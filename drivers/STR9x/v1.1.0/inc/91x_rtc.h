@@ -64,43 +64,29 @@ typedef struct
 #define RTC_TamperPol_Low   0xFFFFFFFB
 
 /*PeriodicClock*/
-#define RTC_Per_2Hz      0x10000
-#define RTC_Per_16Hz     0x20000
-#define RTC_Per_128Hz    0x40000
-#define RTC_Per_1024Hz   0x80000
-#define RTC_Per_DISABLE  0x0
+#define RTC_PER_2Hz      	0x00010000
+#define RTC_PER_16Hz     	0x00020000
+#define RTC_PER_128Hz    	0x00040000
+#define RTC_PER_1024Hz   	0x00080000
+#define RTC_PER_DISABLE  	0x0
 
 /*RTC_IT*/
-#define RTC_IT_Per      0x200000
-#define RTC_IT_Alarm    0x800000
-#define RTC_IT_Tamper   0x400000
+#define RTC_ALARM_EN			0x00100000
+#define RTC_IT_PER      	0x00200000
+#define RTC_IT_ALARM    	0x00800000
+#define RTC_IT_TAMPER   	0x00400000
 
 /*RTC_FLAG*/
-#define RTC_FLAG_Per     0x80000000
-#define RTC_FLAG_Alarm   0x40000000
-#define RTC_FLAG_Tamper  0x10000000
+#define RTC_FLAG_PER     	0x80000000
+#define RTC_FLAG_ALARM   	0x40000000
+#define RTC_FLAG_TAMPER  	0x10000000
 
 
-/* Module private variables --------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
-void RTC_DeInit(void);
-void RTC_SetDate(RTC_DATE Date);
-void RTC_SetTime(RTC_TIME Time);
-void RTC_SetAlarm(RTC_ALARM Alarm);
-void RTC_GetDate(u8 Format, RTC_DATE * Date);
-void RTC_GetTime(u8 Format, RTC_TIME * Time);
-void RTC_GetAlarm(u8 Format, RTC_ALARM * Alarm);
-void RTC_TamperConfig(u32 TamperMode, u32 TamperPol);
-void RTC_TamperCmd(FunctionalState NewState);
-void RTC_AlarmCmd(FunctionalState NewState);
-void RTC_CalibClockCmd(FunctionalState NewState);
-void RTC_SRAMBattPowerCmd(FunctionalState NewState);
-void RTC_PeriodicIntConfig(u32 PeriodicClock);
-void RTC_ITConfig(u32 RTC_IT, FunctionalState NewState);
-FlagStatus RTC_GetFlagStatus(u32 RTC_FLAG);
-void RTC_ClearFlag(u32 RTC_FLAG);
+#define RTC_WRTIE_ENABLE 	0x00000080
+#define RTC_CC_OUT_ENABLE 	0x00000040
+#define RTC_SRAM_VBATT		0x00000008
+
+
 #endif /*__91x_RTC_H*/
 
 /******************* (C) COPYRIGHT 2006 STMicroelectronics *****END OF FILE****/
