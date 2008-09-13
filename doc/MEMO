@@ -1,0 +1,127 @@
+$Id$
+
+Current Development Platforms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   o STM32 Primer
+     -> http://www.st.com/mcu/contentid-105-110-STM3210B_PRIMER.html
+     TM32F103B in 64-pin LQFP package with 128 Kbytes flash program 
+     memory and 20 Kbytes SRAM and embedded communication peripherals 
+     for USB, CAN, USART, SPI, I2C and LIN
+     ca. 40 EUR
+
+   o STR9 comStick
+     -> http://www.hitex.com/str9-comstick/con-str9-comstick.html
+     STR912 microcontroller
+       - ARM966E RISC core up to 96 MHz
+       - 512 + 32 k FLASH and 96 k RAM
+       - 10/100 Ethernet MAC
+       - USB full speed device, CAN and UART
+     ca. 50 EUR
+
+   o upcoming MBHP_CORE_STM32 module
+     ca. 25 EUR
+
+
+Downloading Repository
+~~~~~~~~~~~~~~~~~~~~~~
+
+Download the repository with:
+   svn co svn://svnmios.midibox.org/mios32
+
+If you have write access to the midibox.org SVN server, use:
+   svn co svn+ssh://svn@midibox.org/mios32
+
+
+Synching Repository
+~~~~~~~~~~~~~~~~~~~
+
+Just type "svn update" in the root directory of the repository
+
+
+Environment Variables
+~~~~~~~~~~~~~~~~~~~~~
+
+Before compiling code, set the MIOS32 environment variables:
+
+Unix (we assume, that the repository has been dowloaded into ~/svn)
+  export MIOS32_PATH=~/svn/mios32/trunk
+  export MIOS32_BIN_PATH=$MIOS_PATH/bin
+
+DOS: (we assume, that the repository has been downloaded to D:\)
+  set MIOS32_PATH=D:\mios32\trunk
+  set MIOS32_BIN_PATH=D:\mios32\trunk\bin
+
+
+Installing Toolchain
+~~~~~~~~~~~~~~~~~~~~
+
+Windows
+=======
+
+STM32 Primer: install the toolchain which comes with the CD (Ride7)
+
+STR9 comStick: install WinARM
+-> http://www.siwawi.arubi.uni-kl.de/avr_projects/arm_projects/#winarm
+
+
+MacOS
+=====
+
+STM32 Primer
+------------
+
+Excellent guide can be found under
+-> http://www.paintyourdragon.com/uc/osxstm32/index.html
+Note, that the installation of FatFryer is not required, as CircleOS
+is not used. 
+For the MIOS32 platform, a Bootloader for MacOS/Linux is not available
+yet, therefore the upload of a .hex file has do be done from a Windows
+PC with the cortex_pgm tool, which comes with the Ride7 IDE
+Command:
+   cortex_pgm.exe TSTM32F103RBT6 E B PRTOSDemo.hex S
+
+
+STR9 comStick
+-------------
+
+Precompiled binaries for arm-elf-gcc, which are based on WinARM, are
+available here:
+-> http://www.mikrocontroller.net/articles/ARM_GCC_toolchain_for_Linux_and_Mac_OS_X
+
+Expert knowledge is required to recompile newer gcc sources due to various
+issues with MacOS gcc installation, see also:
+-> http://gmplib.org/macos.html
+
+.bin file (memory image format like .hex) can be downloaded with openOCD:
+http://openocd.berlios.de/web/
+(scripts available on request, ask TK)
+
+
+Linux
+=====
+
+STM32 Primer
+------------
+
+gcc sources can be downloaded from:
+-> http://www.paintyourdragon.com/uc/osxstm32/index.html
+and simply recompiled for your Linux installation
+
+Download of .hex files: same issue as for MacOS
+
+
+STR9 comStick
+-------------
+
+Precompiled binaries for arm-elf-gcc, which are based on WinARM, are
+available here:
+-> http://www.mikrocontroller.net/articles/ARM_GCC_toolchain_for_Linux_and_Mac_OS_X
+
+But is should also be possible to install a newer version.
+Guide:
+-> http://elua.berlios.de/tut_gcc_arm.html
+
+.bin file (memory image format like .hex) can be downloaded with openOCD:
+http://openocd.berlios.de/web/
+(scripts available on request, ask TK)
