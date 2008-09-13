@@ -149,6 +149,11 @@
 #ifdef STR91X_IAR
 	#include "..\..\Source\portable\IAR\STR91x\portmacro.h"
 #endif
+
+// added by TK to support STR9x	
+#ifdef GCC_STR9x
+	#include "../../Source/portable/GCC/STR9x/portmacro.h"
+#endif
 	
 #ifdef GCC_H8S
 	#include "../../Source/portable/GCC/H8S2329/portmacro.h"
