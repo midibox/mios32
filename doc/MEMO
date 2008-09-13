@@ -1,23 +1,23 @@
 $Id$
 
-Current Development Platforms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Current Evaluation Boards
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
    o STM32 Primer
      -> http://www.st.com/mcu/contentid-105-110-STM3210B_PRIMER.html
+     ca. 40 EUR
      TM32F103B in 64-pin LQFP package with 128 Kbytes flash program 
      memory and 20 Kbytes SRAM and embedded communication peripherals 
      for USB, CAN, USART, SPI, I2C and LIN
-     ca. 40 EUR
 
    o STR9 comStick
      -> http://www.hitex.com/str9-comstick/con-str9-comstick.html
+     ca. 50 EUR
      STR912 microcontroller
        - ARM966E RISC core up to 96 MHz
        - 512 + 32 k FLASH and 96 k RAM
        - 10/100 Ethernet MAC
        - USB full speed device, CAN and UART
-     ca. 50 EUR
 
    o upcoming MBHP_CORE_STM32 module
      ca. 25 EUR
