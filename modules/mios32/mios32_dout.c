@@ -36,10 +36,18 @@
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_Init(u32 mode)
 {
+  u8 i;
+
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
-  
+
+  // clear DOUT part of SRIO chain
+  // TODO: here we could provide an option to invert the default value
+  for(i=0; i<MIOS32_SRIO_NUM_MAX; ++i) {
+    mios32_srio_dout[i] = 0;
+  }
+
   return 0;
 }
 
