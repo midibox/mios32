@@ -16,7 +16,7 @@ C_INCLUDE = 	-I . \
 		-I ./ST_Code \
 		-I $(FREE_RTOS)/Demo/Common/include \
 		-I $(FREE_RTOS)/Source/include \
-		-I $(FREE_RTOS)/Source/portable/ARM_CM3 \
+		-I $(FREE_RTOS)/Source/portable/GCC/ARM_CM3 \
 		-I $(DRIVER_LIB)/inc
 
 A_INCLUDE = 	
