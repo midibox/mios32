@@ -70,6 +70,8 @@ s32 MIOS32_SRIO_Init(u32 mode, u8 num)
   srio_num = num;
 
   // clear chains
+  // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
+  // we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
   for(i=0; i<MIOS32_SRIO_NUM_MAX; ++i) {
     mios32_srio_dout[i] = 0;
     mios32_srio_din[i] = 0xff; // passive state
