@@ -6,7 +6,7 @@ FAMILY    = 	STM32F10x
 LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
-DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v0.3.0
+DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v2.0.1
 FREE_RTOS  =    $(MIOS32_PATH)/FreeRTOS
 
 DEBUG     =	-g
@@ -48,8 +48,7 @@ THUMB_SOURCE = \
 		$(FREE_RTOS)/Source/portable/GCC/ARM_CM3/port.c \
 		$(FREE_RTOS)/Source/portable/MemMang/heap_2.c 
 
-THUMB_AS_SOURCE = \
-		$(DRIVER_LIB)/src/cortexm3_macro.s
+THUMB_AS_SOURCE =
 
 ARM_SOURCE =
 

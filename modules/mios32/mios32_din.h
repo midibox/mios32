@@ -32,6 +32,7 @@ extern s32 MIOS32_DIN_Init(u32 mode);
 
 extern s32 MIOS32_DIN_PinGet(u32 pin);
 extern s32 MIOS32_DIN_SRGet(u32 sr);
+u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask);
 
 extern s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin);
 extern s32 MIOS_DIN_PinAutoRepeatEnable(u32 pin);

@@ -81,11 +81,12 @@ int main( void )
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Application Tick Hook (called by FreeRTOS)
+// Application Tick Hook (called by FreeRTOS each mS)
 /////////////////////////////////////////////////////////////////////////////
 void vApplicationTickHook( void )
 {
-  // nothing to do
+  // start next SRIO scan - no IRQ based notification required
+  MIOS32_SRIO_ScanStart(NULL);
 }
 
 
@@ -143,8 +144,8 @@ static void TASK_SRIO_Scan(void *pvParameters)
 
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-    MIOS32_SRIO_ScanStart();
 
+    // check for pin changes, call DIN_NotifyToggle on each toggled pin
     MIOS32_DIN_Handler(DIN_NotifyToggle);
   }
 }

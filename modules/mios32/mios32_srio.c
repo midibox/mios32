@@ -44,6 +44,8 @@ volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_MAX];
 u8 srio_num;
 u8 srio_irq_state;
 
+void (*srio_scan_finished_hook)(void);
+
 /////////////////////////////////////////////////////////////////////////////
 // Initializes SPI pins and peripheral
 // IN: <mode>: currently only mode 0 supported
@@ -59,6 +61,9 @@ s32 MIOS32_SRIO_Init(u32 mode, u8 num)
   SPI_InitTypeDef  SPI_InitStructure;
   GPIO_InitTypeDef GPIO_InitStructure;
   NVIC_InitTypeDef NVIC_InitStructure;
+
+  // disable notification hook
+  srio_scan_finished_hook = NULL;
 
   // currently only mode 0 supported
   if( mode != 0 )
@@ -158,10 +163,13 @@ u8 MIOS32_SRIO_NumberGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Re-Starts the SPI IRQ Handler
+// (Re-)Starts the SPI IRQ Handler which scans the SRIO chain
+// IN: notification function which will be called after the scan has been finished
+//     (all DOUT registers written, all DIN registers read)
+//     use NULL if no function should be called
 // OUT: returns < 0 if operation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_SRIO_ScanStart(void)
+s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 {
   volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
 
@@ -173,14 +181,17 @@ s32 MIOS32_SRIO_ScanStart(void)
     return -2; // notify this special scenario - we could retry here
 
   // disable SPI1 RXNE interrupt
-  SPI_ITConfig(SPI1, SPI_IT_RXNE, DISABLE);
+  SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
 
   // just for the case that there is an ongoing transfer (should be avoided by calling this routine each mS)
   // loop while DR register in not empty
-  while( SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET );
+  while( SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET );
 
   // reset IRQ state
   srio_irq_state = 0;
+
+  // change notification function
+  srio_scan_finished_hook = _notify_hook;
 
   // before first byte will be sent:
   // latch DIN registers by pulsing RCLK: 1->0->1
@@ -192,10 +203,10 @@ s32 MIOS32_SRIO_ScanStart(void)
   GPIO_WriteBit(GPIOA, GPIO_Pin_8, 1);
 
   // Enable SPI1 RXNE interrupt
-  SPI_ITConfig(SPI1, SPI_IT_RXNE, ENABLE);
+  SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, ENABLE);
 
   // send first byte
-  SPI_SendData(SPI1, mios32_srio_dout[srio_num-1]);
+  SPI_I2S_SendData(SPI1, mios32_srio_dout[srio_num-1]);
 
   return 0;
 }
@@ -207,11 +218,11 @@ s32 MIOS32_SRIO_ScanStart(void)
 void MIOS32_SRIO_SPI_IRQHandler(void)
 {
   // if RXNE event has been triggered
-  if( SPI_GetITStatus(SPI1, SPI_IT_RXNE) != RESET ) {
+  if( SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) != RESET ) {
     u8 b;
 
     // get byte
-    b = SPI_ReceiveData(SPI1);
+    b = SPI_I2S_ReceiveData(SPI1);
 
     if( srio_irq_state != 0xff ) { // 0xff should never be reached here - just to ensure
       // notify changes
@@ -231,7 +242,7 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 	srio_irq_state = 0xff;
 
 	// disable SPI1 RXNE interrupt
-	SPI_ITConfig(SPI1, SPI_IT_RXNE, DISABLE);
+	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
 
 	// latch DOUT registers by pulsing RCLK: 1->0->1
 	GPIO_WriteBit(GPIOA, GPIO_Pin_8, 0);
@@ -239,15 +250,19 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 	for(delay=0; delay<10; ++delay);
 	GPIO_WriteBit(GPIOA, GPIO_Pin_8, 1);
 
+	// call user specific hook if requested
+	if( srio_scan_finished_hook != NULL )
+	  srio_scan_finished_hook();
+
 	// next transfer has to be started with MIOS32_SRIO_ScanStart
       } else {
 	// loop while DR register in not empty
-	while( SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET );
+	while( SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET );
 
 	// send next byte
 	// TODO: we could use DMA transfers for send/receive data later, and process
 	// the incoming data once the stream has been sent to offload the CPU
-	SPI_SendData(SPI1, mios32_srio_dout[srio_num-srio_irq_state-1]);
+	SPI_I2S_SendData(SPI1, mios32_srio_dout[srio_num-srio_irq_state-1]);
       }
     }
   }
