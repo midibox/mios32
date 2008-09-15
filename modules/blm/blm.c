@@ -233,7 +233,11 @@ s32 BLM_GetRow(void)
     // cheap (or none) debounce handling
 
     // ignore so long debounce counter != 0
+#if BLM_DEBOUNCE_MODE == 1
     if( !blm_button_debounce_ctr ) {
+#else
+    if( 1 ) {
+#endif
       // determine pin changes
       u8 changed = sr_value ^ blm_button_row[sr];
 
