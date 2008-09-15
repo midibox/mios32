@@ -91,6 +91,36 @@ void vApplicationTickHook( void )
 
 
 /////////////////////////////////////////////////////////////////////////////
+// DIN Handler
+/////////////////////////////////////////////////////////////////////////////
+
+// will be called on pin changes (see TASK_DIN_Check)
+static void DIN_NotifyToggle(u32 pin, u32 value)
+{
+  // map pin and value:
+  // - DOUT pins of a SR are mirrored
+  // - invert DIN value (so that LED lit when button pressed)
+  MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
+}
+
+// checks for toggled DIN pins
+static void TASK_DIN_Check(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // check for pin changes, call DIN_NotifyToggle on each toggled pin
+    MIOS32_DIN_Handler(DIN_NotifyToggle);
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // LED Toggle Task (sends a sign of life)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_LED_Toggle(void *pvParameters)
@@ -117,35 +147,5 @@ static void TASK_LED_Toggle(void *pvParameters)
   XXX unsupported derivative XXX
 #endif
 
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// DIN Handler
-/////////////////////////////////////////////////////////////////////////////
-
-// will be called on pin changes (see TASK_DIN_Check)
-static void DIN_NotifyToggle(u32 pin, u32 value)
-{
-  // map pin and value:
-  // - DOUT pins of a SR are mirrored
-  // - invert DIN value (so that LED lit when button pressed)
-  MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
-}
-
-// checks for toggled DIN pins
-static void TASK_DIN_Check(void *pvParameters)
-{
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
-    // check for pin changes, call DIN_NotifyToggle on each toggled pin
-    MIOS32_DIN_Handler(DIN_NotifyToggle);
   }
 }
