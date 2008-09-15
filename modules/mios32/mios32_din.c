@@ -137,7 +137,7 @@ u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
 s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin)
 {
   // not implemented yet
-  return 1;
+  return -1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin)
 s32 MIOS_DIN_PinAutoRepeatEnable(u32 pin)
 {
   // not implemented yet
-  return 1;
+  return -1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -231,7 +231,7 @@ s32 MIOS32_DIN_Handler(void *_notify_hook)
 
   // no hook?
   if( _notify_hook == NULL )
-    return;
+    return -1;
 
   // check all shift registers for DIN pin changes
   for(sr=0; sr<num_sr; ++sr) {
