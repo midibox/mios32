@@ -88,6 +88,48 @@ s32 MIOS32_DIN_SRGet(u32 sr)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns the DIN pin toggle notifications after a SRIO scan. Should be used 
+// to check and clear these flags when processed by a DIN handler for exclusive
+// access (avoid propagation of already handled DIN pin changes)
+// EXAMPLES: 
+//
+// 1) if a scan matrix handler processes the DIN pins of the first SR,
+// it should call 
+//   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xff)
+// to get a notification, if (and which) pins have toggled during the last scan.
+// The flags will be cleared, so that the remaining handlers won't process
+// the pins of the first DIN register anymore.
+// 
+// 2) it's also possible, to check and clear only dedicated pins of the DIN
+//    register by applying a different pin mask. E.g.
+//   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xc0)
+//    will only check/clear D6 and D7 of the DIN register, the remaining
+//    toggle notifications won't be touched and will be forwarded to remaining 
+//    handlers
+// IN: shift register number in <sr>, pin mask in <maks>
+// OUT: selected (masked) change flags
+//      no error status (-1)! - if unavailable SR selected, 0x00 will be
+//      returned
+/////////////////////////////////////////////////////////////////////////////
+u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
+{
+  u8 changed;
+
+  // check if SR available
+  if( sr >= MIOS32_SRIO_NUM_MAX )
+    return 0x00;
+
+  // get and clear changed flags - must be atomic!
+  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  changed = mios32_srio_din_changed[sr] & mask;
+  mios32_srio_din_changed[sr] &= ~mask;
+  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+
+  return changed;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // disables the auto-repeat feature for the appr. pin
 // IN: pin number in <pin>
 // OUT: returns != 0 on errors
@@ -187,14 +229,15 @@ s32 MIOS32_DIN_Handler(void *_notify_hook)
     return -1;
   }
 
+  // no hook?
+  if( _notify_hook == NULL )
+    return;
+
   // check all shift registers for DIN pin changes
   for(sr=0; sr<num_sr; ++sr) {
     
-    // get and clear changed flags - must be atomic!
-    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-    changed = mios32_srio_din_changed[sr];
-    mios32_srio_din_changed[sr] = 0;
-    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    // check if there are pin changes (mask all pins)
+    changed = MIOS32_DIN_SRChangedGetAndClear(sr, 0xff);
 
     // any pin change at this SR?
     if( !changed )
