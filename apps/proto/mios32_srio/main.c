@@ -33,14 +33,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define PRIORITY_TASK_LED_TOGGLE	( tskIDLE_PRIORITY + 1 )
-#define PRIORITY_TASK_SRIO_SCAN		( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_DIN_CHECK		( tskIDLE_PRIORITY + 2 )
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_LED_Toggle(void *pvParameters);
-static void TASK_SRIO_Scan(void *pvParameters);
+static void TASK_DIN_Check(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,7 +70,7 @@ int main( void )
 
   // start the tasks
   xTaskCreate(TASK_LED_Toggle, (signed portCHAR *)"LED_Toggle", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LED_TOGGLE, NULL);
-  xTaskCreate(TASK_SRIO_Scan, (signed portCHAR *)"SRIO_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SRIO_SCAN, NULL);
+  xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);
 
   // start the scheduler
   vTaskStartScheduler();
@@ -125,7 +125,7 @@ static void TASK_LED_Toggle(void *pvParameters)
 // SRIO Scan Task and DIN Handler
 /////////////////////////////////////////////////////////////////////////////
 
-// will be called on pin changes (see TASK_SRIO_Scan)
+// will be called on pin changes (see TASK_DIN_Check)
 static void DIN_NotifyToggle(u32 pin, u32 value)
 {
   // map pin and value:
@@ -134,8 +134,8 @@ static void DIN_NotifyToggle(u32 pin, u32 value)
   MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
 }
 
-// starts new scan and checks for toggled DIN pins
-static void TASK_SRIO_Scan(void *pvParameters)
+// checks for toggled DIN pins
+static void TASK_DIN_Check(void *pvParameters)
 {
   portTickType xLastExecutionTime;
 
