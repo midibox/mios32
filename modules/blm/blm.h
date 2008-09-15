@@ -23,7 +23,7 @@
 
 
 // define the shift registers to which the anodes of these LEDs are connected
-// Note: they can be equal to DEFAULT_GP_DOUT_SR_[LH], this saves two shift registers, but doesn't allow a separate view of UI selections
+// ensure, that BLM_NUM_COLOURS is set to >= 1
 #ifndef BLM_DOUT_L1
 #define BLM_DOUT_L1	2
 #endif
@@ -53,11 +53,21 @@
 #endif
 
 // define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
+// ensure, that BLM_NUM_COLOURS is set to >= 2
 #ifndef BLM_DOUT_L2
 #define BLM_DOUT_L2	3
 #endif
 #ifndef BLM_DOUT_R2
 #define BLM_DOUT_R2	6
+#endif
+
+// define the shift registers to which the anodes of the "third colour" (blue) LEDs are connected
+// ensure, that BLM_NUM_COLOURS is set to 3
+#ifndef BLM_DOUT_L3
+#define BLM_DOUT_L3	7
+#endif
+#ifndef BLM_DOUT_R3
+#define BLM_DOUT_R3	8
 #endif
 
 // define the DIN shift registers to which the button matrix is connected
@@ -68,8 +78,7 @@
 #define BLM_DIN_R	2
 #endif
 
-// number of colours (currently only 1 or 2 supported)
-// more colours (e.g. for RGB LEDs) require additional DOUT definitions - or maybe a soft configuration via variables?
+// number of colours (currently only 1..3 supported)
 #ifndef BLM_NUM_COLOURS
 #define BLM_NUM_COLOURS 2
 #endif

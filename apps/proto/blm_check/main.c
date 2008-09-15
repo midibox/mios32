@@ -106,8 +106,15 @@ static void DIN_BLM_NotifyToggle(u32 pin, u32 value)
   // map pin and value:
   // - DOUT pins of a SR are mirrored
   // - invert DIN value (so that LED lit when button pressed)
+#if BLM_NUM_COLOURS >= 1
   BLM_DOUT_PinSet(0, pin ^ 7, value ? 0 : 1); // red, pin, value
+#endif
+#if BLM_NUM_COLOURS >= 2
   BLM_DOUT_PinSet(1, pin ^ 7, value ? 0 : 1); // green, pin, value
+#endif
+#if BLM_NUM_COLOURS >= 3
+  BLM_DOUT_PinSet(2, pin ^ 7, value ? 0 : 1); // blue, pin, value
+#endif
 }
 
 // will be called on remaining pin changes (see TASK_DIN_Check)
