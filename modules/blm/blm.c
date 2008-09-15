@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Button/Duo-LED driver
+ * Button/Single/Duo/Triple (RGB)-LED driver
  *
  * ==========================================================================
  *
@@ -149,6 +149,15 @@ s32 BLM_PrepareCol(void)
 #endif
 #if BLM_DOUT_R2
   MIOS32_DOUT_SRSet(BLM_DOUT_R2 - 1, blm_led_row[1][row_offset+1]);
+#endif
+#endif
+
+#if BLM_NUM_COLOURS >= 3
+#if BLM_DOUT_L3
+  MIOS32_DOUT_SRSet(BLM_DOUT_L3 - 1, blm_led_row[2][row_offset+0]);
+#endif
+#if BLM_DOUT_R3
+  MIOS32_DOUT_SRSet(BLM_DOUT_R3 - 1, blm_led_row[2][row_offset+1]);
 #endif
 #endif
 
@@ -321,8 +330,8 @@ u8 BLM_DIN_SRGet(u32 sr)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// sets red or green LED to 0 or Vss
-// IN: colour selection (0/1) in <colour>, pin number in <pin>, pin value in <value>
+// sets red/green/blue LED to 0 or Vss
+// IN: colour selection (0/1/2) in <colour>, pin number in <pin>, pin value in <value>
 // OUT: returns < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_PinSet(u32 colour, u32 pin, u32 value)
@@ -344,8 +353,8 @@ s32 BLM_DOUT_PinSet(u32 colour, u32 pin, u32 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns red or green LED status
-// IN: colour selection (0/1) in <colour>, pin number in <pin>
+// returns red/green/blue LED status
+// IN: colour selection (0/1/2) in <colour>, pin number in <pin>
 // OUT: returns pin value or < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_PinGet(u32 colour, u32 pin)
@@ -363,7 +372,7 @@ s32 BLM_DOUT_PinGet(u32 colour, u32 pin)
 
 /////////////////////////////////////////////////////////////////////////////
 // sets red or green "virtual" shift register
-// IN: colour selection (0/1) in <colour>, SR number in <sr>, SR value in <value>
+// IN: colour selection (0/1/2) in <colour>, SR number in <sr>, SR value in <value>
 // OUT: returns < 0 if SR not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_SRSet(u32 colour, u32 sr, u8 value)
@@ -383,7 +392,7 @@ s32 BLM_DOUT_SRSet(u32 colour, u32 sr, u8 value)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns content of red or green "virtual" shift register
-// IN: colour selection (0/1) in <colour>, SR number in <sr>
+// IN: colour selection (0/1/2) in <colour>, SR number in <sr>
 // OUT: returns SR value or < 0 if SR not available
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_DOUT_SRGet(u32 colour, u32 sr)

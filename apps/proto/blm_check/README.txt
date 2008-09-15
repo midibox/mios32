@@ -26,6 +26,9 @@ This application checks the handling of a Button/LED matrix
 See also the original PIC based application:
 http://svnmios.midibox.org/listing.php?repname=svn.mios&path=%2Ftrunk%2Fapps%2Fexamples%2Fbutton_duoled_matrix%2F
 
+Note, tat the MIOS32 based BLM driver also supports Single, Duo and Triple (RGB) LEDs
+(see SR definitions in $MIOS32_PATH/modules/blm/blm.h)
+
 In addition, the two LEDs of STM32 Primer are flashing to send a "sign of life"
 
 Pin connections:
