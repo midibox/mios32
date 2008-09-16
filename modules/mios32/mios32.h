@@ -52,6 +52,8 @@ extern "C" {
 #include <mios32_srio.h>
 #include <mios32_din.h>
 #include <mios32_dout.h>
+#include <mios32_usb.h>
+#include <mios32_usb_desc.h>
 
 
 /////////////////////////////////////////////////////////////////////////////

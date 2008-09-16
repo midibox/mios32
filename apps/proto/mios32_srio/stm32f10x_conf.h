@@ -48,6 +48,16 @@
 /************************************* EXTI ***********************************/
 //#define _EXTI
 
+/************************************* FLASH and Option Bytes *****************/
+#define _FLASH
+/* Uncomment the line below to enable FLASH program/erase/protections functions,
+   otherwise only FLASH configuration (latency, prefetch, half cycle) functions
+   are enabled */
+/* #define _FLASH_PROG */
+
+/************************************* FSMC ***********************************/
+//#define _FSMC
+
 /************************************* GPIO ***********************************/
 #define _GPIO
 #define _GPIOA
@@ -112,11 +122,10 @@
 #define HSE_Value    ((u32)12000000)   /* Value of the External oscillator in Hz*/
 
 /* Exported macro ------------------------------------------------------------*/
-#undef assert_param
 #ifdef  DEBUG
 /*******************************************************************************
 * Macro Name     : assert_param
-* Description    : The assert macro is used for function's parameters check.
+* Description    : The assert_param macro is used for function's parameters check.
 *                  It is used only if the library is compiled in DEBUG mode. 
 * Input          : - expr: If expr is false, it calls assert_failed function
 *                    which reports the name of the source file and the source
