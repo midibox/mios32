@@ -45,7 +45,6 @@ volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 srio_num;
 u8 srio_irq_state;
 
 void (*srio_scan_finished_hook)(void);
@@ -146,17 +145,6 @@ s32 MIOS32_SRIO_Init(u32 mode)
   NVIC_Init(&NVIC_InitStructure);
 
   return 0;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// returns number of available SR registers
-// IN: -
-// OUT: number of shift registers, which have been specified while calling MIOS32_SRIO_Init()
-/////////////////////////////////////////////////////////////////////////////
-u8 MIOS32_SRIO_NumberGet(void)
-{
-  return srio_num;
 }
 
 

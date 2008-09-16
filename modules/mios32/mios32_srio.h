@@ -35,7 +35,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MIOS32_SRIO_Init(u32 mode);
-extern u8 MIOS32_SRIO_NumberGet(void);
 
 extern s32 MIOS32_SRIO_ScanStart(void *notify_hook);
 extern void MIOS32_SRIO_IRQHandler(void);
