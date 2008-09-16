@@ -20,23 +20,6 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_SYS)
 
-
-#include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
-
-#if defined(_STM32x_)
-# include <stm32f10x_map.h>
-# include <stm32f10x_flash.h>
-# include <stm32f10x_rcc.h>
-# include <stm32f10x_gpio.h>
-# include <stm32f10x_spi.h>
-# include <stm32f10x_nvic.h>
-#else
-  XXX unsupported derivative XXX
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the System for MIOS32
 // IN: <mode>: currently only mode 0 supported

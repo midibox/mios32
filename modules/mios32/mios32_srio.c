@@ -21,17 +21,6 @@
 #if !defined(MIOS32_DONT_USE_SRIO)
 
 
-#if defined(_STM32x_)
-# include <stm32f10x_map.h>
-# include <stm32f10x_rcc.h>
-# include <stm32f10x_gpio.h>
-# include <stm32f10x_spi.h>
-# include <stm32f10x_nvic.h>
-#else
-  XXX unsupported derivative XXX
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////

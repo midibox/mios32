@@ -5,7 +5,9 @@
 C_INCLUDE += -I $(MIOS32_PATH)/modules/mios32
 
 
-# add modules to thumb sources (TODO: provide makefile option to add code to ARM sources)
+# add modules to thumb sources
+# TODO: provide makefile option to add code to ARM sources
+# TODO: select driver library depending on PROCESSOR/FAMILY variable
 THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_sys.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_srio.c \
@@ -13,6 +15,12 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_dout.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb_desc.c \
+	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
+	$(DRIVER_LIB)/src/stm32f10x_flash.c \
+	$(DRIVER_LIB)/src/stm32f10x_spi.c \
+	$(DRIVER_LIB)/src/stm32f10x_rcc.c \
+	$(DRIVER_LIB)/src/stm32f10x_systick.c \
+	$(DRIVER_LIB)/src/stm32f10x_nvic.c \
 	$(DRIVER_LIB)/src/usb_core.c \
 	$(DRIVER_LIB)/src/usb_init.c \
 	$(DRIVER_LIB)/src/usb_int.c \
