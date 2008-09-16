@@ -220,22 +220,21 @@ s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 s32 MIOS32_DIN_Handler(void *_notify_hook)
 {
   s32 sr;
-  s32 num_sr;
   s32 sr_pin;
   u8 changed;
   void (*notify_hook)(u32 pin, u32 value) = _notify_hook;
 
   // no SRIOs?
-  if( (num_sr=MIOS32_SRIO_NumberGet()) <= 0 ) {
-    return -1;
-  }
+#if MIOS32_SRIO_NUM_SR == 0
+  return -1;
+#endif
 
   // no hook?
   if( _notify_hook == NULL )
     return -1;
 
   // check all shift registers for DIN pin changes
-  for(sr=0; sr<num_sr; ++sr) {
+  for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr) {
     
     // check if there are pin changes (mask all pins)
     changed = MIOS32_DIN_SRChangedGetAndClear(sr, 0xff);
