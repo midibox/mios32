@@ -48,7 +48,7 @@ int main( void )
 
   // initialize hardware and MIOS32 modules
   MIOS32_SYS_Init(0);
-  MIOS32_SRIO_Init(0, 16);
+  MIOS32_SRIO_Init(0);
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
 

@@ -4,6 +4,8 @@ from mios32.h to configure the code modules.
 
 Main purpose is to allow to disable MIOS32 functions in order to remove unused code.
 
+It also allows to configure the size of data structures (e.g. MIOS32_SRIO_NUM_SR)
+
 Later we could also provide hard-coded variants to increase the flexibility on
 unexpected usecases.
 
@@ -11,8 +13,12 @@ unexpected usecases.
 Currently, following options are provided. Just copy&paste the relevant lines
 into your local mios32_config.h file
 
+// disable code modules
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
 #define MIOS32_DONT_USE_SYS
 
+// number of scanned SR registers on SRIO chain
+// default value 16 (see mios32_srio.h)
+#define MIOS32_SRIO_NUM_SR 16

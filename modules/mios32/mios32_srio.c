@@ -36,9 +36,9 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_MAX];
-volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_MAX];
-volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_MAX];
+volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
+volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
+volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,10 +55,9 @@ void (*srio_scan_finished_hook)(void);
 // IN: <mode>: currently only mode 0 supported
 //             later we could provide different pin mappings and operation 
 //             modes (e.g. output only)
-//     <num>:  number of SRIOs in the chain (0..16)
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_SRIO_Init(u32 mode, u8 num)
+s32 MIOS32_SRIO_Init(u32 mode)
 {
   u8 i;
 
@@ -73,15 +72,10 @@ s32 MIOS32_SRIO_Init(u32 mode, u8 num)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // check number of specified SRIOs
-  if( num > MIOS32_SRIO_NUM_MAX )
-    return -2; // unsupported number of SRIOs
-  srio_num = num;
-
   // clear chains
   // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
   // we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
-  for(i=0; i<MIOS32_SRIO_NUM_MAX; ++i) {
+  for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
     mios32_srio_dout[i] = 0;
     mios32_srio_din[i] = 0xff; // passive state
     mios32_srio_din_changed[i] = 0;
@@ -177,8 +171,9 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 {
   volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
 
-  if( srio_num == 0 || srio_num > MIOS32_SRIO_NUM_MAX )
-    return -1; // no or to many SRIOs defined
+#if MIOS32_SRIO_NUM_SR == 0
+  return -1; // no SRIO scan required
+#endif
 
   // exit if previous stream hasn't been sent yet (no additional transfer required)
   if( srio_irq_state != 0xff )
@@ -210,7 +205,7 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, ENABLE);
 
   // send first byte
-  SPI_I2S_SendData(SPI1, mios32_srio_dout[srio_num-1]);
+  SPI_I2S_SendData(SPI1, mios32_srio_dout[MIOS32_SRIO_NUM_SR-1]);
 
   return 0;
 }
@@ -239,7 +234,7 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
       ++srio_irq_state;
 
       // last byte received?
-      if( srio_irq_state >= srio_num ) {
+      if( srio_irq_state >= MIOS32_SRIO_NUM_SR ) {
 	volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
 
 	// notify that stream has been completely send
@@ -266,7 +261,7 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 	// send next byte
 	// TODO: we could use DMA transfers for send/receive data later, and process
 	// the incoming data once the stream has been sent to offload the CPU
-	SPI_I2S_SendData(SPI1, mios32_srio_dout[srio_num-srio_irq_state-1]);
+	SPI_I2S_SendData(SPI1, mios32_srio_dout[MIOS32_SRIO_NUM_SR-srio_irq_state-1]);
       }
     }
   }
