@@ -110,6 +110,18 @@ and simply recompiled for your Linux installation
 
 Download of .hex files: same issue as for MacOS
 
+NOTE for Ubuntu users: you may have to install:
+-buil-essential
+-texinfo
+-flex
+-bison
+If the compiler complains because can' t find "stdio_ext.h" try:
+    sudo chmod 644 /usr/include/stdio_ext.h
+and
+    CFLAGS="$CFLAGS -I/usr/include"
+to be sure that the C compiler is looking for headers in the right place.
+
+
 
 STR9 comStick
 -------------
