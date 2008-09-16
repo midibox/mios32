@@ -18,6 +18,9 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// for the case that own descriptor tables should be embedded into the project
+#if !defined(MIOS32_DONT_USE_USB_DESC)
+
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
 #ifndef MIOS32_USB_DESC_USE_AC_INTERFACE
 #define MIOS32_USB_DESC_USE_AC_INTERFACE 1
@@ -38,6 +41,8 @@
 #define MIOS32_USB_DESC_SIZ_STRING_VENDOR      24
 #define MIOS32_USB_DESC_SIZ_STRING_PRODUCT     14
 
+#endif /* MIOS32_DONT_USE_USB_DESC */
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -56,4 +61,3 @@ extern const u8 MIOS32_USB_DESC_StringProduct[MIOS32_USB_DESC_SIZ_STRING_PRODUCT
 /////////////////////////////////////////////////////////////////////////////
 
 #endif /* __USB_DESC_H */
-/******************* (C) COPYRIGHT 2008 STMicroelectronics *****END OF FILE****/

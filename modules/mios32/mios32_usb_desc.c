@@ -19,6 +19,8 @@
 
 #include <mios32.h>
 
+// this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
+#if !defined(MIOS32_DONT_USE_USB_DESC)
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -429,3 +431,5 @@ const u8 MIOS32_USB_DESC_StringProduct[MIOS32_USB_DESC_SIZ_STRING_PRODUCT] = {
   '3',00,
   '2',00
 };
+
+#endif /* MIOS32_DONT_USE_USB_DESC */

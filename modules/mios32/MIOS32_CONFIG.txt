@@ -19,6 +19,8 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
 #define MIOS32_DONT_USE_USB
+#define MIOS32_DONT_USE_USB_DESC
+
 
 // number of scanned SR registers on SRIO chain
 // default value 16 (see mios32_srio.h)
