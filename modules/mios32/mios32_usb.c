@@ -22,15 +22,7 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_USB)
 
-#if defined(_STM32x_)
-# include "stm32f10x_lib.h"
-# include <stm32f10x_map.h>
-# include <stm32f10x_gpio.h>
-# include <stm32f10x_nvic.h>
-# include "usb_lib.h"
-#else
-  XXX unsupported derivative XXX
-#endif
+#include <usb_lib.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -259,12 +251,7 @@ void MIOS32_USB_EP1_IN_Callback(void)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_EP1_OUT_Callback(void)
 {
-  u32 count_out;
-  u8 buffer_out[64];
-
-  count_out = GetEPRxCount(ENDP3);
-  PMAToUserBufferCopy(buffer_out, ENDP1_RXADDR, count_out);
-  SetEPRxValid(ENDP3);
+  SetEPRxValid(ENDP1);
 }
 
 
@@ -279,29 +266,30 @@ void MIOS32_USB_CB_Init(void)
 
   pInformation->Current_Configuration = 0;
 
-  /* Connect the device */
-  /*** CNTR_PWDN = 0 ***/
+  // Connect the device
+
+  // CNTR_PWDN = 0
   wRegVal = CNTR_FRES;
   _SetCNTR(wRegVal);
 
-  /*** CNTR_FRES = 0 ***/
+  // CNTR_FRES = 0
   wInterrupt_Mask = 0;
   _SetCNTR(wInterrupt_Mask);
-  /*** Clear pending interrupts ***/
+
+  // Clear pending interrupts
   _SetISTR(0);
-  /*** Set interrupt mask ***/
+
+  // Set interrupt mask
   wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
   _SetCNTR(wInterrupt_Mask);
 
-  /* USB interrupts initialization */
-  /* clear pending interrupts */
+  // USB interrupts initialization
+  // clear pending interrupts
   _SetISTR(0);
   wInterrupt_Mask = IMR_MSK;
-  /* set interrupts mask */
-  _SetCNTR(wInterrupt_Mask);
 
-  /* configure the USART 1 to the default settings */
-  //  USART_Config_Default();
+  // set interrupts mask
+  _SetCNTR(wInterrupt_Mask);
 
   bDeviceState = UNCONNECTED;
 }
@@ -309,17 +297,17 @@ void MIOS32_USB_CB_Init(void)
 // reset routine
 void MIOS32_USB_CB_Reset(void)
 {
-  /* Set MIOS32_USB_CB DEVICE as not configured */
+  // Set MIOS32 Device as not configured
   pInformation->Current_Configuration = 0;
 
-  /* Current Feature initialization */
+  // Current Feature initialization
   pInformation->Current_Feature = MIOS32_USB_DESC_ConfigDescriptor[7];
 
-  /* Set MIOS32_USB_CB DEVICE with the default Interface*/
+  // Set MIOS32 Device with the default Interface
   pInformation->Current_Interface = 0;
   SetBTABLE(BTABLE_ADDRESS);
 
-  /* Initialize Endpoint 0 */
+  // Initialize Endpoint 0
   SetEPType(ENDP0, EP_CONTROL);
   SetEPTxStatus(ENDP0, EP_TX_STALL);
   SetEPRxAddr(ENDP0, ENDP0_RXADDR);
@@ -328,7 +316,7 @@ void MIOS32_USB_CB_Reset(void)
   SetEPRxCount(ENDP0, Device_Property.MaxPacketSize);
   SetEPRxValid(ENDP0);
 
-  /* Initialize Endpoint 1 */
+  // Initialize Endpoint 1
   SetEPType(ENDP1, EP_BULK);
   SetEPTxAddr(ENDP1, ENDP1_TXADDR);
   SetEPRxAddr(ENDP1, ENDP1_RXADDR);
@@ -337,7 +325,7 @@ void MIOS32_USB_CB_Reset(void)
   SetEPRxStatus(ENDP1, EP_RX_VALID);
   SetEPTxStatus(ENDP1, EP_TX_NAK);
 
-  /* Set this device to response on default address */
+  // Set this device to response on default address
   SetDeviceAddress(0);
 
   bDeviceState = ATTACHED;
@@ -348,9 +336,7 @@ void MIOS32_USB_CB_SetConfiguration(void)
 {
   DEVICE_INFO *pInfo = &Device_Info;
 
-  if (pInfo->Current_Configuration != 0)
-  {
-    /* Device configured */
+  if (pInfo->Current_Configuration != 0) {
     bDeviceState = CONFIGURED;
   }
 }
@@ -399,12 +385,10 @@ u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length)
 u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
 {
   u8 wValue0 = pInformation->USBwValue0;
-  if (wValue0 > 4)
-  {
+
+  if (wValue0 > 4) {
     return NULL;
-  }
-  else
-  {
+  } else {
     return Standard_GetDescriptorData(Length, &String_Descriptor[wValue0]);
   }
 }

@@ -31,7 +31,7 @@ extern "C" {
 /////////////////////////////////////////////////////////////////////////////
 
 #if defined(_STM32x_)
-# include <stm32f10x_type.h>
+# include <stm32f10x_lib.h>
 #else
   XXX unsupported derivative XXX
 #endif

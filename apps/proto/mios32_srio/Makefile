@@ -31,12 +31,6 @@ CFLAGS =	$(DEBUG) \
 		-DGCC_ARMCM3
 
 THUMB_SOURCE = \
-		$(DRIVER_LIB)/src/stm32f10x_gpio.c \
-		$(DRIVER_LIB)/src/stm32f10x_flash.c \
-		$(DRIVER_LIB)/src/stm32f10x_spi.c \
-		$(DRIVER_LIB)/src/stm32f10x_rcc.c \
-		$(DRIVER_LIB)/src/stm32f10x_systick.c \
-		$(DRIVER_LIB)/src/stm32f10x_nvic.c \
 		crt0_STM32x.c \
 		main.c \
 		$(FREE_RTOS)/Source/tasks.c \

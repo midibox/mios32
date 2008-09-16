@@ -17,8 +17,7 @@
 
 #include <mios32.h>
 
-#include <stm32f10x_type.h>
-#include <stm32f10x_gpio.h>
+#include <stm32f10x_lib.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
