@@ -17,6 +17,10 @@
 
 #include <mios32.h>
 
+// this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
+#if !defined(MIOS32_DONT_USE_SRIO)
+
+
 #if defined(_STM32x_)
 # include <stm32f10x_map.h>
 # include <stm32f10x_rcc.h>
@@ -267,4 +271,6 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
     }
   }
 }
+
+#endif /* MIOS32_DONT_USE_SRIO */
 

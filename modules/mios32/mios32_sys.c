@@ -17,6 +17,10 @@
 
 #include <mios32.h>
 
+// this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
+#if !defined(MIOS32_DONT_USE_SYS)
+
+
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
@@ -95,3 +99,4 @@ s32 MIOS32_SYS_Init(u32 mode)
   return 0;
 }
 
+#endif /* MIOS32_DONT_USE_SYS */

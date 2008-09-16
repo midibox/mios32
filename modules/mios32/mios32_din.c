@@ -17,8 +17,13 @@
 
 #include <mios32.h>
 
+// this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
+#if !defined(MIOS32_DONT_USE_DIN)
+
+
 #include <FreeRTOS.h>
 #include <portmacro.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -251,3 +256,5 @@ s32 MIOS32_DIN_Handler(void *_notify_hook)
 
   return 0;
 }
+
+#endif /* MIOS32_DONT_USE_DIN */

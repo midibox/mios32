@@ -36,11 +36,6 @@ THUMB_SOURCE = \
 		$(DRIVER_LIB)/src/stm32f10x_rcc.c \
 		$(DRIVER_LIB)/src/stm32f10x_systick.c \
 		$(DRIVER_LIB)/src/stm32f10x_nvic.c \
-		$(MIOS32_PATH)/modules/mios32/mios32_sys.c \
-		$(MIOS32_PATH)/modules/mios32/mios32_srio.c \
-		$(MIOS32_PATH)/modules/mios32/mios32_din.c \
-		$(MIOS32_PATH)/modules/mios32/mios32_dout.c \
-		$(MIOS32_PATH)/modules/blm/blm.c \
 		crt0_STM32x.c \
 		main.c \
 		$(FREE_RTOS)/Source/tasks.c \
@@ -56,6 +51,11 @@ ARM_SOURCE =
 ARM_AS_SOURCE =
 
 
+# add MIOS32 sources
 include $(MIOS32_PATH)/modules/mios32/mios32.mk
+
+# add BLM sources
 include $(MIOS32_PATH)/modules/blm/blm.mk
+
+# include common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
