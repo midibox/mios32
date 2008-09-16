@@ -51,7 +51,7 @@ s32 MIOS32_DIN_Init(u32 mode)
 
   // clear DIN part of SRIO chain
   // TODO: here we could provide an option to invert the default value
-  for(i=0; i<MIOS32_SRIO_NUM_MAX; ++i) {
+  for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
     mios32_srio_din[i] = 0xff; // passive state
     mios32_srio_din_changed[i] = 0;
   }
@@ -68,9 +68,7 @@ s32 MIOS32_DIN_Init(u32 mode)
 s32 MIOS32_DIN_PinGet(u32 pin)
 {
   // check if pin available
-  // check against max number of SRIO instead of srio_num to ensure, that apps 
-  // don't start to behave strangely if the user reduces the number of SRIOs)
-  if( pin/8 >= MIOS32_SRIO_NUM_MAX )
+  if( pin/8 >= MIOS32_SRIO_NUM_SR )
     return -1;
 
   return (mios32_srio_din[pin >> 3] & (1 << (pin&7))) ? 1 : 0;
@@ -84,9 +82,7 @@ s32 MIOS32_DIN_PinGet(u32 pin)
 s32 MIOS32_DIN_SRGet(u32 sr)
 {
   // check if SR available
-  // check against max number of SRIO instead of srio_num to ensure, that apps 
-  // don't start to behave strangely if the user reduces the number of SRIOs)
-  if( sr >= MIOS32_SRIO_NUM_MAX )
+  if( sr >= MIOS32_SRIO_NUM_SR )
     return -1;
 
   return mios32_srio_din[sr];
@@ -121,7 +117,7 @@ u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
   u8 changed;
 
   // check if SR available
-  if( sr >= MIOS32_SRIO_NUM_MAX )
+  if( sr >= MIOS32_SRIO_NUM_SR )
     return 0x00;
 
   // get and clear changed flags - must be atomic!
