@@ -46,7 +46,7 @@ Before compiling code, set the MIOS32 environment variables:
 
 Unix (we assume, that the repository has been dowloaded into ~/svn)
   export MIOS32_PATH=~/svn/mios32/trunk
-  export MIOS32_BIN_PATH=$MIOS_PATH/bin
+  export MIOS32_BIN_PATH=$MIOS32_PATH/bin
 
 DOS: (we assume, that the repository has been downloaded to D:\)
   set MIOS32_PATH=D:\mios32\trunk

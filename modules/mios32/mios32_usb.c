@@ -24,6 +24,9 @@
 
 #include <usb_lib.h>
 
+#include <FreeRTOS.h>
+#include <portmacro.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -78,6 +81,9 @@ typedef enum _DEVICE_STATE
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
+
+void MIOS32_USB_TxBufferHandler(void);
+void MIOS32_USB_RxBufferHandler(void);
 
 void MIOS32_USB_EP1_IN_Callback(void);
 void MIOS32_USB_EP1_OUT_Callback(void);
@@ -180,6 +186,19 @@ volatile u16 wIstr;
 // USB device status
 vu32 bDeviceState = UNCONNECTED;
 
+// Rx/Tx buffers
+u32 buffer_rx[MIOS32_USB_RX_BUFFER_SIZE];
+volatile u16 buffer_rx_tail;
+volatile u16 buffer_rx_head;
+volatile u16 buffer_rx_size;
+volatile u8 buffer_rx_new_data;
+
+u32 buffer_tx[MIOS32_USB_TX_BUFFER_SIZE];
+volatile u16 buffer_tx_tail;
+volatile u16 buffer_tx_head;
+volatile u16 buffer_tx_size;
+volatile u8 buffer_tx_busy;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the USB interface
@@ -188,11 +207,19 @@ vu32 bDeviceState = UNCONNECTED;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_Init(u32 mode)
 {
+  u8 i;
+
   GPIO_InitTypeDef GPIO_InitStructure;
 
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // clear buffer counters and busy/wait signals
+  buffer_rx_tail = buffer_rx_head = buffer_rx_size = 0;
+  buffer_rx_new_data = 0; // no data received yet
+  buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
+  buffer_tx_busy = 0; // buffer is busy so long no USB connection detected
 
   // configure USB disconnect pin
   // STM32 Primer: pin B12
@@ -207,6 +234,56 @@ s32 MIOS32_USB_Init(u32 mode)
 
   return 0;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function puts a new MIDI package into the Tx buffer
+// IN: MIDI package in <package>
+// OUT: if -1, buffer is full - retry until buffer is free again
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_MIDIPackageSend(u32 package)
+{
+  // buffer full?
+  if( buffer_tx_size >= (MIOS32_USB_TX_BUFFER_SIZE-1) )
+    return -1;
+
+  // put package into buffer - this operation should be atomic!
+  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  buffer_tx[buffer_tx_head++] = package;
+  if( buffer_tx_head >= MIOS32_USB_TX_BUFFER_SIZE )
+    buffer_tx_head = 0;
+  ++buffer_tx_size;
+  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function checks for a new package
+// IN: pointer to MIDI package in <package> (received package will be put into the given variable)
+// OUT: returns -1 if no package in buffer
+//      otherwise returns number of packages which are still in the buffer
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_MIDIPackageReceive(u32 *package)
+{
+  u8 i;
+
+  // package received?
+  if( !buffer_rx_size )
+    return -1;
+
+  // get package - this operation should be atomic!
+  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  *package = buffer_rx[buffer_rx_tail];
+  if( ++buffer_rx_tail >= MIOS32_USB_RX_BUFFER_SIZE )
+    buffer_rx_tail = 0;
+  --buffer_rx_size;
+  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+
+  return buffer_rx_size;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This handler should be called from a RTOS task to react on
@@ -235,10 +312,95 @@ s32 MIOS32_USB_Handler(void)
     CTR_LP();
   }
 
+
   // do we need to react on the remaining events?
   // they are currently masked out via IMR_MSK
 
+
+  // now check if something has to be sent or received
+  MIOS32_USB_RxBufferHandler();
+  MIOS32_USB_TxBufferHandler();
+
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This handler sends the new packages through the IN pipe if the buffer 
+// is not empty
+/////////////////////////////////////////////////////////////////////////////
+void MIOS32_USB_TxBufferHandler(void)
+{
+  // send buffered packages if
+  //   - last transfer finished
+  //   - new packages are in the buffer
+  //   - the device is configured
+
+  if( !buffer_tx_busy && buffer_tx_size && bDeviceState == CONFIGURED ) {
+    u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_TXADDR<<1));
+    s16 count = (buffer_tx_size > (MIOS32_USB_DESC_DATA_IN_SIZE/4)) ? (MIOS32_USB_DESC_DATA_IN_SIZE/4) : buffer_tx_size;
+
+    // notify that new package is sent
+    buffer_tx_busy = 1;
+
+    // send to IN pipe
+    SetEPTxCount(ENDP1, 4*count);
+
+    // atomic operation to avoid conflict with other interrupts
+    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    buffer_tx_size -= count;
+
+    // copy into PMA buffer (16bit word with, only 32bit addressable)
+    do {
+      *pma_addr++ = buffer_tx[buffer_tx_tail] & 0xffff;
+      *pma_addr++ = (buffer_tx[buffer_tx_tail]>>16) & 0xffff;
+      if( ++buffer_tx_tail >= MIOS32_USB_TX_BUFFER_SIZE )
+	buffer_tx_tail = 0;
+    } while( --count );
+
+    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+
+    // send buffer
+    SetEPTxValid(ENDP1);
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This handler receives new packages if the Tx buffer is not full
+/////////////////////////////////////////////////////////////////////////////
+void MIOS32_USB_RxBufferHandler(void)
+{
+  s16 count;
+
+  // check if we can receive new data and get packages to be received from OUT pipe
+  if( buffer_rx_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
+
+    // check if buffer is free
+    if( count < (MIOS32_USB_RX_BUFFER_SIZE-buffer_rx_size) ) {
+      u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_RXADDR<<1));
+
+      // copy received packages into receive buffer
+      // this operation should be atomic
+      portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+      do {
+	u16 pl = *pma_addr++;
+	u16 ph = *pma_addr++;
+	buffer_rx[buffer_rx_head] = (ph << 16) | pl;
+	if( ++buffer_rx_head >= MIOS32_USB_RX_BUFFER_SIZE )
+	  buffer_rx_head = 0;
+	++buffer_rx_size;
+      } while( --count >= 0 );
+
+      // notify, that data has been put into buffer
+      buffer_rx_new_data = 0;
+
+      portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+
+      // release OUT pipe
+      SetEPRxValid(ENDP1);
+    }
+  }
 }
 
 
@@ -247,6 +409,11 @@ s32 MIOS32_USB_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_EP1_IN_Callback(void)
 {
+  // package has been sent
+  buffer_tx_busy = 0;
+
+  // check for next package
+  MIOS32_USB_TxBufferHandler();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -254,7 +421,9 @@ void MIOS32_USB_EP1_IN_Callback(void)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_EP1_OUT_Callback(void)
 {
-  SetEPRxValid(ENDP1);
+  // put package into buffer
+  buffer_rx_new_data = 1;
+  MIOS32_USB_RxBufferHandler();
 }
 
 
@@ -321,15 +490,23 @@ void MIOS32_USB_CB_Reset(void)
 
   // Initialize Endpoint 1
   SetEPType(ENDP1, EP_BULK);
+
   SetEPTxAddr(ENDP1, ENDP1_TXADDR);
-  SetEPRxAddr(ENDP1, ENDP1_RXADDR);
-  SetEPTxCount(ENDP1, 0x40);
-  SetEPRxCount(ENDP1, 0x40);
-  SetEPRxStatus(ENDP1, EP_RX_VALID);
+  SetEPTxCount(ENDP1, MIOS32_USB_DESC_DATA_OUT_SIZE);
   SetEPTxStatus(ENDP1, EP_TX_NAK);
+
+  SetEPRxAddr(ENDP1, ENDP1_RXADDR);
+  SetEPRxCount(ENDP1, MIOS32_USB_DESC_DATA_IN_SIZE);
+  SetEPRxValid(ENDP1);
 
   // Set this device to response on default address
   SetDeviceAddress(0);
+
+  // clear buffer counters and busy/wait signals again (e.g., so that no invalid data will be sent out)
+  buffer_rx_tail = buffer_rx_head = buffer_rx_size = 0;
+  buffer_rx_new_data = 0; // no data received yet
+  buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
+  buffer_tx_busy = 0; // buffer not busy anymore
 
   bDeviceState = ATTACHED;
 }

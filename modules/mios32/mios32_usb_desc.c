@@ -337,7 +337,7 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x02,				// Out Endpoint 2
+  0x01,				// Out Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_DESC_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_DESC_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -367,7 +367,7 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x82,				// In Endpoint 2
+  0x81,				// In Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_DESC_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_DESC_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
