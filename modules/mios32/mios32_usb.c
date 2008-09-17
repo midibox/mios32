@@ -209,11 +209,11 @@ s32 MIOS32_USB_Init(u32 mode)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler should be called from a low priority task to react on
+// This handler should be called from a RTOS task to react on
 // USB interrupt notifications
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_LowPrio_Handler(void)
+s32 MIOS32_USB_Handler(void)
 {
   // MEMO: could also be called from USB_LP_CAN_RX0_IRQHandler
   // if IRQ vector configured for USB
@@ -234,6 +234,9 @@ s32 MIOS32_USB_LowPrio_Handler(void)
     // clear of the CTR flag into the sub
     CTR_LP();
   }
+
+  // do we need to react on the remaining events?
+  // they are currently masked out via IMR_MSK
 
   return 0;
 }
