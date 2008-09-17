@@ -14,8 +14,7 @@ OPTIMIZE  =	-Os
 
 C_INCLUDE = 	-I . \
 		-I $(FREE_RTOS)/Source/include \
-		-I $(FREE_RTOS)/Source/portable/GCC/ARM_CM3 \
-		-I $(DRIVER_LIB)/inc
+		-I $(FREE_RTOS)/Source/portable/GCC/ARM_CM3
 
 A_INCLUDE = 	
 
