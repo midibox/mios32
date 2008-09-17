@@ -18,6 +18,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
+#define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_DESC
 
@@ -31,3 +32,7 @@ into your local mios32_config.h file
 
 // allowed number of USB MIDI ports: 1..5
 #define MIOS32_USB_DESC_NUM_PORTS 1
+
+// buffer size (should be at least >= MIOS32_USB_DESC_DATA_*_SIZE/4)
+#define MIOS32_USB_RX_BUFFER_SIZE   64 // packages
+#define MIOS32_USB_TX_BUFFER_SIZE   64 // packages
