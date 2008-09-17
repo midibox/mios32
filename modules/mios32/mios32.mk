@@ -2,7 +2,8 @@
 # defines additional rules for MIOS32
 
 # enhance include path
-C_INCLUDE += -I $(MIOS32_PATH)/modules/mios32
+C_INCLUDE +=	-I $(MIOS32_PATH)/modules/mios32 \
+		-I $(DRIVER_LIB)/inc
 
 
 # add modules to thumb sources
