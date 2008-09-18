@@ -207,7 +207,7 @@ s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks for pin changes, and calls given hook with following parameters:
+// Checks for pin changes, and calls given callback function with following parameters:
 //   - u32 pin: pin number
 //   - u32 value: pin value
 //
@@ -217,20 +217,20 @@ s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 //          on pin changes
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_DIN_Handler(void *_notify_hook)
+s32 MIOS32_DIN_Handler(void *_callback)
 {
   s32 sr;
   s32 sr_pin;
   u8 changed;
-  void (*notify_hook)(u32 pin, u32 value) = _notify_hook;
+  void (*callback)(u32 pin, u32 value) = _callback;
 
   // no SRIOs?
 #if MIOS32_SRIO_NUM_SR == 0
   return -1;
 #endif
 
-  // no hook?
-  if( _notify_hook == NULL )
+  // no callback function?
+  if( _callback == NULL )
     return -1;
 
   // check all shift registers for DIN pin changes
@@ -246,7 +246,7 @@ s32 MIOS32_DIN_Handler(void *_notify_hook)
     // check all 8 pins of the SR
     for(sr_pin=0; sr_pin<8; ++sr_pin)
       if( changed & (1 << sr_pin) )
-	notify_hook(8*sr+sr_pin, (mios32_srio_din[sr] & (1 << sr_pin)) ? 1 : 0);
+	callback(8*sr+sr_pin, (mios32_srio_din[sr] & (1 << sr_pin)) ? 1 : 0);
   }
 
   return 0;

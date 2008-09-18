@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Demo application for MIOS32_SRIO driver
+ * Demo application for MIDI and USB driver
  *
  * ==========================================================================
  *
@@ -65,7 +65,6 @@ int main(void)
   XXX unsupported derivative XXX
 #endif
 
-
   // start the tasks
   xTaskCreate(TASK_LED_Toggle, (signed portCHAR *)"LED_Toggle", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LED_TOGGLE, NULL);
   xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);
@@ -96,15 +95,156 @@ void vApplicationTickHook( void )
 // will be called on pin changes (see TASK_DIN_Check)
 static void DIN_NotifyToggle(u32 pin, u32 value)
 {
+  u8 sysex[256];
+  u8 i;
+  u8 res;
+
   // map pin and value:
   // - DOUT pins of a SR are mirrored
   // - invert DIN value (so that LED lit when button pressed)
   MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
 
-  // send MIDI event
-  // suspend task for 1 mS if retry requested (MIDI buffer full)
-  if( MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0x00, pin, value ? 0x00 : 0x7f) == -2 )
-    vTaskDelay(1 / portTICK_RATE_MS);
+  // fire MIDI message depending on pin
+  do {
+    switch( pin ) {    
+      case 0: // SysEx with single byte only
+        sysex[0] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 1);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 1: // SysEx with two bytes
+        sysex[0] = 0xf0;
+        sysex[1] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 2);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 2: // SysEx with three bytes
+        sysex[0] = 0xf0;
+        sysex[1] = 0x11;
+        sysex[2] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 3);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 3: // SysEx with four bytes
+        sysex[0] = 0xf0;
+        for(i=1; i<3; ++i) sysex[i] = i*0x11;
+        sysex[3] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 4);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 4: // SysEx with five bytes
+        sysex[0] = 0xf0;
+        for(i=1; i<4; ++i) sysex[i] = i*0x11;
+        sysex[4] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 5);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 5: // SysEx with six bytes
+        sysex[0] = 0xf0;
+        for(i=1; i<5; ++i) sysex[i] = i*0x11;
+        sysex[5] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 6);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 6: // SysEx with seven bytes
+        sysex[0] = 0xf0;
+        for(i=1; i<6; ++i) sysex[i] = i*0x11;
+        sysex[6] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 7);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 7: // SysEx with 128+2 bytes
+        sysex[0] = 0xf0;
+        for(i=1; i<129; ++i) sysex[i] = i-1;
+        sysex[129] = 0xf7;
+        MIOS32_MIDI_SendSysEx(MIOS32_MIDI_PORT_USB0, sysex, 128+2);
+        res = 0; // (blocking function, no retry required)
+        break;
+  
+      case 8: // special event
+        res = MIOS32_MIDI_SendMTC(MIOS32_MIDI_PORT_USB0, 0x11);
+        break;
+  
+      case 9: // special event
+        res = MIOS32_MIDI_SendSongPosition(MIOS32_MIDI_PORT_USB0, 0x1234);
+        break;
+  
+      case 10: // special event
+        res = MIOS32_MIDI_SendSongSelect(MIOS32_MIDI_PORT_USB0, 0x11);
+        break;
+  
+      case 11: // special event
+        res = MIOS32_MIDI_SendClock(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 12: // special event
+        res = MIOS32_MIDI_SendTick(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 13: // special event
+        res = MIOS32_MIDI_SendStart(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 14: // special event
+        res = MIOS32_MIDI_SendStop(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 15: // special event
+        res = MIOS32_MIDI_SendContinue(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 16: // special event
+        res = MIOS32_MIDI_SendActiveSense(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 17: // special event
+        res = MIOS32_MIDI_SendReset(MIOS32_MIDI_PORT_USB0);
+        break;
+  
+      case 18: // note off
+        res = MIOS32_MIDI_SendNoteOff(MIOS32_MIDI_PORT_USB0, 0, 0x11, value ? 0x00 : 0x7f);
+        break;
+  
+      case 19: // note on
+        res = MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0, 0x11, value ? 0x00 : 0x7f);
+        break;
+  
+      case 20: // Poly Pressure
+        res = MIOS32_MIDI_SendPolyPressure(MIOS32_MIDI_PORT_USB0, 0, 0x11, value ? 0x00 : 0x7f);
+        break;
+  
+      case 21: // CC
+        res = MIOS32_MIDI_SendCC(MIOS32_MIDI_PORT_USB0, 0, 0x11, value ? 0x00 : 0x7f);
+        break;
+  
+      case 22: // Program Change
+        res = MIOS32_MIDI_SendProgramChange(MIOS32_MIDI_PORT_USB0, 0, value ? 0x00 : 0x7f);
+        break;
+  
+      case 23: // Aftertouch
+        res = MIOS32_MIDI_SendAftertouch(MIOS32_MIDI_PORT_USB0, 0, value ? 0x00 : 0x7f);
+        break;
+  
+      case 24: // Pitch Bend
+        res = MIOS32_MIDI_SendPitchBend(MIOS32_MIDI_PORT_USB0, 0, value ? 0x0000 : 0x1234);
+        break;
+  
+      default:   // MIDI event
+        res = MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0x00, pin, value ? 0x00 : 0x7f);
+    }
+
+    // retry required? Suspend task for 1 mS
+    if( res == -2 )
+      vTaskDelay(1 / portTICK_RATE_MS);
+  } while( res == -2);
+
 }
 
 // checks for toggled DIN pins
@@ -131,22 +271,13 @@ static void TASK_DIN_Check(void *pvParameters)
 // this hook is called on received MIDI events
 void MIDI_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
-  // if note event over MIDI channel #1 has been received, toggle appr. DOUT pin
-  // change note off events to note on with velocity 0 for easier handling
-  if( (midi_package.evnt0 & 0xf0) == 0x80 ) {
-    midi_package.evnt0 = 0x90 | (midi_package.evnt0 & 0x0f);
-    midi_package.evnt2 = 0x00;
-  }
-
-  // note event over channel #1? set DOUT pin
-  if( midi_package.evnt0 == 0x90 )
-    MIOS32_DOUT_PinSet(midi_package.evnt1, midi_package.evnt2);
+  MIOS32_MIDI_SendPackage(port, midi_package);
 }
 
 // this hook is called if SysEx data is received
 void MIDI_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
 {
-  // ignore
+  MIOS32_MIDI_SendCC(port, 0, (sysex_byte & 0x80) ? 1 : 0, sysex_byte & 0x7f);
 }
 
 // checks for incoming MIDI messages
@@ -167,6 +298,7 @@ static void TASK_MIDI_Receive(void *pvParameters)
     MIOS32_MIDI_Receive_Handler(MIDI_NotifyReceivedEvent, MIDI_NotifyReceivedSysEx);
   }
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // LED Toggle Task (sends a sign of life)
