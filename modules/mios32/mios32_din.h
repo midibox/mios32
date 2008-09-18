@@ -41,7 +41,7 @@ extern s32 MIOS_DIN_PinAutoRepeatGet(u32 pin);
 extern u32 MIOS_DIN_DebounceGet(void);
 extern s32 MIOS_DIN_DebounceSet(u32 debounce_time);
 
-extern s32 MIOS32_DIN_Handler(void *notify_hook);
+extern s32 MIOS32_DIN_Handler(void *callback);
 
 
 /////////////////////////////////////////////////////////////////////////////

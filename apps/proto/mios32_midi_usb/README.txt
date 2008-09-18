@@ -1,6 +1,6 @@
 $Id$
 
-Demo application for MIOS32_SRIO driver
+Demo application for MIOS32_MIDI and MIOS32_USB driver
 ===============================================================================
 Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -17,15 +17,14 @@ Currently only STM32 Primer supported!
 Required hardware:
    o STM32 Primer (or upcoming MBHP_CORE_STM32 module)
    o at least one MBHP_DIN module
-   o at least one MBHP_DOUT module
+   o optionally one MBHP_DOUT module
 
 ===============================================================================
 
-This application demonstrates the MIOS32_SRIO driver
+This application demonstrates the MIOS32_MIDI driver
 
-- DIN pins will be forwarded to DOUT pins
-- DIN pins send a MIDI message (Note Events)
-- DOUT pins controllable via Note Events
+DIN pins send various MIDI messages over USB (see main.c, DIN_NotifyToggle function)
+Incoming MIDI events will be forwarded to the OUT port for testing bidirectional transfers
 
 In addition, the two LEDs of STM32 Primer are flashing to send a "sign of life"
 

@@ -239,13 +239,25 @@ s32 MIOS32_USB_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // This function puts a new MIDI package into the Tx buffer
 // IN: MIDI package in <package>
-// OUT: if -1, buffer is full - retry until buffer is free again
+// OUT: 0: no error
+//      -1: USB not connected
+//      -2: buffer is full - retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDIPackageSend(u32 package)
 {
-  // buffer full?
-  if( buffer_tx_size >= (MIOS32_USB_TX_BUFFER_SIZE-1) )
+  // device available?
+  if( bDeviceState != CONFIGURED )
     return -1;
+
+  // buffer full?
+  if( buffer_tx_size >= (MIOS32_USB_TX_BUFFER_SIZE-1) ) {
+    // call USB handler, so that we are able to get the buffer free again on next execution
+    // (this call simplifies polling loops!)
+    MIOS32_USB_Handler();
+
+    // notify that buffer was full (request retry)
+    return -2;
+  }
 
   // put package into buffer - this operation should be atomic!
   portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
