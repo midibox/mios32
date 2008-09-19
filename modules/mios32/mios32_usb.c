@@ -186,23 +186,34 @@ volatile u16 wIstr;
 // USB device status
 vu32 bDeviceState = UNCONNECTED;
 
-// Rx/Tx buffers
+// Rx buffer
 u32 buffer_rx[MIOS32_USB_RX_BUFFER_SIZE];
 volatile u16 buffer_rx_tail;
 volatile u16 buffer_rx_head;
 volatile u16 buffer_rx_size;
 volatile u8 buffer_rx_new_data;
 
+// Tx buffer
 u32 buffer_tx[MIOS32_USB_TX_BUFFER_SIZE];
 volatile u16 buffer_tx_tail;
 volatile u16 buffer_tx_head;
 volatile u16 buffer_tx_size;
 volatile u8 buffer_tx_busy;
 
+// optional non-blocking mode
+u8 non_blocking_mode;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the USB interface
-// IN: <mode>: currently only mode 0 supported
+// IN: <mode>: 0: MIOS32_MIDI_Send* works in blocking mode - function will
+//                (shortly) stall if the output buffer is full
+//             1: MIOS32_MIDI_Send* works in non-blocking mode - function will
+//                return -2 if buffer is full, the caller has to loop if this
+//                value is returned until the transfer was successful
+//                A common method is to release the RTOS task for 1 mS
+//                so that other tasks can be executed until the sender can
+//                continue
 // OUT: returns < 0 if initialisation failed (e.g. clock not initialised!)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_Init(u32 mode)
@@ -211,9 +222,16 @@ s32 MIOS32_USB_Init(u32 mode)
 
   GPIO_InitTypeDef GPIO_InitStructure;
 
-  // currently only mode 0 supported
-  if( mode != 0 )
-    return -1; // unsupported mode
+  switch( mode ) {
+    case 0:
+      non_blocking_mode = 0;
+      break;
+    case 1:
+      non_blocking_mode = 1;
+      break;
+    default:
+      return -1; // unsupported mode
+  }
 
   // clear buffer counters and busy/wait signals
   buffer_rx_tail = buffer_rx_head = buffer_rx_size = 0;
@@ -241,7 +259,8 @@ s32 MIOS32_USB_Init(u32 mode)
 // IN: MIDI package in <package>
 // OUT: 0: no error
 //      -1: USB not connected
-//      -2: buffer is full - retry until buffer is free again
+//      -2: if non-blocking mode activated: buffer is full
+//          caller should retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDIPackageSend(u32 package)
 {
@@ -256,7 +275,8 @@ s32 MIOS32_USB_MIDIPackageSend(u32 package)
     MIOS32_USB_Handler();
 
     // notify that buffer was full (request retry)
-    return -2;
+    if( non_blocking_mode )
+      return -2;
   }
 
   // put package into buffer - this operation should be atomic!

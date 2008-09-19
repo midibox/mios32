@@ -52,7 +52,7 @@ int main(void)
   MIOS32_SRIO_Init(0);
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
-  MIOS32_MIDI_Init(0);
+  MIOS32_MIDI_Init(0); // 0 = blocking mode
 
 #if defined(_STM32_PRIMER_)
   /* Configure LED pins as output push-pull. */
@@ -102,9 +102,7 @@ static void DIN_NotifyToggle(u32 pin, u32 value)
   MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
 
   // send MIDI event
-  // suspend task for 1 mS if retry requested (MIDI buffer full)
-  if( MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0x00, pin, value ? 0x00 : 0x7f) == -2 )
-    vTaskDelay(1 / portTICK_RATE_MS);
+  MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0x00, pin, value ? 0x00 : 0x7f);
 }
 
 // checks for toggled DIN pins
