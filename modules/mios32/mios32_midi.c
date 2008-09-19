@@ -36,16 +36,22 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes MIDI layer
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
+// IN: <mode>: 0: MIOS32_MIDI_Send* works in blocking mode - function will
+//                (shortly) stall if the output buffer is full
+//             1: MIOS32_MIDI_Send* works in non-blocking mode - function will
+//                return -2 if buffer is full, the caller has to loop if this
+//                value is returned until the transfer was successful
+//                A common method is to release the RTOS task for 1 mS
+//                so that other tasks can be executed until the sender can
+//                continue
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Init(u32 mode)
 {
   s32 ret = 0;
 
-  // currently only mode 0 supported
-  if( mode != 0 )
+  // currently only mode 0 and 1 (blocking/non-blocking) supported
+  if( mode != 0 && mode != 1 )
     return -1; // unsupported mode
 
 #if !defined(MIOS32_DONT_USE_USB)
@@ -65,7 +71,8 @@ s32 MIOS32_MIDI_Init(u32 mode)
 //             0..15: USB, 16..31: USART, 32..47: IIC, 48..63: Ethernet
 //     <package>: MIDI package (see definition in mios32_midi.h)
 // OUT: returns -1 if port not available
-//      returns -2 if port available, but buffer full (retry it)
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
@@ -113,7 +120,8 @@ s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
 // IN: <port>: MIDI port 
 //     <evnt0> <evnt1> <evnt2> up to 3 bytes
 // OUT: returns -1 if port not available
-//      returns -2 if port available, but buffer full (retry it)
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2)
@@ -152,7 +160,8 @@ s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2)
 //     <type>: the event type
 //     <evnt0> <evnt1> <evnt2> up to 3 bytes
 // OUT: returns -1 if port not available
-//      returns -2 if port available, but buffer full (retry it)
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSpecialEvent(u8 port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
@@ -174,7 +183,8 @@ s32 MIOS32_MIDI_SendSpecialEvent(u8 port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
 //     <stream>: pointer to SysEx stream
 //     <count>: number of bytes
 // OUT: returns -1 if port not available
-//      returns -2 if port available, but buffer full (retry it)
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSysEx(u8 port, u8 *stream, u32 count)
@@ -214,7 +224,8 @@ s32 MIOS32_MIDI_SendSysEx(u8 port, u8 *stream, u32 count)
     }
 
     while( (res=MIOS32_MIDI_SendPackage(port, package)) == -2 ) {
-      // TODO: this is a blocking function! We poll until buffer is free again.
+      // TODO: SysEx always sent in blocking mode to avoid inconsistent stream!
+      // We poll until buffer is free again.
       // Are there better ways?
     }
 

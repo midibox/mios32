@@ -52,7 +52,7 @@ int main(void)
   MIOS32_SRIO_Init(0);
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
-  MIOS32_MIDI_Init(0);
+  MIOS32_MIDI_Init(1); // 1 = non-blocking mode
 
 #if defined(_STM32_PRIMER_)
   /* Configure LED pins as output push-pull. */
@@ -105,6 +105,8 @@ static void DIN_NotifyToggle(u32 pin, u32 value)
   MIOS32_DOUT_PinSet(pin ^ 7 , value ? 0 : 1);
 
   // fire MIDI message depending on pin
+  // MIOS32_MIDI has been configured for non-blocking mode
+  // if the Send function returns -2, we have to wait until the transfer was successful
   do {
     switch( pin ) {    
       case 0: // SysEx with single byte only
@@ -271,13 +273,19 @@ static void TASK_DIN_Check(void *pvParameters)
 // this hook is called on received MIDI events
 void MIDI_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
-  MIOS32_MIDI_SendPackage(port, midi_package);
+  // MIOS32_MIDI has been configured for non-blocking mode
+  // if the Send function returns -2, we have to wait until the transfer was successful
+  while( MIOS32_MIDI_SendPackage(port, midi_package) == -2 )
+    vTaskDelay(1 / portTICK_RATE_MS);
 }
 
 // this hook is called if SysEx data is received
 void MIDI_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
 {
-  MIOS32_MIDI_SendCC(port, 0, (sysex_byte & 0x80) ? 1 : 0, sysex_byte & 0x7f);
+  // MIOS32_MIDI has been configured for non-blocking mode
+  // if the Send function returns -2, we have to wait until the transfer was successful
+  while( MIOS32_MIDI_SendSpecialEvent(port, 0xf, sysex_byte, 0, 0) == -2) // type f allows to send single bytes
+    vTaskDelay(1 / portTICK_RATE_MS);
 }
 
 // checks for incoming MIDI messages
