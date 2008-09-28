@@ -33,7 +33,7 @@
 #define PRIORITY_TASK_DIN_CHECK		( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_MIDI_RECEIVE	( tskIDLE_PRIORITY + 2 )
 
-#define BLM_MIDI_STARTNOTE 64
+#define BLM_MIDI_STARTNOTE 24
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -122,15 +122,12 @@ static void DIN_BLM_NotifyToggle(u32 pin, u32 value)
   BLM_DOUT_PinSet(2, pin ^ 7, value ? 0 : 1); // blue, pin, value
 #endif
 
-	if(value)
+	do
 	{
-		do
-		{
-			res = MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0, pin, value ? 0x00 : 0x7f);
-		    if( res == -2 )
-		      vTaskDelay(1 / portTICK_RATE_MS);
-		} while( res == -2);
-	}
+		res = MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0, (pin + BLM_MIDI_STARTNOTE) & 0x7f, value ? 0x00 : 0x7f);
+		if( res == -2 )
+		  vTaskDelay(1 / portTICK_RATE_MS);
+	} while( res == -2);
 	
 }
 
