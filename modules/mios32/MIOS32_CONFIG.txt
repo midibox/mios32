@@ -18,6 +18,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
+#define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_DESC
