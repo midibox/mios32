@@ -1,4 +1,4 @@
-// $Id: mios32_dout.h 10 2008-09-14 21:36:51Z tk $
+// $Id$
 /*
  * Temporary file which describes the DIN/DOUT mapping (later part of setup_* file)
  *
