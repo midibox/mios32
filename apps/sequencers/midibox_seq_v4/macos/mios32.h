@@ -1,4 +1,4 @@
-// $Id: mios32.h 32 2008-09-17 23:59:36Z tk $
+// $Id$
 /*
  * Header file for MIOS32 compatibility layer of MacOS
  *

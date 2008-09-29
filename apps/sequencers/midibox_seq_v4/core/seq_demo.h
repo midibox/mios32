@@ -1,4 +1,4 @@
-// $Id: mios32_dout.h 10 2008-09-14 21:36:51Z tk $
+// $Id$
 /*
  * Header file for SEQ Demo
  *

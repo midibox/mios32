@@ -1,4 +1,4 @@
-# $Id: Makefile 30 2008-09-17 00:00:10Z tk $
+# $Id$
 
 PROCESSOR = 	STM32F103
 FAMILY    = 	STM32F10x

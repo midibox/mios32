@@ -1,4 +1,4 @@
-// $Id: mios32_dout.c 24 2008-09-16 17:50:55Z tk $
+// $Id$
 /*
  * Sequencer Demo
  *

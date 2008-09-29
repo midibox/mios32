@@ -1,4 +1,4 @@
-// $Id: main.c 34 2008-09-19 17:17:46Z tk $
+// $Id$
 /*
  * MIDIbox SEQ V4
  *

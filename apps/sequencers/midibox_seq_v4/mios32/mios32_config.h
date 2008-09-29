@@ -1,4 +1,4 @@
-// $Id: mios32_config.h 23 2008-09-16 17:34:42Z tk $
+// $Id$
 /*
  * Local MIOS32 configuration file
  *
