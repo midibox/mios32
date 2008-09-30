@@ -23,6 +23,8 @@
 
 #include <mios32.h>
 
+#include <glcd_font.h>
+
 #include "app_lcd.h"
 #include "app_lcd_st7637.h"
 
@@ -36,8 +38,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u16 lcd_bcolour = 0xffff;
-u16 lcd_fcolour = 0x0000;
+u16 lcd_bcolour;
+u16 lcd_fcolour;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -64,6 +66,11 @@ s32 APP_LCD_Init(u32 mode)
 
   // notify that this is a GLCD type display
   mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
+
+  // set initial font and colours
+  MIOS32_LCD_FontInit(GLCD_FONT_NORMAL);
+  MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
+  MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
 
   // Enable GPIO clock for LCD
   RCC_APB2PeriphClockCmd(GPIO_LCD_CTRL_PERIPH, ENABLE);
@@ -296,30 +303,38 @@ s32 APP_LCD_CursorSet(u16 line, u16 column)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_PrintChar(char c)
 {
-  int x, y;
+  int x, y, lines;
 
   // font not initialized yet!
   if( mios32_lcd_font == NULL )
     return -1;
 
-  // ST7637 specific function to set view
-  APP_LCD_SetRect_For_Cmd(mios32_lcd_x, 128-8-mios32_lcd_y, 6, 8);
+  u8 y_lines = (mios32_lcd_font_height>>3);
 
-  // Send command to write data on the LCD screen.
-  APP_LCD_Cmd(ST7637_RAMWR);
+  for(lines=0; lines<y_lines; ++lines) {
 
-  u8 *font_ptr = mios32_lcd_font + mios32_lcd_font_offset*(size_t)c;
-  for(x=0; x<mios32_lcd_font_width; ++x) {
-    u8 b = *font_ptr++;
-    for(y=0; y<mios32_lcd_font_height; ++y) {
-      if( b & 0x80 ) {
-	APP_LCD_Data(lcd_fcolour & 0xff);
-	APP_LCD_Data(lcd_fcolour >> 8);
-      } else {
-	APP_LCD_Data(lcd_bcolour & 0xff);
-	APP_LCD_Data(lcd_bcolour >> 8);
+    // calculate pointer to character line
+    u8 *font_ptr = mios32_lcd_font + lines * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
+
+    // ST7637 specific function to set view
+    APP_LCD_SetRect_For_Cmd(mios32_lcd_x, 128-mios32_lcd_y-8*(lines+1), mios32_lcd_font_width, 8);
+
+    // Send command to write data on the LCD screen.
+    APP_LCD_Cmd(ST7637_RAMWR);
+
+    // transfer character
+    for(x=0; x<mios32_lcd_font_width; ++x) {
+      u8 b = *font_ptr++;
+      for(y=0; y<8; ++y) {
+	if( b & 0x80 ) {
+	  APP_LCD_Data(lcd_fcolour & 0xff);
+	  APP_LCD_Data(lcd_fcolour >> 8);
+	} else {
+	  APP_LCD_Data(lcd_bcolour & 0xff);
+	  APP_LCD_Data(lcd_bcolour >> 8);
+	}
+	b <<= 1;
       }
-      b <<= 1;
     }
   }
 

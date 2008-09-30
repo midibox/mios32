@@ -72,6 +72,7 @@ extern s16 mios32_lcd_y;
 extern u8 *mios32_lcd_font;
 extern u8 mios32_lcd_font_width;
 extern u8 mios32_lcd_font_height;
+extern u8 mios32_lcd_font_x0;
 extern u8 mios32_lcd_font_offset;
 
 #endif /* _MIOS32_LCD_H */
