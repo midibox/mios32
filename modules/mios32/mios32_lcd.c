@@ -39,6 +39,7 @@ s16 mios32_lcd_y;
 u8 *mios32_lcd_font = NULL;
 u8 mios32_lcd_font_width;
 u8 mios32_lcd_font_height;
+u8 mios32_lcd_font_x0;
 u8 mios32_lcd_font_offset;
 
 
@@ -149,7 +150,8 @@ s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintString(char *str)
 {
-  return -1; // not implemented yet
+  while( *str != '\0' )
+    MIOS32_LCD_PrintChar(*str++);
 }
 
 
@@ -175,6 +177,7 @@ s32 MIOS32_LCD_FontInit(u8 *font)
   // get width/height/offset from font header
   mios32_lcd_font_width = font[0];
   mios32_lcd_font_height = font[1];
+  mios32_lcd_font_x0 = font[2];
   mios32_lcd_font_offset = font[3];
 
   // set pointer to characters
