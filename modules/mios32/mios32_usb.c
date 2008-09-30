@@ -265,7 +265,8 @@ s32 MIOS32_USB_Init(u32 mode)
 s32 MIOS32_USB_MIDIPackageSend(u32 package)
 {
   // device available?
-  if( bDeviceState != CONFIGURED )
+  // MEMO: when sending to MIOS Studio, bDeviceState can toggle between CONFIGURED and ADDRESSED
+  if( bDeviceState == UNCONNECTED )
     return -1;
 
   // buffer full?
@@ -273,6 +274,11 @@ s32 MIOS32_USB_MIDIPackageSend(u32 package)
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
     MIOS32_USB_Handler();
+
+    // device still available?
+    // (ensures that polling loop terminates if cable has been disconnected)
+    if( bDeviceState == UNCONNECTED )
+      return -1;
 
     // notify that buffer was full (request retry)
     if( non_blocking_mode )
@@ -368,7 +374,7 @@ void MIOS32_USB_TxBufferHandler(void)
   //   - new packages are in the buffer
   //   - the device is configured
 
-  if( !buffer_tx_busy && buffer_tx_size && bDeviceState == CONFIGURED ) {
+  if( !buffer_tx_busy && buffer_tx_size && bDeviceState != UNCONNECTED ) {
     u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_TXADDR<<1));
     s16 count = (buffer_tx_size > (MIOS32_USB_DESC_DATA_IN_SIZE/4)) ? (MIOS32_USB_DESC_DATA_IN_SIZE/4) : buffer_tx_size;
 
