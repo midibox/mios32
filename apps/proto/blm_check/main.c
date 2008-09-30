@@ -56,6 +56,7 @@ int main(void)
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
   MIOS32_MIDI_Init(1); // 1 = non-blocking mode
+  MIOS32_LCD_Init(0);
 
   // initialize BLM driver
   BLM_Init(0);

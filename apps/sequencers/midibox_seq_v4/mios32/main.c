@@ -53,6 +53,7 @@ int main(void)
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
   MIOS32_MIDI_Init(0); // 0 = blocking mode
+  MIOS32_LCD_Init(0);
 
   // init MBSEQ core
   Init(0);

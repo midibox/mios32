@@ -48,5 +48,9 @@ ARM_AS_SOURCE =
 # add MIOS32 sources
 include $(MIOS32_PATH)/modules/mios32/mios32.mk
 
+# add application specific LCD driver
+include $(MIOS32_PATH)/modules/app_lcd/st7637/app_lcd.mk
+#include $(MIOS32_PATH)/modules/app_lcd/clcd/app_lcd.mk
+
 # include common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
