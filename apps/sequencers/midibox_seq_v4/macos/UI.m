@@ -1,4 +1,4 @@
-// $Id: //
+// $Id$
 //
 //  UI.m
 //  midibox_seq_v4
@@ -56,10 +56,6 @@ NSButton *_buttonPause;
 
 // LCD selection
 u8 selectedLCD;
-
-// to determine Enc incrementers
-#define NUM_ENC 17
-double lastEncValue[NUM_ENC];
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -233,39 +229,6 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Toggle notifications from GUI
-//////////////////////////////////////////////////////////////////////////////
-- (IBAction) pushButton:(id)sender
-{
-	DIN_NotifyToggle([sender tag], 0);
-}
-
-- (IBAction) tglButton:(id)sender
-{
-	DIN_NotifyToggle([sender tag], [sender state] ? 0 : 1); 
-}
-
-- (IBAction) movedDial:(id)sender
-{
-	int tag = [sender tag];
-	if( tag < NUM_ENC ) {
-		// determine difference to previous value and convert to integer
-		double value = [sender floatValue];
-		double diff = value - lastEncValue[tag];
-		
-		if( diff != 0.0 ) {
-			lastEncValue[tag] = value;
-			int inc = (int)diff;
-			if( inc == 0 )
-				inc = diff >= 0 ? 1 : -1;
-
-			ENC_NotifyChange([sender tag], inc); 
-		}
-	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
 // init local variables
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
@@ -332,10 +295,6 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 	for(i=0; i<NUM_LEDS; ++i)
 		ledState[i] = 0;
 	
-	// clear Enc values
-	for(i=0; i<NUM_ENC; ++i)
-		lastEncValue[i] = 0.0;
-		
 	// call init function of application
 	Init(0);
 }
