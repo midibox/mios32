@@ -53,6 +53,7 @@ int main(void)
   MIOS32_DIN_Init(0);
   MIOS32_DOUT_Init(0);
   MIOS32_MIDI_Init(0); // 0 = blocking mode
+  MIOS32_LCD_Init(0);
 
 #if defined(_STM32_PRIMER_)
   /* Configure LED pins as output push-pull. */

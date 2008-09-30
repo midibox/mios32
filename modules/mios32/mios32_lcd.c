@@ -20,19 +20,32 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_LCD)
 
+// requires application specific driver
+#include <app_lcd.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+s16 mios32_lcd_type;
+u8  mios32_lcd_device;
+s16 mios32_lcd_line;
+s16 mios32_lcd_column;
+
+s16 mios32_lcd_x;
+s16 mios32_lcd_y;
+
+u8 *mios32_lcd_font = NULL;
+u8 mios32_lcd_font_width;
+u8 mios32_lcd_font_height;
+u8 mios32_lcd_font_offset;
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-
-u8 lcd_device;
-s16 lcd_line;
-s16 lcd_column;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,9 +56,18 @@ s16 lcd_column;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_Init(u32 mode)
 {
+  s32 ret;
+
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // initial LCD type (can be set to a different type in APP_LCD_Init()
+  mios32_lcd_type = MIOS32_LCD_TYPE_CLCD;
+
+  // call application specific init function
+  if( (ret=APP_LCD_Init(mode)) < 0 )
+    return ret;
 
   // select first device
   MIOS32_LCD_DeviceSet(0);
@@ -53,8 +75,9 @@ s32 MIOS32_LCD_Init(u32 mode)
   // clear screen
   MIOS32_LCD_Clear();
 
-  // set cursor to initial position
+  // set character and graphical cursor to initial position
   MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_GCursorSet(0, 0);
 
   return 0; // no error
 }
@@ -67,7 +90,7 @@ s32 MIOS32_LCD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_DeviceSet(u8 device)
 {
-  lcd_device = device;
+  mios32_lcd_device = device;
 
   return 0; // no error
 }
@@ -80,7 +103,7 @@ s32 MIOS32_LCD_DeviceSet(u8 device)
 /////////////////////////////////////////////////////////////////////////////
 u8 MIOS32_LCD_DeviceGet(void)
 {
-  return lcd_device;
+  return mios32_lcd_device;
 }
 
 
@@ -91,30 +114,31 @@ u8 MIOS32_LCD_DeviceGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_CursorSet(u16 line, u16 column)
 {
-  lcd_line = line;
-  lcd_column = column;
+  // set character position
+  mios32_lcd_line = line;
+  mios32_lcd_column = column;
+
+  // set graphical cursor depending on font width
+  mios32_lcd_y = line * mios32_lcd_font_height;
+  mios32_lcd_x = column * mios32_lcd_font_width;
+
+  // forward new cursor position to app driver
+  return APP_LCD_CursorSet(line, column);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Clear Screen
-// IN: -
+// Sets graphical cursor to given position
+// Only relevant for GLCDs
+// IN: <x> and <y>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_Clear(void)
+s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 {
-  return -1; // not implemented yet
-}
+  mios32_lcd_x = x;
+  mios32_lcd_y = y;
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Prints a single character
-// IN: character in <c>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_PrintChar(char c)
-{
-  return -1; // not implemented yet
+  return 0; // no error
 }
 
 
@@ -130,17 +154,6 @@ s32 MIOS32_LCD_PrintString(char *str)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes a single special character
-// IN: character number (0-7) in <num>, pattern in <table[8]>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
-{
-  return -1; // not implemented yet
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initializes all 8 special characters
 // IN: patterns in <table[64]>
 // OUT: returns < 0 on errors
@@ -149,6 +162,90 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 {
   return -1; // not implemented yet
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Initializes the graphical font
+// Only relevant for GLCDs
+// IN: pointer to font in *font
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_FontInit(u8 *font)
+{
+  // get width/height/offset from font header
+  mios32_lcd_font_width = font[0];
+  mios32_lcd_font_height = font[1];
+  mios32_lcd_font_offset = font[3];
+
+  // set pointer to characters
+  mios32_lcd_font = font+4;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// Following functions are implemented in APP_LCD driver, and aliased
+// to APP_LCD_* in mios32_lcd.h via #define
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends data byte to LCD
+// IN: data byte in <data>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_Data(u8 data)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends command byte to LCD
+// IN: command byte in <cmd>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_Cmd(u8 cmd)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Clear Screen
+// IN: -
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_Clear(void)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints a single character
+// IN: character in <c>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_PrintChar(char c)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Initializes a single special character
+// IN: character number (0-7) in <num>, pattern in <table[8]>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the background colour
+// Only relevant for colour GLCDs
+// IN: r/g/b values
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the foreground colour
+// Only relevant for colour GLCDs
+// IN: r/g/b values
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+// s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b)
 
 
 #endif /* MIOS32_DONT_USE_LCD */
