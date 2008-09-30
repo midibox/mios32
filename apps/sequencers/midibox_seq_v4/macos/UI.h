@@ -1,4 +1,4 @@
-// $Id: //
+// $Id$
 //
 //  UI.h
 //  midibox_seq_v4
@@ -103,9 +103,5 @@ IBOutlet NSButton *buttonRew;
 IBOutlet NSButton *buttonFwd;
 
 }
-
-- (IBAction) pushButton:(id)sender;
-- (IBAction) tglButton:(id)sender;
-- (IBAction) movedDial:(id)sender;
 
 @end

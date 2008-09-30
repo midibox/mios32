@@ -12,6 +12,8 @@
 		522A0DB80E8FE5B90084B1EE /* UI.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB70E8FE5B90084B1EE /* UI.m */; };
 		522A10A40E91068F0084B1EE /* seq_demo.c in Sources */ = {isa = PBXBuildFile; fileRef = 522A10A30E91068F0084B1EE /* seq_demo.c */; };
 		522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 522A10F50E910BCA0084B1EE /* seq_lcd.c */; };
+		52A74F1A0E92701800D65394 /* SEQButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74F190E92701800D65394 /* SEQButton.m */; };
+		52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74FE80E92858600D65394 /* SEQEncoder.m */; };
 		8D11072A0486CEB800E47090 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 29B97318FDCFA39411CA2CEA /* MainMenu.nib */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
@@ -38,6 +40,10 @@
 		522A10F50E910BCA0084B1EE /* seq_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd.c; path = ../core/seq_lcd.c; sourceTree = SOURCE_ROOT; };
 		522A10F60E910BCA0084B1EE /* seq_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lcd.h; path = ../core/seq_lcd.h; sourceTree = SOURCE_ROOT; };
 		522A12290E9137B50084B1EE /* srio_mapping.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = srio_mapping.h; path = ../core/srio_mapping.h; sourceTree = SOURCE_ROOT; };
+		52A74F180E92701800D65394 /* SEQButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQButton.h; sourceTree = "<group>"; };
+		52A74F190E92701800D65394 /* SEQButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQButton.m; sourceTree = "<group>"; };
+		52A74FE70E92858600D65394 /* SEQEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQEncoder.h; sourceTree = "<group>"; };
+		52A74FE80E92858600D65394 /* SEQEncoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQEncoder.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* midibox_seq_v4.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = midibox_seq_v4.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -61,6 +67,10 @@
 				522A0DB70E8FE5B90084B1EE /* UI.m */,
 				522A0DB10E8FE5AB0084B1EE /* CLCDView.h */,
 				522A0DB20E8FE5AB0084B1EE /* CLCDView.m */,
+				52A74F180E92701800D65394 /* SEQButton.h */,
+				52A74F190E92701800D65394 /* SEQButton.m */,
+				52A74FE70E92858600D65394 /* SEQEncoder.h */,
+				52A74FE80E92858600D65394 /* SEQEncoder.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -199,6 +209,8 @@
 				522A0DB80E8FE5B90084B1EE /* UI.m in Sources */,
 				522A10A40E91068F0084B1EE /* seq_demo.c in Sources */,
 				522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */,
+				52A74F1A0E92701800D65394 /* SEQButton.m in Sources */,
+				52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

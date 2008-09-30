@@ -1,4 +1,4 @@
-// $Id: //
+// $Id$
 //
 //  CLCDView.m
 //  midibox_seq_v4
