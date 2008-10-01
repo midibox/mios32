@@ -29,7 +29,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 s16 mios32_lcd_type;
-u8  mios32_lcd_device;
+u8  mios32_lcd_device = 0; // (not done in MIOS32_Init to allow the initialisation of multiple LCDs)
 s16 mios32_lcd_line;
 s16 mios32_lcd_column;
 
@@ -69,9 +69,6 @@ s32 MIOS32_LCD_Init(u32 mode)
   // call application specific init function
   if( (ret=APP_LCD_Init(mode)) < 0 )
     return ret;
-
-  // select first device
-  MIOS32_LCD_DeviceSet(0);
 
   // clear screen
   MIOS32_LCD_Clear();
