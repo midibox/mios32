@@ -50,7 +50,7 @@
 extern s32 MIOS32_LCD_Init(u32 mode);
 extern s32 MIOS32_LCD_DeviceSet(u8 device);
 extern u8  MIOS32_LCD_DeviceGet(void);
-extern s32 MIOS32_LCD_CursorSet(u16 line, u16 column);
+extern s32 MIOS32_LCD_CursorSet(u16 column, u16 line);
 extern s32 MIOS32_LCD_GCursorSet(u16 x, u16 y);
 extern s32 MIOS32_LCD_CursorMapSet(u8 map_table[]);
 extern s32 MIOS32_LCD_PrintString(char *str);
@@ -67,8 +67,8 @@ extern s32 MIOS32_LCD_FontInit(u8 *font);
 // should only be directly accessed by APP_LCD driver
 extern s16 mios32_lcd_type;
 extern u8  mios32_lcd_device;
-extern s16 mios32_lcd_line;
 extern s16 mios32_lcd_column;
+extern s16 mios32_lcd_line;
 
 extern u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 

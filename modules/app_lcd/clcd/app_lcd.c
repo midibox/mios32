@@ -224,10 +224,10 @@ s32 APP_LCD_Clear(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets cursor to given position
-// IN: <line> and <column>
+// IN: <column> and <line>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_CursorSet(u16 line, u16 column)
+s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
   // exit with error if line is not in allowed range
   if( line >= MIOS32_LCD_MAX_MAP_LINES )

@@ -30,8 +30,8 @@
 
 s16 mios32_lcd_type;
 u8  mios32_lcd_device = 0; // (not done in MIOS32_Init to allow the initialisation of multiple LCDs)
-s16 mios32_lcd_line;
 s16 mios32_lcd_column;
+s16 mios32_lcd_line;
 
 u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 
@@ -113,21 +113,21 @@ u8 MIOS32_LCD_DeviceGet(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets cursor to given position
-// IN: <line> and <column>
+// IN: <column> and <line>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_CursorSet(u16 line, u16 column)
+s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
 {
   // set character position
-  mios32_lcd_line = line;
   mios32_lcd_column = column;
+  mios32_lcd_line = line;
 
   // set graphical cursor depending on font width
-  mios32_lcd_y = line * mios32_lcd_font_height;
   mios32_lcd_x = column * mios32_lcd_font_width;
+  mios32_lcd_y = line * mios32_lcd_font_height;
 
   // forward new cursor position to app driver
-  return APP_LCD_CursorSet(line, column);
+  return APP_LCD_CursorSet(column, line);
 }
 
 
