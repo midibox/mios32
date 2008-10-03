@@ -110,7 +110,7 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
     GPIOB->BSRR = (value&1) ? GPIO_Pin_8 : (GPIO_Pin_8 << 16);
   }
   if( leds & 2 ) {
-    GPIOB->BSRR = (value&1) ? GPIO_Pin_9 : (GPIO_Pin_9 << 16);
+    GPIOB->BSRR = (value&2) ? GPIO_Pin_9 : (GPIO_Pin_9 << 16);
   }
 
   if( leds & 0xfffffffc)
@@ -138,9 +138,9 @@ u32 MIOS32_BOARD_LED_Get(void)
     values |= (1 << 0);
 #elif defined(_STM32_PRIMER_)
   // two LEDs, connected to PB8 (green) and PB9 (red)
-  if( GPIOB->ODR && GPIO_Pin_8 )
+  if( GPIOB->ODR & GPIO_Pin_8 )
     values |= (1 << 0);
-  if( GPIOB->ODR && GPIO_Pin_9 )
+  if( GPIOB->ODR & GPIO_Pin_9 )
     values |= (1 << 1);
 #endif
 
