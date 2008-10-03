@@ -37,3 +37,7 @@ into your local mios32_config.h file
 // buffer size (should be at least >= MIOS32_USB_DESC_DATA_*_SIZE/4)
 #define MIOS32_USB_RX_BUFFER_SIZE   64 // packages
 #define MIOS32_USB_TX_BUFFER_SIZE   64 // packages
+
+
+// maximum number of mapped CLCD lines
+#define MIOS32_LCD_MAX_MAP_LINES 4

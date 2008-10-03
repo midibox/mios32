@@ -33,6 +33,8 @@ u8  mios32_lcd_device = 0; // (not done in MIOS32_Init to allow the initialisati
 s16 mios32_lcd_line;
 s16 mios32_lcd_column;
 
+u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
+
 s16 mios32_lcd_x;
 s16 mios32_lcd_y;
 
@@ -72,6 +74,10 @@ s32 MIOS32_LCD_Init(u32 mode)
 
   // clear screen
   MIOS32_LCD_Clear();
+
+  // set initial cursor map for character LCDs
+  const u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
+  MIOS32_LCD_CursorMapSet(cursor_map);
 
   // set character and graphical cursor to initial position
   MIOS32_LCD_CursorSet(0, 0);
@@ -141,6 +147,35 @@ s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Set the cursor map for character displays
+//
+// By default the positions are configured for 2x16, 2x20, 4x20 and 2x40 displays:
+//   const u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
+//   MIOS32_LCD_CursorMapSet(cursor_map);
+//
+// For 4x16 displays, the configuration has to be changed:
+//   const u8 cursor_map[] = {0x00, 0x40, 0x10, 0x50}; // offset line 0/1/2/3
+//   MIOS32_LCD_CursorMapSet(cursor_map);
+//
+// For 3x16 DOG displays use:
+//   const u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
+//   MIOS32_LCD_CursorMapSet(cursor_map);
+//
+// IN: cursor map in <map_table>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_CursorMapSet(u8 map_table[])
+{
+  s32 i;
+
+  for(i=0; i<MIOS32_LCD_MAX_MAP_LINES; ++i)
+    mios32_lcd_cursor_map[i] = map_table[i];
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Prints a \0 (zero) terminated string
 // IN: pointer to string in <*str>
 // OUT: returns < 0 on errors
@@ -159,7 +194,14 @@ s32 MIOS32_LCD_PrintString(char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 {
-  return -1; // not implemented yet
+  u32 i;
+  s32 ret;
+
+  for(i=0; i<8; ++i)
+    if( APP_LCD_SpecialCharInit(i, table + (size_t)i*8) )
+      return -1; // error during initialisation
+
+  return 0; // no error
 }
 
 
