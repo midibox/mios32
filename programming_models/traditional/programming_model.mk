@@ -1,4 +1,4 @@
-# $Id: Makefile 42 2008-09-30 21:49:43Z tk $
+# $Id$
 # defines rules building the programming model
 
 # extend include path
@@ -10,6 +10,7 @@ C_INCLUDE += 	-I $(MIOS32_PATH)/programming_models/traditional \
 THUMB_SOURCE += \
 		$(MIOS32_PATH)/programming_models/traditional/crt0_STM32x.c \
 		$(MIOS32_PATH)/programming_models/traditional/main.c \
+		$(MIOS32_PATH)/programming_models/traditional/printf-stdarg.c \
 		$(FREE_RTOS)/Source/tasks.c \
 		$(FREE_RTOS)/Source/list.c \
 		$(FREE_RTOS)/Source/queue.c \
