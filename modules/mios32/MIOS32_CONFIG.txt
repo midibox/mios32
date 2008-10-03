@@ -22,6 +22,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_DESC
+#define MIOS32_DONT_USE_BOARD
 
 
 // number of scanned SR registers on SRIO chain

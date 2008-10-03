@@ -56,6 +56,7 @@ extern "C" {
 #include <mios32_midi.h>
 #include <mios32_usb.h>
 #include <mios32_usb_desc.h>
+#include <mios32_board.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
