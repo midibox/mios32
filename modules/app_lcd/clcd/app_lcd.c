@@ -24,31 +24,36 @@
 // Pin definitions (tmp. for STM32 Primer board)
 /////////////////////////////////////////////////////////////////////////////
 
-// Note: on Primer, PinA.0 is also connected to wakeup button - it has to be triggered fast to avoid a driver conflict (LCD won't be initialized correctly in this case)
-// Thats acceptable for this "evaluation solution"
-#define APP_LCD_SER_PORT       GPIOA
-#define APP_LCD_SER_PIN        GPIO_Pin_0
-
 #define APP_LCD_SCLK_PORT      GPIOA
-#define APP_LCD_SCLK_PIN       GPIO_Pin_1
+#define APP_LCD_SCLK_PIN       GPIO_Pin_8
 
-#define APP_LCD_RCLK_PORT      GPIOA
-#define APP_LCD_RCLK_PIN       GPIO_Pin_2
+#define APP_LCD_RCLK_PORT      GPIOC
+#define APP_LCD_RCLK_PIN       GPIO_Pin_9
 
-#define APP_LCD_E1_PORT        GPIOA
-#define APP_LCD_E1_PIN         GPIO_Pin_3
+#define APP_LCD_SER_PORT       GPIOC
+#define APP_LCD_SER_PIN        GPIO_Pin_8
 
-#define APP_LCD_RW_PORT        GPIOA
-#define APP_LCD_RW_PIN         GPIO_Pin_4
+#define APP_LCD_E1_PORT        GPIOC
+#define APP_LCD_E1_PIN         GPIO_Pin_7
+
+#define APP_LCD_E2_PORT        GPIOC
+#define APP_LCD_E2_PIN         GPIO_Pin_6
+
+#define APP_LCD_RW_PORT        GPIOB
+#define APP_LCD_RW_PIN         GPIO_Pin_2
+
+#define APP_LCD_D7_PORT        GPIOC
+#define APP_LCD_D7_PIN         GPIO_Pin_12
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Help Macros
 /////////////////////////////////////////////////////////////////////////////
-#define PIN_SER(b)  { if( b ) APP_LCD_SER_PORT->BSRR = APP_LCD_SER_PIN; else APP_LCD_SER_PORT->BRR = APP_LCD_SER_PIN; }
 
-#define PIN_E1_0    { APP_LCD_E1_PORT->BRR  = APP_LCD_E1_PIN; }
-#define PIN_E1_1    { APP_LCD_E1_PORT->BSRR = APP_LCD_E1_PIN; }
+#define PIN_SER(b)  { APP_LCD_SER_PORT->BSRR = (b) ? APP_LCD_SER_PIN : (APP_LCD_SER_PIN << 16); }
+#define PIN_E1(b)   { APP_LCD_E1_PORT->BSRR  = (b) ? APP_LCD_E1_PIN  : (APP_LCD_E1_PIN << 16); }
+#define PIN_E2(b)   { APP_LCD_E2_PORT->BSRR  = (b) ? APP_LCD_E2_PIN  : (APP_LCD_E2_PIN << 16); }
+#define PIN_RW(b)   { APP_LCD_RW_PORT->BSRR  = (b) ? APP_LCD_RW_PIN  : (APP_LCD_RW_PIN << 16); }
 
 #define PIN_RCLK_0  { APP_LCD_RCLK_PORT->BRR  = APP_LCD_RCLK_PIN; }
 #define PIN_RCLK_1  { APP_LCD_RCLK_PORT->BSRR = APP_LCD_RCLK_PIN; }
@@ -56,8 +61,7 @@
 #define PIN_SCLK_0  { APP_LCD_SCLK_PORT->BRR  = APP_LCD_SCLK_PIN; }
 #define PIN_SCLK_1  { APP_LCD_SCLK_PORT->BSRR = APP_LCD_SCLK_PIN; }
 
-#define PIN_RW_0    { APP_LCD_RCLK_PORT->BRR  = APP_LCD_RCLK_PIN; }
-#define PIN_RW_1    { APP_LCD_RCLK_PORT->BSRR = APP_LCD_RCLK_PIN; }
+#define PIN_D7_IN   (APP_LCD_D7_PORT->IDR & APP_LCD_D7_PIN)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,12 +73,15 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+u32 display_available = 0;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 void APP_LCD_SerWrite(u8 data, u8 rs);
-void APP_LCD_Strobe(void);
+void APP_LCD_SetRS(u8 rs);
+void APP_LCD_Strobe(u8 value);
+s32  APP_LCD_WaitUnbusy(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,8 +98,9 @@ s32 APP_LCD_Init(u32 mode)
 
   PIN_SCLK_0;
   PIN_RCLK_0;
-  PIN_E1_0;
-  PIN_RW_0;
+  PIN_RW(0);
+  PIN_E1(0);
+  PIN_E2(0);
 
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -109,51 +117,74 @@ s32 APP_LCD_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = APP_LCD_E1_PIN;
   GPIO_Init(APP_LCD_E1_PORT, &GPIO_InitStructure);
 
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_E2_PIN;
+  GPIO_Init(APP_LCD_E2_PORT, &GPIO_InitStructure);
+
   GPIO_InitStructure.GPIO_Pin = APP_LCD_RW_PIN;
   GPIO_Init(APP_LCD_RW_PORT, &GPIO_InitStructure);
 
-  // wait for ca. 100 mS
-  for(delay=0; delay<1000000; ++delay) PIN_RW_0; // each loop takes ca. 100 nS
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // input with pull-up
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_D7_PIN;
+  GPIO_Init(APP_LCD_D7_PORT, &GPIO_InitStructure);
+
+  // enable display by default
+  display_available |= (1 << mios32_lcd_device);
 
   // initialize LCD
   APP_LCD_SerWrite(0x38, 0);
-  APP_LCD_Strobe();
-  for(delay=0; delay<50000; ++delay) PIN_RW_0; // 50 mS Delay
+  APP_LCD_Strobe(1);
+  APP_LCD_Strobe(0);
+  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
 
-  APP_LCD_Strobe();
-  for(delay=0; delay<50000; ++delay) PIN_RW_0; // 50 mS Delay
+  APP_LCD_Strobe(1);
+  APP_LCD_Strobe(0);
+  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
 
-  APP_LCD_Strobe();
-  for(delay=0; delay<50000; ++delay) PIN_RW_0; // 50 mS Delay
+  APP_LCD_Strobe(1);
+  APP_LCD_Strobe(0);
+  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
 
   APP_LCD_Cmd(0x08); // Display Off
   APP_LCD_Cmd(0x0c); // Display On
   APP_LCD_Cmd(0x06); // Entry Mode
   APP_LCD_Cmd(0x01); // Clear Display
-  for(delay=0; delay<50000; ++delay) PIN_RW_0; // 50 mS Delay
+  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
+
+  // for DOG displays: performan additional display initialisation
+  // it should be compatible to common CLCDs (no negative effects)
+  // if not, it can be disabled
+#ifndef APP_LCD_DONT_INIT_DOG
+  APP_LCD_Cmd(0x39); // 8bit interface, switch to instruction table 1
+  APP_LCD_Cmd(0x1d); // BS: 1/4, 3 line LCD
+  APP_LCD_Cmd(0x50); // Booster off, set contrast C5/C4
+  APP_LCD_Cmd(0x6c); // set Voltage follower and amplifier
+  APP_LCD_Cmd(0x7c); // set contrast C3/C2/C1
+  //  APP_LCD_Cmd(0x38); // back to instruction table 0
+  // (will be done below)
+#endif
 
   APP_LCD_Cmd(0x38); // experience from PIC based MIOS: without these lines
   APP_LCD_Cmd(0x0c); // the LCD won't work correctly after a second APP_LCD_Init
 
-  return 0; // no error
+  return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Sends data byte to LCD
 // IN: data byte in <data>
-// OUT: returns < 0 on errors
+// OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data)
 {
-  u32 delay;
-  u8 busy;
+  // wait until LCD unbusy, exit on error (timeout)
+  if( APP_LCD_WaitUnbusy() < 0 )
+    return -1; // timeout
 
   // write data
   APP_LCD_SerWrite(data, 1); // data, rs
-  APP_LCD_Strobe();
-
-  for(delay=0; delay<1000; ++delay) PIN_RW_0; // 50 uS Delay
+  APP_LCD_Strobe(1);
+  APP_LCD_Strobe(0);
 
   return 0; // no error
 }
@@ -162,16 +193,18 @@ s32 APP_LCD_Data(u8 data)
 /////////////////////////////////////////////////////////////////////////////
 // Sends command byte to LCD
 // IN: command byte in <cmd>
-// OUT: returns < 0 on errors
+// OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Cmd(u8 cmd)
 {
-  u32 delay;
+  // wait until LCD unbusy, exit on error (timeout)
+  if( APP_LCD_WaitUnbusy() < 0 )
+    return -1; // timeout
 
+  // write command
   APP_LCD_SerWrite(cmd, 0); // data, rs
-  APP_LCD_Strobe();
-
-  for(delay=0; delay<1000; ++delay) PIN_RW_0; // 50 uS Delay
+  APP_LCD_Strobe(1);
+  APP_LCD_Strobe(0);
 
   return 0; // no error
 }
@@ -196,8 +229,12 @@ s32 APP_LCD_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_CursorSet(u16 line, u16 column)
 {
+  // exit with error if line is not in allowed range
+  if( line >= MIOS32_LCD_MAX_MAP_LINES )
+    return -1;
+
   // -> set cursor address
-  return APP_LCD_Cmd(0x80 | (line*0x40 + column));
+  return APP_LCD_Cmd(0x80 | (mios32_lcd_cursor_map[line] + column));
 }
 
 
@@ -220,9 +257,19 @@ s32 APP_LCD_PrintChar(char c)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
-  // TODO
+  s32 i;
+  s32 ret;
 
-  return -1; // not implemented yet
+  // send character number
+  APP_LCD_Cmd(((num&7)<<3) | 0x40);
+
+  // send 8 data bytes
+  for(i=0; i<8; ++i)
+    if( APP_LCD_Data(table[i]) < 0 )
+      return -1; // error during sending character
+
+  // set cursor to original position
+  return APP_LCD_CursorSet(mios32_lcd_line, mios32_lcd_column);
 }
 
 
@@ -261,6 +308,9 @@ s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 void APP_LCD_SerWrite(u8 data, u8 rs)
 {
   // shift in 8bit data
+  // whole function takes ca. 1.5 uS @ 72MHz
+  // thats acceptable for a (C)LCD, which is normaly busy after each access for ca. 20..40 uS
+
   PIN_SER(data & 0x80); // D7
   PIN_SCLK_0; // setup delay
   PIN_SCLK_1;
@@ -292,9 +342,17 @@ void APP_LCD_SerWrite(u8 data, u8 rs)
   PIN_RCLK_1;
   PIN_RCLK_0;
 
-  // shift RS to Q8
+  APP_LCD_SetRS(rs);
+}
+
+
+// shift RS to Q8 
+// unfortunately 5V voltage required for RS pin, otherwise we could connect it to the SER pin
+// to avoid shifting. However, these 8 shifts take ca. 500 nS @ 72MHz, which is acceptable!
+void APP_LCD_SetRS(u8 rs)
+{
   PIN_SER(rs);
-  PIN_SCLK_0; // setup delay
+  PIN_SCLK_0;
   PIN_SCLK_1;
   PIN_SCLK_0;
   PIN_SCLK_1;
@@ -314,17 +372,60 @@ void APP_LCD_SerWrite(u8 data, u8 rs)
 }
 
 
-// strobes the E line
-void APP_LCD_Strobe(void)
+// used to strobe the E line
+void APP_LCD_Strobe(u8 value)
 {
   u32 delay;
 
   if( mios32_lcd_device == 0 ) {
-    for(delay=0; delay<10; ++delay)
-      PIN_E1_1; // generate pulse length of 1 US
-    PIN_E1_0;
+    PIN_E1(value)
   } else {
-    // TODO
+    PIN_E2(value)
   }
+}
+
+// polls busy flag until it is 0
+// disables display on timeout (-1 will be returned in this case)
+s32 APP_LCD_WaitUnbusy(void)
+{
+  u32 poll_ctr;
+  u32 delay_ctr;
+
+  // don't wait if display already has been disabled
+  if( !(display_available & (1 << mios32_lcd_device)) )
+    return -1;
+
+  // select command register (RS=0)
+  APP_LCD_SetRS(0);
+
+  // select read (will also disable output buffer of 74HC595)
+  PIN_RW(1);
+
+  // poll busy flag, timeout after 10 mS
+  // each loop takes ca. 4 uS @ 72MHz, accordingly we poll 2500 times
+  for(poll_ctr=2500; poll_ctr>0; ++poll_ctr) {
+    APP_LCD_Strobe(1);
+
+    // due to slow slope we should wait at least for 1 uS
+    for(delay_ctr=0; delay_ctr<10; ++delay_ctr)
+      PIN_RW(1);
+
+    u32 busy = PIN_D7_IN;
+    APP_LCD_Strobe(0);
+    if( !busy )
+      break;
+  }
+
+  // deselect read (output buffers of 74HC595 enabled again)
+  PIN_RW(0);
+
+  // timeout?
+  if( poll_ctr == 0 ) {
+    // disable display
+    display_available &= ~(1 << mios32_lcd_device);
+    return -1; // timeout error
+  }
+
+  return 0; // no error
 }
 
