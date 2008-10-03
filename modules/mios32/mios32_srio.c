@@ -22,6 +22,31 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Pin definitions (tmp. for STM32 Primer board)
+/////////////////////////////////////////////////////////////////////////////
+
+#define MIOS32_SRIO_RCLK_PORT  GPIOA
+#define MIOS32_SRIO_RCLK_PIN   GPIO_Pin_4
+
+#define MIOS32_SRIO_SCLK_PORT  GPIOA
+#define MIOS32_SRIO_SCLK_PIN   GPIO_Pin_5
+
+#define MIOS32_SRIO_DIN_PORT   GPIOA
+#define MIOS32_SRIO_DIN_PIN    GPIO_Pin_6
+
+#define MIOS32_SRIO_DOUT_PORT  GPIOA
+#define MIOS32_SRIO_DOUT_PIN   GPIO_Pin_7
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help Macros
+/////////////////////////////////////////////////////////////////////////////
+
+#define PIN_RCLK_0  { MIOS32_SRIO_RCLK_PORT->BRR  = MIOS32_SRIO_RCLK_PIN; }
+#define PIN_RCLK_1  { MIOS32_SRIO_RCLK_PORT->BSRR = MIOS32_SRIO_RCLK_PIN; }
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -69,39 +94,29 @@ s32 MIOS32_SRIO_Init(u32 mode)
     mios32_srio_din_changed[i] = 0;
   }
 
-  // STM32 SPI1 pins:
-  //   o SPI1_SCLK: A5
-  //   o SPI1_MISO: A6
-  //   o SPI1_MOSI: A7
-  //   o RCLK: A8
-
   // init GPIO structure
   GPIO_StructInit(&GPIO_InitStructure);
-
-  // A5 and A7 are outputs assigned to alternate functions
-  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_5 | GPIO_Pin_7;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+  // SCLK and DOUT are outputs assigned to alternate functions
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_SCLK_PIN;
+  GPIO_Init(MIOS32_SRIO_SCLK_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_DOUT_PIN;
+  GPIO_Init(MIOS32_SRIO_DOUT_PORT, &GPIO_InitStructure);
 
-  // A8 is outputs assigned to GPIO
-  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_8;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  // RCLK is outputs assigned to GPIO
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_RCLK_PIN;
+  GPIO_Init(MIOS32_SRIO_RCLK_PORT, &GPIO_InitStructure);
 
   // A6 is input with pull-up
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_6;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_DIN_PIN;
+  GPIO_Init(MIOS32_SRIO_DIN_PORT, &GPIO_InitStructure);
 
   // enable SPI1 peripheral clock (APB2 == high speed)
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-
-  // enable GPIOA clock
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 
   // SPI1 configuration
   SPI_StructInit(&SPI_InitStructure);
@@ -120,7 +135,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   SPI_Cmd(SPI1, ENABLE);
 
   // initial state of RCLK
-  GPIO_WriteBit(GPIOA, GPIO_Pin_8, 1);
+  PIN_RCLK_1;
 
   // start with initial state
   srio_irq_state = 0xff;
@@ -171,12 +186,12 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 
   // before first byte will be sent:
   // latch DIN registers by pulsing RCLK: 1->0->1
-  GPIO_WriteBit(GPIOA, GPIO_Pin_8, 0);
+  PIN_RCLK_0;
   // TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
   // TODO: wait longer for touch sensors
   // TODO: maybe we should disable all IRQs here for higher accuracy
-  for(delay=0; delay<10; ++delay);
-  GPIO_WriteBit(GPIOA, GPIO_Pin_8, 1);
+  for(delay=0; delay<5; ++delay) PIN_RCLK_0;
+  PIN_RCLK_1;
 
   // Enable SPI1 RXNE interrupt
   SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, ENABLE);
@@ -221,10 +236,10 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
 
 	// latch DOUT registers by pulsing RCLK: 1->0->1
-	GPIO_WriteBit(GPIOA, GPIO_Pin_8, 0);
+	PIN_RCLK_0;
 	// TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
-	for(delay=0; delay<10; ++delay);
-	GPIO_WriteBit(GPIOA, GPIO_Pin_8, 1);
+	for(delay=0; delay<5; ++delay)	PIN_RCLK_0;
+	PIN_RCLK_1;
 
 	// call user specific hook if requested
 	if( srio_scan_finished_hook != NULL )

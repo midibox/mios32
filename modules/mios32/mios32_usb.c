@@ -239,6 +239,7 @@ s32 MIOS32_USB_Init(u32 mode)
   buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
   buffer_tx_busy = 0; // buffer is busy so long no USB connection detected
 
+#ifdef _STM32_PRIMER_
   // configure USB disconnect pin
   // STM32 Primer: pin B12
   GPIO_StructInit(&GPIO_InitStructure);
@@ -246,6 +247,7 @@ s32 MIOS32_USB_Init(u32 mode)
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(GPIOB, &GPIO_InitStructure);
+#endif
 
   // remaining initialisation done in STM32 USB driver
   USB_Init();

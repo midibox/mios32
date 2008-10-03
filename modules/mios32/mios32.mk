@@ -18,6 +18,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_midi.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb_desc.c \
+	$(MIOS32_PATH)/modules/mios32/mios32_board.c \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
 	$(DRIVER_LIB)/src/stm32f10x_spi.c \
