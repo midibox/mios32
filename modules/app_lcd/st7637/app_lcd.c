@@ -285,10 +285,10 @@ s32 APP_LCD_Clear(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets cursor to given position
-// IN: <line> and <column>
+// IN: <column> and <line>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_CursorSet(u16 line, u16 column)
+s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
   // nothing to do for GLCD driver
 
