@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SEQ Demo
+ * Header file of application
  *
  * ==========================================================================
  *
@@ -11,8 +11,9 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_DEMO_H
-#define _SEQ_DEMO_H
+#ifndef _APP_H
+#define _APP_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,11 +29,15 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 Init(u32 mode);
-
+extern void APP_Init(void);
+extern void APP_Background(void);
+extern void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package);
+extern void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte);
+extern void APP_SRIO_ServicePrepare(void);
+extern void APP_SRIO_ServiceFinish(void);
 extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
 extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_Background(void);
+extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -40,4 +45,4 @@ extern void APP_Background(void);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_DEMO_H */
+#endif /* _APP_H */

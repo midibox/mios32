@@ -23,9 +23,25 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned INIT_REQ:1;    // request display re-initialisation
+    unsigned UPDATE_REQ:1;  // request display update
+  };
+} display_t;
+
+display_t display;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-void PrintScreen(void);
 u8 mirror_u8(u8 b);
 u8 get_visible_track(void);
 
@@ -78,29 +94,18 @@ s32 Init(u32 mode)
     }
   }
 
-  // init both LCDs
-  for(i=0; i<2; ++i) {
-    MIOS32_LCD_DeviceSet(i);
-    MIOS32_LCD_Init(0);
-  }
-
-  // clear both LCDs
-  SEQ_LCD_Clear();
-
-  // initialise charset
-  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBARS);
-
-  // print the screen
-  PrintScreen();
+  // request display initialisation
+  display.INIT_REQ = 1;
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called when a button has been toggled
+// This hook is called when a button has been toggled
+// pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-s32 DIN_NotifyToggle(u32 pin, u32 value)
+void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if 0
   // for debugging
@@ -108,176 +113,196 @@ s32 DIN_NotifyToggle(u32 pin, u32 value)
 
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
-  sprintf(tmp, "Pin %3d = %d", pin, value);
+  sprintf(tmp, "Pin %3d = %d", pin, pin_value);
   MIOS32_LCD_PrintString(tmp);
 #else
+
+#if 0
+  // send MIDI event for debugging
+  MIOS32_MIDI_SendNoteOn(MIOS32_MIDI_PORT_USB0, 0, pin, pin_value ? 0x00 : 0x7f);
+#endif
 
   // NOTE: for MIDI remote all functions have to be outsourced later!
   // TODO: add #ifdef statements for the case that pins are disabled
 
-  s32 gp = -1;
-  if( (pin>>3) == (DEFAULT_GP_DIN_SR_L-1) )
-    gp = pin&7;
-  else if( (pin>>3) == (DEFAULT_GP_DIN_SR_R-1) )
-    gp = 8 + (pin&7);
+  s32 gp = -1; // notifies that GP button has been pressed
+  switch( pin ) {
+    case BUTTON_GP1:  gp =  0; break;
+    case BUTTON_GP2:  gp =  1; break;
+    case BUTTON_GP3:  gp =  2; break;
+    case BUTTON_GP4:  gp =  3; break;
+    case BUTTON_GP5:  gp =  4; break;
+    case BUTTON_GP6:  gp =  5; break;
+    case BUTTON_GP7:  gp =  6; break;
+    case BUTTON_GP8:  gp =  7; break;
+    case BUTTON_GP9:  gp =  8; break;
+    case BUTTON_GP10: gp =  9; break;
+    case BUTTON_GP11: gp = 10; break;
+    case BUTTON_GP12: gp = 11; break;
+    case BUTTON_GP13: gp = 12; break;
+    case BUTTON_GP14: gp = 13; break;
+    case BUTTON_GP15: gp = 14; break;
+    case BUTTON_GP16: gp = 15; break;
 
+    case BUTTON_LEFT:
+      if( pin_value ) return; // ignore when button depressed
+      if( played_step ) // tmp.
+        --played_step;
+      break;
+    case BUTTON_RIGHT:
+      if( pin_value ) return; // ignore when button depressed
+      if( ++played_step >= NUM_STEPS ) // tmp.
+        played_step = 0;
+      break;
+
+    case BUTTON_SCRUB:
+      break;
+    case BUTTON_METRONOME:
+      break;
+
+    case BUTTON_STOP:
+      break;
+    case BUTTON_PAUSE:
+      break;
+    case BUTTON_PLAY:
+      break;
+    case BUTTON_REW:
+      break;
+    case BUTTON_FWD:
+      break;
+
+    case BUTTON_F1:
+      break;
+    case BUTTON_F2:
+      break;
+    case BUTTON_F3:
+      break;
+    case BUTTON_F4:
+      break;
+
+    case BUTTON_MENU:
+      break;
+    case BUTTON_SELECT:
+      break;
+    case BUTTON_EXIT:
+      break;
+
+    case BUTTON_TRACK1:
+      if( pin_value ) return; // ignore when button depressed
+      selected_tracks = (1 << 0); // TODO: multi-selections!
+      break;
+    case BUTTON_TRACK2:
+      if( pin_value ) return; // ignore when button depressed
+      selected_tracks = (1 << 1); // TODO: multi-selections!
+      break;
+    case BUTTON_TRACK3:
+      if( pin_value ) return; // ignore when button depressed
+      selected_tracks = (1 << 2); // TODO: multi-selections!
+      break;
+    case BUTTON_TRACK4:
+      if( pin_value ) return; // ignore when button depressed
+      selected_tracks = (1 << 3); // TODO: multi-selections!
+      break;
+
+    case BUTTON_PAR_LAYER_A:
+      if( pin_value ) return; // ignore when button depressed
+      selected_par_layer = 0;
+      break;
+    case BUTTON_PAR_LAYER_B:
+      if( pin_value ) return; // ignore when button depressed
+      selected_par_layer = 1;
+      break;
+    case BUTTON_PAR_LAYER_C:
+      if( pin_value ) return; // ignore when button depressed
+      selected_par_layer = 2;
+      break;
+
+    case BUTTON_EDIT:
+      break;
+    case BUTTON_MUTE:
+      break;
+    case BUTTON_PATTERN:
+      break;
+    case BUTTON_SONG:
+      break;
+
+    case BUTTON_SOLO:
+      break;
+    case BUTTON_FAST:
+      break;
+    case BUTTON_ALL:
+      break;
+
+    case BUTTON_GROUP1:
+      if( pin_value ) return; // ignore when button depressed
+      selected_group = 0;
+      break;
+    case BUTTON_GROUP2:
+      if( pin_value ) return; // ignore when button depressed
+      selected_group = 1;
+      break;
+    case BUTTON_GROUP3:
+      if( pin_value ) return; // ignore when button depressed
+      selected_group = 2;
+      break;
+    case BUTTON_GROUP4:
+      if( pin_value ) return; // ignore when button depressed
+      selected_group = 3;
+      break;
+
+    case BUTTON_TRG_LAYER_A:
+      if( pin_value ) return; // ignore when button depressed
+      selected_trg_layer = 0;
+      break;
+    case BUTTON_TRG_LAYER_B:
+      if( pin_value ) return; // ignore when button depressed
+      selected_trg_layer = 1;
+      break;
+    case BUTTON_TRG_LAYER_C:
+      if( pin_value ) return; // ignore when button depressed
+      selected_trg_layer = 2;
+      break;
+
+    case BUTTON_STEP_VIEW:
+      selected_step_view = selected_step_view ? 0 : 1;
+      break;
+
+    case BUTTON_TAP_TEMPO:
+      break;
+  }
+
+  // GP button pressed?
   if( gp >= 0 ) {
 
     // GP buttons
-    if( value ) return 0; // ignore when button depressed
+    if( pin_value ) return; // ignore when button depressed
 
     // toggle trigger layer
     u8 visible_track = get_visible_track();
     u8 step = gp + selected_step_view*16;
     trg_layer_value[visible_track][selected_trg_layer][step>>3] ^= (1 << (step&7));
-
-  } else {
-
-    // remaining buttons
-    switch( pin ) {
-      case BUTTON_LEFT:
-        if( value ) return 0; // ignore when button depressed
-	if( played_step ) // tmp.
-	  --played_step;
-        break;
-      case BUTTON_RIGHT:
-        if( value ) return 0; // ignore when button depressed
-	if( ++played_step >= NUM_STEPS ) // tmp.
-	  played_step = 0;
-        break;
-  
-      case BUTTON_SCRUB:
-        break;
-      case BUTTON_METRONOME:
-        break;
-  
-      case BUTTON_STOP:
-        break;
-      case BUTTON_PAUSE:
-        break;
-      case BUTTON_PLAY:
-        break;
-      case BUTTON_REW:
-        break;
-      case BUTTON_FWD:
-        break;
-  
-      case BUTTON_F1:
-        break;
-      case BUTTON_F2:
-        break;
-      case BUTTON_F3:
-        break;
-      case BUTTON_F4:
-        break;
-  
-      case BUTTON_MENU:
-        break;
-      case BUTTON_SELECT:
-        break;
-      case BUTTON_EXIT:
-        break;
-  
-      case BUTTON_TRACK1:
-        if( value ) return 0; // ignore when button depressed
-        selected_tracks = (1 << 0); // TODO: multi-selections!
-        break;
-      case BUTTON_TRACK2:
-        if( value ) return 0; // ignore when button depressed
-        selected_tracks = (1 << 1); // TODO: multi-selections!
-        break;
-      case BUTTON_TRACK3:
-        if( value ) return 0; // ignore when button depressed
-        selected_tracks = (1 << 2); // TODO: multi-selections!
-        break;
-      case BUTTON_TRACK4:
-        if( value ) return 0; // ignore when button depressed
-        selected_tracks = (1 << 3); // TODO: multi-selections!
-        break;
-  
-      case BUTTON_PAR_LAYER_A:
-        if( value ) return 0; // ignore when button depressed
-        selected_par_layer = 0;
-        break;
-      case BUTTON_PAR_LAYER_B:
-        if( value ) return 0; // ignore when button depressed
-        selected_par_layer = 1;
-        break;
-      case BUTTON_PAR_LAYER_C:
-        if( value ) return 0; // ignore when button depressed
-        selected_par_layer = 2;
-        break;
-  
-      case BUTTON_EDIT:
-        break;
-      case BUTTON_MUTE:
-        break;
-      case BUTTON_PATTERN:
-        break;
-      case BUTTON_SONG:
-        break;
-  
-      case BUTTON_SOLO:
-        break;
-      case BUTTON_FAST:
-        break;
-      case BUTTON_ALL:
-        break;
-  
-      case BUTTON_GROUP1:
-        if( value ) return 0; // ignore when button depressed
-        selected_group = 0;
-        break;
-      case BUTTON_GROUP2:
-        if( value ) return 0; // ignore when button depressed
-        selected_group = 1;
-        break;
-      case BUTTON_GROUP3:
-        if( value ) return 0; // ignore when button depressed
-        selected_group = 2;
-        break;
-      case BUTTON_GROUP4:
-        if( value ) return 0; // ignore when button depressed
-        selected_group = 3;
-        break;
-  
-      case BUTTON_TRG_LAYER_A:
-        if( value ) return 0; // ignore when button depressed
-        selected_trg_layer = 0;
-        break;
-      case BUTTON_TRG_LAYER_B:
-        if( value ) return 0; // ignore when button depressed
-        selected_trg_layer = 1;
-        break;
-      case BUTTON_TRG_LAYER_C:
-        if( value ) return 0; // ignore when button depressed
-        selected_trg_layer = 2;
-        break;
-  
-      case BUTTON_STEP_VIEW:
-        selected_step_view = selected_step_view ? 0 : 1;
-        break;
-  
-      case BUTTON_TAP_TEMPO:
-        break;
-    }
   }
-  
-  // TODO: should use a "update request" later to improve performance on multi-touches!
-  PrintScreen();
-#endif
 
-  return 0; // no error
+  // request display update
+  display.UPDATE_REQ = 1;
+#endif
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called when an encoder has been moved
+// This hook is called when an encoder has been moved
+// incrementer is positive when encoder has been turned clockwise, else
+// it is negative
 /////////////////////////////////////////////////////////////////////////////
-s32 ENC_NotifyChange(u32 enc, s32 incrementer)
+void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-  if( enc > 16 )
-    return -1; // encoder doesn't exist
+  if( encoder > 16 )
+    return; // encoder doesn't exist
+
+#if 0
+  // send MIDI event for debugging
+  MIOS32_MIDI_SendCC(MIOS32_MIDI_PORT_USB0, 0, encoder, incrementer & 0x7f);
+#endif
 
   // limit incrementer
   if( incrementer > 3 )
@@ -285,7 +310,7 @@ s32 ENC_NotifyChange(u32 enc, s32 incrementer)
   else if( incrementer < -3 )
     incrementer = -3;
 
-  if( enc == 0 ) {
+  if( encoder == 0 ) {
     s32 value = played_step + incrementer;
     if( value < 0 )
       value = 0;
@@ -294,7 +319,7 @@ s32 ENC_NotifyChange(u32 enc, s32 incrementer)
     played_step = (u8)value;
   } else {
     u8 visible_track = get_visible_track();
-    u8 step = enc-1 + selected_step_view*16;
+    u8 step = encoder-1 + selected_step_view*16;
 
     // select step
     selected_step = step;
@@ -319,8 +344,8 @@ s32 ENC_NotifyChange(u32 enc, s32 incrementer)
       trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
   }
 
-  // update screen
-  PrintScreen();
+  // request display update
+  display.UPDATE_REQ = 1;
 }
 
 
@@ -363,158 +388,182 @@ u8 get_visible_track(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints the demo screen
+// This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
-void PrintScreen(void)
+void APP_Background(void)
 {
-  char tmp[128];
-  u8 step;
-  u8 visible_track = get_visible_track();
+  // toggle the state of all LEDs (allows to measure the execution speed with a scope)
+  MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
-  ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
+  if( display.INIT_REQ ) {
+    display.INIT_REQ = 0; // clear request
 
-  SEQ_LCD_PrintGxTy(selected_group, selected_tracks);
-  SEQ_LCD_PrintSpaces(2);
+    int i;
 
-  SEQ_LCD_PrintParLayer(selected_par_layer);
-  SEQ_LCD_PrintSpaces(1);
-
-  sprintf(tmp, "Chn%2d", midi_channel);
-  MIOS32_LCD_PrintString(tmp);
-  MIOS32_LCD_PrintChar('/');
-  SEQ_LCD_PrintMIDIPort(midi_port);
-  SEQ_LCD_PrintSpaces(1);
-
-  SEQ_LCD_PrintTrgLayer(selected_trg_layer);
-
-  SEQ_LCD_PrintStepView(selected_step_view);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-
-  MIOS32_LCD_PrintString("Step");
-  SEQ_LCD_PrintSelectedStep(selected_step, 15);
-  MIOS32_LCD_PrintChar(':');
-
-  SEQ_LCD_PrintNote(par_layer_value[visible_track][0][selected_step]);
-  MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][selected_step] >> 4);
-  SEQ_LCD_PrintSpaces(1);
-
-  sprintf(tmp, "Vel:%3d", par_layer_value[visible_track][1][selected_step]);
-  MIOS32_LCD_PrintString(tmp);
-  SEQ_LCD_PrintSpaces(1);
-
-  MIOS32_LCD_PrintString("Len:");
-  SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][selected_step]);
-  SEQ_LCD_PrintSpaces(1);
-
-  MIOS32_LCD_PrintString("G-a-r--");
-
-  ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(1, 0);
-
-  for(step=0; step<16; ++step) {
-    // 9th step reached: switch to second LCD
-    if( step == 8 ) {
-      MIOS32_LCD_DeviceSet(1);
-      MIOS32_LCD_CursorSet(1, 0);
+    // clear both LCDs
+    for(i=0; i<2; ++i) {
+      MIOS32_LCD_DeviceSet(i);
+      SEQ_LCD_Clear();
     }
 
-    u8 visible_step = step + 16*selected_step_view;
-    u8 note = par_layer_value[visible_track][0][visible_step];
-    u8 vel = par_layer_value[visible_track][1][visible_step];
-    u8 len = par_layer_value[visible_track][2][visible_step];
-    u8 gate = trg_layer_value[visible_track][0][visible_step>>3] & (1 << (visible_step&7));
+    // initialise charset
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBARS);
 
-    switch( selected_par_layer ) {
-      case 0: // Note
-      case 1: // Velocity
-
-	if( gate ) {
-	  SEQ_LCD_PrintNote(note);
-	  MIOS32_LCD_PrintChar((char)vel >> 4);
-	} else {
-	  MIOS32_LCD_PrintString("----");
-	}
-	break;
-
-      case 2: // Gatelength
-	// TODO: print length like on real hardware (length bars)
-	SEQ_LCD_PrintGatelength(len);
-	break;
-      default:
-	MIOS32_LCD_PrintString("????");
-    }
-
-    MIOS32_LCD_PrintChar(
-        (visible_step == selected_step) ? '<' 
-	: ((visible_step == selected_step-1) ? '>' : ' '));
+    // request display update
+    display.UPDATE_REQ = 1;
   }
 
-  ///////////////////////////////////////////////////////////////////////////
+  if( display.UPDATE_REQ ) {
+    display.UPDATE_REQ = 0; // clear request
 
-  // GP LEDs
-  // TODO: invert if no dual colour LEDs defined
-#ifdef DEFAULT_GP_DOUT_SR_L
-  MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+0]));
-#endif
-#ifdef DEFAULT_GP_DOUT_SR_R
-  MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+1]));
-#endif
-  // TODO: check for selected step view!
-#ifdef DEFAULT_GP_DOUT_SR_L2
-  MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L2-1, played_step < 8 ? (1 << ((played_step&7)^7)) : 0);
-#endif
-#ifdef DEFAULT_GP_DOUT_SR_R2
-  MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R2-1, played_step >= 8 ? (1 << ((played_step&7)^7)) : 0);
-#endif
-
-  // beat LED: tmp. for demo w/o real sequencer
-  MIOS32_DOUT_PinSet(LED_BEAT, ((played_step & 3) == 0) ? 1 : 0);
-
-  // track LEDs
-  MIOS32_DOUT_PinSet(LED_TRACK1, (selected_tracks & (1 << 0)) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_TRACK2, (selected_tracks & (1 << 1)) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_TRACK3, (selected_tracks & (1 << 2)) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_TRACK4, (selected_tracks & (1 << 3)) ? 1 : 0);
-
-  // parameter layer LEDs
-  MIOS32_DOUT_PinSet(LED_PAR_LAYER_A, (selected_par_layer == 0) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_PAR_LAYER_B, (selected_par_layer == 1) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_PAR_LAYER_C, (selected_par_layer == 2) ? 1 : 0);
-
-  // group LEDs
-  MIOS32_DOUT_PinSet(LED_GROUP1, (selected_group == 0) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_GROUP2, (selected_group == 1) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_GROUP3, (selected_group == 2) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_GROUP4, (selected_group == 3) ? 1 : 0);
-
-  // trigger layer LEDs
-  MIOS32_DOUT_PinSet(LED_TRG_LAYER_A, (selected_trg_layer == 0) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_TRG_LAYER_B, (selected_trg_layer == 1) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_TRG_LAYER_C, (selected_trg_layer == 2) ? 1 : 0);
-
-  // remaining LEDs
-  MIOS32_DOUT_PinSet(LED_EDIT, 1);
-  MIOS32_DOUT_PinSet(LED_MUTE, 0);
-  MIOS32_DOUT_PinSet(LED_PATTERN, 0);
-  MIOS32_DOUT_PinSet(LED_SONG, 0);
-
-  MIOS32_DOUT_PinSet(LED_SOLO, 0);
-  MIOS32_DOUT_PinSet(LED_FAST, 0);
-  MIOS32_DOUT_PinSet(LED_ALL, 0);
-
-  MIOS32_DOUT_PinSet(LED_PLAY, 1);
-  MIOS32_DOUT_PinSet(LED_STOP, 0);
-  MIOS32_DOUT_PinSet(LED_PAUSE, 0);
-
-  MIOS32_DOUT_PinSet(LED_STEP_1_16, (selected_step_view == 0) ? 1 : 0);
-  MIOS32_DOUT_PinSet(LED_STEP_17_32, (selected_step_view == 1) ? 1 : 0); // will be obsolete in MBSEQ V4
-
+    char tmp[128];
+    u8 step;
+    u8 visible_track = get_visible_track();
+  
+    ///////////////////////////////////////////////////////////////////////////
+    MIOS32_LCD_DeviceSet(0);
+    MIOS32_LCD_CursorSet(0, 0);
+  
+    SEQ_LCD_PrintGxTy(selected_group, selected_tracks);
+    SEQ_LCD_PrintSpaces(2);
+  
+    SEQ_LCD_PrintParLayer(selected_par_layer);
+    SEQ_LCD_PrintSpaces(1);
+  
+    sprintf(tmp, "Chn%2d", midi_channel);
+    MIOS32_LCD_PrintString(tmp);
+    MIOS32_LCD_PrintChar('/');
+    SEQ_LCD_PrintMIDIPort(midi_port);
+    SEQ_LCD_PrintSpaces(1);
+  
+    SEQ_LCD_PrintTrgLayer(selected_trg_layer);
+  
+    SEQ_LCD_PrintStepView(selected_step_view);
+  
+  
+    ///////////////////////////////////////////////////////////////////////////
+    MIOS32_LCD_DeviceSet(1);
+    MIOS32_LCD_CursorSet(0, 0);
+  
+    MIOS32_LCD_PrintString("Step");
+    SEQ_LCD_PrintSelectedStep(selected_step, 15);
+    MIOS32_LCD_PrintChar(':');
+  
+    SEQ_LCD_PrintNote(par_layer_value[visible_track][0][selected_step]);
+    MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][selected_step] >> 4);
+    SEQ_LCD_PrintSpaces(1);
+  
+    sprintf(tmp, "Vel:%3d", par_layer_value[visible_track][1][selected_step]);
+    MIOS32_LCD_PrintString(tmp);
+    SEQ_LCD_PrintSpaces(1);
+  
+    MIOS32_LCD_PrintString("Len:");
+    SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][selected_step]);
+    SEQ_LCD_PrintSpaces(1);
+  
+    MIOS32_LCD_PrintString("G-a-r--");
+  
+    ///////////////////////////////////////////////////////////////////////////
+    MIOS32_LCD_DeviceSet(0);
+    MIOS32_LCD_CursorSet(0, 1);
+  
+    for(step=0; step<16; ++step) {
+      // 9th step reached: switch to second LCD
+      if( step == 8 ) {
+        MIOS32_LCD_DeviceSet(1);
+        MIOS32_LCD_CursorSet(0, 1);
+      }
+  
+      u8 visible_step = step + 16*selected_step_view;
+      u8 note = par_layer_value[visible_track][0][visible_step];
+      u8 vel = par_layer_value[visible_track][1][visible_step];
+      u8 len = par_layer_value[visible_track][2][visible_step];
+      u8 gate = trg_layer_value[visible_track][0][visible_step>>3] & (1 << (visible_step&7));
+  
+      switch( selected_par_layer ) {
+        case 0: // Note
+        case 1: // Velocity
+  
+  	if( gate ) {
+  	  SEQ_LCD_PrintNote(note);
+  	  MIOS32_LCD_PrintChar((char)vel >> 4);
+  	} else {
+  	  MIOS32_LCD_PrintString("----");
+  	}
+  	break;
+  
+        case 2: // Gatelength
+  	// TODO: print length like on real hardware (length bars)
+  	SEQ_LCD_PrintGatelength(len);
+  	break;
+        default:
+  	MIOS32_LCD_PrintString("????");
+      }
+  
+      MIOS32_LCD_PrintChar(
+          (visible_step == selected_step) ? '<' 
+  	: ((visible_step == selected_step-1) ? '>' : ' '));
+    }
+  
+    ///////////////////////////////////////////////////////////////////////////
+  
+  
+    // GP LEDs
+    // TODO: invert if no dual colour LEDs defined
+  #ifdef DEFAULT_GP_DOUT_SR_L
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+0]));
+  #endif
+  #ifdef DEFAULT_GP_DOUT_SR_R
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+1]));
+  #endif
+    // TODO: check for selected step view!
+  #ifdef DEFAULT_GP_DOUT_SR_L2
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L2-1, played_step < 8 ? (1 << ((played_step&7)^7)) : 0);
+  #endif
+  #ifdef DEFAULT_GP_DOUT_SR_R2
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R2-1, played_step >= 8 ? (1 << ((played_step&7)^7)) : 0);
+  #endif
+  
+    // beat LED: tmp. for demo w/o real sequencer
+    MIOS32_DOUT_PinSet(LED_BEAT, ((played_step & 3) == 0) ? 1 : 0);
+  
+    // track LEDs
+    MIOS32_DOUT_PinSet(LED_TRACK1, (selected_tracks & (1 << 0)) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_TRACK2, (selected_tracks & (1 << 1)) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_TRACK3, (selected_tracks & (1 << 2)) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_TRACK4, (selected_tracks & (1 << 3)) ? 1 : 0);
+  
+    // parameter layer LEDs
+    MIOS32_DOUT_PinSet(LED_PAR_LAYER_A, (selected_par_layer == 0) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_PAR_LAYER_B, (selected_par_layer == 1) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_PAR_LAYER_C, (selected_par_layer == 2) ? 1 : 0);
+  
+    // group LEDs
+    MIOS32_DOUT_PinSet(LED_GROUP1, (selected_group == 0) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_GROUP2, (selected_group == 1) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_GROUP3, (selected_group == 2) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_GROUP4, (selected_group == 3) ? 1 : 0);
+  
+    // trigger layer LEDs
+    MIOS32_DOUT_PinSet(LED_TRG_LAYER_A, (selected_trg_layer == 0) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_TRG_LAYER_B, (selected_trg_layer == 1) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_TRG_LAYER_C, (selected_trg_layer == 2) ? 1 : 0);
+  
+    // remaining LEDs
+    MIOS32_DOUT_PinSet(LED_EDIT, 1);
+    MIOS32_DOUT_PinSet(LED_MUTE, 0);
+    MIOS32_DOUT_PinSet(LED_PATTERN, 0);
+    MIOS32_DOUT_PinSet(LED_SONG, 0);
+  
+    MIOS32_DOUT_PinSet(LED_SOLO, 0);
+    MIOS32_DOUT_PinSet(LED_FAST, 0);
+    MIOS32_DOUT_PinSet(LED_ALL, 0);
+  
+    MIOS32_DOUT_PinSet(LED_PLAY, 1);
+    MIOS32_DOUT_PinSet(LED_STOP, 0);
+    MIOS32_DOUT_PinSet(LED_PAUSE, 0);
+  
+    MIOS32_DOUT_PinSet(LED_STEP_1_16, (selected_step_view == 0) ? 1 : 0);
+    MIOS32_DOUT_PinSet(LED_STEP_17_32, (selected_step_view == 1) ? 1 : 0); // will be obsolete in MBSEQ V4
+  }
 }
-

@@ -31,13 +31,13 @@
 - (void)mouseDown:(NSEvent *)event
 {
 	// button pressed
-	DIN_NotifyToggle([self tag], 0);
+	APP_DIN_NotifyToggle([self tag], 0);
 }
 
 - (void)mouseUp:(NSEvent *)event
 {
 	// button released
-	DIN_NotifyToggle([self tag], 1);
+	APP_DIN_NotifyToggle([self tag], 1);
 }
 
 @end

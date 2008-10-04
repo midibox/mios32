@@ -35,8 +35,6 @@ float lastValue;
 //////////////////////////////////////////////////////////////////////////////
 - (IBAction)encoderMoved:(id)sender
 {
-	NSLog(@"xxx");
-
 	// determine difference to previous value and convert to integer
 	float value = [self floatValue];
 	float diff = value - lastValue;
@@ -47,7 +45,7 @@ float lastValue;
 		if( incrementer == 0 )
 			incrementer = diff >= 0 ? 1 : -1;
 			
-		ENC_NotifyChange([self tag], incrementer); 
+		APP_ENC_NotifyChange([self tag], incrementer); 
 	}
 }
 
@@ -64,7 +62,7 @@ float lastValue;
 	if( incrementer == 0 )
 		incrementer = diff >= 0 ? 1 : -1;
 			
-	ENC_NotifyChange([self tag], incrementer); 
+	APP_ENC_NotifyChange([self tag], incrementer); 
 	
 	// move dial as well (we have to wrap if end/begin value reached)
 	float newValue = [self floatValue] + [event deltaY];
