@@ -178,7 +178,7 @@ s32 MIOS32_ENC_UpdateStates(void)
     // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
     u8 sr = enc_config[enc].cfg.sr;
     u8 pos = enc_config[enc].cfg.pos;
-    u8 changed_mask = pos << 3; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
+    u8 changed_mask = 3 << pos; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
     if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) ) {
       mios32_enc_type_t enc_type = enc_config[enc].cfg.type;
       enc_state_ptr->last12 = enc_state_ptr->act12;

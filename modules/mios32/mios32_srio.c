@@ -54,6 +54,12 @@ volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
 volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
 volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
+// during SRIO scan it is required to copy new DIN values/change notifiers into a temporary buffer
+// to avoid that a task already takes a new DIN value before the whole chain has been scanned
+// (e.g. relevant for encoder handler: it has to clear the changed flags, so that the DIN handler doesn't take the value)
+volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
+volatile u8 mios32_srio_din_changed_buffer[MIOS32_SRIO_NUM_SR];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -92,6 +98,8 @@ s32 MIOS32_SRIO_Init(u32 mode)
     mios32_srio_dout[i] = 0;
     mios32_srio_din[i] = 0xff; // passive state
     mios32_srio_din_changed[i] = 0;
+    mios32_srio_din_buffer[i] = 0xff; // passive state
+    mios32_srio_din_changed_buffer[i] = 0;
   }
 
   // init GPIO structure
@@ -217,10 +225,10 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 
     if( srio_irq_state != 0xff ) { // 0xff should never be reached here - just to ensure
       // notify changes
-      mios32_srio_din_changed[srio_irq_state] |= mios32_srio_din[srio_irq_state] ^ b;
+      mios32_srio_din_changed_buffer[srio_irq_state] = mios32_srio_din_buffer[srio_irq_state] ^ b;
 
       // store new pin states
-      mios32_srio_din[srio_irq_state] = b;
+      mios32_srio_din_buffer[srio_irq_state] = b;
 
       // increment state
       ++srio_irq_state;
@@ -231,6 +239,13 @@ void MIOS32_SRIO_SPI_IRQHandler(void)
 
 	// notify that stream has been completely send
 	srio_irq_state = 0xff;
+
+	// copy/or buffered DIN values/changed flags
+	s32 i;
+	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+	  mios32_srio_din[i] = mios32_srio_din_buffer[i];
+	  mios32_srio_din_changed[i] |= mios32_srio_din_changed_buffer[i];
+	}
 
 	// disable SPI1 RXNE interrupt
 	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
