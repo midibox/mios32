@@ -16,31 +16,6 @@
 
 // from STM primer code
 
-/* LCD Control pins */
-#define CtrlPin_RS               GPIO_Pin_8
-#define CtrlPin_RD               GPIO_Pin_9
-#define CtrlPin_WR               GPIO_Pin_10
-#define CtrlPin_RST              GPIO_Pin_12
-#define LCD_CTRL_PINS            (CtrlPin_RS|CtrlPin_RD|CtrlPin_WR|CtrlPin_RST)
-#define GPIOx_CTRL_LCD           GPIOC
-#define GPIO_LCD_CTRL_PERIPH     RCC_APB2Periph_GPIOC
-
-#define CtrlPin_CS               GPIO_Pin_2
-#define GPIOx_CS_LCD             GPIOD
-#define GPIO_LCD_CS_PERIPH       RCC_APB2Periph_GPIOD
-
-#define LCD_D0                   GPIO_Pin_0
-#define LCD_D1                   GPIO_Pin_1
-#define LCD_D2                   GPIO_Pin_2
-#define LCD_D3                   GPIO_Pin_3
-#define LCD_D4                   GPIO_Pin_4
-#define LCD_D5                   GPIO_Pin_5
-#define LCD_D6                   GPIO_Pin_6
-#define LCD_D7                   GPIO_Pin_7
-#define LCD_DATA_PINS            (LCD_D0|LCD_D1|LCD_D2|LCD_D3|LCD_D4|LCD_D5|LCD_D6|LCD_D7)
-#define GPIOx_D_LCD              GPIOC
-#define GPIO_LCD_D_PERIPH        RCC_APB2Periph_GPIOC
-
 /* LCD Commands */
 #define DISPLAY_ON               0xAF
 #define DISPLAY_OFF              0xAE
