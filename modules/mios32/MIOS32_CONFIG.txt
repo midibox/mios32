@@ -18,6 +18,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
+#define MIOS32_DONT_USE_ENC
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB
@@ -28,6 +29,9 @@ into your local mios32_config.h file
 // number of scanned SR registers on SRIO chain
 // default value 16 (see mios32_srio.h)
 #define MIOS32_SRIO_NUM_SR 16
+
+// maximal number of rotary encoders
+#define MIOS32_ENC_NUM_MAX 64
 
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
 #define MIOS32_USB_DESC_USE_AC_INTERFACE 1
