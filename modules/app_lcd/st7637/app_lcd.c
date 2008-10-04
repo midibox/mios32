@@ -4,6 +4,7 @@
  * Referenced from MIOS32_LCD routines
  *
  * Some of the code has been taken over and adapted from Raisonance Circle OS
+ * It has been dramatically speed-optimized! (ca. 8 times faster :-)
  *
  * ==========================================================================
  *
@@ -30,6 +31,44 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Pin definitions for STM32 Primer board
+/////////////////////////////////////////////////////////////////////////////
+
+#define APP_LCD_D_PINS         (GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7)
+#define APP_LCD_D_PORT         GPIOC
+
+#define APP_LCD_BL_PORT        GPIOB
+#define APP_LCD_BL_PIN         GPIO_Pin_7
+
+#define APP_LCD_RS_PORT        GPIOC
+#define APP_LCD_RS_PIN         GPIO_Pin_8
+
+#define APP_LCD_RD_PORT        GPIOC
+#define APP_LCD_RD_PIN         GPIO_Pin_9
+
+#define APP_LCD_WR_PORT        GPIOC
+#define APP_LCD_WR_PIN         GPIO_Pin_10
+
+#define APP_LCD_CS_PORT        GPIOC
+#define APP_LCD_CS_PIN         GPIO_Pin_11
+
+#define APP_LCD_RST_PORT       GPIOC
+#define APP_LCD_RST_PIN        GPIO_Pin_12
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help Macros
+/////////////////////////////////////////////////////////////////////////////
+
+#define PIN_BL(b)   { APP_LCD_BL_PORT->BSRR  = (b) ? APP_LCD_BL_PIN  : (APP_LCD_BL_PIN << 16); }
+#define PIN_RS(b)   { APP_LCD_RS_PORT->BSRR  = (b) ? APP_LCD_RS_PIN  : (APP_LCD_RS_PIN << 16); }
+#define PIN_RD(b)   { APP_LCD_RD_PORT->BSRR  = (b) ? APP_LCD_RD_PIN  : (APP_LCD_RD_PIN << 16); }
+#define PIN_WR(b)   { APP_LCD_WR_PORT->BSRR  = (b) ? APP_LCD_WR_PIN  : (APP_LCD_WR_PIN << 16); }
+#define PIN_CS(b)   { APP_LCD_CS_PORT->BSRR  = (b) ? APP_LCD_CS_PIN  : (APP_LCD_CS_PIN << 16); }
+#define PIN_RST(b)  { APP_LCD_RST_PORT->BSRR = (b) ? APP_LCD_RST_PIN : (APP_LCD_RST_PIN << 16); }
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -46,10 +85,6 @@ u16 lcd_fcolour;
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-void APP_LCD_CtrlLinesWrite(GPIO_TypeDef* GPIOx, u32 CtrlPins, BitAction BitVal);
-void APP_LCD_DataLinesWrite(GPIO_TypeDef* GPIOx, u32 PortVal);
-void APP_LCD_DataLinesConfig(u8 output);
-void APP_LCD_CheckLCDStatus(void);
 void APP_LCD_SetRect_For_Cmd(s16 x, s16 y, s16 width, s16 height);
 
 
@@ -72,56 +107,51 @@ s32 APP_LCD_Init(u32 mode)
   MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
   MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
 
-  // Enable GPIO clock for LCD
-  RCC_APB2PeriphClockCmd(GPIO_LCD_CTRL_PERIPH, ENABLE);
-  RCC_APB2PeriphClockCmd(GPIO_LCD_D_PERIPH, ENABLE);
-  RCC_APB2PeriphClockCmd(GPIO_LCD_CS_PERIPH, ENABLE);
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
-
-  // backlight pin (could also be dimmed via PWM)
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-  // backlight on
-  GPIO_SetBits(GPIOB, GPIO_Pin_7);
-
   // control lines
-  GPIO_InitStructure.GPIO_Pin   =  LCD_CTRL_PINS;
+  PIN_BL(1);
+  PIN_RS(1);
+  PIN_RD(1);
+  PIN_CS(1);
+  PIN_WR(1);
+  PIN_RST(1);
+
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_Init(GPIOx_CTRL_LCD, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Pin   =  CtrlPin_CS;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_Init(GPIOx_CS_LCD, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_BL_PIN;
+  GPIO_Init(APP_LCD_BL_PORT, &GPIO_InitStructure);
 
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RS,  Bit_SET );    /* RS = 1   */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD,  Bit_SET );    /* RD = 1   */
-  APP_LCD_CtrlLinesWrite( GPIOx_CS_LCD,   CtrlPin_CS,  Bit_SET );    /* CS = 1   */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR,  Bit_SET );    /* WR = 1   */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RST, Bit_RESET );  /* RST = 0  */
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_RS_PIN;
+  GPIO_Init(APP_LCD_RS_PORT, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_RD_PIN;
+  GPIO_Init(APP_LCD_RD_PORT, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_WR_PIN;
+  GPIO_Init(APP_LCD_WR_PORT, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_CS_PIN;
+  GPIO_Init(APP_LCD_CS_PORT, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin   = APP_LCD_RST_PIN;
+  GPIO_Init(APP_LCD_RST_PORT, &GPIO_InitStructure);
 
   // Apply hardware reset
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RST, Bit_SET );    /* RST = 1  */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RST, Bit_RESET );  /* RST = 0  */
+  PIN_RST(0);
   for(delay=0; delay<0x500; ++delay);
 
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RST, Bit_SET );    /* RST = 1  */
+  PIN_RST(1);
   for(delay=0; delay<0x500; ++delay);
 
-  // default mode is output
-  APP_LCD_DataLinesConfig(1);
+  // configure data pins as outputs
+  GPIO_InitStructure.GPIO_Pin  = APP_LCD_D_PINS;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+  GPIO_Init(APP_LCD_D_PORT, &GPIO_InitStructure);
 
-  APP_LCD_CheckLCDStatus();
-
+  //----------- software reset ------------------------------------------------
   APP_LCD_Cmd(ST7637_SWRESET);
 
-  //-----------disable autoread + Manual read once ----------------------------
+  //----------- disable autoread + Manual read once ---------------------------
   APP_LCD_Cmd( ST7637_AUTOLOADSET );  // Auto Load Set 0xD7
   APP_LCD_Data( 0xBF );               // Auto Load Disable
 
@@ -159,21 +189,21 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd( ST7637_ID3SET );       // ID3 = 00 0xce
   APP_LCD_Data( 0x00 );               //
 
-  APP_LCD_Cmd( 0xB7 );                // Glass direction
+  APP_LCD_Cmd( ST7637_COMSCANDIR );   // Glass direction
   APP_LCD_Data( 0xC0 );               //
 
   APP_LCD_Cmd( ST7637_ANASET );       // Analog circuit setting 0xd0
   APP_LCD_Data( 0x1D );               //
 
-  APP_LCD_Cmd( 0xB4 );                // PTL mode set
+  APP_LCD_Cmd( ST7637_PTLMOD );       // PTL mode set
   APP_LCD_Data( 0x18 );               // power normal mode
   APP_LCD_Cmd( ST7637_INVOFF );       // Display Inversion OFF 0x20
 
-  APP_LCD_Cmd( 0x2A );                // column range
+  APP_LCD_Cmd( ST7637_CASET );        // column range
   APP_LCD_Data( 0x04 );               //
   APP_LCD_Data( 0x83 );               //
 
-  APP_LCD_Cmd( 0x2B );                // raw range
+  APP_LCD_Cmd( ST7637_RASET );        // raw range
   APP_LCD_Data( 0x04 );               //
   APP_LCD_Data( 0x83 );               //
 
@@ -187,8 +217,8 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd( ST7637_DUTYSET );      // Duty = 132 duty 0xb0
   APP_LCD_Data( 0x7F );
 
-  APP_LCD_Cmd( 0x29 );                // Display ON
-  APP_LCD_Cmd( 0xF9 );                // Gamma
+  APP_LCD_Cmd( ST7637_DISPON );       // Display ON
+  APP_LCD_Cmd( ST7637_FRAMESET );     // Gamma
   APP_LCD_Data( 0x00 );               //
   APP_LCD_Data( 0x03 );               //
   APP_LCD_Data( 0x05 );               //
@@ -217,15 +247,22 @@ s32 APP_LCD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data)
 {
+  u32 delay;
+
   // Configure Data lines as Output
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RS, Bit_SET );       /* RS = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_SET );       /* RD = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CS_LCD,   CtrlPin_CS, Bit_RESET );     /* CS = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR, Bit_RESET );     /* WR = 0 */
+  PIN_RS(1);
+  PIN_RD(1);
+  PIN_CS(0);
+  PIN_WR(0);
 
   // Write data to the LCD
-  APP_LCD_DataLinesWrite( GPIOx_D_LCD,(u32)data );
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR, Bit_SET );       /* WR = 1 */
+  APP_LCD_D_PORT->ODR = (APP_LCD_D_PORT->ODR & 0xff00) | (u32)data;
+  PIN_WR(0);
+#if 1
+  PIN_WR(1);
+#else
+  for(delay=0; delay<1; ++delay) PIN_WR(1); // memo: fine for 72 MHz, increase delay if display output doesn't work @ higher speeds
+#endif
 
   return 0; // no error
 }
@@ -238,15 +275,18 @@ s32 APP_LCD_Data(u8 data)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Cmd(u8 cmd)
 {
+  u32 delay;
+
   // Configure Data lines as Output
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RS, Bit_RESET );     /* RS = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_SET );       /* RD = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CS_LCD,   CtrlPin_CS, Bit_RESET );     /* CS = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR, Bit_RESET );     /* WR = 0 */
+  PIN_RS(0);
+  PIN_RD(1);
+  PIN_CS(0);
+  PIN_WR(0);
 
   // Write data to the LCD
-  APP_LCD_DataLinesWrite( GPIOx_D_LCD, (u32)cmd );
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR, Bit_SET );       /* WR = 1 */
+  APP_LCD_D_PORT->ODR = (APP_LCD_D_PORT->ODR & 0xff00) | (u32)cmd;
+  PIN_WR(0);
+  for(delay=0; delay<10; ++delay) PIN_WR(1); // memo: fine for 72 MHz, increase delay if display output doesn't work @ higher speeds
 
   return 0; // no error
 }
@@ -368,7 +408,7 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 {
   // coding: G2G1G0B4 B3B2B1B0 R4R3R2R1 R0G5G4G3
-  lcd_bcolour = ((g&0x07)<<13) | (g>>5) | ((b>>3)<<8) | ((r>>3)<<3);
+  lcd_bcolour = ((g&0x07)<<13) | ((g&0x38)>>3) | ((b&0x1f)<<8) | ((r&0x1f)<<3);
 }
 
 
@@ -381,7 +421,7 @@ s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 {
   // coding: G2G1G0B4 B3B2B1B0 R4R3R2R1 R0G5G4G3
-  lcd_fcolour = ((g&0x07)<<13) | (g>>5) | ((b>>3)<<8) | ((r>>3)<<3);
+  lcd_fcolour = ((g&0x07)<<13) | ((g&0x38)>>3) | ((b&0x1f)<<8) | ((r&0x1f)<<3);
 }
 
 
@@ -391,82 +431,6 @@ s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////////
-// Write to control lines
-/////////////////////////////////////////////////////////////////////////////
-void APP_LCD_CtrlLinesWrite(GPIO_TypeDef* GPIOx, u32 CtrlPins, BitAction BitVal)
-{
-  // Set or Reset the control line
-  GPIO_WriteBit(GPIOx, CtrlPins, BitVal);
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Write to data lines
-/////////////////////////////////////////////////////////////////////////////
-void APP_LCD_DataLinesWrite(GPIO_TypeDef* GPIOx, u32 PortVal)
-{
-  // Write only the lowest 8 bits!
-  GPIOx->ODR = ( (GPIOx->ODR) & 0xFF00 ) | (u8)PortVal;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Set data lines to input (0) or output (1)
-/////////////////////////////////////////////////////////////////////////////
-void APP_LCD_DataLinesConfig(u8 output)
-{
-  GPIO_InitTypeDef             GPIO_InitStructure;
-	   
-  GPIO_InitStructure.GPIO_Pin   =  LCD_DATA_PINS;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-  if( output ) {
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  } else{
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  }
-
-  GPIO_Init(GPIOx_D_LCD, &GPIO_InitStructure);
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Check whether LCD is busy or not
-/////////////////////////////////////////////////////////////////////////////
-void APP_LCD_CheckLCDStatus(void)
-{
-  unsigned char ID1;
-  unsigned char ID2;
-  unsigned char ID3;
-
-  APP_LCD_Cmd(ST7637_RDDID);
-
-  // Configure Data lines as Input
-  APP_LCD_DataLinesConfig(0);
-
-  // Start the LCD send data sequence
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RS, Bit_RESET );     /* RS = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_RESET );     /* RD = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CS_LCD,   CtrlPin_CS, Bit_RESET );     /* CS = 0 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_WR, Bit_SET );       /* WR = 1 */
-
-  // Read data to the LCD
-  GPIO_ReadInputData( GPIOx_D_LCD );
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_SET );       /* RD = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_RESET );     /* RD = 0 */
-
-  ID1 = GPIO_ReadInputData(GPIOx_D_LCD);
-
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_SET );       /* RD = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_RESET );     /* RD = 0 */
-
-  ID2 = GPIO_ReadInputData(GPIOx_D_LCD);
-
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_SET );       /* RD = 1 */
-  APP_LCD_CtrlLinesWrite( GPIOx_CTRL_LCD, CtrlPin_RD, Bit_RESET );     /* RD = 0 */
-
-  ID3 = GPIO_ReadInputData(GPIOx_D_LCD);
-
-  APP_LCD_DataLinesConfig(1);
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Define the rectangle for the next command to be applied
