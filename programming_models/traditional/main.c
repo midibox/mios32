@@ -35,8 +35,13 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
+#ifndef MIOS32_DONT_USE_DIN
 static void TASK_DIN_Check(void *pvParameters);
+#endif
+
+#ifndef MIOS32_DONT_USE_MIDI
 static void TASK_MIDI_Receive(void *pvParameters);
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,19 +52,38 @@ int main(void)
   GPIO_InitTypeDef GPIO_InitStructure;
 
   // initialize hardware and MIOS32 modules
+#ifndef MIOS32_DONT_USE_SYS
   MIOS32_SYS_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_SRIO
   MIOS32_SRIO_Init(0);
+#endif
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
   MIOS32_DIN_Init(0);
+#endif
+#if !defined(MIOS32_DONT_USE_DOUT) && !defined(MIOS32_DONT_USE_SRIO)
   MIOS32_DOUT_Init(0);
+#endif
+#if !defined(MIOS32_DONT_USE_ENC) && !defined(MIOS32_DONT_USE_SRIO)
+  MIOS32_ENC_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_MIDI
   MIOS32_MIDI_Init(0); // 0 = blocking mode
+#endif
+#ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_Init(0);
+#endif
 
   // initialize application
   APP_Init();
 
   // start the tasks
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
   xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);
+#endif
+#if !defined(MIOS32_DONT_USE_MIDI)
   xTaskCreate(TASK_MIDI_Receive, (signed portCHAR *)"MIDI_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI_RECEIVE, NULL);
+#endif
 
   // start the scheduler
   vTaskStartScheduler();
@@ -74,17 +98,27 @@ int main(void)
 /////////////////////////////////////////////////////////////////////////////
 void SRIO_ServiceFinish(void)
 {
+#ifndef MIOS32_DONT_USE_SRIO
+
+# ifndef MIOS32_DONT_USE_ENC
+  // update encoder states
+  MIOS32_ENC_UpdateStates();
+# endif
+
   // notify application about finished SRIO scan
   APP_SRIO_ServiceFinish();
+#endif
 }
 
 void vApplicationTickHook(void)
 {
+#ifndef MIOS32_DONT_USE_SRIO
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();
 
   // start next SRIO scan - IRQ notification to SRIO_ServiceFinish()
   MIOS32_SRIO_ScanStart(SRIO_ServiceFinish);
+#endif
 }
 
 
@@ -103,7 +137,7 @@ void vApplicationIdleHook(void)
 /////////////////////////////////////////////////////////////////////////////
 // DIN Handler
 /////////////////////////////////////////////////////////////////////////////
-// checks for toggled DIN pins
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
 static void TASK_DIN_Check(void *pvParameters)
 {
   portTickType xLastExecutionTime;
@@ -116,14 +150,20 @@ static void TASK_DIN_Check(void *pvParameters)
 
     // check for pin changes, call APP_DIN_NotifyToggle on each toggled pin
     MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
+
+    // check for encoder changes, call APP_ENC_NotifyChanged on each change
+# ifndef MIOS32_DONT_USE_ENC
+    MIOS32_ENC_Handler(APP_ENC_NotifyChange);
+# endif
   }
 }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
 // MIDI Handlers
 /////////////////////////////////////////////////////////////////////////////
-
+#ifndef MIOS32_DONT_USE_MIDI
 // checks for incoming MIDI messages
 static void TASK_MIDI_Receive(void *pvParameters)
 {
@@ -142,3 +182,4 @@ static void TASK_MIDI_Receive(void *pvParameters)
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
   }
 }
+#endif

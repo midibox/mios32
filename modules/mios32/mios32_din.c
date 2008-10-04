@@ -213,9 +213,10 @@ s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 //
 // Example: MIOS32_DIN_Handler(DIN_NotifyToggle);
 //          will call
-//          static void DIN_NotifyToggle(u32 pin, u32 value)
+//          void DIN_NotifyToggle(u32 pin, u32 value)
 //          on pin changes
-// OUT: returns -1 on errors
+// IN: pointer to callback function
+// OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_Handler(void *_callback)
 {
