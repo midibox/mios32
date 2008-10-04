@@ -105,7 +105,7 @@ s32 SEQ_LCD_PrintNote(u8 note)
 
   // print "---" if note number is 0
   if( note == 0 )
-    MIOS32_LCD_PrintString("---");
+    printf("---");
   else {
     u8 octave = 0;
 
@@ -164,13 +164,11 @@ s32 SEQ_LCD_PrintGatelength(u8 len)
   };
 
   if( len < 24 ) { // gatelength
-    MIOS32_LCD_PrintString(len_tab[len]);
+    printf(len_tab[len]);
   } else if( len < 32 ) { // gilde
-    MIOS32_LCD_PrintString("Gld.");
+    printf("Gld.");
   } else { // multi trigger
-    char tmp[5];
-    sprintf(tmp, "%1dx%2d", (len>>5)+1, (len&0x1f)+1);
-    MIOS32_LCD_PrintString(tmp);
+    printf("%1dx%2d", (len>>5)+1, (len&0x1f)+1);
   }
 
   return 0; // no error
@@ -202,7 +200,7 @@ s32 SEQ_LCD_PrintParLayer(u8 layer)
 
   MIOS32_LCD_PrintChar('A' + layer);
   MIOS32_LCD_PrintChar(':');
-  MIOS32_LCD_PrintString(selected_par_layer[layer]);
+  printf(selected_par_layer[layer]);
 
   return 0; // no error
 }
@@ -217,7 +215,7 @@ s32 SEQ_LCD_PrintTrgLayer(u8 layer)
 
   MIOS32_LCD_PrintChar('A' + layer);
   MIOS32_LCD_PrintChar(':');
-  MIOS32_LCD_PrintString(selected_trg_layer[layer]);
+  printf(selected_trg_layer[layer]);
 
   return 0; // no error
 }
@@ -228,7 +226,7 @@ s32 SEQ_LCD_PrintTrgLayer(u8 layer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintMIDIPort(u8 port)
 {
-  MIOS32_LCD_PrintString("Def.");
+  printf("Def.");
 
   return 0; // no error
 }
@@ -239,10 +237,8 @@ s32 SEQ_LCD_PrintMIDIPort(u8 port)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintStepView(u8 step_view)
 {
-  char tmp[7];
 
-  sprintf(tmp, "S%2d-%2d", (step_view*16)+1, (step_view+1)*16);
-  MIOS32_LCD_PrintString(tmp);
+  printf("S%2d-%2d", (step_view*16)+1, (step_view+1)*16);
 
   return 0; // no error
 }
@@ -253,10 +249,7 @@ s32 SEQ_LCD_PrintStepView(u8 step_view)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintSelectedStep(u8 step_sel, u8 step_max)
 {
-  char tmp[7];
-
-  sprintf(tmp, "%3d/%2d", step_sel+1, step_max+1);
-  MIOS32_LCD_PrintString(tmp);
+  printf("%3d/%2d", step_sel+1, step_max+1);
 
   return 0; // no error
 }
