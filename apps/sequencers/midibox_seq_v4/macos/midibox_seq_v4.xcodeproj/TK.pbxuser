@@ -37,16 +37,42 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 244855454;
-			PBXWorkspaceStateSaveDate = 244855454;
+			PBXPerProjectTemplateStateSaveDate = 244855642;
+			PBXWorkspaceStateSaveDate = 244855642;
 		};
 		perUserProjectItems = {
-			52E1E4A50E9832A1004DC476 /* PBXBookmark */ = 52E1E4A50E9832A1004DC476 /* PBXBookmark */;
+			52066E720E98346000861688 /* PBXBookmark */ = 52066E720E98346000861688 /* PBXBookmark */;
+			52066E8A0E98359F00861688 /* PBXTextBookmark */ = 52066E8A0E98359F00861688 /* PBXTextBookmark */;
+			52066E8B0E98359F00861688 /* PBXTextBookmark */ = 52066E8B0E98359F00861688 /* PBXTextBookmark */;
 			52E1E4B10E9832EC004DC476 /* PBXTextBookmark */ = 52E1E4B10E9832EC004DC476 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 522A0DA80E8FE5580084B1EE /* Source Control */;
 		userBuildSettings = {
 		};
+	};
+	52066E720E98346000861688 /* PBXBookmark */ = {
+		isa = PBXBookmark;
+		fRef = 522A10A10E91067D0084B1EE /* mios32.h */;
+	};
+	52066E8A0E98359F00861688 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 522A10A10E91067D0084B1EE /* mios32.h */;
+		name = "mios32.h: 86";
+		rLen = 0;
+		rLoc = 2642;
+		rType = 0;
+		vrLen = 1021;
+		vrLoc = 2197;
+	};
+	52066E8B0E98359F00861688 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 522A0DB70E8FE5B90084B1EE /* UI.m */;
+		name = "UI.m: 115";
+		rLen = 0;
+		rLoc = 2034;
+		rType = 0;
+		vrLen = 612;
+		vrLoc = 1781;
 	};
 	522A0DA10E8FE5490084B1EE /* midibox_seq_v4 */ = {
 		isa = PBXExecutable;
@@ -111,25 +137,26 @@
 	};
 	522A0DB60E8FE5B90084B1EE /* UI.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1026, 1512}}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 1540}}";
 			sepNavSelRange = "{2618, 0}";
-			sepNavVisRange = "{1731, 892}";
+			sepNavVisRange = "{803, 961}";
 			sepNavWindowFrame = "{{44, 102}, {1085, 646}}";
 		};
 	};
 	522A0DB70E8FE5B90084B1EE /* UI.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1026, 4326}}";
-			sepNavSelRange = "{5820, 0}";
-			sepNavVisRange = "{7477, 891}";
-			sepNavWindowFrame = "{{110, 100}, {1085, 646}}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 5250}}";
+			sepNavSelRange = "{2034, 0}";
+			sepNavVisRange = "{1781, 612}";
+			sepNavWindowFrame = "{{295, 39}, {1085, 646}}";
 		};
 	};
 	522A10A10E91067D0084B1EE /* mios32.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {439, 1302}}";
-			sepNavSelRange = "{2882, 0}";
-			sepNavVisRange = "{1978, 463}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 1526}}";
+			sepNavSelRange = "{2642, 0}";
+			sepNavVisRange = "{2197, 1021}";
+			sepNavWindowFrame = "{{19, 227}, {1085, 646}}";
 		};
 	};
 	522A10A30E91068F0084B1EE /* seq_demo.c */ = {
@@ -185,10 +212,6 @@
 			sepNavVisRange = "{1067, 940}";
 			sepNavWindowFrame = "{{308, 183}, {1085, 646}}";
 		};
-	};
-	52E1E4A50E9832A1004DC476 /* PBXBookmark */ = {
-		isa = PBXBookmark;
-		fRef = 522A0DB70E8FE5B90084B1EE /* UI.m */;
 	};
 	52E1E4B10E9832EC004DC476 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;

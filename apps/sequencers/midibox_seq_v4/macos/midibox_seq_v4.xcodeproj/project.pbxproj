@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		52066E870E98356A00861688 /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52066E860E98356A00861688 /* printf-stdarg.c */; };
 		522A0DB40E8FE5AB0084B1EE /* CLCDView.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB20E8FE5AB0084B1EE /* CLCDView.m */; };
 		522A0DB50E8FE5AB0084B1EE /* CLCDView_charset.inc in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */; };
 		522A0DB80E8FE5B90084B1EE /* UI.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB70E8FE5B90084B1EE /* UI.m */; };
@@ -29,6 +30,7 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* midibox_seq_v4_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = midibox_seq_v4_Prefix.pch; sourceTree = "<group>"; };
+		52066E860E98356A00861688 /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "printf-stdarg.c"; sourceTree = "<group>"; };
 		522A0DB10E8FE5AB0084B1EE /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CLCDView.h; sourceTree = "<group>"; };
 		522A0DB20E8FE5AB0084B1EE /* CLCDView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLCDView.m; sourceTree = "<group>"; };
 		522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = CLCDView_charset.inc; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52066E860E98356A00861688 /* printf-stdarg.c */,
 				522A12290E9137B50084B1EE /* srio_mapping.h */,
 				522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */,
 				522A10A10E91067D0084B1EE /* mios32.h */,
@@ -211,6 +214,7 @@
 				522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */,
 				52A74F1A0E92701800D65394 /* SEQButton.m in Sources */,
 				52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */,
+				52066E870E98356A00861688 /* printf-stdarg.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

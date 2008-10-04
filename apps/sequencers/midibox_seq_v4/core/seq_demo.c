@@ -109,12 +109,9 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if 0
   // for debugging
-  char tmp[128];
-
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
-  sprintf(tmp, "Pin %3d = %d", pin, pin_value);
-  MIOS32_LCD_PrintString(tmp);
+  printf("Pin %3d = %d", pin, pin_value);
 #else
 
 #if 0
@@ -430,8 +427,7 @@ void APP_Background(void)
     SEQ_LCD_PrintParLayer(selected_par_layer);
     SEQ_LCD_PrintSpaces(1);
   
-    sprintf(tmp, "Chn%2d", midi_channel);
-    MIOS32_LCD_PrintString(tmp);
+    printf("Chn%2d", midi_channel);
     MIOS32_LCD_PrintChar('/');
     SEQ_LCD_PrintMIDIPort(midi_port);
     SEQ_LCD_PrintSpaces(1);
@@ -445,7 +441,7 @@ void APP_Background(void)
     MIOS32_LCD_DeviceSet(1);
     MIOS32_LCD_CursorSet(0, 0);
   
-    MIOS32_LCD_PrintString("Step");
+    printf("Step");
     SEQ_LCD_PrintSelectedStep(selected_step, 15);
     MIOS32_LCD_PrintChar(':');
   
@@ -453,15 +449,14 @@ void APP_Background(void)
     MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][selected_step] >> 4);
     SEQ_LCD_PrintSpaces(1);
   
-    sprintf(tmp, "Vel:%3d", par_layer_value[visible_track][1][selected_step]);
-    MIOS32_LCD_PrintString(tmp);
+    printf("Vel:%3d", par_layer_value[visible_track][1][selected_step]);
     SEQ_LCD_PrintSpaces(1);
-  
-    MIOS32_LCD_PrintString("Len:");
+
+    printf("Len:");
     SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][selected_step]);
     SEQ_LCD_PrintSpaces(1);
   
-    MIOS32_LCD_PrintString("G-a-r--");
+    printf("G-a-r--");
   
     ///////////////////////////////////////////////////////////////////////////
     MIOS32_LCD_DeviceSet(0);
@@ -488,16 +483,16 @@ void APP_Background(void)
   	  SEQ_LCD_PrintNote(note);
   	  MIOS32_LCD_PrintChar((char)vel >> 4);
   	} else {
-  	  MIOS32_LCD_PrintString("----");
+	  printf("----");
   	}
   	break;
   
         case 2: // Gatelength
-  	// TODO: print length like on real hardware (length bars)
-  	SEQ_LCD_PrintGatelength(len);
-  	break;
+	  // TODO: print length like on real hardware (length bars)
+	  SEQ_LCD_PrintGatelength(len);
+	  break;
         default:
-  	MIOS32_LCD_PrintString("????");
+	  printf("????");
       }
   
       MIOS32_LCD_PrintChar(
