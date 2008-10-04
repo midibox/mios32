@@ -18,10 +18,6 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEFAULT_GP_DIN_SR_L     7       // first GP DIN shift register assigned to SR#7
-#define DEFAULT_GP_DIN_SR_R     10      // second GP DIN shift register assigned to SR#10
-
-
 #define DEFAULT_GP_DOUT_SR_L    3       // first GP DOUT shift register assigned to SR#3
 #define DEFAULT_GP_DOUT_SR_R    4       // second GP DOUT shift register assigned to SR#4
 
@@ -116,6 +112,23 @@
 #define BUTTON_SOLO      (((4    -1)<<3)+    4)
 #define BUTTON_FAST      (((4    -1)<<3)+    5)
 #define BUTTON_ALL       (((4    -1)<<3)+    6)
+
+#define BUTTON_GP1       (((7    -1)<<3)+    0)
+#define BUTTON_GP2       (((7    -1)<<3)+    1)
+#define BUTTON_GP3       (((7    -1)<<3)+    2)
+#define BUTTON_GP4       (((7    -1)<<3)+    3)
+#define BUTTON_GP5       (((7    -1)<<3)+    4)
+#define BUTTON_GP6       (((7    -1)<<3)+    5)
+#define BUTTON_GP7       (((7    -1)<<3)+    6)
+#define BUTTON_GP8       (((7    -1)<<3)+    7)
+#define BUTTON_GP9       (((10   -1)<<3)+    0)
+#define BUTTON_GP10      (((10   -1)<<3)+    1)
+#define BUTTON_GP11      (((10   -1)<<3)+    2)
+#define BUTTON_GP12      (((10   -1)<<3)+    3)
+#define BUTTON_GP13      (((10   -1)<<3)+    4)
+#define BUTTON_GP14      (((10   -1)<<3)+    5)
+#define BUTTON_GP15      (((10   -1)<<3)+    6)
+#define BUTTON_GP16      (((10   -1)<<3)+    7)
 
 #define BUTTON_GROUP1    (((13   -1)<<3)+    0)
 #define BUTTON_GROUP2    (((13   -1)<<3)+    1)

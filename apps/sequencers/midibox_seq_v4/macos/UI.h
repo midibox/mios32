@@ -104,4 +104,6 @@ IBOutlet NSButton *buttonFwd;
 
 }
 
+- (void)backgroundTask:(NSTimer *)aTimer;
+
 @end

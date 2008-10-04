@@ -90,10 +90,10 @@ u8 MIOS32_LCD_DeviceGet(void)
 	return selectedLCD;
 }
 
-s32 MIOS32_LCD_CursorSet(u16 line, u16 column)
+s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
 {
-	[LCD[selectedLCD] setLCDCursorY:line];
 	[LCD[selectedLCD] setLCDCursorX:column];
+	[LCD[selectedLCD] setLCDCursorY:line];
 	
 	return 0; // no error
 }
@@ -229,6 +229,35 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 
 
 //////////////////////////////////////////////////////////////////////////////
+// Stubs for Board specific functions
+//////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_LED_Init(u32 leds)
+{
+	return -1; // not implemented
+}
+
+s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
+{
+	return -1; // not implemented
+}
+
+u32 MIOS32_BOARD_LED_Get(void)
+{
+	return 0; // not implemented, return all-zero
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// The background task
+// called each mS - in MIOS32 it's called whenever nothing else is to do
+//////////////////////////////////////////////////////////////////////////////
+- (void)backgroundTask:(NSTimer *)aTimer
+{
+	APP_Background();
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // init local variables
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
@@ -297,6 +326,10 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 	
 	// call init function of application
 	Init(0);
+	
+	// install background task for all modes
+	NSTimer *timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer forMode: NSRunLoopCommonModes];
 }
 
 @end
