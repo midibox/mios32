@@ -403,7 +403,7 @@ s32 APP_LCD_WaitUnbusy(void)
 
   // poll busy flag, timeout after 10 mS
   // each loop takes ca. 4 uS @ 72MHz, accordingly we poll 2500 times
-  for(poll_ctr=2500; poll_ctr>0; ++poll_ctr) {
+  for(poll_ctr=2500; poll_ctr>0; --poll_ctr) {
     APP_LCD_Strobe(1);
 
     // due to slow slope we should wait at least for 1 uS
