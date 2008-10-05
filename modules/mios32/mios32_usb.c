@@ -218,9 +218,9 @@ u8 non_blocking_mode;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_Init(u32 mode)
 {
-  u8 i;
-
   GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_StructInit(&GPIO_InitStructure);
+  u8 i;
 
   switch( mode ) {
     case 0:
@@ -239,14 +239,33 @@ s32 MIOS32_USB_Init(u32 mode)
   buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
   buffer_tx_busy = 0; // buffer is busy so long no USB connection detected
 
+
 #ifdef _STM32_PRIMER_
   // configure USB disconnect pin
   // STM32 Primer: pin B12
-  GPIO_StructInit(&GPIO_InitStructure);
+  // first we hold it low for ca. 50 mS to force a re-enumeration
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+  u32 delay;
+  for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
+    GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
+
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+#else
+  // using a "dirty" method to force a re-enumeration:
+  // force DPM (Pin PA12) low for ca. 10 mS before USB Tranceiver will be enabled
+  // this overrules the external Pull-Up at PA12, and at least Windows & MacOS will enumerate again
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  u32 delay;
+  for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
+    GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 #endif
 
   // remaining initialisation done in STM32 USB driver
@@ -474,6 +493,7 @@ void MIOS32_USB_EP1_OUT_Callback(void)
 // init routine
 void MIOS32_USB_CB_Init(void)
 {
+  u32 delay;
   u16 wRegVal;
 
   pInformation->Current_Configuration = 0;
@@ -484,12 +504,21 @@ void MIOS32_USB_CB_Init(void)
   wRegVal = CNTR_FRES;
   _SetCNTR(wRegVal);
 
+  // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
+  for(delay=0; delay<100; ++delay); // should be more than sufficient
+
   // CNTR_FRES = 0
   wInterrupt_Mask = 0;
   _SetCNTR(wInterrupt_Mask);
 
   // Clear pending interrupts
   _SetISTR(0);
+
+  // Configure USB clock
+  // USBCLK = PLLCLK / 1.5
+  RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
+  // Enable USB clock
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
 
   // Set interrupt mask
   wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;

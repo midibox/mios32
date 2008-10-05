@@ -90,14 +90,6 @@ s32 MIOS32_SYS_Init(u32 mode)
   // Configure HCLK clock as SysTick clock source
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
 
-  // Configure USB clock
-#if !defined(MIOS32_DONT_USE_USB)
-  // USBCLK = PLLCLK / 1.5
-  RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
-  // Enable USB clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
-#endif
-
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;
 }
