@@ -50,48 +50,14 @@
 #define MIOS32_MIDI_PORT_USB5         0x05
 #define MIOS32_MIDI_PORT_USB6         0x06
 #define MIOS32_MIDI_PORT_USB7         0x07
-#define MIOS32_MIDI_PORT_USB8         0x08
-#define MIOS32_MIDI_PORT_USB9         0x09
-#define MIOS32_MIDI_PORT_USB10        0x0a
-#define MIOS32_MIDI_PORT_USB11        0x0b
-#define MIOS32_MIDI_PORT_USB12        0x0c
-#define MIOS32_MIDI_PORT_USB13        0x0d
-#define MIOS32_MIDI_PORT_USB14        0x0e
-#define MIOS32_MIDI_PORT_USB15        0x0f
 
 #define MIOS32_MIDI_PORT_UART0        0x10
 #define MIOS32_MIDI_PORT_UART1        0x11
-#define MIOS32_MIDI_PORT_UART2        0x12
-#define MIOS32_MIDI_PORT_UART3        0x13
-#define MIOS32_MIDI_PORT_UART4        0x14
-#define MIOS32_MIDI_PORT_UART5        0x15
-#define MIOS32_MIDI_PORT_UART6        0x16
-#define MIOS32_MIDI_PORT_UART7        0x17
-#define MIOS32_MIDI_PORT_UART8        0x18
-#define MIOS32_MIDI_PORT_UART9        0x19
-#define MIOS32_MIDI_PORT_UART10       0x1a
-#define MIOS32_MIDI_PORT_UART11       0x1b
-#define MIOS32_MIDI_PORT_UART12       0x1c
-#define MIOS32_MIDI_PORT_UART13       0x1d
-#define MIOS32_MIDI_PORT_UART14       0x1e
-#define MIOS32_MIDI_PORT_UART15       0x1f
 
 #define MIOS32_MIDI_PORT_IIC0         0x20
 #define MIOS32_MIDI_PORT_IIC1         0x21
 #define MIOS32_MIDI_PORT_IIC2         0x22
 #define MIOS32_MIDI_PORT_IIC3         0x23
-#define MIOS32_MIDI_PORT_IIC4         0x24
-#define MIOS32_MIDI_PORT_IIC5         0x25
-#define MIOS32_MIDI_PORT_IIC6         0x26
-#define MIOS32_MIDI_PORT_IIC7         0x27
-#define MIOS32_MIDI_PORT_IIC8         0x28
-#define MIOS32_MIDI_PORT_IIC9         0x29
-#define MIOS32_MIDI_PORT_IIC10        0x2a
-#define MIOS32_MIDI_PORT_IIC11        0x2b
-#define MIOS32_MIDI_PORT_IIC12        0x2c
-#define MIOS32_MIDI_PORT_IIC13        0x2d
-#define MIOS32_MIDI_PORT_IIC14        0x2e
-#define MIOS32_MIDI_PORT_IIC15        0x2f
 
 
 /////////////////////////////////////////////////////////////////////////////
