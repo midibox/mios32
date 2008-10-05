@@ -159,7 +159,7 @@ void (* const g_pfnVectors[])(void) =
   I2C1_ER_IRQHandler,
   I2C2_EV_IRQHandler,
   I2C2_ER_IRQHandler,
-  MIOS32_SRIO_SPI_IRQHandler, // SPI1_IRQHandler,
+  SPI1_IRQHandler,
   SPI2_IRQHandler,
   USART1_IRQHandler,
   USART2_IRQHandler,

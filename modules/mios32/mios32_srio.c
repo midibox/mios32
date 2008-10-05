@@ -21,6 +21,7 @@
 #if !defined(MIOS32_DONT_USE_SRIO)
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Pin definitions (tmp. for STM32 Primer board)
 /////////////////////////////////////////////////////////////////////////////
@@ -50,24 +51,37 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
+// Note that also the bits are in reversed order compared to PIC based MIOS
 volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
-volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
-volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
-// during SRIO scan it is required to copy new DIN values/change notifiers into a temporary buffer
+// DIN values of last scan
+volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
+
+// DIN values of ongoing scan
+// Note: during SRIO scan it is required to copy new DIN values/change notifiers into a temporary buffer
 // to avoid that a task already takes a new DIN value before the whole chain has been scanned
 // (e.g. relevant for encoder handler: it has to clear the changed flags, so that the DIN handler doesn't take the value)
 volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
-volatile u8 mios32_srio_din_changed_buffer[MIOS32_SRIO_NUM_SR];
+
+// change notification flags
+volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
+
+// transfer state
+volatile u8 srio_values_transfered;
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+void MIOS32_SRIO_DMA_Init(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 srio_irq_state;
-
 void (*srio_scan_finished_hook)(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes SPI pins and peripheral
@@ -83,6 +97,8 @@ s32 MIOS32_SRIO_Init(u32 mode)
   SPI_InitTypeDef  SPI_InitStructure;
   GPIO_InitTypeDef GPIO_InitStructure;
   NVIC_InitTypeDef NVIC_InitStructure;
+  DMA_InitTypeDef  DMA_InitStructure;
+
 
   // disable notification hook
   srio_scan_finished_hook = NULL;
@@ -95,11 +111,10 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
   // we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
   for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
-    mios32_srio_dout[i] = 0;
-    mios32_srio_din[i] = 0xff; // passive state
-    mios32_srio_din_changed[i] = 0;
-    mios32_srio_din_buffer[i] = 0xff; // passive state
-    mios32_srio_din_changed_buffer[i] = 0;
+    mios32_srio_dout[i] = 0x00;       // passive state (LEDs off)
+    mios32_srio_din[i] = 0xff;        // passive state (Buttons depressed)
+    mios32_srio_din_buffer[i] = 0xff; // passive state (Buttons depressed)
+    mios32_srio_din_changed[i] = 0;   // no change
   }
 
   // init GPIO structure
@@ -145,16 +160,56 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // initial state of RCLK
   PIN_RCLK_1;
 
-  // start with initial state
-  srio_irq_state = 0xff;
 
-  // Configure and enable SPI1 interrupt
+  // enable DMA1 clock
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+
+  // DMA Configuration for SPI Rx Event @ Channel 2
+  DMA_StructInit(&DMA_InitStructure);
+  DMA_ClearFlag(DMA1_FLAG_TC2 | DMA1_FLAG_TE2 | DMA1_FLAG_HT2 | DMA1_FLAG_GL2);
+  DMA_Cmd(DMA1_Channel2, DISABLE);
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&SPI1->DR;
+  DMA_InitStructure.DMA_MemoryBaseAddr = (u32)&mios32_srio_din_buffer;
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+  DMA_InitStructure.DMA_BufferSize = MIOS32_SRIO_NUM_SR;
+  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+  DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+  DMA_Init(DMA1_Channel2, &DMA_InitStructure);
+  DMA_Cmd(DMA1_Channel2, ENABLE);
+
+  // trigger interrupt when transfer complete
+  DMA_ITConfig(DMA1_Channel2, DMA_IT_TC, ENABLE);
+
+  // DMA Configuration for SPI Tx Event @ Channel 3
+  // (partly re-using previous DMA setup)
+  DMA_ClearFlag(DMA1_FLAG_TC3 | DMA1_FLAG_TE3 | DMA1_FLAG_HT3 | DMA1_FLAG_GL3);
+  DMA_Cmd(DMA1_Channel3, DISABLE);
+  DMA_InitStructure.DMA_MemoryBaseAddr = (u32)&mios32_srio_dout;
+  DMA_InitStructure.DMA_BufferSize = MIOS32_SRIO_NUM_SR;
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_Init(DMA1_Channel3, &DMA_InitStructure);
+  DMA_Cmd(DMA1_Channel3, ENABLE);
+
+  // enable SPI1 interrupts to DMA
+  SPI_I2S_DMACmd(SPI1, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
+
+  // Configure and enable DMA interrupt
   NVIC_StructInit(&NVIC_InitStructure);
-  NVIC_InitStructure.NVIC_IRQChannel = SPI1_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel2_IRQChannel;
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
+
+  // notify that SRIO values have been transfered
+  // (cleared on each ScanStart, set on each DMA IRQ invokation for proper synchronisation)
+  srio_values_transfered = 1;
 
   return 0;
 }
@@ -176,18 +231,14 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 #endif
 
   // exit if previous stream hasn't been sent yet (no additional transfer required)
-  if( srio_irq_state != 0xff )
+  // THIS IS A FAILSAVE MEASURE ONLY!
+  // should never happen if MIOS32_SRIO_ScanStart is called each mS
+  // the transfer itself takes ca. 225 uS (if 16 SRIOs are scanned)
+  if( !srio_values_transfered )
     return -2; // notify this special scenario - we could retry here
 
-  // disable SPI1 RXNE interrupt
-  SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
-
-  // just for the case that there is an ongoing transfer (should be avoided by calling this routine each mS)
-  // loop while DR register in not empty
-  while( SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET );
-
-  // reset IRQ state
-  srio_irq_state = 0;
+  // notify that new values have to be transfered
+  srio_values_transfered = 0;
 
   // change notification function
   srio_scan_finished_hook = _notify_hook;
@@ -201,77 +252,57 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   for(delay=0; delay<5; ++delay) PIN_RCLK_0;
   PIN_RCLK_1;
 
-  // Enable SPI1 RXNE interrupt
-  SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, ENABLE);
+  // reload DMA byte counters
+  DMA_Cmd(DMA1_Channel2, DISABLE);
+  DMA1_Channel2->CNDTR = MIOS32_SRIO_NUM_SR;
+  DMA_Cmd(DMA1_Channel2, ENABLE);
+
+  DMA_Cmd(DMA1_Channel3, DISABLE);
+  DMA1_Channel3->CNDTR = MIOS32_SRIO_NUM_SR;
+  DMA_Cmd(DMA1_Channel3, ENABLE);
 
   // send first byte
-  SPI_I2S_SendData(SPI1, mios32_srio_dout[MIOS32_SRIO_NUM_SR-1]);
+  // MEMO: it isn't really clear to me yet, why DMA Channel 3 (Tx event) has to be configured for the 
+  // full number of bytes, and with "DMA_MemoryBaseAddr = (u32)&mios32_srio_dout" (0 offset), although
+  // the first byte is send here (I already checked with a scope, that only MIOS32_SRIO_NUM_SR bytes are sent)
+  SPI_I2S_SendData(SPI1, mios32_srio_dout[0]);
 
   return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// SPI IRQ Handler which scans the SRIO chain
+// DMA1 Channel2 interrupt is triggered once the complete SRIO chain
+// has been scanned
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_SRIO_SPI_IRQHandler(void)
+void DMAChannel2_IRQHandler(void)
 {
-  // if RXNE event has been triggered
-  if( SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) != RESET ) {
-    u8 b;
+  s32 i;
+  volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
 
-    // get byte
-    b = SPI_I2S_ReceiveData(SPI1);
+  // clear the pending flag
+  DMA_ClearITPendingBit(DMA1_IT_TC2);
 
-    if( srio_irq_state != 0xff ) { // 0xff should never be reached here - just to ensure
-      // notify changes
-      mios32_srio_din_changed_buffer[srio_irq_state] = mios32_srio_din_buffer[srio_irq_state] ^ b;
+  // notify that new values have been transfered
+  srio_values_transfered = 1;
 
-      // store new pin states
-      mios32_srio_din_buffer[srio_irq_state] = b;
+  // latch DOUT registers by pulsing RCLK: 1->0->1
+  PIN_RCLK_0;
+  // TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
+  for(delay=0; delay<5; ++delay)	PIN_RCLK_0;
+  PIN_RCLK_1;
 
-      // increment state
-      ++srio_irq_state;
-
-      // last byte received?
-      if( srio_irq_state >= MIOS32_SRIO_NUM_SR ) {
-	volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
-
-	// notify that stream has been completely send
-	srio_irq_state = 0xff;
-
-	// copy/or buffered DIN values/changed flags
-	s32 i;
-	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
-	  mios32_srio_din[i] = mios32_srio_din_buffer[i];
-	  mios32_srio_din_changed[i] |= mios32_srio_din_changed_buffer[i];
-	}
-
-	// disable SPI1 RXNE interrupt
-	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, DISABLE);
-
-	// latch DOUT registers by pulsing RCLK: 1->0->1
-	PIN_RCLK_0;
-	// TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
-	for(delay=0; delay<5; ++delay)	PIN_RCLK_0;
-	PIN_RCLK_1;
-
-	// call user specific hook if requested
-	if( srio_scan_finished_hook != NULL )
-	  srio_scan_finished_hook();
-
-	// next transfer has to be started with MIOS32_SRIO_ScanStart
-      } else {
-	// loop while DR register in not empty
-	while( SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET );
-
-	// send next byte
-	// TODO: we could use DMA transfers for send/receive data later, and process
-	// the incoming data once the stream has been sent to offload the CPU
-	SPI_I2S_SendData(SPI1, mios32_srio_dout[MIOS32_SRIO_NUM_SR-srio_irq_state-1]);
-      }
-    }
+  // copy/or buffered DIN values/changed flags
+  for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+    mios32_srio_din_changed[i] |= mios32_srio_din[i] ^ mios32_srio_din_buffer[i];
+    mios32_srio_din[i] = mios32_srio_din_buffer[i];
   }
+
+  // call user specific hook if requested
+  if( srio_scan_finished_hook != NULL )
+    srio_scan_finished_hook();
+
+  // next transfer has to be started with MIOS32_SRIO_ScanStart
 }
 
 #endif /* MIOS32_DONT_USE_SRIO */
