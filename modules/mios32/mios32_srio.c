@@ -256,11 +256,7 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   DMA1_Channel3->CNDTR = MIOS32_SRIO_NUM_SR;
   DMA_Cmd(DMA1_Channel3, ENABLE);
 
-  // send first byte
-  // MEMO: it isn't really clear to me yet, why DMA Channel 3 (Tx event) has to be configured for the 
-  // full number of bytes, and with "DMA_MemoryBaseAddr = (u32)&mios32_srio_dout" (0 offset), although
-  // the first byte is send here (I already checked with a scope, that only MIOS32_SRIO_NUM_SR bytes are sent)
-  SPI_I2S_SendData(SPI1, mios32_srio_dout[0]);
+  // transfer will start now ("empty buffer" event already active)
 
   return 0;
 }
