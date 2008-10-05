@@ -66,7 +66,8 @@ s32 MIOS32_DOUT_PinGet(u32 pin)
   if( pin/8 >= MIOS32_SRIO_NUM_SR )
     return -1;
 
-  return (mios32_srio_dout[pin >> 3] & (1 << (pin&7))) ? 1 : 0;
+  // NOTE: DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
+  return (mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] & (1 << (pin&7))) ? 1 : 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,9 +82,9 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
     return -1;
 
   if( value )
-    mios32_srio_dout[pin >> 3] |= (u8)(1 << (pin&7));
+    mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] |= (u8)(1 << (pin&7));
   else
-    mios32_srio_dout[pin >> 3] &= ~(u8)(1 << (pin&7));
+    mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] &= ~(u8)(1 << (pin&7));
 
   return 0;
 }
@@ -99,7 +100,7 @@ s32 MIOS32_DOUT_SRGet(u32 sr)
   if( sr >= MIOS32_SRIO_NUM_SR )
     return -1;
 
-  return mios32_srio_dout[sr];
+  return mios32_srio_dout[MIOS32_SRIO_NUM_SR - sr - 1];
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -113,7 +114,7 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
   if( sr >= MIOS32_SRIO_NUM_SR )
     return -1;
 
-  mios32_srio_dout[sr] = value;
+  mios32_srio_dout[MIOS32_SRIO_NUM_SR - sr - 1] = value;
 
   return 0;
 }

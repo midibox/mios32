@@ -28,22 +28,28 @@
 
 /* Comment the line below to disable the specific peripheral inclusion */
 /************************************* ADC ************************************/
-//#define _ADC
-//#define _ADC1
-//#define _ADC2
+#define _ADC
+#define _ADC1
+#define _ADC2
 
 /************************************* CAN ************************************/
-//#define _CAN
+#define _CAN
 
 /************************************* DMA ************************************/
-//#define _DMA
-#define _DMA_Channel1
-#define _DMA_Channel2
-#define _DMA_Channel3
-#define _DMA_Channel4
-#define _DMA_Channel5
-#define _DMA_Channel6
-#define _DMA_Channel7
+#define _DMA
+#define _DMA1_Channel1
+#define _DMA1_Channel2
+#define _DMA1_Channel3
+#define _DMA1_Channel4
+#define _DMA1_Channel5
+#define _DMA1_Channel6
+#define _DMA1_Channel7
+#define _DMA2_Channel1
+#define _DMA2_Channel2
+#define _DMA2_Channel3
+#define _DMA2_Channel4
+#define _DMA2_Channel5
+
 
 /************************************* EXTI ***********************************/
 //#define _EXTI
@@ -68,9 +74,9 @@
 #define _AFIO
 
 /************************************* I2C ************************************/
-//#define _I2C
-//#define _I2C1
-//#define _I2C2
+#define _I2C
+#define _I2C1
+#define _I2C2
 
 /************************************* IWDG ***********************************/
 //#define _IWDG
@@ -94,25 +100,25 @@
 /************************************* SPI ************************************/
 #define _SPI
 #define _SPI1
-//#define _SPI2
+#define _SPI2
 
 /************************************* SysTick ********************************/
 #define _SysTick
 
 /************************************* TIM1 ***********************************/
-//#define _TIM1
+#define _TIM1
 
 /************************************* TIM ************************************/
 #define _TIM
-//#define _TIM2
-//#define _TIM3
-//#define _TIM4
+#define _TIM2
+#define _TIM3
+#define _TIM4
 
 /************************************* USART **********************************/
-//#define _USART
-//#define _USART1
-//#define _USART2
-//#define _USART3
+#define _USART
+#define _USART1
+#define _USART2
+#define _USART3
 
 /************************************* WWDG ***********************************/
 //#define _WWDG

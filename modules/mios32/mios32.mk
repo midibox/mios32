@@ -23,6 +23,7 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
 	$(DRIVER_LIB)/src/stm32f10x_spi.c \
+	$(DRIVER_LIB)/src/stm32f10x_dma.c \
 	$(DRIVER_LIB)/src/stm32f10x_rcc.c \
 	$(DRIVER_LIB)/src/stm32f10x_systick.c \
 	$(DRIVER_LIB)/src/stm32f10x_nvic.c \
