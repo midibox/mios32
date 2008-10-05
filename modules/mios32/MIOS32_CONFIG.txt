@@ -36,7 +36,7 @@ into your local mios32_config.h file
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
 #define MIOS32_USB_DESC_USE_AC_INTERFACE 1
 
-// allowed number of USB MIDI ports: 1..5
+// allowed number of USB MIDI ports: 1..8
 #define MIOS32_USB_DESC_NUM_PORTS 1
 
 // buffer size (should be at least >= MIOS32_USB_DESC_DATA_*_SIZE/4)

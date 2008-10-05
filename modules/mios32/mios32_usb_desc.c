@@ -126,10 +126,11 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
 #endif
   0x00,				// revision of this class specification (LSB)
   0x01,				// revision of this class specification (MSB)
-				// Total size of class-specific descriptors (LSB)
-  7+MIOS32_USB_DESC_NUM_PORTS*(6+6+9+9)+9+(4+MIOS32_USB_DESC_NUM_PORTS)+9+(4+MIOS32_USB_DESC_NUM_PORTS),
-  0,				// Total size of class-specific descriptors (MSB)
+  (u8)(MIOS32_USB_DESC_SIZ_CLASS_DESC & 0xff), // Total size of class-specific descriptors (LSB)
+  (u8)(MIOS32_USB_DESC_SIZ_CLASS_DESC >> 8),   // Total size of class-specific descriptors (MSB)
 
+
+#if MIOS32_USB_DESC_NUM_PORTS >= 1
   // MIDI IN Jack Descriptor (Embedded)
   6,				// Descriptor length
   CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
@@ -167,6 +168,7 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
   0x01,				// ID of the entity to which this pin is connected
   0x01,				// Output Pin number of the entity to which this input pin is connected
   0x00,				// unused
+#endif
 
 
 #if MIOS32_USB_DESC_NUM_PORTS >= 2
@@ -333,6 +335,129 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
 #endif
 
 
+#if MIOS32_USB_DESC_NUM_PORTS >= 6
+  // Sixth MIDI IN Jack Descriptor (Embedded)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x01,				// EMBEDDED
+  0x15,				// ID of this jack
+  0x00,				// unused
+
+  // Sixth MIDI Adapter MIDI IN Jack Descriptor (External)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x02,				// EXTERNAL
+  0x16,				// ID of this jack
+  0x00,				// unused
+
+  // Sixth MIDI Adapter MIDI OUT Jack Descriptor (Embedded)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x01,				// EMBEDDED
+  0x17,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x16,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+
+  // Sixth MIDI Adapter MIDI OUT Jack Descriptor (External)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x02,				// EXTERNAL
+  0x18,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x15,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+#endif
+
+
+#if MIOS32_USB_DESC_NUM_PORTS >= 7
+  // Seventh MIDI IN Jack Descriptor (Embedded)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x01,				// EMBEDDED
+  0x19,				// ID of this jack
+  0x00,				// unused
+
+  // Seventh MIDI Adapter MIDI IN Jack Descriptor (External)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x02,				// EXTERNAL
+  0x1a,				// ID of this jack
+  0x00,				// unused
+
+  // Seventh MIDI Adapter MIDI OUT Jack Descriptor (Embedded)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x01,				// EMBEDDED
+  0x1b,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x1a,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+
+  // Seventh MIDI Adapter MIDI OUT Jack Descriptor (External)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x02,				// EXTERNAL
+  0x1c,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x19,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+#endif
+
+
+#if MIOS32_USB_DESC_NUM_PORTS >= 8
+  // Eighth MIDI IN Jack Descriptor (Embedded)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x01,				// EMBEDDED
+  0x1d,				// ID of this jack
+  0x00,				// unused
+
+  // Eighth MIDI Adapter MIDI IN Jack Descriptor (External)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x02,				// EXTERNAL
+  0x1e,				// ID of this jack
+  0x00,				// unused
+
+  // Eighth MIDI Adapter MIDI OUT Jack Descriptor (Embedded)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x01,				// EMBEDDED
+  0x1f,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x1e,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+
+  // Eighth MIDI Adapter MIDI OUT Jack Descriptor (External)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x02,				// EXTERNAL
+  0x20,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x1d,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+#endif
+
+
 
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
@@ -363,6 +488,15 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
 #if MIOS32_USB_DESC_NUM_PORTS >= 5
   0x11,				// ID of embedded MIDI In Jack
 #endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 6
+  0x15,				// ID of embedded MIDI In Jack
+#endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 7
+  0x19,				// ID of embedded MIDI In Jack
+#endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 8
+  0x1d,				// ID of embedded MIDI In Jack
+#endif
 
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
@@ -391,7 +525,16 @@ const u8 MIOS32_USB_DESC_ConfigDescriptor[MIOS32_USB_DESC_SIZ_CONFIG_DESC] = {
   0x0f,				// ID of embedded MIDI Out Jack
 #endif
 #if MIOS32_USB_DESC_NUM_PORTS >= 5
-  0x13				// ID of embedded MIDI Out Jack
+  0x13,				// ID of embedded MIDI Out Jack
+#endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 6
+  0x17,				// ID of embedded MIDI Out Jack
+#endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 7
+  0x1b,				// ID of embedded MIDI Out Jack
+#endif
+#if MIOS32_USB_DESC_NUM_PORTS >= 8
+  0x1f,				// ID of embedded MIDI Out Jack
 #endif
 };
 
