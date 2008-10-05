@@ -505,7 +505,7 @@ void MIOS32_USB_CB_Init(void)
   _SetCNTR(wRegVal);
 
   // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
-  for(delay=0; delay<100; ++delay); // should be more than sufficient
+  for(delay=0; delay<10; ++delay) GPIOA->BRR = 0; // should be more than sufficient - add some dummy code here to ensure that the compiler doesn't optimize the empty for loop away
 
   // CNTR_FRES = 0
   wInterrupt_Mask = 0;
