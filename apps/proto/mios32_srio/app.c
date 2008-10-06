@@ -97,7 +97,7 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
   }
 
   // note event over channel #1? set DOUT pin
-  if( midi_package.event == NoteOn )
+  if( midi_package.chn == Chn1 && midi_package.event == NoteOn )
     MIOS32_DOUT_PinSet(midi_package.note, midi_package.velocity);
 }
 
