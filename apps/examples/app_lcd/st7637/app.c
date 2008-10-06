@@ -163,7 +163,7 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 //  This hook is called when a complete MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
+void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
 }
 
@@ -171,7 +171,7 @@ void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a SysEx byte has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
+void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
 {
 }
 

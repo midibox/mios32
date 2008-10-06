@@ -35,14 +35,14 @@
 // Initializes LEDs of the board
 // IN: <mask> contains a flag for each LED which should be initialized
 //     MBHP_CORE_STM32: 1 LED (flag 0: green)
-//     STM32 Primer: 2 LEDs (flag 0: green, flag 1: red)
+//     STM32_PRIMER: 2 LEDs (flag 0: green, flag 1: red)
 // OUT: returns 0 if initialisation passed
 //      -1 if no LEDs specified for board
 //      -2 if one or more LEDs not available on board
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
-#if defined(_MBHP_CORE_STM32_)
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -58,7 +58,7 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
     return -2; // LED doesn't exist
 
   return 0; // no error
-#elif defined(_STM32_PRIMER_)
+#elif defined(MIOS32_BOARD_STM32_PRIMER)
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -94,7 +94,7 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 {
-#if defined(_MBHP_CORE_STM32_)
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
   // only one LED, connected to PD2
   if( leds & 1 ) {
     GPIOD->BSRR = (value&1) ? GPIO_Pin_2 : (GPIO_Pin_2 << 16);
@@ -104,7 +104,7 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
     return -2; // LED doesn't exist
 
   return 0; // no error
-#elif defined(_STM32_PRIMER_)
+#elif defined(MIOS32_BOARD_STM32_PRIMER)
   // two LEDs, connected to PB8 (green) and PB9 (red)
   if( leds & 1 ) {
     GPIOB->BSRR = (value&1) ? GPIO_Pin_8 : (GPIO_Pin_8 << 16);
@@ -132,11 +132,11 @@ u32 MIOS32_BOARD_LED_Get(void)
 {
   u32 values = 0;
 
-#if defined(_MBHP_CORE_STM32_)
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
   // only one LED, connected to PD2
   if( GPIOD->ODR & GPIO_Pin_2 )
     values |= (1 << 0);
-#elif defined(_STM32_PRIMER_)
+#elif defined(MIOS32_BOARD_STM32_PRIMER)
   // two LEDs, connected to PB8 (green) and PB9 (red)
   if( GPIOB->ODR & GPIO_Pin_8 )
     values |= (1 << 0);

@@ -19,50 +19,62 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
-// aliases for the MIOS32_MIDI_SendEvent function for more comfortable usage
-#define MIOS32_MIDI_SendNoteOff(port, chn, note, vel)          MIOS32_MIDI_SendEvent(port, 0x80 | (chn), note, vel)
-#define MIOS32_MIDI_SendNoteOn(port, chn, note, vel)           MIOS32_MIDI_SendEvent(port, 0x90 | (chn), note, vel)
-#define MIOS32_MIDI_SendPolyPressure(port, chn, note, val)     MIOS32_MIDI_SendEvent(port, 0xa0 | (chn), note, val)
-#define MIOS32_MIDI_SendCC(port, chn, cc, val)                 MIOS32_MIDI_SendEvent(port, 0xb0 | (chn), cc,   val)
-#define MIOS32_MIDI_SendProgramChange(port, chn, prg)          MIOS32_MIDI_SendEvent(port, 0xc0 | (chn), prg,  0x00)
-#define MIOS32_MIDI_SendAftertouch(port, chn, val)             MIOS32_MIDI_SendEvent(port, 0xd0 | (chn), val,  0x00)
-#define MIOS32_MIDI_SendPitchBend(port, chn, val)              MIOS32_MIDI_SendEvent(port, 0xe0 | (chn), val & 0x7f, val >> 7)
-
-#define MIOS32_MIDI_SendMTC(port, val)                         MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf1, val, 0x00)
-#define MIOS32_MIDI_SendSongPosition(port, val)                MIOS32_MIDI_SendSpecialEvent(port, 0x3, 0xf2, val & 0x7f, val >> 7)
-#define MIOS32_MIDI_SendSongSelect(port, val)                  MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf3, val, 0x00)
-#define MIOS32_MIDI_SendTuneRequest(port)                      MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf6, 0x00, 0x00)
-#define MIOS32_MIDI_SendClock(port)                            MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf8, 0x00, 0x00)
-#define MIOS32_MIDI_SendTick(port)                             MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf9, 0x00, 0x00)
-#define MIOS32_MIDI_SendStart(port)                            MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00)
-#define MIOS32_MIDI_SendStop(port)                             MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00)
-#define MIOS32_MIDI_SendContinue(port)                         MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00)
-#define MIOS32_MIDI_SendActiveSense(port)                      MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfe, 0x00, 0x00)
-#define MIOS32_MIDI_SendReset(port)                            MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xff, 0x00, 0x00)
-
-
-// MIDI port IDs
-#define MIOS32_MIDI_PORT_USB0         0x00
-#define MIOS32_MIDI_PORT_USB1         0x01
-#define MIOS32_MIDI_PORT_USB2         0x02
-#define MIOS32_MIDI_PORT_USB3         0x03
-#define MIOS32_MIDI_PORT_USB4         0x04
-#define MIOS32_MIDI_PORT_USB5         0x05
-#define MIOS32_MIDI_PORT_USB6         0x06
-#define MIOS32_MIDI_PORT_USB7         0x07
-
-#define MIOS32_MIDI_PORT_UART0        0x10
-#define MIOS32_MIDI_PORT_UART1        0x11
-
-#define MIOS32_MIDI_PORT_IIC0         0x20
-#define MIOS32_MIDI_PORT_IIC1         0x21
-#define MIOS32_MIDI_PORT_IIC2         0x22
-#define MIOS32_MIDI_PORT_IIC3         0x23
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
+
+
+typedef enum {
+  USB0 = 0x00,
+  USB1 = 0x01,
+  USB2 = 0x02,
+  USB3 = 0x03,
+  USB4 = 0x04,
+  USB5 = 0x05,
+  USB6 = 0x06,
+  USB7 = 0x07,
+
+
+  UART0 = 0x10,
+  UART1 = 0x11,
+
+  IIC0 = 0x20,
+  IIC1 = 0x21,
+  IIC2 = 0x22,
+  IIC3 = 0x23
+} mios32_midi_port_t;
+
+
+typedef enum {
+  NoteOff       = 0x8,
+  NoteOn        = 0x9,
+  PolyPressure  = 0xa,
+  CC            = 0xb,
+  ProgramChange = 0xc,
+  Aftertouch    = 0xd,
+  PitchBend     = 0xe
+} mios32_midi_event_t;
+
+
+typedef enum {
+  Chn1,
+  Chn2,
+  Chn3,
+  Chn4,
+  Chn5,
+  Chn6,
+  Chn7,
+  Chn8,
+  Chn9,
+  Chn10,
+  Chn11,
+  Chn12,
+  Chn13,
+  Chn14,
+  Chn15,
+  Chn16
+} mios32_midi_chn_t;
+
 
 typedef union {
   struct {
@@ -74,6 +86,38 @@ typedef union {
     unsigned evnt1:8;
     unsigned evnt2:8;
   };
+  struct {
+    unsigned cin:4;
+    unsigned cable:4;
+    mios32_midi_chn_t chn:4;
+    mios32_midi_event_t event:4;
+    unsigned value1:8;
+    unsigned value2:8;
+  };
+  struct {
+    unsigned cin:4;
+    unsigned cable:4;
+    mios32_midi_chn_t chn:4;
+    mios32_midi_event_t event:4;
+    unsigned note:8;
+    unsigned velocity:8;
+  };
+  struct {
+    unsigned cin:4;
+    unsigned cable:4;
+    mios32_midi_chn_t chn:4;
+    mios32_midi_event_t event:4;
+    unsigned cc_number:8;
+    unsigned value:8;
+  };
+  struct {
+    unsigned cin:4;
+    unsigned cable:4;
+    mios32_midi_chn_t chn:4;
+    mios32_midi_event_t event:4;
+    unsigned program_change:8;
+    unsigned dummy:8;
+  };
 } mios32_midi_package_t;
 
 
@@ -83,9 +127,30 @@ typedef union {
 
 extern s32 MIOS32_MIDI_Init(u32 mode);
 
-extern s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package);
-extern s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2);
-extern s32 MIOS32_MIDI_SendSysEx(u8 port, u8 *stream, u32 count);
+extern s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
+
+extern s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2);
+extern s32 MIOS32_MIDI_SendNoteOff(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel);
+extern s32 MIOS32_MIDI_SendNoteOn(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel);
+extern s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val);
+extern s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val);
+extern s32 MIOS32_MIDI_SendProgramChange(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 prg);
+extern s32 MIOS32_MIDI_SendAftertouch(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 val);
+extern s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 val);
+
+extern s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count);
+extern s32 MIOS32_MIDI_SendMTC(mios32_midi_port_t port, u8 val);
+extern s32 MIOS32_MIDI_SendSongPosition(mios32_midi_port_t port, u16 val);
+extern s32 MIOS32_MIDI_SendSongSelect(mios32_midi_port_t port, u8 val);
+extern s32 MIOS32_MIDI_SendTuneRequest(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendClock(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendTick(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendStart(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port);
+
 
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_sysex);
 

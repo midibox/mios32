@@ -68,14 +68,14 @@ s32 MIOS32_MIDI_Init(u32 mode)
 // This is a low level function - use the remaining MIOS32_MIDI_Send* functions
 // to send specific MIDI events
 // IN: <port>: MIDI port 
-//             0..15: USB, 16..31: USART, 32..47: IIC, 48..63: Ethernet
+//             USB0..USB7, UART0..UART1, IIC0..IIC3
 //     <package>: MIDI package (see definition in mios32_midi.h)
 // OUT: returns -1 if port not available
 //      returns -2 if non-blocking mode activated: buffer is full
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
+s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
 {
   // insert subport number into package
   package.type = (package.type&0x0f) | (port << 4);
@@ -84,7 +84,7 @@ s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
   switch( port >> 4 ) {
     case 0:
 #if !defined(MIOS32_DONT_USE_USB)
-      return MIOS32_USB_MIDIPackageSend(package.ALL);
+      return MIOS32_USB_MIDIPackageSend(package);
 #else
       return -1; // USB has been disabled
 #endif
@@ -108,7 +108,6 @@ s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
 /////////////////////////////////////////////////////////////////////////////
 // Sends a MIDI Event
 // This function is provided for a more comfortable use model
-// It is aliased to following functions (defined in mios32_midi.h)
 //    o MIOS32_MIDI_SendNoteOff(port, chn, note, vel)
 //    o MIOS32_MIDI_SendNoteOn(port, chn, note, vel)
 //    o MIOS32_MIDI_SendPolyAftertouch(port, chn, note, val)
@@ -124,7 +123,7 @@ s32 MIOS32_MIDI_SendPackage(u8 port, mios32_midi_package_t package)
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2)
+s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2)
 {
   mios32_midi_package_t package;
 
@@ -139,11 +138,32 @@ s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2)
   return MIOS32_MIDI_SendPackage(port, package);
 }
 
+s32 MIOS32_MIDI_SendNoteOff(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
+{ MIOS32_MIDI_SendEvent(port, 0x80 | chn, note, vel); }
+
+s32 MIOS32_MIDI_SendNoteOn(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
+{ MIOS32_MIDI_SendEvent(port, 0x90 | chn, note, vel); }
+
+s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val)
+{ MIOS32_MIDI_SendEvent(port, 0xa0 | chn, note, val); }
+
+s32 MIOS32_MIDI_SendCC(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 cc, u8 val)
+{ MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc,   val); }
+
+s32 MIOS32_MIDI_SendProgramChange(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 prg)
+{ MIOS32_MIDI_SendEvent(port, 0xc0 | chn, prg,  0x00); }
+
+s32 MIOS32_MIDI_SendAftertouch(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 val)
+{ MIOS32_MIDI_SendEvent(port, 0xd0 | chn, val,  0x00); }
+
+s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 val)
+{ MIOS32_MIDI_SendEvent(port, 0xe0 | chn, val & 0x7f, val >> 7); }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Sends a special type MIDI Event
 // This function is provided for a more comfortable use model
-// It is aliased to following functions (defined in mios32_midi.h)
+// It is aliased to following functions
 //    o MIOS32_MIDI_SendMTC(port, val)
 //    o MIOS32_MIDI_SendSongPosition(port, val)
 //    o MIOS32_MIDI_SendSongSelect(port, val)
@@ -164,7 +184,7 @@ s32 MIOS32_MIDI_SendEvent(u8 port, u8 evnt0, u8 evnt1, u8 evnt2)
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendSpecialEvent(u8 port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
+s32 MIOS32_MIDI_SendSpecialEvent(mios32_midi_port_t port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
 {
   mios32_midi_package_t package;
 
@@ -174,6 +194,40 @@ s32 MIOS32_MIDI_SendSpecialEvent(u8 port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
   package.evnt2 = evnt2;
   return MIOS32_MIDI_SendPackage(port, package);
 }
+
+
+s32 MIOS32_MIDI_SendMTC(mios32_midi_port_t port, u8 val)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf1, val, 0x00); }
+
+s32 MIOS32_MIDI_SendSongPosition(mios32_midi_port_t port, u16 val)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x3, 0xf2, val & 0x7f, val >> 7); }
+
+s32 MIOS32_MIDI_SendSongSelect(mios32_midi_port_t port, u8 val)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf3, val, 0x00); }
+
+s32 MIOS32_MIDI_SendTuneRequest(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf6, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendClock(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf8, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendTick(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf9, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendStart(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfe, 0x00, 0x00); }
+
+s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
+{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xff, 0x00, 0x00); }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -187,7 +241,7 @@ s32 MIOS32_MIDI_SendSpecialEvent(u8 port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendSysEx(u8 port, u8 *stream, u32 count)
+s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 {
   s32 res;
   u32 offset;
@@ -241,8 +295,8 @@ s32 MIOS32_MIDI_SendSysEx(u8 port, u8 *stream, u32 count)
 /////////////////////////////////////////////////////////////////////////////
 // Checks for incoming MIDI messages, calls either the callback_event or
 // callback_sysex function with following parameters:
-//    callback_event(u8 port, mios32_midi_package_t midi_package)
-//    callback_sysex(u8 port, u8 sysex_byte)
+//    callback_event(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+//    callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
@@ -251,8 +305,8 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
   mios32_midi_package_t package;
   u8 again;
 
-  void (*callback_event)(u8 port, mios32_midi_package_t midi_package) = _callback_event;
-  void (*callback_sysex)(u8 port, u8 sysex_byte) = _callback_sysex;
+  void (*callback_event)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_event;
+  void (*callback_sysex)(mios32_midi_port_t port, u8 sysex_byte) = _callback_sysex;
 
   do {
     // notifies, that there are more messages to be processed
@@ -262,9 +316,9 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
     // check for USB messages
     if( MIOS32_USB_MIDIPackageReceive(&package) ) {
-      // get port and mask out channel number
-      port = package.type >> 4;
-      package.type &= 0xf;
+      // get port and mask out cable number
+      port = package.cable;
+      package.cable = 0;
 
       if( package.type >= 0x8 ) {
 	callback_event(port, package);

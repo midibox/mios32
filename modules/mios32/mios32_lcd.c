@@ -68,16 +68,19 @@ s32 MIOS32_LCD_Init(u32 mode)
   // initial LCD type (can be set to a different type in APP_LCD_Init()
   mios32_lcd_type = MIOS32_LCD_TYPE_CLCD;
 
+  // set initial cursor map for character LCDs
+  u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
+  MIOS32_LCD_CursorMapSet(cursor_map);
+  // note: this has to be done before APP_LCD_Init() is called, so that
+  // the driver is able to modify the default cursor mapping
+  // usage example: "dog" LCDs
+
   // call application specific init function
   if( (ret=APP_LCD_Init(mode)) < 0 )
     return ret;
 
   // clear screen
   MIOS32_LCD_Clear();
-
-  // set initial cursor map for character LCDs
-  const u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
-  MIOS32_LCD_CursorMapSet(cursor_map);
 
   // set character and graphical cursor to initial position
   MIOS32_LCD_CursorSet(0, 0);
@@ -150,15 +153,15 @@ s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 // Set the cursor map for character displays
 //
 // By default the positions are configured for 2x16, 2x20, 4x20 and 2x40 displays:
-//   const u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
+//   u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
 //   MIOS32_LCD_CursorMapSet(cursor_map);
 //
 // For 4x16 displays, the configuration has to be changed:
-//   const u8 cursor_map[] = {0x00, 0x40, 0x10, 0x50}; // offset line 0/1/2/3
+//   u8 cursor_map[] = {0x00, 0x40, 0x10, 0x50}; // offset line 0/1/2/3
 //   MIOS32_LCD_CursorMapSet(cursor_map);
 //
 // For 3x16 DOG displays use:
-//   const u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
+//   u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
 //   MIOS32_LCD_CursorMapSet(cursor_map);
 //
 // IN: cursor map in <map_table>

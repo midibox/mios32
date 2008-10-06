@@ -42,8 +42,8 @@
 
 extern s32 MIOS32_USB_Init(u32 mode);
 
-extern s32 MIOS32_USB_MIDIPackageSend(u32 package);
-extern s32 MIOS32_USB_MIDIPackageReceive(u32 *package);
+extern s32 MIOS32_USB_MIDIPackageSend(mios32_midi_package_t package);
+extern s32 MIOS32_USB_MIDIPackageReceive(mios32_midi_package_t *package);
 
 extern s32 MIOS32_USB_Handler(void);
 

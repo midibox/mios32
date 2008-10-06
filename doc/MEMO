@@ -53,6 +53,24 @@ DOS: (we assume, that the repository has been downloaded to D:\)
   set MIOS32_BIN_PATH=D:\mios32\trunk\bin
 
 
+Additional environment variables to configure the environment:
+(they have to be set, otherwise compiler will fail)
+
+MBHP_CORE_STM32:
+export MIOS32_FAMILY=STM32F10x
+export MIOS32_PROCESSOR=STM32F103RE
+export MIOS32_BOARD=MBHP_CORE_STM32
+export MIOS32_LCD=clcd
+
+
+STM32 Primer:
+export MIOS32_FAMILY=STM32F10x
+export MIOS32_PROCESSOR=STM32F103RB
+export MIOS32_BOARD=STM32_PRIMER
+export MIOS32_LCD=st7637
+
+
+
 Installing Toolchain
 ~~~~~~~~~~~~~~~~~~~~
 

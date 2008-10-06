@@ -150,10 +150,11 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd(0x01); // Clear Display
   for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
 
-  // for DOG displays: performan additional display initialisation
-  // it should be compatible to common CLCDs (no negative effects)
-  // if not, it can be disabled
-#ifndef APP_LCD_DONT_INIT_DOG
+  // for DOG displays: perform additional display initialisation
+  // this has to be explicitely enabled
+  // see also $MIOS32_PATH/modules/app_lcd/dog/app_lcd.mk for "auto selection"
+  // this makefile is included if environment variable "MIOS32_LCD" is set to "dog"
+#ifdef APP_LCD_INIT_DOG
   APP_LCD_Cmd(0x39); // 8bit interface, switch to instruction table 1
   APP_LCD_Cmd(0x1d); // BS: 1/4, 3 line LCD
   APP_LCD_Cmd(0x50); // Booster off, set contrast C5/C4
@@ -161,6 +162,10 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd(0x7c); // set contrast C3/C2/C1
   //  APP_LCD_Cmd(0x38); // back to instruction table 0
   // (will be done below)
+
+  // modify cursor mapping, so that it complies with 3-line dog displays
+  u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
+  MIOS32_LCD_CursorMapSet(cursor_map);
 #endif
 
   APP_LCD_Cmd(0x38); // experience from PIC based MIOS: without these lines

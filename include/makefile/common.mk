@@ -1,7 +1,7 @@
 # $Id$
 #
 # following variables should be set before including this file:
-#   - PROCESSOR e.g.: STM32F103
+#   - PROCESSOR e.g.: STM32F103RE
 #   - FAMILY    e.g.: STM32F10x
 #   - LD_FILE   e.g.: $(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 #   - PROJECT   e.g.: project   # (.lst, .hex, .map, etc... will be added automatically)
@@ -32,9 +32,7 @@ CC      = $(GCC_PREFIX)gcc
 OBJCOPY = $(GCC_PREFIX)objcopy
 OBJDUMP = $(GCC_PREFIX)objdump
 NM      = $(GCC_PREFIX)nm
-
-# linker script
-LD_FILE = $(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
+SIZE    = $(GCC_PREFIX)size
 
 # default linker flags
 LDFLAGS += -T$(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
@@ -47,7 +45,7 @@ CFLAGS += $(C_DEFINES) $(C_INCLUDE)
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
-CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -DGCC_ARMCM3 -DGCC_ARMCM3 
 endif
 
 ifeq ($(FAMILY),STR9x)
@@ -68,7 +66,7 @@ DIST += $(LD_FILE)
 # default rule
 # note: currently we always require a "cleanall", since dependencies (e.g. on .h files) are not properly declared
 # later we could try it w/o "cleanall", and propose the usage of this step to the user
-all: cleanall $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym
+all: cleanall $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym projectinfo
 
 # rule to create a .hex and .bin file
 %.bin : $(PROJECT).elf
@@ -87,6 +85,17 @@ all: cleanall $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym
 # rule to create .elf file
 $(PROJECT).elf: $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
 	$(CC) $(CFLAGS) $(ARM_OBJS) $(THUMB_OBJS) $(ARM_AS_OBJS) $(THUMB_AS_OBJS) $(LIBS) $(LDFLAGS) 
+
+# rule to output project informations
+projectinfo:
+	@echo "-------------------------------------------------------------------------------"
+	@echo "Application successfully built for:"
+	@echo "Processor: $(PROCESSOR)"
+	@echo "Family:    $(FAMILY)"
+	@echo "Board:     $(BOARD)"
+	@echo "LCD:       $(LCD)"
+	@echo "-------------------------------------------------------------------------------"
+	$(SIZE) $(PROJECT).elf
 
 # default rule for compiling .c programs
 $(THUMB_OBJS) : %.o : %.c

@@ -1,9 +1,17 @@
 # $Id$
 # defines additional rules for MIOS32
 
+# select driver library
+DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v2.0.1
+
 # enhance include path
 C_INCLUDE +=	-I $(MIOS32_PATH)/modules/mios32 \
 		-I $(DRIVER_LIB)/inc
+
+# forward MIOS32 environment variables to preprocessor
+CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
+		-DMIOS32_FAMILY_$(FAMILY) \
+		-DMIOS32_BOARD_$(BOARD)
 
 
 # add modules to thumb sources
