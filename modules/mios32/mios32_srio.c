@@ -53,13 +53,14 @@
 
 // DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
 // Note that also the bits are in reversed order compared to PIC based MIOS
+// So long the array is accessed via MIOS32_DOUT_* functions, they programmer won't notice a difference!
 volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
 
 // DIN values of last scan
 volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
 
 // DIN values of ongoing scan
-// Note: during SRIO scan it is required to copy new DIN values/change notifiers into a temporary buffer
+// Note: during SRIO scan it is required to copy new DIN values into a temporary buffer
 // to avoid that a task already takes a new DIN value before the whole chain has been scanned
 // (e.g. relevant for encoder handler: it has to clear the changed flags, so that the DIN handler doesn't take the value)
 volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
