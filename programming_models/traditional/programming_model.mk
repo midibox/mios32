@@ -1,10 +1,16 @@
 # $Id$
 # defines rules building the programming model
 
+# where is FreeRTOS located
+FREE_RTOS      =    $(MIOS32_PATH)/FreeRTOS
+
 # extend include path
 C_INCLUDE += 	-I $(MIOS32_PATH)/programming_models/traditional \
 		-I $(FREE_RTOS)/Source/include \
 		-I $(FREE_RTOS)/Source/portable/GCC/ARM_CM3
+
+# required by FreeRTOS to select the port
+CFLAGS    +=    -DGCC_ARMCM3
 
 # add modules to thumb sources
 THUMB_SOURCE += \

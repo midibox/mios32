@@ -174,7 +174,7 @@ void (* const g_pfnVectors[])(void) =
   0,
   0,
   0,
-  (unsigned long)0xF108F85F //this is a workaround for boot in RAM mode.
+  (void *)(unsigned long)0xF108F85F //this is a workaround for boot in RAM mode.
 };
 
 /*******************************************************************************

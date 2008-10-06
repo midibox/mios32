@@ -201,7 +201,10 @@ volatile u16 buffer_tx_size;
 volatile u8 buffer_tx_busy;
 
 // optional non-blocking mode
-u8 non_blocking_mode;
+u8 non_blocking_mode = UNCONNECTED;
+
+// transfer possible?
+u8 transfer_possible = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -240,7 +243,7 @@ s32 MIOS32_USB_Init(u32 mode)
   buffer_tx_busy = 0; // buffer is busy so long no USB connection detected
 
 
-#ifdef _STM32_PRIMER_
+#ifdef MIOS32_BOARD_STM32_PRIMER
   // configure USB disconnect pin
   // STM32 Primer: pin B12
   // first we hold it low for ca. 50 mS to force a re-enumeration
@@ -268,6 +271,9 @@ s32 MIOS32_USB_Init(u32 mode)
     GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 #endif
 
+  // transfer not possible yet - will change once USB goes into CONFIGURED state
+  transfer_possible = 0;
+
   // remaining initialisation done in STM32 USB driver
   USB_Init();
 
@@ -283,11 +289,10 @@ s32 MIOS32_USB_Init(u32 mode)
 //      -2: if non-blocking mode activated: buffer is full
 //          caller should retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDIPackageSend(u32 package)
+s32 MIOS32_USB_MIDIPackageSend(mios32_midi_package_t package)
 {
   // device available?
-  // MEMO: when sending to MIOS Studio, bDeviceState can toggle between CONFIGURED and ADDRESSED
-  if( bDeviceState == UNCONNECTED )
+  if( !transfer_possible )
     return -1;
 
   // buffer full?
@@ -298,7 +303,7 @@ s32 MIOS32_USB_MIDIPackageSend(u32 package)
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
-    if( bDeviceState == UNCONNECTED )
+    if( !transfer_possible )
       return -1;
 
     // notify that buffer was full (request retry)
@@ -308,7 +313,7 @@ s32 MIOS32_USB_MIDIPackageSend(u32 package)
 
   // put package into buffer - this operation should be atomic!
   portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-  buffer_tx[buffer_tx_head++] = package;
+  buffer_tx[buffer_tx_head++] = package.ALL;
   if( buffer_tx_head >= MIOS32_USB_TX_BUFFER_SIZE )
     buffer_tx_head = 0;
   ++buffer_tx_size;
@@ -324,7 +329,7 @@ s32 MIOS32_USB_MIDIPackageSend(u32 package)
 // OUT: returns -1 if no package in buffer
 //      otherwise returns number of packages which are still in the buffer
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDIPackageReceive(u32 *package)
+s32 MIOS32_USB_MIDIPackageReceive(mios32_midi_package_t *package)
 {
   u8 i;
 
@@ -334,7 +339,7 @@ s32 MIOS32_USB_MIDIPackageReceive(u32 *package)
 
   // get package - this operation should be atomic!
   portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-  *package = buffer_rx[buffer_rx_tail];
+  package->ALL = buffer_rx[buffer_rx_tail];
   if( ++buffer_rx_tail >= MIOS32_USB_RX_BUFFER_SIZE )
     buffer_rx_tail = 0;
   --buffer_rx_size;
@@ -395,7 +400,7 @@ void MIOS32_USB_TxBufferHandler(void)
   //   - new packages are in the buffer
   //   - the device is configured
 
-  if( !buffer_tx_busy && buffer_tx_size && bDeviceState != UNCONNECTED ) {
+  if( !buffer_tx_busy && buffer_tx_size && transfer_possible ) {
     u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_TXADDR<<1));
     s16 count = (buffer_tx_size > (MIOS32_USB_DESC_DATA_IN_SIZE/4)) ? (MIOS32_USB_DESC_DATA_IN_SIZE/4) : buffer_tx_size;
 
@@ -533,6 +538,8 @@ void MIOS32_USB_CB_Init(void)
   _SetCNTR(wInterrupt_Mask);
 
   bDeviceState = UNCONNECTED;
+
+  transfer_possible = 0;
 }
 
 // reset routine
@@ -587,6 +594,8 @@ void MIOS32_USB_CB_SetConfiguration(void)
 
   if (pInfo->Current_Configuration != 0) {
     bDeviceState = CONFIGURED;
+
+    transfer_possible = 1;
   }
 }
 

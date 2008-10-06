@@ -1,51 +1,57 @@
 # $Id$
 
-PROCESSOR = 	STM32F103
-FAMILY    = 	STM32F10x
+################################################################################
+# following setup taken from environment variables
+################################################################################
+
+PROCESSOR =	$(MIOS32_PROCESSOR)
+FAMILY    = 	$(MIOS32_FAMILY)
+BOARD	  = 	$(MIOS32_BOARD)
+
+#explicitely select ST7637 display
+#LCD       =     $(MIOS32_LCD)
+LCD       =     st7637
+
+
+################################################################################
+# Source Files, include paths and libraries
+################################################################################
+
+THUMB_SOURCE    = app.c
+
+# (following source stubs not relevant for Cortex M3 derivatives)
+THUMB_AS_SOURCE =
+ARM_SOURCE      =
+ARM_AS_SOURCE   =
+
+C_INCLUDE = 	-I .
+A_INCLUDE = 	-I .
+
+LIBS = 		
+
+
+################################################################################
+# Remaining variables
+################################################################################
 
 LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
-DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v2.0.1
-FREE_RTOS  =    $(MIOS32_PATH)/FreeRTOS
-
 DEBUG     =	-g
 OPTIMIZE  =	-Os
 
-C_INCLUDE = 	-I . \
-		-I $(FREE_RTOS)/Source/include \
-		-I $(FREE_RTOS)/Source/portable/GCC/ARM_CM3
-
-A_INCLUDE = 	
-
-LIBS = 		
-
-CFLAGS =	$(DEBUG) \
-		$(OPTIMIZE) \
-		-MD \
-		-D_STM32F103RBT6_ \
-		-D_STM3x_ \
-		-D_STM32x_ \
-		-D_STM32_PRIMER_ \
-		-DGCC_ARMCM3
+CFLAGS =	$(DEBUG) $(OPTIMIZE)
 
 
-THUMB_SOURCE = \
-		app.c
+################################################################################
+# Include source modules via additional makefiles
+################################################################################
 
-THUMB_AS_SOURCE =
-
-ARM_SOURCE =
-
-ARM_AS_SOURCE =
-
-
-# add sources of programming model
+# sources of programming model
 include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
-# add application specific LCD driver
-include $(MIOS32_PATH)/modules/app_lcd/st7637/app_lcd.mk
-#include $(MIOS32_PATH)/modules/app_lcd/clcd/app_lcd.mk
+# application specific LCD driver (selected via makefile variable)
+include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
-# include common make rules
+# common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
