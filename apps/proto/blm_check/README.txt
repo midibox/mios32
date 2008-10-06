@@ -15,7 +15,7 @@ Currently only STM32 Primer supported!
 ===============================================================================
 
 Required hardware:
-   o STM32 Primer (or upcoming MBHP_CORE_STM32 module)
+   o MBHP_CORE_STM32 or STM32 Primer
    o at least one MBHP_DIN module
    o at least one MBHP_DOUT module
 
@@ -32,9 +32,9 @@ Note, tat the MIOS32 based BLM driver also supports Single, Duo and Triple (RGB)
 In addition, the two LEDs of STM32 Primer are flashing to send a "sign of life"
 
 Pin connections:
-  o SPI1_SCLK (A5) -> Sc pin of MBHP_DIN/DOUT modules
-  o SPI1_MISO (A6) -> Si pin of MBHP_DIN module
-  o SPI1_MOSI (A7) -> So Pin of MBHP_DOUT module
-  o RCLK (A8)      -> Rc pin of MBHP_DIN/DOUT modules
+  o RCLK (A4)      -> RC pin of MBHP_DIN/DOUT modules
+  o SPI1_SCLK (A5) -> SC pin of MBHP_DIN/DOUT modules
+  o SPI1_MISO (A6) -> SI pin of MBHP_DIN module
+  o SPI1_MOSI (A7) -> SO Pin of MBHP_DOUT module
 
 ===============================================================================
