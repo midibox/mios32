@@ -143,7 +143,7 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 	
 	// GP LEDs
 	if( pin >= 16 && pin < 32 ) {
-		gp_led = (pin^7) - 16;
+		gp_led = pin - 16;
 		
 		if( value )
 			ledState[gp_led] |= (1 << 0); // set first color
@@ -152,7 +152,7 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 		// color mapping at the end of this function
 
 	} else if( pin >= 112 && pin < 128 ) {
-		gp_led = (pin^7) - 112;
+		gp_led = pin - 112;
 		
 		if( value )
 			ledState[gp_led] |= (1 << 1); // set second color
@@ -160,7 +160,7 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 			ledState[gp_led] &= ~(1 << 1); // clear second color
 		// color mapping at the end of this function
 
-	} else if( pin == 0 ) { // Beat LED
+	} else if( pin == 7 ) { // Beat LED
 		if( value )
 			[LED[16] setColor:[NSColor colorWithCalibratedRed:0.1 green:1.0 blue:0.1 alpha:1.0]];
 		else
@@ -169,38 +169,38 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 		// remaining LED functions via button highlighting
 		// TODO: find solution to update this after button has been released!
 		switch( pin ) {
-			case  7: [_buttonTrack1 highlight:(value ? YES : NO)]; break;
-			case  6: [_buttonTrack2 highlight:(value ? YES : NO)]; break;
-			case  5: [_buttonTrack3 highlight:(value ? YES : NO)]; break;
-			case  4: [_buttonTrack4 highlight:(value ? YES : NO)]; break;
+			case  0: [_buttonTrack1 highlight:(value ? YES : NO)]; break;
+			case  1: [_buttonTrack2 highlight:(value ? YES : NO)]; break;
+			case  2: [_buttonTrack3 highlight:(value ? YES : NO)]; break;
+			case  3: [_buttonTrack4 highlight:(value ? YES : NO)]; break;
 
-			case  3: [_buttonPLayerA highlight:(value ? YES : NO)]; break;
-			case  2: [_buttonPLayerB highlight:(value ? YES : NO)]; break;
-			case  1: [_buttonPLayerC highlight:(value ? YES : NO)]; break;
+			case  4: [_buttonPLayerA highlight:(value ? YES : NO)]; break;
+			case  5: [_buttonPLayerB highlight:(value ? YES : NO)]; break;
+			case  6: [_buttonPLayerC highlight:(value ? YES : NO)]; break;
 
-			case 87: [_buttonGroup1 highlight:(value ? YES : NO)]; break;
-			case 85: [_buttonGroup2 highlight:(value ? YES : NO)]; break;
-			case 83: [_buttonGroup3 highlight:(value ? YES : NO)]; break;
-			case 81: [_buttonGroup4 highlight:(value ? YES : NO)]; break;
+			case 80: [_buttonGroup1 highlight:(value ? YES : NO)]; break;
+			case 82: [_buttonGroup2 highlight:(value ? YES : NO)]; break;
+			case 84: [_buttonGroup3 highlight:(value ? YES : NO)]; break;
+			case 86: [_buttonGroup4 highlight:(value ? YES : NO)]; break;
 
-			case 95: [_buttonTLayerA highlight:(value ? YES : NO)]; break;
-			case 94: [_buttonTLayerB highlight:(value ? YES : NO)]; break;
-			case 93: [_buttonTLayerC highlight:(value ? YES : NO)]; break;
+			case 88: [_buttonTLayerA highlight:(value ? YES : NO)]; break;
+			case 89: [_buttonTLayerB highlight:(value ? YES : NO)]; break;
+			case 90: [_buttonTLayerC highlight:(value ? YES : NO)]; break;
 
-			case 15: [_buttonEdit highlight:(value ? YES : NO)]; break;
-			case 14: [_buttonMute highlight:(value ? YES : NO)]; break;
-			case 13: [_buttonPattern highlight:(value ? YES : NO)]; break;
-			case 12: [_buttonSong highlight:(value ? YES : NO)]; break;
+			case  8: [_buttonEdit highlight:(value ? YES : NO)]; break;
+			case  9: [_buttonMute highlight:(value ? YES : NO)]; break;
+			case 10: [_buttonPattern highlight:(value ? YES : NO)]; break;
+			case 11: [_buttonSong highlight:(value ? YES : NO)]; break;
 			
-			case 11: [_buttonSolo highlight:(value ? YES : NO)]; break;
-			case 10: [_buttonFast highlight:(value ? YES : NO)]; break;
-			case  9: [_buttonAll highlight:(value ? YES : NO)]; break;
+			case 12: [_buttonSolo highlight:(value ? YES : NO)]; break;
+			case 13: [_buttonFast highlight:(value ? YES : NO)]; break;
+			case 14: [_buttonAll highlight:(value ? YES : NO)]; break;
 			
-			case 88: [_buttonStepView highlight:(value ? YES : NO)]; break;
-
-			case 92: [_buttonPlay highlight:(value ? YES : NO)]; break;
-			case 91: [_buttonStop highlight:(value ? YES : NO)]; break;
-			case 90: [_buttonPause highlight:(value ? YES : NO)]; break;
+			case 91: [_buttonPlay highlight:(value ? YES : NO)]; break;
+			case 92: [_buttonStop highlight:(value ? YES : NO)]; break;
+			case 93: [_buttonPause highlight:(value ? YES : NO)]; break;
+			
+			case 95: [_buttonStepView highlight:(value ? YES : NO)]; break;
 		}
 	}
 

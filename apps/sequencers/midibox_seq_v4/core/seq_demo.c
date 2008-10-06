@@ -42,7 +42,6 @@ display_t display;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-u8 mirror_u8(u8 b);
 u8 get_visible_track(void);
 
 
@@ -347,23 +346,6 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// temporary help function to mirror a byte
-// (could be provides as MIOS32 help function later)
-/////////////////////////////////////////////////////////////////////////////
-u8 mirror_u8(u8 b)
-{
-  return 
-    ((b&0x01)<<7) |
-    ((b&0x02)<<5) |
-    ((b&0x04)<<3) |
-    ((b&0x08)<<1) |
-    ((b&0x10)>>1) |
-    ((b&0x20)>>3) |
-    ((b&0x40)>>5) |
-    ((b&0x80)>>7);
-}
-
-/////////////////////////////////////////////////////////////////////////////
 // temporary help function to get the visible track
 // (could be outsourced somewhere else later)
 /////////////////////////////////////////////////////////////////////////////
@@ -506,17 +488,17 @@ void APP_Background(void)
     // GP LEDs
     // TODO: invert if no dual colour LEDs defined
   #ifdef DEFAULT_GP_DOUT_SR_L
-    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+0]));
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L-1, trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+0]);
   #endif
   #ifdef DEFAULT_GP_DOUT_SR_R
-    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R-1, mirror_u8(trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+1]));
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R-1, trg_layer_value[visible_track][selected_trg_layer][2*selected_step_view+1]);
   #endif
     // TODO: check for selected step view!
   #ifdef DEFAULT_GP_DOUT_SR_L2
-    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L2-1, played_step < 8 ? (1 << ((played_step&7)^7)) : 0);
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_L2-1, played_step < 8 ? (1 << (played_step&7)) : 0);
   #endif
   #ifdef DEFAULT_GP_DOUT_SR_R2
-    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R2-1, played_step >= 8 ? (1 << ((played_step&7)^7)) : 0);
+    MIOS32_DOUT_SRSet(DEFAULT_GP_DOUT_SR_R2-1, played_step >= 8 ? (1 << (played_step&7)) : 0);
   #endif
   
     // beat LED: tmp. for demo w/o real sequencer

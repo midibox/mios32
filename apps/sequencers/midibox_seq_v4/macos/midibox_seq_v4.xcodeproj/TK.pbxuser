@@ -37,42 +37,12 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 244855642;
-			PBXWorkspaceStateSaveDate = 244855642;
-		};
-		perUserProjectItems = {
-			52066E720E98346000861688 /* PBXBookmark */ = 52066E720E98346000861688 /* PBXBookmark */;
-			52066E8A0E98359F00861688 /* PBXTextBookmark */ = 52066E8A0E98359F00861688 /* PBXTextBookmark */;
-			52066E8B0E98359F00861688 /* PBXTextBookmark */ = 52066E8B0E98359F00861688 /* PBXTextBookmark */;
-			52E1E4B10E9832EC004DC476 /* PBXTextBookmark */ = 52E1E4B10E9832EC004DC476 /* PBXTextBookmark */;
+			PBXPerProjectTemplateStateSaveDate = 245026175;
+			PBXWorkspaceStateSaveDate = 245026175;
 		};
 		sourceControlManager = 522A0DA80E8FE5580084B1EE /* Source Control */;
 		userBuildSettings = {
 		};
-	};
-	52066E720E98346000861688 /* PBXBookmark */ = {
-		isa = PBXBookmark;
-		fRef = 522A10A10E91067D0084B1EE /* mios32.h */;
-	};
-	52066E8A0E98359F00861688 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 522A10A10E91067D0084B1EE /* mios32.h */;
-		name = "mios32.h: 86";
-		rLen = 0;
-		rLoc = 2642;
-		rType = 0;
-		vrLen = 1021;
-		vrLoc = 2197;
-	};
-	52066E8B0E98359F00861688 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 522A0DB70E8FE5B90084B1EE /* UI.m */;
-		name = "UI.m: 115";
-		rLen = 0;
-		rLoc = 2034;
-		rType = 0;
-		vrLen = 612;
-		vrLoc = 1781;
 	};
 	522A0DA10E8FE5490084B1EE /* midibox_seq_v4 */ = {
 		isa = PBXExecutable;
@@ -145,9 +115,9 @@
 	};
 	522A0DB70E8FE5B90084B1EE /* UI.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1026, 5250}}";
-			sepNavSelRange = "{2034, 0}";
-			sepNavVisRange = "{1781, 612}";
+			sepNavIntBoundsRect = "{{0, 0}, {710, 4326}}";
+			sepNavSelRange = "{2698, 0}";
+			sepNavVisRange = "{2500, 339}";
 			sepNavWindowFrame = "{{295, 39}, {1085, 646}}";
 		};
 	};
@@ -155,8 +125,8 @@
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {1026, 1526}}";
 			sepNavSelRange = "{2642, 0}";
-			sepNavVisRange = "{2197, 1021}";
-			sepNavWindowFrame = "{{19, 227}, {1085, 646}}";
+			sepNavVisRange = "{964, 1204}";
+			sepNavWindowFrame = "{{237, 172}, {1085, 646}}";
 		};
 	};
 	522A10A30E91068F0084B1EE /* seq_demo.c */ = {
@@ -168,9 +138,9 @@
 	};
 	522A10F50E910BCA0084B1EE /* seq_lcd.c */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {740, 2840}}";
-			sepNavSelRange = "{5877, 58}";
-			sepNavVisRange = "{5856, 153}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 3570}}";
+			sepNavSelRange = "{2852, 6}";
+			sepNavVisRange = "{2411, 1083}";
 			sepNavWindowFrame = "{{42, 206}, {1085, 646}}";
 		};
 	};
@@ -212,16 +182,6 @@
 			sepNavVisRange = "{1067, 940}";
 			sepNavWindowFrame = "{{308, 183}, {1085, 646}}";
 		};
-	};
-	52E1E4B10E9832EC004DC476 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 522A0DB70E8FE5B90084B1EE /* UI.m */;
-		name = "UI.m: 225";
-		rLen = 0;
-		rLoc = 5820;
-		rType = 0;
-		vrLen = 891;
-		vrLoc = 7477;
 	};
 	8D1107260486CEB800E47090 /* midibox_seq_v4 */ = {
 		activeExec = 0;

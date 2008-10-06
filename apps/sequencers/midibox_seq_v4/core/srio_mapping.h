@@ -26,49 +26,49 @@
 #define DEFAULT_GP_DOUT_SR_R2   16      // GP dual color: second GP DOUT shift register assigned to SR#15
 
 //                          SR    ignore    Pin
-#define LED_TRACK1       ((( 1   -1)<<3)+    7)
-#define LED_TRACK2       ((( 1   -1)<<3)+    6)
-#define LED_TRACK3       ((( 1   -1)<<3)+    5)
-#define LED_TRACK4       ((( 1   -1)<<3)+    4)
+#define LED_TRACK1       ((( 1   -1)<<3)+    0)
+#define LED_TRACK2       ((( 1   -1)<<3)+    1)
+#define LED_TRACK3       ((( 1   -1)<<3)+    2)
+#define LED_TRACK4       ((( 1   -1)<<3)+    3)
 
 //                          SR    ignore    Pin
-#define LED_PAR_LAYER_A  ((( 1   -1)<<3)+    3)
-#define LED_PAR_LAYER_B  ((( 1   -1)<<3)+    2)
-#define LED_PAR_LAYER_C  ((( 1   -1)<<3)+    1)
+#define LED_PAR_LAYER_A  ((( 1   -1)<<3)+    4)
+#define LED_PAR_LAYER_B  ((( 1   -1)<<3)+    5)
+#define LED_PAR_LAYER_C  ((( 1   -1)<<3)+    6)
 
 //                          SR    ignore    Pin
-#define LED_BEAT         ((( 1   -1)<<3)+    0)
+#define LED_BEAT         ((( 1   -1)<<3)+    7)
 
 //                          SR    ignore    Pin
-#define LED_EDIT         ((( 2   -1)<<3)+    7)
-#define LED_MUTE         ((( 2   -1)<<3)+    6)
-#define LED_PATTERN      ((( 2   -1)<<3)+    5)
-#define LED_SONG         ((( 2   -1)<<3)+    4)
+#define LED_EDIT         ((( 2   -1)<<3)+    0)
+#define LED_MUTE         ((( 2   -1)<<3)+    1)
+#define LED_PATTERN      ((( 2   -1)<<3)+    2)
+#define LED_SONG         ((( 2   -1)<<3)+    3)
 
 //                          SR    ignore    Pin
-#define LED_SOLO         ((( 2   -1)<<3)+    3)
-#define LED_FAST         ((( 2   -1)<<3)+    2)
-#define LED_ALL          ((( 2   -1)<<3)+    1)
+#define LED_SOLO         ((( 2   -1)<<3)+    4)
+#define LED_FAST         ((( 2   -1)<<3)+    5)
+#define LED_ALL          ((( 2   -1)<<3)+    6)
 
 //                          SR    ignore    Pin
-#define LED_GROUP1       (((11   -1)<<3)+    7) // OPTIONAL! see CHANGELOG.txt
-#define LED_GROUP2       (((11   -1)<<3)+    5) // assigned to pin 2 due to DUO LED
-#define LED_GROUP3       (((11   -1)<<3)+    3) // assigned to pin 4 due to DUO LED
-#define LED_GROUP4       (((11   -1)<<3)+    1) // assigned to pin 6 due to DUO LED
+#define LED_GROUP1       (((11   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
+#define LED_GROUP2       (((11   -1)<<3)+    2) // assigned to pin 2 due to DUO LED
+#define LED_GROUP3       (((11   -1)<<3)+    4) // assigned to pin 4 due to DUO LED
+#define LED_GROUP4       (((11   -1)<<3)+    6) // assigned to pin 6 due to DUO LED
 
 //                          SR    ignore    Pin
-#define LED_TRG_LAYER_A  (((12   -1)<<3)+    7) // OPTIONAL! see CHANGELOG.txt
-#define LED_TRG_LAYER_B  (((12   -1)<<3)+    6)
-#define LED_TRG_LAYER_C  (((12   -1)<<3)+    5)
+#define LED_TRG_LAYER_A  (((12   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
+#define LED_TRG_LAYER_B  (((12   -1)<<3)+    1)
+#define LED_TRG_LAYER_C  (((12   -1)<<3)+    2)
 
 //                          SR    ignore    Pin
-#define LED_PLAY         (((12   -1)<<3)+    4) // OPTIONAL! see CHANGELOG.txt
-#define LED_STOP         (((12   -1)<<3)+    3)
-#define LED_PAUSE        (((12   -1)<<3)+    2)
+#define LED_PLAY         (((12   -1)<<3)+    3) // OPTIONAL! see CHANGELOG.txt
+#define LED_STOP         (((12   -1)<<3)+    4)
+#define LED_PAUSE        (((12   -1)<<3)+    5)
 
 //                          SR    ignore    Pin
-#define LED_STEP_1_16    (((12   -1)<<3)+    1) // OPTIONAL! see CHANGELOG.txt
-#define LED_STEP_17_32   (((12   -1)<<3)+    0)
+#define LED_STEP_1_16    (((12   -1)<<3)+    6) // OPTIONAL! see CHANGELOG.txt
+#define LED_STEP_17_32   (((12   -1)<<3)+    7)
 
 
 
