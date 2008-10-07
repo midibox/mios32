@@ -98,7 +98,7 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  unsigned char pin, value;
+  unsigned char pin, pin_state;
 
   MIOS32_MIDI_SendPackage(port, midi_package);
 
@@ -107,21 +107,21 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
   {
     // 90 xx 00 is the same like a note off event!
     // (-> http://www.borg.com/~jglatt/tech/midispec.htm)
-    value = (midi_package.event == NoteOff) || (midi_package.velocity == 0x00);
+    pin_state = (midi_package.event == NoteOff) || (midi_package.velocity == 0x00);
 
     // store last pin number and value
     last_dout_pin = pin;
-    last_dout_value = value;
+    last_dout_value = pin_state;
 
     // set LEDs
 #if BLM_NUM_COLOURS >= 1
-    BLM_DOUT_PinSet(0, pin, value ? 0 : 1); // red, pin, value
+    BLM_DOUT_PinSet(0, pin, pin_state ? 0 : 1); // red, pin, value
 #endif
 #if BLM_NUM_COLOURS >= 2
-    BLM_DOUT_PinSet(1, pin, value ? 0 : 1); // green, pin, value
+    BLM_DOUT_PinSet(1, pin, pin_state ? 0 : (midi_package.velocity > 64)); // green, pin, value
 #endif
 #if BLM_NUM_COLOURS >= 3
-    BLM_DOUT_PinSet(2, pin, value ? 0 : 1); // blue, pin, value
+    BLM_DOUT_PinSet(2, pin, pin_state ? 0 : (midi_package.velocity > 110)); // blue, pin, value
 #endif	
   }
 }
