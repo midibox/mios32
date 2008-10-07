@@ -23,20 +23,50 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Pin definitions (tmp. for STM32 Primer board)
+// Following local definitions depend on the selected SPI
 /////////////////////////////////////////////////////////////////////////////
 
-#define MIOS32_SRIO_RCLK_PORT  GPIOA
-#define MIOS32_SRIO_RCLK_PIN   GPIO_Pin_4
+#if MIOS32_SRIO_SPI == 1
 
-#define MIOS32_SRIO_SCLK_PORT  GPIOA
-#define MIOS32_SRIO_SCLK_PIN   GPIO_Pin_5
+# define MIOS32_SRIO_RCLK_PORT  GPIOA
+# define MIOS32_SRIO_RCLK_PIN   GPIO_Pin_4
+# define MIOS32_SRIO_SCLK_PORT  GPIOA
+# define MIOS32_SRIO_SCLK_PIN   GPIO_Pin_5
+# define MIOS32_SRIO_DIN_PORT   GPIOA
+# define MIOS32_SRIO_DIN_PIN    GPIO_Pin_6
+# define MIOS32_SRIO_DOUT_PORT  GPIOA
+# define MIOS32_SRIO_DOUT_PIN   GPIO_Pin_7
 
-#define MIOS32_SRIO_DIN_PORT   GPIOA
-#define MIOS32_SRIO_DIN_PIN    GPIO_Pin_6
+# define MIOS32_SRIO_SPI_PTR    SPI1
+# define MIOS32_SRIO_DMA_RX_PTR DMA1_Channel2
+# define MIOS32_SRIO_DMA_RX_IRQ_FLAGS (DMA1_FLAG_TC2 | DMA1_FLAG_TE2 | DMA1_FLAG_HT2 | DMA1_FLAG_GL2)
+# define MIOS32_SRIO_DMA_TX_PTR DMA1_Channel3
+# define MIOS32_SRIO_DMA_TX_IRQ_FLAGS (DMA1_FLAG_TC3 | DMA1_FLAG_TE3 | DMA1_FLAG_HT3 | DMA1_FLAG_GL3)
+# define MIOS32_SRIO_DMA_IRQ_CHANNEL DMA1_Channel2_IRQChannel
+# define MIOS32_SRIO_DMA_IRQHANDLER_FUNC void DMAChannel2_IRQHandler(void)
 
-#define MIOS32_SRIO_DOUT_PORT  GPIOA
-#define MIOS32_SRIO_DOUT_PIN   GPIO_Pin_7
+#elif MIOS32_SRIO_SPI == 2
+
+# define MIOS32_SRIO_RCLK_PORT  GPIOB
+# define MIOS32_SRIO_RCLK_PIN   GPIO_Pin_12
+# define MIOS32_SRIO_SCLK_PORT  GPIOB
+# define MIOS32_SRIO_SCLK_PIN   GPIO_Pin_13
+# define MIOS32_SRIO_DIN_PORT   GPIOB
+# define MIOS32_SRIO_DIN_PIN    GPIO_Pin_14
+# define MIOS32_SRIO_DOUT_PORT  GPIOB
+# define MIOS32_SRIO_DOUT_PIN   GPIO_Pin_15
+
+# define MIOS32_SRIO_SPI_PTR    SPI2
+# define MIOS32_SRIO_DMA_RX_PTR DMA1_Channel4
+# define MIOS32_SRIO_DMA_RX_IRQ_FLAGS (DMA1_FLAG_TC4 | DMA1_FLAG_TE4 | DMA1_FLAG_HT4 | DMA1_FLAG_GL4)
+# define MIOS32_SRIO_DMA_TX_PTR DMA1_Channel5
+# define MIOS32_SRIO_DMA_TX_IRQ_FLAGS (DMA1_FLAG_TC5 | DMA1_FLAG_TE5 | DMA1_FLAG_HT5 | DMA1_FLAG_GL5)
+# define MIOS32_SRIO_DMA_IRQ_CHANNEL DMA1_Channel4_IRQChannel
+# define MIOS32_SRIO_DMA_IRQHANDLER_FUNC void DMAChannel4_IRQHandler(void)
+
+#else
+# error "Unsupported SPI peripheral number"
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -129,29 +159,33 @@ s32 MIOS32_SRIO_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_RCLK_PIN;
   GPIO_Init(MIOS32_SRIO_RCLK_PORT, &GPIO_InitStructure);
 
-  // A6 is input with pull-up
+  // DIN is input with pull-up
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_DIN_PIN;
   GPIO_Init(MIOS32_SRIO_DIN_PORT, &GPIO_InitStructure);
 
-  // enable SPI1 peripheral clock (APB2 == high speed)
+  // enable SPI peripheral clock (APB2 == high speed)
+#if MIOS32_SRIO_SPI == 1
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+#elif MIOS32_SRIO_SPI == 2
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
+#endif
 
-  // SPI1 configuration
+  // SPI configuration
   SPI_StructInit(&SPI_InitStructure);
   SPI_InitStructure.SPI_Direction           = SPI_Direction_2Lines_FullDuplex;
   SPI_InitStructure.SPI_Mode                = SPI_Mode_Master;
   SPI_InitStructure.SPI_DataSize            = SPI_DataSize_8b;
-  SPI_InitStructure.SPI_CPOL                = SPI_CPOL_High;
-  SPI_InitStructure.SPI_CPHA                = SPI_CPHA_2Edge;
+  SPI_InitStructure.SPI_CPOL                = SPI_CPOL_Low;
+  SPI_InitStructure.SPI_CPHA                = SPI_CPHA_1Edge;
   SPI_InitStructure.SPI_NSS                 = SPI_NSS_Soft;
   SPI_InitStructure.SPI_BaudRatePrescaler   = SPI_BaudRatePrescaler_128; // ca. 1 uS period
   SPI_InitStructure.SPI_FirstBit            = SPI_FirstBit_MSB;
   SPI_InitStructure.SPI_CRCPolynomial       = 7;
-  SPI_Init(SPI1, &SPI_InitStructure);
+  SPI_Init(MIOS32_SRIO_SPI_PTR, &SPI_InitStructure);
 
-  // enable SPI1
-  SPI_Cmd(SPI1, ENABLE);
+  // enable SPI
+  SPI_Cmd(MIOS32_SRIO_SPI_PTR, ENABLE);
 
   // initial state of RCLK
   PIN_RCLK_1;
@@ -160,11 +194,11 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // enable DMA1 clock
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
-  // DMA Configuration for SPI Rx Event @ Channel 2
+  // DMA Configuration for SPI Rx Event
   DMA_StructInit(&DMA_InitStructure);
-  DMA_ClearFlag(DMA1_FLAG_TC2 | DMA1_FLAG_TE2 | DMA1_FLAG_HT2 | DMA1_FLAG_GL2);
-  DMA_Cmd(DMA1_Channel2, DISABLE);
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&SPI1->DR;
+  DMA_ClearFlag(MIOS32_SRIO_DMA_RX_IRQ_FLAGS);
+  DMA_Cmd(MIOS32_SRIO_DMA_RX_PTR, DISABLE);
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&MIOS32_SRIO_SPI_PTR->DR;
   DMA_InitStructure.DMA_MemoryBaseAddr = (u32)&mios32_srio_din_buffer;
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
   DMA_InitStructure.DMA_BufferSize = MIOS32_SRIO_NUM_SR;
@@ -175,29 +209,29 @@ s32 MIOS32_SRIO_Init(u32 mode)
   DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
   DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
   DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-  DMA_Init(DMA1_Channel2, &DMA_InitStructure);
-  DMA_Cmd(DMA1_Channel2, ENABLE);
+  DMA_Init(MIOS32_SRIO_DMA_RX_PTR, &DMA_InitStructure);
+  DMA_Cmd(MIOS32_SRIO_DMA_RX_PTR, ENABLE);
 
   // trigger interrupt when transfer complete
-  DMA_ITConfig(DMA1_Channel2, DMA_IT_TC, ENABLE);
+  DMA_ITConfig(MIOS32_SRIO_DMA_RX_PTR, DMA_IT_TC, ENABLE);
 
-  // DMA Configuration for SPI Tx Event @ Channel 3
+  // DMA Configuration for SPI Tx Event
   // (partly re-using previous DMA setup)
-  DMA_ClearFlag(DMA1_FLAG_TC3 | DMA1_FLAG_TE3 | DMA1_FLAG_HT3 | DMA1_FLAG_GL3);
-  DMA_Cmd(DMA1_Channel3, DISABLE);
+  DMA_ClearFlag(MIOS32_SRIO_DMA_TX_IRQ_FLAGS);
+  DMA_Cmd(MIOS32_SRIO_DMA_TX_PTR, DISABLE);
   DMA_InitStructure.DMA_MemoryBaseAddr = (u32)&mios32_srio_dout;
   DMA_InitStructure.DMA_BufferSize = MIOS32_SRIO_NUM_SR;
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
   DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  DMA_Init(DMA1_Channel3, &DMA_InitStructure);
-  DMA_Cmd(DMA1_Channel3, ENABLE);
+  DMA_Init(MIOS32_SRIO_DMA_TX_PTR, &DMA_InitStructure);
+  DMA_Cmd(MIOS32_SRIO_DMA_TX_PTR, ENABLE);
 
-  // enable SPI1 interrupts to DMA
-  SPI_I2S_DMACmd(SPI1, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
+  // enable SPI interrupts to DMA
+  SPI_I2S_DMACmd(MIOS32_SRIO_SPI_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
 
   // Configure and enable DMA interrupt
   NVIC_StructInit(&NVIC_InitStructure);
-  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel2_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SRIO_DMA_IRQ_CHANNEL;
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -241,7 +275,6 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 
   // before first byte will be sent:
   // latch DIN registers by pulsing RCLK: 1->0->1
-  PIN_RCLK_0;
   // TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
   // TODO: wait longer for touch sensors
   // TODO: maybe we should disable all IRQs here for higher accuracy
@@ -249,13 +282,13 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   PIN_RCLK_1;
 
   // reload DMA byte counters
-  DMA_Cmd(DMA1_Channel2, DISABLE);
-  DMA1_Channel2->CNDTR = MIOS32_SRIO_NUM_SR;
-  DMA_Cmd(DMA1_Channel2, ENABLE);
+  DMA_Cmd(MIOS32_SRIO_DMA_RX_PTR, DISABLE);
+  MIOS32_SRIO_DMA_RX_PTR->CNDTR = MIOS32_SRIO_NUM_SR;
+  DMA_Cmd(MIOS32_SRIO_DMA_RX_PTR, ENABLE);
 
-  DMA_Cmd(DMA1_Channel3, DISABLE);
-  DMA1_Channel3->CNDTR = MIOS32_SRIO_NUM_SR;
-  DMA_Cmd(DMA1_Channel3, ENABLE);
+  DMA_Cmd(MIOS32_SRIO_DMA_TX_PTR, DISABLE);
+  MIOS32_SRIO_DMA_TX_PTR->CNDTR = MIOS32_SRIO_NUM_SR;
+  DMA_Cmd(MIOS32_SRIO_DMA_TX_PTR, ENABLE);
 
   // transfer will start now ("empty buffer" event already active)
 
@@ -264,24 +297,23 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DMA1 Channel2 interrupt is triggered once the complete SRIO chain
+// DMA1 Channel interrupt is triggered once the complete SRIO chain
 // has been scanned
 /////////////////////////////////////////////////////////////////////////////
-void DMAChannel2_IRQHandler(void)
+MIOS32_SRIO_DMA_IRQHANDLER_FUNC
 {
   s32 i;
   volatile s32 delay; // ensure, that delay won't be removed by compiler (depends on optimisation level)
 
-  // clear the pending flag
-  DMA_ClearITPendingBit(DMA1_IT_TC2);
+  // clear the pending flag(s)
+  DMA_ClearFlag(MIOS32_SRIO_DMA_RX_IRQ_FLAGS);
 
   // notify that new values have been transfered
   srio_values_transfered = 1;
 
   // latch DOUT registers by pulsing RCLK: 1->0->1
-  PIN_RCLK_0;
   // TODO: find a proper way to produce a delay with uS accuracy, vTaskDelay and vTaskDelayUntil only provide mS accuracy
-  for(delay=0; delay<5; ++delay)	PIN_RCLK_0;
+  for(delay=0; delay<5; ++delay) PIN_RCLK_0;
   PIN_RCLK_1;
 
   // copy/or buffered DIN values/changed flags
