@@ -33,7 +33,7 @@ extern "C" {
 #if defined(MIOS32_FAMILY_STM32F10x)
 # include <stm32f10x_lib.h>
 #else
-   XXX derivative not supported XXX
+# error "Unsupported MIOS32_FAMILY selected!"
 #endif
 
 
