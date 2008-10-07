@@ -49,7 +49,7 @@ u8 blm_button_debounce_ctr[8*BLM_NUM_ROWS]; // expensive
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes SPI pins and peripheral
+// Initializes the button LED matrix
 // IN: <mode>: currently only mode 0 supported
 //             later we could provide different pin mappings and operation 
 //             modes (e.g. output only)
@@ -99,8 +99,7 @@ s32 BLM_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function prepares the DOUT register to drive a column
-// It should be called before MIOS32_SRIO_ScanStart() is executed to capture
-// the read DIN values
+// It should be called from the APP_SRIO_ServicePrepare
 // IN: -
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -167,7 +166,7 @@ s32 BLM_PrepareCol(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function gets the DIN values of the selected column
-// It should be called from the SRIO scan finish notification hook
+// It should be called from the APP_SRIO_ServiceFinish hook
 // IN: -
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
