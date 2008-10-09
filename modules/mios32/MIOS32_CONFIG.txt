@@ -35,6 +35,9 @@ into your local mios32_config.h file
 // (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
 #define MIOS32_SRIO_SPI 1
 
+// should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
+#define MIOS32_SRIO_OUTPUTS_OD 1
+
 // maximal number of rotary encoders
 #define MIOS32_ENC_NUM_MAX 64
 

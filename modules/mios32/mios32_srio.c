@@ -144,18 +144,28 @@ s32 MIOS32_SRIO_Init(u32 mode)
   }
 
   // init GPIO structure
+  // using 2 MHz instead of 50 MHz to avoid fast transients which can cause flickering!
+  // optionally using open drain mode for cheap and sufficient levelshifting from 3.3V to 5V
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
   // SCLK and DOUT are outputs assigned to alternate functions
+#if MIOS32_SRIO_OUTPUTS_OD
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_OD;
+#else
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
+#endif
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_SCLK_PIN;
   GPIO_Init(MIOS32_SRIO_SCLK_PORT, &GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_DOUT_PIN;
   GPIO_Init(MIOS32_SRIO_DOUT_PORT, &GPIO_InitStructure);
 
   // RCLK is outputs assigned to GPIO
+#if MIOS32_SRIO_OUTPUTS_OD
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_OD;
+#else
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+#endif
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_RCLK_PIN;
   GPIO_Init(MIOS32_SRIO_RCLK_PORT, &GPIO_InitStructure);
 
@@ -176,10 +186,14 @@ s32 MIOS32_SRIO_Init(u32 mode)
   SPI_InitStructure.SPI_Direction           = SPI_Direction_2Lines_FullDuplex;
   SPI_InitStructure.SPI_Mode                = SPI_Mode_Master;
   SPI_InitStructure.SPI_DataSize            = SPI_DataSize_8b;
-  SPI_InitStructure.SPI_CPOL                = SPI_CPOL_Low;
-  SPI_InitStructure.SPI_CPHA                = SPI_CPHA_1Edge;
+  SPI_InitStructure.SPI_CPOL                = SPI_CPOL_High;
+  SPI_InitStructure.SPI_CPHA                = SPI_CPHA_2Edge;
   SPI_InitStructure.SPI_NSS                 = SPI_NSS_Soft;
-  SPI_InitStructure.SPI_BaudRatePrescaler   = SPI_BaudRatePrescaler_128; // ca. 1 uS period
+#if MIOS32_SRIO_SPI == 2
+  SPI_InitStructure.SPI_BaudRatePrescaler   = SPI_BaudRatePrescaler_64; // ca. 1 uS period @ 72/2 MHz (SPI2 located in APB1 domain)
+#else
+  SPI_InitStructure.SPI_BaudRatePrescaler   = SPI_BaudRatePrescaler_128; // ca. 1 uS period @ 72 MHz
+#endif
   SPI_InitStructure.SPI_FirstBit            = SPI_FirstBit_MSB;
   SPI_InitStructure.SPI_CRCPolynomial       = 7;
   SPI_Init(MIOS32_SRIO_SPI_PTR, &SPI_InitStructure);
