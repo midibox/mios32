@@ -45,6 +45,13 @@
 #define APP_LCD_D7_PORT        GPIOC
 #define APP_LCD_D7_PIN         GPIO_Pin_12
 
+// should output pins to LCD (SER/E1/E2/RW) be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
+#define APP_LCD_OUTPUTS_OD     1
+
+// 0: RS connected to SER input of 74HC595 shift register
+// 1: RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
+#define APP_LCD_RS_AT_D7APOSTROPHE 0
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Help Macros
@@ -102,8 +109,9 @@ s32 APP_LCD_Init(u32 mode)
   PIN_E1(0);
   PIN_E2(0);
 
+  // configure push-pull pins
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // weak driver to reduce transients
 
   GPIO_InitStructure.GPIO_Pin = APP_LCD_SCLK_PIN;
   GPIO_Init(APP_LCD_SCLK_PORT, &GPIO_InitStructure);
@@ -111,6 +119,10 @@ s32 APP_LCD_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = APP_LCD_RCLK_PIN;
   GPIO_Init(APP_LCD_RCLK_PORT, &GPIO_InitStructure);
 
+  // configure open-drain pins (if OD option enabled)
+#if APP_LCD_OUTPUTS_OD
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+#endif
   GPIO_InitStructure.GPIO_Pin = APP_LCD_SER_PIN;
   GPIO_Init(APP_LCD_SER_PORT, &GPIO_InitStructure);
 
@@ -123,9 +135,11 @@ s32 APP_LCD_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = APP_LCD_RW_PIN;
   GPIO_Init(APP_LCD_RW_PORT, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // input with pull-up
+  // configure "busy" input with pull-up
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
   GPIO_InitStructure.GPIO_Pin = APP_LCD_D7_PIN;
   GPIO_Init(APP_LCD_D7_PORT, &GPIO_InitStructure);
+
 
   // enable display by default
   display_available |= (1 << mios32_lcd_device);
@@ -351,12 +365,15 @@ void APP_LCD_SerWrite(u8 data, u8 rs)
 }
 
 
-// shift RS to Q8 
-// unfortunately 5V voltage required for RS pin, otherwise we could connect it to the SER pin
-// to avoid shifting. However, these 8 shifts take ca. 500 nS @ 72MHz, which is acceptable!
+// set RS line
 void APP_LCD_SetRS(u8 rs)
 {
   PIN_SER(rs);
+
+#if APP_LCD_RS_AT_D7APOSTROPHE
+  // RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
+  // shift RS to D7' 
+  // These 8 shifts take ca. 500 nS @ 72MHz, they don't really hurt
   PIN_SCLK_0;
   PIN_SCLK_1;
   PIN_SCLK_0;
@@ -374,6 +391,7 @@ void APP_LCD_SetRS(u8 rs)
   PIN_SCLK_0;
   PIN_SCLK_1;
   PIN_SCLK_0;
+#endif
 }
 
 
