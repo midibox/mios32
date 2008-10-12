@@ -55,11 +55,59 @@ s32 MIOS32_MIDI_Init(u32 mode)
     return -1; // unsupported mode
 
 #if !defined(MIOS32_DONT_USE_USB)
-  if( MIOS32_USB_Init(mode) < 0 )
+  if( MIOS32_USB_MIDI_Init(mode) < 0 )
     ret |= (1 << 0);
 #endif
 
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+  if( MIOS32_IIC_MIDI_Init(mode) < 0 )
+    ret |= (1 << 1);
+#endif
+
   return -ret;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function checks the availability of a MIDI port
+// IN: <port>: MIDI port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+// OUT: 1: port available
+//      0: port not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
+{
+  // if default port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = MIOS32_MIDI_DEFAULT_PORT;
+  }
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
+      return MIOS32_USB_MIDI_CheckAvailable();
+#else
+      return 0; // USB has been disabled
+#endif
+
+    case 2:
+      return 0; // USART not implemented yet
+
+    case 3:
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_CheckAvailable(port & 0xf);
+#else
+      return 0; // IIC_MIDI has been disabled
+#endif
+
+    case 4:
+      return 0; // Ethernet not implemented yet
+      
+    default:
+      // invalid port
+      return 0;
+  }
 }
 
 
@@ -68,7 +116,7 @@ s32 MIOS32_MIDI_Init(u32 mode)
 // This is a low level function - use the remaining MIOS32_MIDI_Send* functions
 // to send specific MIDI events
 // IN: <port>: MIDI port 
-//             USB0..USB7, UART0..UART1, IIC0..IIC3
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
 //     <package>: MIDI package (see definition in mios32_midi.h)
 // OUT: returns -1 if port not available
 //      returns -2 if non-blocking mode activated: buffer is full
@@ -83,8 +131,8 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
   // branch depending on selected port
   switch( port >> 4 ) {
     case 0:
-#if !defined(MIOS32_DONT_USE_USB)
-      return MIOS32_USB_MIDIPackageSend(package);
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
+      return MIOS32_USB_MIDI_MIDIPackageSend(package);
 #else
       return -1; // USB has been disabled
 #endif
@@ -93,7 +141,11 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
       return -1; // USART not implemented yet
 
     case 2:
-      return -1; // IIC not implemented yet
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_PackageSend(package.cable, package);
+#else
+      return -1; // IIC_MIDI has been disabled
+#endif
 
     case 3:
       return -1; // Ethernet not implemented yet
@@ -303,23 +355,88 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 {
   u8 port;
   mios32_midi_package_t package;
-  u8 again;
 
   void (*callback_event)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_event;
   void (*callback_sysex)(mios32_midi_port_t port, u8 sysex_byte) = _callback_sysex;
 
+  u8 intf = 0; // interface to be checked
+  u8 total_packages_forwarded = 0; // number of forwards - stop after 10 forwards to yield some CPU time for other tasks
+  u8 packages_forwarded = 0;
+  u8 again = 1;
   do {
-    // notifies, that there are more messages to be processed
-    again = 0;
+    // Round Robin
+    // TODO: maybe a list based approach would be better
+    // it would allow to add/remove interfaces dynamically
+    // this would also allow to give certain ports a higher priority (to add them multiple times to the list)
+    // it would also improve this spagetthi code ;)
+    s32 error = -1;
+    switch( intf++ ) {
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
+      case 0: error = MIOS32_USB_MIDI_MIDIPackageReceive(&package); port = package.cable; break;
+#else
+      case 0: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 1: error = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
+#else
+      case 1: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 2: error = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
+#else
+      case 2: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 3: error = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
+#else
+      case 3: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 4: error = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
+#else
+      case 4: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 5: error = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
+#else
+      case 5: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 6: error = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
+#else
+      case 6: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 7: error = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
+#else
+      case 7: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 8: error = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+#else
+      case 8: error = -1; break;
+#endif
+      default:
+	// allow 10 forwards maximum to yield some CPU time for other tasks
+	if( packages_forwarded && total_packages_forwarded < 10 ) {
+	  intf = 0; // restart with USB
+	  packages_forwarded = 0; // for checking, if packages still have been forwarded in next round
+	} else {
+	  again = 0; // no more interfaces to be processed
+	}
+	error = -1; // empty round - no message
+    }
 
-    // TODO: more generic handler used by all port types (USB, USART, IIC, etc..)
+    // message received?
+    if( error >= 0 ) {
+      // notify that a package has been forwarded
+      ++packages_forwarded;
+      ++total_packages_forwarded;
 
-    // check for USB messages
-    if( MIOS32_USB_MIDIPackageReceive(&package) ) {
-      // get port and mask out cable number
-      port = package.cable;
+      // remove cable number from package (MIOS32_MIDI passes it's own port number)
       package.cable = 0;
 
+      // branch depending on package type
       if( package.type >= 0x8 ) {
 	callback_event(port, package);
       } else {
