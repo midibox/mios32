@@ -197,7 +197,7 @@ void DIN_BLM_NotifyToggle(u32 pin, u32 pin_value)
 #endif
 
   // send MIDI event
-  MIOS32_MIDI_SendNoteOn(USB0, Chn1, (pin + BLM_MIDI_STARTNOTE) & 0x7f, pin_value ? 0x00 : 0x7f);
+  MIOS32_MIDI_SendNoteOn(DEFAULT, Chn1, (pin + BLM_MIDI_STARTNOTE) & 0x7f, pin_value ? 0x00 : 0x7f);
 }
 
 static void TASK_BLM_Check(void *pvParameters)

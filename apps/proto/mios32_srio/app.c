@@ -140,7 +140,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
   MIOS32_DOUT_PinSet(pin, pin_value ? 0 : 1);
 
   // send MIDI event
-  MIOS32_MIDI_SendNoteOn(USB0, Chn1, pin, pin_value ? 0x00 : 0x7f);
+  MIOS32_MIDI_SendNoteOn(DEFAULT, Chn1, pin, pin_value ? 0x00 : 0x7f);
 }
 
 
@@ -156,7 +156,7 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
   last_enc_dir = (incrementer > 0) ? 1 : 0;
 
   // send MIDI event
-  MIOS32_MIDI_SendCC(USB0, Chn1, encoder, incrementer & 0x7f);
+  MIOS32_MIDI_SendCC(DEFAULT, Chn1, encoder, incrementer & 0x7f);
 }
 
 
