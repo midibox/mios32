@@ -18,6 +18,11 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// the default MIDI port for MIDI output
+#ifndef MIOS32_MIDI_DEFAULT_PORT
+#define MIOS32_MIDI_DEFAULT_PORT USB0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -25,23 +30,29 @@
 
 
 typedef enum {
-  USB0 = 0x00,
-  USB1 = 0x01,
-  USB2 = 0x02,
-  USB3 = 0x03,
-  USB4 = 0x04,
-  USB5 = 0x05,
-  USB6 = 0x06,
-  USB7 = 0x07,
+  DEFAULT = 0x00,
+
+  USB0 = 0x10,
+  USB1 = 0x11,
+  USB2 = 0x12,
+  USB3 = 0x13,
+  USB4 = 0x14,
+  USB5 = 0x15,
+  USB6 = 0x16,
+  USB7 = 0x17,
 
 
-  UART0 = 0x10,
-  UART1 = 0x11,
+  UART0 = 0x20,
+  UART1 = 0x21,
 
-  IIC0 = 0x20,
-  IIC1 = 0x21,
-  IIC2 = 0x22,
-  IIC3 = 0x23
+  IIC0 = 0x30,
+  IIC1 = 0x31,
+  IIC2 = 0x32,
+  IIC3 = 0x33,
+  IIC4 = 0x34,
+  IIC5 = 0x35,
+  IIC6 = 0x36,
+  IIC7 = 0x37
 } mios32_midi_port_t;
 
 
@@ -126,6 +137,8 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MIOS32_MIDI_Init(u32 mode);
+
+extern s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port);
 
 extern s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
 

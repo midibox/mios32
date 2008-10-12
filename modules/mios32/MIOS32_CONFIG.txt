@@ -21,8 +21,9 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_ENC
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
-#define MIOS32_DONT_USE_USB
-#define MIOS32_DONT_USE_USB_DESC
+#define MIOS32_DONT_USE_USB_MIDI
+#define MIOS32_DONT_USE_IIC
+#define MIOS32_DONT_USE_IIC_MIDI
 #define MIOS32_DONT_USE_BOARD
 
 
@@ -41,15 +42,88 @@ into your local mios32_config.h file
 // maximal number of rotary encoders
 #define MIOS32_ENC_NUM_MAX 64
 
+
+// the default MIDI port for MIDI output
+#define MIOS32_MIDI_DEFAULT_PORT USB0
+
+
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
-#define MIOS32_USB_DESC_USE_AC_INTERFACE 1
+#define MIOS32_USB_MIDI_USE_AC_INTERFACE 1
 
 // allowed number of USB MIDI ports: 1..8
-#define MIOS32_USB_DESC_NUM_PORTS 1
+#define MIOS32_USB_MIDI_NUM_PORTS 1
 
-// buffer size (should be at least >= MIOS32_USB_DESC_DATA_*_SIZE/4)
-#define MIOS32_USB_RX_BUFFER_SIZE   64 // packages
-#define MIOS32_USB_TX_BUFFER_SIZE   64 // packages
+// buffer size (should be at least >= MIOS32_USB_MIDI_DATA_*_SIZE/4)
+#define MIOS32_USB_MIDI_RX_BUFFER_SIZE   64 // packages
+#define MIOS32_USB_MIDI_TX_BUFFER_SIZE   64 // packages
+
+
+// sets the IIC bus frequency in kHz (400000 max!)
+#define MIOS32_IIC_BUS_FREQUENCY 400000
+
+// sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
+#define MIOS32_IIC_TIMEOUT_VALUE 5000
+
+// sets the buffer size used for background transmit/receive
+// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
+#define MIOS32_IIC_BUFFER_SIZE 66
+
+
+// base address of first MBHP_IIC_MIDI module
+#define MIOS32_IIC_MIDI_ADDR_BASE 0x10
+
+// max number of IIC MIDI interfaces (0..8)
+// has to be set to >0 in mios32_config.h to enable IIC MIDI!
+#define MIOS32_IIC_MIDI_NUM 0
+
+// Interface and RI_N port configuration
+// _ENABLED:   0 = interface disabled
+//             1 = interface enabled
+//             2 = interface enabled, check RI_N pin instead of polling receive status
+// _RI_N_PORT: Port to which RI_N is connected
+// _RI_N_PIN:  pin to which RI_N is connected
+#define MIOS32_IIC_MIDI0_ENABLED    1
+#define MIOS32_IIC_MIDI0_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI0_RI_N_PIN   GPIO_Pin_0
+#define MIOS32_IIC_MIDI1_ENABLED    1
+#define MIOS32_IIC_MIDI1_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI1_RI_N_PIN   GPIO_Pin_1
+#define MIOS32_IIC_MIDI2_ENABLED    1
+#define MIOS32_IIC_MIDI2_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI2_RI_N_PIN   GPIO_Pin_2
+#define MIOS32_IIC_MIDI3_ENABLED    1
+#define MIOS32_IIC_MIDI3_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI3_RI_N_PIN   GPIO_Pin_3
+#define MIOS32_IIC_MIDI4_ENABLED    1
+#define MIOS32_IIC_MIDI4_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI4_RI_N_PIN   GPIO_Pin_0
+#define MIOS32_IIC_MIDI5_ENABLED    1
+#define MIOS32_IIC_MIDI5_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI5_RI_N_PIN   GPIO_Pin_1
+#define MIOS32_IIC_MIDI6_ENABLED    1
+#define MIOS32_IIC_MIDI6_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI6_RI_N_PIN   GPIO_Pin_2
+#define MIOS32_IIC_MIDI7_ENABLED    1
+#define MIOS32_IIC_MIDI7_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI7_RI_N_PIN   GPIO_Pin_3
+
+
+// base address of first BankStick
+#define MIOS32_IIC_BS_ADDR_BASE 0xa0
+
+// max number of BankSticks (0..8)
+// has to be set to >0 in mios32_config.h to enable BankStick Support
+#define MIOS32_IIC_BS_NUM 0
+
+// _SIZE: 0 = BankStick disabled, 32768 or 65536 = BankStick enabled with given size in kilobyte
+#define MIOS32_IIC_BS0_SIZE    32768
+#define MIOS32_IIC_BS1_SIZE    32768
+#define MIOS32_IIC_BS2_SIZE    32768
+#define MIOS32_IIC_BS3_SIZE    32768
+#define MIOS32_IIC_BS4_SIZE    32768
+#define MIOS32_IIC_BS5_SIZE    32768
+#define MIOS32_IIC_BS6_SIZE    32768
+#define MIOS32_IIC_BS7_SIZE    32768
 
 
 // maximum number of mapped CLCD lines

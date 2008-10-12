@@ -67,6 +67,9 @@ int main(void)
 #if !defined(MIOS32_DONT_USE_ENC) && !defined(MIOS32_DONT_USE_SRIO)
   MIOS32_ENC_Init(0);
 #endif
+#ifndef MIOS32_DONT_USE_IIC_BS
+  MIOS32_IIC_BS_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_MIDI
   MIOS32_MIDI_Init(0); // 0 = blocking mode
 #endif
@@ -176,7 +179,7 @@ static void TASK_MIDI_Receive(void *pvParameters)
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
     // handle USB messages
-    MIOS32_USB_Handler();
+    MIOS32_USB_MIDI_Handler();
     
     // check for incoming MIDI messages and call hooks
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);

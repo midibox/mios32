@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for USB Driver
+ * Header file of application
  *
  * ==========================================================================
  *
@@ -11,24 +11,19 @@
  * ==========================================================================
  */
 
-#ifndef _MIOS32_USB_H
-#define _MIOS32_USB_H
+#ifndef _APP_H
+#define _APP_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// number of ports defined in mios32_usb_desc.h (-> MIOS32_USB_DESC_NUM_PORTS)
-
-
-// buffer size (should be at least >= MIOS32_USB_DESC_DATA_*_SIZE/4)
-#ifndef MIOS32_USB_RX_BUFFER_SIZE
-#define MIOS32_USB_RX_BUFFER_SIZE   64 // packages
-#endif
-
-#ifndef MIOS32_USB_TX_BUFFER_SIZE
-#define MIOS32_USB_TX_BUFFER_SIZE   64 // packages
-#endif
+#define PRINT_MSG_NONE           0
+#define PRINT_MSG_INIT           1
+#define PRINT_MSG_PATCH_AND_BANK 2
+#define PRINT_MSG_DUMP_SENT      3
+#define PRINT_MSG_DUMP_RECEIVED  4
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -40,17 +35,24 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIOS32_USB_Init(u32 mode);
-
-extern s32 MIOS32_USB_MIDIPackageSend(mios32_midi_package_t package);
-extern s32 MIOS32_USB_MIDIPackageReceive(mios32_midi_package_t *package);
-
-extern s32 MIOS32_USB_Handler(void);
+extern void APP_Init(void);
+extern void APP_Background(void);
+extern void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte);
+extern void APP_SRIO_ServicePrepare(void);
+extern void APP_SRIO_ServiceFinish(void);
+extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
+extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
+extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern volatile u8 patch;
+extern volatile u8 bank;
+extern volatile u8 print_msg;
 
-#endif /* _MIOS32_USB_H */
+
+#endif /* _APP_H */

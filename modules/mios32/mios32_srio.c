@@ -118,6 +118,10 @@ void (*srio_scan_finished_hook)(void);
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SRIO_Init(u32 mode)
 {
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
+
   u8 i;
 
   SPI_InitTypeDef  SPI_InitStructure;
@@ -125,13 +129,8 @@ s32 MIOS32_SRIO_Init(u32 mode)
   NVIC_InitTypeDef NVIC_InitStructure;
   DMA_InitTypeDef  DMA_InitStructure;
 
-
   // disable notification hook
   srio_scan_finished_hook = NULL;
-
-  // currently only mode 0 supported
-  if( mode != 0 )
-    return -1; // unsupported mode
 
   // clear chains
   // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
