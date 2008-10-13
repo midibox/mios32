@@ -121,10 +121,10 @@ u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
     return 0x00;
 
   // get and clear changed flags - must be atomic!
-  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
   changed = mios32_srio_din_changed[sr] & mask;
   mios32_srio_din_changed[sr] &= ~mask;
-  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return changed;
 }

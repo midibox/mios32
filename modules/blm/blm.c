@@ -284,10 +284,10 @@ s32 BLM_ButtonHandler(void *_notify_hook)
   for(sr=0; sr<BLM_NUM_ROWS; ++sr) {
     
     // check if there are pin changes - must be atomic!
-    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
     changed = blm_button_row_changed[sr];
     blm_button_row_changed[sr] = 0;
-    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
     // any pin change at this SR?
     if( !changed )

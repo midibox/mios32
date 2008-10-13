@@ -172,6 +172,7 @@ extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_syse
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern const u8 mios32_midi_pcktype_num_bytes[16];
 
 
 #endif /* _MIOS32_MIDI_H */

@@ -28,6 +28,27 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// this global array is read from MIOS32_IIC_MIDI and MIOS32_UART_MIDI to
+// determine the number of MIDI bytes which are part of a package
+const u8 mios32_midi_pcktype_num_bytes[16] = {
+  0, // 0: invalid/reserved event
+  0, // 1: invalid/reserved event
+  2, // 2: two-byte system common messages like MTC, Song Select, etc.
+  3, // 3: three-byte system common messages like SPP, etc.
+  3, // 4: SysEx starts or continues
+  1, // 5: Single-byte system common message or sysex sends with following single byte
+  2, // 6: SysEx sends with following two bytes
+  3, // 7: SysEx sends with following three bytes
+  3, // 8: Note Off
+  3, // 9: Note On
+  3, // a: Poly-Key Press
+  3, // b: Control Change
+  2, // c: Program Change
+  2, // d: Channel Pressure
+  3, // e: PitchBend Change
+  1  // f: single byte
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -59,9 +80,14 @@ s32 MIOS32_MIDI_Init(u32 mode)
     ret |= (1 << 0);
 #endif
 
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+  if( MIOS32_UART_MIDI_Init(mode) < 0 )
+    ret |= (1 << 1);
+#endif
+
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
   if( MIOS32_IIC_MIDI_Init(mode) < 0 )
-    ret |= (1 << 1);
+    ret |= (1 << 2);
 #endif
 
   return -ret;
@@ -92,7 +118,11 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 #endif
 
     case 2:
-      return 0; // USART not implemented yet
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_CheckAvailable(port & 0xf);
+#else
+      return 0; // UART_MIDI has been disabled
+#endif
 
     case 3:
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
@@ -125,29 +155,38 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  // if default port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = MIOS32_MIDI_DEFAULT_PORT;
+  }
+
   // insert subport number into package
   package.type = (package.type&0x0f) | (port << 4);
 
   // branch depending on selected port
   switch( port >> 4 ) {
-    case 0:
+    case 1:
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
       return MIOS32_USB_MIDI_MIDIPackageSend(package);
 #else
       return -1; // USB has been disabled
 #endif
 
-    case 1:
-      return -1; // USART not implemented yet
-
     case 2:
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_PackageSend(package.cable, package);
+#else
+      return -1; // UART_MIDI has been disabled
+#endif
+
+    case 3:
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
       return MIOS32_IIC_MIDI_PackageSend(package.cable, package);
 #else
       return -1; // IIC_MIDI has been disabled
 #endif
 
-    case 3:
+    case 4:
       return -1; // Ethernet not implemented yet
       
     default:
@@ -376,45 +415,55 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 #else
       case 0: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 1: error = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      case 1: error = MIOS32_UART_MIDI_PackageReceive(0, &package); port = UART0; break;
 #else
       case 1: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 2: error = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      case 2: error = MIOS32_UART_MIDI_PackageReceive(1, &package); port = UART1; break;
 #else
       case 2: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 3: error = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
+      case 3: error = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
 #else
       case 3: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 4: error = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
+      case 4: error = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
 #else
       case 4: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 5: error = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
+      case 5: error = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
 #else
       case 5: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 6: error = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
+      case 6: error = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
 #else
       case 6: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 7: error = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
+      case 7: error = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
 #else
       case 7: error = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 8: error = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+      case 8: error = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
 #else
       case 8: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 9: error = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
+#else
+      case 9: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 10: error = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+#else
+      case 10: error = -1; break;
 #endif
       default:
 	// allow 10 forwards maximum to yield some CPU time for other tasks

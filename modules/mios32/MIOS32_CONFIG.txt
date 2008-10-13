@@ -22,6 +22,8 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB_MIDI
+#define MIOS32_DONT_USE_UART
+#define MIOS32_DONT_USE_UART_MIDI
 #define MIOS32_DONT_USE_IIC
 #define MIOS32_DONT_USE_IIC_MIDI
 #define MIOS32_DONT_USE_BOARD
@@ -124,6 +126,22 @@ into your local mios32_config.h file
 #define MIOS32_IIC_BS5_SIZE    32768
 #define MIOS32_IIC_BS6_SIZE    32768
 #define MIOS32_IIC_BS7_SIZE    32768
+
+
+// number of UART interfaces (1 or 2) - to disable UART at all, use "MIOS32_DONT_USE_UART" instead!
+#define MIOS32_UART_NUM 2
+
+// Tx buffer size (1..256)
+#define MIOS32_UART_TX_BUFFER_SIZE 64
+
+// Rx buffer size (1..256)
+#define MIOS32_UART_RX_BUFFER_SIZE 64
+
+// Baudrate of UART first interface
+#define MIOS32_UART0_BAUDRATE 31250
+
+// Baudrate of UART second interface
+#define MIOS32_UART1_BAUDRATE 31250
 
 
 // maximum number of mapped CLCD lines

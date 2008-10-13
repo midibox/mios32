@@ -184,7 +184,7 @@ s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function checks the availability of the MBHP_IIC_MIDI module
 // taken from the last results of MIOS32_IIC_MIDI_ScanInterface()
-// IN: module number (0-7)
+// IN: module number (0..7)
 // OUT: 1: interface available
 //      0: interface not available
 /////////////////////////////////////////////////////////////////////////////
@@ -200,7 +200,7 @@ s32 MIOS32_IIC_MIDI_CheckAvailable(u8 iic_port)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function sends a new MIDI package to the selected IIC_MIDI port
-// IN: IIC_MIDI module number (0-7) in <iic_port>, MIDI package in <package>
+// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
 // OUT: 0: no error
 //      -1: IIC_MIDI device not available
 //      -2: if non-blocking mode activated: IIC_MIDI buffer is full
@@ -213,30 +213,10 @@ s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
 #else
   // exit if IIC port not available
-  if( !(iic_port_available & (1 << iic_port)) )
+  if( !MIOS32_IIC_MIDI_CheckAvailable(iic_port) )
     return -1;
 
-  // define array with number of bytes
-  const u8 num_bytes[16] = {
-    0, // 0: invalid/reserved event
-    0, // 1: invalid/reserved event
-    2, // 2: two-byte system common messages like MTC, Song Select, etc.
-    3, // 3: three-byte system common messages like SPP, etc.
-    3, // 4: SysEx starts or continues
-    1, // 5: Single-byte system common message or sysex sends with following single byte
-    2, // 6: SysEx sends with following two bytes
-    3, // 7: SysEx sends with following three bytes
-    3, // 8: Note Off
-    3, // 9: Note On
-    3, // a: Poly-Key Press
-    3, // b: Control Change
-    2, // c: Program Change
-    2, // d: Channel Pressure
-    3, // e: PitchBend Change
-    1  // f: single byte
-  };
-
-  u8 len = num_bytes[package.cin];
+  u8 len = mios32_midi_pcktype_num_bytes[package.cin];
   if( len ) {
     u8 buffer[3] = {package.evnt0, package.evnt1, package.evnt2};
     s32 error = -1;
@@ -276,7 +256,7 @@ s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function checks for a new package
-// IN: IIC_MIDI module number (0-7) in <iic_port>, 
+// IN: IIC_MIDI module number (0..7) in <iic_port>, 
 //     pointer to MIDI package in <package> (received package will be put into the given variable)
 // OUT: 0: no error
 //      -1: no package in buffer
@@ -289,7 +269,7 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
 #else
   // exit if IIC port not available
-  if( !(iic_port_available & (1 << iic_port)) )
+  if( !MIOS32_IIC_MIDI_CheckAvailable(iic_port) )
     return -1;
 
   // exit if no new data
@@ -331,7 +311,7 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns inverted state of RI_N pin
-// IN: iic_port (0-7) in <iic_port>
+// IN: iic_port (0..7) in <iic_port>
 // OUT: 1: RI_N active, 0: RI_N not active
 //      always 1 if RI_N pin not configured (driver uses polling method in this case)
 //      always 0 if invalid IIC port (>= 8)
