@@ -18,6 +18,11 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// temporary disabled for STM32 Primer due to pin conflicts
+#if defined(MIOS32_BOARD_STM32_PRIMER)
+#define MIOS32_UART_NUM 0
+#endif
+
 // number of UART interfaces (0..2)
 #ifndef MIOS32_UART_NUM
 #define MIOS32_UART_NUM 2
