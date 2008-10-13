@@ -196,10 +196,14 @@ s32 MIOS32_UART_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferFree(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return 0;
   else
     return MIOS32_UART_RX_BUFFER_SIZE - rx_buffer_size[uart];
+#endif
 }
 
 
@@ -211,10 +215,14 @@ s32 MIOS32_UART_RxBufferFree(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferUsed(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return 0;
   else
     return rx_buffer_size[uart];
+#endif
 }
 
 
@@ -227,6 +235,9 @@ s32 MIOS32_UART_RxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferGet(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
@@ -242,6 +253,7 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
   vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return received byte
+#endif
 }
 
 
@@ -254,6 +266,9 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPeek(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
@@ -266,6 +281,7 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
   vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return received byte
+#endif
 }
 
 
@@ -279,6 +295,9 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
@@ -295,6 +314,7 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
   vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0; // no error
+#endif
 }
 
 
@@ -306,10 +326,14 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferFree(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return 0;
   else
     return MIOS32_UART_TX_BUFFER_SIZE - tx_buffer_size[uart];
+#endif
 }
 
 
@@ -321,10 +345,14 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferUsed(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return 0;
   else
     return tx_buffer_size[uart];
+#endif
 }
 
 
@@ -337,6 +365,9 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferGet(u8 uart)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
@@ -352,6 +383,7 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
   vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return transmitted byte
+#endif
 }
 
 
@@ -365,6 +397,9 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
@@ -393,6 +428,7 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
   vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0; // no error
+#endif
 }
 
 
