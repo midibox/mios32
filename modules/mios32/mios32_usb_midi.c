@@ -749,18 +749,18 @@ volatile u16 wIstr;
 static vu32 bDeviceState = UNCONNECTED;
 
 // Rx buffer
-static u32 buffer_rx[MIOS32_USB_MIDI_RX_BUFFER_SIZE];
-static volatile u16 buffer_rx_tail;
-static volatile u16 buffer_rx_head;
-static volatile u16 buffer_rx_size;
-static volatile u8 buffer_rx_new_data;
+static u32 rx_buffer[MIOS32_USB_MIDI_RX_BUFFER_SIZE];
+static volatile u16 rx_buffer_tail;
+static volatile u16 rx_buffer_head;
+static volatile u16 rx_buffer_size;
+static volatile u8 rx_buffer_new_data;
 
 // Tx buffer
-static u32 buffer_tx[MIOS32_USB_MIDI_TX_BUFFER_SIZE];
-static volatile u16 buffer_tx_tail;
-static volatile u16 buffer_tx_head;
-static volatile u16 buffer_tx_size;
-static volatile u8 buffer_tx_busy;
+static u32 tx_buffer[MIOS32_USB_MIDI_TX_BUFFER_SIZE];
+static volatile u16 tx_buffer_tail;
+static volatile u16 tx_buffer_head;
+static volatile u16 tx_buffer_size;
+static volatile u8 tx_buffer_busy;
 
 // optional non-blocking mode
 static u8 non_blocking_mode = 0;
@@ -799,10 +799,10 @@ s32 MIOS32_USB_MIDI_Init(u32 mode)
   }
 
   // clear buffer counters and busy/wait signals
-  buffer_rx_tail = buffer_rx_head = buffer_rx_size = 0;
-  buffer_rx_new_data = 0; // no data received yet
-  buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
-  buffer_tx_busy = 0; // buffer is busy so long no USB connection detected
+  rx_buffer_tail = rx_buffer_head = rx_buffer_size = 0;
+  rx_buffer_new_data = 0; // no data received yet
+  tx_buffer_tail = tx_buffer_head = tx_buffer_size = 0;
+  tx_buffer_busy = 0; // buffer is busy so long no USB connection detected
 
 
 #ifdef MIOS32_BOARD_STM32_PRIMER
@@ -870,7 +870,7 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
     return -1;
 
   // buffer full?
-  if( buffer_tx_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
+  if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
     MIOS32_USB_MIDI_Handler();
@@ -886,12 +886,12 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
   }
 
   // put package into buffer - this operation should be atomic!
-  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-  buffer_tx[buffer_tx_head++] = package.ALL;
-  if( buffer_tx_head >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
-    buffer_tx_head = 0;
-  ++buffer_tx_size;
-  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  tx_buffer[tx_buffer_head++] = package.ALL;
+  if( tx_buffer_head >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+    tx_buffer_head = 0;
+  ++tx_buffer_size;
+  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0;
 }
@@ -908,18 +908,18 @@ s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
   u8 i;
 
   // package received?
-  if( !buffer_rx_size )
+  if( !rx_buffer_size )
     return -1;
 
   // get package - this operation should be atomic!
-  portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-  package->ALL = buffer_rx[buffer_rx_tail];
-  if( ++buffer_rx_tail >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
-    buffer_rx_tail = 0;
-  --buffer_rx_size;
-  portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  package->ALL = rx_buffer[rx_buffer_tail];
+  if( ++rx_buffer_tail >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+    rx_buffer_tail = 0;
+  --rx_buffer_size;
+  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
-  return buffer_rx_size;
+  return rx_buffer_size;
 }
 
 
@@ -974,29 +974,29 @@ void MIOS32_USB_MIDI_TxBufferHandler(void)
   //   - new packages are in the buffer
   //   - the device is configured
 
-  if( !buffer_tx_busy && buffer_tx_size && transfer_possible ) {
+  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
     u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_TXADDR<<1));
-    s16 count = (buffer_tx_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : buffer_tx_size;
+    s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
 
     // notify that new package is sent
-    buffer_tx_busy = 1;
+    tx_buffer_busy = 1;
 
     // send to IN pipe
     SetEPTxCount(ENDP1, 4*count);
 
     // atomic operation to avoid conflict with other interrupts
-    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
-    buffer_tx_size -= count;
+    vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+    tx_buffer_size -= count;
 
     // copy into PMA buffer (16bit word with, only 32bit addressable)
     do {
-      *pma_addr++ = buffer_tx[buffer_tx_tail] & 0xffff;
-      *pma_addr++ = (buffer_tx[buffer_tx_tail]>>16) & 0xffff;
-      if( ++buffer_tx_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
-	buffer_tx_tail = 0;
+      *pma_addr++ = tx_buffer[tx_buffer_tail] & 0xffff;
+      *pma_addr++ = (tx_buffer[tx_buffer_tail]>>16) & 0xffff;
+      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+	tx_buffer_tail = 0;
     } while( --count );
 
-    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
     // send buffer
     SetEPTxValid(ENDP1);
@@ -1012,28 +1012,28 @@ void MIOS32_USB_MIDI_RxBufferHandler(void)
   s16 count;
 
   // check if we can receive new data and get packages to be received from OUT pipe
-  if( buffer_rx_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
+  if( rx_buffer_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
 
     // check if buffer is free
-    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-buffer_rx_size) ) {
+    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
       u32 *pma_addr = (u32 *)(PMAAddr + (ENDP1_RXADDR<<1));
 
       // copy received packages into receive buffer
       // this operation should be atomic
-      portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+      vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
       do {
 	u16 pl = *pma_addr++;
 	u16 ph = *pma_addr++;
-	buffer_rx[buffer_rx_head] = (ph << 16) | pl;
-	if( ++buffer_rx_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
-	  buffer_rx_head = 0;
-	++buffer_rx_size;
+	rx_buffer[rx_buffer_head] = (ph << 16) | pl;
+	if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+	  rx_buffer_head = 0;
+	++rx_buffer_size;
       } while( --count >= 0 );
 
       // notify, that data has been put into buffer
-      buffer_rx_new_data = 0;
+      rx_buffer_new_data = 0;
 
-      portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+      vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
       // release OUT pipe
       SetEPRxValid(ENDP1);
@@ -1048,7 +1048,7 @@ void MIOS32_USB_MIDI_RxBufferHandler(void)
 void MIOS32_USB_MIDI_EP1_IN_Callback(void)
 {
   // package has been sent
-  buffer_tx_busy = 0;
+  tx_buffer_busy = 0;
 
   // check for next package
   MIOS32_USB_MIDI_TxBufferHandler();
@@ -1060,7 +1060,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(void)
 void MIOS32_USB_MIDI_EP1_OUT_Callback(void)
 {
   // put package into buffer
-  buffer_rx_new_data = 1;
+  rx_buffer_new_data = 1;
   MIOS32_USB_MIDI_RxBufferHandler();
 }
 
@@ -1153,10 +1153,10 @@ void MIOS32_USB_MIDI_CB_Reset(void)
   SetDeviceAddress(0);
 
   // clear buffer counters and busy/wait signals again (e.g., so that no invalid data will be sent out)
-  buffer_rx_tail = buffer_rx_head = buffer_rx_size = 0;
-  buffer_rx_new_data = 0; // no data received yet
-  buffer_tx_tail = buffer_tx_head = buffer_tx_size = 0;
-  buffer_tx_busy = 0; // buffer not busy anymore
+  rx_buffer_tail = rx_buffer_head = rx_buffer_size = 0;
+  rx_buffer_new_data = 0; // no data received yet
+  tx_buffer_tail = tx_buffer_head = tx_buffer_size = 0;
+  tx_buffer_busy = 0; // buffer not busy anymore
 
   bDeviceState = ATTACHED;
 }

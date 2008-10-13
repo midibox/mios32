@@ -372,16 +372,16 @@ s32 MIOS32_ENC_Handler(void *_callback)
   for(enc=0; enc<MIOS32_ENC_NUM_MAX; ++enc) {
 
     // following check/modify operation must be atomic
-    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
     if( incrementer = enc_state[enc].incrementer ) {
       enc_state[enc].incrementer = 0;
-      portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+      vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
 
       // call the hook
       callback(enc, incrementer);
     }
 
-    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
   }
 
   return 0; // no error
