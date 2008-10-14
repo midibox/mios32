@@ -50,6 +50,7 @@ Unix (we assume, that the repository has been dowloaded into ~/svn)
   export MIOS32_PATH=~/svn/mios32/trunk
   export MIOS32_BIN_PATH=$MIOS32_PATH/bin
 
+
 DOS: (we assume, that the repository has been downloaded to D:\)
   set MIOS32_PATH=D:\mios32\trunk
   set MIOS32_BIN_PATH=D:\mios32\trunk\bin
@@ -59,6 +60,7 @@ Additional environment variables to configure the environment:
 (they have to be set, otherwise compiler will fail)
 
 MBHP_CORE_STM32:
+export MIOS32_GCC_PREFIX=arm-none-eabi
 export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F103RE
 export MIOS32_BOARD=MBHP_CORE_STM32
@@ -66,6 +68,7 @@ export MIOS32_LCD=clcd
 
 
 STM32 Primer:
+export MIOS32_GCC_PREFIX=arm-none-eabi
 export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F103RB
 export MIOS32_BOARD=STM32_PRIMER
@@ -279,9 +282,8 @@ The command:
 should return a version number >= 4.2.1
 
 Sidenote: If you use a different arm-gcc installation (later, once properly 
-integrated into gcc), you have to adapt the gcc prefix under %MIOS32_PATH%/include/makefile/common.mk
-
-TODO: provide MIOS32_GCC_PREFIX variable
+integrated into gcc), you have to adapt your MIOS32_GCC_PREFIX setting, e.g.
+from "arm-none-eabi" to the common "arm-elf"
 
 
 In addition we need OpenOCD to upload code.
