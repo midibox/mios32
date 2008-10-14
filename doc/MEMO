@@ -317,8 +317,7 @@ c) build the project with
    (-s will lead to a less verbose output)
 
 
-d) ensure that the JTAG interface is connected to your PC
-   (USB cable at the left side is for debugging interface)
+d) ensure that the JTAG interface is connected to your PC and MBHP_CORE_STM32 module
 
 
 e) open a new DOS shell, **go into the directory where you built the code**,
@@ -339,6 +338,7 @@ f) open a third DOS shell, and type "telnet localhost 4444"
       script <filename>      # to execute a batch file
       reset run              # to reset the chip
       halt                   # to stop CPU execution
+      resume                 # to continue CPU execution
       reg                    # to get CPU registers, e.g. the program counter (only works in halt mode)
       mdw                    # to display memory regions, e.g. flash, SRAM and peripheral registers
 
