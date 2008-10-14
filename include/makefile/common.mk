@@ -22,17 +22,15 @@ MIOS32_SHELL ?= sh
 export MIOS32_SHELL
 
 # select GCC tools
-ifeq ($(FAMILY),STM32F10x)
-GCC_PREFIX = arm-none-eabi-
-else
-GCC_PREFIX = arm-elf-
-endif
+# can be optionally overruled via environment variable
+# e.g. for Cortex M3 support provided by CodeSourcery, use MIOS32_GCC_PREFIX=arm-none-eabi
+MIOS32_GCC_PREFIX ?= arm-elf
 
-CC      = $(GCC_PREFIX)gcc
-OBJCOPY = $(GCC_PREFIX)objcopy
-OBJDUMP = $(GCC_PREFIX)objdump
-NM      = $(GCC_PREFIX)nm
-SIZE    = $(GCC_PREFIX)size
+CC      = $(MIOS32_GCC_PREFIX)-gcc
+OBJCOPY = $(MIOS32_GCC_PREFIX)-objcopy
+OBJDUMP = $(MIOS32_GCC_PREFIX)-objdump
+NM      = $(MIOS32_GCC_PREFIX)-nm
+SIZE    = $(MIOS32_GCC_PREFIX)-size
 
 # default linker flags
 LDFLAGS += -T$(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
