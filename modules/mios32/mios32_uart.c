@@ -421,7 +421,7 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
       switch( uart ) {
         case 0: USART_ITConfig(MIOS32_UART0, USART_IT_TXE, ENABLE); break;
         case 1: USART_ITConfig(MIOS32_UART1, USART_IT_TXE, ENABLE); break;
-        default: return -3; // uart not supported by routine (yet)
+        default: vPortExitCritical(); return -3; // uart not supported by routine (yet)
       }
     }
   }
