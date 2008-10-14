@@ -38,6 +38,7 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/src/stm32f10x_usart.c \
 	$(DRIVER_LIB)/src/stm32f10x_i2c.c \
 	$(DRIVER_LIB)/src/stm32f10x_dma.c \
+	$(DRIVER_LIB)/src/stm32f10x_tim.c \
 	$(DRIVER_LIB)/src/stm32f10x_rcc.c \
 	$(DRIVER_LIB)/src/stm32f10x_systick.c \
 	$(DRIVER_LIB)/src/stm32f10x_nvic.c \

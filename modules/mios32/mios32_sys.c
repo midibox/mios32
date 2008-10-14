@@ -40,15 +40,15 @@ s32 MIOS32_SYS_Init(u32 mode)
   // Enable HSE (high speed external clock)
   RCC_HSEConfig(RCC_HSE_ON);
 
-  /* Wait till HSE is ready */
+  // Wait till HSE is ready
   HSEStartUpStatus = RCC_WaitForHSEStartUp();
 
   if( HSEStartUpStatus == SUCCESS )
   {
-    /* Enable Prefetch Buffer */
+    // Enable Prefetch Buffer
     FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
 
-    /* Flash 2 wait state */
+    // Flash 2 wait state
     FLASH_SetLatency(FLASH_Latency_2);
 
     // HCLK = SYSCLK
@@ -60,22 +60,22 @@ s32 MIOS32_SYS_Init(u32 mode)
     // PCLK1 = HCLK/2
     RCC_PCLK1Config(RCC_HCLK_Div2);
 
-    /* ADCCLK = PCLK2/6 */
+    // ADCCLK = PCLK2/6
     RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
-    /* PLLCLK = 12MHz * 6 = 72 MHz */
+    // PLLCLK = 12MHz * 6 = 72 MHz
     RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6);
 
-    /* Enable PLL */
+    // Enable PLL
     RCC_PLLCmd(ENABLE);
 
-    /* Wait till PLL is ready */
+    // Wait till PLL is ready
     while( RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET );
 
-    /* Select PLL as system clock source */
+    // Select PLL as system clock source
     RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
-    /* Wait till PLL is used as system clock source */
+    // Wait till PLL is used as system clock source
     while( RCC_GetSYSCLKSource() != 0x08 );
   }
 
@@ -85,7 +85,7 @@ s32 MIOS32_SYS_Init(u32 mode)
 
   // Set the Vector Table base address at 0x08000000
   NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0);
-  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+  NVIC_PriorityGroupConfig(MIOS32_IRQ_PRIGROUP);
 
   // Configure HCLK clock as SysTick clock source
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
