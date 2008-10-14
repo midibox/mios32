@@ -147,11 +147,12 @@ s32 MIOS32_IIC_Init(u32 mode)
   // configure and enable I2C2 interrupts
   NVIC_InitTypeDef NVIC_InitStructure;
   NVIC_InitStructure.NVIC_IRQChannel = I2C2_EV_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_IIC_EV_PRIORITY; // defined in mios32_irq.h
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 
-  NVIC_InitStructure.NVIC_IRQChannel = I2C2_ER_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_IRQ_IIC_ER_PRIORITY; // defined in mios32_irq.h
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);

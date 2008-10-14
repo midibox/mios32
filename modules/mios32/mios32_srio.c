@@ -245,8 +245,8 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // Configure and enable DMA interrupt
   NVIC_StructInit(&NVIC_InitStructure);
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SRIO_DMA_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SRIO_DMA_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 

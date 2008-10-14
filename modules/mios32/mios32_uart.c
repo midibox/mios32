@@ -153,18 +153,19 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 
   // configure and enable UART interrupts
-  // TODO: review interrupt priorities!
   NVIC_InitTypeDef NVIC_InitStructure;
 
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART0_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
   USART_ITConfig(MIOS32_UART0, USART_IT_RXNE, ENABLE);
 
 #if MIOS32_UART_NUM >= 2
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART1_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
   USART_ITConfig(MIOS32_UART1, USART_IT_RXNE, ENABLE);
@@ -460,7 +461,7 @@ MIOS32_UART0_IRQHANDLER_FUNC
     }
   }
   
-  if( USART_GetITStatus(USART1, USART_IT_TXE) != RESET ) {
+  if( USART_GetITStatus(MIOS32_UART1, USART_IT_TXE) != RESET ) {
     if( MIOS32_UART_TxBufferUsed(0) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(0);
       if( b < 0 ) {
@@ -489,7 +490,7 @@ MIOS32_UART1_IRQHANDLER_FUNC
     }
   }
   
-  if( USART_GetITStatus(USART1, USART_IT_TXE) != RESET ) {
+  if( USART_GetITStatus(MIOS32_UART1, USART_IT_TXE) != RESET ) {
     if( MIOS32_UART_TxBufferUsed(1) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(1);
       if( b < 0 ) {
