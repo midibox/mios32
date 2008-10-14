@@ -49,6 +49,40 @@ const u8 mios32_midi_pcktype_num_bytes[16] = {
   1  // f: single byte
 };
 
+// Number if expected bytes for a common MIDI event - 1
+const u8 mios32_midi_expected_bytes_common[8] = {
+  2, // Note On
+  2, // Note Off
+  2, // Poly Preasure
+  2, // Controller
+  1, // Program Change
+  1, // Channel Preasure
+  2, // Pitch Bender
+  0, // System Message - must be zero, so that mios32_midi_expected_bytes_system[] will be used
+};
+
+// // Number if expected bytes for a system MIDI event - 1
+const u8 mios32_midi_expected_bytes_system[16] = {
+  1, // SysEx Begin (endless until SysEx End F7)
+  1, // MTC Data frame
+  2, // Song Position
+  1, // Song Select
+  0, // Reserved
+  0, // Reserved
+  0, // Request Tuning Calibration
+  0, // SysEx End
+
+  // Note: just only for documentation, Realtime Messages don't change the running status
+  0, // MIDI Clock
+  0, // MIDI Tick
+  0, // MIDI Start
+  0, // MIDI Continue
+  0, // MIDI Stop
+  0, // Reserved
+  0, // Active Sense
+  0, // Reset
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -161,7 +195,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
   }
 
   // insert subport number into package
-  package.type = (package.type&0x0f) | (port << 4);
+  package.cable = port & 0xf;
 
   // branch depending on selected port
   switch( port >> 4 ) {

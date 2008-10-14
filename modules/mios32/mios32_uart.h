@@ -30,12 +30,12 @@
 
 // Tx buffer size (1..256)
 #ifndef MIOS32_UART_TX_BUFFER_SIZE
-#define MIOS32_UART_TX_BUFFER_SIZE 5
+#define MIOS32_UART_TX_BUFFER_SIZE 64
 #endif
 
 // Rx buffer size (1..256)
 #ifndef MIOS32_UART_RX_BUFFER_SIZE
-#define MIOS32_UART_RX_BUFFER_SIZE 5
+#define MIOS32_UART_RX_BUFFER_SIZE 64
 #endif
 
 // Baudrate of UART first interface

@@ -246,12 +246,12 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
   if( ++rx_buffer_tail[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_tail[uart] = 0;
   --rx_buffer_size[uart];
-  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
+  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return received byte
 #endif
@@ -277,9 +277,9 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
-  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
+  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return received byte
 #endif
@@ -307,12 +307,12 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 
   // copy received byte into receive buffer
   // this operation should be atomic!
-  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
   rx_buffer[uart][rx_buffer_head[uart]] = b;
   if( ++rx_buffer_head[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_head[uart] = 0;
   ++rx_buffer_size[uart];
-  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
+  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0; // no error
 #endif
@@ -376,12 +376,12 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
   u8 b = tx_buffer[uart][tx_buffer_tail[uart]];
   if( ++tx_buffer_tail[uart] >= MIOS32_UART_TX_BUFFER_SIZE )
     tx_buffer_tail[uart] = 0;
   --tx_buffer_size[uart];
-  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
+  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return b; // return transmitted byte
 #endif
@@ -404,12 +404,13 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
-  if( tx_buffer_size[uart] >= (MIOS32_UART_TX_BUFFER_SIZE-len+1) )
+  if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
     return -2; // buffer full or cannot get all requested bytes (retry)
 
   // copy bytes to be transmitted into transmit buffer
   // this operation should be atomic!
-  vPortEnterCritical(); // port specific FreeRTOS function to disable IRQs (nested)
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+
   u16 i;
   for(i=0; i<len; ++i) {
     tx_buffer[uart][tx_buffer_head[uart]] = *buffer++;
@@ -420,13 +421,14 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
     // enable Tx interrupt if buffer was empty
     if( ++tx_buffer_size[uart] == 1 ) {
       switch( uart ) {
-        case 0: USART_ITConfig(MIOS32_UART0, USART_IT_TXE, ENABLE); break;
+        case 0: USART_ITConfig(MIOS32_UART0, USART_IT_TXE, ENABLE); 
         case 1: USART_ITConfig(MIOS32_UART1, USART_IT_TXE, ENABLE); break;
-        default: vPortExitCritical(); return -3; // uart not supported by routine (yet)
+        default: portEXIT_CRITICAL(); return -3; // uart not supported by routine (yet)
       }
     }
   }
-  vPortExitCritical(); // port specific FreeRTOS function to enable IRQs (nested)
+
+  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0; // no error
 #endif
@@ -460,8 +462,8 @@ MIOS32_UART0_IRQHANDLER_FUNC
       // here we could add some error handling
     }
   }
-  
-  if( USART_GetITStatus(MIOS32_UART1, USART_IT_TXE) != RESET ) {
+
+  if( USART_GetITStatus(MIOS32_UART0, USART_IT_TXE) != RESET ) {
     if( MIOS32_UART_TxBufferUsed(0) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(0);
       if( b < 0 ) {
