@@ -24,18 +24,34 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+  mios32_midi_package_t package;
+  u8 running_status;
+  u8 expected_bytes;
+  u8 wait_bytes;
+  u8 sysex_ctr;
+} midi_rec_t;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
+
+// handler data structure
+static midi_rec_t midi_rec[MIOS32_UART_NUM];
 
 // optional non-blocking mode
 static u8 non_blocking_mode = 0;
@@ -55,6 +71,8 @@ static u8 non_blocking_mode = 0;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_Init(u32 mode)
 {
+  int i;
+
   switch( mode ) {
     case 0:
       non_blocking_mode = 0;
@@ -64,6 +82,15 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
       break;
     default:
       return -1; // unsupported mode
+  }
+
+  // initialize MIDI record
+  for(i=0; i<MIOS32_UART_NUM; ++i) {
+    midi_rec[i].package.ALL = 0;
+    midi_rec[i].running_status = 0x00;
+    midi_rec[i].expected_bytes = 0x00;
+    midi_rec[i].wait_bytes = 0x00;
+    midi_rec[i].sysex_ctr = 0x00;
   }
 
   // initialize U(S)ART interface
@@ -148,8 +175,127 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
   if( !MIOS32_UART_MIDI_CheckAvailable(uart_port) )
     return -1;
 
-  // TODO
-  return -1;
+  // parses the next incoming byte(s), stop until we got a complete MIDI event
+  // (-> complete package) and forward it to the caller
+  midi_rec_t *midix = &midi_rec[uart_port];// simplify addressing of midi record
+  u8 package_complete = 0;
+  s32 status;
+  while( !package_complete && (status=MIOS32_UART_RxBufferGet(uart_port)) >= 0 ) {
+    u8 byte = (u8)status;
+
+    if( byte & 0x80 ) { // new MIDI status
+      if( byte >= 0xf8 ) { // events >= 0xf8 don't change the running status and can just be forwarded
+	// Realtime messages don't change the running status and can be sent immediately
+	midix->package.cin = 0xf; // F: single byte
+	midix->package.evnt0 = byte;
+	midix->package.evnt1 = 0x00;
+	midix->package.evnt2 = 0x00;
+	package_complete = 1; // -> forward to caller
+      } else {
+	midix->running_status = byte;
+	midix->expected_bytes = mios32_midi_expected_bytes_common[(byte >> 4) & 0x7];
+
+	if( !midix->expected_bytes ) { // System Message, take number of bytes from expected_bytes_system[] array
+	  midix->expected_bytes = mios32_midi_expected_bytes_system[byte & 0xf];
+
+	  if( byte == 0xf0 ) {
+	    midix->package.evnt0 = 0xf0; // midix->package.evnt0 only used by SysEx handler for continuous data streams!
+	    midix->sysex_ctr = 0x01;
+	  } else if( byte == 0xf7 ) {
+	    switch( midix->sysex_ctr ) {
+ 	      case 0:
+		midix->package.cin = 5; // 5: SysEx ends with single byte
+		midix->package.evnt0 = 0xf7;
+		midix->package.evnt1 = 0x00;
+		midix->package.evnt2 = 0x00;
+		break;
+	      case 1:
+		midix->package.cin = 6; // 6: SysEx ends with two bytes
+		// midix->package.evnt0 = // already stored
+		midix->package.evnt1 = 0xf7;
+		midix->package.evnt2 = 0x00;
+		break;
+	      default:
+		midix->package.cin = 7; // 7: SysEx ends with three bytes
+		// midix->package.evnt0 = // already stored
+		// midix->package.evnt1 = // already stored
+		midix->package.evnt2 = 0xf7;
+		break;
+	    }
+	    package_complete = 1; // -> forward to caller
+	    midix->sysex_ctr = 0x00; // ensure that next F7 will just send F7
+	  }
+	}
+
+	midix->wait_bytes = midix->expected_bytes;
+      }
+    } else {
+      if( midix->running_status == 0xf0 ) {
+	switch( ++midix->sysex_ctr ) {
+  	  case 1:
+	    midix->package.evnt0 = byte; 
+	    break;
+	  case 2: 
+	    midix->package.evnt1 = byte; 
+	    break;
+	  default: // 3
+	    midix->package.evnt2 = byte;
+
+	    // Send three-byte event
+	    midix->package.cin = 4;  // 4: SysEx starts or continues
+	    package_complete = 1; // -> forward to caller
+	    midix->sysex_ctr = 0x00; // reset and prepare for next packet
+	}
+      } else { // Common MIDI message or 0xf1 >= status >= 0xf7
+	if( !midix->wait_bytes ) {
+	  midix->wait_bytes = midix->expected_bytes - 1;
+	} else {
+	  --midix->wait_bytes;
+	}
+
+	if( midix->expected_bytes == 1 ) {
+	  midix->package.evnt1 = byte;
+	  midix->package.evnt2 = 0x00;
+	} else {
+	  if( midix->wait_bytes )
+	    midix->package.evnt1 = byte;
+	  else
+	    midix->package.evnt2 = byte;
+	}
+	
+	if( !midix->wait_bytes ) {
+	  if( (midix->running_status & 0xf0) != 0xf0 ) {
+	    midix->package.cin = midix->running_status >> 4; // common MIDI message
+	  } else {
+	    switch( midix->expected_bytes ) { // MEMO: == 0 comparison was a bug in original MBHP_USB code
+  	      case 0: 
+		midix->package.cin = 5; // 5: SysEx common with one byte
+		break;
+  	      case 1: 
+		midix->package.cin = 2; // 2: SysEx common with two bytes
+		break;
+  	      default: 
+		midix->package.cin = 3; // 3: SysEx common with three bytes
+		break;
+	    }
+	  }
+
+	  midix->package.evnt0 = midix->running_status;
+	  // midix->package.evnt1 = // already stored
+	  // midix->package.evnt2 = // already stored
+	  package_complete = 1; // -> forward to caller
+	}
+      }
+    }
+  }
+
+  // new package?
+  if( package_complete ) {
+    *package = midix->package;
+    return 0; // new package in buffer
+  }
+
+  return -1; // no package in buffer
 #endif
 }
 
