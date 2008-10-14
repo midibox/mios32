@@ -279,7 +279,7 @@ The command:
 should return a version number >= 4.2.1
 
 Sidenote: If you use a different arm-gcc installation (later, once properly 
-integrated into gcc), you have to adapt the gcc prefix under %MIOS_PATH%/include/makefile/common.mk
+integrated into gcc), you have to adapt the gcc prefix under %MIOS32_PATH%/include/makefile/common.mk
 
 TODO: provide MIOS32_GCC_PREFIX variable
 
