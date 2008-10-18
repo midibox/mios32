@@ -94,7 +94,7 @@
 
 extern s32 MIOS32_AIN_Init(u32 mode);
 
-extern s32 MIOS32_AIN_PinGet(s32 pin);
+extern s32 MIOS32_AIN_PinGet(u32 pin);
 
 extern s32 MIOS32_AIN_Handler(void *callback);
 
