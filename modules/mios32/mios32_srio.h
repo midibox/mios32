@@ -30,7 +30,7 @@
 // allowed values: 1 and 2
 // (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
 #ifndef MIOS32_SRIO_SPI
-#define MIOS32_SRIO_SPI 1
+#define MIOS32_SRIO_SPI 2
 #endif
 
 
