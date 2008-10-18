@@ -20,6 +20,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_DOUT
 #define MIOS32_DONT_USE_ENC
 #define MIOS32_DONT_USE_AIN
+#define MIOS32_DONT_USE_MF
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
 #define MIOS32_DONT_USE_USB_MIDI
@@ -186,4 +187,19 @@ into your local mios32_config.h file
 #define MIOS32_AIN_MUX1_PORT  GPIOC
 #define MIOS32_AIN_MUX2_PIN   GPIO_Pin_0 // J5C.A10
 #define MIOS32_AIN_MUX2_PORT  GPIOB
+
+
+// number of motorfaders (0-16)
+#define MIOS32_MF_NUM 0
+
+
+#define MIOS32_MF_RCLK_PORT  GPIOC
+#define MIOS32_MF_RCLK_PIN   GPIO_Pin_13
+#define MIOS32_MF_SCLK_PORT  GPIOB
+#define MIOS32_MF_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_MF_DOUT_PORT  GPIOB
+#define MIOS32_MF_DOUT_PIN   GPIO_Pin_5
+
+// should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
+#define MIOS32_MF_OUTPUTS_OD 0
 

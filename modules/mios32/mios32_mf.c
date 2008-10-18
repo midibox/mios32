@@ -327,6 +327,10 @@ s32 MIOS32_MF_ConfigSet(u32 mf, mios32_mf_config_t config)
 /////////////////////////////////////////////////////////////////////////////
 mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf)
 {
+#if !MIOS32_MF_NUM
+  // return 0; // doesn't work :-/
+  // no motors
+#else
   // MF number valid?
   if( mf >= MIOS32_MF_NUM ) {
     const mios32_mf_config_t dummy = { .cfg.deadband=3, .cfg.pwm_period=3, .cfg.pwm_duty_cycle_up=1, .cfg.pwm_duty_cycle_down=1 };
@@ -334,6 +338,7 @@ mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf)
   }
 
   return mf_state[mf].config;
+#endif
 }
 
 
@@ -483,10 +488,10 @@ s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas)
 #endif
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // local function to update the shift registers of MBHP_MF module
 /////////////////////////////////////////////////////////////////////////////
+#if MIOS32_MF_NUM
 static void MIOS32_MF_UpdateSR(void)
 {
   int i, j;
@@ -519,6 +524,7 @@ static void MIOS32_MF_UpdateSR(void)
   PIN_RCLK_1;  // idle state
   PIN_DOUT(1); // idle state
 }
+#endif
 
 
 #endif /* MIOS32_DONT_USE_MF */
