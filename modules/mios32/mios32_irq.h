@@ -30,12 +30,18 @@
 #define MIOS32_IRQ_SRIO_DMA_PRIORITY    5
 
 
+// DMA Channel IRQ used by MIOS32_AIN, called after 
+// all ADC channels have been converted
+#define MIOS32_IRQ_AIN_DMA_PRIORITY     5
+
+
 // IIC IRQs used by MIOS32_IIC, called rarely on IIC accesses
 // should be very high to overcome peripheral flaws (see header of mios32_iic.c)
 // estimated requirement for "reaction time": less than 9/400 kHz = 22.5 uS
 // EV and ER IRQ should have same priority since they are sharing resources
 #define MIOS32_IRQ_IIC_EV_PRIORITY      2
 #define MIOS32_IRQ_IIC_ER_PRIORITY      2
+
 
 // UART IRQs used by MIOS32_UART
 // typically called each 320 mS if full MIDI bandwidth is used
