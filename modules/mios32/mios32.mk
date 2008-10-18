@@ -23,6 +23,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_din.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_dout.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_enc.c \
+	$(MIOS32_PATH)/modules/mios32/mios32_ain.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_lcd.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_midi.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb_midi.c \
@@ -34,6 +35,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_board.c \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
+	$(DRIVER_LIB)/src/stm32f10x_adc.c \
 	$(DRIVER_LIB)/src/stm32f10x_spi.c \
 	$(DRIVER_LIB)/src/stm32f10x_usart.c \
 	$(DRIVER_LIB)/src/stm32f10x_i2c.c \

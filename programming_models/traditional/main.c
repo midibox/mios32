@@ -29,14 +29,19 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define PRIORITY_TASK_DIN_CHECK		( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_AIN_CHECK		( tskIDLE_PRIORITY + 3 )
 #define PRIORITY_TASK_MIDI_RECEIVE	( tskIDLE_PRIORITY + 3 )
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-#ifndef MIOS32_DONT_USE_DIN
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
 static void TASK_DIN_Check(void *pvParameters);
+#endif
+
+#if !defined(MIOS32_DONT_USE_AIN)
+static void TASK_AIN_Check(void *pvParameters);
 #endif
 
 #ifndef MIOS32_DONT_USE_MIDI
@@ -67,6 +72,9 @@ int main(void)
 #if !defined(MIOS32_DONT_USE_ENC) && !defined(MIOS32_DONT_USE_SRIO)
   MIOS32_ENC_Init(0);
 #endif
+#if !defined(MIOS32_DONT_USE_AIN)
+  MIOS32_AIN_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_IIC_BS
   MIOS32_IIC_BS_Init(0);
 #endif
@@ -83,6 +91,9 @@ int main(void)
   // start the tasks
 #if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
   xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);
+#endif
+#if !defined(MIOS32_DONT_USE_AIN)
+  xTaskCreate(TASK_AIN_Check,  (signed portCHAR *)"AIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_AIN_CHECK, NULL);
 #endif
 #if !defined(MIOS32_DONT_USE_MIDI)
   xTaskCreate(TASK_MIDI_Receive, (signed portCHAR *)"MIDI_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI_RECEIVE, NULL);
@@ -151,13 +162,34 @@ static void TASK_DIN_Check(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
-    // check for pin changes, call APP_DIN_NotifyToggle on each toggled pin
+    // check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
     MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
 
     // check for encoder changes, call APP_ENC_NotifyChanged on each change
 # ifndef MIOS32_DONT_USE_ENC
     MIOS32_ENC_Handler(APP_ENC_NotifyChange);
 # endif
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// AIN Handler
+/////////////////////////////////////////////////////////////////////////////
+#if !defined(MIOS32_DONT_USE_AIN)
+static void TASK_AIN_Check(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // check for AIN pin changes, call APP_AIN_NotifyChange on each pin change
+    MIOS32_AIN_Handler(APP_AIN_NotifyChange);
   }
 }
 #endif
