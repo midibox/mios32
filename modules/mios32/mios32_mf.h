@@ -20,14 +20,9 @@
 
 // number of motorfaders (0-16)
 #ifndef MIOS32_MF_NUM
-#define MIOS32_MF_NUM 8
+#define MIOS32_MF_NUM 0
 #endif
 
-
-// define the desired oversampling rate (1..16)
-#ifndef MIOS32_AIN_OVERSAMPLING_RATE
-#define MIOS32_AIN_OVERSAMPLING_RATE  1
-#endif
 
 #ifndef MIOS32_MF_RCLK_PORT
 #define MIOS32_MF_RCLK_PORT  GPIOC
