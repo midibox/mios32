@@ -85,8 +85,15 @@ typedef union {
 extern s32 MIOS32_MF_Init(u32 mode);
 
 extern s32 MIOS32_MF_FaderMove(u32 mf, u16 pos);
-
 extern s32 MIOS32_MF_FaderDirectMove(u32 mf, mios32_mf_direction_t direction);
+
+extern s32 MIOS32_MF_SuspendSet(u32 mf, u8 suspend);
+extern s32 MIOS32_MF_SuspendGet(u32 mf);
+
+extern s32 MIOS32_MF_TouchDetectionReset(u32 mf);
+
+extern s32 MIOS32_MF_ConfigSet(u32 mf, mios32_mf_config_t config);
+extern mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf);
 
 extern s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas);
 
