@@ -27,14 +27,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DIN assignments
-/////////////////////////////////////////////////////////////////////////////
-#define DIN_NUMBER_EXEC     7
-#define DIN_NUMBER_INC      6
-#define DIN_NUMBER_DEC      5
-#define DIN_NUMBER_SNAPSHOT 4
-
-/////////////////////////////////////////////////////////////////////////////
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -83,12 +75,12 @@ void APP_Background(void)
     // new message requested?
     // TODO: add FreeRTOS specific queue handling!
     u8 new_msg = PRINT_MSG_NONE;
-    portDISABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
     if( print_msg ) {
       new_msg = print_msg;
       print_msg = PRINT_MSG_NONE; // clear request
     }
-    portENABLE_INTERRUPTS(); // port specific FreeRTOS macro
+    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
     switch( new_msg ) {
       case PRINT_MSG_INIT:

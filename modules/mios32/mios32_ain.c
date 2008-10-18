@@ -325,7 +325,7 @@ s32 MIOS32_AIN_Init(u32 mode)
 // OUT: AIN pin value - resolution depends on the selected MIOS32_AIN_OVERSAMPLING_RATE!
 //      -1 if pin doesn't exist
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_AIN_PinGet(s32 pin)
+s32 MIOS32_AIN_PinGet(u32 pin)
 {
 #if !MIOS32_AIN_CHANNEL_MASK
   return -1; // no analog input selected
@@ -410,8 +410,8 @@ void DMAChannel1_IRQHandler(void)
 
 #if MIOS32_AIN_OVERSAMPLING_RATE >= 2
   // accumulate conversion result
-  src_ptr = (u16 *)&adc_conversion_values[0];
-  dst_ptr = (u16 *)&adc_conversion_values_sum[0];
+  src_ptr = (u16 *)adc_conversion_values;
+  dst_ptr = (u16 *)adc_conversion_values_sum;
 
   if( oversampling_ctr == 0 ) { // init sum whenever we restarted
     for(i=0; i<num_channels; ++i)
@@ -429,19 +429,27 @@ void DMAChannel1_IRQHandler(void)
   // whenever we reached the last sample:
   // copy conversion values to ain_pin_values if difference > deadband
   if( oversampling_ctr == 0 ) {
+#if MIOS32_MF_NUM
+    u16 ain_deltas[NUM_CHANNELS_MAX];
+    u16 *ain_deltas_ptr = (u16 *)ain_deltas;
+#endif
     u8 pin_offset = num_used_channels * mux_ctr;
     u8 bit_offset = pin_offset & 0x1f;
     u8 word_offset = pin_offset >> 5;
 #if MIOS32_AIN_OVERSAMPLING_RATE >= 2
-    src_ptr = (u16 *)&adc_conversion_values_sum[0];
+    src_ptr = (u16 *)adc_conversion_values_sum;
 #else
-    src_ptr = (u16 *)&adc_conversion_values[0];
+    src_ptr = (u16 *)adc_conversion_values;
 #endif
     dst_ptr = (u16 *)&ain_pin_values[pin_offset];
 
     for(i=0; i<num_channels; ++i) {
       // takeover new value if difference to old value is outside the deadband
+#if MIOS32_MF_NUM
+      if( (*ain_deltas_ptr++ = abs(*src_ptr - *dst_ptr)) > MIOS32_AIN_DEADBAND ) {
+#else
       if( abs(*src_ptr - *dst_ptr) > MIOS32_AIN_DEADBAND ) {
+#endif
 	*dst_ptr = *src_ptr;
 	ain_pin_changed[word_offset] |= (1 << bit_offset);
       }
@@ -456,6 +464,17 @@ void DMAChannel1_IRQHandler(void)
 	++word_offset;
       }
     }
+
+#if MIOS32_MF_NUM
+    // if motorfader driver enabled: forward conversion values + deltas
+#if MIOS32_AIN_OVERSAMPLING_RATE >= 2
+    u16 change_flag_mask = MIOS32_MF_Tick((u16 *)adc_conversion_values_sum, (u16 *)ain_deltas);
+#else
+    u16 change_flag_mask = MIOS32_MF_Tick((u16 *)adc_conversion_values, (u16 *)ain_deltas);
+#endif
+    // do an AND operation on all "changed" flags (MF driver takes control over these flags)
+    ain_pin_changed[0] &= 0xffff0000 | change_flag_mask;
+#endif
   }
 
 #if MIOS32_AIN_MUX_PINS >= 1

@@ -19,11 +19,19 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// messages
 #define PRINT_MSG_NONE           0
 #define PRINT_MSG_INIT           1
 #define PRINT_MSG_PATCH_AND_BANK 2
 #define PRINT_MSG_DUMP_SENT      3
 #define PRINT_MSG_DUMP_RECEIVED  4
+
+
+// DIN pin assignments for menu interface
+#define DIN_NUMBER_EXEC     7
+#define DIN_NUMBER_INC      6
+#define DIN_NUMBER_DEC      5
+#define DIN_NUMBER_SNAPSHOT 4
 
 
 /////////////////////////////////////////////////////////////////////////////

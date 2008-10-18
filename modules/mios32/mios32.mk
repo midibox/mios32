@@ -24,6 +24,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_dout.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_enc.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_ain.c \
+	$(MIOS32_PATH)/modules/mios32/mios32_mf.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_lcd.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_midi.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_usb_midi.c \
