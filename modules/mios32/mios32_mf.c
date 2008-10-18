@@ -253,7 +253,7 @@ s32 MIOS32_MF_SuspendSet(u32 mf, u8 suspend)
 //      1 if motor suspended
 //      0 if motor not suspended
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MF_SuspendGet(u32 mf, u8 suspend)
+s32 MIOS32_MF_SuspendGet(u32 mf)
 {
 #if !MIOS32_MF_NUM
   return -1; // no motors
@@ -273,7 +273,7 @@ s32 MIOS32_MF_SuspendGet(u32 mf, u8 suspend)
 // IN: <mf> motor number (0..MIOS32_MF_NUM-1)
 // OUT: -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MF_TouchDetectionReset(u32 mf, u8 suspend)
+s32 MIOS32_MF_TouchDetectionReset(u32 mf)
 {
 #if !MIOS32_MF_NUM
   return -1; // no motors
