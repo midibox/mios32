@@ -35,6 +35,7 @@ extern s32 APP_LCD_Data(u8 data);
 extern s32 APP_LCD_Cmd(u8 cmd);
 extern s32 APP_LCD_Clear(void);
 extern s32 APP_LCD_CursorSet(u16 column, u16 line);
+extern s32 APP_LCD_GCursorSet(u16 x, u16 y);
 extern s32 APP_LCD_PrintChar(char c);
 extern s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8]);
 extern s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b);

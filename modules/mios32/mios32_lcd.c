@@ -145,7 +145,8 @@ s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
   mios32_lcd_x = x;
   mios32_lcd_y = y;
 
-  return 0; // no error
+  // forward new cursor position to app driver
+  return APP_LCD_GCursorSet(x, y);
 }
 
 

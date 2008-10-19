@@ -77,15 +77,15 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u16 lcd_bcolour;
-u16 lcd_fcolour;
+static u16 lcd_bcolour;
+static u16 lcd_fcolour;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-void APP_LCD_SetRect_For_Cmd(s16 x, s16 y, s16 width, s16 height);
+static void APP_LCD_SetRect_For_Cmd(s16 x, s16 y, s16 width, s16 height);
 
 
 
@@ -337,13 +337,26 @@ s32 APP_LCD_CursorSet(u16 column, u16 line)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sets graphical cursor to given position
+// IN: <x> and <y>
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_GCursorSet(u16 x, u16 y)
+{
+  // nothing to do for GLCD driver
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Prints a single character
 // IN: character in <c>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_PrintChar(char c)
 {
-  int x, y, lines;
+  int x, y, line;
 
   // font not initialized yet!
   if( mios32_lcd_font == NULL )
@@ -351,13 +364,13 @@ s32 APP_LCD_PrintChar(char c)
 
   u8 y_lines = (mios32_lcd_font_height>>3);
 
-  for(lines=0; lines<y_lines; ++lines) {
+  for(line=0; line<y_lines; ++line) {
 
     // calculate pointer to character line
-    u8 *font_ptr = mios32_lcd_font + lines * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
+    u8 *font_ptr = mios32_lcd_font + line * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
 
     // ST7637 specific function to set view
-    APP_LCD_SetRect_For_Cmd(mios32_lcd_x, 128-mios32_lcd_y-8*(lines+1), mios32_lcd_font_width, 8);
+    APP_LCD_SetRect_For_Cmd(mios32_lcd_x, 128-mios32_lcd_y-8*(line+1), mios32_lcd_font_width, 8);
 
     // Send command to write data on the LCD screen.
     APP_LCD_Cmd(ST7637_RAMWR);
@@ -435,7 +448,7 @@ s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 // Define the rectangle for the next command to be applied
 /////////////////////////////////////////////////////////////////////////////
-void APP_LCD_SetRect_For_Cmd(s16 x, s16 y, s16 width, s16 height)
+static void APP_LCD_SetRect_For_Cmd(s16 x, s16 y, s16 width, s16 height)
 {
   APP_LCD_Cmd(ST7637_CASET);
   APP_LCD_Data(y);
