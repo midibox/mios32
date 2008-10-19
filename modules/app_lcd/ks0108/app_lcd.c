@@ -1,6 +1,7 @@
 // $Id$
 /*
- * Application specific CLCD driver for HD44780 (or compatible) character LCDs
+ * Application specific GLCD driver for KS0108 with horizontal screen (-> 240x64)
+ * Referenced from MIOS32_LCD routines
  *
  * ==========================================================================
  *
@@ -16,6 +17,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+
+#include <glcd_font.h>
 
 #include "app_lcd.h"
 
@@ -45,6 +48,16 @@
 #define APP_LCD_D7_PORT        GPIOC
 #define APP_LCD_D7_PIN         GPIO_Pin_12
 
+#define APP_LCD_CS0_PORT       GPIOC       // J5C.A8
+#define APP_LCD_CS0_PIN        GPIO_Pin_4
+#define APP_LCD_CS1_PORT       GPIOC       // J5C.A9
+#define APP_LCD_CS1_PIN        GPIO_Pin_5
+#define APP_LCD_CS2_PORT       GPIOB       // J5C.A10
+#define APP_LCD_CS2_PIN        GPIO_Pin_0
+#define APP_LCD_CS3_PORT       GPIOB       // J5C.A11
+#define APP_LCD_CS3_PIN        GPIO_Pin_1
+
+
 // should output pins to LCD (SER/E1/E2/RW) be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #define APP_LCD_OUTPUTS_OD     1
 
@@ -61,6 +74,26 @@
 #define PIN_E1(b)   { APP_LCD_E1_PORT->BSRR  = (b) ? APP_LCD_E1_PIN  : (APP_LCD_E1_PIN << 16); }
 #define PIN_E2(b)   { APP_LCD_E2_PORT->BSRR  = (b) ? APP_LCD_E2_PIN  : (APP_LCD_E2_PIN << 16); }
 #define PIN_RW(b)   { APP_LCD_RW_PORT->BSRR  = (b) ? APP_LCD_RW_PIN  : (APP_LCD_RW_PIN << 16); }
+
+#if APP_LCD_CS_INVERTED
+# define PIN_CS0_0   { APP_LCD_CS0_PORT->BSRR = APP_LCD_CS0_PIN; }
+# define PIN_CS0_1   { APP_LCD_CS0_PORT->BRR  = APP_LCD_CS0_PIN; }
+# define PIN_CS1_0   { APP_LCD_CS1_PORT->BSRR = APP_LCD_CS1_PIN; }
+# define PIN_CS1_1   { APP_LCD_CS1_PORT->BRR  = APP_LCD_CS1_PIN; }
+# define PIN_CS2_0   { APP_LCD_CS2_PORT->BSRR = APP_LCD_CS2_PIN; }
+# define PIN_CS2_1   { APP_LCD_CS2_PORT->BRR  = APP_LCD_CS2_PIN; }
+# define PIN_CS3_0   { APP_LCD_CS3_PORT->BSRR = APP_LCD_CS3_PIN; }
+# define PIN_CS3_1   { APP_LCD_CS3_PORT->BRR  = APP_LCD_CS3_PIN; }
+#else
+# define PIN_CS0_0   { APP_LCD_CS0_PORT->BRR  = APP_LCD_CS0_PIN; }
+# define PIN_CS0_1   { APP_LCD_CS0_PORT->BSRR = APP_LCD_CS0_PIN; }
+# define PIN_CS1_0   { APP_LCD_CS1_PORT->BRR  = APP_LCD_CS1_PIN; }
+# define PIN_CS1_1   { APP_LCD_CS1_PORT->BSRR = APP_LCD_CS1_PIN; }
+# define PIN_CS2_0   { APP_LCD_CS2_PORT->BRR  = APP_LCD_CS2_PIN; }
+# define PIN_CS2_1   { APP_LCD_CS2_PORT->BSRR = APP_LCD_CS2_PIN; }
+# define PIN_CS3_0   { APP_LCD_CS3_PORT->BRR  = APP_LCD_CS3_PIN; }
+# define PIN_CS3_1   { APP_LCD_CS3_PORT->BSRR = APP_LCD_CS3_PIN; }
+#endif
 
 #define PIN_RCLK_0  { APP_LCD_RCLK_PORT->BRR  = APP_LCD_RCLK_PIN; }
 #define PIN_RCLK_1  { APP_LCD_RCLK_PORT->BSRR = APP_LCD_RCLK_PIN; }
@@ -82,13 +115,17 @@
 
 static u32 display_available = 0;
 
+
 /////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
+// Local prototypes
 /////////////////////////////////////////////////////////////////////////////
+
 static void APP_LCD_SerWrite(u8 data, u8 rs);
 static void APP_LCD_SetRS(u8 rs);
 static void APP_LCD_Strobe(u8 value);
 static s32  APP_LCD_WaitUnbusy(void);
+static void APP_LCD_SetCS(u8 all);
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -119,6 +156,15 @@ s32 APP_LCD_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = APP_LCD_RCLK_PIN;
   GPIO_Init(APP_LCD_RCLK_PORT, &GPIO_InitStructure);
 
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_CS0_PIN;
+  GPIO_Init(APP_LCD_CS0_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_CS1_PIN;
+  GPIO_Init(APP_LCD_CS1_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_CS2_PIN;
+  GPIO_Init(APP_LCD_CS2_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = APP_LCD_CS3_PIN;
+  GPIO_Init(APP_LCD_CS3_PORT, &GPIO_InitStructure);
+
   // configure open-drain pins (if OD option enabled)
 #if APP_LCD_OUTPUTS_OD
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
@@ -145,45 +191,10 @@ s32 APP_LCD_Init(u32 mode)
   display_available |= (1 << mios32_lcd_device);
 
   // initialize LCD
-  APP_LCD_SerWrite(0x38, 0);
-  APP_LCD_Strobe(1);
-  APP_LCD_Strobe(0);
   for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
 
-  APP_LCD_Strobe(1);
-  APP_LCD_Strobe(0);
-  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
-
-  APP_LCD_Strobe(1);
-  APP_LCD_Strobe(0);
-  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
-
-  APP_LCD_Cmd(0x08); // Display Off
-  APP_LCD_Cmd(0x0c); // Display On
-  APP_LCD_Cmd(0x06); // Entry Mode
-  APP_LCD_Cmd(0x01); // Clear Display
-  for(delay=0; delay<50000; ++delay) PIN_RW(0); // 50 mS Delay
-
-  // for DOG displays: perform additional display initialisation
-  // this has to be explicitely enabled
-  // see also $MIOS32_PATH/modules/app_lcd/dog/app_lcd.mk for "auto selection"
-  // this makefile is included if environment variable "MIOS32_LCD" is set to "dog"
-#ifdef APP_LCD_INIT_DOG
-  APP_LCD_Cmd(0x39); // 8bit interface, switch to instruction table 1
-  APP_LCD_Cmd(0x1d); // BS: 1/4, 3 line LCD
-  APP_LCD_Cmd(0x50); // Booster off, set contrast C5/C4
-  APP_LCD_Cmd(0x6c); // set Voltage follower and amplifier
-  APP_LCD_Cmd(0x7c); // set contrast C3/C2/C1
-  //  APP_LCD_Cmd(0x38); // back to instruction table 0
-  // (will be done below)
-
-  // modify cursor mapping, so that it complies with 3-line dog displays
-  u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
-  MIOS32_LCD_CursorMapSet(cursor_map);
-#endif
-
-  APP_LCD_Cmd(0x38); // experience from PIC based MIOS: without these lines
-  APP_LCD_Cmd(0x0c); // the LCD won't work correctly after a second APP_LCD_Init
+  // "Display On" command
+  APP_LCD_Cmd(0x3e + 1);
 
   return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
@@ -192,7 +203,7 @@ s32 APP_LCD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Sends data byte to LCD
 // IN: data byte in <data>
-// OUT: returns < 0 if display not available or timed out
+// OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data)
 {
@@ -200,10 +211,18 @@ s32 APP_LCD_Data(u8 data)
   if( APP_LCD_WaitUnbusy() < 0 )
     return -1; // timeout
 
+  // determine chip select line(s)
+  APP_LCD_SetCS(0); // select display depending on current X position
+
   // write data
   APP_LCD_SerWrite(data, 1); // data, rs
   APP_LCD_Strobe(1);
   APP_LCD_Strobe(0);
+
+  // increment graphical cursor
+  // if end of display segment reached: set X position of all segments to 0
+  if( (++mios32_lcd_x & 0x3f) == 0x00 )
+    return APP_LCD_Cmd(0x40);
 
   return 0; // no error
 }
@@ -212,13 +231,16 @@ s32 APP_LCD_Data(u8 data)
 /////////////////////////////////////////////////////////////////////////////
 // Sends command byte to LCD
 // IN: command byte in <cmd>
-// OUT: returns < 0 if display not available or timed out
+// OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Cmd(u8 cmd)
 {
   // wait until LCD unbusy, exit on error (timeout)
   if( APP_LCD_WaitUnbusy() < 0 )
     return -1; // timeout
+
+  // determine chip select line(s)
+  APP_LCD_SetCS(1); // select all displays
 
   // write command
   APP_LCD_SerWrite(cmd, 0); // data, rs
@@ -236,8 +258,22 @@ s32 APP_LCD_Cmd(u8 cmd)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Clear(void)
 {
-  // -> send clear command
-  return APP_LCD_Cmd(0x01);
+  s32 error = 0;
+  u8 x, y;
+
+  for(y=0; y<8; ++y) {
+    error |= MIOS32_LCD_CursorSet(0, y);
+    for(x=0; x<240; ++x)
+      error |= APP_LCD_Data(0x00);
+  }
+
+  // set Y0=0
+  error |= APP_LCD_Cmd(0xc0 + 0);
+
+  // set X=0, Y=0
+  error |= MIOS32_LCD_CursorSet(0, 0);
+
+  return error;
 }
 
 
@@ -248,12 +284,25 @@ s32 APP_LCD_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
+  s32 error = 0;
+
+#if 0
   // exit with error if line is not in allowed range
   if( line >= MIOS32_LCD_MAX_MAP_LINES )
     return -1;
 
-  // -> set cursor address
-  return APP_LCD_Cmd(0x80 | (mios32_lcd_cursor_map[line] + column));
+  // exit if mapped line >= 8 (not supported by KS0108)
+  u8 mapped_line = mios32_lcd_cursor_map[line];
+  if( mapped_line >= 8 )
+    return -2;
+
+  // ...
+
+  return error;
+#else
+  // mios32_lcd_x/y set by MIOS32_LCD_CursorSet() function
+  return APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+#endif
 }
 
 
@@ -264,8 +313,15 @@ s32 APP_LCD_CursorSet(u16 column, u16 line)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_GCursorSet(u16 x, u16 y)
 {
-  // n.a.
-  return -1;
+  s32 error = 0;
+
+  // set X position
+  error |= APP_LCD_Cmd(0x40 | (x & 0x3f));
+
+  // set Y position
+  error |= APP_LCD_Cmd(0xb8 | ((y>>3) & 0x7));
+
+  return error;
 }
 
 
@@ -276,8 +332,41 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_PrintChar(char c)
 {
-  // -> send as data byte
-  return APP_LCD_Data(c);
+  int x, y, line;
+
+  // font not initialized yet!
+  if( mios32_lcd_font == NULL )
+    return -1;
+
+  u8 y_lines = (mios32_lcd_font_height>>3);
+
+  for(line=0; line<y_lines; ++line) {
+
+    // calculate pointer to character line
+    u8 *font_ptr = mios32_lcd_font + line * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
+
+    // set graphical cursor after second line has reached
+    if( line > 0 ) {
+      mios32_lcd_x -= mios32_lcd_font_width;
+      mios32_lcd_y += 8;
+      APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+    }
+
+    // transfer character
+    for(x=0; x<mios32_lcd_font_width; ++x)
+      APP_LCD_Data(*font_ptr++);
+  }
+
+  // fix graphical cursor if more than one line has been print
+  if( y_lines >= 1 ) {
+    mios32_lcd_y = mios32_lcd_y - (mios32_lcd_font_height-8);
+    APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+  }
+
+  // increment cursor
+  mios32_lcd_column += 1;
+
+  return 0; // no error
 }
 
 
@@ -288,19 +377,9 @@ s32 APP_LCD_PrintChar(char c)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
-  s32 i;
-  s32 ret;
+  // TODO
 
-  // send character number
-  APP_LCD_Cmd(((num&7)<<3) | 0x40);
-
-  // send 8 data bytes
-  for(i=0; i<8; ++i)
-    if( APP_LCD_Data(table[i]) < 0 )
-      return -1; // error during sending character
-
-  // set cursor to original position
-  return APP_LCD_CursorSet(mios32_lcd_line, mios32_lcd_column);
+  return -1; // not implemented yet
 }
 
 
@@ -326,7 +405,6 @@ s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 {
   return -1; // n.a.
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -430,6 +508,9 @@ static s32 APP_LCD_WaitUnbusy(void)
   if( !(display_available & (1 << mios32_lcd_device)) )
     return -1;
 
+  // determine chip select line(s)
+  APP_LCD_SetCS(0); // select display depending on current X position
+
   // select command register (RS=0)
   APP_LCD_SetRS(0);
 
@@ -464,3 +545,27 @@ static s32 APP_LCD_WaitUnbusy(void)
   return 0; // no error
 }
 
+// set CS line depending on X cursor position
+// if "all" flag is set, commands are sent to all segments
+static void APP_LCD_SetCS(u8 all)
+{
+  if( all ) {
+    // set all chip select lines
+    PIN_CS0_1;
+    PIN_CS1_1;
+    PIN_CS2_1;
+    PIN_CS3_1;
+  } else {
+    // set only one chip select line depending on X pos   
+    PIN_CS0_0;
+    PIN_CS1_0;
+    PIN_CS2_0;
+    PIN_CS3_0;
+    switch( (mios32_lcd_x >> 6) & 0x3 ) {
+      case 0: PIN_CS0_1; break;
+      case 1: PIN_CS1_1; break;
+      case 2: PIN_CS2_1; break;
+      case 3: PIN_CS3_1; break;
+    }
+  }
+}

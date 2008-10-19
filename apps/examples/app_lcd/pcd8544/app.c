@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Demo application for ST7637 GLCD, stuffed on a STM32 Primer
+ * Demo application for 8xPCD8544 GLCDs
  *
  * ==========================================================================
  *
@@ -37,124 +37,38 @@ void APP_Background(void)
 {
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
-  MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
 
   // clear LCD
   MIOS32_LCD_Clear();
 
-  // print text
-  MIOS32_LCD_CursorSet(3, 3);
-  printf("ST7637 LCD");
-
-  MIOS32_LCD_CursorSet(7, 5);
-  printf("powered by");
-
-  // endless loop: print animations
-  u8 mios_r = 0;
-  u8 mios_g = 0;
-  u8 mios_b = 0;
-  u8 dir = 1;
-  u8 knob_icon_ctr[4] = {0, 3, 6, 9}; // memo: 12 icons
-  u8 knob_icon_delay_ctr[4] = {0, 2, 4, 6};
-  const u8 knob_icon_x[4] = {0, 100, 0, 100}; // memo: icon width 28
-  const u8 knob_icon_y[4] = {0, 0, 104, 104}; // memo: icon height 24
-
-  u8 vmeter_icon_ctr[2] = {0, 5}; // memo: 28 icons (14 used)
-  u8 vmeter_icon_dir[2] = {1, 1};
-  u8 vmeter_icon_delay_ctr[2] = {1, 4};
-  const u8 vmeter_icon_x[2] = {0, 120}; // memo: icon width 8
-  const u8 vmeter_icon_y[2] = {48, 48}; // memo: icon height 32
-
-  u8 hmeter_icon_ctr[2] = {6, 11}; // memo: 28 icons (14 used)
-  u8 hmeter_icon_dir[2] = {1, 0};
-  u8 hmeter_icon_delay_ctr[2] = {4, 2};
-  const u8 hmeter_icon_x[2] = {50, 50}; // memo: icon width 28
-  const u8 hmeter_icon_y[2] = {0, 120}; // memo: icon height 8
-
+  // endless loop - LED will flicker on each iteration
   while( 1 ) {
-    s32 i;
-
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
-    // colour-cycle "MIOS32" up and down :-)
-    // ST7637 supports 5bit r, 6bit g and 5bit b
-    if( dir ) {
-      if( mios_r < 0x1f )
-	++mios_r;
-      else if( mios_g < 0x3f )
-	++mios_g;
-      else if( mios_b < 0x1f )
-	++mios_b;
-      else
-	dir = 0;
-    } else {
-      if( mios_r > 0x00 )
-	--mios_r;
-      else if( mios_g > 0x00 )
-	--mios_g;
-      else if( mios_b > 0x00 )
-	--mios_b;
-      else
-	dir = 1;
-    }
+    // X/Y "position" of displays (see also comments in $MIOS32_PATH/modules/app_lcd/pcd8544/README.txt)
+    const u8 lcd_x[8] = {0, 1, 2, 0, 1, 2, 0, 1}; // CS#0..7
+    const u8 lcd_y[8] = {0, 0, 0, 1, 1, 1, 2, 2};
 
-    // set new colour
-    MIOS32_LCD_FColourSet(mios_r, mios_g, mios_b);
+    u8 i;
+    for(i=0; i<8; ++i) {
+      u8 x_offset = 84*lcd_x[i];
+      u8 y_offset = 6*8*lcd_y[i];
 
-    // print "MIOS32"
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
-    MIOS32_LCD_GCursorSet(16, 52);
-    printf("MIOS32");
+      // print text
+      MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 0*8);
+      printf("  PCD8544 #%d", i+1);
 
-    // icons with different colour
-    MIOS32_LCD_FColourSet(dir ? mios_r : ~mios_r, ~mios_g, dir ? mios_b : ~mios_b);
+      MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 2*8);
+      printf("  powered by  ");
 
-    // print turning Knob icons at all edges
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); // memo: 12 icons, icon size: 28x24
-    for(i=0; i<4; ++i) {
-      if( ++knob_icon_delay_ctr[i] > 10 ) {
-	knob_icon_delay_ctr[i] = 0;
-	if( ++knob_icon_ctr[i] >= 12 )
-	  knob_icon_ctr[i] = 0;
-      }
-      MIOS32_LCD_GCursorSet(knob_icon_x[i], knob_icon_y[i]);
-      MIOS32_LCD_PrintChar(knob_icon_ctr[i]);
-    }
+      MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
+      MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 3*8);
+      printf("MIOS");
 
-    // print vmeter icons
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); // memo: 28 icons, 14 used, icon size: 8x32
-    for(i=0; i<2; ++i) {
-      if( ++vmeter_icon_delay_ctr[i] > 5 ) {
-	vmeter_icon_delay_ctr[i] = 0;
-	if( vmeter_icon_dir[i] ) {
-	  if( ++vmeter_icon_ctr[i] >= 13 )
-	    vmeter_icon_dir[i] = 0;
-	} else {
-	  if( --vmeter_icon_ctr[i] < 1 )
-	    vmeter_icon_dir[i] = 1;
-	}
-      }
-      MIOS32_LCD_GCursorSet(vmeter_icon_x[i], vmeter_icon_y[i]);
-      MIOS32_LCD_PrintChar(vmeter_icon_ctr[i]);
-    }
-
-    // print hmeter icons
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); // memo: 28 icons, 14 used, icon size: 28x8
-    for(i=0; i<2; ++i) {
-      if( ++hmeter_icon_delay_ctr[i] > 7 ) {
-	hmeter_icon_delay_ctr[i] = 0;
-	if( hmeter_icon_dir[i] ) {
-	  if( ++hmeter_icon_ctr[i] >= 13 )
-	    hmeter_icon_dir[i] = 0;
-	} else {
-	  if( --hmeter_icon_ctr[i] < 1 )
-	    hmeter_icon_dir[i] = 1;
-	}
-      }
-      MIOS32_LCD_GCursorSet(hmeter_icon_x[i], hmeter_icon_y[i]);
-      MIOS32_LCD_PrintChar(hmeter_icon_ctr[i]);
+      MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+      MIOS32_LCD_GCursorSet(x_offset + 64, y_offset + 4*8);
+      printf("32");
     }
   }
 }

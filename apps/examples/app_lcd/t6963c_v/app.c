@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Demo application for ST7637 GLCD, stuffed on a STM32 Primer
+ * Demo application for T6963C GLCD with vertical orientation
  *
  * ==========================================================================
  *
@@ -37,40 +37,51 @@ void APP_Background(void)
 {
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
-  MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
 
   // clear LCD
   MIOS32_LCD_Clear();
 
   // print text
-  MIOS32_LCD_CursorSet(3, 3);
-  printf("ST7637 LCD");
+  MIOS32_LCD_GCursorSet(2, 8*8);
+  printf("  T6963C  ");
+  MIOS32_LCD_GCursorSet(2, 10*8);
+  printf("!vertical!");
 
-  MIOS32_LCD_CursorSet(7, 5);
-  printf("powered by");
+  MIOS32_LCD_GCursorSet(2, 14*8);
+  printf("  Custom  ");
+  MIOS32_LCD_GCursorSet(2, 15*8);
+  printf("   LCD    ");
+  MIOS32_LCD_GCursorSet(2, 16*8);
+  printf("  Driver  ");
+
+  MIOS32_LCD_GCursorSet(5, 18*8);
+  printf(" powered  ");
+  MIOS32_LCD_GCursorSet(2, 19*8);
+  printf("    by    ");
+
+  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
+  MIOS32_LCD_GCursorSet(0, 21*8);
+  printf("MIOS32");
 
   // endless loop: print animations
-  u8 mios_r = 0;
-  u8 mios_g = 0;
-  u8 mios_b = 0;
+  u32 loop_ctr = 0;
   u8 dir = 1;
   u8 knob_icon_ctr[4] = {0, 3, 6, 9}; // memo: 12 icons
   u8 knob_icon_delay_ctr[4] = {0, 2, 4, 6};
-  const u8 knob_icon_x[4] = {0, 100, 0, 100}; // memo: icon width 28
-  const u8 knob_icon_y[4] = {0, 0, 104, 104}; // memo: icon height 24
+  const u8 knob_icon_x[4] = {0, 36, 0, 36}; // memo: icon width 28
+  const u8 knob_icon_y[4] = {0, 0, 216, 216}; // memo: icon height 24
 
   u8 vmeter_icon_ctr[2] = {0, 5}; // memo: 28 icons (14 used)
   u8 vmeter_icon_dir[2] = {1, 1};
   u8 vmeter_icon_delay_ctr[2] = {1, 4};
-  const u8 vmeter_icon_x[2] = {0, 120}; // memo: icon width 8
-  const u8 vmeter_icon_y[2] = {48, 48}; // memo: icon height 32
+  const u8 vmeter_icon_x[2] = {0, 56}; // memo: icon width 8
+  const u8 vmeter_icon_y[2] = {112, 112}; // memo: icon height 32
 
   u8 hmeter_icon_ctr[2] = {6, 11}; // memo: 28 icons (14 used)
   u8 hmeter_icon_dir[2] = {1, 0};
   u8 hmeter_icon_delay_ctr[2] = {4, 2};
-  const u8 hmeter_icon_x[2] = {50, 50}; // memo: icon width 28
-  const u8 hmeter_icon_y[2] = {0, 120}; // memo: icon height 8
+  const u8 hmeter_icon_x[2] = {18, 18}; // memo: icon width 28
+  u8 hmeter_icon_y[2] = {32, 200}; // memo: icon height 8
 
   while( 1 ) {
     s32 i;
@@ -78,38 +89,18 @@ void APP_Background(void)
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
-    // colour-cycle "MIOS32" up and down :-)
-    // ST7637 supports 5bit r, 6bit g and 5bit b
+    // switch direction each 10000 cycles
     if( dir ) {
-      if( mios_r < 0x1f )
-	++mios_r;
-      else if( mios_g < 0x3f )
-	++mios_g;
-      else if( mios_b < 0x1f )
-	++mios_b;
-      else
+      if( ++loop_ctr > 10000 ) {
+	loop_ctr = 0;
 	dir = 0;
+      }
     } else {
-      if( mios_r > 0x00 )
-	--mios_r;
-      else if( mios_g > 0x00 )
-	--mios_g;
-      else if( mios_b > 0x00 )
-	--mios_b;
-      else
+      if( ++loop_ctr > 10000 ) {
+	loop_ctr = 0;
 	dir = 1;
+      }
     }
-
-    // set new colour
-    MIOS32_LCD_FColourSet(mios_r, mios_g, mios_b);
-
-    // print "MIOS32"
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
-    MIOS32_LCD_GCursorSet(16, 52);
-    printf("MIOS32");
-
-    // icons with different colour
-    MIOS32_LCD_FColourSet(dir ? mios_r : ~mios_r, ~mios_g, dir ? mios_b : ~mios_b);
 
     // print turning Knob icons at all edges
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); // memo: 12 icons, icon size: 28x24
