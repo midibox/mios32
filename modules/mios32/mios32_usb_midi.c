@@ -789,9 +789,18 @@ s32 MIOS32_USB_MIDI_Init(u32 mode)
   // transfer not possible yet - will change once USB goes into CONFIGURED state
   transfer_possible = 0;
 
+
+  // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
+  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_StructInit(&NVIC_InitStructure);
+  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN_RX0_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
   // remaining initialisation done in STM32 USB driver
   USB_Init();
-
   return 0;
 }
 
@@ -877,54 +886,17 @@ s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler should be called from a RTOS task to react on
-// USB interrupt notifications
+// This handler should be called from a RTOS task to check for
+// incoming/outgoing USB packages
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Handler(void)
 {
-  int again;
-  int loop_ctr = 0;
+  // check for received packages
+  MIOS32_USB_MIDI_RxBufferHandler();
 
-  // MEMO: could also be called from USB_LP_CAN_RX0_IRQHandler
-  // if IRQ vector configured for USB
-
-  do {
-    again = 0;
-
-    wIstr = _GetISTR();
-
-    if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
-      _SetISTR((u16)CLR_RESET);
-      Device_Property.Reset();
-      again = 1;
-    }
-
-    if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
-      _SetISTR((u16)CLR_SOF);
-      again = 1;
-    }
-
-    if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
-      // servicing of the endpoint correct transfer interrupt
-      // clear of the CTR flag into the sub
-      CTR_LP();
-      again = 1;
-    }
-
-
-    // do we need to react on the remaining events?
-    // they are currently masked out via IMR_MSK
-
-
-    // now check if something has to be sent or received
-    MIOS32_USB_MIDI_RxBufferHandler();
-    MIOS32_USB_MIDI_TxBufferHandler();
-
-    // MEMO: this seems to be a race condition: if we don't stay in this loop whenever
-    // an interrupt flag has been set, the device sometimes won't enumerate under MacOS.
-    // we allow up to 100 loops
-  } while( again && ++loop_ctr < 100 );
+  // check for packages which should be transmitted
+  MIOS32_USB_MIDI_TxBufferHandler();
 
   return 0;
 }
@@ -1005,6 +977,30 @@ void MIOS32_USB_MIDI_RxBufferHandler(void)
       // release OUT pipe
       SetEPRxValid(ENDP1);
     }
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for USB
+/////////////////////////////////////////////////////////////////////////////
+void USB_LP_CAN_RX0_IRQHandler(void)
+{
+  wIstr = _GetISTR();
+
+  if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
+    _SetISTR((u16)CLR_RESET);
+    Device_Property.Reset();
+  }
+
+  if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
+    _SetISTR((u16)CLR_SOF);
+  }
+
+  if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
+    // servicing of the endpoint correct transfer interrupt
+    // clear of the CTR flag into the sub
+    CTR_LP();
   }
 }
 
