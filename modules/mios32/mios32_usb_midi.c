@@ -55,7 +55,7 @@
 #define CS_ENDPOINT	0x25	// Class-specific type: Endpoint
 
 // number of endpoints
-#define EP_NUM              (4)
+#define EP_NUM              (2)
 
 // buffer table base address
 #define BTABLE_ADDRESS      (0x00)
@@ -117,8 +117,8 @@ const u8 MIOS32_USB_MIDI_DeviceDescriptor[MIOS32_USB_MIDI_SIZ_DEVICE_DESC] = {
   (u8)(0x16c0 >> 8),		// Vendor ID (MSB)
   (u8)(1023 & 0xff),		// Product ID (LSB)
   (u8)(1023 >> 8),		// Product ID (MSB)
-  (u8)(0x0001 & 0xff),		// Product version ID (LSB)
-  (u8)(0x0001 >> 8),  		// Product version ID (MSB)
+  (u8)(0x0100 & 0xff),		// Product version ID (LSB)
+  (u8)(0x0100 >> 8),  		// Product version ID (MSB)
   0x01,				// Manufacturer string index
   0x02,				// Product string index
   0x00,				// Serial number string index
@@ -137,9 +137,9 @@ const u8 MIOS32_USB_MIDI_ConfigDescriptor[MIOS32_USB_MIDI_SIZ_CONFIG_DESC] = {
   0x01,				// Number of interfaces
 #endif
   0x01,				// Interface number
-  0x02,				// Configuration string
+  0x00,				// Configuration string
   0x80,				// Attributes (b7 - buspwr, b6 - selfpwr, b5 - rwu)
-  0x10,				// Power requirement (div 2 ma)
+  0x32,				// Power requirement (div 2 ma)
 
 #if MIOS32_USB_MIDI_USE_AC_INTERFACE
   // Standard AC Interface Descriptor
@@ -930,34 +930,49 @@ s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Handler(void)
 {
+  int again = 0;
+  int loop_ctr = 0;
+
   // MEMO: could also be called from USB_LP_CAN_RX0_IRQHandler
   // if IRQ vector configured for USB
 
-  wIstr = _GetISTR();
+  do {
+    wIstr = _GetISTR();
 
-  if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
-    _SetISTR((u16)CLR_RESET);
-    Device_Property.Reset();
-  }
+    if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
+      _SetISTR((u16)CLR_RESET);
+      Device_Property.Reset();
+      again = 1;
+      ++loop_ctr;
+    }
 
-  if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
-    _SetISTR((u16)CLR_SOF);
-  }
+    if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
+      _SetISTR((u16)CLR_SOF);
+      again = 1;
+      ++loop_ctr;
+    }
 
-  if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
-    // servicing of the endpoint correct transfer interrupt
-    // clear of the CTR flag into the sub
-    CTR_LP();
-  }
+    if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
+      // servicing of the endpoint correct transfer interrupt
+      // clear of the CTR flag into the sub
+      CTR_LP();
+      again = 1;
+      ++loop_ctr;
+    }
 
 
-  // do we need to react on the remaining events?
-  // they are currently masked out via IMR_MSK
+    // do we need to react on the remaining events?
+    // they are currently masked out via IMR_MSK
 
 
-  // now check if something has to be sent or received
-  MIOS32_USB_MIDI_RxBufferHandler();
-  MIOS32_USB_MIDI_TxBufferHandler();
+    // now check if something has to be sent or received
+    MIOS32_USB_MIDI_RxBufferHandler();
+    MIOS32_USB_MIDI_TxBufferHandler();
+
+    // MEMO: this seems to be a race condition: if we don't stay in this loop whenever
+    // an interrupt flag has been set, the device sometimes won't enumerate under MacOS.
+    // we allow up to 100 loops
+  } while( again && loop_ctr < 100 );
 
   return 0;
 }
