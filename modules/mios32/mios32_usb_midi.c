@@ -41,9 +41,6 @@
 #define MIOS32_USB_MIDI_SIZ_DEVICE_DESC        18
 #define MIOS32_USB_MIDI_SIZ_CLASS_DESC         (7+MIOS32_USB_MIDI_NUM_PORTS*(6+6+9+9)+9+(4+MIOS32_USB_MIDI_NUM_PORTS)+9+(4+MIOS32_USB_MIDI_NUM_PORTS))
 #define MIOS32_USB_MIDI_SIZ_CONFIG_DESC        (9+9+MIOS32_USB_MIDI_USE_AC_INTERFACE*(9+9)+MIOS32_USB_MIDI_SIZ_CLASS_DESC)
-#define MIOS32_USB_MIDI_SIZ_STRING_LANGID      4
-#define MIOS32_USB_MIDI_SIZ_STRING_VENDOR      24
-#define MIOS32_USB_MIDI_SIZ_STRING_PRODUCT     14
 
 #define DSCR_DEVICE	1	// Descriptor type: Device
 #define DSCR_CONFIG	2	// Descriptor type: Configuration
@@ -113,12 +110,12 @@ const u8 MIOS32_USB_MIDI_DeviceDescriptor[MIOS32_USB_MIDI_SIZ_DEVICE_DESC] = {
   0x00,				// Device sub-class
   0x00,				// Device sub-sub-class
   0x40,				// Maximum packet size
-  (u8)(0x16c0 & 0xff),		// Vendor ID 16C0 --- sponsored by voti.nl! see http://www.voti.nl/pids
-  (u8)(0x16c0 >> 8),		// Vendor ID (MSB)
-  (u8)(1023 & 0xff),		// Product ID (LSB)
-  (u8)(1023 >> 8),		// Product ID (MSB)
-  (u8)(0x0100 & 0xff),		// Product version ID (LSB)
-  (u8)(0x0100 >> 8),  		// Product version ID (MSB)
+  (u8)((MIOS32_USB_MIDI_VENDOR_ID) & 0xff),  // Vendor ID (LSB)
+  (u8)((MIOS32_USB_MIDI_VENDOR_ID) >> 8),    // Vendor ID (MSB)
+  (u8)((MIOS32_USB_MIDI_PRODUCT_ID) & 0xff),	// Product ID (LSB)
+  (u8)((MIOS32_USB_MIDI_PRODUCT_ID) >> 8),	// Product ID (MSB)
+  (u8)((MIOS32_USB_MIDI_VERSION_ID) & 0xff),	// Product version ID (LSB)
+  (u8)((MIOS32_USB_MIDI_VERSION_ID) >> 8),  	// Product version ID (MSB)
   0x01,				// Manufacturer string index
   0x02,				// Product string index
   0x00,				// Serial number string index
@@ -604,43 +601,6 @@ const u8 MIOS32_USB_MIDI_ConfigDescriptor[MIOS32_USB_MIDI_SIZ_CONFIG_DESC] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// USB String Descriptors
-/////////////////////////////////////////////////////////////////////////////
-const u8 MIOS32_USB_MIDI_StringLangID[MIOS32_USB_MIDI_SIZ_STRING_LANGID] = {
-  4,                            // String descriptor length
-  DSCR_STRING,			// Descriptor Type
-  0x09, 0x04			// Charset
-};
-
-const u8 MIOS32_USB_MIDI_StringVendor[MIOS32_USB_MIDI_SIZ_STRING_VENDOR] = {
-  11*2+2,                       // String descriptor length
-  DSCR_STRING,			// Descriptor Type
-  'm',00,
-  'i',00,
-  'd',00,
-  'i',00,
-  'b',00,
-  'o',00,
-  'x',00,
-  '.',00,
-  'o',00,
-  'r',00,
-  'g',00
-};
-
-const u8 MIOS32_USB_MIDI_StringProduct[MIOS32_USB_MIDI_SIZ_STRING_PRODUCT] = {
-  6*2+2,                       // String descriptor length
-  DSCR_STRING,			// Descriptor Type
-  'M',00,
-  'I',00,
-  'O',00,
-  'S',00,
-  '3',00,
-  '2',00
-};
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -728,13 +688,6 @@ ONE_DESCRIPTOR Device_Descriptor = {
 ONE_DESCRIPTOR Config_Descriptor = {
   (u8*)MIOS32_USB_MIDI_ConfigDescriptor,
   MIOS32_USB_MIDI_SIZ_CONFIG_DESC
-};
-
-ONE_DESCRIPTOR String_Descriptor[4] = {
-  {(u8*)MIOS32_USB_MIDI_StringLangID, MIOS32_USB_MIDI_SIZ_STRING_LANGID},
-  {(u8*)MIOS32_USB_MIDI_StringVendor, MIOS32_USB_MIDI_SIZ_STRING_VENDOR},
-  {(u8*)MIOS32_USB_MIDI_StringProduct, MIOS32_USB_MIDI_SIZ_STRING_PRODUCT},
-  0
 };
 
 
@@ -930,26 +883,26 @@ s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Handler(void)
 {
-  int again = 0;
+  int again;
   int loop_ctr = 0;
 
   // MEMO: could also be called from USB_LP_CAN_RX0_IRQHandler
   // if IRQ vector configured for USB
 
   do {
+    again = 0;
+
     wIstr = _GetISTR();
 
     if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
       _SetISTR((u16)CLR_RESET);
       Device_Property.Reset();
       again = 1;
-      ++loop_ctr;
     }
 
     if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
       _SetISTR((u16)CLR_SOF);
       again = 1;
-      ++loop_ctr;
     }
 
     if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
@@ -957,7 +910,6 @@ s32 MIOS32_USB_MIDI_Handler(void)
       // clear of the CTR flag into the sub
       CTR_LP();
       again = 1;
-      ++loop_ctr;
     }
 
 
@@ -972,7 +924,7 @@ s32 MIOS32_USB_MIDI_Handler(void)
     // MEMO: this seems to be a race condition: if we don't stay in this loop whenever
     // an interrupt flag has been set, the device sometimes won't enumerate under MacOS.
     // we allow up to 100 loops
-  } while( again && loop_ctr < 100 );
+  } while( again && ++loop_ctr < 100 );
 
   return 0;
 }
@@ -1231,13 +1183,45 @@ u8 *MIOS32_USB_MIDI_CB_GetConfigDescriptor(u16 Length)
 // gets the string descriptors according to the needed index
 u8 *MIOS32_USB_MIDI_CB_GetStringDescriptor(u16 Length)
 {
-  u8 wValue0 = pInformation->USBwValue0;
+  const u8 vendor_str[] = MIOS32_USB_MIDI_VENDOR_STR;
+  const u8 product_str[] = MIOS32_USB_MIDI_PRODUCT_STR;
 
-  if (wValue0 > 4) {
-    return NULL;
-  } else {
-    return Standard_GetDescriptorData(Length, &String_Descriptor[wValue0]);
+  u8 buffer[200];
+  u16 len;
+  int i;
+
+  switch( pInformation->USBwValue0 ) {
+    case 0: // Language
+      // buffer[0] and [1] initialized below
+      buffer[2] = 0x09;        // CharSet
+      buffer[3] = 0x04;        // U.S.
+      len = 4;
+      break;
+
+    case 1: // Vendor
+      // buffer[0] and [1] initialized below
+      for(i=0, len=2; vendor_str[i] != '\0' && len<200; ++i) {
+	buffer[len++] = vendor_str[i];
+	buffer[len++] = 0;
+      }
+      break;
+
+    case 2: // Product
+      // buffer[0] and [1] initialized below
+      for(i=0, len=2; product_str[i] != '\0' && len<200; ++i) {
+	buffer[len++] = product_str[i];
+	buffer[len++] = 0;
+      }
+      break;
+
+    default: // string ID not supported
+      return NULL;
   }
+
+  buffer[0] = len; // Descriptor Length
+  buffer[1] = DSCR_STRING; // Descriptor Type
+  ONE_DESCRIPTOR desc = {(u8 *)buffer, len};
+  return Standard_GetDescriptorData(Length, &desc);
 }
 
 // test the interface and the alternate setting according to the supported one.
