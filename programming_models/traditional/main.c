@@ -31,6 +31,7 @@
 #define PRIORITY_TASK_DIN_CHECK		( tskIDLE_PRIORITY + 3 )
 #define PRIORITY_TASK_AIN_CHECK		( tskIDLE_PRIORITY + 3 )
 #define PRIORITY_TASK_MIDI_RECEIVE	( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_COM_RECEIVE	( tskIDLE_PRIORITY + 3 )
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,6 +47,10 @@ static void TASK_AIN_Check(void *pvParameters);
 
 #ifndef MIOS32_DONT_USE_MIDI
 static void TASK_MIDI_Receive(void *pvParameters);
+#endif
+
+#ifndef MIOS32_DONT_USE_COM
+static void TASK_COM_Receive(void *pvParameters);
 #endif
 
 
@@ -81,8 +86,14 @@ int main(void)
 #ifndef MIOS32_DONT_USE_IIC_BS
   MIOS32_IIC_BS_Init(0);
 #endif
+#ifndef MIOS32_DONT_USE_USB
+  MIOS32_USB_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_MIDI
   MIOS32_MIDI_Init(0); // 0 = blocking mode
+#endif
+#ifndef MIOS32_DONT_USE_COM
+  MIOS32_COM_Init(0); // 0 = blocking mode
 #endif
 #ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_Init(0);
@@ -100,6 +111,9 @@ int main(void)
 #endif
 #if !defined(MIOS32_DONT_USE_MIDI)
   xTaskCreate(TASK_MIDI_Receive, (signed portCHAR *)"MIDI_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI_RECEIVE, NULL);
+#endif
+#if !defined(MIOS32_DONT_USE_COM)
+  xTaskCreate(TASK_COM_Receive, (signed portCHAR *)"COM_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_COM_RECEIVE, NULL);
 #endif
 
   // start the scheduler
@@ -218,6 +232,28 @@ static void TASK_MIDI_Receive(void *pvParameters)
     
     // check for incoming MIDI messages and call hooks
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// MIDI Handlers
+/////////////////////////////////////////////////////////////////////////////
+#ifndef MIOS32_DONT_USE_COM
+// checks for incoming COM messages
+static void TASK_COM_Receive(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // check for incoming COM messages and call hook
+    MIOS32_COM_Receive_Handler(APP_NotifyReceivedCOM);
   }
 }
 #endif

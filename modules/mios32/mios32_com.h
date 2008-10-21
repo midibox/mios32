@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file of application
+ * Header file for COM layer
  *
  * ==========================================================================
  *
@@ -11,13 +11,17 @@
  * ==========================================================================
  */
 
-#ifndef _APP_H
-#define _APP_H
-
+#ifndef _MIOS32_COM_H
+#define _MIOS32_COM_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
+
+// the default COM port for COM output
+#ifndef MIOS32_COM_DEFAULT_PORT
+#define MIOS32_COM_DEFAULT_PORT USB0
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -25,20 +29,43 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
+typedef enum {
+  COM_DEFAULT = 0x00,
+
+  COM_USB0 = 0x10,
+  COM_USB1 = 0x11,
+  COM_USB2 = 0x12,
+  COM_USB3 = 0x13,
+  COM_USB4 = 0x14,
+  COM_USB5 = 0x15,
+  COM_USB6 = 0x16,
+  COM_USB7 = 0x17,
+
+  COM_UART0 = 0x20,
+  COM_UART1 = 0x21,
+
+  COM_IIC0 = 0x30,
+  COM_IIC1 = 0x31,
+  COM_IIC2 = 0x32,
+  COM_IIC3 = 0x33,
+  COM_IIC4 = 0x34,
+  COM_IIC5 = 0x35,
+  COM_IIC6 = 0x36,
+  COM_IIC7 = 0x37
+} mios32_com_port_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern void APP_Init(void);
-extern void APP_Background(void);
-extern void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-extern void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte);
-extern void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte);
-extern void APP_SRIO_ServicePrepare(void);
-extern void APP_SRIO_ServiceFinish(void);
-extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
-extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
+extern s32 MIOS32_COM_Init(u32 mode);
+
+extern s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port);
+
+extern s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len);
+
+extern s32 MIOS32_COM_Receive_Handler(void *callback);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,4 +73,4 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _APP_H */
+#endif /* _MIOS32_COM_H */
