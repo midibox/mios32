@@ -23,7 +23,10 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_MF
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
+#define MIOS32_DONT_USE_COM
+#define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_MIDI
+#define MIOS32_DONT_USE_USB_COM
 #define MIOS32_DONT_USE_UART
 #define MIOS32_DONT_USE_UART_MIDI
 #define MIOS32_DONT_USE_IIC
@@ -52,11 +55,11 @@ into your local mios32_config.h file
 
 
 // Following settings allow to customize the USB device descriptor
-#define MIOS32_USB_MIDI_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
-#define MIOS32_USB_MIDI_VENDOR_STR   "midibox.org" // you will see this in the USB device description
-#define MIOS32_USB_MIDI_PRODUCT_STR  "MIOS32"      // you will see this in the MIDI device list
-#define MIOS32_USB_MIDI_PRODUCT_ID   1023          // 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
-#define MIOS32_USB_MIDI_VERSION_ID   0x0100        // v1.00
+#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
+#define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
+#define MIOS32_USB_PRODUCT_STR  "MIOS32"      // you will see this in the MIDI device list
+#define MIOS32_USB_PRODUCT_ID   1023          // 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
+#define MIOS32_USB_VERSION_ID   0x0100        // v1.00
 
 
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
@@ -68,6 +71,10 @@ into your local mios32_config.h file
 // buffer size (should be at least >= MIOS32_USB_MIDI_DATA_*_SIZE/4)
 #define MIOS32_USB_MIDI_RX_BUFFER_SIZE   64 // packages
 #define MIOS32_USB_MIDI_TX_BUFFER_SIZE   64 // packages
+
+// size of IN/OUT pipe
+#define MIOS32_USB_MIDI_DATA_IN_SIZE           64
+#define MIOS32_USB_MIDI_DATA_OUT_SIZE          64
 
 
 // sets the IIC bus frequency in kHz (400000 max!)

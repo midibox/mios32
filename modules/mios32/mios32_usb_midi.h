@@ -18,25 +18,6 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-
-// Following settings allow to customize the USB device descriptor
-#ifndef MIOS32_USB_MIDI_VENDOR_ID
-#define MIOS32_USB_MIDI_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
-#endif
-#ifndef MIOS32_USB_MIDI_VENDOR_STR
-#define MIOS32_USB_MIDI_VENDOR_STR   "midibox.org" // you will see this in the USB device description
-#endif
-#ifndef MIOS32_USB_MIDI_PRODUCT_STR
-#define MIOS32_USB_MIDI_PRODUCT_STR  "MIOS32"      // you will see this in the MIDI device list
-#endif
-#ifndef MIOS32_USB_MIDI_PRODUCT_ID
-#define MIOS32_USB_MIDI_PRODUCT_ID   1023          // 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
-#endif
-#ifndef MIOS32_USB_MIDI_VERSION_ID
-#define MIOS32_USB_MIDI_VERSION_ID   0x0100        // v1.00
-#endif
-
-
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
 #ifndef MIOS32_USB_MIDI_USE_AC_INTERFACE
 #define MIOS32_USB_MIDI_USE_AC_INTERFACE 1
@@ -57,11 +38,24 @@
 #endif
 
 
+// size of IN/OUT pipe
+#ifndef MIOS32_USB_MIDI_DATA_IN_SIZE
+#define MIOS32_USB_MIDI_DATA_IN_SIZE           64
+#endif
+#ifndef MIOS32_USB_MIDI_DATA_OUT_SIZE
+#define MIOS32_USB_MIDI_DATA_OUT_SIZE          64
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MIOS32_USB_MIDI_Init(u32 mode);
+
+extern s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected);
+extern void MIOS32_USB_MIDI_EP1_IN_Callback(void);
+extern void MIOS32_USB_MIDI_EP1_OUT_Callback(void);
 
 extern s32 MIOS32_USB_MIDI_CheckAvailable(void);
 
@@ -74,5 +68,6 @@ extern s32 MIOS32_USB_MIDI_Handler(void);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
 
 #endif /* _MIOS32_USB_MIDI_H */
