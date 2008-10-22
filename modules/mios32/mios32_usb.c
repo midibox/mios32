@@ -126,7 +126,7 @@ const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
   (u8)(0x0200 & 0xff),		// Specification Version (BCD, LSB)
   (u8)(0x0200 >> 8),		// Specification Version (BCD, MSB)
 #if 1
-  0x02,				// Device class "Communication"
+  0x02,				// Device class "Communication"   -- required for MacOS to find the COM device. Audio Device works fine in parallel to this
 #else
   0x00,				// Device class "Composite"
 #endif
@@ -741,23 +741,45 @@ RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting);
 /////////////////////////////////////////////////////////////////////////////
 
 void (*pEpInt_IN[7])(void) = {
-  MIOS32_USB_MIDI_EP1_IN_Callback,
-  NOP_Process,
-  NOP_Process,
-  MIOS32_USB_COM_EP4_IN_Callback,
-  NOP_Process,
-  NOP_Process,
-  NOP_Process
+#ifndef MIOS32_DONT_USE_USB_MIDI
+  MIOS32_USB_MIDI_EP1_IN_Callback,   // IN EP1
+#else
+  NOP_Process,                       // IN EP1
+#endif
+
+#ifndef MIOS32_DONT_USE_USB_COM
+  NOP_Process,                       // IN EP2
+  NOP_Process,                       // IN EP3
+  MIOS32_USB_COM_EP4_IN_Callback,    // IN EP4
+#else
+  NOP_Process,                       // IN EP2
+  NOP_Process,                       // IN EP3
+  NOP_Process,                       // IN EP4
+#endif
+
+  NOP_Process,                       // IN EP5
+  NOP_Process,                       // IN EP6
+  NOP_Process                        // IN EP7
 };
 
 void (*pEpInt_OUT[7])(void) = {
-  MIOS32_USB_MIDI_EP1_OUT_Callback,
-  NOP_Process,
-  MIOS32_USB_COM_EP3_OUT_Callback,
-  NOP_Process,
-  NOP_Process,
-  NOP_Process,
-  NOP_Process
+#ifndef MIOS32_DONT_USE_USB_MIDI
+  MIOS32_USB_MIDI_EP1_OUT_Callback,  // OUT EP1
+#else
+  NOP_Process,                       // OUT EP1
+#endif
+#ifndef MIOS32_DONT_USE_USB_COM
+  NOP_Process,                       // OUT EP2
+  MIOS32_USB_COM_EP3_OUT_Callback,   // OUT EP3
+  NOP_Process,                       // OUT EP4
+#else
+  NOP_Process,                       // OUT EP2
+  NOP_Process,                       // OUT EP3
+  NOP_Process,                       // OUT EP4
+#endif
+  NOP_Process,                       // OUT EP5
+  NOP_Process,                       // OUT EP6
+  NOP_Process                        // OUT EP7
 };
 
 DEVICE Device_Table = {
@@ -1053,6 +1075,9 @@ void MIOS32_USB_CB_SetDeviceAddress (void)
 // status IN routine
 void MIOS32_USB_CB_Status_In(void)
 {
+#ifndef MIOS32_DONT_USE_USB_COM
+  MIOS32_USB_COM_CB_StatusIn();
+#endif
 }
 
 // status OUT routine
@@ -1060,15 +1085,27 @@ void MIOS32_USB_CB_Status_Out(void)
 {
 }
 
-// handles the data class specific requests
 RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 {
+  RESULT res;
+
+#ifndef MIOS32_DONT_USE_USB_COM
+  if( (res=MIOS32_USB_COM_CB_Data_Setup(RequestNo)) != USB_UNSUPPORT )
+    return res;
+#endif
   return USB_UNSUPPORT;
 }
 
 // handles the non data class specific requests.
 RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
 {
+  RESULT res;
+
+#ifndef MIOS32_DONT_USE_USB_COM
+  if( (res=MIOS32_USB_COM_CB_NoData_Setup(RequestNo)) != USB_UNSUPPORT )
+    return res;
+#endif
+
   return USB_UNSUPPORT;
 }
 
@@ -1133,9 +1170,9 @@ u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
 // test the interface and the alternate setting according to the supported one.
 RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting)
 {
-  if (AlternateSetting > 0) {
+  if( AlternateSetting > 0 ) {
     return USB_UNSUPPORT;
-  } else if (Interface > 1) {
+  } else if( Interface >= MIOS32_USB_NUM_INTERFACES ) {
     return USB_UNSUPPORT;
   }
 

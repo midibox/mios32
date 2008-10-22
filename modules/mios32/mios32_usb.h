@@ -30,7 +30,7 @@
 #define MIOS32_USB_PRODUCT_STR  "MIOS32"      // you will see this in the MIDI device list
 #endif
 #ifndef MIOS32_USB_PRODUCT_ID
-#define MIOS32_USB_PRODUCT_ID   1023          // 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
+#define MIOS32_USB_PRODUCT_ID   0x03ff        // ==1023; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
 #endif
 #ifndef MIOS32_USB_VERSION_ID
 #define MIOS32_USB_VERSION_ID   0x0100        // v1.00
