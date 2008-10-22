@@ -227,8 +227,10 @@ static void TASK_MIDI_Receive(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
+#ifndef MIOS32_DONT_USE_USB_MIDI
     // handle USB messages
     MIOS32_USB_MIDI_Handler();
+#endif
     
     // check for incoming MIDI messages and call hooks
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);

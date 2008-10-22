@@ -109,7 +109,7 @@ s32 MIOS32_MIDI_Init(u32 mode)
   if( mode != 0 && mode != 1 )
     return -1; // unsupported mode
 
-#if !defined(MIOS32_DONT_USE_USB)
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
   if( MIOS32_USB_MIDI_Init(mode) < 0 )
     ret |= (1 << 0);
 #endif

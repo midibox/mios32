@@ -30,6 +30,34 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Defines
+/////////////////////////////////////////////////////////////////////////////
+
+#define SEND_ENCAPSULATED_COMMAND   0x00
+#define GET_ENCAPSULATED_RESPONSE   0x01
+#define SET_COMM_FEATURE            0x02
+#define GET_COMM_FEATURE            0x03
+#define CLEAR_COMM_FEATURE          0x04
+#define SET_LINE_CODING             0x20
+#define GET_LINE_CODING             0x21
+#define SET_CONTROL_LINE_STATE      0x22
+#define SEND_BREAK                  0x23
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef struct
+{
+  u32 bitrate;
+  u8 format;
+  u8 paritytype;
+  u8 datatype;
+} LINE_CODING;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +80,18 @@ static u8 non_blocking_mode = 0;
 
 // transfer possible?
 static u8 transfer_possible = 0;
+
+// COM Requests
+u8 Request = 0;
+
+// Default linecoding
+LINE_CODING linecoding = {
+  115200, /* baud rate*/
+  0x00,   /* stop bits-1*/
+  0x00,   /* parity - none*/
+  0x08    /* no. of bits 8*/
+};
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -278,11 +318,15 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
   if( usb_com >= MIOS32_USB_COM_NUM )
     return -1; // USB_COM not available
 
-  if( tx_buffer_busy )
-    return -2; // buffer full (retry)
-
   if( len > MIOS32_USB_COM_DATA_IN_SIZE )
     return -4; // cannot get all requested bytes
+
+  if( non_blocking_mode ) {
+    if( tx_buffer_busy )
+      return -2; // buffer full (retry)
+  } else {
+    while( tx_buffer_busy ); // blocking mode - wait until buffer sent
+  };
 
   // copy bytes to be transmitted into transmit buffer
   UserToPMABufferCopy(buffer, MIOS32_USB_ENDP4_TXADDR, len);
@@ -330,6 +374,78 @@ void MIOS32_USB_COM_EP3_OUT_Callback(void)
   // new data has been received - notify this
   rx_buffer_new_data_ctr = GetEPRxCount(ENDP3);
   rx_buffer_ix = 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// MIOS32_USB callback functions (forwarded from STM32 USB driver)
+/////////////////////////////////////////////////////////////////////////////
+void MIOS32_USB_COM_CB_StatusIn(void)
+{
+  if( Request == SET_LINE_CODING ) {
+    // configure UART here...
+    Request = 0;
+  }
+}
+
+
+// handles the data class specific requests
+static u8 *Virtual_Com_Port_GetLineCoding(u16 Length) {
+  if( Length == 0 ) {
+    pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
+    return NULL;
+  }
+
+  return(u8 *)&linecoding;
+}
+
+u8 *Virtual_Com_Port_SetLineCoding(u16 Length)
+{
+  if( Length == 0 ) {
+    pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
+    return NULL;
+  }
+
+  return(u8 *)&linecoding;
+}
+
+s32 MIOS32_USB_COM_CB_Data_Setup(u8 RequestNo)
+{
+  u8 *(*CopyRoutine)(u16) = NULL;
+
+  if( RequestNo == GET_LINE_CODING ) {
+    if( Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT) ) {
+      CopyRoutine = Virtual_Com_Port_GetLineCoding;
+    }
+  } else if( RequestNo == SET_LINE_CODING ) {
+    if( Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT) ) {
+      CopyRoutine = Virtual_Com_Port_SetLineCoding;
+    }
+    Request = SET_LINE_CODING;
+  }
+
+  if( CopyRoutine == NULL ) {
+    return USB_UNSUPPORT;
+  }
+
+  pInformation->Ctrl_Info.CopyData = CopyRoutine;
+  pInformation->Ctrl_Info.Usb_wOffset = 0;
+  (*CopyRoutine)(0);
+
+  return USB_SUCCESS;
+}
+
+s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo)
+{
+  if( Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT) ) {
+    if( RequestNo == SET_COMM_FEATURE ) {
+      return USB_SUCCESS;
+    } else if( RequestNo == SET_CONTROL_LINE_STATE ) {
+      return USB_SUCCESS;
+    }
+  }
+
+  return USB_UNSUPPORT;
 }
 
 #endif /* MIOS32_DONT_USE_USB_COM */

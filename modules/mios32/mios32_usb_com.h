@@ -48,6 +48,9 @@ extern s32 MIOS32_USB_COM_CheckAvailable(void);
 extern s32 MIOS32_USB_COM_ChangeConnectionState(u8 connected);
 extern void MIOS32_USB_COM_EP4_IN_Callback(void);
 extern void MIOS32_USB_COM_EP3_OUT_Callback(void);
+extern void MIOS32_USB_COM_CB_StatusIn(void);
+extern s32 MIOS32_USB_COM_CB_Data_Setup(u8 RequestNo);
+extern s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo);
 
 extern s32 MIOS32_USB_COM_RxBufferFree(u8 usb_com);
 extern s32 MIOS32_USB_COM_RxBufferUsed(u8 usb_com);

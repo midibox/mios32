@@ -30,8 +30,8 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-void MIOS32_USB_MIDI_TxBufferHandler(void);
-void MIOS32_USB_MIDI_RxBufferHandler(void);
+static void MIOS32_USB_MIDI_TxBufferHandler(void);
+static void MIOS32_USB_MIDI_RxBufferHandler(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ s32 MIOS32_USB_MIDI_Handler(void)
 // This handler sends the new packages through the IN pipe if the buffer 
 // is not empty
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_MIDI_TxBufferHandler(void)
+static void MIOS32_USB_MIDI_TxBufferHandler(void)
 {
   // send buffered packages if
   //   - last transfer finished
@@ -258,7 +258,7 @@ void MIOS32_USB_MIDI_TxBufferHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 // This handler receives new packages if the Tx buffer is not full
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_MIDI_RxBufferHandler(void)
+static void MIOS32_USB_MIDI_RxBufferHandler(void)
 {
   s16 count;
 
