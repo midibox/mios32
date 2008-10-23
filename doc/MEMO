@@ -357,3 +357,99 @@ i) not tested yet (as not useful for myself) but possible:
    OpenOCD has a gdb interface which allows you to debug code from a IDE like
    Eclipse (all operating systems) or XCode (MacOS)
 
+
+
+COM Console
+~~~~~~~~~~~
+
+Windows
+-------
+
+Either USB MIDI, or USB COM can be used, but not both the same time due
+to driver limitations.
+If COM is activated, and Windows ask you for a driver, use the 
+   $MIOS32_PATH/etc/inf/mios32_com.inf
+file.
+
+An .inf file is not required for USB MIDI.
+
+
+MacOS
+-----
+
+USB MIDI and COM can be used in parallel.
+COM terminal: most simple connection via "screen" command, you can execute it from
+the Terminal.app
+
+Usage: search for the "modem" device:
+   ls /dev/tty.*
+
+You will get something like:
+/dev/tty.Bluetooth-Modem		/dev/tty.Nokia6230i-NokiaPCSuite-1
+/dev/tty.Bluetooth-PDA-Sync		/dev/tty.usbmodem1a243
+/dev/tty.Nokia6230i-Dial-upnetwo-2
+
+/dev/tty.usbmodem1a243 is the right one.
+
+Now execute the serial terminal with:
+   screen /dev/tty.usbmodem1a243
+
+
+Alternatively (if you prefer GUIs), you could use ZTerm:
+   http://homepage.mac.com/dalverson/zterm/
+
+
+Linux
+-----
+
+USB MIDI and COM can be used in parallel.
+COM terminal: most simple connection via "screen" command, you can execute it from
+a common terminal
+
+Usage: search for the ACM device:
+   ls /dev/ttyACM*
+
+If no other USB ACM device (like a modem) is connected, the MIOS32 core
+usually allocates ACM0
+
+Now execute the serial terminal with:
+   screen /dev/ttyACM0
+
+
+Installing Debugger
+~~~~~~~~~~~~~~~~~~~
+
+Download Insight from
+   http://sources.redhat.com/insight/
+e.g.:
+   ftp://sourceware.org/pub/insight/releases
+version 6.8
+
+go into installation dir
+   mkdir build; cd build
+   ../configure --target=$MIOS32_GCC_PREFIX --prefix=/usr/local/stm32 --disable-nls --enable-shared
+   make
+   sudo make install
+
+Starting:
+   $MIOS32_GCC_PREFIX-insight project.elf &
+(assumed that /usr/local/stm32/bin is in your PATH variable)
+
+MacOS: if you get following message
+---
+$MIOS32_GCC_PREFIX-insight project.elf 
+dyld: Library not loaded: libitcl3.2.dylib
+  Referenced from: /usr/local/stm32/bin/arm-none-eabi-insight
+  Reason: image not found
+Trace/BPT trap
+---
+use:
+  export DYLD_LIBRARY_PATH=/usr/local/stm32/lib
+to set the location of the dylibs
+
+
+Target selection for insight (done in the GUI)
+   GDBserver/TCP
+   localhost
+   3333
+
