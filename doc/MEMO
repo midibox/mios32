@@ -492,7 +492,7 @@ monitor flash probe 0
 monitor stm32x mass_erase 0
 monitor flash write_image project.bin 0x08000000 bin
 monitor halt
-thbreak main
+//thbreak main // can be commented in if app should stop at main() function
 continue
 ---
 
