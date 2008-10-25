@@ -416,8 +416,11 @@ Now execute the serial terminal with:
    screen /dev/ttyACM0
 
 
-Installing Debugger
-~~~~~~~~~~~~~~~~~~~
+Installing Insight Debugger
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(Optional - Codeblocks seems to run more stable! See next section :)
+
 
 Download Insight from
    http://sources.redhat.com/insight/
@@ -452,4 +455,93 @@ Target selection for insight (done in the GUI)
    GDBserver/TCP
    localhost
    3333
+
+
+
+Installing Code::Blocks IDE/Debugger
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Download from http://www.codeblocks.org
+
+
+Configuration steps:
+
+1) create a new toolchain for GCC ARM:
+
+- go to Settings->Compiler and debugger...
+- Select "Global compiler settings"
+- Select GNU GCC Compiler (if not already selected)
+- press Copy button, new name: Cortex M3 GCC
+- press "Toolchain executables" tab
+- change compiler's directory, e.g. to /usr/local/stm32
+- add "arm-none-eabi" prefix to all commands, e.g.
+  arm-none-eabi-gcc
+  arm-none-eabi-g++
+  ..
+  arm-none-eabi-gdb
+- Make program: write "make -s" for less verbose output
+
+- select "Debugger settings", and add following "Debugger initialisation commands":
+
+---
+file project.elf
+target remote localhost:3333
+monitor reset halt
+monitor wait_halt
+monitor flash probe 0
+monitor stm32x mass_erase 0
+monitor flash write_image project.bin 0x08000000 bin
+monitor halt
+thbreak main
+continue
+---
+
+2) define MIOS32 specific environment variables
+- go to Settings->General Settings
+- Select "Environment variables" tab, and add following variables:
+
+(have to be adapted based on your pathes and requirements!)
+(note that ~ doesn't work as shortcut for your home directory!)
+
+---
+MIOS32_PATH=/Users/TK/svn/mios32/trunk
+MIOS32_BIN_PATH=$MIOS32_PATH/bin
+MIOS32_GCC_PREFIX=arm-none-eabi
+MIOS32_FAMILY=STM32F10x
+MIOS32_PROCESSOR=STM32F103RE
+MIOS32_BOARD=MBHP_CORE_STM32
+MIOS32_LCD=clcd
+---
+
+MacOS users: add also
+---
+DYLD_LIBRARY_PATH=/usr/local/stm32/lib
+---
+
+
+3) Open a new, empty project
+- copy an existing application into your project directory (or create the program inside the SVN tree)
+- add at least "app.c" and "Makefile" to the project
+- *NOW THE IMPORTANT STEP*
+--> Right-click on your project, select "Properties..."
+--> select "This is a custom Makefile" button
+
+
+4) Building a project
+press F9
+
+
+5) Starting (and debugging) a project:
+press F8
+- this will download the application
+- this will set a breakpoint at the main() function
+- this will start the CPU
+- CPU will stop at main() - continue from here
+
+Note: don't use the Run button - there is nothing to be started on your PC
+
+
+
+
+
 
