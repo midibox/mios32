@@ -66,6 +66,12 @@ DIST += $(LD_FILE)
 # later we could try it w/o "cleanall", and propose the usage of this step to the user
 all: cleanall $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym projectinfo
 
+# define debug/release target for easier use in codeblocks
+debug: all
+Debug: all
+release: all
+Release: all
+
 # rule to create a .hex and .bin file
 %.bin : $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
