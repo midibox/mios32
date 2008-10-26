@@ -48,6 +48,16 @@
 #define MIOS32_UART1_BAUDRATE 31250
 #endif
 
+// Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
+#ifndef MIOS32_UART0_ASSIGNMENT
+#define MIOS32_UART0_ASSIGNMENT 1
+#endif
+
+// Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
+#ifndef MIOS32_UART1_ASSIGNMENT
+#define MIOS32_UART1_ASSIGNMENT 1
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

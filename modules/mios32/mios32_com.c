@@ -16,6 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
+#include <stdarg.h>
 
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_COM)
@@ -56,6 +58,12 @@ s32 MIOS32_COM_Init(u32 mode)
     ret |= (1 << 0);
 #endif
 
+  // if any COM assignment:
+#if MIOS32_UART0_ASSIGNMENT == 2 || MIOS32_UART1_ASSIGNMENT == 2
+  if( MIOS32_UART_Init(0) < 0 )
+    ret |= (1 << 1);
+#endif
+
   return -ret;
 }
 
@@ -84,7 +92,17 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 #endif
 
     case 2:
-      return 0; // UART COM not implemented yet (but should be easy)
+#if !defined(MIOS32_DONT_USE_UART)
+      switch( port & 0xf ) {
+#if MIOS32_UART_NUM >= 1
+        case 0: return MIOS32_UART0_ASSIGNMENT == 2 ? 1 : 0; // UART0 assigned to COM?
+#endif
+#if MIOS32_UART_NUM >= 2
+        case 1: return MIOS32_UART1_ASSIGNMENT == 2 ? 1 : 0; // UART1 assigned to COM?
+#endif
+      }
+#endif
+      return 0; // no UART
       
     case 3:
       return 0; // IIC COM not implemented yet (but should be easy)
@@ -127,7 +145,11 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 #endif
 
     case 2:
-      return -1; // not implemented yet
+#if !defined(MIOS32_DONT_USE_UART)
+      return MIOS32_UART_TxBufferPutMore(port & 0xf, buffer, len);
+#else
+      return -1; // UART has been disabled
+#endif
 
     case 3:
       return -1; // not implemented yet
@@ -139,6 +161,44 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
       // invalid port
       return -1;
   }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a string over given port
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <str>:  zero-terminated string
+// OUT: returns -1 if port not available
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendString(mios32_com_port_t port, u8 *str)
+{
+  return MIOS32_COM_SendBuffer(port, str, strlen(str));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a formatted string (-> printf) over given port
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <format>:  zero-terminated format string
+//     ...  :  optional arguments
+// OUT: returns -1 if port not available
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, u8 *format, ...)
+{
+  u8 buffer[128]; // TODO: tmp!!! Provide a streamed COM method later!
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return MIOS32_COM_SendBuffer(port, buffer, strlen(buffer));
 }
 
 
@@ -168,9 +228,19 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
     s32 error = -1;
     switch( intf++ ) {
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
-      case 0: error = MIOS32_USB_COM_RxBufferGet(0); port = 0; break;
+      case 0: error = MIOS32_USB_COM_RxBufferGet(0); port = USB0; break;
 #else
       case 0: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_UART)
+      case 1: error = MIOS32_UART_RxBufferGet(0); port = UART0; break;
+#else
+      case 1: error = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_UART)
+      case 2: error = MIOS32_UART_RxBufferGet(1); port = UART1; break;
+#else
+      case 2: error = -1; break;
 #endif
       default:
 	// allow 64 forwards maximum to yield some CPU time for other tasks

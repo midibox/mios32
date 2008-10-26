@@ -93,9 +93,12 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
     midi_rec[i].sysex_ctr = 0x00;
   }
 
+  // if any MIDI assignment:
+#if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1
   // initialize U(S)ART interface
   if( MIOS32_UART_Init(0) < 0 )
     return -1; // initialisation of U(S)ART Interface failed
+#endif
 
   return 0; // no error
 }
@@ -112,7 +115,13 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 #if MIOS32_UART_NUM == 0
   return -1; // all UARTs explicitely disabled
 #else
-  return uart_port >= MIOS32_UART_NUM ? 0 : 1;
+  switch( uart_port ) {
+    case 0: return MIOS32_UART0_ASSIGNMENT == 1 ? 1 : 0; // UART0 assigned to MIDI?
+#if MIOS32_UART_NUM >= 2
+    case 1: return MIOS32_UART1_ASSIGNMENT == 1 ? 1 : 0; // UART1 assigned to MIDI?
+#endif
+  }
+  return 0;
 #endif
 }
 

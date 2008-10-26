@@ -445,7 +445,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
     s32 error = -1;
     switch( intf++ ) {
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      case 0: error = MIOS32_USB_MIDI_MIDIPackageReceive(&package); port = package.cable; break;
+      case 0: error = MIOS32_USB_MIDI_MIDIPackageReceive(&package); port = USB0 + package.cable; break;
 #else
       case 0: error = -1; break;
 #endif
