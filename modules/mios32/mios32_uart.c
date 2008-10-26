@@ -51,6 +51,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// optional non-blocking mode
+static u8 non_blocking_mode = 0;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -86,16 +89,30 @@ static volatile u8 tx_buffer_size[MIOS32_UART_NUM];
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes UART interfaces
-// IN: <mode>: currently only mode 0 supported
+// IN: <mode>: 0: MIOS32_UART_TxBufferPut* works in blocking mode - function will
+//                (shortly) stall if the output buffer is full
+//             1: MIOS32_UART_TxBufferPut* works in non-blocking mode - function will
+//                return -2 if buffer is full, the caller has to loop if this
+//                value is returned until the transfer was successful
+//                A common method is to release the RTOS task for 1 mS
+//                so that other tasks can be executed until the sender can
+//                continue
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_Init(u32 mode)
 {
   GPIO_InitTypeDef GPIO_InitStructure;
 
-  // currently only mode 0 supported
-  if( mode != 0 )
-    return -1; // unsupported mode
+  switch( mode ) {
+    case 0:
+      non_blocking_mode = 0;
+      break;
+    case 1:
+      non_blocking_mode = 1;
+      break;
+    default:
+      return -1; // unsupported mode
+  }
 
 #if MIOS32_UART_NUM == 0
   return -1; // no UARTs
@@ -390,7 +407,7 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
 // IN: UART number (0..1), buffer to be sent and buffer length
 // OUT: 0 if no error
 //      -1 if UART not available
-//      -2 if buffer full or cannot get all requested bytes (retry)
+//      -2 if buffer full or cannot get all requested bytes (retry) - only relevant for non-blocking mode
 //      -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
@@ -401,8 +418,12 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
-  if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
-    return -2; // buffer full or cannot get all requested bytes (retry)
+  if( non_blocking_mode ) {
+    if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
+      return -2; // buffer full or cannot get all requested bytes (retry)
+  } else {
+    while( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE );
+  }
 
   // copy bytes to be transmitted into transmit buffer
   // this operation should be atomic!
