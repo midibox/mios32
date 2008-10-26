@@ -23,6 +23,8 @@
 // requires application specific driver
 #include <app_lcd.h>
 
+#include <stdarg.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -188,6 +190,23 @@ s32 MIOS32_LCD_PrintString(char *str)
 {
   while( *str != '\0' )
     MIOS32_LCD_PrintChar(*str++);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints a \0 (zero) terminated formatted string (like printf)
+// IN: pointer to format in <*str>
+//     additional arguments at ...
+//     64 characters supported maximum!
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
+{
+  u8 buffer[64]; // TODO: tmp!!! Provide a streamed COM method later!
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return MIOS32_LCD_PrintString(buffer);
 }
 
 
