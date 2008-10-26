@@ -43,17 +43,17 @@ void APP_Background(void)
 
   // print text
   MIOS32_LCD_GCursorSet(4, 2*8);
-  printf("            T6963C horizontal           ");
+  MIOS32_LCD_PrintString("            T6963C horizontal           ");
 
   MIOS32_LCD_GCursorSet(4, 3*8);
-  printf("      ---> low performance!!! <---      ");
+  MIOS32_LCD_PrintString("      ---> low performance!!! <---      ");
 
   MIOS32_LCD_GCursorSet(30, 5*8);
-  printf(" powered by  ");
+  MIOS32_LCD_PrintString(" powered by  ");
 
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
   MIOS32_LCD_GCursorSet(110, 4*8);
-  printf("MIOS32");
+  MIOS32_LCD_PrintString("MIOS32");
 
   // endless loop: print animations
   u32 loop_ctr = 0;

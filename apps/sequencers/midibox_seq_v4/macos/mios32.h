@@ -90,9 +90,12 @@ s32 MIOS32_LCD_CursorSet(u16 column, u16 line);
 s32 MIOS32_LCD_Clear(void);
 s32 MIOS32_LCD_PrintChar(char c);
 s32 MIOS32_LCD_PrintString(char *str);
+s32 MIOS32_LCD_PrintFormattedString(char *format, ...);
 
 s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8]);
 s32 MIOS32_LCD_SpecialCharsInit(u8 table[64]);
+
+s32 MIOS32_COM_SendChar(u8 port, char c);
 
 s32 MIOS32_DOUT_PinSet(u32 pin, u32 value);
 s32 MIOS32_DOUT_SRSet(u32 sr, u8 value);

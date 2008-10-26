@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Demo application for ST7637 GLCD, stuffed on a STM32 Primer
+ * Debugging Console
  *
  * ==========================================================================
  *
@@ -35,12 +35,9 @@ s32 CONSOLE_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 CONSOLE_Parse(mios32_com_port_t port, u8 byte)
 {
-  u8 buffer[20];
-
   // parsing: TODO!
 
-  sprintf(buffer, "Echo: '%c' (%02x)\n\r", byte, byte);
-  MIOS32_COM_SendBuffer(port, buffer, strlen(buffer));
+  MIOS32_COM_SendFormattedString(port, "Echo: '%c' (%02x)\n\r", byte, byte);
 
   return 0; // no error
 }

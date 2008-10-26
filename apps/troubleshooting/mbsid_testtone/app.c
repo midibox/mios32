@@ -41,9 +41,9 @@ void APP_Background(void)
   MIOS32_LCD_Clear();
 
   MIOS32_LCD_CursorSet(0, 0);
-  printf("SID Testtone    ");
+  MIOS32_LCD_PrintString("SID Testtone    ");
   MIOS32_LCD_CursorSet(0, 1);
-  printf("Generator       ");
+  MIOS32_LCD_PrintString("Generator       ");
 
   // set initial SID values
   int sid;

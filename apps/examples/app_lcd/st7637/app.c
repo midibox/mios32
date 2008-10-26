@@ -45,10 +45,10 @@ void APP_Background(void)
 
   // print text
   MIOS32_LCD_CursorSet(3, 3);
-  printf("ST7637 LCD");
+  MIOS32_LCD_PrintString("ST7637 LCD");
 
   MIOS32_LCD_CursorSet(7, 5);
-  printf("powered by");
+  MIOS32_LCD_PrintString("powered by");
 
   // endless loop: print animations
   u8 mios_r = 0;
@@ -106,7 +106,7 @@ void APP_Background(void)
     // print "MIOS32"
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
     MIOS32_LCD_GCursorSet(16, 52);
-    printf("MIOS32");
+    MIOS32_LCD_PrintString("MIOS32");
 
     // icons with different colour
     MIOS32_LCD_FColourSet(dir ? mios_r : ~mios_r, ~mios_g, dir ? mios_b : ~mios_b);

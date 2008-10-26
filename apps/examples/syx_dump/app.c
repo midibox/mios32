@@ -85,30 +85,30 @@ void APP_Background(void)
     switch( new_msg ) {
       case PRINT_MSG_INIT:
         MIOS32_LCD_CursorSet(0, 0);
-        printf("see README.txt   ");
+        MIOS32_LCD_PrintString("see README.txt   ");
         MIOS32_LCD_CursorSet(0, 1);
-        printf("for details     ");
+        MIOS32_LCD_PrintString("for details     ");
 	break;
 
       case PRINT_MSG_PATCH_AND_BANK:
         MIOS32_LCD_CursorSet(0, 0);
-        printf("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
+        MIOS32_LCD_PrintFormattedString("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
         MIOS32_LCD_CursorSet(0, 1);
-        printf("                ");
+        MIOS32_LCD_PrintString("                ");
 	break;
 
       case PRINT_MSG_DUMP_SENT:
         MIOS32_LCD_CursorSet(0, 0);
-        printf("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
+        MIOS32_LCD_PrintFormattedString("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
         MIOS32_LCD_CursorSet(0, 1);
-        printf("Dump sent!      ");
+        MIOS32_LCD_PrintString("Dump sent!      ");
 	break;
 
       case PRINT_MSG_DUMP_RECEIVED:
         MIOS32_LCD_CursorSet(0, 0);
-        printf("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
+        MIOS32_LCD_PrintFormattedString("Patch: %3d B:%d%c ", patch, bank, MIOS32_IIC_BS_CheckAvailable(bank) ? ' ' : '*');
         MIOS32_LCD_CursorSet(0, 1);
-        printf("Dump received!  ");
+        MIOS32_LCD_PrintString("Dump received!  ");
 	break;
     }
   }
