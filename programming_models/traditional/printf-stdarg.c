@@ -193,12 +193,26 @@ int printf(const char *format, ...)
         return print( 0, format, args );
 }
 
+// TK: added for alternative parameter passing
+int vprintf(const char *format, va_list args)
+{
+  return print( 0, format, args );
+}
+
 int sprintf(char *out, const char *format, ...)
 {
         va_list args;
         
         va_start( args, format );
         return print( &out, format, args );
+}
+
+// TK: added for alternative parameter passing
+int vsprintf(char *out, const char *format, va_list args)
+{
+  char *_out;
+  _out = out;
+  return print( &_out, format, args );
 }
 
 
