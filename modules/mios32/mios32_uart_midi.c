@@ -53,36 +53,19 @@ typedef struct {
 // handler data structure
 static midi_rec_t midi_rec[MIOS32_UART_NUM];
 
-// optional non-blocking mode
-static u8 non_blocking_mode = 0;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes UART MIDI layer
-// IN: <mode>: 0: MIOS32_UART_MIDI_Send* works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_UART_MIDI_Send* works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_Init(u32 mode)
 {
   int i;
 
-  switch( mode ) {
-    case 0:
-      non_blocking_mode = 0;
-      break;
-    case 1:
-      non_blocking_mode = 1;
-      break;
-    default:
-      return -1; // unsupported mode
-  }
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
 
   // initialize MIDI record
   for(i=0; i<MIOS32_UART_NUM; ++i) {
@@ -131,10 +114,10 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 // IN: UART_MIDI module number (0..1) in <uart_port>, MIDI package in <package>
 // OUT: 0: no error
 //      -1: UART_MIDI device not available
-//      -2: if non-blocking mode activated: UART_MIDI buffer is full
+//      -2: UART_MIDI buffer is full
 //          caller should retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
+s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t package)
 {
 #if MIOS32_UART_NUM == 0
   return -1; // all UARTs explicitely disabled
@@ -147,23 +130,34 @@ s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
   if( len ) {
     u8 buffer[3] = {package.evnt0, package.evnt1, package.evnt2};
 
-    if( non_blocking_mode ) {
-      switch( MIOS32_UART_TxBufferPutMore(uart_port, buffer, len) ) {
-        case  0: return  0; // transfer successfull
-        case -2: return -2; // buffer full, request retry
-      }
-    } else {
-      s32 error;
-      while( (error=MIOS32_UART_TxBufferPutMore(uart_port, buffer, len)) == -2 ); // retry until error status != -2
-
-      if( !error )
-	return 0; // no error
+    switch( MIOS32_UART_TxBufferPutMore(uart_port, buffer, len) ) {
+      case  0: return  0; // transfer successfull
+      case -2: return -2; // buffer full, request retry
+      default: return -1; // UART error
     }
-    return -1; // UART error
+
   } else {
     return 0; // no bytes to send -> no error
   }
 #endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a new MIDI package to the selected UART_MIDI port
+// (blocking function)
+// IN: UART_MIDI module number (0..1) in <uart_port>, MIDI package in <package>
+// OUT: 0: no error
+//      -1: UART_MIDI device not available
+//      -2: UART_MIDI buffer is full
+//          caller should retry until buffer is free again
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
+{
+  s32 error;
+
+  while( (error=MIOS32_UART_MIDI_PackageSend_NonBlocking(uart_port, package)) == -2);
+
+  return error;
 }
 
 

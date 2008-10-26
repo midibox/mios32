@@ -75,9 +75,6 @@ static volatile u8 rx_buffer_ix;
 
 static volatile u8 tx_buffer_busy;
 
-// optional non-blocking mode
-static u8 non_blocking_mode = 0;
-
 // transfer possible?
 static u8 transfer_possible = 0;
 
@@ -96,28 +93,14 @@ LINE_CODING linecoding = {
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the USB COM Protocol
-// IN: <mode>: 0: MIOS32_COM_TxBufferPut* works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_COM_TxBufferPut* works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed (e.g. clock not initialised!)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_Init(u32 mode)
 {
-  switch( mode ) {
-    case 0:
-      non_blocking_mode = 0;
-      break;
-    case 1:
-      non_blocking_mode = 1;
-      break;
-    default:
-      return -1; // unsupported mode
-  }
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
 
   return 0; // no error
 }
@@ -310,7 +293,7 @@ s32 MIOS32_USB_COM_TxBufferUsed(u8 usb_com)
 //      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
 //      -4 if too many bytes should be sent
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
+s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len)
 {
 #if MIOS32_USB_COM_NUM == 0
   return -1; // no USB_COM available
@@ -321,12 +304,8 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
   if( len > MIOS32_USB_COM_DATA_IN_SIZE )
     return -4; // cannot get all requested bytes
 
-  if( non_blocking_mode ) {
-    if( tx_buffer_busy )
-      return -2; // buffer full (retry)
-  } else {
-    while( tx_buffer_busy ); // blocking mode - wait until buffer sent
-  };
+  if( tx_buffer_busy )
+    return -2; // buffer full (retry)
 
   // copy bytes to be transmitted into transmit buffer
   UserToPMABufferCopy(buffer, MIOS32_USB_ENDP4_TXADDR, len);
@@ -342,6 +321,25 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// puts more than one byte onto the transmit buffer (used for atomic sends)
+// (blocking function)
+// IN: USB_COM number (0..1), buffer to be sent and buffer length
+// OUT: 0 if no error
+//      -1 if USB_COM not available
+//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//      -4 if too many bytes should be sent
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
+{
+  s32 error;
+
+  while( (error=MIOS32_USB_COM_TxBufferPutMore(usb_com, buffer, len)) == -2 );
+
+  return error;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // puts a byte onto the transmit buffer
 // IN: USB_COM number (0..1) and byte to be sent
 // OUT: 0 if no error
@@ -349,11 +347,29 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
 //      -2 if buffer full (retry)
 //      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b)
+s32 MIOS32_USB_COM_TxBufferPut_NonBlocking(u8 usb_com, u8 b)
 {
   // for more comfortable usage...
   // -> just forward to MIOS32_USB_COM_TxBufferPutMore
-  return MIOS32_USB_COM_TxBufferPutMore(usb_com, &b, 1);
+  return MIOS32_USB_COM_TxBufferPutMore_NonBlocking(usb_com, &b, 1);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// puts a byte onto the transmit buffer
+// (blocking function)
+// IN: USB_COM number (0..1) and byte to be sent
+// OUT: 0 if no error
+//      -1 if USB_COM not available
+//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b)
+{
+  s32 error;
+
+  while( (error=MIOS32_USB_COM_TxBufferPutMore_NonBlocking(usb_com, &b, 1)) == -2 );
+
+  return error;
 }
 
 

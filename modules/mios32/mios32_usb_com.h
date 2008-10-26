@@ -58,7 +58,9 @@ extern s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com);
 extern s32 MIOS32_USB_COM_RxBufferPeek(u8 usb_com);
 extern s32 MIOS32_USB_COM_TxBufferFree(u8 usb_com);
 extern s32 MIOS32_USB_COM_TxBufferUsed(u8 usb_com);
+extern s32 MIOS32_USB_COM_TxBufferPut_NonBlocking(u8 usb_com, u8 b);
 extern s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b);
+extern s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len);
 extern s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len);
 
 

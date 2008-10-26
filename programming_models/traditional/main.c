@@ -90,10 +90,10 @@ int main(void)
   MIOS32_USB_Init(0);
 #endif
 #ifndef MIOS32_DONT_USE_MIDI
-  MIOS32_MIDI_Init(0); // 0 = blocking mode
+  MIOS32_MIDI_Init(0);
 #endif
 #ifndef MIOS32_DONT_USE_COM
-  MIOS32_COM_Init(0); // 0 = blocking mode
+  MIOS32_COM_Init(0);
 #endif
 #ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_Init(0);
