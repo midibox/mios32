@@ -416,6 +416,27 @@ Now execute the serial terminal with:
    screen /dev/ttyACM0
 
 
+
+MacOS: using second port of FT2232 based JTAG adapter as COM port
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- install FTDI driver: http://www.ftdichip.com/FTDrivers.htm
+- disable "Port A", so that it is accessible for openocd (and not used as COM device)
+  http://meander.roofof.net/2008/07/openocd-and-ft2232s-default-vidpid.html
+
+
+Since the adapter comes with no EEPROM, FT2232D uses default VID/PID (0x0403/0x6010). If FTDIUSBSerialDriver (aka VCP) is installed on your machine, you will need to comment out or remove FT2232C_A section of driver's Info.plist file located at
+  /System/Library/Extensions/FTDIUSBSerialDriver.kext/Contents/
+
+This would prevent the FTDI VCP driver from conflicts with OpenOCD on attempt to use the port A of FT2232D on the adapter board. You also might want to reload the FTDI VCP driver after modification with following commands:
+
+$sudo kextunload  /System/Library/Extensions/FTDIUSBSerialDriver.kext
+kextunload: unload kext /System/Library/Extensions/FTDIUSBSerialDriver.kext succeeded
+$sudo kextload -c /System/Library/Extensions/FTDIUSBSerialDriver.kext
+kextload: /System/Library/Extensions/FTDIUSBSerialDriver.kext loaded successfully
+
+
+
 Installing Insight Debugger
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

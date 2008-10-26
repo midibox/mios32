@@ -2,9 +2,6 @@
 /*
  * U(S)ART functions for MIOS32
  *
- * TODO: provide alternative baudrates for MIDI-to-COM, but also
- * for UART based OSC (we could also provide a mios32_uart_osc layer!)
- *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
