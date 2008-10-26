@@ -26,7 +26,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_COM
 #define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_MIDI
-#define MIOS32_DONT_USE_USB_COM
+#define MIOS32_USE_USB_COM
 #define MIOS32_DONT_USE_UART
 #define MIOS32_DONT_USE_UART_MIDI
 #define MIOS32_DONT_USE_IIC
