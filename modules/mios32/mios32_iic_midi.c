@@ -36,37 +36,20 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port);
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-// optional non-blocking mode
-static u8 non_blocking_mode = 0;
-
 // available interfaces
 static u8 iic_port_available = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes IIC MIDI layer
-// IN: <mode>: 0: MIOS32_IIC_MIDI_Send* works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_IIC_MIDI_Send* works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_Init(u32 mode)
 {
-  switch( mode ) {
-    case 0:
-      non_blocking_mode = 0;
-      break;
-    case 1:
-      non_blocking_mode = 1;
-      break;
-    default:
-      return -1; // unsupported mode
-  }
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
 
 #if MIOS32_IIC_MIDI_NUM == 0
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
@@ -199,15 +182,9 @@ s32 MIOS32_IIC_MIDI_CheckAvailable(u8 iic_port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a new MIDI package to the selected IIC_MIDI port
-// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
-// OUT: 0: no error
-//      -1: IIC_MIDI device not available
-//      -2: if non-blocking mode activated: IIC_MIDI buffer is full
-//          caller should retry until buffer is free again
-//      -3: IIC error during transfer
+// Help function - see descriptions of MIOS32_IIC_MIDI_PackageSend* functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
+static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package, u8 non_blocking_mode)
 {
 #if MIOS32_IIC_MIDI_NUM == 0
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
@@ -255,15 +232,38 @@ s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks for a new package
-// IN: IIC_MIDI module number (0..7) in <iic_port>, 
-//     pointer to MIDI package in <package> (received package will be put into the given variable)
+// This function sends a new MIDI package to the selected IIC_MIDI port
+// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
 // OUT: 0: no error
-//      -1: no package in buffer
-//      -2: IIC interface allocated - retry (only in Non Blocking mode)
+//      -1: IIC_MIDI device not available
+//      -2: IIC_MIDI buffer is full
+//          caller should retry until buffer is free again
 //      -3: IIC error during transfer
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
+s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t package)
+{
+  return _MIOS32_IIC_MIDI_PackageSend(iic_port, package, 1); // non-blocking mode
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a new MIDI package to the selected IIC_MIDI port
+// (blocking function)
+// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
+// OUT: 0: no error
+//      -1: IIC_MIDI device not available
+//      -3: IIC error during transfer
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
+{
+  return _MIOS32_IIC_MIDI_PackageSend(iic_port, package, 0); // blocking mode
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function - see descriptions of MIOS32_IIC_MIDI_PackageReceive* functions
+/////////////////////////////////////////////////////////////////////////////
+static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package, u8 non_blocking_mode)
 {
 #if MIOS32_IIC_MIDI_NUM == 0
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
@@ -306,6 +306,36 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 
   return error;
 #endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function checks for a new package
+// IN: IIC_MIDI module number (0..7) in <iic_port>, 
+//     pointer to MIDI package in <package> (received package will be put into the given variable)
+// OUT: 0: no error
+//      -1: no package in buffer
+//      -2: IIC interface allocated - retry (only in Non Blocking mode)
+//      -3: IIC error during transfer
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_t *package)
+{
+  return _MIOS32_IIC_MIDI_PackageReceive(iic_port, package, 1); // non-blocking
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function checks for a new package
+// (blocking function)
+// IN: IIC_MIDI module number (0..7) in <iic_port>, 
+//     pointer to MIDI package in <package> (received package will be put into the given variable)
+// OUT: 0: no error
+//      -1: no package in buffer
+//      -3: IIC error during transfer
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
+{
+  return _MIOS32_IIC_MIDI_PackageReceive(iic_port, package, 0); // blocking
 }
 
 

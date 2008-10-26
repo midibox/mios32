@@ -91,36 +91,29 @@ const u8 mios32_midi_expected_bytes_system[16] = {
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes MIDI layer
-// IN: <mode>: 0: MIOS32_MIDI_Send* works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_MIDI_Send* works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Init(u32 mode)
 {
   s32 ret = 0;
 
-  // currently only mode 0 and 1 (blocking/non-blocking) supported
-  if( mode != 0 && mode != 1 )
+  // currently only mode 0 supported
+  if( mode != 0 )
     return -1; // unsupported mode
 
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-  if( MIOS32_USB_MIDI_Init(mode) < 0 )
+  if( MIOS32_USB_MIDI_Init(0) < 0 )
     ret |= (1 << 0);
 #endif
 
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
-  if( MIOS32_UART_MIDI_Init(mode) < 0 )
+  if( MIOS32_UART_MIDI_Init(0) < 0 )
     ret |= (1 << 1);
 #endif
 
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-  if( MIOS32_IIC_MIDI_Init(mode) < 0 )
+  if( MIOS32_IIC_MIDI_Init(0) < 0 )
     ret |= (1 << 2);
 #endif
 
@@ -177,14 +170,68 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sends a package over given port
-// This is a low level function - use the remaining MIOS32_MIDI_Send* functions
-// to send specific MIDI events
+// This is a low level function. In difference to other MIOS32_MIDI_Send* functions,
+// It allows to send packages in non-blocking mode (caller has to retry if -2 is returned)
 // IN: <port>: MIDI port 
 //             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
 //     <package>: MIDI package (see definition in mios32_midi.h)
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
+//      returns -2 buffer is full
 //                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // if default port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = MIOS32_MIDI_DEFAULT_PORT;
+  }
+
+  // insert subport number into package
+  package.cable = port & 0xf;
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
+      return MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(package);
+#else
+      return -1; // USB has been disabled
+#endif
+
+    case 2:
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_PackageSend_NonBlocking(package.cable, package);
+#else
+      return -1; // UART_MIDI has been disabled
+#endif
+
+    case 3:
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_PackageSend_NonBlocking(package.cable, package);
+#else
+      return -1; // IIC_MIDI has been disabled
+#endif
+
+    case 4:
+      return -1; // Ethernet not implemented yet
+      
+    default:
+      // invalid port
+      return -1;
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a package over given port
+// This is a low level function - use the remaining MIOS32_MIDI_Send* functions
+// to send specific MIDI events
+// (blocking function)
+// IN: <port>: MIDI port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <package>: MIDI package (see definition in mios32_midi.h)
+// OUT: returns -1 if port not available
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
@@ -244,8 +291,6 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 // IN: <port>: MIDI port 
 //     <evnt0> <evnt1> <evnt2> up to 3 bytes
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
-//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2)
@@ -305,8 +350,6 @@ s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u1
 //     <type>: the event type
 //     <evnt0> <evnt1> <evnt2> up to 3 bytes
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
-//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSpecialEvent(mios32_midi_port_t port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
@@ -362,8 +405,6 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 //     <stream>: pointer to SysEx stream
 //     <count>: number of bytes
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
-//                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
@@ -402,13 +443,9 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 	package.evnt2 = stream[offset++];
     }
 
-    while( (res=MIOS32_MIDI_SendPackage(port, package)) == -2 ) {
-      // TODO: SysEx always sent in blocking mode to avoid inconsistent stream!
-      // We poll until buffer is free again.
-      // Are there better ways?
-    }
+    res=MIOS32_MIDI_SendPackage(port, package);
 
-    // other expection? (e.g., port not available)
+    // expection? (e.g., port not available)
     if( res < 0 )
       return res;
   }

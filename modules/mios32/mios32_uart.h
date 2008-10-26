@@ -78,7 +78,9 @@ extern s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b);
 extern s32 MIOS32_UART_TxBufferFree(u8 uart);
 extern s32 MIOS32_UART_TxBufferUsed(u8 uart);
 extern s32 MIOS32_UART_TxBufferGet(u8 uart);
+extern s32 MIOS32_UART_TxBufferPut_NonBlocking(u8 uart, u8 b);
 extern s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b);
+extern s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len);
 extern s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len);
 
 

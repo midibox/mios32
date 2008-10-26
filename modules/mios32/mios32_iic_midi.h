@@ -130,7 +130,9 @@ extern s32 MIOS32_IIC_MIDI_Init(u32 mode);
 extern s32 MIOS32_IIC_MIDI_ScanInterfaces(void);
 extern s32 MIOS32_IIC_MIDI_CheckAvailable(u8 iic_port);
 
+extern s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t package);
 extern s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package);
+extern s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_t *package);
 extern s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package);
 
 

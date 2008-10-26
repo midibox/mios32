@@ -35,26 +35,19 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes COM layer
-// IN: <mode>: 0: MIOS32_COM_Send works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_COM_Send works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_Init(u32 mode)
 {
   s32 ret = 0;
 
-  // currently only mode 0 and 1 (blocking/non-blocking) supported
-  if( mode != 0 && mode != 1 )
+  // currently only mode 0 supported
+  if( mode != 0 )
     return -1; // unsupported mode
 
 #if !defined(MIOS32_DONT_USE_USB_COM)
-  if( MIOS32_USB_COM_Init(mode) < 0 )
+  if( MIOS32_USB_COM_Init(0) < 0 )
     ret |= (1 << 0);
 #endif
 
@@ -128,6 +121,53 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 len)
+{
+  // if default port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = MIOS32_COM_DEFAULT_PORT;
+  }
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
+      return MIOS32_USB_COM_TxBufferPutMore_NonBlocking(port & 0xf, buffer, len);
+#else
+      return -1; // USB has been disabled
+#endif
+
+    case 2:
+#if !defined(MIOS32_DONT_USE_UART)
+      return MIOS32_UART_TxBufferPutMore_NonBlocking(port & 0xf, buffer, len);
+#else
+      return -1; // UART has been disabled
+#endif
+
+    case 3:
+      return -1; // not implemented yet
+
+    case 4:
+      return -1; // Ethernet not implemented yet
+      
+    default:
+      // invalid port
+      return -1;
+  }
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a package over given port
+// (blocking function)
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <buffer>: character buffer
+//     <len>:    buffer length
+// OUT: returns -1 if port not available
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 {
   // if default port: select mapped port
@@ -170,8 +210,23 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 //             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
 //     <c>:    character
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
+//      returns -2 buffer is full
 //                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c)
+{
+  return MIOS32_COM_SendBuffer_NonBlocking(port, &c, 1);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a single character over given port
+// (blocking function)
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <c>:    character
+// OUT: returns -1 if port not available
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
@@ -186,8 +241,23 @@ s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 //             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
 //     <str>:  zero-terminated string
 // OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
+//      returns -2 buffer is full
 //                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
+{
+  return MIOS32_COM_SendBuffer_NonBlocking(port, str, strlen(str));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a string over given port
+// (blocking function)
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <str>:  zero-terminated string
+// OUT: returns -1 if port not available
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
@@ -206,6 +276,28 @@ s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 // OUT: returns -1 if port not available
 //      returns -2 if non-blocking mode activated: buffer is full
 //                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *format, ...)
+{
+  u8 buffer[128]; // TODO: tmp!!! Provide a streamed COM method later!
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return MIOS32_COM_SendBuffer_NonBlocking(port, buffer, strlen(buffer));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a formatted string (-> printf) over given port
+// (blocking function)
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <format>:  zero-terminated format string
+//     ...  :  optional arguments
+//     128 characters supported maximum!
+// OUT: returns -1 if port not available
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)

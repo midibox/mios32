@@ -52,41 +52,20 @@ static volatile u16 tx_buffer_head;
 static volatile u16 tx_buffer_size;
 static volatile u8 tx_buffer_busy;
 
-// optional non-blocking mode
-static u8 non_blocking_mode = 0;
-
 // transfer possible?
 static u8 transfer_possible = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the USB MIDI Protocol
-// IN: <mode>: 0: MIOS32_MIDI_Send* works in blocking mode - function will
-//                (shortly) stall if the output buffer is full
-//             1: MIOS32_MIDI_Send* works in non-blocking mode - function will
-//                return -2 if buffer is full, the caller has to loop if this
-//                value is returned until the transfer was successful
-//                A common method is to release the RTOS task for 1 mS
-//                so that other tasks can be executed until the sender can
-//                continue
+// IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Init(u32 mode)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  u8 i;
-
-  switch( mode ) {
-    case 0:
-      non_blocking_mode = 0;
-      break;
-    case 1:
-      non_blocking_mode = 1;
-      break;
-    default:
-      return -1; // unsupported mode
-  }
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
 
   return 0; // no error
 }
@@ -134,10 +113,10 @@ s32 MIOS32_USB_MIDI_CheckAvailable(void)
 // IN: MIDI package in <package>
 // OUT: 0: no error
 //      -1: USB not connected
-//      -2: if non-blocking mode activated: buffer is full
+//      -2: buffer is full
 //          caller should retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
+s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
 {
   // device available?
   if( !transfer_possible )
@@ -155,8 +134,7 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
       return -1;
 
     // notify that buffer was full (request retry)
-    if( non_blocking_mode )
-      return -2;
+    return -2;
   }
 
   // put package into buffer - this operation should be atomic!
@@ -168,6 +146,22 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
   portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
 
   return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function puts a new MIDI package into the Tx buffer
+// (blocking function)
+// IN: MIDI package in <package>
+// OUT: 0: no error
+//      -1: USB not connected
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
+{
+  s32 error;
+
+  while( (error=MIOS32_USB_MIDI_MIDIPackageSend(package)) == -2 );
+
+  return error;
 }
 
 
