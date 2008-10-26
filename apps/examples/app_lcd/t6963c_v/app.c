@@ -43,25 +43,25 @@ void APP_Background(void)
 
   // print text
   MIOS32_LCD_GCursorSet(2, 8*8);
-  printf("  T6963C  ");
+  MIOS32_LCD_PrintString("  T6963C  ");
   MIOS32_LCD_GCursorSet(2, 10*8);
-  printf("!vertical!");
+  MIOS32_LCD_PrintString("!vertical!");
 
   MIOS32_LCD_GCursorSet(2, 14*8);
-  printf("  Custom  ");
+  MIOS32_LCD_PrintString("  Custom  ");
   MIOS32_LCD_GCursorSet(2, 15*8);
-  printf("   LCD    ");
+  MIOS32_LCD_PrintString("   LCD    ");
   MIOS32_LCD_GCursorSet(2, 16*8);
-  printf("  Driver  ");
+  MIOS32_LCD_PrintString("  Driver  ");
 
   MIOS32_LCD_GCursorSet(5, 18*8);
-  printf(" powered  ");
+  MIOS32_LCD_PrintString(" powered  ");
   MIOS32_LCD_GCursorSet(2, 19*8);
-  printf("    by    ");
+  MIOS32_LCD_PrintString("    by    ");
 
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
   MIOS32_LCD_GCursorSet(0, 21*8);
-  printf("MIOS32");
+  MIOS32_LCD_PrintString("MIOS32");
 
   // endless loop: print animations
   u32 loop_ctr = 0;

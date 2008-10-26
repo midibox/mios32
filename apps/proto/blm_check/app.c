@@ -84,11 +84,11 @@ void APP_Background(void)
     
     // print text on LCD screen
     MIOS32_LCD_CursorSet(0, 0);
-    printf("DIN  Pin #%3d %c", last_din_pin, last_din_value ? 'o' : '*');
+    MIOS32_LCD_PrintFormattedString("DIN  Pin #%3d %c", last_din_pin, last_din_value ? 'o' : '*');
 
     // print text on LCD screen
     MIOS32_LCD_CursorSet(0, 1);
-    printf("DOUT Pin #%3d %c", last_dout_pin, last_dout_value ? 'o' : '*');
+    MIOS32_LCD_PrintFormattedString("DOUT Pin #%3d %c", last_dout_pin, last_dout_value ? 'o' : '*');
   }
 }
 
@@ -178,6 +178,14 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when a pot has been moved
+/////////////////////////////////////////////////////////////////////////////
+void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
 }
 

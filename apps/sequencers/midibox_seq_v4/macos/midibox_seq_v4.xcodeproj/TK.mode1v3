@@ -303,7 +303,7 @@
 							<real>186</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>147 143 826 625 0 0 1440 878 </string>
+						<string>247 196 826 625 0 0 1440 878 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -340,7 +340,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {618, 0}}</string>
 								<key>RubberWindowFrame</key>
-								<string>147 143 826 625 0 0 1440 878 </string>
+								<string>247 196 826 625 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -360,7 +360,7 @@
 								<key>Frame</key>
 								<string>{{0, 5}, {618, 579}}</string>
 								<key>RubberWindowFrame</key>
-								<string>147 143 826 625 0 0 1440 878 </string>
+								<string>247 196 826 625 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -384,9 +384,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>52E6060D0E9ACD8400C6C480</string>
+				<string>5274ABDD0EB49F7A0077719B</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>52E6060E0E9ACD8400C6C480</string>
+				<string>5274ABDE0EB49F7A0077719B</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -520,14 +520,13 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>52E606250E9ACF1E00C6C480</string>
 		<string>1C78EAAD065D492600B07095</string>
 		<string>1CD10A99069EF8BA00B06720</string>
 		<string>522A0DBB0E8FE5D50084B1EE</string>
 		<string>/Users/TK/svn/mios32/trunk/apps/sequencers/midibox_seq_v4/macos/midibox_seq_v4.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>147 143 826 625 0 0 1440 878 </string>
+	<string>247 196 826 625 0 0 1440 878 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
@@ -606,7 +605,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>522A0DBB0E8FE5D50084B1EE</string>
-				<string>52E606110E9ACD8400C6C480</string>
+				<string>5274ABE10EB49F910077719B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -726,13 +725,13 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>52E606120E9ACD8400C6C480</string>
+				<string>5274ABEE0EB4A1A20077719B</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>52E606130E9ACD8400C6C480</string>
-				<string>52E606140E9ACD8400C6C480</string>
-				<string>52E606150E9ACD8400C6C480</string>
-				<string>52E606160E9ACD8400C6C480</string>
-				<string>52E606170E9ACD8400C6C480</string>
+				<string>5274ABEF0EB4A1A20077719B</string>
+				<string>5274ABF00EB4A1A20077719B</string>
+				<string>5274ABF10EB4A1A20077719B</string>
+				<string>5274ABF20EB4A1A20077719B</string>
+				<string>5274ABF30EB4A1A20077719B</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debugV3</string>
@@ -894,7 +893,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C78EAAD065D492600B07095</string>
-				<string>52E606180E9ACD8400C6C480</string>
+				<string>5274ABF40EB4A1A20077719B</string>
 				<string>1C78EAAC065D492600B07095</string>
 			</array>
 			<key>ToolbarConfiguration</key>

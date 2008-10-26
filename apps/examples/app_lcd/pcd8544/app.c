@@ -57,18 +57,18 @@ void APP_Background(void)
 
       // print text
       MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 0*8);
-      printf("  PCD8544 #%d", i+1);
+      MIOS32_LCD_PrintFormattedString("  PCD8544 #%d", i+1);
 
       MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 2*8);
-      printf("  powered by  ");
+      MIOS32_LCD_PrintString("  powered by  ");
 
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
       MIOS32_LCD_GCursorSet(x_offset + 0, y_offset + 3*8);
-      printf("MIOS");
+      MIOS32_LCD_PrintString("MIOS");
 
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
       MIOS32_LCD_GCursorSet(x_offset + 64, y_offset + 4*8);
-      printf("32");
+      MIOS32_LCD_PrintString("32");
     }
   }
 }

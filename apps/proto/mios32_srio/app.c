@@ -76,10 +76,10 @@ void APP_Background(void)
     
     // print text on LCD screen
     MIOS32_LCD_CursorSet(0, 0);
-    printf("DIN Pin #%3d %c", last_din_pin, last_din_value ? 'o' : '*');
+    MIOS32_LCD_PrintFormattedString("DIN Pin #%3d %c", last_din_pin, last_din_value ? 'o' : '*');
 
     MIOS32_LCD_CursorSet(0, 1);
-    printf("Enc. #%2d (%s)", last_enc, last_enc_dir ? "Right" : "Left ");
+    MIOS32_LCD_PrintFormattedString("Enc. #%2d (%s)", last_enc, last_enc_dir ? "Right" : "Left ");
   }
 }
 

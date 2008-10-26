@@ -40,7 +40,7 @@ void APP_Background(void)
 
   // print text
   MIOS32_LCD_CursorSet(0, 0);
-  printf("READY.");
+  MIOS32_LCD_PrintString("READY.");
 
   // endless loop
   while( 1 ) {

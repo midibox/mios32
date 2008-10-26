@@ -119,6 +119,18 @@ s32 MIOS32_LCD_PrintString(char *str)
 	return 0; // no error
 }
 
+s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
+{
+	u8 buffer[64];
+	va_list args;
+
+	va_start(args, format);
+	vsprintf((char *)buffer, format, args);
+	[LCD[selectedLCD] LCDPrintString:buffer];
+
+	return 0; // no error
+}
+
 s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
 	[LCD[selectedLCD] LCDSpecialCharInit:num:table];
@@ -132,6 +144,14 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 	
 	return 0; // no error
 }
+
+
+s32 MIOS32_COM_SendChar(u8 port, char c)
+{
+	// empty stub - no COM terminal implemented yet
+	return 0; // no error
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////

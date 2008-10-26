@@ -12,7 +12,7 @@
 
 
 // temporary workaround for Windows: disable USB MIDI! :-(
-#define MIOS32_DONT_USE_USB_MIDI
+//#define MIOS32_DONT_USE_USB_MIDI
 
 
 #endif /* _MIOS32_CONFIG_H */

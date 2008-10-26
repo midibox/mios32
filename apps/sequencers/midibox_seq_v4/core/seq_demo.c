@@ -110,7 +110,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
   // for debugging
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
-  printf("Pin %3d = %d", pin, pin_value);
+  MIOS32_LCD_PrintFormattedString("Pin %3d = %d", pin, pin_value);
 #else
 
 #if 0
@@ -409,7 +409,7 @@ void APP_Background(void)
     SEQ_LCD_PrintParLayer(selected_par_layer);
     SEQ_LCD_PrintSpaces(1);
   
-    printf("Chn%2d", midi_channel);
+    MIOS32_LCD_PrintFormattedString("Chn%2d", midi_channel);
     MIOS32_LCD_PrintChar('/');
     SEQ_LCD_PrintMIDIPort(midi_port);
     SEQ_LCD_PrintSpaces(1);
@@ -423,7 +423,7 @@ void APP_Background(void)
     MIOS32_LCD_DeviceSet(1);
     MIOS32_LCD_CursorSet(0, 0);
   
-    printf("Step");
+    MIOS32_LCD_PrintFormattedString("Step");
     SEQ_LCD_PrintSelectedStep(selected_step, 15);
     MIOS32_LCD_PrintChar(':');
   
@@ -431,14 +431,14 @@ void APP_Background(void)
     MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][selected_step] >> 4);
     SEQ_LCD_PrintSpaces(1);
   
-    printf("Vel:%3d", par_layer_value[visible_track][1][selected_step]);
+    MIOS32_LCD_PrintFormattedString("Vel:%3d", par_layer_value[visible_track][1][selected_step]);
     SEQ_LCD_PrintSpaces(1);
 
-    printf("Len:");
+    MIOS32_LCD_PrintFormattedString("Len:");
     SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][selected_step]);
     SEQ_LCD_PrintSpaces(1);
   
-    printf("G-a-r--");
+    MIOS32_LCD_PrintFormattedString("G-a-r--");
   
     ///////////////////////////////////////////////////////////////////////////
     MIOS32_LCD_DeviceSet(0);
@@ -465,7 +465,7 @@ void APP_Background(void)
   	  SEQ_LCD_PrintNote(note);
   	  MIOS32_LCD_PrintChar((char)vel >> 4);
   	} else {
-	  printf("----");
+	  MIOS32_LCD_PrintFormattedString("----");
   	}
   	break;
   
@@ -474,7 +474,7 @@ void APP_Background(void)
 	  SEQ_LCD_PrintGatelength(len);
 	  break;
         default:
-	  printf("????");
+	  MIOS32_LCD_PrintFormattedString("????");
       }
   
       MIOS32_LCD_PrintChar(
