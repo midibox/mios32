@@ -26,20 +26,20 @@
 
 #define putchar(c) outbyte(c)
 */
-#define putchar(c) APP_LCD_PrintChar(c)
+//#define putchar(c) MIOS32_COM_SendChar(c)
 
 
 #include <stdarg.h>
 
 static void printchar(char **str, int c)
 {
-	extern int putchar(int c);
+  //	extern int putchar(int c);
 	
 	if (str) {
 		**str = c;
 		++(*str);
 	}
-	else (void)putchar(c);
+	else MIOS32_COM_SendChar(0, c); // (void)putchar(c);
 }
 
 #define PAD_RIGHT 1

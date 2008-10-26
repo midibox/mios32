@@ -165,6 +165,22 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sends a single character over given port
+// IN: <port>: COM port 
+//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
+//     <c>:    character
+// OUT: returns -1 if port not available
+//      returns -2 if non-blocking mode activated: buffer is full
+//                 caller should retry until buffer is free again
+//      returns 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
+{
+  return MIOS32_COM_SendBuffer(port, &c, 1);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Sends a string over given port
 // IN: <port>: COM port 
 //             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
@@ -174,7 +190,7 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendString(mios32_com_port_t port, u8 *str)
+s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 {
   return MIOS32_COM_SendBuffer(port, str, strlen(str));
 }
@@ -186,12 +202,13 @@ s32 MIOS32_COM_SendString(mios32_com_port_t port, u8 *str)
 //             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
 //     <format>:  zero-terminated format string
 //     ...  :  optional arguments
+//     128 characters supported maximum!
 // OUT: returns -1 if port not available
 //      returns -2 if non-blocking mode activated: buffer is full
 //                 caller should retry until buffer is free again
 //      returns 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, u8 *format, ...)
+s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 {
   u8 buffer[128]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;

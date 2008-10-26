@@ -63,9 +63,10 @@ extern s32 MIOS32_COM_Init(u32 mode);
 
 extern s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port);
 
+extern s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c);
 extern s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len);
-extern s32 MIOS32_COM_SendString(mios32_com_port_t port, u8 *str);
-extern s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, u8 *format, ...);
+extern s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str);
+extern s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...);
 
 extern s32 MIOS32_COM_Receive_Handler(void *callback);
 
