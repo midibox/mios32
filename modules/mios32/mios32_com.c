@@ -46,7 +46,7 @@ s32 MIOS32_COM_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-#if !defined(MIOS32_DONT_USE_USB_COM)
+#if defined(MIOS32_USE_USB_COM)
   if( MIOS32_USB_COM_Init(0) < 0 )
     ret |= (1 << 0);
 #endif
@@ -78,7 +78,7 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
   // branch depending on selected port
   switch( port >> 4 ) {
     case 1:
-#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
+#if !defined(MIOS32_DONT_USE_USB) && defined(MIOS32_USE_USB_COM)
       return MIOS32_USB_COM_CheckAvailable();
 #else
       return 0; // USB has been disabled
@@ -131,7 +131,7 @@ s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 le
   // branch depending on selected port
   switch( port >> 4 ) {
     case 1:
-#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
+#if !defined(MIOS32_DONT_USE_USB) && defined(MIOS32_USE_USB_COM)
       return MIOS32_USB_COM_TxBufferPutMore_NonBlocking(port & 0xf, buffer, len);
 #else
       return -1; // USB has been disabled
@@ -178,7 +178,7 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
   // branch depending on selected port
   switch( port >> 4 ) {
     case 1:
-#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
+#if !defined(MIOS32_DONT_USE_USB) && defined(MIOS32_USE_USB_COM)
       return MIOS32_USB_COM_TxBufferPutMore(port & 0xf, buffer, len);
 #else
       return -1; // USB has been disabled
@@ -336,7 +336,7 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
     // it would also improve this spagetthi code ;)
     s32 error = -1;
     switch( intf++ ) {
-#if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_COM)
+#if !defined(MIOS32_DONT_USE_USB) && defined(MIOS32_USE_USB_COM)
       case 0: error = MIOS32_USB_COM_RxBufferGet(0); port = USB0; break;
 #else
       case 0: error = -1; break;

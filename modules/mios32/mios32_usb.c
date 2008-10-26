@@ -100,7 +100,7 @@ typedef enum _DEVICE_STATE
 # define MIOS32_USB_MIDI_SIZ_CONFIG_DESC        0
 #endif
 
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
 # define MIOS32_USB_COM_NUM_INTERFACES          2
 # define MIOS32_USB_COM_SIZ_CONFIG_DESC         58
 # define MIOS32_USB_COM_CC_INTERFACE_IX         (MIOS32_USB_MIDI_INTERFACE_OFFSET + 0x00)
@@ -634,7 +634,7 @@ const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   ///////////////////////////////////////////////////////////////////////////
   // CDC
   ///////////////////////////////////////////////////////////////////////////
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
 
   /*Interface Descriptor*/
   0x09,   /* bLength: Interface Descriptor size */
@@ -714,7 +714,7 @@ const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   0x00,
   0x00,    /* bInterval */
 
-#endif /* MIOS32_DONT_USE_USB_COM */
+#endif /* MIOS32_USE_USB_COM */
 };
 
 
@@ -747,7 +747,7 @@ void (*pEpInt_IN[7])(void) = {
   NOP_Process,                       // IN EP1
 #endif
 
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   NOP_Process,                       // IN EP2
   NOP_Process,                       // IN EP3
   MIOS32_USB_COM_EP4_IN_Callback,    // IN EP4
@@ -768,7 +768,7 @@ void (*pEpInt_OUT[7])(void) = {
 #else
   NOP_Process,                       // OUT EP1
 #endif
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   NOP_Process,                       // OUT EP2
   MIOS32_USB_COM_EP3_OUT_Callback,   // OUT EP3
   NOP_Process,                       // OUT EP4
@@ -844,7 +844,7 @@ s32 MIOS32_USB_Init(u32 mode)
 #ifndef MIOS32_DONT_USE_USB_MIDI
   MIOS32_USB_MIDI_ChangeConnectionState(0);
 #endif
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   MIOS32_USB_COM_ChangeConnectionState(0);
 #endif
 
@@ -969,7 +969,7 @@ void MIOS32_USB_CB_Init(void)
   // propagate connection state to USB MIDI driver
   MIOS32_USB_MIDI_ChangeConnectionState(0); // not connected
 #endif
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   // propagate connection state to USB MIDI driver
   MIOS32_USB_COM_ChangeConnectionState(0); // not connected
 #endif
@@ -1011,7 +1011,7 @@ void MIOS32_USB_CB_Reset(void)
 #endif
 
 
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   // Initialize Endpoint 2
   SetEPType(ENDP2, EP_INTERRUPT);
   SetEPTxAddr(ENDP2, MIOS32_USB_ENDP2_TXADDR);
@@ -1039,7 +1039,7 @@ void MIOS32_USB_CB_Reset(void)
   // propagate connection state to USB MIDI driver
   MIOS32_USB_MIDI_ChangeConnectionState(0); // not connected
 #endif
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   // propagate connection state to USB COM driver
   MIOS32_USB_COM_ChangeConnectionState(0); // not connected
 #endif
@@ -1057,7 +1057,7 @@ void MIOS32_USB_CB_SetConfiguration(void)
     // propagate connection state to USB MIDI driver
     MIOS32_USB_MIDI_ChangeConnectionState(1); // connected
 #endif
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
     // propagate connection state to USB COM driver
     MIOS32_USB_COM_ChangeConnectionState(1); // connected
 #endif
@@ -1075,7 +1075,7 @@ void MIOS32_USB_CB_SetDeviceAddress (void)
 // status IN routine
 void MIOS32_USB_CB_Status_In(void)
 {
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   MIOS32_USB_COM_CB_StatusIn();
 #endif
 }
@@ -1089,7 +1089,7 @@ RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 {
   RESULT res;
 
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   if( (res=MIOS32_USB_COM_CB_Data_Setup(RequestNo)) != USB_UNSUPPORT )
     return res;
 #endif
@@ -1101,7 +1101,7 @@ RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
 {
   RESULT res;
 
-#ifndef MIOS32_DONT_USE_USB_COM
+#ifdef MIOS32_USE_USB_COM
   if( (res=MIOS32_USB_COM_CB_NoData_Setup(RequestNo)) != USB_UNSUPPORT )
     return res;
 #endif

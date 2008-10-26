@@ -20,8 +20,9 @@
 
 #include <mios32.h>
 
-// this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
-#if !defined(MIOS32_DONT_USE_USB_COM)
+// this module can be optionally *ENABLED* in a local mios32_config.h file (included from mios32.h)
+// it's disabled by default, since Windows doesn't allow to use USB MIDI and CDC in parallel!
+#if defined(MIOS32_USE_USB_COM)
 
 #include <usb_lib.h>
 
@@ -464,4 +465,4 @@ s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo)
   return USB_UNSUPPORT;
 }
 
-#endif /* MIOS32_DONT_USE_USB_COM */
+#endif /* MIOS32_USE_USB_COM */
