@@ -30,6 +30,11 @@
 #define MIOS32_IRQ_SRIO_DMA_PRIORITY    5
 
 
+// DMA Channel IRQ used by MIOS32_I2S, 
+// period depends on sample buffer size, but usually 1..2 mS
+// relaxed conditions (since samples are transfered in background)
+#define MIOS32_IRQ_I2S_DMA_PRIORITY     6
+
 // DMA Channel IRQ used by MIOS32_AIN, called after 
 // all ADC channels have been converted
 #define MIOS32_IRQ_AIN_DMA_PRIORITY     5

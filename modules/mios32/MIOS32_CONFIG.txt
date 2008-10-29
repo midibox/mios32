@@ -31,6 +31,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_UART_MIDI
 #define MIOS32_DONT_USE_IIC
 #define MIOS32_DONT_USE_IIC_MIDI
+#define MIOS32_USE_I2S
 #define MIOS32_DONT_USE_BOARD
 
 
@@ -41,7 +42,7 @@ into your local mios32_config.h file
 // Which SPI peripheral should be used
 // allowed values: 1 and 2
 // (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
-#define MIOS32_SRIO_SPI 1
+#define MIOS32_SRIO_SPI 2
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #define MIOS32_SRIO_OUTPUTS_OD 1
@@ -222,3 +223,20 @@ into your local mios32_config.h file
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #define MIOS32_MF_OUTPUTS_OD 0
 
+
+// MCLK at J15b:E not enabled by default - has to be done in mios32_config.h
+// if I2S chip requires "master clock" (for oversampling)
+#define MIOS32_I2S_MCLK_ENABLE  0
+
+// supported by STM32: 
+// I2S_Standard_Phillips, I2S_Standard_MSB, I2S_Standard_LSB,
+// I2S_Standard_PCMShort, I2S_Standard_PCMLong
+// note that "Philips" is written incorrectly (typo in STM32 driver)
+#define MIOS32_I2S_STANDARD     I2S_Standard_Phillips
+
+// supported by STM32: 
+// I2S_DataFormat_16b, I2S_DataFormat_16bextended, I2S_DataFormat_24b, I2S_DataFormat_32b
+#define MIOS32_I2S_DATA_FORMAT  I2S_DataFormat_16b;
+
+// the sample rate in hertz
+#define MIOS32_I2S_AUDIO_FREQ   48000

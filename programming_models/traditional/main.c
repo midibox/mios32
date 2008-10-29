@@ -98,6 +98,9 @@ int main(void)
 #ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_Init(0);
 #endif
+#ifdef MIOS32_USE_I2S
+  MIOS32_I2S_Init(0);
+#endif
 
   // initialize application
   APP_Init();
