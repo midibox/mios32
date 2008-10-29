@@ -36,6 +36,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_iic.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_iic_bs.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_iic_midi.c \
+	$(MIOS32_PATH)/modules/mios32/mios32_i2s.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_board.c \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
