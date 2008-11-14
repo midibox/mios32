@@ -104,7 +104,23 @@ PROVIDE (   USART3_IRQHandler = 0 ) ;
 PROVIDE (   EXTI15_10_IRQHandler = 0 ) ;
 PROVIDE (   RTCAlarm_IRQHandler = 0 ) ;
 PROVIDE (   USBWakeUp_IRQHandler = 0 ) ;
-
+PROVIDE (   TIM8_BRK_IRQHandler = 0 ) ;
+PROVIDE (   TIM8_UP_IRQHandler = 0 ) ;
+PROVIDE (   TIM8_TRG_COM_IRQHandler = 0 ) ;
+PROVIDE (   TIM8_CC_IRQHandler = 0 ) ;
+PROVIDE (   ADC3_IRQHandler = 0 ) ;
+PROVIDE (   FSMC_IRQHandler = 0 ) ;
+PROVIDE (   SDIO_IRQHandler = 0 ) ;
+PROVIDE (   TIM5_IRQHandler = 0 ) ;
+PROVIDE (   SPI3_IRQHandler = 0 ) ;
+PROVIDE (   UART4_IRQHandler = 0 ) ;
+PROVIDE (   UART5_IRQHandler = 0 ) ;
+PROVIDE (   TIM6_IRQHandler = 0 ) ;
+PROVIDE (   TIM7_IRQHandler = 0 ) ;
+PROVIDE (   DMA2_Channel1_IRQHandler = 0 ) ;
+PROVIDE (   DMA2_Channel2_IRQHandler = 0 ) ;
+PROVIDE (   DMA2_Channel3_IRQHandler = 0 ) ;
+PROVIDE (   DMA2_Channel4_5_IRQHandler = 0 ) ;
 
 
 /******************************************************************************/

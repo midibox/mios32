@@ -113,12 +113,18 @@
 #define _TIM2
 #define _TIM3
 #define _TIM4
+#define _TIM5
+#define _TIM6
+#define _TIM7
+#define _TIM8
 
 /************************************* USART **********************************/
 #define _USART
 #define _USART1
 #define _USART2
 #define _USART3
+#define _UART4
+#define _UART5
 
 /************************************* WWDG ***********************************/
 //#define _WWDG
