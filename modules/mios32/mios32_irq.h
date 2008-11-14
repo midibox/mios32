@@ -26,18 +26,26 @@
 // means: FreeRTOS tasks can be interrupted by level<10 IRQs
 
 
+// predefined user timer priorities (-> MIOS32_TIMER)
+#define MIOS32_IRQ_PRIO_LOW       12  // lower than RTOS
+#define MIOS32_IRQ_PRIO_MID        8  // higher than RTOS
+#define MIOS32_IRQ_PRIO_HIGH       5  // same like SRIO, AIN, etc...
+#define MIOS32_IRQ_PRIO_HIGHEST    5  // same like SRIO, AIN, etc...
+
+
+
 // DMA Channel IRQ used by MIOS32_SRIO, called each mS
-#define MIOS32_IRQ_SRIO_DMA_PRIORITY    5
+#define MIOS32_IRQ_SRIO_DMA_PRIORITY    MIOS32_IRQ_PRIO_HIGH
 
 
 // DMA Channel IRQ used by MIOS32_I2S, 
 // period depends on sample buffer size, but usually 1..2 mS
 // relaxed conditions (since samples are transfered in background)
-#define MIOS32_IRQ_I2S_DMA_PRIORITY     6
+#define MIOS32_IRQ_I2S_DMA_PRIORITY     MIOS32_IRQ_PRIO_MID
 
 // DMA Channel IRQ used by MIOS32_AIN, called after 
 // all ADC channels have been converted
-#define MIOS32_IRQ_AIN_DMA_PRIORITY     5
+#define MIOS32_IRQ_AIN_DMA_PRIORITY     MIOS32_IRQ_PRIO_HIGH
 
 
 // IIC IRQs used by MIOS32_IIC, called rarely on IIC accesses
@@ -51,13 +59,13 @@
 // UART IRQs used by MIOS32_UART
 // typically called each 320 mS if full MIDI bandwidth is used
 // priority should be high to avoid data loss
-#define MIOS32_IRQ_UART_PRIORITY        3
+#define MIOS32_IRQ_UART_PRIORITY        MIOS32_IRQ_PRIO_HIGHEST
 
 
 // USB provides flow control - this interrupt can run at low priority (but higher than RTOS tasks)
 // The interrupt is called at least each mS and takes ca. 1 uS to service the SOF (Start of Frame) flag
 
-#define MIOS32_IRQ_USB_PRIORITY         7
+#define MIOS32_IRQ_USB_PRIORITY         MIOS32_IRQ_PRIO_MID
 
 
 #endif /* _MIOS32_IRQ_H */

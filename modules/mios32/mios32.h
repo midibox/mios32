@@ -70,6 +70,7 @@ extern "C" {
 #include <mios32_iic_midi.h>
 #include <mios32_i2s.h>
 #include <mios32_board.h>
+#include <mios32_timer.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
