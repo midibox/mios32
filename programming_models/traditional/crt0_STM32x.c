@@ -72,6 +72,23 @@ void USART3_IRQHandler(void);
 void EXTI15_10_IRQHandler(void);
 void RTCAlarm_IRQHandler(void);
 void USBWakeUp_IRQHandler(void);
+void TIM8_BRK_IRQHandler(void);
+void TIM8_UP_IRQHandler(void);
+void TIM8_TRG_COM_IRQHandler(void);
+void TIM8_CC_IRQHandler(void);
+void ADC3_IRQHandler(void);
+void FSMC_IRQHandler(void);
+void SDIO_IRQHandler(void);
+void TIM5_IRQHandler(void);
+void SPI3_IRQHandler(void);
+void UART4_IRQHandler(void);
+void UART5_IRQHandler(void);
+void TIM6_IRQHandler(void);
+void TIM7_IRQHandler(void);
+void DMA2_Channel1_IRQHandler(void);
+void DMA2_Channel2_IRQHandler(void);
+void DMA2_Channel3_IRQHandler(void);
+void DMA2_Channel4_5_IRQHandler(void);
 
 
 /* Exported types --------------------------------------------------------------*/
@@ -167,14 +184,23 @@ void (* const g_pfnVectors[])(void) =
   EXTI15_10_IRQHandler,
   RTCAlarm_IRQHandler,
   USBWakeUp_IRQHandler,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  (void *)(unsigned long)0xF108F85F //this is a workaround for boot in RAM mode.
+  TIM8_BRK_IRQHandler,
+  TIM8_UP_IRQHandler,
+  TIM8_TRG_COM_IRQHandler,
+  TIM8_CC_IRQHandler,
+  ADC3_IRQHandler,
+  FSMC_IRQHandler,
+  SDIO_IRQHandler,
+  TIM5_IRQHandler, // originally: (void *)(unsigned long)0xF108F85F //this is a workaround for boot in RAM mode.
+  SPI3_IRQHandler,
+  UART4_IRQHandler,
+  UART5_IRQHandler,
+  TIM6_IRQHandler,
+  TIM7_IRQHandler,
+  DMA2_Channel1_IRQHandler,
+  DMA2_Channel2_IRQHandler,
+  DMA2_Channel3_IRQHandler,
+  DMA2_Channel4_5_IRQHandler
 };
 
 /*******************************************************************************
