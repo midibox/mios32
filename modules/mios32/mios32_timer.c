@@ -56,6 +56,7 @@ static void (*timer_callback[NUM_TIMERS])(void);
 /////////////////////////////////////////////////////////////////////////////
 // Initialize a timer
 // IN: timer (0..2)
+//     Timer allocation on STM32: 0=TIM2, 1=TIM3, 2=TIM5
 //     period in uS accuracy (1..65536)
 //     irq_handler (function-name)
 //     irq_priority: one of these values
@@ -70,6 +71,13 @@ static void (*timer_callback[NUM_TIMERS])(void);
 //
 //   // initialize timer for 1000 uS (= 1 mS) period
 //   MIOS32_TIMER_Init(0, 1000, MyTimer, MIOS32_IRQ_PRIO_MID);
+//
+// this will call following function periodically:
+//
+// void MyTimer(void)
+// {
+//    // your code
+// }
 //
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
