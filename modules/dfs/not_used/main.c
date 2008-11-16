@@ -9,17 +9,16 @@
 #include "dosfs.h"
 
 
-	uint8_t sector[SECTOR_SIZE], sector2[SECTOR_SIZE];
-	VOLINFO vi;
-	DIRINFO di;
-	DIRENT de;
-	FILEINFO fi;
-
 int main(int _argc, char *_argv[])
 {
 	uint32_t pstart, psize, i;
 	uint8_t pactive, ptype;
+	uint8_t sector[SECTOR_SIZE], sector2[SECTOR_SIZE];
+	VOLINFO vi;
+	DIRINFO di;
+	DIRENT de;
 	uint32_t cache;
+	FILEINFO fi;
 	uint8_t *p;
 
 	if (_argc < 2) {
