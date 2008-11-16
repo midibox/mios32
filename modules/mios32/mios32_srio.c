@@ -106,7 +106,7 @@ volatile u8 srio_values_transfered;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-void (*srio_scan_finished_hook)(void);
+static void (*srio_scan_finished_hook)(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -124,11 +124,6 @@ s32 MIOS32_SRIO_Init(u32 mode)
 
   u8 i;
 
-  SPI_InitTypeDef  SPI_InitStructure;
-  GPIO_InitTypeDef GPIO_InitStructure;
-  NVIC_InitTypeDef NVIC_InitStructure;
-  DMA_InitTypeDef  DMA_InitStructure;
-
   // disable notification hook
   srio_scan_finished_hook = NULL;
 
@@ -145,8 +140,9 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // init GPIO structure
   // using 2 MHz instead of 50 MHz to avoid fast transients which can cause flickering!
   // optionally using open drain mode for cheap and sufficient levelshifting from 3.3V to 5V
+  GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 
   // SCLK and DOUT are outputs assigned to alternate functions
 #if MIOS32_SRIO_OUTPUTS_OD
@@ -159,7 +155,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin   = MIOS32_SRIO_DOUT_PIN;
   GPIO_Init(MIOS32_SRIO_DOUT_PORT, &GPIO_InitStructure);
 
-  // RCLK is outputs assigned to GPIO
+  // RCLK output assigned to GPIO
 #if MIOS32_SRIO_OUTPUTS_OD
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_OD;
 #else
@@ -181,6 +177,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
 #endif
 
   // SPI configuration
+  SPI_InitTypeDef SPI_InitStructure;
   SPI_StructInit(&SPI_InitStructure);
   SPI_InitStructure.SPI_Direction           = SPI_Direction_2Lines_FullDuplex;
   SPI_InitStructure.SPI_Mode                = SPI_Mode_Master;
@@ -208,6 +205,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
   // DMA Configuration for SPI Rx Event
+  DMA_InitTypeDef DMA_InitStructure;
   DMA_StructInit(&DMA_InitStructure);
   DMA_ClearFlag(MIOS32_SRIO_DMA_RX_IRQ_FLAGS);
   DMA_Cmd(MIOS32_SRIO_DMA_RX_PTR, DISABLE);
@@ -243,6 +241,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   SPI_I2S_DMACmd(MIOS32_SRIO_SPI_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
 
   // Configure and enable DMA interrupt
+  NVIC_InitTypeDef NVIC_InitStructure;
   NVIC_StructInit(&NVIC_InitStructure);
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SRIO_DMA_IRQ_CHANNEL;
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SRIO_DMA_PRIORITY; // defined in mios32_irq.h
