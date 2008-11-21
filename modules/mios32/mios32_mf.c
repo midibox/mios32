@@ -175,7 +175,7 @@ s32 MIOS32_MF_FaderMove(u32 mf, u16 pos)
   // skip if fader currently manually moved (feedback killer)
   if( !mf_state[mf].manual_move_ctr ) {
     // following sequence must be atomic
-    portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+    MIOS32_IRQ_Disable();
 
     // set new motor position
     mf_state[mf].pos = pos;
@@ -184,7 +184,7 @@ s32 MIOS32_MF_FaderMove(u32 mf, u16 pos)
     mf_state[mf].repeat_ctr = REPEAT_CTR_RELOAD;
     mf_state[mf].timeout_ctr = TIMEOUT_CTR_RELOAD;
 
-    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+    MIOS32_IRQ_Enable();
   }
 
   return 0; // no error
@@ -208,10 +208,10 @@ s32 MIOS32_MF_FaderDirectMove(u32 mf, mios32_mf_direction_t direction)
     return -1;
 
   // set new motor direction (must be atomic)
-  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  MIOS32_IRQ_Disable();
   mf_state[mf].direction = direction;
   mf_state[mf].direct_control = (direction == MF_Standby) ? 0 : 1;
-  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 #endif

@@ -19,6 +19,7 @@ CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
 # TODO: select driver library depending on PROCESSOR/FAMILY variable
 THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mios32/mios32_sys.c \
+	$(MIOS32_PATH)/modules/mios32/mios32_irq.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_srio.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_din.c \
 	$(MIOS32_PATH)/modules/mios32/mios32_dout.c \

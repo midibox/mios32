@@ -1,6 +1,7 @@
 // $Id$
 /*
- * This file collects all interrupt priorities
+ * This file collects all interrupt priorities and provides prototypes to
+ * MIOS32_IRQ_* functions
  *
  * ==========================================================================
  *
@@ -66,6 +67,15 @@
 // The interrupt is called at least each mS and takes ca. 1 uS to service the SOF (Start of Frame) flag
 
 #define MIOS32_IRQ_USB_PRIORITY         MIOS32_IRQ_PRIO_MID
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+extern s32 MIOS32_IRQ_Disable(void);
+extern s32 MIOS32_IRQ_Enable(void);
 
 
 #endif /* _MIOS32_IRQ_H */

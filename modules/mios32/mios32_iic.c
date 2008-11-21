@@ -205,12 +205,12 @@ s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type)
   s32 status = -1;
 
   do {
-    portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+    MIOS32_IRQ_Disable();
     if( !iic_semaphore ) {
       iic_semaphore = 1;
       status = 0;
     }
-    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+    MIOS32_IRQ_Enable();
   } while( semaphore_type == IIC_Blocking && status != 0 );
 
   // clear transfer errors of last transmission

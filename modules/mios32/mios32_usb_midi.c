@@ -138,12 +138,12 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
   }
 
   // put package into buffer - this operation should be atomic!
-  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  MIOS32_IRQ_Disable();
   tx_buffer[tx_buffer_head++] = package.ALL;
   if( tx_buffer_head >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
     tx_buffer_head = 0;
   ++tx_buffer_size;
-  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  MIOS32_IRQ_Enable();
 
   return 0;
 }
@@ -180,12 +180,12 @@ s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
     return -1;
 
   // get package - this operation should be atomic!
-  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  MIOS32_IRQ_Disable();
   package->ALL = rx_buffer[rx_buffer_tail];
   if( ++rx_buffer_tail >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
     rx_buffer_tail = 0;
   --rx_buffer_size;
-  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  MIOS32_IRQ_Enable();
 
   return rx_buffer_size;
 }
@@ -230,7 +230,7 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
     SetEPTxCount(ENDP1, 4*count);
 
     // atomic operation to avoid conflict with other interrupts
-    portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+    MIOS32_IRQ_Disable();
     tx_buffer_size -= count;
 
     // copy into PMA buffer (16bit word with, only 32bit addressable)
@@ -241,7 +241,7 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 	tx_buffer_tail = 0;
     } while( --count );
 
-    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+    MIOS32_IRQ_Enable();
 
     // send buffer
     SetEPTxValid(ENDP1);
@@ -265,7 +265,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
       // copy received packages into receive buffer
       // this operation should be atomic
-      portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+      MIOS32_IRQ_Disable();
       do {
 	u16 pl = *pma_addr++;
 	u16 ph = *pma_addr++;
@@ -278,7 +278,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       // notify, that data has been put into buffer
       rx_buffer_new_data = 0;
 
-      portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+      MIOS32_IRQ_Enable();
 
       // release OUT pipe
       SetEPRxValid(ENDP1);

@@ -226,7 +226,7 @@ s32 MIOS32_AIN_Init(u32 mode)
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1 | RCC_APB2Periph_ADC2, ENABLE);
 
   // map channels to conversion slots depending on the channel selection mask
-  // distribute this over the two ADCs, so that channels can be converted dynamically
+  // distribute this over the two ADCs, so that channels can be converted in parallel
   num_channels = 0;
   for(i=0; i<NUM_CHANNELS_MAX; ++i) {
     if( MIOS32_AIN_CHANNEL_MASK & (1 << i) ) {
@@ -374,10 +374,10 @@ s32 MIOS32_AIN_Handler(void *_callback)
       u32 pin = mux * num_used_channels + chn;
       u32 mask = 1 << (pin & 0x1f);
       if( ain_pin_changed[pin >> 5] & mask ) {
-	portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+	MIOS32_IRQ_Disable();
 	u32 pin_value = ain_pin_values[pin];
 	ain_pin_changed[pin>>5] &= ~mask;
-	portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+	MIOS32_IRQ_Enable();
 
 	// call application hook
 	// note that due to dual conversion approach, we have to convert the pin number
@@ -496,7 +496,7 @@ void DMAChannel1_IRQHandler(void)
     MIOS32_AIN_MUX2_PORT->BSRR = (mux_value & (1 << 2)) ? MIOS32_AIN_MUX2_PIN : (MIOS32_AIN_MUX2_PIN<<16);
 #endif
 
-    // TODO: check with MBHP_CORE_STM32 board, if we need a "seedle" time before
+    // TODO: check with MBHP_CORE_STM32 board, if we need a "settle" time before
     // starting conversion of new selected channels
   }
 #endif
