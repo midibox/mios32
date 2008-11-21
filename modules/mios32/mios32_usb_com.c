@@ -201,7 +201,7 @@ s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  //  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  // MIOS32_IRQ_Disable();
 
   // TODO: access buffer directly, so that we don't need to copy into temporary buffer
   u8 buffer_out[MIOS32_USB_COM_DATA_OUT_SIZE];
@@ -209,7 +209,7 @@ s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com)
   u8 b = buffer_out[rx_buffer_ix++];
   if( !--rx_buffer_new_data_ctr )
     SetEPRxValid(ENDP3);
-  //  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  // MIOS32_IRQ_Enable();
 
   return b; // return received byte
 #endif
@@ -235,12 +235,12 @@ s32 MIOS32_USB_COM_RxBufferPeek(u8 usb_com)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  //  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  // MIOS32_IRQ_Disable();
   // TODO: access buffer directly, so that we don't need to copy into temporary buffer
   u8 buffer_out[MIOS32_USB_COM_DATA_OUT_SIZE];
   PMAToUserBufferCopy(buffer_out, MIOS32_USB_ENDP3_RXADDR, GetEPRxCount(ENDP3));
   u8 b = buffer_out[rx_buffer_ix];
-  //  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  // MIOS32_IRQ_Enable();
 
   return b; // return received byte
 #endif
