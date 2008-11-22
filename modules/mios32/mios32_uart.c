@@ -395,8 +395,8 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
     // enable Tx interrupt if buffer was empty
     if( ++tx_buffer_size[uart] == 1 ) {
       switch( uart ) {
-        case 0: USART_ITConfig(MIOS32_UART0, USART_IT_TXE, ENABLE); break;
-        case 1: USART_ITConfig(MIOS32_UART1, USART_IT_TXE, ENABLE); break;
+        case 0: MIOS32_UART0->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
+        case 1: MIOS32_UART1->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         default: MIOS32_IRQ_Enable(); return -3; // uart not supported by routine (yet)
       }
     }
@@ -466,23 +466,23 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
 #if MIOS32_UART_NUM >= 1
 MIOS32_UART0_IRQHANDLER_FUNC
 {
-  if( USART_GetITStatus(MIOS32_UART0, USART_IT_RXNE) != RESET ) {
-    if( MIOS32_UART_RxBufferPut(0, USART_ReceiveData(MIOS32_UART0)) < 0 ) {
+  if( MIOS32_UART0->SR & (1 << 5) ) { // check if RXNE flag is set
+    if( MIOS32_UART_RxBufferPut(0, MIOS32_UART0->DR) < 0 ) {
       // here we could add some error handling
     }
   }
 
-  if( USART_GetITStatus(MIOS32_UART0, USART_IT_TXE) != RESET ) {
+  if( MIOS32_UART0->SR & (1 << 7) ) { // check if TXE flag is set
     if( MIOS32_UART_TxBufferUsed(0) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(0);
       if( b < 0 ) {
 	// here we could add some error handling
-	USART_SendData(MIOS32_UART0, 0xff);
+	MIOS32_UART0->DR = 0xff;
       } else {
-	USART_SendData(MIOS32_UART0, (u8)b);
+	MIOS32_UART0->DR = b;
       }
     } else {
-      USART_ITConfig(MIOS32_UART0, USART_IT_TXE, DISABLE);
+      MIOS32_UART0->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
     }
   }
 }
@@ -495,23 +495,23 @@ MIOS32_UART0_IRQHANDLER_FUNC
 #if MIOS32_UART_NUM >= 2
 MIOS32_UART1_IRQHANDLER_FUNC
 {
-  if( USART_GetITStatus(MIOS32_UART1, USART_IT_RXNE) != RESET ) {
-    if( MIOS32_UART_RxBufferPut(1, USART_ReceiveData(MIOS32_UART1)) < 0 ) {
+  if( MIOS32_UART1->SR & (1 << 5) ) { // check if RXNE flag is set
+    if( MIOS32_UART_RxBufferPut(1, MIOS32_UART1->DR) < 0 ) {
       // here we could add some error handling
     }
   }
   
-  if( USART_GetITStatus(MIOS32_UART1, USART_IT_TXE) != RESET ) {
+  if( MIOS32_UART1->SR & (1 << 7) ) { // check if TXE flag is set
     if( MIOS32_UART_TxBufferUsed(1) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(1);
       if( b < 0 ) {
 	// here we could add some error handling
-	USART_SendData(MIOS32_UART1, 0xff);
+	MIOS32_UART1->DR = 0xff;
       } else {
-	USART_SendData(MIOS32_UART1, (u8)b);
+	MIOS32_UART1->DR = b;
       }
     } else {
-      USART_ITConfig(MIOS32_UART1, USART_IT_TXE, DISABLE);
+      MIOS32_UART1->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
     }
   }
 }
