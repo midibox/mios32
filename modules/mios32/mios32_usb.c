@@ -25,9 +25,6 @@
 
 #include <usb_lib.h>
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions

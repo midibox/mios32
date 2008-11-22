@@ -20,9 +20,6 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_UART)
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Pin definitions and USART mappings
