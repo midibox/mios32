@@ -58,10 +58,6 @@
 #if !defined(MIOS32_DONT_USE_AIN)
 
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
@@ -183,16 +179,20 @@ s32 MIOS32_AIN_Init(u32 mode)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AIN;
 
-  // J5.A0..3 -> Channel 0..3 -> Pin A0..3
+  // J5A.0..3 -> Channel 10..13 -> Pin C0..3
   GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x000f) >> 0;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-  // J5B.A4..5 -> Channel 14..15 -> Pin C4..5
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0030) >> 0;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-  // J5B.A6..7 -> Channel 8..9 -> Pin B0..1
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x00c0) >> 6;
+  // J5B.4..7 -> Channel 0..3 -> Pin A0..3
+  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x00f0) >> 4;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  // J5C.8..9 -> Channel 14..15 -> Pin C4..5
+  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0300) >> 4;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+  // J5C.A10..11 -> Channel 8..9 -> Pin B0..1
+  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0c00) >> 10;
   GPIO_Init(GPIOB, &GPIO_InitStructure);
 
   // J5C.A8..11 -> Channel 10..13 -> Pin C0..C3
