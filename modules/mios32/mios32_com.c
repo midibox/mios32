@@ -341,12 +341,12 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
 #else
       case 0: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_UART)
+#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART0_ASSIGNMENT == 2
       case 1: error = MIOS32_UART_RxBufferGet(0); port = UART0; break;
 #else
       case 1: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_UART)
+#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART1_ASSIGNMENT == 2
       case 2: error = MIOS32_UART_RxBufferGet(1); port = UART1; break;
 #else
       case 2: error = -1; break;

@@ -486,12 +486,12 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 #else
       case 0: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART0_ASSIGNMENT == 1
       case 1: error = MIOS32_UART_MIDI_PackageReceive(0, &package); port = UART0; break;
 #else
       case 1: error = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART1_ASSIGNMENT == 1
       case 2: error = MIOS32_UART_MIDI_PackageReceive(1, &package); port = UART1; break;
 #else
       case 2: error = -1; break;
