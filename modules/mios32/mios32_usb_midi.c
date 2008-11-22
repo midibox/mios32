@@ -126,7 +126,11 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
   if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
+
+    // disable execution of other tasks while USB_MIDI_Handler() is processed
+    portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
     MIOS32_USB_MIDI_Handler();
+    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
@@ -159,7 +163,7 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
 {
   s32 error;
 
-  while( (error=MIOS32_USB_MIDI_MIDIPackageSend(package)) == -2 );
+  while( (error=MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(package)) == -2 );
 
   return error;
 }
