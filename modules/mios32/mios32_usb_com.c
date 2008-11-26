@@ -331,7 +331,7 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
 {
   s32 error;
 
-  while( (error=MIOS32_USB_COM_TxBufferPutMore(usb_com, buffer, len)) == -2 );
+  while( (error=MIOS32_USB_COM_TxBufferPutMore_NonBlocking(usb_com, buffer, len)) == -2 );
 
   return error;
 }
