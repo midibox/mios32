@@ -20,7 +20,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					379,
+					638,
 					20,
 					48,
 					43,
@@ -37,8 +37,8 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 246718323;
-			PBXWorkspaceStateSaveDate = 246718323;
+			PBXPerProjectTemplateStateSaveDate = 249685807;
+			PBXWorkspaceStateSaveDate = 249685807;
 		};
 		sourceControlManager = 522A0DA80E8FE5580084B1EE /* Source Control */;
 		userBuildSettings = {
@@ -115,9 +115,9 @@
 	};
 	522A0DB70E8FE5B90084B1EE /* UI.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {439, 5166}}";
-			sepNavSelRange = "{2295, 43}";
-			sepNavVisRange = "{2115, 249}";
+			sepNavIntBoundsRect = "{{0, 0}, {806, 5474}}";
+			sepNavSelRange = "{9007, 131}";
+			sepNavVisRange = "{8724, 499}";
 			sepNavWindowFrame = "{{295, 39}, {1085, 646}}";
 		};
 	};
@@ -181,6 +181,21 @@
 			sepNavSelRange = "{1966, 0}";
 			sepNavVisRange = "{1067, 940}";
 			sepNavWindowFrame = "{{308, 183}, {1085, 646}}";
+		};
+	};
+	52D682210EE1E7AF0050D856 /* seq_led.c */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {470, 1036}}";
+			sepNavSelRange = "{588, 21}";
+			sepNavVisRange = "{387, 432}";
+		};
+	};
+	52D682290EE1E7AF0050D856 /* seq_ui.c */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {560, 12726}}";
+			sepNavSelRange = "{25406, 0}";
+			sepNavVisRange = "{24491, 383}";
+			sepNavWindowFrame = "{{19, 227}, {1085, 646}}";
 		};
 	};
 	8D1107260486CEB800E47090 /* midibox_seq_v4 */ = {

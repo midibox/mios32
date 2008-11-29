@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SEQ Demo
+ * Header file for parameter layer routines
  *
  * ==========================================================================
  *
@@ -11,8 +11,11 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_DEMO_H
-#define _SEQ_DEMO_H
+#ifndef _SEQ_PAR_H
+#define _SEQ_PAR_H
+
+#include "seq_core.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,19 +31,13 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 Init(u32 mode);
-
-extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
-extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_SRIO_ServicePrepare(void);
-extern void APP_SRIO_ServiceFinish(void);
-extern void APP_Background(void);
-extern void SEQ_TASK_Period1mS(void);
+extern s32 SEQ_TRG_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 par_layer_value[SEQ_CORE_NUM_TRACKS][3][SEQ_CORE_NUM_STEPS];
 
-#endif /* _SEQ_DEMO_H */
+#endif /* _SEQ_PAR_H */

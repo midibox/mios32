@@ -16,7 +16,13 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = app.c \
 		../core/seq_demo.c \
-		../core/seq_lcd.c
+		../core/seq_ui.c \
+		../core/seq_midi.c \
+		../core/seq_core.c \
+		../core/seq_trg.c \
+		../core/seq_par.c \
+		../core/seq_lcd.c \
+		../core/seq_led.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -41,7 +47,8 @@ PROJECT   = 	project
 DEBUG     =	-g
 OPTIMIZE  =	-Os
 
-CFLAGS =	$(DEBUG) $(OPTIMIZE)
+#                                    temporary select mapping for wilba's frontpanel here
+CFLAGS =	$(DEBUG) $(OPTIMIZE) -DSRIO_MAPPING=1
 
 
 ################################################################################
@@ -53,6 +60,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# BLM8x8
+include $(MIOS32_PATH)/modules/blm8x8/blm8x8.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

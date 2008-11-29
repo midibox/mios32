@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SEQ Demo
+ * Header file for SEQ LED handler
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_DEMO_H
-#define _SEQ_DEMO_H
+#ifndef _SEQ_LED_H
+#define _SEQ_LED_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,14 +28,10 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 Init(u32 mode);
+extern s32 SEQ_LED_Init(u32 mode);
 
-extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
-extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_SRIO_ServicePrepare(void);
-extern void APP_SRIO_ServiceFinish(void);
-extern void APP_Background(void);
-extern void SEQ_TASK_Period1mS(void);
+extern s32 SEQ_LED_PinSet(u32 pin, u32 value);
+extern s32 SEQ_LED_SRSet(u32 sr, u8 value);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,4 +39,4 @@ extern void SEQ_TASK_Period1mS(void);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_DEMO_H */
+#endif /* _SEQ_LED_H */

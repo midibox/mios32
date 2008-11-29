@@ -278,6 +278,16 @@ u32 MIOS32_BOARD_LED_Get(void)
 
 
 //////////////////////////////////////////////////////////////////////////////
+// The periodic 1mS task
+//////////////////////////////////////////////////////////////////////////////
+- (void)periodic1mSTask:(NSTimer *)aTimer
+{
+	// -> forward to application
+	SEQ_TASK_Period1mS();
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // init local variables
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
@@ -348,8 +358,12 @@ u32 MIOS32_BOARD_LED_Get(void)
 	Init(0);
 	
 	// install background task for all modes
-	NSTimer *timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer forMode: NSRunLoopCommonModes];
+	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];
+
+	// install 1mS task
+	NSTimer *timer2 = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(periodic1mSTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer2 forMode: NSRunLoopCommonModes];
 }
 
 @end
