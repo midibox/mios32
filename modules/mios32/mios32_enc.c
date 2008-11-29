@@ -99,7 +99,7 @@ s32 MIOS32_ENC_Init(u32 mode)
 //   <enc_config.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
 //   <enc_config.speed: encoder speed mode (NORMAL/FAST/SLOW)
 //   <enc_config.speed_par: speed parameter (0-7)
-//   <enc_config.sr:    shift register (0-15)
+//   <enc_config.sr:    shift register (1-16)
 //   <enc_config.pos:   pin position of first pin (0, 2, 4 or 6)
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 //   <enc_config.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
 //   <enc_config.speed: encoder speed mode (NORMAL/FAST/SLOW)
 //   <enc_config.speed_par: speed parameter (0-7)
-//   <enc_config.sr:    shift register (0-15)
+//   <enc_config.sr:    shift register (1-16)
 //   <enc_config.pos:   pin position of first pin (0, 2, 4 or 6)
 /////////////////////////////////////////////////////////////////////////////
 mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
@@ -160,9 +160,10 @@ s32 MIOS32_ENC_UpdateStates(void)
   // check all encoders
   // Note: scanning of 64 encoders takes ca. 30 uS @ 72 MHz :-)
   for(enc=0; enc<MIOS32_ENC_NUM_MAX; ++enc) {
+    mios32_enc_config_t *enc_config_ptr = &enc_config[enc];
 
     // skip if encoder not configured
-    if( enc_config[enc].cfg.type == DISABLED )
+    if( enc_config_ptr->cfg.type == DISABLED )
       continue;
 
     enc_state_t *enc_state_ptr = &enc_state[enc];
@@ -172,11 +173,11 @@ s32 MIOS32_ENC_UpdateStates(void)
       --enc_state_ptr->accelerator;
 
     // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
-    u8 sr = enc_config[enc].cfg.sr;
-    u8 pos = enc_config[enc].cfg.pos;
+    u8 sr = enc_config_ptr->cfg.sr-1;
+    u8 pos = enc_config_ptr->cfg.pos;
     u8 changed_mask = 3 << pos; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
     if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) ) {
-      mios32_enc_type_t enc_type = enc_config[enc].cfg.type;
+      mios32_enc_type_t enc_type = enc_config_ptr->cfg.type;
       enc_state_ptr->last12 = enc_state_ptr->act12;
       enc_state_ptr->act12 = (MIOS32_DIN_SRGet(sr) >> pos) & 3;
       s32 predivider;
@@ -266,15 +267,15 @@ MIOS32_ENC_Do_Inc:
       enc_state_ptr->decinc = 0;
 
       // branch depending on speed mode
-      switch( enc_config[enc].cfg.speed ) {
+      switch( enc_config_ptr->cfg.speed ) {
         case FAST:
-	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config[enc].cfg.speed_par))) == 0 )
+	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	    acc = 1;
           enc_state_ptr->incrementer += acc;
 	  break;
 
         case SLOW:
-	  predivider = enc_state_ptr->predivider + (enc_config[enc].cfg.speed_par+1);
+	  predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
 	  // increment on 4bit overrun
 	  if( predivider >= 16 )
 	    ++enc_state_ptr->incrementer;
@@ -298,15 +299,15 @@ MIOS32_ENC_Do_Dec:
       enc_state_ptr->decinc = 1;
 
       // branch depending on speed mode
-      switch( enc_config[enc].cfg.speed ) {
+      switch( enc_config_ptr->cfg.speed ) {
         case FAST:
-	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config[enc].cfg.speed_par))) == 0 )
+	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	    acc = 1;
           enc_state_ptr->incrementer -= acc;
 	  break;
 
         case SLOW:
-	  predivider = enc_state_ptr->predivider - (enc_config[enc].cfg.speed_par+1);
+	  predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
 	  // increment on 4bit underrun
 	  if( predivider < 0 )
 	    --enc_state_ptr->incrementer;
@@ -375,9 +376,9 @@ s32 MIOS32_ENC_Handler(void *_callback)
 
       // call the hook
       callback(enc, incrementer);
+    } else {
+      MIOS32_IRQ_Enable();
     }
-
-    MIOS32_IRQ_Enable();
   }
 
   return 0; // no error
