@@ -20,9 +20,11 @@
 
 // don't touch these defines
 // instead, overrule them from external during gcc is called (e.g. ("-DBLM_DOUT_L1=12")
+// or write the defines into your mios32_config.h file
+#include <mios32_config.h>
 
 
-// define the shift registers to which the anodes of these LEDs are connected
+// define the shift registers to which the anodes of the LEDs are connected
 // ensure, that BLM_NUM_COLOURS is set to >= 1
 #ifndef BLM_DOUT_L1
 #define BLM_DOUT_L1	2
@@ -32,7 +34,7 @@
 #endif
 
 
-// define the shift register to which the cathodes of these LEDs are connected
+// define the shift register to which the cathodes of the LEDs are connected
 // Note that the whole shift register (8 pins) will be allocated! The 4 select lines are duplicated (4 for LED matrix, 4 for button matrix)
 // The second DOUT_CATHODES2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
 #ifndef BLM_DOUT_CATHODES1
@@ -46,7 +48,7 @@
 // set an inversion mask for the DOUT shift registers if sink drivers (transistors)
 // have been added to the cathode lines
 // Settings: 0x00 - no sink drivers
-//           0xf0 - sink drivers connected to D0..D3
+//           0xf0 - sink drivers connected to D3..D0
 //           0x0f - sink drivers connected to D7..D4
 #ifndef BLM_CATHODES_INV_MASK
 #define BLM_CATHODES_INV_MASK	0x00
