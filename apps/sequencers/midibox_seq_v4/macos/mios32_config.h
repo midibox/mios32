@@ -10,20 +10,6 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
-// for debugging via UART1 (application uses printf() to output helpful debugging messages)
-#define COM_DEBUG 1
-
-
-#ifdef COM_DEBUG
-  // enable COM via UART1
-# define MIOS32_UART1_ASSIGNMENT 2
-# define MIOS32_UART1_BAUDRATE 115200
-
-  // use UART1 as default COM port
-# define MIOS32_COM_DEFAULT_PORT UART1
-#endif
-
-
 // include SRIO setup here, so that we can propagate values to external modules
 #include "srio_mapping.h"
 

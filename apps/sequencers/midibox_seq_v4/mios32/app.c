@@ -20,21 +20,47 @@
 
 #include "app.h"
 
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 2 )
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_PERIOD1MS(void *pvParameters);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Encoder Configuration
 /////////////////////////////////////////////////////////////////////////////
-#define NUM_ENCODERS 8
-// (tmp. mapping of MIDIbox LC... just for beta-testing)
+#define NUM_ENCODERS 17
 const mios32_enc_config_t encoders[NUM_ENCODERS] = {
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=12, .cfg.pos=0 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=12, .cfg.pos=2 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=12, .cfg.pos=4 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=12, .cfg.pos=6 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=13, .cfg.pos=0 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=13, .cfg.pos=2 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=13, .cfg.pos=4 },
-  { .cfg.type=NON_DETENTED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=13, .cfg.pos=6 },
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 6, .cfg.pos=2 }, // Data Wheel
+
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=6 }, // V-Pot 1
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=4 }, // V-Pot 2
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=2 }, // V-Pot 3
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=0 }, // V-Pot 4
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=6 }, // V-Pot 5
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=4 }, // V-Pot 6
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=2 }, // V-Pot 7
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=0 }, // V-Pot 8
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=6 }, // V-Pot 9
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=4 }, // V-Pot 10
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=2 }, // V-Pot 11
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=0 }, // V-Pot 12
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=6 }, // V-Pot 13
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=4 }, // V-Pot 14
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=2 }, // V-Pot 15
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=0 }, // V-Pot 16
 };
 
 
@@ -48,12 +74,27 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+#if 1
   // initialize encoders
   for(i=0; i<NUM_ENCODERS; ++i)
     MIOS32_ENC_ConfigSet(i, encoders[i]);
+#endif
+
+  // initialize second CLCD
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_Init(0);
+  MIOS32_LCD_DeviceSet(0);
 
   // init MBSEQ Core
   Init(0);
+
+  // start periodical 1mS task
+  xTaskCreate(TASK_PERIOD1MS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+
+#ifdef COM_DEBUG
+  // for debugging
+  printf("Application initialized\n\r");
+#endif
 }
 
 
@@ -93,17 +134,19 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServicePrepare(void)
-{
-}
+//void APP_SRIO_ServicePrepare(void)
+//{
+//}
+// located in seq_demo
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServiceFinish(void)
-{
-}
+//void APP_SRIO_ServiceFinish(void)
+//{
+//}
+// located in seq_demo
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -132,4 +175,23 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_PERIOD1MS(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // continue in application hook
+    SEQ_TASK_Period1mS();
+  }
 }

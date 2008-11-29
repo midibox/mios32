@@ -70,12 +70,16 @@ s32 SEQ_LCD_InitSpecialChars(u8 charset)
   if( charset != current_charset ) {
     current_charset = charset;
 
-    switch( charset ) {
-      case SEQ_LCD_CHARSET_VBARS:
-	MIOS32_LCD_SpecialCharsInit((u8 *)charset_vbars);
-	break;
-      default:
-	return -1; // charset doesn't exist
+    int dev;
+    for(dev=0; dev<2; ++dev) {
+      MIOS32_LCD_DeviceSet(dev);
+      switch( charset ) {
+        case SEQ_LCD_CHARSET_VBARS:
+	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_vbars);
+	  break;
+        default:
+	  return -1; // charset doesn't exist
+      }
     }
   }
 
