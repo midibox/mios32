@@ -32,19 +32,19 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 blm_selected_column;
+static u8 blm_selected_column;
 
-u8 blm_button_row[BLM_NUM_ROWS];
-u8 blm_button_row_changed[BLM_NUM_ROWS];
+static u8 blm_button_row[BLM_NUM_ROWS];
+static u8 blm_button_row_changed[BLM_NUM_ROWS];
 
-u8 blm_led_row[BLM_NUM_COLOURS][BLM_NUM_ROWS];
+static u8 blm_led_row[BLM_NUM_COLOURS][BLM_NUM_ROWS];
 
-u8 blm_button_debounce_delay;
+static u8 blm_button_debounce_delay;
 
 #if BLM_DEBOUNCE_MODE == 1
-u8 blm_button_debounce_ctr; // cheapo
+static u8 blm_button_debounce_ctr; // cheapo
 #elif BLM_DEBOUNCE_MODE == 2
-u8 blm_button_debounce_ctr[8*BLM_NUM_ROWS]; // expensive
+static u8 blm_button_debounce_ctr[8*BLM_NUM_ROWS]; // expensive
 #endif
 
 
@@ -319,7 +319,7 @@ s32 BLM_DIN_PinGet(u32 pin)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns value of BLM DIN "virtual" shift register
-// IN: colour selection (0/1) in <colour>, pin number in <pin>, pin value in <value>
+// IN: SR number in <sr>
 // OUT: returns < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_DIN_SRGet(u32 sr)
@@ -347,10 +347,12 @@ s32 BLM_DOUT_PinSet(u32 colour, u32 pin, u32 value)
   if( colour >= BLM_NUM_COLOURS )
     return -2;
 
+  MIOS32_IRQ_Disable(); // should be atomic
   if( value )
     blm_led_row[colour][pin >> 3] |= (u8)(1 << (pin&7));
   else
     blm_led_row[colour][pin >> 3] &= ~(u8)(1 << (pin&7));
+  MIOS32_IRQ_Enable();
 
   return 0;
 }
