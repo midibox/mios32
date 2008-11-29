@@ -121,10 +121,12 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
   if( pin/8 >= MIOS32_SRIO_NUM_SR )
     return -1;
 
+  MIOS32_IRQ_Disable(); // this should be atomic
   if( value )
     mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] |= (u8)(1 << ((pin&7)^7));
   else
     mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] &= ~(u8)(1 << ((pin&7)^7));
+  MIOS32_IRQ_Enable();
 
   return 0;
 }
