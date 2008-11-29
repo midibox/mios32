@@ -289,7 +289,7 @@ static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
   // the CS line, otherwise a OSC gate could be triggered twice
   // TODO: check if this is only required for OSC control registers - it could save some time :)
 
-  portENTER_CRITICAL(); // port specific FreeRTOS function to disable IRQs (nested)
+  MIOS32_IRQ_Disable();
 
   // synchronize with rising edge of SID clock
   while(  (SID_CLK_PORT->IDR & SID_CLK_PIN) ); // wait for 0
@@ -310,6 +310,6 @@ static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
   // release CS lines
   PIN_CSN0_1;
   PIN_CSN1_1;
-  portEXIT_CRITICAL(); // port specific FreeRTOS function to enable IRQs (nested)
+  MIOS32_IRQ_Enable();
 }
 
