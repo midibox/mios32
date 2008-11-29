@@ -92,4 +92,8 @@ extern u8 BLM8X8_DebounceDelayGet(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// for direct access (bypasses BLM8X8_DOUT_SR* functions)
+extern u8 blm8x8_led_row[BLM8X8_NUM_ROWS];
+
+
 #endif /* _BLM8X8_H */
