@@ -27,6 +27,9 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// for direct access (bypasses BLM8X8_DOUT_SR* functions)
+u8 blm8x8_led_row[BLM8X8_NUM_ROWS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -36,8 +39,6 @@ static u8 blm8x8_selected_column;
 
 static u8 blm8x8_button_row[BLM8X8_NUM_ROWS];
 static u8 blm8x8_button_row_changed[BLM8X8_NUM_ROWS];
-
-static u8 blm8x8_led_row[BLM8X8_NUM_ROWS];
 
 static u8 blm8x8_button_debounce_delay;
 
