@@ -32,6 +32,8 @@ extern "C" {
 
 #if defined(MIOS32_FAMILY_STM32F10x)
 # include <stm32f10x_lib.h>
+#elif defined(MIOS32_FAMILY_EMULATION)
+# include <mios32_datatypes.h>
 #else
 # error "Unsupported MIOS32_FAMILY selected!"
 #endif
