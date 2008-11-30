@@ -309,25 +309,25 @@ s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2)
 }
 
 s32 MIOS32_MIDI_SendNoteOff(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
-{ MIOS32_MIDI_SendEvent(port, 0x80 | chn, note, vel); }
+{ return MIOS32_MIDI_SendEvent(port, 0x80 | chn, note, vel); }
 
 s32 MIOS32_MIDI_SendNoteOn(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
-{ MIOS32_MIDI_SendEvent(port, 0x90 | chn, note, vel); }
+{ return MIOS32_MIDI_SendEvent(port, 0x90 | chn, note, vel); }
 
 s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val)
-{ MIOS32_MIDI_SendEvent(port, 0xa0 | chn, note, val); }
+{ return MIOS32_MIDI_SendEvent(port, 0xa0 | chn, note, val); }
 
 s32 MIOS32_MIDI_SendCC(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 cc, u8 val)
-{ MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc,   val); }
+{ return MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc,   val); }
 
 s32 MIOS32_MIDI_SendProgramChange(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 prg)
-{ MIOS32_MIDI_SendEvent(port, 0xc0 | chn, prg,  0x00); }
+{ return MIOS32_MIDI_SendEvent(port, 0xc0 | chn, prg,  0x00); }
 
 s32 MIOS32_MIDI_SendAftertouch(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 val)
-{ MIOS32_MIDI_SendEvent(port, 0xd0 | chn, val,  0x00); }
+{ return MIOS32_MIDI_SendEvent(port, 0xd0 | chn, val,  0x00); }
 
 s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 val)
-{ MIOS32_MIDI_SendEvent(port, 0xe0 | chn, val & 0x7f, val >> 7); }
+{ return MIOS32_MIDI_SendEvent(port, 0xe0 | chn, val & 0x7f, val >> 7); }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -365,37 +365,37 @@ s32 MIOS32_MIDI_SendSpecialEvent(mios32_midi_port_t port, u8 type, u8 evnt0, u8 
 
 
 s32 MIOS32_MIDI_SendMTC(mios32_midi_port_t port, u8 val)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf1, val, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf1, val, 0x00); }
 
 s32 MIOS32_MIDI_SendSongPosition(mios32_midi_port_t port, u16 val)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x3, 0xf2, val & 0x7f, val >> 7); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x3, 0xf2, val & 0x7f, val >> 7); }
 
 s32 MIOS32_MIDI_SendSongSelect(mios32_midi_port_t port, u8 val)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf3, val, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf3, val, 0x00); }
 
 s32 MIOS32_MIDI_SendTuneRequest(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf6, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf6, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendClock(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf8, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf8, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendTick(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf9, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf9, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendStart(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfe, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfe, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
-{ MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xff, 0x00, 0x00); }
+{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xff, 0x00, 0x00); }
 
 
 /////////////////////////////////////////////////////////////////////////////
