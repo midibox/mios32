@@ -136,6 +136,14 @@ const u8 mios32_midi_expected_bytes_system[16] = {
 //////////////////////////////////////////////////////////////////////////////
 // LCD access functions
 //////////////////////////////////////////////////////////////////////////////
+//s32 MIOS32_LCD_Clear(void)
+s32 APP_LCD_Clear(void) // aliased
+{
+	[LCD[selectedLCD] LCDClear];
+	
+	return 0; // no error
+}
+
 s32 MIOS32_LCD_Init(u32 mode)
 {
 	// select first device
@@ -169,13 +177,6 @@ s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
 {
 	[LCD[selectedLCD] setLCDCursorX:column];
 	[LCD[selectedLCD] setLCDCursorY:line];
-	
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_Clear(void)
-{
-	[LCD[selectedLCD] LCDClear];
 	
 	return 0; // no error
 }
@@ -224,7 +225,7 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 //////////////////////////////////////////////////////////////////////////////
 // COM functions
 //////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendChar(u8 port, char c)
+s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 {
 	// empty stub - no COM terminal implemented yet
 	return 0; // no error

@@ -9,7 +9,7 @@
 			8D1107260486CEB800E47090 /* midibox_seq_v4 */,
 		);
 		breakpoints = (
-			52C74F160EE2C05600187414 /* UI.m:543 */,
+			52C74F160EE2C05600187414 /* UI.m:544 */,
 		);
 		codeSenseManager = 522A0DA90E8FE5580084B1EE /* Code sense */;
 		executables = (
@@ -38,8 +38,8 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 249734857;
-			PBXWorkspaceStateSaveDate = 249734857;
+			PBXPerProjectTemplateStateSaveDate = 249748579;
+			PBXWorkspaceStateSaveDate = 249748579;
 		};
 		sourceControlManager = 522A0DA80E8FE5580084B1EE /* Source Control */;
 		userBuildSettings = {
@@ -116,18 +116,10 @@
 	};
 	522A0DB70E8FE5B90084B1EE /* UI.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {863, 12724}}";
-			sepNavSelRange = "{4612, 43}";
-			sepNavVisRange = "{4251, 431}";
+			sepNavIntBoundsRect = "{{0, 0}, {863, 12432}}";
+			sepNavSelRange = "{3747, 0}";
+			sepNavVisRange = "{3335, 524}";
 			sepNavWindowFrame = "{{314, 200}, {1085, 646}}";
-		};
-	};
-	522A10A10E91067D0084B1EE /* mios32.h */ = {
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1026, 1526}}";
-			sepNavSelRange = "{2642, 0}";
-			sepNavVisRange = "{964, 1204}";
-			sepNavWindowFrame = "{{237, 172}, {1085, 646}}";
 		};
 	};
 	522A10A30E91068F0084B1EE /* seq_demo.c */ = {
@@ -223,7 +215,7 @@
 			sepNavWindowFrame = "{{226, 38}, {1085, 646}}";
 		};
 	};
-	52C74F160EE2C05600187414 /* UI.m:543 */ = {
+	52C74F160EE2C05600187414 /* UI.m:544 */ = {
 		isa = PBXFileBreakpoint;
 		actions = (
 		);
@@ -235,10 +227,17 @@
 		functionName = "-periodic1mSTask:";
 		hitCount = 0;
 		ignoreCount = 0;
-		lineNumber = 543;
+		lineNumber = 544;
 		location = midibox_seq_v4;
 		modificationTime = 249742698.979183;
 		state = 2;
+	};
+	52C74FD60EE2F78500187414 /* mios32.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 1302}}";
+			sepNavSelRange = "{1098, 47}";
+			sepNavVisRange = "{754, 839}";
+		};
 	};
 	52D682210EE1E7AF0050D856 /* seq_led.c */ = {
 		uiCtxt = {
