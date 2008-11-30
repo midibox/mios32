@@ -80,7 +80,6 @@
 		522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = CLCDView_charset.inc; sourceTree = "<group>"; };
 		522A0DB60E8FE5B90084B1EE /* UI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UI.h; sourceTree = "<group>"; };
 		522A0DB70E8FE5B90084B1EE /* UI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UI.m; sourceTree = "<group>"; };
-		522A10A10E91067D0084B1EE /* mios32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mios32.h; sourceTree = "<group>"; };
 		522A10A30E91068F0084B1EE /* seq_demo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_demo.c; path = ../core/seq_demo.c; sourceTree = SOURCE_ROOT; };
 		522A10A50E91069C0084B1EE /* seq_demo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_demo.h; path = ../core/seq_demo.h; sourceTree = SOURCE_ROOT; };
 		522A10F50E910BCA0084B1EE /* seq_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd.c; path = ../core/seq_lcd.c; sourceTree = SOURCE_ROOT; };
@@ -140,6 +139,7 @@
 		52C74E390EE2B2FA00187414 /* PYMIDIVirtualSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualSource.h; sourceTree = "<group>"; };
 		52C74E3A0EE2B2FA00187414 /* PYMIDIVirtualSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualSource.m; sourceTree = "<group>"; };
 		52C74ED80EE2B8E700187414 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = /System/Library/Frameworks/CoreMIDI.framework; sourceTree = "<absolute>"; };
+		52C74FD60EE2F78500187414 /* mios32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32.h; path = ../../../../modules/mios32/mios32.h; sourceTree = SOURCE_ROOT; };
 		52D6821F0EE1E7AF0050D856 /* seq_core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_core.c; path = ../core/seq_core.c; sourceTree = SOURCE_ROOT; };
 		52D682200EE1E7AF0050D856 /* seq_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_core.h; path = ../core/seq_core.h; sourceTree = SOURCE_ROOT; };
 		52D682210EE1E7AF0050D856 /* seq_led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_led.c; path = ../core/seq_led.c; sourceTree = SOURCE_ROOT; };
@@ -229,6 +229,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52C74FD60EE2F78500187414 /* mios32.h */,
 				52D6823F0EE1E8A70050D856 /* mios32_config.h */,
 				52D6821F0EE1E7AF0050D856 /* seq_core.c */,
 				52D682200EE1E7AF0050D856 /* seq_core.h */,
@@ -247,7 +248,6 @@
 				52066E860E98356A00861688 /* printf-stdarg.c */,
 				522A12290E9137B50084B1EE /* srio_mapping.h */,
 				522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */,
-				522A10A10E91067D0084B1EE /* mios32.h */,
 				522A10F50E910BCA0084B1EE /* seq_lcd.c */,
 				522A10F60E910BCA0084B1EE /* seq_lcd.h */,
 				522A10A50E91069C0084B1EE /* seq_demo.h */,
@@ -525,9 +525,14 @@
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = MIOS32_FAMILY_EMULATION;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = .;
+				HEADER_SEARCH_PATHS = (
+					../../../../modules/mios32,
+					.,
+				);
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 			};
@@ -540,9 +545,14 @@
 					ppc,
 					i386,
 				);
+				GCC_PREPROCESSOR_DEFINITIONS = MIOS32_FAMILY_EMULATION;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = .;
+				HEADER_SEARCH_PATHS = (
+					../../../../modules/mios32,
+					.,
+				);
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 			};
