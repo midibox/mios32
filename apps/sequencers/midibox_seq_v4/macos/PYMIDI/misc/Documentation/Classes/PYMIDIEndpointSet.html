@@ -1,0 +1,113 @@
+<html>
+<head>
+
+<title>PYMIDIEndpointSet</title>
+
+</head>
+<body>
+
+<h1><font color="#000066">PYMIDIEndpointSet</font></h1>
+
+<blockquote>
+<dl>
+	<dt><b>Inherits from:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Classes/NSObject.html#//apple_ref/occ/cl/NSObject">NSObject</a></dd>
+</dl>
+
+<dl>
+	<dt><b>Conforms to:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSObject.html#//apple_ref/occ/intf/NSObject">NSObject</a> (NSObject)</dd>
+</dl>
+
+<dl>
+	<dt><b>Declared in:</b></dt>
+		<dd>PYMIDI/PYMIDIEndpointSet.h</dd>
+</blockquote>
+
+<hr />
+
+
+<h2>Class Description<hr /></h2>
+
+<p>The PYMIDIEndpointSet class allows you to search a set of PYMIDIEndpoints
+for an endpoint matching a particular descriptor.</p>
+
+<p>It can also be used as a delegate for NSKeyedArchiver and
+NSKeyedUnarchiver objects.  When used like this, any endpoint in the set
+will be archived as by descriptor rather than archived directly.
+See <a href="../archiving.html">Archiving Endpoints</a> for more
+information.</p>
+
+
+<h2>Method Types<hr /></h2>
+
+<blockquote>
+
+	Creating temporary endpoint sets
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#endpointSetWithArray:">endpointSetWithArray:</a></dd>
+	</dl>
+	
+	Initializing newly allocated endpoint sets
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#initWithEndpointArray:">initWithEndpointArray:</a></dd>
+	</dl>
+	
+	Searching endpoint sets
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#endpointWithDescriptor:">endpointWithDescriptor:</a></dd>
+	</dl>
+	
+</blockquote>
+
+
+<h2>Class Methods<hr /></h2>
+
+
+<h3><a name="endpointSetWithArray:">endpointSetWithArray:</a></h3>
+
+<p><code>
+	+ (id)<b>endpointSetWithArray:</b>(NSArray*)<em>endpointArray</em>
+</code></p>
+
+<p>Returns an endpoint set containing the endpoints in endpointArray.</p> 
+
+<hr width="25%" align="left" />
+
+
+
+<h2>Instance Methods<hr /></h2>
+
+
+<h3><a name="initWithEndpointArray:">initWithEndpointArray:</a></h3>
+
+<p><code>
+	- (id)<b>initWithEndpointArray:</b>(NSArray*)<em>endpointArray</em>
+</code></p>
+
+<p>Initializes the receiver, a newly allocated PYMIDIEndpointSet to
+contain the endpoint in endpointArray.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="endpointWithDescriptor:">endpointWithDescriptor:</a></h3>
+
+<p><code>
+	- (PYMIDIEndpoint*)<b>endpointWithDescriptor:</b>(PYMIDIEndpointDescriptor*)<em>descriptor</em>
+</code></p>
+
+<p>Searches the receiver for an endpoint matching the given descriptor
+and returns the matching endpoint if one is found, or nil otherwise.</p>
+
+<hr width="25%" align="left" />
+
+
+</body>
+</html>

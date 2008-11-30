@@ -124,14 +124,29 @@ static s32 SEQ_UI_Button_Right(s32 depressed)
 
 static s32 SEQ_UI_Button_Scrub(s32 depressed)
 {
+#if 0
   if( depressed ) return -1; // ignore when button depressed
+#else
+  // Sending SysEx Stream test
+  u8 buffer[7] = { 0xf0, 0x11, 0x22, 0x33, 0x44, depressed ? 0x00 : 0x55, 0xf7 };
+
+  MIOS32_MIDI_SendSysEx(DEFAULT, buffer, 7);
+#endif
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Metronome(s32 depressed)
 {
+#if 0
   if( depressed ) return -1; // ignore when button depressed
+#else
+  // Sending MIDI Note test
+  if( depressed )
+    MIOS32_MIDI_SendNoteOff(DEFAULT, 0x90, 0x3c, 0x00);
+  else
+    MIOS32_MIDI_SendNoteOn(DEFAULT, 0x90, 0x3c, 0x7f);
+#endif
 
   return 0; // no error
 }
