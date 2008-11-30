@@ -22,7 +22,10 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
+#if 0
+// TK: not used and therefore disabled, as it clashes with CLCDs
 #include <glcd_font.h>
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -38,7 +41,12 @@ MIOS32_DELAY_Init(0);
 	MIOS32_BOARD_LED_Init(0xffffffff); // initialize all LEDs
 	//MIOS32_BOARD_LED_Set(0xffffffff, 0);
   
+#if 0
+	// TK: GLCD_FONT_NORMAL not available for CLCDs
+	// for GLCDs the "normal font" is selected by default anyhow,
+	// therefore this function call can be safely disabled
 	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+#endif
 	MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
 	MIOS32_LCD_Clear();
 
