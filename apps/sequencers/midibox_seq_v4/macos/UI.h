@@ -8,8 +8,12 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import <PYMIDI/PYMIDI.h>
 
 #import "CLCDView.h"
+
+#define NUM_MIDI_IN 1
+#define NUM_MIDI_OUT 4
 
 @interface UI : NSObject {
 
@@ -103,7 +107,5 @@ IBOutlet NSButton *buttonRew;
 IBOutlet NSButton *buttonFwd;
 
 }
-
-- (void)backgroundTask:(NSTimer *)aTimer;
 
 @end

@@ -1,0 +1,248 @@
+<html>
+<head>
+
+<title>PYMIDIManager</title>
+
+</head>
+<body>
+
+<h1><font color="#000066">PYMIDIManager</font></h1>
+
+<blockquote>
+<dl>
+	<dt><b>Inherits from:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Classes/NSObject.html#//apple_ref/occ/cl/NSObject">NSObject</a></dd>
+</dl>
+
+<dl>
+	<dt><b>Conforms to:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSObject.html#//apple_ref/occ/intf/NSObject">NSObject</a> (NSObject)</dd>
+</dl>
+
+<dl>
+	<dt><b>Declared in:</b></dt>
+		<dd>PYMIDI/PYMIDIManager.h</dd>
+</dl>
+</blockquote>
+
+<hr />
+
+
+<h2>Class Description<hr /></h2>
+
+<p>The PYMIDIManager is a singleton object that keeps track of the state of
+MIDI system and allows you to query that state, as well as providing some
+useful utility methods.</p>
+
+<p>The <a href="#sharedInstance">sharedInstance</a> class method is used
+to initialize and return the single shared PYMIDIManager instance for your
+application.</p>
+
+<p>The PYMIDIManager sends a <a
+href="#PYMIDISetupChanged">PYMIDISetupChanged</a> notification whenever
+endpoints are added or removed, or attributes of them are changed.</p>
+
+<p>Currently available sources and destinations can be queried using
+the <a href="#realSources">realSources</a> and
+<a href="#realDestinations">realDestinations</a> methods.</p>
+
+
+<br /><h2>Method Types<hr /></h2>
+
+<blockquote>
+
+	Creating and initializing a PYMIDIManager
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#sharedInstance">+ sharedInstance</a></dd>
+	</dl>
+	
+	Getting real destinations
+	
+	<dl>
+		<dt></dt>
+        <dd><a href="#realDestinations">- realDestinations</a></dd>
+        <dd><a href="#realDestinationsOnlineOrInUse">- realDestinationsOnlineOrInUse</a></dd>
+		<dd><a href="#realDestinationWithDescriptor:">- realDestinationWithDescriptor:</a></dd>
+	</dl>
+
+	Getting real sources
+	
+	<dl>
+		<dt></dt>
+        <dd><a href="#realSources">- realSources</a></dd>
+        <dd><a href="#realSourcesOnlineOrInUse">- realSourcesOnlineOrInUse</a></dd>
+		<dd><a href="#realSourceWithDescriptor:">- realSourceWithDescriptor:</a></dd>
+	</dl>
+	
+	Note names
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#nameOfNote">- nameOfNote:</a></dd>
+	</dl>
+
+</blockquote>
+
+
+<br /><h2>Class Methods<hr /></h2>
+
+<h3><a name="sharedInstance">sharedInstance</a></h3>
+
+<p><code>
+	+ (PYMIDIManager*)<b>sharedInstance</b>
+</code></p>
+
+<p>Returns the shared PYMIDIManager instance for the application.  You
+should always use this method to retrieve a PYMIDIManager instance
+and should never instantiate your own.</p>
+
+<hr width="25%" align="left" />
+
+
+<br /><h2>Instance Methods<hr /></h2>
+
+
+<h3><a name="nameOfNote:">nameOfNote:</a></h3>
+
+<p><code>
+	- (NSString*)<b>nameOfNote:</b>(Byte)<em>note</em>
+</code></p>
+
+<p>Returns a string representing the given MIDI note number in human readable
+form, from "C-1" through to "G9", with middle C being "C4".</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realDestinations">realDestinations</a></h3>
+
+<p><code>
+    - (NSArray*)<b>realDestinations</b>
+</code></p>
+
+<p>Returns an <code>NSArray</code> of <code>PYMIDIRealDestination</code>
+objects representing all available MIDI destinations.</p>
+
+<p>Note that any device which goes offline will stay in this list
+in case the device ever comes back online.</p>
+
+<p>Endpoints are returned sorted alphabetically by display name.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#realSources">- realSources</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realDestinationsOnlineOrInUse">realDestinationsOnlineOrInUse</a></h3>
+
+<p><code>
+    - (NSArray*)<b>realDestinationsOnlineOrInUse</b>
+</code></p>
+
+<p>This is similar to the <code>realDestinations</code> method, but returns only
+endpoints that are currently either online (as per the endpoint's <code>isOnline</code>
+method) or in use (as per the endpoint's <code>isInUse</code> method).</p>
+
+<p>
+    <b>See Also:</b>
+    <a href="#realDestinations">- realDestinations</a>,
+    <a href="#realSourcesOnlineOrInUse">- realSourcesOnlineOrInUse</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realDestinationWithDescriptor:">realDestinationWithDescriptor:</a></h3>
+
+<p><code>
+	- (PYMIDIEndpoint*)<b>realDestinationWithDescriptor:</b>(PYMIDIEndpointDescriptor*)<em>descriptor</em>
+</code></p>
+
+<p>This method searches for and returns a real destination endpoint matching the
+given descriptor.</p>
+
+<p>If no real endpoint on the system matches the descriptor, a new offline endpoint is
+created and returned.  This endpoint will go online if the corresponding device
+is later connected.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realSources">realSources</a></h3>
+
+<p><code>
+    - (NSArray*)<b>realSources</b>
+</code></p>
+
+<p>Returns an <code>NSArray</code> of <code>PYMIDIRealSource</code>
+objects representing all available MIDI sources.</p>
+
+<p>Note that any device which goes offline will stay in this list
+in case the device ever comes back online.</p>
+
+<p>Endpoints are returned sorted alphabetically by display name.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#realDestinations">- realDestinations</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realSourcesOnlineOrInUse">realSourcesOnlineOrInUse</a></h3>
+
+<p><code>
+    - (NSArray*)<b>realSourcesOnlineOrInUse</b>
+</code></p>
+
+<p>This is similar to the <code>realSources</code> method, but returns only
+endpoints that are currently either online (as per the endpoint's <code>isOnline</code>
+method) or in use (as per the endpoint's <code>isInUse</code> method).</p>
+
+<p>
+    <b>See Also:</b>
+    <a href="#realSources">- realSources</a>,
+    <a href="#realDestinationsOnlineOrInUse">- realDestinationsOnlineOrInUse</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="realSourceWithDescriptor:">realSourceWithDescriptor:</a></h3>
+
+<p><code>
+	- (PYMIDIEndpoint*)<b>realSourceWithDescriptor:</b>(PYMIDIEndpointDescriptor*)<em>descriptor</em>
+</code></p>
+
+<p>This method searches for and returns a real source endpoint matching the
+given descriptor.</p>
+
+<p>If no real endpoint on the system matches the descriptor, a new offline endpoint is
+created and returned.  This endpoint will go online if the corresponding device
+is later connected.</p>
+
+<hr width="25%" align="left" />
+
+
+<br /><h2>Notifications<hr /></h2>
+
+<h3><a name="PYMIDISetupChanged">PYMIDISetupChanged</a></h3>
+
+<p>The PYMIDISetupChanged notification is sent by the PYMIDIManager whenever
+a change occurs in the MIDI system.  This includes plugging or unplugging of
+devices, creation or destruction of virtual endpoints and endpoint property
+changes.</p>
+
+<p>MIDI system changes that you make yourself through the PYMIDI interfaces
+will not cause this notification to be sent, although changes made using
+CoreMIDI calls will.</p>
+
+
+</body>
+</html>

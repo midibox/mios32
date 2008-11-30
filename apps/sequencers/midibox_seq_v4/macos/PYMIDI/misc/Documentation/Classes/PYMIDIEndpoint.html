@@ -1,0 +1,442 @@
+<html>
+<head>
+
+<title>PYMIDIEndpoint</title>
+
+</head>
+<body>
+
+<h1><font color="#000066">PYMIDIEndpoint</font></h1>
+
+<blockquote>
+<dl>
+	<dt><b>Inherits from:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Classes/NSObject.html#//apple_ref/occ/cl/NSObject">NSObject</a></dd>
+</dl>
+
+<dl>
+	<dt><b>Conforms to:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSCoding.html#//apple_ref/occ/intf/NSCoding">NSCoding</a></dd>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSObject.html#//apple_ref/occ/intf/NSObject">NSObject</a> (NSObject)</dd>
+</dl>
+
+<dl>
+	<dt><b>Declared in:</b></dt>
+		<dd>PYMIDI/PYMIDIEndpoint.h</dd>
+</blockquote>
+
+<hr />
+
+
+<h2>Class Description<hr /></h2>
+
+<p>This is an abstract class which provides a common interface for the
+concrete classes <a href="PYMIDIRealSource.html">PYMIDIRealSource</a>,
+<a href="PYMIDIRealDestination.html">PYMIDIRealDestination</a>,
+<a href="PYMIDIVirtualSource.html">PYMIDIVirtualSource</a>, and
+<a href="PYMIDIVirtualDestination.html">PYMIDIVirtualDestination</a>.</p>
+
+<p>Methods are provided for querying and setting the status of the
+endpoint as well as sending and receiving MIDI data.</p>
+
+
+<h2>Method Types<hr /></h2>
+
+<blockquote>
+
+	Querying and setting endpoint properties
+
+	<dl>
+		<dt></dt>
+		<dd><a href="#displayName">- displayName</a></dd>
+        <dd><a href="#compareByDisplayName:">- compareByDisplayName:</a></dd>
+		<dd><a href="#name">- name</a></dd>
+		<dd><a href="#setName:">- setName:</a></dd>
+		<dd><a href="#uniqueID">- uniqueID</a></dd>
+		<dd><a href="#setUniqueID:">- setUniqueID:</a></dd>
+		<dd><a href="#midiEndpointRef">- midiEndpointRef</a></dd>
+        <dd><a href="#isIACBus">- isIACBus</a></dd>
+	</dl>
+	
+	Endpoint status
+	
+	<dl>
+		<dt></dt>
+        <dd><a href="#isOnline">- isOnline</a></dd>
+		<dd><a href="#isOffline">- isOffline</a></dd>
+		<dd><a href="#isInUse">- isInUse</a></dd>
+        <dd><a href="#isOnlineOrInUse">- isOnlineOrInUse</a></dd>
+	</dl>
+
+	Sending MIDI data
+
+	<dl>
+		<dt></dt>
+		<dd><a href="#addSender:">- addSender</a></dd>
+		<dd><a href="#processMIDIPacketList:sender:">- processMIDIPacketList:sender:</a></dd>
+		<dd><a href="#removeSender:">- removeSender:</a></dd>
+	</dl>
+
+	Receiving MIDI data
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#addReceiver:">- addReceiver</a></dd>
+		<dd><a href="#removeReceiver:">- removeReceiver:</a></dd>
+	</dl>
+
+	Archiving endpoints
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#descriptor">- descriptor</a></dd>
+	</dl>
+	
+</blockquote>
+
+
+<h2>Instance Methods<hr /></h2>
+
+
+<h3><a name="addReceiver:">addReceiver:</a></h3>
+
+<p><code>
+	- (void)<b>addReceiver:</b>(id)<em>receiver</em>
+</code></p>
+
+<p>Adds the given object as a receiver for MIDI data from this endpoint.
+The receiver is expected to have a method of the form:</p>
+
+<p><code>
+	- (void)<b>processMIDIPacketList:</b>(MIDIPacketList*)<em>myPacketList</em> <b>sender:</b>(id)<em>sender</em>
+</code></p> 
+
+<p>This method should only be called on endpoints that supply MIDI data,
+i.e. real sources and virtual destinations.</p>
+
+<p>Note that eceivers added with this method are not retained by the endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#removeReceiver:">- removeReceiver:</a>,
+	<a href="#isInUse">- isInUse</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="addSender:">addSender:</a></h3>
+
+<p><code>
+	- (void)<b>addSender:</b>(id)<em>sender</em>
+</code></p>
+
+<p>Adds the given object as a sender of MIDI data to this endpoint.
+The sender can then call the processMIDIPacketList:sender: method
+of the endpoint to transmit data.</p>
+
+<p>This method should only be called on endpoints that send MIDI data,
+i.e. real destinations and virtual sources.</p>
+
+<p>Note that senders added with this method are not retained by the endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#processMIDIPacketList:sender:">- processMIDIPacketList:sender:</a>,
+	<a href="#removeSender:">- removeSender:</a>,
+	<a href="#isInUse">- isInUse</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="compareByDisplayName:">compareByDisplayName:</a></h3>
+
+<p><code>
+	- (NSComparisonResult)<b>compareByDisplayName:</b>(PYMIDIEndpoint*)<em>endpoint</em>
+</code></p>
+
+<p>Compares this endpoint's display name with that of the passed in endpoint
+and returns the appropriate result.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#name">- displayName</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="descriptor">descriptor</a></h3>
+
+<p><code>
+	- (PYMIDIEndpointDescriptor*)<b>descriptor</b>
+</code></p>
+
+<p>Returns a PYMIDIEndpointDescriptor that uniquely identifies this
+endpoint.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="displayName">displayName</a></h3>
+
+<p><code>
+	- (NSString*)<b>displayName</b>
+</code></p>
+
+<p>Returns the name of the endpoint as it should be displayed to the user.
+In particular, this recognises external devices configured in Audio MIDI Setup
+and displays their names as appropriate.</p>
+
+<p>The string "(offline)" will be appended to the display name of an
+endpoint with a device that is currently disconnected.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#name">- name</a>,
+	<a href="#setName:">- setName:</a>,
+    <a href="#compareByDisplayName:">- compareByDisplayName:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isInUse">isInUse</a></h3>
+
+<p><code>
+	- (BOOL)<b>isInUse</b>
+</code></p>
+
+<p>Returns YES if there are any senders or receivers registered on this
+endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#addReceiver:">- addReceiver:</a>,
+	<a href="#addSender:">- addSender:</a>,
+	<a href="#removeReceiver:">- removeReceiver:</a>,
+	<a href="#removeSender:">- removeSender:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isIACBus">isIACBus</a></h3>
+
+<p><code>
+	- (BOOL)<b>isIACBus</b>
+</code></p>
+
+<p>Returns YES if the endpoint is part of an IAC Bus.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isInUse">isInUse</a></h3>
+
+<p><code>
+	- (BOOL)<b>isInUse</b>
+</code></p>
+
+<p>Returns YES if the endpoint is being used by your app; that is,
+if their are any registered senders or receivers on this endpoint.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isOffline">isOffline</a></h3>
+
+<p><code>
+	- (BOOL)<b>isOffline</b>
+</code></p>
+
+<p>Returns YES if the device with which this endpoint is associated is
+currently not connected.</p>
+
+<p>This is equivalent to <code>![endpoint isOnline]</code>.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#isOnline:">- isOnline</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isOnline">isOnline</a></h3>
+
+<p><code>
+	- (BOOL)<b>isOnline</b>
+</code></p>
+
+<p>Returns YES if the device with which this endpoint is associated is
+currently connected.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#isOffline">- isOffline</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isOnlineOrInUse">isOnlineOrInUse</a></h3>
+
+<p><code>
+	- (BOOL)<b>isOnlineOrInUse</b>
+</code></p>
+
+<p>Returns YES if the endpoint is online or is in use. This is
+equivalent to <code>[endpoint isOnline] || [endpoint isInUse]</code>.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#isOnline">- isOnline</a>,
+    <a href="#isInUse">- isInUse</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="midiEndpointRef">midiEndpointRef</a></h3>
+
+<p><code>
+	- (MIDIEndpointRef)<b>midiEndpointRef</b>
+</code></p>
+
+<p>Returns the underlying CoreMIDI MIDIEndpointRef for this endpoint
+if there is one, nil otherwise.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="name">name</a></h3>
+
+<p><code>
+	- (NSString*)<b>name</b>
+</code></p>
+
+<p>Returns the name of the endpoint, which usually consists of the name of
+the MIDI device followed by a port description.</p>
+
+<p>For a name to display to the user, use the displayName method.</p>
+
+<p>Note that this is not the same as the kMIDIPropertyName of the
+underlying CoreMIDI endpoint, but is a more useful value by which
+to reference the endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#displayName">- displayName</a>,
+	<a href="#setName:">- setName:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="processMIDIPacketList:sender:">processMIDIPacketList:sender:</a></h3>
+
+<p><code>
+	- (void)<b>processMIDIPacketList:</b>(const MIDIPacketList*)<em>packetList</em>
+	<b>sender:</b>(id)<em>sender</em>
+</code></p>
+
+<p>Attempts to send the given MIDI data via this endpoint.</p>
+
+<p>Note that you should call addSender: to register yourself as a
+sender before calling this method.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#addSender:">- addSender:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="removeReceiver:">removeReceiver:</a></h3>
+
+<p><code>
+	- (void)<b>removeReceiver:</b>(id)<em>receiver</em>
+</code></p>
+
+<p>Removes the given receiver from the endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#addReceiver:">- addReceiver:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="removeSender:">removeSender:</a></h3>
+
+<p><code>
+	- (void)<b>removeSender:</b>(id)<em>sender</em>
+</code></p>
+
+<p>Removes the given sender from the endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#processMIDIPacketList:sender:">- processMIDIPacketList:sender:</a>,
+	<a href="#addSender:">- addSender:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="setName:">setName:</a></h3>
+
+<p><code>
+	- (BOOL)<b>setName:</b>(NSString*)<em>name</em>
+</code></p>
+
+<p>Sets the name of the given endpoint.  This should only be used on
+virtual endpoints.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#name">- name</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="setUniqueID:">setUniqueID:</a></h3>
+
+<p><code>
+	- (BOOL)<b>setUniqueID:</b>(SInt32)<em>uniqueID</em>
+</code></p>
+
+<p>Sets the CoreMIDI unique ID of the endpoint. Strictly speaking this shouldn't
+be possible, but older versions of OS X allow it.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#uniqueID">- uniqueID</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="uniqueID">uniqueID</a></h3>
+
+<p><code>
+	- (SInt32)<b>uniqueID</b>
+</code></p>
+
+<p>Returns the CoreMIDI unique ID of this endpoint.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#setUniqueID:">- setUniqueID:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+</body>
+</html>
