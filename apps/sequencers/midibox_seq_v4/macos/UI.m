@@ -506,6 +506,15 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 
 
 //////////////////////////////////////////////////////////////////////////////
+// Stub for encoder configuration
+//////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
+{
+	return 0; // no error
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // Stubs for Board specific functions
 //////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Init(u32 leds)
@@ -742,6 +751,24 @@ void sendMIDIMessageToApp(mios32_midi_port_t port, mios32_midi_package_t package
 
 
 //////////////////////////////////////////////////////////////////////////////
+// initialisation hook for OS specific tasks
+// (called from APP_Init() after everything has been prepared)
+//////////////////////////////////////////////////////////////////////////////
+s32 TASKS_Init(u32 mode)
+{
+	// install background task for all modes
+	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];
+
+	// install 1mS task
+	NSTimer *timer2 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodic1mSTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer2 forMode: NSRunLoopCommonModes];	
+	
+	return 0; // no error
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // init local variables
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
@@ -832,15 +859,7 @@ void sendMIDIMessageToApp(mios32_midi_port_t port, mios32_midi_package_t package
 	}
 
 	// call init function of application
-	Init(0);
-	
-	// install background task for all modes
-	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];
-
-	// install 1mS task
-	NSTimer *timer2 = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(periodic1mSTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer2 forMode: NSRunLoopCommonModes];	
+	APP_Init();
 }
 
 @end

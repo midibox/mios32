@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SEQ Demo
+ * Header file for tasks of MacOS variant
  *
  * ==========================================================================
  *
@@ -11,8 +11,9 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_DEMO_H
-#define _SEQ_DEMO_H
+#ifndef _TASKS_H
+#define _TASKS_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,14 +29,8 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 Init(u32 mode);
-
-extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
-extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_SRIO_ServicePrepare(void);
-extern void APP_SRIO_ServiceFinish(void);
-extern void APP_Background(void);
-extern void SEQ_TASK_Period1mS(void);
+// located in UI.m
+extern s32 TASKS_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,4 +38,4 @@ extern void SEQ_TASK_Period1mS(void);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_DEMO_H */
+#endif /* _TASKS_H */

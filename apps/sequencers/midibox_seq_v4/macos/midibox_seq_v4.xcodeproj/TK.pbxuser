@@ -9,7 +9,7 @@
 			8D1107260486CEB800E47090 /* midibox_seq_v4 */,
 		);
 		breakpoints = (
-			52C74F160EE2C05600187414 /* UI.m:544 */,
+			52C74F160EE2C05600187414 /* UI.m:553 */,
 		);
 		codeSenseManager = 522A0DA90E8FE5580084B1EE /* Code sense */;
 		executables = (
@@ -38,8 +38,8 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 249748579;
-			PBXWorkspaceStateSaveDate = 249748579;
+			PBXPerProjectTemplateStateSaveDate = 249863648;
+			PBXWorkspaceStateSaveDate = 249863648;
 		};
 		sourceControlManager = 522A0DA80E8FE5580084B1EE /* Source Control */;
 		userBuildSettings = {
@@ -116,17 +116,10 @@
 	};
 	522A0DB70E8FE5B90084B1EE /* UI.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {863, 12432}}";
-			sepNavSelRange = "{3747, 0}";
-			sepNavVisRange = "{3335, 524}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 12628}}";
+			sepNavSelRange = "{14823, 0}";
+			sepNavVisRange = "{13773, 1053}";
 			sepNavWindowFrame = "{{314, 200}, {1085, 646}}";
-		};
-	};
-	522A10A30E91068F0084B1EE /* seq_demo.c */ = {
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {794, 6482}}";
-			sepNavSelRange = "{11711, 47}";
-			sepNavVisRange = "{11574, 282}";
 		};
 	};
 	522A10F50E910BCA0084B1EE /* seq_lcd.c */ = {
@@ -142,6 +135,13 @@
 			sepNavIntBoundsRect = "{{0, 0}, {470, 728}}";
 			sepNavSelRange = "{1749, 0}";
 			sepNavVisRange = "{1282, 467}";
+		};
+	};
+	526B4AE80EE49DFD00B80AB4 /* app.c */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 3486}}";
+			sepNavSelRange = "{585, 21}";
+			sepNavVisRange = "{0, 738}";
 		};
 	};
 	52A74F180E92701800D65394 /* SEQButton.h */ = {
@@ -215,7 +215,7 @@
 			sepNavWindowFrame = "{{226, 38}, {1085, 646}}";
 		};
 	};
-	52C74F160EE2C05600187414 /* UI.m:544 */ = {
+	52C74F160EE2C05600187414 /* UI.m:553 */ = {
 		isa = PBXFileBreakpoint;
 		actions = (
 		);
@@ -227,16 +227,17 @@
 		functionName = "-periodic1mSTask:";
 		hitCount = 0;
 		ignoreCount = 0;
-		lineNumber = 544;
+		lineNumber = 553;
 		location = midibox_seq_v4;
 		modificationTime = 249742698.979183;
 		state = 2;
 	};
 	52C74FD60EE2F78500187414 /* mios32.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {863, 1302}}";
-			sepNavSelRange = "{1098, 47}";
-			sepNavVisRange = "{754, 839}";
+			sepNavIntBoundsRect = "{{0, 0}, {1026, 1330}}";
+			sepNavSelRange = "{1737, 0}";
+			sepNavVisRange = "{952, 1084}";
+			sepNavWindowFrame = "{{19, 227}, {1085, 646}}";
 		};
 	};
 	52D682210EE1E7AF0050D856 /* seq_led.c */ = {
