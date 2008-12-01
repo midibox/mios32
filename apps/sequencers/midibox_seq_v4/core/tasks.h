@@ -1,6 +1,9 @@
 // $Id$
 /*
- * Header file for tasks of MacOS variant
+ * Header file for tasks which have to be serviced by FreeRTOS/MacOS
+ *
+ * For MIOS32, the appr. tasks.c file is located in ../mios32/tasks.c
+ * For MacOS, the code is implemented in ui.m
  *
  * ==========================================================================
  *
@@ -29,7 +32,6 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-// located in UI.m
 extern s32 TASKS_Init(u32 mode);
 
 
