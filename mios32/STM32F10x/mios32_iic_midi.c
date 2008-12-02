@@ -223,7 +223,12 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
 
     MIOS32_IIC_TransferFinished();
 
-    return error < 0 ? -3 : 0; // return IIC error status
+    if( error >= 0 ) {
+      MIOS32_MIDI_SendPackageToTxCallback(IIC0 + iic_port, package);
+      return 0; // no error
+    }
+
+    return -3; // IIC error
   } else {
     return 0; // no bytes to send -> no error
   }
@@ -295,6 +300,9 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
     package->evnt0 = buffer[1];
     package->evnt1 = buffer[2];
     package->evnt2 = buffer[3];
+
+    if( error == 0 )
+      MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, package);
 
     error = package->type ? 0 : -1; // return 0 if new package is available
   } else {
