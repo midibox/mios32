@@ -25,22 +25,22 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_com.c \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_sys.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_irq.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_srio.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_iic_midi.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_i2s.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_board.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_timer.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_delay.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_sdcard.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_ain.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_mf.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_usb.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_usb_midi.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_usb_com.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_uart.c \
-	$(MIOS32_PATH)/mios32/stm32/mios32_iic.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_sys.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_irq.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_srio.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_iic_midi.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_i2s.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_board.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_timer.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_delay.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_sdcard.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_ain.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_mf.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_usb.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_usb_midi.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_usb_com.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_uart.c \
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_iic.c \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
 	$(DRIVER_LIB)/src/stm32f10x_adc.c \
