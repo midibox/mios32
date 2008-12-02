@@ -40,8 +40,6 @@ static u8 blm_selected_column;
 static u8 blm_button_row[BLM_NUM_ROWS];
 static u8 blm_button_row_changed[BLM_NUM_ROWS];
 
-static u8 blm_led_row[BLM_NUM_COLOURS][BLM_NUM_ROWS];
-
 static u8 blm_button_debounce_delay;
 
 #if BLM_DEBOUNCE_MODE == 1
