@@ -149,6 +149,8 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
   ++tx_buffer_size;
   MIOS32_IRQ_Enable();
 
+  MIOS32_MIDI_SendPackageToTxCallback(USB0 + package.cable, package);
+
   return 0;
 }
 
@@ -273,7 +275,12 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       do {
 	u16 pl = *pma_addr++;
 	u16 ph = *pma_addr++;
-	rx_buffer[rx_buffer_head] = (ph << 16) | pl;
+	mios32_midi_package_t package;
+	package.ALL = (ph << 16) | pl;
+	rx_buffer[rx_buffer_head] = package.ALL;
+
+	MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package);
+
 	if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
 	  rx_buffer_head = 0;
 	++rx_buffer_size;

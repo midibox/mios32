@@ -168,6 +168,12 @@ extern s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port);
 
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_sysex);
 
+extern s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx);
+extern s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte);
+extern s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte);
+extern s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
@@ -176,6 +182,5 @@ extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_syse
 extern const u8 mios32_midi_pcktype_num_bytes[16];
 extern const u8 mios32_midi_expected_bytes_common[8];
 extern const u8 mios32_midi_expected_bytes_system[16];
-
 
 #endif /* _MIOS32_MIDI_H */

@@ -88,6 +88,9 @@ const u8 mios32_midi_expected_bytes_system[16] = {
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static void (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
+static void (*direct_tx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes MIDI layer
@@ -102,6 +105,11 @@ s32 MIOS32_MIDI_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+  // disable Rx/Tx callback functions
+  direct_rx_callback_func = NULL;
+  direct_tx_callback_func = NULL;
+
+  // initialize interfaces
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
   if( MIOS32_USB_MIDI_Init(0) < 0 )
     ret |= (1 << 0);
@@ -595,6 +603,80 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
   } while( again );
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installs Rx/Tx callback functions which are executed immediately on each
+// incoming/outgoing MIDI byte, partly from interrupt handlers with following
+// parameters:
+//    callback_rx(mios32_midi_port_t port, u8 midi_byte);
+//    callback_tx(mios32_midi_port_t port, u8 midi_byte);
+//
+// These functions should be executed so fast as possible. They can be used
+// to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
+// avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
+{
+  direct_rx_callback_func = callback_rx;
+  direct_tx_callback_func = callback_tx;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is used by MIOS32 internal functions to forward received
+// MIDI bytes to the Rx Callback routine
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
+{
+  // note: here we could filter the user hook execution on special situations
+  if( direct_rx_callback_func != NULL )
+    direct_rx_callback_func(port, midi_byte);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is used by MIOS32 internal functions to forward received
+// MIDI packages to the Rx Callback routine (byte by byte)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+  // note: here we could filter the user hook execution on special situations
+  if( direct_rx_callback_func != NULL ) {
+    u8 buffer[3] = {midi_package.evnt0, midi_package.evnt1, midi_package.evnt2};
+    int len = mios32_midi_pcktype_num_bytes[midi_package.cin];
+    int i;
+    for(i=0; i<len; ++i)
+      direct_rx_callback_func(port, buffer[i]);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is used by MIOS32 internal functions to forward received
+// MIDI bytes to the Tx Callback routine
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
+{
+  // note: here we could filter the user hook execution on special situations
+  if( direct_tx_callback_func != NULL )
+    direct_tx_callback_func(port, midi_byte);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is used by MIOS32 internal functions to forward received
+// MIDI packages to the Tx Callback routine (byte by byte)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+  // note: here we could filter the user hook execution on special situations
+  if( direct_tx_callback_func != NULL ) {
+    u8 buffer[3] = {midi_package.evnt0, midi_package.evnt1, midi_package.evnt2};
+    int len = mios32_midi_pcktype_num_bytes[midi_package.cin];
+    int i;
+    for(i=0; i<len; ++i)
+      direct_tx_callback_func(port, buffer[i]);
+  }
 }
 
 
