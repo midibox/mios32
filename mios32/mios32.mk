@@ -51,4 +51,5 @@ include $(MIOS32_PATH)/mios32/$(FAMILY)/mios32_family.mk
 # directories and files that should be part of the distribution (release) package
 DIST += $(MIOS32_PATH)/mios32/common \
         $(MIOS32_PATH)/mios32/mios32.mk \
-        $(MIOS32_PATH)/include/mios32
+        $(MIOS32_PATH)/include/mios32 \
+        $(MIOS32_PATH)/doc/mios32
