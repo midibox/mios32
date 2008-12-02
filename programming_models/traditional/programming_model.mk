@@ -24,7 +24,7 @@ THUMB_SOURCE += \
 		$(FREE_RTOS)/Source/portable/MemMang/heap_2.c 
 
 # add MIOS32 sources
-include $(MIOS32_PATH)/mios32/stm32/mios32.mk
+include $(MIOS32_PATH)/mios32/mios32.mk
 
 # directories and files that should be part of the distribution (release) package
 DIST += $(MIOS32_PATH)/programming_models/traditional

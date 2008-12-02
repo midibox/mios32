@@ -1,12 +1,8 @@
 # $Id$
 # defines additional rules for MIOS32
 
-# select driver library
-DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v2.0.1
-
 # enhance include path
-C_INCLUDE +=	-I $(MIOS32_PATH)/include/mios32 \
-		-I $(DRIVER_LIB)/inc
+C_INCLUDE +=	-I $(MIOS32_PATH)/include/mios32
 
 # forward MIOS32 environment variables to preprocessor
 CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
@@ -40,23 +36,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_usb_midi.c \
 	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_usb_com.c \
 	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_uart.c \
-	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_iic.c \
-	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
-	$(DRIVER_LIB)/src/stm32f10x_flash.c \
-	$(DRIVER_LIB)/src/stm32f10x_adc.c \
-	$(DRIVER_LIB)/src/stm32f10x_spi.c \
-	$(DRIVER_LIB)/src/stm32f10x_usart.c \
-	$(DRIVER_LIB)/src/stm32f10x_i2c.c \
-	$(DRIVER_LIB)/src/stm32f10x_dma.c \
-	$(DRIVER_LIB)/src/stm32f10x_tim.c \
-	$(DRIVER_LIB)/src/stm32f10x_rcc.c \
-	$(DRIVER_LIB)/src/stm32f10x_systick.c \
-	$(DRIVER_LIB)/src/stm32f10x_nvic.c \
-	$(DRIVER_LIB)/src/usb_core.c \
-	$(DRIVER_LIB)/src/usb_init.c \
-	$(DRIVER_LIB)/src/usb_int.c \
-	$(DRIVER_LIB)/src/usb_mem.c \
-	$(DRIVER_LIB)/src/usb_regs.c
+	$(MIOS32_PATH)/mios32/$(MIOS32_FAMILY)/mios32_iic.c
 
 # MEMO: the gcc linker is clever enough to exclude functions from the final memory image
 # if they are not references from the main routine - accordingly we can savely include
@@ -64,5 +44,11 @@ THUMB_SOURCE += \
 # which don't use the USB peripheral at all :-)
 
 
+# add family specific files
+include $(MIOS32_PATH)/mios32/$(FAMILY)/mios32_family.mk
+
+
 # directories and files that should be part of the distribution (release) package
-DIST += $(MIOS32_PATH)/modules/mios32
+DIST += $(MIOS32_PATH)/mios32/common \
+        $(MIOS32_PATH)/mios32/mios32.mk \
+        $(MIOS32_PATH)/include/mios32
