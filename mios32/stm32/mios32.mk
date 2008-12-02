@@ -5,7 +5,7 @@
 DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v2.0.1
 
 # enhance include path
-C_INCLUDE +=	-I $(MIOS32_PATH)/modules/mios32 \
+C_INCLUDE +=	-I $(MIOS32_PATH)/include/mios32 \
 		-I $(DRIVER_LIB)/inc
 
 # forward MIOS32 environment variables to preprocessor
@@ -16,32 +16,31 @@ CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
 
 # add modules to thumb sources
 # TODO: provide makefile option to add code to ARM sources
-# TODO: select driver library depending on PROCESSOR/FAMILY variable
 THUMB_SOURCE += \
-	$(MIOS32_PATH)/modules/mios32/mios32_sys.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_irq.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_srio.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_din.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_dout.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_enc.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_ain.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_mf.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_lcd.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_midi.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_com.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_usb.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_usb_midi.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_usb_com.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_uart.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_uart_midi.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_iic.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_iic_bs.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_iic_midi.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_i2s.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_board.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_timer.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_delay.c \
-	$(MIOS32_PATH)/modules/mios32/mios32_sdcard.c \
+	$(MIOS32_PATH)/mios32/common/mios32_din.c \
+	$(MIOS32_PATH)/mios32/common/mios32_dout.c \
+	$(MIOS32_PATH)/mios32/common/mios32_enc.c \
+	$(MIOS32_PATH)/mios32/common/mios32_lcd.c \
+	$(MIOS32_PATH)/mios32/common/mios32_midi.c \
+	$(MIOS32_PATH)/mios32/common/mios32_com.c \
+	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
+	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_sys.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_irq.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_srio.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_iic_midi.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_i2s.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_board.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_timer.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_delay.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_sdcard.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_ain.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_mf.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_usb.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_usb_midi.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_usb_com.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_uart.c \
+	$(MIOS32_PATH)/mios32/stm32/mios32_iic.c \
 	$(DRIVER_LIB)/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/src/stm32f10x_flash.c \
 	$(DRIVER_LIB)/src/stm32f10x_adc.c \
