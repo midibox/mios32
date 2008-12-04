@@ -105,7 +105,7 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
   // time base configuration
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
   TIM_TimeBaseStructure.TIM_Period = period-1;
-  TIM_TimeBaseStructure.TIM_Prescaler = 72; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
+  TIM_TimeBaseStructure.TIM_Prescaler = 72-1; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(timer_base[timer], &TIM_TimeBaseStructure);
@@ -152,7 +152,7 @@ s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
   // time base configuration
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
   TIM_TimeBaseStructure.TIM_Period = period - 1;
-  TIM_TimeBaseStructure.TIM_Prescaler = 72; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
+  TIM_TimeBaseStructure.TIM_Prescaler = 72-1; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(timer_base[timer], &TIM_TimeBaseStructure);
