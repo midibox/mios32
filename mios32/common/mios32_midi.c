@@ -622,6 +622,8 @@ s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
 {
   direct_rx_callback_func = callback_rx;
   direct_tx_callback_func = callback_tx;
+
+  return 0; // no error
 }
 
 
@@ -634,6 +636,7 @@ s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
   // note: here we could filter the user hook execution on special situations
   if( direct_rx_callback_func != NULL )
     direct_rx_callback_func(port, midi_byte);
+  return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -650,6 +653,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
     for(i=0; i<len; ++i)
       direct_rx_callback_func(port, buffer[i]);
   }
+  return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -661,6 +665,7 @@ s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
   // note: here we could filter the user hook execution on special situations
   if( direct_tx_callback_func != NULL )
     direct_tx_callback_func(port, midi_byte);
+  return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -677,6 +682,7 @@ s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_pac
     for(i=0; i<len; ++i)
       direct_tx_callback_func(port, buffer[i]);
   }
+  return 0; // no error
 }
 
 
