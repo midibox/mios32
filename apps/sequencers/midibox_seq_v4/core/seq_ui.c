@@ -107,18 +107,12 @@ static s32 SEQ_UI_Button_Left(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  if( played_step ) // tmp.
-    --played_step;
-
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Right(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
-
-  if( ++played_step >= SEQ_CORE_NUM_STEPS ) // tmp.
-    played_step = 0;
 
   return 0; // no error
 }
@@ -158,7 +152,7 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
 
   // if sequencer running: stop it
   // if sequencer already stopped: reset song position
-  if( seq_core_state_run )
+  if( seq_core_state.RUN )
     SEQ_CORE_Stop(0);
   else
     SEQ_CORE_Reset();
@@ -612,12 +606,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     incrementer = -3;
 
   if( encoder == 0 ) {
-    s32 value = played_step + incrementer;
-    if( value < 0 )
-      value = 0;
-    if( value > SEQ_CORE_NUM_STEPS-1 )
-      value = SEQ_CORE_NUM_STEPS-1;
-    played_step = (u8)value;
+    // TODO
   } else {
     u8 visible_track = SEQ_UI_VisibleTrackGet();
     u8 step = encoder-1 + ui_selected_step_view*16;
@@ -775,6 +764,17 @@ s32 SEQ_UI_LCD_Handler(void)
   MIOS32_LCD_PrintFormattedString("%5d  ", seq_midi_queue_size);
 #endif
 
+#if 1
+  u32 bpm_tick = SEQ_BPM_TickGet();
+  u32 bpm_sub = bpm_tick % SEQ_BPM_RESOLUTION_PPQN;
+  u32 bpm_16th = (bpm_tick / (SEQ_BPM_RESOLUTION_PPQN/4)) % 16;
+  u32 bpm_qn = (bpm_tick / SEQ_BPM_RESOLUTION_PPQN) % 4;
+  u32 bpm_n = bpm_tick / (4*SEQ_BPM_RESOLUTION_PPQN);
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintFormattedString("%3d.%2d.%2d.%3d  ", bpm_n, bpm_qn, bpm_16th, bpm_sub);
+#endif
+
   return 0; // no error
 }
 
@@ -820,9 +820,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_FAST, 0);
   SEQ_LED_PinSet(LED_ALL, 0);
   
-  SEQ_LED_PinSet(LED_PLAY, seq_core_state_run);
-  SEQ_LED_PinSet(LED_STOP, !seq_core_state_run);
-  SEQ_LED_PinSet(LED_PAUSE, seq_core_state_pause);
+  SEQ_LED_PinSet(LED_PLAY, seq_core_state.RUN);
+  SEQ_LED_PinSet(LED_STOP, !seq_core_state.RUN);
+  SEQ_LED_PinSet(LED_PAUSE, seq_core_state.PAUSE);
   
   SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0) ? 1 : 0);
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1) ? 1 : 0); // will be obsolete in MBSEQ V4
@@ -847,13 +847,13 @@ s32 SEQ_UI_LED_Handler_Periodic()
   static u16 prev_ui_gp_leds = 0x0000;
   static u16 prev_pos_marker_mask = 0x0000;
 
-
   // beat LED: tmp. for demo w/o real sequencer
-  SEQ_LED_PinSet(LED_BEAT, ((played_step & 3) == 0) ? 1 : 0);
+  SEQ_LED_PinSet(LED_BEAT, (seq_core_state.RUN && (seq_core_state.ref_step & 3) == 0) ? 1 : 0);
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
-  if( (played_step >> 4) == ui_selected_step_view )
+  u8 played_step = seq_core_trk[SEQ_UI_VisibleTrackGet()].step;
+  if( seq_core_state.RUN && (played_step >> 4) == ui_selected_step_view )
     pos_marker_mask = 1 << (played_step & 0xf);
 
   // exit of pattern hasn't changed
