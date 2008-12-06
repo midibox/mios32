@@ -49,7 +49,7 @@
 
 static TIM_TypeDef *timer_base[NUM_TIMERS] = { TIMER0_BASE, TIMER1_BASE, TIMER2_BASE };
 static u32 rcc[NUM_TIMERS] = { TIMER0_RCC, TIMER1_RCC, TIMER2_RCC };
-static u32 timer_irq_chn[NUM_TIMERS] = { TIMER0_IRQ, TIMER1_IRQ, TIMER2_IRQ };
+static const u32 timer_irq_chn[NUM_TIMERS] = { TIMER0_IRQ, TIMER1_IRQ, TIMER2_IRQ };
 static void (*timer_callback[NUM_TIMERS])(void);
 
 
@@ -123,6 +123,8 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
+
+  return 0; // no error
 }
 
 
@@ -156,6 +158,8 @@ s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(timer_base[timer], &TIM_TimeBaseStructure);
+
+  return 0; // no error
 }
 
 
@@ -178,6 +182,8 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 
   // deinitialize timer
   TIM_DeInit(timer_base[timer]);
+
+  return 0; // no error
 }
 
 
