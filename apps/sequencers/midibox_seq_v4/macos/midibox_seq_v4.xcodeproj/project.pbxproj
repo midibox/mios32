@@ -612,6 +612,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../drivers/MacOS,
 					../../../../modules/blm8x8,
 					../../../../include/mios32,
 					.,
@@ -633,6 +634,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../drivers/MacOS,
 					../../../../modules/blm8x8,
 					../../../../include/mios32,
 					.,
