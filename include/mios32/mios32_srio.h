@@ -61,6 +61,7 @@ extern s32 MIOS32_SRIO_ScanStart(void *notify_hook);
 
 extern volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
 extern volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
+extern volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR]; // only required for emulation
 extern volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
 
