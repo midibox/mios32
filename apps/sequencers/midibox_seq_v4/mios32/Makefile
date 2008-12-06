@@ -18,6 +18,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
 		../core/seq_ui.c \
 		../core/seq_midi.c \
+		../core/seq_bpm.c \
 		../core/seq_core.c \
 		../core/seq_trg.c \
 		../core/seq_par.c \

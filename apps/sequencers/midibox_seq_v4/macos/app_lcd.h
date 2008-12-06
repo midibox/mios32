@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for core routines
+ * Header file for application specific LCD Driver
  *
  * ==========================================================================
  *
@@ -11,15 +11,13 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_CORE_H
-#define _SEQ_CORE_H
+#ifndef _APP_LCD_H
+#define _APP_LCD_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_CORE_NUM_STEPS  32
-#define SEQ_CORE_NUM_TRACKS 16
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -31,28 +29,22 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_CORE_Init(u32 mode);
-
-extern s32 SEQ_CORE_Reset(void);
-
-extern s32 SEQ_CORE_Start(u32 no_echo);
-extern s32 SEQ_CORE_Stop(u32 no_echo);
-extern s32 SEQ_CORE_Cont(u32 no_echo);
-extern s32 SEQ_CORE_Pause(u32 no_echo);
-
-extern s32 SEQ_CORE_Tick(u32 bpm_tick);
-
-extern s32 SEQ_CORE_Handler(void);
+// hooks to MIOS32_LCD
+extern s32 APP_LCD_Init(u32 mode);
+extern s32 APP_LCD_Data(u8 data);
+extern s32 APP_LCD_Cmd(u8 cmd);
+extern s32 APP_LCD_Clear(void);
+extern s32 APP_LCD_CursorSet(u16 column, u16 line);
+extern s32 APP_LCD_GCursorSet(u16 x, u16 y);
+extern s32 APP_LCD_PrintChar(char c);
+extern s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8]);
+extern s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b);
+extern s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 played_step;
 
-extern u8 seq_core_state_run;
-extern u8 seq_core_state_pause;
-
-
-#endif /* _SEQ_CORE_H */
+#endif /* _APP_LCD_H */

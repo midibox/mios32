@@ -1,17 +1,15 @@
-// $Id$
 //
-//  UI.h
+//  MIOS32_SRIO_Wrapper.h
 //  midibox_seq_v4
 //
-//  Created by Thorsten Klose on 28.09.08.
+//  Created by Thorsten Klose on 06.12.08.
 //  Copyright 2008 __MyCompanyName__. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>
 
-#import "CLCDView.h"
 
-@interface UI : NSObject {
+@interface MIOS32_SRIO_Wrapper : NSObject {
 IBOutlet NSColorWell *LEDBeat;
 
 IBOutlet NSColorWell *LED1;
@@ -97,7 +95,6 @@ IBOutlet NSButton *buttonPause;
 IBOutlet NSButton *buttonPlay;
 IBOutlet NSButton *buttonRew;
 IBOutlet NSButton *buttonFwd;
-
 }
 
 @end

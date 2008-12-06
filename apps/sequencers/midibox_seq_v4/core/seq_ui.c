@@ -25,6 +25,7 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midi.h"
+#include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -44,7 +45,8 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-ui_display_t ui_display;
+u8 seq_ui_display_update_req;
+u8 seq_ui_display_init_req;
 
 u8 ui_selected_group;
 u8 ui_selected_tracks;
@@ -78,8 +80,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_gp_leds = 0x0000;
 
   // request display initialisation
-  ui_display.ALL = 0;
-  ui_display.INIT_REQ = 1;
+  seq_ui_display_init_req = 1;
 
   return 0; // no error
 }
@@ -155,6 +156,13 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // if sequencer running: stop it
+  // if sequencer already stopped: reset song position
+  if( seq_core_state_run )
+    SEQ_CORE_Stop(0);
+  else
+    SEQ_CORE_Reset();
+
   return 0; // no error
 }
 
@@ -162,12 +170,18 @@ static s32 SEQ_UI_Button_Pause(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // pause sequencer
+  SEQ_CORE_Pause(0);
+
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Play(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
+
+  // start sequencer
+  SEQ_CORE_Start(0);
 
   return 0; // no error
 }
@@ -577,7 +591,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   }
 
   // request display update
-  ui_display.UPDATE_REQ = 1;
+  seq_ui_display_update_req = 1;
 
   return 0; // no error
 }
@@ -632,7 +646,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   }
 
   // request display update
-  ui_display.UPDATE_REQ = 1;
+  seq_ui_display_update_req = 1;
 
   return 0; // no error
 }
@@ -644,8 +658,8 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Handler(void)
 {
-  if( ui_display.INIT_REQ ) {
-    ui_display.INIT_REQ = 0; // clear request
+  if( seq_ui_display_init_req ) {
+    seq_ui_display_init_req = 0; // clear request
 
     // clear both LCDs
     int i;
@@ -658,11 +672,11 @@ s32 SEQ_UI_LCD_Handler(void)
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBARS);
 
     // request display update
-    ui_display.UPDATE_REQ = 1;
+    seq_ui_display_update_req = 1;
   }
 
-  if( ui_display.UPDATE_REQ ) {
-    ui_display.UPDATE_REQ = 0; // clear request
+  if( seq_ui_display_update_req ) {
+    seq_ui_display_update_req = 0; // clear request
 
     char tmp[128];
     u8 step;
@@ -752,6 +766,15 @@ s32 SEQ_UI_LCD_Handler(void)
     }
   }
 
+
+
+  // for debugging
+#if 0
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintFormattedString("%5d  ", seq_midi_queue_size);
+#endif
+
   return 0; // no error
 }
 
@@ -797,9 +820,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_FAST, 0);
   SEQ_LED_PinSet(LED_ALL, 0);
   
-  SEQ_LED_PinSet(LED_PLAY, 1);
-  SEQ_LED_PinSet(LED_STOP, 0);
-  SEQ_LED_PinSet(LED_PAUSE, 0);
+  SEQ_LED_PinSet(LED_PLAY, seq_core_state_run);
+  SEQ_LED_PinSet(LED_STOP, !seq_core_state_run);
+  SEQ_LED_PinSet(LED_PAUSE, seq_core_state_pause);
   
   SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0) ? 1 : 0);
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1) ? 1 : 0); // will be obsolete in MBSEQ V4

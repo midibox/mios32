@@ -8,28 +8,18 @@
 //
 
 #import "UI.h"
+
 #include <mios32.h>
+#include <app.h>
 
 @implementation UI
 
-// struct for MIDI parsing
-typedef struct {
-  mios32_midi_package_t package;
-  u8 running_status;
-  u8 expected_bytes;
-  u8 wait_bytes;
-  u8 sysex_ctr;
-} midi_rec_t;
-
 // local variables to bridge objects to C functions
-#define NUM_LCD 2
-CLCDView *LCD[NUM_LCD];
+static NSObject *_self;
 
 #define NUM_LEDS 17
 NSColorWell *LED[NUM_LEDS];
 u8 ledState[NUM_LEDS]; // for dual-colour option
-
-NSObject *_self;
 
 NSButton *_buttonTrack1;
 NSButton *_buttonTrack2;
@@ -64,359 +54,15 @@ NSButton *_buttonPlay;
 NSButton *_buttonStop;
 NSButton *_buttonPause;
 
-PYMIDIVirtualDestination *virtualMIDI_IN[NUM_MIDI_IN];
-PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
-
-// handler data structure
-static midi_rec_t midi_rec[NUM_MIDI_IN];
-
-// LCD selection
-u8 selectedLCD;
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-// this global array is read from MIOS32_IIC_MIDI and MIOS32_UART_MIDI to
-// determine the number of MIDI bytes which are part of a package
-const u8 mios32_midi_pcktype_num_bytes[16] = {
-  0, // 0: invalid/reserved event
-  0, // 1: invalid/reserved event
-  2, // 2: two-byte system common messages like MTC, Song Select, etc.
-  3, // 3: three-byte system common messages like SPP, etc.
-  3, // 4: SysEx starts or continues
-  1, // 5: Single-byte system common message or sysex sends with following single byte
-  2, // 6: SysEx sends with following two bytes
-  3, // 7: SysEx sends with following three bytes
-  3, // 8: Note Off
-  3, // 9: Note On
-  3, // a: Poly-Key Press
-  3, // b: Control Change
-  2, // c: Program Change
-  2, // d: Channel Pressure
-  3, // e: PitchBend Change
-  1  // f: single byte
-};
-
-// Number if expected bytes for a common MIDI event - 1
-const u8 mios32_midi_expected_bytes_common[8] = {
-  2, // Note On
-  2, // Note Off
-  2, // Poly Preasure
-  2, // Controller
-  1, // Program Change
-  1, // Channel Preasure
-  2, // Pitch Bender
-  0, // System Message - must be zero, so that mios32_midi_expected_bytes_system[] will be used
-};
-
-// // Number if expected bytes for a system MIDI event - 1
-const u8 mios32_midi_expected_bytes_system[16] = {
-  1, // SysEx Begin (endless until SysEx End F7)
-  1, // MTC Data frame
-  2, // Song Position
-  1, // Song Select
-  0, // Reserved
-  0, // Reserved
-  0, // Request Tuning Calibration
-  0, // SysEx End
-
-  // Note: just only for documentation, Realtime Messages don't change the running status
-  0, // MIDI Clock
-  0, // MIDI Tick
-  0, // MIDI Start
-  0, // MIDI Continue
-  0, // MIDI Stop
-  0, // Reserved
-  0, // Active Sense
-  0, // Reset
-};
-
 
 //////////////////////////////////////////////////////////////////////////////
-// LCD access functions
+// Emulation specific LED access functions
 //////////////////////////////////////////////////////////////////////////////
-//s32 MIOS32_LCD_Clear(void)
-s32 APP_LCD_Clear(void) // aliased
-{
-	[LCD[selectedLCD] LCDClear];
-	
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_Init(u32 mode)
-{
-	// select first device
-	MIOS32_LCD_DeviceSet(0);
-
-	// clear screen
-	MIOS32_LCD_Clear();
-
-	// set cursor to initial position
-	MIOS32_LCD_CursorSet(0, 0);
-	
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_DeviceSet(u8 device)
-{
-	if( device >= NUM_LCD )
-		return -1; // unsupported LCD
-
-	selectedLCD = device;
-	
-	return 0; // no error
-}
-
-u8 MIOS32_LCD_DeviceGet(void)
-{
-	return selectedLCD;
-}
-
-s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
-{
-	[LCD[selectedLCD] setLCDCursorX:column];
-	[LCD[selectedLCD] setLCDCursorY:line];
-	
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_PrintChar(char c)
-{
-	[LCD[selectedLCD] LCDPrintChar:c];
-
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_PrintString(char *str)
-{
-	[LCD[selectedLCD] LCDPrintString:str];
-
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
-{
-	u8 buffer[64];
-	va_list args;
-
-	va_start(args, format);
-	vsprintf((char *)buffer, format, args);
-	[LCD[selectedLCD] LCDPrintString:buffer];
-
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
-{
-	[LCD[selectedLCD] LCDSpecialCharInit:num:table];
-	
-	return 0; // no error
-}
-
-s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
-{
-	[LCD[selectedLCD] LCDSpecialCharsInit:table];
-	
-	return 0; // no error
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// COM functions
-//////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
-{
-	// empty stub - no COM terminal implemented yet
-	return 0; // no error
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// MIDI functions
-//////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
-{
-  // if default port: select mapped port
-  if( !(port & 0xf0) ) {
-    port = MIOS32_MIDI_DEFAULT_PORT;
-  }
-
-  if( port >= 0x10 && port <= (0x10 + NUM_MIDI_OUT) )
-	return 1; // port available
-
-  return 0; // port not available
-}
-
-s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
-{
-  // if default port: select mapped port
-  if( !(port & 0xf0) ) {
-    port = MIOS32_MIDI_DEFAULT_PORT;
-  }
-
-  // insert subport number into package
-  package.cable = port & 0xf;
-
-  if( port >= 0x10 && port <= (0x10 + NUM_MIDI_OUT) ) {
-	int outNum = port & 0xf;
-
-  	MIDIPacketList packetList;
-	MIDIPacket *packet = MIDIPacketListInit(&packetList);
-
-	u8 len = mios32_midi_pcktype_num_bytes[package.cin];
-	if( len ) {
-		u8 buffer[3] = {package.evnt0, package.evnt1, package.evnt2};
-	
-		packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet,
-			     0, // timestamp
-				 len, buffer);
-		[virtualMIDI_OUT[outNum] addSender:_self];
-		[virtualMIDI_OUT[outNum] processMIDIPacketList:&packetList sender:_self];
-		[virtualMIDI_OUT[outNum] removeSender:_self];
-	}
-
-	return 0; // packet sent successfully
-  }
-
-  return -1; // port not available
-}
-
-s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2)
-{
-  mios32_midi_package_t package;
-
-  // MEMO: don't optimize this function by calling MIOS32_MIDI_SendSpecialEvent
-  // from here, because the 4 * u8 parameter list of this function leads
-  // to best compile results (4*u8 combined to a single u32)
-
-  package.type  = evnt0 >> 4;
-  package.evnt0 = evnt0;
-  package.evnt1 = evnt1;
-  package.evnt2 = evnt2;
-  return MIOS32_MIDI_SendPackage(port, package);
-}
-
-s32 MIOS32_MIDI_SendNoteOff(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
-{ return MIOS32_MIDI_SendEvent(port, 0x80 | chn, note, vel); }
-
-s32 MIOS32_MIDI_SendNoteOn(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 vel)
-{ return MIOS32_MIDI_SendEvent(port, 0x90 | chn, note, vel); }
-
-s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val)
-{ return MIOS32_MIDI_SendEvent(port, 0xa0 | chn, note, val); }
-
-s32 MIOS32_MIDI_SendCC(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 cc, u8 val)
-{ return MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc,   val); }
-
-s32 MIOS32_MIDI_SendProgramChange(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 prg)
-{ return MIOS32_MIDI_SendEvent(port, 0xc0 | chn, prg,  0x00); }
-
-s32 MIOS32_MIDI_SendAftertouch(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 val)
-{ return MIOS32_MIDI_SendEvent(port, 0xd0 | chn, val,  0x00); }
-
-s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 val)
-{ return MIOS32_MIDI_SendEvent(port, 0xe0 | chn, val & 0x7f, val >> 7); }
-
-
-s32 MIOS32_MIDI_SendSpecialEvent(mios32_midi_port_t port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
-{
-  mios32_midi_package_t package;
-
-  package.type  = type;
-  package.evnt0 = evnt0;
-  package.evnt1 = evnt1;
-  package.evnt2 = evnt2;
-  return MIOS32_MIDI_SendPackage(port, package);
-}
-
-s32 MIOS32_MIDI_SendMTC(mios32_midi_port_t port, u8 val)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf1, val, 0x00); }
-
-s32 MIOS32_MIDI_SendSongPosition(mios32_midi_port_t port, u16 val)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x3, 0xf2, val & 0x7f, val >> 7); }
-
-s32 MIOS32_MIDI_SendSongSelect(mios32_midi_port_t port, u8 val)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x2, 0xf3, val, 0x00); }
-
-s32 MIOS32_MIDI_SendTuneRequest(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf6, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendClock(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf8, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendTick(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xf9, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendStart(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfe, 0x00, 0x00); }
-
-s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
-{ return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xff, 0x00, 0x00); }
-
-
-s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
-{
-  s32 res;
-  u32 offset;
-  mios32_midi_package_t package;
-
-  // MEMO: have a look into the project.lss file - gcc optimizes this code pretty well :)
-
-  for(offset=0; offset<count;) {
-    // package type depends on number of remaining bytes
-    switch( count-offset ) {
-      case 1: 
-	package.type = 0x5; // SysEx ends with following single byte. 
-	package.evnt0 = stream[offset++];
-	package.evnt1 = 0x00;
-	package.evnt2 = 0x00;
-	break;
-      case 2:
-	package.type = 0x6; // SysEx ends with following two bytes.
-	package.evnt0 = stream[offset++];
-	package.evnt1 = stream[offset++];
-	package.evnt2 = 0x00;
-	break;
-      case 3:
-	package.type = 0x7; // SysEx ends with following three bytes. 
-	package.evnt0 = stream[offset++];
-	package.evnt1 = stream[offset++];
-	package.evnt2 = stream[offset++];
-	break;
-      default:
-	package.type = 0x4; // SysEx starts or continues
-	package.evnt0 = stream[offset++];
-	package.evnt1 = stream[offset++];
-	package.evnt2 = stream[offset++];
-    }
-
-    res=MIOS32_MIDI_SendPackage(port, package);
-
-    // expection? (e.g., port not available)
-    if( res < 0 )
-      return res;
-  }
-
-  return 0;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// LED access functions
-//////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
+s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 {
 	int gp_led = -1;
+	
+	pin ^= 7;
 	
 	// GP LEDs
 	if( pin >= 16 && pin < 32 ) {
@@ -494,57 +140,39 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 	return 0;
 }
 
-s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
+s32 EMU_DOUT_SRSet(u32 sr, u8 value)
 {
 	int i;
 
 	for(i=0; i<8; ++i)
-		MIOS32_DOUT_PinSet(sr*8+i, (value & (1 << i)) ? 1 : 0);
+		EMU_DOUT_PinSet(sr*8+i, (value & (1 << i)) ? 1 : 0);
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Emulation specific button event forwarding function
+//////////////////////////////////////////////////////////////////////////////
+s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
+{
+//	APP_DIN_NotifyToggle(pin, value);
+
+	// true emulation: forward to MIOS32_SRIO_Wrapper
+	if( pin > 8*MIOS32_SRIO_NUM_SR )
+		return -1;
+
+	if( value )
+		mios32_srio_din_buffer[pin>>8] |= (1 << (pin&7));
+	else
+		mios32_srio_din_buffer[pin>>8] &= ~(1 << (pin&7));
 
 	return 0;
 }
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Stub for encoder configuration
-//////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
-{
-	return 0; // no error
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
-// Stubs for Board specific functions
-//////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_BOARD_LED_Init(u32 leds)
-{
-	return -1; // not implemented
-}
-
-s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
-{
-	return -1; // not implemented
-}
-
-u32 MIOS32_BOARD_LED_Get(void)
-{
-	return 0; // not implemented, return all-zero
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// The background task
-// called each mS - in MIOS32 it's called whenever nothing else is to do
-//////////////////////////////////////////////////////////////////////////////
-- (void)backgroundTask:(NSTimer *)aTimer
-{
-	APP_Background();
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// The periodic 1mS task
+// Tasks
 //////////////////////////////////////////////////////////////////////////////
 - (void)periodic1mSTask:(NSTimer *)aTimer
 {
@@ -553,201 +181,57 @@ u32 MIOS32_BOARD_LED_Get(void)
 }
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Called when a MIDI event has been received
-//////////////////////////////////////////////////////////////////////////////
-void sendMIDIMessageToApp(mios32_midi_port_t port, mios32_midi_package_t package)
+void SRIO_ServiceFinish(void)
 {
-  // from mios32_midi.c
-  // remove cable number from package (MIOS32_MIDI passes it's own port number)
-  package.cable = 0;
+#ifndef MIOS32_DONT_USE_SRIO
 
-  // branch depending on package type
-  if( package.type >= 0x8 ) {
-	APP_NotifyReceivedEvent(port, package);
-  } else {
-	switch( package.type ) {
-  	  case 0x0: // reserved, ignore
-	  case 0x1: // cable events, ignore
-	    break;
+# ifndef MIOS32_DONT_USE_ENC
+  // update encoder states
+//  MIOS32_ENC_UpdateStates();
+# endif
 
-	  case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc. 
-	  case 0x3: // Three-byte System Common messages like SPP, etc. 
-		APP_NotifyReceivedEvent(port, package); // -> forwarded as event
-		break;
-	  case 0x4: // SysEx starts or continues (3 bytes)
-		APP_NotifyReceivedSysEx(port, package.evnt0); // -> forwarded as SysEx
-		APP_NotifyReceivedSysEx(port, package.evnt1); // -> forwarded as SysEx
-		APP_NotifyReceivedSysEx(port, package.evnt2); // -> forwarded as SysEx
-	    break;
-	  case 0x5: // Single-byte System Common Message or SysEx ends with following single byte. 
-	    if( package.evnt0 >= 0xf8 )
-		  APP_NotifyReceivedEvent(port, package); // -> forwarded as event
-	    else
-		  APP_NotifyReceivedSysEx(port, package.evnt0); // -> forwarded as SysEx
-	    break;
-	  case 0x6: // SysEx ends with following two bytes.
-		APP_NotifyReceivedSysEx(port, package.evnt0); // -> forwarded as SysEx
-		APP_NotifyReceivedSysEx(port, package.evnt1); // -> forwarded as SysEx
-		break;
-	  case 0x7: // SysEx ends with following three bytes.
-		APP_NotifyReceivedSysEx(port, package.evnt0); // -> forwarded as SysEx
-		APP_NotifyReceivedSysEx(port, package.evnt1); // -> forwarded as SysEx
-		APP_NotifyReceivedSysEx(port, package.evnt2); // -> forwarded as SysEx
-		break;
-	}
-  }
+  // notify application about finished SRIO scan
+  APP_SRIO_ServiceFinish();
+#endif
 }
 
-- (void)handleMIDIMessage:(Byte*)message ofSize:(int)size
+- (void)periodicSRIOTask:(NSTimer *)aTimer
 {
-  // from mios32_uart_midi.c
-  // parses the next incoming byte(s), once a complete MIDI event has been 
-  // received, forward it to APP_NotifyReceivedEvent or APP_NotifyReceivedSysEx
+	// notify application about SRIO scan start
+	APP_SRIO_ServicePrepare();
 
-  u8 uart_port = 0; // currently only a single MIDI IN port is supported
-  u8 my_port = 0x10; // port ID of MIDI IN
-  midi_rec_t *midix = &midi_rec[uart_port];// simplify addressing of midi record
-  int i;
-  for(i=0; i<size; ++i) {
-    u8 byte = message[i];
+	// start next SRIO scan - IRQ notification to SRIO_ServiceFinish()
+	MIOS32_SRIO_ScanStart(SRIO_ServiceFinish);
 
-    if( byte & 0x80 ) { // new MIDI status
-      if( byte >= 0xf8 ) { // events >= 0xf8 don't change the running status and can just be forwarded
-		// Realtime messages don't change the running status and can be sent immediately
-		midix->package.cin = 0xf; // F: single byte
-		midix->package.evnt0 = byte;
-		midix->package.evnt1 = 0x00;
-		midix->package.evnt2 = 0x00;
-		sendMIDIMessageToApp(my_port, midix->package);
-      } else {
-		midix->running_status = byte;
-		midix->expected_bytes = mios32_midi_expected_bytes_common[(byte >> 4) & 0x7];
+	// emulation: transfer new DOUT SR values to GUI LED elements
+	int sr;
+	for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr)
+		EMU_DOUT_SRSet(sr, mios32_srio_dout[MIOS32_SRIO_NUM_SR-sr-1]);
 
-	    if( !midix->expected_bytes ) { // System Message, take number of bytes from expected_bytes_system[] array
-		  midix->expected_bytes = mios32_midi_expected_bytes_system[byte & 0xf];
+#ifndef MIOS32_DONT_USE_DIN
+	// check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
+	MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
+#endif
+}
 
-		  if( byte == 0xf0 ) {
-	        midix->package.evnt0 = 0xf0; // midix->package.evnt0 only used by SysEx handler for continuous data streams!
-	        midix->sysex_ctr = 0x01;
-		  } else if( byte == 0xf7 ) {
-		    switch( midix->sysex_ctr ) {
- 	          case 0:
-		        midix->package.cin = 5; // 5: SysEx ends with single byte
-		        midix->package.evnt0 = 0xf7;
-		        midix->package.evnt1 = 0x00;
-		        midix->package.evnt2 = 0x00;
-		        break;
-	          case 1:
-		        midix->package.cin = 6; // 6: SysEx ends with two bytes
-		        // midix->package.evnt0 = // already stored
-		        midix->package.evnt1 = 0xf7;
-		        midix->package.evnt2 = 0x00;
-		        break;
-	          default:
-		        midix->package.cin = 7; // 7: SysEx ends with three bytes
-		        // midix->package.evnt0 = // already stored
-		        // midix->package.evnt1 = // already stored
-		        midix->package.evnt2 = 0xf7;
-		        break;
-	        }
-			sendMIDIMessageToApp(my_port, midix->package);
-	        midix->sysex_ctr = 0x00; // ensure that next F7 will just send F7
-	      }
-	    }
+- (void)periodicMIDITask:(id)anObject
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
-	    midix->wait_bytes = midix->expected_bytes;
-      }
-    } else {
-      if( midix->running_status == 0xf0 ) {
-	    switch( ++midix->sysex_ctr ) {
-  	      case 1:
-	        midix->package.evnt0 = byte; 
-	        break;
-	      case 2: 
-	        midix->package.evnt1 = byte; 
-	        break;
-	      default: // 3
-	        midix->package.evnt2 = byte;
+	while (YES) {
+		// TOOD: find better more FreeRTOS/MIOS32 compliant solution
+		// check for incoming MIDI messages and call hooks
+		MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
 
-	        // Send three-byte event
-	        midix->package.cin = 4;  // 4: SysEx starts or continues
-			sendMIDIMessageToApp(my_port, midix->package);
-	        midix->sysex_ctr = 0x00; // reset and prepare for next packet
-	    }
-      } else { // Common MIDI message or 0xf1 >= status >= 0xf7
-	    if( !midix->wait_bytes ) {
-	      midix->wait_bytes = midix->expected_bytes - 1;
-	    } else {
-	      --midix->wait_bytes;
-	    }
-
-		if( midix->expected_bytes == 1 ) {
-	      midix->package.evnt1 = byte;
-	      midix->package.evnt2 = 0x00;
-	    } else {
-	      if( midix->wait_bytes )
-	        midix->package.evnt1 = byte;
-	      else
-	        midix->package.evnt2 = byte;
-	    }
+		// -> forward to application
+		SEQ_TASK_MIDI();
+        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
+    }
 	
-	    if( !midix->wait_bytes ) {
-	      if( (midix->running_status & 0xf0) != 0xf0 ) {
-	        midix->package.cin = midix->running_status >> 4; // common MIDI message
-	      } else {
-	        switch( midix->expected_bytes ) { // MEMO: == 0 comparison was a bug in original MBHP_USB code
-  	          case 0: 
-		        midix->package.cin = 5; // 5: SysEx common with one byte
-		        break;
-  	          case 1: 
-		        midix->package.cin = 2; // 2: SysEx common with two bytes
-		        break;
-			  default: 
-		        midix->package.cin = 3; // 3: SysEx common with three bytes
-		        break;
-	        }
-	      }
-
-		  midix->package.evnt0 = midix->running_status;
-	      // midix->package.evnt1 = // already stored
-	      // midix->package.evnt2 = // already stored
-		  sendMIDIMessageToApp(my_port, midix->package);
-		}
-      }
-    }
-  }
+	[pool release];
+	[NSThread exit];
 }
 
-- (void)processMIDIPacketList:(const MIDIPacketList*)packets sender:(id)sender
-{
-	// from http://svn.notahat.com/simplesynth/trunk/AudioSystem.m
-    int						i, j;
-    const MIDIPacket*		packet;
-    Byte					message[256];
-    int						messageSize = 0;
-    
-    // Step through each packet
-    packet = packets->packet;
-    for (i = 0; i < packets->numPackets; i++) {
-        for (j = 0; j < packet->length; j++) {
-            if (packet->data[j] >= 0xF8) continue;				// skip over real-time data
-            
-            // Hand off the packet for processing when the next one starts
-            if ((packet->data[j] & 0x80) != 0 && messageSize > 0) {
-                [self handleMIDIMessage:message ofSize:messageSize];
-                messageSize = 0;
-            }
-            
-            message[messageSize++] = packet->data[j];			// push the data into the message
-        }
-        
-        packet = MIDIPacketNext (packet);
-    }
-    
-    if (messageSize > 0)
-        [self handleMIDIMessage:message ofSize:messageSize];
-}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -756,15 +240,54 @@ void sendMIDIMessageToApp(mios32_midi_port_t port, mios32_midi_package_t package
 //////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode)
 {
-	// install background task for all modes
-	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];
-
 	// install 1mS task
 	NSTimer *timer2 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodic1mSTask:) userInfo:nil repeats:YES];
 	[[NSRunLoop currentRunLoop] addTimer: timer2 forMode: NSRunLoopCommonModes];	
+
+	// install SRIO task
+	NSTimer *timer3 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer3 forMode: NSRunLoopCommonModes];	
+
+	// Detach the new threads
+	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
 	
 	return 0; // no error
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// init application after ca. 1 mS (this ensures that all objects have been initialized)
+//////////////////////////////////////////////////////////////////////////////
+- (void)delayedAPP_Init:(id)anObject
+{
+	// init emulated MIOS32 modules
+#ifndef MIOS32_DONT_USE_SRIO
+	MIOS32_SRIO_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_SRIO
+	MIOS32_SRIO_Init(0);
+#endif
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
+  MIOS32_DIN_Init(0);
+#endif
+#if !defined(MIOS32_DONT_USE_DOUT) && !defined(MIOS32_DONT_USE_SRIO)
+  MIOS32_DOUT_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_SRIO
+	MIOS32_SRIO_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_MIDI
+	MIOS32_MIDI_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_COM
+//  MIOS32_COM_Init(0);
+#endif
+#ifndef MIOS32_DONT_USE_LCD
+	MIOS32_LCD_Init(0);
+#endif
+
+	// call init function of application
+	APP_Init();
 }
 
 
@@ -776,11 +299,6 @@ s32 TASKS_Init(u32 mode)
 	int i;
 
 	_self = self;
-	
-	// make object specific pointers visible for native C
-	LCD[0]=lcdView1;
-	LCD[1]=lcdView2;
-	selectedLCD = 0;
 
 	LED[0]=LED1;
 	LED[1]=LED2;
@@ -836,30 +354,10 @@ s32 TASKS_Init(u32 mode)
 	// clear LED states
 	for(i=0; i<NUM_LEDS; ++i)
 		ledState[i] = 0;
-	
-	// create virtual MIDI ports
-	for(i=0; i<NUM_MIDI_IN; ++i) {
-		NSMutableString *portName = [[NSMutableString alloc] init];
-		[portName appendFormat:@"vMBSEQ IN%d", i+1];
-		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
 
-		midi_rec[i].package.ALL = 0;
-		midi_rec[i].running_status = 0x00;
-		midi_rec[i].expected_bytes = 0x00;
-		midi_rec[i].wait_bytes = 0x00;
-		midi_rec[i].sysex_ctr = 0x00;
-
-		[virtualMIDI_IN[i] addReceiver:self];
-	}
-
-	for(i=0; i<NUM_MIDI_OUT; ++i) {
-		NSMutableString *portName = [[NSMutableString alloc] init];
-		[portName appendFormat:@"vMBSEQ OUT%d", i+1];
-		virtualMIDI_OUT[i] = [[PYMIDIVirtualSource alloc] initWithName:portName];
-	}
-
-	// call init function of application
-	APP_Init();
+	// init application after ca. 1 mS (this ensures that all objects have been initialized)
+	NSTimer *init_timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
+	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSRunLoopCommonModes];
 }
 
 @end
