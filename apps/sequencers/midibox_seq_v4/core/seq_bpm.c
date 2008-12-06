@@ -11,9 +11,18 @@
  * with an interval of:
  *   interval = (60 / (bpm * 24)) / 16
  *
- * In distance to MBSEQ V2 and V3, the sequencer clock handler will be called
- * directly from this interrupt routine (no request counters) for highest
- * accuracy.
+ * It requests clock events to the sequencer on each invocation.
+ *
+ * The sequencer can check for clock events by calling 
+ *    u32 bpm_tick_ptr; // will contain the BPM tick which has to be processed
+ *    while( SEQ_BPM_ChkReqClk(&bpm_tick_ctr) ) {
+ *      // got a new 384ppqn tick
+ *    }
+ *
+ * Since the *_ChkReq* function is a destructive call, it should only be used
+ * by the sequencer task.
+ *
+ * Similar request flags exist for MIDI Clock Start/Stop/Continue
  *
  *
  * SLAVE MODE
@@ -201,6 +210,15 @@ s32 SEQ_BPM_TickSet(u32 tick)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// BPM clocked as master or slave?
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_BPM_IsMaster(void)
+{
+  return slave_clk ? 0 : 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Timer interrupt
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_BPM_TimerInit(void)
@@ -209,10 +227,11 @@ static s32 SEQ_BPM_TimerInit(void)
     // in slave mode, the timer will be used to measure the delay between
     // two clocks to produce 16 internal clocks on every F8 event.
     // using 250 uS as reference
-    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 250, SEQ_BPM_Timer_Slave, MIOS32_IRQ_PRIO_MID);
+    // using highest priority for best accuracy (routine is very short, so that this doesn't hurt)
+    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 250, SEQ_BPM_Timer_Slave, MIOS32_IRQ_PRIO_HIGHEST);
   } else {
     // initial timer configuration for master mode -- calls the core clk routine directly
-    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 1000, SEQ_BPM_Timer_Master, MIOS32_IRQ_PRIO_MID);
+    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 1000, SEQ_BPM_Timer_Master, MIOS32_IRQ_PRIO_HIGHEST);
     // set the correct BPM rate
     SEQ_BPM_Set(bpm);
   }
@@ -231,12 +250,16 @@ static void SEQ_BPM_Timer_Master(void)
 
 static void SEQ_BPM_Timer_Slave(void)
 {
+  // disable interrupts to avoid conflicts with NotifyRx handler (which could be called from 
+  // a high-prio interrupt)
+  MIOS32_IRQ_Disable();
+
   // increment clock counter, used to measure the delay between two F8 events
   ++incoming_clk_ctr;
 
   // decrement sent clock delay, send interpolated clock events (SEQ_BPM_RESOLUTION_FACTOR-1) times
   if( --sent_clk_delay == 0 ) {
-    if( sent_clk_ctr <= (SEQ_BPM_RESOLUTION_FACTOR-1) ) {
+    if( sent_clk_ctr < SEQ_BPM_RESOLUTION_FACTOR ) {
       sent_clk_delay = incoming_clk_delay/SEQ_BPM_RESOLUTION_FACTOR;
       ++bpm_tick;
       ++sent_clk_ctr;
@@ -244,6 +267,7 @@ static void SEQ_BPM_Timer_Slave(void)
       // (additional requests could be added by F8 receiver on delay overruns)
     }
   }
+  MIOS32_IRQ_Enable();
 }
 
 
@@ -301,6 +325,9 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       // request sequencer start, disable stop request
       bpm_req_start = 1;
       bpm_req_stop = 0;
+
+      // clear tick counter
+      bpm_tick = 0;
 
       // cancel all requested clocks
       bpm_req_clk_ctr = 0;

@@ -71,6 +71,7 @@ extern s32 SEQ_BPM_Set(u16 bpm);
 
 extern u32 SEQ_BPM_TickGet(void);
 extern s32 SEQ_BPM_TickSet(u32 tick);
+extern s32 SEQ_BPM_IsMaster(void);
 
 extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte);
 
