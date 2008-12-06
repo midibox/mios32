@@ -30,12 +30,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_SEQ_CORE		( tskIDLE_PRIORITY + 3 )
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_PERIOD1MS(void *pvParameters);
+static void TASK_Period1mS(void *pvParameters);
+static void TASK_MIDI(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,7 +46,8 @@ static void TASK_PERIOD1MS(void *pvParameters);
 s32 TASKS_Init(u32 mode)
 {
   // start periodical 1mS task
-  xTaskCreate(TASK_PERIOD1MS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_MIDI,      (signed portCHAR *)"MIDI",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SEQ_CORE, NULL);
 
   return 0; // no error
 }
@@ -53,7 +56,7 @@ s32 TASKS_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_PERIOD1MS(void *pvParameters)
+static void TASK_Period1mS(void *pvParameters)
 {
   portTickType xLastExecutionTime;
 
@@ -65,5 +68,25 @@ static void TASK_PERIOD1MS(void *pvParameters)
 
     // continue in application hook
     SEQ_TASK_Period1mS();
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS as well
+// it handles sequencer and MIDI events
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_MIDI(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // continue in application hook
+    SEQ_TASK_MIDI();
   }
 }

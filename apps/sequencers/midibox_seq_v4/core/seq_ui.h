@@ -24,16 +24,6 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned INIT_REQ:1;    // request display re-initialisation
-    unsigned UPDATE_REQ:1;  // request display update
-  };
-} ui_display_t;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -53,7 +43,8 @@ extern u8 SEQ_UI_VisibleTrackGet(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern ui_display_t ui_display;
+extern u8 seq_ui_display_update_req;
+extern u8 seq_ui_display_init_req;
 
 extern u8 ui_selected_group;
 extern u8 ui_selected_tracks;

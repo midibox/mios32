@@ -23,6 +23,7 @@
 #include "app.h"
 
 #include "seq_core.h"
+#include "seq_bpm.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_ui.h"
@@ -52,6 +53,13 @@ const mios32_enc_config_t encoders[NUM_ENCODERS] = {
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=2 }, // V-Pot 15
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=0 }, // V-Pot 16
 };
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
+static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 byte);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +101,9 @@ void APP_Init(void)
 
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);
+
+  // install MIDI Rx/Tx callback functions
+  MIOS32_MIDI_DirectRxTxCallback_Init(NOTIFY_MIDI_Rx, NOTIFY_MIDI_Tx);
 }
 
 
@@ -102,7 +113,9 @@ void APP_Init(void)
 void APP_Background(void)
 {
   // toggle the state of all LEDs (allows to measure the execution speed with a scope)
+#if 1
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+#endif
 
   // call LCD Handler
   SEQ_UI_LCD_Handler();
@@ -232,5 +245,38 @@ void SEQ_TASK_Period1mS(void)
   // check for BLM8x8 pin changes, call button handler of sequencer on each toggled pin
   BLM8X8_ButtonHandler(APP_BLM8X8_NotifyToggle);
 #endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS as well
+// it handles sequencer and MIDI events
+/////////////////////////////////////////////////////////////////////////////
+void SEQ_TASK_MIDI(void)
+{
+  // execute sequencer handler
+  SEQ_CORE_Handler();
+
+  // send timestamped MIDI events
+  SEQ_MIDI_Handler();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectRxTxCallback_Init
+// Executed immediately on each incoming MIDI byte, partly from interrupt
+// handlers!
+// These function should be executed so fast as possible. They can be used
+// to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
+// avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+/////////////////////////////////////////////////////////////////////////////
+static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+{
+  // TODO: here we could filter a certain port
+  SEQ_BPM_NotifyMIDIRx(midi_byte);
+}
+
+static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 midi_byte)
+{
 }
 
