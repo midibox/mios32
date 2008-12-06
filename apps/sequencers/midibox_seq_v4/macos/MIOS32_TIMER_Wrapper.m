@@ -34,16 +34,15 @@ static NSTimeInterval timer_period[NUM_TIMERS];
 {
 	_self = self;
 
-	// initial period
+	// set initial period and install timer threads
 	int i;
+	NSNumber *timerIx[NUM_TIMERS];
 	for(i=0; i<NUM_TIMERS; ++i) {
 		timer_period[i] = 0.001;
+		
+		timerIx[i] = [NSNumber numberWithInt:i]; 
+		[NSThread detachNewThreadSelector:@selector(timerThread:) toTarget:self withObject:timerIx[i]];
 	}
-
-	// install timer threads
-	[NSThread detachNewThreadSelector:@selector(timer0IRQ:) toTarget:_self withObject:nil];
-	[NSThread detachNewThreadSelector:@selector(timer1IRQ:) toTarget:_self withObject:nil];
-	[NSThread detachNewThreadSelector:@selector(timer2IRQ:) toTarget:_self withObject:nil];
 }
 
 
@@ -156,40 +155,18 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// "Interrupt" handlers
-// TODO: use userInfo to propagate timer number instead of using 3 functions
+// "Interrupt" handlers (these are multiple threads which have been initialized in awakeFromNib)
 /////////////////////////////////////////////////////////////////////////////
-- (void)timer0IRQ:(id)anObject
+- (void)timerThread:(id)timerNumber
 {
+	int timer = [timerNumber intValue];
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSDate *now = [NSDate date];
 	while (YES) {
-		if( timer_callback[0] != NULL )
-			timer_callback[0]();
-        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timer_period[0]]];
-    }
-	[pool release];
-	[NSThread exit];
-}
-
-- (void)timer1IRQ:(id)anObject
-{
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	while (YES) {
-		if( timer_callback[1] != NULL )
-			timer_callback[1]();
-        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timer_period[1]]];
-    }
-	[pool release];
-	[NSThread exit];
-}
-
-- (void)timer2IRQ:(id)anObject
-{
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	while (YES) {
-		if( timer_callback[2] != NULL )
-			timer_callback[2]();
-        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timer_period[2]]];
+		if( timer_callback[timer] != NULL )
+			timer_callback[timer]();
+		now = [now initWithTimeInterval:timer_period[timer] sinceDate:now];
+        [NSThread sleepUntilDate:now];
     }
 	[pool release];
 	[NSThread exit];
