@@ -1,0 +1,83 @@
+<html>
+<head>
+	<title>Archiving Endpoints</title>
+</head>
+
+<body>
+
+<h1>Archiving Endpoints</h1>
+
+<p>Endpoints all conform to the <code>NSCoding</code> protocol
+allowing them to be archived and unarchived using the standard
+<code>NSKeyedArchiver</code> and <code>NSKeyedUnarchiver</code>.</p>
+
+<p>Archiving an endpoint provides an easy way to save a user's
+choice of source or destination endpoints to a document file or a
+to an application's preferences.</p>
+
+<p>The following example shows how to archive an endpoint:</p>
+
+<blockquote>
+<pre>
+NSMutableData*   data;
+NSKeyedArchiver* archiver;
+    
+data = [NSMutableData data];
+archiver = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
+
+[archiver encodeObject:myEndpoint forKey:@"myEndpoint"];
+
+[archiver finishEncoding];
+[archiver release];
+</pre>
+</blockquote>
+
+<p>The following example shows how to unarchive an endpoint:</p>
+
+<blockquote>
+<pre>
+NSKeyedUnarchiver* unarchiver;
+PYMIDIEndpoint*    myEndpoint;
+
+unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
+
+myEndpoint = [[unarchiver decodeObjectForKey:@"myEndpoint"];
+
+[unarchiver finishDecoding];
+[unarchiver release];
+</pre>
+</blockquote>
+
+
+
+<h2>Archiving Real Endpoints</h2>
+
+<p>Archiving and unarchiving real endpoints is generally transparent.
+Real endpoints are not actually created on unarchiving.  Instead, an
+existing real endpoint that matches the archived endpoint is found
+and returned by the unarchiver.</p>
+
+<p>If the device corresponding to an endpoint is not available when
+the endpoint is unarchived, an endpoint is created but is marked
+as offline.  The endpoint will be reconnected with its device if the device
+is later plugged in.</p>
+
+
+<h2>Archiving Virtual Endpoints</h2>
+
+<p>Unlike real endpoints, new virtual endpoints are created when
+they are unarchived.</p>
+
+<p>Often, for the purposes of undo or pasteboard handling, you
+will need to archive references to endpoints and
+have those existing endpoints found on unarchiving rather than having
+new endpoints created.  To facilitate this, an object of the
+<code>PYMIDIEndpointSet</code> class can be used as a delegate
+for an <code>NSKeyedArchiver</code> or <code>NSKeyedUnarchiver</code>.
+Any archived endpoints that appear in the set will be archived by
+reference.  The same set can then be used when unarchiving to
+find the matching existing endpoints.</p>
+
+
+</body>
+</html>

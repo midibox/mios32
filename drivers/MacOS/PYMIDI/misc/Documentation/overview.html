@@ -1,0 +1,26 @@
+<html>
+<head>
+	<title>Overview of the PYMIDI Framework</title>
+</head>
+
+<body>
+
+<h1>Overview of the PYMIDI Framework</h1>
+
+<p>The PYMIDI Framework provides a set of classes and utility functions for
+communicating via MIDI, both with physical devices (MIDI interfaces,
+MIDI controllers, etc.) and with other MIDI software.</p>
+
+<p>The framework is basically a wrapper around Apple's CoreMIDI framework,
+although you don't need to understand CoreMIDI to use the basics of PYMIDI.
+It provides a nicer Objective-C interface to basic CoreMIDI functionality
+and provides some additional functionality that is very useful for producing consistent
+and reliable handling of MIDI.  It does not attempt
+to duplicate all of CoreMIDI's functionality in Objective-C; instead it allows
+advanced developers to access the underlying CoreMIDI data structures.</p>
+
+<p>The framework sends and receives MIDI data, but it doesn't take care
+of parsing, processing or generating it.</p>
+
+</body>
+</html>
