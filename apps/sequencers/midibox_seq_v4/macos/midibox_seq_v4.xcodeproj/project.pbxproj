@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		52066E870E98356A00861688 /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52066E860E98356A00861688 /* printf-stdarg.c */; };
+		521A64150EEC7AE90062CBBE /* seq_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A64130EEC7AE90062CBBE /* seq_random.c */; };
 		521A79100EEB66520016F43B /* seq_ui_edit.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790D0EEB66520016F43B /* seq_ui_edit.c */; };
 		521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790E0EEB66520016F43B /* seq_ui_todo.c */; };
 		521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790F0EEB66520016F43B /* seq_ui_trkdir.c */; };
@@ -94,6 +95,8 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* midibox_seq_v4_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = midibox_seq_v4_Prefix.pch; sourceTree = "<group>"; };
 		52066E860E98356A00861688 /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "printf-stdarg.c"; sourceTree = "<group>"; };
+		521A64130EEC7AE90062CBBE /* seq_random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_random.c; path = ../core/seq_random.c; sourceTree = SOURCE_ROOT; };
+		521A64140EEC7AE90062CBBE /* seq_random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_random.h; path = ../core/seq_random.h; sourceTree = SOURCE_ROOT; };
 		521A790D0EEB66520016F43B /* seq_ui_edit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_edit.c; path = ../core/seq_ui_edit.c; sourceTree = SOURCE_ROOT; };
 		521A790E0EEB66520016F43B /* seq_ui_todo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_todo.c; path = ../core/seq_ui_todo.c; sourceTree = SOURCE_ROOT; };
 		521A790F0EEB66520016F43B /* seq_ui_trkdir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdir.c; path = ../core/seq_ui_trkdir.c; sourceTree = SOURCE_ROOT; };
@@ -297,6 +300,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				521A64130EEC7AE90062CBBE /* seq_random.c */,
+				521A64140EEC7AE90062CBBE /* seq_random.h */,
 				52B98C210EEC45D700454232 /* seq_cc.c */,
 				52B98C220EEC45D700454232 /* seq_cc.h */,
 				521A790D0EEB66520016F43B /* seq_ui_edit.c */,
@@ -566,6 +571,7 @@
 				521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */,
 				521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */,
 				52B98C230EEC45D700454232 /* seq_cc.c in Sources */,
+				521A64150EEC7AE90062CBBE /* seq_random.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

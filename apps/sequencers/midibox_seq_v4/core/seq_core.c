@@ -35,6 +35,9 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
+static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -116,15 +119,10 @@ s32 SEQ_CORE_Reset(void)
   int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     seq_core_trk_t *t = &seq_core_trk[track];
+    seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
     t->state.ALL = 0;
-    t->step = 0; // TODO: depends on direction
-    t->div_ctr = 0;
-    t->next_delay_ctr = 0;
-    t->step_replay_ctr = 0;
-    t->step_saved = 0;
-    t->step_fwd_ctr = 0;
-    t->arp_pos = 0;
+    SEQ_CORE_ResetTrkPos(t, tcc);
   }
 
   // init bpm tick if in master mode (in slave mode it has already been done while receiving MIDI clock start)
@@ -215,20 +213,19 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
     // TODO: use configurable clock dividers
-    if( seq_core_state.FIRST_CLK || ++t->div_ctr >= (SEQ_BPM_RESOLUTION_PPQN/4) ) {
+    if( t->state.FIRST_CLK || ++t->div_ctr >= (SEQ_BPM_RESOLUTION_PPQN/4) ) {
       t->div_ctr = 0;
 
-      if( seq_core_state.FIRST_CLK )
-	t->step = 0;
-      else {
-	if( ++t->step >= 16 ) // TODO: variable track length, configurable direction, progression parameters, ...
-	  t->step = 0;
-      }
+      // determine next step depending on direction mode
+      if( !t->state.FIRST_CLK )
+	SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
 
-      u8 played_step = seq_core_state.ref_step;
+      // clear "first clock" flag (on following clock ticks we can continue as usual)
+      t->state.FIRST_CLK = 0;
+
+      // generate event (temp. solution - no event mode supported yet!)
       u8 step_mask = 1 << (t->step % 8);
       u8 step_ix = t->step / 8;
-
       if( trg_layer_value[track][0][step_ix] & step_mask ) {
 	mios32_midi_package_t midi_package;
 
@@ -249,4 +246,176 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
   seq_core_state.FIRST_CLK = 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Resets the step position variables of a track
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
+{
+  // don't increment on first clock event
+  t->state.FIRST_CLK = 1;
+
+  // reset step REPLAY and FWD counters
+  t->step_replay_ctr = 0;
+  t->step_fwd_ctr = 0;
+
+  // reset clock divider
+  t->div_ctr = 0;
+
+  // reset record state and other record specific variables
+  if( 0 ) { // TODO: define record mode
+    t->state.REC_EVNT_ACTIVE = 0;
+    t->state.REC_MUTE_NEXTSTEP = 0;
+    // record_step = 0;
+    // record_current_event1 = 0;
+    // record_length_ctr = 0;
+  }
+
+  // next part depends on forward/backward direction
+  if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
+    // only for Backward mode
+    t->state.BACKWARD = 1;
+    t->step = tcc->length;
+  } else {
+    // for Forward/PingPong/Pendulum/Random/...
+    t->state.BACKWARD = 0;
+    t->step = 0;
+  }
+
+  // save position (for repeat function)
+  t->step_saved = t->step;
+
+  t->arp_pos = 0;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Determine next step depending on direction mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
+{
+  int i;
+  u8 save_step = 0;
+  u8 new_step = 1;
+
+  // handle progression parameters if position shouldn't be reset
+  if( !reverse && !t->state.POS_RESET ) {
+    if( ++t->step_fwd_ctr > tcc->steps_forward ) {
+      t->step_fwd_ctr = 0;
+      if( tcc->steps_jump_back ) {
+	for(i=0; i<tcc->steps_jump_back; ++i) {
+	  SEQ_CORE_NextStep(t, tcc, 1); // 1=reverse
+	}
+      }
+      if( ++t->step_replay_ctr > tcc->steps_replay ) {
+	t->step_replay_ctr = 0;
+	save_step = 1; // request to save the step in t->step_saved at the end of this routine
+      } else {
+	t->step = t->step_saved;
+	new_step = 0; // don't calculate new step
+      }
+    }
+  }
+
+  if( new_step ) {
+    // special cases:
+    switch( tcc->dir_mode ) {
+      case SEQ_CORE_TRKDIR_Forward:
+	t->state.BACKWARD = 0; // force backward flag
+	break;
+
+      case SEQ_CORE_TRKDIR_Backward:
+	t->state.BACKWARD = 1; // force backward flag
+	break;
+
+      case SEQ_CORE_TRKDIR_PingPong:
+      case SEQ_CORE_TRKDIR_Pendulum:
+	// nothing else to do...
+	break;
+
+      case SEQ_CORE_TRKDIR_Random_Dir:
+	// set forward/backward direction with 1:1 probability
+	t->state.BACKWARD = SEQ_RANDOM_Gen(0) & 1;
+        break;
+
+      case SEQ_CORE_TRKDIR_Random_Step:
+	t->step = SEQ_RANDOM_Gen_Range(tcc->loop, tcc->length);
+	new_step = 0; // no new step calculation required anymore
+        break;
+
+      case SEQ_CORE_TRKDIR_Random_D_S:
+	{
+	  // we continue with a probability of 50%
+	  // we change the direction with a probability of 25%
+	  // we jump to a new step with a probability of 25%
+	  u32 rnd;
+	  if( ((rnd=SEQ_RANDOM_Gen(0)) & 0xff) < 0x80 ) {
+	    if( rnd < 0x40 ) {
+	      // set forward/backward direction with 1:1 probability
+	      t->state.BACKWARD = SEQ_RANDOM_Gen(0) & 1;
+	    } else {
+	      t->step = SEQ_RANDOM_Gen_Range(tcc->loop, tcc->length);
+	      new_step = 0; // no new step calculation required anymore
+	    }
+	  }
+	}
+	break;
+    }
+  }
+
+  if( new_step ) { // note: new_step will be cleared in SEQ_CORE_TRKDIR_Random_Step mode
+    // branch depending on forward/backward mode, take reverse flag into account
+    if( t->state.BACKWARD ^ reverse ) {
+      // jump to last step if first loop step has been reached or a position reset has been requested
+      // in pendulum mode: switch to forward direction
+      if( t->state.POS_RESET || t->step <= tcc->loop ) {
+	if( tcc->dir_mode == SEQ_CORE_TRKDIR_Pendulum ) {
+	  t->state.BACKWARD = 0;
+	} else {
+	  t->step = tcc->length;
+	}
+	// reset arp position as well
+	t->arp_pos = 0;
+      } else {
+	// no reset required; decrement step
+	--t->step;
+
+	// in pingpong mode: turn direction if loop step has been reached after this decrement
+	if( t->step <= tcc->loop && tcc->dir_mode == SEQ_CORE_TRKDIR_PingPong )
+	  t->state.BACKWARD = 0;
+      }
+    } else {
+      // jump to first (loop) step if last step has been reached or a position reset has been requested
+      // in pendulum mode: switch to backward direction
+      if( t->state.POS_RESET || t->step >= tcc->length ) {
+	if( tcc->dir_mode == SEQ_CORE_TRKDIR_Pendulum ) {
+	  t->state.BACKWARD = 1;
+	} else {
+	  t->step = tcc->loop;
+	}
+	// reset arp position as well
+	t->arp_pos = 0;
+      } else {
+	// no reset required; increment step
+	++t->step;
+
+	// in pingpong mode: turn direction if last step has been reached after this increment
+	if( t->step >= tcc->length && tcc->dir_mode == SEQ_CORE_TRKDIR_PingPong )
+	  t->state.BACKWARD = 1;
+      }
+    }
+  }
+
+  if( !reverse ) {
+    // requested by progression handler
+    if( save_step )
+      t->step_saved = t->step;
+
+    t->state.POS_RESET = 0;
+  }
+
+  return 0; // no error
+}
 

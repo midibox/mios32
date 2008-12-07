@@ -47,6 +47,7 @@ typedef union {
     unsigned DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
     unsigned POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
     unsigned BACKWARD:1;    // if set, the track will be played in backward direction
+    unsigned FIRST_CLK:1;   // don't increment on the first clock event
     unsigned REC_EVNT_ACTIVE:1; // set so long a note/CC is held (for note length measuring)
     unsigned REC_MUTE_NEXTSTEP:1; // for length...
     unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
@@ -58,7 +59,6 @@ typedef struct seq_core_trk_t {
   seq_core_trk_state_t state;            // various status flags (see structure definition above)
   u8                   step;             // track position
   u8                   div_ctr;          // clock divider counter
-  u16                  next_delay_ctr;   // number of MIDI clock ticks until next step will be played
   u8                   step_replay_ctr;  // step replay counter
   u8                   step_saved;       // for replay mechanism
   u8                   step_fwd_ctr;     // step forward counter
