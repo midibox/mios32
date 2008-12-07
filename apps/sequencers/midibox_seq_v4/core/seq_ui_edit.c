@@ -22,14 +22,15 @@
 #include "seq_midi.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP LED handler function
+// Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
+static s32 LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -42,50 +43,99 @@ static s32 GP_LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP button callback function
+// Local encoder callback function
+// Should return:
+//   1 if value has been changed
+//   0 if value hasn't been changed
+//  -1 if invalid or unsupported encoder
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_Button_Handler(u32 pin, s32 depressed)
+static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  // toggle trigger layer
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 step = pin + ui_selected_step_view*16;
-  trg_layer_value[visible_track][ui_selected_trg_layer][step>>3] ^= (1 << (step&7));
+#if 0
+  // leads to: comparison is always true due to limited range of data type
+  if( (encoder >= SEQ_UI_ENCODER_GP1 && encoder <= SEQ_UI_ENCODER_GP16) || encoder == SEQ_UI_ENCODER_Datawheel ) {
+#else
+  if( encoder <= SEQ_UI_ENCODER_GP16 || encoder == SEQ_UI_ENCODER_Datawheel ) {
+#endif
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    u8 step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
-  return 0; // no error
+    // select step
+    ui_selected_step = step;
+
+    // add to absolute value
+    s32 value = (s32)par_layer_value[visible_track][ui_selected_par_layer][step] + incrementer;
+    if( value < 0 )
+      value = 0;
+    else if( value >= 128 )
+      value = 127;
+
+    // take over if changed
+    if( (u8)value == par_layer_value[visible_track][ui_selected_par_layer][step] ) {
+      return 0; // value not changed
+    }
+
+    par_layer_value[visible_track][ui_selected_par_layer][step] = (u8)value;
+
+    // (de)activate gate depending on value
+    if( value )
+      trg_layer_value[visible_track][0][step>>3] |= (1 << (step&7));
+    else
+      trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
+
+    return 1; // value changed
+  }
+
+  return -1; // invalid or unsupported encoder
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP encoder callback function
+// Local button callback function
+// Should return:
+//   1 if value has been changed
+//   0 if value hasn't been changed
+//  -1 if invalid or unsupported button
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_Encoder_Handler(u32 encoder, s32 incrementer)
+static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 step = encoder-1 + ui_selected_step_view*16;
+  if( depressed ) return 0; // ignore when button depressed
 
-  // select step
-  ui_selected_step = step;
+#if 0
+  // leads to: comparison is always true due to limited range of data type
+  if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
+#else
+  if( button <= SEQ_UI_BUTTON_GP16 ) {
+#endif
+    // toggle trigger layer
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    u8 step = button + ui_selected_step_view*16;
+    trg_layer_value[visible_track][ui_selected_trg_layer][step>>3] ^= (1 << (step&7));
+    return 1; // value always changed
+  } else {
+    switch( button ) {
+      case SEQ_UI_BUTTON_Select:
+      case SEQ_UI_BUTTON_Right:
+	if( ++ui_selected_step >= SEQ_CORE_NUM_STEPS )
+	  ui_selected_step = 0;
+	ui_selected_step_view = ui_selected_step / 16;
+	return 1; // value always changed
 
-  // add to absolute value
-  s32 value = (s32)par_layer_value[visible_track][ui_selected_par_layer][step] + incrementer;
-  if( value < 0 )
-    value = 0;
-  else if( value >= 128 )
-    value = 127;
+      case SEQ_UI_BUTTON_Left:
+	if( ui_selected_step == 0 )
+	  ui_selected_step = SEQ_CORE_NUM_STEPS-1;
+	ui_selected_step_view = ui_selected_step / 16;
+	return 1; // value always changed
 
-  // take over if changed
-  if( (u8)value != par_layer_value[visible_track][ui_selected_par_layer][step] ) {
-    par_layer_value[visible_track][ui_selected_par_layer][step] = (u8)value;
-    // here we could do more on changes - important for mixer function (event only sent on changes)
+      case SEQ_UI_BUTTON_Up:
+	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
+
+      case SEQ_UI_BUTTON_Down:
+	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+    }
   }
 
-  // (de)activate gate depending on value
-  if( value )
-    trg_layer_value[visible_track][0][step>>3] |= (1 << (step&7));
-  else
-    trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
-
-  return 0; // no error
+  return -1; // invalid or unsupported button
 }
 
 
@@ -100,6 +150,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
+
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
@@ -110,9 +161,9 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintParLayer(ui_selected_par_layer);
   SEQ_LCD_PrintSpaces(1);
 
-  MIOS32_LCD_PrintFormattedString("Chn%2d", midi_channel+1);
+  MIOS32_LCD_PrintFormattedString("Chn%2d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
   MIOS32_LCD_PrintChar('/');
-  SEQ_LCD_PrintMIDIPort(midi_port);
+  SEQ_LCD_PrintMIDIPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
   SEQ_LCD_PrintSpaces(1);
 
   SEQ_LCD_PrintTrgLayer(ui_selected_trg_layer);
@@ -194,10 +245,10 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_EDIT_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallGPButtonCallback(GP_Button_Handler);
-  SEQ_UI_InstallGPEncoderCallback(GP_Encoder_Handler);
-  SEQ_UI_InstallGPLEDCallback(GP_LED_Handler);
-  SEQ_UI_InstallGPLCDCallback(LCD_Handler);
+  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallEncoderCallback(Encoder_Handler);
+  SEQ_UI_InstallLEDCallback(LED_Handler);
+  SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   // initialise charset
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBARS);

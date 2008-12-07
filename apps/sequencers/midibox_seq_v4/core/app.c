@@ -241,6 +241,9 @@ void SEQ_TASK_Period1mS(void)
   // update high-prio LED functions
   SEQ_UI_LED_Handler_Periodic();
 
+  // for menu handling (e.g. flashing cursor, doubleclick counter, etc...)
+  SEQ_UI_MENU_Handler_Periodic();
+
 #if DEFAULT_SRM_ENABLED
   // check for BLM8x8 pin changes, call button handler of sequencer on each toggled pin
   BLM8X8_ButtonHandler(APP_BLM8X8_NotifyToggle);
