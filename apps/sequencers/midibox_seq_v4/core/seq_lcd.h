@@ -40,7 +40,7 @@ extern s32 SEQ_LCD_PrintGatelength(u8 len);
 extern s32 SEQ_LCD_PrintGxTy(u8 group, u8 track);
 extern s32 SEQ_LCD_PrintParLayer(u8 layer);
 extern s32 SEQ_LCD_PrintTrgLayer(u8 layer);
-extern s32 SEQ_LCD_PrintMIDIPort(u8 port);
+extern s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintStepView(u8 step_view);
 extern s32 SEQ_LCD_PrintSelectedStep(u8 step_sel, u8 step_max);
 

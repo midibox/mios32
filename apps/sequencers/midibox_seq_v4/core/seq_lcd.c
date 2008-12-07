@@ -228,9 +228,15 @@ s32 SEQ_LCD_PrintTrgLayer(u8 layer)
 /////////////////////////////////////////////////////////////////////////////
 // prints MIDI port (4 characters)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintMIDIPort(u8 port)
+s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port)
 {
-  MIOS32_LCD_PrintString("Def.");
+  switch( port >> 4 ) {
+    case 0:  MIOS32_LCD_PrintString("Def."); break;
+    case 1:  MIOS32_LCD_PrintFormattedString("USB%x", port%16); break;
+    case 2:  MIOS32_LCD_PrintFormattedString("UAR%x", port%16); break;
+    case 3:  MIOS32_LCD_PrintFormattedString("IIC%x", port%16); break;
+    default: MIOS32_LCD_PrintFormattedString("0x%02X", port); break;
+  }
 
   return 0; // no error
 }

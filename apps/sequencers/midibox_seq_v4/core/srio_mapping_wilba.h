@@ -129,14 +129,16 @@
 #define LED_STEP_17_32   (((19   -1)<<3)+    1)
 
 //                          SR    ignore    Pin
-#define LED_MENU         ((( 0   -1)<<3)+    0)
-#define LED_SCRUB        ((( 0   -1)<<3)+    0)
-#define LED_METRONOME    ((( 0   -1)<<3)+    0)
+#define LED_MENU         LED_DISABLED
+#define LED_SCRUB        LED_DISABLED
+#define LED_METRONOME    LED_DISABLED
 
 
 //                          SR    ignore    Pin
-#define BUTTON_LEFT      (((20   -1)<<3)+    2)
-#define BUTTON_RIGHT     (((20   -1)<<3)+    3)
+#define BUTTON_LEFT      BUTTON_DISABLED
+#define BUTTON_RIGHT     BUTTON_DISABLED
+#define BUTTON_DOWN      (((20   -1)<<3)+    2)
+#define BUTTON_UP        (((20   -1)<<3)+    3)
 
 #define BUTTON_SCRUB     (((20   -1)<<3)+    4)
 #define BUTTON_METRONOME (((20   -1)<<3)+    5)
@@ -202,7 +204,7 @@
 
 #define BUTTON_STEP_VIEW (((21   -1)<<3)+    5)
 
-#define BUTTON_TAP_TEMPO ((( 0   -1)<<3)+    0)
+#define BUTTON_TAP_TEMPO BUTTON_DISABLED
 
 #define BUTTON_UTILITY   (((19   -1)<<3)+    2)
 #define BUTTON_COPY      (((23   -1)<<3)+    3)

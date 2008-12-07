@@ -66,6 +66,77 @@ typedef struct seq_core_trk_t {
 } seq_core_trk_t;
 
 
+typedef enum {
+  SEQ_CORE_TRKMODE_Off,
+  SEQ_CORE_TRKMODE_Normal,
+  SEQ_CORE_TRKMODE_Transpose,
+  SEQ_CORE_TRKMODE_Arpeggiator
+} seq_core_trk_playmode_t;
+
+
+typedef enum {
+  SEQ_CORE_TRKDIR_Forward,
+  SEQ_CORE_TRKDIR_Backward,
+  SEQ_CORE_TRKDIR_PingPong,
+  SEQ_CORE_TRKDIR_Pendulum,
+  SEQ_CORE_TRKDIR_Random_Dir,
+  SEQ_CORE_TRKDIR_Random_Step,
+  SEQ_CORE_TRKDIR_Random_D_S
+} seq_core_trk_dir_t;
+
+
+// shared mode parameters (each track holds another value)
+typedef union {
+  struct {
+    u8 chain; // stored in track #1
+  };
+  struct {
+    u8 morph_pattern; // stored in track #2
+  };
+  struct {
+    u8 scale; // stored in track #3
+  };
+  struct {
+    u8 scale_root; // stored in track #4
+  };
+} seq_core_shared_t;
+
+
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
+    unsigned flags:6;        // combines all flags (for CC access)
+  };
+  struct {
+    unsigned playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
+    unsigned UNSORTED:1;     // sort mode for arpeggiator
+    unsigned HOLD:1;         // hold mode for transposer/arpeggiator
+    unsigned RESTART:1;      // track restart on key press
+    unsigned FORCE_SCALE:1;  // note values are forced to scale
+    unsigned SUSTAIN:1;      // events are sustained
+  };
+} seq_core_trkmode_flags_t;
+
+
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned value:6;        // clock divider value
+    unsigned flags:6;        // combines all flags (for CC access)
+  };
+  struct {
+    unsigned value:6;        // clock divider value
+    unsigned SYNCH_TO_MEASURE:1; // synch to globally selectable measure
+    unsigned TRIPLETS:1;     // play triplets
+  };
+} seq_core_clkdiv_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////

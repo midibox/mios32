@@ -52,9 +52,6 @@ extern s32 SEQ_MIDI_Handler(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 midi_channel;
-extern u8 midi_port;
-
 extern u32 seq_midi_queue_size;
 
 #endif /* _SEQ_MIDI_H */

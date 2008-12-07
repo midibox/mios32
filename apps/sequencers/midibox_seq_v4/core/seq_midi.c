@@ -43,9 +43,6 @@ typedef struct seq_midi_queue_item_t {
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 midi_channel = 0;
-u8 midi_port = 0;
-
 u32 seq_midi_queue_size; // for analysis purposes
 
 

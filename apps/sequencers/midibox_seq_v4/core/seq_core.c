@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_core.h"
+#include "seq_cc.h"
 #include "seq_midi.h"
 #include "seq_bpm.h"
 #include "seq_par.h"
@@ -47,8 +48,6 @@ seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 initial_clock;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -56,6 +55,9 @@ u8 initial_clock;
 s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_state.ALL = 0;
+
+  // reset track parameters
+  SEQ_CC_Init(0);
 
   // reset sequencer
   SEQ_CORE_Reset();
@@ -210,6 +212,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
   int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     seq_core_trk_t *t = &seq_core_trk[track];
+    seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
     // TODO: use configurable clock dividers
     if( seq_core_state.FIRST_CLK || ++t->div_ctr >= (SEQ_BPM_RESOLUTION_PPQN/4) ) {
@@ -230,14 +233,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 	mios32_midi_package_t midi_package;
 
 	midi_package.type = 0x9;
-	midi_package.evnt0 = 0x90 | track;
+	midi_package.evnt0 = 0x90 | tcc->midi_chn;
 	midi_package.evnt1 = par_layer_value[track][0][t->step];
 	midi_package.evnt2 = par_layer_value[track][1][t->step];
 
-	SEQ_MIDI_Send(DEFAULT, midi_package, SEQ_MIDI_OnEvent, bpm_tick);
+	SEQ_MIDI_Send(tcc->midi_port, midi_package, SEQ_MIDI_OnEvent, bpm_tick);
 	midi_package.evnt2 = 0x00;
 	u32 delay = 4*par_layer_value[track][2][t->step]; // TODO: later we will support higher note length resolution
-	SEQ_MIDI_Send(DEFAULT, midi_package, SEQ_MIDI_OffEvent, bpm_tick+delay);
+	SEQ_MIDI_Send(tcc->midi_port, midi_package, SEQ_MIDI_OffEvent, bpm_tick+delay);
       }
     }
   }

@@ -133,8 +133,10 @@
 
 
 //                          SR    ignore    Pin
-#define BUTTON_LEFT      (((1    -1)<<3)+    0)
-#define BUTTON_RIGHT     (((1    -1)<<3)+    1)
+#define BUTTON_DOWN      (((1    -1)<<3)+    0)
+#define BUTTON_UP        (((1    -1)<<3)+    1)
+#define BUTTON_LEFT      BUTTON_DISABLED
+#define BUTTON_RIGHT     BUTTON_DISABLED
 
 #define BUTTON_SCRUB     (((1    -1)<<3)+    2)
 #define BUTTON_METRONOME (((1    -1)<<3)+    3)

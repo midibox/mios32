@@ -21,29 +21,37 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP LED handler function
+// Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
+static s32 LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
 {
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP button callback function
+// Local encoder callback function
+// Should return:
+//   1 if value has been changed
+//   0 if value hasn't been changed
+//  -1 if invalid or unsupported encoder
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_Button_Handler(u32 pin, s32 depressed)
+static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  return 0; // no error
+  return -1; // invalid or unsupported encoder
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local GP encoder callback function
+// Local button callback function
+// Should return:
+//   1 if value has been changed
+//   0 if value hasn't been changed
+//  -1 if invalid or unsupported gp_button
 /////////////////////////////////////////////////////////////////////////////
-static s32 GP_Encoder_Handler(u32 encoder, s32 incrementer)
+static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  return 0; // no error
+  return -1; // invalid or unsupported button
 }
 
 
@@ -74,10 +82,10 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_TODO_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallGPButtonCallback(GP_Button_Handler);
-  SEQ_UI_InstallGPEncoderCallback(GP_Encoder_Handler);
-  SEQ_UI_InstallGPLEDCallback(GP_LED_Handler);
-  SEQ_UI_InstallGPLCDCallback(LCD_Handler);
+  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallEncoderCallback(Encoder_Handler);
+  SEQ_UI_InstallLEDCallback(LED_Handler);
+  SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   return 0; // no error
 }
