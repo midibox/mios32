@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		52066E870E98356A00861688 /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52066E860E98356A00861688 /* printf-stdarg.c */; };
+		521A79100EEB66520016F43B /* seq_ui_edit.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790D0EEB66520016F43B /* seq_ui_edit.c */; };
+		521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790E0EEB66520016F43B /* seq_ui_todo.c */; };
+		521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790F0EEB66520016F43B /* seq_ui_trkdir.c */; };
 		522A0DB40E8FE5AB0084B1EE /* CLCDView.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB20E8FE5AB0084B1EE /* CLCDView.m */; };
 		522A0DB50E8FE5AB0084B1EE /* CLCDView_charset.inc in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */; };
 		522A0DB80E8FE5B90084B1EE /* UI.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB70E8FE5B90084B1EE /* UI.m */; };
@@ -90,6 +93,9 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* midibox_seq_v4_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = midibox_seq_v4_Prefix.pch; sourceTree = "<group>"; };
 		52066E860E98356A00861688 /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "printf-stdarg.c"; sourceTree = "<group>"; };
+		521A790D0EEB66520016F43B /* seq_ui_edit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_edit.c; path = ../core/seq_ui_edit.c; sourceTree = SOURCE_ROOT; };
+		521A790E0EEB66520016F43B /* seq_ui_todo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_todo.c; path = ../core/seq_ui_todo.c; sourceTree = SOURCE_ROOT; };
+		521A790F0EEB66520016F43B /* seq_ui_trkdir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdir.c; path = ../core/seq_ui_trkdir.c; sourceTree = SOURCE_ROOT; };
 		522A0DB10E8FE5AB0084B1EE /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CLCDView.h; sourceTree = "<group>"; };
 		522A0DB20E8FE5AB0084B1EE /* CLCDView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLCDView.m; sourceTree = "<group>"; };
 		522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = CLCDView_charset.inc; sourceTree = "<group>"; };
@@ -288,6 +294,9 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				521A790D0EEB66520016F43B /* seq_ui_edit.c */,
+				521A790E0EEB66520016F43B /* seq_ui_todo.c */,
+				521A790F0EEB66520016F43B /* seq_ui_trkdir.c */,
 				523E38080EE9FEF600E79FF4 /* mios32_dout.c */,
 				523E38060EE9FEDD00E79FF4 /* mios32_din.c */,
 				52FB47B50EE9DBA40024489C /* app_lcd.h */,
@@ -548,6 +557,9 @@
 				526F87F10EEA126A00441997 /* PYMIDIVirtualDestination.m in Sources */,
 				526F87F20EEA126A00441997 /* PYMIDIVirtualEndpoint.m in Sources */,
 				526F87F30EEA126A00441997 /* PYMIDIVirtualSource.m in Sources */,
+				521A79100EEB66520016F43B /* seq_ui_edit.c in Sources */,
+				521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */,
+				521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

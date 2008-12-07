@@ -48,6 +48,8 @@
 u8 seq_ui_display_update_req;
 u8 seq_ui_display_init_req;
 
+seq_ui_button_state_t seq_ui_button_state;
+
 u8 ui_selected_group;
 u8 ui_selected_tracks;
 u8 ui_selected_par_layer;
@@ -56,11 +58,47 @@ u8 ui_selected_step_view;
 u8 ui_selected_step;
 
 u16 ui_gp_leds;
+u16 ui_gp_leds_flashing;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
+
+// Note: must be kept in sync with SEQ_UI_PAGE_xxx definitions in seq_ui.h!
+static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
+  (void *)&SEQ_UI_TODO_Init,    // 0
+  (void *)&SEQ_UI_EDIT_Init,    // 1
+  (void *)&SEQ_UI_TRKDIR_Init   // 2
+};
+
+static s32 (*ui_gp_button_callback)(u32 pin, s32 depressed);
+static s32 (*ui_gp_encoder_callback)(u32 encoder, s32 incrementer);
+static s32 (*ui_gp_led_callback)(u16 *gp_leds, u16 *gp_leds_flashing);
+static s32 (*ui_lcd_callback)(u8 high_prio);
+
+static seq_ui_page_t ui_page;
+
+
+// following pages are directly accessible with the GP buttons when MENU button is pressed
+static const seq_ui_page_t ui_direct_access_menu_pages[16] = {
+  SEQ_UI_PAGE_NONE,        // GP1
+  SEQ_UI_PAGE_NONE,        // GP2
+  SEQ_UI_PAGE_NONE,        // GP3
+  SEQ_UI_PAGE_TRKDIR,      // GP4
+  SEQ_UI_PAGE_NONE,        // GP5
+  SEQ_UI_PAGE_NONE,        // GP6
+  SEQ_UI_PAGE_NONE,        // GP7
+  SEQ_UI_PAGE_NONE,        // GP8
+  SEQ_UI_PAGE_NONE,        // GP9
+  SEQ_UI_PAGE_NONE,        // GP10
+  SEQ_UI_PAGE_NONE,        // GP11
+  SEQ_UI_PAGE_NONE,        // GP12
+  SEQ_UI_PAGE_NONE,        // GP13
+  SEQ_UI_PAGE_NONE,        // GP14
+  SEQ_UI_PAGE_NONE,        // GP15
+  SEQ_UI_PAGE_NONE         // GP16
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,13 +114,71 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step_view = 0;
   ui_selected_step = 0;
 
+  seq_ui_button_state.ALL = 0;
+
   // visible GP pattern
   ui_gp_leds = 0x0000;
+  ui_gp_leds_flashing = 0x0000;
 
-  // request display initialisation
-  seq_ui_display_init_req = 1;
+  // change to edit page
+  ui_page = SEQ_UI_PAGE_NONE;
+  SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Various installation routines for menu page LCD handlers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_InstallGPButtonCallback(void *callback)
+{
+  ui_gp_button_callback = callback;
+  return 0; // no error
+}
+
+s32 SEQ_UI_InstallGPEncoderCallback(void *callback)
+{
+  ui_gp_encoder_callback = callback;
+  return 0; // no error
+}
+
+s32 SEQ_UI_InstallGPLEDCallback(void *callback)
+{
+  ui_gp_led_callback = callback;
+  return 0; // no error
+}
+
+s32 SEQ_UI_InstallGPLCDCallback(void *callback)
+{
+  ui_lcd_callback = callback;
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Change the menu page
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_PageSet(seq_ui_page_t page)
+{
+  if( page != ui_page ) {
+    // disable hooks of previous page and request re-initialisation
+    MIOS32_IRQ_Disable();
+    ui_page = page;
+    ui_gp_button_callback = NULL;
+    ui_gp_encoder_callback = NULL;
+    ui_gp_led_callback = NULL;
+    ui_lcd_callback = NULL;
+    MIOS32_IRQ_Enable();
+
+  // TODO: define generic #define for this button behaviour
+#if defined(MIOS32_FAMILY_EMULATION)
+  seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
+#endif
+
+    // request display initialisation
+    seq_ui_display_init_req = 1;
+  }
 }
 
 
@@ -95,10 +191,14 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  // toggle trigger layer
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 step = gp + ui_selected_step_view*16;
-  trg_layer_value[visible_track][ui_selected_trg_layer][step>>3] ^= (1 << (step&7));
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    // MENU button overruling - select menu page
+    SEQ_UI_PageSet(ui_direct_access_menu_pages[gp]);
+  } else {
+    // forward to menu page
+    if( ui_gp_button_callback != NULL )
+      ui_gp_button_callback(gp, depressed);
+  }
 
   return 0; // no error
 }
@@ -252,7 +352,13 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
 
 static s32 SEQ_UI_Button_Menu(s32 depressed)
 {
+  // TODO: define generic #define for this button behaviour
+#if defined(MIOS32_FAMILY_EMULATION)
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
+#else
+  seq_ui_button_state.MENU_PRESSED = depressed ? 0 : 1;
+#endif
 
   return 0; // no error
 }
@@ -268,12 +374,18 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // release all button states
+  seq_ui_button_state.ALL = 0;
+
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Edit(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
+
+  // change to edit page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
   return 0; // no error
 }
@@ -608,30 +720,9 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   if( encoder == 0 ) {
     // TODO
   } else {
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 step = encoder-1 + ui_selected_step_view*16;
-
-    // select step
-    ui_selected_step = step;
-
-    // add to absolute value
-    s32 value = (s32)par_layer_value[visible_track][ui_selected_par_layer][step] + incrementer;
-    if( value < 0 )
-      value = 0;
-    else if( value >= 128 )
-      value = 127;
-
-    // take over if changed
-    if( (u8)value != par_layer_value[visible_track][ui_selected_par_layer][step] ) {
-      par_layer_value[visible_track][ui_selected_par_layer][step] = (u8)value;
-      // here we could do more on changes - important for mixer function (event only sent on changes)
-    }
-
-    // (de)activate gate depending on value
-    if( value )
-      trg_layer_value[visible_track][0][step>>3] |= (1 << (step&7));
-    else
-      trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
+    // forward to menu page
+    if( ui_gp_encoder_callback != NULL )
+      ui_gp_encoder_callback(encoder, incrementer);
   }
 
   // request display update
@@ -657,105 +748,44 @@ s32 SEQ_UI_LCD_Handler(void)
       SEQ_LCD_Clear();
     }
 
-    // initialise charset
-    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBARS);
+    // call init function of current page
+    if( ui_init_callback[ui_page] != NULL )
+      ui_init_callback[ui_page](0); // mode
 
     // request display update
     seq_ui_display_update_req = 1;
   }
 
+  // perform high priority LCD update request
+  if( ui_lcd_callback != NULL )
+    ui_lcd_callback(1); // high_prio
+
+  // perform low priority LCD update request if requested
   if( seq_ui_display_update_req ) {
     seq_ui_display_update_req = 0; // clear request
 
-    char tmp[128];
-    u8 step;
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-  
-    ///////////////////////////////////////////////////////////////////////////
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_CursorSet(0, 0);
-  
-    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-    SEQ_LCD_PrintSpaces(2);
-  
-    SEQ_LCD_PrintParLayer(ui_selected_par_layer);
-    SEQ_LCD_PrintSpaces(1);
-  
-    MIOS32_LCD_PrintFormattedString("Chn%2d", midi_channel+1);
-    MIOS32_LCD_PrintChar('/');
-    SEQ_LCD_PrintMIDIPort(midi_port);
-    SEQ_LCD_PrintSpaces(1);
-  
-    SEQ_LCD_PrintTrgLayer(ui_selected_trg_layer);
-  
-    SEQ_LCD_PrintStepView(ui_selected_step_view);
-  
-  
-    ///////////////////////////////////////////////////////////////////////////
-    MIOS32_LCD_DeviceSet(1);
-    MIOS32_LCD_CursorSet(0, 0);
-  
-    MIOS32_LCD_PrintFormattedString("Step");
-    SEQ_LCD_PrintSelectedStep(ui_selected_step, 15);
-    MIOS32_LCD_PrintChar(':');
-  
-    SEQ_LCD_PrintNote(par_layer_value[visible_track][0][ui_selected_step]);
-    MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][ui_selected_step] >> 4);
-    SEQ_LCD_PrintSpaces(1);
-  
-    MIOS32_LCD_PrintFormattedString("Vel:%3d", par_layer_value[visible_track][1][ui_selected_step]);
-    SEQ_LCD_PrintSpaces(1);
+#if 0
+  // print available menu pages
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_CursorSet(0, 0);
+  //                      <-------------------------------------->
+  //                      0123456789012345678901234567890123456789
+  MIOS32_LCD_PrintString("                                        ");
+  MIOS32_LCD_CursorSet(0, 1);
+  MIOS32_LCD_PrintString("Mix  Evnt Mode Dir. Div. Len. Trn. Grv. ");
 
-    MIOS32_LCD_PrintFormattedString("Len:");
-    SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][ui_selected_step]);
-    SEQ_LCD_PrintSpaces(1);
-  
-    MIOS32_LCD_PrintFormattedString("G-a-r--");
-  
-    ///////////////////////////////////////////////////////////////////////////
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_CursorSet(0, 1);
-  
-    for(step=0; step<16; ++step) {
-      // 9th step reached: switch to second LCD
-      if( step == 8 ) {
-        MIOS32_LCD_DeviceSet(1);
-        MIOS32_LCD_CursorSet(0, 1);
-      }
-  
-      u8 visible_step = step + 16*ui_selected_step_view;
-      u8 note = par_layer_value[visible_track][0][visible_step];
-      u8 vel = par_layer_value[visible_track][1][visible_step];
-      u8 len = par_layer_value[visible_track][2][visible_step];
-      u8 gate = trg_layer_value[visible_track][0][visible_step>>3] & (1 << (visible_step&7));
-  
-      switch( ui_selected_par_layer ) {
-        case 0: // Note
-        case 1: // Velocity
-  
-  	if( gate ) {
-  	  SEQ_LCD_PrintNote(note);
-  	  MIOS32_LCD_PrintChar((char)vel >> 4);
-  	} else {
-	  MIOS32_LCD_PrintFormattedString("----");
-  	}
-  	break;
-  
-        case 2: // Gatelength
-	  // TODO: print length like on real hardware (length bars)
-	  SEQ_LCD_PrintGatelength(len);
-	  break;
-        default:
-	  MIOS32_LCD_PrintFormattedString("????");
-      }
-  
-      MIOS32_LCD_PrintChar(
-          (visible_step == ui_selected_step) ? '<' 
-  	: ((visible_step == ui_selected_step-1) ? '>' : ' '));
-    }
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_CursorSet(0, 0);
+  //                      <-------------------------------------->
+  //                      0123456789012345678901234567890123456789
+  MIOS32_LCD_PrintString("                                        ");
+  MIOS32_LCD_CursorSet(0, 1);
+  MIOS32_LCD_PrintString("Trg.  Fx  Man. Mrp. BPM  Save MIDI SysEx");
+#endif
+
+    if( ui_lcd_callback != NULL )
+      ui_lcd_callback(0); // no high_prio
   }
-
-
 
   // for debugging
 #if 0
@@ -764,7 +794,7 @@ s32 SEQ_UI_LCD_Handler(void)
   MIOS32_LCD_PrintFormattedString("%5d  ", seq_midi_queue_size);
 #endif
 
-#if 1
+#if 0
   u32 bpm_tick = SEQ_BPM_TickGet();
   u32 bpm_sub = bpm_tick % SEQ_BPM_RESOLUTION_PPQN;
   u32 bpm_16th = (bpm_tick / (SEQ_BPM_RESOLUTION_PPQN/4)) % 16;
@@ -789,29 +819,29 @@ s32 SEQ_UI_LED_Handler(void)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // track LEDs
-  SEQ_LED_PinSet(LED_TRACK1, (ui_selected_tracks & (1 << 0)) ? 1 : 0);
-  SEQ_LED_PinSet(LED_TRACK2, (ui_selected_tracks & (1 << 1)) ? 1 : 0);
-  SEQ_LED_PinSet(LED_TRACK3, (ui_selected_tracks & (1 << 2)) ? 1 : 0);
-  SEQ_LED_PinSet(LED_TRACK4, (ui_selected_tracks & (1 << 3)) ? 1 : 0);
+  SEQ_LED_PinSet(LED_TRACK1, (ui_selected_tracks & (1 << 0)));
+  SEQ_LED_PinSet(LED_TRACK2, (ui_selected_tracks & (1 << 1)));
+  SEQ_LED_PinSet(LED_TRACK3, (ui_selected_tracks & (1 << 2)));
+  SEQ_LED_PinSet(LED_TRACK4, (ui_selected_tracks & (1 << 3)));
   
   // parameter layer LEDs
-  SEQ_LED_PinSet(LED_PAR_LAYER_A, (ui_selected_par_layer == 0) ? 1 : 0);
-  SEQ_LED_PinSet(LED_PAR_LAYER_B, (ui_selected_par_layer == 1) ? 1 : 0);
-  SEQ_LED_PinSet(LED_PAR_LAYER_C, (ui_selected_par_layer == 2) ? 1 : 0);
+  SEQ_LED_PinSet(LED_PAR_LAYER_A, (ui_selected_par_layer == 0));
+  SEQ_LED_PinSet(LED_PAR_LAYER_B, (ui_selected_par_layer == 1));
+  SEQ_LED_PinSet(LED_PAR_LAYER_C, (ui_selected_par_layer == 2));
   
   // group LEDs
-  SEQ_LED_PinSet(LED_GROUP1, (ui_selected_group == 0) ? 1 : 0);
-  SEQ_LED_PinSet(LED_GROUP2, (ui_selected_group == 1) ? 1 : 0);
-  SEQ_LED_PinSet(LED_GROUP3, (ui_selected_group == 2) ? 1 : 0);
-  SEQ_LED_PinSet(LED_GROUP4, (ui_selected_group == 3) ? 1 : 0);
+  SEQ_LED_PinSet(LED_GROUP1, (ui_selected_group == 0));
+  SEQ_LED_PinSet(LED_GROUP2, (ui_selected_group == 1));
+  SEQ_LED_PinSet(LED_GROUP3, (ui_selected_group == 2));
+  SEQ_LED_PinSet(LED_GROUP4, (ui_selected_group == 3));
   
   // trigger layer LEDs
-  SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0) ? 1 : 0);
-  SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1) ? 1 : 0);
-  SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer == 2) ? 1 : 0);
+  SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
+  SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
+  SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer == 2));
   
   // remaining LEDs
-  SEQ_LED_PinSet(LED_EDIT, 1);
+  SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);
   SEQ_LED_PinSet(LED_MUTE, 0);
   SEQ_LED_PinSet(LED_PATTERN, 0);
   SEQ_LED_PinSet(LED_SONG, 0);
@@ -824,14 +854,34 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_STOP, !seq_core_state.RUN);
   SEQ_LED_PinSet(LED_PAUSE, seq_core_state.PAUSE);
   
-  SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0) ? 1 : 0);
-  SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1) ? 1 : 0); // will be obsolete in MBSEQ V4
+  SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0));
+  SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4
 
-  // write GP LED values into ui_gp_leds variable
-  // will be transfered to DOUT registers in SEQ_UI_LED_Handler_Periodic
-  ui_gp_leds =
-    (trg_layer_value[visible_track][ui_selected_trg_layer][2*ui_selected_step_view+1] << 8) |
-     trg_layer_value[visible_track][ui_selected_trg_layer][2*ui_selected_step_view+0];
+  SEQ_LED_PinSet(LED_MENU, seq_ui_button_state.MENU_PRESSED);
+  SEQ_LED_PinSet(LED_SCRUB, 0);
+  SEQ_LED_PinSet(LED_METRONOME, 0);
+
+  // note: the background function is permanently interrupted - therefore we write the GP pattern
+  // into a temporary variable, and take it over once completed
+  u16 new_ui_gp_leds = 0x0000;
+  u16 new_ui_gp_leds_flashing = 0x0000;  
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    // MENU button overruling - find out the selected menu (if accessible via MENU button)
+    int i;
+    for(i=0; i<16; ++i)
+      if(ui_page == ui_direct_access_menu_pages[i])
+	new_ui_gp_leds |= (1 << i);
+  } else {
+    // request GP LED values from current menu page
+    // will be transfered to DOUT registers in SEQ_UI_LED_Handler_Periodic
+    new_ui_gp_leds = 0x0000;
+    new_ui_gp_leds_flashing = 0x0000;
+
+    if( ui_gp_led_callback != NULL )
+      ui_gp_led_callback(&new_ui_gp_leds, &new_ui_gp_leds_flashing);
+  }
+  ui_gp_leds = new_ui_gp_leds;
+  ui_gp_leds_flashing = new_ui_gp_leds_flashing;
 
   return 0; // no error
 }
@@ -848,7 +898,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   static u16 prev_pos_marker_mask = 0x0000;
 
   // beat LED: tmp. for demo w/o real sequencer
-  SEQ_LED_PinSet(LED_BEAT, (seq_core_state.RUN && (seq_core_state.ref_step & 3) == 0) ? 1 : 0);
+  SEQ_LED_PinSet(LED_BEAT, (seq_core_state.RUN && (seq_core_state.ref_step & 3) == 0));
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;

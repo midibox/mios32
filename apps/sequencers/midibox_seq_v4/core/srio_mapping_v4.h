@@ -126,7 +126,10 @@
 #define LED_STEP_1_16    (((12   -1)<<3)+    6) // OPTIONAL! see CHANGELOG.txt
 #define LED_STEP_17_32   (((12   -1)<<3)+    7)
 
-
+//                          SR    ignore    Pin
+#define LED_MENU         (((13   -1)<<3)+    0)
+#define LED_SCRUB        (((13   -1)<<3)+    1)
+#define LED_METRONOME    (((13   -1)<<3)+    2)
 
 
 //                          SR    ignore    Pin
