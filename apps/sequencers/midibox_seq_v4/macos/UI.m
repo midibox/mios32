@@ -21,38 +21,42 @@ static NSObject *_self;
 NSColorWell *LED[NUM_LEDS];
 u8 ledState[NUM_LEDS]; // for dual-colour option
 
-NSButton *_buttonTrack1;
-NSButton *_buttonTrack2;
-NSButton *_buttonTrack3;
-NSButton *_buttonTrack4;
+static NSButton *_buttonTrack1;
+static NSButton *_buttonTrack2;
+static NSButton *_buttonTrack3;
+static NSButton *_buttonTrack4;
 
-NSButton *_buttonGroup1;
-NSButton *_buttonGroup2;
-NSButton *_buttonGroup3;
-NSButton *_buttonGroup4;
+static NSButton *_buttonGroup1;
+static NSButton *_buttonGroup2;
+static NSButton *_buttonGroup3;
+static NSButton *_buttonGroup4;
 
-NSButton *_buttonPLayerA;
-NSButton *_buttonPLayerB;
-NSButton *_buttonPLayerC;
+static NSButton *_buttonPLayerA;
+static NSButton *_buttonPLayerB;
+static NSButton *_buttonPLayerC;
 
-NSButton *_buttonTLayerA;
-NSButton *_buttonTLayerB;
-NSButton *_buttonTLayerC;
+static NSButton *_buttonTLayerA;
+static NSButton *_buttonTLayerB;
+static NSButton *_buttonTLayerC;
 
-NSButton *_buttonEdit;
-NSButton *_buttonMute;
-NSButton *_buttonPattern;
-NSButton *_buttonSong;
+static NSButton *_buttonEdit;
+static NSButton *_buttonMute;
+static NSButton *_buttonPattern;
+static NSButton *_buttonSong;
 
-NSButton *_buttonSolo;
-NSButton *_buttonFast;
-NSButton *_buttonAll;
+static NSButton *_buttonSolo;
+static NSButton *_buttonFast;
+static NSButton *_buttonAll;
 
-NSButton *_buttonStepView;
+static NSButton *_buttonStepView;
 
-NSButton *_buttonPlay;
-NSButton *_buttonStop;
-NSButton *_buttonPause;
+static NSButton *_buttonPlay;
+static NSButton *_buttonStop;
+static NSButton *_buttonPause;
+
+static NSButton *_buttonMenu;
+static NSButton *_buttonScrub;
+static NSButton *_buttonMetronome;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -124,6 +128,10 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 			case 93: [_buttonPause highlight:(value ? YES : NO)]; break;
 			
 			case 95: [_buttonStepView highlight:(value ? YES : NO)]; break;
+			
+			case 96: [_buttonMenu highlight:(value ? YES : NO)]; break;
+			case 97: [_buttonScrub highlight:(value ? YES : NO)]; break;
+			case 98: [_buttonMetronome highlight:(value ? YES : NO)]; break;
 		}
 	}
 
@@ -161,10 +169,14 @@ s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 	if( pin > 8*MIOS32_SRIO_NUM_SR )
 		return -1;
 
+#if 0
+	NSLog(@"Pin: %d: %d\n", pin, value);
+#endif
+
 	if( value )
-		mios32_srio_din_buffer[pin>>8] |= (1 << (pin&7));
+		mios32_srio_din_buffer[pin>>3] |= (1 << (pin&7));
 	else
-		mios32_srio_din_buffer[pin>>8] &= ~(1 << (pin&7));
+		mios32_srio_din_buffer[pin>>3] &= ~(1 << (pin&7));
 
 	return 0;
 }
@@ -350,6 +362,10 @@ s32 TASKS_Init(u32 mode)
 	_buttonPlay = buttonPlay;
 	_buttonStop = buttonStop;
 	_buttonPause = buttonPause;
+
+	_buttonMenu = buttonMenu;
+	_buttonScrub = buttonScrub;
+	_buttonMetronome = buttonMetronome;
 
 	// clear LED states
 	for(i=0; i<NUM_LEDS; ++i)

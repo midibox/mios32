@@ -128,7 +128,10 @@
 #define LED_STEP_1_16    (((19   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
 #define LED_STEP_17_32   (((19   -1)<<3)+    1)
 
-
+//                          SR    ignore    Pin
+#define LED_MENU         ((( 0   -1)<<3)+    0)
+#define LED_SCRUB        ((( 0   -1)<<3)+    0)
+#define LED_METRONOME    ((( 0   -1)<<3)+    0)
 
 
 //                          SR    ignore    Pin
@@ -205,6 +208,5 @@
 #define BUTTON_COPY      (((23   -1)<<3)+    3)
 #define BUTTON_PASTE     (((24   -1)<<3)+    2)
 #define BUTTON_CLEAR     (((24   -1)<<3)+    3)
-
 
 #endif /* _SRIO_MAPPING_V4_H */
