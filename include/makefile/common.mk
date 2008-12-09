@@ -119,10 +119,6 @@ $(ARM_AS_OBJS) : %.o : %.s
 clean:
 	rm -f *.lss *.sym *.map *.elf
 	rm -f $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
-	rm -f $(addsuffix .d,$(basename $(THUMB_SOURCE)))
-	rm -f $(addsuffix .d,$(basename $(ARM_SOURCE)))
-	rm -f $(addsuffix .lst,$(basename $(THUMB_AS_SOURCE)))
-	rm -f $(addsuffix .lst,$(basename $(ARM_AS_SOURCE)))
 
 # clean temporary files + project image
 cleanall: clean
