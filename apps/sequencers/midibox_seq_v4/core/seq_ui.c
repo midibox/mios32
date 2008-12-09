@@ -60,8 +60,8 @@ u8 ui_selected_item;
 
 u8 ui_selected_item;
 
-volatile u16 ui_cursor_flash_ctr;
-
+volatile u8 ui_cursor_flash;
+u16 ui_cursor_flash_ctr;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -71,12 +71,14 @@ volatile u16 ui_cursor_flash_ctr;
 static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TODO_Init,    // 0
   (void *)&SEQ_UI_EDIT_Init,    // 1
-  (void *)&SEQ_UI_TRKDIR_Init   // 2
+  (void *)&SEQ_UI_TRKDIR_Init,  // 2
+  (void *)&SEQ_UI_TRKDIV_Init,  // 3
+  (void *)&SEQ_UI_TRKLEN_Init   // 4
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
 static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
-static s32 (*ui_led_callback)(u16 *gp_leds, u16 *gp_leds_flashing);
+static s32 (*ui_led_callback)(u16 *gp_leds);
 static s32 (*ui_lcd_callback)(u8 high_prio);
 
 static seq_ui_page_t ui_page;
@@ -88,8 +90,8 @@ static const seq_ui_page_t ui_direct_access_menu_pages[16] = {
   SEQ_UI_PAGE_NONE,        // GP2
   SEQ_UI_PAGE_NONE,        // GP3
   SEQ_UI_PAGE_TRKDIR,      // GP4
-  SEQ_UI_PAGE_NONE,        // GP5
-  SEQ_UI_PAGE_NONE,        // GP6
+  SEQ_UI_PAGE_TRKDIV,      // GP5
+  SEQ_UI_PAGE_TRKLEN,      // GP6
   SEQ_UI_PAGE_NONE,        // GP7
   SEQ_UI_PAGE_NONE,        // GP8
   SEQ_UI_PAGE_NONE,        // GP9
@@ -103,7 +105,6 @@ static const seq_ui_page_t ui_direct_access_menu_pages[16] = {
 };
 
 static u16 ui_gp_leds;
-static u16 ui_gp_leds_flashing;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,12 +122,12 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_item = 0;
 
   ui_cursor_flash_ctr = 0;
+  ui_cursor_flash = 0;
 
   seq_ui_button_state.ALL = 0;
 
   // visible GP pattern
   ui_gp_leds = 0x0000;
-  ui_gp_leds_flashing = 0x0000;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -184,12 +185,12 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
 #endif
 
-    // don't display menu page anymore (only first time when menu button has been pressed)
-    seq_ui_button_state.MENU_PAGE_DISPLAYED = 0;
-
     // request display initialisation
     seq_ui_display_init_req = 1;
   }
+
+  // don't display menu page anymore (only first time when menu button has been pressed)
+  seq_ui_button_state.MENU_PAGE_DISPLAYED = 0;
 }
 
 
@@ -209,6 +210,7 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
     // forward to menu page
     if( ui_button_callback != NULL )
       ui_button_callback(gp, depressed);
+    ui_cursor_flash_ctr = 0;
   }
 
   return 0; // no error
@@ -219,6 +221,7 @@ static s32 SEQ_UI_Button_Left(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Left, depressed);
+  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -228,6 +231,7 @@ static s32 SEQ_UI_Button_Right(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Right, depressed);
+  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -237,6 +241,7 @@ static s32 SEQ_UI_Button_Down(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Down, depressed);
+  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -246,6 +251,7 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Up, depressed);
+  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -403,6 +409,7 @@ static s32 SEQ_UI_Button_Select(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Select, depressed);
+  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -412,6 +419,7 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
+  ui_cursor_flash_ctr = 0;
 
   // release all button states
   seq_ui_button_state.ALL = 0;
@@ -763,14 +771,9 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   else if( incrementer < -3 )
     incrementer = -3;
 
-  if( encoder == 0 ) {
-    // forward to menu page
-    if( ui_encoder_callback != NULL )
-      ui_encoder_callback(SEQ_UI_ENCODER_Datawheel, incrementer);
-  } else {
-    // forward to menu page
-    if( ui_encoder_callback != NULL )
-      ui_encoder_callback(encoder-1, incrementer);
+  if( ui_encoder_callback != NULL ) {
+    ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
+    ui_cursor_flash_ctr = 0; // ensure that value is visible when it has been changed
   }
 
   // request display update
@@ -916,7 +919,6 @@ s32 SEQ_UI_LED_Handler(void)
   // note: the background function is permanently interrupted - therefore we write the GP pattern
   // into a temporary variable, and take it over once completed
   u16 new_ui_gp_leds = 0x0000;
-  u16 new_ui_gp_leds_flashing = 0x0000;  
   if( seq_ui_button_state.MENU_PRESSED ) {
     // MENU button overruling - find out the selected menu (if accessible via MENU button)
     int i;
@@ -927,13 +929,11 @@ s32 SEQ_UI_LED_Handler(void)
     // request GP LED values from current menu page
     // will be transfered to DOUT registers in SEQ_UI_LED_Handler_Periodic
     new_ui_gp_leds = 0x0000;
-    new_ui_gp_leds_flashing = 0x0000;
 
     if( ui_led_callback != NULL )
-      ui_led_callback(&new_ui_gp_leds, &new_ui_gp_leds_flashing);
+      ui_led_callback(&new_ui_gp_leds);
   }
   ui_gp_leds = new_ui_gp_leds;
-  ui_gp_leds_flashing = new_ui_gp_leds_flashing;
 
   return 0; // no error
 }
@@ -958,31 +958,26 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_core_state.RUN && (played_step >> 4) == ui_selected_step_view )
     pos_marker_mask = 1 << (played_step & 0xf);
 
-  // apply flash mask
-  u16 ui_gp_leds_flashed = ui_gp_leds;
-  if( ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF )
-    ui_gp_leds_flashed &= ~ui_gp_leds_flashing;
-
   // exit of pattern hasn't changed
-  if( prev_ui_gp_leds == ui_gp_leds_flashed && prev_pos_marker_mask == pos_marker_mask )
+  if( prev_ui_gp_leds == ui_gp_leds && prev_pos_marker_mask == pos_marker_mask )
     return 0;
-  prev_ui_gp_leds = ui_gp_leds_flashed;
+  prev_ui_gp_leds = ui_gp_leds;
   prev_pos_marker_mask = pos_marker_mask;
 
   // transfer to GP LEDs
 
 #ifdef DEFAULT_GP_DOUT_SR_L
 # ifdef DEFAULT_GP_DOUT_SR_L2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, (ui_gp_leds_flashed >> 0) & 0xff);
+  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, (ui_gp_leds >> 0) & 0xff);
 # else
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, ((ui_gp_leds_flashed ^ pos_marker_mask) >> 0) & 0xff);
+  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, ((ui_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
 # endif
 #endif
 #ifdef DEFAULT_GP_DOUT_SR_R
 # ifdef DEFAULT_GP_DOUT_SR_R2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, (ui_gp_leds_flashed >> 8) & 0xff);
+  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, (ui_gp_leds >> 8) & 0xff);
 #else
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, ((ui_gp_leds_flashed ^ pos_marker_mask) >> 8) & 0xff);
+  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, ((ui_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
 #endif
 #endif
 
@@ -1006,9 +1001,9 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // bit 4: second red (i.e. GP2-R)
 
   // this mapping routine takes ca. 5 uS
-  // since it's only executed when ui_gp_leds_flashed or gp_mask has changed, it doesn't really hurt
+  // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
 
-  u16 modified_gp_leds = ui_gp_leds_flashed;
+  u16 modified_gp_leds = ui_gp_leds;
 #if 1
   // extra: red LED is lit exclusively for higher contrast
   modified_gp_leds &= ~pos_marker_mask;
@@ -1048,8 +1043,12 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {
     ui_cursor_flash_ctr = 0;
     seq_ui_display_update_req = 1;
-  } else if( ui_cursor_flash_ctr == SEQ_UI_CURSOR_FLASH_CTR_LED_OFF )
+  } else if( ui_cursor_flash_ctr == SEQ_UI_CURSOR_FLASH_CTR_LED_OFF ) {
     seq_ui_display_update_req = 1;
+  }
+  // important: flash flag has to be recalculated on each invocation of this
+  // handler, since counter could also be reseted outside this function
+  ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
 
   return 0;
 }
@@ -1109,22 +1108,44 @@ s32 SEQ_UI_GxTyInc(s32 incrementer)
 s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int value = SEQ_CC_Get(visible_track, cc);
-  int prev_value = value;
+  int new_value = SEQ_CC_Get(visible_track, cc);
+  int prev_value = new_value;
 
   if( incrementer >= 0 ) {
-    if( (value += incrementer) >= max )
-      value = max;
+    if( (new_value += incrementer) >= max )
+      new_value = max;
   } else {
-    if( (value += incrementer) < min )
-      value = min;
+    if( (new_value += incrementer) < min )
+      new_value = min;
   }
 
-  if( value == prev_value )
+  if( new_value == prev_value )
     return 0; // no change
 
-  SEQ_CC_Set(visible_track, cc, value);
+  SEQ_CC_Set(visible_track, cc, new_value);
 
   return 1; // value changed
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Modifies a bitfield in a CC value to a given value
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int new_value = SEQ_CC_Get(visible_track, cc);
+  int prev_value = new_value;
+
+  new_value = (new_value & ~flag_mask) | value;
+
+  if( new_value == prev_value )
+    return 0; // no change
+
+  SEQ_CC_Set(visible_track, cc, new_value);
+
+  return 1; // value changed
+}
+
 

@@ -45,7 +45,7 @@ u32 SEQ_RANDOM_Gen(u32 seed)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns scaled random number
+// returns random number in a given range
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_RANDOM_Gen_Range(u32 min, u32 max)
 {
@@ -65,5 +65,5 @@ u32 SEQ_RANDOM_Gen_Range(u32 min, u32 max)
   rand_r(&random_value);
 
   // return result within the given range
-  return random_value % (max-min+1);
+  return min + (random_value % (max-min+1));
 }

@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Track direction page
+ * Track length page
  *
  * ==========================================================================
  *
@@ -25,12 +25,41 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       5
+#define NUM_OF_ITEMS       11
 #define ITEM_GXTY          0
-#define ITEM_DIRECTION     1
-#define ITEM_STEPS_FORWARD 2
-#define ITEM_STEPS_JMPBCK  3
-#define ITEM_STEPS_REPLAY  4
+#define ITEM_LENGTH        1
+#define ITEM_LOOP          2
+#define ITEM_LENGTH_2      3
+#define ITEM_LENGTH_4      4
+#define ITEM_LENGTH_6      5
+#define ITEM_LENGTH_8      6
+#define ITEM_LENGTH_12     7
+#define ITEM_LENGTH_16     8
+#define ITEM_LENGTH_24     9
+#define ITEM_LENGTH_32     10
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+const char quicksel_str[8][6] = { "  2  ", "  4  ", "  6  ", "  8  ", "  12 ", "  16 ", "  24 ", "  32 " };
+const u8 quicksel_length[8]   = {    1,       3,       5,       7,       11,      15,      23,      31   };
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Search for item in quick selection list
+/////////////////////////////////////////////////////////////////////////////
+static s32 QUICKSEL_SearchItem(u8 track)
+{
+  u8 search_pattern = SEQ_CC_Get(track, SEQ_CC_LENGTH);
+  int i;
+  for(i=0; i<8; ++i)
+    if( quicksel_length[i] == search_pattern )
+      return i;
+
+  return -1; // item not found
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,15 +72,13 @@ static s32 LED_Handler(u16 *gp_leds)
 
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_DIRECTION: {
-      int selected_direction = SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_DIRECTION);
-      *gp_leds = (1 << (selected_direction+1));
-      }
-      break;
-    case ITEM_STEPS_FORWARD: *gp_leds = 0x0700; break;
-    case ITEM_STEPS_JMPBCK:  *gp_leds = 0x1800; break;
-    case ITEM_STEPS_REPLAY:  *gp_leds = 0xe000; break;
+    case ITEM_LENGTH: *gp_leds = 0x0006; break;
+    case ITEM_LOOP: *gp_leds = 0x0018; break;
   }
+
+  s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
+  if( quicksel_item >= 0 )
+      *gp_leds |= 1 << (quicksel_item+8);
 
   return 0; // no error
 }
@@ -73,40 +100,41 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP2:
     case SEQ_UI_ENCODER_GP3:
+      ui_selected_item = ITEM_LENGTH;
+      break;
+
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
+      ui_selected_item = ITEM_LOOP;
+      break;
+
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_DIRECTION;
-      SEQ_CC_Set(SEQ_UI_VisibleTrackGet(), SEQ_CC_DIRECTION, encoder-1);
-      return 1;
+      return 0; // not mapped
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
     case SEQ_UI_ENCODER_GP11:
-      ui_selected_item = ITEM_STEPS_FORWARD;
-      break;
-
     case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_STEPS_JMPBCK;
-      break;
-
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_STEPS_REPLAY;
-      break;
+      {
+	int quicksel = encoder - 8;
+	ui_selected_item = ITEM_LENGTH_2 + quicksel;
+	u8 visible_track = SEQ_UI_VisibleTrackGet();
+	SEQ_CC_Set(visible_track, SEQ_CC_LENGTH, quicksel_length[quicksel]);
+	return 1; // value has been changed
+      }
   }
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_DIRECTION:     return SEQ_UI_CCInc(SEQ_CC_DIRECTION, 0, 6, incrementer);
-    case ITEM_STEPS_FORWARD: return SEQ_UI_CCInc(SEQ_CC_STEPS_FORWARD, 0, 7, incrementer);
-    case ITEM_STEPS_JMPBCK:  return SEQ_UI_CCInc(SEQ_CC_STEPS_JMPBCK, 0, 7, incrementer);
-    case ITEM_STEPS_REPLAY:  return SEQ_UI_CCInc(SEQ_CC_STEPS_REPLAY, 0, 7, incrementer);
+    case ITEM_LENGTH:        return SEQ_UI_CCInc(SEQ_CC_LENGTH, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
+    case ITEM_LOOP:          return SEQ_UI_CCInc(SEQ_CC_LOOP, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -124,6 +152,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   switch( button ) {
     case SEQ_UI_BUTTON_GP1:
       ui_selected_item = ITEM_GXTY;
@@ -131,31 +161,28 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP2:
     case SEQ_UI_BUTTON_GP3:
+      ui_selected_item = ITEM_LENGTH;
+      return 0; // value hasn't been changed
+
     case SEQ_UI_BUTTON_GP4:
     case SEQ_UI_BUTTON_GP5:
+      ui_selected_item = ITEM_LOOP;
+      return 0; // value hasn't been changed
+
     case SEQ_UI_BUTTON_GP6:
     case SEQ_UI_BUTTON_GP7:
     case SEQ_UI_BUTTON_GP8:
-      ui_selected_item = ITEM_DIRECTION;
-      SEQ_CC_Set(SEQ_UI_VisibleTrackGet(), SEQ_CC_DIRECTION, button-1);
-      return 1; // value changed
+      return 0; // not mapped
 
     case SEQ_UI_BUTTON_GP9:
     case SEQ_UI_BUTTON_GP10:
     case SEQ_UI_BUTTON_GP11:
-      ui_selected_item = ITEM_STEPS_FORWARD;
-      return 0; // value hasn't been changed
-
     case SEQ_UI_BUTTON_GP12:
     case SEQ_UI_BUTTON_GP13:
-      ui_selected_item = ITEM_STEPS_JMPBCK;
-      return 0; // value hasn't been changed
-
     case SEQ_UI_BUTTON_GP14:
     case SEQ_UI_BUTTON_GP15:
     case SEQ_UI_BUTTON_GP16:
-      ui_selected_item = ITEM_STEPS_REPLAY;
-      return 0; // value hasn't been changed
+      return Encoder_Handler((int)button, 1);
 
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -192,10 +219,19 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // >Forward<  PingPong  Rand.Dir  Rand.D+S  Experimental "Progression" Parameters
-  // G1T1   Backward  Pendulum  Rand.Step    Steps Fwd: 1  Jump Back: 0  Replay: x 1
+  // Trk.   Length  Loop                             Quick Selection: Length         
+  // G1T1    16/32    1                         2    4    6    8   12   16   24   32 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  ///////////////////////////////////////////////////////////////////////////
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("Trk.   Length  Loop                     ");
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("        Quick Selection: Length         ");
+
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(0);
@@ -209,73 +245,36 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  const char dir_names[7][13] = {
-    ">Forward<   ",
-    ">Backward<  ",
-    ">PingPong<  ",
-    ">Pendulum<  ",
-    ">Rand.Dir<  ",
-    ">Rand.Step< ",
-    ">Rand.D+S<  "
-  };
-  int i;
-  int selected_direction = SEQ_CC_Get(visible_track, SEQ_CC_DIRECTION);
-  for(i=0; i<7; ++i) {
-    u8 x = 5*i;
-    MIOS32_LCD_CursorSet(x, i%2);
-
-    // print unmodified name if item selected
-    // replace '>' and '<' by space if item not selected
-    // flash item (print only '>'/'<' and spaces) if cursor position == 1 and flash flag set by timer
-    int j;
-    for(j=0; j<12; ++j) {
-      u8 c = dir_names[i][j];
-
-      if( ++x > 40 ) // don't print more than 40 characters per line
-	break;
-
-      if( c == '>' || c == '<' ) {
-	MIOS32_LCD_PrintChar((i == selected_direction) ? c : ' ');
-      } else {
-	if( ui_selected_item == ITEM_DIRECTION && i == selected_direction && ui_cursor_flash )
-	  MIOS32_LCD_PrintChar(' ');
-	else
-	  MIOS32_LCD_PrintChar(c);
-      }
-    }
+  if( ui_selected_item == ITEM_LENGTH && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(8);
+  } else {
+    MIOS32_LCD_PrintFormattedString("%3d/32  ", SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
   }
 
-  // 3 additional spaces to fill LCD (avoids artefacts on page switches)
-  MIOS32_LCD_CursorSet(37, 1);
-  SEQ_LCD_PrintSpaces(3);
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_LOOP && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(8);
+  } else {
+    MIOS32_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintSpaces(21);
+  // free for sale
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString(" Experimental \"Progression\" Parameters  ");
-
-  ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Steps Fwd:");
-  if( ui_selected_item == ITEM_STEPS_FORWARD && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_FORWARD)+1);
-  }
+  s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
 
-  MIOS32_LCD_PrintString("Jump Back:");
-  if( ui_selected_item == ITEM_STEPS_JMPBCK && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_JMPBCK));
+  int i;
+  for(i=0; i<8; ++i) {
+    if( quicksel_item == i && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      MIOS32_LCD_PrintString((char *)quicksel_str[i]);
+    }
   }
-
-  MIOS32_LCD_PrintString("Replay: x");
-  if( ui_selected_item == ITEM_STEPS_REPLAY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%2d ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_REPLAY)+1);
-  }  
 
   return 0; // no error
 }
@@ -284,7 +283,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_TRKDIR_Init(u32 mode)
+s32 SEQ_UI_TRKLEN_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);

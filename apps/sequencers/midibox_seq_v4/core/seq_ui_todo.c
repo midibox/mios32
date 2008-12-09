@@ -23,8 +23,11 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
-static s32 LED_Handler(u16 *gp_leds, u16 *gp_leds_flashing)
+static s32 LED_Handler(u16 *gp_leds)
 {
+  if( ui_cursor_flash ) // if flashing flag active: no LED flag set
+    return 0;
+
   return 0; // no error
 }
 
