@@ -63,7 +63,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->steps_forward = 0;
     tcc->steps_jump_back = 0;
 
-    tcc->clkdiv.value = 0;
+    tcc->clkdiv.value = 3;
     tcc->clkdiv.SYNCH_TO_MEASURE = 0;
     tcc->clkdiv.TRIPLETS = 0;
 

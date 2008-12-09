@@ -46,6 +46,8 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
+u8 steps_per_measure;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -58,6 +60,8 @@ seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_state.ALL = 0;
+
+  steps_per_measure = 16; // will be configurable later
 
   // reset track parameters
   SEQ_CC_Init(0);
@@ -198,12 +202,16 @@ s32 SEQ_CORE_Pause(u32 no_echo)
 s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
   // increment reference step on each 16th note
+  // set request flag on overrun (tracks can synch to measure)
+  u8 synch_to_measure_req = 0;
   if( (bpm_tick % (SEQ_BPM_RESOLUTION_PPQN/4)) == 0 ) {
     if( seq_core_state.FIRST_CLK )
       seq_core_state.ref_step = 0;
     else {
-      if( ++seq_core_state.ref_step >= 16 ) // TODO: adjustable steps per measure
+      if( ++seq_core_state.ref_step >= steps_per_measure ) {
 	seq_core_state.ref_step = 0;
+	synch_to_measure_req = 1;
+      }
     }
   }
 
@@ -212,8 +220,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
     seq_core_trk_t *t = &seq_core_trk[track];
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-    // TODO: use configurable clock dividers
-    if( t->state.FIRST_CLK || ++t->div_ctr >= (SEQ_BPM_RESOLUTION_PPQN/4) ) {
+    // if "synch to measure" flag set: reset track if master has reached the selected number of steps
+    // MEMO: we could also provide the option to synch to another track
+    if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
+      SEQ_CORE_ResetTrkPos(t, tcc);
+
+    // MEMO: due to compatibilty reasons, the clock-predivider is currently multiplied by 4 (previously we used 96ppqn)
+    u16 prediv = bpm_tick % (4 * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+    if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
       t->div_ctr = 0;
 
       // determine next step depending on direction mode

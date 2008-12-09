@@ -19,12 +19,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 3
+#define SEQ_UI_PAGES 5
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
   SEQ_UI_PAGE_EDIT,
-  SEQ_UI_PAGE_TRKDIR
+  SEQ_UI_PAGE_TRKDIR,
+  SEQ_UI_PAGE_TRKDIV,
+  SEQ_UI_PAGE_TRKLEN
 } seq_ui_page_t;
 
 
@@ -32,6 +34,8 @@ typedef enum {
 extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
+extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
+extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -131,6 +135,7 @@ extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 extern u8  SEQ_UI_VisibleTrackGet(void);
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
 extern s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -150,6 +155,6 @@ extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;
 
-extern volatile u16 ui_cursor_flash_ctr;
+extern volatile u8 ui_cursor_flash;
 
 #endif /* _SEQ_UI_H */
