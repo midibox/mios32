@@ -64,21 +64,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     ui_selected_step = step;
 
     // add to absolute value
-    s32 value = (s32)par_layer_value[visible_track][ui_selected_par_layer][step] + incrementer;
-    if( value < 0 )
-      value = 0;
-    else if( value >= 128 )
-      value = 127;
+    s32 old_value = SEQ_PAR_Get(visible_track, ui_selected_par_layer, step);
+    s32 new_value = old_value + incrementer;
+    if( new_value < 0 )
+      new_value = 0;
+    else if( new_value >= 128 )
+      new_value = 127;
 
     // take over if changed
-    if( (u8)value == par_layer_value[visible_track][ui_selected_par_layer][step] ) {
+    if( new_value == old_value ) {
       return 0; // value not changed
     }
 
-    par_layer_value[visible_track][ui_selected_par_layer][step] = (u8)value;
+    SEQ_PAR_Set(visible_track, ui_selected_par_layer, step, (u8)new_value);
 
     // (de)activate gate depending on value
-    if( value )
+    if( new_value )
       trg_layer_value[visible_track][0][step>>3] |= (1 << (step&7));
     else
       trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
@@ -179,15 +180,15 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSelectedStep(ui_selected_step, 15);
   MIOS32_LCD_PrintChar(':');
 
-  SEQ_LCD_PrintNote(par_layer_value[visible_track][0][ui_selected_step]);
-  MIOS32_LCD_PrintChar((char)par_layer_value[visible_track][1][ui_selected_step] >> 4);
+  SEQ_LCD_PrintNote(SEQ_PAR_Get(visible_track, 0, ui_selected_step));
+  MIOS32_LCD_PrintChar((char)(SEQ_PAR_Get(visible_track, 1, ui_selected_step) >> 4));
   SEQ_LCD_PrintSpaces(1);
 
-  MIOS32_LCD_PrintFormattedString("Vel:%3d", par_layer_value[visible_track][1][ui_selected_step]);
+  MIOS32_LCD_PrintFormattedString("Vel:%3d", SEQ_PAR_Get(visible_track, 1, ui_selected_step));
   SEQ_LCD_PrintSpaces(1);
 
   MIOS32_LCD_PrintFormattedString("Len:");
-  SEQ_LCD_PrintGatelength(par_layer_value[visible_track][2][ui_selected_step]);
+  SEQ_LCD_PrintGatelength(SEQ_PAR_Get(visible_track, 2, ui_selected_step));
   SEQ_LCD_PrintSpaces(1);
 
   MIOS32_LCD_PrintFormattedString("G-a-r--");
@@ -205,9 +206,9 @@ static s32 LCD_Handler(u8 high_prio)
     }
 
     u8 visible_step = step + 16*ui_selected_step_view;
-    u8 note = par_layer_value[visible_track][0][visible_step];
-    u8 vel = par_layer_value[visible_track][1][visible_step];
-    u8 len = par_layer_value[visible_track][2][visible_step];
+    u8 note = SEQ_PAR_Get(visible_track, 0, visible_step);
+    u8 vel = SEQ_PAR_Get(visible_track, 1, visible_step);
+    u8 len = SEQ_PAR_Get(visible_track, 2, visible_step);
     u8 gate = trg_layer_value[visible_track][0][visible_step>>3] & (1 << (visible_step&7));
 
     switch( ui_selected_par_layer ) {

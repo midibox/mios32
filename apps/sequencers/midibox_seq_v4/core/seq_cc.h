@@ -56,6 +56,7 @@
 #define SEQ_CC_ASG_ROLL  	0x3c
 #define SEQ_CC_ASG_RANDOM_GATE	0x3d
 #define SEQ_CC_ASG_RANDOM_VALUE	0x3e
+#define SEQ_CC_ASG_RANDOM_SPARE	0x3f
 
 #define SEQ_CC_CHANGE_STEP	0x40
 
@@ -64,7 +65,7 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef struct seq_cc_trk_t {
+typedef struct {
   seq_core_shared_t shared; // shared mode parameters (each track holds another value)
   seq_core_trkmode_flags_t mode; // track mode and flags
   u8       evnt_mode;         // event mode

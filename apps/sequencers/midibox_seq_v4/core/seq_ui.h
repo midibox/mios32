@@ -19,11 +19,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 5
+#define SEQ_UI_PAGES 6
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
   SEQ_UI_PAGE_EDIT,
+  SEQ_UI_PAGE_TRKEVNT,
   SEQ_UI_PAGE_TRKDIR,
   SEQ_UI_PAGE_TRKDIV,
   SEQ_UI_PAGE_TRKLEN
@@ -33,6 +34,7 @@ typedef enum {
 // Prototypes for all UI pages are burried here
 extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
+extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
 extern s32 SEQ_UI_TRKLEN_Init(u32 mode);

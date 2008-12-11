@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include "seq_core.h"
 #include "seq_cc.h"
+#include "seq_layer.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -51,6 +52,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->mode.SUSTAIN = 0;
 
     tcc->evnt_mode = 0;
+
     tcc->evnt_const1 = 0;
     tcc->evnt_const2 = 0;
     tcc->evnt_const3 = 0;
@@ -112,6 +114,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u16 value)
   switch( cc ) {
     case SEQ_CC_MODE: tcc->mode.playmode = value; break;
     case SEQ_CC_MODE_FLAGS: tcc->mode.flags = value; break;
+
     case SEQ_CC_MIDI_EVNT_MODE: tcc->evnt_mode = value; break;
     case SEQ_CC_MIDI_EVNT_CONST1: tcc->evnt_const1 = value; break;
     case SEQ_CC_MIDI_EVNT_CONST2: tcc->evnt_const2 = value; break;
@@ -144,6 +147,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u16 value)
     case SEQ_CC_ASG_ROLL: tcc->trg_assignments.roll = value; break;
     case SEQ_CC_ASG_RANDOM_GATE: tcc->trg_assignments.random_gate = value; break;
     case SEQ_CC_ASG_RANDOM_VALUE: tcc->trg_assignments.random_value = value; break;
+    case SEQ_CC_ASG_RANDOM_SPARE: tcc->trg_assignments.spare = value; break;
   
     case SEQ_CC_CHANGE_STEP: break; // TODO
   
@@ -203,6 +207,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ASG_ROLL: return tcc->trg_assignments.roll;
     case SEQ_CC_ASG_RANDOM_GATE: return tcc->trg_assignments.random_gate;
     case SEQ_CC_ASG_RANDOM_VALUE: return tcc->trg_assignments.random_value;
+    case SEQ_CC_ASG_RANDOM_SPARE: return tcc->trg_assignments.spare;
   
     case SEQ_CC_CHANGE_STEP: break; // TODO
   }

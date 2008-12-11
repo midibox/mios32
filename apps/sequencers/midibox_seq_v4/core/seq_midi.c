@@ -90,25 +90,47 @@ s32 SEQ_MIDI_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, s
     // no item in queue -- first element
     midi_queue = new_item;
   } else {
+    u8 insert_before_item = 0;
+    seq_midi_queue_item_t *last_item = midi_queue;
     seq_midi_queue_item_t *next_item;
     do {
+      // CCs are sorted before notes at a given timestamp
+      // (new CC before On events at the same timestamp)
+      // CCs are still played after Off or Clock events
+      if( event_type == SEQ_MIDI_CCEvent && 
+	  item->timestamp == timestamp &&
+	  item->event_type == SEQ_MIDI_OnEvent ) {
+	// found On event with same timestamp, play CC before On event
+	insert_before_item = 1;
+	break;
+      }
+
       if( (next_item=item->next) == NULL ) {
 	// end of queue reached, insert new item at the end
 	break;
       }
-
+	
       if( next_item->timestamp > timestamp ) {
 	// found entry with later timestamp
 	break;
       }
 
       // switch to next item
+      last_item = item;
       item = next_item;
     } while( 1 );
 
     // insert/add item into/to list
-    item->next = new_item;
-    new_item->next = next_item;
+    if( insert_before_item ) {
+      if( last_item == midi_queue )
+	midi_queue = new_item;
+      else
+	last_item->next = new_item;
+      new_item->next = item;
+    } else {
+      item->next = new_item;
+      new_item->next = next_item;
+    }
   }
 
   return 0; // no error

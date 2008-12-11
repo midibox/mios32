@@ -71,9 +71,10 @@ u16 ui_cursor_flash_ctr;
 static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TODO_Init,    // 0
   (void *)&SEQ_UI_EDIT_Init,    // 1
-  (void *)&SEQ_UI_TRKDIR_Init,  // 2
-  (void *)&SEQ_UI_TRKDIV_Init,  // 3
-  (void *)&SEQ_UI_TRKLEN_Init   // 4
+  (void *)&SEQ_UI_TRKEVNT_Init, // 2
+  (void *)&SEQ_UI_TRKDIR_Init,  // 3
+  (void *)&SEQ_UI_TRKDIV_Init,  // 4
+  (void *)&SEQ_UI_TRKLEN_Init   // 5
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -87,7 +88,7 @@ static seq_ui_page_t ui_page;
 // following pages are directly accessible with the GP buttons when MENU button is pressed
 static const seq_ui_page_t ui_direct_access_menu_pages[16] = {
   SEQ_UI_PAGE_NONE,        // GP1
-  SEQ_UI_PAGE_NONE,        // GP2
+  SEQ_UI_PAGE_TRKEVNT,     // GP2
   SEQ_UI_PAGE_NONE,        // GP3
   SEQ_UI_PAGE_TRKDIR,      // GP4
   SEQ_UI_PAGE_TRKDIV,      // GP5

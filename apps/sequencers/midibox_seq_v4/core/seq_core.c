@@ -19,6 +19,7 @@
 
 #include "seq_core.h"
 #include "seq_cc.h"
+#include "seq_layer.h"
 #include "seq_midi.h"
 #include "seq_bpm.h"
 #include "seq_par.h"
@@ -65,6 +66,9 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset track parameters
   SEQ_CC_Init(0);
+
+  // reset layers
+  SEQ_LAYER_Init(0);
 
   // reset sequencer
   SEQ_CORE_Reset();
@@ -237,21 +241,26 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
       // clear "first clock" flag (on following clock ticks we can continue as usual)
       t->state.FIRST_CLK = 0;
 
-      // generate event (temp. solution - no event mode supported yet!)
-      u8 step_mask = 1 << (t->step % 8);
-      u8 step_ix = t->step / 8;
-      if( trg_layer_value[track][0][step_ix] & step_mask ) {
-	mios32_midi_package_t midi_package;
+      if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
+	s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
+	seq_layer_evnt_t layer_events[4];
+	s32 number_of_events = getevnt_func(track, t->step, layer_events);
+	if( number_of_events > 0 ) {
+	  int i;
+	  seq_layer_evnt_t *e = &layer_events[0];
+	  for(i=0; i<number_of_events; ++e, ++i) {
+	    SEQ_MIDI_Send(tcc->midi_port, 
+			  e->midi_package, 
+			  (e->midi_package.type == CC) ? SEQ_MIDI_CCEvent : SEQ_MIDI_OnEvent,
+			  bpm_tick);
 
-	midi_package.type = 0x9;
-	midi_package.evnt0 = 0x90 | tcc->midi_chn;
-	midi_package.evnt1 = par_layer_value[track][0][t->step];
-	midi_package.evnt2 = par_layer_value[track][1][t->step];
-
-	SEQ_MIDI_Send(tcc->midi_port, midi_package, SEQ_MIDI_OnEvent, bpm_tick);
-	midi_package.evnt2 = 0x00;
-	u32 delay = 4*par_layer_value[track][2][t->step]; // TODO: later we will support higher note length resolution
-	SEQ_MIDI_Send(tcc->midi_port, midi_package, SEQ_MIDI_OffEvent, bpm_tick+delay);
+	    if( e->len ) { // if off event should be played
+	      e->midi_package.velocity = 0x00; // clear velocity
+	      u32 delay = 4*e->len; // TODO: later we will support higher note length resolution
+	      SEQ_MIDI_Send(tcc->midi_port, e->midi_package, SEQ_MIDI_OffEvent, bpm_tick + delay);
+	    }
+	  }
+	}
       }
     }
   }
