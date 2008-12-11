@@ -62,3 +62,14 @@ s32 SEQ_TRG_Init(u32 mode)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns value of trigger layer (if assigned)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_GateGet(u8 track, u8 step)
+{
+  u8 step_mask = 1 << (step % 8);
+  u8 step_ix = step / 8;
+  return (trg_layer_value[track][0][step_ix] & step_mask) ? 1 : 0;
+}

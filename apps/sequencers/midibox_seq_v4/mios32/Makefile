@@ -19,6 +19,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
 		../core/seq_ui_edit.c \
+		../core/seq_ui_trkevnt.c \
 		../core/seq_ui_trkdir.c \
 		../core/seq_ui_trkdiv.c \
 		../core/seq_ui_trklen.c \
@@ -26,6 +27,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_bpm.c \
 		../core/seq_cc.c  \
 		../core/seq_core.c \
+		../core/seq_layer.c \
 		../core/seq_random.c \
 		../core/seq_trg.c \
 		../core/seq_par.c \

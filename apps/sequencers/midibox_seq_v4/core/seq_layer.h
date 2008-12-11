@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for trigger layer routines
+ * Header file for parameter layer routines
  *
  * ==========================================================================
  *
@@ -11,53 +11,42 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_TRG_H
-#define _SEQ_TRG_H
-
-#include "seq_core.h"
-
+#ifndef _SEQ_LAYER_H
+#define _SEQ_LAYER_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_TRG_NUM_LAYERS  3
+// number of available event modes
+#define SEQ_LAYER_EVNTMODE_NUM 11
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  struct {
-    unsigned ALL:16;
-  };
-  struct {
-    unsigned gate:2;
-    unsigned skip:2;
-    unsigned accent:2;
-    unsigned glide:2;
-    unsigned roll:2;
-    unsigned random_gate:2;
-    unsigned random_value:2;
-    unsigned spare:2;
-  };
-} seq_trg_assignments_t;
+typedef struct {
+  mios32_midi_package_t midi_package;
+  u16                   len;
+} seq_layer_evnt_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_TRG_Init(u32 mode);
+extern s32 SEQ_LAYER_Init(u32 mode);
 
-extern s32 SEQ_TRG_GateGet(u8 track, u8 step);
+extern char *SEQ_LAYER_VTypeStr(u8 event_mode, u8 p_layer);
+extern char *SEQ_LAYER_CTypeStr(u8 event_mode, u8 c_num);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
+extern const void *seq_layer_getevnt_func[SEQ_LAYER_EVNTMODE_NUM];
 
-#endif /* _SEQ_TRG_H */
+
+#endif /* _SEQ_LAYER_H */
