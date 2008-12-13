@@ -276,6 +276,8 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_PrintChar(char c)
 {
+  // increment column
+  ++mios32_lcd_column;
   // -> send as data byte
   return APP_LCD_Data(c);
 }
@@ -300,7 +302,7 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
       return -1; // error during sending character
 
   // set cursor to original position
-  return APP_LCD_CursorSet(mios32_lcd_line, mios32_lcd_column);
+  return APP_LCD_CursorSet(mios32_lcd_column, mios32_lcd_line);
 }
 
 
