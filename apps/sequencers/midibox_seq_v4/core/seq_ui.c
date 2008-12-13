@@ -27,6 +27,7 @@
 #include "seq_midi.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 
@@ -139,6 +140,50 @@ s32 SEQ_UI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Inits the speed mode of all encoders
+// Auto mode should be used whenever:
+//    - the edit screen is entered
+//    - the group is changed
+//    - a track is changed
+//    - a layer is changed
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_InitEncSpeed(u32 auto_config)
+{
+  mios32_enc_config_t enc_config;
+
+  if( auto_config ) {
+#if DEFAULT_AUTO_FAST_BUTTON
+    switch( SEQ_LAYER_GetVControlType(SEQ_UI_VisibleTrackGet(), ui_selected_par_layer) ) {
+      case SEQ_LAYER_ControlType_Velocity:
+      case SEQ_LAYER_ControlType_Chord1_Velocity:
+      case SEQ_LAYER_ControlType_Chord2_Velocity:
+      case SEQ_LAYER_ControlType_CC:
+	seq_ui_button_state.FAST_ENCODERS = 1;
+	break;
+
+      default:
+	seq_ui_button_state.FAST_ENCODERS = 0;
+    }
+#else
+    // auto mode not enabled - ignore auto reconfiguration request
+    return 0;
+#endif
+  }
+
+  // change for datawheel and GP encoders
+  int enc;
+  for(enc=0; enc<17; ++enc) {
+    enc_config = MIOS32_ENC_ConfigGet(enc);
+    enc_config.cfg.speed = seq_ui_button_state.FAST_ENCODERS ? FAST : NORMAL;
+    enc_config.cfg.speed_par = (enc == 0) ? DEFAULT_DATAWHEEL_SPEED_VALUE : DEFAULT_ENC_SPEED_VALUE;
+    MIOS32_ENC_ConfigSet(enc, enc_config);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Various installation routines for menu page LCD handlers
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_InstallButtonCallback(void *callback)
@@ -181,8 +226,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_lcd_callback = NULL;
     MIOS32_IRQ_Enable();
 
-  // TODO: define generic #define for this button behaviour
-#if defined(MIOS32_FAMILY_EMULATION)
+#if DEFAULT_BEHAVIOUR_BUTTON_MENU
     seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
 #endif
 
@@ -259,13 +303,13 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
 
 static s32 SEQ_UI_Button_Scrub(s32 depressed)
 {
-#if 0
+#if DEFAULT_BEHAVIOUR_BUTTON_SCRUB
+  // toggle mode
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.SCRUB ^= 1;
 #else
-  // Sending SysEx Stream test
-  u8 buffer[7] = { 0xf0, 0x11, 0x22, 0x33, 0x44, depressed ? 0x00 : 0x55, 0xf7 };
-
-  MIOS32_MIDI_SendSysEx(DEFAULT, buffer, 7);
+  // set mode
+  seq_ui_button_state.SCRUB = depressed ? 0 : 1;
 #endif
 
   return 0; // no error
@@ -273,14 +317,13 @@ static s32 SEQ_UI_Button_Scrub(s32 depressed)
 
 static s32 SEQ_UI_Button_Metronome(s32 depressed)
 {
-#if 0
+#if DEFAULT_BEHAVIOUR_BUTTON_METRON
+  // toggle mode
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.METRONOME ^= 1;
 #else
-  // Sending MIDI Note test
-  if( depressed )
-    MIOS32_MIDI_SendNoteOff(DEFAULT, 0x90, 0x3c, 0x00);
-  else
-    MIOS32_MIDI_SendNoteOn(DEFAULT, 0x90, 0x3c, 0x7f);
+  // set mode
+  seq_ui_button_state.METRONOME = depressed ? 0 : 1;
 #endif
 
   return 0; // no error
@@ -393,10 +436,12 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
 static s32 SEQ_UI_Button_Menu(s32 depressed)
 {
   // TODO: define generic #define for this button behaviour
-#if defined(MIOS32_FAMILY_EMULATION)
+#if DEFAULT_BEHAVIOUR_BUTTON_MENU
+  // toggle mode
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
 #else
+  // set mode
   seq_ui_button_state.MENU_PRESSED = depressed ? 0 : 1;
 #endif
 
@@ -435,6 +480,9 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
   // change to edit page
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
   return 0; // no error
 }
 
@@ -461,21 +509,46 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
 
 static s32 SEQ_UI_Button_Solo(s32 depressed)
 {
+#if DEFAULT_BEHAVIOUR_BUTTON_ALL
+  // toggle mode
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.SOLO ^= 1;
+#else
+  // set mode
+  seq_ui_button_state.SOLO = depressed ? 0 : 1;
+#endif
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Fast(s32 depressed)
 {
+#if DEFAULT_BEHAVIOUR_BUTTON_FAST
+  // toggle mode
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.FAST_ENCODERS ^= 1;
+#else
+  // set mode
+  seq_ui_button_state.FAST_ENCODERS = depressed ? 0 : 1;
+#endif
+
+  SEQ_UI_InitEncSpeed(0); // no auto config
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_All(s32 depressed)
 {
-  if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE = depressed ? 0 : 1;
+
+#if DEFAULT_BEHAVIOUR_BUTTON_ALL
+  // toggle mode
+  if( depressed ) return -1;
+  seq_ui_button_state.CHANGE_ALL_STEPS ^= 1;
+#else
+  // set mode
+  seq_ui_button_state.CHANGE_ALL_STEPS = depressed ? 0 : 1;
+#endif
 
   return 0; // no error
 }
@@ -504,6 +577,9 @@ static s32 SEQ_UI_Button_Track(s32 depressed, u32 track)
 
   ui_selected_tracks = (1 << track); // TODO: multi-selections!
 
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
   return 0; // no error
 }
 
@@ -515,6 +591,9 @@ static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
 
   ui_selected_group = group;
 
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
   return 0; // no error
 }
 
@@ -525,6 +604,9 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
 
   ui_selected_par_layer = par_layer;
+
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
 
   return 0; // no error
 }
@@ -902,9 +984,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_PATTERN, 0);
   SEQ_LED_PinSet(LED_SONG, 0);
   
-  SEQ_LED_PinSet(LED_SOLO, 0);
-  SEQ_LED_PinSet(LED_FAST, 0);
-  SEQ_LED_PinSet(LED_ALL, 0);
+  SEQ_LED_PinSet(LED_SOLO, seq_ui_button_state.SOLO);
+  SEQ_LED_PinSet(LED_FAST, seq_ui_button_state.FAST_ENCODERS);
+  SEQ_LED_PinSet(LED_ALL, seq_ui_button_state.CHANGE_ALL_STEPS);
   
   SEQ_LED_PinSet(LED_PLAY, seq_core_state.RUN);
   SEQ_LED_PinSet(LED_STOP, !seq_core_state.RUN);
@@ -914,8 +996,8 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4
 
   SEQ_LED_PinSet(LED_MENU, seq_ui_button_state.MENU_PRESSED);
-  SEQ_LED_PinSet(LED_SCRUB, 0);
-  SEQ_LED_PinSet(LED_METRONOME, 0);
+  SEQ_LED_PinSet(LED_SCRUB, seq_ui_button_state.SCRUB);
+  SEQ_LED_PinSet(LED_METRONOME, seq_ui_button_state.METRONOME);
 
   // note: the background function is permanently interrupted - therefore we write the GP pattern
   // into a temporary variable, and take it over once completed
@@ -1072,6 +1154,17 @@ u8 SEQ_UI_VisibleTrackGet(void)
     offset = 0;
 
   return 4*ui_selected_group + offset;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if 'track' is selected
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_IsSelectedTrack(u8 track)
+{
+  if( (track>>2) != ui_selected_group )
+    return 0;
+  return (ui_selected_tracks & (1 << (track&3))) ? 1 : 0;
 }
 
 

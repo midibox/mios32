@@ -35,8 +35,8 @@
 
 extern s32 SEQ_PAR_Init(u32 mode);
 
-extern s32 SEQ_PAR_Set(u8 track, u8 p_layer, u8 step, u8 value);
-extern s32 SEQ_PAR_Get(u8 track, u8 p_layer, u8 step);
+extern s32 SEQ_PAR_Set(u8 track, u8 step, u8 par_layer, u8 value);
+extern s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -51,7 +51,11 @@ typedef union {
 
 extern s32 SEQ_TRG_Init(u32 mode);
 
+extern s32 SEQ_TRG_Get(u8 track, u8 step, u8 trg_layer);
 extern s32 SEQ_TRG_GateGet(u8 track, u8 step);
+
+extern s32 SEQ_TRG_Set(u8 track, u8 step, u8 trg_layer, u8 value);
+extern s32 SEQ_TRG_GateSet(u8 track, u8 step, u8 value);
 
 
 /////////////////////////////////////////////////////////////////////////////

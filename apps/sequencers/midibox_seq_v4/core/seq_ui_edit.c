@@ -29,6 +29,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_value, u8 change_gate);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -58,36 +65,36 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 || encoder == SEQ_UI_ENCODER_Datawheel ) {
 #endif
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
+    ui_selected_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
-    // select step
-    ui_selected_step = step;
+    s32 value_changed = 0;
+    s32 forced_value = -1;
+    u8  change_gate = 1;
 
-    // add to absolute value
-    s32 old_value = SEQ_PAR_Get(visible_track, ui_selected_par_layer, step);
-    s32 new_value = old_value + incrementer;
-    if( new_value < 0 )
-      new_value = 0;
-    else if( new_value >= 128 )
-      new_value = 127;
-
-    // take over if changed
-    if( new_value == old_value ) {
-      return 0; // value not changed
+    // first change the selected value
+    if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
+      forced_value = ChangeSingleEncValue(SEQ_UI_VisibleTrackGet(), ui_selected_step, incrementer, forced_value, change_gate);
+      if( forced_value < 0 )
+	return 0; // no change
+      value_changed |= 1;
     }
 
-    SEQ_PAR_Set(visible_track, ui_selected_par_layer, step, (u8)new_value);
-
-    if( SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) != SEQ_LAYER_ControlType_Length ) {
-      // (de)activate gate depending on value
-      if( new_value )
-	trg_layer_value[visible_track][0][step>>3] |= (1 << (step&7));
-      else
-	trg_layer_value[visible_track][0][step>>3] &= ~(1 << (step&7));
+    // change value of all selected steps
+    u8 track;
+    u8 step;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+      if( SEQ_UI_IsSelectedTrack(track) ) {
+	for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
+	  change_gate = step == ui_selected_step;
+	  if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	    if( ChangeSingleEncValue(track, step, incrementer, forced_value, change_gate) >= 0 )
+	      value_changed |= 1;
+	  }
+	}
+      }
     }
 
-    return 1; // value changed
+    return value_changed;
   }
 
   return -1; // invalid or unsupported encoder
@@ -112,10 +119,47 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
     // toggle trigger layer
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 step = button + ui_selected_step_view*16;
-    trg_layer_value[visible_track][ui_selected_trg_layer][step>>3] ^= (1 << (step&7));
+    // we've three cases:
+    // a) ALL function active, but ALL button not pressed: invert complete trigger layer
+    // b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
+    // c) ALL function not active: toggle step
+    if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+      if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
+	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
+	u8 visible_track = SEQ_UI_VisibleTrackGet();
+	u8 step = button + ui_selected_step_view*16;
+	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer) ? 0 : 1;
+
+	u8 track;
+	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+	  if( SEQ_UI_IsSelectedTrack(track) )
+	    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
+	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+      } else {
+	// a) ALL function active, but ALL button not pressed: invert complete trigger layer
+	u8 track, step;
+	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	  if( SEQ_UI_IsSelectedTrack(track) ) {
+	    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
+	      u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer) ? 0 : 1;
+	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	    }
+	  }
+	}
+      }
+    } else {
+      // c) ALL function not active: toggle step
+      u8 track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	if( SEQ_UI_IsSelectedTrack(track) ) {
+	  u8 step = button + ui_selected_step_view*16;
+	  u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer) ? 0 : 1;
+	  SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	}
+      }
+    }
     return 1; // value always changed
+
   } else {
     switch( button ) {
       case SEQ_UI_BUTTON_Select:
@@ -175,6 +219,8 @@ static s32 LCD_Handler(u8 high_prio)
       break;
 
     case SEQ_LAYER_ControlType_Velocity:
+    case SEQ_LAYER_ControlType_Chord1_Velocity:
+    case SEQ_LAYER_ControlType_Chord2_Velocity:
       MIOS32_LCD_PrintString("Vel.   ");
       break;
 
@@ -223,7 +269,7 @@ static s32 LCD_Handler(u8 high_prio)
 				    layer_event.midi_package.value);
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
-    if( layer_event.midi_package.note && layer_event.midi_package.velocity && layer_event.len ) {
+    if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
       SEQ_LCD_PrintNote(layer_event.midi_package.note);
       SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
     }
@@ -273,9 +319,9 @@ static s32 LCD_Handler(u8 high_prio)
       u8 visible_step = step + 16*ui_selected_step_view;
       SEQ_LAYER_GetEvntOfParLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
-      if( previous_step_was_long_multi || layer_event.len > 32 ) { // multi note trigger? - note: .len always +1 of parameter layer value
+      if( previous_step_was_long_multi || layer_event.len >= 32 ) { // multi note trigger?
 	if( !previous_step_was_long_multi ) {
-	  if( previous_length < 24 && !layer_event.midi_package.velocity ) {
+	  if( previous_length <= 24 && !layer_event.midi_package.velocity ) {
 	    SEQ_LCD_PrintSpaces(5);
 	    previous_length = 0;
 	  } else {
@@ -284,34 +330,34 @@ static s32 LCD_Handler(u8 high_prio)
 	    // with gate=0 and previous length >= 24 - we don't know how the core will react here
 
 	    // calculate total length of events -> previous_length
-	    previous_length = ((layer_event.len-1)>>5) * (layer_event.len & 0x1f) + 1;
-	    // long event if > 25
-	    previous_step_was_long_multi = previous_length > 25;
+	    previous_length = (layer_event.len>>5) * (layer_event.len & 0x1f);
+	    // long event if >= 24
+	    previous_step_was_long_multi = previous_length >= 24;
 	  }
 	} else {
 	  // continued long event
 	  // previous step took 24 steps
 	  previous_length -= 24;
-	  // print warning (!!!) if current step not activated but should be played due to continued multi trigger
+	  // print warning (!!!) if current step activated and overlapped by long multi trigger
 	  if( previous_step_was_long_multi && !layer_event.midi_package.velocity )
-	    MIOS32_LCD_PrintString("!!!! ");
-	  else
 	    MIOS32_LCD_PrintString(">>>> ");
-	  // still long event if > 25
-	  previous_step_was_long_multi = previous_length > 25;
+	  else
+	    MIOS32_LCD_PrintString("!!!! ");
+	  // still long event if >= 24
+	  previous_step_was_long_multi = previous_length >= 24;
 	}
       } else {
 	previous_step_was_long_multi = 0;
-	// muted step? if previous gatelength <= 25, print spaces
-	if( !layer_event.midi_package.velocity && previous_length <= 25 ) {
+	// muted step? if previous gatelength <= 24, print spaces
+	if( !layer_event.midi_package.velocity && previous_length <= 24 ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  if( layer_event.len > 24 )
+	  if( layer_event.len >= 24 )
 	    SEQ_LCD_PrintHBar(15); // glide
 	  else
 	    SEQ_LCD_PrintHBar((layer_event.len-1) >> 1);
 	}
-	previous_length = (layer_event.midi_package.velocity || (previous_length > 25 && layer_event.len > 25)) ? layer_event.len : 0;
+	previous_length = (layer_event.midi_package.velocity || (previous_length > 24 && layer_event.len > 24)) ? layer_event.len : 0;
       }
     }
 
@@ -347,8 +393,9 @@ static s32 LCD_Handler(u8 high_prio)
 	  break;
 
         case SEQ_LAYER_ControlType_Chord1:
+        case SEQ_LAYER_ControlType_Chord1_Velocity:
 	  if( layer_event.midi_package.velocity ) {
-	    MIOS32_LCD_PrintFormattedString("S%2d", (SEQ_PAR_Get(visible_track, 0, step) % SEQ_CORE_NUM_STEPS) + 1);
+	    MIOS32_LCD_PrintFormattedString("S%2d", (SEQ_PAR_Get(visible_track, step, 0) % SEQ_CORE_NUM_STEPS) + 1);
 	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
 	  } else {
 	    MIOS32_LCD_PrintString("----");
@@ -356,6 +403,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  break;
 	  
         case SEQ_LAYER_ControlType_Chord2:
+        case SEQ_LAYER_ControlType_Chord2_Velocity:
 	  if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
 	    u8 par_value = SEQ_PAR_Get(visible_track, step, 0);
 	    u8 chord_ix = par_value & 0x0f;
@@ -403,4 +451,48 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to change/set a single encoder value
+// if forced_value >= 0: new value will be set to the given value
+// if forced_value < 0: new value will be changed via incrementer
+// returns >= 0 if new value has been set (value change)
+// returns < 0 if no change
+/////////////////////////////////////////////////////////////////////////////
+static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_value, u8 change_gate)
+{
+  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(track, ui_selected_par_layer);
+
+  // if not length or CC parameter: only change gate if requested
+  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length &&
+      layer_ctrl_type != SEQ_LAYER_ControlType_CC &&
+      !change_gate &&
+      !SEQ_TRG_GateGet(track, step) )
+    return -1;
+
+  s32 old_value = SEQ_PAR_Get(track, step, ui_selected_par_layer);
+  s32 new_value = (forced_value >= 0) ? forced_value : (old_value + incrementer);
+  if( new_value < 0 )
+    new_value = 0;
+  else if( new_value >= 128 )
+    new_value = 127;
+	    
+  // take over if changed
+  if( new_value == old_value )
+    return -1;
+
+  SEQ_PAR_Set(track, step, ui_selected_par_layer, (u8)new_value);
+
+  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length ) {
+    // (de)activate gate depending on value
+    if( new_value )
+      SEQ_TRG_GateSet(track, step, 1);
+    else
+      SEQ_TRG_GateSet(track, step, 0);
+  }
+
+  return new_value;
 }

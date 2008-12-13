@@ -62,8 +62,8 @@ static const seq_layer_ctrl_type_t seq_layer_v_ctrl_type_table[9] = {
   SEQ_LAYER_ControlType_Chord1,    // SEQ_LAYER_V_CHORD1
   SEQ_LAYER_ControlType_Chord2,    // SEQ_LAYER_V_CHORD2
   SEQ_LAYER_ControlType_Velocity,  // SEQ_LAYER_V_VEL
-  SEQ_LAYER_ControlType_Velocity,  // SEQ_LAYER_V_CHORD1_VEL
-  SEQ_LAYER_ControlType_Velocity,  // SEQ_LAYER_V_CHORD2_VEL
+  SEQ_LAYER_ControlType_Chord1_Velocity, // SEQ_LAYER_V_CHORD1_VEL
+  SEQ_LAYER_ControlType_Chord2_Velocity, // SEQ_LAYER_V_CHORD2_VEL
   SEQ_LAYER_ControlType_Length,    // SEQ_LAYER_V_LEN
   SEQ_LAYER_ControlType_CC         // SEQ_LAYER_V_CC
 };
@@ -173,7 +173,7 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_STEPS_FORWARD,  0x00 },
   { SEQ_CC_STEPS_JMPBCK,   0x00 },
   { SEQ_CC_CLK_DIVIDER,    0x03 },
-  { SEQ_CC_CLKDIV_FLAGS,   0x03 },
+  { SEQ_CC_CLKDIV_FLAGS,   0x00 },
   { SEQ_CC_LENGTH,         0x0f },
   { SEQ_CC_LOOP,           0x00 },
   { SEQ_CC_TRANSPOSE_SEMI, 0x00 },
@@ -311,7 +311,7 @@ s32 SEQ_LAYER_GetEvntOfParLayer(u8 track, u8 step, u8 par_layer, seq_layer_evnt_
   if( number_of_events <= 0 ) {
     // fill with dummy data
     layer_event->midi_package.ALL = 0;
-    layer_event->len = 0;
+    layer_event->len = -1;
 
     return -1; // no valid event
   }
@@ -363,9 +363,9 @@ static s32 SEQ_LAYER_GetEvnt_1(u8 track, u8 step, seq_layer_evnt_t layer_events[
   p->type     = NoteOn;
   p->event    = NoteOn;
   p->chn      = tcc->midi_chn;
-  p->note     = SEQ_PAR_Get(track, 0, step);
-  p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, 1, step) : 0x00;
-  e->len      = SEQ_PAR_Get(track, 2, step) + 1;
+  p->note     = SEQ_PAR_Get(track, step, 0);
+  p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+  e->len      = SEQ_PAR_Get(track, step, 2);
 
   return 1;//events
 }
@@ -386,9 +386,9 @@ static s32 SEQ_LAYER_GetEvnt_2(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->type     = NoteOn;
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(cmem_track, i, SEQ_PAR_Get(track, 0, step) % SEQ_CORE_NUM_STEPS);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, 1, step) : 0x00;
-    e->len      = SEQ_PAR_Get(track, 2, step) + 1;
+    p->note     = SEQ_PAR_Get(cmem_track, SEQ_PAR_Get(track, step, 0) % SEQ_CORE_NUM_STEPS, i);
+    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+    e->len      = SEQ_PAR_Get(track, step, 2);
   }
 
   return 3;//events
@@ -412,8 +412,8 @@ static s32 SEQ_LAYER_GetEvnt_4(u8 track, u8 step, seq_layer_evnt_t layer_events[
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   u8 gate = SEQ_TRG_GateGet(track, step);
-  u8 velocity = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1) || 1;
-  u16 len = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST2) + 1;
+  u8 velocity = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1);
+  u16 len = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST2);
 
   int i;
   for(i=0; i<3; ++i) {
@@ -422,7 +422,7 @@ static s32 SEQ_LAYER_GetEvnt_4(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->type     = NoteOn;
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, i, step);
+    p->note     = SEQ_PAR_Get(track, step, i);
     p->velocity = gate ? velocity : 0x00;
     e->len      = len;
   }
@@ -447,8 +447,8 @@ static s32 SEQ_LAYER_GetEvnt_5(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
     p->note     = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1+i);
-    p->velocity = gate ? SEQ_PAR_Get(track, i, step) : 0x00;
-    e->len      = 16; // fixed length
+    p->velocity = gate ? SEQ_PAR_Get(track, step, i) : 0x00;
+    e->len      = 15; // fixed length
   }
 
   return 3;//events
@@ -467,9 +467,9 @@ static s32 SEQ_LAYER_GetEvnt_6(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->type     = NoteOn;
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, 0, step);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, 1, step) : 0x00;
-    e->len      = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1) + 1;
+    p->note     = SEQ_PAR_Get(track, step, 0);
+    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+    e->len      = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1);
   }
 
   {
@@ -479,8 +479,8 @@ static s32 SEQ_LAYER_GetEvnt_6(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event     = CC;
     p->chn       = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST3);
-    p->value     = SEQ_PAR_Get(track, 2, step);
-    e->len       = 0;
+    p->value     = SEQ_PAR_Get(track, step, 2);
+    e->len       = -1;
   }
 
   return 2;//events
@@ -499,9 +499,9 @@ static s32 SEQ_LAYER_GetEvnt_7(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->type     = NoteOn;
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, 0, step);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1) || 1) : 0x00;
-    e->len      = SEQ_PAR_Get(track, 2, step) + 1;
+    p->note     = SEQ_PAR_Get(track, step, 0);
+    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1)) : 0x00;
+    e->len      = SEQ_PAR_Get(track, step, 2);
   }
 
   {
@@ -511,8 +511,8 @@ static s32 SEQ_LAYER_GetEvnt_7(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event     = CC;
     p->chn       = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST2);
-    p->value     = SEQ_PAR_Get(track, 1, step);
-    e->len       = 0;
+    p->value     = SEQ_PAR_Get(track, step, 1);
+    e->len       = -1;
   }
 
   return 2;//events
@@ -531,9 +531,9 @@ static s32 SEQ_LAYER_GetEvnt_8(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->type     = NoteOn;
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, 0, step);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1) || 1) : 0x00;
-    e->len      = 16; // constant
+    p->note     = SEQ_PAR_Get(track, step, 0);
+    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1)) : 0x00;
+    e->len      = 15; // constant
   }
 
   int i;
@@ -545,8 +545,8 @@ static s32 SEQ_LAYER_GetEvnt_8(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event     = CC;
     p->chn       = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST2+i);
-    p->value     = SEQ_PAR_Get(track, 1+i, step);
-    e->len       = 0;
+    p->value     = SEQ_PAR_Get(track, step, 1+i);
+    e->len       = -1;
   }
 
   return 3;//events
@@ -566,8 +566,8 @@ static s32 SEQ_LAYER_GetEvnt_9(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event    = NoteOn;
     p->chn      = tcc->midi_chn;
     p->note     = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, 0, step) : 0x00;
-    e->len      = 16; // constant
+    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 0) : 0x00;
+    e->len      = 15; // constant
   }
 
   int i;
@@ -579,8 +579,8 @@ static s32 SEQ_LAYER_GetEvnt_9(u8 track, u8 step, seq_layer_evnt_t layer_events[
     p->event     = CC;
     p->chn       = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST2+i);
-    p->value     = SEQ_PAR_Get(track, 1+i, step);
-    e->len       = 0;
+    p->value     = SEQ_PAR_Get(track, step, 1+i);
+    e->len       = -1;
   }
 
   return 3;//events
@@ -603,8 +603,8 @@ static s32 SEQ_LAYER_GetEvnt_10(u8 track, u8 step, seq_layer_evnt_t layer_events
     p->event    = CC;
     p->chn      = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1+i);
-    p->value    = SEQ_PAR_Get(track, i, step);
-    e->len      = SEQ_PAR_Get(track, 2, step) + 1;
+    p->value    = SEQ_PAR_Get(track, step, i);
+    e->len      = SEQ_PAR_Get(track, step, 2);
   }
 
   return 2;//events
@@ -627,8 +627,8 @@ static s32 SEQ_LAYER_GetEvnt_11(u8 track, u8 step, seq_layer_evnt_t layer_events
     p->event    = CC;
     p->chn      = tcc->midi_chn;
     p->cc_number = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1+i);
-    p->value    = SEQ_PAR_Get(track, i, step);
-    e->len      = 0;
+    p->value    = SEQ_PAR_Get(track, step, i);
+    e->len      = -1;
   }
 
   return 3;//events
@@ -651,3 +651,50 @@ const void *seq_layer_getevnt_func[SEQ_LAYER_EVNTMODE_NUM] = {
   &SEQ_LAYER_GetEvnt_10,
   &SEQ_LAYER_GetEvnt_11
 };
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Initializes a track depending on selected event mode
+// "only_layers" flag is used by CLR function
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers)
+{
+  int i;
+  int cc;
+
+  u8 evnt_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
+
+  if( !only_layers ) {
+    // copy static presets
+    i = 0;
+    while( (cc=seq_layer_preset_table_static[i][0]) != 0xff ) {
+      SEQ_CC_Set(track, cc, seq_layer_preset_table_static[i][1]);
+      i++;
+    }
+
+    // copy evnt mode depending settings
+    i = 0;
+    while( (cc=seq_layer_preset_table_mode[i][0]) != 0xff ) {
+      SEQ_CC_Set(track, cc, seq_layer_preset_table_mode[i][1+evnt_mode]);
+      i++;
+    }
+  }
+
+  // copy trigger layer values
+  u8 step;
+  u8 trg_layer;
+  for(trg_layer=0; trg_layer<SEQ_TRG_NUM_LAYERS; ++trg_layer) {
+    u8 pattern = seq_layer_preset_table_tlayer[trg_layer][evnt_mode];
+    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
+      SEQ_TRG_Set(track, step, trg_layer, (pattern & (1 << (step&7))) ? 1 : 0);
+  }
+
+  // copy parameter layer values
+  u8 par_layer;
+  for(par_layer=0; par_layer<SEQ_PAR_NUM_LAYERS; ++par_layer) {
+    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
+      SEQ_PAR_Set(track, step, par_layer, seq_layer_preset_table_player[evnt_mode][par_layer*4 + (step%4)]);
+  }
+
+  return 0; // no error
+}

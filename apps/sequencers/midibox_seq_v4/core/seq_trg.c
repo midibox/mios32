@@ -19,6 +19,7 @@
 
 #include "seq_trg.h"
 #include "seq_core.h"
+#include "seq_cc.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,11 +66,49 @@ s32 SEQ_TRG_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of trigger layer (if assigned)
+// returns value of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_GateGet(u8 track, u8 step)
+s32 SEQ_TRG_Get(u8 track, u8 step, u8 trg_layer)
 {
   u8 step_mask = 1 << (step % 8);
   u8 step_ix = step / 8;
-  return (trg_layer_value[track][0][step_ix] & step_mask) ? 1 : 0;
+  return (trg_layer_value[track][trg_layer][step_ix] & step_mask) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns value of assigned layers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_GateGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
+  // gate always set if not assigned
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// sets value of a given trigger layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_Set(u8 track, u8 step, u8 trg_layer, u8 value)
+{
+  u8 step_mask = 1 << (step % 8);
+  u8 step_ix = step / 8;
+
+  if( value )
+    trg_layer_value[track][trg_layer][step_ix] |= step_mask;
+  else
+    trg_layer_value[track][trg_layer][step_ix] &= ~step_mask;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// sets value of assigned layers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_GateSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
 }
