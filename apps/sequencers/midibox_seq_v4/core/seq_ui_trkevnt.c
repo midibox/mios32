@@ -38,6 +38,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 PrintCValue(u8 track, u8 const_ix);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -271,24 +278,14 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_EVNT_CONST1 && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
-  } else {
-    MIOS32_LCD_PrintFormattedString("  %3d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_CONST1));
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_EVNT_CONST2 && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
-  } else {
-    MIOS32_LCD_PrintFormattedString("  %3d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_CONST2));
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_EVNT_CONST3 && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
-  } else {
-    MIOS32_LCD_PrintFormattedString("  %3d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_CONST3));
+  int i;
+  for(i=0; i<3; ++i) {
+    if( ui_selected_item == (ITEM_EVNT_CONST1+i) && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintSpaces(1);
+      PrintCValue(visible_track, i);
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -330,6 +327,48 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to print a constant value (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+static s32 PrintCValue(u8 track, u8 const_ix)
+{
+  u8 value = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1 + const_ix);
+
+  switch( SEQ_LAYER_GetCControlType(track, const_ix) ) {
+    case SEQ_LAYER_ControlType_None:
+      SEQ_LCD_PrintSpaces(4);
+      break;
+
+    case SEQ_LAYER_ControlType_Note:
+      MIOS32_LCD_PrintChar(' ');
+      SEQ_LCD_PrintNote(value);
+      break;
+
+    case SEQ_LAYER_ControlType_Velocity:
+    case SEQ_LAYER_ControlType_CC:
+      MIOS32_LCD_PrintFormattedString(" %3d", value);
+      break;
+
+    case SEQ_LAYER_ControlType_Length:
+      SEQ_LCD_PrintGatelength(value+1);
+      break;
+
+    case SEQ_LAYER_ControlType_CMEM_T:
+    {
+      u8 cmem_track = value % SEQ_CORE_NUM_TRACKS;
+      MIOS32_LCD_PrintFormattedString("G%dT%d", (cmem_track >> 2)+1, (cmem_track & 3)+1);
+    }
+    break;
+
+    default:
+      MIOS32_LCD_PrintString(" ???");
+      break;
+  }
 
   return 0; // no error
 }
