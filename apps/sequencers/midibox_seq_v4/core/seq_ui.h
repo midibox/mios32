@@ -146,8 +146,9 @@ extern u8  SEQ_UI_VisibleTrackGet(void);
 extern s32 SEQ_UI_IsSelectedTrack(u8 track);
 
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
-extern s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer);
-extern s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value);
+extern s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_CC_Set(u8 cc, u16 value);
+extern s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value);
 
 
 /////////////////////////////////////////////////////////////////////////////

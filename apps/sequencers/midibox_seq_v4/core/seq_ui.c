@@ -1199,7 +1199,7 @@ s32 SEQ_UI_GxTyInc(s32 incrementer)
 // Increments a CC within given min/max range
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer)
+s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int new_value = SEQ_CC_Get(visible_track, cc);
@@ -1218,15 +1218,44 @@ s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer)
 
   SEQ_CC_Set(visible_track, cc, new_value);
 
+  // set same value for all selected tracks
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
+      SEQ_CC_Set(track, cc, new_value);
+
   return 1; // value changed
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sets a CC value on all selected tracks
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_CC_Set(u8 cc, u16 value)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int prev_value = SEQ_CC_Get(visible_track, cc);
+
+  if( value == prev_value )
+    return 0; // no change
+
+  SEQ_CC_Set(visible_track, cc, value);
+
+  // set same value for all selected tracks
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
+      SEQ_CC_Set(track, cc, value);
+
+  return 1; // value changed
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Modifies a bitfield in a CC value to a given value
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value)
+s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int new_value = SEQ_CC_Get(visible_track, cc);
@@ -1238,6 +1267,15 @@ s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value)
     return 0; // no change
 
   SEQ_CC_Set(visible_track, cc, new_value);
+
+  // do same modification for all selected tracks
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) ) {
+      int new_value = SEQ_CC_Get(track, cc);
+      new_value = (new_value & ~flag_mask) | value;
+      SEQ_CC_Set(track, cc, new_value);
+    }
 
   return 1; // value changed
 }

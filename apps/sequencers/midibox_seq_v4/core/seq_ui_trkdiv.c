@@ -131,8 +131,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	int quicksel = encoder - 8;
 	ui_selected_item = ITEM_TIMEBASE_1 + quicksel;
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	SEQ_CC_Set(visible_track, SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0x7f);
-	SEQ_UI_CCSetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x80) ? (1<<1) : 0);
+	SEQ_UI_CC_Set(SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0x7f);
+	SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x80) ? (1<<1) : 0);
 	return 1; // value has been changed
       }
   }
@@ -140,9 +140,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_DIVIDER:       return SEQ_UI_CCInc(SEQ_CC_CLK_DIVIDER, 0, 63, incrementer);
-    case ITEM_TRIPLET:       return SEQ_UI_CCSetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
-    case ITEM_SYNCH_TO_MEASURE: return SEQ_UI_CCSetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<0), (incrementer >= 0) ? (1<<0) : 0);
+    case ITEM_DIVIDER:       return SEQ_UI_CC_Inc(SEQ_CC_CLK_DIVIDER, 0, 63, incrementer);
+    case ITEM_TRIPLET:       return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
+    case ITEM_SYNCH_TO_MEASURE: return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<0), (incrementer >= 0) ? (1<<0) : 0);
   }
 
   return -1; // invalid or unsupported encoder
