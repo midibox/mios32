@@ -241,6 +241,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
       // clear "first clock" flag (on following clock ticks we can continue as usual)
       t->state.FIRST_CLK = 0;
 
+      // solo function: don't play MIDI event if track not selected
+      if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
+	continue;
+
       if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
 	s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
 	seq_layer_evnt_t layer_events[4];
@@ -260,16 +264,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 		p->velocity = 0; // force velocity to 0 for next check
 	    }
 
-	    if( p->velocity && e->len ) { // if off event should be played (note: on CC events, velocity matches with CC value)
+	    if( p->velocity && (e->len >= 0) ) { // if off event should be played (note: on CC events, velocity matches with CC value)
 	      if( e->len < 32 ) {
 		p->velocity = 0x00; // clear velocity
-		u32 delay = 4*e->len; // TODO: later we will support higher note length resolution
+		u32 delay = 4*(e->len+1); // TODO: later we will support higher note length resolution
 		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + delay);
 	      } else {
 		// multi trigger - thanks to MIDI queueing mechanism, realisation is much much easier than on MBSEQ V3!!! :-)
 		int i;
-		int triggers = ((e->len-1)>>5);
-		u32 delay = 4 * ((e->len-1) & 0x1f);
+		int triggers = (e->len>>5);
+		u32 delay = 4 * (e->len & 0x1f);
 		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger
 		for(i=0; i<triggers; ++i)
 		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + (i+1)*delay);

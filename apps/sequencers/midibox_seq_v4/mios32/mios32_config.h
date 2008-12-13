@@ -24,6 +24,29 @@
 #endif
 
 
+
+// the speed value for the datawheel (#0) which is used when the "FAST" button is activated:
+#define DEFAULT_DATAWHEEL_SPEED_VALUE	3
+
+// the speed value for the additional encoders (#1-#16) which is used when the "FAST" button is activated:
+#define DEFAULT_ENC_SPEED_VALUE		3
+
+// Auto FAST mode: if a layer is assigned to velocity or CC, the fast button will be automatically
+// enabled - in other cases (e.g. Note or Length), the fast button will be automatically disabled
+#define DEFAULT_AUTO_FAST_BUTTON        1
+
+
+// Toggle behaviour of various buttons
+// 0: active mode so long button pressed
+// 1: pressing button toggles the mode
+#define DEFAULT_BEHAVIOUR_BUTTON_FAST	1
+#define DEFAULT_BEHAVIOUR_BUTTON_ALL	1
+#define DEFAULT_BEHAVIOUR_BUTTON_SOLO	1
+#define DEFAULT_BEHAVIOUR_BUTTON_METRON	1
+#define DEFAULT_BEHAVIOUR_BUTTON_SCRUB	0
+#define DEFAULT_BEHAVIOUR_BUTTON_MENU	0
+
+
 // include SRIO setup here, so that we can propagate values to external modules
 #include "srio_mapping.h"
 

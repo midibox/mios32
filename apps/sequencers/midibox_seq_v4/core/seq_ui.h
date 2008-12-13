@@ -62,6 +62,12 @@ typedef union {
   struct {
     unsigned MENU_PRESSED:1;
     unsigned MENU_PAGE_DISPLAYED:1;
+    unsigned CHANGE_ALL_STEPS:1;
+    unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
+    unsigned FAST_ENCODERS:1;
+    unsigned SOLO:1;
+    unsigned METRONOME:1;
+    unsigned SCRUB:1;
   };
 } seq_ui_button_state_t;
 
@@ -120,6 +126,8 @@ typedef enum {
 
 extern s32 SEQ_UI_Init(u32 mode);
 
+extern s32 SEQ_UI_InitEncSpeed(u32 auto_config);
+
 extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_LED_Handler(void);
@@ -135,6 +143,8 @@ extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 
 extern u8  SEQ_UI_VisibleTrackGet(void);
+extern s32 SEQ_UI_IsSelectedTrack(u8 track);
+
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
 extern s32 SEQ_UI_CCInc(u8 cc, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_CCSetFlags(u8 cc, u16 flag_mask, u16 value);

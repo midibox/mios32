@@ -42,6 +42,15 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 PrintCValue(u8 track, u8 const_ix);
+static s32 CopyPreset(u8 track);
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 preset_copied;
+static u8 old_evnt_mode[SEQ_CORE_NUM_TRACKS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,8 +58,15 @@ static s32 PrintCValue(u8 track, u8 const_ix);
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-  if( ui_cursor_flash ) // if flashing flag active: no LED flag set
+  if( ui_cursor_flash ) { // if flashing flag active: no LED flag set
+    // flash preset LEDs if current preset doesn't match with old preset
+    // this notifies the user, that he should press the "copy preset" button
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) )
+      *gp_leds = 0xc000;
+
     return 0;
+  }
 
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
@@ -60,7 +76,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_EVNT_CONST3: *gp_leds = 0x0080; break;
     case ITEM_MIDI_CHANNEL: *gp_leds = 0x0100; break;
     case ITEM_MIDI_PORT: *gp_leds = 0x0200; break;
-    case ITEM_PRESET: *gp_leds = 0xc000; break;
+    // case ITEM_PRESET: *gp_leds = 0xc000; break;
   }
 
   return 0; // no error
@@ -76,6 +92,8 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  preset_copied = 0; // for display notification
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
@@ -127,9 +145,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_EVNT_CONST1:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST1, 0, 127, incrementer);
     case ITEM_EVNT_CONST2:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST2, 0, 127, incrementer);
     case ITEM_EVNT_CONST3:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST3, 0, 127, incrementer);
-    case ITEM_MIDI_CHANNEL: return SEQ_UI_CCInc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
-    case ITEM_MIDI_PORT: return SEQ_UI_CCInc(SEQ_CC_MIDI_PORT, 0, 3, incrementer); // TODO: use global define for number of MIDI ports!
-    case ITEM_PRESET: return -1; // TODO
+    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CCInc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
+    case ITEM_MIDI_PORT:     return SEQ_UI_CCInc(SEQ_CC_MIDI_PORT, 0, 3, incrementer); // TODO: use global define for number of MIDI ports!
+    case ITEM_PRESET:        CopyPreset(SEQ_UI_VisibleTrackGet()); return 1;
   }
 
   return -1; // invalid or unsupported encoder
@@ -145,6 +163,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
+  preset_copied = 0; // for display notification - always clear this flag when any button has been pressed/depressed
+
   if( depressed ) return 0; // ignore when button depressed
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -178,18 +198,20 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return 0; // value hasn't been changed
 
     case SEQ_UI_BUTTON_GP10:
-      ui_selected_item = ITEM_MIDI_CHANNEL;
+      ui_selected_item = ITEM_MIDI_PORT;
       return 0; // value hasn't been changed
 
     case SEQ_UI_BUTTON_GP11:
     case SEQ_UI_BUTTON_GP12:
     case SEQ_UI_BUTTON_GP13:
     case SEQ_UI_BUTTON_GP14:
-      return -1;
+      return -1; // not mapped
 
     case SEQ_UI_BUTTON_GP15:
     case SEQ_UI_BUTTON_GP16:
-      return -1; // TODO: copy preset!
+      // ui_selected_item = ITEM_PRESET;
+      CopyPreset(SEQ_UI_VisibleTrackGet());
+      return 1; // value has been changed
 
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -250,7 +272,7 @@ static s32 LCD_Handler(u8 high_prio)
   MIOS32_LCD_PrintString(" Val1 Val2 Val3");
   MIOS32_LCD_DeviceSet(1);
   MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Chn. Port                     >> COPY <<");
+  MIOS32_LCD_PrintString("Chn. Port                     "); // ">> COPY <<" will be printed later
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -308,9 +330,24 @@ static s32 LCD_Handler(u8 high_prio)
 #else
   SEQ_LCD_PrintSpaces(15);
 #endif
+  SEQ_LCD_PrintSpaces(5);
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_PrintString("     > PRESET <");
+
+  if( preset_copied ) {
+    MIOS32_LCD_CursorSet(30, 0);
+    MIOS32_LCD_PrintString("> PRESET <");
+    MIOS32_LCD_CursorSet(30, 1);
+    MIOS32_LCD_PrintString("> COPIED <");
+  } else {
+    MIOS32_LCD_CursorSet(30, 0);
+    MIOS32_LCD_PrintString(">> COPY <<");
+    MIOS32_LCD_CursorSet(30, 1);
+    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) )
+      MIOS32_LCD_PrintString(">PRESET!!<");
+    else
+      MIOS32_LCD_PrintString("> PRESET <");
+  }
 
 
   return 0; // no error
@@ -327,6 +364,12 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  preset_copied = 0;
+
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    old_evnt_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
 
   return 0; // no error
 }
@@ -355,7 +398,7 @@ static s32 PrintCValue(u8 track, u8 const_ix)
       break;
 
     case SEQ_LAYER_ControlType_Length:
-      SEQ_LCD_PrintGatelength(value+1);
+      SEQ_LCD_PrintGatelength(value);
       break;
 
     case SEQ_LAYER_ControlType_CMEM_T:
@@ -371,4 +414,15 @@ static s32 PrintCValue(u8 track, u8 const_ix)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Copies preset
+/////////////////////////////////////////////////////////////////////////////
+s32 CopyPreset(u8 track)
+{
+  preset_copied = 1;
+  old_evnt_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
+  return SEQ_LAYER_CopyPreset(track, 0); // 0=all settings
 }

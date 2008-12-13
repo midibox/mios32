@@ -21,6 +21,23 @@ static NSObject *_self;
 NSColorWell *LED[NUM_LEDS];
 u8 ledState[NUM_LEDS]; // for dual-colour option
 
+static NSButton *_buttonGP1;
+static NSButton *_buttonGP2;
+static NSButton *_buttonGP3;
+static NSButton *_buttonGP4;
+static NSButton *_buttonGP5;
+static NSButton *_buttonGP6;
+static NSButton *_buttonGP7;
+static NSButton *_buttonGP8;
+static NSButton *_buttonGP9;
+static NSButton *_buttonGP10;
+static NSButton *_buttonGP11;
+static NSButton *_buttonGP12;
+static NSButton *_buttonGP13;
+static NSButton *_buttonGP14;
+static NSButton *_buttonGP15;
+static NSButton *_buttonGP16;
+
 static NSButton *_buttonTrack1;
 static NSButton *_buttonTrack2;
 static NSButton *_buttonTrack3;
@@ -70,6 +87,8 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 	
 	// GP LEDs
 	if( pin >= 16 && pin < 32 ) {
+#if 0
+		// disabled - using highlight function of GP button instead
 		gp_led = pin - 16;
 		
 		if( value )
@@ -77,7 +96,7 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 		else
 			ledState[gp_led] &= ~(1 << 0); // clear first color
 		// color mapping at the end of this function
-
+#endif
 	} else if( pin >= 112 && pin < 128 ) {
 		gp_led = pin - 112;
 		
@@ -92,56 +111,81 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 			[LED[16] setColor:[NSColor colorWithCalibratedRed:0.1 green:1.0 blue:0.1 alpha:1.0]];
 		else
 			[LED[16] setColor:[NSColor colorWithCalibratedRed:0.1 green:0.3 blue:0.1 alpha:1.0]];
-	} else {
-		// remaining LED functions via button highlighting
-		// TODO: find solution to update this after button has been released!
-		switch( pin ) {
-			case  0: [_buttonTrack1 highlight:(value ? YES : NO)]; break;
-			case  1: [_buttonTrack2 highlight:(value ? YES : NO)]; break;
-			case  2: [_buttonTrack3 highlight:(value ? YES : NO)]; break;
-			case  3: [_buttonTrack4 highlight:(value ? YES : NO)]; break;
+	}
+	
+	// remaining LED functions via button highlighting
+	// TODO: find solution to update this after button has been released!
+	switch( pin ) {
+		case  0: [_buttonTrack1 highlight:(value ? YES : NO)]; break;
+		case  1: [_buttonTrack2 highlight:(value ? YES : NO)]; break;
+		case  2: [_buttonTrack3 highlight:(value ? YES : NO)]; break;
+		case  3: [_buttonTrack4 highlight:(value ? YES : NO)]; break;
+		
+		case  4: [_buttonPLayerA highlight:(value ? YES : NO)]; break;
+		case  5: [_buttonPLayerB highlight:(value ? YES : NO)]; break;
+		case  6: [_buttonPLayerC highlight:(value ? YES : NO)]; break;
 
-			case  4: [_buttonPLayerA highlight:(value ? YES : NO)]; break;
-			case  5: [_buttonPLayerB highlight:(value ? YES : NO)]; break;
-			case  6: [_buttonPLayerC highlight:(value ? YES : NO)]; break;
+		case 16: [_buttonGP1 highlight:(value ? YES : NO)]; break;
+		case 17: [_buttonGP2 highlight:(value ? YES : NO)]; break;
+		case 18: [_buttonGP3 highlight:(value ? YES : NO)]; break;
+		case 19: [_buttonGP4 highlight:(value ? YES : NO)]; break;
+		case 20: [_buttonGP5 highlight:(value ? YES : NO)]; break;
+		case 21: [_buttonGP6 highlight:(value ? YES : NO)]; break;
+		case 22: [_buttonGP7 highlight:(value ? YES : NO)]; break;
+		case 23: [_buttonGP8 highlight:(value ? YES : NO)]; break;
+		case 24: [_buttonGP9 highlight:(value ? YES : NO)]; break;
+		case 25: [_buttonGP10 highlight:(value ? YES : NO)]; break;
+		case 26: [_buttonGP11 highlight:(value ? YES : NO)]; break;
+		case 27: [_buttonGP12 highlight:(value ? YES : NO)]; break;
+		case 28: [_buttonGP13 highlight:(value ? YES : NO)]; break;
+		case 29: [_buttonGP14 highlight:(value ? YES : NO)]; break;
+		case 30: [_buttonGP15 highlight:(value ? YES : NO)]; break;
+		case 31: [_buttonGP16 highlight:(value ? YES : NO)]; break;
 
-			case 80: [_buttonGroup1 highlight:(value ? YES : NO)]; break;
-			case 82: [_buttonGroup2 highlight:(value ? YES : NO)]; break;
-			case 84: [_buttonGroup3 highlight:(value ? YES : NO)]; break;
-			case 86: [_buttonGroup4 highlight:(value ? YES : NO)]; break;
+		case 80: [_buttonGroup1 highlight:(value ? YES : NO)]; break;
+		case 82: [_buttonGroup2 highlight:(value ? YES : NO)]; break;
+		case 84: [_buttonGroup3 highlight:(value ? YES : NO)]; break;
+		case 86: [_buttonGroup4 highlight:(value ? YES : NO)]; break;
 
-			case 88: [_buttonTLayerA highlight:(value ? YES : NO)]; break;
-			case 89: [_buttonTLayerB highlight:(value ? YES : NO)]; break;
-			case 90: [_buttonTLayerC highlight:(value ? YES : NO)]; break;
+		case 88: [_buttonTLayerA highlight:(value ? YES : NO)]; break;
+		case 89: [_buttonTLayerB highlight:(value ? YES : NO)]; break;
+		case 90: [_buttonTLayerC highlight:(value ? YES : NO)]; break;
 
-			case  8: [_buttonEdit highlight:(value ? YES : NO)]; break;
-			case  9: [_buttonMute highlight:(value ? YES : NO)]; break;
-			case 10: [_buttonPattern highlight:(value ? YES : NO)]; break;
-			case 11: [_buttonSong highlight:(value ? YES : NO)]; break;
+		case  8: [_buttonEdit highlight:(value ? YES : NO)]; break;
+		case  9: [_buttonMute highlight:(value ? YES : NO)]; break;
+		case 10: [_buttonPattern highlight:(value ? YES : NO)]; break;
+		case 11: [_buttonSong highlight:(value ? YES : NO)]; break;
 			
-			case 12: [_buttonSolo highlight:(value ? YES : NO)]; break;
-			case 13: [_buttonFast highlight:(value ? YES : NO)]; break;
-			case 14: [_buttonAll highlight:(value ? YES : NO)]; break;
+		case 12: [_buttonSolo highlight:(value ? YES : NO)]; break;
+		case 13: [_buttonFast highlight:(value ? YES : NO)]; break;
+		case 14: [_buttonAll highlight:(value ? YES : NO)]; break;
+		
+		case 91: [_buttonPlay highlight:(value ? YES : NO)]; break;
+		case 92: [_buttonStop highlight:(value ? YES : NO)]; break;
+		case 93: [_buttonPause highlight:(value ? YES : NO)]; break;
 			
-			case 91: [_buttonPlay highlight:(value ? YES : NO)]; break;
-			case 92: [_buttonStop highlight:(value ? YES : NO)]; break;
-			case 93: [_buttonPause highlight:(value ? YES : NO)]; break;
+		case 95: [_buttonStepView highlight:(value ? YES : NO)]; break;
 			
-			case 95: [_buttonStepView highlight:(value ? YES : NO)]; break;
-			
-			case 96: [_buttonMenu highlight:(value ? YES : NO)]; break;
-			case 97: [_buttonScrub highlight:(value ? YES : NO)]; break;
-			case 98: [_buttonMetronome highlight:(value ? YES : NO)]; break;
-		}
+		case 96: [_buttonMenu highlight:(value ? YES : NO)]; break;
+		case 97: [_buttonScrub highlight:(value ? YES : NO)]; break;
+		case 98: [_buttonMetronome highlight:(value ? YES : NO)]; break;
 	}
 
 	// handle dual colour option of GP LEDs
 	if( gp_led >= 0 ) {
 		switch( ledState[gp_led] ) {
+#if 0
 			case 1:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:0.1 green:1.0 blue:0.1 alpha:1.0]]; break;
 			case 2:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:1.0 green:0.3 blue:0.1 alpha:1.0]]; break;
 			case 3:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:1.0 green:1.0 blue:0.1 alpha:1.0]]; break;
 			default: [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:0.1 green:0.3 blue:0.1 alpha:1.0]];
+#else
+			// more contrast
+			case 1:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:0.0 green:1.0 blue:0.0 alpha:1.0]]; break;
+			case 2:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:1.0]]; break;
+			case 3:  [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:1.0 green:1.0 blue:0.0 alpha:1.0]]; break;
+			default: [LED[gp_led] setColor:[NSColor colorWithCalibratedRed:0.9 green:0.9 blue:0.9 alpha:1.0]];
+#endif
 		}
 	}
 
@@ -331,6 +375,23 @@ s32 TASKS_Init(u32 mode)
 	LED[16]=LEDBeat;
 
 	// (only buttons with "LED" function)
+	_buttonGP1 = buttonGP1;
+	_buttonGP2 = buttonGP2;
+	_buttonGP3 = buttonGP3;
+	_buttonGP4 = buttonGP4;
+	_buttonGP5 = buttonGP5;
+	_buttonGP6 = buttonGP6;
+	_buttonGP7 = buttonGP7;
+	_buttonGP8 = buttonGP8;
+	_buttonGP9 = buttonGP9;
+	_buttonGP10 = buttonGP10;
+	_buttonGP11 = buttonGP11;
+	_buttonGP12 = buttonGP12;
+	_buttonGP13 = buttonGP13;
+	_buttonGP14 = buttonGP14;
+	_buttonGP15 = buttonGP15;
+	_buttonGP16 = buttonGP16;
+	
 	_buttonTrack1 = buttonTrack1;
 	_buttonTrack2 = buttonTrack2;
 	_buttonTrack3 = buttonTrack3;

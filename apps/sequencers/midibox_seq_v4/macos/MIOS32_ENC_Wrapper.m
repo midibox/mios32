@@ -30,6 +30,12 @@ static NSObject *_self;
 //////////////////////////////////////////////////////////////////////////////
 // Stub for encoder configuration
 //////////////////////////////////////////////////////////////////////////////
+mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
+{
+	const mios32_enc_config_t dummy = { .cfg.type=DISABLED, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=0, .cfg.pos=0 };
+    return dummy;
+}
+
 s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 {
 	return 0; // no error

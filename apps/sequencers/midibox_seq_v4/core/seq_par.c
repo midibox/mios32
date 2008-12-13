@@ -52,9 +52,9 @@ s32 SEQ_PAR_Init(u32 mode)
 // Sets a value of parameter layer
 // (using this interface function to allow dynamic lists in future)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_Set(u8 track, u8 p_layer, u8 step, u8 value)
+s32 SEQ_PAR_Set(u8 track, u8 step, u8 par_layer, u8 value)
 {
-  par_layer_value[track][p_layer][step] = value;
+  par_layer_value[track][par_layer][step] = value;
   return 0; // no error
 }
 
@@ -63,7 +63,7 @@ s32 SEQ_PAR_Set(u8 track, u8 p_layer, u8 step, u8 value)
 // Returns a value of parameter layer
 // (using this interface function to allow dynamic lists in future)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_Get(u8 track, u8 p_layer, u8 step)
+s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer)
 {
-  return par_layer_value[track][p_layer][step];
+  return par_layer_value[track][par_layer][step];
 }
