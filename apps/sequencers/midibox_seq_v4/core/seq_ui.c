@@ -73,9 +73,12 @@ static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TODO_Init,    // 0
   (void *)&SEQ_UI_EDIT_Init,    // 1
   (void *)&SEQ_UI_TRKEVNT_Init, // 2
-  (void *)&SEQ_UI_TRKDIR_Init,  // 3
-  (void *)&SEQ_UI_TRKDIV_Init,  // 4
-  (void *)&SEQ_UI_TRKLEN_Init   // 5
+  (void *)&SEQ_UI_TRKMODE_Init, // 3
+  (void *)&SEQ_UI_TRKDIR_Init,  // 4
+  (void *)&SEQ_UI_TRKDIV_Init,  // 5
+  (void *)&SEQ_UI_TRKLEN_Init,  // 6
+  (void *)&SEQ_UI_TRKTRAN_Init, // 7
+  (void *)&SEQ_UI_TRGASG_Init   // 8
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -90,13 +93,13 @@ static seq_ui_page_t ui_page;
 static const seq_ui_page_t ui_direct_access_menu_pages[16] = {
   SEQ_UI_PAGE_NONE,        // GP1
   SEQ_UI_PAGE_TRKEVNT,     // GP2
-  SEQ_UI_PAGE_NONE,        // GP3
+  SEQ_UI_PAGE_TRKMODE,     // GP3
   SEQ_UI_PAGE_TRKDIR,      // GP4
   SEQ_UI_PAGE_TRKDIV,      // GP5
   SEQ_UI_PAGE_TRKLEN,      // GP6
-  SEQ_UI_PAGE_NONE,        // GP7
+  SEQ_UI_PAGE_TRKTRAN,     // GP7
   SEQ_UI_PAGE_NONE,        // GP8
-  SEQ_UI_PAGE_NONE,        // GP9
+  SEQ_UI_PAGE_TRGASG,      // GP9
   SEQ_UI_PAGE_NONE,        // GP10
   SEQ_UI_PAGE_NONE,        // GP11
   SEQ_UI_PAGE_NONE,        // GP12

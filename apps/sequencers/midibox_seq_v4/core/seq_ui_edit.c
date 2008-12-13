@@ -118,6 +118,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
+    ui_selected_step = button + ui_selected_step_view*16;
     // toggle trigger layer
     // we've three cases:
     // a) ALL function active, but ALL button not pressed: invert complete trigger layer
@@ -127,7 +128,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	u8 step = button + ui_selected_step_view*16;
+	u8 step = ui_selected_step;
 	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer) ? 0 : 1;
 
 	u8 track;
@@ -152,9 +153,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	if( SEQ_UI_IsSelectedTrack(track) ) {
-	  u8 step = button + ui_selected_step_view*16;
-	  u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer) ? 0 : 1;
-	  SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	  u8 new_value = SEQ_TRG_Get(track, ui_selected_step, ui_selected_trg_layer) ? 0 : 1;
+	  SEQ_TRG_Set(track, ui_selected_step, ui_selected_trg_layer, new_value);
 	}
       }
     }
@@ -197,10 +197,9 @@ static s32 LCD_Handler(u8 high_prio)
     return 0; // there are no high-priority updates
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 step = ui_selected_step + ui_selected_step_view*16;
 
   seq_layer_evnt_t layer_event;
-  SEQ_LAYER_GetEvntOfParLayer(visible_track, step, ui_selected_par_layer, &layer_event);
+  SEQ_LAYER_GetEvntOfParLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -250,7 +249,8 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintMIDIPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
   SEQ_LCD_PrintSpaces(1);
 
-  SEQ_LCD_PrintTrgLayer(ui_selected_trg_layer);
+  MIOS32_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_par_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+  MIOS32_LCD_PrintChar(' ');
 
   SEQ_LCD_PrintStepView(ui_selected_step_view);
 
@@ -283,7 +283,16 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintGatelength(layer_event.len);
   SEQ_LCD_PrintSpaces(1);
 
-  MIOS32_LCD_PrintFormattedString("G-a-r--");
+  int i;
+  const char trg_chars[8] = "gsagrgv";
+  for(i=0; i<7; ++i) {
+    u8 trg_layer;
+    if( !(trg_layer=SEQ_TRG_AssignmentGet(visible_track, i)) )
+      MIOS32_LCD_PrintChar('-');
+    else
+      MIOS32_LCD_PrintChar(SEQ_TRG_Get(visible_track, ui_selected_step, trg_layer-1) ? (trg_chars[i]-32) : trg_chars[i]);
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////
   seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
@@ -309,6 +318,7 @@ static s32 LCD_Handler(u8 high_prio)
     u8 previous_step_was_long_multi = 0; // hard to determine here... TODO
 
     // show length of 16 steps
+    u8 step;
     for(step=0; step<16; ++step) {
       // 9th step reached: switch to second LCD
       if( step == 8 ) {
@@ -370,6 +380,7 @@ static s32 LCD_Handler(u8 high_prio)
     MIOS32_LCD_DeviceSet(0);
     MIOS32_LCD_CursorSet(0, 1);
 
+    u8 step;
     for(step=0; step<16; ++step) {
       // 9th step reached: switch to second LCD
       if( step == 8 ) {

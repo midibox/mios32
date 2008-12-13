@@ -254,21 +254,6 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// TMP: prints selected trigger layer (8 characters)
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintTrgLayer(u8 layer)
-{
-  const char selected_trg_layer[3][7] = { "Gate  ", "Acc.  ", "Roll  " };
-
-  MIOS32_LCD_PrintChar('A' + layer);
-  MIOS32_LCD_PrintChar(':');
-  MIOS32_LCD_PrintString((char *)selected_trg_layer[layer]);
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // prints MIDI port (4 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port)

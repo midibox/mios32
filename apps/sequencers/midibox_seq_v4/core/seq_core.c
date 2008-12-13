@@ -38,6 +38,7 @@
 
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
+static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -234,17 +235,33 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
     if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
       t->div_ctr = 0;
 
-      // determine next step depending on direction mode
-      if( !t->state.FIRST_CLK )
-	SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+      u8 skip_ctr = 0;
+      do {
+	// determine next step depending on direction mode
+	if( !t->state.FIRST_CLK )
+	  SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
 
-      // clear "first clock" flag (on following clock ticks we can continue as usual)
-      t->state.FIRST_CLK = 0;
+	// clear "first clock" flag (on following clock ticks we can continue as usual)
+	t->state.FIRST_CLK = 0;
+
+	// if skip flag set for this flag: try again
+	if( SEQ_TRG_SkipGet(track, t->step) )
+	  ++skip_ctr;
+	else
+	  break;
+
+      } while( skip_ctr < 32 ); // try 32 times maximum
+
 
       // solo function: don't play MIDI event if track not selected
       if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
 	continue;
 
+      // if random gate trigger set: play step with 1:1 probability
+      if( SEQ_TRG_RandomGateGet(track, t->step) && (SEQ_RANDOM_Gen(0) & 1) )
+	continue;
+
+      // fetch MIDI events which should be played
       if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
 	s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
 	seq_layer_evnt_t layer_events[4];
@@ -255,12 +272,25 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  for(i=0; i<number_of_events; ++e, ++i) {
 	    mios32_midi_package_t *p = &e->midi_package;
 
+	    SEQ_CORE_Transpose(t, tcc, p);
+
+	    if( e->len >= 0 ) {
+	      if( SEQ_TRG_RollGet(track, t->step) )
+		e->len = 0x2c; // 2x12
+	      if( SEQ_TRG_GlideGet(track, t->step) )
+		e->len = 0x1f; // Glide
+	    }
+
 	    if( p->type == CC ) {
 	      SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_CCEvent, bpm_tick);
 	    } else {
-	      if( p->note && p->velocity )
+	      if( p->note && p->velocity ) {
+		// force velocity to 0x7f if accent flag set
+		if( SEQ_TRG_AccentGet(track, t->step) )
+		  p->velocity = 0x7f;
+
 		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OnEvent, bpm_tick);
-	      else
+	      } else
 		p->velocity = 0; // force velocity to 0 for next check
 	    }
 
@@ -462,6 +492,51 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
 
     t->state.POS_RESET = 0;
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transposes if midi_package contains a Note Event
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package)
+{
+  if( midi_package->type != NoteOn && midi_package->type != NoteOff )
+    return -1; // no note event
+
+  int note = midi_package->note;
+  int incrementer;
+
+  if( incrementer=tcc->transpose_oct ) {
+    if( incrementer >= 8 ) {
+      // negative direction
+      note += 12 * (-16 + incrementer);
+      while( note < 0 )
+	note += 12;
+    } else {
+      // positive direction
+      note += 12 * incrementer;
+      while( note >= 128 )
+	note -= 12;
+    }
+  }
+
+  if( incrementer=tcc->transpose_semi ) {
+    if( incrementer >= 8 ) {
+      // negative direction
+      note += (-16 + incrementer);
+      while( note < 0 )
+	note += 12;
+    } else {
+      // positive direction
+      note += incrementer;
+      while( note >= 128 )
+	note -= 12;
+    }
+  }
+
+  midi_package->note = note;
 
   return 0; // no error
 }

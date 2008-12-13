@@ -23,16 +23,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +32,17 @@ u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][3][SEQ_CORE_NUM_STEPS/8];
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
+
+static const char seq_trg_names[8][6] = {
+  "Gate ", // 0
+  "Skip ", // 1
+  "Acc. ", // 2
+  "Glide", // 3
+  " Roll", // 4
+  " R.G ", // 5
+  " R.V ", // 6
+  "Spare"  // 7
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,15 @@ s32 SEQ_TRG_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// returns the assignment of a certain trigger
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num)
+{
+  return (seq_cc_trk[track].trg_assignments.ALL >> (trg_num*2)) & 3;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // returns value of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Get(u8 track, u8 step, u8 trg_layer)
@@ -84,6 +94,42 @@ s32 SEQ_TRG_GateGet(u8 track, u8 step)
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
   // gate always set if not assigned
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 1;
+}
+
+s32 SEQ_TRG_SkipGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.skip;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
+s32 SEQ_TRG_AccentGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
+s32 SEQ_TRG_GlideGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.glide;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
+s32 SEQ_TRG_RollGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
+s32 SEQ_TRG_RandomGateGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_gate;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
+s32 SEQ_TRG_RandomValueGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
 }
 
 
@@ -111,4 +157,82 @@ s32 SEQ_TRG_GateSet(u8 track, u8 step, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
   return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_SkipSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.skip;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_AccentSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_GlideSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.glide;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_RollSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_RandomGateSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_gate;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_RandomValueSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function returns the string to a trigger assignment type
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_TRG_TypeStr(u8 trg_num)
+{
+  return (char *)seq_trg_names[trg_num];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function returns the string to assigned trigger(s) - if multiple 
+// triggers are assigned, it returns "Multi" - if layer is not assigned
+// to any trigger, it returns "-----"
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer)
+{
+  u16 trg_assignments = seq_cc_trk[track].trg_assignments.ALL;
+  u16 pattern = trg_layer+1;
+  u16 mask = 3;
+  int assigned = -1;
+  int num = 0;
+
+  int i;
+  for(i=0; i<8; ++i) {
+    if( (trg_assignments & mask) == pattern ) {
+      assigned = i;
+      ++num;
+    }
+    mask <<= 2;
+    pattern <<= 2;
+  }
+
+  if( !num )
+    return "-----";
+
+  if( num > 1 )
+    return "Multi";
+
+  return (char *)seq_trg_names[assigned];
 }
