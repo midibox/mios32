@@ -249,15 +249,35 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  int i;
 	  seq_layer_evnt_t *e = &layer_events[0];
 	  for(i=0; i<number_of_events; ++e, ++i) {
-	    SEQ_MIDI_Send(tcc->midi_port, 
-			  e->midi_package, 
-			  (e->midi_package.type == CC) ? SEQ_MIDI_CCEvent : SEQ_MIDI_OnEvent,
-			  bpm_tick);
+	    mios32_midi_package_t *p = &e->midi_package;
 
-	    if( e->len ) { // if off event should be played
-	      e->midi_package.velocity = 0x00; // clear velocity
-	      u32 delay = 4*e->len; // TODO: later we will support higher note length resolution
-	      SEQ_MIDI_Send(tcc->midi_port, e->midi_package, SEQ_MIDI_OffEvent, bpm_tick + delay);
+	    if( p->type == CC ) {
+	      SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_CCEvent, bpm_tick);
+	    } else {
+	      if( p->note && p->velocity )
+		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OnEvent, bpm_tick);
+	      else
+		p->velocity = 0; // force velocity to 0 for next check
+	    }
+
+	    if( p->velocity && e->len ) { // if off event should be played (note: on CC events, velocity matches with CC value)
+	      if( e->len < 32 ) {
+		p->velocity = 0x00; // clear velocity
+		u32 delay = 4*e->len; // TODO: later we will support higher note length resolution
+		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + delay);
+	      } else {
+		// multi trigger - thanks to MIDI queueing mechanism, realisation is much much easier than on MBSEQ V3!!! :-)
+		int i;
+		int triggers = ((e->len-1)>>5);
+		u32 delay = 4 * ((e->len-1) & 0x1f);
+		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger
+		for(i=0; i<triggers; ++i)
+		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + (i+1)*delay);
+
+		p->velocity = 0x00; // clear velocity
+		for(i=0; i<=triggers; ++i)
+		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + i*delay + (delay/2));
+	      }
 	    }
 	  }
 	}

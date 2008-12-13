@@ -28,8 +28,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 current_charset = SEQ_LCD_CHARSET_NONE;
-
 const u8 charset_vbars[64] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x1e,
@@ -39,6 +37,17 @@ const u8 charset_vbars[64] = {
   0x00, 0x00, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e,
   0x00, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e,
   0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e
+};
+
+const u8 charset_hbars[64] = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // empty bar
+  0x00, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00, // "|  "
+  0x00, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x00, // "|| "
+  0x00, 0x15, 0x15, 0x15, 0x15, 0x15, 0x15, 0x00, // "|||"
+  0x00, 0x00, 0x00, 0x10, 0x10, 0x00, 0x00, 0x00, // " o "
+  0x00, 0x10, 0x14, 0x15, 0x15, 0x14, 0x10, 0x00, // " > "
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // not used
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // not used
 };
 
 
@@ -65,8 +74,10 @@ s32 SEQ_LCD_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 // initialise character set (if not already active)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_InitSpecialChars(u8 charset)
+s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 {
+  static seq_lcd_charset_t current_charset = SEQ_LCD_CHARSET_None;
+
   if( charset != current_charset ) {
     current_charset = charset;
 
@@ -74,8 +85,11 @@ s32 SEQ_LCD_InitSpecialChars(u8 charset)
     for(dev=0; dev<2; ++dev) {
       MIOS32_LCD_DeviceSet(dev);
       switch( charset ) {
-        case SEQ_LCD_CHARSET_VBARS:
+        case SEQ_LCD_CHARSET_VBars:
 	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_vbars);
+	  break;
+        case SEQ_LCD_CHARSET_HBars:
+	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_hbars);
 	  break;
         default:
 	  return -1; // charset doesn't exist
@@ -95,6 +109,50 @@ s32 SEQ_LCD_PrintSpaces(u8 num)
   do {
     MIOS32_LCD_PrintChar(' ');
   } while( --num );
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints a vertical bar for a 3bit value
+// (1 character)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintVBar(u8 value)
+{
+  return MIOS32_LCD_PrintChar(value);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints a horizontal bar for a 4bit value
+// (5 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintHBar(u8 value)
+{
+  // special chars which should be print depending on meter value (16 entries, only 14 used)
+  const u8 hbar_table[16][5] = {
+    { 4, 0, 0, 0, 0 },
+    { 1, 0, 0, 0, 0 },
+    { 2, 0, 0, 0, 0 },
+    { 3, 0, 0, 0, 0 },
+    { 3, 1, 0, 0, 0 },
+    { 3, 2, 0, 0, 0 },
+    { 3, 3, 0, 0, 0 },
+    { 3, 3, 1, 0, 0 },
+    { 3, 3, 2, 0, 0 },
+    { 3, 3, 3, 0, 0 },
+    { 3, 3, 3, 1, 0 },
+    { 3, 3, 3, 2, 0 },
+    { 3, 3, 3, 3, 1 },
+    { 3, 3, 3, 3, 2 },
+    { 3, 3, 3, 3, 3 },
+    { 3, 3, 3, 3, 3 }
+  };
+
+  int i;
+  for(i=0; i<5; ++i)
+    MIOS32_LCD_PrintChar(hbar_table[value][i]);
 
   return 0; // no error
 }
@@ -140,38 +198,40 @@ s32 SEQ_LCD_PrintNote(u8 note)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintGatelength(u8 len)
 {
-  const char len_tab[24][5] = {
-    "  4%", // 0
-    "  8%", // 1
-    " 13%", // 2
-    " 17%", // 3
-    " 21%", // 4
-    " 25%", // 5
-    " 29%", // 6
-    " 33%", // 7
-    " 38%", // 8
-    " 42%", // 9
-    " 46%", // 10
-    " 50%", // 11
-    " 54%", // 12
-    " 58%", // 13
-    " 52%", // 14
-    " 67%", // 15
-    " 71%", // 16
-    " 75%", // 17
-    " 79%", // 18
-    " 83%", // 19
-    " 88%", // 20
-    " 92%", // 21
-    " 96%", // 22
-    "100%" // 23
+  const char len_tab[25][5] = {
+    "  0%", // 0
+    "  4%", // 1
+    "  8%", // 2
+    " 13%", // 3
+    " 17%", // 4
+    " 21%", // 5
+    " 25%", // 6
+    " 29%", // 7
+    " 33%", // 8
+    " 38%", // 9
+    " 42%", // 10
+    " 46%", // 11
+    " 50%", // 12
+    " 54%", // 13
+    " 58%", // 14
+    " 52%", // 15
+    " 67%", // 16
+    " 71%", // 17
+    " 75%", // 18
+    " 79%", // 19
+    " 83%", // 20
+    " 88%", // 21
+    " 92%", // 22
+    " 96%", // 23
+    "100%" // 24
   };
 
-  if( len < 24 ) { // gatelength
+  if( len < 25 ) { // gatelength
     MIOS32_LCD_PrintString((char *)len_tab[len]);
-  } else if( len < 32 ) { // gilde
+  } else if( len < 33 ) { // gilde
     MIOS32_LCD_PrintString("Gld.");
   } else { // multi trigger
+    --len; // for easier calculation
     MIOS32_LCD_PrintFormattedString("%1dx%2d", (len>>5)+1, (len&0x1f)+1);
   }
 
@@ -196,22 +256,7 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints selected parameter layer (8 characters)
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintParLayer(u8 layer)
-{
-  const char selected_par_layer[3][7] = { "Note  ", "Vel.  ", "Len.  " };
-
-  MIOS32_LCD_PrintChar('A' + layer);
-  MIOS32_LCD_PrintChar(':');
-  MIOS32_LCD_PrintString((char *)selected_par_layer[layer]);
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// prints selected trigger layer (8 characters)
+// TMP: prints selected trigger layer (8 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintTrgLayer(u8 layer)
 {

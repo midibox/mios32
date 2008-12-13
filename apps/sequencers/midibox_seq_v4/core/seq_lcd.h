@@ -18,12 +18,16 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_LCD_CHARSET_NONE  0
-#define SEQ_LCD_CHARSET_VBARS 1
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+  SEQ_LCD_CHARSET_None,
+  SEQ_LCD_CHARSET_VBars,
+  SEQ_LCD_CHARSET_HBars
+} seq_lcd_charset_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -32,13 +36,14 @@
 
 extern s32 SEQ_LCD_Clear(void);
 
-extern s32 SEQ_LCD_InitSpecialChars(u8 charset);
+extern s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset);
 
 extern s32 SEQ_LCD_PrintSpaces(u8 num);
+extern s32 SEQ_LCD_PrintVBar(u8 value);
+extern s32 SEQ_LCD_PrintHBar(u8 value);
 extern s32 SEQ_LCD_PrintNote(u8 note);
 extern s32 SEQ_LCD_PrintGatelength(u8 len);
 extern s32 SEQ_LCD_PrintGxTy(u8 group, u8 track);
-extern s32 SEQ_LCD_PrintParLayer(u8 layer);
 extern s32 SEQ_LCD_PrintTrgLayer(u8 layer);
 extern s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintStepView(u8 step_view);
