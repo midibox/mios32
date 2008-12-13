@@ -20,9 +20,12 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_todo.c \
 		../core/seq_ui_edit.c \
 		../core/seq_ui_trkevnt.c \
+		../core/seq_ui_trkmode.c \
 		../core/seq_ui_trkdir.c \
 		../core/seq_ui_trkdiv.c \
 		../core/seq_ui_trklen.c \
+		../core/seq_ui_trktran.c \
+		../core/seq_ui_trgasg.c \
 		../core/seq_midi.c \
 		../core/seq_bpm.c \
 		../core/seq_cc.c  \
