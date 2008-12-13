@@ -79,7 +79,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
       ui_selected_item = ITEM_DIRECTION;
-      SEQ_CC_Set(SEQ_UI_VisibleTrackGet(), SEQ_CC_DIRECTION, encoder-1);
+      SEQ_UI_CC_Set(SEQ_CC_DIRECTION, encoder-1);
       return 1;
 
     case SEQ_UI_ENCODER_GP9:
@@ -103,10 +103,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_DIRECTION:     return SEQ_UI_CCInc(SEQ_CC_DIRECTION, 0, 6, incrementer);
-    case ITEM_STEPS_FORWARD: return SEQ_UI_CCInc(SEQ_CC_STEPS_FORWARD, 0, 7, incrementer);
-    case ITEM_STEPS_JMPBCK:  return SEQ_UI_CCInc(SEQ_CC_STEPS_JMPBCK, 0, 7, incrementer);
-    case ITEM_STEPS_REPLAY:  return SEQ_UI_CCInc(SEQ_CC_STEPS_REPLAY, 0, 7, incrementer);
+    case ITEM_DIRECTION:     return SEQ_UI_CC_Inc(SEQ_CC_DIRECTION, 0, 6, incrementer);
+    case ITEM_STEPS_FORWARD: return SEQ_UI_CC_Inc(SEQ_CC_STEPS_FORWARD, 0, 7, incrementer);
+    case ITEM_STEPS_JMPBCK:  return SEQ_UI_CC_Inc(SEQ_CC_STEPS_JMPBCK, 0, 7, incrementer);
+    case ITEM_STEPS_REPLAY:  return SEQ_UI_CC_Inc(SEQ_CC_STEPS_REPLAY, 0, 7, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -137,7 +137,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_GP7:
     case SEQ_UI_BUTTON_GP8:
       ui_selected_item = ITEM_DIRECTION;
-      SEQ_CC_Set(SEQ_UI_VisibleTrackGet(), SEQ_CC_DIRECTION, button-1);
+      SEQ_UI_CC_Set(SEQ_CC_DIRECTION, button-1);
       return 1; // value changed
 
     case SEQ_UI_BUTTON_GP9:

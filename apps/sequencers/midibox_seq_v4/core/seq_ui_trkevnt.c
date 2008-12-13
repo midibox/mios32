@@ -141,12 +141,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_EVNT_MODE:     return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_MODE, 0, SEQ_LAYER_EVNTMODE_NUM-1, incrementer);
-    case ITEM_EVNT_CONST1:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST1, 0, 127, incrementer);
-    case ITEM_EVNT_CONST2:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST2, 0, 127, incrementer);
-    case ITEM_EVNT_CONST3:   return SEQ_UI_CCInc(SEQ_CC_MIDI_EVNT_CONST3, 0, 127, incrementer);
-    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CCInc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
-    case ITEM_MIDI_PORT:     return SEQ_UI_CCInc(SEQ_CC_MIDI_PORT, 0, 3, incrementer); // TODO: use global define for number of MIDI ports!
+    case ITEM_EVNT_MODE:     return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_MODE, 0, SEQ_LAYER_EVNTMODE_NUM-1, incrementer);
+    case ITEM_EVNT_CONST1:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST1, 0, 127, incrementer);
+    case ITEM_EVNT_CONST2:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST2, 0, 127, incrementer);
+    case ITEM_EVNT_CONST3:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST3, 0, 127, incrementer);
+    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
+    case ITEM_MIDI_PORT:     return SEQ_UI_CC_Inc(SEQ_CC_MIDI_PORT, 0, 3, incrementer); // TODO: use global define for number of MIDI ports!
     case ITEM_PRESET:        CopyPreset(SEQ_UI_VisibleTrackGet()); return 1;
   }
 

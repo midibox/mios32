@@ -125,7 +125,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	int quicksel = encoder - 8;
 	ui_selected_item = ITEM_LENGTH_2 + quicksel;
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	SEQ_CC_Set(visible_track, SEQ_CC_LENGTH, quicksel_length[quicksel]);
+	SEQ_UI_CC_Set(SEQ_CC_LENGTH, quicksel_length[quicksel]);
 	return 1; // value has been changed
       }
   }
@@ -133,8 +133,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_LENGTH:        return SEQ_UI_CCInc(SEQ_CC_LENGTH, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
-    case ITEM_LOOP:          return SEQ_UI_CCInc(SEQ_CC_LOOP, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
+    case ITEM_LENGTH:        return SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
+    case ITEM_LOOP:          return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
