@@ -96,11 +96,11 @@ s32 MIOS32_ENC_Init(u32 mode)
 // Configures Encoder
 // IN: 
 //   <encoder>: encoder number (0..MIOS32_ENC_NUM_MAX-1)
-//   <enc_config.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
-//   <enc_config.speed: encoder speed mode (NORMAL/FAST/SLOW)
-//   <enc_config.speed_par: speed parameter (0-7)
-//   <enc_config.sr:    shift register (1-16)
-//   <enc_config.pos:   pin position of first pin (0, 2, 4 or 6)
+//   <enc_config.cfg.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
+//   <enc_config.cfg.speed: encoder speed mode (NORMAL/FAST/SLOW)
+//   <enc_config.cfg.speed_par: speed parameter (0-7)
+//   <enc_config.cfg.sr:    shift register (1-16)
+//   <enc_config.cfg.pos:   pin position of first pin (0, 2, 4 or 6)
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
@@ -125,11 +125,11 @@ s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 // Returns encoder configuration
 // IN: <encoder>: encoder number (0..MIOS32_ENC_NUM_MAX-1)
 // OUT:
-//   <enc_config.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
-//   <enc_config.speed: encoder speed mode (NORMAL/FAST/SLOW)
-//   <enc_config.speed_par: speed parameter (0-7)
-//   <enc_config.sr:    shift register (1-16)
-//   <enc_config.pos:   pin position of first pin (0, 2, 4 or 6)
+//   <enc_config.cfg.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
+//   <enc_config.cfg.speed: encoder speed mode (NORMAL/FAST/SLOW)
+//   <enc_config.cfg.speed_par: speed parameter (0-7)
+//   <enc_config.cfg.sr:    shift register (1-16)
+//   <enc_config.cfg.pos:   pin position of first pin (0, 2, 4 or 6)
 /////////////////////////////////////////////////////////////////////////////
 mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 {
