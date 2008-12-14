@@ -189,11 +189,11 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
     if( byte & 0x80 ) { // new MIDI status
       if( byte >= 0xf8 ) { // events >= 0xf8 don't change the running status and can just be forwarded
 	// Realtime messages don't change the running status and can be sent immediately
-	midix->package.cin = 0xf; // F: single byte
-	midix->package.evnt0 = byte;
-	midix->package.evnt1 = 0x00;
-	midix->package.evnt2 = 0x00;
-	package_complete = 1; // -> forward to caller
+	package->cin = 0xf; // F: single byte
+	package->evnt0 = byte;
+	package->evnt1 = 0x00;
+	package->evnt2 = 0x00;
+	package_complete = 1;
       } else {
 	midix->running_status = byte;
 	midix->expected_bytes = mios32_midi_expected_bytes_common[(byte >> 4) & 0x7];
@@ -225,6 +225,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 		midix->package.evnt2 = 0xf7;
 		break;
 	    }
+	    *package = midix->package;
 	    package_complete = 1; // -> forward to caller
 	    midix->sysex_ctr = 0x00; // ensure that next F7 will just send F7
 	  }
@@ -246,6 +247,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 
 	    // Send three-byte event
 	    midix->package.cin = 4;  // 4: SysEx starts or continues
+	    *package = midix->package;
 	    package_complete = 1; // -> forward to caller
 	    midix->sysex_ctr = 0x00; // reset and prepare for next packet
 	}
@@ -286,19 +288,15 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	  midix->package.evnt0 = midix->running_status;
 	  // midix->package.evnt1 = // already stored
 	  // midix->package.evnt2 = // already stored
+	  *package = midix->package;
 	  package_complete = 1; // -> forward to caller
 	}
       }
     }
   }
 
-  // new package?
-  if( package_complete ) {
-    *package = midix->package;
-    return 0; // new package in buffer
-  }
-
-  return -1; // no package in buffer
+  // return 0 if new package in buffer, otherwise -1
+  return package_complete ? 0 : -1;
 #endif
 }
 
