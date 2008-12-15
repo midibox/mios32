@@ -21,10 +21,23 @@
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_midi.h"
+#include "seq_midi_in.h"
 #include "seq_bpm.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_pattern.h"
+#include "seq_random.h"
 #include "seq_ui.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+// set this to 1 if performance of clock handler should be measured with a scope
+// (LED toggling in APP_Background() has to be disabled!)
+// set this to 2 to visualize forward delay during pattern changes
+#define LED_PERFORMANCE_MEASURING 2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +68,10 @@ u8 steps_per_measure;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u32 bpm_tick_forward_delay_ctr;
+static u32 bpm_tick_forward_delay_ctr_req;
+static u32 bpm_tick_forwarded;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -62,6 +79,9 @@ u8 steps_per_measure;
 s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_state.ALL = 0;
+  bpm_tick_forward_delay_ctr_req = 0;
+  bpm_tick_forward_delay_ctr = 0;
+  bpm_tick_forwarded = 0;
 
   steps_per_measure = 16; // will be configurable later
 
@@ -70,6 +90,16 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset layers
   SEQ_LAYER_Init(0);
+
+  // reset patterns
+  SEQ_PATTERN_Init(0);
+
+  // clear registers which are not reset by SEQ_CORE_Reset()
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    seq_core_trk_t *t = &seq_core_trk[track];
+    t->sustain_note.ALL = 0;
+  }
 
   // reset sequencer
   SEQ_CORE_Reset();
@@ -107,10 +137,38 @@ s32 SEQ_CORE_Handler(void)
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
 
-      if( seq_core_state.RUN && !seq_core_state.PAUSE )
-	SEQ_CORE_Tick(bpm_tick);
+      if( seq_core_state.RUN && !seq_core_state.PAUSE ) {
+
+	if( bpm_tick_forward_delay_ctr ) {
+	  --bpm_tick_forward_delay_ctr;
+#if LED_PERFORMANCE_MEASURING == 2
+	  MIOS32_BOARD_LED_Set(0xffffffff, bpm_tick_forward_delay_ctr ? 1 : 0);
+#endif
+	} else if( bpm_tick_forward_delay_ctr_req ) {
+#if LED_PERFORMANCE_MEASURING == 2
+	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+#endif
+	  // forwarding sequencer has been requested!
+	  bpm_tick_forwarded = bpm_tick;
+	  while( bpm_tick_forward_delay_ctr_req ) {
+	    ++bpm_tick_forward_delay_ctr;
+	    --bpm_tick_forward_delay_ctr_req;
+	    SEQ_CORE_Tick(bpm_tick_forwarded++);
+	  }
+	} else {
+#if LED_PERFORMANCE_MEASURING == 1
+	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+#endif
+	  SEQ_CORE_Tick(bpm_tick);
+#if LED_PERFORMANCE_MEASURING == 1
+	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
+	}
+      }
     }
   } while( again && num_loops < 10 );
+
+  return 0; // no error
 }
 
 
@@ -120,7 +178,18 @@ s32 SEQ_CORE_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_PlayOffEvents(void)
 {
+  // play "off events"
   SEQ_MIDI_FlushQueue();
+
+  // play sustained notes
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    seq_core_trk_t *t = &seq_core_trk[track];
+    if( t->sustain_note.ALL ) {
+      MIOS32_MIDI_SendPackage(t->sustain_port, t->sustain_note);
+      t->sustain_note.ALL = 0;
+    }
+  }
 
   return 0; // no error
 }
@@ -239,9 +308,9 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
   }
 
   int track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-    seq_core_trk_t *t = &seq_core_trk[track];
-    seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++tcc, ++track) {
 
     // if "synch to measure" flag set: reset track if master has reached the selected number of steps
     // MEMO: we could also provide the option to synch to another track
@@ -278,6 +347,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
       if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
 	continue;
 
+      // mute function
+      if( t->state.MUTED )
+	continue;
+
       // if random gate trigger set: play step with 1:1 probability
       if( SEQ_TRG_RandomGateGet(track, t->step) && (SEQ_RANDOM_Gen(0) & 1) )
 	continue;
@@ -293,8 +366,21 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  for(i=0; i<number_of_events; ++e, ++i) {
 	    mios32_midi_package_t *p = &e->midi_package;
 
+	    // transpose notes/CCs
 	    SEQ_CORE_Transpose(t, tcc, p);
 
+	    // skip if velocity has been cleared by transpose function
+	    // (e.g. no key pressed in transpose mode)
+	    if( p->type == NoteOn && !p->velocity )
+	      continue;
+
+	    // sustained note: play off event
+	    if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
+	      SEQ_MIDI_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OffEvent, bpm_tick);
+	      t->sustain_note.ALL = 0;
+	    }
+
+	    // roll/glide flag
 	    if( e->len >= 0 ) {
 	      if( SEQ_TRG_RollGet(track, t->step) )
 		e->len = 0x2c; // 2x12
@@ -302,8 +388,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 		e->len = 0x1f; // Glide
 	    }
 
+	    // send On event
 	    if( p->type == CC ) {
 	      SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_CCEvent, bpm_tick);
+	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      if( p->note && p->velocity ) {
 		// force velocity to 0x7f if accent flag set
@@ -311,15 +399,22 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 		  p->velocity = 0x7f;
 
 		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OnEvent, bpm_tick);
+		t->vu_meter = p->velocity; // for visualisation in mute menu
 	      } else
 		p->velocity = 0; // force velocity to 0 for next check
 	    }
 
+	    // send Off event
 	    if( p->velocity && (e->len >= 0) ) { // if off event should be played (note: on CC events, velocity matches with CC value)
 	      if( e->len < 32 ) {
 		p->velocity = 0x00; // clear velocity
-		u32 delay = 4*(e->len+1); // TODO: later we will support higher note length resolution
-		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + delay);
+		if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
+		  t->sustain_port = tcc->midi_port;
+		  t->sustain_note = *p;
+		} else {
+		  u32 delay = 4*(e->len+1); // TODO: later we will support higher note length resolution
+		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + delay);
+		}
 	      } else {
 		// multi trigger - thanks to MIDI queueing mechanism, realisation is much much easier than on MBSEQ V3!!! :-)
 		int i;
@@ -342,6 +437,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
 
   // clear "first clock" flag if it was set before
   seq_core_state.FIRST_CLK = 0;
+
+  return 0; // no error
 }
 
 
@@ -575,11 +672,12 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     }
   }
 
-
+#if 0
   // apply transpose octave/semitones parameter
   if( midi_package->type != NoteOn && midi_package->type != NoteOff )
     return -1; // no note event
-
+  // TODO: what about tracks which play transposed/arp events + CC?
+#endif
 
   if( inc_oct ) {
     note += 12 * inc_oct;
@@ -608,3 +706,26 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// This function requests to pre-generate sequencer ticks for a given time
+// It returns -1 if the previously requested delay hasn't passed yet
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_AddForwardDelay(u16 delay_ms)
+{
+  if( bpm_tick_forward_delay_ctr )
+    return -1; // ongoing request
+
+  // calculate how many BPM ticks are required to bridge the delay
+  u32 add_bpm_ticks = SEQ_BPM_TicksFor_mS(delay_ms);
+
+#if 0
+  // for checking the result on the console
+  printf("[SEQ_CORE_AddForwardDelay] %d ticks\n\r", add_bpm_ticks);
+#endif
+
+  // requested ticks will be taken from SEQ_CORE_Handler()
+  bpm_tick_forward_delay_ctr_req = add_bpm_ticks;
+
+  return 0; // no error
+}

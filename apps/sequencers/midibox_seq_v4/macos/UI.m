@@ -275,7 +275,7 @@ void SRIO_ServiceFinish(void)
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
 	while (YES) {
-		// TOOD: find better more FreeRTOS/MIOS32 compliant solution
+		// TODO: find better more FreeRTOS/MIOS32 compliant solution
 		// check for incoming MIDI messages and call hooks
 		MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
 
@@ -286,6 +286,31 @@ void SRIO_ServiceFinish(void)
 	
 	[pool release];
 	[NSThread exit];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is triggered from SEQ_PATTERN_Change to transport the new patch
+// into RAM
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Pattern(void *pvParameters)
+{
+#if 0
+  do {
+    // suspend task - will be resumed from SEQ_PATTERN_Change()
+    vTaskSuspend(NULL);
+
+    SEQ_TASK_Pattern();
+  } while( 1 );
+#endif
+}
+
+// use this function to resume the task
+void SEQ_TASK_PatternResume(void)
+{
+//    vTaskResume(xPatternHandle);
+
+	// MacOS: call task directly
+    SEQ_TASK_Pattern();
 }
 
 
@@ -306,10 +331,9 @@ s32 TASKS_Init(u32 mode)
 
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
-	
+
 	return 0; // no error
 }
-
 
 //////////////////////////////////////////////////////////////////////////////
 // init application after ca. 1 mS (this ensures that all objects have been initialized)

@@ -85,11 +85,12 @@ extern s32 SEQ_BPM_ChkReqStart(void);
 extern s32 SEQ_BPM_ChkReqCont(void);
 extern s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr);
 
+extern u32 SEQ_BPM_TicksFor_mS(u16 time_ms);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u32 seq_bpm_last_incoming_clk_delay; // for diagnosis only
 
 #endif /* _SEQ_BPM_H */

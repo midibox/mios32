@@ -24,9 +24,12 @@
 
 #include "seq_core.h"
 #include "seq_bpm.h"
+#include "seq_midi.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_led.h"
 #include "seq_ui.h"
+#include "seq_pattern.h"
 
 #include "seq_midi_in.h"
 
@@ -119,7 +122,7 @@ void APP_Init(void)
 void APP_Background(void)
 {
   // toggle the state of all LEDs (allows to measure the execution speed with a scope)
-#if 1
+#if 0
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 #endif
 
@@ -268,6 +271,15 @@ void SEQ_TASK_MIDI(void)
 
   // send timestamped MIDI events
   SEQ_MIDI_Handler();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is triggered whenever a pattern has to be loaded
+/////////////////////////////////////////////////////////////////////////////
+void SEQ_TASK_Pattern(void)
+{
+  SEQ_PATTERN_Handler();
 }
 
 

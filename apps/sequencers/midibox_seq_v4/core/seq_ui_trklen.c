@@ -124,7 +124,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       {
 	int quicksel = encoder - 8;
 	ui_selected_item = ITEM_LENGTH_2 + quicksel;
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	SEQ_UI_CC_Set(SEQ_CC_LENGTH, quicksel_length[quicksel]);
 	return 1; // value has been changed
       }
@@ -151,8 +150,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
-
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   switch( button ) {
     case SEQ_UI_BUTTON_GP1:

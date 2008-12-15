@@ -18,8 +18,9 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#define SEQ_CORE_NUM_GROUPS   4
+#define SEQ_CORE_NUM_TRACKS   (4*SEQ_CORE_NUM_GROUPS)
 #define SEQ_CORE_NUM_STEPS    32
-#define SEQ_CORE_NUM_TRACKS   16
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,6 +46,7 @@ typedef union {
   };
   struct {
     unsigned DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
+    unsigned MUTED:1;       // track is muted
     unsigned POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
     unsigned BACKWARD:1;    // if set, the track will be played in backward direction
     unsigned FIRST_CLK:1;   // don't increment on the first clock event
@@ -63,6 +65,9 @@ typedef struct seq_core_trk_t {
   u8                   step_saved;       // for replay mechanism
   u8                   step_fwd_ctr;     // step forward counter
   u8                   arp_pos;          // arpeggiator position
+  mios32_midi_port_t   sustain_port;     // port of sustained note
+  mios32_midi_package_t sustain_note;    // sustained note
+  u8                   vu_meter;         // for visualisation in mute menu
 } seq_core_trk_t;
 
 
@@ -153,6 +158,8 @@ extern s32 SEQ_CORE_Pause(u32 no_echo);
 extern s32 SEQ_CORE_Tick(u32 bpm_tick);
 
 extern s32 SEQ_CORE_Handler(void);
+
+extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
 
 /////////////////////////////////////////////////////////////////////////////

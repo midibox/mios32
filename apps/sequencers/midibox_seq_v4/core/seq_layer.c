@@ -399,8 +399,6 @@ static s32 SEQ_LAYER_GetEvnt_2(u8 track, u8 step, seq_layer_evnt_t layer_events[
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_LAYER_GetEvnt_3(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
 {
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
   return -1; // unimplemented layer mode
 }
 
@@ -593,8 +591,6 @@ static s32 SEQ_LAYER_GetEvnt_10(u8 track, u8 step, seq_layer_evnt_t layer_events
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  u8 gate = SEQ_TRG_GateGet(track, step);
-
   int i;
   for(i=0; i<2; ++i) {
     seq_layer_evnt_t *e = &layer_events[i];
@@ -616,8 +612,6 @@ static s32 SEQ_LAYER_GetEvnt_10(u8 track, u8 step, seq_layer_evnt_t layer_events
 static s32 SEQ_LAYER_GetEvnt_11(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  u8 gate = SEQ_TRG_GateGet(track, step);
 
   int i;
   for(i=0; i<3; ++i) {

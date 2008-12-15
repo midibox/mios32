@@ -1,9 +1,6 @@
 // $Id$
 /*
- * Header file for tasks which have to be serviced by FreeRTOS/MacOS
- *
- * For MIOS32, the appr. tasks.c file is located in ../mios32/tasks.c
- * For MacOS, the code is implemented in ui.m
+ * Header file for pattern routines
  *
  * ==========================================================================
  *
@@ -14,8 +11,11 @@
  * ==========================================================================
  */
 
-#ifndef _TASKS_H
-#define _TASKS_H
+#ifndef _SEQ_PATTERN_H
+#define _SEQ_PATTERN_H
+
+
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -27,25 +27,39 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  struct {
+    unsigned ALL:16;
+  };
+  struct {
+    unsigned pattern:7;      // full pattern number
+    unsigned DISABLED:1;     // pattern can be disabled
+    unsigned REQ:1;          // change pattern request flag
+    unsigned SYNCHED:1;      // change should be synched to measure
+    unsigned bank:3;         // pattern bank
+  };
+  struct {
+    unsigned num:3;          // pattern number (1-8)
+    unsigned group:3;        // pattern group (A-H)
+    unsigned lower:1;        // selects between upper (A-H) and lower (a-h) group
+  };
+} seq_pattern_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-// called from tasks.c
-extern s32 TASKS_Init(u32 mode);
+extern s32 SEQ_PATTERN_Init(u32 mode);
 
-extern void SEQ_TASK_Period1mS(void);
-extern void SEQ_TASK_MIDI(void);
-extern void SEQ_TASK_Pattern(void);
-
-// located in tasks.c
-extern void SEQ_TASK_PatternResume(void);
+extern s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern);
+extern s32 SEQ_PATTERN_Handler(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern seq_pattern_t seq_pattern[SEQ_CORE_NUM_GROUPS];
 
-#endif /* _TASKS_H */
+#endif /* _SEQ_PATTERN_H */

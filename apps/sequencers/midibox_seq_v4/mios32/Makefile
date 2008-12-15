@@ -19,6 +19,8 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
 		../core/seq_ui_edit.c \
+		../core/seq_ui_mute.c \
+		../core/seq_ui_pattern.c \
 		../core/seq_ui_trkevnt.c \
 		../core/seq_ui_trkmode.c \
 		../core/seq_ui_trkdir.c \
@@ -31,6 +33,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_bpm.c \
 		../core/seq_cc.c  \
 		../core/seq_core.c \
+		../core/seq_pattern.c \
 		../core/seq_layer.c \
 		../core/seq_random.c \
 		../core/seq_trg.c \
@@ -59,6 +62,7 @@ LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
 DEBUG     =	-g
+#DEBUG     =	-g -Wall -Wno-format -Wno-switch
 OPTIMIZE  =	-Os
 
 #                                    temporary select mapping for wilba's frontpanel here

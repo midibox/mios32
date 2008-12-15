@@ -281,6 +281,22 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// prints the pattern name (2 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern)
+{
+  if( pattern.DISABLED ) {
+    MIOS32_LCD_PrintChar('-');
+    MIOS32_LCD_PrintChar('-');
+  } else {
+    MIOS32_LCD_PrintChar('A' + pattern.group + (pattern.lower ? 32 : 0));
+    MIOS32_LCD_PrintChar('1' + pattern.num);
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // prints MIDI port (4 characters)
