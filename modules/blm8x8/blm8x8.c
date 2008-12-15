@@ -58,7 +58,7 @@ u8 blm8x8_button_debounce_ctr[8*BLM8X8_NUM_ROWS]; // expensive
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM8X8_Init(u32 mode)
 {
-  u8 i, j;
+  u8 i;
 
   // currently only mode 0 supported
   if( mode != 0 )
@@ -101,7 +101,6 @@ s32 BLM8X8_Init(u32 mode)
 s32 BLM8X8_PrepareCol(void)
 {
   u8 dout_value;
-  u8 row_offset;
 
   // increment column, wrap at 8
   if( ++blm8x8_selected_column >= 8 )
@@ -135,7 +134,7 @@ s32 BLM8X8_PrepareCol(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM8X8_GetRow(void)
 {
-  u8 sr, sr_pin, sr_value;
+  u8 sr, sr_value;
 
 #if BLM8X8_DEBOUNCE_MODE == 1
   // decrememt debounce counter if > 0
@@ -223,7 +222,6 @@ s32 BLM8X8_GetRow(void)
 s32 BLM8X8_ButtonHandler(void *_notify_hook)
 {
   s32 sr;
-  s32 num_sr;
   s32 sr_pin;
   u8 changed;
   void (*notify_hook)(u32 pin, u32 value) = _notify_hook;

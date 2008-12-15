@@ -188,8 +188,12 @@ s32 MIOS32_LCD_CursorMapSet(u8 map_table[])
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintString(char *str)
 {
+  s32 status = 0;
+
   while( *str != '\0' )
-    MIOS32_LCD_PrintChar(*str++);
+    status |= MIOS32_LCD_PrintChar(*str++);
+
+  return status;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -201,7 +205,7 @@ s32 MIOS32_LCD_PrintString(char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
 {
-  u8 buffer[64]; // TODO: tmp!!! Provide a streamed COM method later!
+  char buffer[64]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;
 
   va_start(args, format);
@@ -217,8 +221,7 @@ s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 {
-  u32 i;
-  s32 ret;
+  int i;
 
   for(i=0; i<8; ++i)
     if( APP_LCD_SpecialCharInit(i, table + (size_t)i*8) )

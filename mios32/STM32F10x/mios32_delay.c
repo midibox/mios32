@@ -49,7 +49,7 @@ s32 MIOS32_DELAY_Init(u32 mode)
   // time base configuration
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
   TIM_TimeBaseStructure.TIM_Period = 65535; // maximum value
-  TIM_TimeBaseStructure.TIM_Prescaler = 72; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
+  TIM_TimeBaseStructure.TIM_Prescaler = 72-1; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(MIOS32_DELAY_TIMER, &TIM_TimeBaseStructure);

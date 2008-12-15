@@ -1084,9 +1084,8 @@ void MIOS32_USB_CB_Status_Out(void)
 
 RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 {
-  RESULT res;
-
 #ifdef MIOS32_USE_USB_COM
+  RESULT res;
   if( (res=MIOS32_USB_COM_CB_Data_Setup(RequestNo)) != USB_UNSUPPORT )
     return res;
 #endif
@@ -1096,9 +1095,8 @@ RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 // handles the non data class specific requests.
 RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
 {
-  RESULT res;
-
 #ifdef MIOS32_USE_USB_COM
+  RESULT res;
   if( (res=MIOS32_USB_COM_CB_NoData_Setup(RequestNo)) != USB_UNSUPPORT )
     return res;
 #endif

@@ -370,7 +370,7 @@ s32 MIOS32_ENC_Handler(void *_callback)
 
     // following check/modify operation must be atomic
     MIOS32_IRQ_Disable();
-    if( incrementer = enc_state[enc].incrementer ) {
+    if( (incrementer = enc_state[enc].incrementer) ) {
       enc_state[enc].incrementer = 0;
       MIOS32_IRQ_Enable();
 

@@ -216,7 +216,7 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c)
 {
-  return MIOS32_COM_SendBuffer_NonBlocking(port, &c, 1);
+  return MIOS32_COM_SendBuffer_NonBlocking(port, (u8 *)&c, 1);
 }
 
 
@@ -231,7 +231,7 @@ s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 {
-  return MIOS32_COM_SendBuffer(port, &c, 1);
+  return MIOS32_COM_SendBuffer(port, (u8 *)&c, 1);
 }
 
 
@@ -247,7 +247,7 @@ s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
 {
-  return MIOS32_COM_SendBuffer_NonBlocking(port, str, strlen(str));
+  return MIOS32_COM_SendBuffer_NonBlocking(port, (u8 *)str, (u16)strlen(str));
 }
 
 
@@ -262,7 +262,7 @@ s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 {
-  return MIOS32_COM_SendBuffer(port, str, strlen(str));
+  return MIOS32_COM_SendBuffer(port, (u8 *)str, strlen(str));
 }
 
 
@@ -285,7 +285,7 @@ s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *for
 
   va_start(args, format);
   vsprintf((char *)buffer, format, args);
-  return MIOS32_COM_SendBuffer_NonBlocking(port, buffer, strlen(buffer));
+  return MIOS32_COM_SendBuffer_NonBlocking(port, buffer, (u16)strlen((char *)buffer));
 }
 
 
@@ -307,7 +307,7 @@ s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 
   va_start(args, format);
   vsprintf((char *)buffer, format, args);
-  return MIOS32_COM_SendBuffer(port, buffer, strlen(buffer));
+  return MIOS32_COM_SendBuffer(port, buffer, (u16)strlen((char *)buffer));
 }
 
 
