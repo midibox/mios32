@@ -117,7 +117,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
     case ITEM_MODE:          return SEQ_UI_CC_Inc(SEQ_CC_MODE, 0, 3, incrementer);
     case ITEM_HOLD:          return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
-    case ITEM_SORT:          return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<0), (incrementer >= 0) ? (1<<0) : 0);
+    case ITEM_SORT:          return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<0), (incrementer >= 0) ? 0 : (1<<0)); // SORT is inverted!
     case ITEM_RESTART:       return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<2), (incrementer >= 0) ? (1<<2) : 0);
     case ITEM_FORCE_SCALE:   return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<3), (incrementer >= 0) ? (1<<3) : 0);
     case ITEM_SUSTAIN:       return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<4), (incrementer >= 0) ? (1<<4) : 0);
@@ -162,7 +162,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<1)) ? -1 : 1); // toggle flag
 
     case SEQ_UI_BUTTON_GP10:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<0)) ? -1 : 1); // toggle flag
+      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<0)) ? 1 : -1); // toggle flag - SORT is inverted!
 
     case SEQ_UI_BUTTON_GP11:
     case SEQ_UI_BUTTON_GP12:
@@ -276,12 +276,13 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_CursorSet(0, 1);
+  u16 flags = SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS);
   MIOS32_LCD_PrintFormattedString(" %s  %s    %s       %s        %s   ",
-				  (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<1)) ? "on " : "off",
-				  (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<0)) ? "on " : "off",
-				  (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<2)) ? "on " : "off",
-				  (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<3)) ? "on " : "off",
-				  (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<4)) ? "on " : "off");
+				  (flags & (1<<1)) ? "on " : "off",
+				  (flags & (1<<0)) ? "off" : "on ", // SORT is inverted!
+				  (flags & (1<<2)) ? "on " : "off",
+				  (flags & (1<<3)) ? "on " : "off",
+				  (flags & (1<<4)) ? "on " : "off");
 
   return 0; // no error
 }

@@ -203,7 +203,18 @@ u32 SEQ_BPM_TickGet(void)
 
 s32 SEQ_BPM_TickSet(u32 tick)
 {
-  bpm_tick = tick;
+  MIOS32_IRQ_Disable();
+
+  // especially in slave mode it can happen that additional clocks
+  // have already been requested while the bpm_tick reference is
+  // changed.
+  // it's a race condition between BPM generator and sequencer which can
+  // be easily solved by shifting bpm_tick to the current point of time, 
+  // so that SEQ_BPM_ChkReqClk() will be polled multiple times
+  // (see code there)
+  bpm_tick = tick + bpm_req_clk_ctr;
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
@@ -326,9 +337,6 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       bpm_req_start = 1;
       bpm_req_stop = 0;
 
-      // clear tick counter
-      bpm_tick = 0;
-
       // cancel all requested clocks
       bpm_req_clk_ctr = 0;
       sent_clk_ctr = SEQ_BPM_RESOLUTION_FACTOR - 1;
@@ -424,8 +432,9 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
   MIOS32_IRQ_Disable();
   u8 req;
   if( req=bpm_req_clk_ctr ) {
+    if( bpm_tick >= bpm_req_clk_ctr )
+      *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
     --bpm_req_clk_ctr;
-    *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
   }
   MIOS32_IRQ_Enable();
   return req;

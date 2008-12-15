@@ -42,6 +42,7 @@ extern s32 SEQ_LCD_PrintSpaces(u8 num);
 extern s32 SEQ_LCD_PrintVBar(u8 value);
 extern s32 SEQ_LCD_PrintHBar(u8 value);
 extern s32 SEQ_LCD_PrintNote(u8 note);
+extern s32 SEQ_LCD_PrintArp(u8 note);
 extern s32 SEQ_LCD_PrintGatelength(u8 len);
 extern s32 SEQ_LCD_PrintGxTy(u8 group, u8 track);
 extern s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port);

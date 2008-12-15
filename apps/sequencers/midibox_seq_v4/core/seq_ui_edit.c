@@ -67,13 +67,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #endif
     ui_selected_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+
     s32 value_changed = 0;
     s32 forced_value = -1;
     u8  change_gate = 1;
 
+    // due to historical reasons (from old times where MBSEQ CS was stuffed with pots): 
+    // in arp mode, we increment in steps of 4
+    if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator &&
+	SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) == SEQ_LAYER_ControlType_Note )
+      incrementer *= 4;
+
+
     // first change the selected value
     if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
-      forced_value = ChangeSingleEncValue(SEQ_UI_VisibleTrackGet(), ui_selected_step, incrementer, forced_value, change_gate);
+      forced_value = ChangeSingleEncValue(visible_track, ui_selected_step, incrementer, forced_value, change_gate);
       if( forced_value < 0 )
 	return 0; // no change
       value_changed |= 1;
@@ -270,7 +279,10 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
     if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
-      SEQ_LCD_PrintNote(layer_event.midi_package.note);
+      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+	SEQ_LCD_PrintArp(layer_event.midi_package.note);
+      else
+	SEQ_LCD_PrintNote(layer_event.midi_package.note);
       SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
     }
     else {
@@ -396,7 +408,10 @@ static s32 LCD_Handler(u8 high_prio)
         case SEQ_LAYER_ControlType_Note:
         case SEQ_LAYER_ControlType_Velocity:
 	  if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	    SEQ_LCD_PrintNote(layer_event.midi_package.note);
+	    if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+	      SEQ_LCD_PrintArp(layer_event.midi_package.note);
+	    else
+	      SEQ_LCD_PrintNote(layer_event.midi_package.note);
 	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
 	  } else {
 	    MIOS32_LCD_PrintString("----");

@@ -28,6 +28,8 @@
 #include "seq_trg.h"
 #include "seq_ui.h"
 
+#include "seq_midi_in.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Encoder Configuration
@@ -88,6 +90,10 @@ void APP_Init(void)
   BLM8X8_Init(0);
 #endif
 
+  // initialize MIDI handlers
+  SEQ_MIDI_IN_Init(0);
+  SEQ_MIDI_Init(0);
+
   // initialize parameter/trigger layers
   SEQ_PAR_Init(0);
   SEQ_TRG_Init(0);
@@ -130,7 +136,7 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
-  //  MIOS32_MIDI_SendPackage(port, midi_package);
+  SEQ_MIDI_IN_Receive(port, midi_package);
 }
 
 
