@@ -85,8 +85,6 @@ static s32 SEQ_BPM_DigitUpdate(void);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u32 seq_bpm_last_incoming_clk_delay; // for diagnosis only
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -192,6 +190,7 @@ s32 SEQ_BPM_Set(u16 _bpm)
 
   return 0; // no error
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // sets/queries the BPM tick (timestamp)
@@ -314,7 +313,7 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
     // exit if not in slave mode
     if( !slave_clk )
-      return;
+      return 0; // no error
 
     // following operations should be atomic
     MIOS32_IRQ_Disable();
@@ -322,7 +321,6 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
     if( midi_byte == 0xf8 ) { // MIDI clock
       // we've measured a new delay between two F8 events
       incoming_clk_delay = incoming_clk_ctr;
-      seq_bpm_last_incoming_clk_delay = incoming_clk_ctr; // public for diagnosis only (writing to this variable has no effect)
       incoming_clk_ctr = 0;
 
       // how many clocks (still) need to be triggered?
@@ -351,6 +349,8 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
     // enable interrupts again
     MIOS32_IRQ_Enable();
   }
+
+  return 0; // no error
 }
 
 
@@ -431,12 +431,29 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 {
   MIOS32_IRQ_Disable();
   u8 req;
-  if( req=bpm_req_clk_ctr ) {
+  if( (req=bpm_req_clk_ctr) ) {
     if( bpm_tick >= bpm_req_clk_ctr )
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
     --bpm_req_clk_ctr;
   }
   MIOS32_IRQ_Enable();
   return req;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This help function returns the number of BPM ticks for a given time
+// E.g.: SEQ_BPM_TicksFor_mS(50) returns 38 ticks @ 120 BPM 384 ppqn
+// Regardless if BPM generator is clocked in master or slave mode
+/////////////////////////////////////////////////////////////////////////////
+u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
+{
+  if( slave_clk ) {
+    float time_per_tick = 0.25 * incoming_clk_delay / SEQ_BPM_RESOLUTION_FACTOR;
+    return (u32)((float)time_ms / time_per_tick);
+  }
+
+  float period_m = 1E3 * (60 / (bpm*2.4)) / SEQ_BPM_RESOLUTION_FACTOR; // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
+  return (u32)((float)time_ms / period_m);
 }
 

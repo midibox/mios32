@@ -19,11 +19,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 9
+#define SEQ_UI_PAGES 11
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
   SEQ_UI_PAGE_EDIT,
+  SEQ_UI_PAGE_MUTE,
+  SEQ_UI_PAGE_PATTERN,
   SEQ_UI_PAGE_TRKEVNT,
   SEQ_UI_PAGE_TRKMODE,
   SEQ_UI_PAGE_TRKDIR,
@@ -37,6 +39,8 @@ typedef enum {
 // Prototypes for all UI pages are burried here
 extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
+extern s32 SEQ_UI_MUTE_Init(u32 mode);
+extern s32 SEQ_UI_PATTERN_Init(u32 mode);
 extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
 extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
@@ -138,6 +142,7 @@ extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();
+extern s32 SEQ_UI_LCD_Handler(void);
 extern s32 SEQ_UI_MENU_Handler_Periodic();
 
 extern s32 SEQ_UI_PageSet(seq_ui_page_t page);

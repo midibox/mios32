@@ -16,10 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-
-#if DEFAULT_SRM_ENABLED
 #include <blm8x8.h>
-#endif
 
 #include "seq_ui.h"
 #include "seq_lcd.h"
@@ -28,8 +25,7 @@
 #include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_layer.h"
-#include "seq_par.h"
-#include "seq_trg.h"
+#include "seq_cc.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,13 +68,15 @@ u16 ui_cursor_flash_ctr;
 static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TODO_Init,    // 0
   (void *)&SEQ_UI_EDIT_Init,    // 1
-  (void *)&SEQ_UI_TRKEVNT_Init, // 2
-  (void *)&SEQ_UI_TRKMODE_Init, // 3
-  (void *)&SEQ_UI_TRKDIR_Init,  // 4
-  (void *)&SEQ_UI_TRKDIV_Init,  // 5
-  (void *)&SEQ_UI_TRKLEN_Init,  // 6
-  (void *)&SEQ_UI_TRKTRAN_Init, // 7
-  (void *)&SEQ_UI_TRGASG_Init   // 8
+  (void *)&SEQ_UI_MUTE_Init,    // 2
+  (void *)&SEQ_UI_PATTERN_Init, // 3
+  (void *)&SEQ_UI_TRKEVNT_Init, // 4
+  (void *)&SEQ_UI_TRKMODE_Init, // 5
+  (void *)&SEQ_UI_TRKDIR_Init,  // 6
+  (void *)&SEQ_UI_TRKDIV_Init,  // 7
+  (void *)&SEQ_UI_TRKLEN_Init,  // 8
+  (void *)&SEQ_UI_TRKTRAN_Init, // 9
+  (void *)&SEQ_UI_TRGASG_Init   // 10
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -239,6 +237,8 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 
   // don't display menu page anymore (only first time when menu button has been pressed)
   seq_ui_button_state.MENU_PAGE_DISPLAYED = 0;
+
+  return 0; // no error
 }
 
 
@@ -493,12 +493,16 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
+
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Pattern(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN);
 
   return 0; // no error
 }
@@ -957,8 +961,6 @@ s32 SEQ_UI_LCD_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   // track LEDs
   SEQ_LED_PinSet(LED_TRACK1, (ui_selected_tracks & (1 << 0)));
   SEQ_LED_PinSet(LED_TRACK2, (ui_selected_tracks & (1 << 1)));
@@ -983,8 +985,8 @@ s32 SEQ_UI_LED_Handler(void)
   
   // remaining LEDs
   SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);
-  SEQ_LED_PinSet(LED_MUTE, 0);
-  SEQ_LED_PinSet(LED_PATTERN, 0);
+  SEQ_LED_PinSet(LED_MUTE, ui_page == SEQ_UI_PAGE_MUTE);
+  SEQ_LED_PinSet(LED_PATTERN, ui_page == SEQ_UI_PAGE_PATTERN);
   SEQ_LED_PinSet(LED_SONG, 0);
   
   SEQ_LED_PinSet(LED_SOLO, seq_ui_button_state.SOLO);
@@ -1117,6 +1119,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 #endif
 
+  return 0; // no error
 }
 
 
@@ -1135,6 +1138,22 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   // important: flash flag has to be recalculated on each invocation of this
   // handler, since counter could also be reseted outside this function
   ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
+
+
+  // VU meters (used in MUTE menu, could also be available as LED matrix...)
+  static u8 vu_meter_prediv = 0; // predivider for VU meters
+
+  if( ++vu_meter_prediv >= 4 ) {
+    vu_meter_prediv = 0;
+
+    u8 track;
+    seq_core_trk_t *t = &seq_core_trk[0];
+    MIOS32_IRQ_Disable();
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++track)
+      if( t->vu_meter )
+	--t->vu_meter;
+    MIOS32_IRQ_Enable();
+  }
 
   return 0;
 }

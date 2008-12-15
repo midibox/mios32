@@ -167,8 +167,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   if( depressed ) return 0; // ignore when button depressed
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( button ) {
     case SEQ_UI_BUTTON_GP1:
       ui_selected_item = ITEM_GXTY;

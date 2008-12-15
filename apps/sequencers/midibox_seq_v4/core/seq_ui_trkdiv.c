@@ -130,7 +130,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       {
 	int quicksel = encoder - 8;
 	ui_selected_item = ITEM_TIMEBASE_1 + quicksel;
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	SEQ_UI_CC_Set(SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0x7f);
 	SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x80) ? (1<<1) : 0);
 	return 1; // value has been changed
