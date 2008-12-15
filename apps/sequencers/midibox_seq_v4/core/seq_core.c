@@ -115,6 +115,18 @@ s32 SEQ_CORE_Handler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function plays all "off" events
+// Should be called on sequencer reset/restart/pause to avoid hanging notes
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_PlayOffEvents(void)
+{
+  SEQ_MIDI_FlushQueue();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Resets song position of sequencer
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Reset(void)
@@ -134,9 +146,12 @@ s32 SEQ_CORE_Reset(void)
     SEQ_CORE_ResetTrkPos(t, tcc);
   }
 
-  // init bpm tick if in master mode (in slave mode it has already been done while receiving MIDI clock start)
-  if( SEQ_BPM_IsMaster() )
-    SEQ_BPM_TickSet(0);
+  // init bpm tick
+  SEQ_BPM_TickSet(0);
+
+  // since timebase has been changed, ensure that Off-Events are played 
+  // (otherwise they will be played much later...)
+  SEQ_CORE_PlayOffEvents();
 
   return 0; // no error
 }
@@ -166,7 +181,7 @@ s32 SEQ_CORE_Stop(u32 no_echo)
 
   seq_core_state.PAUSE = 0;
   seq_core_state.RUN = 0;
-  SEQ_MIDI_FlushQueue();
+  SEQ_CORE_PlayOffEvents();
   return no_echo ? 0 : SEQ_BPM_Stop();
 }
 
@@ -196,7 +211,8 @@ s32 SEQ_CORE_Pause(u32 no_echo)
 
   seq_core_state.PAUSE ^= 1;
   if( seq_core_state.PAUSE )
-    SEQ_MIDI_FlushQueue();
+    SEQ_CORE_PlayOffEvents();
+
   return 0; // no error
 }
 
@@ -206,6 +222,8 @@ s32 SEQ_CORE_Pause(u32 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
+  //  printf("BPM %d\n\r", bpm_tick);
+
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
@@ -235,22 +253,25 @@ s32 SEQ_CORE_Tick(u32 bpm_tick)
     if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
       t->div_ctr = 0;
 
-      u8 skip_ctr = 0;
-      do {
-	// determine next step depending on direction mode
-	if( !t->state.FIRST_CLK )
-	  SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+      // increment step if not in arpeggiator mode or arp position == 0
+      if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
+	u8 skip_ctr = 0;
+	do {
+	  // determine next step depending on direction mode
+	  if( !t->state.FIRST_CLK )
+	    SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
 
-	// clear "first clock" flag (on following clock ticks we can continue as usual)
-	t->state.FIRST_CLK = 0;
+	  // clear "first clock" flag (on following clock ticks we can continue as usual)
+	  t->state.FIRST_CLK = 0;
 
-	// if skip flag set for this flag: try again
-	if( SEQ_TRG_SkipGet(track, t->step) )
-	  ++skip_ctr;
-	else
-	  break;
+	  // if skip flag set for this flag: try again
+	  if( SEQ_TRG_SkipGet(track, t->step) )
+	    ++skip_ctr;
+	  else
+	    break;
 
-      } while( skip_ctr < 32 ); // try 32 times maximum
+	} while( skip_ctr < 32 ); // try 32 times maximum
+      }
 
 
       // solo function: don't play MIDI event if track not selected
@@ -502,35 +523,81 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package)
 {
+  int note = midi_package->note;
+
+  int inc_oct = tcc->transpose_oct;
+  if( inc_oct >= 8 )
+    inc_oct -= 16;
+
+  int inc_semi = tcc->transpose_semi;
+  if( inc_semi >= 8 )
+    inc_semi -= 16;
+
+  // in transpose or arp playmode we allow to transpose notes and CCs
+  if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ) {
+    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->mode.HOLD);
+
+    if( tr_note < 0 ) {
+      midi_package->velocity = 0; // disable note and exit
+      return -1; // note has been disabled
+    }
+
+    inc_semi += tr_note - 0x3c; // C-3 is the base note
+  }
+  else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
+    int key_num = (note >> 2) & 0x3;
+    int arp_oct = (note >> 4) & 0x7;
+
+    if( arp_oct < 2 ) { // Multi Arp Event
+      inc_oct += ((note >> 2) & 7) - 4;
+      key_num = t->arp_pos;
+    } else {
+      inc_oct += arp_oct - 4;
+    }
+
+    int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->mode.HOLD, !tcc->mode.UNSORTED, key_num);
+
+    if( arp_note & 0x80 ) {
+      t->arp_pos = 0;
+    } else {
+      if( arp_oct < 2 ) { // Multi Arp Event
+	// play next key, step will be incremented once t->arp_pos reaches 0 again
+	if( ++t->arp_pos >= 4 )
+	  t->arp_pos = 0;
+      }
+    }
+
+    note = arp_note & 0x7f;
+
+    if( !note ) { // disable note and exit
+      midi_package->velocity = 0;
+      return -1; // note has been disabled
+    }
+  }
+
+
+  // apply transpose octave/semitones parameter
   if( midi_package->type != NoteOn && midi_package->type != NoteOff )
     return -1; // no note event
 
-  int note = midi_package->note;
-  int incrementer;
 
-  if( incrementer=tcc->transpose_oct ) {
-    if( incrementer >= 8 ) {
-      // negative direction
-      note += 12 * (-16 + incrementer);
+  if( inc_oct ) {
+    note += 12 * inc_oct;
+    if( inc_oct < 0 ) {
       while( note < 0 )
 	note += 12;
     } else {
-      // positive direction
-      note += 12 * incrementer;
       while( note >= 128 )
 	note -= 12;
     }
   }
 
-  if( incrementer=tcc->transpose_semi ) {
-    if( incrementer >= 8 ) {
-      // negative direction
-      note += (-16 + incrementer);
+  if( inc_semi ) {
+    note += inc_semi;
+    if( inc_semi < 0 ) {
       while( note < 0 )
 	note += 12;
     } else {
-      // positive direction
-      note += incrementer;
       while( note >= 128 )
 	note -= 12;
     }

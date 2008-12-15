@@ -46,7 +46,7 @@ s32 SEQ_CC_Init(u32 mode)
 
     tcc->mode.playmode = SEQ_CORE_TRKMODE_Normal;
     tcc->mode.UNSORTED = 0;
-    tcc->mode.HOLD = 0;
+    tcc->mode.HOLD = 1;
     tcc->mode.RESTART = 0;
     tcc->mode.FORCE_SCALE = 0;
     tcc->mode.SUSTAIN = 0;

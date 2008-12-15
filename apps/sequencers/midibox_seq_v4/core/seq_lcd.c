@@ -194,6 +194,35 @@ s32 SEQ_LCD_PrintNote(u8 note)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints an arp event (3 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintArp(u8 arp)
+{
+  if( arp < 4 )
+    MIOS32_LCD_PrintString("---");
+  else {
+    int key_num = (arp >> 2) & 0x3;
+    int arp_oct = (arp >> 4) & 0x7;
+
+    if( arp_oct < 2 ) { // Multi Arp
+      MIOS32_LCD_PrintChar('*');
+      arp_oct = ((arp >> 2) & 7) - 4;
+    } else {
+      MIOS32_LCD_PrintChar('1' + key_num);
+      arp_oct -= 4;
+    }
+
+    if( arp_oct >= 0 )
+      MIOS32_LCD_PrintFormattedString("+%d", arp_oct);
+    else
+      MIOS32_LCD_PrintFormattedString("-%d", -arp_oct);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints the gatelength (4 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintGatelength(u8 len)
