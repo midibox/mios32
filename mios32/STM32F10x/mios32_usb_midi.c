@@ -179,8 +179,6 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
 {
-  u8 i;
-
   // package received?
   if( !rx_buffer_size )
     return -1;

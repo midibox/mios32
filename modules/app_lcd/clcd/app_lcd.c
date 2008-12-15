@@ -291,7 +291,6 @@ s32 APP_LCD_PrintChar(char c)
 s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
   s32 i;
-  s32 ret;
 
   // send character number
   APP_LCD_Cmd(((num&7)<<3) | 0x40);
@@ -412,8 +411,6 @@ static void APP_LCD_SetRS(u8 rs)
 // used to strobe the E line
 static void APP_LCD_Strobe(u8 value)
 {
-  u32 delay;
-
   if( mios32_lcd_device == 0 ) {
     PIN_E1(value)
   } else {

@@ -117,14 +117,12 @@ static volatile u8 iic_semaphore = 1; // if 1, interface hasn't been initialized
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Init(u32 mode)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  I2C_InitTypeDef  I2C_InitStructure;
-
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
 
   // configure IIC pins in open drain mode
+  GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
@@ -327,7 +325,7 @@ s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, 
   s32 error;
 
   // wait until previous transfer finished
-  if( error = MIOS32_IIC_TransferWait() ) // transmission error during previous transfer
+  if( (error = MIOS32_IIC_TransferWait()) ) // transmission error during previous transfer
     return error + MIOS32_IIC_ERROR_PREV_OFFSET;
 
   // disable interrupts

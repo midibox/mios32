@@ -103,8 +103,6 @@ static void MIOS32_MF_UpdateSR(void);
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_Init(u32 mode)
 {
-  int i;
-
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -137,6 +135,7 @@ s32 MIOS32_MF_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = MIOS32_MF_DOUT_PIN;
   GPIO_Init(MIOS32_MF_DOUT_PORT, &GPIO_InitStructure);
 
+  int i;
   for(i=0; i<MIOS32_MF_NUM; ++i) {
     mf_state[i].ALL0 = 0;
     mf_state[i].ALL1 = 0;
