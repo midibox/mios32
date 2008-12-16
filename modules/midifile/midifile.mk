@@ -1,5 +1,5 @@
 # $Id$
-# defines additional rules for integrating the button/LED matrix
+# defines additional rules for integrating the midifile modules
 
 # enhance include path
 C_INCLUDE += -I $(MIOS32_PATH)/modules/midifile
