@@ -29,9 +29,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_trktran.c \
 		../core/seq_ui_trgasg.c \
 		../core/seq_midi_in.c \
-		../core/seq_midi.c \
 		../core/seq_midply.c \
-		../core/seq_bpm.c \
 		../core/seq_cc.c  \
 		../core/seq_core.c \
 		../core/seq_pattern.c \
@@ -82,6 +80,9 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # BLM8x8
 include $(MIOS32_PATH)/modules/blm8x8/blm8x8.mk
+
+# generic sequencer modules
+include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk

@@ -18,13 +18,14 @@
 #include <mios32.h>
 #include <blm8x8.h>
 
+#include <seq_midi_out.h>
+#include <seq_bpm.h>
+
 #include "tasks.h"
 
 #include "app.h"
 
 #include "seq_core.h"
-#include "seq_bpm.h"
-#include "seq_midi.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_led.h"
@@ -98,7 +99,7 @@ void APP_Init(void)
 
   // initialize MIDI handlers
   SEQ_MIDI_IN_Init(0);
-  SEQ_MIDI_Init(0);
+  SEQ_MIDI_OUT_Init(0);
 
   // initialize parameter/trigger layers
   SEQ_PAR_Init(0);
@@ -282,7 +283,7 @@ void SEQ_TASK_MIDI(void)
 #endif
 
   // send timestamped MIDI events
-  SEQ_MIDI_Handler();
+  SEQ_MIDI_OUT_Handler();
 }
 
 
