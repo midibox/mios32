@@ -24,6 +24,8 @@
 #endif
 
 
+#define MID_PLAYER_TEST 0
+
 
 // the speed value for the datawheel (#0) which is used when the "FAST" button is activated:
 #define DEFAULT_DATAWHEEL_SPEED_VALUE	3

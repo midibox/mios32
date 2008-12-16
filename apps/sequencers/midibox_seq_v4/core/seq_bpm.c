@@ -2,7 +2,11 @@
 /*
  * BPM generator
  *
- * Some notes to the way how MIDIboxSEQ generates the internal 384ppqn clock
+ * Some notes to the way how MIDIboxSEQ generates the internal ppqn clock
+ *
+ * In following calculation examples, it is assumed that ppqn has been set
+ * to 384 (16 times more than original 24 ppqn provided by MIDI protocol)
+ *
  *
  * MASTER MODE
  * ~~~~~~~~~~~
@@ -99,17 +103,22 @@ static u8 bpm_req_start;
 static u8 bpm_req_stop;
 static u8 bpm_req_cont;
 static u8 bpm_req_clk_ctr;
+static u8 bpm_req_song_pos;
 
 static u8 slave_clk;
 
 static u32 bpm_tick;
 
 static u16 bpm;
+static u16 ppqn;
 
 static u32 incoming_clk_ctr;
 static u32 incoming_clk_delay;
 static u32 sent_clk_ctr;
 static u32 sent_clk_delay;
+
+static u16 new_song_pos;
+static u8  receive_song_pos_state;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,8 +130,12 @@ s32 SEQ_BPM_Init(u32 mode)
   bpm_req_stop = 0;
   bpm_req_cont = 0;
   bpm_req_clk_ctr = 0;
+  bpm_req_song_pos = 0;
 
   bpm_tick = 0;
+  new_song_pos = 0;
+
+  receive_song_pos_state = 0;
 
   slave_clk = 0;
   incoming_clk_ctr = 0;
@@ -130,7 +143,8 @@ s32 SEQ_BPM_Init(u32 mode)
   sent_clk_ctr = 0;
   sent_clk_delay = 0;
 
-  // start clock generator with 140 BPM in Auto mode
+  // start clock generator with 140 BPM/384 ppqn in Auto mode
+  ppqn = 384;
   bpm = 1400;
   SEQ_BPM_ModeSet(SEQ_BPM_MODE_Auto);
 
@@ -177,7 +191,7 @@ s32 SEQ_BPM_Set(u16 _bpm)
   // set new BPM rate if not in slave mode
   if( !slave_clk ) {
     // calculate timer period for the given BPM rate
-    float period = 1E6 * (60 / (bpm*2.4)) / SEQ_BPM_RESOLUTION_FACTOR; // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
+    float period = 1E6 * (60 / (bpm*2.4)) / (float)(ppqn/24); // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
     u16 period_u = (u16)period;
     // safety measure: ensure that period is nether less than 250 uS
     if( period_u < 250 )
@@ -187,6 +201,28 @@ s32 SEQ_BPM_Set(u16 _bpm)
 
   // update LED digits
   SEQ_BPM_DigitUpdate();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// set/query current ppqn
+// Note: after changing PPQN, SEQ_BPM_Set() has to be called again to take
+// over the new value.
+// In other words: set PPQN before BPM
+//
+// Supported ppqn for slave mode: 24, 48, 96, 192 and 384
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_BPM_PPQN_Get(void)
+{
+  return ppqn;
+}
+
+s32 SEQ_BPM_PPQN_Set(u16 _ppqn)
+{
+  // set new ppqn value
+  ppqn = _ppqn;
 
   return 0; // no error
 }
@@ -229,6 +265,27 @@ s32 SEQ_BPM_IsMaster(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// BPM should be clocked as master or slave?
+// If this function is called in Auto Mode, BPM will switch to Master Clock
+// returns 1 if we changed from auto slave to master mode
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_BPM_CheckAutoMaster(void)
+{
+  // in Auto Slave Mode: check if we are already in master mode - if not, change to it now!
+  if( slave_clk && bpm_mode == SEQ_BPM_MODE_Auto ) {
+    MIOS32_IRQ_Disable();
+    slave_clk = 0;
+    SEQ_BPM_TimerInit();
+    MIOS32_IRQ_Enable();
+
+    return 1;
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Timer interrupt
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_BPM_TimerInit(void)
@@ -267,10 +324,10 @@ static void SEQ_BPM_Timer_Slave(void)
   // increment clock counter, used to measure the delay between two F8 events
   ++incoming_clk_ctr;
 
-  // decrement sent clock delay, send interpolated clock events (SEQ_BPM_RESOLUTION_FACTOR-1) times
+  // decrement sent clock delay, send interpolated clock events ((ppqn/24)-1) times
   if( --sent_clk_delay == 0 ) {
-    if( sent_clk_ctr < SEQ_BPM_RESOLUTION_FACTOR ) {
-      sent_clk_delay = incoming_clk_delay/SEQ_BPM_RESOLUTION_FACTOR;
+    if( sent_clk_ctr < (ppqn/24) ) {
+      sent_clk_delay = incoming_clk_delay/(ppqn/24);
       ++bpm_tick;
       ++sent_clk_ctr;
       ++bpm_req_clk_ctr; // add at least one clock request
@@ -324,11 +381,11 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       incoming_clk_ctr = 0;
 
       // how many clocks (still) need to be triggered?
-      bpm_req_clk_ctr += SEQ_BPM_RESOLUTION_FACTOR - sent_clk_ctr;
+      bpm_req_clk_ctr += (ppqn/24) - sent_clk_ctr;
 
       // clear interpolation clock counter and get new SENT_CLK delay
       sent_clk_ctr = 0;
-      sent_clk_delay = incoming_clk_delay / SEQ_BPM_RESOLUTION_FACTOR;
+      sent_clk_delay = incoming_clk_delay / (ppqn/24);
 
     } else if( midi_byte == 0xfa ) { // MIDI Start event
       // request sequencer start, disable stop request
@@ -337,7 +394,7 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
       // cancel all requested clocks
       bpm_req_clk_ctr = 0;
-      sent_clk_ctr = SEQ_BPM_RESOLUTION_FACTOR - 1;
+      sent_clk_ctr = (ppqn/24) - 1;
     } else if( midi_byte == 0xfb ) { // MIDI Continue event
       // request continue, disable stop request
       bpm_req_cont = 1;
@@ -348,6 +405,45 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
     // enable interrupts again
     MIOS32_IRQ_Enable();
+
+  } else if( receive_song_pos_state || midi_byte == 0xf2 ) {
+
+    // new song position is received
+    switch( receive_song_pos_state ) {
+      case 0:
+	// expecting LSB and MSB
+	receive_song_pos_state = 1;
+	break;
+
+      case 1:
+	// ignore any realtime event (e.g. 0xfe)
+	if( midi_byte < 0xf8 ) {
+	  // an unexpected status byte has been received
+	  if( midi_byte >= 0x80 )
+	    receive_song_pos_state = 0;
+	  else {
+	    // get LSB, expect MSB
+	    receive_song_pos_state = 2;
+	    new_song_pos = midi_byte;
+	  }
+	}
+	break;
+
+      case 2:
+	// ignore any realtime event (e.g. 0xfe)
+	if( midi_byte < 0xf8 ) {
+	  // an unexpected status byte has been received
+	  if( midi_byte >= 0x80 )
+	    receive_song_pos_state = 0;
+	  else {
+	    // get MSB and send request to update sequencer
+	    receive_song_pos_state = 0;
+	    new_song_pos |= (midi_byte << 7);
+	    bpm_req_song_pos = 1;
+	  }
+	}
+	break;
+    }
   }
 
   return 0; // no error
@@ -366,18 +462,11 @@ s32 SEQ_BPM_TapTempo(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function starts the BPM generator and forwards this event to the
 // sequencer. 
-// If this function is called in Auto Mode, BPM will switch to Master Clock
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Start(void)
 {
   MIOS32_IRQ_Disable();
   bpm_req_start = 1;
-
-  // in Auto Slave Mode: check if we are already in master mode - if not, change to it now!
-  if( slave_clk && bpm_mode == SEQ_BPM_MODE_Auto ) {
-    slave_clk = 0;
-    SEQ_BPM_TimerInit();
-  }
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -441,6 +530,18 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 }
 
 
+// returns a new song position if requested from external
+s32 SEQ_BPM_ChkReqSongPos(u16 *song_pos)
+{
+  MIOS32_IRQ_Disable();
+  u8 req = bpm_req_song_pos;
+  bpm_req_song_pos = 0;
+  *song_pos = new_song_pos;
+  MIOS32_IRQ_Enable();
+  return req;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // This help function returns the number of BPM ticks for a given time
 // E.g.: SEQ_BPM_TicksFor_mS(50) returns 38 ticks @ 120 BPM 384 ppqn
@@ -449,11 +550,11 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
 {
   if( slave_clk ) {
-    float time_per_tick = 0.25 * incoming_clk_delay / SEQ_BPM_RESOLUTION_FACTOR;
+    float time_per_tick = 0.25 * incoming_clk_delay / (ppqn/24);
     return (u32)((float)time_ms / time_per_tick);
   }
 
-  float period_m = 1E3 * (60 / (bpm*2.4)) / SEQ_BPM_RESOLUTION_FACTOR; // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
+  float period_m = 1E3 * (60 / (bpm*2.4)) / (ppqn/24); // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
   return (u32)((float)time_ms / period_m);
 }
 

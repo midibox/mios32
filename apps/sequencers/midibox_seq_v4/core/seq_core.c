@@ -49,6 +49,8 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo);
+
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package);
@@ -107,6 +109,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // init BPM generator
   SEQ_BPM_Init(0);
 
+  SEQ_BPM_PPQN_Set(384);
+  SEQ_BPM_Set(1400); // for 140.0 BPM
+
   return 0; // no error
 }
 
@@ -133,12 +138,18 @@ s32 SEQ_CORE_Handler(void)
     if( SEQ_BPM_ChkReqStart() )
       SEQ_CORE_Start(1);
 
+    u16 new_song_pos;
+    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) )
+      SEQ_CORE_SongPos(new_song_pos, 1);
+
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
 
       if( seq_core_state.RUN && !seq_core_state.PAUSE ) {
 
+	// TODO: forwarding mechanism can be simplified
+	// it's better to do it the same way like in the MIDI file player
 	if( bpm_tick_forward_delay_ctr ) {
 	  --bpm_tick_forward_delay_ctr;
 #if LED_PERFORMANCE_MEASURING == 2
@@ -153,13 +164,13 @@ s32 SEQ_CORE_Handler(void)
 	  while( bpm_tick_forward_delay_ctr_req ) {
 	    ++bpm_tick_forward_delay_ctr;
 	    --bpm_tick_forward_delay_ctr_req;
-	    SEQ_CORE_Tick(bpm_tick_forwarded++);
+	    SEQ_CORE_Tick(bpm_tick_forwarded++, 1);
 	  }
 	} else {
 #if LED_PERFORMANCE_MEASURING == 1
 	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
-	  SEQ_CORE_Tick(bpm_tick);
+	  SEQ_CORE_Tick(bpm_tick, 1);
 #if LED_PERFORMANCE_MEASURING == 1
 	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
@@ -229,7 +240,7 @@ s32 SEQ_CORE_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 // Starts the sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Start(u32 no_echo)
+s32 SEQ_CORE_Start(u8 no_echo)
 {
   // request display update
   seq_ui_display_update_req = 1;
@@ -243,7 +254,7 @@ s32 SEQ_CORE_Start(u32 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // Stops the sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Stop(u32 no_echo)
+s32 SEQ_CORE_Stop(u8 no_echo)
 {
   // request display update
   seq_ui_display_update_req = 1;
@@ -258,7 +269,7 @@ s32 SEQ_CORE_Stop(u32 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // Continues the sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Cont(u32 no_echo)
+s32 SEQ_CORE_Cont(u8 no_echo)
 {
   // request display update
   seq_ui_display_update_req = 1;
@@ -273,7 +284,7 @@ s32 SEQ_CORE_Cont(u32 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // Pauses sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Pause(u32 no_echo)
+s32 SEQ_CORE_Pause(u8 no_echo)
 {
   // request display update
   seq_ui_display_update_req = 1;
@@ -287,16 +298,33 @@ s32 SEQ_CORE_Pause(u32 no_echo)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sets new song position (new_song_pos resolution: 16th notes)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_SongPos(u16 new_song_pos, u8 no_echo)
+{
+  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 6);
+
+  // play off events
+  SEQ_CORE_PlayOffEvents();
+
+  // and set new tick value
+  SEQ_BPM_TickSet(new_tick);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Tick(u32 bpm_tick)
+static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 {
   //  printf("BPM %d\n\r", bpm_tick);
 
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
-  if( (bpm_tick % (SEQ_BPM_RESOLUTION_PPQN/4)) == 0 ) {
+  if( (bpm_tick % (384/4)) == 0 ) {
     if( seq_core_state.FIRST_CLK )
       seq_core_state.ref_step = 0;
     else {

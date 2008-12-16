@@ -22,10 +22,12 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midi.h"
+#include "seq_midply.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -338,10 +340,17 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
 
   // if sequencer running: stop it
   // if sequencer already stopped: reset song position
+#if MID_PLAYER_TEST
+  if( seq_midply_state.RUN )
+    SEQ_MIDPLY_Stop(0);
+  else
+    SEQ_MIDPLY_Reset();
+#else
   if( seq_core_state.RUN )
     SEQ_CORE_Stop(0);
   else
     SEQ_CORE_Reset();
+#endif
 
   return 0; // no error
 }
@@ -351,7 +360,11 @@ static s32 SEQ_UI_Button_Pause(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
 
   // pause sequencer
+#if MID_PLAYER_TEST
+  SEQ_MIDPLY_Pause(0);
+#else
   SEQ_CORE_Pause(0);
+#endif
 
   return 0; // no error
 }
@@ -360,8 +373,16 @@ static s32 SEQ_UI_Button_Play(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // if in auto mode and BPM generator is clocked in slave mode:
+  // change to master mode
+  SEQ_BPM_CheckAutoMaster();
+
   // start sequencer
+#if MID_PLAYER_TEST
+  SEQ_MIDPLY_Start(0);
+#else
   SEQ_CORE_Start(0);
+#endif
 
   return 0; // no error
 }
@@ -993,9 +1014,15 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_FAST, seq_ui_button_state.FAST_ENCODERS);
   SEQ_LED_PinSet(LED_ALL, seq_ui_button_state.CHANGE_ALL_STEPS);
   
+#if MID_PLAYER_TEST
+  SEQ_LED_PinSet(LED_PLAY, seq_midply_state.RUN);
+  SEQ_LED_PinSet(LED_STOP, !seq_midply_state.RUN);
+  SEQ_LED_PinSet(LED_PAUSE, seq_midply_state.PAUSE);
+#else
   SEQ_LED_PinSet(LED_PLAY, seq_core_state.RUN);
   SEQ_LED_PinSet(LED_STOP, !seq_core_state.RUN);
   SEQ_LED_PinSet(LED_PAUSE, seq_core_state.PAUSE);
+#endif
   
   SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0));
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4

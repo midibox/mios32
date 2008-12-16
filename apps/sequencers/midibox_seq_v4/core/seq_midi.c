@@ -84,7 +84,7 @@ s32 SEQ_MIDI_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, s
     new_item->timestamp = timestamp;
     new_item->next = NULL;
   }
-
+ 
 #if 0
   printf("[SEQ_MIDI_Send:%d] %02x %02x %02x\n\r", timestamp, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
 #endif
@@ -99,6 +99,17 @@ s32 SEQ_MIDI_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, s
     seq_midi_queue_item_t *last_item = midi_queue;
     seq_midi_queue_item_t *next_item;
     do {
+      // Clock and Tempo events are sorted before CC and Note events at a given timestamp
+      if( (event_type == SEQ_MIDI_ClkEvent || event_type == SEQ_MIDI_TempoEvent ) && 
+	  item->timestamp == timestamp &&
+	  (item->event_type == SEQ_MIDI_OnEvent || item->event_type == SEQ_MIDI_CCEvent) ) {
+	// found any event with same timestamp, insert clock before these events
+	// note that the Clock event order doesn't get lost if clock events 
+	// are queued at the same timestamp (e.g. MIDI start -> MIDI clock)
+	insert_before_item = 1;
+	break;
+      }
+
       // CCs are sorted before notes at a given timestamp
       // (new CC before On events at the same timestamp)
       // CCs are still played after Off or Clock events
@@ -173,7 +184,17 @@ s32 SEQ_MIDI_Handler(void)
 
   seq_midi_queue_item_t *item;
   while( (item=midi_queue) != NULL && item->timestamp <= SEQ_BPM_TickGet() ) {
-    MIOS32_MIDI_SendPackage(item->port, item->package);
+#if 0
+    printf("[SEQ_MIDI_Handler:%d] %02x %02x %02x\n\r", item->timestamp, item->package.evnt0, item->package.evnt1, item->package.evnt2);
+#endif
+
+    // if tempo event: change BPM stored in midi_package.ALL
+    if( item->event_type == SEQ_MIDI_TempoEvent ) {
+      SEQ_BPM_Set(item->package.ALL);
+    } else {
+      MIOS32_MIDI_SendPackage(item->port, item->package);
+    }
+
     midi_queue = item->next;
     vPortFree(item);
     --seq_midi_queue_size;
