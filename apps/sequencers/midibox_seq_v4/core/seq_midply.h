@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MIDI routines
+ * Header file for MIDI player
  *
  * ==========================================================================
  *
@@ -11,9 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_MIDI_H
-#define _SEQ_MIDI_H
-
+#ifndef _SEQ_MIDPLY_H
+#define _SEQ_MIDPLY_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -24,30 +23,38 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-  SEQ_MIDI_ClkEvent,   // always sent first before any other timestamped event
-  SEQ_MIDI_TempoEvent, // dito - changes the BPM rate (located in midi_package.ALL)
-  SEQ_MIDI_CCEvent,    // sent before notes
-  SEQ_MIDI_OnEvent,    // note on event
-  SEQ_MIDI_OffEvent    // note off event - sent by SEQ_MIDI_FlushQueue when queue is emptied (e.g. on Stop/Pause)
-} seq_midi_event_type_t;
+typedef union {
+  struct {
+    unsigned ALL:32;
+  };
+  struct {
+    unsigned RUN:1;
+    unsigned PAUSE:1;
+  };
+} seq_midply_state_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_MIDI_Init(u32 mode);
+extern s32 SEQ_MIDPLY_Init(u32 mode);
 
-extern s32 SEQ_MIDI_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_event_type_t event_type, u32 timestamp);
-extern s32 SEQ_MIDI_FlushQueue(void);
-extern s32 SEQ_MIDI_Handler(void);
+extern s32 SEQ_MIDPLY_Reset(void);
+
+extern s32 SEQ_MIDPLY_Start(u8 no_echo);
+extern s32 SEQ_MIDPLY_Stop(u8 no_echo);
+extern s32 SEQ_MIDPLY_Cont(u8 no_echo);
+extern s32 SEQ_MIDPLY_Pause(u8 no_echo);
+extern s32 SEQ_MIDPLY_SongPos(u16 new_song_pos, u8 no_echo);
+
+extern s32 SEQ_MIDPLY_Handler(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u32 seq_midi_queue_size;
+extern seq_midply_state_t seq_midply_state;
 
-#endif /* _SEQ_MIDI_H */
+#endif /* _SEQ_MIDPLY_H */

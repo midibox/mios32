@@ -24,28 +24,6 @@
 #endif
 
 
-// allowed values: 24, 48, 96, 192, 384
-#ifndef SEQ_BPM_RESOLUTION_PPQN
-#define SEQ_BPM_RESOLUTION_PPQN 384
-#endif
-
-
-// determine resolution factor (don't touch)
-#if   SEQ_BPM_RESOLUTION_PPQN == 24
-# define SEQ_BPM_RESOLUTION_FACTOR 1
-#elif SEQ_BPM_RESOLUTION_PPQN == 48
-# define SEQ_BPM_RESOLUTION_FACTOR 2
-#elif SEQ_BPM_RESOLUTION_PPQN == 96
-# define SEQ_BPM_RESOLUTION_FACTOR 4
-#elif SEQ_BPM_RESOLUTION_PPQN == 192
-# define SEQ_BPM_RESOLUTION_FACTOR 8
-#elif SEQ_BPM_RESOLUTION_PPQN == 384
-# define SEQ_BPM_RESOLUTION_FACTOR 16
-#else
-#error "unsupported SEQ_BPM_RESOLUTION_PPQN value!"
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -69,9 +47,14 @@ extern s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode);
 extern s32 SEQ_BPM_Get(void);
 extern s32 SEQ_BPM_Set(u16 bpm);
 
+extern s32 SEQ_BPM_PPQN_Get(void);
+extern s32 SEQ_BPM_PPQN_Set(u16 ppqn);
+
 extern u32 SEQ_BPM_TickGet(void);
 extern s32 SEQ_BPM_TickSet(u32 tick);
+
 extern s32 SEQ_BPM_IsMaster(void);
+extern s32 SEQ_BPM_CheckAutoMaster(void);
 
 extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte);
 
@@ -84,6 +67,7 @@ extern s32 SEQ_BPM_ChkReqStop(void);
 extern s32 SEQ_BPM_ChkReqStart(void);
 extern s32 SEQ_BPM_ChkReqCont(void);
 extern s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr);
+extern s32 SEQ_BPM_ChkReqSongPos(u16 *song_pos);
 
 extern u32 SEQ_BPM_TicksFor_mS(u16 time_ms);
 
