@@ -17,13 +17,13 @@
 
 #include <mios32.h>
 #include <blm8x8.h>
+#include <seq_midi_out.h>
+#include <seq_bpm.h>
 
 #include "seq_ui.h"
 #include "seq_lcd.h"
 #include "seq_led.h"
-#include "seq_midi.h"
 #include "seq_midply.h"
-#include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_layer.h"
 #include "seq_cc.h"

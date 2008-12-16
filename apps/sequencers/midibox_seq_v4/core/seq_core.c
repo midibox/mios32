@@ -16,13 +16,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <seq_bpm.h>
+#include <seq_midi_out.h>
 
 #include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
-#include "seq_midi.h"
 #include "seq_midi_in.h"
-#include "seq_bpm.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_pattern.h"
@@ -190,7 +190,7 @@ s32 SEQ_CORE_Handler(void)
 static s32 SEQ_CORE_PlayOffEvents(void)
 {
   // play "off events"
-  SEQ_MIDI_FlushQueue();
+  SEQ_MIDI_OUT_FlushQueue();
 
   // play sustained notes
   u8 track;
@@ -404,7 +404,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 
 	    // sustained note: play off event
 	    if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
-	      SEQ_MIDI_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OffEvent, bpm_tick);
+	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick);
 	      t->sustain_note.ALL = 0;
 	    }
 
@@ -418,7 +418,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 
 	    // send On event
 	    if( p->type == CC ) {
-	      SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_CCEvent, bpm_tick);
+	      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      if( p->note && p->velocity ) {
@@ -426,7 +426,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 		if( SEQ_TRG_AccentGet(track, t->step) )
 		  p->velocity = 0x7f;
 
-		SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OnEvent, bpm_tick);
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick);
 		t->vu_meter = p->velocity; // for visualisation in mute menu
 	      } else
 		p->velocity = 0; // force velocity to 0 for next check
@@ -441,7 +441,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 		  t->sustain_note = *p;
 		} else {
 		  u32 delay = 4*(e->len+1); // TODO: later we will support higher note length resolution
-		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + delay);
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + delay);
 		}
 	      } else {
 		// multi trigger - thanks to MIDI queueing mechanism, realisation is much much easier than on MBSEQ V3!!! :-)
@@ -450,11 +450,11 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
 		u32 delay = 4 * (e->len & 0x1f);
 		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger
 		for(i=0; i<triggers; ++i)
-		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + (i+1)*delay);
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + (i+1)*delay);
 
 		p->velocity = 0x00; // clear velocity
 		for(i=0; i<=triggers; ++i)
-		  SEQ_MIDI_Send(tcc->midi_port, *p, SEQ_MIDI_OffEvent, bpm_tick + i*delay + (delay/2));
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + i*delay + (delay/2));
 	      }
 	    }
 	  }

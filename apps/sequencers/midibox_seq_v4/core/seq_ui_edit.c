@@ -19,8 +19,6 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
-#include "seq_midi.h"
-#include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_layer.h"

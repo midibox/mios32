@@ -17,11 +17,11 @@
 
 #include <mios32.h>
 
-#include "seq_midply.h"
-#include "mid_parser.h"
+#include <seq_bpm.h>
+#include <seq_midi_out.h>
+#include <mid_parser.h>
 
-#include "seq_bpm.h"
-#include "seq_midi.h"
+#include "seq_midply.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ s32 SEQ_MIDPLY_Handler(void)
 static s32 SEQ_MIDPLY_PlayOffEvents(void)
 {
   // play "off events"
-  SEQ_MIDI_FlushQueue();
+  SEQ_MIDI_OUT_FlushQueue();
 
   // send Note Off to all channels
   // TODO: howto handle different ports?
@@ -367,11 +367,11 @@ static s32 SEQ_MIDPLY_PlayEvent(u8 track, mios32_midi_package_t midi_package, u3
   if( ffwd_silent_mode )
     return 0;
 
-  seq_midi_event_type_t event_type = SEQ_MIDI_OnEvent;
+  seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
   if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) )
-    event_type = SEQ_MIDI_OffEvent;
+    event_type = SEQ_MIDI_OUT_OffEvent;
 
-  return SEQ_MIDI_Send(DEFAULT, midi_package, event_type, tick);
+  return SEQ_MIDI_OUT_Send(DEFAULT, midi_package, event_type, tick);
 }
 
 
@@ -469,7 +469,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	  // put tempo change request into the queue
 	  mios32_midi_package_t tempo_package; // or Softis?
 	  tempo_package.ALL = bpm;
-	  SEQ_MIDI_Send(DEFAULT, tempo_package, SEQ_MIDI_TempoEvent, tick);
+	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick);
 	}
 
 #if DEBUG_VERBOSE_LEVEL >= 1
