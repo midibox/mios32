@@ -116,7 +116,7 @@ s32 MIOS32_USB_MIDI_CheckAvailable(void)
 //      -2: buffer is full
 //          caller should retry until buffer is free again
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
+s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 {
   // device available?
   if( !transfer_possible )
@@ -161,11 +161,27 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(mios32_midi_package_t package)
 // OUT: 0: no error
 //      -1: USB not connected
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
+s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t package)
 {
+  static u16 timeout_ctr = 0;
+  // this function could hang up if USB is available, but MIDI port won't be
+  // serviced by the host (e.g. windows: no program uses the MIDI IN port)
+  // Therefore we time out the polling after 10000 tries
+  // Once the timeout value is reached, each new MIDI_PackageSend call will
+  // try to access the USB port only a single time anymore. Once the try
+  // was successfull (MIDI port will be used by host), timeout value is
+  // reset again
+
   s32 error;
 
-  while( (error=MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(package)) == -2 );
+  while( (error=MIOS32_USB_MIDI_PackageSend_NonBlocking(package)) == -2 ) {
+    if( timeout_ctr >= 10000 )
+      break;
+    ++timeout_ctr;
+  }
+
+  if( error >= 0 ) // no error: reset timeout counter
+    timeout_ctr = 0;
 
   return error;
 }
@@ -177,7 +193,7 @@ s32 MIOS32_USB_MIDI_MIDIPackageSend(mios32_midi_package_t package)
 // OUT: returns -1 if no package in buffer
 //      otherwise returns number of packages which are still in the buffer
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_MIDIPackageReceive(mios32_midi_package_t *package)
+s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 {
   // package received?
   if( !rx_buffer_size )
