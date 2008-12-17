@@ -202,7 +202,7 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
   switch( port >> 4 ) {
     case 1:
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      return MIOS32_USB_MIDI_MIDIPackageSend_NonBlocking(package);
+      return MIOS32_USB_MIDI_PackageSend_NonBlocking(package);
 #else
       return -1; // USB has been disabled
 #endif
@@ -256,7 +256,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
   switch( port >> 4 ) {
     case 1:
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      return MIOS32_USB_MIDI_MIDIPackageSend(package);
+      return MIOS32_USB_MIDI_PackageSend(package);
 #else
       return -1; // USB has been disabled
 #endif
@@ -490,7 +490,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
     s32 error = -1;
     switch( intf++ ) {
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      case 0: error = MIOS32_USB_MIDI_MIDIPackageReceive(&package); port = USB0 + package.cable; break;
+      case 0: error = MIOS32_USB_MIDI_PackageReceive(&package); port = USB0 + package.cable; break;
 #else
       case 0: error = -1; break;
 #endif
