@@ -189,7 +189,7 @@ s32 SEQ_MIDPLY_Reset(void)
 
   // set initial BPM (according to MIDI file spec)
   SEQ_BPM_PPQN_Set(384); // not specified
-  SEQ_BPM_Set(1200); // -> 120.0
+  SEQ_BPM_Set(120.0);
 
   // since timebase has been changed, ensure that Off-Events are played 
   // (otherwise they will be played much later...)
@@ -255,7 +255,7 @@ static s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 
     if( MID_PARSER_FetchEvents(next_prefetch, prefetch_ticks) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_MIDPLY] End of song reached - restart!\n\r");
+      printf("[SEQ_MIDPLY] End of song reached after %u ticks - restart!\n\r", bpm_ticks);
 #endif
       SEQ_MIDPLY_SongPos(0);
     }
@@ -410,8 +410,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
     case 0x51: // Set Tempo
       if( len == 3 ) {
 	u32 tempo_us = (*buffer++ << 16) | (*buffer++ << 8) | *buffer;
-	float bpm_f = 10.0 * 60.0 * (1E6 / (float)tempo_us);
-	u16 bpm = (u16)bpm_f;
+	float bpm = 60.0 * (1E6 / (float)tempo_us);
 	SEQ_BPM_PPQN_Set(MIDI_PARSER_PPQN_Get());
 
 	// set tempo immediately on first tick
@@ -420,7 +419,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	} else {
 	  // put tempo change request into the queue
 	  mios32_midi_package_t tempo_package; // or Softis?
-	  tempo_package.ALL = bpm;
+	  tempo_package.ALL = (u32)bpm;
 	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick);
 	}
 

@@ -91,7 +91,7 @@ s32 SEQ_Init(u32 mode)
   SEQ_BPM_Init(0);
 
   SEQ_BPM_PPQN_Set(384);
-  SEQ_BPM_Set(1200); // for 120.0 BPM
+  SEQ_BPM_Set(120.0);
 
   return 0; // no error
 }

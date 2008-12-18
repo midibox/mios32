@@ -44,8 +44,8 @@ extern s32 SEQ_BPM_Init(u32 mode);
 extern seq_bpm_mode_t SEQ_BPM_ModeGet(void);
 extern s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode);
 
-extern s32 SEQ_BPM_Get(void);
-extern s32 SEQ_BPM_Set(u16 bpm);
+extern float SEQ_BPM_Get(void);
+extern s32 SEQ_BPM_Set(float bpm);
 
 extern s32 SEQ_BPM_PPQN_Get(void);
 extern s32 SEQ_BPM_PPQN_Set(u16 ppqn);
