@@ -47,7 +47,7 @@
 // use "<dir>/" for a subdirectory in root
 // use "<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
 
-#define MID_FILES_PATH "NewMidi/"
+#define MID_FILES_PATH ""
 //#define MID_FILES_PATH "MyMidi/"
 
 
