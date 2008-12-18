@@ -53,6 +53,7 @@ extern s32 SEQ_BPM_PPQN_Set(u16 ppqn);
 extern u32 SEQ_BPM_TickGet(void);
 extern s32 SEQ_BPM_TickSet(u32 tick);
 
+extern s32 SEQ_BPM_IsRunning(void);
 extern s32 SEQ_BPM_IsMaster(void);
 extern s32 SEQ_BPM_CheckAutoMaster(void);
 
@@ -61,6 +62,7 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte);
 extern s32 SEQ_BPM_TapTempo(void);
 
 extern s32 SEQ_BPM_Start(void);
+extern s32 SEQ_BPM_Cont(void);
 extern s32 SEQ_BPM_Stop(void);
 
 extern s32 SEQ_BPM_ChkReqStop(void);
