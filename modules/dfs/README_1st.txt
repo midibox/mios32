@@ -31,3 +31,8 @@ TK 2008-12-18:
 added 'DFS_CachingEnabledSet(uint8_t enable)' function to enable a simple 
 caching mechanism. This feature has to be explicitely enabled, as it isn't 
 reentrant and requires to use the same buffer pointer whenever reading a file!
+
+TK 2008-18-12
+added missing pendant to DFS_CanonicalToDir;
+char *DFS_DirToCanonical(char *dest, char *src)
+expects a 13 byte buffer in *dest
