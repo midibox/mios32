@@ -366,6 +366,14 @@ void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch);
 */
 uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch);
 
+
+
+// TK: added 2008-18-12
+// for caching - this feature has to be explicitely enabled, as it isn't reentrant
+// and requires to use the same buffer pointer whenever reading a file
+void DFS_CachingEnabledSet(uint8_t enable);
+
+
 // If we are building a host-emulation version, include host support
 #ifdef HOSTVER
 #include "hostemu.h"

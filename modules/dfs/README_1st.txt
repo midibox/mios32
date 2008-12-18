@@ -16,3 +16,18 @@ The original usage examples can be found under unused/main.c
 
 MIOS32 based usage examples can be found under
    $MIOS32_PATH/apps/examples/sdcard
+
+
+Addendum:
+
+TK 2008-12-18: 
+DFS_Seek was running endless, applied a patch which has been posted at
+http://reza.net/wordpress/?p=110
+
+TK 2008-12-18: 
+patched the patch: endcluster wasn't calculated correctly
+
+TK 2008-12-18: 
+added 'DFS_CachingEnabledSet(uint8_t enable)' function to enable a simple 
+caching mechanism. This feature has to be explicitely enabled, as it isn't 
+reentrant and requires to use the same buffer pointer whenever reading a file!

@@ -8,8 +8,12 @@
 	You cannot re-copyright or restrict use of the code as released by Lewin Edwards.
 */
 
+//#include "common.h"
 #include <string.h>
 #include <stdlib.h>
+//#include "fat.h"
+
+#define div(a,b) ldiv(a,b)
 
 #include "dosfs.h"
 
@@ -24,7 +28,7 @@
 */
 uint32_t DFS_GetPtnStart(uint8_t unit, uint8_t *scratchsector, uint8_t pnum, uint8_t *pactive, uint8_t *pptype, uint32_t *psize)
 {
-	uint32_t result;
+	uint32_t result=0;
 	PMBR mbr = (PMBR) scratchsector;
 
 	// DOS ptable supports maximum 4 partitions
@@ -69,7 +73,9 @@ uint32_t DFS_GetVolInfo(uint8_t unit, uint8_t *scratchsector, uint32_t startsect
 	PLBR lbr = (PLBR) scratchsector;
 	volinfo->unit = unit;
 	volinfo->startsector = startsector;
-
+#ifdef DEBUG_DOSFS
+        printf("DFS_GetVolInfo\r\n");
+#endif
 	if(DFS_ReadSector(unit,scratchsector,startsector,1))
 		return DFS_ERRMISC;
 
@@ -106,7 +112,7 @@ uint32_t DFS_GetVolInfo(uint8_t unit, uint8_t *scratchsector, uint32_t startsect
 	
 // tag: OEMID, refer dosfs.h
 //		memcpy(volinfo->system, lbr->ebpb.ebpb32.system, 8);
-//		volinfo->system[8] = 0; 
+//		volinfo->system[8] = 0;
 	}
 	else {
 		memcpy(volinfo->label, lbr->ebpb.ebpb.label, 11);
@@ -114,7 +120,7 @@ uint32_t DFS_GetVolInfo(uint8_t unit, uint8_t *scratchsector, uint32_t startsect
 	
 // tag: OEMID, refer dosfs.h
 //		memcpy(volinfo->system, lbr->ebpb.ebpb.system, 8);
-//		volinfo->system[8] = 0; 
+//		volinfo->system[8] = 0;
 	}
 
 	// note: if rootentries is 0, we must be in a FAT32 volume.
@@ -161,8 +167,11 @@ uint32_t DFS_GetVolInfo(uint8_t unit, uint8_t *scratchsector, uint32_t startsect
 */
 uint32_t DFS_GetFAT(PVOLINFO volinfo, uint8_t *scratch, uint32_t *scratchcache, uint32_t cluster)
 {
-	uint32_t offset, sector, result;
+	uint32_t offset=0, sector=0, result=0;
 
+#ifdef DEBUG_DOSFS
+       printf("DFS_GetFAT\r\n");
+#endif
 	if (volinfo->filesystem == FAT12) {
 		offset = cluster + (cluster / 2);
 	}
@@ -256,7 +265,10 @@ uint32_t DFS_GetFAT(PVOLINFO volinfo, uint8_t *scratch, uint32_t *scratchcache, 
 */
 uint32_t DFS_SetFAT(PVOLINFO volinfo, uint8_t *scratch, uint32_t *scratchcache, uint32_t cluster, uint32_t new_contents)
 {
-	uint32_t offset, sector, result;
+	uint32_t offset=0, sector=0, result=0;
+#ifdef DEBUG_DOSFS
+	printf("DFS_SetFAT (%lu->%lu)\r\n",cluster,new_contents);
+#endif
 	if (volinfo->filesystem == FAT12) {
 		offset = cluster + (cluster / 2);
 		new_contents &=0xfff;
@@ -366,7 +378,7 @@ uint32_t DFS_SetFAT(PVOLINFO volinfo, uint8_t *scratch, uint32_t *scratchcache, 
 		scratch[offset] = (new_contents & 0xff);
 		scratch[offset+1] = (new_contents & 0xff00) >> 8;
 		result = DFS_WriteSector(volinfo->unit, scratch, *scratchcache, 1);
-		// mirror the FAT into copy 2
+		// mirror the FAT into copy 2 - XXX
 		if (DFS_OK == result)
 			result = DFS_WriteSector(volinfo->unit, scratch, (*scratchcache)+volinfo->secperfat, 1);
 	}
@@ -428,6 +440,11 @@ uint8_t *DFS_CanonicalToDir(uint8_t *dest, uint8_t *src)
 uint32_t DFS_GetFreeFAT(PVOLINFO volinfo, uint8_t *scratch)
 {
 	uint32_t i, result = 0xffffffff, scratchcache = 0;
+
+
+#ifdef DEBUG_DOSFS
+        printf("DFS_GetFreeFAT\r\n");
+#endif	
 	
 	// Search starts at cluster 2, which is the first usable cluster
 	// NOTE: This search can't terminate at a bad cluster, because there might
@@ -445,6 +462,7 @@ uint32_t DFS_GetFreeFAT(PVOLINFO volinfo, uint8_t *scratch)
 /*
 	Open a directory for enumeration by DFS_GetNextDirEnt
 	You must supply a populated VOLINFO (see DFS_GetVolInfo)
+        ** you must also make sure dirinfo->scratch is valid in the dirinfo you pass it** //reza
 	The empty string or a string containing only the directory separator are
 	considered to be the root directory.
 	Returns 0 OK, nonzero for any error.
@@ -453,7 +471,9 @@ uint32_t DFS_OpenDir(PVOLINFO volinfo, uint8_t *dirname, PDIRINFO dirinfo)
 {
 	// Default behavior is a regular search for existing entries
 	dirinfo->flags = 0;
-
+#ifdef DEBUG_DOSFS
+        printf("DFS_OpenDir\r\n");
+#endif
 	if (!strlen((char *) dirname) || (strlen((char *) dirname) == 1 && dirname[0] == DIR_SEPARATOR)) {
 		if (volinfo->filesystem == FAT32) {
 			dirinfo->currentcluster = volinfo->rootdir;
@@ -562,12 +582,15 @@ uint32_t DFS_GetNext(PVOLINFO volinfo, PDIRINFO dirinfo, PDIRENT dirent)
 {
 	uint32_t tempint;	// required by DFS_GetFAT
 
+#ifdef DEBUG_DOSFS
+        printf("DFS_GetNext\r\n");
+#endif
 	// Do we need to read the next sector of the directory?
 	if (dirinfo->currententry >= SECTOR_SIZE / sizeof(DIRENT)) {
 		dirinfo->currententry = 0;
 		dirinfo->currentsector++;
 
-		// Root directory; special case handling 
+		// Root directory; special case handling
 		// Note that currentcluster will only ever be zero if both:
 		// (a) this is the root directory, and
 		// (b) we are on a FAT12/16 volume, where the root dir can't be expanded
@@ -588,7 +611,7 @@ uint32_t DFS_GetNext(PVOLINFO volinfo, PDIRINFO dirinfo, PDIRENT dirent)
 				if ((dirinfo->currentcluster >= 0xff7 &&  volinfo->filesystem == FAT12) ||
 				  (dirinfo->currentcluster >= 0xfff7 &&  volinfo->filesystem == FAT16) ||
 				  (dirinfo->currentcluster >= 0x0ffffff7 &&  volinfo->filesystem == FAT32)) {
-				  
+				
 				  	// We are at the end of the directory chain. If this is a normal
 				  	// find operation, we should indicate that there is nothing more
 				  	// to see.
@@ -641,8 +664,10 @@ uint32_t DFS_GetNext(PVOLINFO volinfo, PDIRINFO dirinfo, PDIRENT dirent)
 */
 uint32_t DFS_GetFreeDirEnt(PVOLINFO volinfo, uint8_t *path, PDIRINFO di, PDIRENT de)
 {
-	uint32_t tempclus,i;
-
+	uint32_t tempclus=0,i=0;
+#ifdef DEBUG_DOSFS
+        printf("DFS_GetFreeDirEnt\r\n");
+#endif
 	if (DFS_OpenDir(volinfo, path, di))
 		return DFS_NOTFOUND;
 
@@ -713,7 +738,10 @@ uint32_t DFS_OpenFile(PVOLINFO volinfo, uint8_t *path, uint8_t mode, uint8_t *sc
 	uint8_t *p;
 	DIRINFO di;
 	DIRENT de;
-
+        uint32_t temp;
+#ifdef DEBUG_DOSFS
+        printf("DFS_OpenFile\r\n");
+#endif
 	// larwe 2006-09-16 +1 zero out file structure
 	memset(fileinfo, 0, sizeof(FILEINFO));
 
@@ -793,7 +821,7 @@ uint32_t DFS_OpenFile(PVOLINFO volinfo, uint8_t *path, uint8_t mode, uint8_t *sc
 	// At this point, we KNOW the file does not exist. If the file was opened
 	// with write access, we can create it.
 	if (mode & DFS_WRITE) {
-		uint32_t cluster, temp;
+		uint32_t cluster;
 
 		// Locate or create a directory entry for this file
 		if (DFS_OK != DFS_GetFreeDirEnt(volinfo, tmppath, &di, &de))
@@ -870,11 +898,13 @@ uint32_t DFS_OpenFile(PVOLINFO volinfo, uint8_t *path, uint8_t mode, uint8_t *sc
 */
 uint32_t DFS_ReadFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, uint32_t *successcount, uint32_t len)
 {
-	uint32_t remain;
+	uint32_t remain=0;
 	uint32_t result = DFS_OK;
-	uint32_t sector;
-	uint32_t bytesread;
-
+	uint32_t sector=0;
+	uint32_t bytesread=0;
+#ifdef DEBUG_DOSFS
+        printf("DFS_ReadFile\r\n");
+#endif
 	// Don't try to read past EOF
 	if (len > fileinfo->filelen - fileinfo->pointer)
 		len = fileinfo->filelen - fileinfo->pointer;
@@ -976,8 +1006,11 @@ uint32_t DFS_ReadFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, uin
 */
 void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch)
 {
-	uint32_t tempint;
-
+    uint32_t tempint;
+	uint16_t endcluster=0;  //canny/reza 5/7 fixed
+#ifdef DEBUG_DOSFS
+        printf("DFS_Seek\r\n");
+#endif
 	// larwe 9/16/06 bugfix split case 0a/0b and changed fallthrough handling
 	// Case 0a - Return immediately for degenerate case
 	if (offset == fileinfo->pointer) {
@@ -1006,8 +1039,7 @@ void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch)
 
 	// Case 3 - Seeking forwards
 	// Note _intentional_ fallthrough from Case 2 above
-
-	// Case 3a - Seek size does not cross cluster boundary - 
+	// Case 3a - Seek size does not cross cluster boundary -
 	// very simple case
 	// larwe 9/16/06 changed .rem to .quot in both div calls, bugfix
 	if (div(fileinfo->pointer, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot ==
@@ -1022,9 +1054,11 @@ void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch)
 
 		// seek by clusters
 		// larwe 9/30/06 bugfix changed .rem to .quot in both div calls
-		while (div(fileinfo->pointer, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot !=
-		  div(fileinfo->pointer + offset, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot) {
-
+                // canny/reza 5/7  added endcluster related code
+		// TK 2008-12-18: fixed endcluster calculation
+		// old: endcluster = div(fileinfo->pointer + offset, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot;
+                endcluster = div(offset, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot;
+                while (div(fileinfo->pointer, fileinfo->volinfo->secperclus * SECTOR_SIZE).quot !=endcluster) {
 			fileinfo->cluster = DFS_GetFAT(fileinfo->volinfo, scratch, &tempint, fileinfo->cluster);
 			// Abort if there was an error
 			if (fileinfo->cluster == 0x0ffffff7) {
@@ -1049,8 +1083,11 @@ uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch)
 	PDIRENT de = (PDIRENT) scratch;
 	FILEINFO fi;
 	uint32_t cache = 0;
-	uint32_t tempclus;
+	uint32_t tempclus = 0;
 
+#ifdef DEBUG_DOSFS
+        printf("DFS_UnlinkFile\r\n");
+#endif
 	// DFS_OpenFile gives us all the information we need to delete it
 	if (DFS_OK != DFS_OpenFile(volinfo, path, DFS_READ, scratch, &fi))
 		return DFS_NOTFOUND;
@@ -1084,10 +1121,13 @@ uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch)
 */
 uint32_t DFS_WriteFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, uint32_t *successcount, uint32_t len)
 {
-	uint32_t remain;
+	uint32_t remain=0;
 	uint32_t result = DFS_OK;
-	uint32_t sector;
-	uint32_t byteswritten;
+	uint32_t sector=0;
+	uint32_t byteswritten=0;
+#ifdef DEBUG_DOSFS
+        printf("DFS_WriteFile\r\n");
+#endif
 
 	// Don't allow writes to a file that's open as readonly
 	if (!(fileinfo->mode & DFS_WRITE))
