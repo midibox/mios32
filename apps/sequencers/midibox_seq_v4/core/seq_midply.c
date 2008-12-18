@@ -22,6 +22,7 @@
 #include <mid_parser.h>
 
 #include "seq_midply.h"
+#include "seq_ui.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,7 +44,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_MIDPLY_PlayOffEvents(void);
-static s32 SEQ_MIDPLY_Tick(u32 bpm_tick, u8 no_echo);
+static s32 SEQ_MIDPLY_SongPos(u16 new_song_pos);
+static s32 SEQ_MIDPLY_Tick(u32 bpm_tick);
 
 static s32 SEQ_MIDPLY_getc(void);
 static s32 SEQ_MIDPLY_eof(void);
@@ -51,13 +53,6 @@ static s32 SEQ_MIDPLY_seek(u32 pos);
 
 static s32 SEQ_MIDPLY_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick);
 static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-seq_midply_state_t seq_midply_state;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,25 +109,35 @@ s32 SEQ_MIDPLY_Handler(void)
   do {
     ++num_loops;
 
-    if( SEQ_BPM_ChkReqStop() )
-      SEQ_MIDPLY_Stop(1);
+    // note: don't remove any request check - clocks won't be propagated
+    // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
+    if( SEQ_BPM_ChkReqStop() ) {
+      SEQ_MIDPLY_PlayOffEvents();
+    }
 
-    if( SEQ_BPM_ChkReqCont() )
-      SEQ_MIDPLY_Cont(1);
+    if( SEQ_BPM_ChkReqCont() ) {
+      // release pause mode
+      ui_seq_pause = 0;
+    }
 
-    if( SEQ_BPM_ChkReqStart() )
-      SEQ_MIDPLY_Start(1);
+    if( SEQ_BPM_ChkReqStart() ) {
+      SEQ_MIDPLY_Reset();
+
+      // initial prefetch (100 BPM ticks)
+      MID_PARSER_FetchEvents(0, 100);
+      next_prefetch = 0;
+    }
 
     u16 new_song_pos;
-    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) )
-      SEQ_MIDPLY_SongPos(new_song_pos, 1);
+    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
+      SEQ_MIDPLY_SongPos(new_song_pos);
+    }
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
 
-      if( seq_midply_state.RUN && !seq_midply_state.PAUSE )
-        SEQ_MIDPLY_Tick(bpm_tick, 1);
+      SEQ_MIDPLY_Tick(bpm_tick);
     }
   } while( again && num_loops < 10 );
 
@@ -173,7 +178,7 @@ static s32 SEQ_MIDPLY_PlayOffEvents(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_Reset(void)
 {
-  seq_midply_state.PAUSE = 0;
+  ui_seq_pause = 0;
 
   next_prefetch = 0;
 
@@ -186,65 +191,12 @@ s32 SEQ_MIDPLY_Reset(void)
   SEQ_BPM_PPQN_Set(384); // not specified
   SEQ_BPM_Set(1200); // -> 120.0
 
-  // init bpm tick
-  SEQ_BPM_TickSet(0);
-
   // since timebase has been changed, ensure that Off-Events are played 
   // (otherwise they will be played much later...)
   SEQ_MIDPLY_PlayOffEvents();
 
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Starts the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_Start(u8 no_echo)
-{
-  SEQ_MIDPLY_Reset();
-  seq_midply_state.RUN = 1;
-
-  // initial prefetch (100 BPM ticks)
-  MID_PARSER_FetchEvents(0, 100);
-  next_prefetch = 0;
-
-  return no_echo ? 0 : SEQ_BPM_Start();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Stops the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_Stop(u8 no_echo)
-{
-  seq_midply_state.PAUSE = 0;
-  seq_midply_state.RUN = 0;
-  SEQ_MIDPLY_PlayOffEvents();
-  return no_echo ? 0 : SEQ_BPM_Stop();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Continues the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_Cont(u8 no_echo)
-{
-  seq_midply_state.PAUSE = 0;
-  seq_midply_state.RUN = 1;
-  return no_echo ? 0 : SEQ_BPM_Start();
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Pauses sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_Pause(u8 no_echo)
-{
-  seq_midply_state.PAUSE ^= 1;
-  if( seq_midply_state.PAUSE )
-    SEQ_MIDPLY_PlayOffEvents();
+  // reset BPM tick
+  SEQ_BPM_TickSet(0);
 
   return 0; // no error
 }
@@ -253,9 +205,9 @@ s32 SEQ_MIDPLY_Pause(u8 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // Sets new song position (new_song_pos resolution: 16th notes)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_SongPos(u16 new_song_pos, u8 no_echo)
+static s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
 {
-  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 6);
+  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   printf("[SEQ_MIDPLY] Setting new song position %u (-> %u ticks)\n\r", new_song_pos, new_tick);
@@ -290,7 +242,7 @@ s32 SEQ_MIDPLY_SongPos(u16 new_song_pos, u8 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDPLY_Tick(u32 bpm_tick, u8 no_echo)
+static s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 {
   if( bpm_tick >= next_prefetch ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -305,7 +257,7 @@ static s32 SEQ_MIDPLY_Tick(u32 bpm_tick, u8 no_echo)
 #if DEBUG_VERBOSE_LEVEL >= 1
       printf("[SEQ_MIDPLY] End of song reached - restart!\n\r");
 #endif
-      SEQ_MIDPLY_SongPos(0, 1);
+      SEQ_MIDPLY_SongPos(0);
     }
 
 

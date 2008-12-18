@@ -21,6 +21,7 @@
 
 #include "seq_pattern.h"
 #include "seq_core.h"
+#include "seq_ui.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,7 +85,7 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
     return -1; // invalid group
 
   // change immediately if sequencer not running
-  if( !seq_core_state.RUN || seq_core_state.PAUSE ) {
+  if( !SEQ_BPM_IsRunning() || ui_seq_pause ) {
     SEQ_PATTERN_Load(group, pattern);
   } else {
 

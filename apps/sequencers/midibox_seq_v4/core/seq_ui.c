@@ -62,6 +62,9 @@ u8 ui_selected_item;
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
 
+u8 ui_seq_pause;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -130,6 +133,8 @@ s32 SEQ_UI_Init(u32 mode)
   ui_cursor_flash = 0;
 
   seq_ui_button_state.ALL = 0;
+
+  ui_seq_pause = 0;
 
   // visible GP pattern
   ui_gp_leds = 0x0000;
@@ -341,13 +346,13 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
   // if sequencer running: stop it
   // if sequencer already stopped: reset song position
 #if MID_PLAYER_TEST
-  if( seq_midply_state.RUN )
-    SEQ_MIDPLY_Stop(0);
+  if( SEQ_BPM_IsRunning() )
+    SEQ_BPM_Stop();
   else
     SEQ_MIDPLY_Reset();
 #else
-  if( seq_core_state.RUN )
-    SEQ_CORE_Stop(0);
+  if( SEQ_BPM_IsRunning() )
+    SEQ_BPM_Stop();
   else
     SEQ_CORE_Reset();
 #endif
@@ -359,12 +364,18 @@ static s32 SEQ_UI_Button_Pause(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  // pause sequencer
-#if MID_PLAYER_TEST
-  SEQ_MIDPLY_Pause(0);
-#else
-  SEQ_CORE_Pause(0);
-#endif
+  // if in auto mode and BPM generator is clocked in slave mode:
+  // change to master mode
+  SEQ_BPM_CheckAutoMaster();
+
+  // toggle pause mode
+  ui_seq_pause ^= 1;
+
+  // execute stop/continue depending on new mode
+  if( ui_seq_pause )
+    SEQ_BPM_Stop();
+  else
+    SEQ_BPM_Cont();
 
   return 0; // no error
 }
@@ -377,11 +388,16 @@ static s32 SEQ_UI_Button_Play(s32 depressed)
   // change to master mode
   SEQ_BPM_CheckAutoMaster();
 
-  // start sequencer
-#if MID_PLAYER_TEST
-  SEQ_MIDPLY_Start(0);
+#if 0
+  // if sequencer running: restart it
+  // if sequencer stopped: continue at last song position
+  if( SEQ_BPM_IsRunning() )
+    SEQ_BPM_Start();
+  else
+    SEQ_BPM_Cont();
 #else
-  SEQ_CORE_Start(0);
+  // always restart sequencer
+  SEQ_BPM_Start();
 #endif
 
   return 0; // no error
@@ -1014,15 +1030,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_FAST, seq_ui_button_state.FAST_ENCODERS);
   SEQ_LED_PinSet(LED_ALL, seq_ui_button_state.CHANGE_ALL_STEPS);
   
-#if MID_PLAYER_TEST
-  SEQ_LED_PinSet(LED_PLAY, seq_midply_state.RUN);
-  SEQ_LED_PinSet(LED_STOP, !seq_midply_state.RUN);
-  SEQ_LED_PinSet(LED_PAUSE, seq_midply_state.PAUSE);
-#else
-  SEQ_LED_PinSet(LED_PLAY, seq_core_state.RUN);
-  SEQ_LED_PinSet(LED_STOP, !seq_core_state.RUN);
-  SEQ_LED_PinSet(LED_PAUSE, seq_core_state.PAUSE);
-#endif
+  SEQ_LED_PinSet(LED_PLAY, SEQ_BPM_IsRunning());
+  SEQ_LED_PinSet(LED_STOP, !SEQ_BPM_IsRunning() && !ui_seq_pause);
+  SEQ_LED_PinSet(LED_PAUSE, ui_seq_pause);
   
   SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0));
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4
@@ -1065,12 +1075,13 @@ s32 SEQ_UI_LED_Handler_Periodic()
   static u16 prev_pos_marker_mask = 0x0000;
 
   // beat LED: tmp. for demo w/o real sequencer
-  SEQ_LED_PinSet(LED_BEAT, (seq_core_state.RUN && (seq_core_state.ref_step & 3) == 0));
+  u8 sequencer_running = SEQ_BPM_IsRunning();
+  SEQ_LED_PinSet(LED_BEAT, (sequencer_running && (seq_core_state.ref_step & 3) == 0));
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
   u8 played_step = seq_core_trk[SEQ_UI_VisibleTrackGet()].step;
-  if( seq_core_state.RUN && (played_step >> 4) == ui_selected_step_view )
+  if( sequencer_running && (played_step >> 4) == ui_selected_step_view )
     pos_marker_mask = 1 << (played_step & 0xf);
 
   // exit of pattern hasn't changed

@@ -34,8 +34,6 @@ typedef union {
   struct {
     u8       ref_step:8;
 
-    unsigned RUN:1;
-    unsigned PAUSE:1;
     unsigned FIRST_CLK:1;
   };
 } seq_core_state_t;
@@ -149,12 +147,6 @@ typedef union {
 extern s32 SEQ_CORE_Init(u32 mode);
 
 extern s32 SEQ_CORE_Reset(void);
-
-extern s32 SEQ_CORE_Start(u8 no_echo);
-extern s32 SEQ_CORE_Stop(u8 no_echo);
-extern s32 SEQ_CORE_Cont(u8 no_echo);
-extern s32 SEQ_CORE_Pause(u8 no_echo);
-extern s32 SEQ_CORE_SongPos(u16 new_song_pos, u8 no_echo);
 
 extern s32 SEQ_CORE_Handler(void);
 
