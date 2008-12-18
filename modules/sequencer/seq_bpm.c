@@ -2,55 +2,50 @@
 /*
  * BPM generator
  *
- * Some notes to the way how MIDIboxSEQ generates the internal ppqn clock
- *
- * In following calculation examples, it is assumed that ppqn has been set
- * to 384 (16 times more than original 24 ppqn provided by MIDI protocol)
- *
+ * Some comments to the way how the bpm_tick is generated:
  *
  * MASTER MODE
  * ~~~~~~~~~~~
  *
- * In order to reach 384ppqn resolution, a timer interrupt will be triggered
- * with an interval of:
- *   interval = (60 / (bpm * 24)) / 16
+ * A timer interrupt will be triggered with an interval of:
+ *   interval = (60 / (bpm * 24)) / (ppqn/24)
  *
- * It requests clock events to the sequencer on each invocation.
+ * It increments bpm_tick, and request the clock event to the sequencer.
  *
  * The sequencer can check for clock events by calling 
  *    u32 bpm_tick_ptr; // will contain the BPM tick which has to be processed
  *    while( SEQ_BPM_ChkReqClk(&bpm_tick_ctr) ) {
- *      // got a new 384ppqn tick
+ *      // got a new tick
  *    }
  *
- * Since the *_ChkReq* function is a destructive call, it should only be used
- * by the sequencer task.
+ * This polling scheme ensures, that no bpm_tick gets lost if the sequencer
+ * task is stalled for any reason
  *
- * Similar request flags exist for MIDI Clock Start/Stop/Continue
+ * Since the *_ChkReq* function is a destructive call, it should only be used
+ * by the sequencer task, and not called from any other function.
+ *
+ * Similar request flags exist for MIDI Clock Start/Stop/Continue and Song Position
  *
  *
  * SLAVE MODE
  * ~~~~~~~~~~
  *
+ * In order to reach a higher ppqn resolution (e.g. 384 ppqn) than provided 
+ * by MIDI (24 ppqn), the incoming clock has to be interpolated in ppqn/24 steps
+ *
  * A timer interrupt with an interval of 250 uS is used to measure 
  * the delay between two incoming MIDI clock events. The same interrupt
  * will call the sequencer clock handler with an interval of:
- *   interval = 250 uS * measured_delay / 16
- * (16x interpolated clock)
+ *   interval = 250 uS * measured_delay / (ppqn/24)
+ * (e.g. 384 ppqn: 16x interpolated clock)
  *
  * There is a protection (-> sent_clk_ctr) which ensures, that never more
- * that 16 internal clock events will be triggered between two F8 to
- * improve robustness on BPM sweeps or jittering incoming MIDI clock
+ * that 16 internal ticks will be triggered between two F8 events to 
+ * improve the robustness on BPM sweeps or jittering incoming MIDI clock
  *
  * Note that instead of the timer interrupt, we could also use a HW timer
  * to measure the delay. Problem: currently I don't know how to handle this
  * in the MacOS based emulation...
- *
- * 
- * The API of the BPM generator has been written in a way which allows
- * general usage by multiple applications
- * It could be provided under $MIOS32_PATH/modules/bpm once the robustness
- * has been proven
  *
  * ==========================================================================
  *
@@ -71,11 +66,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -83,11 +73,6 @@ static s32 SEQ_BPM_TimerInit(void);
 static void SEQ_BPM_Timer_Slave(void);
 static void SEQ_BPM_Timer_Master(void);
 static s32 SEQ_BPM_DigitUpdate(void);
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -108,6 +93,7 @@ static u8 bpm_req_song_pos;
 static u8 slave_clk;
 
 static u32 bpm_tick;
+static u8  running; // 0: not running, 1: received start event, 2: received first clock after start
 
 static u16 bpm;
 static u16 ppqn;
@@ -133,6 +119,7 @@ s32 SEQ_BPM_Init(u32 mode)
   bpm_req_song_pos = 0;
 
   bpm_tick = 0;
+  running = 0;
   new_song_pos = 0;
 
   receive_song_pos_state = 0;
@@ -238,20 +225,21 @@ u32 SEQ_BPM_TickGet(void)
 
 s32 SEQ_BPM_TickSet(u32 tick)
 {
-  MIOS32_IRQ_Disable();
-
-  // especially in slave mode it can happen that additional clocks
-  // have already been requested while the bpm_tick reference is
-  // changed.
-  // it's a race condition between BPM generator and sequencer which can
-  // be easily solved by shifting bpm_tick to the current point of time, 
-  // so that SEQ_BPM_ChkReqClk() will be polled multiple times
-  // (see code there)
-  bpm_tick = tick + bpm_req_clk_ctr;
-
-  MIOS32_IRQ_Enable();
+  bpm_tick = tick;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// BPM generator running?
+// returns 0 if generator not running
+// returns 1 if start event has been received
+// returns 2 if first clock after start has been received and bpm_tick will be incremented
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_BPM_IsRunning(void)
+{
+  return running;
 }
 
 
@@ -292,7 +280,7 @@ static s32 SEQ_BPM_TimerInit(void)
 {
   if( slave_clk ) {
     // in slave mode, the timer will be used to measure the delay between
-    // two clocks to produce 16 internal clocks on every F8 event.
+    // two clocks to generate 16 internal clocks (@384ppqn) on every F8 event.
     // using 250 uS as reference
     // using highest priority for best accuracy (routine is very short, so that this doesn't hurt)
     MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 250, SEQ_BPM_Timer_Slave, MIOS32_IRQ_PRIO_HIGHEST);
@@ -309,9 +297,10 @@ static s32 SEQ_BPM_TimerInit(void)
 
 static void SEQ_BPM_Timer_Master(void)
 {
-  // NOTE: also used by slave timer! See below
-  ++bpm_tick;
-  ++bpm_req_clk_ctr;
+  if( running >= 2 ) {
+    ++bpm_tick;
+    ++bpm_req_clk_ctr;
+  }
 }
 
 
@@ -325,13 +314,15 @@ static void SEQ_BPM_Timer_Slave(void)
   ++incoming_clk_ctr;
 
   // decrement sent clock delay, send interpolated clock events ((ppqn/24)-1) times
-  if( --sent_clk_delay == 0 ) {
+  if( sent_clk_delay && --sent_clk_delay == 0 ) {
     if( sent_clk_ctr < (ppqn/24) ) {
       sent_clk_delay = incoming_clk_delay/(ppqn/24);
-      ++bpm_tick;
       ++sent_clk_ctr;
-      ++bpm_req_clk_ctr; // add at least one clock request
-      // (additional requests could be added by F8 receiver on delay overruns)
+
+      if( running >= 2 ) {
+	++bpm_tick;
+	++bpm_req_clk_ctr;
+      }
     }
   }
   MIOS32_IRQ_Enable();
@@ -381,11 +372,17 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       incoming_clk_ctr = 0;
 
       // how many clocks (still) need to be triggered?
-      bpm_req_clk_ctr += (ppqn/24) - sent_clk_ctr;
+      if( running >= 2 )
+	bpm_req_clk_ctr += (ppqn/24) - sent_clk_ctr;
 
       // clear interpolation clock counter and get new SENT_CLK delay
       sent_clk_ctr = 0;
       sent_clk_delay = incoming_clk_delay / (ppqn/24);
+
+      // if first clock after start or continue event: set run state to 2
+      // (now we start to send BPM ticks)
+      if( running == 1 )
+	running = 2;
 
     } else if( midi_byte == 0xfa ) { // MIDI Start event
       // request sequencer start, disable stop request
@@ -394,13 +391,25 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
       // cancel all requested clocks
       bpm_req_clk_ctr = 0;
-      sent_clk_ctr = (ppqn/24) - 1;
+      sent_clk_ctr = (ppqn/24);
+
+      // reset BPM tick value
+      bpm_tick = 0;
+
+      // enter run state 1 (bpm_tick will be incremented once the first F8 event has been received)
+      running = 1;
     } else if( midi_byte == 0xfb ) { // MIDI Continue event
       // request continue, disable stop request
       bpm_req_cont = 1;
       bpm_req_stop = 0;
+
+      // enter run state 1 (bpm_tick will be incremented once the first F8 event has been received)
+      running = 1;
     } else { // MIDI Stop event
       bpm_req_stop = 1;
+
+      // enter stop state (bpm_tick won't be incremented)
+      running = 0;
     }
 
     // enable interrupts again
@@ -440,6 +449,9 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 	    receive_song_pos_state = 0;
 	    new_song_pos |= (midi_byte << 7);
 	    bpm_req_song_pos = 1;
+
+	    // take over new bpm_tick value immediately (16th notes resolution)
+	    bpm_tick = new_song_pos * (ppqn/4);
 	  }
 	}
 	break;
@@ -467,6 +479,26 @@ s32 SEQ_BPM_Start(void)
 {
   MIOS32_IRQ_Disable();
   bpm_req_start = 1;
+  if( !slave_clk || running == 1 ) { // master mode: start to send events, slave mode: change from 1->2 state
+    running = 2;
+  }
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function continues the BPM generator and forwards this event to the
+// sequencer. 
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_BPM_Cont(void)
+{
+  MIOS32_IRQ_Disable();
+  bpm_req_cont = 1;
+  if( !slave_clk || running == 1 ) { // master mode: start to send events, slave mode: change from 1->2 state
+    running = 2;
+  }
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -479,7 +511,10 @@ s32 SEQ_BPM_Start(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Stop(void)
 {
+  MIOS32_IRQ_Disable();
   bpm_req_stop = 1;
+  running = 0;
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
@@ -518,14 +553,19 @@ s32 SEQ_BPM_ChkReqCont(void)
 // returns the bpm_tick which is related to the clock request
 s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 {
-  MIOS32_IRQ_Disable();
   u8 req;
-  if( (req=bpm_req_clk_ctr) ) {
-    if( bpm_tick >= bpm_req_clk_ctr )
+
+  // don't trigger clock if there is an ongoing request which could change the song position
+  if( bpm_req_stop || bpm_req_start || bpm_req_cont || bpm_req_song_pos ) {
+    req = 0;
+  } else {
+    MIOS32_IRQ_Disable();
+    if( (req=bpm_req_clk_ctr) ) {
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
-    --bpm_req_clk_ctr;
+      --bpm_req_clk_ctr;
+    }
+    MIOS32_IRQ_Enable();
   }
-  MIOS32_IRQ_Enable();
   return req;
 }
 
