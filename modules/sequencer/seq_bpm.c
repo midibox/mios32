@@ -95,7 +95,7 @@ static u8 slave_clk;
 static u32 bpm_tick;
 static u8  running; // 0: not running, 1: received start event, 2: received first clock after start
 
-static u16 bpm;
+static float bpm;
 static u16 ppqn;
 
 static u32 incoming_clk_ctr;
@@ -132,7 +132,7 @@ s32 SEQ_BPM_Init(u32 mode)
 
   // start clock generator with 140 BPM/384 ppqn in Auto mode
   ppqn = 384;
-  bpm = 1400;
+  bpm = 140.0;
   SEQ_BPM_ModeSet(SEQ_BPM_MODE_Auto);
 
   return 0; // no error
@@ -165,12 +165,12 @@ s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode)
 // set/query current BPM
 // Note that BPM is multiplied by 10 to reach higher accuracy
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_BPM_Get(void)
+float SEQ_BPM_Get(void)
 {
   return bpm;
 }
 
-s32 SEQ_BPM_Set(u16 _bpm)
+s32 SEQ_BPM_Set(float _bpm)
 {
   // set new BPM rate
   bpm = _bpm;
@@ -178,7 +178,7 @@ s32 SEQ_BPM_Set(u16 _bpm)
   // set new BPM rate if not in slave mode
   if( !slave_clk ) {
     // calculate timer period for the given BPM rate
-    float period = 1E6 * (60 / (bpm*2.4)) / (float)(ppqn/24); // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
+    float period = 1E6 * (60 / (bpm*24)) / (float)(ppqn/24);
     u16 period_u = (u16)period;
     // safety measure: ensure that period is nether less than 250 uS
     if( period_u < 250 )
@@ -560,6 +560,10 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
     req = 0;
   } else {
     MIOS32_IRQ_Disable();
+    if( bpm_req_clk_ctr > bpm_tick ) {
+      // ensure that bpm_tick never gets negative (e.g. if clock wasn't polled for long time)
+      bpm_req_clk_ctr = bpm_tick;
+    }
     if( (req=bpm_req_clk_ctr) ) {
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
       --bpm_req_clk_ctr;
@@ -594,7 +598,7 @@ u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
     return (u32)((float)time_ms / time_per_tick);
   }
 
-  float period_m = 1E3 * (60 / (bpm*2.4)) / (ppqn/24); // multiplied by 2.4 instead of 24 because of *10 BPM accuracy
+  float period_m = 1E3 * (60 / (bpm*24)) / (ppqn/24);
   return (u32)((float)time_ms / period_m);
 }
 
