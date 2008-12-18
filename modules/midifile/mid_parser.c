@@ -321,8 +321,10 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 #if DEBUG_VERBOSE_LEVEL >= 3
 	  DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes\n\r", track, mt->tick, meta, length);
 #endif
-	  // copy bytes into buffer
-	  mt->file_pos += mid_parser_read_callback(buffer, length);
+	  if( length ) {
+	    // copy bytes into buffer
+	    mt->file_pos += mid_parser_read_callback(buffer, length);
+	  }
 	  buffer[length] = 0; // terminate with 0 for the case that a string has been transfered
 	  
 	  // -> forward to callback function
