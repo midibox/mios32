@@ -49,7 +49,8 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo);
+static s32 SEQ_CORE_PlayOffEvents(void);
+static s32 SEQ_CORE_Tick(u32 bpm_tick);
 
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
@@ -129,52 +130,56 @@ s32 SEQ_CORE_Handler(void)
   do {
     ++num_loops;
 
-    if( SEQ_BPM_ChkReqStop() )
-      SEQ_CORE_Stop(1);
+    // note: don't remove any request check - clocks won't be propagated
+    // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
+    if( SEQ_BPM_ChkReqStop() ) {
+      SEQ_CORE_PlayOffEvents();
+    }
 
-    if( SEQ_BPM_ChkReqCont() )
-      SEQ_CORE_Cont(1);
+    if( SEQ_BPM_ChkReqCont() ) {
+      // release pause mode
+      ui_seq_pause = 0;
+    }
 
-    if( SEQ_BPM_ChkReqStart() )
-      SEQ_CORE_Start(1);
+    if( SEQ_BPM_ChkReqStart() ) {
+      SEQ_CORE_Reset();
+    }
 
     u16 new_song_pos;
-    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) )
-      SEQ_CORE_SongPos(new_song_pos, 1);
+    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
+      SEQ_CORE_PlayOffEvents();
+    }
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
 
-      if( seq_core_state.RUN && !seq_core_state.PAUSE ) {
-
-	// TODO: forwarding mechanism can be simplified
-	// it's better to do it the same way like in the MIDI file player
-	if( bpm_tick_forward_delay_ctr ) {
-	  --bpm_tick_forward_delay_ctr;
+      // TODO: forwarding mechanism can be simplified
+      // it's better to do it the same way like in the MIDI file player
+      if( bpm_tick_forward_delay_ctr ) {
+	--bpm_tick_forward_delay_ctr;
 #if LED_PERFORMANCE_MEASURING == 2
-	  MIOS32_BOARD_LED_Set(0xffffffff, bpm_tick_forward_delay_ctr ? 1 : 0);
+	MIOS32_BOARD_LED_Set(0xffffffff, bpm_tick_forward_delay_ctr ? 1 : 0);
 #endif
-	} else if( bpm_tick_forward_delay_ctr_req ) {
+      } else if( bpm_tick_forward_delay_ctr_req ) {
 #if LED_PERFORMANCE_MEASURING == 2
-	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
-	  // forwarding sequencer has been requested!
-	  bpm_tick_forwarded = bpm_tick;
-	  while( bpm_tick_forward_delay_ctr_req ) {
-	    ++bpm_tick_forward_delay_ctr;
-	    --bpm_tick_forward_delay_ctr_req;
-	    SEQ_CORE_Tick(bpm_tick_forwarded++, 1);
-	  }
-	} else {
-#if LED_PERFORMANCE_MEASURING == 1
-	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
-#endif
-	  SEQ_CORE_Tick(bpm_tick, 1);
-#if LED_PERFORMANCE_MEASURING == 1
-	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
-#endif
+	// forwarding sequencer has been requested!
+	bpm_tick_forwarded = bpm_tick;
+	while( bpm_tick_forward_delay_ctr_req ) {
+	  ++bpm_tick_forward_delay_ctr;
+	  --bpm_tick_forward_delay_ctr_req;
+	  SEQ_CORE_Tick(bpm_tick_forwarded++);
 	}
+      } else {
+#if LED_PERFORMANCE_MEASURING == 1
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
+#endif
+	SEQ_CORE_Tick(bpm_tick);
+#if LED_PERFORMANCE_MEASURING == 1
+	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
       }
     }
   } while( again && num_loops < 10 );
@@ -211,10 +216,7 @@ static s32 SEQ_CORE_PlayOffEvents(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Reset(void)
 {
-  // request display update
-  seq_ui_display_update_req = 1;
-
-  seq_core_state.PAUSE = 0;
+  ui_seq_pause = 0;
   seq_core_state.FIRST_CLK = 1;
 
   int track;
@@ -226,89 +228,12 @@ s32 SEQ_CORE_Reset(void)
     SEQ_CORE_ResetTrkPos(t, tcc);
   }
 
-  // init bpm tick
-  SEQ_BPM_TickSet(0);
-
   // since timebase has been changed, ensure that Off-Events are played 
   // (otherwise they will be played much later...)
   SEQ_CORE_PlayOffEvents();
 
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Starts the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Start(u8 no_echo)
-{
-  // request display update
-  seq_ui_display_update_req = 1;
-
-  SEQ_CORE_Reset();
-  seq_core_state.RUN = 1;
-  return no_echo ? 0 : SEQ_BPM_Start();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Stops the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Stop(u8 no_echo)
-{
-  // request display update
-  seq_ui_display_update_req = 1;
-
-  seq_core_state.PAUSE = 0;
-  seq_core_state.RUN = 0;
-  SEQ_CORE_PlayOffEvents();
-  return no_echo ? 0 : SEQ_BPM_Stop();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Continues the sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Cont(u8 no_echo)
-{
-  // request display update
-  seq_ui_display_update_req = 1;
-
-  seq_core_state.PAUSE = 0;
-  seq_core_state.RUN = 1;
-  return no_echo ? 0 : SEQ_BPM_Start();
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Pauses sequencer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Pause(u8 no_echo)
-{
-  // request display update
-  seq_ui_display_update_req = 1;
-
-  seq_core_state.PAUSE ^= 1;
-  if( seq_core_state.PAUSE )
-    SEQ_CORE_PlayOffEvents();
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Sets new song position (new_song_pos resolution: 16th notes)
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_SongPos(u16 new_song_pos, u8 no_echo)
-{
-  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 6);
-
-  // play off events
-  SEQ_CORE_PlayOffEvents();
-
-  // and set new tick value
-  SEQ_BPM_TickSet(new_tick);
+  // reset BPM tick
+  SEQ_BPM_TickSet(0);
 
   return 0; // no error
 }
@@ -317,10 +242,8 @@ s32 SEQ_CORE_SongPos(u16 new_song_pos, u8 no_echo)
 /////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Tick(u32 bpm_tick, u8 no_echo)
+static s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
-  //  printf("BPM %d\n\r", bpm_tick);
-
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;

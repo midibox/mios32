@@ -181,4 +181,6 @@ extern u8 ui_selected_item;
 
 extern volatile u8 ui_cursor_flash;
 
+extern u8 ui_seq_pause;
+
 #endif /* _SEQ_UI_H */
