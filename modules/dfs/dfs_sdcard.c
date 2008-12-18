@@ -25,6 +25,32 @@ void DFS_CachingEnabledSet(uint8_t enable)
   last_sector = 0xffffffff;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Converts directory name to canonical name
+// (missing pendant to DFS_anonicalToDir)
+// dest must point to a 13-byte buffer
+/////////////////////////////////////////////////////////////////////////////
+char *DFS_DirToCanonical(char *dest, char *src)
+{
+  u8 pos = 0;
+
+  while( pos < 8 && src[pos] != ' ' )
+    *dest++ = src[pos++];
+  
+  *dest++ = '.';
+  
+  pos = 8;
+  while( pos < 11 && src[pos] != ' ' )
+    *dest++ = src[pos++];
+
+  *dest = 0; // terminate string
+
+  return dest;
+}
+
+
+
 /*
 	Read sector from SD Card
 	Returns 0 OK, nonzero for any error

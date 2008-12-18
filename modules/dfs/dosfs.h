@@ -373,6 +373,10 @@ uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch);
 // and requires to use the same buffer pointer whenever reading a file
 void DFS_CachingEnabledSet(uint8_t enable);
 
+// TK: added 2008-18-12
+// missing pendant to DFS_CanonicalToDir
+char *DFS_DirToCanonical(char *dest, char *src);
+
 
 // If we are building a host-emulation version, include host support
 #ifdef HOSTVER
