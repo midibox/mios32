@@ -35,7 +35,7 @@
 
 extern s32 MID_PARSER_Init(u32 mode);
 
-extern s32 MID_PARSER_InstallFileCallbacks(void *mid_parser_getc, void *mid_parser_eof, void *mid_parser_seek);
+extern s32 MID_PARSER_InstallFileCallbacks(void *mid_parser_read, void *mid_parser_eof, void *mid_parser_seek);
 extern s32 MID_PARSER_InstallEventCallbacks(void *mid_parser_playevent, void *mid_parser_playmeta);
 
 extern s32 MID_PARSER_Read(void);
