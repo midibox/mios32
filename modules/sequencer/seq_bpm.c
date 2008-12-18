@@ -162,8 +162,7 @@ s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// set/query current BPM
-// Note that BPM is multiplied by 10 to reach higher accuracy
+// set/query current BPM (float value, e.g. 120.42 is possible)
 /////////////////////////////////////////////////////////////////////////////
 float SEQ_BPM_Get(void)
 {

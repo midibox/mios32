@@ -178,6 +178,10 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Handler(void)
 {
+  // exit if BPM generator not running
+  if( !SEQ_BPM_IsRunning() )
+    return 0;
+
   // search in queue for items which have to be played now (or have been missed earlier)
   // note that we are going through a sorted list, therefore we can exit once a timestamp
   // has been found which has to be played later than now
