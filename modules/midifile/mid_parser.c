@@ -71,7 +71,7 @@ static u8 midi_tracks_num;
 static midi_track_t midi_tracks[MID_PARSER_MAX_TRACKS];
 
 // callback functions
-static s32 (*mid_parser_getc_callback)(void);
+static u32 (*mid_parser_read_callback)(void *buffer, u32 len);
 static s32 (*mid_parser_eof_callback)(void);
 static s32 (*mid_parser_seek_callback)(u32 pos);
 static s32 (*mid_parser_playevent_callback)(u8 track, mios32_midi_package_t midi_package, u32 tick);
@@ -86,7 +86,7 @@ s32 MID_PARSER_Init(u32 mode)
   // initial values
   midi_tracks_num = 0;
 
-  mid_parser_getc_callback = NULL;
+  mid_parser_read_callback = NULL;
   mid_parser_eof_callback = NULL;
   mid_parser_seek_callback = NULL;
   mid_parser_playevent_callback = NULL;
@@ -99,9 +99,9 @@ s32 MID_PARSER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Various installation routines for callbacks
 /////////////////////////////////////////////////////////////////////////////
-s32 MID_PARSER_InstallFileCallbacks(void *mid_parser_getc, void *mid_parser_eof, void *mid_parser_seek)
+s32 MID_PARSER_InstallFileCallbacks(void *mid_parser_read, void *mid_parser_eof, void *mid_parser_seek)
 {
-  mid_parser_getc_callback = mid_parser_getc;
+  mid_parser_read_callback = mid_parser_read;
   mid_parser_eof_callback = mid_parser_eof;
   mid_parser_seek_callback = mid_parser_seek;
   return 0; // no error
@@ -123,7 +123,7 @@ s32 MID_PARSER_Read(void)
   u8 chunk_type[4];
   u32 chunk_len;
 
-  if( mid_parser_getc_callback == NULL ||
+  if( mid_parser_read_callback == NULL ||
       mid_parser_eof_callback == NULL ||
       mid_parser_seek_callback == NULL )
     return -1; // missing callback functions
@@ -143,10 +143,7 @@ s32 MID_PARSER_Read(void)
   while( !mid_parser_eof_callback() ) {
     int i;
 
-    for(i=0; i<4; ++i) {
-      chunk_type[i] = mid_parser_getc_callback();
-      ++file_pos;
-    }
+    file_pos += mid_parser_read_callback(chunk_type, 4);
 
     if( mid_parser_eof_callback() )
       break; // unexpected: end of file reached
@@ -202,16 +199,14 @@ s32 MID_PARSER_Read(void)
       }
 
       // switch to next track
-      int i;
-      for(i=0; i<chunk_len; ++i)
-	mid_parser_getc_callback();
       file_pos += chunk_len;
-
+      mid_parser_seek_callback(file_pos);
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MID_PARSER] Found unknown chunk '%c%c%c%c' of size %u\n\r", 
 	     chunk_type[0], chunk_type[1], chunk_type[2], chunk_type[3],
 	     chunk_len);
+      return -1;
 #endif
     }
   }
@@ -258,7 +253,7 @@ s32 MIDI_PARSER_TrackNumGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 {
-  if( mid_parser_getc_callback == NULL ||
+  if( mid_parser_read_callback == NULL ||
       mid_parser_eof_callback == NULL ||
       mid_parser_seek_callback == NULL )
     return -1; // missing callback functions
@@ -280,8 +275,8 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
       mid_parser_seek_callback(mt->file_pos);
 
       // get event
-      u8 event = (u8)mid_parser_getc_callback();
-      ++mt->file_pos;
+      u8 event;
+      mt->file_pos += mid_parser_read_callback(&event, 1);
 
       if( event == 0xf0 ) { // SysEx event
 	u32 length = (u32)MID_PARSER_ReadVarLen(&mt->file_pos);
@@ -294,12 +289,12 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	midi_package.type = 0xf; // single bytes will be transmitted
 	int i;
 	for(i=0; i<length; ++i) {
-	  midi_package.evnt0 = mid_parser_getc_callback();
+	  u8 evnt0;
+	  mt->file_pos += mid_parser_read_callback(&evnt0, 1);
+	  midi_package.evnt0 = evnt0;
 	  if( mid_parser_playevent_callback != NULL )
 	    mid_parser_playevent_callback(track, midi_package, mt->tick);
 	}
-
-	mt->file_pos += length;
       } else if( event == 0xf7 ) { // "Escaped" event (allows to send any MIDI data)
 	u32 length = (u32)MID_PARSER_ReadVarLen(&mt->file_pos);
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -309,14 +304,15 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	midi_package.type = 0xf; // single bytes will be transmitted
 	int i;
 	for(i=0; i<length; ++i) {
-	  midi_package.evnt0 = mid_parser_getc_callback();
+	  u8 evnt0;
+	  mt->file_pos += mid_parser_read_callback(&evnt0, 1);
+	  midi_package.evnt0 = evnt0;
 	  if( mid_parser_playevent_callback != NULL )
 	    mid_parser_playevent_callback(track, midi_package, mt->tick);
 	}
-	mt->file_pos += length;
       } else if( event == 0xff ) { // Meta Event
-	u8 meta = (u8)mid_parser_getc_callback();
-	++mt->file_pos;
+	u8 meta;
+	mt->file_pos += mid_parser_read_callback(&meta, 1);
 	u32 length = (u32)MID_PARSER_ReadVarLen(&mt->file_pos);
 
 	// try to allocate memory for the temporary buffer
@@ -326,12 +322,8 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	  DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes\n\r", track, mt->tick, meta, length);
 #endif
 	  // copy bytes into buffer
-	  int i;
-	  u8 *buffer_tmp = buffer;
-	  for(i=0; i<length; ++i)
-	    *buffer_tmp++ = mid_parser_getc_callback();
-	  mt->file_pos += length;
-	  *buffer_tmp = 0; // terminate with 0 for the case that a string has been transfered
+	  mt->file_pos += mid_parser_read_callback(buffer, length);
+	  buffer[length] = 0; // terminate with 0 for the case that a string has been transfered
 	  
 	  // -> forward to callback function
 	  mid_parser_playmeta_callback(track, meta, length, buffer, mt->tick);
@@ -344,9 +336,9 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 #endif
 	  // no free memory: dummy reads
 	  int i;
+	  u8 dummy;
 	  for(i=0; i<length; ++i)
-	    mid_parser_getc_callback();
-	  mt->file_pos += length;
+	    mt->file_pos += mid_parser_read_callback(&dummy, 1);
 	}
       } else { // common MIDI event
 	mios32_midi_package_t midi_package;
@@ -354,8 +346,9 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	if( event & 0x80 ) {
 	  mt->running_status = event;
 	  midi_package.evnt0 = event;
-	  midi_package.evnt1 = mid_parser_getc_callback();
-	  ++mt->file_pos;
+	  u8 evnt1;
+	  mt->file_pos += mid_parser_read_callback(&evnt1, 1);
+	  midi_package.evnt1 = evnt1;
 	} else {
 	  midi_package.evnt0 = mt->running_status;
 	  midi_package.evnt1 = event;
@@ -368,15 +361,18 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	  case PolyPressure:
 	  case CC:
 	  case PitchBend:
-	    midi_package.evnt2 = mid_parser_getc_callback();
-	    ++mt->file_pos;
+	  {
+	    u8 evnt2;
+	    mt->file_pos += mid_parser_read_callback(&evnt2, 1);
+	    midi_package.evnt2 = evnt2;
 
 	    if( mid_parser_playevent_callback != NULL )
 	      mid_parser_playevent_callback(track, midi_package, mt->tick);
 #if DEBUG_VERBOSE_LEVEL >= 3
 	    DEBUG_MSG("[MID_PARSER:%d:%u] %02x%02x%02x\n\r", track, mt->tick, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
 #endif
-	    break;
+	  }
+	  break;
 	  case ProgramChange:
 	  case Aftertouch:
 	    if( mid_parser_playevent_callback != NULL )
@@ -415,8 +411,10 @@ static u32 MID_PARSER_ReadWord(u8 len)
   int i;
 
   for(i=0; i<len; ++i) {
-    int value = (u8)mid_parser_getc_callback();
-    word = (word << 8) | value;
+    // due to unknown endianess of the host processor, we have to read byte by byte!
+    u8 byte;
+    mid_parser_read_callback(&byte, 1);
+    word = (word << 8) | byte;
   }
 
   return word;
@@ -431,13 +429,13 @@ static long long MID_PARSER_ReadVarLen(u32 *pos)
   long long value;
   u8 c;
 
-  *pos += 1;
-  if( (value = mid_parser_getc_callback()) & 0x80 ) {
+  *pos += mid_parser_read_callback(&c, 1);
+  if( (value = c) & 0x80 ) {
     value &= 0x7f;
 
     do {
-      *pos += 1;
-      value = (value << 7) | ((c = mid_parser_getc_callback())) & 0x7f;
+      *pos += mid_parser_read_callback(&c, 1);
+      value = (value << 7) | (c & 0x7f);
     } while( c & 0x80 );
   }
 
