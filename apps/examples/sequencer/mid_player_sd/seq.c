@@ -190,9 +190,11 @@ static s32 SEQ_PlayOffEvents(void)
   for(chn=0; chn<16; ++chn) {
     midi_package.chn = chn;
     midi_package.evnt1 = 123; // All Notes Off
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    MIOS32_MIDI_SendPackage(USB0, midi_package);
+    MIOS32_MIDI_SendPackage(UART0, midi_package);
     midi_package.evnt1 = 121; // Controller Reset
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    MIOS32_MIDI_SendPackage(USB0, midi_package);
+    MIOS32_MIDI_SendPackage(UART0, midi_package);
   }
 
   return 0; // no error
