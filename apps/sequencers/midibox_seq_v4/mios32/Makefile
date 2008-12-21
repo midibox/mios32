@@ -28,6 +28,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_trklen.c \
 		../core/seq_ui_trktran.c \
 		../core/seq_ui_trgasg.c \
+		../core/seq_ui_shortcut.c \
 		../core/seq_midi_in.c \
 		../core/seq_midply.c \
 		../core/seq_cc.c  \

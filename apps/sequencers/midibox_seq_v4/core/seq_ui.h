@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 11
+#define SEQ_UI_PAGES 12
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
@@ -32,7 +32,8 @@ typedef enum {
   SEQ_UI_PAGE_TRKDIV,
   SEQ_UI_PAGE_TRKLEN,
   SEQ_UI_PAGE_TRKTRAN,
-  SEQ_UI_PAGE_TRGASG
+  SEQ_UI_PAGE_TRGASG,
+  SEQ_UI_PAGE_SHORTCUT
 } seq_ui_page_t;
 
 
@@ -48,6 +49,7 @@ extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
 extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
 extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
+extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -71,7 +73,6 @@ typedef union {
   };
   struct {
     unsigned MENU_PRESSED:1;
-    unsigned MENU_PAGE_DISPLAYED:1;
     unsigned CHANGE_ALL_STEPS:1;
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
     unsigned FAST_ENCODERS:1;
@@ -178,6 +179,9 @@ extern u8 ui_selected_trg_layer;
 extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;
+
+extern seq_ui_page_t ui_page;
+extern seq_ui_page_t ui_shortcut_prev_page;
 
 extern volatile u8 ui_cursor_flash;
 

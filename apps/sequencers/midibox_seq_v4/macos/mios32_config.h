@@ -10,7 +10,7 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
-#define MID_PLAYER_TEST 1
+#define MID_PLAYER_TEST 0
 
 // not supported by MacOS emulation:
 //#define MIOS32_DONT_USE_SYS

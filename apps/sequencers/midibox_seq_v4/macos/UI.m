@@ -230,12 +230,6 @@ s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 //////////////////////////////////////////////////////////////////////////////
 // Tasks
 //////////////////////////////////////////////////////////////////////////////
-- (void)periodic1mSTask:(NSTimer *)aTimer
-{
-	// -> forward to application
-	SEQ_TASK_Period1mS();
-}
-
 
 void SRIO_ServiceFinish(void)
 {
@@ -288,6 +282,19 @@ void SRIO_ServiceFinish(void)
 	[NSThread exit];
 }
 
+- (void)periodic1mSTask:(id)anObject
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
+	while (YES) {
+		SEQ_TASK_Period1mS();
+        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
+    }
+	
+	[pool release];
+	[NSThread exit];
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // This task is triggered from SEQ_PATTERN_Change to transport the new patch
 // into RAM
@@ -321,16 +328,13 @@ void SEQ_TASK_PatternResume(void)
 //////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode)
 {
-	// install 1mS task
-	NSTimer *timer2 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodic1mSTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer2 forMode: NSRunLoopCommonModes];	
-
 	// install SRIO task
-	NSTimer *timer3 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer3 forMode: NSRunLoopCommonModes];	
+	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];	
 
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
+	[NSThread detachNewThreadSelector:@selector(periodic1mSTask:) toTarget:_self withObject:nil];
 
 	return 0; // no error
 }
