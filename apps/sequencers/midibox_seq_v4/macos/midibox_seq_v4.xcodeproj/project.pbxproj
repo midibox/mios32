@@ -70,6 +70,7 @@
 		526F87F30EEA126A00441997 /* PYMIDIVirtualSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */; };
 		52A74F1A0E92701800D65394 /* SEQButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74F190E92701800D65394 /* SEQButton.m */; };
 		52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74FE80E92858600D65394 /* SEQEncoder.m */; };
+		52B5C57E0EFE9577000ADFBD /* seq_ui_shortcut.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B5C57D0EFE9577000ADFBD /* seq_ui_shortcut.c */; };
 		52B731690EF4462B00496FC2 /* seq_ui_trgasg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731660EF4462B00496FC2 /* seq_ui_trgasg.c */; };
 		52B7316A0EF4462B00496FC2 /* seq_ui_trkmode.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731670EF4462B00496FC2 /* seq_ui_trkmode.c */; };
 		52B7316B0EF4462B00496FC2 /* seq_ui_trktran.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731680EF4462B00496FC2 /* seq_ui_trktran.c */; };
@@ -200,6 +201,7 @@
 		52A74F190E92701800D65394 /* SEQButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQButton.m; sourceTree = "<group>"; };
 		52A74FE70E92858600D65394 /* SEQEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQEncoder.h; sourceTree = "<group>"; };
 		52A74FE80E92858600D65394 /* SEQEncoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQEncoder.m; sourceTree = "<group>"; };
+		52B5C57D0EFE9577000ADFBD /* seq_ui_shortcut.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_shortcut.c; path = ../core/seq_ui_shortcut.c; sourceTree = SOURCE_ROOT; };
 		52B731660EF4462B00496FC2 /* seq_ui_trgasg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trgasg.c; path = ../core/seq_ui_trgasg.c; sourceTree = SOURCE_ROOT; };
 		52B731670EF4462B00496FC2 /* seq_ui_trkmode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkmode.c; path = ../core/seq_ui_trkmode.c; sourceTree = SOURCE_ROOT; };
 		52B731680EF4462B00496FC2 /* seq_ui_trktran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trktran.c; path = ../core/seq_ui_trktran.c; sourceTree = SOURCE_ROOT; };
@@ -339,6 +341,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52B5C57D0EFE9577000ADFBD /* seq_ui_shortcut.c */,
 				52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */,
 				52DA1B340EFB006400E889A5 /* seq_layer.h */,
 				52DA1B350EFB006400E889A5 /* seq_midi_in.h */,
@@ -646,6 +649,7 @@
 				52DA1B310EFB002900E889A5 /* mid_parser.c in Sources */,
 				52DA1B3A0EFB006400E889A5 /* mb_midifile_demo.inc in Sources */,
 				52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */,
+				52B5C57E0EFE9577000ADFBD /* seq_ui_shortcut.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
