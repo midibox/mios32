@@ -17,6 +17,10 @@
 // local variables to bridge objects to C functions
 static NSObject *_self;
 
+// shadow registers for DOUT pins
+u8 dout_sr_shadow[MIOS32_SRIO_NUM_SR];
+
+// LED reverences
 #define NUM_LEDS 17
 NSColorWell *LED[NUM_LEDS];
 u8 ledState[NUM_LEDS]; // for dual-colour option
@@ -196,8 +200,20 @@ s32 EMU_DOUT_SRSet(u32 sr, u8 value)
 {
 	int i;
 
-	for(i=0; i<8; ++i)
-		EMU_DOUT_PinSet(sr*8+i, (value & (1 << i)) ? 1 : 0);
+	// optimisation: only update DOUT pins in GUI if SR value has changed
+	if( dout_sr_shadow[sr] == value )
+		return 0;
+
+	// same optimisation for individual pins
+	u8 mask = 1;
+	for(i=0; i<8; ++i) {
+		if( (dout_sr_shadow[sr] ^ value) & mask )
+			EMU_DOUT_PinSet(sr*8+i, (value & (1 << i)) ? 1 : 0);
+		mask <<= 1;
+	}
+
+	// take over new value
+	dout_sr_shadow[sr] = value;
 
 	return 0;
 }
@@ -383,6 +399,9 @@ s32 TASKS_Init(u32 mode)
 	int i;
 
 	_self = self;
+
+	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i)
+		dout_sr_shadow[i] = 0;
 
 	LED[0]=LED1;
 	LED[1]=LED2;
