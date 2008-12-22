@@ -160,11 +160,15 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 - (void)timerThread:(id)timerNumber
 {
 	int timer = [timerNumber intValue];
+	NSLock *theLock = [[NSLock alloc] init];
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	NSDate *now = [NSDate date];
 	while (YES) {
+		[theLock lock];
 		if( timer_callback[timer] != NULL )
 			timer_callback[timer]();
+		[theLock unlock];
+		
 		now = [now initWithTimeInterval:timer_period[timer] sinceDate:now];
         [NSThread sleepUntilDate:now];
     }
