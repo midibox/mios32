@@ -1,53 +1,55 @@
 // $Id$
-/*
- * BPM generator
- *
- * Some comments to the way how the bpm_tick is generated:
- *
- * MASTER MODE
- * ~~~~~~~~~~~
- *
- * A timer interrupt will be triggered with an interval of:
- *   interval = (60 / (bpm * 24)) / (ppqn/24)
- *
- * It increments bpm_tick, and request the clock event to the sequencer.
- *
- * The sequencer can check for clock events by calling 
- *    u32 bpm_tick_ptr; // will contain the BPM tick which has to be processed
- *    while( SEQ_BPM_ChkReqClk(&bpm_tick_ctr) ) {
- *      // got a new tick
- *    }
- *
- * This polling scheme ensures, that no bpm_tick gets lost if the sequencer
- * task is stalled for any reason
- *
- * Since the *_ChkReq* function is a destructive call, it should only be used
- * by the sequencer task, and not called from any other function.
- *
- * Similar request flags exist for MIDI Clock Start/Stop/Continue and Song Position
- *
- *
- * SLAVE MODE
- * ~~~~~~~~~~
- *
- * In order to reach a higher ppqn resolution (e.g. 384 ppqn) than provided 
- * by MIDI (24 ppqn), the incoming clock has to be interpolated in ppqn/24 steps
- *
- * A timer interrupt with an interval of 250 uS is used to measure 
- * the delay between two incoming MIDI clock events. The same interrupt
- * will call the sequencer clock handler with an interval of:
- *   interval = 250 uS * measured_delay / (ppqn/24)
- * (e.g. 384 ppqn: 16x interpolated clock)
- *
- * There is a protection (-> sent_clk_ctr) which ensures, that never more
- * that 16 internal ticks will be triggered between two F8 events to 
- * improve the robustness on BPM sweeps or jittering incoming MIDI clock
- *
- * Note that instead of the timer interrupt, we could also use a HW timer
- * to measure the delay. Problem: currently I don't know how to handle this
- * in the MacOS based emulation...
- *
- * ==========================================================================
+//! \defgroup SEQ_BPM
+//!
+//! Some comments to the way how the bpm_tick is generated:
+//!
+//! <B>MASTER MODE</B>
+//!
+//! A timer interrupt will be triggered with an interval of:
+//!   interval = (60 / (bpm * 24)) / (ppqn/24)
+//!
+//! It increments bpm_tick, and request the clock event to the sequencer.
+//!
+//! The sequencer can check for clock events by calling 
+//! \code
+//!    u32 bpm_tick_ptr; // will contain the BPM tick which has to be processed
+//!    while( SEQ_BPM_ChkReqClk(&bpm_tick_ctr) ) {
+//!      // got a new tick
+//!    }
+//! \endcode
+//!
+//! This polling scheme ensures, that no bpm_tick gets lost if the sequencer
+//! task is stalled for any reason
+//!
+//! Since the *_ChkReq* function is a destructive call, it should only be used
+//! by the sequencer task, and not called from any other function.
+//!
+//! Similar request flags exist for MIDI Clock Start/Stop/Continue and Song Position
+//! \note these flags <B>have to be</B> polled as well, otherwise clock requests
+//! will be held back
+//!
+//!
+//! <B>SLAVE MODE</B>
+//!
+//! In order to reach a higher ppqn resolution (e.g. 384 ppqn) than provided 
+//! by MIDI (24 ppqn), the incoming clock has to be interpolated in ppqn/24 steps
+//!
+//! A timer interrupt with an interval of 250 uS is used to measure 
+//! the delay between two incoming MIDI clock events. The same interrupt
+//! will call the sequencer clock handler with an interval of:
+//!   interval = 250 uS * measured_delay / (ppqn/24)
+//! (e.g. 384 ppqn: 16x interpolated clock)
+//!
+//! There is a protection (-> sent_clk_ctr) which ensures, that never more
+//! that 16 internal ticks will be triggered between two F8 events to 
+//! improve the robustness on BPM sweeps or jittering incoming MIDI clock
+//!
+//! Note that instead of the timer interrupt, we could also use a HW timer
+//! to measure the delay. Problem: currently I don't know how to handle this
+//! in the MacOS based emulation...
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -108,7 +110,9 @@ static u8  receive_song_pos_state;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation
+//! Initialisation of BPM generator
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Init(u32 mode)
 {
@@ -140,13 +144,19 @@ s32 SEQ_BPM_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// sets/queries the current run mode
+//! Queries the current run mode
+//! \return the run mode
 /////////////////////////////////////////////////////////////////////////////
 seq_bpm_mode_t SEQ_BPM_ModeGet(void)
 {
   return bpm_mode;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a new run mode
+//! \param[in] mode the run mode
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode)
 {
   bpm_mode = mode;
@@ -162,13 +172,18 @@ s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// set/query current BPM (float value, e.g. 120.42 is possible)
+//! Queries the current BPM rate
+//! \return bpm rate as float
 /////////////////////////////////////////////////////////////////////////////
 float SEQ_BPM_Get(void)
 {
   return bpm;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a new BPM rate
+//! \param[in] bpm rate as float
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Set(float _bpm)
 {
   // set new BPM rate
@@ -193,18 +208,22 @@ s32 SEQ_BPM_Set(float _bpm)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// set/query current ppqn
-// Note: after changing PPQN, SEQ_BPM_Set() has to be called again to take
-// over the new value.
-// In other words: set PPQN before BPM
-//
-// Supported ppqn for slave mode: 24, 48, 96, 192 and 384
+//! Queries the current PPQN value
+//! \return ppqn value
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_PPQN_Get(void)
 {
   return ppqn;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a new PPQN value
+//! \note after changing PPQN, SEQ_BPM_Set() has to be called again to take
+//! over the new value.
+//! In other words: set PPQN before BPM
+//!
+//! Supported ppqn for slave mode: 24, 48, 96, 192 and 384
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_PPQN_Set(u16 _ppqn)
 {
   // set new ppqn value
@@ -215,13 +234,19 @@ s32 SEQ_BPM_PPQN_Set(u16 _ppqn)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// sets/queries the BPM tick (timestamp)
+//! Queries the current tick value
+//! \return BPM tick value
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_BPM_TickGet(void)
 {
   return bpm_tick;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a new BPM tick value
+//! \param[in] tick new BPM tick value
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_TickSet(u32 tick)
 {
   bpm_tick = tick;
@@ -231,10 +256,10 @@ s32 SEQ_BPM_TickSet(u32 tick)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// BPM generator running?
-// returns 0 if generator not running
-// returns 1 if start event has been received
-// returns 2 if first clock after start has been received and bpm_tick will be incremented
+//! BPM generator running?
+//! \return 0 if generator not running
+//! \return 1 if start event has been received
+//! \return 2 if first clock after start has been received and bpm_tick will be incremented
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_IsRunning(void)
 {
@@ -243,7 +268,8 @@ s32 SEQ_BPM_IsRunning(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// BPM clocked as master or slave?
+//! BPM clocked as master or slave?
+//! \return 0: BPM clocked as slave, 1: BPM clocked as master
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_IsMaster(void)
 {
@@ -252,9 +278,9 @@ s32 SEQ_BPM_IsMaster(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// BPM should be clocked as master or slave?
-// If this function is called in Auto Mode, BPM will switch to Master Clock
-// returns 1 if we changed from auto slave to master mode
+//! BPM should be clocked as master or slave?
+//! If this function is called in Auto Mode, BPM will switch to Master Clock
+//! \return 1 if we changed from auto slave to master mode
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_CheckAutoMaster(void)
 {
@@ -345,9 +371,11 @@ static s32 SEQ_BPM_DigitUpdate(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// call from Direct Rx notification hook in app.c on incoming MIDI bytes
+//! should be called from Direct Rx notification hook in app.c on incoming MIDI bytes
+//! see also example code
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
+s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 {
   // any MIDI clock/start/cont/stop event received?
   if( midi_byte == 0xf8 || (midi_byte >= 0xfa && midi_byte <= 0xfc) ) {
@@ -462,7 +490,8 @@ extern s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when a tempo is "tapped" with a button
+//! This function is called when a tempo is "tapped" with a button
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_TapTempo(void)
 {
@@ -471,8 +500,8 @@ s32 SEQ_BPM_TapTempo(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function starts the BPM generator and forwards this event to the
-// sequencer. 
+//! This function starts the BPM generator and forwards this event to the
+//! sequencer. 
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Start(void)
 {
@@ -488,8 +517,9 @@ s32 SEQ_BPM_Start(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function continues the BPM generator and forwards this event to the
-// sequencer. 
+//! This function continues the BPM generator and forwards this event to the
+//! sequencer. 
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Cont(void)
 {
@@ -505,8 +535,9 @@ s32 SEQ_BPM_Cont(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function stops the BPM generator and forwards this event to the
-// sequencer
+//! This function stops the BPM generator and forwards this event to the
+//! sequencer
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Stop(void)
 {
@@ -520,7 +551,9 @@ s32 SEQ_BPM_Stop(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Has to be called by the sequencer to chec for requests
+//! Has to be called by the sequencer to check for a stop request
+//! \return 0 if no stop request
+//! \return 1 if stop has been requested
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ChkReqStop(void)
 {
@@ -531,6 +564,11 @@ s32 SEQ_BPM_ChkReqStop(void)
   return req;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Has to be called by the sequencer to check for a start request
+//! \return 0 if no start request
+//! \return 1 if start has been requested
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ChkReqStart(void)
 {
   MIOS32_IRQ_Disable();
@@ -540,6 +578,11 @@ s32 SEQ_BPM_ChkReqStart(void)
   return req;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Has to be called by the sequencer to check for a continue request
+//! \return 0 if no continue request
+//! \return 1 if continue has been requested
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ChkReqCont(void)
 {
   MIOS32_IRQ_Disable();
@@ -549,7 +592,18 @@ s32 SEQ_BPM_ChkReqCont(void)
   return req;
 }
 
-// returns the bpm_tick which is related to the clock request
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the bpm_tick which is related to the clock request
+//! \attention ChkReqClk will return 0 so long Stop/Cont/Start/SongPos haven't been
+//! checked to ensure that clocks won't be propagated so long a position or
+//! run state change hasn't been flagged to the sequencer. Accordingly, the
+//! sequencer application has to poll all requests as shown in the examples,
+//! otherwise it will never receive a clock
+//! \param[out] bpm_tick_ptr a pointer to a u32 value which will get the 
+//!             requested bpm_tick
+//! \return 0 if no clock request (content of bpm_tick invalid)
+//! \return 1 if clock has been requested (content of bpm_tick valid)
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 {
   u8 req;
@@ -573,7 +627,13 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 }
 
 
-// returns a new song position if requested from external
+/////////////////////////////////////////////////////////////////////////////
+//! Returns a new song position if requested from external
+//! \param[out] bpm_tick_ptr a pointer to a u32 value which will get the 
+//!             requested bpm_tick
+//! \return 0 if no song position request (content of song_pos invalid)
+//! \return 1 if new song position has been requested (content of song_pos valid)
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_ChkReqSongPos(u16 *song_pos)
 {
   MIOS32_IRQ_Disable();
@@ -586,9 +646,11 @@ s32 SEQ_BPM_ChkReqSongPos(u16 *song_pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This help function returns the number of BPM ticks for a given time
-// E.g.: SEQ_BPM_TicksFor_mS(50) returns 38 ticks @ 120 BPM 384 ppqn
-// Regardless if BPM generator is clocked in master or slave mode
+//! This help function returns the number of BPM ticks for a given time
+//! E.g.: SEQ_BPM_TicksFor_mS(50) returns 38 ticks @ 120 BPM 384 ppqn
+//! Regardless if BPM generator is clocked in master or slave mode
+//! \param[in] time_ms the time in milliseconds (e.g. 50 corresponds to 50 mS)
+//! \return the number of BPM ticks
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
 {
@@ -601,3 +663,4 @@ u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
   return (u32)((float)time_ms / period_m);
 }
 
+//! \}
