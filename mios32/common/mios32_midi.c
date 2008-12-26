@@ -1,11 +1,13 @@
 // $Id$
-/*
- * MIDI layer functions for MIOS32
- *
- * the mios32_midi_package_t format complies with USB MIDI spec (details see there)
- * and is used for transfers between other MIDI ports as well.
- *
- * ==========================================================================
+//! \defgroup MIOS32_MIDI
+//!
+//! MIDI layer functions for MIOS32
+//!
+//! the mios32_midi_package_t format complies with USB MIDI spec (details see there)
+//! and is used for transfers between other MIDI ports as well.
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -28,8 +30,8 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-// this global array is read from MIOS32_IIC_MIDI and MIOS32_UART_MIDI to
-// determine the number of MIDI bytes which are part of a package
+//! this global array is read from MIOS32_IIC_MIDI and MIOS32_UART_MIDI to
+//! determine the number of MIDI bytes which are part of a package
 const u8 mios32_midi_pcktype_num_bytes[16] = {
   0, // 0: invalid/reserved event
   0, // 1: invalid/reserved event
@@ -49,7 +51,7 @@ const u8 mios32_midi_pcktype_num_bytes[16] = {
   1  // f: single byte
 };
 
-// Number if expected bytes for a common MIDI event - 1
+//! Number if expected bytes for a common MIDI event - 1
 const u8 mios32_midi_expected_bytes_common[8] = {
   2, // Note On
   2, // Note Off
@@ -61,7 +63,7 @@ const u8 mios32_midi_expected_bytes_common[8] = {
   0, // System Message - must be zero, so that mios32_midi_expected_bytes_system[] will be used
 };
 
-// // Number if expected bytes for a system MIDI event - 1
+//! Number if expected bytes for a system MIDI event - 1
 const u8 mios32_midi_expected_bytes_system[16] = {
   1, // SysEx Begin (endless until SysEx End F7)
   1, // MTC Data frame
@@ -93,9 +95,9 @@ static void (*direct_tx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes MIDI layer
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes MIDI layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Init(u32 mode)
 {
@@ -130,11 +132,10 @@ s32 MIOS32_MIDI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks the availability of a MIDI port
-// IN: <port>: MIDI port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-// OUT: 1: port available
-//      0: port not available
+//! This function checks the availability of a MIDI port
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return 1: port available
+//! \return 0: port not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 {
@@ -177,16 +178,15 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a package over given port
-// This is a low level function. In difference to other MIOS32_MIDI_Send* functions,
-// It allows to send packages in non-blocking mode (caller has to retry if -2 is returned)
-// IN: <port>: MIDI port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <package>: MIDI package (see definition in mios32_midi.h)
-// OUT: returns -1 if port not available
-//      returns -2 buffer is full
-//                 caller should retry until buffer is free again
-//      returns 0 on success
+//! Sends a package over given port
+//! This is a low level function. In difference to other MIOS32_MIDI_Send* functions,
+//! It allows to send packages in non-blocking mode (caller has to retry if -2 is returned)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] package MIDI package
+//! \return -1 if port not available
+//! \return -2 buffer is full
+//!         caller should retry until buffer is free again
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_package_t package)
 {
@@ -232,15 +232,14 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a package over given port
-// This is a low level function - use the remaining MIOS32_MIDI_Send* functions
-// to send specific MIDI events
-// (blocking function)
-// IN: <port>: MIDI port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <package>: MIDI package (see definition in mios32_midi.h)
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a package over given port
+//! This is a low level function - use the remaining MIOS32_MIDI_Send* functions
+//! to send specific MIDI events
+//! (blocking function)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] package MIDI package
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
 {
@@ -286,20 +285,22 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a MIDI Event
-// This function is provided for a more comfortable use model
-//    o MIOS32_MIDI_SendNoteOff(port, chn, note, vel)
-//    o MIOS32_MIDI_SendNoteOn(port, chn, note, vel)
-//    o MIOS32_MIDI_SendPolyAftertouch(port, chn, note, val)
-//    o MIOS32_MIDI_SendCC(port, chn, cc, val)
-//    o MIOS32_MIDI_SendProgramChange(port, chn, prg)
-//    o MIOS32_MIDI_ChannelAftertouch(port, chn, val)
-//    o MIOS32_MIDI_PitchBend(port, chn, val)
-//
-// IN: <port>: MIDI port 
-//     <evnt0> <evnt1> <evnt2> up to 3 bytes
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a MIDI Event
+//! This function is provided for a more comfortable use model
+//!    o MIOS32_MIDI_SendNoteOff(port, chn, note, vel)
+//!    o MIOS32_MIDI_SendNoteOn(port, chn, note, vel)
+//!    o MIOS32_MIDI_SendPolyAftertouch(port, chn, note, val)
+//!    o MIOS32_MIDI_SendCC(port, chn, cc, val)
+//!    o MIOS32_MIDI_SendProgramChange(port, chn, prg)
+//!    o MIOS32_MIDI_ChannelAftertouch(port, chn, val)
+//!    o MIOS32_MIDI_PitchBend(port, chn, val)
+//!
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] evnt0 first MIDI byte
+//! \param[in] evnt1 first MIDI byte
+//! \param[in] evnt2 first MIDI byte
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendEvent(mios32_midi_port_t port, u8 evnt0, u8 evnt1, u8 evnt2)
 {
@@ -339,26 +340,28 @@ s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u1
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a special type MIDI Event
-// This function is provided for a more comfortable use model
-// It is aliased to following functions
-//    o MIOS32_MIDI_SendMTC(port, val)
-//    o MIOS32_MIDI_SendSongPosition(port, val)
-//    o MIOS32_MIDI_SendSongSelect(port, val)
-//    o MIOS32_MIDI_SendTuneRequest()
-//    o MIOS32_MIDI_SendClock()
-//    o MIOS32_MIDI_SendTick()
-//    o MIOS32_MIDI_SendStart()
-//    o MIOS32_MIDI_SendStop()
-//    o MIOS32_MIDI_SendContinue()
-//    o MIOS32_MIDI_SendActiveSense()
-//    o MIOS32_MIDI_SendReset()
-//
-// IN: <port>: MIDI port 
-//     <type>: the event type
-//     <evnt0> <evnt1> <evnt2> up to 3 bytes
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a special type MIDI Event
+//! This function is provided for a more comfortable use model
+//! It is aliased to following functions
+//!    o MIOS32_MIDI_SendMTC(port, val)
+//!    o MIOS32_MIDI_SendSongPosition(port, val)
+//!    o MIOS32_MIDI_SendSongSelect(port, val)
+//!    o MIOS32_MIDI_SendTuneRequest()
+//!    o MIOS32_MIDI_SendClock()
+//!    o MIOS32_MIDI_SendTick()
+//!    o MIOS32_MIDI_SendStart()
+//!    o MIOS32_MIDI_SendStop()
+//!    o MIOS32_MIDI_SendContinue()
+//!    o MIOS32_MIDI_SendActiveSense()
+//!    o MIOS32_MIDI_SendReset()
+//!
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] type the event type
+//! \param[in] evnt0 first MIDI byte
+//! \param[in] evnt1 first MIDI byte
+//! \param[in] evnt2 first MIDI byte
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSpecialEvent(mios32_midi_port_t port, u8 type, u8 evnt0, u8 evnt1, u8 evnt2)
 {
@@ -407,13 +410,13 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a SysEx Stream
-// This function is provided for a more comfortable use model
-// IN: <port>: MIDI port 
-//     <stream>: pointer to SysEx stream
-//     <count>: number of bytes
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a SysEx Stream
+//! This function is provided for a more comfortable use model
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] stream pointer to SysEx stream
+//! \param[in] count number of bytes
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 {
@@ -463,11 +466,13 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks for incoming MIDI messages, calls either the callback_event or
-// callback_sysex function with following parameters:
-//    callback_event(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-//    callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
-// OUT: returns < 0 on errors
+//! Checks for incoming MIDI messages, calls either the callback_event or
+//! callback_sysex function with following parameters:
+//! \code
+//!    callback_event(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+//!    callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
+//! \endcode
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 {
@@ -607,16 +612,18 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Installs Rx/Tx callback functions which are executed immediately on each
-// incoming/outgoing MIDI byte, partly from interrupt handlers with following
-// parameters:
-//    callback_rx(mios32_midi_port_t port, u8 midi_byte);
-//    callback_tx(mios32_midi_port_t port, u8 midi_byte);
-//
-// These functions should be executed so fast as possible. They can be used
-// to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
-// avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
-// OUT: returns < 0 on errors
+//! Installs Rx/Tx callback functions which are executed immediately on each
+//! incoming/outgoing MIDI byte, partly from interrupt handlers with following
+//! parameters:
+//! \code
+//!    callback_rx(mios32_midi_port_t port, u8 midi_byte);
+//!    callback_tx(mios32_midi_port_t port, u8 midi_byte);
+//! \endcode
+//!
+//! These functions should be executed so fast as possible. They can be used
+//! to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
+//! avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
 {
@@ -628,8 +635,8 @@ s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is used by MIOS32 internal functions to forward received
-// MIDI bytes to the Rx Callback routine
+//! This function is used by MIOS32 internal functions to forward received
+//! MIDI bytes to the Rx Callback routine
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 {
@@ -640,8 +647,11 @@ s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is used by MIOS32 internal functions to forward received
-// MIDI packages to the Rx Callback routine (byte by byte)
+//! This function is used by MIOS32 internal functions to forward received
+//! MIDI packages to the Rx Callback routine (byte by byte)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] package MIDI package
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -657,8 +667,11 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is used by MIOS32 internal functions to forward received
-// MIDI bytes to the Tx Callback routine
+//! This function is used by MIOS32 internal functions to forward received
+//! MIDI bytes to the Tx Callback routine
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] midi_byte MIDI byte
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
 {
@@ -669,8 +682,11 @@ s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is used by MIOS32 internal functions to forward received
-// MIDI packages to the Tx Callback routine (byte by byte)
+//! This function is used by MIOS32 internal functions to forward received
+//! MIDI packages to the Tx Callback routine (byte by byte)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] package MIDI package
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -685,5 +701,6 @@ s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_pac
   return 0; // no error
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_MIDI */

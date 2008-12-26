@@ -1,8 +1,10 @@
 // $Id$
-/*
- * MIDI Output Routines
- *
- * ==========================================================================
+//! \defgroup SEQ_MIDI_OUT
+//!
+//! Functions for schedules MIDI output
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -44,7 +46,8 @@ typedef struct seq_midi_out_queue_item_t {
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u32 seq_midi_out_queue_size; // for analysis purposes
+//! only for analysis purposes - could be removed later!
+u32 seq_midi_out_queue_size;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,7 +57,9 @@ u32 seq_midi_out_queue_size; // for analysis purposes
 static seq_midi_out_queue_item_t *midi_queue;
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation
+//! Initialisation of MIDI output scheduler
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Init(u32 mode)
 {
@@ -66,8 +71,14 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a MIDI event over given port at a given time
-// returns -1 if out of memory
+//! This function schedules a MIDI event, which will be sent over a given
+//! port at a given bpm_tick
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] package MIDI package
+//! \param[in] event_type the event type
+//! \param[in] timestamp the bpm_tick value at which the event should be sent
+//! \return 0 if event has been scheduled successfully
+//! \return -1 if out of memory
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp)
 {
@@ -154,7 +165,8 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function empties the queue and plays all off events
+//! This function empties the queue and plays all "off" events
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_FlushQueue(void)
 {
@@ -173,8 +185,9 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called periodically (1 mS) to check timestamped
-// MIDI events which have to be sent
+//! This function should be called periodically (1 mS) to check timestamped
+//! MIDI events which have to be sent
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Handler(void)
 {
@@ -206,3 +219,5 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
   return 0; // no error
 }
+
+//! \}

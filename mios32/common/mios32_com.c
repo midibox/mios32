@@ -1,8 +1,10 @@
 // $Id$
-/*
- * COM layer functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_COM
+//!
+//! COM layer functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -34,9 +36,9 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes COM layer
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes COM layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_Init(u32 mode)
 {
@@ -62,11 +64,10 @@ s32 MIOS32_COM_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks the availability of a COM port
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-// OUT: 1: port available
-//      0: port not available
+//! This function checks the availability of a COM port
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return 1: port available
+//! \return 0: port not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 {
@@ -111,15 +112,14 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a package over given port
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <buffer>: character buffer
-//     <len>:    buffer length
-// OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
-//                 caller should retry until buffer is free again
-//      returns 0 on success
+//! Sends a package over given port
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] buffer character buffer
+//! \param[in] len buffer length
+//! \return -1 if port not available
+//! \return -2 if non-blocking mode activated: buffer is full
+//!            caller should retry until buffer is free again
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 len)
 {
@@ -159,14 +159,13 @@ s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 le
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a package over given port
-// (blocking function)
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <buffer>: character buffer
-//     <len>:    buffer length
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a package over given port
+//! (blocking function)
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] buffer character buffer
+//! \param[in] len buffer length
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 {
@@ -205,14 +204,13 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a single character over given port
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <c>:    character
-// OUT: returns -1 if port not available
-//      returns -2 buffer is full
-//                 caller should retry until buffer is free again
-//      returns 0 on success
+//! Sends a single character over given port
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] c character
+//! \return -1 if port not available
+//! \return -2 buffer is full
+//!            caller should retry until buffer is free again
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c)
 {
@@ -221,13 +219,12 @@ s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a single character over given port
-// (blocking function)
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <c>:    character
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a single character over given port
+//! (blocking function)
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] c character
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 {
@@ -236,14 +233,13 @@ s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a string over given port
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <str>:  zero-terminated string
-// OUT: returns -1 if port not available
-//      returns -2 buffer is full
-//                 caller should retry until buffer is free again
-//      returns 0 on success
+//! Sends a string over given port
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] str zero-terminated string
+//! \return -1 if port not available
+//! \return -2 buffer is full
+//!         caller should retry until buffer is free again
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
 {
@@ -252,13 +248,12 @@ s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a string over given port
-// (blocking function)
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <str>:  zero-terminated string
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a string over given port
+//! (blocking function)
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] str zero-terminated string
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 {
@@ -267,16 +262,15 @@ s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a formatted string (-> printf) over given port
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <format>:  zero-terminated format string
-//     ...  :  optional arguments
-//     128 characters supported maximum!
-// OUT: returns -1 if port not available
-//      returns -2 if non-blocking mode activated: buffer is full
-//                 caller should retry until buffer is free again
-//      returns 0 on success
+//! Sends a formatted string (-> printf) over given port
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] format zero-terminated format string
+//! \param[in] ... optional arguments,
+//!        128 characters supported maximum!
+//! \return -1 if port not available
+//! \return -2 if non-blocking mode activated: buffer is full
+//!         caller should retry until buffer is free again
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *format, ...)
 {
@@ -290,15 +284,14 @@ s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *for
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends a formatted string (-> printf) over given port
-// (blocking function)
-// IN: <port>: COM port 
-//             DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7
-//     <format>:  zero-terminated format string
-//     ...  :  optional arguments
-//     128 characters supported maximum!
-// OUT: returns -1 if port not available
-//      returns 0 on success
+//! Sends a formatted string (-> printf) over given port
+//! (blocking function)
+//! \param[in] port COM port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] format zero-terminated format string
+//! \param[in] ... optional arguments,
+//!        128 characters supported maximum!
+//! \return -1 if port not available
+//! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 {
@@ -313,10 +306,13 @@ s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks for incoming COM messages, calls the callback function with
-// following parameters:
-//    callback_event(mios32_com_port_t port, u8 byte)
-// OUT: returns < 0 on errors
+//! Checks for incoming COM messages, calls the callback function with
+//! following parameters:
+//! \code
+//!    callback_event(mios32_com_port_t port, u8 byte)
+//! \endcode
+//! \param[in] callback function which should be called on incoming messages
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_Receive_Handler(void *_callback)
 {
@@ -376,5 +372,6 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
   return 0;
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_COM */
