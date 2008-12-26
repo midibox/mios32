@@ -1,10 +1,14 @@
 // $Id$
-/*
- * UART MIDI layer for MIOS32
- *
- * TODO: optional running status optimisation for MIDI Out
- *
- * ==========================================================================
+//! \defgroup MIOS32_UART_MIDI
+//!
+//! UART MIDI layer for MIOS32
+//! 
+//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_MIDI layer functions
+//! 
+//! \todo optional running status optimisation for MIDI Out
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -22,12 +26,6 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_UART_MIDI)
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local Types
 /////////////////////////////////////////////////////////////////////////////
@@ -42,11 +40,6 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -55,9 +48,10 @@ static midi_rec_t midi_rec[MIOS32_UART_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes UART MIDI layer
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes UART MIDI layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_Init(u32 mode)
 {
@@ -88,10 +82,11 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function can be used to determine, if a UART interface is available
-// IN: UART number (0..1)
-// OUT: 1: interface available
-//      0: interface not available
+//! This function can be used to determine, if a UART interface is available
+//! \param[in] uart_port UART number (0..1)
+//! \return 1: interface available
+//! \return 0: interface not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 {
@@ -110,12 +105,14 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a new MIDI package to the selected UART_MIDI port
-// IN: UART_MIDI module number (0..1) in <uart_port>, MIDI package in <package>
-// OUT: 0: no error
-//      -1: UART_MIDI device not available
-//      -2: UART_MIDI buffer is full
-//          caller should retry until buffer is free again
+//! This function sends a new MIDI package to the selected UART_MIDI port
+//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: UART_MIDI device not available
+//! \return -2: UART_MIDI buffer is full
+//!             caller should retry until buffer is free again
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t package)
 {
@@ -143,13 +140,13 @@ s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a new MIDI package to the selected UART_MIDI port
-// (blocking function)
-// IN: UART_MIDI module number (0..1) in <uart_port>, MIDI package in <package>
-// OUT: 0: no error
-//      -1: UART_MIDI device not available
-//      -2: UART_MIDI buffer is full
-//          caller should retry until buffer is free again
+//! This function sends a new MIDI package to the selected UART_MIDI port
+//! (blocking function)
+//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: UART_MIDI device not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
 {
@@ -162,12 +159,12 @@ s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks for a new package
-// IN: UART_MIDI module number (0..1) in <uart_port>, 
-//     pointer to MIDI package in <package> (received package will be put into the given variable)
-// OUT: 0: no error
-//      -1: no package in buffer
-//      -2: UART interface allocated - retry (only in Non Blocking mode)
+//! This function checks for a new package
+//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[out] package pointer to MIDI package (received package will be put into the given variable
+//! \return 0: no error
+//! \return -1: no package in buffer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package)
 {
@@ -299,5 +296,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
   return package_complete ? 0 : -1;
 #endif
 }
+
+//!}
 
 #endif /* MIOS32_DONT_USE_UART_MIDI */

@@ -1,31 +1,32 @@
 // $Id$
-/*
- * IIC functions for MIOS32
- *
- * Interrupt driven approach, inspired by STM32 AN15021, enriched by
- * more generic buffer send/receive routines and a proper error/failsave handling
- *
- * Some remarks:
- * A common polling method would work unstable on receive transactions if the
- * sending rouine is interrupted, so that NAK + STOP cannot be requested 
- * early enough before the last byte should be received
- * See also this enlightening forum thread http://www.st.com/mcu/forums-cat-6701-23.html
- *
- * DMA transfers are no solution for MIOS32, as it should stay compatible
- * to mid-range devices (-> no DMA2), and the available DMA channels which
- * could be used for I2C2 are already allocated by SPI1 and SPI2
- *
- * The interrupt has to run with higher priority - it has to be ensured that
- * the received data is read from DR register before the ACK of the previous
- * byte is sent, otherwise the I2C peripheral can get busy permanently, waiting
- * for a NAK which it will never transmit as it will never request a byte in 
- * master mode -> lifelock -> design flaw
- *
- * I must highlight that I don't really like the I2C concept of STM32. It's 
- * unbelievable that the guys specified a pipeline based approach, but 
- * haven't put the NAK/Stop condition into the transaction pipeline
- *
- * ==========================================================================
+//! \defgroup MIOS32_IIC
+//!
+//! IIC driver for MIOS32
+//!
+//! Interrupt driven approach, inspired by STM32 AN15021, enriched by
+//! more generic buffer send/receive routines and a proper error/failsave handling
+//!
+//! Some remarks:
+//! A common polling method would work unstable on receive transactions if the
+//! sending rouine is interrupted, so that NAK + STOP cannot be requested 
+//! early enough before the last byte should be received
+//! See also this enlightening forum thread http://www.st.com/mcu/forums-cat-6701-23.html
+//!
+//! DMA transfers are no solution for MIOS32, as it should stay compatible
+//! to mid-range devices (-> no DMA2), and the available DMA channels which
+//! could be used for I2C2 are already allocated by SPI1 and SPI2
+//!
+//! The interrupt has to run with higher priority - it has to be ensured that
+//! the received data is read from DR register before the ACK of the previous
+//! byte is sent, otherwise the I2C peripheral can get busy permanently, waiting
+//! for a NAK which it will never transmit as it will never request a byte in 
+//! master mode -> lifelock -> design flaw
+//!
+//! I must highlight that I don't really like the I2C concept of STM32. It's 
+//! unbelievable that the guys specified a pipeline based approach, but 
+//! haven't put the NAK/Stop condition into the transaction pipeline
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -111,9 +112,9 @@ static volatile u8 iic_semaphore = 1; // if 1, interface hasn't been initialized
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes IIC interface
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes IIC driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Init(u32 mode)
 {
@@ -189,10 +190,10 @@ static void MIOS32_IIC_InitPeripheral(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Semaphore handling: requests the IIC interface
-// IN: <semaphore_type> is either IIC_Blocking or IIC_Non_Blocking
-// OUT: if Non_Blocking: returns -1 to request a retry
-//      returns 0 if IIC interface free
+//! Semaphore handling: requests the IIC interface
+//! \param[in] semaphore_type is either IIC_Blocking or IIC_Non_Blocking
+//! \return Non_Blocking: returns -1 to request a retry
+//! \return 0 if IIC interface free
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type)
 {
@@ -215,7 +216,8 @@ s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Semaphore handling: releases the IIC interface for other tasks
+//! Semaphore handling: releases the IIC interface for other tasks
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferFinished(void)
 {
@@ -226,12 +228,11 @@ s32 MIOS32_IIC_TransferFinished(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the last transfer error
-// Will be updated by MIOS32_IIC_TransferCheck(), so that the error status
-// doesn't get lost (the check function will return 0 when called again)
-// Will be cleared when a new transfer has been started successfully
-// IN: -
-// OUT: last error status
+//! Returns the last transfer error<BR>
+//! Will be updated by MIOS32_IIC_TransferCheck(), so that the error status
+//! doesn't get lost (the check function will return 0 when called again)<BR>
+//! Will be cleared when a new transfer has been started successfully
+//! \return last error status
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_LastErrorGet(void)
 {
@@ -240,11 +241,10 @@ s32 MIOS32_IIC_LastErrorGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks if transfer is finished
-// IN: -
-// OUT: 0 if no ongoing transfer
-//      1 if ongoing transfer
-//      <0 if error during transfer
+//! Checks if transfer is finished
+//! \return 0 if no ongoing transfer
+//! \return 1 if ongoing transfer
+//! \return < 0 if error during transfer
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferCheck(void)
 {
@@ -268,10 +268,9 @@ s32 MIOS32_IIC_TransferCheck(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Waits until transfer is finished
-// IN: -
-// OUT: 0 if no ongoing transfer
-//      <0 if error during transfer
+//! Waits until transfer is finished
+//! \return 0 if no ongoing transfer
+//! \return < 0 if error during transfer
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferWait(void)
 {
@@ -306,19 +305,23 @@ s32 MIOS32_IIC_TransferWait(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Starts a new transfer. If this function is called during an ongoing
-// transfer, we wait until it has been finished and setup the new transfer
-// IN: <transfer> type:
-//       - IIC_Read: a common Read transfer
-//       - IIC_Write: a common Write transfer
-//       - IIC_Read_AbortIfFirstByteIs0: used to poll MBHP_IIC_MIDI: aborts transfer
-//         if the first received byte is 0
-//       - IIC_Write_WithoutStop: don't send stop condition after transfer to allow
-//         a restart condition (e.g. used to access EEPROMs)
-// OUT: 0 no error
-//      < 0 on errors, if MIOS32_IIC_ERROR_PREV_OFFSET is added, the previous
-//      transfer got an error (the previous task didn't use MIOS32_IIC_TransferWait()
-//      to poll the transfer state)
+//! Starts a new transfer. If this function is called during an ongoing
+//! transfer, we wait until it has been finished and setup the new transfer
+//! \param[in] transfer type:<BR>
+//! <UL>
+//!   <LI>IIC_Read: a common Read transfer
+//!   <LI>IIC_Write: a common Write transfer
+//!   <LI>IIC_Read_AbortIfFirstByteIs0: used to poll MBHP_IIC_MIDI: aborts transfer
+//!         if the first received byte is 0
+//!   <LI>IIC_Write_WithoutStop: don't send stop condition after transfer to allow
+//!         a restart condition (e.g. used to access EEPROMs)
+//! \param[in] address of IIC device (bit 0 always cleared)
+//! \param[in] *buffer pointer to transmit/receive buffer
+//! \param[in] len number of bytes which should be transmitted/received
+//! \return 0 no error
+//! \return < 0 on errors, if MIOS32_IIC_ERROR_PREV_OFFSET is added, the previous
+//!      transfer got an error (the previous task didn't use \ref MIOS32_IIC_TransferWait
+//!      to poll the transfer state)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len)
 {
@@ -385,7 +388,8 @@ s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, 
 
 
 /////////////////////////////////////////////////////////////////////////////
-// interrupt handler for I2C events
+//! interrupt handler for I2C events
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 void I2C2_EV_IRQHandler(void)
 {
@@ -518,7 +522,8 @@ void I2C2_EV_IRQHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// interrupt handler for I2C errors
+//! interrupt handler for I2C errors
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 void I2C2_ER_IRQHandler(void)
 {
@@ -553,5 +558,6 @@ void I2C2_ER_IRQHandler(void)
   transfer_state.BUSY = 0;
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_IIC */

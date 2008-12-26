@@ -1,8 +1,10 @@
 // $Id$
-/*
- * DIN functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_DIN
+//!
+//! DIN functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -20,22 +22,10 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_DIN)
 
-
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Initializes DIN driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes DIN driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_Init(u32 mode)
 {
@@ -57,9 +47,11 @@ s32 MIOS32_DIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value from a DIN Pin
-// IN: pin number in <pin>
-// OUT: 1 if pin is Vss, 0 if pin is 0V, -1 if pin not available
+//! Returns state of a DIN pin
+//! \param[in] pin number (0..127)
+//! \return 1 if pin is Vss (ie. 5V)
+//! \return 0 if pin is 0V
+//! \return -1 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_PinGet(u32 pin)
 {
@@ -71,9 +63,10 @@ s32 MIOS32_DIN_PinGet(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of DIN shift register
-// IN: shift register number in <sr>
-// OUT: 8bit value of shift register, -1 if SR not available
+//! Returns state of a DIN shift register
+//! \param[in] sr shift register number (0..15)
+//! \return 8bit value of shift register
+//! \return -1 if shift register not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_SRGet(u32 sr)
 {
@@ -85,28 +78,32 @@ s32 MIOS32_DIN_SRGet(u32 sr)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the DIN pin toggle notifications after a SRIO scan. Should be used 
-// to check and clear these flags when processed by a DIN handler for exclusive
-// access (avoid propagation of already handled DIN pin changes)
-// EXAMPLES: 
-//
-// 1) if a scan matrix handler processes the DIN pins of the first SR,
-// it should call 
-//   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xff)
-// to get a notification, if (and which) pins have toggled during the last scan.
-// The flags will be cleared, so that the remaining handlers won't process
-// the pins of the first DIN register anymore.
-// 
-// 2) it's also possible, to check and clear only dedicated pins of the DIN
-//    register by applying a different pin mask. E.g.
-//   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xc0)
-//    will only check/clear D6 and D7 of the DIN register, the remaining
-//    toggle notifications won't be touched and will be forwarded to remaining 
-//    handlers
-// IN: shift register number in <sr>, pin mask in <maks>
-// OUT: selected (masked) change flags
-//      no error status (-1)! - if unavailable SR selected, 0x00 will be
-//      returned
+//! Returns the DIN pin toggle notifications after a SRIO scan. Should be used 
+//! to check and clear these flags when processed by a DIN handler for exclusive
+//! access (avoid propagation of already handled DIN pin changes)
+//!
+//! Examples:<BR>
+//! 1) if a scan matrix handler processes the DIN pins of the first SR,
+//! it should call
+//! \code
+//!   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xff)
+//! \endcode
+//! to get a notification, if (and which) pins have toggled during the last scan.
+//! The flags will be cleared, so that the remaining handlers won't process
+//! the pins of the first DIN register anymore.
+//!
+//! 2) it's also possible, to check and clear only dedicated pins of the DIN
+//!    register by applying a different pin mask. E.g.
+//! \code
+//!   changed = MIOS32_DIN_SRChangedGetAndClear(0, 0xc0)
+//! \endcode
+//!    will only check/clear D6 and D7 of the DIN register, the remaining
+//!    toggle notifications won't be touched and will be forwarded to remaining 
+//!    handlers
+//! \param[in] sr shift register number (0..15)
+//! \param[in] mask pin mask (8bit value)
+//! \return 8bit value which contains the selected (masked) change flags
+//! \return no error status (-1)! - if unavailable SR selected, 0x00 will be returned
 /////////////////////////////////////////////////////////////////////////////
 u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
 {
@@ -127,9 +124,10 @@ u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// disables the auto-repeat feature for the appr. pin
-// IN: pin number in <pin>
-// OUT: returns != 0 on errors
+//! Disables the auto-repeat feature for the appr. pin
+//! \param[in] pin pin number (0..127)
+//! \return < 0 on errors
+//! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin)
 {
@@ -138,9 +136,10 @@ s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// enables the auto-repeat feature for the appr. pin
-// IN: pin number in <pin>
-// OUT: returns != 0 on errors
+//! Enables the auto-repeat feature for the appr. pin
+//! \param[in] pin pin number (0..127)
+//! \return < 0 on errors
+//! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS_DIN_PinAutoRepeatEnable(u32 pin)
 {
@@ -149,10 +148,11 @@ s32 MIOS_DIN_PinAutoRepeatEnable(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns != 0 if auto-repeat has been enabled for the appr. pin
-// IN: pin number in <pin>
-// OUT: != 0 if auto-repeat has been enabled for this pin
-//      0 if auto-repeat has been disabled for this pin
+//! queries the auto-repeat state of a DIN pin
+//! \param[in] pin pin number (0..127)
+//! \return 1 if auto-repeat has been enabled for this pin
+//! \return 0 if auto-repeat has been disabled for this pin
+//! \return -1 if pin nor available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS_DIN_PinAutoRepeatGet(u32 pin)
 {
@@ -161,9 +161,9 @@ s32 MIOS_DIN_PinAutoRepeatGet(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the debounce counter reload value of the DIN SR registers
-// IN: -
-// OUT: debounce counter reload value
+//! Returns the debounce counter reload value of the DIN SR registers
+//! \return debounce counter reload value
+//! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS_DIN_DebounceGet(void)
 {
@@ -172,28 +172,28 @@ u32 MIOS_DIN_DebounceGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets the debounce counter reload value for the DIN SR registers which are 
-// not assigned to rotary encoders to debounce low-quality buttons.
-//
-// Debouncing is realized in the following way: on every button movement 
-// the debounce preload value will be loaded into the debounce counter 
-// register. The counter will be decremented on every SRIO update cycle. 
-// So long as this counter isn't zero, button changes will still be recorded, 
-// but they won't trigger the USER_DIN_NotifyToggle function (FIXME)
-//
-// No (intended) button movement will get lost, but the latency will be 
-// increased. Example: if the update frequency is set to 1 mS, and the 
-// debounce value to 32, the first button movement will be regognized 
-// with a worst-case latency of 1 mS. Every additional button movement 
-// which happens within 32 mS will be regognized within a worst-case 
-// latency of 32 mS. After the debounce time has passed, the worst-case 
-// latency is 1 mS again.
-//
-// This function affects all DIN registers. If the application should 
-// record pin changes from digital sensors which are switching very fast, 
-// then debouncing should be ommited.
-// IN: -
-// OUT: returns != 0 on errors
+//! Sets the debounce counter reload value for the DIN SR registers which are 
+//! not assigned to rotary encoders to debounce low-quality buttons.
+//!
+//! Debouncing is realized in the following way: on every button movement 
+//! the debounce preload value will be loaded into the debounce counter 
+//! register. The counter will be decremented on every SRIO update cycle. 
+//! So long as this counter isn't zero, button changes will still be recorded, 
+//! but they won't trigger the USER_DIN_NotifyToggle function (FIXME)
+//!
+//! No (intended) button movement will get lost, but the latency will be 
+//! increased. Example: if the update frequency is set to 1 mS, and the 
+//! debounce value to 32, the first button movement will be regognized 
+//! with a worst-case latency of 1 mS. Every additional button movement 
+//! which happens within 32 mS will be regognized within a worst-case 
+//! latency of 32 mS. After the debounce time has passed, the worst-case 
+//! latency is 1 mS again.
+//!
+//! This function affects all DIN registers. If the application should 
+//! record pin changes from digital sensors which are switching very fast, 
+//! then debouncing should be ommited.
+//! \return < 0 on errors
+//! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 {
@@ -203,16 +203,12 @@ s32 MIOS_DIN_DebounceSet(u32 debounce_time)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks for pin changes, and calls given callback function with following parameters:
-//   - u32 pin: pin number
-//   - u32 value: pin value
-//
-// Example: MIOS32_DIN_Handler(DIN_NotifyToggle);
-//          will call
-//          void DIN_NotifyToggle(u32 pin, u32 value)
-//          on pin changes
-// IN: pointer to callback function
-// OUT: returns < 0 on errors
+//! Checks for pin changes, and calls given callback function with following parameters:
+//! \code
+//!   void DIN_NotifyToggle(u32 pin, u32 value)
+//! \endcode
+//! \param[in] _callback pointer to callback function
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_Handler(void *_callback)
 {
@@ -248,5 +244,7 @@ s32 MIOS32_DIN_Handler(void *_callback)
 
   return 0;
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_DIN */

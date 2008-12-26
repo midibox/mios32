@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Development Board specific functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_BOARD
+//!
+//! Development Board specific functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -22,23 +24,15 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Initializes LEDs of the board
-// IN: <mask> contains a flag for each LED which should be initialized
-//     MBHP_CORE_STM32: 1 LED (flag 0: green)
-//     STM32_PRIMER: 2 LEDs (flag 0: green, flag 1: red)
-// OUT: returns 0 if initialisation passed
-//      -1 if no LEDs specified for board
-//      -2 if one or more LEDs not available on board
+//! Initializes LEDs of the board
+//! \param[in] leds mask contains a flag for each LED which should be initialized<BR>
+//! <UL>
+//!   <LI>MBHP_CORE_STM32: 1 LED (flag 0: green)
+//!   <LI>STM32_PRIMER: 2 LEDs (flag 0: green, flag 1: red)
+//! </UL>
+//! \return 0 if initialisation passed
+//! \return -1 if no LEDs specified for board
+//! \return -2 if one or more LEDs not available on board
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
@@ -85,12 +79,12 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets one or more LEDs to the given value(s)
-// IN: <mask> contains a flag for each LED which should be changed
-//     <value> contains the value which should be set
-// OUT: returns 0 if initialisation passed
-//      -1 if no LEDs specified for board
-//      -2 if one or more LEDs not available on board
+//! Sets one or more LEDs to the given value(s)
+//! \param[in] leds mask contains a flag for each LED which should be changed
+//! \param[in] value contains the value which should be set
+//! \return 0 if initialisation passed
+//! \return -1 if no LEDs specified for board
+//! \return -2 if one or more LEDs not available on board
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 {
@@ -124,9 +118,8 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the status of all LEDs
-// IN: -
-// OUT: status of all LEDs
+//! Returns the status of all LEDs
+//! \return status of all LEDs
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS32_BOARD_LED_Get(void)
 {
@@ -147,5 +140,6 @@ u32 MIOS32_BOARD_LED_Get(void)
   return values;
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_BOARD */

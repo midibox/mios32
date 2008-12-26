@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Delay functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_DELAY
+//!
+//! Delay functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -21,18 +23,17 @@
 #if !defined(MIOS32_DONT_USE_DELAY)
 
 
-
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the Timer used by MIOS32_DELAY functions
-// This function has to be executed before wait functions are used
-// (already done in main.c of the programming model)
-//
-// Currently TIM1 is allocated by MIOS32_DELAY functions - if this clashes with
-// your application, just switch to another timer by overriding 
-// MIOS32_DELAY_TIMER and MIOS32_DELAY_TIMER_RCC in your mios32_config.h file
-//
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes the Timer used by MIOS32_DELAY functions<BR>
+//! This function has to be executed before wait functions are used
+//! (already done in main.c of the programming model)
+//!
+//! Currently TIM1 is allocated by MIOS32_DELAY functions - if this clashes with
+//! your application, just switch to another timer by overriding 
+//! MIOS32_DELAY_TIMER and MIOS32_DELAY_TIMER_RCC in your mios32_config.h file
+//!
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DELAY_Init(u32 mode)
 {
@@ -61,14 +62,14 @@ s32 MIOS32_DELAY_Init(u32 mode)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Waits for a specific number of uS
-// IN: delay in uS (1..65535)
-// OUT: < 0 on errors
-// EXAMPLE:
-//
-//   // wait for 500 uS
-//   MIOS32_DELAY_Wait_uS(500);
-//
+//! Waits for a specific number of uS<BR>
+//! Example:<BR>
+//! \code
+//!   // wait for 500 uS
+//!   MIOS32_DELAY_Wait_uS(500);
+//! \endcode
+//! \param[in] uS delay (1..65535 microseconds)
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DELAY_Wait_uS(u16 uS)
 {
@@ -79,5 +80,7 @@ s32 MIOS32_DELAY_Wait_uS(u16 uS)
 
   return 0; // no error
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_DELAY */

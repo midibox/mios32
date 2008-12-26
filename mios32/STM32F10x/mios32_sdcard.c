@@ -1,34 +1,32 @@
 // $Id$
-/*
- * MMC/SD Card Driver for MIOS32
- *
- * Approach:
- * SD Card is accessed via SPI1 (J16) or alternatively via SPI2 (J8/9)
- * A bitbanging solution (for using alternative ports) will be provided later.
- *
- * The card has to be supplied with 3.3V!
- *
- * The SDIO peripheral is not used to ensure compatibility with "mid density"
- * devices of the STM32 family, and future derivatives != STM32
- *
- * MIOS32_SDCARD_Init(0) has to be called only once to initialize the GPIO pins,
- * clocks, SPI and DMA
- *
- * MIOS32_SDCARD_PowerOn() should be called to connect with the SD Card. If an error
- * is returned, it can be assumed that no SD Card is connected. The function
- * can be called again (after a certain time) to retry a connection, resp. for
- * an auto-detection during runtime
- *
- * MIOS32_SDCARD_SectorRead/SectorWrite allow to read/write a 512 byte sector.
- *
- * If such an access returns an error, it can be assumed that the SD Card has
- * been disconnected during the transfer.
- *
- * Since DMA is used for serial transfers, Reading/Writing a sector typically
- * takes ca. 500 uS, accordingly the achievable transfer rate is ca. 1 MByte/s
- * (8 MBit/s)
- *
- * ==========================================================================
+//! \defgroup MIOS32_SDCARD
+//!
+//! SD Card is accessed via SPI1 (J16) or alternatively via SPI2 (J8/9)
+//! A bitbanging solution (for using alternative ports) will be provided later.
+//!
+//! The card has to be supplied with 3.3V!
+//!
+//! The SDIO peripheral is not used to ensure compatibility with "mid density"
+//! devices of the STM32 family, and future derivatives != STM32
+//!
+//! MIOS32_SDCARD_Init(0) has to be called only once to initialize the GPIO pins,
+//! clocks, SPI and DMA
+//!
+//! MIOS32_SDCARD_PowerOn() should be called to connect with the SD Card. If an error
+//! is returned, it can be assumed that no SD Card is connected. The function
+//! can be called again (after a certain time) to retry a connection, resp. for
+//! an auto-detection during runtime
+//!
+//! MIOS32_SDCARD_SectorRead/SectorWrite allow to read/write a 512 byte sector.
+//!
+//! If such an access returns an error, it can be assumed that the SD Card has
+//! been disconnected during the transfer.
+//!
+//! Since DMA is used for serial transfers, Reading/Writing a sector typically
+//! takes ca. 500 uS, accordingly the achievable transfer rate is ca. 1 MByte/s
+//! (8 MBit/s)
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -114,16 +112,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -133,9 +121,9 @@ static s32 MIOS32_SDCARD_TransferByte(u8 b);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes SPI pins and peripheral to access MMC/SD Card
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes SPI pins and peripheral to access MMC/SD Card
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_Init(u32 mode)
 {
@@ -210,9 +198,8 @@ s32 MIOS32_SDCARD_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Connects to SD Card
-// IN: -
-// OUT: returns < 0 if initialisation sequence failed
+//! Connects to SD Card
+//! \return < 0 if initialisation sequence failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_PowerOn(void)
 {
@@ -267,25 +254,23 @@ s32 MIOS32_SDCARD_PowerOn(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Disconnects from SD Card
-// IN: -
-// OUT: returns < 0 if initialisation sequence failed
+//! Disconnects from SD Card
+//! \return < 0 if initialisation sequence failed
+//! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_PowerOff(void)
 {
-  // TODO
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends command to SD card
-// IN: command in <cmd>
-//     32bit address in <addr>
-//     precalculated CRC in <crc>
-// OUT: returns >= 0x00 if command has been sent successfully (contains received byte)
-//      return -1 if no response from SD Card (timeout)
+//! Sends command to SD card
+//! \param[in] cmd SD card command
+//! \param[in] addr 32bit address
+//! \param[in] crc precalculated CRC
+//! \return >= 0x00 if command has been sent successfully (contains received byte)
+//! \return -1 if no response from SD Card (timeout)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 {
@@ -324,21 +309,23 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Reads 512 bytes from selected sector
-// IN: 32bit sector in <sector>
-//     pointer to buffer in <buffer>
-// OUT: returns 0 if whole sector has been successfully read
-//      returns -error if error occured during read operation
-//        -Bit 0              - In idle state if 1
-//        -Bit 1              - Erase Reset if 1
-//        -Bit 2              - Illgal Command if 1
-//        -Bit 3              - Com CRC Error if 1
-//        -Bit 4              - Erase Sequence Error if 1
-//        -Bit 5              - Address Error if 1
-//        -Bit 6              - Parameter Error if 1
-//        -Bit 7              - Not used, always '0'
-//      returns -256 if timeout during command has been sent
-//      returns -257 if timeout while waiting for start token
+//! Reads 512 bytes from selected sector
+//! \param[in] sector 32bit sector
+//! \param[in] *buffer pointer to 512 byte buffer
+//! \return 0 if whole sector has been successfully read
+//! \return -error if error occured during read operation:<BR>
+//! <UL>
+//!   <LI>Bit 0              - In idle state if 1
+//!   <LI>Bit 1              - Erase Reset if 1
+//!   <LI>Bit 2              - Illgal Command if 1
+//!   <LI>Bit 3              - Com CRC Error if 1
+//!   <LI>Bit 4              - Erase Sequence Error if 1
+//!   <LI>Bit 5              - Address Error if 1
+//!   <LI>Bit 6              - Parameter Error if 1
+//!   <LI>Bit 7              - Not used, always '0'
+//! </UL>
+//! \return -256 if timeout during command has been sent
+//! \return -257 if timeout while waiting for start token
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 {
@@ -391,22 +378,24 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Writes 512 bytes into selected sector
-// IN: 32bit sector in <sector>
-//     pointer to buffer in <buffer>
-// OUT: returns 0 if whole sector has been successfully written
-//      return -error if error occured during write operation
-//        -Bit 0              - In idle state if 1
-//        -Bit 1              - Erase Reset if 1
-//        -Bit 2              - Illgal Command if 1
-//        -Bit 3              - Com CRC Error if 1
-//        -Bit 4              - Erase Sequence Error if 1
-//        -Bit 5              - Address Error if 1
-//        -Bit 6              - Parameter Error if 1
-//        -Bit 7              - Not used, always '0'
-//      returns -256 if timeout during command has been sent
-//      returns -257 if write operation not accepted
-//      returns -258 if timeout during write operation
+//! Writes 512 bytes into selected sector
+//! \param[in] sector 32bit sector
+//! \param[in] *buffer pointer to 512 byte buffer
+//! \return 0 if whole sector has been successfully read
+//! \return -error if error occured during read operation:<BR>
+//! <UL>
+//!   <LI>Bit 0              - In idle state if 1
+//!   <LI>Bit 1              - Erase Reset if 1
+//!   <LI>Bit 2              - Illgal Command if 1
+//!   <LI>Bit 3              - Com CRC Error if 1
+//!   <LI>Bit 4              - Erase Sequence Error if 1
+//!   <LI>Bit 5              - Address Error if 1
+//!   <LI>Bit 6              - Parameter Error if 1
+//!   <LI>Bit 7              - Not used, always '0'
+//! </UL>
+//! \return -256 if timeout during command has been sent
+//! \return -257 if write operation not accepted
+//! \return -258 if timeout during write operation
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 {
@@ -515,6 +504,7 @@ static s32 MIOS32_SDCARD_TransferByte(u8 b)
   return MIOS32_SDCARD_SPI_PTR->DR;
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_SDCARD */
 

@@ -1,8 +1,10 @@
 // $Id$
-/*
- * LCD functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_LCD
+//!
+//! LCD functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -47,17 +49,10 @@ u8 mios32_lcd_font_x0;
 u8 mios32_lcd_font_offset;
 
 
-
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Initializes LCD driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes LCD driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_Init(u32 mode)
 {
@@ -93,9 +88,9 @@ s32 MIOS32_LCD_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Selects LCD device
-// IN: lcd device number
-// OUT: returns < 0 on errors
+//! Selects LCD device
+//! \param[in] device LCD device number
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_DeviceSet(u8 device)
 {
@@ -106,9 +101,8 @@ s32 MIOS32_LCD_DeviceSet(u8 device)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns LCD device
-// IN: -
-// OUT: returns device number
+//! Returns LCD device
+//! \return device number
 /////////////////////////////////////////////////////////////////////////////
 u8 MIOS32_LCD_DeviceGet(void)
 {
@@ -117,9 +111,10 @@ u8 MIOS32_LCD_DeviceGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets cursor to given position
-// IN: <column> and <line>
-// OUT: returns < 0 on errors
+//! Sets cursor to given position
+//! \param[in] column number
+//! \param[in] line number
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
 {
@@ -137,10 +132,11 @@ s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets graphical cursor to given position
-// Only relevant for GLCDs
-// IN: <x> and <y>
-// OUT: returns < 0 on errors
+//! Sets graphical cursor to given position<BR>
+//! Only relevant for GLCDs
+//! \param[in] x position
+//! \param[in] y position
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 {
@@ -153,22 +149,27 @@ s32 MIOS32_LCD_GCursorSet(u16 x, u16 y)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Set the cursor map for character displays
-//
-// By default the positions are configured for 2x16, 2x20, 4x20 and 2x40 displays:
-//   u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
-//   MIOS32_LCD_CursorMapSet(cursor_map);
-//
-// For 4x16 displays, the configuration has to be changed:
-//   u8 cursor_map[] = {0x00, 0x40, 0x10, 0x50}; // offset line 0/1/2/3
-//   MIOS32_LCD_CursorMapSet(cursor_map);
-//
-// For 3x16 DOG displays use:
-//   u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
-//   MIOS32_LCD_CursorMapSet(cursor_map);
-//
-// IN: cursor map in <map_table>
-// OUT: returns < 0 on errors
+//! Set the cursor map for character displays
+//!
+//! By default the positions are configured for 2x16, 2x20, 4x20 and 2x40 displays:
+//! \code
+//!   u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
+//!   MIOS32_LCD_CursorMapSet(cursor_map);
+//! \endcode
+//!
+//! For 4x16 displays, the configuration has to be changed:
+//! \code
+//!   u8 cursor_map[] = {0x00, 0x40, 0x10, 0x50}; // offset line 0/1/2/3
+//!   MIOS32_LCD_CursorMapSet(cursor_map);
+//! \endcode
+//!
+//! For 3x16 DOG displays use:
+//! \code
+//!   u8 cursor_map[] = {0x00, 0x10, 0x20, 0x30}; // offset line 0/1/2/3
+//!   MIOS32_LCD_CursorMapSet(cursor_map);
+//! \endcode
+//! \param[in] map_table the cursor map
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_CursorMapSet(u8 map_table[])
 {
@@ -182,9 +183,9 @@ s32 MIOS32_LCD_CursorMapSet(u8 map_table[])
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Prints a \0 (zero) terminated string
-// IN: pointer to string in <*str>
-// OUT: returns < 0 on errors
+//! Prints a \\0 (zero) terminated string
+//! \param[in] str pointer to string
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintString(char *str)
 {
@@ -197,11 +198,10 @@ s32 MIOS32_LCD_PrintString(char *str)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Prints a \0 (zero) terminated formatted string (like printf)
-// IN: pointer to format in <*str>
-//     additional arguments at ...
-//     64 characters supported maximum!
-// OUT: returns < 0 on errors
+//! Prints a \\0 (zero) terminated formatted string (like printf)
+//! \param[in] *format zero-terminated format string - 64 characters supported maximum!
+//! \param ... additional arguments
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
 {
@@ -215,9 +215,9 @@ s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes all 8 special characters
-// IN: patterns in <table[64]>
-// OUT: returns < 0 on errors
+//! Initializes all 8 special characters
+//! \param[in] table 8 * 8 (=64) bytes which contain the pixel lines
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 {
@@ -232,10 +232,10 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the graphical font
-// Only relevant for GLCDs
-// IN: pointer to font in *font
-// OUT: returns < 0 on errors
+//! Initializes the graphical font<BR>
+//! Only relevant for GLCDs
+//! \param[in] *font pointer to font
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_FontInit(u8 *font)
 {
@@ -253,67 +253,94 @@ s32 MIOS32_LCD_FontInit(u8 *font)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sends data byte to LCD
+//! \param[in] data byte which should be sent to LCD
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// Following functions are implemented in APP_LCD driver, and aliased
-// to APP_LCD_* in mios32_lcd.h via #define
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
-// Sends data byte to LCD
-// IN: data byte in <data>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_Data(u8 data)
+s32 MIOS32_LCD_Data(u8 data)
+{
+  // -> forward to app_lcd
+  return APP_LCD_Data(data);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends command byte to LCD
-// IN: command byte in <cmd>
-// OUT: returns < 0 on errors
+//! Sends command byte to LCD
+//! \param[in] cmd command byte which should be sent to LCD
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_Cmd(u8 cmd)
+s32 MIOS32_LCD_Cmd(u8 cmd)
+{
+  // -> forward to app_lcd
+  return APP_LCD_Cmd(cmd);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Clear Screen
-// IN: -
-// OUT: returns < 0 on errors
+//! Clear Screen
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_Clear(void)
+s32 MIOS32_LCD_Clear(void)
+{
+  // -> forward to app_lcd
+  return APP_LCD_Clear();
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Prints a single character
-// IN: character in <c>
-// OUT: returns < 0 on errors
+//! Prints a single character
+//! \param[in] c character to be print
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_PrintChar(char c)
+s32 MIOS32_LCD_PrintChar(char c)
+{
+  // -> forward to app_lcd
+  return APP_LCD_PrintChar(c);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes a single special character
-// IN: character number (0-7) in <num>, pattern in <table[8]>
-// OUT: returns < 0 on errors
+//! Initializes a single special character
+//! \param[in] num character number (0-7)
+//! \param[in] table 8 byte pattern
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
+s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
+{
+  // -> forward to app_lcd
+  return APP_LCD_SpecialCharInit(num, table);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets the background colour
-// Only relevant for colour GLCDs
-// IN: r/g/b values
-// OUT: returns < 0 on errors
+//! Sets the background colour<BR>
+//! Only relevant for colour GLCDs
+//! \param[in] r (red) value
+//! \param[in] g (green) value
+//! \param[in] b (blue) value
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
+{
+  // -> forward to app_lcd
+  APP_LCD_BColourSet(r, g, b);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets the foreground colour
-// Only relevant for colour GLCDs
-// IN: r/g/b values
-// OUT: returns < 0 on errors
+//! Sets the foreground colour<BR>
+//! Only relevant for colour GLCDs
+//! \param[in] r (red) value
+//! \param[in] g (green) value
+//! \param[in] b (blue) value
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-// s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b)
+{
+  // -> forward to app_lcd
+  APP_LCD_FColourSet(r, g, b);
+}
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_LCD */

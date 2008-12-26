@@ -1,11 +1,17 @@
 // $Id$
-/*
- * USB COM driver for MIOS32
- *
- * Based on driver included in STM32 USB library
- * Some code copied and modified from Virtual_COM_Port demo
- *
- * ==========================================================================
+//! \defgroup MIOS32_USB_COM
+//!
+//! USB COM layer for MIOS32
+//! 
+//! Based on driver included in STM32 USB library
+//! Some code copied and modified from Virtual_COM_Port demo
+//! 
+//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM layer functions
+//! 
+//! \note this module can be optionally *ENABLED* in a local mios32_config.h file (included from mios32.h) by adding '#define MIOS32_USE_USB_COM'
+//! it's disabled by default, since Windows doesn't allow to use USB MIDI and CDC in parallel!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -90,9 +96,10 @@ LINE_CODING linecoding = {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the USB COM Protocol
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed (e.g. clock not initialised!)
+//! Initializes USB COM layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_Init(u32 mode)
 {
@@ -105,9 +112,10 @@ s32 MIOS32_USB_COM_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by the USB driver on cable connection/disconnection
-// IN: <connected>: connection status (1 if connected)
-// OUT: returns -1 on errors
+//! This function is called by the USB driver on cable connection/disconnection
+//! \param[in] connected connection status (1 if connected)
+//! \return < 0 on errors
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_ChangeConnectionState(u8 connected)
 {
@@ -130,10 +138,10 @@ s32 MIOS32_USB_COM_ChangeConnectionState(u8 connected)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the connection status of the USB COM interface
-// IN: -
-// OUT: 1: interface available
-//      0: interface not available
+//! This function returns the connection status of the USB COM interface
+//! \return 1: interface available
+//! \return 0: interface not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_CheckAvailable(void)
 {
@@ -142,10 +150,11 @@ s32 MIOS32_USB_COM_CheckAvailable(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of free bytes in receive buffer
-// IN: USB_COM number
-// OUT: number of free bytes
-//      if usb_com not available: 0
+//! Returns number of free bytes in receive buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return number of free bytes
+//! \return 0 if usb_com not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_RxBufferFree(u8 usb_com)
 {
@@ -161,10 +170,11 @@ s32 MIOS32_USB_COM_RxBufferFree(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of used bytes in receive buffer
-// IN: USB_COM number (0..1)
-// OUT: number of used bytes
-//      if usb_com not available: 0
+//! Returns number of used bytes in receive buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return number of used bytes
+//! \return 0 if usb_com not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_RxBufferUsed(u8 usb_com)
 {
@@ -180,11 +190,12 @@ s32 MIOS32_USB_COM_RxBufferUsed(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// gets a byte from the receive buffer
-// IN: USB_COM number (0..1)
-// OUT: -1 if USB_COM not available
-//      -2 if no new byte available
-//      otherwise received byte
+//! Gets a byte from the receive buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return -1 if USB_COM not available
+//! \return -2 if no new byte available
+//! \return >= 0: received byte
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com)
 {
@@ -214,11 +225,12 @@ s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the next byte of the receive buffer without taking it
-// IN: USB_COM number (0..1)
-// OUT: -1 if USB_COM not available
-//      -2 if no new byte available
-//      otherwise received byte
+//! Returns the next byte of the receive buffer without taking it
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return -1 if USB_COM not available
+//! \return -2 if no new byte available
+//! \return >= 0: received byte
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_RxBufferPeek(u8 usb_com)
 {
@@ -245,10 +257,11 @@ s32 MIOS32_USB_COM_RxBufferPeek(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of free bytes in transmit buffer
-// IN: USB_COM number (0..1)
-// OUT: number of free bytes
-//      if usb_com not available: 0
+//! returns number of free bytes in transmit buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return number of free bytes
+//! \return 0 if usb_com not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferFree(u8 usb_com)
 {
@@ -264,10 +277,11 @@ s32 MIOS32_USB_COM_TxBufferFree(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of used bytes in transmit buffer
-// IN: USB_COM number (0..1)
-// OUT: number of used bytes
-//      if usb_com not available: 0
+//! Returns number of used bytes in transmit buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \return number of used bytes
+//! \return 0 if usb_com not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferUsed(u8 usb_com)
 {
@@ -283,13 +297,16 @@ s32 MIOS32_USB_COM_TxBufferUsed(u8 usb_com)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts more than one byte onto the transmit buffer (used for atomic sends)
-// IN: USB_COM number (0..1), buffer to be sent and buffer length
-// OUT: 0 if no error
-//      -1 if USB_COM not available
-//      -2 if buffer full or cannot get all requested bytes (retry)
-//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
-//      -4 if too many bytes should be sent
+//! puts more than one byte onto the transmit buffer (used for atomic sends)
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \param[in] *buffer pointer to buffer which should be transmitted
+//! \param[in] len number of bytes which should be transmitted
+//! \return 0 if no error
+//! \return -1 if USB_COM not available
+//! \return -2 if buffer full or cannot get all requested bytes (retry)
+//! \return -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! \return -4 if too many bytes should be sent
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len)
 {
@@ -319,13 +336,16 @@ s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts more than one byte onto the transmit buffer (used for atomic sends)
-// (blocking function)
-// IN: USB_COM number (0..1), buffer to be sent and buffer length
-// OUT: 0 if no error
-//      -1 if USB_COM not available
-//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
-//      -4 if too many bytes should be sent
+//! puts more than one byte onto the transmit buffer (used for atomic sends)<BR>
+//! (blocking function)
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \param[in] *buffer pointer to buffer which should be transmitted
+//! \param[in] len number of bytes which should be transmitted
+//! \return 0 if no error
+//! \return -1 if USB_COM not available
+//! \return -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! \return -4 if too many bytes should be sent
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
 {
@@ -338,12 +358,14 @@ s32 MIOS32_USB_COM_TxBufferPutMore(u8 usb_com, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts a byte onto the transmit buffer
-// IN: USB_COM number (0..1) and byte to be sent
-// OUT: 0 if no error
-//      -1 if USB_COM not available
-//      -2 if buffer full (retry)
-//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! puts a byte onto the transmit buffer
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \param[in] b byte which should be put into Tx buffer
+//! \return 0 if no error
+//! \return -1 if USB_COM not available
+//! \return -2 if buffer full (retry)
+//! \return -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferPut_NonBlocking(u8 usb_com, u8 b)
 {
@@ -354,12 +376,14 @@ s32 MIOS32_USB_COM_TxBufferPut_NonBlocking(u8 usb_com, u8 b)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts a byte onto the transmit buffer
-// (blocking function)
-// IN: USB_COM number (0..1) and byte to be sent
-// OUT: 0 if no error
-//      -1 if USB_COM not available
-//      -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! puts a byte onto the transmit buffer<BR>
+//! (blocking function)
+//! \param[in] usb_com USB_COM number (not supported yet, should always be 0)
+//! \param[in] b byte which should be put into Tx buffer
+//! \return 0 if no error
+//! \return -1 if USB_COM not available
+//! \return -3 if USB_COM not supported by MIOS32_USB_COM_TxBufferPut Routine
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b)
 {
@@ -372,7 +396,8 @@ s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called by STM32 USB driver to check for IN streams
+//! Called by STM32 USB driver to check for IN streams
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_COM_EP4_IN_Callback(void)
 {
@@ -381,7 +406,8 @@ void MIOS32_USB_COM_EP4_IN_Callback(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Called by STM32 USB driver to check for OUT streams
+//! Called by STM32 USB driver to check for OUT streams
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_COM_EP3_OUT_Callback(void)
 {
@@ -392,7 +418,8 @@ void MIOS32_USB_COM_EP3_OUT_Callback(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// MIOS32_USB callback functions (forwarded from STM32 USB driver)
+//! MIOS32_USB callback functions (forwarded from STM32 USB driver)
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_COM_CB_StatusIn(void)
 {
@@ -461,5 +488,7 @@ s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo)
 
   return USB_UNSUPPORT;
 }
+
+//! \}
 
 #endif /* MIOS32_USE_USB_COM */

@@ -1,42 +1,45 @@
 // $Id$
-/*
- * I2S Functions
- *
- * Approach: I2S pins are connected to J8 of the MBHP_CORE_STM32 module
- * Optionally a master clock is available for 8x oversampling, which has
- * to be explicitely enabled via MIOS32_I2S_ENABLE_MCLK, and has to be
- * connected to J15b:E (pinning see below)
- *
- * Due to pin conflicts with default setting of MIOS32_SRIO, MIOS_I2S is 
- * disabled by default, and has to be enabled via MIOS32_USE_I2S in
- * mios32_config.h
- * MIOS32_SRIO should either be disabled via MIOS32_DONT_USE_SRIO, or 
- * mapped to SPI1 (-> J16 of MBHP_CORE_STM32 module) via MIOS32_SRIO_SPI 1
- *
- * I2S is configured for standard Philips format with 2x16 bits for L/R
- * channel at 48 kHz by default. Other protocols/sample rates can be selected
- * via MIOS32_I2S_* defines
- * 
- * DMA Channel 5 is used to transfer sample values to the SPI in background.
- * An application specific callback function is invoked whenever the transfer
- * of the lower or upper half of the sample buffer is completed. This allows
- * the application to update the already uploaded sample buffer half with new
- * data while the next half is transfered.
- * 
- * Accordingly, the sample buffer size together with the sample rate defines
- * the time span between audio buffer updates.
- *
- * Calculation of the "refill rate" (transfer time of one sample buffer half)
- *   2 * sample rate / (sample buffer size)
- *
- * e.g.: 1.3 mS @ 48 kHz and 2*64 byte buffer
- * 
- * The sample buffer consists of 32bit words, LSBs for left channel, MSBs for
- * right channel
- * 
- * Demo application: $MIOS32_PATH/apps/examples/i2s
- * 
- * ==========================================================================
+//! \defgroup MIOS32_I2S
+//!
+//! I2S Functions
+//!
+//! Approach: I2S pins are connected to J8 of the MBHP_CORE_STM32 module
+//! Optionally a master clock is available for 8x oversampling, which has
+//! to be explicitely enabled via MIOS32_I2S_ENABLE_MCLK, and has to be
+//! connected to J15b:E (pinning see below)
+//!
+//! Due to pin conflicts with default setting of MIOS32_SRIO, MIOS_I2S is 
+//! disabled by default, and has to be enabled via MIOS32_USE_I2S in
+//! mios32_config.h<BR>
+//! MIOS32_SRIO should either be disabled via MIOS32_DONT_USE_SRIO, or 
+//! mapped to SPI1 (-> J16 of MBHP_CORE_STM32 module) via MIOS32_SRIO_SPI 1
+//!
+//! I2S is configured for standard Philips format with 2x16 bits for L/R
+//! channel at 48 kHz by default. Other protocols/sample rates can be selected
+//! via MIOS32_I2S_* defines
+//! 
+//! DMA Channel 5 is used to transfer sample values to the SPI in background.
+//! An application specific callback function is invoked whenever the transfer
+//! of the lower or upper half of the sample buffer is completed. This allows
+//! the application to update the already uploaded sample buffer half with new
+//! data while the next half is transfered.
+//! 
+//! Accordingly, the sample buffer size together with the sample rate defines
+//! the time span between audio buffer updates.
+//!
+//! Calculation of the "refill rate" (transfer time of one sample buffer half)<BR>
+//!   2 * sample rate / (sample buffer size)
+//!
+//! e.g.: 1.3 mS @ 48 kHz and 2*64 byte buffer
+//! 
+//! The sample buffer consists of 32bit words, LSBs for left channel, MSBs for
+//! right channel
+//! 
+//! Demo application: $MIOS32_PATH/apps/examples/i2s
+//!
+//! \note this module can be optionally *ENABLED* in a local mios32_config.h file (included from mios32.h) by adding '#define MIOS32_USE_I2S'
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -80,9 +83,9 @@ static void (*buffer_reload_callback)(u32 state) = NULL;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes I2S interface
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes I2S interface
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_I2S_Init(u32 mode)
 {
@@ -161,15 +164,17 @@ s32 MIOS32_I2S_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Starts DMA driven I2S transfers
-// IN: <*buffer>: pointer to sample buffer (contains L/R halfword)
-//     <len>    : size of audio buffer
-//     callback : callback function:
-//                void callback(u32 state)
-//                called when the lower (state == 0) or upper (state == 1)
-//                range of the sample buffer has been transfered, so that it
-//                can be updated
-// OUT: returns < 0 if initialisation failed
+//! Starts DMA driven I2S transfers
+//! \param[in] *buffer pointer to sample buffer (contains L/R halfword)
+//! \param[in] len size of audio buffer
+//! \param[in] _callback callback function:<BR>
+//! \code
+//!   void callback(u32 state)
+//! \endcode
+//!      called when the lower (state == 0) or upper (state == 1)
+//!      range of the sample buffer has been transfered, so that it
+//!      can be updated
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_I2S_Start(u32 *buffer, u16 len, void *_callback)
 {
@@ -192,9 +197,8 @@ s32 MIOS32_I2S_Start(u32 *buffer, u16 len, void *_callback)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Stops DMA driven I2S transfers
-// IN: -
-// OUT: returns < 0 if initialisation failed
+//! Stops DMA driven I2S transfers
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_I2S_Stop(void)
 {
@@ -207,7 +211,8 @@ s32 MIOS32_I2S_Stop(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DMA1 Channel interrupt is triggered on HT and TC interrupts
+//! DMA1 Channel interrupt is triggered on HT and TC interrupts
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 void DMAChannel5_IRQHandler(void)
 {
@@ -225,5 +230,7 @@ void DMAChannel5_IRQHandler(void)
     buffer_reload_callback(1);
   }
 }
+
+//! \}
 
 #endif /* MIOS32_USE_I2S */

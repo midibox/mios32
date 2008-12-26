@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Rotary Encoder functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_ENC
+//!
+//! Rotary Encoder functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -19,12 +21,6 @@
 
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_ENC)
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -64,10 +60,9 @@ enc_state_t enc_state[MIOS32_ENC_NUM_MAX];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes Encoder driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes encoder driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_Init(u32 mode)
 {
@@ -93,15 +88,17 @@ s32 MIOS32_ENC_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Configures Encoder
-// IN: 
-//   <encoder>: encoder number (0..MIOS32_ENC_NUM_MAX-1)
-//   <enc_config.cfg.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
-//   <enc_config.cfg.speed: encoder speed mode (NORMAL/FAST/SLOW)
-//   <enc_config.cfg.speed_par: speed parameter (0-7)
-//   <enc_config.cfg.sr:    shift register (1-16)
-//   <enc_config.cfg.pos:   pin position of first pin (0, 2, 4 or 6)
-// OUT: returns < 0 if initialisation failed
+//! Configures Encoder
+//! \param[in] encoder encoder number (0..MIOS32_ENC_NUM_MAX-1)
+//! \param[in] config a structure with following members:
+//! <UL>
+//!   <LI>enc_config.cfg.type: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)<BR>
+//!   <LI>enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)<BR>
+//!   <LI>enc_config.cfg.speed_par speed parameter (0-7)<BR>
+//!   <LI>enc_config.cfg.sr shift register (1-16)<BR>
+//!   <LI>enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)<BR>
+//! </UL>
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 {
@@ -122,14 +119,13 @@ s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns encoder configuration
-// IN: <encoder>: encoder number (0..MIOS32_ENC_NUM_MAX-1)
-// OUT:
-//   <enc_config.cfg.type>: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
-//   <enc_config.cfg.speed: encoder speed mode (NORMAL/FAST/SLOW)
-//   <enc_config.cfg.speed_par: speed parameter (0-7)
-//   <enc_config.cfg.sr:    shift register (1-16)
-//   <enc_config.cfg.pos:   pin position of first pin (0, 2, 4 or 6)
+//! Returns encoder configuration
+//! \param[in] encoder encoder number (0..MIOS32_ENC_NUM_MAX-1)
+//! \return enc_config.cfg.type encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
+//! \return enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)
+//! \return enc_config.cfg.speed_par speed parameter (0-7)
+//! \return enc_config.cfg.sr shift register (1-16)
+//! \return enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)
 /////////////////////////////////////////////////////////////////////////////
 mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 {
@@ -144,9 +140,8 @@ mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function has to be called after a SRIO scan to update encoder states
-// IN: -
-// OUT: returns < 0 on errors
+//! This function has to be called after a SRIO scan to update encoder states
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_UpdateStates(void)
 {
@@ -338,17 +333,13 @@ MIOS32_ENC_Do_Nothing:
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler checks for encoder movements, and calls the given callback
-// function with following parameters:
-//   - u32 encoder
-//   - s32 incrementer
-//
-// Example: MIOS32_ENC_Handler(ENC_NotifyToggle);
-//          will call
-//          void ENC_NotifyToggle(u32 encoder, s32 incrementer)
-//          on encoer movements
-// IN: pointer to callback function
-// OUT: returns < 0 on errors
+//! This handler checks for encoder movements, and calls the given callback
+//! function with following parameters on encoder movements:
+//! \code
+//!   void ENC_NotifyToggle(u32 encoder, s32 incrementer)
+//! \endcode
+//! \param[in] _callback pointer to callback function
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_Handler(void *_callback)
 {
@@ -384,5 +375,6 @@ s32 MIOS32_ENC_Handler(void *_callback)
   return 0; // no error
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_ENC */

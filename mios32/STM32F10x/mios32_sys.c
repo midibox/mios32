@@ -1,8 +1,10 @@
 // $Id$
-/*
- * System Initialisation for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_SYS
+//!
+//! System Initialisation for MIOS32
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -21,9 +23,15 @@
 #if !defined(MIOS32_DONT_USE_SYS)
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the System for MIOS32
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed (e.g. clock not initialised!)
+//! Initializes the System for MIOS32:<BR>
+//! <UL>
+//!   <LI>enables clock for IO ports
+//!   <LI>configures pull-ups for all IO pins
+//!   <LI>initializes PLL for 72 MHz @ 12 MHz ext. clock
+//!   <LI>sets base address of vector table
+//! </UL>
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SYS_Init(u32 mode)
 {
@@ -103,5 +111,7 @@ s32 MIOS32_SYS_Init(u32 mode)
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_SYS */

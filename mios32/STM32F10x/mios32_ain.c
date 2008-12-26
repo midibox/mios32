@@ -1,51 +1,48 @@
 // $Id$
-/*
- * Analog Input functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_AIN
+//!
+//! AIN driver for MIOS32
+//! 
+//! ADC channels which should be converted have to be specified with a
+//! mask (MIOS32_AIN_CHANNEL_MASK), which has to be added to the application 
+//! specific mios32_config.h file.
+//!
+//! Conversion results are transfered into the adc_conversion_values[] array
+//! by DMA1 Channel 1 to relieve the CPU.
+//!
+//! After the scan is completed, the DMA channel interrupt will be invoked
+//! to calculate the final (optionally oversampled) values, and to transfer 
+//! them into the ain_pin_values[] array if the value change is greater than 
+//! the defined MIOS32_AIN_DEADBAND.
+//!
+//! Value changes (within the deadband) will be notified to the MIOS32_AIN_Handler().
+//! This function isn't called directly by the application, but it's part 
+//! of the programming model framework.
+//! E.g., if the "traditional" framework is used, the AIN handler will be called
+//! each mS, and it will call the 'APP_AIN_NotifyChange(u32 pin, u32 pin_value)' 
+//! hook on pin changes.<BR>
+//! The AIN handler will trigger a new scan after all pins have been checked.
+//!
+//! Analog channels can be multiplexed via MBHP_AINX4 modules. The selection
+//! pins can be connected to any free GPIO pin, the assignments have to be
+//! added to the mios32_config.h file.<BR>
+//! Usually the 3 selection lines are connected to J5C.A0/1/2 of the core module.
+//! Together with the 8 analog channels at J5A/B this results into 64 analog pins.
+//!
+//! The AIN driver is flexible enough to increase the number of ADC channels
+//! to not less than 16 (connected to J5A/B/C and J16). Together with 4 AINX4 
+//! multiplexers this results into 128 analog channels.
+//!
+//! It's possible to define an oversampling rate, which leads to an accumulation 
+//! of conversion results to increase the resolution and to improve the accuracy.
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
- *
- * Approach
- * ~~~~~~~~
- *
- * ADC channels which should be converted have to be specified with a
- * mask (MIOS32_AIN_CHANNEL_MASK), which has to be added to the application 
- * specific mios32_config.h file.
- *
- * Conversion results are transfered into the adc_conversion_values[] array
- * by DMA1 Channel 1 to relieve the CPU.
- *
- * After the scan is completed, the DMA channel interrupt will be invoked
- * to calculate the final (optionally oversampled) values, and to transfer 
- * them into the ain_pin_values[] array if the value change is greater than 
- * the defined MIOS32_AIN_DEADBAND.
- *
- * Value changes (within the deadband) will be notified to the MIOS32_AIN_Handler().
- * This function isn't called directly by the application, but it's part 
- * of the programming model framework.
- * E.g., if the "traditional" framework is used, the AIN handler will be called
- * each mS, and it will call the 'APP_AIN_NotifyChange(u32 pin, u32 pin_value)' 
- * hook on pin changes.
- * The AIN handler will trigger a new scan after all pins have been checked.
- *
- * Analog channels can be multiplexed via MBHP_AINX4 modules. The selection
- * pins can be connected to any free GPIO pin, the assignments have to be
- * added to the mios32_config.h file.
- * Usually the 3 selection lines are connected to J5C.A0/1/2 of the core module.
- * Together with the 8 analog channels at J5A/B this results into 64 analog pins.
- *
- * The AIN driver is flexible enough to increase the number of ADC channels
- * to not less than 16 (connected to J5A/B/C and J16). Together with 4 AINX4 
- * multiplexers this results into 128 analog channels.
- *
- * It's possible to define an oversampling rate, which leads to an accumulation 
- * of conversion results to increase the resolution and to improve the accuracy.
- *
  */
 
 /////////////////////////////////////////////////////////////////////////////
@@ -140,10 +137,9 @@ const u8 mux_selection_order[8] = { 5, 7, 3, 1, 2, 4, 0, 6 };
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes AIN driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes AIN driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Init(u32 mode)
 {
@@ -320,10 +316,10 @@ s32 MIOS32_AIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of an AIN Pin
-// IN: pin number in <pin>
-// OUT: AIN pin value - resolution depends on the selected MIOS32_AIN_OVERSAMPLING_RATE!
-//      -1 if pin doesn't exist
+//! Returns value of an AIN Pin
+//! \param[in] pin number
+//! \return AIN pin value - resolution depends on the selected MIOS32_AIN_OVERSAMPLING_RATE!
+//! \return -1 if pin doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_PinGet(u32 pin)
 {
@@ -341,16 +337,12 @@ s32 MIOS32_AIN_PinGet(u32 pin)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Checks for pin changes, and calls given callback function with following parameters:
-//   - s32 pin: pin number
-//   - u16 value: pin value in 16bit resolution
-//
-// Example: MIOS32_AIN_Handler(AIN_NotifyChanged);
-//          will call
-//            void AIN_NotifyChanged(u32 pin, u16 value)
-//          on pin changes
-// IN: pointer to callback function
-// OUT: returns < 0 on errors
+//! Checks for pin changes, and calls given callback function with following parameters on pin changes:
+//! \code
+//!   void AIN_NotifyChanged(u32 pin, u16 value)
+//! \endcode
+//! \param[in] _callback pointer to callback function
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Handler(void *_callback)
 {
@@ -397,7 +389,8 @@ s32 MIOS32_AIN_Handler(void *_callback)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DMA channel interrupt is triggered when all ADC channels have been converted
+//! DMA channel interrupt is triggered when all ADC channels have been converted
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 #if MIOS32_AIN_CHANNEL_MASK
 void DMAChannel1_IRQHandler(void)
@@ -506,5 +499,7 @@ void DMAChannel1_IRQHandler(void)
     ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 }
 #endif
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_AIN */
