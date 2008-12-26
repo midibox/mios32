@@ -650,7 +650,7 @@ s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 //! This function is used by MIOS32 internal functions to forward received
 //! MIDI packages to the Rx Callback routine (byte by byte)
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] package MIDI package
+//! \param[in] midi_package MIDI package
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -685,7 +685,7 @@ s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
 //! This function is used by MIOS32 internal functions to forward received
 //! MIDI packages to the Tx Callback routine (byte by byte)
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] package MIDI package
+//! \param[in] midi_package MIDI package
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)

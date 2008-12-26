@@ -1,8 +1,12 @@
 // $Id$
-/*
- * USB MIDI driver for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_USB_MIDI
+//!
+//! USB MIDI layer for MIOS32
+//! 
+//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_MIDI layer functions
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -57,9 +61,10 @@ static u8 transfer_possible = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the USB MIDI Protocol
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes USB MIDI layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Init(u32 mode)
 {
@@ -72,9 +77,10 @@ s32 MIOS32_USB_MIDI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by the USB driver on cable connection/disconnection
-// IN: <connected>: connection status (1 if connected)
-// OUT: returns -1 on errors
+//! This function is called by the USB driver on cable connection/disconnection
+//! \param[in] connected status (1 if connected)
+//! \return < 0 on errors
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 {
@@ -97,10 +103,10 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the connection status of the USB MIDI interface
-// IN: -
-// OUT: 1: interface available
-//      0: interface not available
+//! This function returns the connection status of the USB MIDI interface
+//! \return 1: interface available
+//! \return 0: interface not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_CheckAvailable(void)
 {
@@ -109,12 +115,13 @@ s32 MIOS32_USB_MIDI_CheckAvailable(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function puts a new MIDI package into the Tx buffer
-// IN: MIDI package in <package>
-// OUT: 0: no error
-//      -1: USB not connected
-//      -2: buffer is full
-//          caller should retry until buffer is free again
+//! This function puts a new MIDI package into the Tx buffer
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: USB not connected
+//! \return -2: buffer is full
+//!             caller should retry until buffer is free again
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 {
@@ -155,11 +162,12 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function puts a new MIDI package into the Tx buffer
-// (blocking function)
-// IN: MIDI package in <package>
-// OUT: 0: no error
-//      -1: USB not connected
+//! This function puts a new MIDI package into the Tx buffer
+//! (blocking function)
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: USB not connected
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t package)
 {
@@ -188,10 +196,11 @@ s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks for a new package
-// IN: pointer to MIDI package in <package> (received package will be put into the given variable)
-// OUT: returns -1 if no package in buffer
-//      otherwise returns number of packages which are still in the buffer
+//! This function checks for a new package
+//! \param[out] package pointer to MIDI package (received package will be put into the given variable)
+//! \return -1 if no package in buffer
+//! \return >= 0: number of packages which are still in the buffer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 {
@@ -212,9 +221,10 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler should be called from a RTOS task to check for
-// incoming/outgoing USB packages
-// OUT: returns < 0 on errors
+//! This handler should be called from a RTOS task to check for
+//! incoming/outgoing USB packages
+//! \return < 0 on errors
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Handler(void)
 {
@@ -313,7 +323,8 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called by STM32 USB driver to check for IN streams
+//! Called by STM32 USB driver to check for IN streams
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_IN_Callback(void)
 {
@@ -325,7 +336,8 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Called by STM32 USB driver to check for OUT streams
+//! Called by STM32 USB driver to check for OUT streams
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_OUT_Callback(void)
 {
@@ -334,5 +346,6 @@ void MIOS32_USB_MIDI_EP1_OUT_Callback(void)
   MIOS32_USB_MIDI_RxBufferHandler();
 }
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_USB_MIDI */

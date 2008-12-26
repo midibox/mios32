@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Motorfader functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_MF
+//!
+//! Motorfader functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -19,11 +21,6 @@
 
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_MF)
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -96,10 +93,9 @@ static void MIOS32_MF_UpdateSR(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes MF driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes motorfader driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_Init(u32 mode)
 {
@@ -153,11 +149,11 @@ s32 MIOS32_MF_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// set target position and move fader
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-//     <pos> position 
-//     (resolution depends on the used AIN resolution, usually 12bit)
-// OUT: -1 if motor doesn't exist
+//! set target position and move fader
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \param[in] pos motorfader position 
+//!      (resolution depends on the used AIN resolution, usually 12bit)
+//! \return -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_FaderMove(u32 mf, u16 pos)
 {
@@ -189,10 +185,10 @@ s32 MIOS32_MF_FaderMove(u32 mf, u16 pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// direct control over the motorfader
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-//     <direction> is MF_Standby, MF_Up or MF_Down
-// OUT: -1 if motor doesn't exist
+//! direct control over the motorfader
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \param[in] direction is MF_Standby, MF_Up or MF_Down
+//! \return -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_FaderDirectMove(u32 mf, mios32_mf_direction_t direction)
 {
@@ -215,11 +211,11 @@ s32 MIOS32_MF_FaderDirectMove(u32 mf, mios32_mf_direction_t direction)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// activates/deactivates suspend mode of motor
-// (function used by touchsensor detection)
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-//     <suspend> 1 to enable, 0 to disable suspend
-// OUT: -1 if motor doesn't exist
+//! activates/deactivates suspend mode of motor<BR>
+//! (function used by touchsensor detection)
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \param[in] suspend 1 to enable, 0 to disable suspend
+//! \return -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_SuspendSet(u32 mf, u8 suspend)
 {
@@ -243,11 +239,11 @@ s32 MIOS32_MF_SuspendSet(u32 mf, u8 suspend)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the suspend state of the motor
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-// OUT: -1 if motor doesn't exist
-//      1 if motor suspended
-//      0 if motor not suspended
+//! returns the suspend state of the motor
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \return -1 if motor doesn't exist
+//! \return 1 if motor suspended
+//! \return 0 if motor not suspended
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_SuspendGet(u32 mf)
 {
@@ -264,10 +260,10 @@ s32 MIOS32_MF_SuspendGet(u32 mf)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// this function resets the software implemented touch detection, so that the
-// fader is repositioned regardless if it is currently moved or not
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-// OUT: -1 if motor doesn't exist
+//! this function resets the software implemented touch detection, so that the
+//! fader is repositioned regardless if it is currently moved or not
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \return -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_TouchDetectionReset(u32 mf)
 {
@@ -286,15 +282,18 @@ s32 MIOS32_MF_TouchDetectionReset(u32 mf)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// this function configures various MF driver parameters.
-// see http://www.ucapps.de/mbhp_mf.html for detailed informations about
-// these parameters.
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-//     <mf_config.deadband>
-//     <mf_config.pwm_period>
-//     <mf_config.pwm_duty_cycle_up>
-//     <mf_config.pwm_duty_cycle_down>
-// OUT: -1 if motor doesn't exist
+//! This function configures various MF driver parameters.<BR>
+//! see http://www.ucapps.de/mbhp_mf.html for detailed informations about
+//! these parameters.
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \param[in] config a structure with following members:
+//! <UL>
+//!   <LI>mf_config.deadband
+//!   <LI>mf_config.pwm_period
+//!   <LI>mf_config.pwm_duty_cycle_up
+//!   <LI>mf_config.pwm_duty_cycle_down
+//! </UL>
+//! \return -1 if motor doesn't exist
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_ConfigSet(u32 mf, mios32_mf_config_t config)
 {
@@ -314,12 +313,12 @@ s32 MIOS32_MF_ConfigSet(u32 mf, mios32_mf_config_t config)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the MF configuration
-// IN: <mf> motor number (0..MIOS32_MF_NUM-1)
-// OUT: <mf_config.deadband>
-//      <mf_config.pwm_period>
-//      <mf_config.pwm_duty_cycle_up>
-//      <mf_config.pwm_duty_cycle_down>
+//! returns the MF configuration
+//! \param[in] mf motor number (0..MIOS32_MF_NUM-1)
+//! \return mf_config.deadband
+//! \return mf_config.pwm_period
+//! \return mf_config.pwm_duty_cycle_up
+//! \return mf_config.pwm_duty_cycle_down
 /////////////////////////////////////////////////////////////////////////////
 mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf)
 {
@@ -339,13 +338,14 @@ mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called from AIN DMA interrupt whenever new conversion results are available
-// IN: pointer to current conversion results
-//     pointer to differences between old and new results
-// OUT: returns -1 on errors
-//      if >= 0: mask of 16 "changed" flags which should not cleared
-//               (if "changed" flag set, the AIN driver will propagate a new
-//                conversion value to the application hook)
+//! Called from AIN DMA interrupt whenever new conversion results are available
+//! \param[in] *ain_values pointer to current conversion results
+//! \param[in] *ain_deltas pointer to differences between old and new results
+//! \return -1 on errors
+//! \return >= 0: mask of 16 "changed" flags which should not cleared
+//!               (if "changed" flag set, the AIN driver will propagate a new
+//!                conversion value to the application hook)
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas)
 {
@@ -522,5 +522,6 @@ static void MIOS32_MF_UpdateSR(void)
 }
 #endif
 
+//! \}
 
 #endif /* MIOS32_DONT_USE_MF */

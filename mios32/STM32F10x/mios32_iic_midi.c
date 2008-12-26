@@ -1,8 +1,13 @@
 // $Id$
-/*
- * IIC MIDI layer for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_IIC_MIDI
+//!
+//! IIC MIDI layer for MIOS32
+//! 
+//! Except for \ref MIOS32_IIC_MIDI_ScanInterfaces applications shouldn't call
+//! these functions directly, instead please use \ref MIOS32_MIDI layer functions
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -28,11 +33,6 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -41,9 +41,10 @@ static u8 iic_port_available = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes IIC MIDI layer
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes IIC MIDI layer
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_Init(u32 mode)
 {
@@ -106,16 +107,17 @@ s32 MIOS32_IIC_MIDI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Scans all MBHP_IIC_MIDI modules to check the availablility by sending
-// dummy requests and checking the ACK response.
-// Per module, this procedure takes at least ca. 25 uS, if no module is 
-// connected ca. 75 uS (3 retries), or even more if we have to wait for 
-// completion of the previous IIC transfer.
-// Therefore this function should only be rarely used (e.g. once per second),
-// and the state should be saved somewhere in the application
-// IN: -
-// OUT: returns 0 if all IIC interfaces scanned
-//      returns -2 if IIC interface blocked by another task (retry the scan!)
+//! Scans all MBHP_IIC_MIDI modules to check the availablility by sending
+//! dummy requests and checking the ACK response.
+//!
+//! Per module, this procedure takes at least ca. 25 uS, if no module is 
+//! connected ca. 75 uS (3 retries), or even more if we have to wait for 
+//! completion of the previous IIC transfer.
+//!
+//! Therefore this function should only be rarely used (e.g. once per second),
+//! and the state should be saved somewhere in the application
+//! \return 0 if all IIC interfaces scanned
+//! \return -2 if IIC interface blocked by another task (retry the scan!)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
 {
@@ -165,11 +167,12 @@ s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks the availability of the MBHP_IIC_MIDI module
-// taken from the last results of MIOS32_IIC_MIDI_ScanInterface()
-// IN: module number (0..7)
-// OUT: 1: interface available
-//      0: interface not available
+//! This function checks the availability of the MBHP_IIC_MIDI module
+//! taken from the last results of MIOS32_IIC_MIDI_ScanInterface()
+//! \param[in] iic_port module number (0..7)
+//! \return 1: interface available
+//! \return 0: interface not available
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_CheckAvailable(u8 iic_port)
 {
@@ -237,13 +240,15 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a new MIDI package to the selected IIC_MIDI port
-// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
-// OUT: 0: no error
-//      -1: IIC_MIDI device not available
-//      -2: IIC_MIDI buffer is full
-//          caller should retry until buffer is free again
-//      -3: IIC error during transfer
+//! This function sends a new MIDI package to the selected IIC_MIDI port
+//! \param[in] iic_port IIC_MIDI module number (0..7)
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: IIC_MIDI device not available
+//! \return -2: IIC_MIDI buffer is full
+//!             caller should retry until buffer is free again
+//! \return -3: IIC error during transfer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t package)
 {
@@ -252,12 +257,14 @@ s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t p
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a new MIDI package to the selected IIC_MIDI port
-// (blocking function)
-// IN: IIC_MIDI module number (0..7) in <iic_port>, MIDI package in <package>
-// OUT: 0: no error
-//      -1: IIC_MIDI device not available
-//      -3: IIC error during transfer
+//! This function sends a new MIDI package to the selected IIC_MIDI port
+//! (blocking function)
+//! \param[in] iic_port IIC_MIDI module number (0..7)
+//! \param[in] package MIDI package
+//! \return 0: no error
+//! \return -1: IIC_MIDI device not available
+//! \return -3: IIC error during transfer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
 {
@@ -318,13 +325,14 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks for a new package
-// IN: IIC_MIDI module number (0..7) in <iic_port>, 
-//     pointer to MIDI package in <package> (received package will be put into the given variable)
-// OUT: 0: no error
-//      -1: no package in buffer
-//      -2: IIC interface allocated - retry (only in Non Blocking mode)
-//      -3: IIC error during transfer
+//! This function checks for a new package
+//! \param[in] iic_port IIC_MIDI module number (0..7)
+//! \param[out] package pointer to MIDI package (received package will be put into the given variable)
+//! \return 0: no error
+//! \return -1: no package in buffer
+//! \return -2: IIC interface allocated - retry (only in Non Blocking mode)
+//! \return -3: IIC error during transfer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_t *package)
 {
@@ -333,13 +341,14 @@ s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks for a new package
-// (blocking function)
-// IN: IIC_MIDI module number (0..7) in <iic_port>, 
-//     pointer to MIDI package in <package> (received package will be put into the given variable)
-// OUT: 0: no error
-//      -1: no package in buffer
-//      -3: IIC error during transfer
+//! This function checks for a new package<BR>
+//! (blocking function)
+//! \param[in] iic_port IIC_MIDI module number (0..7)
+//! \param[out] package pointer to MIDI package (received package will be put into the given variable)
+//! \return 0: no error
+//! \return -1: no package in buffer
+//! \return -3: IIC error during transfer
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 {
@@ -348,11 +357,13 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns inverted state of RI_N pin
-// IN: iic_port (0..7) in <iic_port>
-// OUT: 1: RI_N active, 0: RI_N not active
-//      always 1 if RI_N pin not configured (driver uses polling method in this case)
-//      always 0 if invalid IIC port (>= 8)
+//! Returns inverted state of RI_N pin
+//! \param[in] iic_port IIC_MIDI module number (0..7)
+//! \return 1: RI_N active
+//! \return 0: RI_N not active
+//! \return always 1 if RI_N pin not configured (driver uses polling method in this case)
+//! \return always 0 if invalid IIC port (>= 8)
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
 {
@@ -399,5 +410,7 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
 #endif
   }
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_IIC_MIDI */

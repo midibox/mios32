@@ -1,11 +1,15 @@
 // $Id$
-/*
- * USB driver for MIOS32
- *
- * Based on driver included in STM32 USB library
- * Some code copied and modified from Virtual_COM_Port demo
- *
- * ==========================================================================
+//! \defgroup MIOS32_USB
+//!
+//! USB driver for MIOS32
+//! 
+//! Based on driver included in STM32 USB library
+//! Some code copied and modified from Virtual_COM_Port demo
+//! 
+//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -117,7 +121,7 @@ typedef enum _DEVICE_STATE
 // USB Standard Device Descriptor
 /////////////////////////////////////////////////////////////////////////////
 #define MIOS32_USB_SIZ_DEVICE_DESC 18
-const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
+static const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
   (u8)(MIOS32_USB_SIZ_DEVICE_DESC&0xff), // Device Descriptor length
   DSCR_DEVICE,			// Decriptor type
   (u8)(0x0200 & 0xff),		// Specification Version (BCD, LSB)
@@ -151,7 +155,7 @@ const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
 // this has to be done in *MIOS32_USB_CB_GetConfigDescriptor()
 // Problem: it would increase stack or static RAM consumption
 
-const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
+static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   // Configuration Descriptor
   9,				// Descriptor length
   DSCR_CONFIG,			// Descriptor type
@@ -719,18 +723,18 @@ const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-void MIOS32_USB_CB_Init(void);
-void MIOS32_USB_CB_Reset(void);
-void MIOS32_USB_CB_SetConfiguration(void);
-void MIOS32_USB_CB_SetDeviceAddress (void);
-void MIOS32_USB_CB_Status_In(void);
-void MIOS32_USB_CB_Status_Out(void);
-RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo);
-RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo);
-u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length);
-u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length);
-u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length);
-RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting);
+static void MIOS32_USB_CB_Init(void);
+static void MIOS32_USB_CB_Reset(void);
+static void MIOS32_USB_CB_SetConfiguration(void);
+static void MIOS32_USB_CB_SetDeviceAddress (void);
+static void MIOS32_USB_CB_Status_In(void);
+static void MIOS32_USB_CB_Status_Out(void);
+static RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo);
+static RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo);
+static u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length);
+static u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length);
+static u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length);
+static RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -824,9 +828,10 @@ static vu32 bDeviceState = UNCONNECTED;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the USB interface
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed (e.g. clock not initialised!)
+//! Initializes USB interface
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_Init(u32 mode)
 {
@@ -891,7 +896,8 @@ s32 MIOS32_USB_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Interrupt handler for USB
+//! Interrupt handler for USB
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 void USB_LP_CAN_RX0_IRQHandler(void)
 {
@@ -915,11 +921,12 @@ void USB_LP_CAN_RX0_IRQHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Hooks of STM32 USB library
+//! Hooks of STM32 USB library
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 
 // init routine
-void MIOS32_USB_CB_Init(void)
+static void MIOS32_USB_CB_Init(void)
 {
   u32 delay;
   u16 wRegVal;
@@ -973,7 +980,7 @@ void MIOS32_USB_CB_Init(void)
 }
 
 // reset routine
-void MIOS32_USB_CB_Reset(void)
+static void MIOS32_USB_CB_Reset(void)
 {
   // Set MIOS32 Device as not configured
   pInformation->Current_Configuration = 0;
@@ -1045,7 +1052,7 @@ void MIOS32_USB_CB_Reset(void)
 }
 
 // update the device state to configured.
-void MIOS32_USB_CB_SetConfiguration(void)
+static void MIOS32_USB_CB_SetConfiguration(void)
 {
   DEVICE_INFO *pInfo = &Device_Info;
 
@@ -1064,13 +1071,13 @@ void MIOS32_USB_CB_SetConfiguration(void)
 }
 
 // update the device state to addressed
-void MIOS32_USB_CB_SetDeviceAddress (void)
+static void MIOS32_USB_CB_SetDeviceAddress (void)
 {
   bDeviceState = ADDRESSED;
 }
 
 // status IN routine
-void MIOS32_USB_CB_Status_In(void)
+static void MIOS32_USB_CB_Status_In(void)
 {
 #ifdef MIOS32_USE_USB_COM
   MIOS32_USB_COM_CB_StatusIn();
@@ -1078,11 +1085,11 @@ void MIOS32_USB_CB_Status_In(void)
 }
 
 // status OUT routine
-void MIOS32_USB_CB_Status_Out(void)
+static void MIOS32_USB_CB_Status_Out(void)
 {
 }
 
-RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
+static RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 {
 #ifdef MIOS32_USE_USB_COM
   RESULT res;
@@ -1093,7 +1100,7 @@ RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo)
 }
 
 // handles the non data class specific requests.
-RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
+static RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
 {
 #ifdef MIOS32_USE_USB_COM
   RESULT res;
@@ -1105,21 +1112,21 @@ RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo)
 }
 
 // gets the device descriptor.
-u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length)
+static u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length)
 {
   ONE_DESCRIPTOR desc = {(u8 *)MIOS32_USB_DeviceDescriptor, MIOS32_USB_SIZ_DEVICE_DESC};
   return Standard_GetDescriptorData(Length, &desc);
 }
 
 // gets the configuration descriptor.
-u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length)
+static u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length)
 {
   ONE_DESCRIPTOR desc = {(u8 *)MIOS32_USB_ConfigDescriptor, MIOS32_USB_SIZ_CONFIG_DESC};
   return Standard_GetDescriptorData(Length, &desc);
 }
 
 // gets the string descriptors according to the needed index
-u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
+static u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
 {
   const u8 vendor_str[] = MIOS32_USB_VENDOR_STR;
   const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
@@ -1163,7 +1170,7 @@ u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
 }
 
 // test the interface and the alternate setting according to the supported one.
-RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting)
+static RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting)
 {
   if( AlternateSetting > 0 ) {
     return USB_UNSUPPORT;
@@ -1173,5 +1180,7 @@ RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting)
 
   return USB_SUCCESS;
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_USB */

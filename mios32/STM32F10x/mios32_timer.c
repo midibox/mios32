@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Timer interrupt functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_TIMER
+//!
+//! Timer functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -54,31 +56,34 @@ static void (*timer_callback[NUM_TIMERS])(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialize a timer
-// IN: timer (0..2)
-//     Timer allocation on STM32: 0=TIM2, 1=TIM3, 2=TIM5
-//     period in uS accuracy (1..65536)
-//     irq_handler (function-name)
-//     irq_priority: one of these values
-//       MIOS32_IRQ_PRIO_LOW      // lower than RTOS
-//       MIOS32_IRQ_PRIO_MID      // higher than RTOS
-//       MIOS32_IRQ_PRIO_HIGH     // same like SRIO, AIN, etc...
-//       MIOS32_IRQ_PRIO_HIGHEST  // higher than SRIO, AIN, etc...
-// OUT: returns 0 if initialisation passed
-//      -1 if invalid timer number
-//      -2 if invalid period
-// EXAMPLE:
-//
-//   // initialize timer for 1000 uS (= 1 mS) period
-//   MIOS32_TIMER_Init(0, 1000, MyTimer, MIOS32_IRQ_PRIO_MID);
-//
-// this will call following function periodically:
-//
-// void MyTimer(void)
-// {
-//    // your code
-// }
-//
+//! Initialize a timer
+//! \param[in] timer (0..2)<BR>
+//!     Timer allocation on STM32: 0=TIM2, 1=TIM3, 2=TIM5
+//! \param[in] period in uS accuracy (1..65536)
+//! \param[in] _irq_handler (function name)
+//! \param[in] irq_priority: one of these values:
+//! <UL>
+//!   <LI>MIOS32_IRQ_PRIO_LOW      // lower than RTOS
+//!   <LI>MIOS32_IRQ_PRIO_MID      // higher than RTOS
+//!   <LI>MIOS32_IRQ_PRIO_HIGH     // same like SRIO, AIN, etc...
+//!   <LI>MIOS32_IRQ_PRIO_HIGHEST  // higher than SRIO, AIN, etc...
+//! </UL>
+//!
+//! Example:<BR>
+//! \code
+//!   // initialize timer for 1000 uS (= 1 mS) period
+//!   MIOS32_TIMER_Init(0, 1000, MyTimer, MIOS32_IRQ_PRIO_MID);
+//! \endcode
+//! this will call following function periodically:
+//! \code
+//! void MyTimer(void)
+//! {
+//!    // your code
+//! }
+//! \endcode
+//! \return 0 if initialisation passed
+//! \return -1 if invalid timer number
+//! \return -2 if invalid period
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
 {
@@ -129,17 +134,19 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Re-Initialize a timer with given period
-// IN: timer (0..2)
-//     period in uS accuracy (1..65536)
-// OUT: returns 0 if initialisation passed
-//      -1 if invalid timer number
-//      -2 if invalid period
-// EXAMPLE:
-//
-//   // change timer period to 2 mS
-//   MIOS32_TIMER_ReInit(0, 2000);
-//
+//! Re-Initialize a timer with given period
+//!
+//! Example:<BR>
+//! \code
+//!   // change timer period to 2 mS
+//!   MIOS32_TIMER_ReInit(0, 2000);
+//! \endcode
+//! \param[in] timer (0..2)<BR>
+//!     Timer allocation on STM32: 0=TIM2, 1=TIM3, 2=TIM5
+//! \param[in] period in uS accuracy (1..65536)
+//! \return 0 if initialisation passed
+//! \return if invalid timer number
+//! \return -2 if invalid period
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
 {
@@ -164,15 +171,16 @@ s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// De-Initialize a timer
-// IN: timer (0..2)
-// OUT: returns 0 if timer has been disabled
-//      -1 if invalid timer number
-// EXAMPLE:
-//
-//   // disable timer
-//   MIOS32_TIMER_DeInit(0);
-//
+//! De-Initialize a timer
+//!
+//! Example:<BR>
+//! \code
+//!   // disable timer
+//!   MIOS32_TIMER_DeInit(0);
+//! \endcode
+//! \param[in] timer (0..2)
+//! \return 0 if timer has been disabled
+//! \return -1 if invalid timer number
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_TIMER_DeInit(u8 timer)
 {
@@ -188,7 +196,8 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Interrupt handlers
+//! Interrupt handlers
+//! \note don't call them directly from application
 /////////////////////////////////////////////////////////////////////////////
 TIMER0_IRQ_HANDLER
 {
@@ -213,5 +222,7 @@ TIMER2_IRQ_HANDLER
     timer_callback[2]();
   }
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_TIMER */

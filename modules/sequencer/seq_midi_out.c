@@ -74,7 +74,7 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 //! This function schedules a MIDI event, which will be sent over a given
 //! port at a given bpm_tick
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] package MIDI package
+//! \param[in] midi_package MIDI package
 //! \param[in] event_type the event type
 //! \param[in] timestamp the bpm_tick value at which the event should be sent
 //! \return 0 if event has been scheduled successfully

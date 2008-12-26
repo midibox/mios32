@@ -1,8 +1,10 @@
 // $Id$
-/*
- * IIC BankStick layer for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_IIC_BS
+//!
+//! IIC BankStick layer for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -20,23 +22,12 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_IIC_BS)
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 // bankstick sizes
-const s32 bs_size[8] = {
+static const s32 bs_size[8] = {
   MIOS32_IIC_BS0_SIZE,
   MIOS32_IIC_BS1_SIZE,
   MIOS32_IIC_BS2_SIZE,
@@ -52,10 +43,9 @@ static u8 bs_available = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes BankSticks
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes BankSticks
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_Init(u32 mode)
 {
@@ -81,16 +71,16 @@ s32 MIOS32_IIC_BS_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Scans all BankSticks to check the availablility by sending dummy requests
-// and checking the ACK response.
-// Per module, this procedure takes at least ca. 25 uS, if no module is 
-// connected ca. 75 uS (3 retries), or even more if we have to wait for 
-// completion of the previous IIC transfer.
-// Therefore this function should only be rarely used (e.g. once per second),
-// and the state should be saved somewhere in the application
-// IN: -
-// OUT: returns 0 if all BankSticks scanned
-//      returns -2 if BankStick blocked by another task (retry the scan!)
+//! Scans all BankSticks to check the availablility by sending dummy requests
+//! and checking the ACK response.
+//!
+//! Per module, this procedure takes at least ca. 25 uS, if no module is 
+//! connected ca. 75 uS (3 retries), or even more if we have to wait for 
+//! completion of the previous IIC transfer.
+//! Therefore this function should only be rarely used (e.g. once per second),
+//! and the state should be saved somewhere in the application
+//! \return 0 if all BankSticks scanned
+//! \return -2 if BankStick blocked by another task (retry the scan!)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_ScanBankSticks(void)
 {
@@ -128,11 +118,11 @@ s32 MIOS32_IIC_BS_ScanBankSticks(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function checks the availability of a BankStick
-// taken from the last results of MIOS32_IIC_BS_ScanBankSticks()
-// IN: BankStick number (0-7)
-// OUT: >0: BankStick available, returns the size in bytes (e.g. 32768)
-//      0: BankStick not available
+//! This function checks the availability of a BankStick
+//! taken from the last results of \ref MIOS32_IIC_BS_ScanBankSticks
+//! \param[in] bs BankStick number (0-7)
+//! \return >0: BankStick available, returns the size in bytes (e.g. 32768)
+//! \return 0: BankStick not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_CheckAvailable(u8 bs)
 {
@@ -145,16 +135,16 @@ s32 MIOS32_IIC_BS_CheckAvailable(u8 bs)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Reads one or more bytes into a buffer
-// IN: <bs> BankStick number (0-7)
-//     <address> BankStick address (depends on size)
-//     <buffer> destination buffer
-//     <len> number of bytes which should be read (1..64)
-// OUT: returns 0 if operation was successful
-//      returns -1 if error during IIC transfer
-//      returns -2 if BankStick blocked by another task (retry it!)
-//      returns -3 if BankStick wasn't available at last scan
-//      returns -4 if invalid length
+//! Reads one or more bytes into a buffer
+//! \param[in] bs BankStick number (0-7)
+//! \param[in] address BankStick address (depends on size)
+//! \param[out] buffer destination buffer
+//! \param[in] len number of bytes which should be read (1..64)
+//! \return 0 if operation was successful
+//! \return -1 if error during IIC transfer
+//! \return -2 if BankStick blocked by another task (retry it!)
+//! \return -3 if BankStick wasn't available at last scan
+//! \return -4 if invalid length
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_Read(u8 bs, u16 address, u8 *buffer, u8 len)
 {
@@ -196,18 +186,18 @@ s32 MIOS32_IIC_BS_Read(u8 bs, u16 address, u8 *buffer, u8 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Writes one or more bytes into the BankStick
-// IN: <bs> BankStick number (0-7)
-//     <address> BankStick address (depends on size)
-//     <buffer> source buffer
-//     <len> number of bytes which should be written (1..64)
-// OUT: returns 0 if operation was successful
-//      returns -1 if error during IIC transfer
-//      returns -2 if BankStick blocked by another task (retry it!)
-//      returns -3 if BankStick wasn't available at last scan
-//      returns -4 if invalid length
-// use MIOS32_IIC_BS_CheckWriteFinished() to check when the write operation
-// has been finished - this can take up to 5 mS!
+//! Writes one or more bytes into the BankStick
+//! \param[in] bs BankStick number (0-7)
+//! \param[in] address BankStick address (depends on size)
+//! \param[in] buffer source buffer
+//! \param[in] len number of bytes which should be written (1..64)
+//! \return 0 if operation was successful
+//! \return -1 if error during IIC transfer
+//! \return -2 if BankStick blocked by another task (retry it!)
+//! \return -3 if BankStick wasn't available at last scan
+//! \return -4 if invalid length
+//! \note Use \ref MIOS32_IIC_BS_CheckWriteFinished to check when the write operation
+//! has been finished - this can take up to 5 mS!
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_Write(u8 bs, u16 address, u8 *buffer, u8 len)
 {
@@ -248,14 +238,14 @@ s32 MIOS32_IIC_BS_Write(u8 bs, u16 address, u8 *buffer, u8 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Has to be used after MIOS32_IIC_BS_Write (during write operation) 
-// to poll the device state
-// IN: BankStick number (0-7)
-// OUT: 1: if BankStick was available before, and now doesn't respond: write operation is in progress
-//      0: BankStick available, write operation finished
-//      returns -1 if error during IIC transfer
-//      returns -2 if BankStick blocked by another task (retry it!)
-//      returns -3 if BankStick wasn't available at last scan
+//! Has to be used after MIOS32_IIC_BS_Write (during write operation) 
+//! to poll the device state
+//! \param[in] bs BankStick number (0-7)
+//! \return 1 if BankStick was available before, and now doesn't respond: write operation is in progress
+//! \return 0 if BankStick available, write operation finished
+//! \return -1 if error during IIC transfer
+//! \return -2 if BankStick blocked by another task (retry it!)
+//! \return -3 if BankStick wasn't available at last scan
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_BS_CheckWriteFinished(u8 bs)
 {
@@ -286,5 +276,7 @@ s32 MIOS32_IIC_BS_CheckWriteFinished(u8 bs)
   return -1; // IIC error (for debugging: error status can be read with MIOS32_IIC_LastErrorGet())
 #endif
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_IIC_BS */

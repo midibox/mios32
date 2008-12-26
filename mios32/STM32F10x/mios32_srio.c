@@ -1,8 +1,9 @@
 // $Id$
-/*
- * SRIO Driver for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_SRIO
+//!
+//! SRIO Driver for MIOS32
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -109,11 +110,9 @@ static volatile u8 srio_values_transfered;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes SPI pins and peripheral
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide different pin mappings and operation 
-//             modes (e.g. output only)
-// OUT: returns < 0 if initialisation failed
+//! Initializes SPI pins and peripheral
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SRIO_Init(u32 mode)
 {
@@ -257,11 +256,11 @@ s32 MIOS32_SRIO_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// (Re-)Starts the SPI IRQ Handler which scans the SRIO chain
-// IN: notification function which will be called after the scan has been finished
-//     (all DOUT registers written, all DIN registers read)
-//     use NULL if no function should be called
-// OUT: returns < 0 if operation failed
+//! (Re-)Starts the SPI IRQ Handler which scans the SRIO chain
+//! \param[in] _notify_hook notification function which will be called after the scan has been finished
+//!     (all DOUT registers written, all DIN registers read)
+//!     use NULL if no function should be called
+//! \return < 0 if operation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 {
@@ -308,8 +307,9 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DMA1 Channel interrupt is triggered once the complete SRIO chain
-// has been scanned
+//! DMA1 Channel interrupt is triggered once the complete SRIO chain
+//! has been scanned
+//! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 MIOS32_SRIO_DMA_IRQHANDLER_FUNC
 {
@@ -339,6 +339,8 @@ MIOS32_SRIO_DMA_IRQHANDLER_FUNC
 
   // next transfer has to be started with MIOS32_SRIO_ScanStart
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_SRIO */
 

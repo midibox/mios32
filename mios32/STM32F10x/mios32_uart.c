@@ -1,8 +1,12 @@
 // $Id$
-/*
- * U(S)ART functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_UART
+//!
+//! U(S)ART functions for MIOS32
+//!
+//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -62,9 +66,10 @@ static volatile u8 tx_buffer_size[MIOS32_UART_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes UART interfaces
-// IN: <mode>: currently only mode 0 supported
-// OUT: returns < 0 if initialisation failed
+//! Initializes UART interfaces
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_Init(u32 mode)
 {
@@ -164,10 +169,11 @@ s32 MIOS32_UART_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of free bytes in receive buffer
-// IN: UART number (0..1)
-// OUT: number of free bytes
-//      if uart not available: 0
+//! returns number of free bytes in receive buffer
+//! \param[in] uart UART number (0..1)
+//! \return uart number of free bytes
+//! \return 1: uart available
+//! \return 0: uart not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferFree(u8 uart)
 {
@@ -183,10 +189,11 @@ s32 MIOS32_UART_RxBufferFree(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of used bytes in receive buffer
-// IN: UART number (0..1)
-// OUT: number of used bytes
-//      if uart not available: 0
+//! returns number of used bytes in receive buffer
+//! \param[in] uart UART number (0..1)
+//! \return > 0: number of used bytes
+//! \return 0 if uart not available
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferUsed(u8 uart)
 {
@@ -202,11 +209,12 @@ s32 MIOS32_UART_RxBufferUsed(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// gets a byte from the receive buffer
-// IN: UART number (0..1)
-// OUT: -1 if UART not available
-//      -2 if no new byte available
-//      otherwise received byte
+//! gets a byte from the receive buffer
+//! \param[in] uart UART number (0..1)
+//! \return -1 if UART not available
+//! \return -2 if no new byte available
+//! \return >= 0: number of received bytes
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferGet(u8 uart)
 {
@@ -233,11 +241,12 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the next byte of the receive buffer without taking it
-// IN: UART number (0..1)
-// OUT: -1 if UART not available
-//      -2 if no new byte available
-//      otherwise received byte
+//! returns the next byte of the receive buffer without taking it
+//! \param[in] uart UART number (0..1)
+//! \return -1 if UART not available
+//! \return -2 if no new byte available
+//! \return >= 0: number of received bytes
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPeek(u8 uart)
 {
@@ -261,12 +270,13 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts a byte onto the receive buffer
-// IN: UART number (0..1) and byte to be sent
-// OUT: 0 if no error
-//      -1 if UART not available
-//      -2 if buffer full (retry)
-//      
+//! puts a byte onto the receive buffer
+//! \param[in] uart UART number (0..1)
+//! \param[in] b byte which should be put into Rx buffer
+//! \return 0 if no error
+//! \return -1 if UART not available
+//! \return -2 if buffer full (retry)
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 {
@@ -294,10 +304,11 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of free bytes in transmit buffer
-// IN: UART number (0..1)
-// OUT: number of free bytes
-//      if uart not available: 0
+//! returns number of free bytes in transmit buffer
+//! \param[in] uart UART number (0..1)
+//! \return number of free bytes
+//! \return 0 if uart not available
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferFree(u8 uart)
 {
@@ -313,10 +324,11 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns number of used bytes in transmit buffer
-// IN: UART number (0..1)
-// OUT: number of used bytes
-//      if uart not available: 0
+//! returns number of used bytes in transmit buffer
+//! \param[in] uart UART number (0..1)
+//! \return number of used bytes
+//! \return 0 if uart not available
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferUsed(u8 uart)
 {
@@ -332,11 +344,12 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// gets a byte from the transmit buffer
-// IN: UART number (0..1)
-// OUT: -1 if UART not available
-//      -2 if no new byte available
-//      otherwise transmitted byte
+//! gets a byte from the transmit buffer
+//! \param[in] uart UART number (0..1)
+//! \return -1 if UART not available
+//! \return -2 if no new byte available
+//! \return >= 0: transmitted byte
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferGet(u8 uart)
 {
@@ -363,12 +376,15 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts more than one byte onto the transmit buffer (used for atomic sends)
-// IN: UART number (0..1), buffer to be sent and buffer length
-// OUT: 0 if no error
-//      -1 if UART not available
-//      -2 if buffer full or cannot get all requested bytes (retry)
-//      -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! puts more than one byte onto the transmit buffer (used for atomic sends)
+//! \param[in] uart UART number (0..1)
+//! \param[in] *buffer pointer to buffer to be sent
+//! \param[in] len number of bytes to be sent
+//! \return 0 if no error
+//! \return -1 if UART not available
+//! \return -2 if buffer full or cannot get all requested bytes (retry)
+//! \return -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 {
@@ -418,12 +434,15 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// puts more than one byte onto the transmit buffer (used for atomic sends)
-// (blocking function)
-// IN: UART number (0..1), buffer to be sent and buffer length
-// OUT: 0 if no error
-//      -1 if UART not available
-//      -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! puts more than one byte onto the transmit buffer (used for atomic sends)<BR>
+//! (blocking function)
+//! \param[in] uart UART number (0..1)
+//! \param[in] *buffer pointer to buffer to be sent
+//! \param[in] len number of bytes to be sent
+//! \return 0 if no error
+//! \return -1 if UART not available
+//! \return -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
 {
@@ -436,12 +455,14 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts a byte onto the transmit buffer
-// IN: UART number (0..1) and byte to be sent
-// OUT: 0 if no error
-//      -1 if UART not available
-//      -2 if buffer full (retry)
-//      -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! puts a byte onto the transmit buffer
+//! \param[in] uart UART number (0..1)
+//! \param[in] b byte which should be put into Tx buffer
+//! \return 0 if no error
+//! \return -1 if UART not available
+//! \return -2 if buffer full (retry)
+//! \return -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPut_NonBlocking(u8 uart, u8 b)
 {
@@ -452,12 +473,14 @@ s32 MIOS32_UART_TxBufferPut_NonBlocking(u8 uart, u8 b)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// puts a byte onto the transmit buffer
-// (blocking function)
-// IN: UART number (0..1) and byte to be sent
-// OUT: 0 if no error
-//      -1 if UART not available
-//      -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! puts a byte onto the transmit buffer<BR>
+//! (blocking function)
+//! \param[in] uart UART number (0..1)
+//! \param[in] b byte which should be put into Tx buffer
+//! \return 0 if no error
+//! \return -1 if UART not available
+//! \return -3 if UART not supported by MIOS32_UART_TxBufferPut Routine
+//! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
 {

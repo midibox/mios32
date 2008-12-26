@@ -31,19 +31,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Aliases to app_lcd functions
-/////////////////////////////////////////////////////////////////////////////
-
-#define MIOS32_LCD_Data(data) APP_LCD_Data(data)
-#define MIOS32_LCD_Cmd(cmd) APP_LCD_Cmd(cmd)
-#define MIOS32_LCD_PrintChar(c) APP_LCD_PrintChar(c)
-#define MIOS32_LCD_Clear() APP_LCD_Clear()
-#define MIOS32_LCD_SpecialCharInit(num, table) APP_LCD_SpecialCharInit(num, table)
-#define MIOS32_LCD_BColourSet(r, g, b) APP_LCD_BColourSet(r, g, b)
-#define MIOS32_LCD_FColourSet(r, g, b) APP_LCD_FColourSet(r, g, b)
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -59,6 +46,15 @@ extern s32 MIOS32_LCD_PrintFormattedString(char *format, ...);
 extern s32 MIOS32_LCD_SpecialCharsInit(u8 table[64]);
 
 extern s32 MIOS32_LCD_FontInit(u8 *font);
+
+// forward functions to app_lcd
+extern s32 MIOS32_LCD_Data(u8 data);
+extern s32 MIOS32_LCD_Cmd(u8 cmd);
+extern s32 MIOS32_LCD_Clear(void);
+extern s32 MIOS32_LCD_PrintChar(char c);
+extern s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8]);
+extern s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b);
+extern s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -182,7 +182,7 @@ float SEQ_BPM_Get(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets a new BPM rate
-//! \param[in] bpm rate as float
+//! \param[in] _bpm rate as float
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_Set(float _bpm)
 {
@@ -629,8 +629,8 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a new song position if requested from external
-//! \param[out] bpm_tick_ptr a pointer to a u32 value which will get the 
-//!             requested bpm_tick
+//! \param[out] song_pos a pointer to a u32 value which will get the 
+//!             new song position
 //! \return 0 if no song position request (content of song_pos invalid)
 //! \return 1 if new song position has been requested (content of song_pos valid)
 /////////////////////////////////////////////////////////////////////////////

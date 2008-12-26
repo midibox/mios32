@@ -1,8 +1,10 @@
 // $Id$
-/*
- * System Specific IRQ Enable/Disable routines
- *
- * ==========================================================================
+//! \defgroup MIOS32_IRQ
+//!
+//! System Specific IRQ Enable/Disable routines
+//! 
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -27,9 +29,8 @@ static u32 nested_ctr;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function disables all interrupts (nested)
-// IN: -
-// OUT: -
+//! This function disables all interrupts (nested)
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IRQ_Disable(void)
 {
@@ -46,9 +47,8 @@ s32 MIOS32_IRQ_Disable(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function enables all interrupts (nested)
-// IN: -
-// OUT: -
+//! This function enables all interrupts (nested)
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IRQ_Enable(void)
 {
@@ -64,6 +64,8 @@ s32 MIOS32_IRQ_Enable(void)
 
   return 0; // no error
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_IRQ */
 

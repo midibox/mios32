@@ -1,8 +1,10 @@
 // $Id$
-/*
- * DOUT functions for MIOS32
- *
- * ==========================================================================
+//! \defgroup MIOS32_DOUT
+//!
+//! DOUT functions for MIOS32
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -22,18 +24,8 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// temporary help function to mirror a byte
-// (could be provides as MIOS32 help function later)
+//! temporary help array to mirror a byte
+//! (could be provided as MIOS32 help function later)
 /////////////////////////////////////////////////////////////////////////////
 
 // DOUT bits are uploaded in reversed order compared to PIC based MIOS, and
@@ -69,13 +61,10 @@ const u8 mios32_dout_reverse_tab[256] = {
 };
 
 
-
-
 /////////////////////////////////////////////////////////////////////////////
-// Initializes DOUT driver
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide operation modes
-// OUT: returns < 0 if initialisation failed
+//! Initializes DOUT driver
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_Init(u32 mode)
 {
@@ -96,9 +85,11 @@ s32 MIOS32_DOUT_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value from a DOUT Pin
-// IN: pin number in <pin>
-// OUT: 1 if pin is Vss, 0 if pin is 0V, -1 if pin not available
+//! Returns value from a DOUT Pin
+//! \param[in] pin number (0..127)
+//! \return 1 if pin is Vss (ie. 5V)
+//! \return 0 if pin is 0V
+//! \return -1 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_PinGet(u32 pin)
 {
@@ -111,9 +102,10 @@ s32 MIOS32_DOUT_PinGet(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// set pin to 0 or Vss
-// IN: pin number in <pin>, pin value in <value>
-// OUT: returns < 0 if pin not available
+//! Sets value of a DOUT Pin
+//! \param[in] pin number (0..127)
+//! \param[in] value of the pin (0 or 1)
+//! \return -1 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 {
@@ -132,9 +124,10 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of DOUT shift register
-// IN: shift register number in <sr>
-// OUT: 8bit value of shift register, -1 if SR not available
+//! Returns 8bit value of a DOUT shift register
+//! \param[in] sr shift register number (0..15)
+//! \return 8bit value of shift register
+//! \return -1 if shift register not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_SRGet(u32 sr)
 {
@@ -146,9 +139,10 @@ s32 MIOS32_DOUT_SRGet(u32 sr)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// sets value of DOUT shift register
-// IN: shift register number in <sr>, 8bit shift register value in <value>
-// OUT: returns -1 if SR not available
+//! Sets 8bit value of a DOUT shift register
+//! \param[in] sr shift register number (0..15)
+//! \param[in] value 8bit value of shift register
+//! \return -1 if shift register not available
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 {
@@ -160,5 +154,7 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 
   return 0;
 }
+
+//! \}
 
 #endif /* MIOS32_DONT_USE_DOUT */
