@@ -38,6 +38,9 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_DELAY
 #define MIOS32_DONT_USE_SDCARD
 
+// calls to FreeRTOS required? (e.g. to disable tasks on critical sections)
+#define MIOS32_DONT_USE_FREERTOS
+
 
 // number of scanned SR registers on SRIO chain
 // default value 16 (see mios32_srio.h)
