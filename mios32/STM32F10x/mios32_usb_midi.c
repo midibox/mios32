@@ -26,9 +26,10 @@
 
 #include <usb_lib.h>
 
+#ifndef MIOS32_DONT_USE_FREERTOS
 #include <FreeRTOS.h>
 #include <portmacro.h>
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -135,9 +136,13 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
     // (this call simplifies polling loops!)
 
     // disable execution of other tasks while USB_MIDI_Handler() is processed
+#ifndef MIOS32_DONT_USE_FREERTOS
     portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
+#endif
     MIOS32_USB_MIDI_Handler();
+#ifndef MIOS32_DONT_USE_FREERTOS
     portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
+#endif
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
