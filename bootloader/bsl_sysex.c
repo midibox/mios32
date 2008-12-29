@@ -35,9 +35,6 @@
 #define MEM16(addr) (*((volatile u16 *)(addr)))
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
-// STM32: base address of flash memory
-#define FLASH_BASE_ADDR   0x08000000
-
 // STM32: determine size of flash, it's stored in the "electronic signature"
 #define FLASH_SIZE        (MEM16(0x1ffff7e0) * 0x400)
 
@@ -45,13 +42,17 @@
 // TODO: find a proper way, as there could be high density devices with less than 256k?)
 #define FLASH_PAGE_SIZE   (MEM16(0x1ffff7e0) >= 0x100 ? 0x800 : 0x400)
 
+// STM32: flash memory range (16k BSL range excluded)
+#define FLASH_START_ADDR  (0x08000000 + 0x4000)
+#define FLASH_END_ADDR    (0x08000000 + FLASH_SIZE - 0x4000 - 1)
 
-// STM32: base address of SRAM
-#define SRAM_BASE_ADDR    0x20000000
 
 // STM32: determine size of SRAM, it's stored in the "electronic signature"
 #define SRAM_SIZE         (MEM16(0x1ffff7e2) * 0x400)
 
+// STM32: base address of SRAM
+#define SRAM_START_ADDR   (0x20000000)
+#define SRAM_END_ADDR     (0x20000000 + SRAM_SIZE - 1)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -497,7 +498,7 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
     return -BSL_SYSEX_DISACK_ADDR_NOT_ALIGNED;
 
   // check for flash memory range
-  if( addr >= FLASH_BASE_ADDR && addr < (FLASH_BASE_ADDR + FLASH_SIZE) ) {
+  if( addr >= FLASH_START_ADDR && addr <= FLASH_END_ADDR ) {
     // FLASH_* routines are part of the STM32 code library
     FLASH_Unlock();
 
@@ -517,7 +518,7 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
   }
 
   // check for SRAM memory range
-  if( addr >= SRAM_BASE_ADDR && addr < (SRAM_BASE_ADDR + SRAM_SIZE) ) {
+  if( addr >= SRAM_START_ADDR && addr <= SRAM_END_ADDR ) {
 
     // transfer buffer into SRAM
     memcpy((u8 *)addr, (u8 *)buffer, len);
