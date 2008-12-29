@@ -104,8 +104,8 @@ typedef union {
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-int SYSEX_Init(void);
-int SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch);
-int SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 SYSEX_Init(u32 mode);
+extern s32 SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch);
+extern s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 
 #endif /* _SYSEX_H */

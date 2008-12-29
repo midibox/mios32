@@ -33,8 +33,11 @@ u8 patch_structure[256];
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the patch structure
 /////////////////////////////////////////////////////////////////////////////
-int PATCH_Init(void)
+s32 PATCH_Init(u32 mode)
 {
+  if( mode != 0 )
+    return -1; // only mode 0 supported
+
   // load first patch
   PATCH_Load(0, 0); // bank, patch
 
@@ -54,7 +57,7 @@ u8 PATCH_ReadByte(u8 addr)
 /////////////////////////////////////////////////////////////////////////////
 // This function writes a byte into patch structure in RAM
 /////////////////////////////////////////////////////////////////////////////
-int PATCH_WriteByte(u8 addr, u8 byte)
+s32 PATCH_WriteByte(u8 addr, u8 byte)
 {
   patch_structure[addr] = byte;
 
@@ -66,12 +69,12 @@ int PATCH_WriteByte(u8 addr, u8 byte)
 // This function loads the patch structure from EEPROM/BankStick
 // Returns != 0 if Load failed (e.g. BankStick not connected)
 /////////////////////////////////////////////////////////////////////////////
-int PATCH_Load(u8 bank, u8 patch)
+s32 PATCH_Load(u8 bank, u8 patch)
 {
 #if PATCH_USE_BANKSTICK
   // determine offset depending on patch number
   u16 offset = patch << 8;
-  int error;
+  s32 error;
   int i;
 
   // use 64byte page load functions for faster access
@@ -92,12 +95,12 @@ int PATCH_Load(u8 bank, u8 patch)
 // This function stores the patch structure into EEPROM/BankStick
 // Returns != 0 if Store failed (e.g. BankStick not connected)
 /////////////////////////////////////////////////////////////////////////////
-int PATCH_Store(u8 bank, u8 patch)
+s32 PATCH_Store(u8 bank, u8 patch)
 {
 #if PATCH_USE_BANKSTICK
   // determine offset depending on patch number
   u16 offset = patch << 8;
-  int error;
+  s32 error;
   int i;
 
   // use 64byte page write functions for faster access

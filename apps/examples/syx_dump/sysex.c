@@ -27,13 +27,13 @@
 // Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static int SYSEX_CmdFinished(void);
-static int SYSEX_SendFooter(u8 force);
-static int SYSEX_Cmd(u8 cmd_state, u8 midi_in);
+static s32 SYSEX_CmdFinished(void);
+static s32 SYSEX_SendFooter(u8 force);
+static s32 SYSEX_Cmd(u8 cmd_state, u8 midi_in);
 
-static int SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in);
-static int SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in);
-static int SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in);
+static s32 SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in);
+static s32 SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in);
+static s32 SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,8 +75,12 @@ u8 sysex_buffer[1024];
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the SysEx handler
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Init(void)
+s32 SYSEX_Init(u32 mode)
 {
+  if( mode != 0 )
+    return -1; // only mode 0 supported
+
+  sysex_port = DEFAULT;
   sysex_state.ALL = 0;
 
   return 0; // no error
@@ -86,7 +90,7 @@ int SYSEX_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function sends a SysEx dump of the patch structure
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch)
+s32 SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch)
 {
   int i;
   int sysex_buffer_ix = 0;
@@ -123,7 +127,7 @@ int SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch)
 
 #if SYSEX_CHECKSUM_PROTECTION
   // send checksum
-  sysex_buffer[sysex_buffer_ix++] = (checksum ^ 0xff) & 0x7f;
+  sysex_buffer[sysex_buffer_ix++] = -checksum & 0x7f;
 #endif
 
   // send footer
@@ -138,7 +142,7 @@ int SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch)
 // This function sends a SysEx acknowledge to notify the user about the received command
 // expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
+s32 SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 {
   int i;
   int sysex_buffer_ix = 0;
@@ -164,19 +168,13 @@ int SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 /////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for SysEx messages
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
+s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
-  // ignore realtime messages (see MIDI spec - realtime messages can 
-  // always be injected into events/streams, and don't change the running status)
-  if( midi_in >= 0xf8 )
-    return 0;
-
-  // only receive SysEx messages over default port
-  if( port != DEFAULT )
+  // TODO: here we could send an error notification, that multiple devices are trying to access the device
+  if( sysex_state.MY_SYSEX && port != sysex_port )
     return -1;
 
-  // (we could add a multi-port handling here)
-  sysex_port = DEFAULT;
+  sysex_port = port;
 
   // branch depending on state
   if( !sysex_state.MY_SYSEX ) {
@@ -218,7 +216,7 @@ int SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 // This function is called at the end of a sysex command or on 
 // an invalid message
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_CmdFinished(void)
+s32 SYSEX_CmdFinished(void)
 {
   // clear all status variables
   sysex_state.ALL = 0;
@@ -235,7 +233,7 @@ int SYSEX_CmdFinished(void)
 // This function sends the SysEx footer if merger enabled
 // if force == 1, send the footer regardless of merger state
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_SendFooter(u8 force)
+s32 SYSEX_SendFooter(u8 force)
 {
 #if 0
   // TODO ("force" not used yet, merger not available yet)
@@ -249,7 +247,7 @@ int SYSEX_SendFooter(u8 force)
 /////////////////////////////////////////////////////////////////////////////
 // This function handles the sysex commands
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Cmd(u8 cmd_state, u8 midi_in)
+s32 SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 {
   // enter the commands here
   switch( sysex_cmd ) {
@@ -276,7 +274,7 @@ int SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 01: Read Patch handler
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in)
+s32 SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
@@ -323,7 +321,7 @@ int SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 02: Write Patch handler
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
+s32 SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
@@ -387,13 +385,13 @@ int SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 	// too many bytes received
 	SYSEX_SendAck(sysex_port, SYSEX_DISACK, SYSEX_DISACK_MORE_BYTES_THAN_EXP);
 #if SYSEX_CHECKSUM_PROTECTION
-      } else if( sysex_received_checksum != ((sysex_checksum ^ 0xff) & 0x7f) ) {
+      } else if( sysex_received_checksum != (-sysex_checksum & 0x7f) ) {
 	// notify that wrong checksum has been received
 	SYSEX_SendAck(sysex_port, SYSEX_DISACK, SYSEX_DISACK_WRONG_CHECKSUM);
 #endif
       } else {
 	// write patch
-	int error;
+	s32 error;
 	if( error = PATCH_Store(sysex_bank, sysex_patch) ) {
 	  // write failed (bankstick not available)
 	  SYSEX_SendAck(sysex_port, SYSEX_DISACK, SYSEX_DISACK_BS_NOT_AVAILABLE);
@@ -414,7 +412,7 @@ int SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 0F: Ping (just send back acknowledge)
 /////////////////////////////////////////////////////////////////////////////
-int SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in)
+s32 SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
