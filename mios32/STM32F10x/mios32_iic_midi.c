@@ -309,7 +309,7 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
     package->evnt2 = buffer[3];
 
     if( error == 0 )
-      MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, package);
+      MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, *package);
 
     error = package->type ? 0 : -1; // return 0 if new package is available
   } else {
