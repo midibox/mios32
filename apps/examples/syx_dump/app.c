@@ -46,10 +46,10 @@ void APP_Init(void)
   MIOS32_BOARD_LED_Init(0xffffffff);
 
   // initialise SysEx parser
-  SYSEX_Init();
+  SYSEX_Init(0);
 
   // initialize patch structure
-  PATCH_Init();
+  PATCH_Init(0);
 
   // init local patch/bank
   patch = bank = 0;

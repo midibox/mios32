@@ -36,12 +36,12 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern int PATCH_Init(void);
+extern s32 PATCH_Init(u32 mode);
 
 extern u8  PATCH_ReadByte(u8 addr);
-extern int PATCH_WriteByte(u8 addr, u8 byte);
+extern s32 PATCH_WriteByte(u8 addr, u8 byte);
 
-extern int PATCH_Load(u8 bank, u8 patch);
-extern int PATCH_Store(u8 bank, u8 patch);
+extern s32 PATCH_Load(u8 bank, u8 patch);
+extern s32 PATCH_Store(u8 bank, u8 patch);
 
 #endif /* _PATCH_H */

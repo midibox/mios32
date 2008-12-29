@@ -93,7 +93,7 @@ typedef union {
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-s32 BSL_SYSEX_Init(u32 mode);
-s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 BSL_SYSEX_Init(u32 mode);
+extern s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 
 #endif /* _BSL_SYSEX_H */
