@@ -63,8 +63,8 @@ static s32 BSL_SYSEX_CmdFinished(void);
 static s32 BSL_SYSEX_SendFooter(u8 force);
 static s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 
-static s32 BSL_SYSEX_Cmd_ReadFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_WriteFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_Ping(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 
 static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in);
@@ -228,10 +228,10 @@ s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
   // enter the commands here
   switch( sysex_cmd ) {
     case 0x01:
-      BSL_SYSEX_Cmd_ReadFlash(cmd_state, midi_in);
+      BSL_SYSEX_Cmd_ReadMem(cmd_state, midi_in);
       break;
     case 0x02:
-      BSL_SYSEX_Cmd_WriteFlash(cmd_state, midi_in);
+      BSL_SYSEX_Cmd_WriteMem(cmd_state, midi_in);
       break;
     case 0x0f:
       BSL_SYSEX_Cmd_Ping(cmd_state, midi_in);
@@ -248,9 +248,9 @@ s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Command 01: Read Flash handler
+// Command 01: Read Memory handler
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_ReadFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
@@ -285,9 +285,9 @@ s32 BSL_SYSEX_Cmd_ReadFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Command 02: Write Flash handler
+// Command 02: Write Memory handler
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_WriteFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u32 bit_ctr8 = 0;
   static u32 value8 = 0;
@@ -352,7 +352,7 @@ s32 BSL_SYSEX_Cmd_WriteFlash(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 	// notify that wrong checksum has been received
 	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_WRONG_CHECKSUM);
       } else {
-	// write flash
+	// write received data into memory
 	s32 error;
 	if( error = BSL_SYSEX_WriteMem(sysex_addr, sysex_len, sysex_buffer) ) {
 	  // write failed - return negated error status
@@ -439,7 +439,7 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
   // device ID
   *sysex_buffer_ptr++ = sysex_device_id;
 
-  // "write flash" command (so that dump could be sent back to overwrite flash w/o modifications)
+  // "write mem" command (so that dump could be sent back to overwrite the memory w/o modifications)
   *sysex_buffer_ptr++ = 0x02;
 
   // send 32bit address (divided by 16) in 7bit format
@@ -454,7 +454,7 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
   checksum += *sysex_buffer_ptr++ = (len >> 10) & 0x7f;
   checksum += *sysex_buffer_ptr++ = (len >>  3) & 0x7f;
 
-  // send flash content
+  // send memory content
   u8 value7 = 0;
   u8 bit_ctr7 = 0;
   i=0;
@@ -489,7 +489,7 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function writes into a memory
-// We expect that address and length are aligned to 16
+// We expect that address and length are aligned to 4
 /////////////////////////////////////////////////////////////////////////////
 static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 {
