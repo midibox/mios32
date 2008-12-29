@@ -192,7 +192,7 @@ s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
     }
   }
 
-  return 0; // no error
+  return sysex_state.MY_SYSEX ? 1 : 0; // no error - return 1 if new command is received
 }
 
 /////////////////////////////////////////////////////////////////////////////
