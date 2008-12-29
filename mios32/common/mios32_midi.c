@@ -571,7 +571,8 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
       // branch depending on package type
       if( package.type >= 0x8 ) {
-	callback_event(port, package);
+	if( callback_event != NULL )
+	  callback_event(port, package);
       } else {
 	switch( package.type ) {
   	case 0x0: // reserved, ignore
@@ -580,27 +581,37 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
 	case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc. 
 	case 0x3: // Three-byte System Common messages like SPP, etc. 
-	  callback_event(port, package); // -> forwarded as event
+	  if( callback_event != NULL )
+	    callback_event(port, package); // -> forwarded as event
 	  break;
 	case 0x4: // SysEx starts or continues (3 bytes)
-	  callback_sysex(port, package.evnt0); // -> forwarded as SysEx
-	  callback_sysex(port, package.evnt1); // -> forwarded as SysEx
-	  callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	  if( callback_sysex != NULL ) {
+	    callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
+	    callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	  }
 	  break;
 	case 0x5: // Single-byte System Common Message or SysEx ends with following single byte. 
-	  if( package.evnt0 >= 0xf8 )
-	    callback_event(port, package); // -> forwarded as event
-	  else
-	    callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	  if( package.evnt0 >= 0xf8 ) {
+	    if( callback_event != NULL )
+	      callback_event(port, package); // -> forwarded as event
+	  } else {
+	    if( callback_sysex != NULL )
+	      callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	  }
 	  break;
 	case 0x6: // SysEx ends with following two bytes.
-	  callback_sysex(port, package.evnt0); // -> forwarded as SysEx
-	  callback_sysex(port, package.evnt1); // -> forwarded as SysEx
+	  if( callback_sysex != NULL ) {
+	    callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
+	  }
 	  break;
 	case 0x7: // SysEx ends with following three bytes.
-	  callback_sysex(port, package.evnt0); // -> forwarded as SysEx
-	  callback_sysex(port, package.evnt1); // -> forwarded as SysEx
-	  callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	  if( callback_sysex != NULL ) {
+	    callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
+	    callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	  }
 	  break;
 	}
       }
