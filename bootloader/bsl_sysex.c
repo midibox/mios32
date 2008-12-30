@@ -402,13 +402,13 @@ s32 BSL_SYSEX_Cmd_Ping(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in)
 {
   if( sysex_rec_state <= BSL_SYSEX_REC_A0 ) {
-    sysex_addr = (sysex_addr << 7) | ((midi_in & 0x7f) << 3);
+    sysex_addr = (sysex_addr << 7) | ((midi_in & 0x7f) << 4);
     if( sysex_rec_state == BSL_SYSEX_REC_A0 )
       sysex_rec_state = BSL_SYSEX_REC_L3;
     else
       ++sysex_rec_state;
   } else if( sysex_rec_state <= BSL_SYSEX_REC_L0 ) {
-    sysex_len = (sysex_len << 7) | ((midi_in & 0x7f) << 3);
+    sysex_len = (sysex_len << 7) | ((midi_in & 0x7f) << 4);
     if( sysex_rec_state == BSL_SYSEX_REC_L0 ) {
       sysex_rec_state = BSL_SYSEX_REC_PAYLOAD;
     } else {
@@ -443,18 +443,18 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
   *sysex_buffer_ptr++ = 0x02;
 
   // send 32bit address (divided by 16) in 7bit format
-  checksum += *sysex_buffer_ptr++ = (addr >> 24) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (addr >> 17) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (addr >> 10) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (addr >>  3) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (addr >> 25) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (addr >> 18) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (addr >> 11) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (addr >>  4) & 0x7f;
 
   // send 32bit range (divided by 16) in 7bit format
-  checksum += *sysex_buffer_ptr++ = (len >> 24) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (len >> 17) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (len >> 10) & 0x7f;
-  checksum += *sysex_buffer_ptr++ = (len >>  3) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (len >> 25) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (len >> 18) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (len >> 11) & 0x7f;
+  checksum += *sysex_buffer_ptr++ = (len >>  4) & 0x7f;
 
-  // send memory content
+  // send memory content in scrambled format (8bit values -> 7bit values)
   u8 value7 = 0;
   u8 bit_ctr7 = 0;
   i=0;
