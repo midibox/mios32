@@ -505,7 +505,7 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
     FLASH_Status status;
     int i;
     for(i=0; i<len; addr+=2, i+=2) {
-      if( (addr % 0x800) == 0 ) {
+      if( (addr % FLASH_PAGE_SIZE) == 0 ) {
 	if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE )
 	  return -BSL_SYSEX_DISACK_WRITE_FAILED;
       }
