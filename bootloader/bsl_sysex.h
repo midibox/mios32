@@ -45,7 +45,7 @@
 #define BSL_SYSEX_DISACK_BS_NOT_AVAILABLE     0x0a
 #define BSL_SYSEX_DISACK_OVERRUN              0x0b
 #define BSL_SYSEX_DISACK_FRAME_ERROR          0x0c
-
+#define BSL_SYSEX_DISACK_WRONG_UNLOCK_SEQ     0x0d
 #define BSL_SYSEX_DISACK_INVALID_COMMAND      0x0e
 
 
@@ -73,6 +73,12 @@ typedef enum {
   BSL_SYSEX_REC_L0,
   BSL_SYSEX_REC_PAYLOAD,
   BSL_SYSEX_REC_CHECKSUM,
+  BSL_SYSEX_REC_UNLOCK1,
+  BSL_SYSEX_REC_UNLOCK2,
+  BSL_SYSEX_REC_UNLOCK3,
+  BSL_SYSEX_REC_UNLOCK_OK,
+  BSL_SYSEX_REC_ID,
+  BSL_SYSEX_REC_ID_OK,
   BSL_SYSEX_REC_INVALID
 } bsl_sysex_rec_state_t;
 
@@ -95,5 +101,7 @@ typedef union {
 
 extern s32 BSL_SYSEX_Init(u32 mode);
 extern s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+
+extern s32 BSL_SYSEX_SendUploadReq(mios32_midi_port_t port);
 
 #endif /* _BSL_SYSEX_H */

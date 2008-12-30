@@ -63,12 +63,15 @@ static s32 BSL_SYSEX_CmdFinished(void);
 static s32 BSL_SYSEX_SendFooter(u8 force);
 static s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 
+static s32 BSL_SYSEX_Cmd_Reset(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_Ping(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 
 static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in);
 
+static s32 BSL_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
 static s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len);
 static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer);
 
@@ -124,34 +127,7 @@ s32 BSL_SYSEX_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a SysEx acknowledge to notify the user about the received command
-// expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
-{
-  int i;
-
-  u8 *sysex_buffer_ptr = &sysex_buffer[0];
-  for(i=0; i<sizeof(sysex_header); ++i)
-    *sysex_buffer_ptr++ = sysex_header[i];
-
-  // device ID
-  *sysex_buffer_ptr++ = sysex_device_id;
-
-  // send ack code and argument
-  *sysex_buffer_ptr++ = ack_code;
-  *sysex_buffer_ptr++ = ack_arg;
-
-  // send footer
-  *sysex_buffer_ptr++ = 0xf7;
-
-  // finally send SysEx stream
-  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function parses an incoming sysex stream for SysEx messages
+// This function sends an upload request
 /////////////////////////////////////////////////////////////////////////////
 s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
@@ -220,6 +196,7 @@ s32 BSL_SYSEX_SendFooter(u8 force)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // This function handles the sysex commands
 /////////////////////////////////////////////////////////////////////////////
@@ -227,11 +204,17 @@ s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   // enter the commands here
   switch( sysex_cmd ) {
+    case 0x00:
+      BSL_SYSEX_Cmd_Reset(cmd_state, midi_in);
+      break;
     case 0x01:
       BSL_SYSEX_Cmd_ReadMem(cmd_state, midi_in);
       break;
     case 0x02:
       BSL_SYSEX_Cmd_WriteMem(cmd_state, midi_in);
+      break;
+    case 0x0c:
+      BSL_SYSEX_Cmd_ChangeDeviceID(cmd_state, midi_in);
       break;
     case 0x0f:
       BSL_SYSEX_Cmd_Ping(cmd_state, midi_in);
@@ -241,6 +224,51 @@ s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
       BSL_SYSEX_SendFooter(0);
       BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_INVALID_COMMAND);
       BSL_SYSEX_CmdFinished();      
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Command 00: Reset Core
+/////////////////////////////////////////////////////////////////////////////
+s32 BSL_SYSEX_Cmd_Reset(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  switch( cmd_state ) {
+
+    case BSL_SYSEX_CMD_STATE_BEGIN:
+      sysex_rec_state = BSL_SYSEX_REC_UNLOCK1;
+      break;
+
+    case BSL_SYSEX_CMD_STATE_CONT:
+      switch( sysex_rec_state ) {
+        case BSL_SYSEX_REC_UNLOCK1:
+	  sysex_rec_state = (midi_in == 0x55) ? BSL_SYSEX_REC_UNLOCK2 : BSL_SYSEX_REC_INVALID;
+	  break;
+        case BSL_SYSEX_REC_UNLOCK2:
+	  sysex_rec_state = (midi_in == 0x1a) ? BSL_SYSEX_REC_UNLOCK3 : BSL_SYSEX_REC_INVALID;
+	  break;
+        case BSL_SYSEX_REC_UNLOCK3:
+	  sysex_rec_state = (midi_in == 0x42) ? BSL_SYSEX_REC_UNLOCK_OK : BSL_SYSEX_REC_INVALID;
+	  break;
+        default:
+	  // too many bytes or wrong sequence... wait for F7
+	  sysex_rec_state = BSL_SYSEX_REC_INVALID;
+      }
+      break;
+
+    default: // BSL_SYSEX_CMD_STATE_END
+      BSL_SYSEX_SendFooter(0);
+
+      if( sysex_rec_state != BSL_SYSEX_REC_UNLOCK_OK ) {
+	// wrong unlock sequence received
+	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_WRONG_UNLOCK_SEQ);
+      } else {
+	// reset core (this will send an upload request)
+	BSL_SYSEX_SendUploadReq(sysex_port);
+      }
+      break;
   }
 
   return 0; // no error
@@ -283,6 +311,7 @@ s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 
   return 0; // no error
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Command 02: Write Memory handler
@@ -368,6 +397,56 @@ s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Command 0C: change the Device ID
+/////////////////////////////////////////////////////////////////////////////
+s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  static u8 new_device_id = 0;
+
+  switch( cmd_state ) {
+
+    case BSL_SYSEX_CMD_STATE_BEGIN:
+      new_device_id = 0;
+      sysex_rec_state = BSL_SYSEX_REC_ID;
+      break;
+
+    case BSL_SYSEX_CMD_STATE_CONT:
+      if( sysex_rec_state == BSL_SYSEX_REC_ID ) {
+	  new_device_id = midi_in;
+	  sysex_rec_state = BSL_SYSEX_REC_ID_OK;
+      } else {
+	// too many bytes or wrong sequence... wait for F7
+	sysex_rec_state = BSL_SYSEX_REC_INVALID;
+      }
+      break;
+
+    default: // BSL_SYSEX_CMD_STATE_END
+      BSL_SYSEX_SendFooter(0);
+
+      if( sysex_rec_state != BSL_SYSEX_REC_ID_OK ) {
+	// too many bytes received
+	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
+      } else {
+	// program device ID if it has been changed
+	if( new_device_id != sysex_device_id ) {
+	  // TODO: this will require an EEPROM emulation...
+	}
+	// send acknowledge via old device ID
+	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, new_device_id);
+	// change device ID
+	sysex_device_id = new_device_id;
+	// send acknowledge via new device ID
+	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, new_device_id);
+      }
+      break;
+  }
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Command 0F: Ping (just send back acknowledge)
 /////////////////////////////////////////////////////////////////////////////
@@ -419,6 +498,61 @@ static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in)
   }
 
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a SysEx acknowledge to notify the user about the received command
+// expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
+/////////////////////////////////////////////////////////////////////////////
+static s32 BSL_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
+{
+  u8 sysex_buffer[32]; // should be enough?
+  u8 *sysex_buffer_ptr = &sysex_buffer[0];
+  int i;
+
+  for(i=0; i<sizeof(sysex_header); ++i)
+    *sysex_buffer_ptr++ = sysex_header[i];
+
+  // device ID
+  *sysex_buffer_ptr++ = sysex_device_id;
+
+  // send ack code and argument
+  *sysex_buffer_ptr++ = ack_code;
+  *sysex_buffer_ptr++ = ack_arg;
+
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
+
+  // finally send SysEx stream
+  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends an upload request
+/////////////////////////////////////////////////////////////////////////////
+s32 BSL_SYSEX_SendUploadReq(mios32_midi_port_t port)
+{
+  u8 sysex_buffer[32]; // should be enough?
+  u8 *sysex_buffer_ptr = &sysex_buffer[0];
+  int i;
+
+  for(i=0; i<sizeof(sysex_header); ++i)
+    *sysex_buffer_ptr++ = sysex_header[i];
+
+  // device ID
+  *sysex_buffer_ptr++ = sysex_device_id;
+
+  // send 0x01 to request code upload
+  *sysex_buffer_ptr++ = 0x01;
+
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
+
+  // finally send SysEx stream
+  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
 }
 
 
