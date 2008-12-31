@@ -25,6 +25,31 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Uses by MIOS32 SysEx parser
+/////////////////////////////////////////////////////////////////////////////
+
+// ack/disack code
+#define MIOS32_MIDI_SYSEX_DISACK   0x0e
+#define MIOS32_MIDI_SYSEX_ACK      0x0f
+
+// disacknowledge arguments
+#define MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP  0x01
+#define MIOS32_MIDI_SYSEX_DISACK_MORE_BYTES_THAN_EXP  0x02
+#define MIOS32_MIDI_SYSEX_DISACK_WRONG_CHECKSUM       0x03
+#define MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED         0x04
+#define MIOS32_MIDI_SYSEX_DISACK_WRITE_ACCESS         0x05
+#define MIOS32_MIDI_SYSEX_DISACK_MIDI_TIMEOUT         0x06
+#define MIOS32_MIDI_SYSEX_DISACK_WRONG_DEBUG_CMD      0x07
+#define MIOS32_MIDI_SYSEX_DISACK_WRONG_ADDR_RANGE     0x08
+#define MIOS32_MIDI_SYSEX_DISACK_ADDR_NOT_ALIGNED     0x09
+#define MIOS32_MIDI_SYSEX_DISACK_BS_NOT_AVAILABLE     0x0a
+#define MIOS32_MIDI_SYSEX_DISACK_OVERRUN              0x0b
+#define MIOS32_MIDI_SYSEX_DISACK_FRAME_ERROR          0x0c
+#define MIOS32_MIDI_SYSEX_DISACK_WRONG_UNLOCK_SEQ     0x0d
+#define MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND      0x0e
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -132,6 +157,14 @@ typedef union {
 } mios32_midi_package_t;
 
 
+// command states
+typedef enum {
+  MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN,
+  MIOS32_MIDI_SYSEX_CMD_STATE_CONT,
+  MIOS32_MIDI_SYSEX_CMD_STATE_END
+} mios32_midi_sysex_cmd_state_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -174,6 +207,12 @@ extern s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_m
 extern s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte);
 extern s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
+extern s32 MIOS32_MIDI_DefaultPortSet(mios32_midi_port_t port);
+extern mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void);
+
+extern s32 MIOS32_MIDI_DeviceIDSet(u8 device_id);
+extern u8  MIOS32_MIDI_DeviceIDGet(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
@@ -182,5 +221,7 @@ extern s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_m
 extern const u8 mios32_midi_pcktype_num_bytes[16];
 extern const u8 mios32_midi_expected_bytes_common[8];
 extern const u8 mios32_midi_expected_bytes_system[16];
+
+extern const u8 mios32_midi_sysex_header[5];
 
 #endif /* _MIOS32_MIDI_H */

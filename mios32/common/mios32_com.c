@@ -26,13 +26,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
+
+static mios32_com_port_t default_port = MIOS32_COM_DEFAULT_PORT;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,6 +44,9 @@ s32 MIOS32_COM_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // set default port as defined in mios32.h/mios32_config.h
+  default_port = MIOS32_COM_DEFAULT_PORT;
 
 #if defined(MIOS32_USE_USB_COM)
   if( MIOS32_USB_COM_Init(0) < 0 )
@@ -73,7 +73,7 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_COM_DEFAULT_PORT;
+    port = default_port;
   }
 
   // branch depending on selected port
@@ -125,7 +125,7 @@ s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 le
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_COM_DEFAULT_PORT;
+    port = default_port;
   }
 
   // branch depending on selected port
@@ -171,7 +171,7 @@ s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_COM_DEFAULT_PORT;
+    port = default_port;
   }
 
   // branch depending on selected port
@@ -368,6 +368,34 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
   } while( again );
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function allows to change the DEFAULT port.<BR>
+//! The preset which will be used after application reset can be set in
+//! mios32_config.h via "#define MIOS32_COM_DEFAULT_PORT <port>".<BR>
+//! It's set to USB0 so long not overruled in mios32_config.h
+//! \param[in] port COM port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_DefaultPortSet(mios32_com_port_t port)
+{
+  if( port == DEFAULT ) // avoid recursion
+    return -1;
+
+  default_port = port;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the DEFAULT port
+//! \return the default port
+/////////////////////////////////////////////////////////////////////////////
+mios32_com_port_t MIOS32_COM_DefaultPortGet(void)
+{
+  return default_port;
 }
 
 //! \}

@@ -19,6 +19,12 @@
 
 #include <mios32.h>
 
+#ifndef MIOS32_DONT_USE_FREERTOS
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#endif
+
+
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_SYS)
 
@@ -111,6 +117,58 @@ s32 MIOS32_SYS_Init(u32 mode)
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Shutdown MIOS32 and reset the microcontroller:<BR>
+//! <UL>
+//!   <LI>disable all RTOS tasks
+//!   <LI>wait until all MIDI OUT buffers are empty (TODO)
+//!   <LI>disable all interrupts
+//!   <LI>turn off all board LEDs
+//!   <LI>send all-0 to DOUT chain (TODO)
+//!   <LI>send all-0 to MF control chain (if enabled) (TODO)
+//!   <LI>reset STM32
+//! </UL>
+//! \return < 0 if reset failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_Reset(void)
+{
+  // disable all RTOS tasks
+#ifndef MIOS32_DONT_USE_FREERTOS
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
+#endif
+
+  // wait until all MIDI OUT buffers are empty (TODO)
+
+  // disable all interrupts
+  MIOS32_IRQ_Disable();
+
+  // turn off all board LEDs
+  MIOS32_BOARD_LED_Set(0xffffffff, 0x00000000);
+
+  // send all-0 to DOUT chain (TODO)
+
+  // send all-0 to MF control chain (if enabled) (TODO)
+
+  // reset STM32
+#if 0
+  // doesn't work for some reasons...
+  NVIC_GenerateSystemReset();
+#else
+  NVIC_GenerateSystemReset();
+  RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
+  RCC_APB1PeriphResetCmd(0xffffffff, ENABLE);
+  RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
+  RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+  NVIC_GenerateCoreReset();
+#endif
+
+  while( 1 );
+
+  return -1; // we will never reach this point
+}
+
 
 //! \}
 

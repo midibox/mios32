@@ -59,15 +59,10 @@
 // Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 BSL_SYSEX_CmdFinished(void);
-static s32 BSL_SYSEX_SendFooter(u8 force);
-static s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
 
-static s32 BSL_SYSEX_Cmd_Reset(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_Ping(bsl_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_ReadMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 
 static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in);
 
@@ -80,25 +75,13 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer);
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-static sysex_state_t sysex_state;
-static u8 sysex_device_id;
-static u8 sysex_cmd;
-
 static bsl_sysex_rec_state_t sysex_rec_state;
 
-static mios32_midi_port_t sysex_port = DEFAULT;
 static u32 sysex_addr;
 static u32 sysex_len;
 static u8 sysex_checksum;
 static u8 sysex_received_checksum;
 static u32 sysex_receive_ctr;
-
-
-/////////////////////////////////////////////////////////////////////////////
-// constant definitions
-/////////////////////////////////////////////////////////////////////////////
-
-static const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x32 };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,159 +99,35 @@ s32 BSL_SYSEX_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  sysex_port = DEFAULT;
-  sysex_state.ALL = 0;
-
-  // TODO: allow to change device ID (read from flash, resp. config sector)
-  sysex_device_id = 0x00;
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends an upload request
+// This function enhances MIOS32 SysEx commands
+// it's called from MIOS32_MIDI_SYSEX_Cmd if the "MIOS32_MIDI_BSL_ENHANCEMENTS"
+// switch is set (see code there for details)
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
-{
-  // TODO: here we could send an error notification, that multiple devices are trying to access the device
-  if( sysex_state.MY_SYSEX && port != sysex_port )
-    return -1;
-
-  sysex_port = port;
-
-  // branch depending on state
-  if( !sysex_state.MY_SYSEX ) {
-    if( (sysex_state.CTR < sizeof(sysex_header) && midi_in != sysex_header[sysex_state.CTR]) ||
-	(sysex_state.CTR == sizeof(sysex_header) && midi_in != sysex_device_id) ) {
-      // incoming byte doesn't match
-      BSL_SYSEX_CmdFinished();
-    } else {
-      if( ++sysex_state.CTR > sizeof(sysex_header) ) {
-	// complete header received, waiting for data
-	sysex_state.MY_SYSEX = 1;
-      }
-    }
-  } else {
-    // check for end of SysEx message or invalid status byte
-    if( midi_in >= 0x80 ) {
-      if( midi_in == 0xf7 && sysex_state.CMD ) {
-      	BSL_SYSEX_Cmd(BSL_SYSEX_CMD_STATE_END, midi_in);
-      }
-      BSL_SYSEX_CmdFinished();
-    } else {
-      // check if command byte has been received
-      if( !sysex_state.CMD ) {
-	sysex_state.CMD = 1;
-	sysex_cmd = midi_in;
-	BSL_SYSEX_Cmd(BSL_SYSEX_CMD_STATE_BEGIN, midi_in);
-      }
-      else
-	BSL_SYSEX_Cmd(BSL_SYSEX_CMD_STATE_CONT, midi_in);
-    }
-  }
-
-  return sysex_state.MY_SYSEX ? 1 : 0; // no error - return 1 if new command is received
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// This function is called at the end of a sysex command or on 
-// an invalid message
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_CmdFinished(void)
-{
-  // clear all status variables
-  sysex_state.ALL = 0;
-  sysex_rec_state = 0;
-  sysex_cmd = 0;
-
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// This function sends the SysEx footer if merger enabled
-// if force == 1, send the footer regardless of merger state
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_SendFooter(u8 force)
-{
-  // function not relevant - merger not supported anyhow
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function handles the sysex commands
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in, u8 sysex_cmd)
 {
   // enter the commands here
   switch( sysex_cmd ) {
-    case 0x00:
-      BSL_SYSEX_Cmd_Reset(cmd_state, midi_in);
-      break;
+    // case 0x00: // reset request command is implemented in MIOS32
+    // case 0x0f: // ping command is implemented in MIOS32
+
     case 0x01:
-      BSL_SYSEX_Cmd_ReadMem(cmd_state, midi_in);
+      BSL_SYSEX_Cmd_ReadMem(port, cmd_state, midi_in);
       break;
     case 0x02:
-      BSL_SYSEX_Cmd_WriteMem(cmd_state, midi_in);
+      BSL_SYSEX_Cmd_WriteMem(port, cmd_state, midi_in);
       break;
     case 0x0c:
-      BSL_SYSEX_Cmd_ChangeDeviceID(cmd_state, midi_in);
+      BSL_SYSEX_Cmd_ChangeDeviceID(port, cmd_state, midi_in);
       break;
-    case 0x0f:
-      BSL_SYSEX_Cmd_Ping(cmd_state, midi_in);
-      break;
+
     default:
       // unknown command
-      BSL_SYSEX_SendFooter(0);
-      BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_INVALID_COMMAND);
-      BSL_SYSEX_CmdFinished();      
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Command 00: Reset Core
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_Reset(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
-{
-  switch( cmd_state ) {
-
-    case BSL_SYSEX_CMD_STATE_BEGIN:
-      sysex_rec_state = BSL_SYSEX_REC_UNLOCK1;
-      break;
-
-    case BSL_SYSEX_CMD_STATE_CONT:
-      switch( sysex_rec_state ) {
-        case BSL_SYSEX_REC_UNLOCK1:
-	  sysex_rec_state = (midi_in == 0x55) ? BSL_SYSEX_REC_UNLOCK2 : BSL_SYSEX_REC_INVALID;
-	  break;
-        case BSL_SYSEX_REC_UNLOCK2:
-	  sysex_rec_state = (midi_in == 0x1a) ? BSL_SYSEX_REC_UNLOCK3 : BSL_SYSEX_REC_INVALID;
-	  break;
-        case BSL_SYSEX_REC_UNLOCK3:
-	  sysex_rec_state = (midi_in == 0x42) ? BSL_SYSEX_REC_UNLOCK_OK : BSL_SYSEX_REC_INVALID;
-	  break;
-        default:
-	  // too many bytes or wrong sequence... wait for F7
-	  sysex_rec_state = BSL_SYSEX_REC_INVALID;
-      }
-      break;
-
-    default: // BSL_SYSEX_CMD_STATE_END
-      BSL_SYSEX_SendFooter(0);
-
-      if( sysex_rec_state != BSL_SYSEX_REC_UNLOCK_OK ) {
-	// wrong unlock sequence received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_WRONG_UNLOCK_SEQ);
-      } else {
-	// reset core (this will send an upload request)
-	BSL_SYSEX_SendUploadReq(sysex_port);
-      }
-      break;
+      return -1; // command not supported
   }
 
   return 0; // no error
@@ -278,32 +137,32 @@ s32 BSL_SYSEX_Cmd_Reset(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 01: Read Memory handler
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd_ReadMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
-    case BSL_SYSEX_CMD_STATE_BEGIN:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
       // set initial receive state and address/len
       sysex_rec_state = BSL_SYSEX_REC_A3;
       sysex_addr = 0;
       sysex_len = 0;
       break;
 
-    case BSL_SYSEX_CMD_STATE_CONT:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
       if( sysex_rec_state < BSL_SYSEX_REC_PAYLOAD )
 	BSL_SYSEX_RecAddrAndLen(midi_in);
       break;
 
     default: // BSL_SYSEX_CMD_STATE_END
-      BSL_SYSEX_SendFooter(0);
+      // TODO: send 0xf7 if merger enabled
 
       // did we reach payload state?
       if( sysex_rec_state != BSL_SYSEX_REC_PAYLOAD ) {
 	// not enough bytes received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
       } else {
 	// send dump
-	BSL_SYSEX_SendMem(sysex_port, sysex_addr, sysex_len);
+	BSL_SYSEX_SendMem(port, sysex_addr, sysex_len);
       }
 
       break;
@@ -316,14 +175,14 @@ s32 BSL_SYSEX_Cmd_ReadMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 02: Write Memory handler
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u32 bit_ctr8 = 0;
   static u32 value8 = 0;
 
   switch( cmd_state ) {
 
-    case BSL_SYSEX_CMD_STATE_BEGIN:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
       // set initial receive state and address/len
       sysex_rec_state = BSL_SYSEX_REC_A3;
       sysex_addr = 0;
@@ -337,7 +196,7 @@ s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
       value8 = 0;
       break;
 
-    case BSL_SYSEX_CMD_STATE_CONT:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
       if( sysex_rec_state < BSL_SYSEX_REC_PAYLOAD ) {
 	sysex_checksum += midi_in;
 	BSL_SYSEX_RecAddrAndLen(midi_in);
@@ -368,27 +227,27 @@ s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
       }
       break;
 
-    default: // BSL_SYSEX_CMD_STATE_END
-      BSL_SYSEX_SendFooter(0);
+    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
+      // TODO: send 0xf7 if merger enabled
 
       if( sysex_receive_ctr < sysex_len ) {
 	// not enough bytes received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
       } else if( sysex_rec_state == BSL_SYSEX_REC_INVALID ) {
 	// too many bytes received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
       } else if( sysex_received_checksum != (-sysex_checksum & 0x7f) ) {
 	// notify that wrong checksum has been received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_WRONG_CHECKSUM);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_WRONG_CHECKSUM);
       } else {
 	// write received data into memory
 	s32 error;
 	if( error = BSL_SYSEX_WriteMem(sysex_addr, sysex_len, sysex_buffer) ) {
 	  // write failed - return negated error status
-	  BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, -error);
+	  BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, -error);
 	} else {
 	  // notify that bytes have been received by returning checksum
-	  BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, -sysex_checksum & 0x7f);
+	  BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, -sysex_checksum & 0x7f);
 	}
       }
       break;
@@ -401,18 +260,18 @@ s32 BSL_SYSEX_Cmd_WriteMem(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Command 0C: change the Device ID
 /////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
+s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u8 new_device_id = 0;
 
   switch( cmd_state ) {
 
-    case BSL_SYSEX_CMD_STATE_BEGIN:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
       new_device_id = 0;
       sysex_rec_state = BSL_SYSEX_REC_ID;
       break;
 
-    case BSL_SYSEX_CMD_STATE_CONT:
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
       if( sysex_rec_state == BSL_SYSEX_REC_ID ) {
 	  new_device_id = midi_in;
 	  sysex_rec_state = BSL_SYSEX_REC_ID_OK;
@@ -422,23 +281,23 @@ s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
       }
       break;
 
-    default: // BSL_SYSEX_CMD_STATE_END
-      BSL_SYSEX_SendFooter(0);
+    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
+      // TODO: send 0xf7 if merger enabled
 
       if( sysex_rec_state != BSL_SYSEX_REC_ID_OK ) {
 	// too many bytes received
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_DISACK, BSL_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
       } else {
 	// program device ID if it has been changed
-	if( new_device_id != sysex_device_id ) {
+	if( new_device_id != MIOS32_MIDI_DeviceIDGet() ) {
 	  // TODO: this will require an EEPROM emulation...
 	}
 	// send acknowledge via old device ID
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, new_device_id);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
 	// change device ID
-	sysex_device_id = new_device_id;
+	MIOS32_MIDI_DeviceIDSet(new_device_id);
 	// send acknowledge via new device ID
-	BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, new_device_id);
+	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
       }
       break;
   }
@@ -446,33 +305,6 @@ s32 BSL_SYSEX_Cmd_ChangeDeviceID(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
   return 0; // no error
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Command 0F: Ping (just send back acknowledge)
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_Ping(bsl_sysex_cmd_state_t cmd_state, u8 midi_in)
-{
-  switch( cmd_state ) {
-
-    case BSL_SYSEX_CMD_STATE_BEGIN:
-      // nothing to do
-      break;
-
-    case BSL_SYSEX_CMD_STATE_CONT:
-      // nothing to do
-      break;
-
-    default: // BSL_SYSEX_CMD_STATE_END
-      BSL_SYSEX_SendFooter(0);
-
-      // send acknowledge
-      BSL_SYSEX_SendAck(sysex_port, BSL_SYSEX_ACK, 0x00);
-
-      break;
-  }
-
-  return 0; // no error
-}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -512,11 +344,11 @@ static s32 BSL_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
   u8 *sysex_buffer_ptr = &sysex_buffer[0];
   int i;
 
-  for(i=0; i<sizeof(sysex_header); ++i)
-    *sysex_buffer_ptr++ = sysex_header[i];
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
 
   // device ID
-  *sysex_buffer_ptr++ = sysex_device_id;
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
 
   // send ack code and argument
   *sysex_buffer_ptr++ = ack_code;
@@ -539,11 +371,11 @@ s32 BSL_SYSEX_SendUploadReq(mios32_midi_port_t port)
   u8 *sysex_buffer_ptr = &sysex_buffer[0];
   int i;
 
-  for(i=0; i<sizeof(sysex_header); ++i)
-    *sysex_buffer_ptr++ = sysex_header[i];
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
 
   // device ID
-  *sysex_buffer_ptr++ = sysex_device_id;
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
 
   // send 0x01 to request code upload
   *sysex_buffer_ptr++ = 0x01;
@@ -567,11 +399,11 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
 
   // send header
   u8 *sysex_buffer_ptr = &sysex_buffer[0];
-  for(i=0; i<sizeof(sysex_header); ++i)
-    *sysex_buffer_ptr++ = sysex_header[i];
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
 
   // device ID
-  *sysex_buffer_ptr++ = sysex_device_id;
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
 
   // "write mem" command (so that dump could be sent back to overwrite the memory w/o modifications)
   *sysex_buffer_ptr++ = 0x02;
@@ -629,7 +461,7 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 {
   // check for alignment
   if( (addr % 4) || (len % 4) )
-    return -BSL_SYSEX_DISACK_ADDR_NOT_ALIGNED;
+    return -MIOS32_MIDI_SYSEX_DISACK_ADDR_NOT_ALIGNED;
 
   // check for flash memory range
   if( addr >= FLASH_START_ADDR && addr <= FLASH_END_ADDR ) {
@@ -639,13 +471,21 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
     FLASH_Status status;
     int i;
     for(i=0; i<len; addr+=2, i+=2) {
+      MIOS32_IRQ_Disable();
       if( (addr % FLASH_PAGE_SIZE) == 0 ) {
-	if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE )
-	  return -BSL_SYSEX_DISACK_WRITE_FAILED;
+	if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE ) {
+	  FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+	  return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
+	}
       }
-      
-      if( (status=FLASH_ProgramHalfWord(addr, buffer[i+0] | ((u16)buffer[i+1] << 8))) != FLASH_COMPLETE )
-	return -BSL_SYSEX_DISACK_WRITE_FAILED;
+      MIOS32_IRQ_Enable();
+
+      if( (status=FLASH_ProgramHalfWord(addr, buffer[i+0] | ((u16)buffer[i+1] << 8))) != FLASH_COMPLETE ) {
+	FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+	return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
+      }
+
+      // TODO: verify programmed code
     }
 
     return 0; // no error
@@ -661,6 +501,6 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
   }
 
   // invalid address
-  return -BSL_SYSEX_DISACK_WRONG_ADDR_RANGE;
+  return -MIOS32_MIDI_SYSEX_DISACK_WRONG_ADDR_RANGE;
 }
 

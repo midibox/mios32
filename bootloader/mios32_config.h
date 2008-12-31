@@ -62,4 +62,7 @@
 #define MIOS32_USB_MIDI_DATA_OUT_SIZE          64
 
 
+// enable BSL enhancements in MIOS32 SysEx parser
+#define MIOS32_MIDI_BSL_ENHANCEMENTS 1
+
 #endif /* _MIOS32_CONFIG_H */
