@@ -198,13 +198,26 @@ PROVIDE ( SCB             = (SCS_BASE + 0x0D00) ) ;
 
 SECTIONS
 {
+    /* the MIOS32 BSL section */
+    .mios32_bsl :
+    {
+	. = ALIGN(4);
+        KEEP(*(.mios32_bsl))
+	. = ALIGN(4);
+	_mios32_bsl_end = . ;
+    } >FLASH
+
     /* for Cortex devices, the beginning of the startup code is stored in the .isr_vector section, which goes to FLASH */
     .isr_vector :
     {
+	_mios32_sys_isr_vector = . ;
 	. = ALIGN(4);
         KEEP(*(.isr_vector))            /* Startup code */
 	. = ALIGN(4);
     } >FLASH
+
+    /* used in MIOS32_SYS to set the start vector */
+    PROVIDE ( mios32_sys_isr_vector = _mios32_sys_isr_vector );
  
     /* for some STRx devices, the beginning of the startup code is stored in the .flashtext section, which goes to FLASH */
     .flashtext :

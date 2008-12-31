@@ -1,13 +1,16 @@
 /* $Id$
-Linker script for STM32F103RE
+Linker script for STM32F103 Bootloader
+Memory sizes defined for STM32F103RB (20k RAM), but will also work on RE (64k RAM)
+Bootloader has to be allocated between 0x08000000..0x080037ff!
+0x08003800..0x08003fff reserved for EEPROM emulation
 Based on scripts from Raisonance
 */
 
 /* Memory Spaces Definitions */
 MEMORY
 {
-  RAM (xrw) :     ORIGIN = 0x20000000, LENGTH = 64K
-  FLASH (rx) :    ORIGIN = 0x08000000, LENGTH = 512K
+  RAM (xrw) :     ORIGIN = 0x20000000, LENGTH = 20K
+  FLASH (rx) :    ORIGIN = 0x08000000, LENGTH = 14K
   FLASHB1 (rx) :  ORIGIN = 0x00000000, LENGTH = 0
   EXTMEMB0 (rx) : ORIGIN = 0x00000000, LENGTH = 0
   EXTMEMB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
@@ -16,7 +19,7 @@ MEMORY
 }
 
 /* higher address of the user mode stack */
-_estack = 0x20010000;
+_estack = 0x20005000;
 
 
 /* default stack sizes. 
@@ -123,6 +126,7 @@ PROVIDE (   DMA2_Channel3_IRQHandler = 0 ) ;
 PROVIDE (   DMA2_Channel4_5_IRQHandler = 0 ) ;
 
 
+
 /******************************************************************************/
 /*                       Peripheral memory map                                */
 /******************************************************************************/
@@ -197,14 +201,6 @@ PROVIDE ( SCB             = (SCS_BASE + 0x0D00) ) ;
 
 SECTIONS
 {
-    /* the MIOS32 BSL section */
-    .mios32_bsl :
-    {
-	. = ALIGN(4);
-        KEEP(*(.mios32_bsl))
-	. = ALIGN(4);
-    } >FLASH
- 
     /* for Cortex devices, the beginning of the startup code is stored in the .isr_vector section, which goes to FLASH */
     .isr_vector :
     {
