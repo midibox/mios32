@@ -2,8 +2,6 @@
 
 ################################################################################
 # following setup is static for STM32 and STM32_PRIMER
-# note that we build a dummy BSL here - it branches directly to the application,
-# or flashes the red LED
 ################################################################################
 
 PROCESSOR =	STM32F103RB
@@ -17,7 +15,8 @@ LCD       =     dummy
 ################################################################################
 
 THUMB_SOURCE    = crt0_STM32x.c \
-		  main_dummy.c
+		  main.c \
+		  bsl_sysex.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
