@@ -1,53 +1,20 @@
 # $Id: Makefile 194 2008-12-18 01:47:21Z tk $
 
 ################################################################################
-# following setup taken from environment variables
+# The make rule compiles the code and generates the mios32_bsl_*.inc file
 ################################################################################
+all:
+	make -f Makefile.bsl_MBHP_CORE_STM32
+	mv project.bin project_MBHP_CORE_STM32.bin
+	perl gen_inc_file.pl project_MBHP_CORE_STM32.bin ../mios32/STM32F10x/mios32_bsl_MBHP_CORE_STM32.inc mios32_bsl_image
+	make -f Makefile.bsl_MBHP_CORE_STM32 cleanall
 
-PROCESSOR =	$(MIOS32_PROCESSOR)
-FAMILY    = 	$(MIOS32_FAMILY)
-BOARD	  = 	$(MIOS32_BOARD)
-LCD       =     $(MIOS32_LCD)
+	make -f Makefile.bsl_STM32_PRIMER
+	mv project.bin project_STM32_PRIMER.bin
+	perl gen_inc_file.pl project_STM32_PRIMER.bin ../mios32/STM32F10x/mios32_bsl_STM32_PRIMER.inc mios32_bsl_image
+	make -f Makefile.bsl_STM32_PRIMER cleanall
 
-
-################################################################################
-# Source Files, include paths and libraries
-################################################################################
-
-THUMB_SOURCE    = crt0_STM32x.c \
-		  main.c \
-		  bsl_sysex.c
-
-# (following source stubs not relevant for Cortex M3 derivatives)
-THUMB_AS_SOURCE =
-ARM_SOURCE      =
-ARM_AS_SOURCE   =
-
-C_INCLUDE = 	-I .
-A_INCLUDE = 	-I .
-
-LIBS = 		
-
-
-################################################################################
-# Remaining variables
-################################################################################
-
-LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
-PROJECT   = 	project
-
-DEBUG     =	-g
-OPTIMIZE  =	-Os
-
-CFLAGS =	$(DEBUG) $(OPTIMIZE)
-
-
-################################################################################
-# Include source modules via additional makefiles
-################################################################################
-
-# add MIOS32 sources
-include $(MIOS32_PATH)/mios32/mios32.mk
-
-# common make rules
-include $(MIOS32_PATH)/include/makefile/common.mk
+	make -f Makefile.bsl_dummy
+	mv project.bin project_dummy.bin
+	perl gen_inc_file.pl project_dummy.bin ../mios32/STM32F10x/mios32_bsl_dummy.inc mios32_bsl_image
+	make -f Makefile.bsl_dummy cleanall

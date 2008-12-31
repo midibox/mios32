@@ -65,4 +65,7 @@
 // enable BSL enhancements in MIOS32 SysEx parser
 #define MIOS32_MIDI_BSL_ENHANCEMENTS 1
 
+// exclude default BSL image from MIOS32
+#define MIOS32_DONT_INCLUDE_BSL
+
 #endif /* _MIOS32_CONFIG_H */

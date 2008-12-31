@@ -28,6 +28,10 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_SYS)
 
+// specified in .ld file
+extern u32 mios32_sys_isr_vector;
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the System for MIOS32:<BR>
 //! <UL>
@@ -107,8 +111,8 @@ s32 MIOS32_SYS_Init(u32 mode)
     while( RCC_GetSYSCLKSource() != 0x08 );
   }
 
-  // Set the Vector Table base address at 0x08000000
-  NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0);
+  // Set the Vector Table base address as specified in .ld file (-> mios32_sys_isr_vector)
+  NVIC_SetVectorTable((u32)&mios32_sys_isr_vector, 0x0);
   NVIC_PriorityGroupConfig(MIOS32_IRQ_PRIGROUP);
 
   // Configure HCLK clock as SysTick clock source

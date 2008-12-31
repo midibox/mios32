@@ -21,6 +21,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_com.c \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
+	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_bsl.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_sys.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_irq.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_srio.c \
