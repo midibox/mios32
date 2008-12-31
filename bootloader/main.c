@@ -7,6 +7,14 @@
  * TODO: MIOS32 should directly branch to BSL, no USB reset
  * TODO: "hold pin" to select USB after power-on reset and to avoid branch
  *       to application (e.g. BOOT1 could be used)
+ * TODO: allow code upload via USB for Primer under following conditions:
+ *       - USB only
+ *       - don't start after power on reset
+ *       - application was running and didn't crash
+ *       - application configured USB for MIDI
+ *       - recovery on app crash only possible via integrated debug interface
+ *       Note that this will be a perfect upload solution for the Primer,
+ *       as the USB MIDI interface won't be reseted!
  *
  * ==========================================================================
  *
