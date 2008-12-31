@@ -38,12 +38,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-static void BSL_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte);
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Main function
 /////////////////////////////////////////////////////////////////////////////
 int main(void)
@@ -97,6 +91,13 @@ int main(void)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  // send upload request to USB and UART MIDI
+  ///////////////////////////////////////////////////////////////////////////
+  BSL_SYSEX_SendUploadReq(UART0);    
+  BSL_SYSEX_SendUploadReq(USB0);
+
+
+  ///////////////////////////////////////////////////////////////////////////
   // clear timer pending flag and start wait loop
   TIM_ClearITPendingBit(BSL_DELAY_TIMER, TIM_IT_Update);
   do {
@@ -106,29 +107,31 @@ int main(void)
     // handle USB messages
     MIOS32_USB_MIDI_Handler();
 
-    // check for incoming MIDI messages and call SysEx hook (event hook not used)
-    MIOS32_MIDI_Receive_Handler(NULL, BSL_NotifyReceivedSysEx);
+    // check for incoming MIDI messages - no hooks are used
+    // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
+    // directly by MIOS32 to enhance command set
+    MIOS32_MIDI_Receive_Handler(NULL, NULL);
+
+#if 0
+    // another request after 5 seconds
+    static int onlyonce = 0;
+    if( !onlyonce && TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) != RESET ) {
+      onlyonce=1;
+      BSL_SYSEX_SendUploadReq(UART0);    
+      BSL_SYSEX_SendUploadReq(USB0);
+    }
+#endif
 
   } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || 1 );
 
   // turn on LED permanently 
   MIOS32_BOARD_LED_Set(1 << BSL_LED_NUM, 1 << BSL_LED_NUM);
 
+  // ensure that flash write access is locked
+  FLASH_Lock();
+
   // TODO: here we will branch to the application later
   while( 1 );
 
   return 0; // will never be reached
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-static void BSL_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-  // forward to SysEx parser
-  // reset timer on success (so that we wait for 5 seconds again)
-  if( BSL_SYSEX_Parser(port, sysex_byte) > 0 ) {
-    BSL_DELAY_TIMER->CNT = 1; // not 0 to avoid that pending flag will be set unintentionally
-    TIM_ClearITPendingBit(BSL_DELAY_TIMER, TIM_IT_Update);
-  }
 }

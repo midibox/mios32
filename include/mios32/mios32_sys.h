@@ -30,6 +30,8 @@
 
 extern s32 MIOS32_SYS_Init(u32 mode);
 
+extern s32 MIOS32_SYS_Reset(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

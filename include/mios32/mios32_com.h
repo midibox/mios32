@@ -74,6 +74,9 @@ extern s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, 
 
 extern s32 MIOS32_COM_Receive_Handler(void *callback);
 
+extern s32 MIOS32_COM_DefaultPortSet(mios32_com_port_t port);
+extern mios32_com_port_t MIOS32_COM_DefaultPortGet(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

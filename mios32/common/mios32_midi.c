@@ -85,13 +85,52 @@ const u8 mios32_midi_expected_bytes_system[16] = {
   0, // Reset
 };
 
+//! should only be used by MIOS32 internally and by the Bootloader!
+const u8 mios32_midi_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x32 };
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+
+  struct {
+    unsigned CTR:3;
+    unsigned CMD:1;
+    unsigned MY_SYSEX:1;
+  };
+} sysex_state_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static mios32_midi_port_t default_port = MIOS32_MIDI_DEFAULT_PORT;
+
 static void (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static void (*direct_tx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
+
+static sysex_state_t sysex_state;
+static u8 sysex_device_id;
+static u8 sysex_cmd;
+static mios32_midi_port_t last_sysex_port = DEFAULT;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_CmdFinished(void);
+static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_Cmd_Reset(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -106,6 +145,9 @@ s32 MIOS32_MIDI_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // set default port as defined in mios32.h/mios32_config.h
+  default_port = MIOS32_MIDI_DEFAULT_PORT;
 
   // disable Rx/Tx callback functions
   direct_rx_callback_func = NULL;
@@ -127,6 +169,12 @@ s32 MIOS32_MIDI_Init(u32 mode)
     ret |= (1 << 2);
 #endif
 
+  last_sysex_port = DEFAULT;
+  sysex_state.ALL = 0;
+
+  // TODO: allow to change device ID (read from flash, resp. BSL based EEPROM emulation)
+  sysex_device_id = 0x00;
+
   return -ret;
 }
 
@@ -141,7 +189,7 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_MIDI_DEFAULT_PORT;
+    port = default_port;
   }
 
   // branch depending on selected port
@@ -192,7 +240,7 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_MIDI_DEFAULT_PORT;
+    port = default_port;
   }
 
   // insert subport number into package
@@ -245,7 +293,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 {
   // if default port: select mapped port
   if( !(port & 0xf0) ) {
-    port = MIOS32_MIDI_DEFAULT_PORT;
+    port = default_port;
   }
 
   // insert subport number into package
@@ -297,8 +345,8 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 //!
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \param[in] evnt0 first MIDI byte
-//! \param[in] evnt1 first MIDI byte
-//! \param[in] evnt2 first MIDI byte
+//! \param[in] evnt1 second MIDI byte
+//! \param[in] evnt2 third MIDI byte
 //! \return -1 if port not available
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
@@ -358,8 +406,8 @@ s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u1
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \param[in] type the event type
 //! \param[in] evnt0 first MIDI byte
-//! \param[in] evnt1 first MIDI byte
-//! \param[in] evnt2 first MIDI byte
+//! \param[in] evnt1 second MIDI byte
+//! \param[in] evnt2 third MIDI byte
 //! \return -1 if port not available
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
@@ -590,6 +638,9 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
 	    callback_sysex(port, package.evnt2); // -> forwarded as SysEx
 	  }
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
 	  break;
 	case 0x5: // Single-byte System Common Message or SysEx ends with following single byte. 
 	  if( package.evnt0 >= 0xf8 ) {
@@ -598,6 +649,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	  } else {
 	    if( callback_sysex != NULL )
 	      callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
 	  }
 	  break;
 	case 0x6: // SysEx ends with following two bytes.
@@ -605,6 +657,8 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    callback_sysex(port, package.evnt0); // -> forwarded as SysEx
 	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
 	  }
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
 	  break;
 	case 0x7: // SysEx ends with following three bytes.
 	  if( callback_sysex != NULL ) {
@@ -612,6 +666,9 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    callback_sysex(port, package.evnt1); // -> forwarded as SysEx
 	    callback_sysex(port, package.evnt2); // -> forwarded as SysEx
 	  }
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
+	  MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
 	  break;
 	}
       }
@@ -711,6 +768,262 @@ s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_pac
   }
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function allows to change the DEFAULT port.<BR>
+//! The preset which will be used after application reset can be set in
+//! mios32_config.h via "#define MIOS32_MIDI_DEFAULT_PORT <port>".<BR>
+//! It's set to USB0 so long not overruled in mios32_config.h
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DefaultPortSet(mios32_midi_port_t port)
+{
+  if( port == DEFAULT ) // avoid recursion
+    return -1;
+
+  default_port = port;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the DEFAULT port
+//! \return the default port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void)
+{
+  return default_port;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets the SysEx Device ID, which is used during parsing
+//! incoming SysEx Requests to MIOS32<BR>
+//! It can also be used by an application for additional parsing with the same ID.<BR>
+//! ID changes will get lost after reset. It can be changed permanently by the
+//! user via Bootloader Command 0x0c
+//! \param[in] device_id a new (temporary) device ID (0x00..0x7f)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DeviceIDSet(u8 device_id)
+{
+  sysex_device_id = device_id & 0x7f;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the SysEx Device ID, which is used during parsing
+//! incoming SysEx Requests to MIOS32<BR>
+//! It can also be used by an application for additional parsing with the same ID.<BR>
+//! The initial ID is stored inside the BSL range and will be recovered after
+//! reset. It can be changed by the user via Bootloader Command 0x0c
+//! \return SysEx device ID (0x00..0x7f)
+//! \todo store device ID via BSL based EEPROM emulation
+/////////////////////////////////////////////////////////////////////////////
+u8 MIOS32_MIDI_DeviceIDGet(void)
+{
+  return sysex_device_id;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function parses an incoming sysex stream for MIOS32 commands
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
+{
+  // ignore realtime messages (see MIDI spec - realtime messages can
+  // always be injected into events/streams, and don't change the running status)
+  if( midi_in >= 0xf8 )
+    return 0;
+
+  // TODO: here we could send an error notification, that multiple devices are trying to access the device
+  if( sysex_state.MY_SYSEX && port != last_sysex_port )
+    return -1;
+
+  last_sysex_port = port;
+
+  // branch depending on state
+  if( !sysex_state.MY_SYSEX ) {
+    if( (sysex_state.CTR < sizeof(mios32_midi_sysex_header) && midi_in != mios32_midi_sysex_header[sysex_state.CTR]) ||
+	(sysex_state.CTR == sizeof(mios32_midi_sysex_header) && midi_in != sysex_device_id) ) {
+      // incoming byte doesn't match
+      MIOS32_MIDI_SYSEX_CmdFinished();
+    } else {
+      if( ++sysex_state.CTR > sizeof(mios32_midi_sysex_header) ) {
+	// complete header received, waiting for data
+	sysex_state.MY_SYSEX = 1;
+      }
+    }
+  } else {
+    // check for end of SysEx message or invalid status byte
+    if( midi_in >= 0x80 ) {
+      if( midi_in == 0xf7 && sysex_state.CMD ) {
+      	MIOS32_MIDI_SYSEX_Cmd(port, MIOS32_MIDI_SYSEX_CMD_STATE_END, midi_in);
+      }
+      MIOS32_MIDI_SYSEX_CmdFinished();
+    } else {
+      // check if command byte has been received
+      if( !sysex_state.CMD ) {
+	sysex_state.CMD = 1;
+	sysex_cmd = midi_in;
+	MIOS32_MIDI_SYSEX_Cmd(port, MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN, midi_in);
+      }
+      else
+	MIOS32_MIDI_SYSEX_Cmd(port, MIOS32_MIDI_SYSEX_CMD_STATE_CONT, midi_in);
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called at the end of a sysex command or on 
+// an invalid message
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_CmdFinished(void)
+{
+  // clear all status variables
+  sysex_state.ALL = 0;
+  sysex_cmd = 0;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function handles the sysex commands
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  // enter the commands here
+  switch( sysex_cmd ) {
+    case 0x00:
+      MIOS32_MIDI_SYSEX_Cmd_Reset(port, cmd_state, midi_in);
+      break;
+    case 0x0f:
+      MIOS32_MIDI_SYSEX_Cmd_Ping(port, cmd_state, midi_in);
+      break;
+    default:
+#if MIOS32_MIDI_BSL_ENHANCEMENTS
+      // this compile switch should only be activated for the bootloader!
+      if( BSL_SYSEX_Cmd(port, cmd_state, midi_in, sysex_cmd) >= 0 )
+	return 0; // BSL has serviced this command - no error
+#endif
+      // unknown command
+      // TODO: send 0xf7 if merger enabled
+      MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND);
+      MIOS32_MIDI_SYSEX_CmdFinished();      
+  }
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Command 00: Reset Core
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_Cmd_Reset(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  static u8 unlock_seq_state = 0;
+
+  switch( cmd_state ) {
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
+      unlock_seq_state = 1;
+      break;
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
+      switch( unlock_seq_state ) {
+        case 1:
+	  unlock_seq_state = (midi_in == 0x55) ? 2 : 0;
+	  break;
+        case 2:
+	  unlock_seq_state = (midi_in == 0x1a) ? 3 : 0;
+	  break;
+        case 3:
+	  unlock_seq_state = (midi_in == 0x42) ? 4 : 0;
+	  break;
+        default:
+	  // too many bytes or wrong sequence... wait for F7
+	  unlock_seq_state = 0;
+      }
+      break;
+
+    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
+      // TODO: send 0xf7 if merger enabled
+
+      if( unlock_seq_state != 4 ) {
+	// wrong unlock sequence received
+	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_WRONG_UNLOCK_SEQ);
+      } else {
+	// reset core (this will send an upload request)
+	MIOS32_SYS_Reset();
+	// at least on STM32 we will never reach this point
+	// but other core families could contain an empty stumb!
+      }
+      break;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Command 0F: Ping (just send back acknowledge)
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  switch( cmd_state ) {
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
+      // nothing to do
+      break;
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
+      // nothing to do
+      break;
+
+    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
+      // TODO: send 0xf7 if merger enabled
+
+      // send acknowledge
+      MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
+
+      break;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a SysEx acknowledge to notify the user about the received command
+// expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
+{
+  u8 sysex_buffer[32]; // should be enough?
+  u8 *sysex_buffer_ptr = &sysex_buffer[0];
+  int i;
+
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
+
+  // device ID
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
+
+  // send ack code and argument
+  *sysex_buffer_ptr++ = ack_code;
+  *sysex_buffer_ptr++ = ack_arg;
+
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
+
+  // finally send SysEx stream
+  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+}
+
 
 //! \}
 
