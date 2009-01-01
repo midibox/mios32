@@ -3,6 +3,8 @@
 # following variables should be set before including this file:
 #   - PROCESSOR e.g.: STM32F103RE
 #   - FAMILY    e.g.: STM32F10x
+#   - BOARD     e.g.: MBHP_CORE_STM32
+#   - LCD       e.g.: clcd
 #   - LD_FILE   e.g.: $(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 #   - PROJECT   e.g.: project   # (.lst, .hex, .map, etc... will be added automatically)
 #   - THUMB_SOURCE e.g.: main.c (.c only)

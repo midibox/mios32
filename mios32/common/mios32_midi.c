@@ -128,9 +128,10 @@ static mios32_midi_port_t last_sysex_port = DEFAULT;
 static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_CmdFinished(void);
 static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 MIOS32_MIDI_SYSEX_Cmd_Reset(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
+static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -900,7 +901,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_
   // enter the commands here
   switch( sysex_cmd ) {
     case 0x00:
-      MIOS32_MIDI_SYSEX_Cmd_Reset(port, cmd_state, midi_in);
+      MIOS32_MIDI_SYSEX_Cmd_Query(port, cmd_state, midi_in);
       break;
     case 0x0f:
       MIOS32_MIDI_SYSEX_Cmd_Ping(port, cmd_state, midi_in);
@@ -923,48 +924,68 @@ static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Command 00: Reset Core
+// Command 00: Query core informations and request BSL entry
 /////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_MIDI_SYSEX_Cmd_Reset(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
+static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-  static u8 unlock_seq_state = 0;
+  static u8 query_req = 0;
+  char str_buffer[40];
 
   switch( cmd_state ) {
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      unlock_seq_state = 1;
+      query_req = 0;
       break;
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      switch( unlock_seq_state ) {
-        case 1:
-	  unlock_seq_state = (midi_in == 0x55) ? 2 : 0;
-	  break;
-        case 2:
-	  unlock_seq_state = (midi_in == 0x1a) ? 3 : 0;
-	  break;
-        case 3:
-	  unlock_seq_state = (midi_in == 0x42) ? 4 : 0;
-	  break;
-        default:
-	  // too many bytes or wrong sequence... wait for F7
-	  unlock_seq_state = 0;
-      }
+      query_req = midi_in;
       break;
 
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
-      // TODO: send 0xf7 if merger enabled
-
-      if( unlock_seq_state != 4 ) {
-	// wrong unlock sequence received
-	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_WRONG_UNLOCK_SEQ);
-      } else {
-	// reset core (this will send an upload request)
-	MIOS32_SYS_Reset();
-	// at least on STM32 we will never reach this point
-	// but other core families could contain an empty stumb!
+      switch( query_req ) {
+        case 0x01: // operating system
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, "MIOS32");
+	  break;
+        case 0x02: // MBHP Board
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_BOARD_STR);
+	  break;
+        case 0x03: // Core Family
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_FAMILY_STR);
+	  break;
+        case 0x04: // Chip ID
+	  sprintf(str_buffer, "%08x", MIOS32_SYS_ChipIDGet());
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, (char *)str_buffer);
+	  break;
+        case 0x05: // Serial Number
+	  if( MIOS32_SYS_SerialNumberGet((char *)str_buffer) >= 0 )
+	    MIOS32_MIDI_SYSEX_SendAckStr(port, str_buffer);
+	  else
+	    MIOS32_MIDI_SYSEX_SendAckStr(port, "?");
+	  break;
+        case 0x06: // Flash Memory Size
+	  sprintf(str_buffer, "%d", MIOS32_SYS_FlashSizeGet());
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, str_buffer);
+	  break;
+        case 0x07: // RAM Memory Size
+	  sprintf(str_buffer, "%d", MIOS32_SYS_RAMSizeGet());
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, str_buffer);
+	  break;
+        case 0x08: // Application Name Line #1
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_LCD_BOOT_MSG_LINE1);
+	  break;
+        case 0x09: // Application Name Line #2
+	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_LCD_BOOT_MSG_LINE2);
+	  break;
+        case 0x7f:
+	  // reset core (this will send an upload request)
+	  MIOS32_SYS_Reset();
+	  // at least on STM32 we will never reach this point
+	  // but other core families could contain an empty stumb!
+	  break;
+        default: 
+	  // unknown query
+	  MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_UNKNOWN_QUERY);
       }
-      break;
   }
 
   return 0; // no error
@@ -1024,7 +1045,33 @@ static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ac
   return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// This function sends an SysEx acknowledge with a string (used on queries)
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
+{
+  u8 sysex_buffer[128]; // should be enough?
+  u8 *sysex_buffer_ptr = &sysex_buffer[0];
+  int i;
 
-//! \}
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
+
+  // device ID
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
+
+  // send ack code
+  *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_ACK;
+
+  // send string
+  for(i=0; i<100 && str[i] != 0; ++i)
+    *sysex_buffer_ptr++ = str[i];
+
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
+
+  // finally send SysEx stream
+  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+}
 
 #endif /* MIOS32_DONT_USE_MIDI */

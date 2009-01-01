@@ -35,24 +35,18 @@
 #define MEM16(addr) (*((volatile u16 *)(addr)))
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
-// STM32: determine size of flash, it's stored in the "electronic signature"
-#define FLASH_SIZE        (MEM16(0x1ffff7e0) * 0x400)
-
 // STM32: determine page size (mid density devices: 1k, high density devices: 2k)
 // TODO: find a proper way, as there could be high density devices with less than 256k?)
-#define FLASH_PAGE_SIZE   (MEM16(0x1ffff7e0) >= 0x100 ? 0x800 : 0x400)
+#define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
 
 // STM32: flash memory range (16k BSL range excluded)
 #define FLASH_START_ADDR  (0x08000000 + 0x4000)
-#define FLASH_END_ADDR    (0x08000000 + FLASH_SIZE - 0x4000 - 1)
+#define FLASH_END_ADDR    (0x08000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
 
-
-// STM32: determine size of SRAM, it's stored in the "electronic signature"
-#define SRAM_SIZE         (MEM16(0x1ffff7e2) * 0x400)
 
 // STM32: base address of SRAM
 #define SRAM_START_ADDR   (0x20000000)
-#define SRAM_END_ADDR     (0x20000000 + SRAM_SIZE - 1)
+#define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -90,6 +84,8 @@ static u32 sysex_receive_ctr;
 
 static u8 sysex_buffer[BSL_SYSEX_BUFFER_SIZE];
 
+static u8 halt_state;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the SysEx handler
@@ -99,7 +95,18 @@ s32 BSL_SYSEX_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+  halt_state = 0;
+
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if BSL is in halt state (e.g. code is uploaded, or Boot1 pin is 0)
+/////////////////////////////////////////////////////////////////////////////
+s32 BSL_SYSEX_HaltStateGet(void)
+{
+  return halt_state;
 }
 
 
@@ -240,6 +247,9 @@ s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_
 	// notify that wrong checksum has been received
 	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_WRONG_CHECKSUM);
       } else {
+	// enter halt state (can only be released via BSL reset)
+	halt_state = 1;
+
 	// write received data into memory
 	s32 error;
 	if( error = BSL_SYSEX_WriteMem(sysex_addr, sysex_len, sysex_buffer) ) {

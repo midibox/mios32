@@ -32,6 +32,11 @@ extern s32 MIOS32_SYS_Init(u32 mode);
 
 extern s32 MIOS32_SYS_Reset(void);
 
+extern u32 MIOS32_SYS_ChipIDGet(void);
+extern u32 MIOS32_SYS_FlashSizeGet(void);
+extern u32 MIOS32_SYS_RAMSizeGet(void);
+extern s32 MIOS32_SYS_SerialNumberGet(char *str);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

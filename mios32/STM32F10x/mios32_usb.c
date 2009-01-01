@@ -142,7 +142,7 @@ static const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
   (u8)((MIOS32_USB_VERSION_ID) >> 8),  	// Product version ID (MSB)
   0x01,				// Manufacturer string index
   0x02,				// Product string index
-  0x00,				// Serial number string index
+  0x03,				// Serial number string index
   0x01 				// Number of configurations
 };
 
@@ -1159,6 +1159,17 @@ static u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
       }
       break;
 
+    case 3: { // Serial Number
+        u8 serial_number_str[40];
+	if( MIOS32_SYS_SerialNumberGet((char *)serial_number_str) >= 0 ) {
+	  for(i=0, len=2; serial_number_str[i] != '\0' && len<200; ++i) {
+	    buffer[len++] = serial_number_str[i];
+	    buffer[len++] = 0;
+	  }
+	} else
+	  return NULL;
+      }
+      break;
     default: // string ID not supported
       return NULL;
   }
