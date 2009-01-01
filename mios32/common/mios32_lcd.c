@@ -215,6 +215,28 @@ s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Used during startup to print the boot message, which consists of two lines
+//! specified with MIOS32_LCD_BOOT_MSG_LINE1 and MIOS32_LCD_BOOT_MSG_LINE2.<BR>
+//! Both lines should be adapted in the mios32_config.h file of an application.<BR>
+//! The message is automatically print by the programming model after each reset.<BR>
+//! It will also be returned on a SysEx query.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_PrintBootMessage(void)
+{
+  s32 status = 0;
+
+  status |= MIOS32_LCD_DeviceSet(0);
+  status |= MIOS32_LCD_CursorSet(0, 0);
+  status |= MIOS32_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+  status |= MIOS32_LCD_CursorSet(0, 1);
+  status |= MIOS32_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Initializes all 8 special characters
 //! \param[in] table 8 * 8 (=64) bytes which contain the pixel lines
 //! \return < 0 on errors

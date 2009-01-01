@@ -10,6 +10,11 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+
+
 #define MID_PLAYER_TEST 0
 
 // not supported by MacOS emulation:

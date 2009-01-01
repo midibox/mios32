@@ -10,6 +10,10 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+// The boot message which is on a SysEx query (LCD not enabled, therefore not print on startup)
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIOS32 Bootloader"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+
 // disable code modules
 //#define MIOS32_DONT_USE_SYS
 //#define MIOS32_DONT_USE_IRQ

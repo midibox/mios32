@@ -108,6 +108,18 @@ int main(void)
   // initialize application
   APP_Init();
 
+  // print boot message
+#ifndef MIOS32_DONT_USE_LCD
+  MIOS32_LCD_PrintBootMessage();
+#endif
+
+  // wait for 2 seconds
+#ifndef MIOS32_DONT_USE_DELAY
+  int delay = 0;
+  for(delay=0; delay<2000; ++delay)
+    MIOS32_DELAY_Wait_uS(1000);
+#endif
+
   // start the tasks
 #if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
   xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);

@@ -10,6 +10,13 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+
+
+
 // for debugging via UART1 (application uses printf() to output helpful debugging messages)
 #define COM_DEBUG 1
 
@@ -25,7 +32,6 @@
 
 
 #define MID_PLAYER_TEST 0
-
 
 // the speed value for the datawheel (#0) which is used when the "FAST" button is activated:
 #define DEFAULT_DATAWHEEL_SPEED_VALUE	3

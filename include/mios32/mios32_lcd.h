@@ -18,9 +18,20 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// maximum number of mapped CLCD lines
 #ifndef MIOS32_LCD_MAX_MAP_LINES
 #define MIOS32_LCD_MAX_MAP_LINES 4
 #endif
+
+// The boot message which is print during startup and returned on a SysEx query
+#ifndef MIOS32_LCD_BOOT_MSG_LINE1
+#define MIOS32_LCD_BOOT_MSG_LINE1 "Unnamed App."
+#endif
+
+#ifndef MIOS32_LCD_BOOT_MSG_LINE2
+#define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -42,6 +53,8 @@ extern s32 MIOS32_LCD_GCursorSet(u16 x, u16 y);
 extern s32 MIOS32_LCD_CursorMapSet(u8 map_table[]);
 extern s32 MIOS32_LCD_PrintString(char *str);
 extern s32 MIOS32_LCD_PrintFormattedString(char *format, ...);
+
+extern s32 MIOS32_LCD_PrintBootMessage(void);
 
 extern s32 MIOS32_LCD_SpecialCharsInit(u8 table[64]);
 
