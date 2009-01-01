@@ -16,7 +16,6 @@ CFLAGS    +=    -DGCC_ARMCM3
 THUMB_SOURCE += \
 		$(MIOS32_PATH)/programming_models/traditional/crt0_STM32x.c \
 		$(MIOS32_PATH)/programming_models/traditional/main.c \
-		$(MIOS32_PATH)/programming_models/traditional/printf-stdarg.c \
 		$(FREE_RTOS)/Source/tasks.c \
 		$(FREE_RTOS)/Source/list.c \
 		$(FREE_RTOS)/Source/queue.c \
