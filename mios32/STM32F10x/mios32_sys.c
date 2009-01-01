@@ -33,6 +33,15 @@ extern u32 mios32_sys_isr_vector;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Macros
+/////////////////////////////////////////////////////////////////////////////
+
+#define MEM32(addr) (*((volatile u32 *)(addr)))
+#define MEM16(addr) (*((volatile u16 *)(addr)))
+#define MEM8(addr)  (*((volatile u8  *)(addr)))
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Initializes the System for MIOS32:<BR>
 //! <UL>
 //!   <LI>enables clock for IO ports
@@ -127,6 +136,7 @@ s32 MIOS32_SYS_Init(u32 mode)
 //! Shutdown MIOS32 and reset the microcontroller:<BR>
 //! <UL>
 //!   <LI>disable all RTOS tasks
+//!   <LI>print reboot message if LCD enabled
 //!   <LI>wait until all MIDI OUT buffers are empty (TODO)
 //!   <LI>disable all interrupts
 //!   <LI>turn off all board LEDs
@@ -141,6 +151,14 @@ s32 MIOS32_SYS_Reset(void)
   // disable all RTOS tasks
 #ifndef MIOS32_DONT_USE_FREERTOS
   portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
+#endif
+
+  // print reboot message if LCD enabled
+#ifndef MIOS32_DONT_USE_LCD
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_Clear();
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("Rebooting MIOS32...");
 #endif
 
   // wait until all MIDI OUT buffers are empty (TODO)
@@ -171,6 +189,61 @@ s32 MIOS32_SYS_Reset(void)
   while( 1 );
 
   return -1; // we will never reach this point
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the Chip ID of the core
+//! \return the chip ID
+/////////////////////////////////////////////////////////////////////////////
+u32 MIOS32_SYS_ChipIDGet(void)
+{
+  // stored in DBGMCU_IDCODE register
+  return MEM32(0xe0042000);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the Flash size of the core
+//! \return the Flash size in bytes
+/////////////////////////////////////////////////////////////////////////////
+u32 MIOS32_SYS_FlashSizeGet(void)
+{
+  // stored in the so called "electronic signature"
+  return (u32)MEM16(0x1ffff7e0) * 0x400;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the (data) RAM size of the core
+//! \return the RAM size in bytes
+/////////////////////////////////////////////////////////////////////////////
+u32 MIOS32_SYS_RAMSizeGet(void)
+{
+  // stored in the so called "electronic signature"
+  return (u32)MEM16(0x1ffff7e2) * 0x400;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the serial number as a string
+//! \param[out] str pointer to a string which can store at least 32 digits + zero terminator!
+//! (24 digits returned for STM32)
+//! \return < 0 if feature not supported
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_SerialNumberGet(char *str)
+{
+  int i;
+
+  // stored in the so called "electronic signature"
+  for(i=0; i<24; ++i) {
+    u8 b = MEM8(0x1ffff7e8 + (i/2));
+    if( !(i & 1) )
+      b >>= 4;
+    b &= 0x0f;
+
+    str[i] = ((b > 9) ? ('A'-10) : '0') + b;
+  }
+  str[i] = 0;
+
+  return 0; // no error
 }
 
 

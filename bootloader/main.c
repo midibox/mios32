@@ -134,7 +134,7 @@ int main(void)
     // directly by MIOS32 to enhance command set
     MIOS32_MIDI_Receive_Handler(NULL, NULL);
 
-  } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET );
+  } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || BSL_SYSEX_HaltStateGet() );
 
   // ensure that flash write access is locked
   FLASH_Lock();
