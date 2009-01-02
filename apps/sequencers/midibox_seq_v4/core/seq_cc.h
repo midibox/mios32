@@ -60,6 +60,14 @@
 
 #define SEQ_CC_CHANGE_STEP	0x40
 
+#define SEQ_CC_ECHO_REPEATS	0x50
+#define SEQ_CC_ECHO_DELAY	0x51
+#define SEQ_CC_ECHO_VELOCITY	0x52
+#define SEQ_CC_ECHO_FB_VELOCITY	0x53
+#define SEQ_CC_ECHO_FB_NOTE	0x54
+#define SEQ_CC_ECHO_FB_GATELENGTH 0x55
+#define SEQ_CC_ECHO_FB_TICKS    0x56
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -90,6 +98,15 @@ typedef struct {
   seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V
   unsigned humanize_mode:4;   // humanize mode
   unsigned humanize_value:4;  // humanize intensity
+
+  // new in MBSEQ V4
+  unsigned echo_repeats:4;    // repeats (0..15)
+  unsigned echo_delay:4;      // delay between echoed notes (different predefined lengths + Rnd1/2)
+  unsigned echo_velocity:8;   // initial velocity 0%..200%, 5 step resolution (41 values)
+  unsigned echo_fb_velocity:8; // feedbacked velocity (41 values)
+  unsigned echo_fb_note:8;    // feedbacked note (-24..24 + random = 50 values)
+  unsigned echo_fb_gatelength:8; // feedbacked gatelength 0%..200%, 5 step resolution (41 values)
+  unsigned echo_fb_ticks:8;   // feedbacked ticks 0%..200%, 5 step resolution (41 values)
 } seq_cc_trk_t;
 
 

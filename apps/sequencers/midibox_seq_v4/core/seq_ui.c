@@ -75,17 +75,19 @@ u8 ui_seq_pause;
 // Note: must be kept in sync with SEQ_UI_PAGE_xxx definitions in seq_ui.h!
 static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TODO_Init,    // 0
-  (void *)&SEQ_UI_EDIT_Init,    // 1
-  (void *)&SEQ_UI_MUTE_Init,    // 2
-  (void *)&SEQ_UI_PATTERN_Init, // 3
-  (void *)&SEQ_UI_TRKEVNT_Init, // 4
-  (void *)&SEQ_UI_TRKMODE_Init, // 5
-  (void *)&SEQ_UI_TRKDIR_Init,  // 6
-  (void *)&SEQ_UI_TRKDIV_Init,  // 7
-  (void *)&SEQ_UI_TRKLEN_Init,  // 8
-  (void *)&SEQ_UI_TRKTRAN_Init, // 9
-  (void *)&SEQ_UI_TRGASG_Init,  // 10
-  (void *)&SEQ_UI_SHORTCUT_Init // 11
+  (void *)&SEQ_UI_SHORTCUT_Init,// 1
+  (void *)&SEQ_UI_EDIT_Init,    // 2
+  (void *)&SEQ_UI_MUTE_Init,    // 3
+  (void *)&SEQ_UI_PATTERN_Init, // 4
+  (void *)&SEQ_UI_TRKEVNT_Init, // 5
+  (void *)&SEQ_UI_TRKMODE_Init, // 6
+  (void *)&SEQ_UI_TRKDIR_Init,  // 7
+  (void *)&SEQ_UI_TRKDIV_Init,  // 8
+  (void *)&SEQ_UI_TRKLEN_Init,  // 9
+  (void *)&SEQ_UI_TRKTRAN_Init, // 10
+  (void *)&SEQ_UI_TRGASG_Init,  // 11
+  (void *)&SEQ_UI_FX_Init,      // 12
+  (void *)&SEQ_UI_FX_ECHO_Init  // 13
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);

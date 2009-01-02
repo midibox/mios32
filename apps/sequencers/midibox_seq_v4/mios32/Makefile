@@ -18,6 +18,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
+		../core/seq_ui_shortcut.c \
 		../core/seq_ui_edit.c \
 		../core/seq_ui_mute.c \
 		../core/seq_ui_pattern.c \
@@ -28,7 +29,8 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_trklen.c \
 		../core/seq_ui_trktran.c \
 		../core/seq_ui_trgasg.c \
-		../core/seq_ui_shortcut.c \
+		../core/seq_ui_fx.c \
+		../core/seq_ui_fx_echo.c \
 		../core/seq_midi_in.c \
 		../core/seq_midply.c \
 		../core/seq_cc.c  \

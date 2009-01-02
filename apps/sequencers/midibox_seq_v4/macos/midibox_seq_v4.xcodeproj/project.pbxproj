@@ -77,6 +77,8 @@
 		52B7316B0EF4462B00496FC2 /* seq_ui_trktran.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731680EF4462B00496FC2 /* seq_ui_trktran.c */; };
 		52B731740EF5960D00496FC2 /* seq_midi_in.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731730EF5960D00496FC2 /* seq_midi_in.c */; };
 		52B98C230EEC45D700454232 /* seq_cc.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B98C210EEC45D700454232 /* seq_cc.c */; };
+		52C4BC590F0EB3600063D223 /* seq_ui_fx.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C4BC570F0EB3600063D223 /* seq_ui_fx.c */; };
+		52C4BC5A0F0EB3600063D223 /* seq_ui_fx_echo.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */; };
 		52C74ED90EE2B8E700187414 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C74ED80EE2B8E700187414 /* CoreMIDI.framework */; };
 		52D6822D0EE1E7AF0050D856 /* seq_core.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D6821F0EE1E7AF0050D856 /* seq_core.c */; };
 		52D6822E0EE1E7AF0050D856 /* seq_led.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D682210EE1E7AF0050D856 /* seq_led.c */; };
@@ -211,6 +213,8 @@
 		52B731730EF5960D00496FC2 /* seq_midi_in.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_in.c; path = ../core/seq_midi_in.c; sourceTree = SOURCE_ROOT; };
 		52B98C210EEC45D700454232 /* seq_cc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cc.c; path = ../core/seq_cc.c; sourceTree = SOURCE_ROOT; };
 		52B98C220EEC45D700454232 /* seq_cc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cc.h; path = ../core/seq_cc.h; sourceTree = SOURCE_ROOT; };
+		52C4BC570F0EB3600063D223 /* seq_ui_fx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx.c; path = ../core/seq_ui_fx.c; sourceTree = SOURCE_ROOT; };
+		52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_echo.c; path = ../core/seq_ui_fx_echo.c; sourceTree = SOURCE_ROOT; };
 		52C74ED80EE2B8E700187414 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = /System/Library/Frameworks/CoreMIDI.framework; sourceTree = "<absolute>"; };
 		52D6821F0EE1E7AF0050D856 /* seq_core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_core.c; path = ../core/seq_core.c; sourceTree = SOURCE_ROOT; };
 		52D682200EE1E7AF0050D856 /* seq_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_core.h; path = ../core/seq_core.h; sourceTree = SOURCE_ROOT; };
@@ -346,6 +350,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52C4BC570F0EB3600063D223 /* seq_ui_fx.c */,
+				52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */,
 				52B5C57D0EFE9577000ADFBD /* seq_ui_shortcut.c */,
 				52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */,
 				52DA1B340EFB006400E889A5 /* seq_layer.h */,
@@ -656,6 +662,8 @@
 				52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */,
 				52B5C57E0EFE9577000ADFBD /* seq_ui_shortcut.c in Sources */,
 				5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */,
+				52C4BC590F0EB3600063D223 /* seq_ui_fx.c in Sources */,
+				52C4BC5A0F0EB3600063D223 /* seq_ui_fx_echo.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

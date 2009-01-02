@@ -27,18 +27,18 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-// following pages are directly accessible with the GP buttons when MENU button is pressed
+// following pages are directly accessible with the GP buttons inside the Fx menu
 static const seq_ui_page_t shortcut_menu_pages[16] = {
-  SEQ_UI_PAGE_NONE,        // GP1
-  SEQ_UI_PAGE_TRKEVNT,     // GP2
-  SEQ_UI_PAGE_TRKMODE,     // GP3
-  SEQ_UI_PAGE_TRKDIR,      // GP4
-  SEQ_UI_PAGE_TRKDIV,      // GP5
-  SEQ_UI_PAGE_TRKLEN,      // GP6
-  SEQ_UI_PAGE_TRKTRAN,     // GP7
+  SEQ_UI_PAGE_FX_ECHO,     // GP1
+  SEQ_UI_PAGE_NONE,        // GP2
+  SEQ_UI_PAGE_NONE,        // GP3
+  SEQ_UI_PAGE_NONE,        // GP4
+  SEQ_UI_PAGE_NONE,        // GP5
+  SEQ_UI_PAGE_NONE,        // GP6
+  SEQ_UI_PAGE_NONE,        // GP7
   SEQ_UI_PAGE_NONE,        // GP8
-  SEQ_UI_PAGE_TRGASG,      // GP9
-  SEQ_UI_PAGE_FX,          // GP10
+  SEQ_UI_PAGE_NONE,        // GP9
+  SEQ_UI_PAGE_NONE,        // GP10
   SEQ_UI_PAGE_NONE,        // GP11
   SEQ_UI_PAGE_NONE,        // GP12
   SEQ_UI_PAGE_NONE,        // GP13
@@ -53,14 +53,6 @@ static const seq_ui_page_t shortcut_menu_pages[16] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-  if( ui_cursor_flash ) // if flashing flag active: no LED flag set
-    return 0;
-
-  int i;
-  for(i=0; i<16; ++i)
-    if(ui_shortcut_prev_page == shortcut_menu_pages[i])
-      *gp_leds |= (1 << i);
-
   return 0; // no error
 }
 
@@ -81,7 +73,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
     // change to new page
-    SEQ_UI_PageSet(shortcut_menu_pages[encoder]);
+    if( shortcut_menu_pages[encoder] != SEQ_UI_PAGE_NONE )
+      SEQ_UI_PageSet(shortcut_menu_pages[encoder]);
 
     return 1; // value changed
   }
@@ -108,7 +101,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
     // change to new page
-    SEQ_UI_PageSet(shortcut_menu_pages[button]);
+    if( shortcut_menu_pages[button] != SEQ_UI_PAGE_NONE )
+      SEQ_UI_PageSet(shortcut_menu_pages[button]);
 
     return 1; // value always changed
   }
@@ -131,10 +125,10 @@ static s32 LCD_Handler(u8 high_prio)
   MIOS32_LCD_CursorSet(0, 0);
   //                      <-------------------------------------->
   //                      0123456789012345678901234567890123456789
-  MIOS32_LCD_PrintString("Menu Shortcuts:");
-  SEQ_LCD_PrintSpaces(25);
+  MIOS32_LCD_PrintString("Fx Pages:");
+  SEQ_LCD_PrintSpaces(32);
   MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Mix  Evnt Mode Dir. Div. Len. Trn. Grv. ");
+  MIOS32_LCD_PrintString("Echo                                    ");
   
   MIOS32_LCD_DeviceSet(1);
   MIOS32_LCD_CursorSet(0, 0);
@@ -142,7 +136,7 @@ static s32 LCD_Handler(u8 high_prio)
   //                      0123456789012345678901234567890123456789
   SEQ_LCD_PrintSpaces(40);
   MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Trg.  Fx  Man. Mrp. BPM  Save MIDI SysEx");
+  SEQ_LCD_PrintSpaces(40);
 
   return 0; // no error
 }
@@ -151,7 +145,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_SHORTCUT_Init(u32 mode)
+s32 SEQ_UI_FX_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);

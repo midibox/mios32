@@ -19,10 +19,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 12
+#define SEQ_UI_PAGES 14
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
+  SEQ_UI_PAGE_SHORTCUT,
   SEQ_UI_PAGE_EDIT,
   SEQ_UI_PAGE_MUTE,
   SEQ_UI_PAGE_PATTERN,
@@ -33,12 +34,14 @@ typedef enum {
   SEQ_UI_PAGE_TRKLEN,
   SEQ_UI_PAGE_TRKTRAN,
   SEQ_UI_PAGE_TRGASG,
-  SEQ_UI_PAGE_SHORTCUT
+  SEQ_UI_PAGE_FX,
+  SEQ_UI_PAGE_FX_ECHO
 } seq_ui_page_t;
 
 
 // Prototypes for all UI pages are burried here
 extern s32 SEQ_UI_TODO_Init(u32 mode);
+extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
 extern s32 SEQ_UI_MUTE_Init(u32 mode);
 extern s32 SEQ_UI_PATTERN_Init(u32 mode);
@@ -49,7 +52,8 @@ extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
 extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
 extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
-extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
+extern s32 SEQ_UI_FX_Init(u32 mode);
+extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////

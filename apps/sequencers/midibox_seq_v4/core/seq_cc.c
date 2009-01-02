@@ -58,7 +58,11 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->evnt_const3 = 0;
 
     tcc->midi_chn = track % 16;
+#if 0
+    tcc->midi_port = UART0;
+#else
     tcc->midi_port = DEFAULT;
+#endif
 
     tcc->dir_mode = SEQ_CORE_TRKDIR_Forward;
     tcc->steps_replay = 0;
@@ -92,6 +96,14 @@ s32 SEQ_CC_Init(u32 mode)
 
     tcc->humanize_mode = 0;
     tcc->humanize_value = 0;
+
+    tcc->echo_repeats = 0;
+    tcc->echo_delay = 3; // 1/32
+    tcc->echo_velocity = 15; // 75%
+    tcc->echo_fb_velocity = 15; // 75%
+    tcc->echo_fb_note = 24; // +0
+    tcc->echo_fb_gatelength = 20; // 100%
+    tcc->echo_fb_ticks = 20; // 100%
   }
 
   return 0; // no error
@@ -151,6 +163,14 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u16 value)
   
     case SEQ_CC_CHANGE_STEP: break; // TODO
   
+    case SEQ_CC_ECHO_REPEATS: tcc->echo_repeats = value; break;
+    case SEQ_CC_ECHO_DELAY: tcc->echo_delay = value; break;
+    case SEQ_CC_ECHO_VELOCITY: tcc->echo_velocity = value; break;
+    case SEQ_CC_ECHO_FB_VELOCITY: tcc->echo_fb_velocity = value; break;
+    case SEQ_CC_ECHO_FB_NOTE: tcc->echo_fb_note = value; break;
+    case SEQ_CC_ECHO_FB_GATELENGTH: tcc->echo_fb_gatelength = value; break;
+    case SEQ_CC_ECHO_FB_TICKS: tcc->echo_fb_ticks = value; break;
+
     default:
       MIOS32_IRQ_Enable();
       return -2; // invalid CC
@@ -209,7 +229,15 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ASG_RANDOM_VALUE: return tcc->trg_assignments.random_value;
     case SEQ_CC_ASG_RANDOM_SPARE: return tcc->trg_assignments.spare;
   
-    case SEQ_CC_CHANGE_STEP: break; // TODO
+    case SEQ_CC_CHANGE_STEP: return 0; // TODO
+
+    case SEQ_CC_ECHO_REPEATS: return tcc->echo_repeats; break;
+    case SEQ_CC_ECHO_DELAY: return tcc->echo_delay; break;
+    case SEQ_CC_ECHO_VELOCITY: return tcc->echo_velocity; break;
+    case SEQ_CC_ECHO_FB_VELOCITY: return tcc->echo_fb_velocity; break;
+    case SEQ_CC_ECHO_FB_NOTE: return tcc->echo_fb_note; break;
+    case SEQ_CC_ECHO_FB_GATELENGTH: return tcc->echo_fb_gatelength; break;
+    case SEQ_CC_ECHO_FB_TICKS: return tcc->echo_fb_ticks; break;
   }
 
   return -2; // invalid CC
