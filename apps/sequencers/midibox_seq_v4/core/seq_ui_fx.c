@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Shortcut page (visible when MENU button is pressed)
+ * Fx menu page
  *
  * ==========================================================================
  *

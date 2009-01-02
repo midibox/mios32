@@ -87,7 +87,8 @@ static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TRKTRAN_Init, // 10
   (void *)&SEQ_UI_TRGASG_Init,  // 11
   (void *)&SEQ_UI_FX_Init,      // 12
-  (void *)&SEQ_UI_FX_ECHO_Init  // 13
+  (void *)&SEQ_UI_FX_ECHO_Init, // 13
+  (void *)&SEQ_UI_BPM_Init      // 14
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -1212,6 +1213,32 @@ s32 SEQ_UI_GxTyInc(s32 incrementer)
 
   ui_selected_tracks = 1 << (gxty % 4);
   ui_selected_group = gxty / 4;
+
+  return 1; // value changed
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments a 16bit variable within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Var_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
+{
+  int new_value = *value;
+  int prev_value = new_value;
+
+  if( incrementer >= 0 ) {
+    if( (new_value += incrementer) >= max )
+      new_value = max;
+  } else {
+    if( (new_value += incrementer) < min )
+      new_value = min;
+  }
+
+  if( new_value == prev_value )
+    return 0; // no change
+
+  *value = new_value;
 
   return 1; // value changed
 }

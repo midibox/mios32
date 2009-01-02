@@ -66,7 +66,10 @@ static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
-u8 steps_per_measure;
+u8 seq_core_steps_per_measure;
+
+u8 seq_core_bpm_div_int;
+u8 seq_core_bpm_div_ext;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,7 +87,10 @@ s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_state.ALL = 0;
 
-  steps_per_measure = 16; // will be configurable later
+  // will be configurable later
+  seq_core_steps_per_measure = 16;
+  seq_core_bpm_div_int = 0;
+  seq_core_bpm_div_ext = 1;
 
   // reset track parameters
   SEQ_CC_Init(0);
@@ -248,14 +254,28 @@ s32 SEQ_CORE_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
+#if 0
+  // handle internal clock divider
+  if( seq_core_bpm_div_int ) {
+    if( (bpm_tick % (1 << seq_core_bpm_div_int)) )
+      return 0; // skip clock
+    bpm_tick >>= seq_core_bpm_div_int;
+  }
+
+  // handle external clock divider
+  if( !(bpm_tick % (1 << (seq_core_bpm_div_ext+1))) ) {
+    // TODO: send external clock
+  }
+#endif
+
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
-  if( (bpm_tick % (384/4)) == 0 ) {
+  if( (bpm_tick % ((384/4) << seq_core_bpm_div_int)) == 0 ) {
     if( seq_core_state.FIRST_CLK )
       seq_core_state.ref_step = 0;
     else {
-      if( ++seq_core_state.ref_step >= steps_per_measure ) {
+      if( ++seq_core_state.ref_step >= seq_core_steps_per_measure ) {
 	seq_core_state.ref_step = 0;
 	synch_to_measure_req = 1;
       }
@@ -263,7 +283,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   }
 
   // send MIDI clock on each 16th tick (since we are working at 384ppqn)
-  if( (bpm_tick % 16) == 0 )
+  if( (bpm_tick % (16 << seq_core_bpm_div_int)) == 0 )
     SEQ_CORE_SendMIDIClockEvent(0xf8, bpm_tick);
 
 
@@ -279,7 +299,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       SEQ_CORE_ResetTrkPos(t, tcc);
 
     // MEMO: due to compatibilty reasons, the clock-predivider is currently multiplied by 4 (previously we used 96ppqn)
-    u16 prediv = bpm_tick % (4 * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+    u16 prediv = bpm_tick % ((4 * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int);
     if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
       t->div_ctr = 0;
 
@@ -376,14 +396,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		  t->sustain_note = p_off;
 		  gatelength=0;
 		} else {
-		  gatelength = 4*(e->len+1); // TODO: later we will support higher note length resolution
+		  // TODO: later we will support higher note length resolution
+		  gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
 		  SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, SEQ_MIDI_OUT_OffEvent, bpm_tick + gatelength);
 		}
 	      } else {
 		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
 		int i;
 		int triggers = (e->len>>5);
-		gatelength = 4 * (e->len & 0x1f);
+		gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
 		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
 		for(i=0; i<triggers; ++i)
 		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + (i+1)*gatelength);

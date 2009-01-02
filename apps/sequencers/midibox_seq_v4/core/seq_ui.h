@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 14
+#define SEQ_UI_PAGES 15
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
@@ -35,7 +35,8 @@ typedef enum {
   SEQ_UI_PAGE_TRKTRAN,
   SEQ_UI_PAGE_TRGASG,
   SEQ_UI_PAGE_FX,
-  SEQ_UI_PAGE_FX_ECHO
+  SEQ_UI_PAGE_FX_ECHO,
+  SEQ_UI_PAGE_BPM,
 } seq_ui_page_t;
 
 
@@ -54,6 +55,7 @@ extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
 extern s32 SEQ_UI_FX_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
+extern s32 SEQ_UI_BPM_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -162,6 +164,7 @@ extern u8  SEQ_UI_VisibleTrackGet(void);
 extern s32 SEQ_UI_IsSelectedTrack(u8 track);
 
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
+extern s32 SEQ_UI_Var_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Set(u8 cc, u16 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value);
