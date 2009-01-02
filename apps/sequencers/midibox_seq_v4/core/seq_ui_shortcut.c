@@ -41,7 +41,7 @@ static const seq_ui_page_t shortcut_menu_pages[16] = {
   SEQ_UI_PAGE_FX,          // GP10
   SEQ_UI_PAGE_NONE,        // GP11
   SEQ_UI_PAGE_NONE,        // GP12
-  SEQ_UI_PAGE_NONE,        // GP13
+  SEQ_UI_PAGE_BPM,         // GP13
   SEQ_UI_PAGE_NONE,        // GP14
   SEQ_UI_PAGE_NONE,        // GP15
   SEQ_UI_PAGE_NONE         // GP16

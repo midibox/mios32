@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Echo Fx page
+ * BPM configuration page
  *
  * ==========================================================================
  *
@@ -19,21 +19,19 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
+#include "seq_bpm.h"
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
-#define ITEM_GXTY          0
-#define ITEM_REPEATS       1
-#define ITEM_DELAY         2
-#define ITEM_VELOCITY      3
-#define ITEM_FB_VELOCITY   4
-#define ITEM_FB_NOTE       5
-#define ITEM_FB_GATELENGTH 6
-#define ITEM_FB_TICKS      7
+#define NUM_OF_ITEMS       4
+#define ITEM_MODE          0
+#define ITEM_BPM           1
+#define ITEM_IDIV          2
+#define ITEM_EDIV          3
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,18 +42,13 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( ui_selected_item ) {
-    case ITEM_GXTY: *gp_leds = 0x0003; break;
-    case ITEM_REPEATS: *gp_leds = 0x000c; break;
-    case ITEM_DELAY: *gp_leds = 0x0030; break;
-    case ITEM_VELOCITY: *gp_leds = 0x00c0; break;
-    case ITEM_FB_VELOCITY: *gp_leds = 0x0300; break;
-    case ITEM_FB_NOTE: *gp_leds = 0x0c00; break;
-    case ITEM_FB_GATELENGTH: *gp_leds = 0x3000; break;
-    case ITEM_FB_TICKS: *gp_leds = 0xc000; break;
+    case ITEM_MODE: *gp_leds = 0x0007; break;
+    case ITEM_BPM: *gp_leds = 0x0078; break;
   }
+
+  *gp_leds |= (1 << (seq_core_bpm_div_int+8));
+  *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
 
   return 0; // no error
 }
@@ -73,55 +66,79 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_GXTY;
-      break;
-
     case SEQ_UI_ENCODER_GP3:
+      ui_selected_item = ITEM_MODE;
+      break;
+
     case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_REPEATS;
-      break;
-
     case SEQ_UI_ENCODER_GP5:
-    case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_DELAY;
+      ui_selected_item = ITEM_BPM;
       break;
 
+    case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
-    case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_VELOCITY;
+      ui_selected_item = ITEM_BPM;
+      // special feature: these two encoders increment *10
+      incrementer *= 10;
       break;
+
+    case SEQ_UI_ENCODER_GP8:
+      return 0; // Tap Tempo not for encoder
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_FB_VELOCITY;
-      break;
-
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
-      ui_selected_item = ITEM_FB_NOTE;
-      break;
+      ui_selected_item = ITEM_IDIV;
+      seq_core_bpm_div_int = (u8)encoder & 3;
+      return 1;
 
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_FB_GATELENGTH;
-      break;
-
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_FB_TICKS;
-      break;
+      ui_selected_item = ITEM_EDIV;
+      seq_core_bpm_div_ext = (u8)encoder & 3;
+      return 1;
   }
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_REPEATS:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_REPEATS, 0, 15, incrementer);
-    case ITEM_DELAY:         return SEQ_UI_CC_Inc(SEQ_CC_ECHO_DELAY, 0, 15, incrementer);
-    case ITEM_VELOCITY:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_VELOCITY, 0, 40, incrementer);
-    case ITEM_FB_VELOCITY:   return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_VELOCITY, 0, 40, incrementer);
-    case ITEM_FB_NOTE:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_NOTE, 0, 49, incrementer);
-    case ITEM_FB_GATELENGTH: return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_GATELENGTH, 0, 40, incrementer);
-    case ITEM_FB_TICKS:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_TICKS, 0, 40, incrementer);
+    case ITEM_MODE: {
+      u16 value = SEQ_BPM_ModeGet();
+      if( SEQ_UI_Var_Inc(&value, 0, 2, incrementer) ) {
+	SEQ_BPM_ModeSet(value);
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
+
+    case ITEM_BPM: {
+      u16 value = (u32)(SEQ_BPM_Get()*10);
+      if( SEQ_UI_Var_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
+	SEQ_BPM_Set((float)value/10.0);
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
+
+    case ITEM_IDIV: {
+      u16 value = (u16)seq_core_bpm_div_int;
+      if( SEQ_UI_Var_Inc(&value, 0, 3, incrementer) ) {
+	seq_core_bpm_div_int = (u8)value;
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
+
+    case ITEM_EDIV: {
+      u16 value = (u16)seq_core_bpm_div_ext;
+      if( SEQ_UI_Var_Inc(&value, 0, 3, incrementer) ) {
+	seq_core_bpm_div_ext = (u8)value;
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -186,120 +203,63 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.        Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  
-  // GxTy           3       1/16      75%        120%       + 0     100%       100%
+  // BPM Clock Mode   Beats per Minute   Tap    Global Clock Dividers (Int./Ext.)    
+  //     Master            140.0        Tempo  >1<   2    4    8    2   >4<   8   16 
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.        Repeats   Delay   Vel.Level ");
+  MIOS32_LCD_PrintString("BPM Clock Mode   Beats per Minute   Tap ");
   MIOS32_LCD_DeviceSet(1);
   MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString(" FB Velocity  Note   Gatelen.    Ticks  ");
+  MIOS32_LCD_PrintString("   Global Clock Dividers (Int./Ext.)    ");
+
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 1);
 
-  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-  }
-  SEQ_LCD_PrintSpaces(10);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_REPEATS && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS));
-  }
-  SEQ_LCD_PrintSpaces(7);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_DELAY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    const char delay_str[16][5] = {
-      " 64T",
-      " 64 ",
-      " 32T",
-      " 32 ",
-      " 16T",
-      " 16 ",
-      "  8T",
-      "  8 ",
-      "  4T",
-      "  4 ",
-      "  2T",
-      "  2 ",
-      "  1T",
-      "  1 ",
-      "Rnd1",
-      "Rnd2"
-    };
-    MIOS32_LCD_PrintString((char *)delay_str[SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY)]);
-  }
-  SEQ_LCD_PrintSpaces(6);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_VELOCITY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_VELOCITY));
-  }
-  SEQ_LCD_PrintSpaces(2);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
   SEQ_LCD_PrintSpaces(4);
-
-  if( ui_selected_item == ITEM_FB_VELOCITY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
+  if( ui_selected_item == ITEM_MODE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(6);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_VELOCITY));
+    const char mode_str[3][7] = { "Auto  ", "Master", "Slave "};
+    MIOS32_LCD_PrintString((char *)mode_str[SEQ_BPM_ModeGet()]);
   }
-  SEQ_LCD_PrintSpaces(7);
+  SEQ_LCD_PrintSpaces(11);
 
   ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_FB_NOTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+  if( ui_selected_item == ITEM_BPM && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    u8 note_delta = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_NOTE);
-    if( note_delta < 24 )
-      MIOS32_LCD_PrintFormattedString("-%2d", 24-note_delta);
-    else if( note_delta < 49 )
-      MIOS32_LCD_PrintFormattedString("+%2d", note_delta-24);
+    float bpm = SEQ_BPM_Get();
+    MIOS32_LCD_PrintFormattedString("%3d.%d", (int)bpm, (int)(10*bpm)%10);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintSpaces(9);
+  MIOS32_LCD_PrintString("Tempo");
+
+  ///////////////////////////////////////////////////////////////////////////
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_CursorSet(0, 1);
+
+  int i;
+  for(i=0; i<4; ++i) {
+    if( seq_core_bpm_div_int == i && ui_cursor_flash )
+      SEQ_LCD_PrintSpaces(5);
     else
-      MIOS32_LCD_PrintString("Rnd");
+      MIOS32_LCD_PrintFormattedString("  %2d ", 1 << i);
   }
-  SEQ_LCD_PrintSpaces(5);
 
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_FB_GATELENGTH && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_GATELENGTH));
+  for(i=0; i<4; ++i) {
+    if( seq_core_bpm_div_ext == i && ui_cursor_flash )
+      SEQ_LCD_PrintSpaces(5);
+    else {
+      MIOS32_LCD_PrintFormattedString("  %2d ", 1 << (i+1));
+    }
   }
-  SEQ_LCD_PrintSpaces(7);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( ui_selected_item == ITEM_FB_TICKS && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_TICKS));
-  }
-  SEQ_LCD_PrintSpaces(2);
 
 
   return 0; // no error
@@ -309,7 +269,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_FX_ECHO_Init(u32 mode)
+s32 SEQ_UI_BPM_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);

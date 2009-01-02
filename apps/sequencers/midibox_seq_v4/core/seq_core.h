@@ -160,4 +160,7 @@ extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 extern seq_core_state_t seq_core_state;
 extern seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
+extern u8 seq_core_bpm_div_int;
+extern u8 seq_core_bpm_div_ext;
+
 #endif /* _SEQ_CORE_H */
