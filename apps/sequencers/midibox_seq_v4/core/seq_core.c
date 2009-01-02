@@ -54,7 +54,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick);
 
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
-static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package);
+static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
+static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, mios32_midi_package_t p_off, u32 bpm_tick, u32 gatelength);
+static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -71,9 +73,8 @@ u8 steps_per_measure;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 bpm_tick_forward_delay_ctr;
-static u32 bpm_tick_forward_delay_ctr_req;
-static u32 bpm_tick_forwarded;
+static u32 bpm_tick_prefetch_req;
+static u32 bpm_tick_prefetched_ctr;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,9 +83,6 @@ static u32 bpm_tick_forwarded;
 s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_state.ALL = 0;
-  bpm_tick_forward_delay_ctr_req = 0;
-  bpm_tick_forward_delay_ctr = 0;
-  bpm_tick_forwarded = 0;
 
   steps_per_measure = 16; // will be configurable later
 
@@ -134,45 +132,47 @@ s32 SEQ_CORE_Handler(void)
     // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_CORE_PlayOffEvents();
+      SEQ_CORE_SendMIDIClockEvent(0xfc, 0);
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
       // release pause mode
       ui_seq_pause = 0;
+      SEQ_CORE_SendMIDIClockEvent(0xfb, 0);
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
       SEQ_CORE_Reset();
+      SEQ_CORE_SendMIDIClockEvent(0xfa, 0);
     }
 
     u16 new_song_pos;
     if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
       SEQ_CORE_PlayOffEvents();
+      // cancel prefetch requests/counter
+      bpm_tick_prefetch_req = 0;
+      bpm_tick_prefetched_ctr = 0;
     }
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
 
-      // TODO: forwarding mechanism can be simplified
-      // it's better to do it the same way like in the MIDI file player
-      if( bpm_tick_forward_delay_ctr ) {
-	--bpm_tick_forward_delay_ctr;
-#if LED_PERFORMANCE_MEASURING == 2
-	MIOS32_BOARD_LED_Set(0xffffffff, bpm_tick_forward_delay_ctr ? 1 : 0);
-#endif
-      } else if( bpm_tick_forward_delay_ctr_req ) {
-#if LED_PERFORMANCE_MEASURING == 2
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);
-#endif
-	// forwarding sequencer has been requested!
-	bpm_tick_forwarded = bpm_tick;
-	while( bpm_tick_forward_delay_ctr_req ) {
-	  ++bpm_tick_forward_delay_ctr;
-	  --bpm_tick_forward_delay_ctr_req;
-	  SEQ_CORE_Tick(bpm_tick_forwarded++);
+      if( bpm_tick_prefetched_ctr ) {
+	// ticks already generated due to prefetching - wait until we catch up
+	--bpm_tick_prefetched_ctr;
+      } else if( bpm_tick_prefetch_req ) {
+	// forwarding the sequencer has been requested (e.g. before pattern change)
+	u32 forwarded_bpm_tick = bpm_tick;
+
+	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
+	  SEQ_CORE_Tick(forwarded_bpm_tick);
+	  ++forwarded_bpm_tick;
+	  ++bpm_tick_prefetched_ctr;
 	}
+	bpm_tick_prefetch_req = 0;
       } else {
+	// realtime generation of events
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
@@ -235,6 +235,10 @@ s32 SEQ_CORE_Reset(void)
   // reset BPM tick
   SEQ_BPM_TickSet(0);
 
+  // cancel prefetch requests/counter
+  bpm_tick_prefetch_req = 0;
+  bpm_tick_prefetched_ctr = 0;
+
   return 0; // no error
 }
 
@@ -258,6 +262,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
     }
   }
 
+  // send MIDI clock on each 16th tick (since we are working at 384ppqn)
+  if( (bpm_tick % 16) == 0 )
+    SEQ_CORE_SendMIDIClockEvent(0xf8, bpm_tick);
+
+
+  // process all tracks
   int track;
   seq_core_trk_t *t = &seq_core_trk[0];
   seq_cc_trk_t *tcc = &seq_cc_trk[0];
@@ -356,30 +366,37 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    }
 
 	    // send Off event
+	    mios32_midi_package_t p_off = *p;
+	    p_off.velocity = 0; // clear velocity/CC value
+	    u32 gatelength = 0;
 	    if( p->velocity && (e->len >= 0) ) { // if off event should be played (note: on CC events, velocity matches with CC value)
 	      if( e->len < 32 ) {
-		p->velocity = 0x00; // clear velocity
 		if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
 		  t->sustain_port = tcc->midi_port;
-		  t->sustain_note = *p;
+		  t->sustain_note = p_off;
+		  gatelength=0;
 		} else {
-		  u32 delay = 4*(e->len+1); // TODO: later we will support higher note length resolution
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + delay);
+		  gatelength = 4*(e->len+1); // TODO: later we will support higher note length resolution
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, SEQ_MIDI_OUT_OffEvent, bpm_tick + gatelength);
 		}
 	      } else {
-		// multi trigger - thanks to MIDI queueing mechanism, realisation is much much easier than on MBSEQ V3!!! :-)
+		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
 		int i;
 		int triggers = (e->len>>5);
-		u32 delay = 4 * (e->len & 0x1f);
-		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger
+		gatelength = 4 * (e->len & 0x1f);
+		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
 		for(i=0; i<triggers; ++i)
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + (i+1)*delay);
-
-		p->velocity = 0x00; // clear velocity
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + (i+1)*gatelength);
+		
 		for(i=0; i<=triggers; ++i)
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + i*delay + (delay/2));
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, SEQ_MIDI_OUT_OffEvent, bpm_tick + i*gatelength + (gatelength/2));
 	      }
 	    }
+
+	    // apply echo Fx if enabled
+	    if( tcc->echo_repeats && (p->type == CC || gatelength) )
+	      SEQ_CORE_Echo(t, tcc, *p, p_off, bpm_tick, gatelength);
+
 	  }
 	}
       }
@@ -569,9 +586,9 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
 /////////////////////////////////////////////////////////////////////////////
 // Transposes if midi_package contains a Note Event
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *midi_package)
+static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
 {
-  int note = midi_package->note;
+  int note = p->note;
 
   int inc_oct = tcc->transpose_oct;
   if( inc_oct >= 8 )
@@ -586,7 +603,7 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->mode.HOLD);
 
     if( tr_note < 0 ) {
-      midi_package->velocity = 0; // disable note and exit
+      p->velocity = 0; // disable note and exit
       return -1; // note has been disabled
     }
 
@@ -618,14 +635,14 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     note = arp_note & 0x7f;
 
     if( !note ) { // disable note and exit
-      midi_package->velocity = 0;
+      p->velocity = 0;
       return -1; // note has been disabled
     }
   }
 
 #if 0
   // apply transpose octave/semitones parameter
-  if( midi_package->type != NoteOn && midi_package->type != NoteOff )
+  if( p->type != NoteOn && p->type != NoteOff )
     return -1; // no note event
   // TODO: what about tracks which play transposed/arp events + CC?
 #endif
@@ -652,9 +669,107 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     }
   }
 
-  midi_package->note = note;
+  p->note = note;
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Echo Fx
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, mios32_midi_package_t p_off, u32 bpm_tick, u32 gatelength)
+{
+  // thanks to MIDI queuing mechanism, this is a no-brainer :)
+
+  // 64T, 64, 32T, 32, 16T, 16, ... 1, Rnd1 and Rnd2
+  s32 fb_ticks = ((tcc->echo_delay & 1) ? 24 : 16) * (1 << (tcc->echo_delay>>1));
+
+  s32 fb_note = p.note;
+  s32 fb_note_base = fb_note; // for random function
+
+  // the initial velocity value allows to start with a low velocity,
+  // and to increase it with each step via FB velocity value
+  s32 fb_velocity = p.velocity;
+  if( tcc->echo_velocity != 20 ) { // 20 == 100% -> no change
+    fb_velocity = (fb_velocity * 5*tcc->echo_velocity) / 100;
+    if( fb_velocity > 127 )
+      fb_velocity = 127;
+    p.velocity = (u8)fb_velocity;
+  }
+
+  seq_midi_out_event_type_t on_event =  p.type == CC ? SEQ_MIDI_OUT_CCEvent : SEQ_MIDI_OUT_OnEvent;
+  seq_midi_out_event_type_t off_event =  p_off.type == CC ? SEQ_MIDI_OUT_CCEvent : SEQ_MIDI_OUT_OffEvent;
+
+  u32 echo_offset = fb_ticks;
+  int i;
+  for(i=0; i<tcc->echo_repeats; ++i) {
+    if( i ) { // no feedback of velocity or echo ticks on first step
+      if( tcc->echo_fb_velocity != 20 ) { // 20 == 100% -> no change
+	fb_velocity = (fb_velocity * 5*tcc->echo_fb_velocity) / 100;
+	if( fb_velocity > 127 )
+	  fb_velocity = 127;
+	p.velocity = (u8)fb_velocity;
+      }
+
+      if( tcc->echo_fb_ticks != 20 ) { // 20 == 100% -> no change
+	fb_ticks = (fb_ticks * 5*tcc->echo_fb_ticks) / 100;
+      }
+      echo_offset += fb_ticks;
+    }
+
+    if( tcc->echo_fb_note != 24 ) { // 24 == 0 -> no change
+      if( tcc->echo_fb_note == 49 ) // random
+	fb_note = fb_note_base + ((s32)SEQ_RANDOM_Gen_Range(0, 48) - 24);
+      else
+	fb_note = fb_note + ((s32)tcc->echo_fb_note-24);
+      while( fb_note < 0 )
+	fb_note += 12;
+      while( fb_note > 127 )
+	fb_note -= 12;
+
+      p.note = (u8)fb_note;
+      p_off.note = (u8)fb_note;
+    }
+
+    if( gatelength && tcc->echo_fb_gatelength != 20 ) { // 20 == 100% -> no change
+      gatelength = (gatelength * 5*tcc->echo_fb_gatelength) / 100;
+      if( !gatelength )
+	gatelength = 1;
+    }
+
+    SEQ_MIDI_OUT_Send(tcc->midi_port, p, on_event, bpm_tick + echo_offset);
+    if( gatelength ) {
+      SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, off_event, bpm_tick + echo_offset + gatelength);
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a MIDI clock/Start/Stop/Continue event to all output
+// ports which have been enabled for this function.
+// if bpm_tick == 0, the event will be sent immediately, otherwise it will
+// be queued
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
+{
+  // TODO: currently only in master mode - we will allow to optionally send in slave mode as well
+  // TODO: MIDI clock port routing, currently only sent on UART0
+  if( SEQ_BPM_IsMaster() ) {
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.type = 0x5; // Single-byte system common message
+    p.evnt0 = evnt0;
+
+    if( bpm_tick )
+      SEQ_MIDI_OUT_Send(UART0, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick);
+    else
+      MIOS32_MIDI_SendPackage(UART0, p);
+  }
+
+  return 0; // no error;
 }
 
 
@@ -664,19 +779,16 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_AddForwardDelay(u16 delay_ms)
 {
-  if( bpm_tick_forward_delay_ctr )
+  if( bpm_tick_prefetch_req )
     return -1; // ongoing request
 
-  // calculate how many BPM ticks are required to bridge the delay
-  u32 add_bpm_ticks = SEQ_BPM_TicksFor_mS(delay_ms);
+  // calculate how many BPM ticks have to be forwarded
+  bpm_tick_prefetch_req = SEQ_BPM_TickGet() + SEQ_BPM_TicksFor_mS(delay_ms);
 
 #if 0
   // for checking the result on the console
-  printf("[SEQ_CORE_AddForwardDelay] %d ticks\n\r", add_bpm_ticks);
+  printf("[SEQ_CORE_AddForwardDelay] %d..%d ticks\n\r", SEQ_BPM_TickGet(), bpm_tick_prefetch_req);
 #endif
-
-  // requested ticks will be taken from SEQ_CORE_Handler()
-  bpm_tick_forward_delay_ctr_req = add_bpm_ticks;
 
   return 0; // no error
 }
