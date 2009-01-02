@@ -898,7 +898,6 @@ static s32 MIOS32_MIDI_SYSEX_CmdFinished(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-  // enter the commands here
   switch( sysex_cmd ) {
     case 0x00:
       MIOS32_MIDI_SYSEX_Cmd_Query(port, cmd_state, midi_in);
@@ -977,10 +976,15 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
 	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_LCD_BOOT_MSG_LINE2);
 	  break;
         case 0x7f:
+#if MIOS32_MIDI_BSL_ENHANCEMENTS
+	  // release halt state (or sending upload request) instead of reseting the core
+	  BSL_SYSEX_ReleaseHaltState();
+#else
 	  // reset core (this will send an upload request)
 	  MIOS32_SYS_Reset();
 	  // at least on STM32 we will never reach this point
 	  // but other core families could contain an empty stumb!
+#endif
 	  break;
         default: 
 	  // unknown query

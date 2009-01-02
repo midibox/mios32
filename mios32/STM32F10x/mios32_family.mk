@@ -26,5 +26,7 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/src/usb_mem.c \
 	$(DRIVER_LIB)/src/usb_regs.c
 
+THUMB_AS_SOURCE += $(DRIVER_LIB)/src/cortexm3_macro.s
+
 # directories and files that should be part of the distribution (release) package
 DIST += $(MIOS32_PATH)/mios32/$(FAMILY)

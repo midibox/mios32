@@ -103,7 +103,7 @@ s32 APP_LCD_Init(u32 mode)
   mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
 
   // set initial font and colours
-  MIOS32_LCD_FontInit(GLCD_FONT_NORMAL);
+  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
   MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
   MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
 

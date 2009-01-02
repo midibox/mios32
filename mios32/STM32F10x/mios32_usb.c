@@ -829,7 +829,11 @@ static vu32 bDeviceState = UNCONNECTED;
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes USB interface
-//! \param[in] mode currently only mode 0 supported
+//! \param[in] mode
+//!   <UL>
+//!     <LI>if 0, USB peripheral won't be initialized if this has already been done before
+//!     <LI>if 1, USB peripheral re-initialisation will be forced
+//!   </UL>
 //! \return < 0 if initialisation failed
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
@@ -838,8 +842,8 @@ s32 MIOS32_USB_Init(u32 mode)
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
 
-  // currently only mode 0 supported
-  if( mode != 0 )
+  // currently only mode 0 and 1 supported
+  if( mode >= 2 )
     return -1; // unsupported mode
 
   // change connection state to disconnected
@@ -850,46 +854,49 @@ s32 MIOS32_USB_Init(u32 mode)
   MIOS32_USB_COM_ChangeConnectionState(0);
 #endif
 
+  // if mode == 0: don't initialize USB if not required (important for BSL)
+  u8 usb_configured = 0;
+  if( mode == 0 && MIOS32_USB_IsInitialized() ) {
+    usb_configured = 1;
+  } else {
 
 #ifdef MIOS32_BOARD_STM32_PRIMER
-  // configure USB disconnect pin
-  // STM32 Primer: pin B12
-  // first we hold it low for ca. 50 mS to force a re-enumeration
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
+    // configure USB disconnect pin
+    // STM32 Primer: pin B12
+    // first we hold it low for ca. 50 mS to force a re-enumeration
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-  u32 delay;
-  for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
-    GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
+    u32 delay;
+    for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
+      GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
 #else
-  // using a "dirty" method to force a re-enumeration:
-  // force DPM (Pin PA12) low for ca. 10 mS before USB Tranceiver will be enabled
-  // this overrules the external Pull-Up at PA12, and at least Windows & MacOS will enumerate again
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-  u32 delay;
-  for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
-    GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
+    // using a "dirty" method to force a re-enumeration:
+    // force DPM (Pin PA12) low for ca. 10 mS before USB Tranceiver will be enabled
+    // this overrules the external Pull-Up at PA12, and at least Windows & MacOS will enumerate again
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    u32 delay;
+    for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
+      GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 #endif
-
-  // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_StructInit(&NVIC_InitStructure);
-  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN_RX0_IRQChannel;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  }
 
   // remaining initialisation done in STM32 USB driver
   USB_Init();
+
+  if( usb_configured ) {
+    pInformation->Current_Feature = MIOS32_USB_ConfigDescriptor[7];
+    pInformation->Current_Configuration = 1;
+    pUser_Standard_Requests->User_SetConfiguration();
+  }
 
   return 0; // no error
 }
@@ -921,6 +928,19 @@ void USB_LP_CAN_RX0_IRQHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Allows to query, if the USB interface has already been initialized.<BR>
+//! This function is used by the bootloader to avoid a reconnection, it isn't
+//! relevant for typical applications!
+//! \return 1 if USB already initialized, 0 if not initialized
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_IsInitialized(void)
+{
+  // we assume that initialisation has been done when endpoint 0 contains a value
+  return GetEPType(ENDP0) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Hooks of STM32 USB library
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
@@ -933,39 +953,52 @@ static void MIOS32_USB_CB_Init(void)
 
   pInformation->Current_Configuration = 0;
 
-  // Connect the device
+  // Connect the device if USB not already initialized
 
   // CNTR_PWDN = 0
-  wRegVal = CNTR_FRES;
-  _SetCNTR(wRegVal);
+  if( !MIOS32_USB_IsInitialized() ) {
+    wRegVal = CNTR_FRES;
+    _SetCNTR(wRegVal);
 
-  // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
-  for(delay=0; delay<10; ++delay) GPIOA->BRR = 0; // should be more than sufficient - add some dummy code here to ensure that the compiler doesn't optimize the empty for loop away
+    // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
+    for(delay=0; delay<10; ++delay) GPIOA->BRR = 0; // should be more than sufficient - add some dummy code here to ensure that the compiler doesn't optimize the empty for loop away
+    
+    // CNTR_FRES = 0
+    wInterrupt_Mask = 0;
+    _SetCNTR(wInterrupt_Mask);
 
-  // CNTR_FRES = 0
-  wInterrupt_Mask = 0;
-  _SetCNTR(wInterrupt_Mask);
+    // Clear pending interrupts
+    _SetISTR(0);
 
-  // Clear pending interrupts
-  _SetISTR(0);
+    // Configure USB clock
+    // USBCLK = PLLCLK / 1.5
+    RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
+    // Enable USB clock
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
 
-  // Configure USB clock
-  // USBCLK = PLLCLK / 1.5
-  RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
-  // Enable USB clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
+    // Set interrupt mask
+    wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
+    _SetCNTR(wInterrupt_Mask);
 
-  // Set interrupt mask
-  wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
-  _SetCNTR(wInterrupt_Mask);
+    // USB interrupts initialization
+    // clear pending interrupts
+    _SetISTR(0);
+    wInterrupt_Mask = IMR_MSK;
 
-  // USB interrupts initialization
-  // clear pending interrupts
-  _SetISTR(0);
-  wInterrupt_Mask = IMR_MSK;
-
-  // set interrupts mask
-  _SetCNTR(wInterrupt_Mask);
+    // set interrupts mask
+    _SetCNTR(wInterrupt_Mask);
+  } else {
+#ifndef MIOS32_DONT_USE_USB_MIDI
+    // release ENDP1 Rx/Tx
+    SetEPTxStatus(ENDP1, EP_TX_NAK);
+    SetEPRxValid(ENDP1);
+#endif
+    // clear pending interrupts
+    _SetISTR(0);
+    // set interrupts mask
+    wInterrupt_Mask = IMR_MSK;
+    _SetCNTR(wInterrupt_Mask);
+  }
 
   bDeviceState = UNCONNECTED;
 
@@ -977,6 +1010,15 @@ static void MIOS32_USB_CB_Init(void)
   // propagate connection state to USB MIDI driver
   MIOS32_USB_COM_ChangeConnectionState(0); // not connected
 #endif
+
+  // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
+  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_StructInit(&NVIC_InitStructure);
+  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN_RX0_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
 }
 
 // reset routine
