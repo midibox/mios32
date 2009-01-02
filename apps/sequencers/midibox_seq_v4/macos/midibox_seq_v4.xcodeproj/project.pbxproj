@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */; };
 		5203A4400EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */; };
 		52066E870E98356A00861688 /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52066E860E98356A00861688 /* printf-stdarg.c */; };
 		521A64150EEC7AE90062CBBE /* seq_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A64130EEC7AE90062CBBE /* seq_random.c */; };
@@ -110,6 +111,8 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* midibox_seq_v4_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = midibox_seq_v4_Prefix.pch; sourceTree = "<group>"; };
+		5200751C0F0E39760042E730 /* MIOS32_SYS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SYS_Wrapper.h; sourceTree = "<group>"; };
+		5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SYS_Wrapper.m; sourceTree = "<group>"; };
 		5203A43E0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_DELAY_Wrapper.h; sourceTree = "<group>"; };
 		5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_DELAY_Wrapper.m; sourceTree = "<group>"; };
 		52066E860E98356A00861688 /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "printf-stdarg.c"; sourceTree = "<group>"; };
@@ -295,6 +298,8 @@
 				523E38CC0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m */,
 				5203A43E0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.h */,
 				5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */,
+				5200751C0F0E39760042E730 /* MIOS32_SYS_Wrapper.h */,
+				5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -650,6 +655,7 @@
 				52DA1B3A0EFB006400E889A5 /* mb_midifile_demo.inc in Sources */,
 				52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */,
 				52B5C57E0EFE9577000ADFBD /* seq_ui_shortcut.c in Sources */,
+				5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -711,7 +717,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = MIOS32_FAMILY_EMULATION;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"MIOS32_FAMILY_STR=\\\"EMULATION\\\"",
+					"MIOS32_BOARD_STR=\\\"MACOS\\\"",
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
@@ -735,7 +745,11 @@
 					i386,
 				);
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = MIOS32_FAMILY_EMULATION;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"MIOS32_FAMILY_STR=\\\"EMULATION\\\"",
+					"MIOS32_BOARD_STR=\\\"MACOS\\\"",
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
