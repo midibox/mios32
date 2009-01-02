@@ -2,20 +2,6 @@
 /*
  * MIOS32 Bootloader
  *
- * TODO: provide SysEx command which allows that BSL stays in wait loop
- * TODO: don't re-init USB anymore
- * TODO: MIOS32 should directly branch to BSL, no USB reset
- * TODO: "hold pin" to select USB after power-on reset and to avoid branch
- *       to application (e.g. BOOT1 could be used)
- * TODO: allow code upload via USB for Primer under following conditions:
- *       - USB only
- *       - don't start after power on reset
- *       - application was running and didn't crash
- *       - application configured USB for MIDI
- *       - recovery on app crash only possible via integrated debug interface
- *       Note that this will be a perfect upload solution for the Primer,
- *       as the USB MIDI interface won't be reseted!
- *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -32,6 +18,8 @@
 #include <mios32.h>
 #include "bsl_sysex.h"
 
+#include <usb_lib.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -39,6 +27,15 @@
 
 // LEDs used by BSL to notify the status
 #define BSL_LED_MASK 0x00000001 // green LED
+
+// the "hold" pin (low-active)
+// we are using Boot1 = B2, since it suits perfectly for this purpose:
+//   o jumper already available (J27)
+//   o pull-up already available
+//   o normaly used in Open Drain mode, so that no short circuit if jumper is stuffed
+#define BSL_HOLD_PORT        GPIOB
+#define BSL_HOLD_PIN         GPIO_Pin_2
+#define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
 
 
 // timer used to measure delays (TIM1..TIM8)
@@ -62,6 +59,12 @@ int main(void)
   MIOS32_SYS_Init(0);
 
   MIOS32_BOARD_LED_Init(BSL_LED_MASK);
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // get and store state of hold pin
+  ///////////////////////////////////////////////////////////////////////////
+  u8 hold_mode_active_after_reset = BSL_HOLD_STATE;
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -91,9 +94,25 @@ int main(void)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  // initialize USB only if already done (-> not after Power On) or Hold mode enabled
+  ///////////////////////////////////////////////////////////////////////////
+
+  if( MIOS32_USB_IsInitialized() || BSL_HOLD_STATE ) {
+    // if initialized, this function will only set some variables - it won't re-init the peripheral.
+    // if hold mode activated via external pin, force re-initialisation by resetting USB
+    if( hold_mode_active_after_reset ) {
+      RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
+      RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
+    }
+
+    MIOS32_USB_Init(0);
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
   // initialize remaining peripherals
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_MIDI_Init(0); // will also initialize UART and USB
+  MIOS32_MIDI_Init(0); // will also initialise UART
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -134,7 +153,9 @@ int main(void)
     // directly by MIOS32 to enhance command set
     MIOS32_MIDI_Receive_Handler(NULL, NULL);
 
-  } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || BSL_SYSEX_HaltStateGet() );
+  } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || 
+	   BSL_SYSEX_HaltStateGet() ||
+	   (hold_mode_active_after_reset && BSL_HOLD_STATE));
 
   // ensure that flash write access is locked
   FLASH_Lock();
@@ -143,10 +164,28 @@ int main(void)
   u32 *reset_vector = (u32 *)0x08004004;
   if( (*reset_vector >> 24) == 0x08 ) {
     // reset all peripherals
+#ifdef MIOS32_BOARD_STM32_PRIMER
+    RCC_APB2PeriphResetCmd(0xfffffff7, ENABLE); // Primer: don't reset GPIOB due to USB disconnect pin
+#else
     RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
-    RCC_APB1PeriphResetCmd(0xffffffff, ENABLE);
+#endif
+    RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
     RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
     RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+
+    if( hold_mode_active_after_reset ) {
+      // if hold mode activated via external pin, force re-initialisation by resetting USB
+      RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
+      RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
+    } else {
+      // no hold mode: ensure that USB interrupts won't be triggered while jumping into application
+      _SetCNTR(0); // clear interrupt mask
+      _SetISTR(0); // clear all requests
+    }
+
+    // change stack pointer
+    u32 *stack_pointer = (u32 *)0x08004000;
+    __MSR_MSP(*stack_pointer);
 
     // branch to application
     void (*application)(void) = (void *)*reset_vector;

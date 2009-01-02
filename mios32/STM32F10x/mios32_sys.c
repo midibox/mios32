@@ -24,7 +24,6 @@
 #include <portmacro.h>
 #endif
 
-
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_SYS)
 
@@ -46,7 +45,9 @@ extern u32 mios32_sys_isr_vector;
 //! <UL>
 //!   <LI>enables clock for IO ports
 //!   <LI>configures pull-ups for all IO pins
-//!   <LI>initializes PLL for 72 MHz @ 12 MHz ext. clock
+//!   <LI>initializes PLL for 72 MHz @ 12 MHz ext. clock<BR>
+//!       (skipped if PLL already running - relevant for proper software 
+//!        reset, e.g. so that USB connection can survive)
 //!   <LI>sets base address of vector table
 //! </UL>
 //! \param[in] mode currently only mode 0 supported
@@ -70,54 +71,67 @@ s32 MIOS32_SYS_Init(u32 mode)
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
   GPIO_InitStructure.GPIO_Pin   = 0xffff;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
   GPIO_Init(GPIOC, &GPIO_InitStructure);
   GPIO_Init(GPIOD, &GPIO_InitStructure);
   //  GPIO_Init(GPIOE, &GPIO_InitStructure);
 
-  // Start with the clocks in their expected state
-  RCC_DeInit();
+#ifdef MIOS32_BOARD_STM32_PRIMER
+  // special measure for STM32 Primer
+  // ensure that pull-down is active on USB disconnect pin
+  GPIO_InitStructure.GPIO_Pin   = 0xffff & ~GPIO_Pin_12;
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+#else
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+#endif
 
-  // Enable HSE (high speed external clock)
-  RCC_HSEConfig(RCC_HSE_ON);
+  // init clock system if chip doesn't already run with PLL
+  if( RCC_GetSYSCLKSource() != 0x08 ) {
+    // Start with the clocks in their expected state
+    RCC_DeInit();
 
-  // Wait till HSE is ready
-  HSEStartUpStatus = RCC_WaitForHSEStartUp();
+    // Enable HSE (high speed external clock)
+    RCC_HSEConfig(RCC_HSE_ON);
 
-  if( HSEStartUpStatus == SUCCESS )
-  {
-    // Enable Prefetch Buffer
-    FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
+    // Wait till HSE is ready
+    HSEStartUpStatus = RCC_WaitForHSEStartUp();
 
-    // Flash 2 wait state
-    FLASH_SetLatency(FLASH_Latency_2);
+    if( HSEStartUpStatus == SUCCESS ) {
+      // Enable Prefetch Buffer
+      FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
 
-    // HCLK = SYSCLK
-    RCC_HCLKConfig(RCC_SYSCLK_Div1);
+      // Flash 2 wait state
+      FLASH_SetLatency(FLASH_Latency_2);
 
-    // PCLK2 = HCLK
-    RCC_PCLK2Config(RCC_HCLK_Div1);
+      // HCLK = SYSCLK
+      RCC_HCLKConfig(RCC_SYSCLK_Div1);
 
-    // PCLK1 = HCLK/2
-    RCC_PCLK1Config(RCC_HCLK_Div2);
+      // PCLK2 = HCLK
+      RCC_PCLK2Config(RCC_HCLK_Div1);
 
-    // ADCCLK = PCLK2/6
-    RCC_ADCCLKConfig(RCC_PCLK2_Div6);
+      // PCLK1 = HCLK/2
+      RCC_PCLK1Config(RCC_HCLK_Div2);
 
-    // PLLCLK = 12MHz * 6 = 72 MHz
-    RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6);
+      // ADCCLK = PCLK2/6
+      RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
-    // Enable PLL
-    RCC_PLLCmd(ENABLE);
+      // PLLCLK = 12MHz * 6 = 72 MHz
+      RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6);
 
-    // Wait till PLL is ready
-    while( RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET );
+      // Enable PLL
+      RCC_PLLCmd(ENABLE);
 
-    // Select PLL as system clock source
-    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+      // Wait till PLL is ready
+      while( RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET );
 
-    // Wait till PLL is used as system clock source
-    while( RCC_GetSYSCLKSource() != 0x08 );
+      // Select PLL as system clock source
+      RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+
+      // Wait till PLL is used as system clock source
+      while( RCC_GetSYSCLKSource() != 0x08 );
+    }
   }
 
   // Set the Vector Table base address as specified in .ld file (-> mios32_sys_isr_vector)
@@ -155,6 +169,11 @@ s32 MIOS32_SYS_Reset(void)
 
   // print reboot message if LCD enabled
 #ifndef MIOS32_DONT_USE_LCD
+  // TODO: here we should select the normal font - but only if available!
+  // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
+  MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
+
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_Clear();
   MIOS32_LCD_CursorSet(0, 0);
@@ -176,11 +195,16 @@ s32 MIOS32_SYS_Reset(void)
   // reset STM32
 #if 0
   // doesn't work for some reasons...
+  // in addition, causes a USB disconnect on Primer (probably since GPIOB is reseted?)
   NVIC_GenerateSystemReset();
 #else
-  NVIC_GenerateSystemReset();
+  //  NVIC_GenerateSystemReset();
+#ifdef MIOS32_BOARD_STM32_PRIMER
+  RCC_APB2PeriphResetCmd(0xfffffff7, ENABLE); // Primer: don't reset GPIOB due to USB disconnect pin
+#else
   RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
-  RCC_APB1PeriphResetCmd(0xffffffff, ENABLE);
+#endif
+  RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
   RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
   RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
   NVIC_GenerateCoreReset();

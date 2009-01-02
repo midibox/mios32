@@ -58,6 +58,7 @@ typedef enum {
 
 extern s32 BSL_SYSEX_Init(u32 mode);
 extern s32 BSL_SYSEX_HaltStateGet(void);
+extern s32 BSL_SYSEX_ReleaseHaltState(void);
 extern s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in, u8 sysex_cmd);
 extern s32 BSL_SYSEX_SendUploadReq(mios32_midi_port_t port);
 

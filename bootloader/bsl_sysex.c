@@ -2,12 +2,6 @@
 /*
  * BSL SysEx Parser
  *
- * MEMO: upload of ca. 50k code via UART MIDI: 24s, via USB: ca. 5s! :-)
- *
- * TODO: support for device id
- * TODO: command to request MIOS32 version, chip ID and flash size
- * TODO: command to halt BSL (so that the application won't be started before releasing this state)
- *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -102,11 +96,29 @@ s32 BSL_SYSEX_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns 1 if BSL is in halt state (e.g. code is uploaded, or Boot1 pin is 0)
+// Returns 1 if BSL is in halt state (e.g. code is uploaded)
 /////////////////////////////////////////////////////////////////////////////
 s32 BSL_SYSEX_HaltStateGet(void)
 {
   return halt_state;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Used by MIOS32_MIDI to release halt state instead of triggering a reset
+/////////////////////////////////////////////////////////////////////////////
+s32 BSL_SYSEX_ReleaseHaltState(void)
+{
+  if( !halt_state ) {
+    // send upload request if not in halt state
+    BSL_SYSEX_SendUploadReq(UART0);    
+    BSL_SYSEX_SendUploadReq(USB0);
+  } else {
+    // clear halt state
+    halt_state = 0;
+  }
+
+  return 0;
 }
 
 
@@ -119,7 +131,7 @@ s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_sta
 {
   // enter the commands here
   switch( sysex_cmd ) {
-    // case 0x00: // reset request command is implemented in MIOS32
+    // case 0x00: // query command is implemented in MIOS32
     // case 0x0f: // ping command is implemented in MIOS32
 
     case 0x01:
@@ -143,6 +155,8 @@ s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_sta
 
 /////////////////////////////////////////////////////////////////////////////
 // Command 01: Read Memory handler
+// TODO: we could provide this command also during runtime, as it isn't destructive
+// or it could be available as debug command 0D like known from MIOS8
 /////////////////////////////////////////////////////////////////////////////
 s32 BSL_SYSEX_Cmd_ReadMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
