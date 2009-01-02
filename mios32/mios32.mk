@@ -7,9 +7,9 @@ C_INCLUDE +=	-I $(MIOS32_PATH)/include/mios32
 # forward MIOS32 environment variables to preprocessor
 CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
 		-DMIOS32_FAMILY_$(FAMILY) \
-		-DMIOS32_FAMILY_STR="\"$(FAMILY)\"" \
+		-DMIOS32_FAMILY_STR=\"$(FAMILY)\" \
 		-DMIOS32_BOARD_$(BOARD) \
-		-DMIOS32_BOARD_STR="\"$(BOARD)\""
+		-DMIOS32_BOARD_STR=\"$(BOARD)\"
 
 
 # add modules to thumb sources
