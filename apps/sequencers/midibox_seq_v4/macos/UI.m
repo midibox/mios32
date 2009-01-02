@@ -407,6 +407,17 @@ s32 TASKS_Init(u32 mode)
 
 	// call init function of application
 	APP_Init();
+	
+	// print boot message
+	MIOS32_LCD_PrintBootMessage();
+
+	// doesn't work here - LCD won't be updated so long we are stalling the task :-/
+#if 0
+	// wait for 2 seconds
+	int delay = 0;
+	for(delay=0; delay<2000; ++delay)
+		MIOS32_DELAY_Wait_uS(1000);
+#endif
 }
 
 
