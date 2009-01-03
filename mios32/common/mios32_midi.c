@@ -898,6 +898,11 @@ static s32 MIOS32_MIDI_SYSEX_CmdFinished(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
+#if MIOS32_MIDI_BSL_ENHANCEMENTS
+  // this compile switch should only be activated for the bootloader!
+  if( BSL_SYSEX_Cmd(port, cmd_state, midi_in, sysex_cmd) >= 0 )
+    return 0; // BSL has serviced this command - no error
+#endif
   switch( sysex_cmd ) {
     case 0x00:
       MIOS32_MIDI_SYSEX_Cmd_Query(port, cmd_state, midi_in);
@@ -906,11 +911,6 @@ static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_
       MIOS32_MIDI_SYSEX_Cmd_Ping(port, cmd_state, midi_in);
       break;
     default:
-#if MIOS32_MIDI_BSL_ENHANCEMENTS
-      // this compile switch should only be activated for the bootloader!
-      if( BSL_SYSEX_Cmd(port, cmd_state, midi_in, sysex_cmd) >= 0 )
-	return 0; // BSL has serviced this command - no error
-#endif
       // unknown command
       // TODO: send 0xf7 if merger enabled
       MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND);

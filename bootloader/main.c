@@ -38,16 +38,6 @@
 #define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
 
 
-// timer used to measure delays (TIM1..TIM8)
-#ifndef BSL_DELAY_TIMER
-#define BSL_DELAY_TIMER  TIM1
-#endif
-
-#ifndef BSL_DELAY_TIMER_RCC
-#define BSL_DELAY_TIMER_RCC RCC_APB2Periph_TIM1
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Main function
 /////////////////////////////////////////////////////////////////////////////
@@ -65,32 +55,6 @@ int main(void)
   // get and store state of hold pin
   ///////////////////////////////////////////////////////////////////////////
   u8 hold_mode_active_after_reset = BSL_HOLD_STATE;
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  // initialize timer which is used to measure a 5 second delay before application
-  // will be started
-  ///////////////////////////////////////////////////////////////////////////
-
-  // enable timer clock
-  if( BSL_DELAY_TIMER_RCC == RCC_APB2Periph_TIM1 || BSL_DELAY_TIMER_RCC == RCC_APB2Periph_TIM8 )
-    RCC_APB2PeriphClockCmd(BSL_DELAY_TIMER_RCC, ENABLE);
-  else
-    RCC_APB1PeriphClockCmd(BSL_DELAY_TIMER_RCC, ENABLE);
-
-  // time base configuration
-  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-  TIM_TimeBaseStructure.TIM_Period = 20000; // waiting for 2 seconds (-> 20000 * 100 uS)
-  TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // for 100 uS accuracy @ 72 MHz
-  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  TIM_TimeBaseInit(BSL_DELAY_TIMER, &TIM_TimeBaseStructure);
-
-  // enable interrupt
-  TIM_ITConfig(BSL_DELAY_TIMER, TIM_IT_Update, ENABLE);
-
-  // start counter
-  TIM_Cmd(BSL_DELAY_TIMER, ENABLE);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -129,14 +93,14 @@ int main(void)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // clear timer pending flag and start wait loop
-  TIM_ClearITPendingBit(BSL_DELAY_TIMER, TIM_IT_Update);
+  // reset 2s timer and start wait loop
+  BSL_SYSEX_TimerReset();
   do {
     // This is a simple way to pulsate a LED via PWM
     // A timer in incrementer mode is used as reference, the counter value is incremented each 100 uS
     // Within the given PWM period, we define a duty cycle based on the current counter value
     // We periodically sweep the PWM duty cycle 100 steps up, and 100 steps down
-    u32 cnt = BSL_DELAY_TIMER->CNT;  // the reference counter (incremented each 100 uS)
+    u32 cnt = BSL_SYSEX_DELAY_TIMER->CNT;  // the reference counter (incremented each 100 uS)
     const u32 pwm_period = 50;       // *100 uS -> 5 mS
     const u32 pwm_sweep_steps = 100; // * 5 mS -> 500 mS
     u32 pwm_duty = ((cnt / pwm_period) % pwm_sweep_steps) / (pwm_sweep_steps/pwm_period);
@@ -153,19 +117,7 @@ int main(void)
     // directly by MIOS32 to enhance command set
     MIOS32_MIDI_Receive_Handler(NULL, NULL);
 
-    // if SysEx halt state has been released - wait for 2 additional seconds before starting application
-    static u8 last_sysex_halt_state = 0;
-    if( BSL_SYSEX_HaltStateGet() ) {
-      last_sysex_halt_state = 1;
-    } else {
-      if( last_sysex_halt_state ) {
-	BSL_DELAY_TIMER->CNT = 1; // set to 1 instead of 0 to avoid new IRQ request
-	TIM_ClearITPendingBit(BSL_DELAY_TIMER, TIM_IT_Update);
-      }
-    }
-    last_sysex_halt_state = BSL_SYSEX_HaltStateGet();
-
-  } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || 
+  } while( !BSL_SYSEX_TimerFinishedGet() ||
 	   BSL_SYSEX_HaltStateGet() ||
 	   (hold_mode_active_after_reset && BSL_HOLD_STATE));
 
@@ -206,7 +158,7 @@ int main(void)
 
   // otherwise flash LED fast (BSL failed to start application)
   while( 1 ) {
-    u32 led_on = ((BSL_DELAY_TIMER->CNT % 1000) > 500) ? 1 : 0;
+    u32 led_on = ((BSL_SYSEX_DELAY_TIMER->CNT % 1000) > 500) ? 1 : 0;
     MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
   }
 

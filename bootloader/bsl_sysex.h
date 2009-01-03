@@ -22,11 +22,22 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// buffer size (due to scrambling, must be larger than received bytes)
-#define BSL_SYSEX_BUFFER_SIZE 1024
-
 // max. received bytes
 #define BSL_SYSEX_MAX_BYTES 1024
+
+// buffer size (due to scrambling, must be larger than received bytes)
+// + some bytes to send the header
+#define BSL_SYSEX_BUFFER_SIZE (((BSL_SYSEX_MAX_BYTES*8)/7) + 20)
+
+
+// timer used to measure delays (TIM1..TIM8)
+#ifndef BSL_SYSEX_DELAY_TIMER
+#define BSL_SYSEX_DELAY_TIMER  TIM1
+#endif
+
+#ifndef BSL_SYSEX_DELAY_TIMER_RCC
+#define BSL_SYSEX_DELAY_TIMER_RCC RCC_APB2Periph_TIM1
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +68,8 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 BSL_SYSEX_Init(u32 mode);
+extern s32 BSL_SYSEX_TimerReset(void);
+extern s32 BSL_SYSEX_TimerFinishedGet(void);
 extern s32 BSL_SYSEX_HaltStateGet(void);
 extern s32 BSL_SYSEX_ReleaseHaltState(void);
 extern s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in, u8 sysex_cmd);

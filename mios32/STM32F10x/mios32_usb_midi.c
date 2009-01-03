@@ -254,6 +254,8 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
   //   - new packages are in the buffer
   //   - the device is configured
 
+  // atomic operation to avoid conflict with other interrupts
+  MIOS32_IRQ_Disable();
   if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
     u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP1_TXADDR<<1));
     s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
@@ -264,8 +266,6 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
     // send to IN pipe
     SetEPTxCount(ENDP1, 4*count);
 
-    // atomic operation to avoid conflict with other interrupts
-    MIOS32_IRQ_Disable();
     tx_buffer_size -= count;
 
     // copy into PMA buffer (16bit word with, only 32bit addressable)
@@ -276,11 +276,10 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 	tx_buffer_tail = 0;
     } while( --count );
 
-    MIOS32_IRQ_Enable();
-
     // send buffer
     SetEPTxValid(ENDP1);
   }
+  MIOS32_IRQ_Enable();
 }
 
 
@@ -300,7 +299,6 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
       // copy received packages into receive buffer
       // this operation should be atomic
-      MIOS32_IRQ_Disable();
       do {
 	u16 pl = *pma_addr++;
 	u16 ph = *pma_addr++;
@@ -310,15 +308,16 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
 	MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package);
 
+	MIOS32_IRQ_Disable();
 	if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
 	  rx_buffer_head = 0;
 	++rx_buffer_size;
+	MIOS32_IRQ_Enable();
+
       } while( --count >= 0 );
 
       // notify, that data has been put into buffer
       rx_buffer_new_data = 0;
-
-      MIOS32_IRQ_Enable();
 
       // release OUT pipe
       SetEPRxValid(ENDP1);
