@@ -153,6 +153,18 @@ int main(void)
     // directly by MIOS32 to enhance command set
     MIOS32_MIDI_Receive_Handler(NULL, NULL);
 
+    // if SysEx halt state has been released - wait for 2 additional seconds before starting application
+    static u8 last_sysex_halt_state = 0;
+    if( BSL_SYSEX_HaltStateGet() ) {
+      last_sysex_halt_state = 1;
+    } else {
+      if( last_sysex_halt_state ) {
+	BSL_DELAY_TIMER->CNT = 1; // set to 1 instead of 0 to avoid new IRQ request
+	TIM_ClearITPendingBit(BSL_DELAY_TIMER, TIM_IT_Update);
+      }
+    }
+    last_sysex_halt_state = BSL_SYSEX_HaltStateGet();
+
   } while( TIM_GetITStatus(BSL_DELAY_TIMER, TIM_IT_Update) == RESET || 
 	   BSL_SYSEX_HaltStateGet() ||
 	   (hold_mode_active_after_reset && BSL_HOLD_STATE));

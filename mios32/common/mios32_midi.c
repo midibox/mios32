@@ -945,7 +945,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
         case 0x01: // operating system
 	  MIOS32_MIDI_SYSEX_SendAckStr(port, "MIOS32");
 	  break;
-        case 0x02: // MBHP Board
+        case 0x02: // Board
 	  MIOS32_MIDI_SYSEX_SendAckStr(port, MIOS32_BOARD_STR);
 	  break;
         case 0x03: // Core Family

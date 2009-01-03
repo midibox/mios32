@@ -109,14 +109,12 @@ s32 BSL_SYSEX_HaltStateGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 BSL_SYSEX_ReleaseHaltState(void)
 {
-  if( !halt_state ) {
-    // send upload request if not in halt state
-    BSL_SYSEX_SendUploadReq(UART0);    
-    BSL_SYSEX_SendUploadReq(USB0);
-  } else {
-    // clear halt state
-    halt_state = 0;
-  }
+  // always send upload request (like if we would come out of reset)
+  BSL_SYSEX_SendUploadReq(UART0);    
+  BSL_SYSEX_SendUploadReq(USB0);
+
+  // clear halt state
+  halt_state = 0;
 
   return 0;
 }
