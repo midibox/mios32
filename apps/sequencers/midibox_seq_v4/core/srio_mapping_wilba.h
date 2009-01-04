@@ -125,13 +125,25 @@
 #define LED_FWD          (((17   -1)<<3)+    2)
 
 //                          SR    ignore    Pin
-#define LED_STEP_1_16    (((19   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
-#define LED_STEP_17_32   (((19   -1)<<3)+    1)
-
-//                          SR    ignore    Pin
 #define LED_MENU         LED_DISABLED
 #define LED_SCRUB        LED_DISABLED
 #define LED_METRONOME    LED_DISABLED
+#define LED_UTILITY      LED_DISABLED
+#define LED_COPY         LED_DISABLED
+#define LED_PASTE        LED_DISABLED
+#define LED_CLEAR        LED_DISABLED
+
+//                          SR    ignore    Pin
+#define LED_F1           LED_DISABLED
+#define LED_F2           LED_DISABLED
+#define LED_F3           LED_DISABLED
+#define LED_F4           LED_DISABLED
+
+#define LED_STEP_1_16    (((19   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
+#define LED_STEP_17_32   (((19   -1)<<3)+    1)
+
+#define LED_DOWN         LED_DISABLED
+#define LED_UP           LED_DISABLED
 
 
 //                          SR    ignore    Pin

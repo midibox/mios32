@@ -63,13 +63,14 @@ static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-seq_core_state_t seq_core_state;
-seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
-
+seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
-
+u8 seq_core_global_scale_ctrl;
 u8 seq_core_bpm_div_int;
 u8 seq_core_bpm_div_ext;
+
+seq_core_state_t seq_core_state;
+seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -85,12 +86,13 @@ static u32 bpm_tick_prefetched_ctr;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Init(u32 mode)
 {
-  seq_core_state.ALL = 0;
-
-  // will be configurable later
+  seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16;
-  seq_core_bpm_div_int = 0;
+  seq_core_global_scale_ctrl = 0; // global
+  seq_core_bpm_div_int = 0; // (frequently used, therefore not part of seq_core_options union)
   seq_core_bpm_div_ext = 1;
+
+  seq_core_state.ALL = 0;
 
   // reset track parameters
   SEQ_CC_Init(0);
@@ -255,13 +257,6 @@ s32 SEQ_CORE_Reset(void)
 static s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
 #if 0
-  // handle internal clock divider
-  if( seq_core_bpm_div_int ) {
-    if( (bpm_tick % (1 << seq_core_bpm_div_int)) )
-      return 0; // skip clock
-    bpm_tick >>= seq_core_bpm_div_int;
-  }
-
   // handle external clock divider
   if( !(bpm_tick % (1 << (seq_core_bpm_div_ext+1))) ) {
     // TODO: send external clock

@@ -34,15 +34,15 @@ static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_v
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local LED handler function
+// LED handler function (globally accessible, since it's re-used by UTIL page)
 /////////////////////////////////////////////////////////////////////////////
-static s32 LED_Handler(u16 *gp_leds)
+s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   *gp_leds =
-    (trg_layer_value[visible_track][ui_selected_trg_layer][2*ui_selected_step_view+1] << 8) |
-    trg_layer_value[visible_track][ui_selected_trg_layer][2*ui_selected_step_view+0];
+    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer) << 8) |
+    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer) << 0);
 
   return 0; // no error
 }
@@ -195,10 +195,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Display Handler function
+// Global Display Handler function
 // IN: <high_prio>: if set, a high-priority LCD update is requested
+//     <edit_page>: selects the normal, or copy/paste/move/scroll view
 /////////////////////////////////////////////////////////////////////////////
-static s32 LCD_Handler(u8 high_prio)
+s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 {
   if( high_prio )
     return 0; // there are no high-priority updates
@@ -213,44 +214,98 @@ static s32 LCD_Handler(u8 high_prio)
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-  SEQ_LCD_PrintSpaces(2);
+  switch( edit_mode ) {
+    case SEQ_UI_EDIT_MODE_COPY: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	char str_buffer[10];
+	sprintf(str_buffer, "%d-%d", SEQ_UI_UTIL_CopyPasteBeginGet()+1, SEQ_UI_UTIL_CopyPasteEndGet()+1);
+	MIOS32_LCD_PrintFormattedString("COPY S%-9s", str_buffer);
+      }
+    } break;
 
-  MIOS32_LCD_PrintChar('A' + ui_selected_par_layer);
-  MIOS32_LCD_PrintChar(':');
+    case SEQ_UI_EDIT_MODE_PASTE: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	MIOS32_LCD_PrintFormattedString("PASTE OFFS.%3d ", ui_selected_step+1);
+      }
+    } break;
 
-  switch( SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) ) {
-    case SEQ_LAYER_ControlType_Note:
-      MIOS32_LCD_PrintString("Note   ");
-      break;
+    case SEQ_UI_EDIT_MODE_MOVE: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	MIOS32_LCD_PrintString("MOVE STEPS     ");
+      }
+    } break;
 
-    case SEQ_LAYER_ControlType_Velocity:
-    case SEQ_LAYER_ControlType_Chord1_Velocity:
-    case SEQ_LAYER_ControlType_Chord2_Velocity:
-      MIOS32_LCD_PrintString("Vel.   ");
-      break;
+    case SEQ_UI_EDIT_MODE_SCROLL: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	MIOS32_LCD_PrintString("SCROLL TRACK   ");
+      }
+    } break;
 
-    case SEQ_LAYER_ControlType_Chord1:
-      MIOS32_LCD_PrintString("Chord1 ");
-      break;
+    case SEQ_UI_EDIT_MODE_RANDOM: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	MIOS32_LCD_PrintString("RANDOMIZED     ");
+      }
+    } break;
 
-    case SEQ_LAYER_ControlType_Chord2:
-      MIOS32_LCD_PrintString("Chord2 ");
-      break;
+    case SEQ_UI_EDIT_MODE_RECORD: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	MIOS32_LCD_PrintString("RECORDING MODE ");
+      }
+    } break;
 
-    case SEQ_LAYER_ControlType_Length:
-      MIOS32_LCD_PrintString("Length ");
-      break;
+    default: {
+      SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+      SEQ_LCD_PrintSpaces(2);
 
-    case SEQ_LAYER_ControlType_CC:
-      MIOS32_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
-      break;
+      MIOS32_LCD_PrintChar('A' + ui_selected_par_layer);
+      MIOS32_LCD_PrintChar(':');
 
-    default:
-      MIOS32_LCD_PrintString("???    ");
-      break;
+      switch( SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) ) {
+        case SEQ_LAYER_ControlType_Note:
+	  MIOS32_LCD_PrintString("Note   ");
+	  break;
+
+        case SEQ_LAYER_ControlType_Velocity:
+        case SEQ_LAYER_ControlType_Chord1_Velocity:
+        case SEQ_LAYER_ControlType_Chord2_Velocity:
+          MIOS32_LCD_PrintString("Vel.   ");
+          break;
+    
+        case SEQ_LAYER_ControlType_Chord1:
+          MIOS32_LCD_PrintString("Chord1 ");
+          break;
+    
+        case SEQ_LAYER_ControlType_Chord2:
+          MIOS32_LCD_PrintString("Chord2 ");
+          break;
+    
+        case SEQ_LAYER_ControlType_Length:
+          MIOS32_LCD_PrintString("Length ");
+          break;
+    
+        case SEQ_LAYER_ControlType_CC:
+          MIOS32_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+          break;
+    
+        default:
+          MIOS32_LCD_PrintString("???    ");
+          break;
+      }
+    }
   }
-
+  
   MIOS32_LCD_PrintFormattedString("Chn%2d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
   MIOS32_LCD_PrintChar('/');
   SEQ_LCD_PrintMIDIPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
@@ -390,6 +445,26 @@ static s32 LCD_Handler(u8 high_prio)
     MIOS32_LCD_DeviceSet(0);
     MIOS32_LCD_CursorSet(0, 1);
 
+    u8 step_region_begin;
+    u8 step_region_end;
+    switch( edit_mode ) {
+      case SEQ_UI_EDIT_MODE_COPY:
+	step_region_begin = SEQ_UI_UTIL_CopyPasteBeginGet();
+	step_region_end = SEQ_UI_UTIL_CopyPasteEndGet();
+	break;
+      case SEQ_UI_EDIT_MODE_PASTE:
+	step_region_begin = ui_selected_step;
+	step_region_end = ui_selected_step + SEQ_UI_UTIL_CopyPasteEndGet() - SEQ_UI_UTIL_CopyPasteBeginGet();
+	break;
+      case SEQ_UI_EDIT_MODE_SCROLL:
+	step_region_begin = ui_selected_step;
+	step_region_end = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+	break;
+      default:
+	step_region_begin = ui_selected_step;
+	step_region_end = ui_selected_step;
+    }
+
     u8 step;
     for(step=0; step<16; ++step) {
       // 9th step reached: switch to second LCD
@@ -399,6 +474,14 @@ static s32 LCD_Handler(u8 high_prio)
       }
 
       u8 visible_step = step + 16*ui_selected_step_view;
+
+      if( ui_cursor_flash && 
+	  edit_mode != SEQ_UI_EDIT_MODE_NORMAL && 
+	  visible_step >= step_region_begin && visible_step <= step_region_end ) {
+	SEQ_LCD_PrintSpaces(5);
+	continue;
+      }
+
       seq_layer_evnt_t layer_event;
       SEQ_LAYER_GetEvntOfParLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
@@ -453,13 +536,23 @@ static s32 LCD_Handler(u8 high_prio)
 	  break;
       }
 
-      MIOS32_LCD_PrintChar(
-        (visible_step == ui_selected_step) ? '<' 
-	: ((visible_step == ui_selected_step-1) ? '>' : ' '));
+      MIOS32_LCD_PrintChar((visible_step == step_region_end) ? '<' 
+			   : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
+      
     }
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Display Handler function
+// IN: <high_prio>: if set, a high-priority LCD update is requested
+/////////////////////////////////////////////////////////////////////////////
+static s32 LCD_Handler(u8 high_prio)
+{
+  return SEQ_UI_EDIT_LCD_Handler(high_prio, SEQ_UI_EDIT_MODE_NORMAL);
 }
 
 
@@ -471,7 +564,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
-  SEQ_UI_InstallLEDCallback(LED_Handler);
+  SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   return 0; // no error

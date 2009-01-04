@@ -26,7 +26,7 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][3][SEQ_CORE_NUM_STEPS/8];
+static u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -83,6 +83,15 @@ s32 SEQ_TRG_Get(u8 track, u8 step, u8 trg_layer)
   u8 step_mask = 1 << (step % 8);
   u8 step_ix = step / 8;
   return (trg_layer_value[track][trg_layer][step_ix] & step_mask) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 8 steps of a given trigger layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer)
+{
+  return trg_layer_value[track][trg_layer][step8];
 }
 
 
@@ -145,6 +154,16 @@ s32 SEQ_TRG_Set(u8 track, u8 step, u8 trg_layer, u8 value)
     trg_layer_value[track][trg_layer][step_ix] |= step_mask;
   else
     trg_layer_value[track][trg_layer][step_ix] &= ~step_mask;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// sets 8 steps of a given trigger layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value)
+{
+  trg_layer_value[track][trg_layer][step8] = value;
 
   return 0; // no error
 }

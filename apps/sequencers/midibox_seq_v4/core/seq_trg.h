@@ -54,6 +54,7 @@ extern s32 SEQ_TRG_Init(u32 mode);
 extern s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num);
 
 extern s32 SEQ_TRG_Get(u8 track, u8 step, u8 trg_layer);
+extern s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer);
 extern s32 SEQ_TRG_GateGet(u8 track, u8 step);
 extern s32 SEQ_TRG_SkipGet(u8 track, u8 step);
 extern s32 SEQ_TRG_AccentGet(u8 track, u8 step);
@@ -63,6 +64,7 @@ extern s32 SEQ_TRG_RandomGateGet(u8 track, u8 step);
 extern s32 SEQ_TRG_RandomValueGet(u8 track, u8 step);
 
 extern s32 SEQ_TRG_Set(u8 track, u8 step, u8 trg_layer, u8 value);
+extern s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value);
 extern s32 SEQ_TRG_GateSet(u8 track, u8 step, u8 value);
 extern s32 SEQ_TRG_SkipSet(u8 track, u8 step, u8 value);
 extern s32 SEQ_TRG_AccentSet(u8 track, u8 step, u8 value);
@@ -79,6 +81,5 @@ extern char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
 
 #endif /* _SEQ_TRG_H */

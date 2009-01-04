@@ -59,6 +59,8 @@ u8 ui_selected_item;
 
 u8 ui_selected_item;
 
+u16 ui_hold_msg_ctr;
+
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_shortcut_prev_page;
 
@@ -85,10 +87,13 @@ static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_TRKDIV_Init,  // 8
   (void *)&SEQ_UI_TRKLEN_Init,  // 9
   (void *)&SEQ_UI_TRKTRAN_Init, // 10
-  (void *)&SEQ_UI_TRGASG_Init,  // 11
-  (void *)&SEQ_UI_FX_Init,      // 12
-  (void *)&SEQ_UI_FX_ECHO_Init, // 13
-  (void *)&SEQ_UI_BPM_Init      // 14
+  (void *)&SEQ_UI_TRKRND_Init,  // 11
+  (void *)&SEQ_UI_TRGASG_Init,  // 12
+  (void *)&SEQ_UI_FX_Init,      // 13
+  (void *)&SEQ_UI_FX_ECHO_Init, // 14
+  (void *)&SEQ_UI_UTIL_Init,    // 15
+  (void *)&SEQ_UI_BPM_Init,     // 16
+  (void *)&SEQ_UI_OPT_Init      // 17
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -112,6 +117,8 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step_view = 0;
   ui_selected_step = 0;
   ui_selected_item = 0;
+
+  ui_hold_msg_ctr = 0;
 
   ui_cursor_flash_ctr = 0;
   ui_cursor_flash = 0;
@@ -241,8 +248,6 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
-  if( depressed ) return -1; // ignore when button depressed
-
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(gp, depressed);
@@ -273,6 +278,8 @@ static s32 SEQ_UI_Button_Right(s32 depressed)
 
 static s32 SEQ_UI_Button_Down(s32 depressed)
 {
+  seq_ui_button_state.DOWN = depressed ? 0 : 1;
+
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Down, depressed);
@@ -283,6 +290,8 @@ static s32 SEQ_UI_Button_Down(s32 depressed)
 
 static s32 SEQ_UI_Button_Up(s32 depressed)
 {
+  seq_ui_button_state.UP = depressed ? 0 : 1;
+
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Up, depressed);
@@ -385,6 +394,8 @@ static s32 SEQ_UI_Button_Play(s32 depressed)
 
 static s32 SEQ_UI_Button_Rew(s32 depressed)
 {
+  seq_ui_button_state.REW = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
@@ -392,6 +403,8 @@ static s32 SEQ_UI_Button_Rew(s32 depressed)
 
 static s32 SEQ_UI_Button_Fwd(s32 depressed)
 {
+  seq_ui_button_state.FWD = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
@@ -399,13 +412,20 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
 
 static s32 SEQ_UI_Button_F1(s32 depressed)
 {
+  seq_ui_button_state.F1 = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
+
+  // change to utility page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_F2(s32 depressed)
 {
+  seq_ui_button_state.F2 = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
@@ -413,6 +433,8 @@ static s32 SEQ_UI_Button_F2(s32 depressed)
 
 static s32 SEQ_UI_Button_F3(s32 depressed)
 {
+  seq_ui_button_state.F3 = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
@@ -420,6 +442,8 @@ static s32 SEQ_UI_Button_F3(s32 depressed)
 
 static s32 SEQ_UI_Button_F4(s32 depressed)
 {
+  seq_ui_button_state.F4 = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
@@ -429,28 +453,54 @@ static s32 SEQ_UI_Button_Utility(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // change to utility page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Copy(s32 depressed)
 {
-  if( depressed ) return -1; // ignore when button depressed
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
-  return 0; // no error
+  seq_ui_button_state.COPY = depressed ? 0 : 1;
+
+  if( !depressed ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  }
+
+  s32 status = SEQ_UI_UTIL_CopyButton(depressed);
+
+  if( depressed )
+    SEQ_UI_PageSet(prev_page);
+
+  return status;
 }
 
 static s32 SEQ_UI_Button_Paste(s32 depressed)
 {
-  if( depressed ) return -1; // ignore when button depressed
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
-  return 0; // no error
+  seq_ui_button_state.PASTE = depressed ? 0 : 1;
+
+  if( !depressed ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  }
+
+  s32 status = SEQ_UI_UTIL_PasteButton(depressed);
+
+  if( depressed )
+    SEQ_UI_PageSet(prev_page);
+
+  return status;
 }
 
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
-  if( depressed ) return -1; // ignore when button depressed
-
-  return 0; // no error
+  seq_ui_button_state.CLEAR = depressed ? 0 : 1;
+  return SEQ_UI_UTIL_ClearButton(depressed);
 }
 
 static s32 SEQ_UI_Button_Menu(s32 depressed)
@@ -1003,6 +1053,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_PLAY, SEQ_BPM_IsRunning());
   SEQ_LED_PinSet(LED_STOP, !SEQ_BPM_IsRunning() && !ui_seq_pause);
   SEQ_LED_PinSet(LED_PAUSE, ui_seq_pause);
+
+  SEQ_LED_PinSet(LED_REW, seq_ui_button_state.REW);
+  SEQ_LED_PinSet(LED_FWD, seq_ui_button_state.FWD);
   
   SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0));
   SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4
@@ -1010,6 +1063,19 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_MENU, seq_ui_button_state.MENU_PRESSED);
   SEQ_LED_PinSet(LED_SCRUB, seq_ui_button_state.SCRUB);
   SEQ_LED_PinSet(LED_METRONOME, seq_ui_button_state.METRONOME);
+
+  SEQ_LED_PinSet(LED_UTILITY, ui_page == SEQ_UI_PAGE_UTIL);
+  SEQ_LED_PinSet(LED_COPY, seq_ui_button_state.COPY);
+  SEQ_LED_PinSet(LED_PASTE, seq_ui_button_state.PASTE);
+  SEQ_LED_PinSet(LED_CLEAR, seq_ui_button_state.CLEAR);
+
+  SEQ_LED_PinSet(LED_F1, seq_ui_button_state.F1);
+  SEQ_LED_PinSet(LED_F2, seq_ui_button_state.F2);
+  SEQ_LED_PinSet(LED_F3, seq_ui_button_state.F3);
+  SEQ_LED_PinSet(LED_F4, seq_ui_button_state.F4);
+
+  SEQ_LED_PinSet(LED_DOWN, seq_ui_button_state.DOWN);
+  SEQ_LED_PinSet(LED_UP, seq_ui_button_state.UP);
 
   // note: the background function is permanently interrupted - therefore we write the GP pattern
   // into a temporary variable, and take it over once completed
@@ -1141,6 +1207,10 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
 
 
+  // used in some pages for temporary messages
+  if( ui_hold_msg_ctr )
+    --ui_hold_msg_ctr;
+
   // VU meters (used in MUTE menu, could also be available as LED matrix...)
   static u8 vu_meter_prediv = 0; // predivider for VU meters
 
@@ -1192,6 +1262,17 @@ s32 SEQ_UI_IsSelectedTrack(u8 track)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sets a new selected step and updates the step view
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_SelectedStepSet(u8 step)
+{
+  ui_selected_step = step;
+  ui_selected_step_view = (ui_selected_step >= 16) ? 1 : 0;
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Increments the selected tracks/groups
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
@@ -1222,7 +1303,7 @@ s32 SEQ_UI_GxTyInc(s32 incrementer)
 // Increments a 16bit variable within given min/max range
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_Var_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
+s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
 {
   int new_value = *value;
   int prev_value = new_value;
@@ -1241,6 +1322,21 @@ s32 SEQ_UI_Var_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
   *value = new_value;
 
   return 1; // value changed
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments an 8bit variable within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer)
+{
+  u16 tmp = *value;
+  if( SEQ_UI_Var16_Inc(&tmp, min, max, incrementer) ) {
+    *value = tmp;
+    return 1; // value changed
+  }
+
+  return 0; // value hasn't been changed
 }
 
 
