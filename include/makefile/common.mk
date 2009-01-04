@@ -59,6 +59,10 @@ THUMB_AS_OBJS = $(THUMB_AS_SOURCE:.s=.o)
 ARM_OBJS = $(ARM_SOURCE:.c=.o)
 ARM_AS_OBJS = $(ARM_AS_SOURCE:.s=.o)
 
+# convert .s -> .lst
+THUMB_AS_LST = $(THUMB_AS_SOURCE:.s=.lst)
+ARM_AS_LST = $(ARM_AS_SOURCE:.s=.lst)
+
 # add files for distribution
 DIST += $(MIOS32_PATH)/include/makefile/common.mk $(MIOS32_PATH)/include/c
 DIST += $(LD_FILE)
@@ -120,7 +124,7 @@ $(ARM_AS_OBJS) : %.o : %.s
 # clean temporary files
 clean:
 	rm -f *.lss *.sym *.map *.elf
-	rm -f $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
+	rm -f $(THUMB_OBJS) $(THUMB_AS_OBJS) $(THUMB_AS_LST) $(ARM_OBJS) $(ARM_AS_OBJS)  $(ARM_AS_LST)
 
 # clean temporary files + project image
 cleanall: clean
