@@ -105,8 +105,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_MODE: {
-      u16 value = SEQ_BPM_ModeGet();
-      if( SEQ_UI_Var_Inc(&value, 0, 2, incrementer) ) {
+      u8 value = SEQ_BPM_ModeGet();
+      if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
 	SEQ_BPM_ModeSet(value);
 	return 1; // value has been changed
       } else
@@ -114,31 +114,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_BPM: {
-      u16 value = (u32)(SEQ_BPM_Get()*10);
-      if( SEQ_UI_Var_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
+      u16 value = (u16)(SEQ_BPM_Get()*10);
+      if( SEQ_UI_Var16_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
 	SEQ_BPM_Set((float)value/10.0);
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
     } break;
 
-    case ITEM_IDIV: {
-      u16 value = (u16)seq_core_bpm_div_int;
-      if( SEQ_UI_Var_Inc(&value, 0, 3, incrementer) ) {
-	seq_core_bpm_div_int = (u8)value;
-	return 1; // value has been changed
-      } else
-	return 0; // value hasn't been changed
-    } break;
+    case ITEM_IDIV:
+      return SEQ_UI_Var8_Inc(&seq_core_bpm_div_int, 0, 3, incrementer);
 
-    case ITEM_EDIV: {
-      u16 value = (u16)seq_core_bpm_div_ext;
-      if( SEQ_UI_Var_Inc(&value, 0, 3, incrementer) ) {
-	seq_core_bpm_div_ext = (u8)value;
-	return 1; // value has been changed
-      } else
-	return 0; // value hasn't been changed
-    } break;
+    case ITEM_EDIV:
+      return SEQ_UI_Var8_Inc(&seq_core_bpm_div_ext, 0, 3, incrementer);
   }
 
   return -1; // invalid or unsupported encoder

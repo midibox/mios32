@@ -121,15 +121,29 @@
 #define LED_PLAY         (((12   -1)<<3)+    3) // OPTIONAL! see CHANGELOG.txt
 #define LED_STOP         (((12   -1)<<3)+    4)
 #define LED_PAUSE        (((12   -1)<<3)+    5)
-
-//                          SR    ignore    Pin
-#define LED_STEP_1_16    (((12   -1)<<3)+    6) // OPTIONAL! see CHANGELOG.txt
-#define LED_STEP_17_32   (((12   -1)<<3)+    7)
+#define LED_REW          (((12   -1)<<3)+    6)
+#define LED_FWD          (((12   -1)<<3)+    7)
 
 //                          SR    ignore    Pin
 #define LED_MENU         (((13   -1)<<3)+    0)
 #define LED_SCRUB        (((13   -1)<<3)+    1)
 #define LED_METRONOME    (((13   -1)<<3)+    2)
+#define LED_UTILITY      (((13   -1)<<3)+    3)
+#define LED_COPY         (((13   -1)<<3)+    4)
+#define LED_PASTE        (((13   -1)<<3)+    5)
+#define LED_CLEAR        (((13   -1)<<3)+    6)
+
+//                          SR    ignore    Pin
+#define LED_F1           (((14   -1)<<3)+    0)
+#define LED_F2           (((14   -1)<<3)+    1)
+#define LED_F3           (((14   -1)<<3)+    2)
+#define LED_F4           (((14   -1)<<3)+    3)
+
+#define LED_STEP_1_16    (((14   -1)<<3)+    4) // OPTIONAL! see CHANGELOG.txt
+#define LED_STEP_17_32   (((14   -1)<<3)+    5)
+
+#define LED_DOWN         (((14   -1)<<3)+    6)
+#define LED_UP           (((14   -1)<<3)+    7)
 
 
 //                          SR    ignore    Pin

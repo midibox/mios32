@@ -29,7 +29,19 @@
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned SYNCHED_PATTERN_CHANGE:1;
+    unsigned FOLLOW_SONG:1;
+    unsigned PASTE_CLR_ALL:1;
+  };
+} seq_core_options_t;
+
+
+typedef union {
+  struct {
+    unsigned ALL:16;
   };
   struct {
     u8       ref_step:8;
@@ -37,6 +49,7 @@ typedef union {
     unsigned FIRST_CLK:1;
   };
 } seq_core_state_t;
+
 
 typedef union {
   struct {
@@ -157,10 +170,13 @@ extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern seq_core_state_t seq_core_state;
-extern seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
-
+extern seq_core_options_t seq_core_options;
+extern u8 seq_core_steps_per_measure;
+extern u8 seq_core_global_scale_ctrl;
 extern u8 seq_core_bpm_div_int;
 extern u8 seq_core_bpm_div_ext;
+
+extern seq_core_state_t seq_core_state;
+extern seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
 #endif /* _SEQ_CORE_H */

@@ -74,10 +74,25 @@ static NSButton *_buttonStepView;
 static NSButton *_buttonPlay;
 static NSButton *_buttonStop;
 static NSButton *_buttonPause;
+static NSButton *_buttonRew;
+static NSButton *_buttonFwd;
 
 static NSButton *_buttonMenu;
 static NSButton *_buttonScrub;
 static NSButton *_buttonMetronome;
+
+static NSButton *_buttonUtility;
+static NSButton *_buttonCopy;
+static NSButton *_buttonPaste;
+static NSButton *_buttonClear;
+
+static NSButton *_buttonF1;
+static NSButton *_buttonF2;
+static NSButton *_buttonF3;
+static NSButton *_buttonF4;
+
+static NSButton *_buttonUp;
+static NSButton *_buttonDown;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -167,12 +182,27 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 		case 91: [_buttonPlay highlight:(value ? YES : NO)]; break;
 		case 92: [_buttonStop highlight:(value ? YES : NO)]; break;
 		case 93: [_buttonPause highlight:(value ? YES : NO)]; break;
-			
-		case 95: [_buttonStepView highlight:(value ? YES : NO)]; break;
+		case 94: [_buttonRew highlight:(value ? YES : NO)]; break;
+		case 95: [_buttonFwd highlight:(value ? YES : NO)]; break;
 			
 		case 96: [_buttonMenu highlight:(value ? YES : NO)]; break;
 		case 97: [_buttonScrub highlight:(value ? YES : NO)]; break;
 		case 98: [_buttonMetronome highlight:(value ? YES : NO)]; break;
+
+		case 99: [_buttonUtility highlight:(value ? YES : NO)]; break;
+		case 100: [_buttonCopy highlight:(value ? YES : NO)]; break;
+		case 101: [_buttonPaste highlight:(value ? YES : NO)]; break;
+		case 102: [_buttonClear highlight:(value ? YES : NO)]; break;
+
+		case 104: [_buttonF1 highlight:(value ? YES : NO)]; break;
+		case 105: [_buttonF2 highlight:(value ? YES : NO)]; break;
+		case 106: [_buttonF3 highlight:(value ? YES : NO)]; break;
+		case 107: [_buttonF4 highlight:(value ? YES : NO)]; break;
+
+		case 109: [_buttonStepView highlight:(value ? YES : NO)]; break;
+		
+		case 110: [_buttonDown highlight:(value ? YES : NO)]; break;
+		case 111: [_buttonUp highlight:(value ? YES : NO)]; break;
 	}
 
 	// handle dual colour option of GP LEDs
@@ -431,7 +461,7 @@ s32 TASKS_Init(u32 mode)
 	_self = self;
 
 	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i)
-		dout_sr_shadow[i] = 0;
+		dout_sr_shadow[i] = 0xff; // inverted value, so that all emulated LEDs will be updated during initialisation
 
 	LED[0]=LED1;
 	LED[1]=LED2;
@@ -500,10 +530,25 @@ s32 TASKS_Init(u32 mode)
 	_buttonPlay = buttonPlay;
 	_buttonStop = buttonStop;
 	_buttonPause = buttonPause;
+	_buttonRew = buttonRew;
+	_buttonFwd = buttonFwd;
 
 	_buttonMenu = buttonMenu;
 	_buttonScrub = buttonScrub;
 	_buttonMetronome = buttonMetronome;
+
+	_buttonUtility = buttonUtility;
+	_buttonCopy = buttonCopy;
+	_buttonPaste = buttonPaste;
+	_buttonClear = buttonClear;
+
+	_buttonF1 = buttonF1;
+	_buttonF2 = buttonF2;
+	_buttonF3 = buttonF3;
+	_buttonF4 = buttonF4;
+
+	_buttonDown = buttonLeft; // TODO: change name
+	_buttonUp = buttonRight;
 
 	// clear LED states
 	for(i=0; i<NUM_LEDS; ++i)

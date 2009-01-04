@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 15
+#define SEQ_UI_PAGES 18
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
@@ -33,10 +33,13 @@ typedef enum {
   SEQ_UI_PAGE_TRKDIV,
   SEQ_UI_PAGE_TRKLEN,
   SEQ_UI_PAGE_TRKTRAN,
+  SEQ_UI_PAGE_TRKRND,
   SEQ_UI_PAGE_TRGASG,
   SEQ_UI_PAGE_FX,
   SEQ_UI_PAGE_FX_ECHO,
+  SEQ_UI_PAGE_UTIL,
   SEQ_UI_PAGE_BPM,
+  SEQ_UI_PAGE_OPT
 } seq_ui_page_t;
 
 
@@ -52,10 +55,13 @@ extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
 extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
 extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
+extern s32 SEQ_UI_TRKRND_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
 extern s32 SEQ_UI_FX_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
+extern s32 SEQ_UI_UTIL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_Init(u32 mode);
+extern s32 SEQ_UI_OPT_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,7 +81,7 @@ extern s32 SEQ_UI_BPM_Init(u32 mode);
 
 typedef union {
   struct {
-    unsigned ALL:8;
+    unsigned ALL:16;
   };
   struct {
     unsigned MENU_PRESSED:1;
@@ -85,6 +91,17 @@ typedef union {
     unsigned SOLO:1;
     unsigned METRONOME:1;
     unsigned SCRUB:1;
+    unsigned REW:1;
+    unsigned FWD:1;
+    unsigned COPY:1;
+    unsigned PASTE:1;
+    unsigned CLEAR:1;
+    unsigned F1:1;
+    unsigned F2:1;
+    unsigned F3:1;
+    unsigned F4:1;
+    unsigned UP:1;
+    unsigned DOWN:1;
   };
 } seq_ui_button_state_t;
 
@@ -136,6 +153,17 @@ typedef enum {
 } seq_ui_encoder_t;
 
 
+typedef enum {
+  SEQ_UI_EDIT_MODE_NORMAL,
+  SEQ_UI_EDIT_MODE_COPY,
+  SEQ_UI_EDIT_MODE_PASTE,
+  SEQ_UI_EDIT_MODE_CLEAR,
+  SEQ_UI_EDIT_MODE_MOVE,
+  SEQ_UI_EDIT_MODE_SCROLL,
+  SEQ_UI_EDIT_MODE_RANDOM,
+  SEQ_UI_EDIT_MODE_RECORD
+} seq_ui_edit_mode_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -163,11 +191,32 @@ extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 extern u8  SEQ_UI_VisibleTrackGet(void);
 extern s32 SEQ_UI_IsSelectedTrack(u8 track);
 
+extern s32 SEQ_UI_SelectedStepSet(u8 step);
+
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
-extern s32 SEQ_UI_Var_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Set(u8 cc, u16 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value);
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes for functions implemented in seq_ui_*.c
+/////////////////////////////////////////////////////////////////////////////
+
+extern s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode);
+extern s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds);
+
+extern s32 SEQ_UI_UTIL_CopyButton(s32 depressed);
+extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
+extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);
+extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
+
+extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
+
+extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
+extern u8 SEQ_UI_UTIL_CopyPasteEndGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -186,6 +235,8 @@ extern u8 ui_selected_trg_layer;
 extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;
+
+extern u16 ui_hold_msg_ctr;
 
 extern seq_ui_page_t ui_page;
 extern seq_ui_page_t ui_shortcut_prev_page;
