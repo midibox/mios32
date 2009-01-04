@@ -150,7 +150,7 @@ s32 MIOS32_SYS_Init(u32 mode)
 //! Shutdown MIOS32 and reset the microcontroller:<BR>
 //! <UL>
 //!   <LI>disable all RTOS tasks
-//!   <LI>print reboot message if LCD enabled
+//!   <LI>print "Bootloader Mode " message if LCD enabled (since MIOS32 will enter this mode after reset)
 //!   <LI>wait until all MIDI OUT buffers are empty (TODO)
 //!   <LI>disable all interrupts
 //!   <LI>turn off all board LEDs
@@ -177,7 +177,7 @@ s32 MIOS32_SYS_Reset(void)
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_Clear();
   MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Rebooting MIOS32...");
+  MIOS32_LCD_PrintString("Bootloader Mode "); // 16 chars
 #endif
 
   // wait until all MIDI OUT buffers are empty (TODO)
