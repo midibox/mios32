@@ -116,7 +116,7 @@ typedef struct {
 
 extern s32 SEQ_CC_Init(u32 mode);
 
-extern s32 SEQ_CC_Set(u8 track, u8 cc, u16 value);
+extern s32 SEQ_CC_Set(u8 track, u8 cc, u8 value);
 extern s32 SEQ_CC_Get(u8 track, u8 cc);
 
 

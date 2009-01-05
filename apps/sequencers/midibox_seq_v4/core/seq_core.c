@@ -703,6 +703,8 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
   s32 fb_note = p.note;
   s32 fb_note_base = fb_note; // for random function
 
+  // TODO: echo port and MIDI channel
+  
   // the initial velocity value allows to start with a low velocity,
   // and to increase it with each step via FB velocity value
   s32 fb_velocity = p.velocity;

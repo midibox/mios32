@@ -40,6 +40,8 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_cc.c  \
 		../core/seq_core.c \
 		../core/seq_pattern.c \
+		../core/seq_file.c \
+		../core/seq_file_b.c \
 		../core/seq_layer.c \
 		../core/seq_random.c \
 		../core/seq_trg.c \
@@ -93,6 +95,9 @@ include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
+
+# DOSFS Driver
+include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

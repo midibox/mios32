@@ -30,6 +30,19 @@
 # define MIOS32_COM_DEFAULT_PORT UART1
 #endif
 
+// Stack size for FreeRTOS tasks as defined by the programming model
+// Note that each task maintains it's own stack!
+// If you want to define a different stack size for your application tasks
+// (-> xTaskCreate() function), keep in mind that it has to be divided by 4,
+// since the stack width of ARM is 32bit.
+// The FreeRTOS define "configMINIMAL_STACK_SIZE" is (MIOS32_MINIMAL_STACK_SIZE/4)
+// it can be used in applications as well, e.g.
+// xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+#define MIOS32_MINIMAL_STACK_SIZE 1024
+
+// reserved memory for FreeRTOS pvPortMalloc function
+#define MIOS32_HEAP_SIZE 20*1024
+
 
 #define MID_PLAYER_TEST 0
 

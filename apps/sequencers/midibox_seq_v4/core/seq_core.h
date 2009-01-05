@@ -18,9 +18,10 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_CORE_NUM_GROUPS   4
-#define SEQ_CORE_NUM_TRACKS   (4*SEQ_CORE_NUM_GROUPS)
-#define SEQ_CORE_NUM_STEPS    32
+#define SEQ_CORE_NUM_GROUPS            4
+#define SEQ_CORE_NUM_TRACKS_PER_GROUP  4
+#define SEQ_CORE_NUM_TRACKS            (SEQ_CORE_NUM_TRACKS_PER_GROUP*SEQ_CORE_NUM_GROUPS)
+#define SEQ_CORE_NUM_STEPS             32
 
 
 /////////////////////////////////////////////////////////////////////////////
