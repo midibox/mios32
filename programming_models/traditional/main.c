@@ -28,30 +28,13 @@
 // Task Priorities
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_DIN_CHECK		( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_AIN_CHECK		( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_MIDI_RECEIVE	( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_COM_RECEIVE	( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_HOOKS		( tskIDLE_PRIORITY + 3 )
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
-static void TASK_DIN_Check(void *pvParameters);
-#endif
-
-#if !defined(MIOS32_DONT_USE_AIN)
-static void TASK_AIN_Check(void *pvParameters);
-#endif
-
-#ifndef MIOS32_DONT_USE_MIDI
-static void TASK_MIDI_Receive(void *pvParameters);
-#endif
-
-#ifndef MIOS32_DONT_USE_COM
-static void TASK_COM_Receive(void *pvParameters);
-#endif
+static void TASK_Hooks(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -120,19 +103,8 @@ int main(void)
     MIOS32_DELAY_Wait_uS(1000);
 #endif
 
-  // start the tasks
-#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
-  xTaskCreate(TASK_DIN_Check,  (signed portCHAR *)"DIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_CHECK, NULL);
-#endif
-#if !defined(MIOS32_DONT_USE_AIN)
-  xTaskCreate(TASK_AIN_Check,  (signed portCHAR *)"AIN_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_AIN_CHECK, NULL);
-#endif
-#if !defined(MIOS32_DONT_USE_MIDI)
-  xTaskCreate(TASK_MIDI_Receive, (signed portCHAR *)"MIDI_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI_RECEIVE, NULL);
-#endif
-#if !defined(MIOS32_DONT_USE_COM)
-  xTaskCreate(TASK_COM_Receive, (signed portCHAR *)"COM_Receive", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_COM_RECEIVE, NULL);
-#endif
+  // start the task which calls the application hooks
+  xTaskCreate(TASK_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 
   // start the scheduler
   vTaskStartScheduler();
@@ -184,10 +156,9 @@ void vApplicationIdleHook(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// DIN Handler
+// Remaining application hooks
 /////////////////////////////////////////////////////////////////////////////
-#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
-static void TASK_DIN_Check(void *pvParameters)
+static void TASK_Hooks(void *pvParameters)
 {
   portTickType xLastExecutionTime;
 
@@ -197,6 +168,7 @@ static void TASK_DIN_Check(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
+#if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
     // check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
     MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
 
@@ -204,47 +176,14 @@ static void TASK_DIN_Check(void *pvParameters)
 # ifndef MIOS32_DONT_USE_ENC
     MIOS32_ENC_Handler(APP_ENC_NotifyChange);
 # endif
-  }
-}
 #endif
 
-
-/////////////////////////////////////////////////////////////////////////////
-// AIN Handler
-/////////////////////////////////////////////////////////////////////////////
 #if !defined(MIOS32_DONT_USE_AIN)
-static void TASK_AIN_Check(void *pvParameters)
-{
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
     // check for AIN pin changes, call APP_AIN_NotifyChange on each pin change
     MIOS32_AIN_Handler(APP_AIN_NotifyChange);
-  }
-}
 #endif
 
-
-/////////////////////////////////////////////////////////////////////////////
-// MIDI Handlers
-/////////////////////////////////////////////////////////////////////////////
-#ifndef MIOS32_DONT_USE_MIDI
-// checks for incoming MIDI messages
-static void TASK_MIDI_Receive(void *pvParameters)
-{
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
+#if !defined(MIOS32_DONT_USE_MIDI)
 #ifndef MIOS32_DONT_USE_USB_MIDI
     // handle USB messages
     MIOS32_USB_MIDI_Handler();
@@ -252,28 +191,11 @@ static void TASK_MIDI_Receive(void *pvParameters)
     
     // check for incoming MIDI messages and call hooks
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
-  }
-}
 #endif
 
-
-/////////////////////////////////////////////////////////////////////////////
-// MIDI Handlers
-/////////////////////////////////////////////////////////////////////////////
-#ifndef MIOS32_DONT_USE_COM
-// checks for incoming COM messages
-static void TASK_COM_Receive(void *pvParameters)
-{
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
+#if !defined(MIOS32_DONT_USE_COM)
     // check for incoming COM messages and call hook
     MIOS32_COM_Receive_Handler(APP_NotifyReceivedCOM);
+#endif
   }
 }
-#endif
