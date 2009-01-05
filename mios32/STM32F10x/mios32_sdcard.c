@@ -438,12 +438,12 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   }
 
   // wait for write completion
-  for(i=0; i<65536; ++i) { // TODO: check if sufficient
+  for(i=0; i<32*65536; ++i) { // TODO: check if sufficient
     u8 ret = MIOS32_SDCARD_TransferByte(0xff);
     if( ret != 0x00 )
       break;
   }
-  if( i == 65536 ) {
+  if( i == 32*65536 ) {
     PIN_CSN_1; // deactivate chip select
     return -258; // return error code
   }
