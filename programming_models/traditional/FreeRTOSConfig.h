@@ -53,6 +53,18 @@
 /* Library includes. */
 #include <stm32f10x_lib.h>
 
+// MIOS32 specific predefines - can be overruled in your local mios32_config.h file
+#include "mios32_config.h"
+
+#ifndef MIOS32_MINIMAL_STACK_SIZE
+#define MIOS32_MINIMAL_STACK_SIZE 1024
+#endif
+
+#ifndef MIOS32_HEAP_SIZE
+#define MIOS32_HEAP_SIZE 10*1024
+#endif
+
+
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
@@ -69,8 +81,8 @@
 #define configCPU_CLOCK_HZ		( ( unsigned portLONG ) 72000000 )	
 #define configTICK_RATE_HZ		( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 5 )
-#define configMINIMAL_STACK_SIZE	( ( unsigned portSHORT ) 128 )
-#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 10 * 1024 ) )
+#define configMINIMAL_STACK_SIZE	( ( unsigned portSHORT ) (MIOS32_MINIMAL_STACK_SIZE/4) )
+#define configTOTAL_HEAP_SIZE		( ( size_t ) ( MIOS32_HEAP_SIZE ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
