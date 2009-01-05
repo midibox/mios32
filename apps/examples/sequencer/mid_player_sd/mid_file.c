@@ -96,13 +96,13 @@ s32 MID_FILE_Init(u32 mode)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[MID_FILE] SD Card power on sequence, status: %d\n\r", error);
 #endif
+  }
 
-    if( error >= 0 ) {
-      error = MID_FILE_mount_fs();
+  if( error >= 0 ) {
+    error = MID_FILE_mount_fs();
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[MID_FILE] Tried to mount file system, status: %d\n\r", error);
+    printf("[MID_FILE] Tried to mount file system, status: %d\n\r", error);
 #endif
-    }
   }
 
   return 0; // no error
@@ -162,7 +162,7 @@ static s32 MID_FILE_mount_fs(void)
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[MID_FILE] Volume label '%-11.11s'\n\r", vi.label);
+  printf("[MID_FILE] Volume label '%s'\n\r", vi.label);
   printf("[MID_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n\r", vi.secperclus, vi.reservedsecs, vi.numsecs);
   printf("[MID_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n\r",vi.secperfat,vi.fat1,vi.rootdir);
   printf("[MID_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n\r");
