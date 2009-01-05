@@ -27,7 +27,12 @@
 #include "seq_core.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+#include "seq_file_b.h"
 
+#ifndef MIOS32_FAMILY_EMULATION
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -320,6 +325,17 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   // toggle mode
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.METRONOME ^= 1;
+#if 1
+#ifndef MIOS32_FAMILY_EMULATION
+  portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
+#endif
+  SEQ_FILE_B_Create(0);
+  SEQ_FILE_B_Open(0);
+#ifndef MIOS32_FAMILY_EMULATION
+  portEXIT_CRITICAL();
+#endif
+#endif
+
 #else
   // set mode
   seq_ui_button_state.METRONOME = depressed ? 0 : 1;
@@ -1344,7 +1360,7 @@ s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer)
 // Increments a CC within given min/max range
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer)
+s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int new_value = SEQ_CC_Get(visible_track, cc);
@@ -1377,7 +1393,7 @@ s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer)
 // Sets a CC value on all selected tracks
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CC_Set(u8 cc, u16 value)
+s32 SEQ_UI_CC_Set(u8 cc, u8 value)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int prev_value = SEQ_CC_Get(visible_track, cc);
@@ -1400,7 +1416,7 @@ s32 SEQ_UI_CC_Set(u8 cc, u16 value)
 // Modifies a bitfield in a CC value to a given value
 // OUT: 1 if value has been changed, otherwise 0
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value)
+s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int new_value = SEQ_CC_Get(visible_track, cc);

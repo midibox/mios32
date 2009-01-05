@@ -81,5 +81,9 @@ extern char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// should only be directly accessed by SEQ_FILE_B, remaining functions should
+// use SEQ_TRG_Get/Set
+extern u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
+
 
 #endif /* _SEQ_TRG_H */

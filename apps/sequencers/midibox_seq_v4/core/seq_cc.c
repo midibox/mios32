@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Track direction page
+ * CC layer
  *
  * ==========================================================================
  *
@@ -98,7 +98,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->humanize_value = 0;
 
     tcc->echo_repeats = 0;
-    tcc->echo_delay = 3; // 1/32
+    tcc->echo_delay = 7; // 1/8
     tcc->echo_velocity = 15; // 75%
     tcc->echo_fb_velocity = 15; // 75%
     tcc->echo_fb_note = 24; // +0
@@ -113,7 +113,7 @@ s32 SEQ_CC_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Set CCs
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CC_Set(u8 track, u8 cc, u16 value)
+s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 {
   if( track >= SEQ_CORE_NUM_TRACKS )
     return -1; // invalid track

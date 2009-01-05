@@ -196,9 +196,9 @@ extern s32 SEQ_UI_SelectedStepSet(u8 step);
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
 extern s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
-extern s32 SEQ_UI_CC_Inc(u8 cc, u16 min, u16 max, s32 incrementer);
-extern s32 SEQ_UI_CC_Set(u8 cc, u16 value);
-extern s32 SEQ_UI_CC_SetFlags(u8 cc, u16 flag_mask, u16 value);
+extern s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer);
+extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
+extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);
 
 
 /////////////////////////////////////////////////////////////////////////////

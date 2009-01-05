@@ -36,6 +36,9 @@
 
 #include "seq_midi_in.h"
 
+#include "seq_file.h"
+#include "seq_file_b.h"
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,6 +119,10 @@ void APP_Init(void)
   // init user interface
   SEQ_LED_Init(0);
   SEQ_UI_Init(0);
+
+  // initial load of filesystem
+  SEQ_FILE_Init(0); // TODO: periodically check if SD card connected/disconnected during runtime
+  SEQ_FILE_B_Init(0);
 
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);

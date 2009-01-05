@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for parameter layer routines
+ * Header for file functions
  *
  * ==========================================================================
  *
@@ -11,17 +11,15 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_PAR_H
-#define _SEQ_PAR_H
+#ifndef _SEQ_FILE_H
+#define _SEQ_FILE_H
 
-#include "seq_core.h"
+#include <dosfs.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
-
-#define SEQ_PAR_NUM_LAYERS  3
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -33,18 +31,27 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_PAR_Init(u32 mode);
+extern s32 SEQ_FILE_Init(u32 mode);
 
-extern s32 SEQ_PAR_Set(u8 track, u8 step, u8 par_layer, u8 value);
-extern s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer);
+extern s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath);
+extern s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
+extern s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte);
+extern s32 SEQ_FILE_ReadHWord(PFILEINFO fileinfo, u16 *hword);
+extern s32 SEQ_FILE_ReadWord(PFILEINFO fileinfo, u32 *word);
+
+extern s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create);
+extern s32 SEQ_FILE_WriteBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
+extern s32 SEQ_FILE_WriteByte(PFILEINFO fileinfo, u8 byte);
+extern s32 SEQ_FILE_WriteHWord(PFILEINFO fileinfo, u16 hword);
+extern s32 SEQ_FILE_WriteWord(PFILEINFO fileinfo, u32 word);
+extern s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo);
+
+extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-// should only be directly accessed by SEQ_FILE_B, remaining functions should
-// use SEQ_PAR_Get/Set
-extern u8 par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_NUM_LAYERS][SEQ_CORE_NUM_STEPS];
 
-#endif /* _SEQ_PAR_H */
+#endif /* _SEQ_FILE_H */

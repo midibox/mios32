@@ -26,7 +26,9 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
+// should only be directly accessed by SEQ_FILE_B, remaining functions should
+// use SEQ_TRG_Get/Set
+u8 trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
 
 
 /////////////////////////////////////////////////////////////////////////////

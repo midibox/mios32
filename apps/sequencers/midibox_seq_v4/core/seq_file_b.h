@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for parameter layer routines
+ * Header for file functions
  *
  * ==========================================================================
  *
@@ -11,17 +11,15 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_PAR_H
-#define _SEQ_PAR_H
-
-#include "seq_core.h"
+#ifndef _SEQ_FILE_B_H
+#define _SEQ_FILE_B_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_PAR_NUM_LAYERS  3
+#define SEQ_FILE_B_NUM_BANKS 8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -33,18 +31,18 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_PAR_Init(u32 mode);
+extern s32 SEQ_FILE_B_Init(u32 mode);
 
-extern s32 SEQ_PAR_Set(u8 track, u8 step, u8 par_layer, u8 value);
-extern s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer);
+extern s32 SEQ_FILE_B_Create(u8 bank);
+extern s32 SEQ_FILE_B_Open(u8 bank);
+
+extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
+extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-// should only be directly accessed by SEQ_FILE_B, remaining functions should
-// use SEQ_PAR_Get/Set
-extern u8 par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_NUM_LAYERS][SEQ_CORE_NUM_STEPS];
 
-#endif /* _SEQ_PAR_H */
+#endif /* _SEQ_FILE_B_H */

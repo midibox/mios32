@@ -22,6 +22,7 @@
 #include "seq_pattern.h"
 #include "seq_core.h"
 #include "seq_ui.h"
+#include "seq_file_b.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -30,7 +31,7 @@
 
 // set this to 1 if performance of pattern handler should be measured with a scope
 // (LED toggling in APP_Background() has to be disabled!)
-#define LED_PERFORMANCE_MEASURING 0
+#define LED_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,7 +87,13 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
 
   // change immediately if sequencer not running
   if( !SEQ_BPM_IsRunning() || ui_seq_pause ) {
+#if LED_PERFORMANCE_MEASURING
+    MIOS32_BOARD_LED_Set(0xffffffff, 1);
+#endif
     SEQ_PATTERN_Load(group, pattern);
+#if LED_PERFORMANCE_MEASURING
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
   } else {
 
     // TODO: stall here if previous pattern change hasn't been finished yet!
@@ -130,10 +137,6 @@ s32 SEQ_PATTERN_Handler(void)
     }
   }
 
-  // temporary:
-  // emulate extra long delay to test sequencer timing robustness
-  MIOS32_DELAY_Wait_uS(50000); // 50 mS!
-
 #if LED_PERFORMANCE_MEASURING
   MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
@@ -147,10 +150,12 @@ s32 SEQ_PATTERN_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 {
-  // TODO
+  s32 status;
 
   seq_pattern[group] = pattern;
 
-  return 0;
+  status = SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group);
+
+  return status;
 }
 
