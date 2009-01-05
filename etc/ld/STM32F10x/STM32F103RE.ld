@@ -22,9 +22,12 @@ _estack = 0x20010000;
 /* default stack sizes. 
 
 These are used by the startup in order to allocate stacks for the different modes.
+
+Note: FreeRTOS gives each task an own stack, the default stack sizes used by the
+"programming model" can be changed with MIOS32_MINIMAL_STACK_SIZE
 */
 
-__Stack_Size = 1024 ;
+__Stack_Size = 128 ;
 
 PROVIDE ( _Stack_Size = __Stack_Size ) ;
 
