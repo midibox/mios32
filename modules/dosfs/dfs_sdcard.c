@@ -77,7 +77,7 @@ uint32_t DFS_ReadSector(uint8_t unit, uint8_t *buffer, uint32_t sector, uint32_t
 
   // forward to MIOS, reconnect to SD Card if required
   s32 status;
-  if( (status=MIOS32_SDCARD_SectorRead(sector, buffer) < 0) ) {
+  if( (status=MIOS32_SDCARD_SectorRead(sector, buffer)) < 0 ) {
     // try re-connection
     if( (status=MIOS32_SDCARD_PowerOn()) >= 0 ) {
       status=MIOS32_SDCARD_SectorRead(sector, buffer);
@@ -111,7 +111,7 @@ uint32_t DFS_WriteSector(uint8_t unit, uint8_t *buffer, uint32_t sector, uint32_
 
   // forward to MIOS, reconnect to SD Card if required
   s32 status;
-  if( (status=MIOS32_SDCARD_SectorWrite(sector, buffer) < 0) ) {
+  if( (status=MIOS32_SDCARD_SectorWrite(sector, buffer)) < 0 ) {
     // try re-connection
     if( (status=MIOS32_SDCARD_PowerOn()) >= 0 ) {
       status=MIOS32_SDCARD_SectorWrite(sector, buffer);
