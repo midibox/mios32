@@ -19,6 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
+#include "seq_file_b.h"
 #include "seq_core.h"
 
 
@@ -119,29 +120,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // change bank/pattern number
   seq_pattern_t *pattern = &selected_pattern[ui_selected_group];
   if( encoder & 1 ) {
-    int old_value = pattern->pattern;
-    int new_value = pattern->pattern + incrementer;
-    if( new_value > 127 )
-      new_value = 127;
-    else if( new_value < 0 )
-      new_value = 0;
-
-    if( new_value == old_value )
+    u8 tmp = pattern->pattern;
+    u8 max_patterns = SEQ_FILE_B_NumPatterns(pattern->bank);
+    // TODO: print error message if bank not valid (max_patterns = 0)
+    if( !max_patterns || !SEQ_UI_Var8_Inc(&tmp, 0, max_patterns-1, incrementer) ) {
       return 0; // no change
-
-    pattern->pattern = new_value;
+    }
+    pattern->pattern = tmp;
   } else {
-    int old_value = pattern->bank;
-    int new_value = pattern->bank + incrementer;
-    if( new_value > 7 )
-      new_value = 7;
-    else if( new_value < 0 )
-      new_value = 0;
-
-    if( new_value == old_value )
+    u8 tmp = pattern->bank;
+    if( !SEQ_UI_Var8_Inc(&tmp, 0, SEQ_FILE_B_NUM_BANKS-1, incrementer) ) {
       return 0; // no change
-
-    pattern->bank = new_value;
+    }
+    pattern->bank = tmp;
   }
 
   SEQ_PATTERN_Change(ui_selected_group, *pattern);
@@ -248,7 +239,12 @@ static s32 LCD_Handler(u8 high_prio)
       // shortly show current pattern
       seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + group) && ui_cursor_flash) ? seq_pattern[group] : selected_pattern[group];
       MIOS32_LCD_PrintFormattedString("%d:", pattern.bank + 1);
-      SEQ_LCD_PrintPattern(pattern);
+
+      if( pattern.pattern < SEQ_FILE_B_NumPatterns(pattern.bank) )
+	SEQ_LCD_PrintPattern(pattern);
+      else
+	MIOS32_LCD_PrintString("!!"); // covers the case that bank is not available, or that pattern number too high
+
       if( selected_pattern[group].pattern != seq_pattern[group].pattern ||
 	  selected_pattern[group].bank != seq_pattern[group].bank )
 	MIOS32_LCD_PrintChar('*');

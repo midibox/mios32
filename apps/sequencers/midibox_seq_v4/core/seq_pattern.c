@@ -69,7 +69,11 @@ s32 SEQ_PATTERN_Init(u32 mode)
   u8 group;
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     seq_pattern[group].ALL = 0;
+#if 0
     seq_pattern[group].group = 2*group; // A/C/E/G
+#else
+    seq_pattern[group].bank = group; // each group has it's own bank
+#endif
     seq_pattern_req[group].ALL = 0;
   }
 

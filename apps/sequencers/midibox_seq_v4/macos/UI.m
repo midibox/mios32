@@ -461,7 +461,7 @@ s32 TASKS_Init(u32 mode)
 	_self = self;
 
 	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i)
-		dout_sr_shadow[i] = 0xff; // inverted value, so that all emulated LEDs will be updated during initialisation
+		dout_sr_shadow[i] = 0x00;
 
 	LED[0]=LED1;
 	LED[1]=LED2;

@@ -98,7 +98,8 @@ static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
   (void *)&SEQ_UI_FX_ECHO_Init, // 14
   (void *)&SEQ_UI_UTIL_Init,    // 15
   (void *)&SEQ_UI_BPM_Init,     // 16
-  (void *)&SEQ_UI_OPT_Init      // 17
+  (void *)&SEQ_UI_OPT_Init,     // 17
+  (void *)&SEQ_UI_SAVE_Init     // 18
 };
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
@@ -329,8 +330,11 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 #ifndef MIOS32_FAMILY_EMULATION
   portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
 #endif
-  SEQ_FILE_B_Create(0);
-  SEQ_FILE_B_Open(0);
+  u8 bank;
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
+    SEQ_FILE_B_Create(bank);
+    SEQ_FILE_B_Open(bank);
+  }
 #ifndef MIOS32_FAMILY_EMULATION
   portEXIT_CRITICAL();
 #endif
