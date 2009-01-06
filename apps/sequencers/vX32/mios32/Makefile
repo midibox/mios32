@@ -1,4 +1,4 @@
-# $Id: Makefile 78 2008-10-12 22:09:23Z tk $
+# $Id$
 
 ################################################################################
 # following setup taken from environment variables
@@ -17,9 +17,16 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE = tasks.c \
 				../core/app.c \
 				../core/utils.c \
+				../core/ui.c \
 				../core/graph.c \
 				../core/mclock.c \
-				../core/modules.c
+				../core/patterns.c \
+				../core/mod_send.c \
+				../core/modules.c \
+\
+				../core/mod_sxh.c \
+				../core/mod_seq.c \
+				../core/mod_midiout.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

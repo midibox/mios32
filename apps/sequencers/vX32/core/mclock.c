@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -20,6 +21,10 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #include "app.h"
 #include "graph.h"
 #include "mclock.h"
+#include "modules.h"
+#include "patterns.h"
+#include "utils.h"
+#include "ui.h"
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -36,7 +41,6 @@ unsigned char midiclockcounter;
 unsigned char midiclockdivider;
 
 void clocks_init(void) {
-
 
 	// reset sequencer
     SEQ_BPM_TickSet(0);
@@ -75,9 +79,8 @@ void clocks_init(void) {
 }
 
 void mclock_init(void) {
-    mclock.cyclelen = (unsigned long) (((mclock.res << 2)*mclock.timesigu)/mclock.timesigl);			// Length of master track measured in ticks.
-	midiclockdivider = (mclock.res)/24;	
-	midiclockcounter = midiclockdivider;
+    mclock.cyclelen = (unsigned long) (((SEQ_BPM_PPQN_Get() * 4) * mclock.timesigu) / mclock.timesigl);			// Length of master track measured in ticks.
+	midiclockdivider = (SEQ_BPM_PPQN_Get())/24;
 }
 
 
@@ -93,7 +96,7 @@ void sclock_init(unsigned char SC, unsigned char steps1, unsigned char steps2, u
 		The two Loops values are multiplied to produce the SubClock Denominator (effect is similar to a clock divider)
 	*/
 	
-	if (SC < dead_sclock) {
+	if (SC < max_sclocks) {
 		sclock[SC].steps1 = steps1;
 		sclock[SC].loops1 = loops1;
 		sclock[SC].steps2 = steps2;
@@ -108,7 +111,10 @@ void sclock_init(unsigned char SC, unsigned char steps1, unsigned char steps2, u
 		sclock[(SC)].modcounter = sclock[(SC)].modulus;										// The SubClock Modulus Counter is set to equal the SubClock Modulus
 		
 		sclock[(SC)].ticksent = 0;
-		sclock[(SC)].countdown = 0;
+		
+		sclock[(SC)].countdown = sclock[(SC)].quotient;										// calculate ticks till next step
+		sclock[(SC)].countmclock = 1;
+		
 	}
 	
 }
@@ -122,12 +128,6 @@ void mclock_setbpm(unsigned char bpm) {
 	}
 	
 }
-
-
-void mclock_timer(void) {
-// FIXME remove me
-}
-
 
 
 void mclock_tick(void) {
@@ -144,15 +144,18 @@ void mclock_tick(void) {
 		// note: don't remove any request check - clocks won't be propagated
 		// so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
 		if( SEQ_BPM_ChkReqStop() ) {
+			mclock_stop();
 		  //SEQ_PlayOffEvents();
 		}
 		
 		if( SEQ_BPM_ChkReqCont() ) {
+			mclock_unpause();
 		  // release pause mode
 		  //seq_pause = 0;
 		}
 		
 		if( SEQ_BPM_ChkReqStart() ) {
+			mclock_reset();
 		  //SEQ_Reset();
 		}
 		
@@ -162,14 +165,13 @@ void mclock_tick(void) {
 		}
 		
 		if( SEQ_BPM_ChkReqClk(&mod_tick_timestamp) > 0 ) {
-			mod_tick_timestamp += SEQ_BPM_TicksFor_mS(PROCESSING_LATENCY_MS);			// Allow 1mS latency to process
 			(mclock.ticked)++;
 			again = 1; // check all requests again after execution of this part
 		}
 		
 	} while( again && num_loops < 10 );
   
-	if (mclock.status > 0x7F) {
+	if (mclock.status == 0x80) {
 	    if (mclock.ticked) {
 			// Unneeded interrupts are disabled in the module now MIOS32_IRQ_Disable();									// port specific FreeRTOS function to disable IRQs (nested)
 			--(mclock.ticked);
@@ -177,7 +179,7 @@ void mclock_tick(void) {
 			for (i = 0; i < max_sclocks; i++) {						// i is the number of SubClocks
 				
 				if (sclock[(i)].status > 0x7F) {					// only do this if the SubClock is active
-					if ((++(sclock[(i)].countmclock)) > (sclock[(i)].countdown)){		// increment the master tick counter
+					if ((--(sclock[(i)].countmclock)) == 0 ) {		// decrement the master tick counter
 						sclock_tick(i);
 						
 					}
@@ -187,7 +189,7 @@ void mclock_tick(void) {
 			}
 			
 			if (SEQ_BPM_IsMaster()) {
-				if ((--midiclockcounter) == 0) {
+				if ((midiclockcounter++) == 0) {
 					midiclockcounter = midiclockdivider;
 					
 					mios32_midi_package_t midi_package;
@@ -197,7 +199,7 @@ void mclock_tick(void) {
 					midi_package.evnt2    = 0;
 					
 					SEQ_MIDI_OUT_Send(USB0, midi_package, SEQ_MIDI_OUT_ClkEvent, mod_tick_timestamp);
-					//MIOS32_MIDI_SendClock();
+					
 				}
 				
 			}
@@ -220,7 +222,7 @@ how long until the next tick). This does not run over all SubClocks, just one, w
 
 void sclock_tick(unsigned char SC) {
 	(sclock[(SC)].ticked)++;										// increment the subclock tick counter
-	sclock[(SC)].countmclock = sclock[(SC)].countmclock - sclock[(SC)].countdown;		// adjust master tick counter
+	sclock[(SC)].countmclock = sclock[(SC)].countdown;		// adjust master tick counter
 
     sclock[(SC)].countdown = sclock[(SC)].quotient;					// calculate ticks till next step
 	
@@ -234,6 +236,37 @@ void sclock_tick(unsigned char SC) {
 		
     }
 	
+}
+
+
+
+void mclock_play(void) {
+	midiclockcounter = 0;
+	mclock.status = 0x80;
+}
+
+
+void mclock_unpause(void) {
+	midiclockcounter = 0;
+	mclock.status = 0x80;
+}
+
+
+void mclock_reset(void) {
+	midiclockcounter = 0;
+	mclock.status = 0x80;
+	
+	SEQ_MIDI_OUT_FlushQueue();
+	
+	SEQ_BPM_TickSet(0);												// reset BPM tick
+}
+
+
+void mclock_stop(void) {
+	midiclockcounter = 0;	
+	mclock.status = 0x00;
+
+	SEQ_MIDI_OUT_FlushQueue();
 }
 
 

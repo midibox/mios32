@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
  * FreeRTOS Tasks
  * only used by MIOS32 build, as pthread based Task handling is used on x86
@@ -21,9 +22,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_MIDI 			( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_MIDI 			( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_RACK 			( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 1 )
 
 
 /////////////////////////////////////////////////////////////////////////////

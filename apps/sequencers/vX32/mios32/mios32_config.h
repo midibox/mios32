@@ -1,4 +1,4 @@
-// $Id: mios32_config.h 56 2008-10-04 00:46:12Z tk $
+/* $Id$ */
 /*
  * Local MIOS32 configuration file
  *
@@ -15,7 +15,7 @@
 // Windows sucks so
 // use linux instead #define MIOS32_DONT_USE_USB_MIDI // FIXME TESTING
 // enable USB COM instead
-#define MIOS32_USE_USB_COM // FIXME TESTING
+//#define MIOS32_USE_USB_COM // FIXME TESTING
 
 
 
@@ -26,6 +26,12 @@
 #define MIOS32_USB_PRODUCT_STR  "vX32"								// you will see this in the MIDI device list
 #define MIOS32_USB_PRODUCT_ID   0x03ff								// ==1000; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
 #define MIOS32_USB_VERSION_ID   0x0100								// v1.00
+
+#define MIOS32_LCD_BOOT_MSG_LINE1 "vX32 alpha-0"
+
+
+#define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
+
 
 //#define MIOS32_DONT_USE_BOARD // FIXME TESTING
 

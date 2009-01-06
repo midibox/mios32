@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id:  $ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -26,32 +26,11 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #include "utils.h"
 #include "ui.h"
 
-/* 
-// -128..0..127  --->  0..127		  // 		 0 --> 64
-u8 util_s8tou7(s8 input) {
-	u8 out = (u8)(input+64);
-	out = out%128;
-	return out;
-}
-*/
+#include <seq_midi_out.h>
 
 
-/* 
-// -128..0..127  --->  0..63		  // 		-32 --> 0 		 0 --> 32 		 32 --> 64
-u8 util_s8tou6(s8 input) {
-	u8 out = (u8)(input+32);
-	out = out%64;
-	return out;
-}
- */
 
 
-/* 
-// -128..0..127  --->  0..63		  // 		-32 --> 0 		 0 --> 32 		 32 --> 64
-u8 util_s8tou4(s8 input) {
-	u8 out = (u8)(input+8);
-	out = out%16;
-	return out;
-}
-*/
+signed char *vpattern[max_vpatterns];
 
+signed char *bpattern[max_bpatterns];
