@@ -183,16 +183,12 @@ s32 SEQ_FILE_B_NumPatterns(u8 bank)
 
 /////////////////////////////////////////////////////////////////////////////
 // create a complete bank file
-// returns 0 on success
-// returns -1 if failed to access SD card
-// returns -2 if file cannot be written
-// returns -3 if no memory could be allocated for write sector
-// returns -4 if invalid bank number
+// returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_B_Create(u8 bank)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
-    return -4; // invalid bank number
+    return SEQ_FILE_B_ERR_INVALID_BANK;
 
   seq_file_b_info_t *info = &seq_file_b_info[bank];
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
@@ -271,17 +267,12 @@ s32 SEQ_FILE_B_Create(u8 bank)
 
 /////////////////////////////////////////////////////////////////////////////
 // open a bank file
-// returns 0 on success
-// returns -1 if failed to access SD card
-// returns -2 if file not found
-// returns -3 if error during reading file
-// returns -4 if invalid bank number
-// returns -5 if invalid file format
+// returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_B_Open(u8 bank)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
-    return -4; // invalid bank number
+    return SEQ_FILE_B_ERR_INVALID_BANK;
 
   seq_file_b_info_t *info = &seq_file_b_info[bank];
 
@@ -309,7 +300,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] failed to read header, status: %d\n\r", status);
 #endif
-    return -3; // error during reading file
+    return status;
   }
 
   if( strncmp(file_type, "MBSEQV4_B", 10) != 0 ) {
@@ -317,7 +308,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
     file_type[9] = 0; // ensure that string is terminated
     printf("[SEQ_FILE_B] wrong header type: %s\n\r", file_type);
 #endif
-    return -5; // invalid file format
+    return SEQ_FILE_B_ERR_FORMAT;
   }
 
   status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)info->header.name, 20);
@@ -328,7 +319,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] file access error while reading header, status: %d\n\r", status);
 #endif
-    return -3; // error during reading file
+    return SEQ_FILE_B_ERR_READ;
   }
 
   // bank is valid! :)
@@ -344,29 +335,23 @@ s32 SEQ_FILE_B_Open(u8 bank)
 
 /////////////////////////////////////////////////////////////////////////////
 // reads a pattern from bank into given group
-// returns 0 on success
-// returns -1 if failed to access SD card
-// returns -3 if error during reading file
-// returns -4 if invalid bank number
-// returns -5 if invalid pattern number
-// returns -6 if invalid target group number
-// returns -7 if bank not available (e.g. since file header is invalid)
+// returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
-    return -4; // invalid bank number
+    return SEQ_FILE_B_ERR_INVALID_BANK;
 
   if( target_group >= SEQ_CORE_NUM_GROUPS )
-    return -6; // invalid group number
+    return SEQ_FILE_B_ERR_INVALID_GROUP;
 
   seq_file_b_info_t *info = &seq_file_b_info[bank];
 
   if( !info->valid )
-    return -7; // bank not available
+    return SEQ_FILE_B_ERR_NO_FILE;
 
   if( pattern >= info->header.num_patterns )
-    return -5; // invalid pattern number
+    return SEQ_FILE_B_ERR_INVALID_PATTERN;
 
   // change to file position
   s32 status;
@@ -375,7 +360,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n\r", status);
 #endif
-    return -3; // error during reading file
+    return SEQ_FILE_B_ERR_READ;
   }
 
   status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_pattern_name[target_group], 20);
@@ -506,7 +491,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] error while reading file, status: %d\n\r", status);
 #endif
-    return -3; // error during reading file
+    return SEQ_FILE_B_ERR_READ;
   }
 
   return 0; // no error
@@ -515,30 +500,23 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 
 /////////////////////////////////////////////////////////////////////////////
 // writes a pattern of a given group into bank
-// returns 0 on success
-// returns -1 if failed to access SD card
-// returns -3 if error during writing file
-// returns -4 if invalid bank number
-// returns -5 if invalid pattern number
-// returns -6 if invalid source group number
-// returns -7 if bank not available (e.g. since file header is invalid)
-// returns -8 if resulting pattern size too large for slot in bank
+// returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
-    return -4; // invalid bank number
+    return SEQ_FILE_B_ERR_INVALID_BANK;
 
   if( source_group >= SEQ_CORE_NUM_GROUPS )
-    return -6; // invalid group number
+    return SEQ_FILE_B_ERR_INVALID_GROUP;
 
   seq_file_b_info_t *info = &seq_file_b_info[bank];
 
   if( !info->valid )
-    return -7; // bank not available
+    return SEQ_FILE_B_ERR_FORMAT;
 
   if( pattern >= info->header.num_patterns )
-    return -5; // invalid pattern number
+    return SEQ_FILE_B_ERR_INVALID_PATTERN;
 
 
   // TODO: before writing into pattern slot, we should check if it already exists, and then
@@ -556,7 +534,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] Resulting pattern is too large for slot in bank (is: %d, max: %d)\n\r", 
 	   expected_pattern_size, info->header.pattern_size);
-    return -8;
+    return SEQ_FILE_B_ERR_P_TOO_LARGE;
 #endif
   }
 
@@ -574,8 +552,8 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] Failed to open file, status: %d\n\r", status);
 #endif
-    status |= SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
-    return -3;
+    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    return status;
   }
 
   // change to file position
@@ -584,8 +562,8 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n\r", status);
 #endif
-    status |= SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
-    return -3; // error during writing file
+    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    return status;
   }
 
   // write pattern name w/o zero terminator
@@ -652,5 +630,5 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   printf("[SEQ_FILE_B] Pattern written with status %d\n\r", status);
 #endif
 
-  return (status < 0) ? -3 : 0;
+  return (status < 0) ? SEQ_FILE_B_ERR_WRITE : 0;
 }

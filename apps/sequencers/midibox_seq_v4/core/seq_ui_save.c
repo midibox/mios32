@@ -44,7 +44,7 @@
 static seq_pattern_t save_pattern[SEQ_CORE_NUM_GROUPS];
 
 static u8 in_menu_msg;
-static u8 in_menu_msg_error_status;
+static u32 in_menu_msg_error_status;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -307,7 +307,7 @@ static s32 LCD_Handler(u8 high_prio)
     switch( in_menu_msg ) {
       case MSG_SAVE:
 	if( in_menu_msg_error_status ) // TODO: here we could decode the error status
-	  MIOS32_LCD_PrintFormattedString("Store Operation failed with error #%d!   ", in_menu_msg_error_status);
+	  MIOS32_LCD_PrintFormattedString("Store Operation failed with error #%-3d  ", in_menu_msg_error_status);
 	else
 	  MIOS32_LCD_PrintString("Pattern stored successfully             ");
         break;
