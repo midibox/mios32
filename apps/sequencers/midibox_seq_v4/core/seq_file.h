@@ -21,6 +21,30 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// error codes
+#define SEQ_FILE_ERR_SD_CARD        -1 // failed to access SD card
+#define SEQ_FILE_ERR_NO_PARTITION   -2 // DFS_GetPtnStart failed to find partition
+#define SEQ_FILE_ERR_NO_VOLUME      -3 // DFS_GetVolInfo failed to find volume information
+#define SEQ_FILE_ERR_UNKNOWN_FS     -4 // unknown filesystem (only FAT12/16/32 supported)
+#define SEQ_FILE_ERR_OPEN_READ      -5 // DFS_OpenFile(..DFS_READ..) failed, e.g. file not found
+#define SEQ_FILE_ERR_READ           -6 // DFS_ReadFile failed
+#define SEQ_FILE_ERR_READCOUNT      -7 // less bytes read than expected
+#define SEQ_FILE_ERR_WRITE_MALLOC   -8 // SEQ_FILE_WriteOpen failed to allocate memory for write buffer
+#define SEQ_FILE_ERR_OPEN_WRITE     -9 // DFS_OpenFile(..DFS_WRITE..) failed
+#define SEQ_FILE_ERR_WRITE         -10 // DFS_WriteFile failed
+#define SEQ_FILE_ERR_WRITECOUNT    -11 // less bytes written than expected
+#define SEQ_FILE_ERR_SEEK          -12 // SEQ_FILE_Seek() failed
+
+// used by seq_file_b.c
+#define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
+#define SEQ_FILE_B_ERR_INVALID_GROUP   -129 // invalid group number
+#define SEQ_FILE_B_ERR_INVALID_PATTERN -130 // invalid pattern number
+#define SEQ_FILE_B_ERR_FORMAT          -131 // invalid bank file format
+#define SEQ_FILE_B_ERR_READ            -132 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_B_ERR_WRITE           -133 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_B_ERR_NO_FILE         -134 // no or invalid bank file
+#define SEQ_FILE_B_ERR_P_TOO_LARGE     -135 // during pattern write: pattern too large for slot in bank
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -52,6 +76,10 @@ extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+// last error status returned by DFS
+// can be used as additional debugging help if SEQ_FILE_*ERR returned by function
+extern u32 seq_file_dfs_errno;
 
 
 #endif /* _SEQ_FILE_H */
