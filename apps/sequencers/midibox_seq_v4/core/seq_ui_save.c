@@ -32,10 +32,19 @@
 #define ITEM_PATTERN       2
 
 
+// used "In-Menu" messages
+#define MSG_DEFAULT 0x00
+#define MSG_SAVE    0x81
+#define MSG_NO_BANK 0x82
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 static seq_pattern_t save_pattern[SEQ_CORE_NUM_GROUPS];
+
+static u8 in_menu_msg;
+static u8 in_menu_msg_error_status;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,8 +125,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_PATTERN: {
       u8 tmp = save_pattern[ui_selected_group].pattern;
       u8 max_patterns = SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank);
-      // TODO: print error message if bank not valid (max_patterns = 0)
-      if( max_patterns && SEQ_UI_Var8_Inc(&tmp, 0, max_patterns-1, incrementer) ) {
+
+      if( !max_patterns ) {
+	// print error message if bank not valid (max_patterns = 0)
+	in_menu_msg = MSG_NO_BANK;
+	in_menu_msg_error_status = save_pattern[ui_selected_group].bank;
+	ui_hold_msg_ctr = 2000; // print for 2 seconds
+	return 1;
+      }
+
+      if( SEQ_UI_Var8_Inc(&tmp, 0, max_patterns-1, incrementer) ) {
 	save_pattern[ui_selected_group].pattern = tmp;
 	return 1;
       }
@@ -168,6 +185,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	// change pattern number directly
 	seq_pattern[ui_selected_group] = save_pattern[ui_selected_group];
       }
+      in_menu_msg_error_status = -status; // we expect a value within byte range...
+      in_menu_msg = MSG_SAVE;
+      ui_hold_msg_ctr = 2000; // print for 2 seconds
       return 1;
     } break;
 
@@ -220,8 +240,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Grp. Save Pattern    to Target     SAVE ToDo: Pattern name entry                
-  // G1 (Track 11-11)/1:A1 -> 1:A1       IT                                          
+  // Grp. Save Pattern    to Target     SAVE Name: xxxxxxxxxxxxxxxxxxxx              
+  // G1 (Track 11-11)/1:A1 -> 1:A1       IT  ToDo: Pattern name entry                                                        
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -229,11 +249,6 @@ static s32 LCD_Handler(u8 high_prio)
   MIOS32_LCD_CursorSet(0, 0);
   MIOS32_LCD_PrintString("Grp. Save Pattern    to Target     SAVE ");
 
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("ToDo: Pattern name entry                ");
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("                                        ");
 
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_LCD_DeviceSet(0);
@@ -272,8 +287,39 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintPattern(save_pattern[ui_selected_group]);
   }
 
-  SEQ_LCD_PrintSpaces(7);
+  MIOS32_LCD_PrintChar(SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank) ? ' ' : '!');
+
+  SEQ_LCD_PrintSpaces(6);
   MIOS32_LCD_PrintString("IT  ");
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("Name: ");
+  SEQ_LCD_PrintPatternName(seq_pattern[ui_selected_group], seq_pattern_name[ui_selected_group]);
+  SEQ_LCD_PrintSpaces(14);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Save message
+  MIOS32_LCD_CursorSet(0, 1);
+  if( ui_hold_msg_ctr && in_menu_msg != MSG_DEFAULT ) {
+    switch( in_menu_msg ) {
+      case MSG_SAVE:
+	if( in_menu_msg_error_status ) // TODO: here we could decode the error status
+	  MIOS32_LCD_PrintFormattedString("Store Operation failed with error #%d!   ", in_menu_msg_error_status);
+	else
+	  MIOS32_LCD_PrintString("Pattern stored successfully             ");
+        break;
+
+      case MSG_NO_BANK:
+	MIOS32_LCD_PrintFormattedString("Bank #%d not available!", in_menu_msg_error_status+1);
+	SEQ_LCD_PrintSpaces(18);
+        break;
+    }
+  } else {
+    MIOS32_LCD_PrintString("ToDo: Pattern name entry                ");
+  }
 
   return 0; // no error
 }
@@ -294,6 +340,11 @@ s32 SEQ_UI_SAVE_Init(u32 mode)
   int i;
   for(i=0; i<SEQ_CORE_NUM_GROUPS; ++i)
     save_pattern[i] = seq_pattern[i];
+
+  // for printing the error status after save operation
+  in_menu_msg = MSG_DEFAULT;
+  ui_hold_msg_ctr = 0;
+  in_menu_msg_error_status = 0;
 
   return 0; // no error
 }
