@@ -66,7 +66,13 @@ static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
+
+u8 seq_core_global_scale;
 u8 seq_core_global_scale_ctrl;
+u8 seq_core_global_scale_root;
+u8 seq_core_global_scale_root_selection;
+u8 seq_core_keyb_scale_root;
+
 u8 seq_core_bpm_div_int;
 u8 seq_core_bpm_div_ext;
 
@@ -89,7 +95,10 @@ s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16;
+  seq_core_global_scale = 0;
   seq_core_global_scale_ctrl = 0; // global
+  seq_core_global_scale_root_selection = 0; // from keyboard
+  seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
   seq_core_bpm_div_int = 0; // (frequently used, therefore not part of seq_core_options union)
   seq_core_bpm_div_ext = 1;
 
@@ -103,6 +112,9 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset patterns
   SEQ_PATTERN_Init(0);
+
+  // reset force-to-scale module
+  SEQ_SCALE_Init(0);
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -365,6 +377,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
 	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick);
 	      t->sustain_note.ALL = 0;
+	    }
+
+	    // force to scale
+	    if( tcc->mode.FORCE_SCALE ) {
+	      u8 scale, root_selection, root;
+	      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	      SEQ_SCALE_Note(p, scale, root);
 	    }
 
 	    // roll/glide flag
@@ -700,6 +719,32 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the selected scale and root note selection depending on
+// global/group specific settings
+// scale and root note are for interest while playing the sequence -> SEQ_CORE
+// scale and root selection are for interest when editing the settings -> SEQ_UI_OPT
+// Both functions are calling this function to ensure consistency
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
+{
+  if( seq_core_global_scale_ctrl > 0 ) {
+    // scale/root selection from a specific pattern group
+    u8 group = seq_core_global_scale_ctrl-1;
+    *scale = seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale;
+    *root_selection = seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root;
+  } else {
+    // global scale/root selection
+    *scale = seq_core_global_scale;
+    *root_selection = seq_core_global_scale_root_selection;
+  }
+  *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Echo Fx

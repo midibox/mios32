@@ -40,6 +40,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_midply.c \
 		../core/seq_cc.c  \
 		../core/seq_core.c \
+		../core/seq_scale.c \
 		../core/seq_pattern.c \
 		../core/seq_file.c \
 		../core/seq_file_b.c \

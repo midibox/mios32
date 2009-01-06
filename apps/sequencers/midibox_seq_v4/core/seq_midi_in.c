@@ -141,8 +141,9 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
   if( velocity ) { // Note On
     SEQ_MIDI_IN_Notestack_Push(n, note, 0); // unsorted
     transposer_hold_note = n->note[0];
-    
-    // TODO: change root note of scale
+
+    // will only be used if enabled in OPT menu
+    seq_core_keyb_scale_root = note % 12;
   } else { // Note Off
     if( SEQ_MIDI_IN_Notestack_Pop(n, note) > 0 && n->len ) {
       transposer_hold_note = n->note[0];
