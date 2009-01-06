@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -23,6 +24,9 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #include "graph.h"
 #include "mclock.h"
 #include "modules.h"
+#include "patterns.h"
+#include "utils.h"
+#include "ui.h"
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -77,6 +81,28 @@ void APP_Init(void) {
 	MIOS32_MIDI_DirectRxTxCallback_Init(vx_midi_rx, vx_midi_tx);
 	
 	TASKS_Init();
+	
+	// FIXME TESTING
+		
+	sclock_init(0, 8, 1, 1, 1);
+
+	sclock[0].status = 0x80; 
+		
+	sclock_init(1, 10, 1, 1, 1);
+
+	sclock[1].status = 0x80; 
+	
+	
+	testmodule1 = node_add(1);
+	
+	mod_set_clocksource(testmodule1, 0); //FIXME TESTING
+	
+	testmodule2 = node_add(1);
+	
+	mod_set_clocksource(testmodule2, 1); //FIXME TESTING
+	
+	// FIXME TESTING
+	
 }
 
 
@@ -94,6 +120,14 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 	// buffer up the incoming events
 	// notify each host node by incrementing the process_req flag
 	// process all the nodes downstream of the host node
+	if (midi_package.evnt2 == 0x7f) {
+		
+		testmodule1 = node_add(1);
+		
+		mod_set_clocksource(testmodule1, 0); //FIXME TESTING
+	
+	}
+	
 }
 
 
@@ -108,85 +142,6 @@ void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte) {
 // This hook is called when a byte has been received via COM interface
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte) {
-// FIXME TESTING
-	if (byte == 't') {
-sclock_init(0, 4, 2, 1, 1);
-
-sclock[0].status = 0x80; 
-	} else if (byte == 'T'){
-sclock_init(1, 4, 2, 3, 1);
-
-sclock[1].status = 0x80; 
-	
-	} else if (byte == 'g'){
-	
-
-	testmodule1 = node_add(0); //FIXME TESTING
-	testmodule2 = node_add(1); //FIXME TESTING
-	mod_set_clocksource(testmodule1, 0); //FIXME TESTING
-	mod_set_clocksource(testmodule2, 1); //FIXME TESTING
-
-	
-	} else if (byte == 'p'){
-	
-	mclock.status = 0x80;
-	//mclock.ticked++;
-	
-	// if in auto mode and BPM generator is clocked in slave mode:
-    // change to master mode
-    SEQ_BPM_CheckAutoMaster();
-
-    // start sequencer
-    SEQ_BPM_Start();
-	
-	} else if (byte == 'n'){
-	
-	testedge1 = edge_add(testmodule1, 0, testmodule2, 3);
-	
-	
-	} else if (byte == 'N'){
-	
-	edge_add(testmodule2, 5, testmodule1, 5);
-	
-	
-	} else if (byte == 'd'){
-	
-	edge_del(testmodule1, testedge1, 1);
-	
-	
-	} else if (byte == 'D'){
-	
-	node_del(testmodule1);
-	
-	
-	} else if (byte == 'b'){
-	
-	mclock_setbpm(45);
-	
-	
-	} else if (byte == 'B'){
-	
-	mclock_setbpm(180);
-	
-	
-	} else if (byte == 'm'){
-	
-	testmodule1 = node_add(1);
-	
-	mod_set_clocksource(testmodule1, 0); //FIXME TESTING
-
-	
-	} else if (byte == 'M'){
-	
-	testmodule2 = node_add(1);
-	mod_set_clocksource(testmodule2, 1); //FIXME TESTING
-	
-	
-	} else {
-	
-	}
-	
-// FIXME TESTING
 }
 
 
@@ -275,7 +230,49 @@ void vx_task_midi(void) {
 // This task is switched each 1ms
 /////////////////////////////////////////////////////////////////////////////
 void vx_task_period1ms(void) {
-	// Do CS stuff
+static unsigned int perfctr = 2500;
+
+const portTickType xDelay = 500 / portTICK_RATE_MS;
+
+
+
+	while (1) {
+		vportMallInfo_t memuse = vPortMallInfo();
+		
+		MIOS32_LCD_Clear();
+		
+		//MIOS32_LCD_FColourSet(0x00, 0x00, 0xff);
+		MIOS32_LCD_CursorSet(1, 4);
+		/* This is the total size of the heap */
+		MIOS32_LCD_PrintFormattedString( "Total %u B", memuse.totalheap);
+		
+		MIOS32_LCD_CursorSet(1, 5);
+		/* This is the total size of memory occupied by chunks handed out by malloc. */
+		MIOS32_LCD_PrintFormattedString( "In use %d B", memuse.totalheap - memuse.freespace);
+		
+		MIOS32_LCD_CursorSet(1, 6);
+		/* This is the total size of memory occupied by free (not in use) chunks. */
+		MIOS32_LCD_PrintFormattedString( "Free %u B", memuse.freespace);
+		
+		MIOS32_LCD_CursorSet(1, 7);
+		/* This is the total number of chunks free to allocate with malloc. */
+		MIOS32_LCD_PrintFormattedString( "Free %u chunks", memuse.freeblocks);
+		
+		MIOS32_LCD_CursorSet(1, 8);
+		/* This is the size of the bottom-most free chunk that normally borders
+		the start of the heap (i.e., the smallest available block). */
+		MIOS32_LCD_PrintFormattedString( "Smallest is %d B", memuse.smallestblock);
+		
+		MIOS32_LCD_CursorSet(1, 9);
+		/* This is the size of the top-most free chunk that normally borders
+		the end of the heap (i.e., the largest available block). */
+		MIOS32_LCD_PrintFormattedString( "Largest is %d B", memuse.largestblock);
+		
+		
+		// Do CS stuff
+		vTaskDelay( xDelay );
+	}
+
 }
 
 

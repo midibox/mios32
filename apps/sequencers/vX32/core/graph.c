@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -19,7 +20,11 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 
 #include "app.h"
 #include "graph.h"
+#include "mclock.h"
 #include "modules.h"
+#include "patterns.h"
+#include "utils.h"
+#include "ui.h"
 
 
 
@@ -29,17 +34,17 @@ nodelist_t *topolisthead;											// list of topologically sorted nodeids
 
 unsigned char node_count;
 
-unsigned char nodeidinuse[(max_nodes+1)/8];
+unsigned char nodeidinuse[nodeidinuse_bytes];
 
 
 void graph_init(void) {
 	node_count = 0;
 	unsigned char n = 0;
-	for (n = 0; n <= (max_nodes+1)/8; n++) {
+	for (n = 0; n < nodeidinuse_bytes; n++) {
 		nodeidinuse[n] = 0;
 	}
 	
-	for (n = 0; n <= max_nodes; n++) {								// init this array 	
+	for (n = 0; n < max_nodes; n++) {								// init this array 	
 		node[n].name[0] = 'E';										// so that all nodes start off dead
 		node[n].name[1] = 'M';
 		node[n].name[2] = 'P';
@@ -65,15 +70,10 @@ unsigned char node_add(unsigned char moduletype) {
 	nodelist_t *topoinsert;
 	unsigned char newnodeid;
 	if (node_count < max_nodes-1) {									// handle max nodes
-		if (moduletype < dead_moduletype) {						// make sure the moduletype is logal
-			newnodeid = node_count+1; //FIXME TESTING
-			node_count++; //FIXME TESTING !!!!!!!! 
-			// fix nodeid_gen !!!!!
-			// fix nodeid_gen !!!!!
-			// fix nodeid_gen !!!!!
-			//FIXME TESTING newnodeid = nodeid_gen();							// grab a new nodeid and save it
-			if (newnodeid < dead_nodeid) {							// if no error grabbing the ID
-				mod_init[moduletype](newnodeid);					// initialise the module hosted by this node
+		if (moduletype < max_moduletypes) {							// make sure the moduletype is legal
+			newnodeid = nodeid_gen();								// grab a new nodeid and save it
+			if (newnodeid < max_nodes) {							// if no error grabbing the ID
+				mod_init_graph(newnodeid, moduletype);				// initialise the module hosted by this node
 				topoinsert = topolisthead;							// save the topolist root
 				topolisthead = pvPortMalloc(sizeof(nodelist_t));	// replace the topolist root with new space
 				topolisthead->next = topoinsert;					// restore the old root to the next pointer
@@ -99,9 +99,9 @@ unsigned char node_add(unsigned char moduletype) {
 unsigned char nodeid_gen(void) {
 	unsigned char indexbit;
 	unsigned char arrayindex;
-	unsigned char a = dead_nodeid;									// prep the error handler
+	unsigned char a = nodeidinuse_bytes+1;									// prep the error handler
 	if (node_count < (max_nodes-1)) {								// if were not full
-		for (arrayindex = 0; arrayindex < 32; arrayindex++) {		// step through the array
+		for (arrayindex = 0; arrayindex < nodeidinuse_bytes; arrayindex++) {		// step through the array
 			if (nodeidinuse[arrayindex] != 0xff) {					// until we find an available slot
 				a = arrayindex;
 				break;
@@ -109,10 +109,10 @@ unsigned char nodeid_gen(void) {
 			
 		}
 		
-		if (a < 0xff) {												// if there are errors
+		if (a <= nodeidinuse_bytes) {										// if in finds
 			for (indexbit = 0; indexbit < 8; indexbit++) {			// step through the byte
 				if (!(nodeidinuse[a] & (1<<indexbit))) {			// if we find a 0
-					nodeidinuse[a] != (1<<indexbit);				// set the bit
+					nodeidinuse[a] |= (1<<indexbit);				// set the bit
 					node_count++;									// increment the node count
 					return ((8*(a)) + (indexbit));					// and return the new nodeid
 				}
@@ -170,7 +170,7 @@ unsigned char node_del(unsigned char delnodeid) {
 			
 			if (nodeid_free(delnodeid) != dead_nodeid) {			// free the node id
 				returnval = 0;										// return successful
-				mod_uninit(delnodeid);		 						// uninit the module
+				mod_uninit_graph(delnodeid);						// uninit the module
 			} else {
 				returnval = 9;										// freeing the nodeid failed
 			}
@@ -224,7 +224,7 @@ edge_t *edge_add(unsigned char tail_nodeid, unsigned char tail_moduleport, unsig
 		
 		if (node[tail_nodeid].indegree < dead_indegree) {			// if tail node exists
 			if (node[head_nodeid].indegree < max_indegree) {		// if head node exists and we aren't about to bust the maximum indegree
-				if ((tail_moduleport <= mod_ports[(node[tail_nodeid].moduletype)]) && (head_moduleport <= mod_ports[(node[head_nodeid].moduletype)])) {
+				if ((tail_moduleport < mod_ports[(node[tail_nodeid].moduletype)]) && (head_moduleport < mod_ports[(node[head_nodeid].moduletype)])) {
 					edge_t *curredge = NULL;						// declare pointer to previous edge
 					edge_t *newedge = pvPortMalloc(sizeof(edge_t));	// malloc a new edge_t, store pointer in temp var
 					edge_t *edgepointer = node[tail_nodeid].edgelist; 			// load up the list header
@@ -318,7 +318,7 @@ unsigned char edge_del(unsigned char tailnodeid, edge_t *deledge, unsigned char 
 
 
 
-void nodes_proc(unsigned char startnodeid){
+void nodes_proc(unsigned char startnodeid) {
 	nodelist_t *topolist;
 	unsigned char procnodeid;
 	if (node_count > 0) {											// handle no nodes
@@ -334,7 +334,7 @@ void nodes_proc(unsigned char startnodeid){
 			
 			while (topolist != NULL) {								// for each entry in the topolist from there on
 				procnodeid = topolist->nodeid;						// get the nodeid
-				if (procnodeid < dead_nodeid) {
+				if (procnodeid < max_nodes) {
 					if (node[procnodeid].process_req > 0) {			// only process nodes which request it
 						mod_process(procnodeid);					// crunch the numbers according to function pointer
 						

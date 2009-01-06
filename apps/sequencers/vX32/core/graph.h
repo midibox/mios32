@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -18,7 +19,12 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #define dead_nodeid (max_nodes+1)	// Do not change
 #define dead_indegree (max_indegree+1)	// Do not change
 
-
+#define nodeidinuse_mod (max_nodes%8)	// Do not change
+#if nodeidinuse_mod > 0
+#define nodeidinuse_bytes ((max_nodes/8)+1)
+#else
+#define nodeidinuse_bytes (max_nodes/8)
+#endif
 
 typedef struct edge_t {
 	unsigned char tailport;
@@ -41,7 +47,8 @@ typedef struct {
 	struct edge_t *edgelist;
 	signed char *ports;
 	signed char *privvars;
-	unsigned char *outbuffer;
+	signed char *outbuffer;
+	unsigned char outbuffer_count;
 	unsigned char outbuffer_size;
 	unsigned char outbuffer_type;
 	unsigned char outbuffer_req;
