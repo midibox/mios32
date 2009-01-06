@@ -26,6 +26,7 @@
 #include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_pattern.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -252,7 +253,8 @@ s32 SEQ_FILE_B_Create(u8 bank)
     // appending patterns
     u16 pattern;
     for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
-      status |= SEQ_FILE_B_PatternWrite(bank, pattern, bank % SEQ_CORE_NUM_GROUPS); // note: bank selects source group
+      u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
+      status |= SEQ_FILE_B_PatternWrite(bank, pattern, group);
     }
 
     // bank invalid again - we have to use SEQ_FILE_B_Open() after a create to init the fileinfo array
@@ -376,9 +378,9 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     return -3; // error during reading file
   }
 
-  char pattern_name[21];
-  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)pattern_name, 20);
-  pattern_name[20] = 0;
+  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_pattern_name[target_group], 20);
+  seq_pattern_name[target_group][20] = 0;
+
   u8 num_tracks;
   status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_tracks);
 
@@ -392,7 +394,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &reserved);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] read pattern B%d:P%d '%s', %d tracks\n\r", bank+1, pattern, pattern_name, num_tracks);
+  printf("[SEQ_FILE_B] read pattern B%d:P%d '%s', %d tracks\n\r", bank+1, pattern, seq_pattern_name[target_group], num_tracks);
 #endif
 
   // reduce number of tracks if required
@@ -402,9 +404,8 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   u8 track;
   u8 target_track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++target_track) {
-    char track_name[21];
-    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)track_name, 20);
-    track_name[20] = 0;
+    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 20);
+    seq_core_trk[target_track].name[20] = 0;
 
     u8 given_num_p_layers;
     status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &given_num_p_layers);
@@ -436,7 +437,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 #if DEBUG_VERBOSE_LEVEL >= 2
     printf("[SEQ_FILE_B] read track #%d (-> %d) '%s', P:%d,T:%d layers (P:%d,T:%d) P:%d,T:%d steps (P:%d,T:%d)\n\r", 
 	   track+1, target_track+1,
-	   track_name,
+	   seq_core_trk[target_track].name,
 	   num_p_layers, num_t_layers,
 	   given_num_p_layers, given_num_t_layers,
 	   p_layer_size, 8*t_layer_size,
@@ -588,12 +589,10 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   }
 
   // write pattern name w/o zero terminator
-  char pattern_name[21];
-  sprintf(pattern_name, "Pattern %c%d          ", ('A'+((pattern>>3)&7)), (pattern&7)+1);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)pattern_name, 20);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_pattern_name[source_group], 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[SEQ_FILE_B] writing pattern '%s'...\n\r", pattern_name);
+  printf("[SEQ_FILE_B] writing pattern '%s'...\n\r", seq_pattern_name[source_group]);
 #endif
 
   // write number of tracks
@@ -613,9 +612,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++source_track) {
     // write track name w/o zero terminator
-    char track_name[23];
-    sprintf(track_name, "Track #%d            ", track+1);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)track_name, 20);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 20);
 
     // write number of parameter layers
     status |= SEQ_FILE_WriteByte(&fi, num_p_layers);

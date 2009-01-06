@@ -282,7 +282,7 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// prints the pattern name (2 characters)
+// prints the pattern number (2 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern)
 {
@@ -292,6 +292,59 @@ s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern)
   } else {
     MIOS32_LCD_PrintChar('A' + pattern.group + (pattern.lower ? 32 : 0));
     MIOS32_LCD_PrintChar('1' + pattern.num);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints the pattern name as a 20 character string
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintPatternName(seq_pattern_t pattern, char *pattern_name)
+{
+  // if string only contains spaces, print pattern number instead
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<20; ++i)
+    if( pattern_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+
+  if( found_char )
+    MIOS32_LCD_PrintFormattedString("%-20s", pattern_name);
+  else {
+    MIOS32_LCD_PrintString("<Pattern ");
+    SEQ_LCD_PrintPattern(pattern);
+    MIOS32_LCD_PrintChar('>');
+    SEQ_LCD_PrintSpaces(8);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints the track name as a 20 character string
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintTrackName(u8 track, char *track_name)
+{
+  // if string only contains spaces, print track number instead
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<20; ++i)
+    if( track_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+
+  if( found_char )
+    MIOS32_LCD_PrintFormattedString("%-20s", track_name);
+  else {
+    MIOS32_LCD_PrintFormattedString("<Track #%d", track+1);
+    MIOS32_LCD_PrintChar('>');
+    SEQ_LCD_PrintSpaces((track > 9) ? 9 : 10);
   }
 
   return 0; // no error

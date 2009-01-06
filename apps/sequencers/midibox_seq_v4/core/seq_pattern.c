@@ -51,6 +51,7 @@ static s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern);
 /////////////////////////////////////////////////////////////////////////////
 
 seq_pattern_t seq_pattern[SEQ_CORE_NUM_GROUPS];
+char seq_pattern_name[SEQ_CORE_NUM_GROUPS][21];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,6 +76,20 @@ s32 SEQ_PATTERN_Init(u32 mode)
     seq_pattern[group].bank = group; // each group has it's own bank
 #endif
     seq_pattern_req[group].ALL = 0;
+
+#if 0
+    sprintf((char *)seq_pattern_name[group], "Pattern %c%d          ", ('A'+((pattern>>3)&7)), (pattern&7)+1);
+#else
+    // if pattern name only contains spaces, the UI will print 
+    // the pattern number instead of an empty message
+    // this ensures highest flexibility (e.g. any pattern can be copied to another slot w/o name inconsistencies)
+    // -> see SEQ_LCD_PrintPatternName()
+    int i;
+    for(i=0; i<20; ++i)
+      seq_pattern_name[group][i] = ' ';
+    seq_pattern_name[group][20] = 0;
+#endif
+
   }
 
   return 0; // no error

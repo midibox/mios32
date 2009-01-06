@@ -71,6 +71,7 @@ typedef union {
 
 typedef struct seq_core_trk_t {
   seq_core_trk_state_t state;            // various status flags (see structure definition above)
+  char                 name[21];         // the track name (20 chars + zero terminator)
   u8                   step;             // track position
   u8                   div_ctr;          // clock divider counter
   u8                   step_replay_ctr;  // step replay counter

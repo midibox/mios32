@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 
@@ -108,6 +109,16 @@ s32 SEQ_CORE_Init(u32 mode)
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     seq_core_trk_t *t = &seq_core_trk[track];
     t->sustain_note.ALL = 0;
+
+    // if track name only contains spaces, the UI will print 
+    // the track number instead of an empty message
+    // this ensures highest flexibility (e.g. any track can 
+    // play patterns normaly assigned for other tracks w/o inconsistent messages)
+    // -> see SEQ_LCD_PrintTrackName()
+    int i;
+    for(i=0; i<20; ++i)
+      seq_core_trk[track].name[i] = ' ';
+    seq_core_trk[track].name[20] = 0;
   }
 
   // reset sequencer
