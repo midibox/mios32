@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 18
+#define SEQ_UI_PAGES 19
 
 typedef enum {
   SEQ_UI_PAGE_NONE,
@@ -39,7 +39,8 @@ typedef enum {
   SEQ_UI_PAGE_FX_ECHO,
   SEQ_UI_PAGE_UTIL,
   SEQ_UI_PAGE_BPM,
-  SEQ_UI_PAGE_OPT
+  SEQ_UI_PAGE_OPT,
+  SEQ_UI_PAGE_SAVE
 } seq_ui_page_t;
 
 
@@ -62,6 +63,7 @@ extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
 extern s32 SEQ_UI_UTIL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_Init(u32 mode);
 extern s32 SEQ_UI_OPT_Init(u32 mode);
+extern s32 SEQ_UI_SAVE_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////

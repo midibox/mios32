@@ -33,6 +33,8 @@
 
 extern s32 SEQ_FILE_B_Init(u32 mode);
 
+extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
+
 extern s32 SEQ_FILE_B_Create(u8 bank);
 extern s32 SEQ_FILE_B_Open(u8 bank);
 

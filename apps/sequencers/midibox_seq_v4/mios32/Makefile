@@ -35,6 +35,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_util.c \
 		../core/seq_ui_bpm.c \
 		../core/seq_ui_opt.c \
+		../core/seq_ui_save.c \
 		../core/seq_midi_in.c \
 		../core/seq_midply.c \
 		../core/seq_cc.c  \

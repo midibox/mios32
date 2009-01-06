@@ -149,23 +149,34 @@ s32 SEQ_FILE_B_Init(u32 mode)
 
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     s32 error;
-    if( error >= 0 ) {
-      error = SEQ_FILE_B_Open(bank);
+    error = SEQ_FILE_B_Open(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n\r", bank+1, error);
+    printf("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n\r", bank+1, error);
 #endif
 #if 0
-      if( error == -2 ) {
-	error = SEQ_FILE_B_Create(bank);
+    if( error == -2 ) {
+      error = SEQ_FILE_B_Create(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ_FILE_B] Tried to create bank #%d file, status: %d\n\r", bank+1, error);
-#endif
-      }
+      printf("[SEQ_FILE_B] Tried to create bank #%d file, status: %d\n\r", bank+1, error);
 #endif
     }
+#endif
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns number of patterns in bank
+// Returns 0 if bank not valid
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_B_NumPatterns(u8 bank)
+{
+  if( (bank < SEQ_FILE_B_NUM_BANKS) && seq_file_b_info[bank].valid )
+    return seq_file_b_info[bank].header.num_patterns;
+
+  return 0;
 }
 
 
@@ -185,7 +196,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
   seq_file_b_info_t *info = &seq_file_b_info[bank];
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
-  static FILEINFO fi;
+  FILEINFO fi;
   int i;
 
   char filepath[MAX_PATH];
@@ -243,6 +254,9 @@ s32 SEQ_FILE_B_Create(u8 bank)
     for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
       status |= SEQ_FILE_B_PatternWrite(bank, pattern, bank % SEQ_CORE_NUM_GROUPS); // note: bank selects source group
     }
+
+    // bank invalid again - we have to use SEQ_FILE_B_Open() after a create to init the fileinfo array
+    info->valid = 0;
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -545,7 +559,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #endif
   }
 
-  static FILEINFO fi;
+  FILEINFO fi;
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
@@ -641,5 +655,5 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   printf("[SEQ_FILE_B] Pattern written with status %d\n\r", status);
 #endif
 
-  return status ? -3 : 0;
+  return (status < 0) ? -3 : 0;
 }

@@ -326,7 +326,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP9: // select Save Page
       if( depressed ) return -1;
-      return -1; // TODO
+      SEQ_UI_PageSet(SEQ_UI_PAGE_SAVE);
+      return 0;
 
     case SEQ_UI_BUTTON_GP10: // select Record Page
       if( depressed ) return -1;
