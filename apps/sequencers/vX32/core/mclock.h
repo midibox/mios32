@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -18,7 +19,6 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #define max_sclocks 16
 #define dead_sclock (max_sclocks+1)
 
-#define PROCESSING_LATENCY_MS 1
 
 typedef struct {
 	unsigned char status;											// bit 7 is run/stop
@@ -66,11 +66,19 @@ extern void sclock_init(unsigned char SC, unsigned char steps1, unsigned char st
 
 extern void mclock_setbpm(unsigned char bpm);
 
-extern void mclock_timer(void);
-
 extern void mclock_tick(void);
 
 void sclock_tick(unsigned char SC);
+
+
+extern void mclock_play(void);
+
+extern void mclock_stop(void);
+
+void mclock_unpause(void);
+
+void mclock_reset(void);
+
 
 
 extern mclock_t mclock;												// Allocate the Master Clock struct
