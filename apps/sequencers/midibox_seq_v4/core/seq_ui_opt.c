@@ -20,6 +20,8 @@
 #include "seq_ui.h"
 
 #include "seq_core.h"
+#include "seq_cc.h"
+#include "seq_scale.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -118,8 +120,23 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_FOLLOW_SONG:     seq_core_options.FOLLOW_SONG = incrementer >= 0 ? 1 : 0; return 1;
     case ITEM_PASTE_CLR_ALL:   seq_core_options.PASTE_CLR_ALL = incrementer >= 0 ? 1 : 0; return 1;return 1;
     case ITEM_SCALE_CTRL:      return SEQ_UI_Var8_Inc(&seq_core_global_scale_ctrl, 0, 4, incrementer);
-    case ITEM_SCALE_ROOT:      return 1; // TODO
-    case ITEM_SCALE:           return 1; // TODO
+    case ITEM_SCALE_ROOT:
+      if( seq_core_global_scale_ctrl == 0 ) {
+	return SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer); // Keyb, C..H
+      } else {
+	u8 group = seq_core_global_scale_ctrl-1;
+	return SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root, 0, 12, incrementer); // Keyb, C..H
+      }
+
+    case ITEM_SCALE: {
+      u8 scale_max = SEQ_SCALE_GetNum()-1;
+      if( seq_core_global_scale_ctrl == 0 ) {
+	return SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer);
+      } else {
+	u8 group = seq_core_global_scale_ctrl-1;
+	return SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale, 0, scale_max, incrementer); // Keyb, C..H
+      }
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -281,27 +298,28 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
+
+  // determine the selected scale and root note selection depending on
+  // global/group specific settings
+  u8 scale, root_selection, root;
+  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+
   if( ui_selected_item == ITEM_SCALE_ROOT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+    SEQ_LCD_PrintSpaces(4);
   } else {
-    // u8 root = SEQ_SCALE_GetRoot; // TODO
-    u8 root = 0;
     const char root_str[13][5] = {
       "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
     };
-    MIOS32_LCD_PrintString((char *)root_str[root]);
+    MIOS32_LCD_PrintString((char *)root_str[root_selection]);
   }
   SEQ_LCD_PrintSpaces(2);
 
-  ///////////////////////////////////////////////////////////////////////////
+
   if( ui_selected_item == ITEM_SCALE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(24);
   } else {
-    // u8 scale = SEQ_SCALE_GetScale; // TODO
-    u8 scale = 0;
-    MIOS32_LCD_PrintFormattedString("%3d:", scale+1);
-    // MIOS32_LCD_Print(SEQ_SCALE_GetString(scale));
-    MIOS32_LCD_PrintString("xxxxxxxxxxxxxxxxxxxx");
+    MIOS32_LCD_PrintFormattedString("%3d:", scale);
+    MIOS32_LCD_PrintString(SEQ_SCALE_GetName(scale));
   }
 
   return 0; // no error

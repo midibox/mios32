@@ -165,6 +165,8 @@ extern s32 SEQ_CORE_Reset(void);
 
 extern s32 SEQ_CORE_Handler(void);
 
+extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root);
+
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
 
@@ -174,7 +176,12 @@ extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
 extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
+
+extern u8 seq_core_global_scale;
 extern u8 seq_core_global_scale_ctrl;
+extern u8 seq_core_global_scale_root_selection;
+extern u8 seq_core_keyb_scale_root;
+
 extern u8 seq_core_bpm_div_int;
 extern u8 seq_core_bpm_div_ext;
 
