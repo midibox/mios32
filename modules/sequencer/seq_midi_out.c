@@ -41,13 +41,23 @@ typedef struct seq_midi_out_queue_item_t {
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void);
+static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item);
+static void SEQ_MIDI_OUT_SlotFreeHeap(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-//! only for analysis purposes - could be removed later!
-u32 seq_midi_out_queue_size;
+//! contains number of events which have allocated memory
+u32 seq_midi_out_allocated;
+
+//! only for analysis purposes - has to be enabled with SEQ_MIDI_OUT_MALLOC_ANALYSIS
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+u32 seq_midi_out_max_allocated;
+u32 seq_midi_out_dropouts;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +65,34 @@ u32 seq_midi_out_queue_size;
 /////////////////////////////////////////////////////////////////////////////
 
 static seq_midi_out_queue_item_t *midi_queue;
+
+
+#if SEQ_MIDI_OUT_MALLOC_METHOD >= 0 && SEQ_MIDI_OUT_MALLOC_METHOD <= 3
+
+// determine flag array width and mask
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 0
+# define SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH 1
+# define SEQ_MIDI_OUT_MALLOC_FLAG_MASK  1
+  static u8 alloc_flags[SEQ_MIDI_OUT_MAX_EVENTS];
+#elif SEQ_MIDI_OUT_MALLOC_METHOD == 1
+# define SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH 8
+# define SEQ_MIDI_OUT_MALLOC_FLAG_MASK  0xff
+  static u8 alloc_flags[SEQ_MIDI_OUT_MAX_EVENTS/8];
+#elif SEQ_MIDI_OUT_MALLOC_METHOD == 2
+# define SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH 16
+# define SEQ_MIDI_OUT_MALLOC_FLAG_MASK  0xffff
+  static u16 alloc_flags[SEQ_MIDI_OUT_MAX_EVENTS/16];
+#else
+# define SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH 32
+# define SEQ_MIDI_OUT_MALLOC_FLAG_MASK  0xffffffff
+  static u32 alloc_flags[SEQ_MIDI_OUT_MAX_EVENTS/32];
+#endif
+
+// Note: we could easily provide an option for static heap allocation as well
+static seq_midi_out_queue_item_t *alloc_heap;
+static u32 alloc_pos;
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initialisation of MIDI output scheduler
@@ -64,7 +102,21 @@ static seq_midi_out_queue_item_t *midi_queue;
 s32 SEQ_MIDI_OUT_Init(u32 mode)
 {
   midi_queue = NULL;
-  seq_midi_out_queue_size = 0;
+
+  seq_midi_out_allocated = 0;
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+  seq_midi_out_max_allocated = 0;
+  seq_midi_out_dropouts = 0;
+#endif
+
+#if SEQ_MIDI_OUT_MALLOC_METHOD >= 0 && SEQ_MIDI_OUT_MALLOC_METHOD <= 3
+  alloc_pos = 0;
+  alloc_heap = NULL; // memory will be allocated with first event
+
+  int i;
+  for(i=0; i<(SEQ_MIDI_OUT_MAX_EVENTS/8); ++i)
+    alloc_flags[i] = 0;
+#endif
 
   return 0; // no error
 }
@@ -84,11 +136,9 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 {
   // create new item
   seq_midi_out_queue_item_t *new_item;
-  if( (new_item=(seq_midi_out_queue_item_t *)pvPortMalloc(sizeof(seq_midi_out_queue_item_t))) == NULL ) {
+  if( (new_item=SEQ_MIDI_OUT_SlotMalloc()) == NULL ) {
     return -1; // allocation error
   } else {
-    ++seq_midi_out_queue_size;
-
     new_item->port = port;
     new_item->package = midi_package;
     new_item->event_type = event_type;
@@ -176,8 +226,7 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
       MIOS32_MIDI_SendPackage(item->port, item->package);
 
     midi_queue = item->next;
-    vPortFree(item);
-    --seq_midi_out_queue_size;
+    SEQ_MIDI_OUT_SlotFree(item);
   }
 
   return 0; // no error
@@ -185,8 +234,9 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! This function should be called periodically (1 mS) to check timestamped
-//! MIDI events which have to be sent
+//! This function should be called periodically (1 mS) to check for timestamped
+//! MIDI events which have to be sent.
+//! 
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Handler(void)
@@ -213,11 +263,188 @@ s32 SEQ_MIDI_OUT_Handler(void)
     }
 
     midi_queue = item->next;
-    vPortFree(item);
-    --seq_midi_out_queue_size;
+    SEQ_MIDI_OUT_SlotFree(item);
   }
 
+  SEQ_MIDI_OUT_SlotFreeHeap();
+
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local function to allocate memory
+// returns NULL if no memory free
+/////////////////////////////////////////////////////////////////////////////
+static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
+{
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 4 || SEQ_MIDI_OUT_MALLOC_METHOD == 5
+  seq_midi_out_queue_item_t *item;
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 4
+  if( (item=(seq_midi_out_queue_item_t *)pvPortMalloc(sizeof(seq_midi_out_queue_item_t))) == NULL ) {
+#else
+  if( (item=(seq_midi_out_queue_item_t *)malloc(sizeof(seq_midi_out_queue_item_t))) == NULL ) {
+#endif
+
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+    return NULL;
+  }
+
+  ++seq_midi_out_allocated;
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+  if( seq_midi_out_allocated > seq_midi_out_max_allocated )
+    seq_midi_out_max_allocated = seq_midi_out_allocated;
+#endif
+
+  return item;
+#else
+
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+
+  // allocate memory if this hasn't been done yet
+  if( alloc_heap == NULL ) {
+    alloc_heap = (seq_midi_out_queue_item_t *)pvPortMalloc(
+      sizeof(seq_midi_out_queue_item_t)*SEQ_MIDI_OUT_MAX_EVENTS);
+    if( alloc_heap == NULL ) {
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+      ++seq_midi_out_dropouts;
+      return NULL;
+#endif
+    }
+  }
+
+  // is there still a free slot?
+  if( seq_midi_out_allocated >= SEQ_MIDI_OUT_MAX_EVENTS ) {
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+    return NULL;
+  }
+
+  // search for next free slot
+  s32 new_pos = -1;
+
+  s32 i;
+#if SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH == 1
+  // start with +1, since the chance is higher that this block is free
+  s32 ix = (alloc_pos + 1) % SEQ_MIDI_OUT_MAX_EVENTS;
+  for(i=0; i<SEQ_MIDI_OUT_MAX_EVENTS; ++i) {
+    if( !alloc_flags[ix] ) {
+      alloc_flags[ix] = 1;
+      new_pos = ix;
+      break;
+    }
+
+    ix = ++ix % SEQ_MIDI_OUT_MAX_EVENTS;
+  }
+#else
+  s32 ix = ((alloc_pos/SEQ_MIDI_OUT_MAX_EVENTS) + 1) % (SEQ_MIDI_OUT_MAX_EVENTS / SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH);
+  u32 mask;
+  for(i=0; i<SEQ_MIDI_OUT_MAX_EVENTS; ++i) {
+    u32 flags;
+    if( (flags=alloc_flags[ix]) != SEQ_MIDI_OUT_MALLOC_FLAG_MASK ) {
+      mask = (1 << 0);
+      u8 j;
+      for(j=0; j<SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH; ++j) {
+	if( (flags & mask) == 0 ) {
+	  new_pos = SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH*ix + j;
+	  alloc_flags[ix] |= mask;
+	  break;
+	}
+	mask <<= 1;
+      }
+      if( j < SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH ) {
+	break;
+      }
+
+      // we should never reach this point! (can be checked by setting a breakpoint or printf to this location)
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+      return NULL;
+    }
+
+    ix = ++ix % (SEQ_MIDI_OUT_MAX_EVENTS / SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH);
+  }
+#endif
+
+  if( new_pos == -1 ) {
+    // should never happen! (can be checked by setting a breakpoint or printf to this location)
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+    return NULL;
+  }
+
+  alloc_pos = new_pos;
+  ++seq_midi_out_allocated;
+
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+  if( seq_midi_out_allocated > seq_midi_out_max_allocated )
+    seq_midi_out_max_allocated = seq_midi_out_allocated;
+#endif
+
+  return &alloc_heap[alloc_pos];
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local function to free memory
+/////////////////////////////////////////////////////////////////////////////
+static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item)
+{
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 4
+  vPortFree(item);
+  --seq_midi_out_allocated;
+#elif SEQ_MIDI_OUT_MALLOC_METHOD == 5
+  free(item);
+  --seq_midi_out_allocated;
+#else
+
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+
+  if( item >= alloc_heap ) {
+    u32 pos = item - alloc_heap;
+    if( pos < SEQ_MIDI_OUT_MAX_EVENTS ) {
+#if SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH == 1
+      alloc_flags[pos] = 0;
+#else
+      alloc_flags[pos/SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH] &= ~(1 << (pos%SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH));
+#endif
+      --seq_midi_out_allocated;
+    } else {
+      // should never happen! (can be checked by setting a breakpoint or ptintf to this location)
+      return;
+    }
+  } else {
+    // should never happen! (can be checked by setting a breakpoint or printf to this location)
+    return;
+  }
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local function to free the allocated heap memory
+/////////////////////////////////////////////////////////////////////////////
+static void SEQ_MIDI_OUT_SlotFreeHeap(void)
+{
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 4
+  // not relevant
+#elif SEQ_MIDI_OUT_MALLOC_METHOD == 5
+  // not relevant
+#else
+  vPortFree(alloc_heap);
+  alloc_heap = NULL;
+#endif
 }
 
 //! \}

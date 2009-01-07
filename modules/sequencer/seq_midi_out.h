@@ -19,6 +19,29 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// memory alloccation method:
+// 0: internal static allocation with one byte for each flag
+// 1: internal static allocation with 8bit flags
+// 2: internal static allocation with 16bit flags
+// 3: internal static allocation with 32bit flags
+// 4: FreeRTOS based pvPortMalloc
+// 5: malloc provided by library
+#ifndef SEQ_MIDI_OUT_MALLOC_METHOD
+#define SEQ_MIDI_OUT_MALLOC_METHOD 0
+#endif
+
+// max number of scheduled events which will allocate memory
+// each event allocates 12 bytes
+// MAX_EVENTS must be a power of two! (e.g. 64, 128, 256, 512, ...)
+#ifndef SEQ_MIDI_OUT_MAX_EVENTS
+#define SEQ_MIDI_OUT_MAX_EVENTS 128
+#endif
+
+// enable seq_midi_out_max_allocated and seq_midi_out_dropouts
+#ifndef SEQ_MIDI_OUT_MALLOC_ANALYSIS
+#define SEQ_MIDI_OUT_MALLOC_ANALYSIS 0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -48,6 +71,10 @@ extern s32 SEQ_MIDI_OUT_Handler(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u32 seq_midi_out_queue_size;
+extern u32 seq_midi_out_allocated;
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+extern u32 seq_midi_out_max_allocated;
+extern u32 seq_midi_out_dropouts;
+#endif
 
 #endif /* _SEQ_MIDI_OUT_H */
