@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//GNUstep//DTD plist 0.9//EN" "http://www.gnustep.org/plist-0_9.xml">
+<plist version="0.9">
+<dict>
+    <key>IBDocumentLocation</key>
+    <string>104 277 348 290 0 0 1680 1050</string>
+    <key>IBFramework Version</key>
+    <string>437.0</string>
+    <key>IBOpenItems</key>
+    <array>
+	<integer>6</integer>
+	<integer>182</integer>
+    </array>
+    <key>IBSystem Version</key>
+    <string>8I127</string>
+    <key>IBUsesTextArchiving</key>
+    <true/>
+</dict>
+</plist>
