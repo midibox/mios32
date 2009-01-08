@@ -50,6 +50,10 @@ int main(void)
 
   MIOS32_BOARD_LED_Init(BSL_LED_MASK);
 
+  // initialize stopwatch which is used to measure a 2 second delay 
+  // before application will be started
+  MIOS32_STOPWATCH_Init(100); // 100 uS accuracy
+
 
   ///////////////////////////////////////////////////////////////////////////
   // get and store state of hold pin
@@ -93,14 +97,14 @@ int main(void)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // reset 2s timer and start wait loop
-  BSL_SYSEX_TimerReset();
+  // reset stopwatch timer and start wait loop
+  MIOS32_STOPWATCH_Reset();
   do {
     // This is a simple way to pulsate a LED via PWM
     // A timer in incrementer mode is used as reference, the counter value is incremented each 100 uS
     // Within the given PWM period, we define a duty cycle based on the current counter value
     // We periodically sweep the PWM duty cycle 100 steps up, and 100 steps down
-    u32 cnt = BSL_SYSEX_DELAY_TIMER->CNT;  // the reference counter (incremented each 100 uS)
+    u32 cnt = MIOS32_STOPWATCH_ValueGet();  // the reference counter (incremented each 100 uS)
     const u32 pwm_period = 50;       // *100 uS -> 5 mS
     const u32 pwm_sweep_steps = 100; // * 5 mS -> 500 mS
     u32 pwm_duty = ((cnt / pwm_period) % pwm_sweep_steps) / (pwm_sweep_steps/pwm_period);
@@ -117,12 +121,15 @@ int main(void)
     // directly by MIOS32 to enhance command set
     MIOS32_MIDI_Receive_Handler(NULL, NULL);
 
-  } while( !BSL_SYSEX_TimerFinishedGet() ||
-	   BSL_SYSEX_HaltStateGet() ||
-	   (hold_mode_active_after_reset && BSL_HOLD_STATE));
+  } while( MIOS32_STOPWATCH_ValueGet() < 20000 ||             // wait for 2 seconds
+	   BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation
+	   (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
 
   // ensure that flash write access is locked
   FLASH_Lock();
+
+  // turn of LED
+  MIOS32_BOARD_LED_Set(BSL_LED_MASK, 0);
 
   // branch to application if reset vector is valid (should be inside flash range)
   u32 *reset_vector = (u32 *)0x08004004;
@@ -158,8 +165,13 @@ int main(void)
 
   // otherwise flash LED fast (BSL failed to start application)
   while( 1 ) {
-    u32 led_on = ((BSL_SYSEX_DELAY_TIMER->CNT % 1000) > 500) ? 1 : 0;
-    MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
+    MIOS32_STOPWATCH_Reset();
+    MIOS32_BOARD_LED_Set(BSL_LED_MASK, BSL_LED_MASK);
+    while( MIOS32_STOPWATCH_ValueGet() < 500 );
+
+    MIOS32_STOPWATCH_Reset();
+    MIOS32_BOARD_LED_Set(BSL_LED_MASK, 0);
+    while( MIOS32_STOPWATCH_ValueGet() < 500 );
   }
 
   return 0; // will never be reached

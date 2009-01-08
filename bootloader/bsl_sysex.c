@@ -89,56 +89,11 @@ s32 BSL_SYSEX_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  ///////////////////////////////////////////////////////////////////////////
-  // initialize timer which is used to measure a 5 second delay before application
-  // will be started
-  ///////////////////////////////////////////////////////////////////////////
-
-  // enable timer clock
-  if( BSL_SYSEX_DELAY_TIMER_RCC == RCC_APB2Periph_TIM1 || BSL_SYSEX_DELAY_TIMER_RCC == RCC_APB2Periph_TIM8 )
-    RCC_APB2PeriphClockCmd(BSL_SYSEX_DELAY_TIMER_RCC, ENABLE);
-  else
-    RCC_APB1PeriphClockCmd(BSL_SYSEX_DELAY_TIMER_RCC, ENABLE);
-
-  // time base configuration
-  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-  TIM_TimeBaseStructure.TIM_Period = 20000; // waiting for 2 seconds (-> 20000 * 100 uS)
-  TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // for 100 uS accuracy @ 72 MHz
-  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  TIM_TimeBaseInit(BSL_SYSEX_DELAY_TIMER, &TIM_TimeBaseStructure);
-
-  // enable interrupt
-  TIM_ITConfig(BSL_SYSEX_DELAY_TIMER, TIM_IT_Update, ENABLE);
-
-  // start counter
-  TIM_Cmd(BSL_SYSEX_DELAY_TIMER, ENABLE);
-
   // set to one when writing flash to prevent the execution of application code
   // so long flash hasn't been programmed completely
   halt_state = 0;
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Resets the 2s timer
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_TimerReset(void)
-{
-  BSL_SYSEX_DELAY_TIMER->CNT = 1; // set to 1 instead of 0 to avoid new IRQ request
-  TIM_ClearITPendingBit(BSL_SYSEX_DELAY_TIMER, TIM_IT_Update);
-
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Returns the timer state
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_TimerFinishedGet(void)
-{
-  return TIM_GetITStatus(BSL_SYSEX_DELAY_TIMER, TIM_IT_Update) != RESET;
 }
 
 
@@ -175,7 +130,7 @@ s32 BSL_SYSEX_ReleaseHaltState(void)
 s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in, u8 sysex_cmd)
 {
   // wait 2 additional seconds whenever a SysEx message has been received
-  BSL_SYSEX_TimerReset();
+  MIOS32_STOPWATCH_Reset();
 
   // enter the commands here
   switch( sysex_cmd ) {
