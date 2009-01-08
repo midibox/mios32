@@ -46,8 +46,7 @@ volatile u8 print_msg;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u16 benchmark_cycles;
-static u8 benchmark_overrun;
+static u32 benchmark_cycles;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,12 +59,14 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+  // initialize stopwatch for measuring delays
+  MIOS32_STOPWATCH_Init(100);
+
   // initialize benchmark
   BENCHMARK_Init(0);
 
   // init benchmark result
   benchmark_cycles = 0;
-  benchmark_overrun = 0;
 
   // print first message
   print_msg = PRINT_MSG_INIT;
@@ -109,9 +110,10 @@ void APP_Background(void)
 					seq_midi_out_dropouts);
 
         MIOS32_LCD_CursorSet(0, 1);
-	MIOS32_LCD_PrintFormattedString("Time: %5d.%d mS %c", 
-					benchmark_cycles/10, benchmark_cycles%10, 
-					benchmark_overrun ? 'O' : ' ');
+	if( benchmark_cycles == 0xffff )
+	  MIOS32_LCD_PrintFormattedString("Time: overrun   ");
+	else
+	  MIOS32_LCD_PrintFormattedString("Time: %5d.%d mS  ", benchmark_cycles/10, benchmark_cycles%10);
 
 	// request status screen again (will stop once a new screen is requested by another task)
 	print_msg = PRINT_MSG_SEQ_STATUS;
@@ -128,26 +130,6 @@ void APP_Background(void)
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ) {
-    // enable timer clock
-    if( BENCHMARK_TIMER_RCC == RCC_APB2Periph_TIM1 || BENCHMARK_TIMER_RCC == RCC_APB2Periph_TIM8 )
-      RCC_APB2PeriphClockCmd(BENCHMARK_TIMER_RCC, ENABLE);
-    else
-      RCC_APB1PeriphClockCmd(BENCHMARK_TIMER_RCC, ENABLE);
-
-    // time base configuration
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-    TIM_TimeBaseStructure.TIM_Period = 0xffff; // max period
-    TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // 100 uS accuracy @ 72 MHz
-    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseInit(BENCHMARK_TIMER, &TIM_TimeBaseStructure);
-
-    // enable interrupt request
-    TIM_ITConfig(BENCHMARK_TIMER, TIM_IT_Update, ENABLE);
-
-    // start counter
-    TIM_Cmd(BENCHMARK_TIMER, ENABLE);
-
     // reset benchmark
     BENCHMARK_Reset();
 
@@ -156,19 +138,14 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     // turn on LED (e.g. for measurements with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, 1);
 
-    // reset counter
-    BENCHMARK_TIMER->CNT = 1; // set to 1 instead of 0 to avoid new IRQ request
-    TIM_ClearITPendingBit(BENCHMARK_TIMER, TIM_IT_Update);
+    // reset stopwatch
+    MIOS32_STOPWATCH_Reset();
 
     // start benchmark
     BENCHMARK_Start();
 
     // capture counter value
-    benchmark_cycles = BENCHMARK_TIMER->CNT;
-
-    // set overrun flag if required
-    if( (benchmark_overrun = TIM_GetITStatus(BENCHMARK_TIMER, TIM_IT_Update)) != RESET )
-      benchmark_cycles = 0xffff;
+    benchmark_cycles = MIOS32_STOPWATCH_ValueGet();
 
     // turn off LED
     MIOS32_BOARD_LED_Set(0xffffffff, 0);

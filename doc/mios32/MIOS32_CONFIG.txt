@@ -35,6 +35,7 @@ into your local mios32_config.h file
 #define MIOS32_USE_I2S
 #define MIOS32_DONT_USE_BOARD
 #define MIOS32_DONT_USE_TIMER
+#define MIOS32_DONT_USE_STOPWATCH
 #define MIOS32_DONT_USE_DELAY
 #define MIOS32_DONT_USE_SDCARD
 
