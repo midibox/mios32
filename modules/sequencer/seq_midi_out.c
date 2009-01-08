@@ -307,8 +307,8 @@ static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
     if( alloc_heap == NULL ) {
 #if SEQ_MIDI_OUT_MALLOC_ANALYSIS
       ++seq_midi_out_dropouts;
-      return NULL;
 #endif
+      return NULL;
     }
   }
 
