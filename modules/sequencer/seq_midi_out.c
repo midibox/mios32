@@ -109,14 +109,8 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
   seq_midi_out_dropouts = 0;
 #endif
 
-#if SEQ_MIDI_OUT_MALLOC_METHOD >= 0 && SEQ_MIDI_OUT_MALLOC_METHOD <= 3
-  alloc_pos = 0;
-  alloc_heap = NULL; // memory will be allocated with first event
-
-  int i;
-  for(i=0; i<(SEQ_MIDI_OUT_MAX_EVENTS/8); ++i)
-    alloc_flags[i] = 0;
-#endif
+  // memory will be allocated with first event
+  SEQ_MIDI_OUT_SlotFreeHeap();
 
   return 0; // no error
 }
@@ -229,6 +223,8 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
     SEQ_MIDI_OUT_SlotFree(item);
   }
 
+  SEQ_MIDI_OUT_SlotFreeHeap();
+
   return 0; // no error
 }
 
@@ -265,8 +261,6 @@ s32 SEQ_MIDI_OUT_Handler(void)
     midi_queue = item->next;
     SEQ_MIDI_OUT_SlotFree(item);
   }
-
-  SEQ_MIDI_OUT_SlotFreeHeap();
 
   return 0; // no error
 }
@@ -442,8 +436,17 @@ static void SEQ_MIDI_OUT_SlotFreeHeap(void)
 #elif SEQ_MIDI_OUT_MALLOC_METHOD == 5
   // not relevant
 #else
-  vPortFree(alloc_heap);
-  alloc_heap = NULL;
+  if( alloc_heap != NULL ) {
+    vPortFree(alloc_heap);
+    alloc_heap = NULL;
+  }
+
+  alloc_pos = 0;
+  seq_midi_out_allocated = 0;
+
+  int i;
+  for(i=0; i<(SEQ_MIDI_OUT_MAX_EVENTS/SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH); ++i)
+    alloc_flags[i] = 0;
 #endif
 }
 

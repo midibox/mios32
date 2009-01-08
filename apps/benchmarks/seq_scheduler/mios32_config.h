@@ -22,7 +22,7 @@
 // 3: internal static allocation with 32bit flags
 // 4: FreeRTOS based pvPortMalloc
 // 5: malloc provided by library
-#define SEQ_MIDI_OUT_MALLOC_METHOD 4
+#define SEQ_MIDI_OUT_MALLOC_METHOD 0
 
 // max number of scheduled events which will allocate memory
 // each event allocates 12 bytes
