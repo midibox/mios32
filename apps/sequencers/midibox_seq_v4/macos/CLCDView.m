@@ -11,9 +11,10 @@
 
 @implementation CLCDView
 
+
+
 // include default character set from separate file
 #include "CLCDView_charset.inc"
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Frame initialisation
@@ -43,7 +44,8 @@
 	[self LCDClear]; // will also reset cursor position
 	
 	[self LCDPrintString:"READY."];
-	
+	NSLog(@"LCD Initialized");
+
 	return self;
 }
 
@@ -88,6 +90,7 @@
 		if( LCDCursorX == (LCD_MAX_COLUMNS-1) )
 			break;
 	};
+
 }
 
 - (void)LCDSpecialCharInit: (unsigned char)num: (unsigned char *)table
@@ -161,6 +164,7 @@
 //////////////////////////////////////////////////////////////////////////////  
 - (void)drawRect:(NSRect)rect {		
 	
+
 	// help variables
 	unsigned column, line, x, y;
 
@@ -168,18 +172,19 @@
 	unsigned lcd_size_x = 2*LCDBorderX + LCDPixelX*LCDColumns*LCDCharWidth + LCDOffsetColumns*(LCDColumns-1) + 2;
 	unsigned lcd_size_y = 2*LCDBorderY + LCDPixelY*LCDLines*LCDCharHeight + LCDOffsetLines*(LCDLines-1);
 
-#if 0
+	
 	// for debugging (values can be used to re-size the NSView object
+#if 0
 	NSLog(@"X: %d  Y: %d\n", lcd_size_x, lcd_size_y);
 #endif
 
-	// from CG example: open context to graphic pane
-	CGContextRef myContext = [[NSGraphicsContext currentContext] graphicsPort];
+	NSBezierPath *BP = [NSBezierPath bezierPathWithRect: [self bounds]];
+	[[NSColor colorWithDeviceRed:LCDBColorR green:LCDBColorG blue:LCDBColorB alpha:1.] set];
+	[BP fill];
+    BP = [NSBezierPath bezierPathWithRect: NSMakeRect(0, 0,
+                                                     lcd_size_x,
+                                                     lcd_size_y)];
 
-	// fill background
-	CGContextSetRGBFillColor(myContext, LCDBColorR, LCDBColorG, LCDBColorB, 1);
-	CGContextFillRect(myContext, CGRectMake(0, 0, lcd_size_x, lcd_size_y));
-	
 	// print each character
 	// TODO: optimized version, which buffers characters during printChar() to avoid that complete bitmap has to be re-created on each redraw
 	for(line=0; line<LCDLines; ++line) {
@@ -188,19 +193,23 @@
 	
 			for(y=0; y<LCDCharHeight; ++y) {
 				for(x=0; x<LCDCharWidth; ++x) {
+					//NSBezierPath *BP2 = [NSBezierPath bezierPathWithRect: [self bounds]];
+
 					if( chr[y] & (1 << (LCDCharWidth-x-1)) ) {
-						CGContextSetRGBFillColor(myContext, LCDFColorR, LCDFColorG, LCDFColorB, 1);
+						[[NSColor colorWithDeviceRed:LCDFColorR green:LCDFColorG blue:LCDFColorB alpha:1.] set];
 					} else {
-						CGContextSetRGBFillColor(myContext, LCDBColorR, LCDBColorG, LCDBColorB, 1);
+						[[NSColor colorWithDeviceRed:LCDBColorR green:LCDBColorG blue:LCDBColorB alpha:1.] set];
 					}
-					CGContextFillRect(myContext, CGRectMake(
+					[BP fill];
+					BP = [NSBezierPath bezierPathWithRect: NSMakeRect(
 						LCDBorderX + LCDPixelX*(column*LCDCharWidth+x) + column*LCDOffsetColumns,
 						lcd_size_y - LCDBorderY - LCDPixelY*(y+line*(LCDCharHeight+LCDOffsetLines)), 
-						LCDPixelX, LCDPixelY));
+						LCDPixelX, LCDPixelY)]; 
 				}
 			}
 		}
 	}
+	
 }
 
 @end
