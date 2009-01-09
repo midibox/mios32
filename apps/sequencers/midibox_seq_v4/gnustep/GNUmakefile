@@ -67,7 +67,6 @@ main.m
 midibox_seq_v4_C_FILES = \
 ../core/seq_lcd.c \
 ../../../../mios32/common/printf-stdarg.c \
-jsw_rand.c \
 ../core/seq_core.c \
 ../core/seq_led.c \
 ../core/seq_par.c \
