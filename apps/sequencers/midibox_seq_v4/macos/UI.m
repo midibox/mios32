@@ -395,7 +395,12 @@ s32 TASKS_Init(u32 mode)
 {
 	// install SRIO task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
+
+	#ifdef GNUSTEP
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSDefaultRunLoopMode];
+#else	
 	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];	
+#endif
 
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
@@ -556,7 +561,12 @@ s32 TASKS_Init(u32 mode)
 
 	// init application after ca. 1 mS (this ensures that all objects have been initialized)
 	NSTimer *init_timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
+#ifdef GNUSTEP
+	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSDefaultRunLoopMode];
+#else
 	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSRunLoopCommonModes];
+#endif
+
 }
 
 @end
