@@ -21,6 +21,7 @@
 #include <seq_midi_out.h>
 
 #include "seq_core.h"
+#include "seq_random.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_midi_in.h"
@@ -103,6 +104,9 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_bpm_div_ext = 1;
 
   seq_core_state.ALL = 0;
+
+  // set initial seed of random generator
+  SEQ_RANDOM_Gen(0xdeadbabe);
 
   // reset track parameters
   SEQ_CC_Init(0);

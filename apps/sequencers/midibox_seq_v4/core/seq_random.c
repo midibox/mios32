@@ -19,6 +19,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local defines
+/////////////////////////////////////////////////////////////////////////////
+
+// Reentrant "rand_r" not supported by MinGW, therefore we are using rand() instead
+#define REENTRANT 1
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -31,8 +39,10 @@ static unsigned int random_value = 0xdeadbabe;
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_RANDOM_Gen(u32 seed)
 {
+#if REENTRANT
   if( seed )
     random_value = seed;
+	
 
   // MEMO: for thread safeness, we would have to pass a pointer to random_value through the SEQ_RANDOM_Gen() function
   // however, multiple threads just increase the randomness even more - therefore this approach is fine ;-)
@@ -41,6 +51,12 @@ u32 SEQ_RANDOM_Gen(u32 seed)
   rand_r(&random_value);
 
   return random_value;
+#else
+  if( seed )
+	srand(seed);
+	
+  return random_value = (u32)rand();
+#endif
 }
 
 
@@ -62,7 +78,11 @@ u32 SEQ_RANDOM_Gen_Range(u32 min, u32 max)
   }
 
   // generate new random number
+#if REENTRANT
   rand_r(&random_value);
+#else
+  random_value = rand();
+#endif
 
   // return result within the given range
   return min + (random_value % (max-min+1));
