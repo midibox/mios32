@@ -32,23 +32,25 @@ static NSObject *_self;
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
 {
-	//int i;
+	int i;
 	
 	_self = self;
 
-	// create virtual MIDI ports
-	//for(i=0; i<NUM_MIDI_IN; ++i) {
-	//	NSMutableString *portName = [[NSMutableString alloc] init];
-	//	[portName appendFormat:@"vMBSEQ IN%d", i+1];
-		//virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
-		//[virtualMIDI_IN[i] addReceiver:self];
-	//}
+	/*
+	create virtual MIDI ports
+	for(i=0; i<NUM_MIDI_IN; ++i) {
+		NSMutableString *portName = [[NSMutableString alloc] init];
+		[portName appendFormat:@"vMBSEQ IN%d", i+1];
+		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
+		[virtualMIDI_IN[i] addReceiver:self];
+	}
 
-	//for(i=0; i<NUM_MIDI_OUT; ++i) {
-	//	NSMutableString *portName = [[NSMutableString alloc] init];
-	//	[portName appendFormat:@"vMBSEQ OUT%d", i+1];
+	for(i=0; i<NUM_MIDI_OUT; ++i) {
+		NSMutableString *portName = [[NSMutableString alloc] init];
+		[portName appendFormat:@"vMBSEQ OUT%d", i+1];
 		//virtualMIDI_OUT[i] = [[PYMIDIVirtualSource alloc] initWithName:portName];
-	//}
+	}
+	*/
 }
 
 
@@ -60,6 +62,7 @@ static NSObject *_self;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_Init(u32 mode)
 {
+	return 0;
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -92,7 +95,9 @@ s32 MIOS32_UART_Init(u32 mode)
 //      otherwise received byte
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferGet(u8 uart)
-{
+{	
+	return 0;
+
 #if MIOS32_UART_NUM == 0
   return -1; // no UART available
 #else
@@ -124,6 +129,8 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPeek(u8 uart)
 {
+	return 0;
+
 #if MIOS32_UART_NUM == 0
   return -1; // no UART available
 #else
@@ -152,6 +159,8 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 {
+	return 0;
+
 #if MIOS32_UART_NUM == 0
   return -1; // no UART available//
 #else
@@ -183,6 +192,7 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferFree(u8 uart)
 {
+	return 0;
 #if MIOS32_UART_NUM == 0
   return 0; // no UART available
 #else
@@ -202,6 +212,7 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferUsed(u8 uart)
 {
+	return 0;
 #if MIOS32_UART_NUM == 0
   return 0; // no UART available
 #else
@@ -223,7 +234,7 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 {
-  NSLog(@"MIOS32: Sending MIDI %s",buffer);
+	return 0;
 
 #if MIOS32_UART_NUM == 0
   return -1; // no UART available
@@ -269,9 +280,10 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
 {
+	return 0;
   s32 error;
 
-  while( (error=MIOS32_UART_TxBufferPutMore_NonBlocking(uart, buffer, len)) == -2 );
+  //while( (error=MIOS32_UART_TxBufferPutMore_NonBlocking(uart, buffer, len)) == -2 );
 
   return error;
 }
@@ -304,9 +316,10 @@ s32 MIOS32_UART_TxBufferPut_NonBlocking(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
 {
+	return 0;
   s32 error;
 
-  while( (error=MIOS32_UART_TxBufferPutMore(uart, &b, 1)) == -2 );
+  //while( (error=MIOS32_UART_TxBufferPutMore(uart, &b, 1)) == -2 );
 
   return error;
 }
@@ -318,6 +331,7 @@ s32   MIOS32_MIDI_SendByteToRxCallback(UART0, b);
 - (void)handleMIDIMessage:(Byte*)message ofSize:(int)size
 {
 	int i;
+	return 0;
 
 	for(i=0; i<size; ++i) {
 		MIOS32_UART_RxBufferPut(0, message[i]); // TODO: multiple IN ports
@@ -332,6 +346,7 @@ s32   MIOS32_MIDI_SendByteToRxCallback(UART0, b);
     const MIDIPacket*		packet;
     Byte					message[256];
     int						messageSize = 0;
+	return 0;
     
     // Step through each packet
     packet = packets->packet;
