@@ -110,7 +110,7 @@ void APP_Background(void)
 					seq_midi_out_dropouts);
 
         MIOS32_LCD_CursorSet(0, 1);
-	if( benchmark_cycles == 0xffff )
+	if( benchmark_cycles == 0xffffffff )
 	  MIOS32_LCD_PrintFormattedString("Time: overrun   ");
 	else
 	  MIOS32_LCD_PrintFormattedString("Time: %5d.%d mS  ", benchmark_cycles/10, benchmark_cycles%10);
