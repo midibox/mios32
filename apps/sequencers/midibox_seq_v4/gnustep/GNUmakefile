@@ -75,10 +75,10 @@ midibox_seq_v4_RESOURCE_FILES=\
 
 midibox_seq_v4_LOCALIZED_RESOURCE_FILES=\
 	InfoPlist.strings\
-	MainMenu.nib
+	MainMenu.gorm
 	
 midibox_seq_v4_MAIN_MODEL_FILE=\
-	MainMenu.nib
+	MainMenu.gorm
 
 midibox_seq_v4_LANGUAGES=\
 	English
