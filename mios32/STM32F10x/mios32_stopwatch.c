@@ -57,9 +57,9 @@
 //!   MyFunction();
 //!
 //!   // send execution time via DEFAULT COM interface
-//!  u32 delay = MIOS32_STOPWATCH_ValueGet();
-//!   printf("Execution time of MyFunction:\n\r");
-//!   if( delay == 0xffff )
+//!   u32 delay = MIOS32_STOPWATCH_ValueGet();
+//!   printf("Execution time of MyFunction: ");
+//!   if( delay == 0xffffffff )
 //!     printf("Overrun!\n\r");
 //!   else
 //!     printf("%d.%d mS\n\r", delay/10, delay%10);
@@ -110,15 +110,15 @@ s32 MIOS32_STOPWATCH_Reset(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns current value of stopwatch
-//! \return 1..65534: valid stopwatch value
-//! \return 65535: counter overrun
+//! \return 1..65535: valid stopwatch value
+//! \return 0xffffffff: counter overrun
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS32_STOPWATCH_ValueGet(void)
 {
   u32 value = STOPWATCH_TIMER_BASE->CNT;
 
   if( TIM_GetITStatus(STOPWATCH_TIMER_BASE, TIM_IT_Update) != RESET )
-    value = 0xffff;
+    value = 0xffffffff;
 
   return value;
 }
