@@ -129,6 +129,16 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len)
 {
+  // failsave measure:
+  // don't take On or OnOff item if heap is almost completely allocated
+  if( seq_midi_out_allocated >= (SEQ_MIDI_OUT_MAX_EVENTS-2) && // should be enough for a On *and* Off event
+      (event_type == SEQ_MIDI_OUT_OnEvent || event_type == SEQ_MIDI_OUT_OnOffEvent) ) {
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+    return -1; // allocation error
+  };
+
   // create new item
   seq_midi_out_queue_item_t *new_item;
   if( (new_item=SEQ_MIDI_OUT_SlotMalloc()) == NULL ) {
@@ -141,7 +151,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     new_item->len = len;
     new_item->next = NULL;
   }
- 
+
 #if 0
   printf("[SEQ_MIDI_OUT_Send:%d] %02x %02x %02x len:%d\n\r", timestamp, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
 #endif
@@ -209,7 +219,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
   }
 
   // schedule off event now if length > 16bit (since it cannot be stored in event record)
-  if( item->event_type == SEQ_MIDI_OUT_OnOffEvent && len > 0xffff ) {
+  if( event_type == SEQ_MIDI_OUT_OnOffEvent && len > 0xffff ) {
     return SEQ_MIDI_OUT_Send(port, midi_package, event_type, timestamp+len, 0);
   }
 
@@ -291,6 +301,14 @@ s32 SEQ_MIDI_OUT_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
 {
+  // limit max number of allocted items for all methods
+  if( seq_midi_out_allocated >= SEQ_MIDI_OUT_MAX_EVENTS ) {
+#if SEQ_MIDI_OUT_MALLOC_ANALYSIS
+    ++seq_midi_out_dropouts;
+#endif
+    return NULL;
+  }
+
 #if SEQ_MIDI_OUT_MALLOC_METHOD == 4 || SEQ_MIDI_OUT_MALLOC_METHOD == 5
   seq_midi_out_queue_item_t *item;
 #if SEQ_MIDI_OUT_MALLOC_METHOD == 4
