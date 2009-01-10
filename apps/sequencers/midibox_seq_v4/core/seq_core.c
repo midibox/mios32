@@ -783,6 +783,10 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
   if( p.type == CC && !gatelength )
     event_type = SEQ_MIDI_OUT_CCEvent;
 
+  // for the case that force-to-scale is activated
+  u8 scale, root_selection, root;
+  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+
   u32 echo_offset = fb_ticks;
   int i;
   for(i=0; i<tcc->echo_repeats; ++i) {
@@ -817,6 +821,11 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
       gatelength = (gatelength * 5*tcc->echo_fb_gatelength) / 100;
       if( !gatelength )
 	gatelength = 1;
+    }
+
+    // force to scale
+    if( tcc->mode.FORCE_SCALE ) {
+      SEQ_SCALE_Note(&p, scale, root);
     }
 
     SEQ_MIDI_OUT_Send(tcc->midi_port, p, event_type, bpm_tick + echo_offset, gatelength);
