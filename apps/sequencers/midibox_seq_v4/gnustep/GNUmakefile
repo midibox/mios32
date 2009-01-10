@@ -19,7 +19,7 @@ midibox_seq_v4_OBJC_FILES=\
 	../macos/MIOS32_TIMER_Wrapper.m \
 	../macos/SEQButton.m \
 	../macos/SEQEncoder.m \
-	../macos/UI.m \
+	UI.m \
 	../macos/main.m 
 
 midibox_seq_v4_C_FILES=\
@@ -75,7 +75,9 @@ midibox_seq_v4_RESOURCE_FILES=\
 
 midibox_seq_v4_LOCALIZED_RESOURCE_FILES=\
 	InfoPlist.strings\
-	MainMenu.gorm
+	MainMenu.gorm\
+	Knob_Blue.png\
+	Knob_Red.png
 	
 midibox_seq_v4_MAIN_MODEL_FILE=\
 	MainMenu.gorm
@@ -92,12 +94,15 @@ midibox_seq_v4_INCLUDE_DIRS=\
 	-I./../../../../modules/blm8x8\
 	-I./../../../../mios32/common\
 	-I./../../../../modules/sequencer\
-	-I./../../../../modules/midifile
+	-I./../../../../modules/midifile\
+	-I./../../../../drivers/gnustep
+
+
 
 #before-all::
 #	mkdir -p ./obj
 
-#ADDITIONAL_NATIVE_LIBS+= CoreMIDI
+#ADDITIONAL_LDFLAGS = -L. -lportmidi.lib
 
 
 ADDITIONAL_CPPFLAGS+= -DGNUSTEP -DMIOS32_FAMILY_EMULATION -DMIOS32_FAMILY_STR=\"EMULATION\" -DMIOS32_BOARD_STR=\"WINDOWS\"
