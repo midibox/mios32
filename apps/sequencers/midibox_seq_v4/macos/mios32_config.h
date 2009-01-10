@@ -46,6 +46,24 @@
 #define MIOS32_MIDI_DEFAULT_PORT UART0
 
 
+// memory alloccation method:
+// 0: internal static allocation with one byte for each flag
+// 1: internal static allocation with 8bit flags
+// 2: internal static allocation with 16bit flags
+// 3: internal static allocation with 32bit flags
+// 4: FreeRTOS based pvPortMalloc
+// 5: malloc provided by library
+#define SEQ_MIDI_OUT_MALLOC_METHOD 0
+
+// max number of scheduled events which will allocate memory
+// each event allocates 12 bytes
+// MAX_EVENTS must be a power of two! (e.g. 64, 128, 256, 512, ...)
+#define SEQ_MIDI_OUT_MAX_EVENTS 8192
+
+// enable seq_midi_out_max_allocated and seq_midi_out_dropouts
+#define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
+
+
 // the speed value for the datawheel (#0) which is used when the "FAST" button is activated:
 #define DEFAULT_DATAWHEEL_SPEED_VALUE	3
 

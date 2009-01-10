@@ -115,6 +115,29 @@ s32 SEQ_LCD_PrintSpaces(u8 num)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints padded string
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintStringPadded(char *str, u32 width)
+{
+  // replacement for not supported "%:-40s" of simple sprintf function
+
+  u32 pos;
+  u8 fill = 0;
+  for(pos=0; pos<width; ++pos) {
+    char c = str[pos];
+    if( c == 0 )
+      fill = 1;
+    if( fill )
+      MIOS32_LCD_PrintChar(' ');
+    else
+      MIOS32_LCD_PrintChar(c);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints a vertical bar for a 3bit value
 // (1 character)
 /////////////////////////////////////////////////////////////////////////////

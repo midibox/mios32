@@ -15,6 +15,9 @@
 // Include files
 /////////////////////////////////////////////////////////////////////////////
 
+// with this switch, seq_ui.h/seq_ui_pages.inc will create local variables
+#define SEQ_UI_PAGES_INC_LOCAL_VARS 1
+
 #include <mios32.h>
 #include <blm8x8.h>
 #include <seq_midi_out.h>
@@ -67,6 +70,7 @@ u8 ui_selected_item;
 u16 ui_hold_msg_ctr;
 
 seq_ui_page_t ui_page;
+seq_ui_page_t ui_selected_page;
 seq_ui_page_t ui_shortcut_prev_page;
 
 volatile u8 ui_cursor_flash;
@@ -78,29 +82,6 @@ u8 ui_seq_pause;
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-
-// Note: must be kept in sync with SEQ_UI_PAGE_xxx definitions in seq_ui.h!
-static const s32 (*ui_init_callback[SEQ_UI_PAGES])(u32 mode) = {
-  (void *)&SEQ_UI_TODO_Init,    // 0
-  (void *)&SEQ_UI_SHORTCUT_Init,// 1
-  (void *)&SEQ_UI_EDIT_Init,    // 2
-  (void *)&SEQ_UI_MUTE_Init,    // 3
-  (void *)&SEQ_UI_PATTERN_Init, // 4
-  (void *)&SEQ_UI_TRKEVNT_Init, // 5
-  (void *)&SEQ_UI_TRKMODE_Init, // 6
-  (void *)&SEQ_UI_TRKDIR_Init,  // 7
-  (void *)&SEQ_UI_TRKDIV_Init,  // 8
-  (void *)&SEQ_UI_TRKLEN_Init,  // 9
-  (void *)&SEQ_UI_TRKTRAN_Init, // 10
-  (void *)&SEQ_UI_TRKRND_Init,  // 11
-  (void *)&SEQ_UI_TRGASG_Init,  // 12
-  (void *)&SEQ_UI_FX_Init,      // 13
-  (void *)&SEQ_UI_FX_ECHO_Init, // 14
-  (void *)&SEQ_UI_UTIL_Init,    // 15
-  (void *)&SEQ_UI_BPM_Init,     // 16
-  (void *)&SEQ_UI_OPT_Init,     // 17
-  (void *)&SEQ_UI_SAVE_Init     // 18
-};
 
 static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
 static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
@@ -243,7 +224,21 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     seq_ui_display_init_req = 1;
   }
 
+  // for SEQ_UI_MENU which is accessible with EXIT button
+  // remember the current selectable page
+  if( ui_page >= SEQ_UI_FIRST_MENU_SELECTION_PAGE )
+    ui_selected_page = ui_page;
+
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns name of menu page (18 characters)
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_UI_PageNameGet(seq_ui_page_t page)
+{
+  return ui_menu_pages[page].name;
 }
 
 
@@ -562,6 +557,10 @@ static s32 SEQ_UI_Button_Select(s32 depressed)
 
 static s32 SEQ_UI_Button_Exit(s32 depressed)
 {
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 prev_ui_page = ui_page;
+
   // forward to menu page
   if( ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
@@ -569,6 +568,10 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
 
   // release all button states
   seq_ui_button_state.ALL = 0;
+
+  // enter menu page if we were not there before
+  if( prev_ui_page != SEQ_UI_PAGE_MENU )
+    SEQ_UI_PageSet(SEQ_UI_PAGE_MENU);
 
   return 0; // no error
 }
@@ -990,8 +993,8 @@ s32 SEQ_UI_LCD_Handler(void)
     ui_selected_item = 0;
 
     // call init function of current page
-    if( ui_init_callback[ui_page] != NULL )
-      ui_init_callback[ui_page](0); // mode
+    if( ui_menu_pages[ui_page].init_callback != NULL )
+      ui_menu_pages[ui_page].init_callback(0); // mode
 
     // request display update
     seq_ui_display_update_req = 1;
