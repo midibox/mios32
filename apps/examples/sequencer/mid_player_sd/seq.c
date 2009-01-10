@@ -380,8 +380,8 @@ static s32 SEQ_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick)
 
   // output events on USB0 and UART0
   u32 status = 0;
-  status |= SEQ_MIDI_OUT_Send(USB0, midi_package, event_type, tick);
-  status |= SEQ_MIDI_OUT_Send(UART0, midi_package, event_type, tick);
+  status |= SEQ_MIDI_OUT_Send(USB0, midi_package, event_type, tick, 0);
+  status |= SEQ_MIDI_OUT_Send(UART0, midi_package, event_type, tick, 0);
 
   return status;
 }
@@ -480,7 +480,7 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	  // put tempo change request into the queue
 	  mios32_midi_package_t tempo_package; // or Softis?
 	  tempo_package.ALL = (u32)bpm;
-	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick);
+	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick, 0);
 	}
 
 #if DEBUG_VERBOSE_LEVEL >= 1

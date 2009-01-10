@@ -110,7 +110,7 @@ s32 BENCHMARK_Start(void)
   int i;
   mios32_midi_package_t midi_package;
   for(i=0; i<1000 || seq_midi_out_allocated; ++i) {
-    SEQ_MIDI_OUT_Send(0xff, midi_package, NoteOn, bpm_tick);
+    SEQ_MIDI_OUT_Send(0xff, midi_package, NoteOn, bpm_tick, 0);
 
     // increment tick
     ++bpm_tick;
@@ -138,9 +138,9 @@ static s32 BENCHMARK_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32
 
   // output events to a dummy port (so that the interface doesn't falsify the benchmark results)
 #if 1
-  SEQ_MIDI_OUT_Send(0xff, midi_package, event_type, tick);
+  SEQ_MIDI_OUT_Send(0xff, midi_package, event_type, tick, 0);
 #else
-  SEQ_MIDI_OUT_Send(USB0, midi_package, event_type, tick);
+  SEQ_MIDI_OUT_Send(USB0, midi_package, event_type, tick, 0);
 #endif
 
   return 0; // no error

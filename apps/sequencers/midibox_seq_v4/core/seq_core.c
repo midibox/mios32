@@ -57,7 +57,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick);
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
-static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, mios32_midi_package_t p_off, u32 bpm_tick, u32 gatelength);
+static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
 static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 
@@ -379,7 +379,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	    // sustained note: play off event
 	    if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
-	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
 	      t->sustain_note.ALL = 0;
 	    }
 
@@ -398,54 +398,58 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		e->len = 0x1f; // Glide
 	    }
 
-	    // send On event
-	    if( p->type == CC ) {
-	      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick);
-	      t->vu_meter = 0x7f; // for visualisation in mute menu
-	    } else {
-	      if( p->note && p->velocity ) {
-		// force velocity to 0x7f if accent flag set
-		if( SEQ_TRG_AccentGet(track, t->step) )
-		  p->velocity = 0x7f;
-
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick);
-		t->vu_meter = p->velocity; // for visualisation in mute menu
-	      } else
-		p->velocity = 0; // force velocity to 0 for next check
-	    }
-
-	    // send Off event
-	    mios32_midi_package_t p_off = *p;
-	    p_off.velocity = 0; // clear velocity/CC value
+	    // determine gate length
 	    u32 gatelength = 0;
-	    if( p->velocity && (e->len >= 0) ) { // if off event should be played (note: on CC events, velocity matches with CC value)
+	    u8 triggers = 0;
+	    if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
 	      if( e->len < 32 ) {
 		if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
 		  t->sustain_port = tcc->midi_port;
+		  mios32_midi_package_t p_off = *p;
+		  p_off.velocity = 0; // clear velocity/CC value
 		  t->sustain_note = p_off;
 		  gatelength=0;
 		} else {
 		  // TODO: later we will support higher note length resolution
+		  triggers = 1;
 		  gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, SEQ_MIDI_OUT_OffEvent, bpm_tick + gatelength);
 		}
 	      } else {
 		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
-		int i;
-		int triggers = (e->len>>5);
+		triggers = (e->len>>5) + 1;
 		gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
 		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
-		for(i=0; i<triggers; ++i)
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, bpm_tick + (i+1)*gatelength);
-		
-		for(i=0; i<=triggers; ++i)
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, SEQ_MIDI_OUT_OffEvent, bpm_tick + i*gatelength + (gatelength/2));
 	      }
 	    }
 
-	    // apply echo Fx if enabled
-	    if( tcc->echo_repeats && (p->type == CC || gatelength) )
-	      SEQ_CORE_Echo(t, tcc, *p, p_off, bpm_tick, gatelength);
+	    // schedule events
+	    if( triggers ) {
+	      if( p->type == CC && !gatelength ) {
+		int i;
+		for(i=0; i<triggers; ++i)
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+		t->vu_meter = 0x7f; // for visualisation in mute menu
+	      } else {
+		// force velocity to 0x7f if accent flag set
+		if( SEQ_TRG_AccentGet(track, t->step) )
+		  p->velocity = 0x7f;
+		  
+		if( triggers > 1 ) {
+		  int i;
+		  for(i=0; i<triggers; ++i)
+		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, (gatelength/2));
+		} else {
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
+		}
+		  
+		t->vu_meter = p->velocity; // for visualisation in mute menu
+	      }
+	      
+	      // apply echo Fx if enabled
+	      if( tcc->echo_repeats && (p->type == CC || gatelength) )
+		SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+	    }
+
 
 	  }
 	}
@@ -753,7 +757,7 @@ s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 /////////////////////////////////////////////////////////////////////////////
 // Echo Fx
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, mios32_midi_package_t p_off, u32 bpm_tick, u32 gatelength)
+static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength)
 {
   // thanks to MIDI queuing mechanism, this is a no-brainer :)
 
@@ -775,8 +779,9 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
     p.velocity = (u8)fb_velocity;
   }
 
-  seq_midi_out_event_type_t on_event =  p.type == CC ? SEQ_MIDI_OUT_CCEvent : SEQ_MIDI_OUT_OnEvent;
-  seq_midi_out_event_type_t off_event =  p_off.type == CC ? SEQ_MIDI_OUT_CCEvent : SEQ_MIDI_OUT_OffEvent;
+  seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnOffEvent;
+  if( p.type == CC && !gatelength )
+    event_type = SEQ_MIDI_OUT_CCEvent;
 
   u32 echo_offset = fb_ticks;
   int i;
@@ -806,7 +811,6 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 	fb_note -= 12;
 
       p.note = (u8)fb_note;
-      p_off.note = (u8)fb_note;
     }
 
     if( gatelength && tcc->echo_fb_gatelength != 20 ) { // 20 == 100% -> no change
@@ -815,10 +819,7 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 	gatelength = 1;
     }
 
-    SEQ_MIDI_OUT_Send(tcc->midi_port, p, on_event, bpm_tick + echo_offset);
-    if( gatelength ) {
-      SEQ_MIDI_OUT_Send(tcc->midi_port, p_off, off_event, bpm_tick + echo_offset + gatelength);
-    }
+    SEQ_MIDI_OUT_Send(tcc->midi_port, p, event_type, bpm_tick + echo_offset, gatelength);
   }
 
   return 0; // no error
@@ -842,7 +843,7 @@ s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
     p.evnt0 = evnt0;
 
     if( bpm_tick )
-      SEQ_MIDI_OUT_Send(UART0, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick);
+      SEQ_MIDI_OUT_Send(UART0, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
     else
       MIOS32_MIDI_SendPackage(UART0, p);
   }

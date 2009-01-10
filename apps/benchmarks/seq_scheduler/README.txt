@@ -30,11 +30,11 @@ timings don't falsify the results.
 Different memory allocation methods can be selected in mios32_config.h
 
 Here the results - than lower the value, than faster the handling:
-0: internal static allocation with one byte for each flag     617.8 mS
-1: internal static allocation with 8bit flags                 622.7 mS
-2: internal static allocation with 16bit flags                625.2 mS
-3: internal static allocation with 32bit flags                618.7 mS
-4: FreeRTOS based pvPortMalloc                                646.7 mS
+0: internal static allocation with one byte for each flag     632.8 mS
+1: internal static allocation with 8bit flags                 636.6 mS
+2: internal static allocation with 16bit flags                637.3 mS
+3: internal static allocation with 32bit flags                635.7 mS
+4: FreeRTOS based pvPortMalloc                                655.4 mS
 5: malloc provided by library                                 setup not done for Newlib
 
 
