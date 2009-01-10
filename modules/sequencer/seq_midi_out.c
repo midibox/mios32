@@ -281,13 +281,20 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
     // schedule Off event if requested
     if( item->event_type == SEQ_MIDI_OUT_OnOffEvent && item->len ) {
-      item->package.velocity = 0; // ensure that velocity is 0
-      SEQ_MIDI_OUT_Send(item->port, item->package, SEQ_MIDI_OUT_OffEvent, item->timestamp + item->len, 0);
-    }
+      // ensure that we get a free memory slot by releasing the current item before queuing the off item
+      seq_midi_out_queue_item_t copy = *item;
+      copy.package.velocity = 0; // ensure that velocity is 0
 
-    // remove item from queue
-    midi_queue = item->next;
-    SEQ_MIDI_OUT_SlotFree(item);
+      // remove item from queue
+      midi_queue = item->next;
+      SEQ_MIDI_OUT_SlotFree(item);
+
+      SEQ_MIDI_OUT_Send(copy.port, copy.package, SEQ_MIDI_OUT_OffEvent, copy.timestamp + copy.len, 0);
+    } else {
+      // remove item from queue
+      midi_queue = item->next;
+      SEQ_MIDI_OUT_SlotFree(item);
+    }
   }
 
   return 0; // no error
