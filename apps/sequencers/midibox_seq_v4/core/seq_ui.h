@@ -18,52 +18,7 @@
 // Menu Page definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// must be kept in sync with ui_init_callback list in seq_ui.c!
-#define SEQ_UI_PAGES 19
-
-typedef enum {
-  SEQ_UI_PAGE_NONE,
-  SEQ_UI_PAGE_SHORTCUT,
-  SEQ_UI_PAGE_EDIT,
-  SEQ_UI_PAGE_MUTE,
-  SEQ_UI_PAGE_PATTERN,
-  SEQ_UI_PAGE_TRKEVNT,
-  SEQ_UI_PAGE_TRKMODE,
-  SEQ_UI_PAGE_TRKDIR,
-  SEQ_UI_PAGE_TRKDIV,
-  SEQ_UI_PAGE_TRKLEN,
-  SEQ_UI_PAGE_TRKTRAN,
-  SEQ_UI_PAGE_TRKRND,
-  SEQ_UI_PAGE_TRGASG,
-  SEQ_UI_PAGE_FX,
-  SEQ_UI_PAGE_FX_ECHO,
-  SEQ_UI_PAGE_UTIL,
-  SEQ_UI_PAGE_BPM,
-  SEQ_UI_PAGE_OPT,
-  SEQ_UI_PAGE_SAVE
-} seq_ui_page_t;
-
-
-// Prototypes for all UI pages are burried here
-extern s32 SEQ_UI_TODO_Init(u32 mode);
-extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
-extern s32 SEQ_UI_EDIT_Init(u32 mode);
-extern s32 SEQ_UI_MUTE_Init(u32 mode);
-extern s32 SEQ_UI_PATTERN_Init(u32 mode);
-extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
-extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
-extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
-extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
-extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
-extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
-extern s32 SEQ_UI_TRKRND_Init(u32 mode);
-extern s32 SEQ_UI_TRGASG_Init(u32 mode);
-extern s32 SEQ_UI_FX_Init(u32 mode);
-extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
-extern s32 SEQ_UI_UTIL_Init(u32 mode);
-extern s32 SEQ_UI_BPM_Init(u32 mode);
-extern s32 SEQ_UI_OPT_Init(u32 mode);
-extern s32 SEQ_UI_SAVE_Init(u32 mode);
+#include "seq_ui_pages.inc"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,6 +138,7 @@ extern s32 SEQ_UI_LCD_Handler(void);
 extern s32 SEQ_UI_MENU_Handler_Periodic();
 
 extern s32 SEQ_UI_PageSet(seq_ui_page_t page);
+extern char *SEQ_UI_PageNameGet(seq_ui_page_t page);
 
 extern s32 SEQ_UI_InstallInitCallback(void *callback);
 extern s32 SEQ_UI_InstallButtonCallback(void *callback);
@@ -241,6 +197,7 @@ extern u8 ui_selected_item;
 extern u16 ui_hold_msg_ctr;
 
 extern seq_ui_page_t ui_page;
+extern seq_ui_page_t ui_selected_page;
 extern seq_ui_page_t ui_shortcut_prev_page;
 
 extern volatile u8 ui_cursor_flash;

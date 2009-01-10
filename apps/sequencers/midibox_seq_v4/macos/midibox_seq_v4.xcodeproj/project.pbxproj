@@ -73,6 +73,8 @@
 		526F87F10EEA126A00441997 /* PYMIDIVirtualDestination.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CA0EEA126A00441997 /* PYMIDIVirtualDestination.m */; };
 		526F87F20EEA126A00441997 /* PYMIDIVirtualEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */; };
 		526F87F30EEA126A00441997 /* PYMIDIVirtualSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */; };
+		5282AE090F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */; };
+		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
 		52A74F1A0E92701800D65394 /* SEQButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74F190E92701800D65394 /* SEQButton.m */; };
 		52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74FE80E92858600D65394 /* SEQEncoder.m */; };
 		52B5BEF20F1037B800E68948 /* mid_file.inc in Sources */ = {isa = PBXBuildFile; fileRef = 52B5BEEF0F1037B800E68948 /* mid_file.inc */; };
@@ -220,6 +222,9 @@
 		526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualEndpoint.m; sourceTree = "<group>"; };
 		526F87CD0EEA126A00441997 /* PYMIDIVirtualSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualSource.h; sourceTree = "<group>"; };
 		526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualSource.m; sourceTree = "<group>"; };
+		5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_STOPWATCH_Wrapper.h; sourceTree = "<group>"; };
+		5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_STOPWATCH_Wrapper.m; sourceTree = "<group>"; };
+		5282AE180F18C4AF00901181 /* seq_ui_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_menu.c; path = ../core/seq_ui_menu.c; sourceTree = SOURCE_ROOT; };
 		52A74F180E92701800D65394 /* SEQButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQButton.h; sourceTree = "<group>"; };
 		52A74F190E92701800D65394 /* SEQButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQButton.m; sourceTree = "<group>"; };
 		52A74FE70E92858600D65394 /* SEQEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQEncoder.h; sourceTree = "<group>"; };
@@ -333,6 +338,8 @@
 				5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */,
 				52BBD94A0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.h */,
 				52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */,
+				5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */,
+				5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -379,6 +386,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5282AE180F18C4AF00901181 /* seq_ui_menu.c */,
 				525192530F13DDDA007A6BFF /* seq_ui_save.c */,
 				5251924D0F13DDBD007A6BFF /* seq_scale.c */,
 				5251924E0F13DDBD007A6BFF /* seq_scale.h */,
@@ -718,6 +726,8 @@
 				52BBD9520F12CEAF00C76C61 /* dosfs.c in Sources */,
 				5251924F0F13DDBD007A6BFF /* seq_scale.c in Sources */,
 				525192540F13DDDA007A6BFF /* seq_ui_save.c in Sources */,
+				5282AE090F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m in Sources */,
+				5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

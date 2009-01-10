@@ -30,6 +30,7 @@
 # define MIOS32_COM_DEFAULT_PORT UART1
 #endif
 
+
 // Stack size for FreeRTOS tasks as defined by the programming model
 // Note that each task maintains it's own stack!
 // If you want to define a different stack size for your application tasks
@@ -41,7 +42,25 @@
 #define MIOS32_MINIMAL_STACK_SIZE 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 20*1024
+#define MIOS32_HEAP_SIZE 32*1024
+
+
+// memory alloccation method:
+// 0: internal static allocation with one byte for each flag
+// 1: internal static allocation with 8bit flags
+// 2: internal static allocation with 16bit flags
+// 3: internal static allocation with 32bit flags
+// 4: FreeRTOS based pvPortMalloc
+// 5: malloc provided by library
+#define SEQ_MIDI_OUT_MALLOC_METHOD 3
+
+// max number of scheduled events which will allocate memory
+// each event allocates 12 bytes
+// MAX_EVENTS must be a power of two! (e.g. 64, 128, 256, 512, ...)
+#define SEQ_MIDI_OUT_MAX_EVENTS 1024
+
+// enable seq_midi_out_max_allocated and seq_midi_out_dropouts
+#define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
 
 #define MID_PLAYER_TEST 0

@@ -57,6 +57,10 @@
 
 extern s32 SEQ_FILE_Init(u32 mode);
 
+extern s32 SEQ_FILE_VolumeAvailable(void);
+extern u32 SEQ_FILE_VolumeBytesFree(void);
+extern u32 SEQ_FILE_VolumeBytesTotal(void);
+
 extern s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath);
 extern s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
 extern s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte);

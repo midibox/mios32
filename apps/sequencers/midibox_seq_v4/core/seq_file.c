@@ -49,6 +49,7 @@ u32 seq_file_dfs_errno;
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_FILE_MountFS(void);
+static s32 SEQ_FILE_UpdateFreeBytes(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +58,9 @@ static s32 SEQ_FILE_MountFS(void);
 
 // DOS FS variables
 static u8 sector[SECTOR_SIZE];
+
+static u8 volume_available;
+static u32 volume_free_bytes;
 
 static VOLINFO vi;
 
@@ -69,6 +73,9 @@ static u8 *write_buffer;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_Init(u32 mode)
 {
+  volume_available = 0;
+  volume_free_bytes = 0;
+
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -157,8 +164,79 @@ static s32 SEQ_FILE_MountFS(void)
 
   if( vi.filesystem != FAT12 && vi.filesystem != FAT16 && vi.filesystem != FAT32 )
     return SEQ_FILE_ERR_UNKNOWN_FS;
+  else {
+    volume_available = 1;
+    SEQ_FILE_UpdateFreeBytes();
+  }
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function updates the number of free bytes by scanning the FAT for
+// unused clusters.
+// should be called whenever a new file has been created!
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_FILE_UpdateFreeBytes(void)
+{
+  volume_free_bytes = 0xffffffff;
+
+  // Disabled: takes too long! (e.g. my SD card has ca. 2000 clusters, 
+  // it takes ca. 3 seconds to determine free clusters)
+#if 0
+  // exit if volume not available
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    printf("[SEQ_FILE] UpdateFreeBytes stopped - no volume!\n\r");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  u32 scratchcache = 0;
+  u32 i;
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  printf("[SEQ_FILE] Starting UpdateFreeBytes, scan for %u clusters\n\r", vi.numclusters);
+#endif
+
+  for(i=2; i<vi.numclusters; ++i) {
+    if( !DFS_GetFAT(&vi, sector, &scratchcache, i) )
+      volume_free_bytes += vi.secperclus * SECTOR_SIZE;
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  printf("[SEQ_FILE] Finished UpdateFreeBytes: %u\n\r", volume_free_bytes);
+#endif
+#endif
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if volume available
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_VolumeAvailable(void)
+{
+  return volume_available;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns number of available bytes
+/////////////////////////////////////////////////////////////////////////////
+u32 SEQ_FILE_VolumeBytesFree(void)
+{
+  return volume_free_bytes;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns total number of available bytes
+/////////////////////////////////////////////////////////////////////////////
+u32 SEQ_FILE_VolumeBytesTotal(void)
+{
+  return vi.numclusters * vi.secperclus * SECTOR_SIZE;
 }
 
 
@@ -213,6 +291,10 @@ s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath)
 s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len)
 {
   u32 successcount;
+
+  // exit if volume not available
+  if( !volume_available )
+    return SEQ_FILE_ERR_NO_VOLUME;
 
   if( seq_file_dfs_errno = DFS_ReadFile(fileinfo, sector, buffer, &successcount, len) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -321,6 +403,10 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_WriteBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len)
 {
+  // exit if volume not available
+  if( !volume_available )
+    return SEQ_FILE_ERR_NO_VOLUME;
+
   // exit if filepos < 0 -> this indicates that an error has happened during previous write operation
   if( write_filepos < 0 )
     return write_filepos; // skipped due to previous error
@@ -439,6 +525,9 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 
   // enable cache again
   DFS_CachingEnabledSet(1);
+
+  // update number of free bytes
+  SEQ_FILE_UpdateFreeBytes();
 
   return status;
 }
