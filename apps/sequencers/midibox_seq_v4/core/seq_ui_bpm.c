@@ -196,24 +196,19 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("BPM Clock Mode   Beats per Minute   Tap ");
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("   Global Clock Dividers (Int./Ext.)    ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("BPM Clock Mode   Beats per Minute   Tap    Global Clock Dividers (Int./Ext.)    ");
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   SEQ_LCD_PrintSpaces(4);
   if( ui_selected_item == ITEM_MODE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
     const char mode_str[3][7] = { "Auto  ", "Master", "Slave "};
-    MIOS32_LCD_PrintString((char *)mode_str[SEQ_BPM_ModeGet()]);
+    SEQ_LCD_PrintString((char *)mode_str[SEQ_BPM_ModeGet()]);
   }
   SEQ_LCD_PrintSpaces(11);
 
@@ -222,30 +217,27 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(5);
   } else {
     float bpm = SEQ_BPM_Get();
-    MIOS32_LCD_PrintFormattedString("%3d.%d", (int)bpm, (int)(10*bpm)%10);
+    SEQ_LCD_PrintFormattedString("%3d.%d", (int)bpm, (int)(10*bpm)%10);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintSpaces(9);
-  MIOS32_LCD_PrintString("Tempo");
+  SEQ_LCD_PrintString("Tempo");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
-
   int i;
   for(i=0; i<4; ++i) {
     if( seq_core_bpm_div_int == i && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
     else
-      MIOS32_LCD_PrintFormattedString("  %2d ", 1 << i);
+      SEQ_LCD_PrintFormattedString("  %2d ", 1 << i);
   }
 
   for(i=0; i<4; ++i) {
     if( seq_core_bpm_div_ext == i && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
     else {
-      MIOS32_LCD_PrintFormattedString("  %2d ", 1 << (i+1));
+      SEQ_LCD_PrintFormattedString("  %2d ", 1 << (i+1));
     }
   }
 

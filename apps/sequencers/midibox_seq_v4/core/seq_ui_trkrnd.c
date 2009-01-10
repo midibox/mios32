@@ -298,23 +298,19 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.          Random Generator  ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.          Random Generator  ");
 
   if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
-    MIOS32_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
+    SEQ_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
   } else {
     SEQ_LCD_PrintSpaces(8);
   }
 
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("LayA LayB LayC TrgA TrgB TrgC           ");
+  SEQ_LCD_PrintString("LayA LayB LayC TrgA TrgB TrgC           ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
@@ -322,21 +318,18 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   }
 
-  MIOS32_LCD_PrintString("  Generate           Clr. Util Undo ");
+  SEQ_LCD_PrintString("  Generate           Clr. Util Undo ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
-
   int i;
   for(i=0; i<3; ++i) {
     if( ui_selected_item == (ITEM_PAR_A+i) && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
       if( par_layer_range[i] )
-	MIOS32_LCD_PrintFormattedString(" %2d  ", par_layer_range[i]);
+	SEQ_LCD_PrintFormattedString(" %2d  ", par_layer_range[i]);
       else
-	MIOS32_LCD_PrintString(" --  ");
+	SEQ_LCD_PrintString(" --  ");
     }
   }
 
@@ -345,11 +338,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(5);
     } else {
       if( trg_layer_range[i] == 15 )
-	MIOS32_LCD_PrintString(" All ");
+	SEQ_LCD_PrintString(" All ");
       else if( trg_layer_range[i] )
-	MIOS32_LCD_PrintFormattedString(" %2d  ", trg_layer_range[i]);
+	SEQ_LCD_PrintFormattedString(" %2d  ", trg_layer_range[i]);
       else
-	MIOS32_LCD_PrintString(" --  ");
+	SEQ_LCD_PrintString(" --  ");
     }
   }
 

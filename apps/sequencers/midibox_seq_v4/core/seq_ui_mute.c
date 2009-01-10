@@ -110,40 +110,26 @@ static s32 LCD_Handler(u8 high_prio)
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////
     // frequently update VU meters
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_CursorSet(0, 1);
+    SEQ_LCD_CursorSet(0, 1);
 
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
     for(track=0; track<16; ++t, ++track) {
-      if( track == 8 ) {
-	// switch over to second LCD
-	MIOS32_LCD_DeviceSet(1);
-	MIOS32_LCD_CursorSet(0, 1);
-      }
-
       if( seq_core_trk[track].state.MUTED )
-	MIOS32_LCD_PrintString("Mute ");
+	SEQ_LCD_PrintString("Mute ");
       else
 	SEQ_LCD_PrintHBar(t->vu_meter >> 3);
     }
   } else {
     ///////////////////////////////////////////////////////////////////////////
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_CursorSet(0, 0);
+    SEQ_LCD_CursorSet(0, 0);
 
     u8 track;
     for(track=0; track<16; ++track) {
-      if( track == 8 ) {
-	// switch over to second LCD
-	MIOS32_LCD_DeviceSet(1);
-	MIOS32_LCD_CursorSet(0, 0);
-      }
-      
       if( SEQ_UI_IsSelectedTrack(track) )
-	MIOS32_LCD_PrintFormattedString(" >%2d<", track+1);
+	SEQ_LCD_PrintFormattedString(" >%2d<", track+1);
       else
-	MIOS32_LCD_PrintFormattedString("  %2d ", track+1);
+	SEQ_LCD_PrintFormattedString("  %2d ", track+1);
     }
   }
 

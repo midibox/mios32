@@ -192,16 +192,11 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.        Repeats   Delay   Vel.Level ");
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString(" FB Velocity  Note   Gatelen.    Ticks  ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.        Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
@@ -215,7 +210,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_REPEATS && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(2);
   } else {
-    MIOS32_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS));
+    SEQ_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS));
   }
   SEQ_LCD_PrintSpaces(7);
 
@@ -242,7 +237,7 @@ static s32 LCD_Handler(u8 high_prio)
       "Rnd1",
       "Rnd2"
     };
-    MIOS32_LCD_PrintString((char *)delay_str[SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY)]);
+    SEQ_LCD_PrintString((char *)delay_str[SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY)]);
   }
   SEQ_LCD_PrintSpaces(6);
 
@@ -251,20 +246,19 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_VELOCITY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_VELOCITY));
+    SEQ_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_VELOCITY));
   }
   SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
 
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(40, 1);
   SEQ_LCD_PrintSpaces(4);
 
   if( ui_selected_item == ITEM_FB_VELOCITY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_VELOCITY));
+    SEQ_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_VELOCITY));
   }
   SEQ_LCD_PrintSpaces(7);
 
@@ -275,11 +269,11 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     u8 note_delta = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_NOTE);
     if( note_delta < 24 )
-      MIOS32_LCD_PrintFormattedString("-%2d", 24-note_delta);
+      SEQ_LCD_PrintFormattedString("-%2d", 24-note_delta);
     else if( note_delta < 49 )
-      MIOS32_LCD_PrintFormattedString("+%2d", note_delta-24);
+      SEQ_LCD_PrintFormattedString("+%2d", note_delta-24);
     else
-      MIOS32_LCD_PrintString("Rnd");
+      SEQ_LCD_PrintString("Rnd");
   }
   SEQ_LCD_PrintSpaces(5);
 
@@ -288,7 +282,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_FB_GATELENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_GATELENGTH));
+    SEQ_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_GATELENGTH));
   }
   SEQ_LCD_PrintSpaces(7);
 
@@ -297,7 +291,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_FB_TICKS && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_TICKS));
+    SEQ_LCD_PrintFormattedString("%3d%%", 5*SEQ_CC_Get(visible_track, SEQ_CC_ECHO_FB_TICKS));
   }
   SEQ_LCD_PrintSpaces(2);
 

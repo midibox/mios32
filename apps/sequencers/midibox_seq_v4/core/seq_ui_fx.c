@@ -121,22 +121,15 @@ static s32 LCD_Handler(u8 high_prio)
     return 0; // there are no high-priority updates
 
   // print available menu pages
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
+  SEQ_LCD_CursorSet(0, 0);
   //                      <-------------------------------------->
   //                      0123456789012345678901234567890123456789
-  MIOS32_LCD_PrintString("Fx Pages:");
-  SEQ_LCD_PrintSpaces(32);
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Echo                                    ");
-  
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  //                      <-------------------------------------->
-  //                      0123456789012345678901234567890123456789
-  SEQ_LCD_PrintSpaces(40);
-  MIOS32_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintSpaces(40);
+  SEQ_LCD_PrintString("Fx Pages:");
+  SEQ_LCD_PrintSpaces(32 + 40);
+
+  SEQ_LCD_CursorSet(0, 1);
+  SEQ_LCD_PrintString("Echo");
+  SEQ_LCD_PrintSpaces(36 + 40);
 
   return 0; // no error
 }

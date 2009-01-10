@@ -193,22 +193,18 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk. ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk. ");
 
   int i;
   for(i=0; i<7; ++i)
-    MIOS32_LCD_PrintString(SEQ_TRG_TypeStr(i));
+    SEQ_LCD_PrintString(SEQ_TRG_TypeStr(i));
  
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintSpaces(40);
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
@@ -220,20 +216,22 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
 
   for(i=0; i<7; ++i) {
-    MIOS32_LCD_PrintChar(' ');
-    MIOS32_LCD_PrintChar(((i+1) == ui_selected_item) ? '>' : ' ');
+    SEQ_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(((i+1) == ui_selected_item) ? '>' : ' ');
 
     if( (i+1) == ui_selected_item && ui_cursor_flash )
-      MIOS32_LCD_PrintChar(' ');
+      SEQ_LCD_PrintChar(' ');
     else {
       u8 value = SEQ_CC_Get(visible_track, SEQ_CC_ASG_GATE+i);
-      MIOS32_LCD_PrintChar(value ? ('A'-1+value) : '-');
+      SEQ_LCD_PrintChar(value ? ('A'-1+value) : '-');
     }
 
-    MIOS32_LCD_PrintChar(((i+1) == ui_selected_item) ? '<' : ' ');
-    MIOS32_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(((i+1) == ui_selected_item) ? '<' : ' ');
+    SEQ_LCD_PrintChar(' ');
   }
 
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintSpaces(40);
 
   return 0; // no error
 }

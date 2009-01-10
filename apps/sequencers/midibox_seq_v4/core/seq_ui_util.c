@@ -411,23 +411,19 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.        Utility Functions   ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.        Utility Functions   ");
 
   if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
-    MIOS32_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
+    SEQ_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
   } else {
     SEQ_LCD_PrintSpaces(8);
   }
+  SEQ_LCD_PrintString("            Quick Menu Change           ");
 
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("            Quick Menu Change           ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   //  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
   if( ui_cursor_flash ) {
@@ -436,11 +432,8 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   }
 
-  MIOS32_LCD_PrintString(" Copy Paste Clr Move Scrl Rand Undo ");
-
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Save Rec. Mix. Opt. PMte     Mute UnMute");
+  SEQ_LCD_PrintString(" Copy Paste Clr Move Scrl Rand Undo ");
+  SEQ_LCD_PrintString("Save Rec. Mix. Opt. PMte     Mute UnMute");
 
   return 0; // no error
 }

@@ -982,12 +982,9 @@ s32 SEQ_UI_LCD_Handler(void)
   if( seq_ui_display_init_req ) {
     seq_ui_display_init_req = 0; // clear request
 
-    // clear both LCDs
-    int i;
-    for(i=0; i<2; ++i) {
-      MIOS32_LCD_DeviceSet(i);
-      SEQ_LCD_Clear();
-    }
+    // clear force update of LCD
+    SEQ_LCD_Clear();
+    SEQ_LCD_Update(1);
 
     // select first menu item
     ui_selected_item = 0;
@@ -1012,23 +1009,8 @@ s32 SEQ_UI_LCD_Handler(void)
       ui_lcd_callback(0); // no high_prio
   }
 
-  // for debugging
-#if 0
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintFormattedString("%5d  ", seq_midi_queue_size);
-#endif
-
-#if 0
-  u32 bpm_tick = SEQ_BPM_TickGet();
-  u32 bpm_sub = bpm_tick % SEQ_BPM_RESOLUTION_PPQN;
-  u32 bpm_16th = (bpm_tick / (SEQ_BPM_RESOLUTION_PPQN/4)) % 16;
-  u32 bpm_qn = (bpm_tick / SEQ_BPM_RESOLUTION_PPQN) % 4;
-  u32 bpm_n = bpm_tick / (4*SEQ_BPM_RESOLUTION_PPQN);
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintFormattedString("%3d.%2d.%2d.%3d  ", bpm_n, bpm_qn, bpm_16th, bpm_sub);
-#endif
+  // transfer all changed characters to LCD
+  SEQ_LCD_Update(0);
 
   return 0; // no error
 }

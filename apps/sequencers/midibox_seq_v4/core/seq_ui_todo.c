@@ -68,12 +68,10 @@ static s32 LCD_Handler(u8 high_prio)
     return 0; // there are no high-priority updates
 
   // print TODO message
-  int lcd;
-  for(lcd=0; lcd<2; ++lcd) {
-    MIOS32_LCD_DeviceSet(lcd);
-    MIOS32_LCD_CursorSet(0, 0);
-    MIOS32_LCD_PrintString("TODO page");
-  }
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("TODO page");
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintString("TODO page");
 
   return 0; // no error
 }

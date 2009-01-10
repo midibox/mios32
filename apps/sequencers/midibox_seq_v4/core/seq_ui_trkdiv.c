@@ -233,17 +233,13 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.  Clock Divider  Synch to Measure   ");
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("       Quick Selection: Timebase        ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.  Clock Divider  Synch to Measure   ");
+  SEQ_LCD_PrintString("       Quick Selection: Timebase        ");
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
@@ -256,14 +252,14 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_DIVIDER && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_CLK_DIVIDER)+1);
+    SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_CLK_DIVIDER)+1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_TRIPLET && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(11);
   } else {
-    MIOS32_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<1)) ? "(triplet)  " : "(normal)   ");
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<1)) ? "(triplet)  " : "(normal)   ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -271,13 +267,11 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(19);
   } else {
     SEQ_LCD_PrintSpaces(6);
-    MIOS32_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<0)) ? "yes" : "no ");
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<0)) ? "yes" : "no ");
     SEQ_LCD_PrintSpaces(10);
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
   s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
 
   int i;
@@ -285,7 +279,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( quicksel_item == i && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
-      MIOS32_LCD_PrintString((char *)quicksel_str[i]);
+      SEQ_LCD_PrintString((char *)quicksel_str[i]);
     }
   }
 

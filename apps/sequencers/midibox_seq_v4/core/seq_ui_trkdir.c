@@ -198,8 +198,7 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
@@ -222,7 +221,7 @@ static s32 LCD_Handler(u8 high_prio)
   int selected_direction = SEQ_CC_Get(visible_track, SEQ_CC_DIRECTION);
   for(i=0; i<7; ++i) {
     u8 x = 5*i;
-    MIOS32_LCD_CursorSet(x, i%2);
+    SEQ_LCD_CursorSet(x, i%2);
 
     // print unmodified name if item selected
     // replace '>' and '<' by space if item not selected
@@ -235,46 +234,45 @@ static s32 LCD_Handler(u8 high_prio)
 	break;
 
       if( c == '>' || c == '<' ) {
-	MIOS32_LCD_PrintChar((i == selected_direction) ? c : ' ');
+	SEQ_LCD_PrintChar((i == selected_direction) ? c : ' ');
       } else {
 	if( ui_selected_item == ITEM_DIRECTION && i == selected_direction && ui_cursor_flash )
-	  MIOS32_LCD_PrintChar(' ');
+	  SEQ_LCD_PrintChar(' ');
 	else
-	  MIOS32_LCD_PrintChar(c);
+	  SEQ_LCD_PrintChar(c);
       }
     }
   }
 
   // 3 additional spaces to fill LCD (avoids artefacts on page switches)
-  MIOS32_LCD_CursorSet(37, 1);
+  SEQ_LCD_CursorSet(37, 1);
   SEQ_LCD_PrintSpaces(3);
 
-  ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString(" Experimental \"Progression\" Parameters  ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Steps Fwd:");
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintString(" Experimental \"Progression\" Parameters  ");
+
+  SEQ_LCD_CursorSet(40, 1);
+  SEQ_LCD_PrintString("Steps Fwd:");
   if( ui_selected_item == ITEM_STEPS_FORWARD && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_FORWARD)+1);
+    SEQ_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_FORWARD)+1);
   }
 
-  MIOS32_LCD_PrintString("Jump Back:");
+  SEQ_LCD_PrintString("Jump Back:");
   if( ui_selected_item == ITEM_STEPS_JMPBCK && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_JMPBCK));
+    SEQ_LCD_PrintFormattedString("%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_JMPBCK));
   }
 
-  MIOS32_LCD_PrintString("Replay: x");
+  SEQ_LCD_PrintString("Replay: x");
   if( ui_selected_item == ITEM_STEPS_REPLAY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    MIOS32_LCD_PrintFormattedString("%2d ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_REPLAY)+1);
+    SEQ_LCD_PrintFormattedString("%2d ", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_REPLAY)+1);
   }  
 
   return 0; // no error

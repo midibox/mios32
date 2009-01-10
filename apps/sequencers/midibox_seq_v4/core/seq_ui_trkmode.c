@@ -217,11 +217,10 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.");
 
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
@@ -240,7 +239,7 @@ static s32 LCD_Handler(u8 high_prio)
   int selected_mode = SEQ_CC_Get(visible_track, SEQ_CC_MODE);
   for(i=0; i<4; ++i) {
     u8 x = 4 + 5*i;
-    MIOS32_LCD_CursorSet(x, i%2);
+    SEQ_LCD_CursorSet(x, i%2);
 
     // print unmodified name if item selected
     // replace '>' and '<' by space if item not selected
@@ -253,31 +252,30 @@ static s32 LCD_Handler(u8 high_prio)
 	break;
 
       if( c == '>' || c == '<' ) {
-	MIOS32_LCD_PrintChar((i == selected_mode) ? c : ' ');
+	SEQ_LCD_PrintChar((i == selected_mode) ? c : ' ');
       } else {
 	if( ui_selected_item == ITEM_MODE && i == selected_mode && ui_cursor_flash )
-	  MIOS32_LCD_PrintChar(' ');
+	  SEQ_LCD_PrintChar(' ');
 	else
-	  MIOS32_LCD_PrintChar(c);
+	  SEQ_LCD_PrintChar(c);
       }
     }
   }
 
   // additional spaces to fill LCD (avoids artefacts on page switches)
-  MIOS32_LCD_CursorSet(25, 0);
+  SEQ_LCD_CursorSet(25, 0);
   SEQ_LCD_PrintSpaces(15);
-  MIOS32_LCD_CursorSet(32, 1);
+  SEQ_LCD_CursorSet(32, 1);
   SEQ_LCD_PrintSpaces(8);
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Hold Sort  Restart  ForceScale  Sustain ");
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintString("Hold Sort  Restart  ForceScale  Sustain ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(40, 1);
   u16 flags = SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS);
-  MIOS32_LCD_PrintFormattedString(" %s  %s    %s       %s        %s   ",
+  SEQ_LCD_PrintFormattedString(" %s  %s    %s       %s        %s   ",
 				  (flags & (1<<1)) ? "on " : "off",
 				  (flags & (1<<0)) ? "off" : "on ", // SORT is inverted!
 				  (flags & (1<<2)) ? "on " : "off",

@@ -215,50 +215,45 @@ static s32 LCD_Handler(u8 high_prio)
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////
     // frequently update VU meters
-    MIOS32_LCD_DeviceSet(0);
-
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
     for(track=0; track<16; ++t, ++track) {
       if( !(track % 4) )
-	MIOS32_LCD_CursorSet(5 + 10*(track>>2), 1);
+	SEQ_LCD_CursorSet(5 + 10*(track>>2), 1);
 
       SEQ_LCD_PrintVBar(t->vu_meter >> 4);
     }
   } else {
     ///////////////////////////////////////////////////////////////////////////
-    MIOS32_LCD_DeviceSet(0);
-
     u8 group;
     for(group=0; group<4; ++group) {
-      MIOS32_LCD_CursorSet(10*group, 0);
-      MIOS32_LCD_PrintFormattedString((ui_selected_item == group) ? " >G%d<" : "  G%d ", group+1);
+      SEQ_LCD_CursorSet(10*group, 0);
+      SEQ_LCD_PrintFormattedString((ui_selected_item == group) ? " >G%d<" : "  G%d ", group+1);
       SEQ_LCD_PrintSpaces(5);
 
-      MIOS32_LCD_CursorSet(10*group, 1);
+      SEQ_LCD_CursorSet(10*group, 1);
       // shortly show current pattern
       seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + group) && ui_cursor_flash) ? seq_pattern[group] : selected_pattern[group];
-      MIOS32_LCD_PrintFormattedString("%d:", pattern.bank + 1);
+      SEQ_LCD_PrintFormattedString("%d:", pattern.bank + 1);
 
       if( pattern.pattern < SEQ_FILE_B_NumPatterns(pattern.bank) )
 	SEQ_LCD_PrintPattern(pattern);
       else
-	MIOS32_LCD_PrintString("!!"); // covers the case that bank is not available, or that pattern number too high
+	SEQ_LCD_PrintString("!!"); // covers the case that bank is not available, or that pattern number too high
 
       if( selected_pattern[group].pattern != seq_pattern[group].pattern ||
 	  selected_pattern[group].bank != seq_pattern[group].bank )
-	MIOS32_LCD_PrintChar('*');
+	SEQ_LCD_PrintChar('*');
       else
-	MIOS32_LCD_PrintChar(' ');
-      MIOS32_LCD_CursorSet(10*group + 9, 1);
-      MIOS32_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
+      SEQ_LCD_CursorSet(10*group + 9, 1);
+      SEQ_LCD_PrintChar(' ');
     }
 
     // second LCD currently unused - will change once we have more tracks
-    MIOS32_LCD_DeviceSet(1);
-    MIOS32_LCD_CursorSet(0, 0);
+    SEQ_LCD_CursorSet(40, 0);
     SEQ_LCD_PrintSpaces(40);
-    MIOS32_LCD_CursorSet(0, 1);
+    SEQ_LCD_CursorSet(40, 1);
     SEQ_LCD_PrintSpaces(40);
   }
 

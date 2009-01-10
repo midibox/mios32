@@ -222,17 +222,13 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.   Length  Loop                     ");
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("        Quick Selection: Length         ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.   Length  Loop                     ");
+  SEQ_LCD_PrintString("        Quick Selection: Length         ");
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
@@ -245,14 +241,14 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_LENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d/32  ", SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
+    SEQ_LCD_PrintFormattedString("%3d/32  ", SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_LOOP && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1);
+    SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -260,8 +256,6 @@ static s32 LCD_Handler(u8 high_prio)
   // free for sale
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
   s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
 
   int i;
@@ -269,7 +263,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( quicksel_item == i && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
-      MIOS32_LCD_PrintString((char *)quicksel_str[i]);
+      SEQ_LCD_PrintString((char *)quicksel_str[i]);
     }
   }
 
