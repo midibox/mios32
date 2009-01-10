@@ -44,7 +44,6 @@ typedef struct seq_midi_out_queue_item_t {
 
 static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void);
 static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item);
-static void SEQ_MIDI_OUT_SlotFreeHeap(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -102,7 +101,10 @@ static u32 alloc_pos;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Init(u32 mode)
 {
-  midi_queue = NULL;
+  // don't re-initialize queue to ensure that memory can be delocated properly
+  // when this function is called multiple times
+  // we assume, that gcc will always fill the memory range with zero on application start
+  //  midi_queue = NULL;
 
   seq_midi_out_allocated = 0;
 #if SEQ_MIDI_OUT_MALLOC_ANALYSIS
@@ -111,7 +113,7 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 #endif
 
   // memory will be allocated with first event
-  SEQ_MIDI_OUT_SlotFreeHeap();
+  SEQ_MIDI_OUT_FreeHeap();
 
   return 0; // no error
 }
@@ -244,7 +246,41 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
     SEQ_MIDI_OUT_SlotFree(item);
   }
 
-  SEQ_MIDI_OUT_SlotFreeHeap();
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function frees the complete allocated memory.<BR>
+//! It should only be called after SEQ_MIDI_OUT_FlushQueue to prevent stucking
+//! Note events
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_FreeHeap(void)
+{
+  // ensure that all items are delocated
+  seq_midi_out_queue_item_t *item;
+  while( (item=midi_queue) != NULL ) {
+    midi_queue = item->next;
+    SEQ_MIDI_OUT_SlotFree(item);
+  }
+
+  // free memory
+#if SEQ_MIDI_OUT_MALLOC_METHOD == 4
+  // not relevant
+#elif SEQ_MIDI_OUT_MALLOC_METHOD == 5
+  // not relevant
+#else
+  if( alloc_heap != NULL ) {
+    vPortFree(alloc_heap);
+    alloc_heap = NULL;
+  }
+
+  alloc_pos = 0;
+  seq_midi_out_allocated = 0;
+
+  int i;
+  for(i=0; i<(SEQ_MIDI_OUT_MAX_EVENTS/SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH); ++i)
+    alloc_flags[i] = 0;
+#endif
 
   return 0; // no error
 }
@@ -468,29 +504,5 @@ static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item)
 #endif
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local function to free the allocated heap memory
-/////////////////////////////////////////////////////////////////////////////
-static void SEQ_MIDI_OUT_SlotFreeHeap(void)
-{
-#if SEQ_MIDI_OUT_MALLOC_METHOD == 4
-  // not relevant
-#elif SEQ_MIDI_OUT_MALLOC_METHOD == 5
-  // not relevant
-#else
-  if( alloc_heap != NULL ) {
-    vPortFree(alloc_heap);
-    alloc_heap = NULL;
-  }
-
-  alloc_pos = 0;
-  seq_midi_out_allocated = 0;
-
-  int i;
-  for(i=0; i<(SEQ_MIDI_OUT_MAX_EVENTS/SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH); ++i)
-    alloc_flags[i] = 0;
-#endif
-}
 
 //! \}
