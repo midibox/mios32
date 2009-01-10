@@ -207,16 +207,14 @@ static s32 SEQ_Tick(u32 bpm_tick)
       midi_package.note     = note;
       midi_package.velocity = velocity;
 
-      // send to USB0 and UART0 simultaneously at bpm_tick
-      SEQ_MIDI_OUT_Send(USB0, midi_package, SEQ_MIDI_OUT_OnEvent, bpm_tick);
-      SEQ_MIDI_OUT_Send(UART0, midi_package, SEQ_MIDI_OUT_OnEvent, bpm_tick);
+      // send to USB0 and UART0 simultaneously at bpm_tick with given length
+      SEQ_MIDI_OUT_Send(USB0, midi_package, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, length);
+      SEQ_MIDI_OUT_Send(UART0, midi_package, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, length);
 
-      // Note Off event: just change velocity to 0
-      midi_package.velocity = 0;
-
-      // send to USB0 and UART0 simultaneously at bpm_tick + length
-      SEQ_MIDI_OUT_Send(USB0, midi_package, SEQ_MIDI_OUT_OffEvent, bpm_tick + length);
-      SEQ_MIDI_OUT_Send(UART0, midi_package, SEQ_MIDI_OUT_OffEvent, bpm_tick + length);
+      // Note: I'm sending to USB0 and UART0 directly, since I don't know, 
+      // which interface you are using
+      // in a common application, it's better to direct MIDI events to the DEFAULT port.
+      // It can be selected in mios32_config.h, or via MIOS32_MIDI_DefaultSet()
     }
   }
 

@@ -27,7 +27,7 @@
 // 4: FreeRTOS based pvPortMalloc
 // 5: malloc provided by library
 #ifndef SEQ_MIDI_OUT_MALLOC_METHOD
-#define SEQ_MIDI_OUT_MALLOC_METHOD 0
+#define SEQ_MIDI_OUT_MALLOC_METHOD 3
 #endif
 
 // max number of scheduled events which will allocate memory
@@ -51,8 +51,9 @@ typedef enum {
   SEQ_MIDI_OUT_ClkEvent,   // always sent first before any other timestamped event
   SEQ_MIDI_OUT_TempoEvent, // dito - changes the BPM rate (located in midi_package.ALL)
   SEQ_MIDI_OUT_CCEvent,    // sent before notes
-  SEQ_MIDI_OUT_OnEvent,    // note on event
-  SEQ_MIDI_OUT_OffEvent    // note off event - sent by SEQ_MIDI_OUT_FlushQueue when queue is emptied (e.g. on Stop/Pause)
+  SEQ_MIDI_OUT_OnEvent,    // on event
+  SEQ_MIDI_OUT_OffEvent,   // off event - sent by SEQ_MIDI_OUT_FlushQueue when queue is emptied (e.g. on Stop/Pause)
+  SEQ_MIDI_OUT_OnOffEvent  // Plays On and Off event after given length
 } seq_midi_out_event_type_t;
 
 
@@ -62,7 +63,7 @@ typedef enum {
 
 extern s32 SEQ_MIDI_OUT_Init(u32 mode);
 
-extern s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp);
+extern s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len);
 extern s32 SEQ_MIDI_OUT_FlushQueue(void);
 extern s32 SEQ_MIDI_OUT_Handler(void);
 
