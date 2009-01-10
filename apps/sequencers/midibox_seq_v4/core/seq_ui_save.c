@@ -245,41 +245,39 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Grp. Save Pattern    to Target     SAVE ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Grp. Save Pattern    to Target     SAVE ");
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GROUP && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    MIOS32_LCD_PrintFormattedString("G%d ", ui_selected_group+1);
+    SEQ_LCD_PrintFormattedString("G%d ", ui_selected_group+1);
   }
 
-  MIOS32_LCD_PrintFormattedString("(Track %2d-%2d)/",
+  SEQ_LCD_PrintFormattedString("(Track %2d-%2d)/",
 				  (ui_selected_group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+1,
 				  ((ui_selected_group+1)*SEQ_CORE_NUM_TRACKS_PER_GROUP));
 
   if( ui_selected_item == ITEM_GROUP && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    MIOS32_LCD_PrintFormattedString("%d:", seq_pattern[ui_selected_group].bank+1);
+    SEQ_LCD_PrintFormattedString("%d:", seq_pattern[ui_selected_group].bank+1);
     SEQ_LCD_PrintPattern(seq_pattern[ui_selected_group]);
   }
 
-  MIOS32_LCD_PrintString(" -> ");
+  SEQ_LCD_PrintString(" -> ");
 
   if( ui_selected_item == ITEM_BANK && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(1);
   } else {
-    MIOS32_LCD_PrintFormattedString("%d", save_pattern[ui_selected_group].bank+1);
+    SEQ_LCD_PrintFormattedString("%d", save_pattern[ui_selected_group].bank+1);
   }
 
-  MIOS32_LCD_PrintChar(':');
+  SEQ_LCD_PrintChar(':');
 
   if( ui_selected_item == ITEM_PATTERN && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(2);
@@ -287,38 +285,37 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintPattern(save_pattern[ui_selected_group]);
   }
 
-  MIOS32_LCD_PrintChar(SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank) ? ' ' : '!');
+  SEQ_LCD_PrintChar(SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank) ? ' ' : '!');
 
   SEQ_LCD_PrintSpaces(6);
-  MIOS32_LCD_PrintString("IT  ");
+  SEQ_LCD_PrintString("IT  ");
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Name: ");
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintString("Name: ");
   SEQ_LCD_PrintPatternName(seq_pattern[ui_selected_group], seq_pattern_name[ui_selected_group]);
   SEQ_LCD_PrintSpaces(14);
 
   ///////////////////////////////////////////////////////////////////////////
   // Save message
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(40, 1);
   if( ui_hold_msg_ctr && in_menu_msg != MSG_DEFAULT ) {
     switch( in_menu_msg ) {
       case MSG_SAVE:
 	if( in_menu_msg_error_status ) // TODO: here we could decode the error status
-	  MIOS32_LCD_PrintFormattedString("Store Operation failed with error #%-3d  ", in_menu_msg_error_status);
+	  SEQ_LCD_PrintFormattedString("Store Operation failed with error #%-3d  ", in_menu_msg_error_status);
 	else
-	  MIOS32_LCD_PrintString("Pattern stored successfully             ");
+	  SEQ_LCD_PrintString("Pattern stored successfully             ");
         break;
 
       case MSG_NO_BANK:
-	MIOS32_LCD_PrintFormattedString("Bank #%d not available!", in_menu_msg_error_status+1);
+	SEQ_LCD_PrintFormattedString("Bank #%d not available!", in_menu_msg_error_status+1);
 	SEQ_LCD_PrintSpaces(18);
         break;
     }
   } else {
-    MIOS32_LCD_PrintString("ToDo: Pattern name entry                ");
+    SEQ_LCD_PrintString("ToDo: Pattern name entry                ");
   }
 
   return 0; // no error

@@ -2,6 +2,22 @@
 /*
  * LCD utility functions
  *
+ * Both 2x40 LCD screens are buffered.
+ * The application should only access the displays via SEQ_LCD_* commands.
+ *
+ * The buffer method has the advantage, that multiple tasks can write to the
+ * LCD without accessing the IO pins or the requirement for semaphores (to save time)
+ *
+ * Only changed characters (marked with flag 7 of each buffer byte) will be 
+ * transfered to the LCD. This greatly improves performance as well, especially
+ * if a graphical display should ever be supported by MBSEQ, but also in the
+ * emulation.
+ *
+ * Another advantage: LCD access works independent from the physical dimension
+ * of the LCDs. They are combined to one large 2x80 display, and SEQ_LCD_Update()
+ * will take care for switching between the devices and setting the cursor.
+ * If different LCDs should be used, only SEQ_LCD_Update() needs to be changed.
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -16,6 +32,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <stdarg.h>
 
 #include "seq_lcd.h"
 
@@ -23,12 +40,19 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#define LCD_MAX_LINES    2
+#define LCD_MAX_COLUMNS  80
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-const u8 charset_vbars[64] = {
+static const u8 charset_vbars[64] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x1e,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x1e, 0x1e,
@@ -39,7 +63,7 @@ const u8 charset_vbars[64] = {
   0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e
 };
 
-const u8 charset_hbars[64] = {
+static const u8 charset_hbars[64] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // empty bar
   0x00, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00, // "|  "
   0x00, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x00, // "|| "
@@ -50,22 +74,107 @@ const u8 charset_hbars[64] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // not used
 };
 
+static u8 lcd_buffer[LCD_MAX_LINES][LCD_MAX_COLUMNS];
+
+static u16 lcd_cursor_x;
+static u16 lcd_cursor_y;
+
 
 /////////////////////////////////////////////////////////////////////////////
-// Clear both LCDs
+// Buffer handling functions
 /////////////////////////////////////////////////////////////////////////////
+
+// clears the buffer
 s32 SEQ_LCD_Clear(void)
 {
   int i;
+  
+  u8 *ptr = (u8 *)lcd_buffer;
+  for(i=0; i<LCD_MAX_LINES*LCD_MAX_COLUMNS; ++i)
+    *ptr++ = ' ';
 
-  // clear both LCDs
-  for(i=0; i<2; ++i) {
-    MIOS32_LCD_DeviceSet(i);
-    MIOS32_LCD_Clear();
+  lcd_cursor_x = 0;
+  lcd_cursor_y = 0;
+
+  return 0; // no error
+}
+
+// prints char into buffer and increments cursor
+s32 SEQ_LCD_PrintChar(char c)
+{
+  if( lcd_cursor_y >= LCD_MAX_LINES || lcd_cursor_x >= LCD_MAX_COLUMNS )
+    return -1; // invalid cursor range
+
+  u8 *ptr = &lcd_buffer[lcd_cursor_y][lcd_cursor_x++];
+  if( (*ptr & 0x7f) != c )
+      *ptr = c;
+
+  return 0; // no error
+}
+
+// allows to change the buffer from other tasks w/o the need for semaphore handling
+// it doesn't change the cursor
+s32 SEQ_LCD_BufferSet(u16 x, u16 y, char *str)
+{
+  // we assume, that the CPU allows atomic accesses to bytes, 
+  // therefore no thread locking is required
+
+  if( lcd_cursor_y >= LCD_MAX_LINES )
+    return -1; // invalid cursor range
+
+  u8 *ptr = &lcd_buffer[y][x];
+  while( *str != '\0' ) {
+    if( x++ >= LCD_MAX_COLUMNS )
+      break;
+    if( (*ptr & 0x7f) != *str )
+      *ptr = *str;
+    ++ptr;
+    ++str;
   }
 
-  // select first LCD again
-  MIOS32_LCD_DeviceSet(0);
+  return 0; // no error
+}
+
+// sets the cursor to a new buffer location
+s32 SEQ_LCD_CursorSet(u16 column, u16 line)
+{
+  // set character position
+  lcd_cursor_x = column;
+  lcd_cursor_y = line;
+
+  return 0;
+}
+
+// transfers the buffer to LCDs
+// if force != 0, it is ensured that the whole screen will be refreshed, regardless
+// if characters have changed or not
+s32 SEQ_LCD_Update(u8 force)
+{
+  int next_x = -1;
+  int next_y = -1;
+
+  int x, y;
+  u8 *ptr = (u8 *)lcd_buffer;
+  for(y=0; y<LCD_MAX_LINES; ++y)
+    for(x=0; x<LCD_MAX_COLUMNS; ++x) {
+
+      if( force || !(*ptr & 0x80) ) {
+	if( x != next_x || y != next_y ) {
+	  // for 2 * 2x40 LCDs
+	  MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
+	  MIOS32_LCD_CursorSet(x%40, y);
+	}
+	MIOS32_LCD_PrintChar(*ptr & 0x7f);
+	*ptr |= 0x80;
+	next_y = y;
+	next_x = x+1;
+
+	// for 2 * 2x40 LCDs: ensure that cursor is set when we reach the second half
+	if( next_x == 40 )
+	  next_x = -1;
+      }
+      ++ptr;
+    }
 
   return 0; // no error
 }
@@ -102,12 +211,41 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints a string
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintString(char *str)
+{
+  while( *str != '\0' ) {
+    if( lcd_cursor_x >= LCD_MAX_COLUMNS )
+      break;
+    SEQ_LCD_PrintChar(*str);
+    ++str;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// prints a formatted string
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintFormattedString(char *format, ...)
+{
+  char buffer[LCD_MAX_COLUMNS]; // TODO: tmp!!! Provide a streamed COM method later!
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return SEQ_LCD_PrintString(buffer);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints <num> spaces
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintSpaces(u8 num)
 {
   do {
-    MIOS32_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(' ');
   } while( --num );
 
   return 0; // no error
@@ -128,9 +266,9 @@ s32 SEQ_LCD_PrintStringPadded(char *str, u32 width)
     if( c == 0 )
       fill = 1;
     if( fill )
-      MIOS32_LCD_PrintChar(' ');
+      SEQ_LCD_PrintChar(' ');
     else
-      MIOS32_LCD_PrintChar(c);
+      SEQ_LCD_PrintChar(c);
   }
 
   return 0; // no error
@@ -143,7 +281,7 @@ s32 SEQ_LCD_PrintStringPadded(char *str, u32 width)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintVBar(u8 value)
 {
-  return MIOS32_LCD_PrintChar(value);
+  return SEQ_LCD_PrintChar(value);
 }
 
 
@@ -175,7 +313,7 @@ s32 SEQ_LCD_PrintHBar(u8 value)
 
   int i;
   for(i=0; i<5; ++i)
-    MIOS32_LCD_PrintChar(hbar_table[value][i]);
+    SEQ_LCD_PrintChar(hbar_table[value][i]);
 
   return 0; // no error
 }
@@ -190,7 +328,7 @@ s32 SEQ_LCD_PrintNote(u8 note)
 
   // print "---" if note number is 0
   if( note == 0 )
-    MIOS32_LCD_PrintString("---");
+    SEQ_LCD_PrintString("---");
   else {
     u8 octave = 0;
 
@@ -201,14 +339,14 @@ s32 SEQ_LCD_PrintNote(u8 note)
     }
 
     // print semitone (capital letter if octave >= 2)
-    MIOS32_LCD_PrintChar(octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0]);
-    MIOS32_LCD_PrintChar(note_tab[note][1]);
+    SEQ_LCD_PrintChar(octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0]);
+    SEQ_LCD_PrintChar(note_tab[note][1]);
 
     // print octave
     switch( octave ) {
-      case 0:  MIOS32_LCD_PrintChar('2'); break; // -2
-      case 1:  MIOS32_LCD_PrintChar('1'); break; // -1
-      default: MIOS32_LCD_PrintChar('0' + (octave-2)); // 0..7
+      case 0:  SEQ_LCD_PrintChar('2'); break; // -2
+      case 1:  SEQ_LCD_PrintChar('1'); break; // -1
+      default: SEQ_LCD_PrintChar('0' + (octave-2)); // 0..7
     }
   }
 
@@ -222,23 +360,23 @@ s32 SEQ_LCD_PrintNote(u8 note)
 s32 SEQ_LCD_PrintArp(u8 arp)
 {
   if( arp < 4 )
-    MIOS32_LCD_PrintString("---");
+    SEQ_LCD_PrintString("---");
   else {
     int key_num = (arp >> 2) & 0x3;
     int arp_oct = (arp >> 4) & 0x7;
 
     if( arp_oct < 2 ) { // Multi Arp
-      MIOS32_LCD_PrintChar('*');
+      SEQ_LCD_PrintChar('*');
       arp_oct = ((arp >> 2) & 7) - 4;
     } else {
-      MIOS32_LCD_PrintChar('1' + key_num);
+      SEQ_LCD_PrintChar('1' + key_num);
       arp_oct -= 4;
     }
 
     if( arp_oct >= 0 )
-      MIOS32_LCD_PrintFormattedString("+%d", arp_oct);
+      SEQ_LCD_PrintFormattedString("+%d", arp_oct);
     else
-      MIOS32_LCD_PrintFormattedString("-%d", -arp_oct);
+      SEQ_LCD_PrintFormattedString("-%d", -arp_oct);
   }
 
   return 0; // no error
@@ -278,11 +416,11 @@ s32 SEQ_LCD_PrintGatelength(u8 len)
   };
 
   if( len < 24 ) { // gatelength
-    MIOS32_LCD_PrintString((char *)len_tab[len]);
+    SEQ_LCD_PrintString((char *)len_tab[len]);
   } else if( len < 32 ) { // gilde
-    MIOS32_LCD_PrintString("Gld.");
+    SEQ_LCD_PrintString("Gld.");
   } else { // multi trigger
-    MIOS32_LCD_PrintFormattedString("%1dx%2d", (len>>5)+1, (len&0x1f)+1);
+    SEQ_LCD_PrintFormattedString("%1dx%2d", (len>>5)+1, (len&0x1f)+1);
   }
 
   return 0; // no error
@@ -296,10 +434,10 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
 {
   const char selected_tracks_tab[16] = { '-', '1', '2', 'M', '3', 'M', 'M', 'M', '4', 'M', 'M', 'M', 'M', 'M', 'M', 'A' };
 
-  MIOS32_LCD_PrintChar('G');
-  MIOS32_LCD_PrintChar('1' + group);
-  MIOS32_LCD_PrintChar('T');
-  MIOS32_LCD_PrintChar(selected_tracks_tab[selected_tracks & 0xf]);
+  SEQ_LCD_PrintChar('G');
+  SEQ_LCD_PrintChar('1' + group);
+  SEQ_LCD_PrintChar('T');
+  SEQ_LCD_PrintChar(selected_tracks_tab[selected_tracks & 0xf]);
 
   return 0; // no error
 }
@@ -310,11 +448,11 @@ s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
 s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern)
 {
   if( pattern.DISABLED ) {
-    MIOS32_LCD_PrintChar('-');
-    MIOS32_LCD_PrintChar('-');
+    SEQ_LCD_PrintChar('-');
+    SEQ_LCD_PrintChar('-');
   } else {
-    MIOS32_LCD_PrintChar('A' + pattern.group + (pattern.lower ? 32 : 0));
-    MIOS32_LCD_PrintChar('1' + pattern.num);
+    SEQ_LCD_PrintChar('A' + pattern.group + (pattern.lower ? 32 : 0));
+    SEQ_LCD_PrintChar('1' + pattern.num);
   }
 
   return 0; // no error
@@ -336,11 +474,11 @@ s32 SEQ_LCD_PrintPatternName(seq_pattern_t pattern, char *pattern_name)
     }
 
   if( found_char )
-    MIOS32_LCD_PrintFormattedString("%-20s", pattern_name);
+    SEQ_LCD_PrintFormattedString("%-20s", pattern_name);
   else {
-    MIOS32_LCD_PrintString("<Pattern ");
+    SEQ_LCD_PrintString("<Pattern ");
     SEQ_LCD_PrintPattern(pattern);
-    MIOS32_LCD_PrintChar('>');
+    SEQ_LCD_PrintChar('>');
     SEQ_LCD_PrintSpaces(8);
   }
 
@@ -363,10 +501,10 @@ s32 SEQ_LCD_PrintTrackName(u8 track, char *track_name)
     }
 
   if( found_char )
-    MIOS32_LCD_PrintFormattedString("%-20s", track_name);
+    SEQ_LCD_PrintFormattedString("%-20s", track_name);
   else {
-    MIOS32_LCD_PrintFormattedString("<Track #%d", track+1);
-    MIOS32_LCD_PrintChar('>');
+    SEQ_LCD_PrintFormattedString("<Track #%d", track+1);
+    SEQ_LCD_PrintChar('>');
     SEQ_LCD_PrintSpaces((track > 9) ? 9 : 10);
   }
 
@@ -380,11 +518,11 @@ s32 SEQ_LCD_PrintTrackName(u8 track, char *track_name)
 s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port)
 {
   switch( port >> 4 ) {
-    case 0:  MIOS32_LCD_PrintString("Def."); break;
-    case 1:  MIOS32_LCD_PrintFormattedString("USB%x", port%16); break;
-    case 2:  MIOS32_LCD_PrintFormattedString("UAR%x", port%16); break;
-    case 3:  MIOS32_LCD_PrintFormattedString("IIC%x", port%16); break;
-    default: MIOS32_LCD_PrintFormattedString("0x%02X", port); break;
+    case 0:  SEQ_LCD_PrintString("Def."); break;
+    case 1:  SEQ_LCD_PrintFormattedString("USB%x", port%16); break;
+    case 2:  SEQ_LCD_PrintFormattedString("UAR%x", port%16); break;
+    case 3:  SEQ_LCD_PrintFormattedString("IIC%x", port%16); break;
+    default: SEQ_LCD_PrintFormattedString("0x%02X", port); break;
   }
 
   return 0; // no error
@@ -397,7 +535,7 @@ s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port)
 s32 SEQ_LCD_PrintStepView(u8 step_view)
 {
 
-  MIOS32_LCD_PrintFormattedString("S%2d-%2d", (step_view*16)+1, (step_view+1)*16);
+  SEQ_LCD_PrintFormattedString("S%2d-%2d", (step_view*16)+1, (step_view+1)*16);
 
   return 0; // no error
 }
@@ -408,7 +546,7 @@ s32 SEQ_LCD_PrintStepView(u8 step_view)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintSelectedStep(u8 step_sel, u8 step_max)
 {
-  MIOS32_LCD_PrintFormattedString("%3d/%2d", step_sel+1, step_max+1);
+  SEQ_LCD_PrintFormattedString("%3d/%2d", step_sel+1, step_max+1);
 
   return 0; // no error
 }

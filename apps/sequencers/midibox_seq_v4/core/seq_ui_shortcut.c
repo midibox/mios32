@@ -127,22 +127,13 @@ static s32 LCD_Handler(u8 high_prio)
     return 0; // there are no high-priority updates
 
   // print available menu pages
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
+  SEQ_LCD_CursorSet(0, 0);
   //                      <-------------------------------------->
   //                      0123456789012345678901234567890123456789
-  MIOS32_LCD_PrintString("Menu Shortcuts:");
-  SEQ_LCD_PrintSpaces(25);
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Mix  Evnt Mode Dir. Div. Len. Trn. Grv. ");
-  
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  //                      <-------------------------------------->
-  //                      0123456789012345678901234567890123456789
-  SEQ_LCD_PrintSpaces(40);
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("Trg.  Fx  Man. Mrp. BPM  Save MIDI SysEx");
+  SEQ_LCD_PrintString("Menu Shortcuts:");
+  SEQ_LCD_PrintSpaces(25 + 40);
+  SEQ_LCD_CursorSet(0, 1);
+  SEQ_LCD_PrintString("Mix  Evnt Mode Dir. Div. Len. Trn. Grv. Trg.  Fx  Man. Mrp. BPM  Save MIDI SysEx");
 
   return 0; // no error
 }

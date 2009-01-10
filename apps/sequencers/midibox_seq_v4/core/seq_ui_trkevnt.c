@@ -253,29 +253,24 @@ static s32 LCD_Handler(u8 high_prio)
   u8 evnt_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE);
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk. Layer Assignments:");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk. Layer Assignments:");
   ///
   if( ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(2);
   } else {
-    MIOS32_LCD_PrintFormattedString("%2d", evnt_mode + 1);
+    SEQ_LCD_PrintFormattedString("%2d", evnt_mode + 1);
   }
-  MIOS32_LCD_PrintFormattedString(" %s %s %s", 
+  SEQ_LCD_PrintFormattedString(" %s %s %s", 
 				  SEQ_LAYER_CTypeStr(evnt_mode, 0),
 				  SEQ_LAYER_CTypeStr(evnt_mode, 1),
 				  SEQ_LAYER_CTypeStr(evnt_mode, 2));
   ///
-  MIOS32_LCD_PrintString(" Val1 Val2 Val3");
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Chn. Port                     "); // ">> COPY <<" will be printed later
+  SEQ_LCD_PrintString("Chn. Port                     "); // ">> COPY <<" will be printed later
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
@@ -285,16 +280,16 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "A:");
-  MIOS32_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 0));
+  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "A:");
+  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 0));
   SEQ_LCD_PrintSpaces(1);
 
-  MIOS32_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "B:");
-  MIOS32_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 1));
+  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "B:");
+  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 1));
   SEQ_LCD_PrintSpaces(1);
 
-  MIOS32_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "C:");
-  MIOS32_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 2));
+  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "C:");
+  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 2));
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -309,22 +304,20 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
   if( ui_selected_item == ITEM_MIDI_CHANNEL && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d  ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
+    SEQ_LCD_PrintFormattedString("%3d  ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
-    MIOS32_LCD_PrintFormattedString("0x%02x ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT)); // TODO: get MIDI port name from SEQ_MIDI
+    SEQ_LCD_PrintFormattedString("0x%02x ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT)); // TODO: get MIDI port name from SEQ_MIDI
   }
 #if 0
-  MIOS32_LCD_PrintString(1 ? "(not available)" : "(available)    "); // TODO: get MIDI port availability from SEQ_MIDI
+  SEQ_LCD_PrintString(1 ? "(not available)" : "(available)    "); // TODO: get MIDI port availability from SEQ_MIDI
 #else
   SEQ_LCD_PrintSpaces(15);
 #endif
@@ -333,18 +326,18 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
 
   if( preset_copied ) {
-    MIOS32_LCD_CursorSet(30, 0);
-    MIOS32_LCD_PrintString("> PRESET <");
-    MIOS32_LCD_CursorSet(30, 1);
-    MIOS32_LCD_PrintString("> COPIED <");
+    SEQ_LCD_CursorSet(70, 0);
+    SEQ_LCD_PrintString("> PRESET <");
+    SEQ_LCD_CursorSet(70, 1);
+    SEQ_LCD_PrintString("> COPIED <");
   } else {
-    MIOS32_LCD_CursorSet(30, 0);
-    MIOS32_LCD_PrintString(">> COPY <<");
-    MIOS32_LCD_CursorSet(30, 1);
+    SEQ_LCD_CursorSet(70, 0);
+    SEQ_LCD_PrintString(">> COPY <<");
+    SEQ_LCD_CursorSet(70, 1);
     if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) )
-      MIOS32_LCD_PrintString(">PRESET!!<");
+      SEQ_LCD_PrintString(">PRESET!!<");
     else
-      MIOS32_LCD_PrintString("> PRESET <");
+      SEQ_LCD_PrintString("> PRESET <");
   }
 
 
@@ -386,13 +379,13 @@ static s32 PrintCValue(u8 track, u8 const_ix)
       break;
 
     case SEQ_LAYER_ControlType_Note:
-      MIOS32_LCD_PrintChar(' ');
+      SEQ_LCD_PrintChar(' ');
       SEQ_LCD_PrintNote(value);
       break;
 
     case SEQ_LAYER_ControlType_Velocity:
     case SEQ_LAYER_ControlType_CC:
-      MIOS32_LCD_PrintFormattedString(" %3d", value);
+      SEQ_LCD_PrintFormattedString(" %3d", value);
       break;
 
     case SEQ_LAYER_ControlType_Length:
@@ -402,12 +395,12 @@ static s32 PrintCValue(u8 track, u8 const_ix)
     case SEQ_LAYER_ControlType_CMEM_T:
     {
       u8 cmem_track = value % SEQ_CORE_NUM_TRACKS;
-      MIOS32_LCD_PrintFormattedString("G%dT%d", (cmem_track >> 2)+1, (cmem_track & 3)+1);
+      SEQ_LCD_PrintFormattedString("G%dT%d", (cmem_track >> 2)+1, (cmem_track & 3)+1);
     }
     break;
 
     default:
-      MIOS32_LCD_PrintString(" ???");
+      SEQ_LCD_PrintString(" ???");
       break;
   }
 

@@ -239,23 +239,17 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("SyncPatChange  FollowSong  Paste/Clr Beh");
-
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString(" Control  Root      Selected Scale      ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("SyncPatChange  FollowSong  Paste/Clr Beh Control  Root      Selected Scale      ");
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
   SEQ_LCD_PrintSpaces(2);
 
   if( ui_selected_item == ITEM_SYNC_CHANGE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    MIOS32_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
+    SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
   }
   SEQ_LCD_PrintSpaces(3);
 
@@ -263,7 +257,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_STEPS_MEASURE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d", seq_core_steps_per_measure);
+    SEQ_LCD_PrintFormattedString("%3d", seq_core_steps_per_measure);
   }
   SEQ_LCD_PrintSpaces(8);
 
@@ -271,7 +265,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_FOLLOW_SONG && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    MIOS32_LCD_PrintString(seq_core_options.FOLLOW_SONG ? "on " : "off");
+    SEQ_LCD_PrintString(seq_core_options.FOLLOW_SONG ? "on " : "off");
   }
   SEQ_LCD_PrintSpaces(7);
 
@@ -279,21 +273,20 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(11);
   } else {
-    MIOS32_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Whole Track" : "Steps only ");
+    SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Whole Track" : "Steps only ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(40, 1);
   SEQ_LCD_PrintSpaces(1);
 
   if( ui_selected_item == ITEM_SCALE_CTRL && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
     if( seq_core_global_scale_ctrl )
-      MIOS32_LCD_PrintFormattedString("Group G%d", seq_core_global_scale_ctrl);
+      SEQ_LCD_PrintFormattedString("Group G%d", seq_core_global_scale_ctrl);
     else
-      MIOS32_LCD_PrintString("Global  ");
+      SEQ_LCD_PrintString("Global  ");
   }
   SEQ_LCD_PrintSpaces(1);
 
@@ -310,7 +303,7 @@ static s32 LCD_Handler(u8 high_prio)
     const char root_str[13][5] = {
       "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
     };
-    MIOS32_LCD_PrintString((char *)root_str[root_selection]);
+    SEQ_LCD_PrintString((char *)root_str[root_selection]);
   }
   SEQ_LCD_PrintSpaces(2);
 
@@ -318,8 +311,8 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_SCALE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(24);
   } else {
-    MIOS32_LCD_PrintFormattedString("%3d:", scale);
-    MIOS32_LCD_PrintString(SEQ_SCALE_GetName(scale));
+    SEQ_LCD_PrintFormattedString("%3d:", scale);
+    SEQ_LCD_PrintString(SEQ_SCALE_GetName(scale));
   }
 
   return 0; // no error

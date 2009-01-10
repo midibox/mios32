@@ -150,37 +150,33 @@ static s32 LCD_Handler(u8 high_prio)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("Trk.  Transpose: ");
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Trk.  Transpose: ");
 
-  MIOS32_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '>' : ' ');
+  SEQ_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '>' : ' ');
   if( ui_selected_item == ITEM_OCTAVE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
-    MIOS32_LCD_PrintString("Octave");
+    SEQ_LCD_PrintString("Octave");
   }
-  MIOS32_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '<' : ' ');
+  SEQ_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '<' : ' ');
 
   SEQ_LCD_PrintSpaces(2);
 
-  MIOS32_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '>' : ' ');
+  SEQ_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '>' : ' ');
   if( ui_selected_item == ITEM_SEMITONE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    MIOS32_LCD_PrintString("Semitone");
+    SEQ_LCD_PrintString("Semitone");
   }
-  MIOS32_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '<' : ' ');
+  SEQ_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '<' : ' ');
 
-  SEQ_LCD_PrintSpaces(3);
-
-  MIOS32_LCD_DeviceSet(1);
-  SEQ_LCD_PrintSpaces(40);
+  SEQ_LCD_PrintSpaces(3); // finish first half
+  SEQ_LCD_PrintSpaces(40); // second half
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
@@ -195,30 +191,27 @@ static s32 LCD_Handler(u8 high_prio)
 
   int i;
   for(i=1; i<8; ++i) {
-    MIOS32_LCD_PrintChar(value == (8+i) ? '>' : ' ');
+    SEQ_LCD_PrintChar(value == (8+i) ? '>' : ' ');
 
     if( ui_selected_item != ITEM_GXTY && value == (8+i) && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(2);
     else
-      MIOS32_LCD_PrintFormattedString("-%d", 8-i);
+      SEQ_LCD_PrintFormattedString("-%d", 8-i);
 
-    MIOS32_LCD_PrintChar(value == (8+i) ? '<' : ' ');
-    MIOS32_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(value == (8+i) ? '<' : ' ');
+    SEQ_LCD_PrintChar(' ');
   }
 
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_CursorSet(0, 1);
-
   for(i=8; i<16; ++i) {
-    MIOS32_LCD_PrintChar(value == (i-8) ? '>' : ' ');
+    SEQ_LCD_PrintChar(value == (i-8) ? '>' : ' ');
 
     if( ui_selected_item != ITEM_GXTY && value == (i-8)  && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(2);
     else
-      MIOS32_LCD_PrintFormattedString("+%d", i-8);
+      SEQ_LCD_PrintFormattedString("+%d", i-8);
 
-    MIOS32_LCD_PrintChar(value == (i-8) ? '<' : ' ');
-    MIOS32_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(value == (i-8) ? '<' : ' ');
+    SEQ_LCD_PrintChar(' ');
   }
 
   return 0; // no error

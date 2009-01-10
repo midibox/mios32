@@ -114,32 +114,28 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(0);
-
-  MIOS32_LCD_CursorSet(0, 0);
+  SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintSpaces(20);
-  MIOS32_LCD_PrintString("Select Menu Page:   ");
-  MIOS32_LCD_CursorSet(0, 1);
+  SEQ_LCD_PrintString("Select Menu Page:   ");
+  SEQ_LCD_CursorSet(0, 1);
   SEQ_LCD_PrintSpaces(20);
-  MIOS32_LCD_PrintString(SEQ_UI_PageNameGet(ui_selected_page));
-  MIOS32_LCD_PrintChar((ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE) ? ' ' : '<');
-  MIOS32_LCD_PrintChar((ui_selected_page < (SEQ_UI_PAGES-1)) ? '>' : ' ');
+  SEQ_LCD_PrintString(SEQ_UI_PageNameGet(ui_selected_page));
+  SEQ_LCD_PrintChar((ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE) ? ' ' : '<');
+  SEQ_LCD_PrintChar((ui_selected_page < (SEQ_UI_PAGES-1)) ? '>' : ' ');
 
 
   ///////////////////////////////////////////////////////////////////////////
-  MIOS32_LCD_DeviceSet(1);
-
-  MIOS32_LCD_CursorSet(0, 0);
+  SEQ_LCD_CursorSet(40, 0);
   if( seq_midi_out_allocated > 1000 || seq_midi_out_max_allocated > 1000 || seq_midi_out_dropouts > 1000 ) {
-    MIOS32_LCD_PrintFormattedString("MIDI Scheduler: Alloc %4d/%4d Dr: %4d",
+    SEQ_LCD_PrintFormattedString("MIDI Scheduler: Alloc %4d/%4d Dr: %4d",
       seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
   } else {
-    MIOS32_LCD_PrintFormattedString("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
+    SEQ_LCD_PrintFormattedString("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
       seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
   }
 
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintFormattedString("SD Card: ");
+  SEQ_LCD_CursorSet(0, 1);
+  SEQ_LCD_PrintFormattedString("SD Card: ");
   char status_str[128];
   if( !SEQ_FILE_VolumeAvailable() ) {
     sprintf(status_str, "not connected");
