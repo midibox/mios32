@@ -7,7 +7,8 @@
 //
 
 #import "MIOS32_MIDI_Wrapper.h"
-//#import <PYMIDI/PYMIDI.h>
+
+#include <portmidi.h>
 
 #include <mios32.h>
 
@@ -62,6 +63,11 @@ static NSObject *_self;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_Init(u32 mode)
 {
+	int i;
+/*    for (i = 0; i < Pm_CountDevices(); i++) {
+        const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+        NSLog("%d: %s, %s", i, info->interf, info->name);
+	}*/
 	return 0;
   // currently only mode 0 supported
   if( mode != 0 )
@@ -74,7 +80,7 @@ s32 MIOS32_UART_Init(u32 mode)
   // initialisation of PYMIDI channels already done in awakeFromNib
   
   // clear buffer counters
-  int i;
+
   for(i=0; i<NUM_MIDI_IN; ++i) {
     rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
   }
