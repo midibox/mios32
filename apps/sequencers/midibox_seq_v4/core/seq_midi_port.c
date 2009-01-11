@@ -37,7 +37,10 @@ typedef struct {
 static const seq_midi_port_entry_t in_ports[] = {
   // port ID  Name
   { DEFAULT, "Def." },
-  { USB0,    "USB " },
+  { USB0,    "USB1" },
+  { USB1,    "USB2" },
+  { USB2,    "USB3" },
+  { USB3,    "USB4" },
   { UART0,   "IN1 " },
   { UART1,   "IN2 " },
   { IIC0,    "IIC1" },
@@ -50,7 +53,10 @@ static const seq_midi_port_entry_t in_ports[] = {
 static const seq_midi_port_entry_t out_ports[] = {
   // port ID  Name
   { DEFAULT, "Def." },
-  { USB0,    "USB " },
+  { USB0,    "USB1" },
+  { USB1,    "USB2" },
+  { USB2,    "USB3" },
+  { USB3,    "USB4" },
   { UART0,   "OUT1" },
   { UART1,   "OUT2" },
   { UART2,   "OUT3" },
