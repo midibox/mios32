@@ -23,6 +23,7 @@
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 
+#include "tasks.h"
 #include "seq_ui.h"
 #include "seq_lcd.h"
 #include "seq_led.h"
@@ -32,11 +33,6 @@
 #include "seq_cc.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
-
-#ifndef MIOS32_FAMILY_EMULATION
-#include <FreeRTOS.h>
-#include <portmacro.h>
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -322,10 +318,9 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   // toggle mode
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.METRONOME ^= 1;
+
 #if 1
-#ifndef MIOS32_FAMILY_EMULATION
-  portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
-#endif
+  MUTEX_SDCARD_TAKE;
 
 #if 0
   u8 bank;
@@ -338,9 +333,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
     SEQ_FILE_M_Open();
 #endif
 
-#ifndef MIOS32_FAMILY_EMULATION
-  portEXIT_CRITICAL();
-#endif
+  MUTEX_SDCARD_GIVE;
 #endif
 
 #else

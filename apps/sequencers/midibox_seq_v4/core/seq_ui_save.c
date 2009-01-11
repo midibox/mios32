@@ -19,6 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
+#include "seq_pattern.h"
 #include "seq_file_b.h"
 
 
@@ -178,7 +179,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP8: {
       s32 status;
-      if( (status=SEQ_FILE_B_PatternWrite(save_pattern[ui_selected_group].bank, save_pattern[ui_selected_group].pattern, ui_selected_group)) < 0 ) {
+      if( (status=SEQ_PATTERN_Save(ui_selected_group, save_pattern[ui_selected_group])) < 0 ) {
 	// TODO: print error message
       } else {
 	// TODO: print success message

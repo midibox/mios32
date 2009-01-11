@@ -174,8 +174,10 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(40, 1);
   SEQ_LCD_PrintFormattedString("SD Card: ");
   char status_str[128];
-  if( !SEQ_FILE_VolumeAvailable() ) {
+  if( !SEQ_FILE_SDCardAvailable() ) {
     sprintf(status_str, "not connected");
+  } else if( !SEQ_FILE_VolumeAvailable() ) {
+    sprintf(status_str, "Invalid FAT  ");
   } else {
 #if 0
     // disabled: determing the number of free bytes takes too long!

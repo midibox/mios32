@@ -66,6 +66,9 @@
 
 extern s32 SEQ_FILE_Init(u32 mode);
 
+extern s32 SEQ_FILE_CheckSDCard(void);
+
+extern s32 SEQ_FILE_SDCardAvailable(void);
 extern s32 SEQ_FILE_VolumeAvailable(void);
 extern u32 SEQ_FILE_VolumeBytesFree(void);
 extern u32 SEQ_FILE_VolumeBytesTotal(void);
