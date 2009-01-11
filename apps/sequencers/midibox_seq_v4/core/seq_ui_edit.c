@@ -307,7 +307,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   
   SEQ_LCD_PrintFormattedString("Chn%2d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
   SEQ_LCD_PrintChar('/');
-  SEQ_LCD_PrintMIDIPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
+  SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
   SEQ_LCD_PrintSpaces(1);
 
   SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_par_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));

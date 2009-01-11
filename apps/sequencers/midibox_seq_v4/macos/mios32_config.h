@@ -45,6 +45,8 @@
 
 #define MIOS32_MIDI_DEFAULT_PORT UART0
 
+#define MIOS32_UART_NUM 4
+
 
 // memory alloccation method:
 // 0: internal static allocation with one byte for each flag

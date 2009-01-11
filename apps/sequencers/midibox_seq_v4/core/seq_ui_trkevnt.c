@@ -146,7 +146,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_EVNT_CONST2:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST2, 0, 127, incrementer);
     case ITEM_EVNT_CONST3:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST3, 0, 127, incrementer);
     case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
-    case ITEM_MIDI_PORT:     return SEQ_UI_CC_Inc(SEQ_CC_MIDI_PORT, 0, 3, incrementer); // TODO: use global define for number of MIDI ports!
+    case ITEM_MIDI_PORT: {
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) ) {
+	mios32_midi_port_t new_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	SEQ_UI_CC_Set(SEQ_CC_MIDI_PORT, new_port);
+	return 1; // value changed
+      }
+      return 0; // value not changed
+    } break;
     case ITEM_PRESET:        CopyPreset(SEQ_UI_VisibleTrackGet()); return 1;
   }
 
@@ -311,16 +321,14 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
+  mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
   if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+    SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString("0x%02x ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT)); // TODO: get MIDI port name from SEQ_MIDI
+    SEQ_LCD_PrintMIDIOutPort(port);
   }
-#if 0
-  SEQ_LCD_PrintString(1 ? "(not available)" : "(available)    "); // TODO: get MIDI port availability from SEQ_MIDI
-#else
-  SEQ_LCD_PrintSpaces(15);
-#endif
+  ;
+  SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutCheckAvailable(port) ? " (available)    " : " (not available)");
   SEQ_LCD_PrintSpaces(5);
 
   ///////////////////////////////////////////////////////////////////////////

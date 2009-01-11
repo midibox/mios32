@@ -382,7 +382,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("Assignment for CC%d ", mixer_par-SEQ_MIXER_PAR_CC1_NUM+1);
     }
 
-    SEQ_LCD_PrintMIDIPort(SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_PORT));
+    SEQ_LCD_PrintMIDIOutPort(SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_PORT));
     SEQ_LCD_PrintFormattedString(" Chn#%2d", SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_CHANNEL));
 
 
@@ -397,7 +397,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 	if( mixer_par == SEQ_MIXER_PAR_PORT ) {
 	  SEQ_LCD_PrintChar(' ');
-	  SEQ_LCD_PrintMIDIPort(value);
+	  SEQ_LCD_PrintMIDIOutPort(value);
 	} else if( mixer_par == SEQ_MIXER_PAR_CHANNEL ) {
 	  SEQ_LCD_PrintFormattedString(" #%2d ", value+1);
 	} else if( mixer_par >= SEQ_MIXER_PAR_PRG && mixer_par <= SEQ_MIXER_PAR_CC4 ) {
