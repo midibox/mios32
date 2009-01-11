@@ -15,6 +15,9 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
+// USB settings
+#define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
+#define MIOS32_USB_MIDI_NUM_PORTS 4
 
 
 // for debugging via UART1 (application uses printf() to output helpful debugging messages)
