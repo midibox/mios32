@@ -795,7 +795,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
     u8 buffer[3] = {midi_package.evnt0, midi_package.evnt1, midi_package.evnt2};
     int len = mios32_midi_pcktype_num_bytes[midi_package.cin];
     int i;
-    s32 status;
+    s32 status = 0;
     for(i=0; i<len; ++i)
       status |= direct_rx_callback_func(port, buffer[i]);
     return status;
