@@ -39,7 +39,11 @@
 // set this to 1 if performance of clock handler should be measured with a scope
 // (LED toggling in APP_Background() has to be disabled!)
 // set this to 2 to visualize forward delay during pattern changes
-#define LED_PERFORMANCE_MEASURING 2
+#define LED_PERFORMANCE_MEASURING 0
+
+// same for measuring with the stopwatch
+// value is visible in menu (-> press exit button)
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -146,6 +150,10 @@ s32 SEQ_CORE_Init(u32 mode)
   SEQ_BPM_PPQN_Set(384);
   SEQ_BPM_Set(140.0);
 
+#if STOPWATCH_PERFORMANCE_MEASURING
+  SEQ_UI_MENU_StopwatchInit();
+#endif
+
   return 0; // no error
 }
 
@@ -200,20 +208,38 @@ s32 SEQ_CORE_Handler(void)
 	// forwarding the sequencer has been requested (e.g. before pattern change)
 	u32 forwarded_bpm_tick = bpm_tick;
 
+#if LED_PERFORMANCE_MEASURING == 2
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
+#endif
+#if STOPWATCH_PERFORMANCE_MEASURING == 2
+	SEQ_UI_MENU_StopwatchReset();
+#endif
 	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
 	  SEQ_CORE_Tick(forwarded_bpm_tick);
 	  ++forwarded_bpm_tick;
 	  ++bpm_tick_prefetched_ctr;
 	}
 	bpm_tick_prefetch_req = 0;
+#if LED_PERFORMANCE_MEASURING == 2
+	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
+#if STOPWATCH_PERFORMANCE_MEASURING == 2
+	SEQ_UI_MENU_StopwatchCapture();
+#endif
       } else {
 	// realtime generation of events
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+	SEQ_UI_MENU_StopwatchReset();
+#endif
 	SEQ_CORE_Tick(bpm_tick);
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+	SEQ_UI_MENU_StopwatchCapture();
 #endif
       }
     }
