@@ -356,6 +356,22 @@ void SRIO_ServiceFinish(void)
 	[NSThread exit];
 }
 
+- (void)periodic1STask:(id)anObject
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSLock *theLock = [[NSLock alloc] init];
+
+	while (YES) {		
+		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
+		SEQ_TASK_Period1S();
+		[theLock unlock];
+        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.000]];
+    }
+	
+	[pool release];
+	[NSThread exit];
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // This task is triggered from SEQ_PATTERN_Change to transport the new patch
 // into RAM
@@ -395,16 +411,12 @@ s32 TASKS_Init(u32 mode)
 {
 	// install SRIO task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
-
-	#ifdef GNUSTEP
-	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSDefaultRunLoopMode];
-#else	
 	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];	
-#endif
 
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
 	[NSThread detachNewThreadSelector:@selector(periodic1mSTask:) toTarget:_self withObject:nil];
+	[NSThread detachNewThreadSelector:@selector(periodic1STask:) toTarget:_self withObject:nil];
 
 	return 0; // no error
 }
@@ -561,12 +573,7 @@ s32 TASKS_Init(u32 mode)
 
 	// init application after ca. 1 mS (this ensures that all objects have been initialized)
 	NSTimer *init_timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
-#ifdef GNUSTEP
-	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSDefaultRunLoopMode];
-#else
 	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSRunLoopCommonModes];
-#endif
-
 }
 
 @end
