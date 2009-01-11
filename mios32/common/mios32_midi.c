@@ -701,11 +701,13 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 //!
 //! The callback allows following usecases:
 //! <UL>
-//!   <LI>filter packages
+//!   <LI>package filter
 //!   <LI>duplicating/routing packages
 //!   <LI>monitoring packages (sniffer)
 //!   <LI>create virtual busses; loopbacks
-//!   <LI>extend available interfaces (e.g. by an OSC or AOUT interface)
+//!   <LI>extend available ports (e.g. by an OSC or AOUT port)<BR>
+//!       It is recommented to give port extensions a port number >= 0x80 to
+//!       avoid incompatibility with future MIOS32 port extensions.
 //! </UL>
 //! \param[in] *callback_tx pointer to callback function:<BR>
 //! \code
