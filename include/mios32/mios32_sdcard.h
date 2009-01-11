@@ -39,6 +39,7 @@ extern s32 MIOS32_SDCARD_Init(u32 mode);
 
 extern s32 MIOS32_SDCARD_PowerOn(void);
 extern s32 MIOS32_SDCARD_PowerOff(void);
+extern s32 MIOS32_SDCARD_CheckAvailable(u8 was_available);
 
 extern s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc);
 extern s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer);
