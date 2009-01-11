@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for scale routines
+ * Header file for chord routines
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_SCALE_H
-#define _SEQ_SCALE_H
+#ifndef _SEQ_CHORD_H
+#define _SEQ_CHORD_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -29,16 +29,15 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_SCALE_Init(u32 mode);
+extern s32 SEQ_CHORD_Init(u32 mode);
 
-extern s32 SEQ_SCALE_NumGet(void);
-extern char *SEQ_SCALE_NameGet(u8 scale);
-
-extern s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root);
+extern s32 SEQ_CHORD_NumGet(void);
+extern char *SEQ_CHORD_NameGet(u8 chord_ix);
+extern s32 SEQ_CHORD_NoteGet(u8 key_num, u8 chord);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SEQ_SCALE_H */
+#endif /* _SEQ_CHORD_H */

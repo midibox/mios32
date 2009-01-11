@@ -129,7 +129,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
 
     case ITEM_SCALE: {
-      u8 scale_max = SEQ_SCALE_GetNum()-1;
+      u8 scale_max = SEQ_SCALE_NumGet()-1;
       if( seq_core_global_scale_ctrl == 0 ) {
 	return SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer);
       } else {
@@ -312,7 +312,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(24);
   } else {
     SEQ_LCD_PrintFormattedString("%3d:", scale);
-    SEQ_LCD_PrintString(SEQ_SCALE_GetName(scale));
+    SEQ_LCD_PrintString(SEQ_SCALE_NameGet(scale));
   }
 
   return 0; // no error

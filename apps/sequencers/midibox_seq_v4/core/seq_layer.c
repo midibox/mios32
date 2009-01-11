@@ -22,6 +22,7 @@
 #include "seq_cc.h"
 #include "seq_trg.h"
 #include "seq_par.h"
+#include "seq_chord.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -252,6 +253,8 @@ static const u8 seq_layer_preset_table_player[SEQ_LAYER_EVNTMODE_NUM][4*SEQ_PAR_
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LAYER_Init(u32 mode)
 {
+  SEQ_CHORD_Init(0);
+
   return 0; // no error
 }
 
@@ -399,7 +402,26 @@ static s32 SEQ_LAYER_GetEvnt_2(u8 track, u8 step, seq_layer_evnt_t layer_events[
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_LAYER_GetEvnt_3(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
 {
-  return -1; // unimplemented layer mode
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  u8 chord_value = SEQ_PAR_Get(track, step, 0);
+  int i;
+  for(i=0; i<4; ++i) {
+    s32 note = SEQ_CHORD_NoteGet(i, chord_value);
+    if( note < 0 )
+      break;
+
+    seq_layer_evnt_t *e = &layer_events[i];
+    mios32_midi_package_t *p = &e->midi_package;
+    p->type     = NoteOn;
+    p->event    = NoteOn;
+    p->chn      = tcc->midi_chn;
+    p->note     = note;
+    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+    e->len      = SEQ_PAR_Get(track, step, 2);
+  }
+
+  return i;// events
 }
 
 /////////////////////////////////////////////////////////////////////////////
