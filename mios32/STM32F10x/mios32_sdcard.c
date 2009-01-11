@@ -95,6 +95,9 @@
 #define SDCMD_SEND_OP_COND	0x41
 #define SDCMD_SEND_OP_COND_CRC	0xf9
 
+#define SDCMD_SEND_STATUS	0x4d
+#define SDCMD_SEND_STATUS_CRC	0xaf
+
 #define SDCMD_READ_SINGLE_BLOCK	0x51
 #define SDCMD_READ_SINGLE_BLOCK_CRC 0xff
 
@@ -265,6 +268,77 @@ s32 MIOS32_SDCARD_PowerOff(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! If SD card was previously available: Checks if the SD Card is still 
+//! available by sending the STATUS command.<BR>
+//! This takes ca. 10 uS
+//!
+//! If SD card was previously not available: Checks if the SD Card is
+//! available by sending the IDLE command at low speed.<BR>
+//! This takes ca. 500 uS!<BR>
+//! Once we got a positive response, MIOS32_SDCARD_PowerOn() will be 
+//! called by this function to initialize the card completely.
+//!
+//! Example for Connection/Disconnection detection:
+//! \code
+//! // this function is called each second from a low-priority task
+//! // If multiple tasks are accessing the SD card, add a semaphore/mutex
+//! //  to avoid IO access collisions with other tasks!
+//! u8 sdcard_available;
+//! s32 SEQ_FILE_CheckSDCard(void)
+//! {
+//!   // check if SD card is available
+//!   // High speed access if the card was previously available
+//!   u8 prev_sdcard_available = sdcard_available;
+//!   sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
+//! 
+//!   if( sdcard_available && !prev_sdcard_available ) {
+//!     // SD Card has been connected
+//! 
+//!     // now it's possible to read/write sectors
+//! 
+//!   } else if( !sdcard_available && prev_sdcard_available ) {
+//!     // SD Card has been disconnected
+//! 
+//!     // here you can notify your application about this state
+//!   }
+//! 
+//!   return 0; // no error
+//! }
+//! \endcode
+//! \param[in] was_available should only be set if the SD card was previously available
+//! \return 0 if no response from SD Card
+//! \return 1 if SD card is accessible
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
+{
+  if( was_available ) {
+    // send STATUS command to check if media is available
+    if( MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_STATUS, 0, SDCMD_SEND_STATUS_CRC) < 0 )
+      return 0; // SD card not available anymore
+
+    // deactivate chip select
+    PIN_CSN_1;
+  } else {
+    // ensure that SPI interface is clocked at low speed
+    MIOS32_SDCARD_SPI_Init(0);
+
+    // send CMD0 to reset the media
+    if( MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC) < 0 )
+      return 0; // SD card still not available
+
+    // deactivate chip select
+    PIN_CSN_1;
+
+    // run power-on sequence
+    if( MIOS32_SDCARD_PowerOn() < 0 )
+      return 0; // SD card not available anymore
+  }
+  
+  return 1; // SD card available
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Sends command to SD card
 //! \param[in] cmd SD card command
 //! \param[in] addr 32bit address
@@ -288,17 +362,29 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
   MIOS32_SDCARD_TransferByte((addr >>  0) & 0xff);
   MIOS32_SDCARD_TransferByte(crc);
 
-  // wait for response
-  for(i=0; i<8; ++i) {
-    if( (ret=MIOS32_SDCARD_TransferByte(0xff)) != 0xff )
-      break;
+  u8 timeout = 0;
+
+  if( cmd == SDCMD_SEND_STATUS ) {
+    // one dummy read
+    MIOS32_SDCARD_TransferByte(0xff);
+    // read two bytes (only last value will be returned)
+    ret=MIOS32_SDCARD_TransferByte(0xff);
+    ret=MIOS32_SDCARD_TransferByte(0xff);
+  } else {
+    // wait for response
+    for(i=0; i<8; ++i) {
+      if( (ret=MIOS32_SDCARD_TransferByte(0xff)) != 0xff )
+	break;
+    }
+    if( i == 8 )
+      timeout = 1;
   }
 
   // required clocking (see spec)
   MIOS32_SDCARD_TransferByte(0xff);
 
   // deactivate chip-select on timeout, and return error code
-  if( i == 8 ) {
+  if( timeout ) {
     PIN_CSN_1; // deactivate chip select
     return -1;
   }
