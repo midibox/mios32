@@ -317,6 +317,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
+
+  ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
 
   SEQ_LCD_PrintFormattedString("Step");
@@ -330,10 +333,18 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
     if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
-      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);
-      else
+      } else if( layer_ctrl_type == SEQ_LAYER_ControlType_Chord2 ||
+	       layer_ctrl_type == SEQ_LAYER_ControlType_Chord2_Velocity ) {
+	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0);
+	u8 chord_ix = par_value & 0x0f;
+	u8 chord_oct = par_value >> 4;
+	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
+	SEQ_LCD_PrintFormattedString("/%d", chord_oct);
+      } else {
 	SEQ_LCD_PrintNote(layer_event.midi_package.note);
+      }
       SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
     }
     else {
@@ -358,7 +369,6 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
 
   // extra handling for gatelength (shows vertical bars)
   if( layer_ctrl_type == SEQ_LAYER_ControlType_Length ) {
@@ -499,14 +509,14 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	    u8 par_value = SEQ_PAR_Get(visible_track, step, 0);
 	    u8 chord_ix = par_value & 0x0f;
 	    u8 chord_oct = par_value >> 4;
-	    SEQ_LCD_PrintFormattedString("%d/%d", chord_ix, chord_oct);
+	    SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
 	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
 	  } else {
 	    SEQ_LCD_PrintString("----");
 	  }
 	  break;
 	  
-	//case SEQ_LAYER_ControlType_Lenght:
+	//case SEQ_LAYER_ControlType_Length:
 	//break;
 	// extra handling -- see code above
 

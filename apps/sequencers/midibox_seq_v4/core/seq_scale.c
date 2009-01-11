@@ -53,7 +53,7 @@ typedef union {
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-const seq_scale_entry_t seq_scale_table[] = {
+static const seq_scale_entry_t seq_scale_table[] = {
 //	        C 	C#	D 	D#	E 	F 	F#	G 	G#	A 	A#	B
 //	        0 	1 	2 	3 	4 	5 	6 	7 	8 	9 	10	11 	Semitone
 //              1 	b2	2 	b3	3 	4 	b5	5 	b6	6 	b7	7	Minor Tone
@@ -256,7 +256,7 @@ s32 SEQ_SCALE_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // returns number of available scales
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_SCALE_GetNum(void)
+s32 SEQ_SCALE_NumGet(void)
 {
   return sizeof(seq_scale_table)/sizeof(seq_scale_entry_t);
 }
@@ -266,9 +266,9 @@ s32 SEQ_SCALE_GetNum(void)
 // returns pointer to the name of a scale
 // Length: 20 characters + zero terminator
 /////////////////////////////////////////////////////////////////////////////
-char *SEQ_SCALE_GetName(u8 scale)
+char *SEQ_SCALE_NameGet(u8 scale)
 {
-  if( scale >= SEQ_SCALE_GetNum() )
+  if( scale >= SEQ_SCALE_NumGet() )
     return "Invalid Scale       ";
 
   return seq_scale_table[scale].name;

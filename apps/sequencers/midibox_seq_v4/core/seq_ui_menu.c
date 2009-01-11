@@ -50,13 +50,19 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    u8 tmp = ui_selected_page; // required conversion from ui_page_t to u8
-    if( SEQ_UI_Var8_Inc(&tmp, SEQ_UI_FIRST_MENU_SELECTION_PAGE, SEQ_UI_PAGES-1, incrementer) ) {
-      ui_selected_page = tmp;
-      return 1; // value changed
-    }
-    return 0; // value not changed
+  switch( encoder ) {
+    case SEQ_UI_ENCODER_GP5:
+    case SEQ_UI_ENCODER_GP6:
+    case SEQ_UI_ENCODER_GP7:
+    case SEQ_UI_ENCODER_GP8:
+    case SEQ_UI_ENCODER_Datawheel: {
+      u8 tmp = ui_selected_page; // required conversion from ui_page_t to u8
+      if( SEQ_UI_Var8_Inc(&tmp, SEQ_UI_FIRST_MENU_SELECTION_PAGE, SEQ_UI_PAGES-1, incrementer) ) {
+	ui_selected_page = tmp;
+	return 1; // value changed
+      }
+      return 0; // value not changed
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
