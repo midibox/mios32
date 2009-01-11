@@ -32,6 +32,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_B_Init(u32 mode);
+extern s32 SEQ_FILE_B_LoadAllBanks(void);
+extern s32 SEQ_FILE_B_UnloadAllBanks(void);
 
 extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
 

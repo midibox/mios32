@@ -2,6 +2,11 @@
 /*
  * File access functions
  *
+ * NOTE: before accessing the SD Card, the upper level function should
+ * synchronize with the SD Card semaphore!
+ *   MUTEX_SDCARD_TAKE; // to take the semaphore
+ *   MUTEX_SDCARD_GIVE; // to release the semaphore
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -59,6 +64,7 @@ static s32 SEQ_FILE_UpdateFreeBytes(void);
 // DOS FS variables
 static u8 sector[SECTOR_SIZE];
 
+static u8 sdcard_available;
 static u8 volume_available;
 static u32 volume_free_bytes;
 
@@ -73,27 +79,64 @@ static u8 *write_buffer;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_Init(u32 mode)
 {
+  sdcard_available = 0;
   volume_available = 0;
   volume_free_bytes = 0;
 
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] SD Card initialized, status: %d\n\r", error);
+  printf("[SEQ_FILE] SD Card interface initialized, status: %d\n\r", error);
 #endif
 
-  if( error >= 0 ) {
-    error = MIOS32_SDCARD_PowerOn();
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function should be called periodically to check the availability
+// of the SD Card
+//
+// Once the chard has been detected, all banks will be read
+// returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_CheckSDCard(void)
+{
+  // check if SD card is available
+  // High-speed access if SD card was previously available
+  u8 prev_sdcard_available = sdcard_available;
+  sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
+
+  if( sdcard_available && !prev_sdcard_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] SD Card power on sequence, status: %d\n\r", error);
+    printf("[SEQ_FILE] SD Card has been connected!\n\r");
 #endif
-  }
 
-  if( error >= 0 ) {
-    error = SEQ_FILE_MountFS();
+    s32 error = SEQ_FILE_MountFS();
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE] Tried to mount file system, status: %d\n\r", error);
 #endif
+
+    if( error < 0 ) {
+      // ensure that volume flagged as not available
+      volume_available = 0;
+
+      return error; // break here!
+    }
+
+    // load all banks
+    SEQ_FILE_B_LoadAllBanks();
+    SEQ_FILE_M_LoadAllBanks();
+
+  } else if( !sdcard_available && prev_sdcard_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    printf("[SEQ_FILE] SD Card disconnected!\n\r");
+#endif
+    volume_available = 0;
+
+    // unload all banks
+    SEQ_FILE_B_UnloadAllBanks();
+    SEQ_FILE_M_UnloadAllBanks();
   }
 
   return 0; // no error
@@ -210,6 +253,15 @@ static s32 SEQ_FILE_UpdateFreeBytes(void)
 #endif
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if SD card available
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_SDCardAvailable(void)
+{
+  return sdcard_available;
 }
 
 

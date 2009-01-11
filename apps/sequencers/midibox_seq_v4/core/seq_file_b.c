@@ -2,6 +2,11 @@
 /*
  * Bank access functions
  *
+ * NOTE: before accessing the SD Card, the upper level function should
+ * synchronize with the SD Card semaphore!
+ *   MUTEX_SDCARD_TAKE; // to take the semaphore
+ *   MUTEX_SDCARD_GIVE; // to release the semaphore
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -141,16 +146,25 @@ static seq_file_b_info_t seq_file_b_info[SEQ_FILE_B_NUM_BANKS];
 s32 SEQ_FILE_B_Init(u32 mode)
 {
   // invalidate all bank infos
+  SEQ_FILE_B_UnloadAllBanks();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Loads all banks
+// Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_B_LoadAllBanks(void)
+{
+  s32 status = 0;
+
+  // load all banks
   u8 bank;
-  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank)
-    seq_file_b_info[bank].valid = 0;
-
-  // TODO: move this to a separate function
-  // banks should be read when SD Card is plugged into the slot
-
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
-    s32 error;
-    error = SEQ_FILE_B_Open(bank);
+    s32 error = SEQ_FILE_B_Open(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n\r", bank+1, error);
 #endif
@@ -162,7 +176,24 @@ s32 SEQ_FILE_B_Init(u32 mode)
 #endif
     }
 #endif
+    status |= error;
   }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Unloads all banks
+// Called from SEQ_FILE_CheckSDCard() when the SD card has been disconnected
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_B_UnloadAllBanks(void)
+{
+  // invalidate all bank infos
+  u8 bank;
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank)
+    seq_file_b_info[bank].valid = 0;
 
   return 0; // no error
 }

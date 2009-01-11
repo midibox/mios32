@@ -31,19 +31,11 @@
 
 // set this to 1 if performance of pattern handler should be measured with a scope
 // (LED toggling in APP_Background() has to be disabled!)
-#define LED_PERFORMANCE_MEASURING 1
+#define LED_PERFORMANCE_MEASURING 0
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-static s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern);
+// same for measuring with the stopwatch
+// value is visible in menu (-> press exit button)
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -176,15 +168,31 @@ s32 SEQ_PATTERN_Handler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Load a pattern from BankStick/SD Card
+// Load a pattern from SD Card
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
+s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 {
   s32 status;
 
   seq_pattern[group] = pattern;
 
+  MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group);
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Stores a pattern into SD Card
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
+{
+  s32 status;
+
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group);
+  MUTEX_SDCARD_GIVE;
 
   return status;
 }

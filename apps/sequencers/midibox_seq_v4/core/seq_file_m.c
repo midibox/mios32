@@ -2,6 +2,11 @@
 /*
  * Mixer map access functions
  *
+ * NOTE: before accessing the SD Card, the upper level function should
+ * synchronize with the SD Card semaphore!
+ *   MUTEX_SDCARD_TAKE; // to take the semaphore
+ *   MUTEX_SDCARD_GIVE; // to release the semaphore
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -29,7 +34,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging via COM interface
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 0
 
 // add following lines to your mios32_config.h file to send these messages via UART1
 // // enable COM via UART1
@@ -113,11 +118,20 @@ static seq_file_m_info_t seq_file_m_info;
 s32 SEQ_FILE_M_Init(u32 mode)
 {
   // invalidate bank info
-  seq_file_m_info.valid = 0;
+  SEQ_FILE_M_UnloadAllBanks();
 
-  // TODO: move this to a separate function
-  // bank should be read when SD Card is plugged into the slot
+  return 0; // no error
+}
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Loads all banks
+// Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_M_LoadAllBanks(void)
+{
+  // load bank
   s32 error;
   error = SEQ_FILE_M_Open();
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -125,11 +139,24 @@ s32 SEQ_FILE_M_Init(u32 mode)
 #endif
 #if 0
   if( error == -2 ) {
-    error = SEQ_FILE_M_Create(bank);
+    error = SEQ_FILE_M_Create();
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE_M] Tried to create bank file, status: %d\n\r", error);
 #endif
 #endif
+
+  return error;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Unloads all banks
+// Called from SEQ_FILE_CheckSDCard() when the SD card has been disconnected
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_M_UnloadAllBanks(void)
+{
+  seq_file_m_info.valid = 0;
 
   return 0; // no error
 }
