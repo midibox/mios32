@@ -63,6 +63,19 @@ s32 MIOS32_SDCARD_PowerOff(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Checks if the SD Card is available
+//! \param[in] was_available should only be set if the SD card was previously available
+//! \return 0 if no response from SD Card
+//! \return 1 if SD card is accessible
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CheckAvailable(u8 high_speed)
+{
+        // always available
+        return 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Sends command to SD card
 //! \param[in] cmd SD card command
 //! \param[in] addr 32bit address
