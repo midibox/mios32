@@ -58,6 +58,16 @@
 #define MIOS32_UART1_ASSIGNMENT 1
 #endif
 
+// Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
+#ifndef MIOS32_UART2_ASSIGNMENT
+#define MIOS32_UART2_ASSIGNMENT 1
+#endif
+
+// Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
+#ifndef MIOS32_UART3_ASSIGNMENT
+#define MIOS32_UART3_ASSIGNMENT 1
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

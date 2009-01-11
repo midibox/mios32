@@ -66,9 +66,10 @@ typedef enum {
   USB6 = 0x16,
   USB7 = 0x17,
 
-
   UART0 = 0x20,
   UART1 = 0x21,
+  UART2 = 0x22,
+  UART3 = 0x23,
 
   IIC0 = 0x30,
   IIC1 = 0x31,
