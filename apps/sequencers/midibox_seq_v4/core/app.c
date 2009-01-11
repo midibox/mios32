@@ -70,8 +70,8 @@ const mios32_enc_config_t encoders[NUM_ENCODERS] = {
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
-static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 byte);
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,8 @@ void APP_Init(void)
   TASKS_Init(0);
 
   // install MIDI Rx/Tx callback functions
-  MIOS32_MIDI_DirectRxTxCallback_Init(NOTIFY_MIDI_Rx, NOTIFY_MIDI_Tx);
+  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
+  MIOS32_MIDI_DirectTxCallback_Init(NOTIFY_MIDI_Tx);
 }
 
 
@@ -308,20 +309,22 @@ void SEQ_TASK_Pattern(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Installed via MIOS32_MIDI_DirectRxTxCallback_Init
-// Executed immediately on each incoming MIDI byte, partly from interrupt
-// handlers!
-// These function should be executed so fast as possible. They can be used
-// to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
-// avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+// Installed via MIOS32_MIDI_DirectRxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // TODO: here we could filter a certain port
   SEQ_BPM_NotifyMIDIRx(midi_byte);
+
+  return 0; // no error, no filtering
 }
 
-static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 midi_byte)
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectTxCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  return 0; // no error, no filtering
 }
 

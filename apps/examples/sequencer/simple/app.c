@@ -48,8 +48,7 @@ volatile u8 print_msg;
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_SEQ(void *pvParameters);
-static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
-static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 byte);
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,8 +72,8 @@ void APP_Init(void)
   // initialize sequencer
   SEQ_Init(0);
 
-  // install MIDI Rx/Tx callback functions
-  MIOS32_MIDI_DirectRxTxCallback_Init(NOTIFY_MIDI_Rx, NOTIFY_MIDI_Tx);
+  // install MIDI Rx callback function
+  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
 
   // install sequencer task
   xTaskCreate(TASK_SEQ, (signed portCHAR *)"SEQ", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SEQ, NULL);
@@ -285,21 +284,14 @@ static void TASK_SEQ(void *pvParameters)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Installed via MIOS32_MIDI_DirectRxTxCallback_Init
-// Executed immediately on each incoming MIDI byte, partly from interrupt
-// handlers!
-// These function should be executed so fast as possible. They can be used
-// to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
-// avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+// Installed via MIOS32_MIDI_DirectRxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-static void NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // here we could filter a certain port
   // The BPM generator will deliver inaccurate results if MIDI clock 
   // is received from multiple ports
   SEQ_BPM_NotifyMIDIRx(midi_byte);
-}
 
-static void NOTIFY_MIDI_Tx(mios32_midi_port_t port, u8 midi_byte)
-{
+  return 0; // no error, no filtering
 }

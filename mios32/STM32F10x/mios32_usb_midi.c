@@ -161,8 +161,6 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
   ++tx_buffer_size;
   MIOS32_IRQ_Enable();
 
-  MIOS32_MIDI_SendPackageToTxCallback(USB0 + package.cable, package);
-
   return 0;
 }
 
@@ -304,16 +302,16 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 	u16 ph = *pma_addr++;
 	mios32_midi_package_t package;
 	package.ALL = (ph << 16) | pl;
-	rx_buffer[rx_buffer_head] = package.ALL;
 
-	MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package);
+	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
+	  rx_buffer[rx_buffer_head] = package.ALL;
 
-	MIOS32_IRQ_Disable();
-	if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
-	  rx_buffer_head = 0;
-	++rx_buffer_size;
-	MIOS32_IRQ_Enable();
-
+	  MIOS32_IRQ_Disable();
+	  if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+	    rx_buffer_head = 0;
+	  ++rx_buffer_size;
+	  MIOS32_IRQ_Enable();
+	}
       } while( --count >= 0 );
 
       // notify, that data has been put into buffer

@@ -112,8 +112,8 @@ typedef union {
 
 static mios32_midi_port_t default_port = MIOS32_MIDI_DEFAULT_PORT;
 
-static void (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
-static void (*direct_tx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
+static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
+static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
 
 static sysex_state_t sysex_state;
 static u8 sysex_device_id;
@@ -228,13 +228,20 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sends a package over given port
+//!
 //! This is a low level function. In difference to other MIOS32_MIDI_Send* functions,
 //! It allows to send packages in non-blocking mode (caller has to retry if -2 is returned)
+//!
+//! Before the package is forwarded, an optional Tx Callback function will be called
+//! which allows to filter/monitor/route the package, or extend the MIDI transmitter
+//! by custom MIDI Output ports (e.g. for internal busses, OSC, AOUT, etc.)
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \param[in] package MIDI package
 //! \return -1 if port not available
 //! \return -2 buffer is full
 //!         caller should retry until buffer is free again
+//! \return -3 Tx Callback reported an error
+//! \return 1 if package has been filtered by Tx callback
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_package_t package)
@@ -246,6 +253,13 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 
   // insert subport number into package
   package.cable = port & 0xf;
+
+  // forward to Tx callback function and break if package has been filtered
+  if( direct_tx_callback_func != NULL ) {
+    s32 status;
+    if( status = direct_tx_callback_func(port, package) )
+      return status;
+  }
 
   // branch depending on selected port
   switch( port >> 4 ) {
@@ -681,22 +695,35 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Installs Rx/Tx callback functions which are executed immediately on each
-//! incoming/outgoing MIDI byte, partly from interrupt handlers with following
-//! parameters:
-//! \code
-//!    callback_rx(mios32_midi_port_t port, u8 midi_byte);
-//!    callback_tx(mios32_midi_port_t port, u8 midi_byte);
-//! \endcode
+//! Installs the Tx callback function which is executed by
+//! MIOS32_MIDI_SendPackage_NonBlocking() before the MIDI package will be
+//! forwarded to the physical interface.
 //!
-//! These functions should be executed so fast as possible. They can be used
-//! to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
-//! avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+//! The callback allows following usecases:
+//! <UL>
+//!   <LI>filter packages
+//!   <LI>duplicating/routing packages
+//!   <LI>monitoring packages (sniffer)
+//!   <LI>create virtual busses; loopbacks
+//!   <LI>extend available interfaces (e.g. by an OSC or AOUT interface)
+//! </UL>
+//! \param[in] *callback_tx pointer to callback function:<BR>
+//! \code
+//!    s32 callback_tx(mios32_midi_port_t port, mios32_midi_package_t package);
+//! \endcode
+//! The package will be forwarded to the physical interface if the function 
+//! returns 0.<BR>
+//! Should return 1 to filter a package.
+//! Should return -2 to initiate a retry (function will be called again)
+//! Should return -3 to report any other error.
+//! These error codes comply with MIOS32_MIDI_SendPackage_NonBlocking()
 //! \return < 0 on errors
+//! \note Please use the filtering capabilities with special care - if a port
+//! is filtered which is also used for code upload, you won't be able to exchange
+//! the erroneous code w/o starting the bootloader in hold mode after power-on.
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
+s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx)
 {
-  direct_rx_callback_func = callback_rx;
   direct_tx_callback_func = callback_tx;
 
   return 0; // no error
@@ -704,22 +731,59 @@ s32 MIOS32_MIDI_DirectRxTxCallback_Init(void *callback_rx, void *callback_tx)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Installs the Rx callback function which is executed immediately on each
+//! incoming/outgoing MIDI byte, partly from interrupt handlers.
+//!
+//! This function should be executed so fast as possible. It can be used
+//! to trigger MIDI Rx LEDs or to trigger on MIDI clock events. In order to
+//! avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
+//!
+//! It is possible to filter incoming MIDI bytes with the return value of the
+//! callback function.<BR>
+//! \param[in] *callback_rx pointer to callback function:<BR>
+//! \code
+//!    s32 callback_rx(mios32_midi_port_t port, u8 midi_byte);
+//! \endcode
+//! The byte will be forwarded into the MIDI Rx queue if the function returns 0.<BR>
+//! It will be filtered out if the callback returns != 0 (e.g. 1 for "filter", 
+//! or -1 for "error").
+//! \return < 0 on errors
+//! \note Please use the filtering capabilities with special care - if a port
+//! is filtered which is also used for code upload, you won't be able to exchange
+//! the erroneous code w/o starting the bootloader in hold mode after power-on.
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DirectRxCallback_Init(void *callback_rx)
+{
+  direct_rx_callback_func = callback_rx;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function is used by MIOS32 internal functions to forward received
-//! MIDI bytes to the Rx Callback routine
+//! MIDI bytes to the Rx Callback routine.
+//!
+//! It shouldn't be used by applications.
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] midi_byte received MIDI byte
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 {
   // note: here we could filter the user hook execution on special situations
   if( direct_rx_callback_func != NULL )
-    direct_rx_callback_func(port, midi_byte);
+    return direct_rx_callback_func(port, midi_byte);
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function is used by MIOS32 internal functions to forward received
 //! MIDI packages to the Rx Callback routine (byte by byte)
+//!
+//! It shouldn't be used by applications.
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] midi_package MIDI package
+//! \param[in] midi_package received MIDI package
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -729,43 +793,10 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
     u8 buffer[3] = {midi_package.evnt0, midi_package.evnt1, midi_package.evnt2};
     int len = mios32_midi_pcktype_num_bytes[midi_package.cin];
     int i;
+    s32 status;
     for(i=0; i<len; ++i)
-      direct_rx_callback_func(port, buffer[i]);
-  }
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! This function is used by MIOS32 internal functions to forward received
-//! MIDI bytes to the Tx Callback routine
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] midi_byte MIDI byte
-//! \return < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendByteToTxCallback(mios32_midi_port_t port, u8 midi_byte)
-{
-  // note: here we could filter the user hook execution on special situations
-  if( direct_tx_callback_func != NULL )
-    direct_tx_callback_func(port, midi_byte);
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! This function is used by MIOS32 internal functions to forward received
-//! MIDI packages to the Tx Callback routine (byte by byte)
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
-//! \param[in] midi_package MIDI package
-//! \return < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendPackageToTxCallback(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-{
-  // note: here we could filter the user hook execution on special situations
-  if( direct_tx_callback_func != NULL ) {
-    u8 buffer[3] = {midi_package.evnt0, midi_package.evnt1, midi_package.evnt2};
-    int len = mios32_midi_pcktype_num_bytes[midi_package.cin];
-    int i;
-    for(i=0; i<len; ++i)
-      direct_tx_callback_func(port, buffer[i]);
+      status |= direct_rx_callback_func(port, buffer[i]);
+    return status;
   }
   return 0; // no error
 }
