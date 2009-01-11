@@ -238,10 +238,6 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 		[virtualMIDI_OUT[uart] addSender:_self];
 		[virtualMIDI_OUT[uart] processMIDIPacketList:&packetList sender:_self];
 		[virtualMIDI_OUT[uart] removeSender:_self];		
-		
-		int i;
-		for(i=0; i<len; ++i)
-			MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i]);
 	}
 	
 #if 0
@@ -305,16 +301,13 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
   return error;
 }
 
-//    MIOS32_MIDI_SendByteToRxCallback(UART0, b);
-
-
 - (void)handleMIDIMessage:(Byte*)message ofSize:(int)size
 {
 	int i;
 
 	for(i=0; i<size; ++i) {
-		MIOS32_UART_RxBufferPut(0, message[i]); // TODO: multiple IN ports
-		MIOS32_MIDI_SendByteToRxCallback(UART0, message[i]);
+		if( MIOS32_MIDI_SendByteToRxCallback(UART0, message[i]) == 0 )
+			MIOS32_UART_RxBufferPut(0, message[i]); // TODO: multiple IN ports
 	}
 }
 

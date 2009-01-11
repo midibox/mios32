@@ -34,6 +34,7 @@
 
 #include "seq_midply.h"
 
+#include "seq_midi_port.h"
 #include "seq_midi_in.h"
 
 #include "seq_file.h"
@@ -101,6 +102,7 @@ void APP_Init(void)
 #endif
 
   // initialize MIDI handlers
+  SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_OUT_Init(0);
 

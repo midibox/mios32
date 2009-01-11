@@ -35,6 +35,7 @@
 #include <stdarg.h>
 
 #include "seq_lcd.h"
+#include "seq_midi_port.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -513,17 +514,22 @@ s32 SEQ_LCD_PrintTrackName(u8 track, char *track_name)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints MIDI port (4 characters)
+// prints MIDI In port (4 characters)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port)
+s32 SEQ_LCD_PrintMIDIInPort(mios32_midi_port_t port)
 {
-  switch( port >> 4 ) {
-    case 0:  SEQ_LCD_PrintString("Def."); break;
-    case 1:  SEQ_LCD_PrintFormattedString("USB%x", port%16); break;
-    case 2:  SEQ_LCD_PrintFormattedString("UAR%x", port%16); break;
-    case 3:  SEQ_LCD_PrintFormattedString("IIC%x", port%16); break;
-    default: SEQ_LCD_PrintFormattedString("0x%02X", port); break;
-  }
+  return SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(port)));
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints MIDI Out port (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintMIDIOutPort(mios32_midi_port_t port)
+{
+  return SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(port)));
 
   return 0; // no error
 }
