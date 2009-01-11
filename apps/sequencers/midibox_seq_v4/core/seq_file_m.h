@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_FILE_M_H
-#define _SEQ_FILE_M_H
+#ifndef _SEQ_FILE_B_H
+#define _SEQ_FILE_B_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -31,15 +31,15 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_FILE_B_Init(u32 mode);
+extern s32 SEQ_FILE_M_Init(u32 mode);
 
-extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
+extern s32 SEQ_FILE_M_NumMaps(void);
 
-extern s32 SEQ_FILE_B_Create(u8 bank);
-extern s32 SEQ_FILE_B_Open(u8 bank);
+extern s32 SEQ_FILE_M_Create(void);
+extern s32 SEQ_FILE_M_Open(void);
 
-extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
-extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
+extern s32 SEQ_FILE_M_MapRead(u8 map);
+extern s32 SEQ_FILE_M_MapWrite(u8 map);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,4 +47,4 @@ extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_FILE_M_H */
+#endif /* _SEQ_FILE_B_H */

@@ -35,11 +35,12 @@ typedef enum {
   SEQ_UI_PAGE_UTIL,
   SEQ_UI_PAGE_BPM,
   SEQ_UI_PAGE_OPT,
-  SEQ_UI_PAGE_SAVE
+  SEQ_UI_PAGE_SAVE,
+  SEQ_UI_PAGE_MIXER
 } seq_ui_page_t;
 
 	
-#define SEQ_UI_PAGES (SEQ_UI_PAGE_SAVE + 1)
+#define SEQ_UI_PAGES (SEQ_UI_PAGE_MIXER + 1)
 #define SEQ_UI_FIRST_MENU_SELECTION_PAGE SEQ_UI_PAGE_EDIT
 
 
@@ -64,6 +65,7 @@ extern s32 SEQ_UI_UTIL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_Init(u32 mode);
 extern s32 SEQ_UI_OPT_Init(u32 mode);
 extern s32 SEQ_UI_SAVE_Init(u32 mode);
+extern s32 SEQ_UI_MIXER_Init(u32 mode);
 
 
 typedef struct {
@@ -96,7 +98,8 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Utilities         ", (void *)&SEQ_UI_UTIL_Init },
   { "BPM Selection     ", (void *)&SEQ_UI_BPM_Init },
   { "Options           ", (void *)&SEQ_UI_OPT_Init },
-  { "Save              ", (void *)&SEQ_UI_SAVE_Init }
+  { "Save Pattern      ", (void *)&SEQ_UI_SAVE_Init },
+  { "Mixer             ", (void *)&SEQ_UI_MIXER_Init }
 };
 #endif
 

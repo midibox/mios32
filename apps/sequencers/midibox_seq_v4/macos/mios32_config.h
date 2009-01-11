@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
 
 #define MID_PLAYER_TEST 0

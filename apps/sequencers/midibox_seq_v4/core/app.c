@@ -104,6 +104,9 @@ void APP_Init(void)
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_OUT_Init(0);
 
+  // init mixer page
+  SEQ_MIXER_Init(0);
+
   // initialize parameter/trigger layers
   SEQ_PAR_Init(0);
   SEQ_TRG_Init(0);
@@ -123,6 +126,7 @@ void APP_Init(void)
   // initial load of filesystem
   SEQ_FILE_Init(0); // TODO: periodically check if SD card connected/disconnected during runtime
   SEQ_FILE_B_Init(0);
+  SEQ_FILE_M_Init(0);
 
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);

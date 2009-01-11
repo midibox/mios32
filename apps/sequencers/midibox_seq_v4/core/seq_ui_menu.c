@@ -134,7 +134,7 @@ static s32 LCD_Handler(u8 high_prio)
       seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
   }
 
-  SEQ_LCD_CursorSet(0, 1);
+  SEQ_LCD_CursorSet(40, 1);
   SEQ_LCD_PrintFormattedString("SD Card: ");
   char status_str[128];
   if( !SEQ_FILE_VolumeAvailable() ) {

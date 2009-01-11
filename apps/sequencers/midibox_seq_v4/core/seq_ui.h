@@ -171,6 +171,12 @@ extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
 
+extern s32 SEQ_UI_MIXER_Copy(void);
+extern s32 SEQ_UI_MIXER_Paste(void);
+extern s32 SEQ_UI_MIXER_Clear(void);
+extern s32 SEQ_UI_MIXER_Undo(u8 mixer_map);
+extern s32 SEQ_UI_MIXER_UndoUpdate(void);
+
 extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 
 extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);

@@ -29,7 +29,7 @@
 
 // following pages are directly accessible with the GP buttons when MENU button is pressed
 static const seq_ui_page_t shortcut_menu_pages[16] = {
-  SEQ_UI_PAGE_NONE,        // GP1
+  SEQ_UI_PAGE_MIXER,       // GP1
   SEQ_UI_PAGE_TRKEVNT,     // GP2
   SEQ_UI_PAGE_TRKMODE,     // GP3
   SEQ_UI_PAGE_TRKDIR,      // GP4

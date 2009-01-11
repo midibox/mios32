@@ -31,6 +31,7 @@
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_file_b.h"
+#include "seq_file_m.h"
 
 #ifndef MIOS32_FAMILY_EMULATION
 #include <FreeRTOS.h>
@@ -325,11 +326,18 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 #ifndef MIOS32_FAMILY_EMULATION
   portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
 #endif
+
+#if 0
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     SEQ_FILE_B_Create(bank);
     SEQ_FILE_B_Open(bank);
   }
+#else
+    SEQ_FILE_M_Create();
+    SEQ_FILE_M_Open();
+#endif
+
 #ifndef MIOS32_FAMILY_EMULATION
   portEXIT_CRITICAL();
 #endif
@@ -480,17 +488,23 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
 
   seq_ui_button_state.COPY = depressed ? 0 : 1;
 
-  if( !depressed ) {
-    prev_page = ui_page;
-    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  if( ui_page == SEQ_UI_PAGE_MIXER ) {
+    if( depressed ) return -1;
+    SEQ_UI_MIXER_Copy();
+    return 1;
+  } else {
+    if( !depressed ) {
+      prev_page = ui_page;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+    }
+
+    s32 status = SEQ_UI_UTIL_CopyButton(depressed);
+
+    if( depressed )
+      SEQ_UI_PageSet(prev_page);
+
+    return status;
   }
-
-  s32 status = SEQ_UI_UTIL_CopyButton(depressed);
-
-  if( depressed )
-    SEQ_UI_PageSet(prev_page);
-
-  return status;
 }
 
 static s32 SEQ_UI_Button_Paste(s32 depressed)
@@ -499,23 +513,36 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 
   seq_ui_button_state.PASTE = depressed ? 0 : 1;
 
-  if( !depressed ) {
-    prev_page = ui_page;
-    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  if( ui_page == SEQ_UI_PAGE_MIXER ) {
+    if( depressed ) return -1;
+    SEQ_UI_MIXER_Paste();
+    return 1;
+  } else {
+    if( !depressed ) {
+      prev_page = ui_page;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+    }
+
+    s32 status = SEQ_UI_UTIL_PasteButton(depressed);
+
+    if( depressed )
+      SEQ_UI_PageSet(prev_page);
+
+    return status;
   }
-
-  s32 status = SEQ_UI_UTIL_PasteButton(depressed);
-
-  if( depressed )
-    SEQ_UI_PageSet(prev_page);
-
-  return status;
 }
 
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
-  return SEQ_UI_UTIL_ClearButton(depressed);
+
+  if( ui_page == SEQ_UI_PAGE_MIXER ) {
+    if( depressed ) return -1;
+    SEQ_UI_MIXER_Clear();
+    return 1;
+  } else {
+    return SEQ_UI_UTIL_ClearButton(depressed);
+  }
 }
 
 static s32 SEQ_UI_Button_Menu(s32 depressed)
