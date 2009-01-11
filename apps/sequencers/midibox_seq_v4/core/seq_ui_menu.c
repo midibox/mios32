@@ -24,6 +24,13 @@
 #include "seq_file.h"
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+u32 stopwatch_value;
+u32 stopwatch_value_max;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -68,6 +75,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( depressed ) return 0; // ignore when button depressed
 
   switch( button ) {
+    case SEQ_UI_BUTTON_GP1: // clears stopwatch value
+    case SEQ_UI_BUTTON_GP2:
+    case SEQ_UI_BUTTON_GP3:
+      if( stopwatch_value_max ) {
+	stopwatch_value_max = 0;
+	return 1;
+      }
+      return -1;
+      
     case SEQ_UI_BUTTON_GP12: // clears max counter
     case SEQ_UI_BUTTON_GP13:
     case SEQ_UI_BUTTON_GP14:
@@ -109,16 +125,31 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //                     Select Menu Page:   MIDI Scheduler: Alloc xxx/xxx Drops: xxx
-  //                     xxxxxxxxxxxxxxxxxx<>SD Card: not available                  
+  // Stopwatch:          Select Menu Page:   MIDI Scheduler: Alloc xxx/xxx Drops: xxx
+  // xxxxx/xxxxx uS      xxxxxxxxxxxxxxxxxx<>SD Card: not available                  
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintSpaces(20);
+
+  if( stopwatch_value_max ) {
+    SEQ_LCD_PrintString("Stopwatch:");
+    SEQ_LCD_PrintSpaces(10);
+  } else
+    SEQ_LCD_PrintSpaces(20);
+
   SEQ_LCD_PrintString("Select Menu Page:   ");
+
   SEQ_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintSpaces(20);
+  if( stopwatch_value_max == 0xffffffff ) {
+    SEQ_LCD_PrintFormattedString("Overrun!", stopwatch_value, stopwatch_value_max);
+    SEQ_LCD_PrintSpaces(12);
+  } else if( stopwatch_value_max ) {
+    SEQ_LCD_PrintFormattedString("%5d/%5d uS", stopwatch_value, stopwatch_value_max);
+    SEQ_LCD_PrintSpaces(6);
+  } else
+    SEQ_LCD_PrintSpaces(20);
+
   SEQ_LCD_PrintString(SEQ_UI_PageNameGet(ui_selected_page));
   SEQ_LCD_PrintChar((ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE) ? ' ' : '<');
   SEQ_LCD_PrintChar((ui_selected_page < (SEQ_UI_PAGES-1)) ? '>' : ' ');
@@ -166,6 +197,49 @@ s32 SEQ_UI_MENU_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Optional stopwatch for measuring performance
+// Will be displayed on menu page once stopwatch_max > 0
+// Value can be reseted by pressing GP button below the max number
+// Usage example: see seq_core.c
+// Only one task should control the stopwatch!
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MENU_StopwatchInit(void)
+{
+  stopwatch_value = 0;
+  stopwatch_value_max = 0;
+  MIOS32_STOPWATCH_Init(1); // 1 uS resolution
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Resets stopwatch
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MENU_StopwatchReset(void)
+{
+  return MIOS32_STOPWATCH_Reset();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Captures value of stopwatch and displays on screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MENU_StopwatchCapture(void)
+{
+  u32 value = MIOS32_STOPWATCH_ValueGet();
+  MIOS32_IRQ_Disable(); // should be atomic
+  stopwatch_value = value;
+  if( value > stopwatch_value_max )
+    stopwatch_value_max = value;
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
