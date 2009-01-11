@@ -609,7 +609,7 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
     for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
       undo_trg_layer[layer][step] = SEQ_TRG_Get8(undo_track, step, layer);
 
-  // notify that copy&paste buffer is filled
+  // notify that undo buffer is filled
   undo_buffer_filled = 1;
 
   return 0; // no error

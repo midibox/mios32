@@ -45,6 +45,15 @@
 #define SEQ_FILE_B_ERR_NO_FILE         -134 // no or invalid bank file
 #define SEQ_FILE_B_ERR_P_TOO_LARGE     -135 // during pattern write: pattern too large for slot in bank
 
+// used by seq_file_m.c
+#define SEQ_FILE_M_ERR_INVALID_BANK    -144 // invalid bank number
+#define SEQ_FILE_M_ERR_INVALID_MAP     -146 // invalid map number
+#define SEQ_FILE_M_ERR_FORMAT          -147 // invalid bank file format
+#define SEQ_FILE_M_ERR_READ            -148 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_M_ERR_WRITE           -149 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_M_ERR_NO_FILE         -150 // no or invalid bank file
+#define SEQ_FILE_M_ERR_M_TOO_LARGE     -151 // during map write: map too large for slot in bank
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
