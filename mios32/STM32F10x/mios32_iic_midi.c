@@ -226,11 +226,6 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
 
     MIOS32_IIC_TransferFinished();
 
-    if( error >= 0 ) {
-      MIOS32_MIDI_SendPackageToTxCallback(IIC0 + iic_port, package);
-      return 0; // no error
-    }
-
     return -3; // IIC error
   } else {
     return 0; // no bytes to send -> no error
@@ -248,6 +243,7 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
 //! \return -2: IIC_MIDI buffer is full
 //!             caller should retry until buffer is free again
 //! \return -3: IIC error during transfer
+//! \return -4: Error reported by Rx callback function
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t package)
@@ -264,6 +260,7 @@ s32 MIOS32_IIC_MIDI_PackageSend_NonBlocking(u8 iic_port, mios32_midi_package_t p
 //! \return 0: no error
 //! \return -1: IIC_MIDI device not available
 //! \return -3: IIC error during transfer
+//! \return -4: Error reported by Rx callback function
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t package)
@@ -303,13 +300,16 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
     error = MIOS32_IIC_TransferWait();
 
   if( !error ) {
+    error = MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, *package);
+    if( error )
+      return error < 0 ? -4 : 0; // don't forward error if package has been filtered
+  }
+
+  if( !error ) {
     package->type  = buffer[0];
     package->evnt0 = buffer[1];
     package->evnt1 = buffer[2];
     package->evnt2 = buffer[3];
-
-    if( error == 0 )
-      MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, *package);
 
     error = package->type ? 0 : -1; // return 0 if new package is available
   } else {

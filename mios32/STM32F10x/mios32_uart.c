@@ -403,15 +403,6 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 
   u16 i;
   for(i=0; i<len; ++i) {
-    switch( uart ) {
-#if MIOS32_UART0_ASSIGNMENT == 1
-      case 0: MIOS32_MIDI_SendByteToTxCallback(UART0, *buffer); break;
-#endif
-#if MIOS32_UART0_ASSIGNMENT == 1
-      case 1: MIOS32_MIDI_SendByteToTxCallback(UART1, *buffer); break;
-#endif
-    }
-
     tx_buffer[uart][tx_buffer_head[uart]] = *buffer++;
 
     if( ++tx_buffer_head[uart] >= MIOS32_UART_TX_BUFFER_SIZE )
@@ -502,10 +493,12 @@ MIOS32_UART0_IRQHANDLER_FUNC
     u8 b = MIOS32_UART0->DR;
 
 #if MIOS32_UART0_ASSIGNMENT == 1
-    MIOS32_MIDI_SendByteToRxCallback(UART0, b);
+    s32 status = MIOS32_MIDI_SendByteToRxCallback(UART0, b);
+#else
+    s32 status = 0;
 #endif
 
-    if( MIOS32_UART_RxBufferPut(0, b) < 0 ) {
+    if( status == 0 && MIOS32_UART_RxBufferPut(0, b) < 0 ) {
       // here we could add some error handling
     }
   }
@@ -537,10 +530,12 @@ MIOS32_UART1_IRQHANDLER_FUNC
     u8 b = MIOS32_UART1->DR;
 
 #if MIOS32_UART1_ASSIGNMENT == 1
-    MIOS32_MIDI_SendByteToRxCallback(UART1, b);
+    s32 status = MIOS32_MIDI_SendByteToRxCallback(UART1, b);
+#else
+    s32 status = 0;
 #endif
 
-    if( MIOS32_UART_RxBufferPut(1, b) < 0 ) {
+    if( status == 0 && MIOS32_UART_RxBufferPut(1, b) < 0 ) {
       // here we could add some error handling
     }
   }
