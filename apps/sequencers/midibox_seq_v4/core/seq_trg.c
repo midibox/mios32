@@ -43,7 +43,7 @@ static const char seq_trg_names[8][6] = {
   " Roll", // 4
   " R.G ", // 5
   " R.V ", // 6
-  "Spare"  // 7
+  "No Fx"  // 7
 };
 
 
@@ -143,6 +143,12 @@ s32 SEQ_TRG_RandomValueGet(u8 track, u8 step)
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
 }
 
+s32 SEQ_TRG_NoFxGet(u8 track, u8 step)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.no_fx;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // sets value of a given trigger layer
@@ -213,6 +219,12 @@ s32 SEQ_TRG_RandomGateSet(u8 track, u8 step, u8 value)
 s32 SEQ_TRG_RandomValueSet(u8 track, u8 step, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+}
+
+s32 SEQ_TRG_NoFxSet(u8 track, u8 step, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.no_fx;
   return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
 }
 
