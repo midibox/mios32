@@ -370,6 +370,10 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
     // read two bytes (only last value will be returned)
     ret=MIOS32_SDCARD_TransferByte(0xff);
     ret=MIOS32_SDCARD_TransferByte(0xff);
+
+    // all-one read: we expect that SD card is not connected: notify timeout!
+    if( ret == 0xff )
+      timeout = 1;
   } else {
     // wait for response
     for(i=0; i<8; ++i) {
