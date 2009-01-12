@@ -1,4 +1,4 @@
-// $Id: mios32_config.h 229 2009-01-01 13:05:29Z tk $
+// $Id: mios32_config.h 285 2009-01-11 17:25:57Z tk $
 /*
  * Local MIOS32 configuration file
  *
@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
 
 #define MID_PLAYER_TEST 0
@@ -44,6 +44,26 @@
 
 
 #define MIOS32_MIDI_DEFAULT_PORT UART0
+
+#define MIOS32_UART_NUM 4
+
+
+// memory alloccation method:
+// 0: internal static allocation with one byte for each flag
+// 1: internal static allocation with 8bit flags
+// 2: internal static allocation with 16bit flags
+// 3: internal static allocation with 32bit flags
+// 4: FreeRTOS based pvPortMalloc
+// 5: malloc provided by library
+#define SEQ_MIDI_OUT_MALLOC_METHOD 0
+
+// max number of scheduled events which will allocate memory
+// each event allocates 12 bytes
+// MAX_EVENTS must be a power of two! (e.g. 64, 128, 256, 512, ...)
+#define SEQ_MIDI_OUT_MAX_EVENTS 8192
+
+// enable seq_midi_out_max_allocated and seq_midi_out_dropouts
+#define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
 
 // the speed value for the datawheel (#0) which is used when the "FAST" button is activated:

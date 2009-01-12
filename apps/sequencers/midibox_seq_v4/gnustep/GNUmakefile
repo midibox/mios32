@@ -15,6 +15,7 @@ midibox_seq_v4_OBJC_FILES=\
 	MIOS32_MIDI_Wrapper.m \
 	../macos/MIOS32_SDCARD_Wrapper.m \
 	../macos/MIOS32_SRIO_Wrapper.m \
+	../macos/MIOS32_STOPWATCH_Wrapper.m \
 	../macos/MIOS32_SYS_Wrapper.m \
 	../macos/MIOS32_TIMER_Wrapper.m \
 	../macos/SEQButton.m \
@@ -33,16 +34,26 @@ midibox_seq_v4_C_FILES=\
 	../../../../modules/midifile/mid_parser.c \
 	../../../../modules/sequencer/seq_bpm.c \
 	../../../../modules/sequencer/seq_midi_out.c \
+	../../../../drivers/gnustep/portmidi/pm_common/portmidi.c \
+	../../../../drivers/gnustep/portmidi/pm_common/pmutil.c \
+	../../../../drivers/gnustep/portmidi/pm_win/pmwin.c \
+	../../../../drivers/gnustep/portmidi/pm_win/pmwinmm.c \
+	../../../../drivers/gnustep/portmidi/porttime/porttime.c \
+	../../../../drivers/gnustep/portmidi/porttime/ptwinmm.c \
 	../core/app.c \
 	../core/seq_cc.c \
+	../core/seq_chord.c \
 	../core/seq_core.c \
 	../core/seq_file.c \
 	../core/seq_file_b.c \
+	../core/seq_file_m.c \
 	../core/seq_layer.c \
 	../core/seq_lcd.c \
 	../core/seq_led.c \
 	../core/seq_midi_in.c \
+	../core/seq_midi_port.c \
 	../core/seq_midply.c \
+	../core/seq_mixer.c \
 	../core/seq_par.c \
 	../core/seq_pattern.c \
 	../core/seq_random.c \
@@ -53,6 +64,8 @@ midibox_seq_v4_C_FILES=\
 	../core/seq_ui_edit.c \
 	../core/seq_ui_fx.c \
 	../core/seq_ui_fx_echo.c \
+	../core/seq_ui_menu.c \
+	../core/seq_ui_mixer.c \
 	../core/seq_ui_mute.c \
 	../core/seq_ui_opt.c \
 	../core/seq_ui_pattern.c \
@@ -75,9 +88,7 @@ midibox_seq_v4_RESOURCE_FILES=\
 
 midibox_seq_v4_LOCALIZED_RESOURCE_FILES=\
 	InfoPlist.strings\
-	MainMenu.gorm\
-	Knob_Blue.png\
-	Knob_Red.png
+	MainMenu.gorm
 	
 midibox_seq_v4_MAIN_MODEL_FILE=\
 	MainMenu.gorm
@@ -95,14 +106,17 @@ midibox_seq_v4_INCLUDE_DIRS=\
 	-I./../../../../mios32/common\
 	-I./../../../../modules/sequencer\
 	-I./../../../../modules/midifile\
-	-I./../../../../drivers/gnustep
-
-
+	-I./../../../../drivers/gnustep \
+	-I../../../../drivers/gnustep/portmidi/pm_common \
+	-I../../../../drivers/gnustep/portmidi/porttime \
+	-I../../../../drivers/gnustep/portmidi/pm_win
 
 #before-all::
 #	mkdir -p ./obj
 
-#ADDITIONAL_LDFLAGS = -L. -lportmidi.lib
+ADDITIONAL_NATIVE_LIBS = winmm
+#ADDITIONAL_LDFLAGS = --add-stdcall-alias -l winmm.dll
+
 
 
 ADDITIONAL_CPPFLAGS+= -DGNUSTEP -DMIOS32_FAMILY_EMULATION -DMIOS32_FAMILY_STR=\"EMULATION\" -DMIOS32_BOARD_STR=\"WINDOWS\"

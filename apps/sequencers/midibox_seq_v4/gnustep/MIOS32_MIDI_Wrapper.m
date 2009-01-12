@@ -16,6 +16,11 @@
 
 #define NUM_MIDI_IN 1
 #define NUM_MIDI_OUT 4
+#define INPUT_BUFFER_SIZE 100
+#define OUTPUT_BUFFER_SIZE 0
+#define DRIVER_INFO NULL
+#define TIME_PROC ((long (*)(void *)) Pt_Time)
+#define TIME_INFO NULL
 
 static u8 rx_buffer[NUM_MIDI_IN][MIOS32_UART_RX_BUFFER_SIZE];
 static volatile u8 rx_buffer_tail[NUM_MIDI_IN];
@@ -23,9 +28,8 @@ static volatile u8 rx_buffer_head[NUM_MIDI_IN];
 static volatile u8 rx_buffer_size[NUM_MIDI_IN];
 
 static NSObject *_self;
-
-//PYMIDIVirtualDestination *virtualMIDI_IN[NUM_MIDI_IN];
-//PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
+PmStream *virtualMIDI_IN[NUM_MIDI_IN];
+PmStream *virtualMIDI_OUT[NUM_MIDI_OUT];
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -37,21 +41,26 @@ static NSObject *_self;
 	
 	_self = self;
 
-	/*
-	create virtual MIDI ports
+	//create virtual MIDI ports
 	for(i=0; i<NUM_MIDI_IN; ++i) {
-		NSMutableString *portName = [[NSMutableString alloc] init];
-		[portName appendFormat:@"vMBSEQ IN%d", i+1];
-		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
-		[virtualMIDI_IN[i] addReceiver:self];
+	    Pm_OpenInput(&virtualMIDI_IN[i], 
+                 i,
+                 DRIVER_INFO, 
+                 INPUT_BUFFER_SIZE, 
+                 NULL, 
+                 NULL);
+		Pm_SetFilter(virtualMIDI_IN[i], PM_FILT_ACTIVE | PM_FILT_CLOCK | PM_FILT_SYSEX);
 	}
 
 	for(i=0; i<NUM_MIDI_OUT; ++i) {
-		NSMutableString *portName = [[NSMutableString alloc] init];
-		[portName appendFormat:@"vMBSEQ OUT%d", i+1];
-		//virtualMIDI_OUT[i] = [[PYMIDIVirtualSource alloc] initWithName:portName];
+	    Pm_OpenOutput(&virtualMIDI_OUT[i], 
+                 i,
+                 DRIVER_INFO, 
+                 OUTPUT_BUFFER_SIZE, 
+                 NULL, 
+                 NULL,
+				 0);
 	}
-	*/
 }
 
 
@@ -63,12 +72,6 @@ static NSObject *_self;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_Init(u32 mode)
 {
-	int i;
-/*    for (i = 0; i < Pm_CountDevices(); i++) {
-        const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
-        NSLog("%d: %s, %s", i, info->interf, info->name);
-	}*/
-	return 0;
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -77,10 +80,16 @@ s32 MIOS32_UART_Init(u32 mode)
   NSLog(@"MIOS32 No UARTs Found");
   return -1; // no UARTs
 #else
-  // initialisation of PYMIDI channels already done in awakeFromNib
-  
-  // clear buffer counters
 
+	int i;
+#if 1
+    for (i = 0; i < Pm_CountDevices(); i++) {
+        const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+        NSLog(@"Found MIDI Interface - %d: %s, %s\n", i, info->interf, info->name);
+	} 
+#endif
+
+  // clear buffer counters
   for(i=0; i<NUM_MIDI_IN; ++i) {
     rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
   }
@@ -247,25 +256,23 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 #else
   if( uart >= NUM_MIDI_OUT )
     return -1; // UART not available
-
-	/*
-  	MIDIPacketList packetList;
-	MIDIPacket *packet = MIDIPacketListInit(&packetList);
-
+/*
 	if( len ) {
-		packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet,
-			     0, // timestamp
-				 len, buffer);
-		[virtualMIDI_OUT[uart] addSender:_self];
-		[virtualMIDI_OUT[uart] processMIDIPacketList:&packetList sender:_self];
-		[virtualMIDI_OUT[uart] removeSender:_self];		
+		//int num_packets=len>>2;
 		
+	    PmEvent buffer[1];    
 		int i;
-		for(i=0; i<len; ++i)
-			MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i]);
+		for(i=0; i<len; i+=4)
+			 buffer, 1);
+			 
+			 
+		Pm_Write(virtualMIDI_OUT[uart],
+		MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i]);
+		MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i+1];
+		MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i+2]);
+		MIOS32_MIDI_SendByteToTxCallback(UART0 + uart, buffer[i+3]);
 	}
 	*/
-	
 #if 0
   if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
     return -2; // buffer full or cannot get all requested bytes (retry)
@@ -330,12 +337,15 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
   return error;
 }
 
+
+//s32   MIOS32_MIDI_SendByteToRxCallback(UART0, b);
+
 /*
-s32   MIOS32_MIDI_SendByteToRxCallback(UART0, b);
-
-
-- (void)handleMIDIMessage:(Byte*)message ofSize:(int)size
+s32 pollforMIDIMessage()
 {
+
+	if Pm_Poll(midi);
+            length = Pm_Read(midi,buffer, 1);
 	int i;
 	return 0;
 

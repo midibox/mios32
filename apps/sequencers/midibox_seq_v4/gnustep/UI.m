@@ -324,6 +324,7 @@ void SRIO_ServiceFinish(void)
 	while (YES) {
 		// TODO: find better more FreeRTOS/MIOS32 compliant solution
 		// check for incoming MIDI messages and call hooks
+//		pollforMIDIMessage();
 		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
 		[theLock unlock];
@@ -509,28 +510,13 @@ s32 TASKS_Init(u32 mode)
 	_buttonGP15 = buttonGP15;
 	_buttonGP16 = buttonGP16;
 
+/* Not now needed.
 	NSBundle	*bundle = [NSBundle mainBundle];
 	NSImage		*blueKnob, *redKnob;
 
 	blueKnob = [[[NSImage alloc] initWithContentsOfFile: [bundle pathForResource: @"Knob_Blue" ofType: @"png"]] autorelease];
 	redKnob = [[[NSImage alloc] initWithContentsOfFile: [bundle pathForResource: @"Knob_Red" ofType: @"png"]] autorelease];
-	[buttonTrack1 setImage: blueKnob];
-	[buttonTrack2 setImage: blueKnob];
-	[buttonTrack3 setImage: blueKnob];
-	[buttonTrack4 setImage: blueKnob];
-	[buttonTrack1 setAlternateImage: redKnob];
-	[buttonTrack2 setAlternateImage: redKnob];
-	[buttonTrack3 setAlternateImage: redKnob];
-	[buttonTrack4 setAlternateImage: redKnob];
-
-	
-	[buttonTrack1 setFocusRingType: NSFocusRingTypeNone];
-	[buttonTrack2 setFocusRingType: NSFocusRingTypeNone];
-	[buttonTrack3 setFocusRingType: NSFocusRingTypeNone];
-	[buttonTrack4 setFocusRingType: NSFocusRingTypeNone];
-
-
-
+*/
 	_buttonTrack1 = buttonTrack1;
 	_buttonTrack2 = buttonTrack2;
 	_buttonTrack3 = buttonTrack3;
