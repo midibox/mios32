@@ -23,8 +23,10 @@ static NSObject *_self;
 	
 	// install background task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.01 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSDefaultRunLoopMode];
 }
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////
