@@ -339,13 +339,24 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_CursorSet(70, 1);
     SEQ_LCD_PrintString("> COPIED <");
   } else {
-    SEQ_LCD_CursorSet(70, 0);
-    SEQ_LCD_PrintString(">> COPY <<");
-    SEQ_LCD_CursorSet(70, 1);
-    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) )
-      SEQ_LCD_PrintString(">PRESET!!<");
-    else
+    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) ) {
+      SEQ_LCD_CursorSet(70, 0);
+      if( !ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(10);
+      else
+	SEQ_LCD_PrintString("!! COPY !!");
+
+      SEQ_LCD_CursorSet(70, 1);
+      if( !ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(10);
+      else
+	SEQ_LCD_PrintString("! PRESET !");
+    } else {
+      SEQ_LCD_CursorSet(70, 0);
+      SEQ_LCD_PrintString(">> COPY <<");
+      SEQ_LCD_CursorSet(70, 1);
       SEQ_LCD_PrintString("> PRESET <");
+    }
   }
 
 

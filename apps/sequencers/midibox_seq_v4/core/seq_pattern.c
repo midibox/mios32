@@ -35,7 +35,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
-#define STOPWATCH_PERFORMANCE_MEASURING 1
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////
