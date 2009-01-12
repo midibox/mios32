@@ -411,7 +411,7 @@ s32 TASKS_Init(u32 mode)
 {
 	// install SRIO task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
-	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSRunLoopCommonModes];	
+	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSDefaultRunLoopMode];
 
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
