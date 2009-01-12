@@ -4,84 +4,84 @@ APP_NAME=midibox_seq_v4
 VERSION=1.0
 
 midibox_seq_v4_OBJC_FILES=\
-	../macos/CLCDView.m\
-	../macos/FreeRTOS_Wrapper.m\
-	../macos/MIOS32_BOARD_Wrapper.m \
-	../macos/MIOS32_COM_Wrapper.m \
-	../macos/MIOS32_DELAY_Wrapper.m \
-	../macos/MIOS32_ENC_Wrapper.m \
-	../macos/MIOS32_IRQ_Wrapper.m \
-	../macos/MIOS32_LCD_Wrapper.m \
-	MIOS32_MIDI_Wrapper.m \
-	../macos/MIOS32_SDCARD_Wrapper.m \
-	../macos/MIOS32_SRIO_Wrapper.m \
-	../macos/MIOS32_STOPWATCH_Wrapper.m \
-	../macos/MIOS32_SYS_Wrapper.m \
-	../macos/MIOS32_TIMER_Wrapper.m \
-	../macos/SEQButton.m \
-	../macos/SEQEncoder.m \
-	UI.m \
-	../macos/main.m 
+	./build/CLCDView.m\
+	./build/FreeRTOS_Wrapper.m\
+	./build/MIOS32_BOARD_Wrapper.m \
+	./build/MIOS32_COM_Wrapper.m \
+	./build/MIOS32_DELAY_Wrapper.m \
+	./build/MIOS32_ENC_Wrapper.m \
+	./build/MIOS32_IRQ_Wrapper.m \
+	./build/MIOS32_LCD_Wrapper.m \
+	./build/MIOS32_MIDI_Wrapper.m \
+	./build/MIOS32_SDCARD_Wrapper.m \
+	./build/MIOS32_SRIO_Wrapper.m \
+	./build/MIOS32_STOPWATCH_Wrapper.m \
+	./build/MIOS32_SYS_Wrapper.m \
+	./build/MIOS32_TIMER_Wrapper.m \
+	./build/SEQButton.m \
+	./build/SEQEncoder.m \
+	./build/UI.m \
+	./build/main.m 
 
 midibox_seq_v4_C_FILES=\
-	../../../../mios32/common/mios32_din.c \
-	../../../../mios32/common/mios32_dout.c \
-	../../../../mios32/common/mios32_lcd.c \
-	../../../../mios32/common/mios32_midi.c \
-	../../../../mios32/common/mios32_uart_midi.c \
-	../../../../modules/dosfs/dfs_sdcard.c \
-	../../../../modules/dosfs/dosfs.c \
-	../../../../modules/midifile/mid_parser.c \
-	../../../../modules/sequencer/seq_bpm.c \
-	../../../../modules/sequencer/seq_midi_out.c \
-	../../../../drivers/gnustep/portmidi/pm_common/portmidi.c \
-	../../../../drivers/gnustep/portmidi/pm_common/pmutil.c \
-	../../../../drivers/gnustep/portmidi/pm_win/pmwin.c \
-	../../../../drivers/gnustep/portmidi/pm_win/pmwinmm.c \
-	../../../../drivers/gnustep/portmidi/porttime/porttime.c \
-	../../../../drivers/gnustep/portmidi/porttime/ptwinmm.c \
-	../core/app.c \
-	../core/seq_cc.c \
-	../core/seq_chord.c \
-	../core/seq_core.c \
-	../core/seq_file.c \
-	../core/seq_file_b.c \
-	../core/seq_file_m.c \
-	../core/seq_layer.c \
-	../core/seq_lcd.c \
-	../core/seq_led.c \
-	../core/seq_midi_in.c \
-	../core/seq_midi_port.c \
-	../core/seq_midply.c \
-	../core/seq_mixer.c \
-	../core/seq_par.c \
-	../core/seq_pattern.c \
-	../core/seq_random.c \
-	../core/seq_scale.c \
-	../core/seq_trg.c \
-	../core/seq_ui.c \
-	../core/seq_ui_bpm.c \
-	../core/seq_ui_edit.c \
-	../core/seq_ui_fx.c \
-	../core/seq_ui_fx_echo.c \
-	../core/seq_ui_menu.c \
-	../core/seq_ui_mixer.c \
-	../core/seq_ui_mute.c \
-	../core/seq_ui_opt.c \
-	../core/seq_ui_pattern.c \
-	../core/seq_ui_save.c \
-	../core/seq_ui_shortcut.c \
-	../core/seq_ui_todo.c \
-	../core/seq_ui_trgasg.c \
-	../core/seq_ui_trkdir.c \
-	../core/seq_ui_trkdiv.c \
-	../core/seq_ui_trkevnt.c \
-	../core/seq_ui_trklen.c \
-	../core/seq_ui_trkmode.c \
-	../core/seq_ui_trkrnd.c \
-	../core/seq_ui_trktran.c \
-	../core/seq_ui_util.c \
-	../../../../mios32/common/printf-stdarg.c 
+	./build/mios32_din.c \
+	./build/mios32_dout.c \
+	./build/mios32_lcd.c \
+	./build/mios32_midi.c \
+	./build/mios32_uart_midi.c \
+	./build/dfs_sdcard.c \
+	./build/dosfs.c \
+	./build/mid_parser.c \
+	./build/seq_bpm.c \
+	./build/seq_midi_out.c \
+	./build/portmidi.c \
+	./build/pmutil.c \
+	./build/pmwin.c \
+	./build/pmwinmm.c \
+	./build/porttime.c \
+	./build/ptwinmm.c \
+	./build/app.c \
+	./build/seq_cc.c \
+	./build/seq_chord.c \
+	./build/seq_core.c \
+	./build/seq_file.c \
+	./build/seq_file_b.c \
+	./build/seq_file_m.c \
+	./build/seq_layer.c \
+	./build/seq_lcd.c \
+	./build/seq_led.c \
+	./build/seq_midi_in.c \
+	./build/seq_midi_port.c \
+	./build/seq_midply.c \
+	./build/seq_mixer.c \
+	./build/seq_par.c \
+	./build/seq_pattern.c \
+	./build/seq_random.c \
+	./build/seq_scale.c \
+	./build/seq_trg.c \
+	./build/seq_ui.c \
+	./build/seq_ui_bpm.c \
+	./build/seq_ui_edit.c \
+	./build/seq_ui_fx.c \
+	./build/seq_ui_fx_echo.c \
+	./build/seq_ui_menu.c \
+	./build/seq_ui_mixer.c \
+	./build/seq_ui_mute.c \
+	./build/seq_ui_opt.c \
+	./build/seq_ui_pattern.c \
+	./build/seq_ui_save.c \
+	./build/seq_ui_shortcut.c \
+	./build/seq_ui_todo.c \
+	./build/seq_ui_trgasg.c \
+	./build/seq_ui_trkdir.c \
+	./build/seq_ui_trkdiv.c \
+	./build/seq_ui_trkevnt.c \
+	./build/seq_ui_trklen.c \
+	./build/seq_ui_trkmode.c \
+	./build/seq_ui_trkrnd.c \
+	./build/seq_ui_trktran.c \
+	./build/seq_ui_util.c \
+	./build/printf-stdarg.c 
 
 midibox_seq_v4_RESOURCE_FILES=\
 	Info.plist
@@ -111,11 +111,25 @@ midibox_seq_v4_INCLUDE_DIRS=\
 	-I../../../../drivers/gnustep/portmidi/porttime \
 	-I../../../../drivers/gnustep/portmidi/pm_win
 
-#before-all::
-#	mkdir -p ./obj
-
+before-all::
+	rm -rf ./build
+	rm -rf ./obj
+	mkdir ./build 
+	mkdir ./obj 
+	mkdir ./obj/build
+	cp ../macos/*.m build 
+	cp *.m build 
+	cp ../core/*.c build 
+	cp ../../../../mios32/common/*.c build 
+	cp ../../../../modules/dosfs/*.c build 
+	cp ../../../../modules/midifile/*.c build 
+	cp ../../../../modules/sequencer/*.c build 
+	cp ../../../../drivers/gnustep/portmidi/pm_common/*.c build 
+	cp ../../../../drivers/gnustep/portmidi/pm_win/*.c build 
+	cp ../../../../drivers/gnustep/portmidi/porttime/*.c build 
+	
+# Include windows midi dll (winmm.dll)
 ADDITIONAL_NATIVE_LIBS = winmm
-#ADDITIONAL_LDFLAGS = --add-stdcall-alias -l winmm.dll
 
 
 
