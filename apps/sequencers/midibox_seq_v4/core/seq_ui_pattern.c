@@ -158,10 +158,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP8 ) {
 #endif
-    if( selected_pattern[ui_selected_group].group == button )
-      selected_pattern[ui_selected_group].lower ^= 1;
-    else
+    if( selected_pattern[ui_selected_group].group == button ) {
+      if( SEQ_FILE_B_NumPatterns(selected_pattern[ui_selected_group].bank) > 64 ) {
+	selected_pattern[ui_selected_group].lower ^= 1;
+      } else {
+	selected_pattern[ui_selected_group].lower = 0; // toggling not required
+      }
+    } else {
       selected_pattern[ui_selected_group].group = button;
+    }
     return 1; // value always changed
   }
 

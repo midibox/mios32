@@ -186,6 +186,9 @@ extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
 extern u8 SEQ_UI_UTIL_CopyPasteEndGet(void);
 
+extern s32 SEQ_UI_SDCardMsg(u16 delay, char *line1, char *line2);
+extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

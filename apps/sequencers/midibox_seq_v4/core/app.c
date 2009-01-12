@@ -39,7 +39,7 @@
 
 #include "seq_file.h"
 #include "seq_file_b.h"
-
+#include "seq_file_m.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -290,7 +290,34 @@ void SEQ_TASK_Period1S(void)
 {
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
-  SEQ_FILE_CheckSDCard();
+
+  s32 status = SEQ_FILE_CheckSDCard();
+
+  if( status == 1 ) {
+    char str[21];
+    sprintf(str, "Label: %s", SEQ_FILE_VolumeLabel());
+    SEQ_UI_SDCardMsg(2000, " SD Card connected", "        :-D");
+  } else if( status == 2 ) {
+    SEQ_UI_SDCardMsg(2000, "SD Card disconnected", "        :-/");
+  } else if( status == 3 ) {
+    if( !SEQ_FILE_SDCardAvailable() ) {
+      SEQ_UI_SDCardMsg(2000, "  No SD Card found  ", "        :-(");
+    } else if( !SEQ_FILE_VolumeAvailable() ) {
+      SEQ_UI_SDCardMsg(2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
+    } else {
+      char str1[21];
+      sprintf(str1, "Banks: ........");
+      u8 bank;
+      for(bank=0; bank<8; ++bank)
+	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
+      char str2[21];
+      sprintf(str2, "Mixer: %d", SEQ_FILE_M_NumMaps() ? 1 : 0);
+      SEQ_UI_SDCardMsg(2000, str1, str2);
+    }
+  } else if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+  }
+
   MUTEX_SDCARD_GIVE;
 }
 

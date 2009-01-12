@@ -73,6 +73,8 @@ static VOLINFO vi;
 static s32 write_filepos;
 static u8 *write_buffer;
 
+static u8 status_msg_ctr;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -89,6 +91,9 @@ s32 SEQ_FILE_Init(u32 mode)
   printf("[SEQ_FILE] SD Card interface initialized, status: %d\n\r", error);
 #endif
 
+  // for status message
+  status_msg_ctr = 5;
+
   return 0; // no error
 }
 
@@ -99,6 +104,9 @@ s32 SEQ_FILE_Init(u32 mode)
 //
 // Once the chard has been detected, all banks will be read
 // returns < 0 on errors (error codes are documented in seq_file.h)
+// returns 1 if SD card has been connected
+// returns 2 if SD card has been disconnected
+// returns 3 if status message should be print
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_CheckSDCard(void)
 {
@@ -128,6 +136,11 @@ s32 SEQ_FILE_CheckSDCard(void)
     SEQ_FILE_B_LoadAllBanks();
     SEQ_FILE_M_LoadAllBanks();
 
+    // status message after 3 seconds
+    status_msg_ctr = 3;
+
+    return 1; // SD card has been connected
+
   } else if( !sdcard_available && prev_sdcard_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     printf("[SEQ_FILE] SD Card disconnected!\n\r");
@@ -137,6 +150,13 @@ s32 SEQ_FILE_CheckSDCard(void)
     // unload all banks
     SEQ_FILE_B_UnloadAllBanks();
     SEQ_FILE_M_UnloadAllBanks();
+
+    return 2; // SD card has been disconnected
+  }
+
+  if( status_msg_ctr ) {
+    if( !--status_msg_ctr )
+      return 3;
   }
 
   return 0; // no error
@@ -289,6 +309,15 @@ u32 SEQ_FILE_VolumeBytesFree(void)
 u32 SEQ_FILE_VolumeBytesTotal(void)
 {
   return vi.numclusters * vi.secperclus * SECTOR_SIZE;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns volume label
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_FILE_VolumeLabel(void)
+{
+  return vi.label;
 }
 
 
