@@ -92,7 +92,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->trg_assignments.roll = 3;
     tcc->trg_assignments.random_gate = 0;
     tcc->trg_assignments.random_value = 0;
-    tcc->trg_assignments.spare = 0;
+    tcc->trg_assignments.no_fx = 0;
 
     tcc->humanize_mode = 0;
     tcc->humanize_value = 0;
@@ -159,7 +159,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
     case SEQ_CC_ASG_ROLL: tcc->trg_assignments.roll = value; break;
     case SEQ_CC_ASG_RANDOM_GATE: tcc->trg_assignments.random_gate = value; break;
     case SEQ_CC_ASG_RANDOM_VALUE: tcc->trg_assignments.random_value = value; break;
-    case SEQ_CC_ASG_RANDOM_SPARE: tcc->trg_assignments.spare = value; break;
+    case SEQ_CC_ASG_NO_FX: tcc->trg_assignments.no_fx = value; break;
   
     case SEQ_CC_CHANGE_STEP: break; // TODO
   
@@ -227,7 +227,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ASG_ROLL: return tcc->trg_assignments.roll;
     case SEQ_CC_ASG_RANDOM_GATE: return tcc->trg_assignments.random_gate;
     case SEQ_CC_ASG_RANDOM_VALUE: return tcc->trg_assignments.random_value;
-    case SEQ_CC_ASG_RANDOM_SPARE: return tcc->trg_assignments.spare;
+    case SEQ_CC_ASG_NO_FX: return tcc->trg_assignments.no_fx;
   
     case SEQ_CC_CHANGE_STEP: return 0; // TODO
 

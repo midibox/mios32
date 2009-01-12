@@ -573,7 +573,7 @@ s32 TASKS_Init(u32 mode)
 
 	// init application after ca. 1 mS (this ensures that all objects have been initialized)
 	NSTimer *init_timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
-	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSRunLoopCommonModes];
+	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSDefaultRunLoopMode];
 }
 
 @end

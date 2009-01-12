@@ -40,7 +40,7 @@ typedef union {
     unsigned roll:2;
     unsigned random_gate:2;
     unsigned random_value:2;
-    unsigned spare:2;
+    unsigned no_fx:2;
   };
 } seq_trg_assignments_t;
 
@@ -62,6 +62,7 @@ extern s32 SEQ_TRG_GlideGet(u8 track, u8 step);
 extern s32 SEQ_TRG_RollGet(u8 track, u8 step);
 extern s32 SEQ_TRG_RandomGateGet(u8 track, u8 step);
 extern s32 SEQ_TRG_RandomValueGet(u8 track, u8 step);
+extern s32 SEQ_TRG_NoFxGet(u8 track, u8 step);
 
 extern s32 SEQ_TRG_Set(u8 track, u8 step, u8 trg_layer, u8 value);
 extern s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value);
@@ -72,6 +73,7 @@ extern s32 SEQ_TRG_GlideSet(u8 track, u8 step, u8 value);
 extern s32 SEQ_TRG_RollSet(u8 track, u8 step, u8 value);
 extern s32 SEQ_TRG_RandomGateSet(u8 track, u8 step, u8 value);
 extern s32 SEQ_TRG_RandomValueSet(u8 track, u8 step, u8 value);
+extern s32 SEQ_TRG_NoFxSet(u8 track, u8 step, u8 value);
 
 extern char *SEQ_TRG_TypeStr(u8 trg_num);
 extern char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer);

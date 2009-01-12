@@ -471,11 +471,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		t->vu_meter = p->velocity; // for visualisation in mute menu
 	      }
 	      
-	      // apply echo Fx if enabled
-	      if( tcc->echo_repeats && (p->type == CC || gatelength) )
-		SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+	      // apply Fx if "No Fx" trigger is not set
+	      if( !SEQ_TRG_NoFxGet(track, t->step) ) {
+		// apply echo Fx if enabled
+		if( tcc->echo_repeats && (p->type == CC || gatelength) )
+		  SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+	      }
 	    }
-
 
 	  }
 	}

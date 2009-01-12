@@ -56,7 +56,7 @@
 #define SEQ_CC_ASG_ROLL  	0x3c
 #define SEQ_CC_ASG_RANDOM_GATE	0x3d
 #define SEQ_CC_ASG_RANDOM_VALUE	0x3e
-#define SEQ_CC_ASG_RANDOM_SPARE	0x3f
+#define SEQ_CC_ASG_NO_FX	0x3f
 
 #define SEQ_CC_CHANGE_STEP	0x40
 
