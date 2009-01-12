@@ -35,7 +35,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -83,6 +83,10 @@ s32 SEQ_PATTERN_Init(u32 mode)
 #endif
 
   }
+
+#if STOPWATCH_PERFORMANCE_MEASURING
+  SEQ_UI_MENU_StopwatchInit();
+#endif
 
   return 0; // no error
 }
@@ -177,7 +181,18 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
   seq_pattern[group] = pattern;
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  SEQ_UI_MENU_StopwatchReset();
+#endif
+
+  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  SEQ_UI_MENU_StopwatchCapture();
+#endif
+
   MUTEX_SDCARD_GIVE;
 
   return status;
@@ -191,7 +206,18 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   s32 status;
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  SEQ_UI_MENU_StopwatchReset();
+#endif
+
+  if( (status=SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group)) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  SEQ_UI_MENU_StopwatchCapture();
+#endif
+
   MUTEX_SDCARD_GIVE;
 
   return status;

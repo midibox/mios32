@@ -175,10 +175,14 @@ s32 SEQ_MIXER_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIXER_Load(u8 map)
 {
+  s32 status;
+
   MUTEX_SDCARD_TAKE;
-  s32 error = SEQ_FILE_M_MapRead(map);
+  if( (status=SEQ_FILE_M_MapRead(map)) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
-  return error;
+
+  return status;
 }
 
 
@@ -187,8 +191,12 @@ s32 SEQ_MIXER_Load(u8 map)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIXER_Save(u8 map)
 {
+  s32 status;
+
   MUTEX_SDCARD_TAKE;
-  s32 error = SEQ_FILE_M_MapWrite(map);
+  if( (status=SEQ_FILE_M_MapWrite(map)) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
-  return error;
+
+  return status;
 }

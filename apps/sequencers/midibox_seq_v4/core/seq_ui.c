@@ -19,6 +19,7 @@
 #define SEQ_UI_PAGES_INC_LOCAL_VARS 1
 
 #include <mios32.h>
+#include <string.h>
 #include <blm8x8.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -31,6 +32,7 @@
 #include "seq_core.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+#include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
 
@@ -88,6 +90,12 @@ static s32 (*ui_lcd_callback)(u8 high_prio);
 static u16 ui_gp_leds;
 
 
+#define SDCARD_MSG_MAX_CHAR 21
+static char sdcard_msg[2][SDCARD_MSG_MAX_CHAR];
+static u16 sdcard_msg_ctr;
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
@@ -103,6 +111,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_item = 0;
 
   ui_hold_msg_ctr = 0;
+  sdcard_msg_ctr = 0;
 
   ui_cursor_flash_ctr = 0;
   ui_cursor_flash = 0;
@@ -1029,6 +1038,24 @@ s32 SEQ_UI_LCD_Handler(void)
       ui_lcd_callback(0); // no high_prio
   }
 
+  // if SD card message active: copy over the text
+  if( sdcard_msg_ctr ) {
+    const char animation_l[4][3] = {
+      "  ", " >", ">>", "> " };
+    const char animation_r[4][3] = {
+      "  ", "< ", "<<", " <" };
+    int anum = (sdcard_msg_ctr % 1000) / 250;
+
+    int line;
+    for(line=0; line<2; ++line) {
+      SEQ_LCD_CursorSet(40, line);
+      SEQ_LCD_PrintFormattedString(" %s| %-20s |%s ",
+				   (char *)animation_l[anum], 
+				   (char *)sdcard_msg[line], 
+				   (char *)animation_r[anum]);
+    }
+  }
+
   // transfer all changed characters to LCD
   SEQ_LCD_Update(0);
 
@@ -1235,6 +1262,10 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   // used in some pages for temporary messages
   if( ui_hold_msg_ctr )
     --ui_hold_msg_ctr;
+
+  // used for temporary SD Card messages
+  if( sdcard_msg_ctr )
+    --sdcard_msg_ctr;
 
   // VU meters (used in MUTE menu, could also be available as LED matrix...)
   static u8 vu_meter_prediv = 0; // predivider for VU meters
@@ -1451,3 +1482,27 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Print temporary messages after file operations
+// expects mS delay and two lines, each up to 20 characters
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_SDCardMsg(u16 delay, char *line1, char *line2)
+{
+  sdcard_msg_ctr = delay;
+  strncpy((char *)sdcard_msg[0], line1, SDCARD_MSG_MAX_CHAR);
+  strncpy((char *)sdcard_msg[1], line2, SDCARD_MSG_MAX_CHAR);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints a temporary error messages after file operation
+// Expects error status number (as defined in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
+{
+  // TODO: add more verbose error messages, they are clearly defined in seq_file.h)
+  char str[21];
+  sprintf(str, "E%3d (DOSFS: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
+  return SEQ_UI_SDCardMsg(delay, "!! SD Card Error !!!", str);
+}

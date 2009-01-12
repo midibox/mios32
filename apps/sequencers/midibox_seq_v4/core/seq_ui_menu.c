@@ -185,8 +185,8 @@ static s32 LCD_Handler(u8 high_prio)
 	    SEQ_FILE_VolumeBytesFree()/1000000,
 	    SEQ_FILE_VolumeBytesTotal()/1000000);
 #else
-    // disabled: determing the number of free bytes takes too long!
-    sprintf(status_str, "connected (%d MB)", SEQ_FILE_VolumeBytesTotal()/1000000);
+    // print volume label instead
+    sprintf(status_str, "\"%11s\"", SEQ_FILE_VolumeLabel());
 #endif
   }
   SEQ_LCD_PrintStringPadded(status_str, 31);
