@@ -43,7 +43,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -462,8 +462,11 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		  
 		if( triggers > 1 ) {
 		  int i;
+		  u32 half_gatelength = gatelength/2;
+		  if( !half_gatelength )
+		    half_gatelength = 1;
 		  for(i=0; i<triggers; ++i)
-		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, (gatelength/2));
+		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
 		} else {
 		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
 		}
