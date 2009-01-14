@@ -314,6 +314,13 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
   // insert subport number into package
   package.cable = port & 0xf;
 
+  // forward to Tx callback function and break if package has been filtered
+  if( direct_tx_callback_func != NULL ) {
+    s32 status;
+    if( status = direct_tx_callback_func(port, package) )
+      return status;
+  }
+
   // branch depending on selected port
   switch( port >> 4 ) {
     case 1:
