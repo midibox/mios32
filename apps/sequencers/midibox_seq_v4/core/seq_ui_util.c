@@ -480,8 +480,8 @@ u8 SEQ_UI_UTIL_CopyPasteEndGet(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 COPY_Track(u8 track)
 {
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
 
   // copy layers into buffer
   for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
@@ -503,26 +503,26 @@ static s32 COPY_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 PASTE_Track(u8 track)
 {
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
 
   // branch to clear function if copy&paste buffer not filled
   if( !copypaste_buffer_filled )
     return CLEAR_Track(track);
 
   // determine begin/end boundary
-  u8 step_begin = copypaste_begin;
-  u8 step_end = copypaste_end;
+  int step_begin = copypaste_begin;
+  int step_end = copypaste_end;
   // swap if required
   if( step_begin > step_end ) {
-    u8 tmp = step_end;
+    int tmp = step_end;
     step_end = step_begin;
     step_begin = tmp;
   }
 
   // copy layers from buffer
   for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer) {
-    u8 step_offset = ui_selected_step;
+    int step_offset = ui_selected_step;
     for(step=step_begin; step<=step_end; ++step, ++step_offset) {
       if( step_offset < SEQ_CORE_NUM_STEPS )
 	SEQ_PAR_Set(track, step_offset, layer, copypaste_par_layer[layer][step]);
@@ -530,7 +530,7 @@ static s32 PASTE_Track(u8 track)
   }
 
   for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer) {
-    u8 step_offset = ui_selected_step;
+    int step_offset = ui_selected_step;
     for(step=step_begin; step<=step_end; ++step, ++step_offset) {
       if( step_offset < SEQ_CORE_NUM_STEPS ) {
 	u8 step_ix = step>>3;
@@ -556,8 +556,8 @@ static s32 CLEAR_Track(u8 track)
   SEQ_LAYER_CopyPreset(track, seq_core_options.PASTE_CLR_ALL ? 0 : 1);
 
   // clear all triggers
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
   for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
     for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
       SEQ_TRG_Set8(track, step, layer, 0x00);
@@ -570,8 +570,8 @@ static s32 CLEAR_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 UNDO_Track(void)
 {
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
 
   // exit if undo buffer not filled
   if( !undo_buffer_filled )
@@ -594,8 +594,8 @@ static s32 UNDO_Track(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 {
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
 
   // store track in special variable, so that we restore to the right one later
   undo_track = track;
@@ -621,7 +621,7 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MOVE_StoreStep(u8 track, u8 step, u8 buffer, u8 clr_triggers)
 {
-  u8 layer;
+  int layer;
 
   for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
     move_par_layer[buffer][layer] = SEQ_PAR_Get(track, step, layer);
@@ -638,7 +638,7 @@ static s32 MOVE_StoreStep(u8 track, u8 step, u8 buffer, u8 clr_triggers)
 
 static s32 MOVE_RestoreStep(u8 track, u8 step, u8 buffer)
 {
-  u8 layer;
+  int layer;
 
   for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
     SEQ_PAR_Set(track, step, layer, move_par_layer[buffer][layer]);
@@ -655,11 +655,11 @@ static s32 MOVE_RestoreStep(u8 track, u8 step, u8 buffer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
 {
-  u8 layer;
-  u8 step;
+  int layer;
+  int step;
 
   // determine the last step which has to be rotated
-  u8 last_step = SEQ_CC_Get(track, SEQ_CC_LENGTH);
+  int last_step = SEQ_CC_Get(track, SEQ_CC_LENGTH);
   if( first_step > last_step ) {
     // loop point behind track len -> rotate complete track
     first_step = 0;
@@ -711,7 +711,7 @@ static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_UTIL_MuteAllTracks(void)
 {
-  u8 track;
+  int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
     seq_core_trk[track].state.MUTED = 1;
 
@@ -723,7 +723,7 @@ static s32 SEQ_UI_UTIL_MuteAllTracks(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_UTIL_UnMuteAllTracks(void)
 {
-  u8 track;
+  int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
     seq_core_trk[track].state.MUTED = 0;
 

@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
 
 #include "seq_midi_in.h"
 #include "seq_cc.h"
@@ -113,16 +114,29 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  s32 status = 0;
+
   // TODO: here we could filter the MIDI port
 
+  // Access to MIDI IN functions controlled by Mutex, since this function is access
+  // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
+  // SEQ_CORE_* for loopbacks)
   if( midi_package.chn == (seq_midi_in_channel-1) ) {
     switch( midi_package.event ) {
-      case NoteOff: return SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
-      case NoteOn:  return SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
+      case NoteOff: 
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
+	MUTEX_MIDIIN_GIVE;
+	break;
+      case NoteOn:
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
+	MUTEX_MIDIIN_GIVE;
+	break;
     }
   }
 
-  return 0; // no error
+  return status;
 }
 
 

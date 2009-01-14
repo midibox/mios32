@@ -86,6 +86,7 @@
 #define DEFAULT_BEHAVIOUR_BUTTON_METRON	1
 #define DEFAULT_BEHAVIOUR_BUTTON_SCRUB	1
 #define DEFAULT_BEHAVIOUR_BUTTON_MENU	1
+#define DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW 1
 
 
 // include SRIO setup here, so that we can propagate values to external modules

@@ -71,6 +71,7 @@ u16 ui_hold_msg_ctr;
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
 seq_ui_page_t ui_shortcut_prev_page;
+seq_ui_page_t ui_stepview_prev_page;
 
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
@@ -691,9 +692,20 @@ static s32 SEQ_UI_Button_All(s32 depressed)
 
 static s32 SEQ_UI_Button_StepView(s32 depressed)
 {
+#if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.STEPVIEW ^= 1; // toggle STEPVIEW pressed (will also be released once GP button has been pressed)
+#else
+  // set mode
+  seq_ui_button_state.STEPVIEW = depressed ? 0 : 1;
+#endif
 
-  ui_selected_step_view = ui_selected_step_view ? 0 : 1;
+  if( seq_ui_button_state.STEPVIEW ) {
+    ui_stepview_prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_STEPSEL);
+  } else {
+    SEQ_UI_PageSet(ui_stepview_prev_page);
+  }
 
   return 0; // no error
 }
@@ -1109,8 +1121,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_REW, seq_ui_button_state.REW);
   SEQ_LED_PinSet(LED_FWD, seq_ui_button_state.FWD);
   
-  SEQ_LED_PinSet(LED_STEP_1_16, (ui_selected_step_view == 0));
-  SEQ_LED_PinSet(LED_STEP_17_32, (ui_selected_step_view == 1)); // will be obsolete in MBSEQ V4
+  SEQ_LED_PinSet(LED_STEPVIEW, seq_ui_button_state.STEPVIEW);
 
   SEQ_LED_PinSet(LED_MENU, seq_ui_button_state.MENU_PRESSED);
   SEQ_LED_PinSet(LED_SCRUB, seq_ui_button_state.SCRUB);

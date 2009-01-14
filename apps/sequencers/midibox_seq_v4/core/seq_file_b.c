@@ -433,7 +433,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 
     u16 given_p_layer_size;
     status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &given_p_layer_size);
-    u8 p_layer_size = (given_p_layer_size > SEQ_CORE_NUM_STEPS) ? SEQ_CORE_NUM_STEPS : given_p_layer_size;
+    u16 p_layer_size = (given_p_layer_size > SEQ_CORE_NUM_STEPS) ? SEQ_CORE_NUM_STEPS : given_p_layer_size;
 
     u16 given_t_layer_size;
     status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &given_t_layer_size);

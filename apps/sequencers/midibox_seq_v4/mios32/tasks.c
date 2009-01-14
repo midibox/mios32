@@ -31,6 +31,9 @@
 // for emulation
 xSemaphoreHandle xSDCardSemaphore;
 
+// Mutex for MIDI IN handler
+xSemaphoreHandle xMIDIINSemaphore;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions

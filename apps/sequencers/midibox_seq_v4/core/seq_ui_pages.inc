@@ -20,6 +20,7 @@ typedef enum {
   SEQ_UI_PAGE_MENU,
   SEQ_UI_PAGE_SHORTCUT,
   SEQ_UI_PAGE_FX,
+  SEQ_UI_PAGE_STEPSEL,
   SEQ_UI_PAGE_EDIT,
   SEQ_UI_PAGE_MUTE,
   SEQ_UI_PAGE_PATTERN,
@@ -49,6 +50,7 @@ extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_MENU_Init(u32 mode);
 extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
 extern s32 SEQ_UI_FX_Init(u32 mode);
+extern s32 SEQ_UI_STEPSEL_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
 extern s32 SEQ_UI_MUTE_Init(u32 mode);
 extern s32 SEQ_UI_PATTERN_Init(u32 mode);
@@ -81,6 +83,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Page Menu         ", (void *)&SEQ_UI_MENU_Init },
   { "Page Shortcuts    ", (void *)&SEQ_UI_SHORTCUT_Init },
   { "Fx Selection      ", (void *)&SEQ_UI_FX_Init },
+  { "Step Selection    ", (void *)&SEQ_UI_STEPSEL_Init },
 
   // menu selection starts here
   { "Edit              ", (void *)&SEQ_UI_EDIT_Init },
