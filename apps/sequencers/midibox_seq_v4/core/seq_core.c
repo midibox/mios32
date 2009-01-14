@@ -336,158 +336,173 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 
   // process all tracks
-  int track;
-  seq_core_trk_t *t = &seq_core_trk[0];
-  seq_cc_trk_t *tcc = &seq_cc_trk[0];
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++tcc, ++track) {
+  // first the loopback ports, thereafter parameters sent to common MIDI ports
+  int round;
+  for(round=0; round<2; ++round) {
+    seq_core_trk_t *t = &seq_core_trk[0];
+    seq_cc_trk_t *tcc = &seq_cc_trk[0];
+    int track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++tcc, ++track) {
 
-    // if "synch to measure" flag set: reset track if master has reached the selected number of steps
-    // MEMO: we could also provide the option to synch to another track
-    if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
-      SEQ_CORE_ResetTrkPos(t, tcc);
-
-    // MEMO: due to compatibilty reasons, the clock-predivider is currently multiplied by 4 (previously we used 96ppqn)
-    u16 prediv = bpm_tick % ((4 * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int);
-    if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
-      t->div_ctr = 0;
-
-      // increment step if not in arpeggiator mode or arp position == 0
-      if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
-	u8 skip_ctr = 0;
-	do {
-	  // determine next step depending on direction mode
-	  if( !t->state.FIRST_CLK )
-	    SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
-
-	  // clear "first clock" flag (on following clock ticks we can continue as usual)
-	  t->state.FIRST_CLK = 0;
-
-	  // if skip flag set for this flag: try again
-	  if( SEQ_TRG_SkipGet(track, t->step) )
-	    ++skip_ctr;
-	  else
-	    break;
-
-	} while( skip_ctr < 32 ); // try 32 times maximum
-      }
-
-
-      // solo function: don't play MIDI event if track not selected
-      if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
+      // round 0: loopback ports, round 1: remaining ports
+      u8 loopback_port = (tcc->midi_port & 0xf0) == 0xf0;
+      if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
-
-      // mute function
-      if( t->state.MUTED )
-	continue;
-
-      // if random gate trigger set: play step with 1:1 probability
-      if( SEQ_TRG_RandomGateGet(track, t->step) && (SEQ_RANDOM_Gen(0) & 1) )
-	continue;
-
-      // fetch MIDI events which should be played
-      if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
-	s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
-	seq_layer_evnt_t layer_events[4];
-	s32 number_of_events = getevnt_func(track, t->step, layer_events);
-	if( number_of_events > 0 ) {
-	  int i;
-	  seq_layer_evnt_t *e = &layer_events[0];
-	  for(i=0; i<number_of_events; ++e, ++i) {
-	    mios32_midi_package_t *p = &e->midi_package;
-
-	    // transpose notes/CCs
-	    SEQ_CORE_Transpose(t, tcc, p);
-
-	    // skip if velocity has been cleared by transpose function
-	    // (e.g. no key pressed in transpose mode)
-	    if( p->type == NoteOn && !p->velocity )
-	      continue;
-
-	    // sustained note: play off event
-	    if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
-	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
-	      t->sustain_note.ALL = 0;
-	    }
-
-	    // force to scale
-	    if( tcc->mode.FORCE_SCALE ) {
-	      u8 scale, root_selection, root;
-	      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-	      SEQ_SCALE_Note(p, scale, root);
-	    }
-
-	    // roll/glide flag
-	    if( e->len >= 0 ) {
-	      if( SEQ_TRG_RollGet(track, t->step) )
-		e->len = 0x2c; // 2x12
-	      if( SEQ_TRG_GlideGet(track, t->step) )
-		e->len = 0x1f; // Glide
-	    }
-
-	    // determine gate length
-	    u32 gatelength = 0;
-	    u8 triggers = 0;
-	    if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
-	      if( e->len < 32 ) {
-		if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
-		  t->sustain_port = tcc->midi_port;
-		  mios32_midi_package_t p_off = *p;
-		  p_off.velocity = 0; // clear velocity/CC value
-		  t->sustain_note = p_off;
-		  gatelength=0;
-		} else {
-		  // TODO: later we will support higher note length resolution
-		  triggers = 1;
-		  gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
-		}
-	      } else {
-		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
-		triggers = (e->len>>5) + 1;
-		gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
-		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
+  
+      // if "synch to measure" flag set: reset track if master has reached the selected number of steps
+      // MEMO: we could also provide the option to synch to another track
+      if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
+        SEQ_CORE_ResetTrkPos(t, tcc);
+  
+      // MEMO: due to compatibilty reasons, the clock-predivider is currently multiplied by 4 (previously we used 96ppqn)
+      u16 prediv = bpm_tick % ((4 * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int);
+      if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
+        t->div_ctr = 0;
+  
+        // increment step if not in arpeggiator mode or arp position == 0
+        if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
+	  u8 skip_ctr = 0;
+	  do {
+	    // determine next step depending on direction mode
+	    if( !t->state.FIRST_CLK )
+	      SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+	    
+	    // clear "first clock" flag (on following clock ticks we can continue as usual)
+	    t->state.FIRST_CLK = 0;
+  
+	    // if skip flag set for this flag: try again
+	    if( SEQ_TRG_SkipGet(track, t->step) )
+	      ++skip_ctr;
+	    else
+	      break;
+	    
+	  } while( skip_ctr < 32 ); // try 32 times maximum
+        }
+  
+  
+        // solo function: don't play MIDI event if track not selected
+        if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
+	  continue;
+  
+        // mute function
+        if( t->state.MUTED )
+	  continue;
+  
+        // if random gate trigger set: play step with 1:1 probability
+        if( SEQ_TRG_RandomGateGet(track, t->step) && (SEQ_RANDOM_Gen(0) & 1) )
+	  continue;
+  
+        // fetch MIDI events which should be played
+        if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
+	  s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
+	  seq_layer_evnt_t layer_events[4];
+	  s32 number_of_events = getevnt_func(track, t->step, layer_events);
+	  if( number_of_events > 0 ) {
+	    int i;
+	    seq_layer_evnt_t *e = &layer_events[0];
+	    for(i=0; i<number_of_events; ++e, ++i) {
+	      mios32_midi_package_t *p = &e->midi_package;
+	      
+	      // transpose notes/CCs
+	      SEQ_CORE_Transpose(t, tcc, p);
+	      
+	      // skip if velocity has been cleared by transpose function
+	      // (e.g. no key pressed in transpose mode)
+	      if( p->type == NoteOn && !p->velocity )
+		continue;
+  
+	      // sustained note: play off event
+	      if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
+		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
+		t->sustain_note.ALL = 0;
 	      }
-	    }
-
-	    // schedule events
-	    if( triggers ) {
-	      if( p->type == CC && !gatelength ) {
-		int i;
-		for(i=0; i<triggers; ++i)
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
-		t->vu_meter = 0x7f; // for visualisation in mute menu
-	      } else {
-		// force velocity to 0x7f if accent flag set
-		if( SEQ_TRG_AccentGet(track, t->step) )
-		  p->velocity = 0x7f;
-		  
-		if( triggers > 1 ) {
-		  int i;
-		  u32 half_gatelength = gatelength/2;
-		  if( !half_gatelength )
-		    half_gatelength = 1;
-		  for(i=0; i<triggers; ++i)
-		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+  
+	      // force to scale
+	      if( tcc->mode.FORCE_SCALE ) {
+		u8 scale, root_selection, root;
+		SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+		SEQ_SCALE_Note(p, scale, root);
+	      }
+  
+	      // roll/glide flag
+	      if( e->len >= 0 ) {
+		if( SEQ_TRG_RollGet(track, t->step) )
+		  e->len = 0x2c; // 2x12
+		if( SEQ_TRG_GlideGet(track, t->step) )
+		  e->len = 0x1f; // Glide
+	      }
+  
+	      // determine gate length
+	      u32 gatelength = 0;
+	      u8 triggers = 0;
+	      if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
+		if( e->len < 32 ) {
+		  if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
+		    t->sustain_port = tcc->midi_port;
+		    mios32_midi_package_t p_off = *p;
+		    p_off.velocity = 0; // clear velocity/CC value
+		    t->sustain_note = p_off;
+		    gatelength=0;
+		  } else {
+		    // TODO: later we will support higher note length resolution
+		    triggers = 1;
+		    gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
+		  }
 		} else {
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
+		  // thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
+		  triggers = (e->len>>5) + 1;
+		  gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
+		  // TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
 		}
-		  
-		t->vu_meter = p->velocity; // for visualisation in mute menu
 	      }
 	      
-	      // apply Fx if "No Fx" trigger is not set
-	      if( !SEQ_TRG_NoFxGet(track, t->step) ) {
-		// apply echo Fx if enabled
-		if( tcc->echo_repeats && (p->type == CC || gatelength) )
-		  SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+	      // schedule events
+	      if( triggers ) {
+		if( p->type == CC && !gatelength ) {
+		  int i;
+		  for(i=0; i<triggers; ++i)
+		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+		  t->vu_meter = 0x7f; // for visualisation in mute menu
+		} else {
+		  // force velocity to 0x7f if accent flag set
+		  if( SEQ_TRG_AccentGet(track, t->step) )
+		    p->velocity = 0x7f;
+
+		  t->vu_meter = p->velocity; // for visualisation in mute menu
+  		  
+		  if( loopback_port ) {
+		    // forward to MIDI IN handler immediately
+		    SEQ_MIDI_IN_Receive(tcc->midi_port, *p);
+		    // multi triggers, but also echo not possible on loopback ports
+		  } else {
+		    if( triggers > 1 ) {
+		      int i;
+		      u32 half_gatelength = gatelength/2;
+		      if( !half_gatelength )
+			half_gatelength = 1;
+		      
+		      for(i=0; i<triggers; ++i)
+			SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+		    } else {
+		      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
+		    }		    
+		  }
+		
+		  // apply Fx if "No Fx" trigger is not set
+		  if( !SEQ_TRG_NoFxGet(track, t->step) ) {
+		    // apply echo Fx if enabled
+		    if( tcc->echo_repeats && (p->type == CC || gatelength) )
+		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+		  }
+		}
 	      }
 	    }
-
 	  }
-	}
+        }
       }
     }
   }
-
+  
   // clear "first clock" flag if it was set before
   seq_core_state.FIRST_CLK = 0;
 

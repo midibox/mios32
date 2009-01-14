@@ -46,6 +46,8 @@ extern u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_InCheckAvailable(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port);
 
+extern s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

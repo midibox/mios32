@@ -366,6 +366,8 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  SEQ_MIDI_PORT_NotifyMIDITx(port, package);
+
   return 0; // no error, no filtering
 }
 
