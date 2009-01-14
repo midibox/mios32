@@ -139,8 +139,8 @@
 #define LED_F3           (((14   -1)<<3)+    2)
 #define LED_F4           (((14   -1)<<3)+    3)
 
-#define LED_STEP_1_16    (((14   -1)<<3)+    4) // OPTIONAL! see CHANGELOG.txt
-#define LED_STEP_17_32   (((14   -1)<<3)+    5)
+#define LED_STEP_1_16    (((14   -1)<<3)+    4) // was step 1..16 in MBSEQ V3
+#define LED_STEPVIEW     (((14   -1)<<3)+    5)
 
 #define LED_DOWN         (((14   -1)<<3)+    6)
 #define LED_UP           (((14   -1)<<3)+    7)

@@ -43,8 +43,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-const char quicksel_str[8][6] = { "  2  ", "  4  ", "  6  ", "  8  ", "  12 ", "  16 ", "  24 ", "  32 " };
-const u8 quicksel_length[8]   = {    1,       3,       5,       7,       11,      15,      23,      31   };
+const char quicksel_str[8][6] = { "  4  ", "  8  ", "  16 ", "  24 ", "  32 ", "  64 ", " 128 ", " 256 " };
+const u8 quicksel_length[8]   = {    3,       7,       15,      23,      31 ,     63,     127,     255   };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -217,7 +217,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk.   Length  Loop                             Quick Selection: Length         
-  // G1T1    16/32    1                         2    4    6    8   12   16   24   32 
+  // G1T1   256/256   1                         4    8   16   24   32   64  128  256
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -231,22 +231,32 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(0, 1);
 
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(7);
   } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-    SEQ_LCD_PrintSpaces(2);
+    SEQ_LCD_PrintSpaces(3);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_LENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d/32  ", SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
+    u16 max_len = SEQ_CORE_NUM_STEPS;
+    u16 len = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1;
+    // TODO: a "center string" function would be useful here!
+    if( max_len >= 100 )
+      if( len >= 100 )
+	SEQ_LCD_PrintFormattedString("%3d/%3d", len, max_len);
+      else
+	SEQ_LCD_PrintFormattedString("%2d/%3d ", len, max_len);
+    else
+      SEQ_LCD_PrintFormattedString(" %2d/%2d ", len, max_len);
+    SEQ_LCD_PrintSpaces(1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_LOOP && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(8);
+    SEQ_LCD_PrintSpaces(4);
   } else {
     SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1);
   }

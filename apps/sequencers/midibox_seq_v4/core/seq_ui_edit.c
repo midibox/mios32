@@ -88,7 +88,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // change value of all selected steps
     u8 track;
-    u8 step;
+    u16 step;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
@@ -135,7 +135,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	u8 step = ui_selected_step;
+	u16 step = ui_selected_step;
 	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer) ? 0 : 1;
 
 	u8 track;
@@ -145,7 +145,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
       } else {
 	// a) ALL function active, but ALL button not pressed: invert complete trigger layer
-	u8 track, step;
+	u8 track;
+	u16 step;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	  if( SEQ_UI_IsSelectedTrack(track) ) {
 	    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
@@ -170,11 +171,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   } else {
     switch( button ) {
       case SEQ_UI_BUTTON_Select:
-      case SEQ_UI_BUTTON_Right:
-	if( ++ui_selected_step >= SEQ_CORE_NUM_STEPS )
-	  ui_selected_step = 0;
+      case SEQ_UI_BUTTON_Right: {
+	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
+	if( ++next_step >= SEQ_CORE_NUM_STEPS )
+	  next_step = 0;
+	ui_selected_step = next_step;
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1; // value always changed
+      } break;
 
       case SEQ_UI_BUTTON_Left:
 	if( ui_selected_step == 0 )

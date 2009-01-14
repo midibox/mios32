@@ -139,8 +139,8 @@
 #define LED_F3           LED_DISABLED
 #define LED_F4           LED_DISABLED
 
-#define LED_STEP_1_16    (((19   -1)<<3)+    0) // OPTIONAL! see CHANGELOG.txt
-#define LED_STEP_17_32   (((19   -1)<<3)+    1)
+#define LED_STEP_SPARE  (((19   -1)<<3)+    0) // was step 1..16 in MBSEQ V3
+#define LED_STEPVIEW    (((19   -1)<<3)+    1)
 
 #define LED_DOWN         LED_DISABLED
 #define LED_UP           LED_DISABLED

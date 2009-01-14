@@ -41,6 +41,17 @@
 # define MUTEX_SDCARD_GIVE { xSemaphoreGive(xSDCardSemaphore); }
 #endif
 
+
+// MIDI IN handler
+#ifdef MIOS32_FAMILY_EMULATION
+# define MUTEX_MIDIIN_TAKE { }
+# define MUTEX_MIDIIN_GIVE { }
+#else
+  extern xSemaphoreHandle xMIDIINSemaphore;
+# define MUTEX_MIDIIN_TAKE { while( xSemaphoreTake(xMIDIINSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_MIDIIN_GIVE { xSemaphoreGive(xMIDIINSemaphore); }
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////

@@ -697,8 +697,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers)
   }
 
   // copy trigger layer values
-  u8 step;
-  u8 trg_layer;
+  int step;
+  int trg_layer;
   for(trg_layer=0; trg_layer<SEQ_TRG_NUM_LAYERS; ++trg_layer) {
     u8 pattern = seq_layer_preset_table_tlayer[trg_layer][evnt_mode];
     for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
@@ -706,7 +706,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers)
   }
 
   // copy parameter layer values
-  u8 par_layer;
+  int par_layer;
   for(par_layer=0; par_layer<SEQ_PAR_NUM_LAYERS; ++par_layer) {
     for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
       SEQ_PAR_Set(track, step, par_layer, seq_layer_preset_table_player[evnt_mode][par_layer*4 + (step%4)]);
