@@ -74,6 +74,7 @@ s32 TASKS_Init(u32 mode)
 
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateMutex();
+  xMIDIINSemaphore = xSemaphoreCreateMutex();
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 
   return 0; // no error

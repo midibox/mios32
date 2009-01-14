@@ -121,7 +121,9 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
   // SEQ_CORE_* for loopbacks)
-  if( midi_package.chn == (seq_midi_in_channel-1) ) {
+
+  // Note Events: ignore channel if loopback
+  if( ((port & 0xf0) == 0xf0) || midi_package.chn == (seq_midi_in_channel-1) ) {
     switch( midi_package.event ) {
       case NoteOff: 
 	MUTEX_MIDIIN_TAKE;
@@ -135,6 +137,8 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	break;
     }
   }
+
+  // TODO CC Events: channel won't be ignored on loopback
 
   return status;
 }
