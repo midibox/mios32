@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_midi_port.h"
+#include "seq_midi_in.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -192,4 +193,16 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 	return MIOS32_MIDI_CheckAvailable(port);
   }
   return 0; // port not available
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called by MIDI Tx Notificaton hook if a MIDI event should be sent
+// Allows to provide additional MIDI ports
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // TODO: Add AOUT and Bus handlers here
+
+  return 0;
 }
