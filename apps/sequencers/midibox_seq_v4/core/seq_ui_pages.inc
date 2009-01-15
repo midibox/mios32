@@ -18,7 +18,6 @@
 typedef enum {
   SEQ_UI_PAGE_NONE,
   SEQ_UI_PAGE_MENU,
-  SEQ_UI_PAGE_SHORTCUT,
   SEQ_UI_PAGE_FX,
   SEQ_UI_PAGE_STEPSEL,
   SEQ_UI_PAGE_EDIT,
@@ -48,7 +47,6 @@ typedef enum {
 // Prototypes for all UI pages are burried here
 extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_MENU_Init(u32 mode);
-extern s32 SEQ_UI_SHORTCUT_Init(u32 mode);
 extern s32 SEQ_UI_FX_Init(u32 mode);
 extern s32 SEQ_UI_STEPSEL_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
@@ -81,7 +79,6 @@ typedef struct {
 static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "TODO page         ", (void *)&SEQ_UI_TODO_Init },
   { "Page Menu         ", (void *)&SEQ_UI_MENU_Init },
-  { "Page Shortcuts    ", (void *)&SEQ_UI_SHORTCUT_Init },
   { "Fx Selection      ", (void *)&SEQ_UI_FX_Init },
   { "Step Selection    ", (void *)&SEQ_UI_STEPSEL_Init },
 
@@ -104,5 +101,27 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Save Pattern      ", (void *)&SEQ_UI_SAVE_Init },
   { "Mixer             ", (void *)&SEQ_UI_MIXER_Init }
 };
+
+// following pages are directly accessible with the GP buttons when MENU button is pressed
+#define UI_SHORTCUT_STR "Mix  Evnt Mode Dir. Div. Len. Trn. Grv. Trg.  Fx  Man. Mrp. BPM  Save MIDI SysEx"
+static const seq_ui_page_t ui_shortcut_menu_pages[16] = {
+  SEQ_UI_PAGE_MIXER,       // GP1
+  SEQ_UI_PAGE_TRKEVNT,     // GP2
+  SEQ_UI_PAGE_TRKMODE,     // GP3
+  SEQ_UI_PAGE_TRKDIR,      // GP4
+  SEQ_UI_PAGE_TRKDIV,      // GP5
+  SEQ_UI_PAGE_TRKLEN,      // GP6
+  SEQ_UI_PAGE_TRKTRAN,     // GP7
+  SEQ_UI_PAGE_NONE,        // GP8
+  SEQ_UI_PAGE_TRGASG,      // GP9
+  SEQ_UI_PAGE_FX,          // GP10
+  SEQ_UI_PAGE_NONE,        // GP11
+  SEQ_UI_PAGE_NONE,        // GP12
+  SEQ_UI_PAGE_BPM,         // GP13
+  SEQ_UI_PAGE_SAVE,        // GP14
+  SEQ_UI_PAGE_NONE,        // GP15
+  SEQ_UI_PAGE_NONE         // GP16
+};
+
 #endif
 

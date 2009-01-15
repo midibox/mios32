@@ -42,6 +42,7 @@ typedef union {
   };
   struct {
     unsigned MENU_PRESSED:1;
+    unsigned MENU_FIRST_PAGE_SELECTED:1;
     unsigned CHANGE_ALL_STEPS:1;
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
     unsigned FAST_ENCODERS:1;
@@ -212,7 +213,6 @@ extern u16 ui_hold_msg_ctr;
 
 extern seq_ui_page_t ui_page;
 extern seq_ui_page_t ui_selected_page;
-extern seq_ui_page_t ui_shortcut_prev_page;
 extern seq_ui_page_t ui_stepview_prev_page;
 
 extern volatile u8 ui_cursor_flash;

@@ -348,6 +348,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       u8 loopback_port = (tcc->midi_port & 0xf0) == 0xf0;
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
+
+      // sustained note: play off event if sustain mode has been disabled
+      if( !tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
+	SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
+	t->sustain_note.ALL = 0;
+      }
   
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
@@ -411,12 +417,6 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      if( p->type == NoteOn && !p->velocity )
 		continue;
   
-	      // sustained note: play off event
-	      if( tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
-		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
-		t->sustain_note.ALL = 0;
-	      }
-  
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
 		u8 scale, root_selection, root;
@@ -435,16 +435,25 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      // determine gate length
 	      u32 gatelength = 0;
 	      u8 triggers = 0;
-	      if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
+
+	      if( p->type == CC && e->len == -1 ) {
+		// CC w/o gatelength, just play it
+		triggers = 1;
+	      } else if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
+		// Any other event with gatelength
 		if( e->len < 32 ) {
 		  if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
+		    // sustained note: play off event of previous step
+		    SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
+
+		    // sustained note: play note at timestamp, but don't queue off event
+		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
+
 		    t->sustain_port = tcc->midi_port;
-		    mios32_midi_package_t p_off = *p;
-		    p_off.velocity = 0; // clear velocity/CC value
-		    t->sustain_note = p_off;
-		    gatelength=0;
+		    t->sustain_note = *p;
+		    t->sustain_note.velocity = 0; // clear velocity value
+		    // triggers/gatelength already 0 - don't queue additional notes
 		  } else {
-		    // TODO: later we will support higher note length resolution
 		    triggers = 1;
 		    gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
 		  }
@@ -459,9 +468,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      // schedule events
 	      if( triggers ) {
 		if( p->type == CC && !gatelength ) {
-		  int i;
-		  for(i=0; i<triggers; ++i)
-		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 		  t->vu_meter = 0x7f; // for visualisation in mute menu
 		} else {
 		  // force velocity to 0x7f if accent flag set
@@ -484,6 +491,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		      for(i=0; i<triggers; ++i)
 			SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
 		    } else {
+		      if( !gatelength )
+			gatelength = 1;
 		      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
 		    }		    
 		  }

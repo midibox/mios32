@@ -222,10 +222,10 @@ static s32 LCD_Handler(u8 high_prio)
 
   SEQ_LCD_CursorSet(0, 1);
   if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(9);
   } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-    SEQ_LCD_PrintSpaces(2);
+    SEQ_LCD_PrintSpaces(5);
   }
 
   ///////////////////////////////////////////////////////////////////////////
