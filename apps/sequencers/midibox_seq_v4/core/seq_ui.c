@@ -70,7 +70,6 @@ u16 ui_hold_msg_ctr;
 
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
-seq_ui_page_t ui_shortcut_prev_page;
 seq_ui_page_t ui_stepview_prev_page;
 
 volatile u8 ui_cursor_flash;
@@ -126,7 +125,6 @@ s32 SEQ_UI_Init(u32 mode)
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
-  ui_shortcut_prev_page = SEQ_UI_PAGE_NONE;
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
   return 0; // no error
@@ -224,12 +222,13 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
 #endif
 
-    // disable shortcut page (menu button won't jump back to previous page anymore)
-    ui_shortcut_prev_page = SEQ_UI_PAGE_NONE;
-
     // request display initialisation
     seq_ui_display_init_req = 1;
   }
+
+  // for MENU button:
+  // first page has been selected - display new screen
+  seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 1;
 
   // for SEQ_UI_MENU which is accessible with EXIT button
   // remember the current selectable page
@@ -256,10 +255,16 @@ char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
-  // forward to menu page
-  if( ui_button_callback != NULL )
-    ui_button_callback(gp, depressed);
-  ui_cursor_flash_ctr = 0;
+  // in MENU page: overrule GP buttons so long MENU button is pressed/active
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    if( depressed ) return -1;
+    SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
+  } else {
+    // forward to menu page
+    if( ui_button_callback != NULL )
+      ui_button_callback(gp, depressed);
+    ui_cursor_flash_ctr = 0;
+  }
 
   return 0; // no error
 }
@@ -267,7 +272,7 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 static s32 SEQ_UI_Button_Left(s32 depressed)
 {
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Left, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -277,7 +282,7 @@ static s32 SEQ_UI_Button_Left(s32 depressed)
 static s32 SEQ_UI_Button_Right(s32 depressed)
 {
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Right, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -289,7 +294,7 @@ static s32 SEQ_UI_Button_Down(s32 depressed)
   seq_ui_button_state.DOWN = depressed ? 0 : 1;
 
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Down, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -301,7 +306,7 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
   seq_ui_button_state.UP = depressed ? 0 : 1;
 
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Up, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -554,23 +559,13 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 #if DEFAULT_BEHAVIOUR_BUTTON_MENU
   // toggle mode
   if( depressed ) return -1; // ignore when button depressed
+  seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
   seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
 #else
   // set mode
+  seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
   seq_ui_button_state.MENU_PRESSED = depressed ? 0 : 1;
 #endif
-
-  // enter shortcut page if button has been pressed
-  if( seq_ui_button_state.MENU_PRESSED ) {
-    seq_ui_page_t tmp = ui_page; // remember previous page
-    SEQ_UI_PageSet(SEQ_UI_PAGE_SHORTCUT);
-    ui_shortcut_prev_page = tmp;
-    seq_ui_button_state.MENU_PRESSED = 1; // (will be overwritten by SEQ_UI_PageSet)
-  } else {
-    // change back to previous page
-    if( ui_shortcut_prev_page != SEQ_UI_PAGE_NONE )
-      SEQ_UI_PageSet(ui_shortcut_prev_page);
-  }
 
   return 0; // no error
 }
@@ -578,7 +573,7 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 static s32 SEQ_UI_Button_Select(s32 depressed)
 {
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Select, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -592,7 +587,7 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   u8 prev_ui_page = ui_page;
 
   // forward to menu page
-  if( ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
     ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
   ui_cursor_flash_ctr = 0;
 
@@ -1002,7 +997,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   else if( incrementer < -3 )
     incrementer = -3;
 
-  if( ui_encoder_callback != NULL ) {
+  if( !seq_ui_button_state.MENU_PRESSED && ui_encoder_callback != NULL ) {
     ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
     ui_cursor_flash_ctr = 0; // ensure that value is visible when it has been changed
   }
@@ -1038,16 +1033,27 @@ s32 SEQ_UI_LCD_Handler(void)
     seq_ui_display_update_req = 1;
   }
 
-  // perform high priority LCD update request
-  if( ui_lcd_callback != NULL )
-    ui_lcd_callback(1); // high_prio
-
-  // perform low priority LCD update request if requested
-  if( seq_ui_display_update_req ) {
-    seq_ui_display_update_req = 0; // clear request
-
+  // in MENU page: overrule LCD output so long MENU button is pressed/active
+  if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
+    SEQ_LCD_CursorSet(0, 0);
+    //                      <-------------------------------------->
+    //                      0123456789012345678901234567890123456789
+    SEQ_LCD_PrintString("Menu Shortcuts:");
+    SEQ_LCD_PrintSpaces(25 + 40);
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString(UI_SHORTCUT_STR); // defined in seq_ui_pages.inc
+  } else {
+    // perform high priority LCD update request
     if( ui_lcd_callback != NULL )
-      ui_lcd_callback(0); // no high_prio
+      ui_lcd_callback(1); // high_prio
+
+    // perform low priority LCD update request if requested
+    if( seq_ui_display_update_req ) {
+      seq_ui_display_update_req = 0; // clear request
+      
+      if( ui_lcd_callback != NULL )
+	ui_lcd_callback(0); // no high_prio
+    }
   }
 
   // if SD card message active: copy over the text
@@ -1140,17 +1146,32 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_DOWN, seq_ui_button_state.DOWN);
   SEQ_LED_PinSet(LED_UP, seq_ui_button_state.UP);
 
-  // note: the background function is permanently interrupted - therefore we write the GP pattern
-  // into a temporary variable, and take it over once completed
-  u16 new_ui_gp_leds = 0x0000;
-  // request GP LED values from current menu page
-  // will be transfered to DOUT registers in SEQ_UI_LED_Handler_Periodic
-  new_ui_gp_leds = 0x0000;
 
-  if( ui_led_callback != NULL )
-    ui_led_callback(&new_ui_gp_leds);
+  // in MENU page: overrule GP LEDs so long MENU button is pressed/active
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    if( ui_cursor_flash ) // if flashing flag active: no LED flag set
+      ui_gp_leds = 0x0000;
+    else {
+      int i;
+      u16 new_ui_gp_leds = 0x0000;
+      for(i=0; i<16; ++i)
+	if( ui_page == ui_shortcut_menu_pages[i] )
+	  new_ui_gp_leds |= (1 << i);
+      ui_gp_leds = new_ui_gp_leds;
+    }
+  } else {
+    // note: the background function is permanently interrupted - therefore we write the GP pattern
+    // into a temporary variable, and take it over once completed
+    u16 new_ui_gp_leds = 0x0000;
+    // request GP LED values from current menu page
+    // will be transfered to DOUT registers in SEQ_UI_LED_Handler_Periodic
+    new_ui_gp_leds = 0x0000;
 
-  ui_gp_leds = new_ui_gp_leds;
+    if( ui_led_callback != NULL )
+      ui_led_callback(&new_ui_gp_leds);
+
+    ui_gp_leds = new_ui_gp_leds;
+  }
 
   return 0; // no error
 }

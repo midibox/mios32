@@ -19,7 +19,6 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
 		../core/seq_ui_menu.c \
-		../core/seq_ui_shortcut.c \
 		../core/seq_ui_edit.c \
 		../core/seq_ui_mute.c \
 		../core/seq_ui_pattern.c \

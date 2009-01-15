@@ -119,6 +119,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
@@ -134,7 +136,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	u16 step = ui_selected_step;
 	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer) ? 0 : 1;
 
@@ -173,7 +174,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       case SEQ_UI_BUTTON_Select:
       case SEQ_UI_BUTTON_Right: {
 	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
-	if( ++next_step >= SEQ_CORE_NUM_STEPS )
+	if( next_step >= (SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1) )
 	  next_step = 0;
 	ui_selected_step = next_step;
 	ui_selected_step_view = ui_selected_step / 16;
@@ -182,7 +183,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       case SEQ_UI_BUTTON_Left:
 	if( ui_selected_step == 0 )
-	  ui_selected_step = SEQ_CORE_NUM_STEPS-1;
+	  ui_selected_step = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1; // value always changed
 
@@ -601,7 +602,7 @@ static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_v
 
   SEQ_PAR_Set(track, step, ui_selected_par_layer, (u8)new_value);
 
-  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length ) {
+  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length && layer_ctrl_type != SEQ_LAYER_ControlType_CC ) {
     // (de)activate gate depending on value
     if( new_value )
       SEQ_TRG_GateSet(track, step, 1);
