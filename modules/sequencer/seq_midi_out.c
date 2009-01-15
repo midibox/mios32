@@ -165,7 +165,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     midi_queue = new_item;
   } else {
     u8 insert_before_item = 0;
-    seq_midi_out_queue_item_t *last_item = midi_queue;
+    seq_midi_out_queue_item_t *last_item = NULL;
     seq_midi_out_queue_item_t *next_item;
     do {
       // Clock and Tempo events are sorted before CC and Note events at a given timestamp
@@ -209,7 +209,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 
     // insert/add item into/to list
     if( insert_before_item ) {
-      if( last_item == midi_queue )
+      if( last_item == NULL )
 	midi_queue = new_item;
       else
 	last_item->next = new_item;
