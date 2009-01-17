@@ -39,7 +39,7 @@ static void printchar(char **str, int c)
 		**str = c;
 		++(*str);
 	}
-	else MIOS32_COM_SendChar(0, c); // (void)putchar(c);
+	else MIOS32_COM_SendChar(1, c); // (void)putchar(c);
 }
 
 #define PAD_RIGHT 1

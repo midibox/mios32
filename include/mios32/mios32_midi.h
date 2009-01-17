@@ -24,11 +24,18 @@
 #endif
 
 
+// the default MIDI port for debugging output via MIOS32_MIDI_SendDebugMessage
+#ifndef MIOS32_MIDI_DEBUG_PORT
+#define MIOS32_MIDI_DEBUG_PORT USB0
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Uses by MIOS32 SysEx parser
 /////////////////////////////////////////////////////////////////////////////
 
-// ack/disack code
+// MIDI acknowledge reply codes
+#define MIOS32_MIDI_SYSEX_DEBUG    0x0d
 #define MIOS32_MIDI_SYSEX_DISACK   0x0e
 #define MIOS32_MIDI_SYSEX_ACK      0x0f
 
@@ -55,7 +62,8 @@
 
 
 typedef enum {
-  DEFAULT = 0x00,
+  DEFAULT    = 0x00,
+  MIDI_DEBUG = 0x01,
 
   USB0 = 0x10,
   USB1 = 0x11,
@@ -199,6 +207,8 @@ extern s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port);
 extern s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port);
 extern s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port);
 
+extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
+
 
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_sysex);
 
@@ -210,6 +220,9 @@ extern s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_m
 
 extern s32 MIOS32_MIDI_DefaultPortSet(mios32_midi_port_t port);
 extern mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void);
+
+extern s32 MIOS32_MIDI_DebugPortSet(mios32_midi_port_t port);
+extern mios32_midi_port_t MIOS32_MIDI_DebugPortGet(void);
 
 extern s32 MIOS32_MIDI_DeviceIDSet(u8 device_id);
 extern u8  MIOS32_MIDI_DeviceIDGet(void);

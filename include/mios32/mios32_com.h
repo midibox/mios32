@@ -23,6 +23,11 @@
 #define MIOS32_COM_DEFAULT_PORT USB0
 #endif
 
+// the default COM port for debugging output via printf
+#ifndef MIOS32_COM_DEBUG_PORT
+#define MIOS32_COM_DEBUG_PORT USB0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -31,6 +36,7 @@
 
 typedef enum {
   COM_DEFAULT = 0x00,
+  COM_DEBUG = 0x01,
 
   COM_USB0 = 0x10,
   COM_USB1 = 0x11,
@@ -76,6 +82,9 @@ extern s32 MIOS32_COM_Receive_Handler(void *callback);
 
 extern s32 MIOS32_COM_DefaultPortSet(mios32_com_port_t port);
 extern mios32_com_port_t MIOS32_COM_DefaultPortGet(void);
+
+extern s32 MIOS32_COM_DebugPortSet(mios32_com_port_t port);
+extern mios32_com_port_t MIOS32_COM_DebugPortGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

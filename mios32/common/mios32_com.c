@@ -30,6 +30,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static mios32_com_port_t default_port = MIOS32_COM_DEFAULT_PORT;
+static mios32_com_port_t debug_port = MIOS32_COM_DEBUG_PORT;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,8 +46,9 @@ s32 MIOS32_COM_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // set default port as defined in mios32.h/mios32_config.h
+  // set default/debug port as defined in mios32.h/mios32_config.h
   default_port = MIOS32_COM_DEFAULT_PORT;
+  debug_port = MIOS32_COM_DEBUG_PORT;
 
 #if defined(MIOS32_USE_USB_COM)
   if( MIOS32_USB_COM_Init(0) < 0 )
@@ -71,9 +73,9 @@ s32 MIOS32_COM_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == COM_DEBUG) ? debug_port : default_port;
   }
 
   // branch depending on selected port
@@ -123,9 +125,9 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 len)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == COM_DEBUG) ? debug_port : default_port;
   }
 
   // branch depending on selected port
@@ -169,9 +171,9 @@ s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 le
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == COM_DEBUG) ? debug_port : default_port;
   }
 
   // branch depending on selected port
@@ -396,6 +398,33 @@ s32 MIOS32_COM_DefaultPortSet(mios32_com_port_t port)
 mios32_com_port_t MIOS32_COM_DefaultPortGet(void)
 {
   return default_port;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function allows to change the COM_DEBUG port.<BR>
+//! The preset which will be used after application reset can be set in
+//! mios32_config.h via "#define MIOS32_COM_DEBUG_PORT <port>".<BR>
+//! It's set to USB0 so long not overruled in mios32_config.h
+//! \param[in] port COM port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_DebugPortSet(mios32_com_port_t port)
+{
+  if( port == COM_DEBUG ) // avoid recursion
+    return -1;
+
+  debug_port = port;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the COM_DEBUG port
+//! \return the debug port
+/////////////////////////////////////////////////////////////////////////////
+mios32_com_port_t MIOS32_COM_DebugPortGet(void)
+{
+  return debug_port;
 }
 
 //! \}
