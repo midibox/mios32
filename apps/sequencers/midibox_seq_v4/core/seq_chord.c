@@ -37,7 +37,7 @@ typedef struct {
   // note: chords are used together with the forced-to-scale feature in seq_scale.c
   // therefore only "major" chords have to be defined here, minor chords are selected with the scale
   // if no key should be played, add -1
-const seq_chord_entry_t seq_chord_table[] = {
+static const seq_chord_entry_t seq_chord_table[] = {
   // 1   2   3   4   <----> (6 chars!)
   {  0,  4,  7, -1, "Maj.I " },
   {  4,  7, 12, -1, "Maj.II" },
