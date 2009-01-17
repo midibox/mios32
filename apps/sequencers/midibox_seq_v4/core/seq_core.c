@@ -928,10 +928,5 @@ s32 SEQ_CORE_AddForwardDelay(u16 delay_ms)
   // calculate how many BPM ticks have to be forwarded
   bpm_tick_prefetch_req = SEQ_BPM_TickGet() + SEQ_BPM_TicksFor_mS(delay_ms);
 
-#if 0
-  // for checking the result on the console
-  printf("[SEQ_CORE_AddForwardDelay] %d..%d ticks\n\r", SEQ_BPM_TickGet(), bpm_tick_prefetch_req);
-#endif
-
   return 0; // no error
 }

@@ -24,6 +24,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via MIDI
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -154,8 +161,8 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     new_item->next = NULL;
   }
 
-#if 0
-  printf("[SEQ_MIDI_OUT_Send:%d] %02x %02x %02x len:%d\n\r", timestamp, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[SEQ_MIDI_OUT_Send:%d] %02x %02x %02x len:%d\n", timestamp, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
 #endif
 
   // search in queue for last item which has the same (or earlier) timestamp
@@ -304,8 +311,8 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
   seq_midi_out_queue_item_t *item;
   while( (item=midi_queue) != NULL && item->timestamp <= SEQ_BPM_TickGet() ) {
-#if 0
-    printf("[SEQ_MIDI_OUT_Handler:%d] %02x %02x %02x\n\r", item->timestamp, item->package.evnt0, item->package.evnt1, item->package.evnt2);
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%d] %02x %02x %02x\n", item->timestamp, item->package.evnt0, item->package.evnt1, item->package.evnt2);
 #endif
 
     // if tempo event: change BPM stored in midi_package.ALL

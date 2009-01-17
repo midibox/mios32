@@ -20,19 +20,8 @@
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
 
-// for debugging via UART1 (application uses printf() to output helpful debugging messages)
-#define COM_DEBUG 1
-
-
-#ifdef COM_DEBUG
-  // enable COM via UART1
-# define MIOS32_UART1_ASSIGNMENT 2
-# define MIOS32_UART1_BAUDRATE 115200
-
-  // use UART1 as default COM port
-# define MIOS32_COM_DEFAULT_PORT UART1
-#endif
-
+// port used for debugging via MIDI
+//#define MIOS32_MIDI_DEBUG_PORT USB0
 
 // Stack size for FreeRTOS tasks as defined by the programming model
 // Note that each task maintains it's own stack!

@@ -11,12 +11,4 @@
 #define _MIOS32_CONFIG_H
 
 
-#if 0
-// optional COM output for debugging of seq.c
-#define MIOS32_UART1_ASSIGNMENT 2
-#define MIOS32_UART1_BAUDRATE 115200
-#define MIOS32_COM_DEFAULT_PORT UART1
-#endif
-
-
 #endif /* _MIOS32_CONFIG_H */

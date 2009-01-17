@@ -32,15 +32,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -135,13 +130,13 @@ s32 SEQ_FILE_M_LoadAllBanks(void)
   s32 error;
   error = SEQ_FILE_M_Open();
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Tried to open bank file, status: %d\n\r", error);
+  DEBUG_MSG("[SEQ_FILE_M] Tried to open bank file, status: %d\n", error);
 #endif
 #if 0
   if( error == -2 ) {
     error = SEQ_FILE_M_Create();
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] Tried to create bank file, status: %d\n\r", error);
+    DEBUG_MSG("[SEQ_FILE_M] Tried to create bank file, status: %d\n", error);
 #endif
 #endif
 
@@ -188,13 +183,13 @@ s32 SEQ_FILE_M_Create(void)
   sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Creating new bank file '%s'\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_M] Creating new bank file '%s'\n", filepath);
 #endif
 
   s32 status = 0;
   if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] Failed to create file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] Failed to create file, status: %d\n", status);
 #endif
     return status;
   }
@@ -209,7 +204,7 @@ s32 SEQ_FILE_M_Create(void)
   memcpy(info->header.name, bank_name, 20);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] writing '%s'...\n\r", bank_name);
+  DEBUG_MSG("[SEQ_FILE_M] writing '%s'...\n", bank_name);
 #endif
 
   // number of maps
@@ -241,7 +236,7 @@ s32 SEQ_FILE_M_Create(void)
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Bank file created with status %d\n\r", status);
+  DEBUG_MSG("[SEQ_FILE_M] Bank file created with status %d\n", status);
 #endif
 
   return status;
@@ -262,13 +257,13 @@ s32 SEQ_FILE_M_Open(void)
   sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Open bank file '%s'\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s'\n", filepath);
 #endif
 
   s32 status;
   if( (status=SEQ_FILE_ReadOpen((PFILEINFO)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] failed to open file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] failed to open file, status: %d\n", status);
 #endif
     return status;
   }
@@ -278,7 +273,7 @@ s32 SEQ_FILE_M_Open(void)
   char file_type[10];
   if( (status=SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] failed to read header, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] failed to read header, status: %d\n", status);
 #endif
     return status;
   }
@@ -286,7 +281,7 @@ s32 SEQ_FILE_M_Open(void)
   if( strncmp(file_type, "MBSEQV4_M", 10) != 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     file_type[9] = 0; // ensure that string is terminated
-    printf("[SEQ_FILE_M] wrong header type: %s\n\r", file_type);
+    DEBUG_MSG("[SEQ_FILE_M] wrong header type: %s\n", file_type);
 #endif
     return SEQ_FILE_M_ERR_FORMAT;
   }
@@ -297,7 +292,7 @@ s32 SEQ_FILE_M_Open(void)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] file access error while reading header, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] file access error while reading header, status: %d\n", status);
 #endif
     return SEQ_FILE_M_ERR_READ;
   }
@@ -306,7 +301,7 @@ s32 SEQ_FILE_M_Open(void)
   info->valid = 1;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] bank is valid! Number of Maps: %d, Map Size: %d\n\r", info->header.num_maps, info->header.map_size);
+  DEBUG_MSG("[SEQ_FILE_M] bank is valid! Number of Maps: %d, Map Size: %d\n", info->header.num_maps, info->header.map_size);
 #endif
 
   return 0; // no error
@@ -332,7 +327,7 @@ s32 SEQ_FILE_M_MapRead(u8 map)
   u32 offset = 10 + sizeof(seq_file_m_header_t) + map * info->header.map_size;
   if( (status=SEQ_FILE_Seek((PFILEINFO)&info->file, offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] failed to change map offset in file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] failed to change map offset in file, status: %d\n", status);
 #endif
     return SEQ_FILE_M_ERR_READ;
   }
@@ -347,7 +342,7 @@ s32 SEQ_FILE_M_MapRead(u8 map)
 
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] read map M%d '%s', %d channels, %d parameters\n\r", map, seq_mixer_map_name, num_chn, num_par);
+  DEBUG_MSG("[SEQ_FILE_M] read map M%d '%s', %d channels, %d parameters\n", map, seq_mixer_map_name, num_chn, num_par);
 #endif
 
   // reduce number of channels if required
@@ -370,7 +365,7 @@ s32 SEQ_FILE_M_MapRead(u8 map)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] error while reading file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] error while reading file, status: %d\n", status);
 #endif
     return SEQ_FILE_M_ERR_READ;
   }
@@ -403,7 +398,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   u16 expected_map_size = sizeof(seq_file_m_map_header_t) + num_chn * num_par;
   if( expected_map_size > info->header.map_size ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] Resulting map is too large for slot in bank (is: %d, max: %d)\n\r", 
+    DEBUG_MSG("[SEQ_FILE_M] Resulting map is too large for slot in bank (is: %d, max: %d)\n", 
 	   expected_map_size, info->header.map_size);
     return SEQ_FILE_M_ERR_M_TOO_LARGE;
 #endif
@@ -415,13 +410,13 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Open bank file '%s' for writing\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s' for writing\n", filepath);
 #endif
 
   s32 status = 0;
   if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] Failed to open file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] Failed to open file, status: %d\n", status);
 #endif
     SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
     return status;
@@ -431,7 +426,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   u32 offset = 10 + sizeof(seq_file_m_header_t) + map * info->header.map_size;
   if( (status=SEQ_FILE_Seek(&fi, offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_M] failed to change map offset in file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_M] failed to change map offset in file, status: %d\n", status);
 #endif
     SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
     return status;
@@ -441,7 +436,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_mixer_map_name, 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[SEQ_FILE_M] writing map #%d '%s'...\n\r", map, seq_mixer_map_name);
+  DEBUG_MSG("[SEQ_FILE_M] writing map #%d '%s'...\n", map, seq_mixer_map_name);
 #endif
 
   // write number of channels
@@ -471,7 +466,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   status |= SEQ_FILE_WriteClose(&fi);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_M] Map written with status %d\n\r", status);
+  DEBUG_MSG("[SEQ_FILE_M] Map written with status %d\n", status);
 #endif
 
   return (status < 0) ? SEQ_FILE_M_ERR_WRITE : 0;

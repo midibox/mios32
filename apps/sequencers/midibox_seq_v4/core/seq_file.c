@@ -29,15 +29,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -88,7 +83,7 @@ s32 SEQ_FILE_Init(u32 mode)
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] SD Card interface initialized, status: %d\n\r", error);
+  DEBUG_MSG("[SEQ_FILE] SD Card interface initialized, status: %d\n", error);
 #endif
 
   // for status message
@@ -117,12 +112,12 @@ s32 SEQ_FILE_CheckSDCard(void)
 
   if( sdcard_available && !prev_sdcard_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] SD Card has been connected!\n\r");
+    DEBUG_MSG("[SEQ_FILE] SD Card has been connected!\n");
 #endif
 
     s32 error = SEQ_FILE_MountFS();
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] Tried to mount file system, status: %d\n\r", error);
+    DEBUG_MSG("[SEQ_FILE] Tried to mount file system, status: %d\n", error);
 #endif
 
     if( error < 0 ) {
@@ -143,7 +138,7 @@ s32 SEQ_FILE_CheckSDCard(void)
 
   } else if( !sdcard_available && prev_sdcard_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] SD Card disconnected!\n\r");
+    DEBUG_MSG("[SEQ_FILE] SD Card disconnected!\n");
 #endif
     volume_available = 0;
 
@@ -176,13 +171,13 @@ static s32 SEQ_FILE_MountFS(void)
   pstart = DFS_GetPtnStart(0, sector, 0, &pactive, &ptype, &psize);
   if( pstart == 0xffffffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] Cannot find first partition - reconnect SD Card\n\r");
+    DEBUG_MSG("[SEQ_FILE] Cannot find first partition - reconnect SD Card\n");
 #endif
 
     s32 error = MIOS32_SDCARD_PowerOn();
     if( error < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE] Failed - no access to SD Card\n\r");
+      DEBUG_MSG("[SEQ_FILE] Failed - no access to SD Card\n");
 #endif
       return SEQ_FILE_ERR_SD_CARD;
     }
@@ -190,38 +185,38 @@ static s32 SEQ_FILE_MountFS(void)
     pstart = DFS_GetPtnStart(0, sector, 0, &pactive, &ptype, &psize);
     if( pstart == 0xffffffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE] SD Card available, but still cannot find first partition - giving up!\n\r");
+      DEBUG_MSG("[SEQ_FILE] SD Card available, but still cannot find first partition - giving up!\n");
 #endif
       return SEQ_FILE_ERR_NO_PARTITION;
     }
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[SEQ_FILE] Partition 0 start sector 0x%-08.8lX active %-02.2hX type %-02.2hX size %-08.8lX\n\r", pstart, pactive, ptype, psize);
+  DEBUG_MSG("[SEQ_FILE] Partition 0 start sector 0x%-08.8lX active %-02.2hX type %-02.2hX size %-08.8lX\n", pstart, pactive, ptype, psize);
 #endif
 
   if( seq_file_dfs_errno = DFS_GetVolInfo(0, sector, pstart, &vi) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] Error getting volume information\n\r");
+    DEBUG_MSG("[SEQ_FILE] Error getting volume information\n");
 #endif
     return SEQ_FILE_ERR_NO_VOLUME;
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[SEQ_FILE] Volume label '%s'\n\r", vi.label);
-  printf("[SEQ_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n\r", vi.secperclus, vi.reservedsecs, vi.numsecs);
-  printf("[SEQ_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n\r",vi.secperfat,vi.fat1,vi.rootdir);
-  printf("[SEQ_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n\r");
-  printf("[SEQ_FILE] %d root dir entries, data area commences at sector #%d.\n\r",vi.rootentries,vi.dataarea);
-  printf("[SEQ_FILE] %d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
+  DEBUG_MSG("[SEQ_FILE] Volume label '%s'\n", vi.label);
+  DEBUG_MSG("[SEQ_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
+  DEBUG_MSG("[SEQ_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n",vi.secperfat,vi.fat1,vi.rootdir);
+  DEBUG_MSG("[SEQ_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
+  DEBUG_MSG("[SEQ_FILE] %d root dir entries, data area commences at sector #%d.\n",vi.rootentries,vi.dataarea);
+  DEBUG_MSG("[SEQ_FILE] %d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
   if (vi.filesystem == FAT12)
-    printf("FAT12.\n\r");
+    DEBUG_MSG("FAT12.\n");
   else if (vi.filesystem == FAT16)
-    printf("FAT16.\n\r");
+    DEBUG_MSG("FAT16.\n");
   else if (vi.filesystem == FAT32)
-    printf("FAT32.\n\r");
+    DEBUG_MSG("FAT32.\n");
   else {
-    printf("[SEQ_FILE] [unknown]\n\r");
+    DEBUG_MSG("[SEQ_FILE] [unknown]\n");
   }
 #endif
 
@@ -250,7 +245,7 @@ static s32 SEQ_FILE_UpdateFreeBytes(void)
   // exit if volume not available
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ_FILE] UpdateFreeBytes stopped - no volume!\n\r");
+    DEBUG_MSG("[SEQ_FILE] UpdateFreeBytes stopped - no volume!\n");
 #endif
     return SEQ_FILE_ERR_NO_VOLUME;
   }
@@ -259,7 +254,7 @@ static s32 SEQ_FILE_UpdateFreeBytes(void)
   u32 i;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] Starting UpdateFreeBytes, scan for %u clusters\n\r", vi.numclusters);
+  DEBUG_MSG("[SEQ_FILE] Starting UpdateFreeBytes, scan for %u clusters\n", vi.numclusters);
 #endif
 
   for(i=2; i<vi.numclusters; ++i) {
@@ -268,7 +263,7 @@ static s32 SEQ_FILE_UpdateFreeBytes(void)
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] Finished UpdateFreeBytes: %u\n\r", volume_free_bytes);
+  DEBUG_MSG("[SEQ_FILE] Finished UpdateFreeBytes: %u\n", volume_free_bytes);
 #endif
 #endif
 
@@ -328,7 +323,7 @@ char *SEQ_FILE_VolumeLabel(void)
 s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] Opening file '%s'\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE] Opening file '%s'\n", filepath);
 #endif
 
   // enable caching
@@ -338,27 +333,27 @@ s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath)
 
   if( seq_file_dfs_errno = DFS_OpenFile(&vi, filepath, DFS_READ, sector, fileinfo) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] Error opening file - try mounting the partition again\n\r");
+    DEBUG_MSG("[SEQ_FILE] Error opening file - try mounting the partition again\n");
 #endif
 
     s32 error;
     if( (error = SEQ_FILE_MountFS()) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE] mounting failed with status: %d\n\r", error);
+      DEBUG_MSG("[SEQ_FILE] mounting failed with status: %d\n", error);
 #endif
       return SEQ_FILE_ERR_SD_CARD;
     }
 
     if( seq_file_dfs_errno = DFS_OpenFile(&vi, filepath, DFS_READ, sector, fileinfo) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE] Still not able to open file - giving up!\n\r");
+      DEBUG_MSG("[SEQ_FILE] Still not able to open file - giving up!\n");
 #endif
       return SEQ_FILE_ERR_OPEN_READ;
     }
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE] found '%s' of length %u\n\r", filepath, fileinfo->filelen);
+  DEBUG_MSG("[SEQ_FILE] found '%s' of length %u\n", filepath, fileinfo->filelen);
 #endif
 
   return 0;
@@ -379,13 +374,13 @@ s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len)
 
   if( seq_file_dfs_errno = DFS_ReadFile(fileinfo, sector, buffer, &successcount, len) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n\r", fileinfo->pointer, seq_file_dfs_errno);
+    DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", fileinfo->pointer, seq_file_dfs_errno);
 #endif
       return SEQ_FILE_ERR_READ;
   }
   if( successcount != len ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ_FILE] Wrong successcount while reading from position 0x%08x (count: %d)\n\r", fileinfo->pointer, successcount);
+    DEBUG_MSG("[SEQ_FILE] Wrong successcount while reading from position 0x%08x (count: %d)\n", fileinfo->pointer, successcount);
 #endif
     return SEQ_FILE_ERR_READCOUNT;
   }
@@ -444,7 +439,7 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
   write_buffer = (u8 *)pvPortMalloc(SECTOR_SIZE);
   if( write_buffer == NULL ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] failed to allocate %d bytes for write sector\n\r", SECTOR_SIZE);
+    DEBUG_MSG("[SEQ_FILE] failed to allocate %d bytes for write sector\n", SECTOR_SIZE);
 #endif
     return SEQ_FILE_ERR_WRITE_MALLOC;
   }
@@ -454,14 +449,14 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
 
   if( create && (seq_file_dfs_errno = DFS_UnlinkFile(&vi, filepath, sector)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ_FILE] couldn't delete '%s' (file not found...)\n\r", filepath);
+    DEBUG_MSG("[SEQ_FILE] couldn't delete '%s' (file not found...)\n", filepath);
 #endif
     // continue .. perhaps it didn't exist
   }
   
   if( seq_file_dfs_errno = DFS_OpenFile(&vi, filepath, DFS_WRITE, sector, fileinfo) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE] error opening file '%s' for writing!\n\r", filepath);
+    DEBUG_MSG("[SEQ_FILE] error opening file '%s' for writing!\n", filepath);
 #endif
     // free memory
     vPortFree(write_buffer);
@@ -502,14 +497,14 @@ s32 SEQ_FILE_WriteBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len)
     u32 successcount;
     if( seq_file_dfs_errno = DFS_WriteFile(fileinfo, sector, write_buffer, &successcount, SECTOR_SIZE) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      printf("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n\r", write_filepos, seq_file_dfs_errno);
+      DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", write_filepos, seq_file_dfs_errno);
 #endif
       write_filepos = -1; // ensure that next writes will be skipped
       return SEQ_FILE_ERR_WRITE;
     }
     if( successcount != SECTOR_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      printf("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n\r", write_filepos, successcount);
+      DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos, successcount);
 #endif
       write_filepos = -2; // ensure that next writes will be skipped
       return SEQ_FILE_ERR_WRITECOUNT;
@@ -586,14 +581,14 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 
     if( len && (seq_file_dfs_errno=DFS_WriteFile(fileinfo, sector, write_buffer, &successcount, len)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      printf("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n\r", write_filepos-SECTOR_SIZE, seq_file_dfs_errno);
+      DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", write_filepos-SECTOR_SIZE, seq_file_dfs_errno);
 #endif
 
       status = -1; // write error
     } else {
       if( successcount != len ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	printf("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n\r", write_filepos-SECTOR_SIZE, successcount);
+	DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos-SECTOR_SIZE, successcount);
 #endif
 	
 	status = -2; // not all bytes written

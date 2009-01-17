@@ -29,15 +29,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -241,7 +236,7 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   SEQ_BPM_TickSet(new_tick);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ] Setting new song position %u (-> %u ticks)\n\r", new_song_pos, new_tick);
+  DEBUG_MSG("[SEQ] Setting new song position %u (-> %u ticks)\n", new_song_pos, new_tick);
 #endif
 
   // since timebase has been changed, ensure that Off-Events are played 
@@ -281,12 +276,12 @@ static s32 SEQ_PlayFile(u32 next)
   if( (next_file = MID_FILE_FindNext(next ? MID_FILE_NameGet() : NULL)) != NULL ||
       (next_file = MID_FILE_FindNext(NULL)) != NULL ) { // if next file not found, try first file
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ] next file found '%s'\n\r", next_file);
+    DEBUG_MSG("[SEQ] next file found '%s'\n", next_file);
 #endif
     if( MID_FILE_open(next_file) ) { // try to open next file
       SEQ_BPM_Stop();                // stop BPM generator if this failed
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ] file %s cannot be opened (wrong directory?)\n\r", next_file);
+      DEBUG_MSG("[SEQ] file %s cannot be opened (wrong directory?)\n", next_file);
 #endif
       return -1; // file cannot be opened
     }
@@ -296,7 +291,7 @@ static s32 SEQ_PlayFile(u32 next)
     SEQ_BPM_Stop();           // stop BPM generator
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ] no file found\n\r");
+    DEBUG_MSG("[SEQ] no file found\n");
 #endif
     return -1; // file not found
   }
@@ -342,12 +337,12 @@ static s32 SEQ_Tick(u32 bpm_tick)
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ] Prefetch started at tick %u (prefetching %u..%u)\n\r", bpm_tick, prefetch_offset, prefetch_offset+prefetch_ticks-1);
+    DEBUG_MSG("[SEQ] Prefetch started at tick %u (prefetching %u..%u)\n", bpm_tick, prefetch_offset, prefetch_offset+prefetch_ticks-1);
 #endif
 
     if( MID_PARSER_FetchEvents(prefetch_offset, prefetch_ticks) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ] End of song reached after %u ticks - loading next file!\n\r", bpm_tick);
+      DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
 #endif
       SEQ_PlayFileReq(1);
     } else {
@@ -355,7 +350,7 @@ static s32 SEQ_Tick(u32 bpm_tick)
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ] Prefetch finished at tick %u\n\r", SEQ_BPM_TickGet());
+    DEBUG_MSG("[SEQ] Prefetch finished at tick %u\n", SEQ_BPM_TickGet());
 #endif
   }
 
@@ -397,54 +392,54 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
       if( len == 2 ) {
 	u32 seq_number = (*buffer++ << 8) | *buffer;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Sequence Number %u\n\r", track, tick, seq_number);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Sequence Number %u\n", track, tick, seq_number);
 #endif
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Sequence Number with %d bytes -- ERROR: expecting 2 bytes!\n\r", track, tick, len);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Sequence Number with %d bytes -- ERROR: expecting 2 bytes!\n", track, tick, len);
 #endif
       }
       break;
 
     case 0x01: // Text Event
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Text: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Text: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x02: // Copyright Notice
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Copyright: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Copyright: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x03: // Sequence/Track Name
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Track Name: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Track Name: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x04: // Instrument Name
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Instr. Name: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Instr. Name: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x05: // Lyric
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Lyric: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Lyric: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x06: // Marker
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Marker: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Marker: %s\n", track, tick, buffer);
 #endif
       break;
 
     case 0x07: // Cue Point
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - Cue Point: %s\n\r", track, tick, buffer);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - Cue Point: %s\n", track, tick, buffer);
 #endif
       break;
 
@@ -452,18 +447,18 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
       if( len == 1 ) {
 	u32 prefix = *buffer;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Channel Prefix %u\n\r", track, tick, prefix);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Channel Prefix %u\n", track, tick, prefix);
 #endif
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Channel Prefix with %d bytes -- ERROR: expecting 1 byte!\n\r", track, tick, len);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Channel Prefix with %d bytes -- ERROR: expecting 1 byte!\n", track, tick, len);
 #endif
       }
       break;
 
     case 0x2f: // End of Track
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ:%d:%u] Meta - End of Track\n\r", track, tick, meta);
+      DEBUG_MSG("[SEQ:%d:%u] Meta - End of Track\n", track, tick, meta);
 #endif
       break;
 
@@ -484,11 +479,11 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	}
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Tempo to %u uS -> %u BPM\n\r", track, tick, tempo_us, (u32)bpm);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Tempo to %u uS -> %u BPM\n", track, tick, tempo_us, (u32)bpm);
 #endif
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	printf("[SEQ:%d:%u] Meta - Tempo with %u bytes -- ERROR: expecting 3 bytes!\n\r", track, tick, len);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Tempo with %u bytes -- ERROR: expecting 3 bytes!\n", track, tick, len);
 #endif
       }
       break;
@@ -501,7 +496,7 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 
 #if DEBUG_VERBOSE_LEVEL >= 1
     default:
-      printf("[SEQ:%d:%u] Meta Event 0x%02x with length %u not processed\n\r", track, tick, meta, len);
+      DEBUG_MSG("[SEQ:%d:%u] Meta Event 0x%02x with length %u not processed\n", track, tick, meta, len);
 #endif
   }
 

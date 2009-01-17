@@ -75,6 +75,16 @@ into your local mios32_config.h file
 // the default MIDI port for MIDI output
 #define MIOS32_MIDI_DEFAULT_PORT USB0
 
+// the default MIDI port for debugging output via MIOS32_MIDI_SendDebugMessage
+#define MIOS32_MIDI_DEBUG_PORT USB0
+
+
+// the default COM port for COM output
+#define MIOS32_COM_DEFAULT_PORT USB0
+
+// the default COM port for debugging output via printf
+#define MIOS32_COM_DEBUG_PORT USB0
+
 
 // Following settings allow to customize the USB device descriptor
 #define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids

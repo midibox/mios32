@@ -70,6 +70,18 @@ void APP_Init(void)
 
   // print first message
   print_msg = PRINT_MSG_INIT;
+
+  // print welcome message on MIOS terminal
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("====================\n");
+  MIOS32_MIDI_SendDebugMessage("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
+  MIOS32_MIDI_SendDebugMessage("====================\n");
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("Settings:\n");
+  MIOS32_MIDI_SendDebugMessage("#define SEQ_MIDI_OUT_MALLOC_METHOD %d\n", SEQ_MIDI_OUT_MALLOC_METHOD);
+  MIOS32_MIDI_SendDebugMessage("#define SEQ_MIDI_OUT_MAX_EVENTS %d\n", SEQ_MIDI_OUT_MAX_EVENTS);
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("Play any MIDI note to start the benchmark\n");
 }
 
 
@@ -151,6 +163,12 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     MIOS32_BOARD_LED_Set(0xffffffff, 0);
 
     portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
+
+    // print result on MIOS terminal
+    if( benchmark_cycles == 0xffffffff )
+      MIOS32_MIDI_SendDebugMessage("Time: overrun!\n");
+    else
+      MIOS32_MIDI_SendDebugMessage("Time: %5d.%d mS\n", benchmark_cycles/10, benchmark_cycles%10);
 
     // print status screen
     print_msg = PRINT_MSG_SEQ_STATUS;
