@@ -21,21 +21,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging via MIOS terminal
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-#if DEBUG_VERBOSE_LEVEL >= 1
-# define DEBUG_MSG printf
-#else
-# undef DEBUG_MSG
-#endif
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////

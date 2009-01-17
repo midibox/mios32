@@ -27,15 +27,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -88,20 +83,20 @@ s32 MID_FILE_Init(u32 mode)
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[MID_FILE] SD Card initialized, status: %d\n\r", error);
+  DEBUG_MSG("[MID_FILE] SD Card initialized, status: %d\n", error);
 #endif
 
   if( error >= 0 ) {
     error = MIOS32_SDCARD_PowerOn();
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] SD Card power on sequence, status: %d\n\r", error);
+    DEBUG_MSG("[MID_FILE] SD Card power on sequence, status: %d\n", error);
 #endif
   }
 
   if( error >= 0 ) {
     error = MID_FILE_mount_fs();
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] Tried to mount file system, status: %d\n\r", error);
+    DEBUG_MSG("[MID_FILE] Tried to mount file system, status: %d\n", error);
 #endif
   }
 
@@ -130,13 +125,13 @@ static s32 MID_FILE_mount_fs(void)
   pstart = DFS_GetPtnStart(0, sector, 0, &pactive, &ptype, &psize);
   if( pstart == 0xffffffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] Cannot find first partition - reconnect SD Card\n\r");
+    DEBUG_MSG("[MID_FILE] Cannot find first partition - reconnect SD Card\n");
 #endif
 
     s32 error = MIOS32_SDCARD_PowerOn();
     if( error < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[MID_FILE] Failed - no access to SD Card\n\r");
+      DEBUG_MSG("[MID_FILE] Failed - no access to SD Card\n");
 #endif
       return -1;
     }
@@ -144,38 +139,38 @@ static s32 MID_FILE_mount_fs(void)
     pstart = DFS_GetPtnStart(0, sector, 0, &pactive, &ptype, &psize);
     if( pstart == 0xffffffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[MID_FILE] SD Card available, but still cannot find first partition - giving up!\n\r");
+      DEBUG_MSG("[MID_FILE] SD Card available, but still cannot find first partition - giving up!\n");
 #endif
       return -1;
     }
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[MID_FILE] Partition 0 start sector 0x%-08.8lX active %-02.2hX type %-02.2hX size %-08.8lX\n\r", pstart, pactive, ptype, psize);
+  DEBUG_MSG("[MID_FILE] Partition 0 start sector 0x%-08.8lX active %-02.2hX type %-02.2hX size %-08.8lX\n", pstart, pactive, ptype, psize);
 #endif
 
   if (DFS_GetVolInfo(0, sector, pstart, &vi)) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] Error getting volume information\n\r");
+    DEBUG_MSG("[MID_FILE] Error getting volume information\n");
 #endif
     return -1;
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[MID_FILE] Volume label '%s'\n\r", vi.label);
-  printf("[MID_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n\r", vi.secperclus, vi.reservedsecs, vi.numsecs);
-  printf("[MID_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n\r",vi.secperfat,vi.fat1,vi.rootdir);
-  printf("[MID_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n\r");
-  printf("[MID_FILE] %d root dir entries, data area commences at sector #%d.\n\r",vi.rootentries,vi.dataarea);
-  printf("[MID_FILE] %d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
+  DEBUG_MSG("[MID_FILE] Volume label '%s'\n", vi.label);
+  DEBUG_MSG("[MID_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
+  DEBUG_MSG("[MID_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n",vi.secperfat,vi.fat1,vi.rootdir);
+  DEBUG_MSG("[MID_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
+  DEBUG_MSG("[MID_FILE] %d root dir entries, data area commences at sector #%d.\n",vi.rootentries,vi.dataarea);
+  DEBUG_MSG("[MID_FILE] %d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
   if (vi.filesystem == FAT12)
-    printf("FAT12.\n\r");
+    DEBUG_MSG("FAT12.\n");
   else if (vi.filesystem == FAT16)
-    printf("FAT16.\n\r");
+    DEBUG_MSG("FAT16.\n");
   else if (vi.filesystem == FAT32)
-    printf("FAT32.\n\r");
+    DEBUG_MSG("FAT32.\n");
   else {
-    printf("[MID_FILE] [unknown]\n\r");
+    DEBUG_MSG("[MID_FILE] [unknown]\n");
   }
 #endif
 
@@ -200,19 +195,19 @@ static s32 MID_FILE_mount_fs(void)
 char *MID_FILE_FindNext(char *filename)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[MID_FILE] Opening directory '%s'\n\r", MID_FILES_PATH);
+  DEBUG_MSG("[MID_FILE] Opening directory '%s'\n", MID_FILES_PATH);
 #endif
 
   di.scratch = sector;
   if( DFS_OpenDir(&vi, MID_FILES_PATH, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] Error opening directory - try mounting the partition again\n\r");
+    DEBUG_MSG("[MID_FILE] Error opening directory - try mounting the partition again\n");
 #endif
 
     s32 error;
     if( (error = MID_FILE_mount_fs()) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[MID_FILE] mounting failed with status: %d\n\r", error);
+      DEBUG_MSG("[MID_FILE] mounting failed with status: %d\n", error);
 #endif
       strcpy(midifile_name, "no SD-Card");
       return NULL; // directory not found
@@ -220,7 +215,7 @@ char *MID_FILE_FindNext(char *filename)
 
     if( DFS_OpenDir(&vi, MID_FILES_PATH, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[MID_FILE] Error opening directory again - giving up!\n\r");
+      DEBUG_MSG("[MID_FILE] Error opening directory again - giving up!\n");
 #endif
       strcpy(midifile_name, "no direct.");
       return NULL; // directory not found
@@ -240,17 +235,17 @@ char *MID_FILE_FindNext(char *filename)
     if( de.name[0] ) {
       DFS_DirToCanonical(midifile_name, de.name);
 #if DEBUG_VERBOSE_LEVEL >= 2
-      printf("[MID_FILE] file: '%s'\n\r", midifile_name);
+      DEBUG_MSG("[MID_FILE] file: '%s'\n", midifile_name);
 #endif
       if( strncasecmp(&de.name[8], "mid", 3) == 0 ) {
 	if( take_next ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  printf("[MID_FILE] return it as next file\n\r");
+	  DEBUG_MSG("[MID_FILE] return it as next file\n");
 #endif
 	  return midifile_name;
 	} else if( strncasecmp(&de.name[0], (char *)search_file, 8) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  printf("[MID_FILE] found file: '%s', searching for next\n\r", midifile_name);
+	  DEBUG_MSG("[MID_FILE] found file: '%s', searching for next\n", midifile_name);
 #endif
 	  take_next = 1;
 	}
@@ -274,7 +269,7 @@ s32 MID_FILE_open(char *filename)
   
   if( DFS_OpenFile(&vi, filepath, DFS_READ, sector, &fi)) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] error opening file '%s'!\n\r", filepath);
+    DEBUG_MSG("[MID_FILE] error opening file '%s'!\n", filepath);
 #endif
     strcpy(midifile_name, "file error");
     midifile_len = 0;
@@ -286,7 +281,7 @@ s32 MID_FILE_open(char *filename)
   midifile_len = fi.filelen;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[MID_FILE] opened '%s' of length %u\n\r", filepath, midifile_len);
+  DEBUG_MSG("[MID_FILE] opened '%s' of length %u\n", filepath, midifile_len);
 #endif
 
   return 0; // no error
@@ -305,7 +300,7 @@ u32 MID_FILE_read(void *buffer, u32 len)
 
   if( successcount != len ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[MID_FILE] unexpected read error - DFS cannot access offset %u (len: %u, got: %u)\n\r", midifile_pos, len, successcount);
+    DEBUG_MSG("[MID_FILE] unexpected read error - DFS cannot access offset %u (len: %u, got: %u)\n", midifile_pos, len, successcount);
 #endif
   }
   

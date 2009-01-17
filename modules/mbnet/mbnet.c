@@ -32,21 +32,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-#if DEBUG_VERBOSE_LEVEL >= 1
-# define DEBUG_MSG printf
-#else
-# undef DEBUG_MSG
-#endif
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -173,14 +162,14 @@ s32 MBNET_Init(u32 mode)
   while( !(CAN->MSR & (1 << 0)) ) { // CAN_MSR_INAK
     if( --poll_ctr == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNET] ----- initialisation FAILED! ------------------------------------------\n\r");
+      DEBUG_MSG("[MBNET] ----- initialisation FAILED! ------------------------------------------\n");
 #endif
       return -1; // initialisation failed
     }
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[MBNET] ----- initialized -----------------------------------------------------\n\r");
+  DEBUG_MSG("[MBNET] ----- initialized -----------------------------------------------------\n");
 #endif
 
   return 0; // no error
@@ -314,7 +303,7 @@ static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   if( tos12_ctr <= 8 ) {
-    DEBUG_MSG("[MBNET] sent %s via mailbox %d: ID:%02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n\r",
+    DEBUG_MSG("[MBNET] sent %s via mailbox %d: ID:%02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 	      mbnet_id.ack ? "ACK" : "REQ",
 	      mailbox,
 	      mbnet_id.node,
@@ -469,7 +458,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
       // response from expected slave? if not - ignore it!
       if( (mbnet_id.control & 0xff) == slave_id ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[MBNET] got ACK from slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n\r",
+	DEBUG_MSG("[MBNET] got ACK from slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 		  slave_id,
 		  mbnet_id.tos,
 		  *dlc,
@@ -480,7 +469,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 	// retry requested?
 	if( mbnet_id.tos == MBNET_ACK_RETRY ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  DEBUG_MSG("[MBNET] Slave ID %02x requested to retry the transfer!\n\r", slave_id);
+	  DEBUG_MSG("[MBNET] Slave ID %02x requested to retry the transfer!\n", slave_id);
 #endif
 	  return -4; // slave requested to retry
 	}
@@ -488,7 +477,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 	return 0; // wait ack successful!
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNET] ERROR: ACK from unexpected slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n\r",
+	DEBUG_MSG("[MBNET] ERROR: ACK from unexpected slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 		  mbnet_id.node,
 		  mbnet_id.tos,
 		  *dlc,
@@ -532,7 +521,7 @@ s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 
   if( timeout_ctr == 1000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[MBNET] ACK polling for slave ID %02x timed out!\n\r", slave_id);
+    DEBUG_MSG("[MBNET] ACK polling for slave ID %02x timed out!\n", slave_id);
 #endif
     return -6; // timeout
   }
@@ -616,7 +605,7 @@ s32 MBNET_Handler(void *_callback)
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNET] new slave found: ID %02x (Ix=%d) P:%d T:%c%c%c%c V:%d.%d\n\r", 
+	  DEBUG_MSG("[MBNET] new slave found: ID %02x (Ix=%d) P:%d T:%c%c%c%c V:%d.%d\n", 
 		    search_slave_id,
 		    slave_nodes_ix[ix_ix],
 		    ack_msg.protocol_version,
@@ -624,7 +613,7 @@ s32 MBNET_Handler(void *_callback)
 		    ack_msg.node_version, ack_msg.node_subversion);
 
 	  if( slave_nodes_ix[ix_ix] == 0xff )
-	    DEBUG_MSG("[MBNET] unfortunately no free info slot anymore!\n\r");
+	    DEBUG_MSG("[MBNET] unfortunately no free info slot anymore!\n");
 #endif
 	}
       }
@@ -660,7 +649,7 @@ s32 MBNET_Handler(void *_callback)
       if( mbnet_id.tos == 1 || mbnet_id.tos == 2 ) {
 	++tos12_ctr;
 	if( tos12_ctr > 8 ) {
-	  DEBUG_MSG("[MBNET] ... skip display of remaining read/write operations\n\r");
+	  DEBUG_MSG("[MBNET] ... skip display of remaining read/write operations\n");
 	}
       } else {
 	tos12_ctr = 0;
@@ -668,7 +657,7 @@ s32 MBNET_Handler(void *_callback)
 #endif
 #if DEBUG_VERBOSE_LEVEL >= 2
       if( tos12_ctr <= 8 ) {
-	DEBUG_MSG("[MBNET] request ID=%02x TOS=%d CTRL=%04x DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n\r",
+	DEBUG_MSG("[MBNET] request ID=%02x TOS=%d CTRL=%04x DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 		  master_id,
 		  mbnet_id.tos,
 		  mbnet_id.control,
@@ -685,7 +674,7 @@ s32 MBNET_Handler(void *_callback)
       if( locked != -1 && mbnet_id.ms != locked ) {
 	MBNET_SendAck(master_id, MBNET_ACK_RETRY, ack_msg, 0); // master_id, tos, msg, dlc
 #if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[MBNET] ignore - node is locked by MS=%d\n\r", locked);
+	DEBUG_MSG("[MBNET] ignore - node is locked by MS=%d\n", locked);
 #endif
       } else {
 	// branch depending on TOS

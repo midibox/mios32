@@ -35,15 +35,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging via COM interface
+// for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-// add following lines to your mios32_config.h file to send these messages via UART1
-// // enable COM via UART1
-// #define MIOS32_UART1_ASSIGNMENT 2
-// #define MIOS32_UART1_BAUDRATE 115200
-// #define MIOS32_COM_DEFAULT_PORT UART1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -166,13 +161,13 @@ s32 SEQ_FILE_B_LoadAllBanks(void)
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     s32 error = SEQ_FILE_B_Open(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n\r", bank+1, error);
+    DEBUG_MSG("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n", bank+1, error);
 #endif
 #if 0
     if( error == -2 ) {
       error = SEQ_FILE_B_Create(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
-      printf("[SEQ_FILE_B] Tried to create bank #%d file, status: %d\n\r", bank+1, error);
+      DEBUG_MSG("[SEQ_FILE_B] Tried to create bank #%d file, status: %d\n", bank+1, error);
 #endif
     }
 #endif
@@ -231,13 +226,13 @@ s32 SEQ_FILE_B_Create(u8 bank)
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] Creating new bank file '%s'\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_B] Creating new bank file '%s'\n", filepath);
 #endif
 
   s32 status = 0;
   if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] Failed to create file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] Failed to create file, status: %d\n", status);
 #endif
     return status;
   }
@@ -252,7 +247,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
   memcpy(info->header.name, bank_name, 20);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] writing '%s'...\n\r", bank_name);
+  DEBUG_MSG("[SEQ_FILE_B] writing '%s'...\n", bank_name);
 #endif
 
   // number of patterns
@@ -289,7 +284,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] Bank file created with status %d\n\r", status);
+  DEBUG_MSG("[SEQ_FILE_B] Bank file created with status %d\n", status);
 #endif
 
   return status;
@@ -313,13 +308,13 @@ s32 SEQ_FILE_B_Open(u8 bank)
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] Open bank file '%s'\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s'\n", filepath);
 #endif
 
   s32 status;
   if( (status=SEQ_FILE_ReadOpen((PFILEINFO)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] failed to open file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] failed to open file, status: %d\n", status);
 #endif
     return status;
   }
@@ -329,7 +324,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   char file_type[10];
   if( (status=SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] failed to read header, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] failed to read header, status: %d\n", status);
 #endif
     return status;
   }
@@ -337,7 +332,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   if( strncmp(file_type, "MBSEQV4_B", 10) != 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     file_type[9] = 0; // ensure that string is terminated
-    printf("[SEQ_FILE_B] wrong header type: %s\n\r", file_type);
+    DEBUG_MSG("[SEQ_FILE_B] wrong header type: %s\n", file_type);
 #endif
     return SEQ_FILE_B_ERR_FORMAT;
   }
@@ -348,7 +343,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] file access error while reading header, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] file access error while reading header, status: %d\n", status);
 #endif
     return SEQ_FILE_B_ERR_READ;
   }
@@ -357,7 +352,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   info->valid = 1;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] bank is valid! Number of Patterns: %d, Pattern Size: %d\n\r", info->header.num_patterns, info->header.pattern_size);
+  DEBUG_MSG("[SEQ_FILE_B] bank is valid! Number of Patterns: %d, Pattern Size: %d\n", info->header.num_patterns, info->header.pattern_size);
 #endif
 
   return 0; // no error
@@ -389,7 +384,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
   if( (status=SEQ_FILE_Seek((PFILEINFO)&info->file, offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
 #endif
     return SEQ_FILE_B_ERR_READ;
   }
@@ -410,7 +405,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &reserved);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] read pattern B%d:P%d '%s', %d tracks\n\r", bank+1, pattern, seq_pattern_name[target_group], num_tracks);
+  DEBUG_MSG("[SEQ_FILE_B] read pattern B%d:P%d '%s', %d tracks\n", bank+1, pattern, seq_pattern_name[target_group], num_tracks);
 #endif
 
   // reduce number of tracks if required
@@ -445,13 +440,13 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     // before changing CCs: we should stop here on error if read failed
     if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      printf("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n\r", track+1, target_track+1, status);
+      DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n", track+1, target_track+1, status);
 #endif
       break;
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    printf("[SEQ_FILE_B] read track #%d (-> %d) '%s', P:%d,T:%d layers (P:%d,T:%d) P:%d,T:%d steps (P:%d,T:%d)\n\r", 
+    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s', P:%d,T:%d layers (P:%d,T:%d) P:%d,T:%d steps (P:%d,T:%d)\n", 
 	   track+1, target_track+1,
 	   seq_core_trk[target_track].name,
 	   num_p_layers, num_t_layers,
@@ -520,7 +515,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] error while reading file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] error while reading file, status: %d\n", status);
 #endif
     return SEQ_FILE_B_ERR_READ;
   }
@@ -563,7 +558,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
     num_tracks * (sizeof(seq_file_b_track_t) + num_p_layers*p_layer_size + num_t_layers*t_layer_size);
   if( expected_pattern_size > info->header.pattern_size ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] Resulting pattern is too large for slot in bank (is: %d, max: %d)\n\r", 
+    DEBUG_MSG("[SEQ_FILE_B] Resulting pattern is too large for slot in bank (is: %d, max: %d)\n", 
 	   expected_pattern_size, info->header.pattern_size);
     return SEQ_FILE_B_ERR_P_TOO_LARGE;
 #endif
@@ -575,13 +570,13 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] Open bank file '%s' for writing\n\r", filepath);
+  DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s' for writing\n", filepath);
 #endif
 
   s32 status = 0;
   if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] Failed to open file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] Failed to open file, status: %d\n", status);
 #endif
     SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
     return status;
@@ -591,7 +586,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
   if( (status=SEQ_FILE_Seek(&fi, offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    printf("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n\r", status);
+    DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
 #endif
     SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
     return status;
@@ -601,7 +596,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_pattern_name[source_group], 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  printf("[SEQ_FILE_B] writing pattern '%s'...\n\r", seq_pattern_name[source_group]);
+  DEBUG_MSG("[SEQ_FILE_B] writing pattern '%s'...\n", seq_pattern_name[source_group]);
 #endif
 
   // write number of tracks
@@ -658,7 +653,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   status |= SEQ_FILE_WriteClose(&fi);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  printf("[SEQ_FILE_B] Pattern written with status %d\n\r", status);
+  DEBUG_MSG("[SEQ_FILE_B] Pattern written with status %d\n", status);
 #endif
 
   return (status < 0) ? SEQ_FILE_B_ERR_WRITE : 0;

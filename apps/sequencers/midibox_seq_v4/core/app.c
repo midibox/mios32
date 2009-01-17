@@ -43,6 +43,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via MIDI
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Encoder Configuration
 /////////////////////////////////////////////////////////////////////////////
 #define NUM_ENCODERS 17
@@ -212,9 +219,8 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-#if COM_DEBUG == 1
-  // for debugging
-  printf("Pin %3d (SR%d:D%d) = %d\n\r", pin, (pin>>3)+1, pin&7, pin_value);
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 
   // forward to UI button handler
@@ -230,9 +236,8 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 #if DEFAULT_SRM_ENABLED
 void APP_BLM8X8_NotifyToggle(u32 pin, u32 pin_value)
 {
-#if COM_DEBUG == 1
-  // for debugging
-  printf("BLM Pin %3d (SR%d:D%d) = %d\n\r", pin, (pin>>3)+1, pin&7, pin_value);
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("BLM Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 
   // forward to UI button handler
@@ -248,9 +253,8 @@ void APP_BLM8X8_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-#if COM_DEBUG == 1
-  // for debugging
-  printf("Enc %2d = %d\n\r", encoder, incrementer);
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
 #endif
 
   // forward to UI encoder handler

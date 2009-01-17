@@ -24,6 +24,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via MIDI
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -168,13 +175,13 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
     }
   }
 
-#if 0
+#if DEBUG_VERBOSE_LEVEL >= 1
   {
     int i;
-    printf("[T Notestack] IN: %02x %02x  LEN: %d  Notes:", note, velocity, n->len);
+    DEBUG_MSG("[T Notestack] IN: %02x %02x  LEN: %d  Notes:", note, velocity, n->len);
     for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      printf(" %02x", n->note[i]);
-    printf("\n\r");
+      DEBUG_MSG(" %02x", n->note[i]);
+    DEBUG_MSG("\n");
   }
 #endif
 
@@ -219,18 +226,18 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
     SEQ_MIDI_IN_Notestack_Pop(&notestack[NOTESTACK_ARP_UNSORTED], note);
   }
 
-#if 0
+#if DEBUG_VERBOSE_LEVEL >= 1
   {
     int i;
-    printf("[ARP Sorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_SORTED].len);
+    DEBUG_MSG("[ARP Sorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_SORTED].len);
     for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      printf(" %02x", notestack[NOTESTACK_ARP_SORTED].note[i]);
-    printf("\n\r");
+      DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_SORTED].note[i]);
+    DEBUG_MSG("\n");
 
-    printf("[ARP Unsorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_UNSORTED].len);
+    DEBUG_MSG("[ARP Unsorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_UNSORTED].len);
     for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      printf(" %02x", notestack[NOTESTACK_ARP_UNSORTED].note[i]);
-    printf("\n\r");
+      DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_UNSORTED].note[i]);
+    DEBUG_MSG("\n");
   }
 #endif
 
