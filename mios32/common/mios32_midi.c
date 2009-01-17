@@ -21,6 +21,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
+#include <stdarg.h>
 
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_MIDI)
@@ -111,6 +113,7 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 static mios32_midi_port_t default_port = MIOS32_MIDI_DEFAULT_PORT;
+static mios32_midi_port_t debug_port   = MIOS32_MIDI_DEBUG_PORT;
 
 static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
@@ -147,8 +150,9 @@ s32 MIOS32_MIDI_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // set default port as defined in mios32.h/mios32_config.h
+  // set default/debug port as defined in mios32.h/mios32_config.h
   default_port = MIOS32_MIDI_DEFAULT_PORT;
+  debug_port = MIOS32_MIDI_DEBUG_PORT;
 
   // disable Rx/Tx callback functions
   direct_rx_callback_func = NULL;
@@ -188,9 +192,9 @@ s32 MIOS32_MIDI_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
   }
 
   // branch depending on selected port
@@ -246,9 +250,9 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
   }
 
   // insert subport number into package
@@ -306,9 +310,9 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  // if default port: select mapped port
+  // if default/debug port: select mapped port
   if( !(port & 0xf0) ) {
-    port = default_port;
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
   }
 
   // insert subport number into package
@@ -481,6 +485,7 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sends a SysEx Stream
+//!
 //! This function is provided for a more comfortable use model
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \param[in] stream pointer to SysEx stream
@@ -532,6 +537,63 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
   }
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a formatted Debug Message to the MIOS Terminal in MIOS Studio.
+//!
+//! Formatting parameters are like known from printf, e.g.
+//! \code
+//!   MIOS32_MIDI_SendDebugMessage("Button %d %s\n", button, value ? "depressed" : "pressed");
+//! \endcode
+//!
+//! The MIDI port used for debugging (MIDI_DEBUG) can be declared in mios32_config.h:
+//! \code
+//!   #define MIOS32_MIDI_DEBUG_PORT USB0
+//! \endcode
+//! (USB0 is the default value)
+//!
+//! Optionally, the port can be changed during runtime with MIOS32_MIDI_DebugPortSet
+//! \param[in] *format zero-terminated format string - 128 characters supported maximum!
+//! \param ... additional arguments
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
+{
+  u8 buffer[128+5+3+1]; // 128 chars allowed + 5 for header + 3 for command + F7
+  va_list args;
+  int i;
+
+  // transform formatted string into string
+  va_start(args, format);
+  vsprintf((char *)((size_t)buffer+sizeof(mios32_midi_sysex_header)+3), format, args);
+
+  u8 *sysex_buffer_ptr = buffer;
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
+
+  // device ID
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
+
+  // debug message: ack code
+  *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
+
+  // command identifier
+  *sysex_buffer_ptr++ = 0x40; // string
+
+  // search end of string and determine length
+  u16 len = sizeof(mios32_midi_sysex_header) + 3;
+  for(i=0; i<128 && (*sysex_buffer_ptr != 0); ++i) {
+    *sysex_buffer_ptr++ &= 0x7f; // ensure that MIDI protocol won't be violated
+    ++len;
+  }
+
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
+  ++len;
+
+  return MIOS32_MIDI_SendSysEx(debug_port, buffer, len);
 }
 
 
@@ -840,6 +902,34 @@ mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function allows to change the MIDI_DEBUG port.<BR>
+//! The preset which will be used after application reset can be set in
+//! mios32_config.h via "#define MIOS32_MIDI_DEBUG_PORT <port>".<BR>
+//! It's set to USB0 so long not overruled in mios32_config.h
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DebugPortSet(mios32_midi_port_t port)
+{
+  if( port == MIDI_DEBUG ) // avoid recursion
+    return -1;
+
+  debug_port = port;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the MIDI_DEBUG port
+//! \return the debug port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t MIOS32_MIDI_DebugPortGet(void)
+{
+  return debug_port;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function sets the SysEx Device ID, which is used during parsing
 //! incoming SysEx Requests to MIOS32<BR>
 //! It can also be used by an application for additional parsing with the same ID.<BR>
@@ -1108,7 +1198,7 @@ static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
   *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_ACK;
 
   // send string
-  for(i=0; i<100 && str[i] != 0; ++i)
+  for(i=0; i<100 && (str[i] != 0); ++i)
     *sysex_buffer_ptr++ = str[i];
 
   // send footer
