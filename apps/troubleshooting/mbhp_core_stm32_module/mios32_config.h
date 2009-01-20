@@ -19,9 +19,9 @@
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_AIN
 #define MIOS32_DONT_USE_MF
-#define MIOS32_DONT_USE_UART
 #define MIOS32_DONT_USE_IIC
 
 // LCD pins are disabled after a warning message has been print
+// UARTs is enabled/disabled on the fly to allow MIDI queries over these ports
 
 #endif /* _MIOS32_CONFIG_H */
