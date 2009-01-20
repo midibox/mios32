@@ -21,6 +21,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+s32 check_delay;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
@@ -53,9 +60,12 @@ void APP_Background(void)
     MIOS32_BOARD_LED_Init(1); // initialize all LEDs
     MIOS32_BOARD_LED_Set(1, (status < 0) ? 1 : 0);
 
+    // init UART again
+    MIOS32_UART_Init(0);
+
     // wait for 5 seconds
-    int i;
-    for(i=0; i<5000; ++i)
+    // check_delay will be reset to 5000 whenever a SysEx byte is received
+    for(check_delay=5000; check_delay>= 0; --check_delay)
       MIOS32_DELAY_Wait_uS(1000);
   }
 }
@@ -74,6 +84,9 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
 {
+  // reset wait delay - this ensures, that new code can be uploaded w/o the danger that
+  // the background task disturbs it
+  check_delay = 5000;
 }
 
 
