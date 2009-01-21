@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file of application
+ * Header file for benchmark routines
  *
  * ==========================================================================
  *
@@ -11,25 +11,12 @@
  * ==========================================================================
  */
 
-#ifndef _APP_H
-#define _APP_H
-
+#ifndef _BENCHMARK_H
+#define _BENCHMARK_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
-
-// messages
-#define PRINT_MSG_NONE           0
-#define PRINT_MSG_INIT           1
-#define PRINT_MSG_STATUS         2
-
-
-// DIN pin assignments for menu interface
-#define DIN_NUMBER_EXEC     7
-#define DIN_NUMBER_INC      6
-#define DIN_NUMBER_DEC      5
-#define DIN_NUMBER_SNAPSHOT 4
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -41,23 +28,18 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern void APP_Init(void);
-extern void APP_Background(void);
-extern void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-extern void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte);
-extern void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte);
-extern void APP_SRIO_ServicePrepare(void);
-extern void APP_SRIO_ServiceFinish(void);
-extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
-extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
-extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
+extern s32 BENCHMARK_Init(u32 mode);
+
+extern s32 BENCHMARK_Reset(void);
+
+extern s32 BENCHMARK_Start_Reads(void);
+extern s32 BENCHMARK_Start_BlockReads(void);
+extern s32 BENCHMARK_Start_Writes(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern volatile u8 print_msg;
 
-
-#endif /* _APP_H */
+#endif /* _BENCHMARK_H */

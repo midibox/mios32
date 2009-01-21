@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Benchmark for MIDI Out Scheduler
+ * Benchmark for MIOS32_IIC routines
  * See README.txt for details
  *
  * ==========================================================================
@@ -21,7 +21,6 @@
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
-#include <seq_midi_out.h>
 #include "benchmark.h"
 #include "app.h"
 
@@ -37,7 +36,9 @@ volatile u8 print_msg;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 benchmark_cycles;
+static u32 benchmark_cycles_reads;
+static u32 benchmark_cycles_block_reads;
+static u32 benchmark_cycles_writes;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,7 +58,9 @@ void APP_Init(void)
   BENCHMARK_Init(0);
 
   // init benchmark result
-  benchmark_cycles = 0;
+  benchmark_cycles_reads = 0;
+  benchmark_cycles_block_reads = 0;
+  benchmark_cycles_writes = 0;
 
   // print first message
   print_msg = PRINT_MSG_INIT;
@@ -69,8 +72,7 @@ void APP_Init(void)
   MIOS32_MIDI_SendDebugMessage("====================\n");
   MIOS32_MIDI_SendDebugMessage("\n");
   MIOS32_MIDI_SendDebugMessage("Settings:\n");
-  MIOS32_MIDI_SendDebugMessage("#define SEQ_MIDI_OUT_MALLOC_METHOD %d\n", SEQ_MIDI_OUT_MALLOC_METHOD);
-  MIOS32_MIDI_SendDebugMessage("#define SEQ_MIDI_OUT_MAX_EVENTS %d\n", SEQ_MIDI_OUT_MAX_EVENTS);
+  MIOS32_MIDI_SendDebugMessage("#define MIOS32_IIC_BUS_FREQUENCY %u\n", MIOS32_IIC_BUS_FREQUENCY);
   MIOS32_MIDI_SendDebugMessage("\n");
   MIOS32_MIDI_SendDebugMessage("Play any MIDI note to start the benchmark\n");
 }
@@ -107,16 +109,16 @@ void APP_Background(void)
       case PRINT_MSG_STATUS:
       {
         MIOS32_LCD_CursorSet(0, 0);
-	MIOS32_LCD_PrintFormattedString("A%3d  M%3d  D%3d",
-					seq_midi_out_allocated,
-					seq_midi_out_max_allocated,
-					seq_midi_out_dropouts);
+	if( benchmark_cycles_reads == 0xffffffff )
+	  MIOS32_LCD_PrintFormattedString("Reads: overrun  ");
+	else
+	  MIOS32_LCD_PrintFormattedString("Reads: %4d.%d mS  ", benchmark_cycles_reads/10, benchmark_cycles_reads%10);
 
         MIOS32_LCD_CursorSet(0, 1);
-	if( benchmark_cycles == 0xffffffff )
-	  MIOS32_LCD_PrintFormattedString("Time: overrun   ");
+	if( benchmark_cycles_writes == 0xffffffff )
+	  MIOS32_LCD_PrintFormattedString("Write: overrun ");
 	else
-	  MIOS32_LCD_PrintFormattedString("Time: %5d.%d mS  ", benchmark_cycles/10, benchmark_cycles%10);
+	  MIOS32_LCD_PrintFormattedString("Write: %4d.%d mS  ", benchmark_cycles_writes/10, benchmark_cycles_writes%10);
 
 	// request status screen again (will stop once a new screen is requested by another task)
 	print_msg = PRINT_MSG_STATUS;
@@ -133,33 +135,120 @@ void APP_Background(void)
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ) {
-    // reset benchmark
-    BENCHMARK_Reset();
+
+    // reset benchmark (returns < 0 on errors)
+    s32 status;
+    if( (status=BENCHMARK_Reset()) < 0 ) {
+      benchmark_cycles_reads = 0xffffffff;
+      benchmark_cycles_block_reads = 0xffffffff;
+      benchmark_cycles_writes = 0xffffffff;
+
+      MIOS32_MIDI_SendDebugMessage("No IIC EEPROM connected - error code %d!\n", status);
+      return;
+    }
 
     portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
 
     // turn on LED (e.g. for measurements with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, 1);
 
+
+    /////////////////////////////////////////////////////////////////////////
+    // IIC Reads
+    /////////////////////////////////////////////////////////////////////////
+
     // reset stopwatch
     MIOS32_STOPWATCH_Reset();
 
     // start benchmark
-    BENCHMARK_Start();
+    s32 status_reads = BENCHMARK_Start_Reads();
 
     // capture counter value
-    benchmark_cycles = MIOS32_STOPWATCH_ValueGet();
+    benchmark_cycles_reads = MIOS32_STOPWATCH_ValueGet();
 
     // turn off LED
     MIOS32_BOARD_LED_Set(0xffffffff, 0);
 
+
+    /////////////////////////////////////////////////////////////////////////
+    // IIC Block Reads
+    /////////////////////////////////////////////////////////////////////////
+
+    // reset stopwatch
+    MIOS32_STOPWATCH_Reset();
+
+    // start benchmark
+    s32 status_block_reads = BENCHMARK_Start_BlockReads();
+
+    // capture counter value
+    benchmark_cycles_block_reads = MIOS32_STOPWATCH_ValueGet();
+
+    // turn off LED
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);
+
+
+    /////////////////////////////////////////////////////////////////////////
+    // IIC Writes
+    /////////////////////////////////////////////////////////////////////////
+
+    // reset stopwatch
+    MIOS32_STOPWATCH_Reset();
+
+    // start benchmark
+    s32 status_writes = BENCHMARK_Start_Writes();
+
+    // capture counter value
+    benchmark_cycles_writes = MIOS32_STOPWATCH_ValueGet();
+
+    // turn off LED
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);
+
+
+    /////////////////////////////////////////////////////////////////////////
+    // Finished...
+    /////////////////////////////////////////////////////////////////////////
+
     portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
 
     // print result on MIOS terminal
-    if( benchmark_cycles == 0xffffffff )
-      MIOS32_MIDI_SendDebugMessage("Time: overrun!\n");
-    else
-      MIOS32_MIDI_SendDebugMessage("Time: %5d.%d mS\n", benchmark_cycles/10, benchmark_cycles%10);
+    if( status_reads < 0 ) {
+      MIOS32_MIDI_SendDebugMessage("Reads: error status %d!\n", status_reads);
+      benchmark_cycles_reads = 0xffffffff;
+    } else {
+      if( benchmark_cycles_reads == 0xffffffff )
+	MIOS32_MIDI_SendDebugMessage("Reads: overrun!\n");
+      else {
+	MIOS32_MIDI_SendDebugMessage("Reads: %5d.%d mS / 1000\n", benchmark_cycles_reads/10, benchmark_cycles_reads%10);
+	MIOS32_MIDI_SendDebugMessage("-> %d read accesses per second\n", 10000000 / benchmark_cycles_reads);
+	MIOS32_MIDI_SendDebugMessage("-> transfered %d bytes per second\n", 4 * (10000000 / benchmark_cycles_reads));
+      }
+    }
+
+    if( status_block_reads < 0 ) {
+      MIOS32_MIDI_SendDebugMessage("Reads: error status %d!\n", status_reads);
+      benchmark_cycles_block_reads = 0xffffffff;
+    } else {
+      if( benchmark_cycles_block_reads == 0xffffffff )
+	MIOS32_MIDI_SendDebugMessage("Block Reads: overrun!\n");
+      else {
+	MIOS32_MIDI_SendDebugMessage("Block Reads: %5d.%d mS / 1000\n", benchmark_cycles_block_reads/10, benchmark_cycles_block_reads%10);
+	MIOS32_MIDI_SendDebugMessage("-> %d block read accesses per second\n", 10000000 / benchmark_cycles_block_reads);
+	MIOS32_MIDI_SendDebugMessage("-> transfered %d bytes per second\n", 67 * (10000000 / benchmark_cycles_block_reads));
+      }
+    }
+
+    if( status_reads < 0 ) {
+      MIOS32_MIDI_SendDebugMessage("Writes: error status %d!\n", status_writes);
+      benchmark_cycles_writes = 0xffffffff;
+    } else {
+      if( benchmark_cycles_writes == 0xffffffff )
+	MIOS32_MIDI_SendDebugMessage("Writes: overrun!\n");
+      else {
+	MIOS32_MIDI_SendDebugMessage("Writes:%5d.%d mS / 1000\n", benchmark_cycles_writes/10, benchmark_cycles_writes%10);
+	MIOS32_MIDI_SendDebugMessage("-> %d write accesses per second\n", 10000000 / benchmark_cycles_writes);
+	MIOS32_MIDI_SendDebugMessage("-> transfered %d bytes per second\n", 3 * (10000000 / benchmark_cycles_writes));
+      }
+    }
 
     // print status screen
     print_msg = PRINT_MSG_STATUS;

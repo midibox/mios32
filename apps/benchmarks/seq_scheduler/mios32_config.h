@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDI Scheduler Benchmark"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T.Klose"
 
 
 // memory alloccation method:
@@ -31,14 +31,6 @@
 
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
-
-
-#if 0
-// optional COM output to display benchmark results
-#define MIOS32_UART1_ASSIGNMENT 2
-#define MIOS32_UART1_BAUDRATE 115200
-#define MIOS32_COM_DEFAULT_PORT UART1
-#endif
 
 
 #endif /* _MIOS32_CONFIG_H */
