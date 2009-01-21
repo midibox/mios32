@@ -226,7 +226,7 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
 
     MIOS32_IIC_TransferFinished();
 
-    return -3; // IIC error
+    return (error < 0) ? -3 : 0; // IIC error if status < 0
   } else {
     return 0; // no bytes to send -> no error
   }
