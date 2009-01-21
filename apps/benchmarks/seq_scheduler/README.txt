@@ -14,7 +14,10 @@ Required tools:
 
 Required hardware:
    o MBHP_CORE_STM32 or STM32 Primer
-   o LCD to display result
+
+Optional hardware:
+   o a LCD to display result
+     (however, MIOS Terminal output is much more verbose!)
 
 ===============================================================================
 
