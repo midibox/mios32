@@ -18,7 +18,7 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// sets the IIC bus frequency in kHz (400000 max!)
+// sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
 #ifndef MIOS32_IIC_BUS_FREQUENCY
 #define MIOS32_IIC_BUS_FREQUENCY 400000
 #endif
