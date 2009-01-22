@@ -16,13 +16,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-
+#include <jsw_rand.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
 // Reentrant "rand_r" not supported by MinGW, therefore we are using rand() instead
+// Now using portable jsw_rand() functions due to problems with newlib on windows/linux
 #define REENTRANT 0
 
 
@@ -53,9 +54,9 @@ u32 SEQ_RANDOM_Gen(u32 seed)
   return random_value;
 #else
   if( seed )
-	srand(seed);
+	jsw_seed(seed);
 	
-  return random_value = (u32)rand();
+  return random_value = (u32)jsw_rand();
 #endif
 }
 
@@ -76,12 +77,11 @@ u32 SEQ_RANDOM_Gen_Range(u32 min, u32 max)
     min = max;
     max = tmp;
   }
-
   // generate new random number
 #if REENTRANT
   rand_r(&random_value);
 #else
-  random_value = rand();
+  random_value = jsw_rand();
 #endif
 
   // return result within the given range

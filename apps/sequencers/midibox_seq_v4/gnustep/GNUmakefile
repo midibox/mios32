@@ -70,7 +70,7 @@ midibox_seq_v4_C_FILES=\
 	./build/seq_ui_opt.c \
 	./build/seq_ui_pattern.c \
 	./build/seq_ui_save.c \
-	./build/seq_ui_shortcut.c \
+	./build/seq_ui_stepsel.c \
 	./build/seq_ui_todo.c \
 	./build/seq_ui_trgasg.c \
 	./build/seq_ui_trkdir.c \
@@ -81,7 +81,8 @@ midibox_seq_v4_C_FILES=\
 	./build/seq_ui_trkrnd.c \
 	./build/seq_ui_trktran.c \
 	./build/seq_ui_util.c \
-	./build/printf-stdarg.c 
+	./build/printf-stdarg.c \
+	./build/jsw_rand.c
 
 midibox_seq_v4_RESOURCE_FILES=\
 	Info.plist
@@ -106,6 +107,7 @@ midibox_seq_v4_INCLUDE_DIRS=\
 	-I./../../../../mios32/common\
 	-I./../../../../modules/sequencer\
 	-I./../../../../modules/midifile\
+	-I./../../../../modules/random\
 	-I./../../../../drivers/gnustep \
 	-I../../../../drivers/gnustep/portmidi/pm_common \
 	-I../../../../drivers/gnustep/portmidi/porttime \
@@ -123,6 +125,7 @@ before-all::
 	cp ../../../../mios32/common/*.c build 
 	cp ../../../../modules/dosfs/*.c build 
 	cp ../../../../modules/midifile/*.c build 
+	cp ../../../../modules/random/*.c build 
 	cp ../../../../modules/sequencer/*.c build 
 	cp ../../../../drivers/gnustep/portmidi/pm_common/*.c build 
 	cp ../../../../drivers/gnustep/portmidi/pm_win/*.c build 
