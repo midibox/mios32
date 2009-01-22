@@ -107,5 +107,8 @@ include $(MIOS32_PATH)/modules/midifile/midifile.mk
 # DOSFS Driver
 include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
 
+# Portable randomize module
+include $(MIOS32_PATH)/modules/random/random.mk
+
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
