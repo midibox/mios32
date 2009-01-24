@@ -226,6 +226,7 @@ s32 SEQ_LCD_PrintString(char *str)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // prints a formatted string
 /////////////////////////////////////////////////////////////////////////////
@@ -266,10 +267,7 @@ s32 SEQ_LCD_PrintStringPadded(char *str, u32 width)
     char c = str[pos];
     if( c == 0 )
       fill = 1;
-    if( fill )
-      SEQ_LCD_PrintChar(' ');
-    else
-      SEQ_LCD_PrintChar(c);
+    SEQ_LCD_PrintChar(fill ? ' ' : c);
   }
 
   return 0; // no error
@@ -461,26 +459,27 @@ s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints the pattern name as a 20 character string
+// prints the pattern label as a 15 character string
+// The label is located at character position 5..19 of a pattern name
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintPatternName(seq_pattern_t pattern, char *pattern_name)
+s32 SEQ_LCD_PrintPatternLabel(seq_pattern_t pattern, char *pattern_name)
 {
   // if string only contains spaces, print pattern number instead
   int i;
   u8 found_char = 0;
-  for(i=0; i<20; ++i)
+  for(i=5; i<20; ++i)
     if( pattern_name[i] != ' ' ) {
       found_char = 1;
       break;
     }
 
   if( found_char )
-    SEQ_LCD_PrintFormattedString("%-20s", pattern_name);
+    SEQ_LCD_PrintStringPadded((char *)&pattern_name[5], 15);
   else {
     SEQ_LCD_PrintString("<Pattern ");
     SEQ_LCD_PrintPattern(pattern);
     SEQ_LCD_PrintChar('>');
-    SEQ_LCD_PrintSpaces(8);
+    SEQ_LCD_PrintSpaces(3);
   }
 
   return 0; // no error
@@ -488,26 +487,75 @@ s32 SEQ_LCD_PrintPatternName(seq_pattern_t pattern, char *pattern_name)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints the track name as a 20 character string
+// prints the pattern category as a 5 character string
+// The category is located at character position 0..4 of a pattern name
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintTrackName(u8 track, char *track_name)
+s32 SEQ_LCD_PrintPatternCategory(seq_pattern_t pattern, char *pattern_name)
+{
+  // if string only contains spaces, print "NoCat" instead
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<5; ++i)
+    if( pattern_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+
+  if( found_char )
+    SEQ_LCD_PrintStringPadded((char *)&pattern_name[0], 5);
+  else
+    SEQ_LCD_PrintString("NoCat");
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints the track label as a 15 character string
+// The label is located at character position 5..19 of a track name
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintTrackLabel(u8 track, char *track_name)
 {
   // if string only contains spaces, print track number instead
   int i;
   u8 found_char = 0;
-  for(i=0; i<20; ++i)
+  for(i=5; i<20; ++i)
     if( track_name[i] != ' ' ) {
       found_char = 1;
       break;
     }
 
   if( found_char )
-    SEQ_LCD_PrintFormattedString("%-20s", track_name);
+    SEQ_LCD_PrintStringPadded((char *)&track_name[5], 15);
   else {
     SEQ_LCD_PrintFormattedString("<Track #%d", track+1);
     SEQ_LCD_PrintChar('>');
     SEQ_LCD_PrintSpaces((track > 9) ? 9 : 10);
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints the track category as a 5 character string
+// The category is located at character position 0..4 of a track name
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintTrackCategory(u8 track, char *track_name)
+{
+  // if string only contains spaces, print "NoCat" instead
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<5; ++i)
+    if( track_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+
+  if( found_char )
+    SEQ_LCD_PrintStringPadded((char *)&track_name[0], 5);
+  else
+    SEQ_LCD_PrintString("NoCat");
 
   return 0; // no error
 }

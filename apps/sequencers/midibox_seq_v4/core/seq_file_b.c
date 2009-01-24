@@ -71,12 +71,12 @@
 // Size for 64 patterns, 64*4 tracks,
 // each consists of 16 parameter and 8 trigger layers (format is flexible enough to change these numbers)
 // parameter layer has 64, trigger layer 256 steps (for easier partitioning, see comments below)
-// 10 + 24 + 64 * (24 + 4 * (154 + 16*64 + 8*256/8))
-// 10 + 24 + 64 * (24 + 4 * (154 + 1024  + 8*256/8))
-// 10 + 24 + 64 * (24 + 4 * 1434)
-// 10 + 24 + 64 * (24 + 5736)
-// 10 + 24 + 368640
-// -> 368674 bytes (good that SD cards are so cheap today ;)
+// 10 + 24 + 64 * (24 + 4 * (214 + 16*64 + 8*256/8))
+// 10 + 24 + 64 * (24 + 4 * (214 + 1024  + 8*256/8))
+// 10 + 24 + 64 * (24 + 4 * 1494)
+// 10 + 24 + 64 * (24 + 5976)
+// 10 + 24 + 384000
+// -> 384034 bytes (good that SD cards are so cheap today ;)
 
 // note: allocating more bytes will result into more FAT operations when seeking a pattern position
 // e.g. I tried 16 layers/256 steps, and it took ca. 10 mS to find the starting sector
@@ -103,7 +103,7 @@ typedef struct {
 } seq_file_b_pattern_t;  // 24 bytes
 
 typedef struct {
-  char name[20];      // track name consists of 20 characters, no zero termination, patted with spaces
+  char name[80];      // track name consists of 80 characters, no zero termination, patted with spaces
   u8   num_p_layers;  // number of parameter layers (usually 3, we will provide more later)
   u8   num_t_layers;  // number of trigger layers (usually 3, we will provide more later)
   u16  p_layer_size;  // size per parameter layer, e.g. 256 steps
@@ -415,8 +415,8 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   u8 track;
   u8 target_track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++target_track) {
-    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 20);
-    seq_core_trk[target_track].name[20] = 0;
+    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 80);
+    seq_core_trk[target_track].name[80] = 0;
 
     u8 given_num_p_layers;
     status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &given_num_p_layers);
@@ -616,7 +616,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++source_track) {
     // write track name w/o zero terminator
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 20);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 80);
 
     // write number of parameter layers
     status |= SEQ_FILE_WriteByte(&fi, num_p_layers);

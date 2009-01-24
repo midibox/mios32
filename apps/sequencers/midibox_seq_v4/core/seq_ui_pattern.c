@@ -66,46 +66,40 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
-      ui_selected_item = ITEM_PATTERN_G1;
-      break;
-
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_PATTERN_G1;
-      break;
+      return -1; // not mapped
 
     case SEQ_UI_ENCODER_GP3:
-      ui_selected_item = ITEM_PATTERN_G2;
-      break;
-
     case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_PATTERN_G2;
+      ui_selected_item = ITEM_PATTERN_G1;
       break;
 
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_PATTERN_G3;
-      break;
-
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_PATTERN_G3;
-      break;
+      return -1; // not mapped
 
     case SEQ_UI_ENCODER_GP7:
-      ui_selected_item = ITEM_PATTERN_G4;
-      break;
-
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_PATTERN_G4;
+      ui_selected_item = ITEM_PATTERN_G2;
       break;
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
+      return -1; // not mapped
+
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = ITEM_PATTERN_G3;
+      break;
+
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
+      return -1; // not mapped
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      return -1; // not mapped
+      ui_selected_item = ITEM_PATTERN_G4;
+      break;
 
     case SEQ_UI_ENCODER_Datawheel:
       return -1; // not mapped yet
@@ -214,8 +208,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  >G1<       G2        G3        G4                                              
-  // 1:A1 ____ 1:C1 ____ 1:E1 ____ 1:G1 ____                                         
+  // G1: xxxxxxxxxxxxxxx  G2: xxxxxxxxxxxxxxxG3: xxxxxxxxxxxxxxx  G4: xxxxxxxxxxxxxxx
+  // >>> xxxxx 1:A1 ____      xxxxx 2:A1 ____    xxxxx 3:A1 ____      xxxxx 4:A1 ____                                         
 
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////
@@ -224,7 +218,7 @@ static s32 LCD_Handler(u8 high_prio)
     seq_core_trk_t *t = &seq_core_trk[0];
     for(track=0; track<16; ++t, ++track) {
       if( !(track % 4) )
-	SEQ_LCD_CursorSet(5 + 10*(track>>2), 1);
+	SEQ_LCD_CursorSet(15 + 20*(track>>2), 1);
 
       SEQ_LCD_PrintVBar(t->vu_meter >> 4);
     }
@@ -232,11 +226,31 @@ static s32 LCD_Handler(u8 high_prio)
     ///////////////////////////////////////////////////////////////////////////
     u8 group;
     for(group=0; group<4; ++group) {
-      SEQ_LCD_CursorSet(10*group, 0);
-      SEQ_LCD_PrintFormattedString((ui_selected_item == group) ? " >G%d<" : "  G%d ", group+1);
-      SEQ_LCD_PrintSpaces(5);
+      SEQ_LCD_CursorSet(20*group, 0);
+      if( group % 1 )
+	SEQ_LCD_PrintSpaces(1);
 
-      SEQ_LCD_CursorSet(10*group, 1);
+      SEQ_LCD_PrintFormattedString("G%d: ", group+1);
+      SEQ_LCD_PrintPatternLabel(seq_pattern[group], seq_pattern_name[group]);
+
+      if( !(group % 1) )
+	SEQ_LCD_PrintSpaces(1);
+
+      SEQ_LCD_CursorSet(20*group, 1);
+
+      if( group % 1 )
+	SEQ_LCD_PrintSpaces(1);
+
+      if( group == ui_selected_group )
+	SEQ_LCD_PrintString(">>>");
+      else
+	SEQ_LCD_PrintSpaces(3);
+
+      SEQ_LCD_PrintSpaces(1);
+      SEQ_LCD_PrintPatternCategory(seq_pattern[group], seq_pattern_name[group]);
+      SEQ_LCD_PrintSpaces(1);
+
+
       // shortly show current pattern
       seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + group) && ui_cursor_flash) ? seq_pattern[group] : selected_pattern[group];
       SEQ_LCD_PrintFormattedString("%d:", pattern.bank + 1);
@@ -251,15 +265,12 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintChar('*');
       else
 	SEQ_LCD_PrintChar(' ');
-      SEQ_LCD_CursorSet(10*group + 9, 1);
-      SEQ_LCD_PrintChar(' ');
-    }
 
-    // second LCD currently unused - will change once we have more tracks
-    SEQ_LCD_CursorSet(40, 0);
-    SEQ_LCD_PrintSpaces(40);
-    SEQ_LCD_CursorSet(40, 1);
-    SEQ_LCD_PrintSpaces(40);
+      if( !(group % 1) ) {
+	SEQ_LCD_CursorSet(20*group+19, 1);
+	SEQ_LCD_PrintSpaces(1);
+      }
+    }
   }
 
   return 0; // no error

@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
@@ -27,16 +28,29 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       3
+#define NUM_OF_ITEMS       11
 #define ITEM_GROUP         0
 #define ITEM_BANK          1
 #define ITEM_PATTERN       2
+#define ITEM_EDIT_CHAR     3
+#define ITEM_EDIT_CURSOR   4
+#define ITEM_EDIT_INS      5
+#define ITEM_EDIT_CLR      6
+#define ITEM_EDIT_UNDO     7
+#define ITEM_EDIT_PRESET_CATEG  8
+#define ITEM_EDIT_PRESET_LABEL  9
+#define ITEM_SAVE          10
 
 
 // used "In-Menu" messages
 #define MSG_DEFAULT 0x00
 #define MSG_SAVE    0x81
 #define MSG_NO_BANK 0x82
+
+
+// tmp.
+#define PRESET_LABELS_MAX     32
+#define PRESET_CATEGORIES_MAX 16
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,6 +60,12 @@ static seq_pattern_t save_pattern[SEQ_CORE_NUM_GROUPS];
 
 static u8 in_menu_msg;
 static u32 in_menu_msg_error_status;
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 CopyPresetCategory(u8 num);
+static s32 CopyPresetLabel(u8 num);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,6 +86,14 @@ static s32 LED_Handler(u16 *gp_leds)
 #else
     case ITEM_PATTERN:       *gp_leds = 0x0020; break;
 #endif
+    case ITEM_EDIT_CHAR:     *gp_leds = 0x0100; break;
+    case ITEM_EDIT_CURSOR:   *gp_leds = 0x0200; break;
+    case ITEM_EDIT_INS:      *gp_leds = 0x0400; break;
+    case ITEM_EDIT_CLR:      *gp_leds = 0x0800; break;
+    case ITEM_EDIT_UNDO:     *gp_leds = 0x1000; break;
+    case ITEM_EDIT_PRESET_CATEG:  *gp_leds = 0x2000; break;
+    case ITEM_EDIT_PRESET_LABEL:  *gp_leds = 0x4000; break;
+    case ITEM_SAVE:          *gp_leds = 0x8000; break;
   }
 
   return 0; // no error
@@ -100,21 +128,51 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
+      return -1; // not mapped
+
     case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = ITEM_EDIT_CHAR;
+      break;
+
     case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = ITEM_EDIT_CURSOR;
+      break;
+
     case SEQ_UI_ENCODER_GP11:
+      ui_selected_item = ITEM_EDIT_INS;
+      break;
+
     case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = ITEM_EDIT_CLR;
+      break;
+
     case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = ITEM_EDIT_UNDO;
+      break;
+
     case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_EDIT_PRESET_CATEG;
+      break;
+
     case SEQ_UI_ENCODER_GP15:
+      ui_selected_item = ITEM_EDIT_PRESET_LABEL;
+      break;
+
     case SEQ_UI_ENCODER_GP16:
-      return 0; // not used
+      ui_selected_item = ITEM_SAVE;
+      break;
   }
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GROUP:
-      return SEQ_UI_Var8_Inc(&ui_selected_group, 0, SEQ_CORE_NUM_GROUPS-1, incrementer);
+    case ITEM_GROUP: {
+      s32 status;
+      if( (status=SEQ_UI_Var8_Inc(&ui_selected_group, 0, SEQ_CORE_NUM_GROUPS-1, incrementer)) > 0 ) {
+	memcpy((char *)ui_edit_name, (char *)&seq_pattern_name[ui_selected_group], 20);
+      }
+      return status;
+    } break;
+
     case ITEM_BANK: {
       u8 tmp = save_pattern[ui_selected_group].bank;
       if( SEQ_UI_Var8_Inc(&tmp, 0, SEQ_FILE_B_NUM_BANKS-1, incrementer) ) {
@@ -123,6 +181,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0;
     } break;
+
     case ITEM_PATTERN: {
       u8 tmp = save_pattern[ui_selected_group].pattern;
       u8 max_patterns = SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank);
@@ -140,6 +199,75 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_EDIT_CHAR:
+      return SEQ_UI_Var8_Inc((u8 *)&ui_edit_name[ui_edit_name_cursor], 32, 127, incrementer);
+
+    case ITEM_EDIT_CURSOR:
+      return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 20-1, incrementer);
+
+    case ITEM_EDIT_INS: {
+      u8 field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
+      int i;
+      for(i=field_end; i>ui_edit_name_cursor; --i) {
+	ui_edit_name[i] = ui_edit_name[i-1];
+      }
+      ui_edit_name[ui_edit_name_cursor] = ' ';
+      return 1;
+    } break;
+
+    case ITEM_EDIT_CLR: {
+      u8 field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
+      int i;
+      for(i=ui_edit_name_cursor; i<field_end; ++i) {
+	ui_edit_name[i] = ui_edit_name[i+1];
+      }
+      ui_edit_name[field_end] = ' ';
+      return 1;
+    } break;
+
+    case ITEM_EDIT_UNDO:
+      memcpy((char *)ui_edit_name, (char *)&seq_pattern_name[ui_selected_group], 20);
+      return 1;
+
+    case ITEM_EDIT_PRESET_CATEG:
+      if( ui_edit_name_cursor >= 5 ) // set cursor to category field if required (more intuitive usage)
+	ui_edit_name_cursor = 0;
+
+      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, PRESET_CATEGORIES_MAX-1, incrementer) ) {
+	CopyPresetCategory(ui_edit_preset_num_category);
+	return 1;
+      }
+      return 0;
+
+    case ITEM_EDIT_PRESET_LABEL:
+      if( ui_edit_name_cursor < 5 ) // set cursor to category field if required (more intuitive usage)
+	ui_edit_name_cursor = 5;
+
+      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, PRESET_LABELS_MAX-1, incrementer) ) {
+	CopyPresetLabel(ui_edit_preset_num_label);
+	return 1;
+      }
+      return 0;
+
+    case ITEM_SAVE: {
+      s32 status;
+
+      memcpy((char *)&seq_pattern_name[ui_selected_group], (char *)ui_edit_name, 20);
+
+      if( (status=SEQ_PATTERN_Save(ui_selected_group, save_pattern[ui_selected_group])) < 0 ) {
+	// TODO: print error message
+      } else {
+	// TODO: print success message
+	// change pattern number directly
+	seq_pattern[ui_selected_group] = save_pattern[ui_selected_group];
+      }
+      in_menu_msg_error_status = -status; // we expect a value within byte range...
+      in_menu_msg = MSG_SAVE;
+      ui_hold_msg_ctr = 2000; // print for 2 seconds
+
+      return 1;
     } break;
   }
 
@@ -175,32 +303,36 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       break;
 
     case SEQ_UI_BUTTON_GP7:
+    case SEQ_UI_BUTTON_GP8:
       return 0;
-
-    case SEQ_UI_BUTTON_GP8: {
-      s32 status;
-      if( (status=SEQ_PATTERN_Save(ui_selected_group, save_pattern[ui_selected_group])) < 0 ) {
-	// TODO: print error message
-      } else {
-	// TODO: print success message
-	// change pattern number directly
-	seq_pattern[ui_selected_group] = save_pattern[ui_selected_group];
-      }
-      in_menu_msg_error_status = -status; // we expect a value within byte range...
-      in_menu_msg = MSG_SAVE;
-      ui_hold_msg_ctr = 2000; // print for 2 seconds
-      return 1;
-    } break;
 
     case SEQ_UI_BUTTON_GP9:
+      ui_selected_item = ITEM_EDIT_CHAR;
+      break;
+
     case SEQ_UI_BUTTON_GP10:
+      ui_selected_item = ITEM_EDIT_CURSOR;
+      break;
+
     case SEQ_UI_BUTTON_GP11:
+      return Encoder_Handler(SEQ_UI_ENCODER_GP11, 1);
+
     case SEQ_UI_BUTTON_GP12:
+      return Encoder_Handler(SEQ_UI_ENCODER_GP12, 1);
+
     case SEQ_UI_BUTTON_GP13:
+      return Encoder_Handler(SEQ_UI_ENCODER_GP13, 1);
+
     case SEQ_UI_BUTTON_GP14:
+      ui_selected_item = ITEM_EDIT_PRESET_CATEG;
+      break;
+
     case SEQ_UI_BUTTON_GP15:
+      ui_selected_item = ITEM_EDIT_PRESET_LABEL;
+      break;
+
     case SEQ_UI_BUTTON_GP16:
-      return 0;
+      return Encoder_Handler(SEQ_UI_ENCODER_GP16, 1);
 
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -241,13 +373,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Grp. Save Pattern    to Target     SAVE Name: xxxxxxxxxxxxxxxxxxxx              
-  // G1 (Track 11-11)/1:A1 -> 1:A1       IT  ToDo: Pattern name entry                                                        
+  // Grp. Save Pattern    to Target          Category: xxxxx   Label: xxxxxxxxxxxxxxx
+  // G1 (Track 11-11)/1:A1 -> 1:A1           Char  Cur  Ins  Clr Undo  Presets  SAVE 
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Grp. Save Pattern    to Target     SAVE ");
+  SEQ_LCD_PrintString("Grp. Save Pattern    to Target          ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -288,15 +420,22 @@ static s32 LCD_Handler(u8 high_prio)
 
   SEQ_LCD_PrintChar(SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank) ? ' ' : '!');
 
-  SEQ_LCD_PrintSpaces(6);
-  SEQ_LCD_PrintString("IT  ");
+  SEQ_LCD_PrintSpaces(10);
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
-  SEQ_LCD_PrintString("Name: ");
-  SEQ_LCD_PrintPatternName(seq_pattern[ui_selected_group], seq_pattern_name[ui_selected_group]);
-  SEQ_LCD_PrintSpaces(14);
+  SEQ_LCD_PrintString("Category: ");
+  SEQ_LCD_PrintPatternCategory(seq_pattern[ui_selected_group], ui_edit_name);
+  SEQ_LCD_PrintString("   Label: ");
+  SEQ_LCD_PrintPatternLabel(seq_pattern[ui_selected_group], ui_edit_name);
+
+  // insert flashing cursor
+  if( ui_cursor_flash ) {
+    SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 10 : 20) + ui_edit_name_cursor, 0);
+    SEQ_LCD_PrintChar('*');
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////
   // Save message
@@ -316,7 +455,7 @@ static s32 LCD_Handler(u8 high_prio)
         break;
     }
   } else {
-    SEQ_LCD_PrintString("ToDo: Pattern name entry                ");
+    SEQ_LCD_PrintString("Char  Cur  Ins  Clr Undo  Presets  SAVE ");
   }
 
   return 0; // no error
@@ -343,6 +482,70 @@ s32 SEQ_UI_SAVE_Init(u32 mode)
   in_menu_msg = MSG_DEFAULT;
   ui_hold_msg_ctr = 0;
   in_menu_msg_error_status = 0;
+
+  // initialize edit label
+  memcpy((char *)ui_edit_name, (char *)&seq_pattern_name[ui_selected_group], 20);
+  ui_edit_name_cursor = 0;
+  ui_edit_preset_num_category = 0;
+  ui_edit_preset_num_label = 0;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Temporary function which copies a preset category
+// will be loaded from SD-Card later
+/////////////////////////////////////////////////////////////////////////////
+static s32 CopyPresetCategory(u8 num)
+{
+  const char preset_categories[][6] = {
+    "     ",
+    "Synth",
+    "Bass ",
+    "Drums",
+    "Break",
+    "MBSID",
+    "MBFM ",
+    "Ctrl"
+  };
+
+  if( num < (sizeof(preset_categories)/6) ) {
+    memcpy((char *)&ui_edit_name[0], (char *)&preset_categories[num], 5);
+  } else {
+    memcpy((char *)&ui_edit_name[0], ".....", 5);
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Temporary function which copies a preset label
+// will be loaded from SD-Card later
+/////////////////////////////////////////////////////////////////////////////
+static s32 CopyPresetLabel(u8 num)
+{
+  const char preset_labels[][16] = {
+    "               ",
+    "Vintage        ",
+    "Synthline      ",
+    "Bassline       ",
+    "Pads           ",
+    "Lovely Arps    ",
+    "Electr. Drums  ",
+    "Heavy Beats    ",
+    "Simple Beats   ",
+    "CC Tracks      ",
+    "Experiments    ",
+    "Live Played    ",
+    "Transposer     "
+  };
+
+  if( num < (sizeof(preset_labels)/16) ) {
+    memcpy((char *)&ui_edit_name[5], (char *)&preset_labels[num], 15);
+  } else {
+    memcpy((char *)&ui_edit_name[5], "...............", 15);
+  }
 
   return 0; // no error
 }

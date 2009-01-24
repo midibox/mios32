@@ -136,9 +136,9 @@ s32 SEQ_CORE_Init(u32 mode)
     // play patterns normaly assigned for other tracks w/o inconsistent messages)
     // -> see SEQ_LCD_PrintTrackName()
     int i;
-    for(i=0; i<20; ++i)
+    for(i=0; i<80; ++i)
       seq_core_trk[track].name[i] = ' ';
-    seq_core_trk[track].name[20] = 0;
+    seq_core_trk[track].name[80] = 0;
   }
 
   // reset sequencer
