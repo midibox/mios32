@@ -28,10 +28,10 @@
 #define NUM_OF_ITEMS       9
 #define ITEM_GXTY          0
 #define ITEM_GATE          1
-#define ITEM_SKIP          2
-#define ITEM_ACCENT        3
+#define ITEM_ACCENT        2
+#define ITEM_ROLL          3
 #define ITEM_GLIDE         4
-#define ITEM_ROLL          5
+#define ITEM_SKIP          5
 #define ITEM_RANDOM_GATE   6
 #define ITEM_RANDOM_VALUE  7
 #define ITEM_NO_FX         8
@@ -48,10 +48,10 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
     case ITEM_GATE: *gp_leds = 0x0002; break;
-    case ITEM_SKIP: *gp_leds = 0x0004; break;
-    case ITEM_ACCENT: *gp_leds = 0x0008; break;
+    case ITEM_ACCENT: *gp_leds = 0x0004; break;
+    case ITEM_ROLL: *gp_leds = 0x0008; break;
     case ITEM_GLIDE: *gp_leds = 0x0010; break;
-    case ITEM_ROLL: *gp_leds = 0x0020; break;
+    case ITEM_SKIP: *gp_leds = 0x0020; break;
     case ITEM_RANDOM_GATE: *gp_leds = 0x0040; break;
     case ITEM_RANDOM_VALUE: *gp_leds = 0x0080; break;
     case ITEM_NO_FX: *gp_leds = 0x0100; break;
@@ -80,11 +80,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP3:
-      ui_selected_item = ITEM_SKIP;
+      ui_selected_item = ITEM_ACCENT;
       break;
 
     case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_ACCENT;
+      ui_selected_item = ITEM_ROLL;
       break;
 
     case SEQ_UI_ENCODER_GP5:
@@ -92,7 +92,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_ROLL;
+      ui_selected_item = ITEM_SKIP;
       break;
 
     case SEQ_UI_ENCODER_GP7:
@@ -121,14 +121,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:         return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_GATE:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_GATE, 0, 3, incrementer);
-    case ITEM_SKIP:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_SKIP, 0, 3, incrementer);
-    case ITEM_ACCENT:       return SEQ_UI_CC_Inc(SEQ_CC_ASG_ACCENT, 0, 3, incrementer);
-    case ITEM_GLIDE:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_GLIDE, 0, 3, incrementer);
-    case ITEM_ROLL:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_ROLL, 0, 3, incrementer);
-    case ITEM_RANDOM_GATE:  return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_GATE, 0, 3, incrementer);
-    case ITEM_RANDOM_VALUE: return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_VALUE, 0, 3, incrementer);
-    case ITEM_NO_FX:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_NO_FX, 0, 3, incrementer);
+    case ITEM_GATE:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_GATE, 0, 8, incrementer);
+    case ITEM_ACCENT:       return SEQ_UI_CC_Inc(SEQ_CC_ASG_ACCENT, 0, 8, incrementer);
+    case ITEM_ROLL:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_ROLL, 0, 8, incrementer);
+    case ITEM_GLIDE:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_GLIDE, 0, 8, incrementer);
+    case ITEM_SKIP:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_SKIP, 0, 8, incrementer);
+    case ITEM_RANDOM_GATE:  return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_GATE, 0, 8, incrementer);
+    case ITEM_RANDOM_VALUE: return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_VALUE, 0, 8, incrementer);
+    case ITEM_NO_FX:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_NO_FX, 0, 8, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -193,8 +193,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Gate Skip Acc. Glide Roll R.G  R.V No Fx                                  
-  // G1T1   A    -    B    -     C   -    -    -                                    
+  // Trk. Gate Acc. Roll Glide Skip R.G  R.V No Fx                                  
+  // G1T1   A    B    C    D     E   F    G    H                                    
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 

@@ -166,9 +166,6 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     // capture counter value
     benchmark_cycles_reads = MIOS32_STOPWATCH_ValueGet();
 
-    // turn off LED
-    MIOS32_BOARD_LED_Set(0xffffffff, 0);
-
 
     /////////////////////////////////////////////////////////////////////////
     // IIC Block Reads
@@ -182,9 +179,6 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 
     // capture counter value
     benchmark_cycles_block_reads = MIOS32_STOPWATCH_ValueGet();
-
-    // turn off LED
-    MIOS32_BOARD_LED_Set(0xffffffff, 0);
 
 
     /////////////////////////////////////////////////////////////////////////
@@ -200,13 +194,13 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     // capture counter value
     benchmark_cycles_writes = MIOS32_STOPWATCH_ValueGet();
 
-    // turn off LED
-    MIOS32_BOARD_LED_Set(0xffffffff, 0);
-
 
     /////////////////////////////////////////////////////////////////////////
     // Finished...
     /////////////////////////////////////////////////////////////////////////
+
+    // turn off LED
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);
 
     portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
 

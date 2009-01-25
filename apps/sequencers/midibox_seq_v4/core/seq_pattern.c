@@ -125,10 +125,10 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
     // TODO: stall here if previous pattern change hasn't been finished yet!
 
     // else request change
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     pattern.REQ = 1;
     seq_pattern_req[group] = pattern;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
 
     // pregenerate bpm ticks
     SEQ_CORE_AddForwardDelay(50); // mS
@@ -155,9 +155,9 @@ s32 SEQ_PATTERN_Handler(void)
 
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     if( seq_pattern_req[group].REQ ) {
-      MIOS32_IRQ_Disable();
+      portENTER_CRITICAL();
       seq_pattern_req[group].REQ = 0;
-      MIOS32_IRQ_Enable();
+      portEXIT_CRITICAL();
 
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
     }

@@ -130,10 +130,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
 
   // for GP encoders and Datawheel
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_LENGTH:        return SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
-    case ITEM_LOOP:          return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, SEQ_CORE_NUM_STEPS-1, incrementer);
+    case ITEM_LENGTH:        return SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, num_steps-1, incrementer);
+    case ITEM_LOOP:          return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, num_steps-1, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -241,16 +243,16 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_LENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    u16 max_len = SEQ_CORE_NUM_STEPS;
+    u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
     u16 len = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1;
     // TODO: a "center string" function would be useful here!
-    if( max_len >= 100 )
+    if( num_steps >= 100 )
       if( len >= 100 )
-	SEQ_LCD_PrintFormattedString("%3d/%3d", len, max_len);
+	SEQ_LCD_PrintFormattedString("%3d/%3d", len, num_steps);
       else
-	SEQ_LCD_PrintFormattedString("%2d/%3d ", len, max_len);
+	SEQ_LCD_PrintFormattedString("%2d/%3d ", len, num_steps);
     else
-      SEQ_LCD_PrintFormattedString(" %2d/%2d ", len, max_len);
+      SEQ_LCD_PrintFormattedString(" %2d/%2d ", len, num_steps);
     SEQ_LCD_PrintSpaces(1);
   }
 

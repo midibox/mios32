@@ -16,6 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
@@ -54,9 +56,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
     // access to seq_core_trk[] must be atomic!
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     seq_core_trk[encoder].state.MUTED = incrementer >= 0;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
 
     return 1; // value changed
   }
@@ -83,9 +85,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
     // access to seq_core_trk[] must be atomic!
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     seq_core_trk[button].state.MUTED ^= 1;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
 
     return 1; // value always changed
   }

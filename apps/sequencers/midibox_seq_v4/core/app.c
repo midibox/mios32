@@ -26,8 +26,6 @@
 #include "app.h"
 
 #include "seq_core.h"
-#include "seq_par.h"
-#include "seq_trg.h"
 #include "seq_led.h"
 #include "seq_ui.h"
 #include "seq_pattern.h"
@@ -115,10 +113,6 @@ void APP_Init(void)
 
   // init mixer page
   SEQ_MIXER_Init(0);
-
-  // initialize parameter/trigger layers
-  SEQ_PAR_Init(0);
-  SEQ_TRG_Init(0);
 
   // init sequencer core
   SEQ_CORE_Init(0);

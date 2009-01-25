@@ -30,7 +30,7 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_value, u8 change_gate);
+static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     u16 step;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( SEQ_UI_IsSelectedTrack(track) ) {
-	for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
+	u16 num_steps = SEQ_PAR_NumStepsGet(track);
+	for(step=0; step<num_steps; ++step) {
 	  change_gate = step == ui_selected_step;
 	  if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
 	    if( ChangeSingleEncValue(track, step, incrementer, forced_value, change_gate) >= 0 )
@@ -141,16 +142,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	  if( SEQ_UI_IsSelectedTrack(track) )
-	    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
+	  if( SEQ_UI_IsSelectedTrack(track) ) {
+	    u16 num_steps = SEQ_TRG_NumStepsGet(track);
+	    for(step=0; step<num_steps; ++step)
 	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	  }
       } else {
 	// a) ALL function active, but ALL button not pressed: invert complete trigger layer
 	u8 track;
 	u16 step;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	  if( SEQ_UI_IsSelectedTrack(track) ) {
-	    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step) {
+	    u16 num_steps = SEQ_TRG_NumStepsGet(track);
+	    for(step=0; step<num_steps; ++step) {
 	      u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer) ? 0 : 1;
 	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
 	    }
@@ -501,7 +505,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
         case SEQ_LAYER_ControlType_Chord1:
         case SEQ_LAYER_ControlType_Chord1_Velocity:
 	  if( layer_event.midi_package.velocity ) {
-	    SEQ_LCD_PrintFormattedString("S%2d", (SEQ_PAR_Get(visible_track, step, 0) % SEQ_CORE_NUM_STEPS) + 1);
+	    u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
+	    SEQ_LCD_PrintFormattedString("S%2d", (SEQ_PAR_Get(visible_track, step, 0) % num_steps) + 1);
 	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
 	  } else {
 	    SEQ_LCD_PrintString("----");
@@ -578,7 +583,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 // returns >= 0 if new value has been set (value change)
 // returns < 0 if no change
 /////////////////////////////////////////////////////////////////////////////
-static s32 ChangeSingleEncValue(u8 track, u8 step, s32 incrementer, s32 forced_value, u8 change_gate)
+static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate)
 {
   seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(track, ui_selected_par_layer);
 

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */; };
 		5203A4400EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */; };
+		520C95B60F2D1A890021C202 /* jsw_rand.c in Sources */ = {isa = PBXBuildFile; fileRef = 520C95B40F2D1A890021C202 /* jsw_rand.c */; };
 		521A64150EEC7AE90062CBBE /* seq_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A64130EEC7AE90062CBBE /* seq_random.c */; };
 		521A64410EEF29940062CBBE /* seq_ui_trkdiv.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A643F0EEF29940062CBBE /* seq_ui_trkdiv.c */; };
 		521A64420EEF29940062CBBE /* seq_ui_trklen.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A64400EEF29940062CBBE /* seq_ui_trklen.c */; };
@@ -136,6 +137,8 @@
 		5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SYS_Wrapper.m; sourceTree = "<group>"; };
 		5203A43E0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_DELAY_Wrapper.h; sourceTree = "<group>"; };
 		5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_DELAY_Wrapper.m; sourceTree = "<group>"; };
+		520C95B40F2D1A890021C202 /* jsw_rand.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsw_rand.c; path = ../../../../modules/random/jsw_rand.c; sourceTree = SOURCE_ROOT; };
+		520C95B50F2D1A890021C202 /* jsw_rand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsw_rand.h; path = ../../../../modules/random/jsw_rand.h; sourceTree = SOURCE_ROOT; };
 		521A64130EEC7AE90062CBBE /* seq_random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_random.c; path = ../core/seq_random.c; sourceTree = SOURCE_ROOT; };
 		521A64140EEC7AE90062CBBE /* seq_random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_random.h; path = ../core/seq_random.h; sourceTree = SOURCE_ROOT; };
 		521A643F0EEF29940062CBBE /* seq_ui_trkdiv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdiv.c; path = ../core/seq_ui_trkdiv.c; sourceTree = SOURCE_ROOT; };
@@ -402,6 +405,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				520C95B40F2D1A890021C202 /* jsw_rand.c */,
+				520C95B50F2D1A890021C202 /* jsw_rand.h */,
 				523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */,
 				52F714270F1ABB590043546F /* printf-stdarg.c */,
 				52988C2D0F1A84680046F70C /* seq_chord.c */,
@@ -760,6 +765,7 @@
 				52988C2F0F1A84680046F70C /* seq_chord.c in Sources */,
 				52F714280F1ABB590043546F /* printf-stdarg.c in Sources */,
 				523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */,
+				520C95B60F2D1A890021C202 /* jsw_rand.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -45,12 +45,18 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int num_steps = SEQ_PAR_NumStepsGet(visible_track);
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( (encoder >= SEQ_UI_ENCODER_GP1 && encoder <= SEQ_UI_ENCODER_GP16) ) {
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
+    if( encoder > (num_steps/16) )
+      return -1; // invalid step view
+
     // select new step view
     ui_selected_step_view = encoder;
 
@@ -69,7 +75,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, SEQ_CORE_NUM_STEPS/16, incrementer);
+    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, num_steps/16, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -139,13 +145,14 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int num_steps = SEQ_PAR_NumStepsGet(visible_track);
   int played_step = seq_core_trk[visible_track].step + 1;
   int played_view = (played_step-1) / 16;
 
   int i;
 
   SEQ_LCD_CursorSet(0, 0);
-  for(i=0; i<16; ++i)
+  for(i=0; i<(num_steps/16); ++i)
     if( i == ui_selected_step_view && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
     else if( i == played_view )
@@ -154,7 +161,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("%3d- ", i*16+1);
 
   SEQ_LCD_CursorSet(0, 1);
-  for(i=0; i<16; ++i)
+  for(i=0; i<(num_steps/16); ++i)
     if( i == ui_selected_step_view && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
     else if( i == played_view )
