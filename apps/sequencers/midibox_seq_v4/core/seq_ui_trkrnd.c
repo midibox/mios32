@@ -16,6 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
@@ -61,9 +63,9 @@ static const char in_menu_msg_str[3][9] = {
 
 
 // 0..63
-static u8 par_layer_range[SEQ_PAR_NUM_LAYERS] = { 20, 0, 0 }; // has to be extended once more layers are available
+static u8 par_layer_range[16] = { 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 // 0..14, 15=ALL
-static u8 trg_layer_range[SEQ_TRG_NUM_LAYERS] = { 15, 0, 0 }; // dito
+static u8 trg_layer_range[16] = { 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static u8 random_gen_req;
 
@@ -272,10 +274,10 @@ static s32 LCD_Handler(u8 high_prio)
 {
   // new requests?
   if( random_gen_req ) {
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     u8 req = random_gen_req;
     random_gen_req = 0;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
 
     if( req )
       RandomGenerator(req);
@@ -379,6 +381,8 @@ static s32 RandomGenerator(u8 req)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
+  // TODO: proper parametrisation depending on number of par/trg layers
+
   // update UNDO buffer
   SEQ_UI_UTIL_UndoUpdate(visible_track);
 
@@ -409,8 +413,9 @@ static s32 RandomGenerator(u8 req)
 	}
 
 	// set random values
-	u8 step;
-	for(step=0; step<SEQ_CORE_NUM_STEPS-1; ++step)
+	u16 step;
+	u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
+	for(step=0; step<num_steps; ++step)
 	  SEQ_PAR_Set(visible_track, step, layer, SEQ_RANDOM_Gen_Range(base-range, base+range));
 
 
@@ -425,8 +430,9 @@ static s32 RandomGenerator(u8 req)
 	if( !probability )
 	  continue;
 
-	u8 step;
-	for(step=0; step<SEQ_CORE_NUM_STEPS-1; ++step) {
+	u16 step;
+	u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+	for(step=0; step<num_steps; ++step) {
 	  if( probability == 15 ) // set all steps
 	    SEQ_TRG_Set(visible_track, step, layer, 1);
 	  else {

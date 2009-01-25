@@ -142,9 +142,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
     case ITEM_EVNT_MODE:     return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_MODE, 0, SEQ_LAYER_EVNTMODE_NUM-1, incrementer);
-    case ITEM_EVNT_CONST1:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST1, 0, 127, incrementer);
-    case ITEM_EVNT_CONST2:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST2, 0, 127, incrementer);
-    case ITEM_EVNT_CONST3:   return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_CONST3, 0, 127, incrementer);
+    case ITEM_EVNT_CONST1:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1, 0, 127, incrementer);
+    case ITEM_EVNT_CONST2:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1, 0, 127, incrementer);
+    case ITEM_EVNT_CONST3:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1, 0, 127, incrementer);
     case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
     case ITEM_MIDI_PORT: {
       u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -390,7 +390,7 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 static s32 PrintCValue(u8 track, u8 const_ix)
 {
-  u8 value = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_CONST1 + const_ix);
+  u8 value = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1 + 16*const_ix);
 
   switch( SEQ_LAYER_GetCControlType(track, const_ix) ) {
     case SEQ_LAYER_ControlType_None:
@@ -434,5 +434,5 @@ s32 CopyPreset(u8 track)
 {
   preset_copied = 1;
   old_evnt_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
-  return SEQ_LAYER_CopyPreset(track, 0); // 0=all settings
+  return SEQ_LAYER_CopyPreset(track, 0, 0); // 0=all settings, 0=triggers initialized
 }

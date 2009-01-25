@@ -198,9 +198,9 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
 	if( seq_cc_trk[track].mode.RESTART ) {
-	  MIOS32_IRQ_Disable(); // this operation should be atomic
+	  portENTER_CRITICAL();
 	  seq_core_trk[track].state.POS_RESET = 1;
-	  MIOS32_IRQ_Enable(); // this operation should be atomic
+	  portEXIT_CRITICAL();
 	}
 
       // and invalidate hold stacks

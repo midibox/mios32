@@ -36,6 +36,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// allows to enable malloc instead of static allocation of write buffer
+/////////////////////////////////////////////////////////////////////////////
+#define SEQ_FILE_WRITE_BUFFER_MALLOC 0
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +72,12 @@ static u32 volume_free_bytes;
 static VOLINFO vi;
 
 static s32 write_filepos;
+
+#if SEQ_FILE_WRITE_BUFFER_MALLOC
 static u8 *write_buffer;
+#else
+static u8 write_buffer[SECTOR_SIZE];
+#endif
 
 static u8 status_msg_ctr;
 
@@ -435,6 +446,10 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
   // reset filepos
   write_filepos = 0;
 
+#if SEQ_FILE_WRITE_BUFFER_MALLOC
+  // TK: write buffer now statically allocated for deterministic memory usage
+  // malloc option still optional
+
   // try to allocate buffer for write sector
   write_buffer = (u8 *)pvPortMalloc(SECTOR_SIZE);
   if( write_buffer == NULL ) {
@@ -443,6 +458,7 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
 #endif
     return SEQ_FILE_ERR_WRITE_MALLOC;
   }
+#endif
 
   // it's better to disable caching here, since different sectors are accessed
   DFS_CachingEnabledSet(0);
@@ -458,8 +474,11 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE] error opening file '%s' for writing!\n", filepath);
 #endif
+
+#if SEQ_FILE_WRITE_BUFFER_MALLOC
     // free memory
     vPortFree(write_buffer);
+#endif
 
     // enable cache again
     DFS_CachingEnabledSet(1);
@@ -596,8 +615,10 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
     }
   }
 
+#if SEQ_FILE_WRITE_BUFFER_MALLOC
   // free memory
   vPortFree(write_buffer);
+#endif
 
   // enable cache again
   DFS_CachingEnabledSet(1);

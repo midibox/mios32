@@ -59,7 +59,7 @@ extern s32 SEQ_LAYER_GetEvntOfParLayer(u8 track, u8 step, u8 par_layer, seq_laye
 extern seq_layer_ctrl_type_t SEQ_LAYER_GetVControlType(u8 track, u8 par_layer);
 extern seq_layer_ctrl_type_t SEQ_LAYER_GetCControlType(u8 track, u8 const_ix);
 
-extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers);
+extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared);
 
 
 /////////////////////////////////////////////////////////////////////////////

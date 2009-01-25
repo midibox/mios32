@@ -16,10 +16,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
 #include "seq_core.h"
+#include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_cc.h"
@@ -63,17 +65,17 @@ static u8 copypaste_begin;
 static u8 copypaste_end;
 
 static u8 copypaste_buffer_filled = 0;
-static u8 copypaste_par_layer[SEQ_PAR_NUM_LAYERS][SEQ_CORE_NUM_STEPS];
-static u8 copypaste_trg_layer[SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
+static u8 copypaste_par_layer[SEQ_PAR_MAX_BYTES];
+static u8 copypaste_trg_layer[SEQ_TRG_MAX_BYTES];
 
 static u8 undo_buffer_filled = 0;
 static u8 undo_track;
-static u8 undo_par_layer[SEQ_PAR_NUM_LAYERS][SEQ_CORE_NUM_STEPS];
-static u8 undo_trg_layer[SEQ_TRG_NUM_LAYERS][SEQ_CORE_NUM_STEPS/8];
+static u8 undo_par_layer[SEQ_PAR_MAX_BYTES];
+static u8 undo_trg_layer[SEQ_TRG_MAX_BYTES];
 
 static s8 move_enc;
-static u8 move_par_layer[2][SEQ_PAR_NUM_LAYERS];
-static u8 move_trg_layer[2];
+static u8 move_par_layer[2][16];
+static u16 move_trg_layer[2];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,10 +86,10 @@ static s32 PASTE_Track(u8 track);
 static s32 CLEAR_Track(u8 track);
 static s32 UNDO_Track(void);
 
-static s32 MOVE_StoreStep(u8 track, u8 step, u8 buffer, u8 clr_triggers);
-static s32 MOVE_RestoreStep(u8 track, u8 step, u8 buffer);
+static s32 MOVE_StoreStep(u8 track, u16 step, u8 buffer, u8 clr_triggers);
+static s32 MOVE_RestoreStep(u8 track, u16 step, u8 buffer);
 
-static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer);
+static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer);
 
 static s32 SEQ_UI_UTIL_MuteAllTracks(void);
 static s32 SEQ_UI_UTIL_UnMuteAllTracks(void);
@@ -149,7 +151,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case MSG_PASTE: {
       // change paste offset
-      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, SEQ_CORE_NUM_STEPS-1, incrementer) ) {
+      int num_steps = SEQ_PAR_NumStepsGet(visible_track);
+      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) ) {
 	SEQ_UI_SelectedStepSet(ui_selected_step); // set new visible step/view
 	return 1; // value changed
       }
@@ -180,7 +183,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	// increment step -> this will move it
 	u8 new_step = ui_selected_step;
-	if( SEQ_UI_Var8_Inc(&new_step, 0, SEQ_CORE_NUM_STEPS-1, incrementer) ) {
+	int num_steps = SEQ_PAR_NumStepsGet(visible_track);
+	if( SEQ_UI_Var8_Inc(&new_step, 0, num_steps-1, incrementer) ) {
 	  // restore old value
 	  MOVE_RestoreStep(visible_track, ui_selected_step, MOVE_BUFFER_OLD);
 	  // set new visible step/view
@@ -484,13 +488,8 @@ static s32 COPY_Track(u8 track)
   int step;
 
   // copy layers into buffer
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
-    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
-      copypaste_par_layer[layer][step] = SEQ_PAR_Get(track, step, layer);
-
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
-    for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
-      copypaste_trg_layer[layer][step] = SEQ_TRG_Get8(track, step, layer);
+  memcpy((u8 *)copypaste_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
+  memcpy((u8 *)copypaste_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
 
   // notify that copy&paste buffer is filled
   copypaste_buffer_filled = 1;
@@ -521,21 +520,27 @@ static s32 PASTE_Track(u8 track)
   }
 
   // copy layers from buffer
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer) {
+  int num_layers = SEQ_PAR_NumLayersGet(track);
+  int num_steps = SEQ_PAR_NumStepsGet(track);
+  for(layer=0; layer<num_layers; ++layer) {
     int step_offset = ui_selected_step;
     for(step=step_begin; step<=step_end; ++step, ++step_offset) {
-      if( step_offset < SEQ_CORE_NUM_STEPS )
-	SEQ_PAR_Set(track, step_offset, layer, copypaste_par_layer[layer][step]);
+      if( step_offset < num_steps ) {
+	u16 step_ix = layer * num_steps + step;
+	SEQ_PAR_Set(track, step_offset, layer, copypaste_par_layer[step_ix]);
+      }
     }
   }
 
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer) {
+  num_layers = SEQ_TRG_NumLayersGet(track);
+  num_steps = SEQ_TRG_NumStepsGet(track);
+  for(layer=0; layer<num_layers; ++layer) {
     int step_offset = ui_selected_step;
     for(step=step_begin; step<=step_end; ++step, ++step_offset) {
-      if( step_offset < SEQ_CORE_NUM_STEPS ) {
-	u8 step_ix = step>>3;
+      if( step_offset < (num_steps / 8) ) {
+	u8 step8_ix = layer * (num_steps / 8) + (step>>3);
 	u8 step_mask = (1 << (step&7));
-	SEQ_TRG_Set(track, step_offset, layer, (copypaste_trg_layer[layer][step_ix] & step_mask) ? 1 : 0);
+	SEQ_TRG_Set(track, step_offset, layer, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
       }
     }
   }
@@ -553,14 +558,10 @@ static s32 PASTE_Track(u8 track)
 static s32 CLEAR_Track(u8 track)
 {
   // copy preset
-  SEQ_LAYER_CopyPreset(track, seq_core_options.PASTE_CLR_ALL ? 0 : 1);
+  SEQ_LAYER_CopyPreset(track, seq_core_options.PASTE_CLR_ALL ? 0 : 1, 0);
 
   // clear all triggers
-  int layer;
-  int step;
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
-    for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
-      SEQ_TRG_Set8(track, step, layer, 0x00);
+  memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
 
   return 0; // no error
 }
@@ -578,13 +579,8 @@ static s32 UNDO_Track(void)
     return;
 
   // copy layers from buffer
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
-    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
-      SEQ_PAR_Set(undo_track, step, layer, undo_par_layer[layer][step]);
-
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
-    for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
-      SEQ_TRG_Set8(undo_track, step, layer, undo_trg_layer[layer][step]);
+  memcpy((u8 *)&seq_par_layer_value[undo_track], (u8 *)undo_par_layer, SEQ_PAR_MAX_BYTES);
+  memcpy((u8 *)&seq_trg_layer_value[undo_track], (u8 *)undo_trg_layer, SEQ_TRG_MAX_BYTES);
 
   return 0; // no error
 }
@@ -601,13 +597,8 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
   undo_track = track;
 
   // copy layers into buffer
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
-    for(step=0; step<SEQ_CORE_NUM_STEPS; ++step)
-      undo_par_layer[layer][step] = SEQ_PAR_Get(undo_track, step, layer);
-
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
-    for(step=0; step<(SEQ_CORE_NUM_STEPS/8); ++step)
-      undo_trg_layer[layer][step] = SEQ_TRG_Get8(undo_track, step, layer);
+  memcpy((u8 *)undo_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
+  memcpy((u8 *)undo_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
 
   // notify that undo buffer is filled
   undo_buffer_filled = 1;
@@ -619,16 +610,16 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 // Help functions for move step feature
 /////////////////////////////////////////////////////////////////////////////
-static s32 MOVE_StoreStep(u8 track, u8 step, u8 buffer, u8 clr_triggers)
+static s32 MOVE_StoreStep(u8 track, u16 step, u8 buffer, u8 clr_triggers)
 {
   int layer;
 
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
+  for(layer=0; layer<16; ++layer)
     move_par_layer[buffer][layer] = SEQ_PAR_Get(track, step, layer);
 
   move_trg_layer[buffer] = 0;
   if( !clr_triggers ) {
-    for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
+    for(layer=0; layer<16; ++layer)
       if( SEQ_TRG_Get(track, step, layer) )
 	move_trg_layer[buffer] |= (1 << layer);
   }
@@ -636,14 +627,14 @@ static s32 MOVE_StoreStep(u8 track, u8 step, u8 buffer, u8 clr_triggers)
   return 0; // no error
 }
 
-static s32 MOVE_RestoreStep(u8 track, u8 step, u8 buffer)
+static s32 MOVE_RestoreStep(u8 track, u16 step, u8 buffer)
 {
   int layer;
 
-  for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer)
+  for(layer=0; layer<16; ++layer)
     SEQ_PAR_Set(track, step, layer, move_par_layer[buffer][layer]);
 
-  for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer)
+  for(layer=0; layer<16; ++layer)
     SEQ_TRG_Set(track, step, layer, (move_trg_layer[buffer] & (1 << layer)) ? 1 : 0);
 
   return 0; // no error
@@ -653,7 +644,7 @@ static s32 MOVE_RestoreStep(u8 track, u8 step, u8 buffer)
 /////////////////////////////////////////////////////////////////////////////
 // Scroll function
 /////////////////////////////////////////////////////////////////////////////
-static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
+static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
 {
   int layer;
   int step;
@@ -663,13 +654,14 @@ static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
   if( first_step > last_step ) {
     // loop point behind track len -> rotate complete track
     first_step = 0;
-    last_step = SEQ_CORE_NUM_STEPS-1;
+    last_step = SEQ_TRG_NumStepsGet(track)-1;
   }
 
   if( first_step < last_step ) {
     if( incrementer >= 0 ) {
       // rightrotate parameter layers
-      for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer) {
+      int num_layers = SEQ_PAR_NumLayersGet(track);
+      for(layer=0; layer<num_layers; ++layer) {
 	u8 tmp = SEQ_PAR_Get(track, last_step, layer);
 	for(step=last_step; step>first_step; --step)
 	  SEQ_PAR_Set(track, step, layer, SEQ_PAR_Get(track, step-1, layer));
@@ -677,7 +669,8 @@ static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
       }
 
       // rightrotate trigger layers
-      for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer) {
+      num_layers = SEQ_TRG_NumLayersGet(track);
+      for(layer=0; layer<num_layers; ++layer) {
 	u8 tmp = SEQ_TRG_Get(track, last_step, layer);
 	for(step=last_step; step>first_step; --step)
 	  SEQ_TRG_Set(track, step, layer, SEQ_TRG_Get(track, step-1, layer));
@@ -685,15 +678,17 @@ static s32 SCROLL_Track(u8 track, u8 first_step, s32 incrementer)
       }
     } else {
       // leftrotate parameter layers
-      for(layer=0; layer<SEQ_PAR_NUM_LAYERS; ++layer) {
+      int num_layers = SEQ_PAR_NumLayersGet(track);
+      for(layer=0; layer<num_layers; ++layer) {
 	u8 tmp = SEQ_PAR_Get(track, first_step, layer);
 	for(step=first_step; step<last_step; ++step)
 	  SEQ_PAR_Set(track, step, layer, SEQ_PAR_Get(track, step+1, layer));
 	SEQ_PAR_Set(track, step, layer, tmp);
       }
 
-      // leftrotate triggerr layers
-      for(layer=0; layer<SEQ_TRG_NUM_LAYERS; ++layer) {
+      // leftrotate trigger layers
+      num_layers = SEQ_TRG_NumLayersGet(track);
+      for(layer=0; layer<num_layers; ++layer) {
 	u8 tmp = SEQ_TRG_Get(track, first_step, layer);
 	for(step=first_step; step<last_step; ++step)
 	  SEQ_TRG_Set(track, step, layer, SEQ_TRG_Get(track, step+1, layer));

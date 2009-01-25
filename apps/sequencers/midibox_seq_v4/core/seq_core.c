@@ -112,9 +112,6 @@ s32 SEQ_CORE_Init(u32 mode)
   // set initial seed of random generator
   SEQ_RANDOM_Gen(0xdeadbabe);
 
-  // reset track parameters
-  SEQ_CC_Init(0);
-
   // reset layers
   SEQ_LAYER_Init(0);
 

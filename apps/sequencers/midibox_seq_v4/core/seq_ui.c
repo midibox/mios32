@@ -215,13 +215,13 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 {
   if( page != ui_page ) {
     // disable hooks of previous page and request re-initialisation
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     ui_page = page;
     ui_button_callback = NULL;
     ui_encoder_callback = NULL;
     ui_led_callback = NULL;
     ui_lcd_callback = NULL;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
 
 #if DEFAULT_BEHAVIOUR_BUTTON_MENU
     seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
@@ -342,7 +342,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 #if 1
   MUTEX_SDCARD_TAKE;
 
-#if 0
+#if 1
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     SEQ_FILE_B_Create(bank);
@@ -1312,11 +1312,11 @@ s32 SEQ_UI_MENU_Handler_Periodic()
 
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
-    MIOS32_IRQ_Disable();
+    portENTER_CRITICAL();
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++track)
       if( t->vu_meter )
 	--t->vu_meter;
-    MIOS32_IRQ_Enable();
+    portEXIT_CRITICAL();
   }
 
   return 0;

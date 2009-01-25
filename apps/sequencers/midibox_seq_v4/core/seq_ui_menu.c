@@ -16,8 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-
 #include <seq_midi_out.h>
+#include "tasks.h"
 
 #include "seq_lcd.h"
 #include "seq_ui.h"
@@ -243,11 +243,11 @@ s32 SEQ_UI_MENU_StopwatchReset(void)
 s32 SEQ_UI_MENU_StopwatchCapture(void)
 {
   u32 value = MIOS32_STOPWATCH_ValueGet();
-  MIOS32_IRQ_Disable(); // should be atomic
+  portENTER_CRITICAL();
   stopwatch_value = value;
   if( value > stopwatch_value_max )
     stopwatch_value_max = value;
-  MIOS32_IRQ_Enable();
+  portEXIT_CRITICAL();
 
   return 0; // no error
 }

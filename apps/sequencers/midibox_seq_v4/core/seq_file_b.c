@@ -418,21 +418,17 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 80);
     seq_core_trk[target_track].name[80] = 0;
 
-    u8 given_num_p_layers;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &given_num_p_layers);
-    u8 num_p_layers = (given_num_p_layers > SEQ_PAR_NUM_LAYERS) ? SEQ_PAR_NUM_LAYERS : given_num_p_layers;
+    u8 num_p_layers;
+    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_layers);
 
-    u8 given_num_t_layers;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &given_num_t_layers);
-    u8 num_t_layers = (given_num_t_layers > SEQ_TRG_NUM_LAYERS) ? SEQ_TRG_NUM_LAYERS : given_num_t_layers;
+    u8 num_t_layers;
+    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_t_layers);
 
-    u16 given_p_layer_size;
-    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &given_p_layer_size);
-    u16 p_layer_size = (given_p_layer_size > SEQ_CORE_NUM_STEPS) ? SEQ_CORE_NUM_STEPS : given_p_layer_size;
+    u16 p_layer_size;
+    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &p_layer_size);
 
-    u16 given_t_layer_size;
-    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &given_t_layer_size);
-    u8 t_layer_size = (given_t_layer_size > (SEQ_CORE_NUM_STEPS/8)) ? (SEQ_CORE_NUM_STEPS/8) : given_t_layer_size;
+    u16 t_layer_size;
+    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &t_layer_size);
 
     u8 cc_buffer[128];
     status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, cc_buffer, 128);
@@ -446,13 +442,10 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s', P:%d,T:%d layers (P:%d,T:%d) P:%d,T:%d steps (P:%d,T:%d)\n", 
-	   track+1, target_track+1,
-	   seq_core_trk[target_track].name,
+    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, target_track+1, seq_core_trk[target_track].name);
+    DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d layers P:%d,T:%d steps\n", 
 	   num_p_layers, num_t_layers,
-	   given_num_p_layers, given_num_t_layers,
-	   p_layer_size, 8*t_layer_size,
-	   given_p_layer_size, 8*given_t_layer_size);
+	   p_layer_size, 8*t_layer_size);
 #endif
 
     // reading CCs
@@ -460,56 +453,39 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     for(cc=0; cc<128; ++cc)
       SEQ_CC_Set(target_track, cc, cc_buffer[cc]);
 
+    // partitionate parameter layer and clear all steps
+    SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers);
+
     // reading Parameter layers
-    if( num_p_layers && p_layer_size ) {
-      u8 layer;
-      for(layer=0; layer<given_num_p_layers; ++layer) {
-	if( layer < num_p_layers ) {
-	  SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&par_layer_value[target_track][layer], p_layer_size);
-	  
-	  if( p_layer_size < SEQ_CORE_NUM_STEPS ) {
-	    // fill remaining bytes with 0
-	    memset((u8 *)&par_layer_value[target_track][layer][p_layer_size], 0, SEQ_CORE_NUM_STEPS-p_layer_size);
-	  } else if( given_p_layer_size > p_layer_size ) {
-	    // read remaining bytes into dummy buffer
-	    int i; // read remaining bytes into dummy buffer
-	    u8 dummy;
-	    for(i=p_layer_size; i<given_p_layer_size; ++i)
-	      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
-	  }
-	} else {
-	  int i; // read remaining bytes into dummy buffer
-	  u8 dummy;
-	  for(i=0; i<given_p_layer_size; ++i)
-	    SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
-	}
-      }
+    u32 par_size = num_p_layers * p_layer_size;
+    u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
+    if( par_size_taken )
+      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_par_layer_value[target_track], par_size_taken);
+
+    // read remaining bytes into dummy buffer
+    if( par_size > par_size_taken ) {
+      u32 i;
+      u8 dummy;
+      for(i=par_size_taken; i<par_size; ++i)
+	SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
     }
-    
+
+
+    // partitionate trigger layer and clear all steps
+    SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers);
+
     // reading Trigger layers
-    if( num_t_layers && t_layer_size ) {
-      u8 layer;
-      for(layer=0; layer<given_num_t_layers; ++layer) {
-	if( layer < num_t_layers ) {
-	  SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&trg_layer_value[target_track][layer], t_layer_size);
-	  
-	  if( t_layer_size < (SEQ_CORE_NUM_STEPS/8) ) {
-	    // fill remaining bytes with 0
-	    memset((u8 *)&trg_layer_value[target_track][layer][t_layer_size], 0, (SEQ_CORE_NUM_STEPS/8)-t_layer_size);
-	  } else if( given_t_layer_size > t_layer_size ) {
-	    // read remaining bytes into dummy buffer
-	    int i; // read remaining bytes into dummy buffer
-	    u8 dummy;
-	    for(i=t_layer_size; i<given_t_layer_size; ++i)
-	      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
-	  }
-	} else {
-	  int i; // read remaining bytes into dummy buffer
-	  u8 dummy;
-	  for(i=0; i<given_t_layer_size; ++i)
-	    SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
-	}
-      }
+    u32 trg_size = num_t_layers * t_layer_size;
+    u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
+    if( trg_size_taken )
+      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_trg_layer_value[target_track], trg_size_taken);
+
+    // read remaining bytes into dummy buffer
+    if( trg_size > trg_size_taken ) {
+      u32 i;
+      u8 dummy;
+      for(i=trg_size_taken; i<trg_size; ++i)
+	SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
     }
   }
 
@@ -548,14 +524,10 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   // TODO: before writing into pattern slot, we should check if it already exists, and then
   // compare layer parameters with given constraints available in following defines/variables:
   u8 num_tracks = SEQ_CORE_NUM_TRACKS_PER_GROUP;
-  u8 num_p_layers = SEQ_PAR_NUM_LAYERS;
-  u16 num_t_layers = SEQ_TRG_NUM_LAYERS;
-  u16 p_layer_size = SEQ_CORE_NUM_STEPS;
-  u16 t_layer_size = SEQ_CORE_NUM_STEPS/8;
 
   // ok, we should at least check, if the resulting size is within the given range
   u16 expected_pattern_size = sizeof(seq_file_b_pattern_t) + 
-    num_tracks * (sizeof(seq_file_b_track_t) + num_p_layers*p_layer_size + num_t_layers*t_layer_size);
+    num_tracks * (sizeof(seq_file_b_track_t) + SEQ_PAR_MAX_BYTES + SEQ_TRG_MAX_BYTES);
   if( expected_pattern_size > info->header.pattern_size ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] Resulting pattern is too large for slot in bank (is: %d, max: %d)\n", 
@@ -615,6 +587,11 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   u8 track;
   u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++source_track) {
+    u16 num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 p_layer_size = SEQ_PAR_NumStepsGet(track);
+    u16 num_t_layers = SEQ_TRG_NumLayersGet(track);
+    u16 t_layer_size = SEQ_TRG_NumStepsGet(track)/8;
+
     // write track name w/o zero terminator
     status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 80);
 
@@ -636,10 +613,10 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
       status |= SEQ_FILE_WriteByte(&fi, SEQ_CC_Get(source_track, cc));
 
     // write parameter layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&par_layer_value[source_track], num_p_layers*p_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[source_track], num_p_layers*p_layer_size);
 
     // write trigger layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&trg_layer_value[source_track], num_t_layers*t_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[source_track], num_t_layers*t_layer_size);
   }
 
   // fill remaining bytes with zero if required

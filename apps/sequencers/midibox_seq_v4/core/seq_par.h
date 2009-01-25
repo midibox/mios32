@@ -21,7 +21,12 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_PAR_NUM_LAYERS  3
+// reserved memory for each track:
+#define SEQ_PAR_MAX_BYTES   1024
+// example configurations:
+//   - 256 steps, 4 parameter layers: 4*256 = 1024
+//   - 64 steps, 16 parameter layers: 16*64 = 1024
+// don't change this value - it directly affects the constraints of the bank file format!
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -35,8 +40,13 @@
 
 extern s32 SEQ_PAR_Init(u32 mode);
 
-extern s32 SEQ_PAR_Set(u8 track, u8 step, u8 par_layer, u8 value);
-extern s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer);
+extern s32 SEQ_PAR_TrackInit(u8 track, u16 steps, u16 par_layers);
+
+extern s32 SEQ_PAR_NumLayersGet(u8 track);
+extern s32 SEQ_PAR_NumStepsGet(u8 track);
+
+extern s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 value);
+extern s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,6 +55,6 @@ extern s32 SEQ_PAR_Get(u8 track, u8 step, u8 par_layer);
 
 // should only be directly accessed by SEQ_FILE_B, remaining functions should
 // use SEQ_PAR_Get/Set
-extern u8 par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_NUM_LAYERS][SEQ_CORE_NUM_STEPS];
+extern u8 seq_par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_MAX_BYTES];
 
 #endif /* _SEQ_PAR_H */
