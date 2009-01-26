@@ -366,14 +366,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type Steps/ParL/TrgL Port Chn. Glb LayA       Drum Note VelN VelA Edit     
-  // G1T1 Drum   64   1    16  USB1  10  yes Prb.        BD   C-1  100  127 Name DONE
+  // Trk. Type St/ParL St/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
+  // G1T1 Drum 64/2   128/2*16 USB1  10  yes Dly. Prb.   BD   C-1  100  127 Name DONE
 
-  // Trk. Type Steps/ParL/TrgL Port Chn. Glb            Drum Note VelN VelA Edit     
-  // G1T1 Drum  256   0    16  USB1  10  yes             BD   C-1  100  127 Name DONE
-
-  // Trk. Type Steps/ParL/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
-  // G1T1 Drum   64   2     8  USB1  12   no Dly. Prb.   SD   D-1  100  127 Name DONE
+  // Trk. Type St/ParL St/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
+  // G1T1 Drum 64/2   256/16   USB1  12   no Vel. Len.   SD   D-1  ---  --- Name DONE
 
 
   // Track Type "Drums":
@@ -391,26 +388,22 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   // Available Layer Constraints (Partitioning for 1024 bytes Par. memory, 2048 bits Trg. memory)
-  //    - 256 Steps with no Parameter Layer and 16  Trigger Layers A-P taken for Gate
-  //    - 256 Steps with no Parameter Layer and 2*8 Trigger Layers A-H taken for Gate and Accent 
-  //    -  64 Steps with  1 Parameter Layer and 16 Trigger Layers A-P
-  //    -  64 Steps with  1 Parameter Layer and 16 Trigger Layers A-H taken for Gate and Accent
-  //    -  64 Steps with  2 Parameter Layer and  8 Trigger Layers A-H
+  //    - 2 Parameter Layer with 64 steps and 2*16 Trigger Layers A-P with 128 steps taken for Gate and Accent
+  //    - 2 Parameter Layer with 64 steps and 16 Trigger Layers A-P with 256 steps taken for Gate
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Type Steps/ParL/TrgL Port Chn. ");
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    SEQ_LCD_PrintString("Glb ");
+    SEQ_LCD_PrintString("Trk. Type St/ParL St/TrgL Port Chn. Glb Layer  controls                Edit     ");
     SEQ_LCD_PrintString("LayA ");
     SEQ_LCD_PrintString("LayB ");
     SEQ_LCD_PrintString(" Drum Note VelN VelA Edit     ");
   } else {
-    SEQ_LCD_PrintString("    Layer  controls                Edit     ");
+    SEQ_LCD_PrintString("Trk. Type Steps/ParL/TrgL Port Chn.     Layer  controls                Edit     ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -431,10 +424,15 @@ static s32 LCD_Handler(u8 high_prio)
     const char event_mode_str[4][6] = { "Note ", "Chord", " CC  ", "Drum " };
     SEQ_LCD_PrintString(event_mode_str[event_mode]);
 
-    u16 steps = 256;
-    u8 par_l = 4;
-    u8 trg_l = 8;
-    SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", steps, par_l, trg_l);
+    u16 par_steps = 256;
+    u16 trg_steps = 256;
+    u8 par_layers = 4;
+    u8 trg_layers = 8;
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintFormattedString("64/2   128/2*16 ");
+    } else {
+      SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", par_steps, par_layers, trg_layers);
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////
