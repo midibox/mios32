@@ -562,6 +562,31 @@ s32 SEQ_LCD_PrintTrackCategory(u8 track, char *track_name)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints the drum instrument as a 5 character string
+// The drum name is located at character position drum * (0..4) of a track name
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintTrackDrum(u8 track, u8 drum, char *track_name)
+{
+  // if string only contains spaces, print "NoCat" instead
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<5; ++i)
+    if( track_name[5*drum+i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+
+  if( found_char )
+    SEQ_LCD_PrintStringPadded((char *)&track_name[5*drum], 5);
+  else {
+    SEQ_LCD_PrintFormattedString("Drm%c ", 'A'+drum);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints MIDI In port (4 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintMIDIInPort(mios32_midi_port_t port)

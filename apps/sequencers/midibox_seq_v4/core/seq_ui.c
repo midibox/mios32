@@ -342,7 +342,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 #if 1
   MUTEX_SDCARD_TAKE;
 
-#if 1
+#if 0
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     SEQ_FILE_B_Create(bank);
