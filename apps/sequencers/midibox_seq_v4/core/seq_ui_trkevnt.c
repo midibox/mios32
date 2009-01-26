@@ -376,6 +376,8 @@ static s32 LCD_Handler(u8 high_prio)
   // Track Type "Drums":
   //    usually 1 or 2 parameter layers for each trigger layer (drum instrument)
   //    assignable to Velocity/Gatelength/Delay/Probability only
+  //    special parameter for drum mode: "Roll/Flam Effect" (a selection of up 
+  //    to 128 different effects selectable for each step separately)
   //    (no CC, no Pitch Bender, no Loopback, as they don't work note-wise, but 
   //     only channel wise
   //     just send them from a different track)
