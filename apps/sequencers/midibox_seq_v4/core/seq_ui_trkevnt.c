@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Track clock divider page
+ * Track event page
  *
  * ==========================================================================
  *
@@ -26,15 +26,29 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
-#define ITEM_GXTY          0
-#define ITEM_EVNT_MODE     1
-#define ITEM_EVNT_CONST1   2
-#define ITEM_EVNT_CONST2   3
-#define ITEM_EVNT_CONST3   4
-#define ITEM_MIDI_CHANNEL  5
-#define ITEM_MIDI_PORT     6
-#define ITEM_PRESET        7
+// Note/Chord/CC
+#define NUM_OF_ITEMS_NORMAL 6
+#define ITEM_GXTY           0
+#define ITEM_EVENT_MODE     1
+#define ITEM_MIDI_PORT      2
+#define ITEM_MIDI_CHANNEL   3
+#define ITEM_LAYER_SELECT   4
+#define ITEM_LAYER_CONTROL  5
+
+// Drum
+#define NUM_OF_ITEMS_DRUM   11
+#define ITEM_GXTY           0
+#define ITEM_EVENT_MODE     1
+#define ITEM_MIDI_PORT      2
+#define ITEM_MIDI_CHANNEL   3
+#define ITEM_MIDI_CHANNEL_LOCAL 4
+#define ITEM_LAYER_A_SELECT 5
+#define ITEM_LAYER_B_SELECT 6
+#define ITEM_DRUM_SELECT    7
+#define ITEM_DRUM_NOTE      8
+#define ITEM_DRUM_VEL_N     9
+#define ITEM_DRUM_VEL_A     10
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,8 +63,13 @@ static s32 CopyPreset(u8 track);
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 event_mode; // seq_event_mode_t
+
+static u8 selected_layer;
+static u8 selected_drum;
+
 static u8 preset_copied;
-static u8 old_evnt_mode[SEQ_CORE_NUM_TRACKS];
+static u8 old_event_mode[SEQ_CORE_NUM_TRACKS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -59,24 +78,38 @@ static u8 old_evnt_mode[SEQ_CORE_NUM_TRACKS];
 static s32 LED_Handler(u16 *gp_leds)
 {
   if( ui_cursor_flash ) { // if flashing flag active: no LED flag set
-    // flash preset LEDs if current preset doesn't match with old preset
+    // flash DONE LED if current preset doesn't match with old preset
     // this notifies the user, that he should press the "copy preset" button
     u8 visible_track = SEQ_UI_VisibleTrackGet();
-    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) )
-      *gp_leds = 0xc000;
+    if( old_event_mode[visible_track] != event_mode )
+      *gp_leds = 0x8000;
 
     return 0;
   }
 
-  switch( ui_selected_item ) {
-    case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_EVNT_MODE: *gp_leds = 0x001e; break;
-    case ITEM_EVNT_CONST1: *gp_leds = 0x0020; break;
-    case ITEM_EVNT_CONST2: *gp_leds = 0x0040; break;
-    case ITEM_EVNT_CONST3: *gp_leds = 0x0080; break;
-    case ITEM_MIDI_CHANNEL: *gp_leds = 0x0100; break;
-    case ITEM_MIDI_PORT: *gp_leds = 0x0200; break;
-    // case ITEM_PRESET: *gp_leds = 0xc000; break;
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    switch( ui_selected_item ) {
+      case ITEM_GXTY: *gp_leds = 0x0001; break;
+      case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
+      case ITEM_MIDI_PORT: *gp_leds = 0x0020; break;
+      case ITEM_MIDI_CHANNEL: *gp_leds = 0x0040; break;
+      case ITEM_MIDI_CHANNEL_LOCAL: *gp_leds = 0x0080; break;
+      case ITEM_LAYER_A_SELECT: *gp_leds = 0x0100; break;
+      case ITEM_LAYER_B_SELECT: *gp_leds = 0x0200; break;
+      case ITEM_DRUM_SELECT: *gp_leds = 0x0400; break;
+      case ITEM_DRUM_NOTE: *gp_leds = 0x0800; break;
+      case ITEM_DRUM_VEL_N: *gp_leds = 0x1000; break;
+      case ITEM_DRUM_VEL_A: *gp_leds = 0x2000; break;
+    }
+  } else {
+    switch( ui_selected_item ) {
+      case ITEM_GXTY: *gp_leds = 0x0001; break;
+      case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
+      case ITEM_MIDI_PORT: *gp_leds = 0x0020; break;
+      case ITEM_MIDI_CHANNEL: *gp_leds = 0x0040; break;
+      case ITEM_LAYER_SELECT: *gp_leds = 0x0100; break;
+      case ITEM_LAYER_CONTROL: *gp_leds = 0x3e00; break;
+    }
   }
 
   return 0; // no error
@@ -103,49 +136,59 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP3:
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_EVNT_MODE;
+      ui_selected_item = ITEM_EVENT_MODE;
       break;
 
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_EVNT_CONST1;
-      break;
-
-    case SEQ_UI_ENCODER_GP7:
-      ui_selected_item = ITEM_EVNT_CONST2;
-      break;
-
-    case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_EVNT_CONST3;
-      break;
-
-    case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_MIDI_CHANNEL;
-      break;
-
-    case SEQ_UI_ENCODER_GP10:
       ui_selected_item = ITEM_MIDI_PORT;
       break;
 
+    case SEQ_UI_ENCODER_GP7:
+      ui_selected_item = ITEM_MIDI_CHANNEL;
+      break;
+
+    case SEQ_UI_ENCODER_GP8:
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	ui_selected_item = ITEM_MIDI_CHANNEL_LOCAL;
+      else
+	return -1;
+      break;
+
+    case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_A_SELECT : ITEM_LAYER_SELECT;
+      break;
+
+    case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_B_SELECT : ITEM_LAYER_CONTROL;
+      break;
+
     case SEQ_UI_ENCODER_GP11:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_SELECT : ITEM_LAYER_CONTROL;
+      break;
+
     case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_NOTE : ITEM_LAYER_CONTROL;
+      break;
+
     case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_N : ITEM_LAYER_CONTROL;
+      break;
+
     case SEQ_UI_ENCODER_GP14:
-      return -1; // not mapped
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_A : ITEM_LAYER_CONTROL;
+      break;
 
     case SEQ_UI_ENCODER_GP15:
+      return -1; // not mapped to encoder
+
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_PRESET;
-      break;
+      return -1; // not mapped to encoder
   }
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_EVNT_MODE:     return SEQ_UI_CC_Inc(SEQ_CC_MIDI_EVNT_MODE, 0, SEQ_LAYER_EVNTMODE_NUM-1, incrementer);
-    case ITEM_EVNT_CONST1:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1, 0, 127, incrementer);
-    case ITEM_EVNT_CONST2:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1, 0, 127, incrementer);
-    case ITEM_EVNT_CONST3:   return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1, 0, 127, incrementer);
-    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
+    case ITEM_EVENT_MODE:    return SEQ_UI_Var8_Inc(&event_mode, 0, 3, incrementer);
     case ITEM_MIDI_PORT: {
       u8 visible_track = SEQ_UI_VisibleTrackGet();
       mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
@@ -157,7 +200,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0; // value not changed
     } break;
-    case ITEM_PRESET:        CopyPreset(SEQ_UI_VisibleTrackGet()); return 1;
+    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
+  }
+
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    switch( ui_selected_item ) {
+      case ITEM_DRUM_SELECT:   return SEQ_UI_Var8_Inc(&selected_drum, 0, 15, incrementer);
+    }
+  } else {
+    switch( ui_selected_item ) {
+      case ITEM_LAYER_SELECT:  return SEQ_UI_Var8_Inc(&selected_layer, 0, 15, incrementer);
+    }
   }
 
   return -1; // invalid or unsupported encoder
@@ -178,58 +231,86 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( depressed ) return 0; // ignore when button depressed
 
   switch( button ) {
-    case SEQ_UI_BUTTON_GP1:
+    case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
-      return 0; // value hasn't been changed
+      return 1;
 
-    case SEQ_UI_BUTTON_GP2:
-    case SEQ_UI_BUTTON_GP3:
-    case SEQ_UI_BUTTON_GP4:
-    case SEQ_UI_BUTTON_GP5:
-      ui_selected_item = ITEM_EVNT_MODE;
-      return 0; // value hasn't been changed
+    case SEQ_UI_ENCODER_GP2:
+    case SEQ_UI_ENCODER_GP3:
+    case SEQ_UI_ENCODER_GP4:
+    case SEQ_UI_ENCODER_GP5:
+      ui_selected_item = ITEM_EVENT_MODE;
+      return 1;
 
-    case SEQ_UI_BUTTON_GP6:
-      ui_selected_item = ITEM_EVNT_CONST1;
-      return 0; // value hasn't been changed
-
-    case SEQ_UI_BUTTON_GP7:
-      ui_selected_item = ITEM_EVNT_CONST2;
-      return 0; // value hasn't been changed
-
-    case SEQ_UI_BUTTON_GP8:
-      ui_selected_item = ITEM_EVNT_CONST3;
-      return 0; // value hasn't been changed
-
-    case SEQ_UI_BUTTON_GP9:
-      ui_selected_item = ITEM_MIDI_CHANNEL;
-      return 0; // value hasn't been changed
-
-    case SEQ_UI_BUTTON_GP10:
+    case SEQ_UI_ENCODER_GP6:
       ui_selected_item = ITEM_MIDI_PORT;
-      return 0; // value hasn't been changed
+      return 1;
 
-    case SEQ_UI_BUTTON_GP11:
-    case SEQ_UI_BUTTON_GP12:
-    case SEQ_UI_BUTTON_GP13:
-    case SEQ_UI_BUTTON_GP14:
-      return -1; // not mapped
+    case SEQ_UI_ENCODER_GP7:
+      ui_selected_item = ITEM_MIDI_CHANNEL;
+      return 1;
 
-    case SEQ_UI_BUTTON_GP15:
-    case SEQ_UI_BUTTON_GP16:
+    case SEQ_UI_ENCODER_GP8:
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	ui_selected_item = ITEM_MIDI_CHANNEL_LOCAL;
+      else
+	return -1;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_A_SELECT : ITEM_LAYER_SELECT;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_B_SELECT : ITEM_LAYER_CONTROL;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP11:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_SELECT : ITEM_LAYER_CONTROL;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_NOTE : ITEM_LAYER_CONTROL;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_N : ITEM_LAYER_CONTROL;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_A : ITEM_LAYER_CONTROL;
+      return 1;
+
+    case SEQ_UI_ENCODER_GP15:
+      // TODO
+      return 1;
+
+    case SEQ_UI_ENCODER_GP16:
       // ui_selected_item = ITEM_PRESET;
       CopyPreset(SEQ_UI_VisibleTrackGet());
       return 1; // value has been changed
 
+
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
-      if( ++ui_selected_item >= NUM_OF_ITEMS )
-	ui_selected_item = 0;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	if( ++ui_selected_item >= NUM_OF_ITEMS_DRUM )
+	  ui_selected_item = 0;
+      } else {
+	if( ++ui_selected_item >= NUM_OF_ITEMS_NORMAL )
+	  ui_selected_item = 0;
+      }
+
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Left:
-      if( ui_selected_item == 0 )
-	ui_selected_item = NUM_OF_ITEMS-1;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	if( ui_selected_item == 0 )
+	  ui_selected_item = NUM_OF_ITEMS_DRUM-1;
+      } else {
+	if( ui_selected_item == 0 )
+	  ui_selected_item = NUM_OF_ITEMS_NORMAL-1;
+      }
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:
@@ -256,28 +337,81 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Layer Assignments:xx Val1 Val2 Val3Chn. Port                     >> COPY <<
-  // G1T1 A:Chrd B:Vel. C:Len.  127  127  127 16  IIC2 (not available)     > PRESET <
+  // Trk. Type Steps/ParL/TrgL Port Chn.     Layer  controls                Edit      
+  // G1T1 Note  256   4     8  IIC2  12        D    Prob                    Name DONE
+
+  // Trk. Type Steps/ParL/TrgL Port Chn.     Layer  controls                Edit      
+  // G1T1 Note  256   4     8  IIC2  12        D    CC #001 ModWheel        Name DONE
+
+  // Track Type "Note", Chord" and "CC":
+  // Note: Parameter Layer A/B/C statically assigned to Note Number/Velocity/Length
+  //       Parameter Layer D..P can be mapped to
+  //       - additional Notes (e.g. for poly recording)
+  //       - Base note (directly forwarded to Transposer, e.g. for Force-to-Scale or Chords)
+  //       - CC (Number 000..127 assignable, GM controller name will be displayed)
+  //       - Pitch Bender
+  //       - Loopback (Number 000..127 assignable, name will be displayed)
+  //       - Delay (+/- 96 ticks @384 ppqn)
+  //       - Probability (100%..0%)
+  // Chord: same like Note, but predefined Chords will be played
+  // CC: Layer A/B/C play CCs (or other parameters) as well - no note number, no velocity, no length
+
+  // Available Layer Constraints (Partitioning for 1024 bytes Par. memory, 2048 bits Trg. memory)
+  //    - 256 Steps with  4 Parameter Layers A-D and 8 Trigger Layers A-H
+  //    - 128 Steps with  8 Parameter Layers A-H and 8 Trigger Layers A-H
+  //    -  64 Steps with 16 Parameter Layers A-P and 8 Trigger Layers A-H
+
+
+  // layout:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  // Trk. Type Steps/ParL/TrgL Port Chn. Glb LayA       Drum Note VelN VelA Edit     
+  // G1T1 Drum   64   1    16  USB1  10  yes Prb.        BD   C-1  100  127 Name DONE
+
+  // Trk. Type Steps/ParL/TrgL Port Chn. Glb            Drum Note VelN VelA Edit     
+  // G1T1 Drum  256   0    16  USB1  10  yes             BD   C-1  100  127 Name DONE
+
+  // Trk. Type Steps/ParL/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
+  // G1T1 Drum   64   2     8  USB1  12   no Dly. Prb.   SD   D-1  100  127 Name DONE
+
+
+  // Track Type "Drums":
+  //    usually 1 or 2 parameter layers for each trigger layer (drum instrument)
+  //    assignable to Velocity/Delay/Probability only
+  //    (no CC, no Pitch Bender, no Loopback, as they don't work note-wise, but 
+  //     only channel wise
+  //     just send them from a different track)
+
+  // Each drum instrument provides 4 constant parameters for:
+  //   - Note Number
+  //   - MIDI Channel (1-16) - optionally, we can select a "local" channel definition for the instrument
+  //   - Velocity Normal (if not taken from Parameter Layer)
+  //   - Velocity Accented (if not taken from Parameter Layer)
+
+
+  // Available Layer Constraints (Partitioning for 1024 bytes Par. memory, 2048 bits Trg. memory)
+  //    - 256 Steps with no Parameter Layer and 16  Trigger Layers A-P taken for Gate
+  //    - 256 Steps with no Parameter Layer and 2*8 Trigger Layers A-H taken for Gate and Accent 
+  //    -  64 Steps with  1 Parameter Layer and 16 Trigger Layers A-P
+  //    -  64 Steps with  1 Parameter Layer and 16 Trigger Layers A-H taken for Gate and Accent
+  //    -  64 Steps with  2 Parameter Layer and  8 Trigger Layers A-H
+
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 evnt_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Layer Assignments:");
-  ///
-  if( ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
-  } else {
-    SEQ_LCD_PrintFormattedString("%2d", evnt_mode + 1);
-  }
-  SEQ_LCD_PrintFormattedString(" %s %s %s", 
-				  SEQ_LAYER_CTypeStr(evnt_mode, 0),
-				  SEQ_LAYER_CTypeStr(evnt_mode, 1),
-				  SEQ_LAYER_CTypeStr(evnt_mode, 2));
-  ///
-  SEQ_LCD_PrintString("Chn. Port                     "); // ">> COPY <<" will be printed later
+  SEQ_LCD_PrintString("Trk. Type Steps/ParL/TrgL Port Chn. ");
 
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    SEQ_LCD_PrintString("Glb ");
+    SEQ_LCD_PrintString("LayA ");
+    SEQ_LCD_PrintString("LayB ");
+    SEQ_LCD_PrintString(" Drum Note VelN VelA Edit     ");
+  } else {
+    SEQ_LCD_PrintString("    Layer  controls                Edit     ");
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -290,27 +424,26 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "A:");
-  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 0));
-  SEQ_LCD_PrintSpaces(1);
 
-  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "B:");
-  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 1));
-  SEQ_LCD_PrintSpaces(1);
+  if( ui_selected_item == ITEM_EVENT_MODE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(21);
+  } else {
+    const char event_mode_str[4][6] = { "Note ", "Chord", " CC  ", "Drum " };
+    SEQ_LCD_PrintString(event_mode_str[event_mode]);
 
-  SEQ_LCD_PrintString((ui_selected_item == ITEM_EVNT_MODE && ui_cursor_flash) ? "  " : "C:");
-  SEQ_LCD_PrintString(SEQ_LAYER_VTypeStr(evnt_mode, 2));
-
+    u16 steps = 256;
+    u8 par_l = 4;
+    u8 trg_l = 8;
+    SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", steps, par_l, trg_l);
+  }
 
   ///////////////////////////////////////////////////////////////////////////
-  int i;
-  for(i=0; i<3; ++i) {
-    if( ui_selected_item == (ITEM_EVNT_CONST1+i) && ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(5);
-    } else {
-      SEQ_LCD_PrintSpaces(1);
-      PrintCValue(visible_track, i);
-    }
+  mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+  if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintMIDIOutPort(port);
+    SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -321,44 +454,79 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-  if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintMIDIOutPort(port);
-  }
-  ;
-  SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutCheckAvailable(port) ? " (available)    " : " (not available)");
-  SEQ_LCD_PrintSpaces(5);
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  if( preset_copied ) {
-    SEQ_LCD_CursorSet(70, 0);
-    SEQ_LCD_PrintString("> PRESET <");
-    SEQ_LCD_CursorSet(70, 1);
-    SEQ_LCD_PrintString("> COPIED <");
-  } else {
-    if( old_evnt_mode[visible_track] != SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVNT_MODE) ) {
-      SEQ_LCD_CursorSet(70, 0);
-      if( !ui_cursor_flash )
-	SEQ_LCD_PrintSpaces(10);
-      else
-	SEQ_LCD_PrintString("!! COPY !!");
-
-      SEQ_LCD_CursorSet(70, 1);
-      if( !ui_cursor_flash )
-	SEQ_LCD_PrintSpaces(10);
-      else
-	SEQ_LCD_PrintString("! PRESET !");
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_MIDI_CHANNEL_LOCAL && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(4);
     } else {
-      SEQ_LCD_CursorSet(70, 0);
-      SEQ_LCD_PrintString(">> COPY <<");
-      SEQ_LCD_CursorSet(70, 1);
-      SEQ_LCD_PrintString("> PRESET <");
+      SEQ_LCD_PrintFormattedString(" no ");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LAYER_A_SELECT && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintFormattedString("Dly. ");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LAYER_B_SELECT && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(6);
+    } else {
+      SEQ_LCD_PrintFormattedString("Par.  ");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_DRUM_SELECT && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintTrackDrum(visible_track, selected_drum, (char *)seq_core_trk[visible_track].name);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_PrintSpaces(1);
+    if( ui_selected_item == ITEM_DRUM_NOTE && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintNote(0x24);
+    }
+    SEQ_LCD_PrintSpaces(1);
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintFormattedString(" %3d ", 100);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_DRUM_VEL_A && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintFormattedString(" %3d ", 127);
+    }
+  } else {
+    /////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_PrintSpaces(4);
+
+    /////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_PrintSpaces(2);
+    if( ui_selected_item == ITEM_LAYER_SELECT && ui_cursor_flash ) {
+      SEQ_LCD_PrintChar(' ');
+    } else {
+      SEQ_LCD_PrintChar('A' + selected_layer);
+    }
+    SEQ_LCD_PrintSpaces(4);
+
+    /////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LAYER_CONTROL && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(24);
+    } else {
+      SEQ_LCD_PrintString("CC #001 ModWheel        ");
     }
   }
 
+  SEQ_LCD_PrintString("Name DONE");
 
   return 0; // no error
 }
@@ -379,12 +547,13 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
 
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    old_evnt_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
+    old_event_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
 
   return 0; // no error
 }
 
 
+#if 0
 /////////////////////////////////////////////////////////////////////////////
 // Help function to print a constant value (4 characters)
 /////////////////////////////////////////////////////////////////////////////
@@ -425,7 +594,7 @@ static s32 PrintCValue(u8 track, u8 const_ix)
 
   return 0; // no error
 }
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Copies preset
@@ -433,6 +602,6 @@ static s32 PrintCValue(u8 track, u8 const_ix)
 s32 CopyPreset(u8 track)
 {
   preset_copied = 1;
-  old_evnt_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
+  old_event_mode[track] = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
   return SEQ_LAYER_CopyPreset(track, 0, 0); // 0=all settings, 0=triggers initialized
 }

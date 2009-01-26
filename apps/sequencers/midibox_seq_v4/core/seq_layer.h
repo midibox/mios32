@@ -33,6 +33,14 @@ typedef struct {
 
 
 typedef enum {
+  SEQ_EVENT_MODE_Note,
+  SEQ_EVENT_MODE_Chord,
+  SEQ_EVENT_MODE_CC,
+  SEQ_EVENT_MODE_Drum
+} seq_event_mode_t;
+
+
+typedef enum {
   SEQ_LAYER_ControlType_None,
   SEQ_LAYER_ControlType_Note,
   SEQ_LAYER_ControlType_Velocity,

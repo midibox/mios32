@@ -211,6 +211,13 @@ static s32 LCD_Handler(u8 high_prio)
   // G1: xxxxxxxxxxxxxxx  G2: xxxxxxxxxxxxxxxG3: xxxxxxxxxxxxxxx  G4: xxxxxxxxxxxxxxx
   // >>> xxxxx 1:A1 ____      xxxxx 2:A1 ____    xxxxx 3:A1 ____      xxxxx 4:A1 ____                                         
 
+
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  // G1: Breakbeats 2     G2: Lovely Arps 5  G3: My fav.Bassline  G4: Transposer Emaj 
+  // >>> Drums 1:B2 ____      Synth 2:A5 ____    Bass  3:B1 ____      Ctrl 4:C1 ____                                         
+
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////
     // frequently update VU meters
