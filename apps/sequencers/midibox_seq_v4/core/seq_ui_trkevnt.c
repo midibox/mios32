@@ -378,7 +378,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   // Track Type "Drums":
   //    usually 1 or 2 parameter layers for each trigger layer (drum instrument)
-  //    assignable to Velocity/Delay/Probability only
+  //    assignable to Velocity/Gatelength/Delay/Probability only
   //    (no CC, no Pitch Bender, no Loopback, as they don't work note-wise, but 
   //     only channel wise
   //     just send them from a different track)
