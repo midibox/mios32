@@ -15,6 +15,7 @@
 #define _SEQ_CC_H
 
 #include "seq_trg.h"
+#include "seq_layer.h"
 #include "seq_core.h"
 
 
@@ -96,7 +97,7 @@
 
 #define SEQ_CC_MODE		0x40
 #define SEQ_CC_MODE_FLAGS	0x41
-#define SEQ_CC_MIDI_EVNT_MODE	0x42
+#define SEQ_CC_MIDI_EVENT_MODE	0x42
 //#define SEQ_CC_MIDI_EVNT_CONST1	0x43 // obsolete
 //#define SEQ_CC_MIDI_EVNT_CONST2	0x44 // obsolete
 //#define SEQ_CC_MIDI_EVNT_CONST3	0x45 // obsolete
@@ -153,7 +154,7 @@ typedef struct {
 
   seq_core_shared_t shared;   // shared mode parameters (each track holds another value)
   seq_core_trkmode_flags_t mode; // track mode and flags
-  u8       evnt_mode;         // event mode
+  seq_event_mode_t event_mode;  // event mode
   mios32_midi_port_t midi_port; // MIDI port
   mios32_midi_chn_t midi_chn:4; // MIDI channel
   unsigned dir_mode:4;        // track direction mode (limited to 4 bits, see also seq_cc_trk_dir_t)

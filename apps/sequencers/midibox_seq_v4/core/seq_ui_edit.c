@@ -214,9 +214,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     return 0; // there are no high-priority updates
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   seq_layer_evnt_t layer_event;
-  SEQ_LAYER_GetEvntOfParLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
+  SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -286,17 +287,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	  break;
 
         case SEQ_LAYER_ControlType_Velocity:
-        case SEQ_LAYER_ControlType_Chord1_Velocity:
-        case SEQ_LAYER_ControlType_Chord2_Velocity:
+        case SEQ_LAYER_ControlType_Chord_Velocity:
           SEQ_LCD_PrintString("Vel.   ");
           break;
     
-        case SEQ_LAYER_ControlType_Chord1:
-          SEQ_LCD_PrintString("Chord1 ");
-          break;
-    
-        case SEQ_LAYER_ControlType_Chord2:
-          SEQ_LCD_PrintString("Chord2 ");
+        case SEQ_LAYER_ControlType_Chord:
+          SEQ_LCD_PrintString("Chord  ");
           break;
     
         case SEQ_LAYER_ControlType_Length:
@@ -344,8 +340,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
       if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);
-      } else if( layer_ctrl_type == SEQ_LAYER_ControlType_Chord2 ||
-	       layer_ctrl_type == SEQ_LAYER_ControlType_Chord2_Velocity ) {
+      } else if( layer_ctrl_type == SEQ_LAYER_ControlType_Chord ||
+	       layer_ctrl_type == SEQ_LAYER_ControlType_Chord_Velocity ) {
 	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0);
 	u8 chord_ix = par_value & 0x0f;
 	u8 chord_oct = par_value >> 4;
@@ -394,7 +390,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       previous_step = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 
     seq_layer_evnt_t layer_event;
-    SEQ_LAYER_GetEvntOfParLayer(visible_track, previous_step, ui_selected_par_layer, &layer_event);
+    SEQ_LAYER_GetEvntOfLayer(visible_track, previous_step, ui_selected_par_layer, &layer_event);
     u16 previous_length = layer_event.len;
     u8 previous_step_was_long_multi = 0; // hard to determine here... TODO
 
@@ -402,7 +398,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     u8 step;
     for(step=0; step<16; ++step) {
       u8 visible_step = step + 16*ui_selected_step_view;
-      SEQ_LAYER_GetEvntOfParLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
+      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
       if( previous_step_was_long_multi || layer_event.len >= 32 ) { // multi note trigger?
 	if( !previous_step_was_long_multi ) {
@@ -448,14 +444,19 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   } else {
 
-    // we want to show vertical bars
-    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      // we want to show triggers
+      SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbols);
+    } else {
+      // we want to show vertical bars
+      SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+    }
 
     // initial cursor position
     SEQ_LCD_CursorSet(0, 1);
 
-    u8 step_region_begin;
-    u8 step_region_end;
+    int step_region_begin;
+    int step_region_end;
     switch( edit_mode ) {
       case SEQ_UI_EDIT_MODE_COPY:
 	step_region_begin = SEQ_UI_UTIL_CopyPasteBeginGet();
@@ -470,8 +471,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	step_region_end = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 	break;
       default:
-	step_region_begin = ui_selected_step;
-	step_region_end = ui_selected_step;
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  step_region_begin = -1;
+	  step_region_end = -1;
+	} else {
+	  step_region_begin = ui_selected_step;
+	  step_region_end = ui_selected_step;
+	}
     }
 
     u8 step;
@@ -486,62 +492,67 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 
       seq_layer_evnt_t layer_event;
-      SEQ_LAYER_GetEvntOfParLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
+      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
-      switch( layer_ctrl_type ) {
-        case SEQ_LAYER_ControlType_Note:
-        case SEQ_LAYER_ControlType_Velocity:
-	  if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	    if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
-	      SEQ_LCD_PrintArp(layer_event.midi_package.note);
-	    else
-	      SEQ_LCD_PrintNote(layer_event.midi_package.note);
-	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
-	  } else {
-	    SEQ_LCD_PrintString("----");
-	  }
-	  break;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track); // TODO: find proper solution to define 2*16 (Gate/Accent) case
+	u8 num_notes = num_layers % 16;
 
-        case SEQ_LAYER_ControlType_Chord1:
-        case SEQ_LAYER_ControlType_Chord1_Velocity:
-	  if( layer_event.midi_package.velocity ) {
-	    u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
-	    SEQ_LCD_PrintFormattedString("S%2d", (SEQ_PAR_Get(visible_track, step, 0) % num_steps) + 1);
-	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
-	  } else {
-	    SEQ_LCD_PrintString("----");
-	  }
-	  break;
+	u8 gate = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer);
+	u8 accent = (num_layers > num_notes) ? SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer + 16) : 0;
+
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(gate ? 0x03 : 0x02);
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
+      } else {
+	switch( layer_ctrl_type ) {
+          case SEQ_LAYER_ControlType_Note:
+          case SEQ_LAYER_ControlType_Velocity:
+	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
+	      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+		SEQ_LCD_PrintArp(layer_event.midi_package.note);
+	      else
+		SEQ_LCD_PrintNote(layer_event.midi_package.note);
+	      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+	    } else {
+	      SEQ_LCD_PrintString("----");
+	    }
+	    break;
+
+          case SEQ_LAYER_ControlType_Chord:
+          case SEQ_LAYER_ControlType_Chord_Velocity:
+	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
+	      u8 par_value = SEQ_PAR_Get(visible_track, step, 0);
+	      u8 chord_ix = par_value & 0x0f;
+	      u8 chord_oct = par_value >> 4;
+	      SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
+	      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+	    } else {
+	      SEQ_LCD_PrintString("----");
+	    }
+	    break;
 	  
-        case SEQ_LAYER_ControlType_Chord2:
-        case SEQ_LAYER_ControlType_Chord2_Velocity:
-	  if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	    u8 par_value = SEQ_PAR_Get(visible_track, step, 0);
-	    u8 chord_ix = par_value & 0x0f;
-	    u8 chord_oct = par_value >> 4;
-	    SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
-	    SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
-	  } else {
-	    SEQ_LCD_PrintString("----");
-	  }
-	  break;
-	  
-	//case SEQ_LAYER_ControlType_Length:
-	//break;
-	// extra handling -- see code above
+	  //case SEQ_LAYER_ControlType_Length:
+	  //break;
+	  // extra handling -- see code above
 
-        case SEQ_LAYER_ControlType_CC:
-	  SEQ_LCD_PrintFormattedString("%3d", layer_event.midi_package.value);
-	  SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
-	  break;
+          case SEQ_LAYER_ControlType_CC:
+	    SEQ_LCD_PrintFormattedString("%3d", layer_event.midi_package.value);
+	    SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
+	    break;
 
-        default:
-	  SEQ_LCD_PrintString("????");
-	  break;
+          default:
+	    SEQ_LCD_PrintString("????");
+	    break;
+	}
       }
 
-      SEQ_LCD_PrintChar((visible_step == step_region_end) ? '<' 
-			   : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
+      if( step_region_begin != -1 && step_region_end != -1 ) {
+	SEQ_LCD_PrintChar((visible_step == step_region_end) ? '<' 
+			  : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
+      }
       
     }
   }
