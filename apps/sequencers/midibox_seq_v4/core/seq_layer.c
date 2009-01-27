@@ -29,135 +29,16 @@
 // Local definitions and arrays
 /////////////////////////////////////////////////////////////////////////////
 
-// variable types (each step has a selectable value, embedded in the three available layers)
-// Bit 3-0 is a unique number (0x0...0xf)
-// Bit 6-4 select the MIDI event status byte, bit 7 must be 0!
-//    0x0: not relevant for status byte (e.g. note length)
-//    0x1: Note
-//    0x3: CC
-#define SEQ_LAYER_V_NONE	0x00
-#define SEQ_LAYER_V_NOTE	0x11
-#define SEQ_LAYER_V_CHORD1	0x12
-#define SEQ_LAYER_V_CHORD2	0x13
-#define SEQ_LAYER_V_VEL		0x14
-#define SEQ_LAYER_V_CHORD1_VEL	0x15
-#define SEQ_LAYER_V_CHORD2_VEL	0x16
-#define SEQ_LAYER_V_LEN		0x07
-#define SEQ_LAYER_V_CC		0x38
-
-static const char seq_layer_v_names[9][5] = {
-  "----",	// SEQ_LAYER_V_NONE
-  "Note",	// SEQ_LAYER_V_NOTE
-  "Crd1",	// SEQ_LAYER_V_CHORD1
-  "Crd2",	// SEQ_LAYER_V_CHORD2
-  "Vel.",	// SEQ_LAYER_V_VEL
-  "Vel.",	// SEQ_LAYER_V_CHORD1_VEL
-  "Vel.",	// SEQ_LAYER_V_CHORD2_VEL
-  "Len.",	// SEQ_LAYER_V_LEN
-  " CC "	// SEQ_LAYER_V_CC
+// Control Type Names as 4 character string
+static const char seq_layer_names[][5] = {
+  "None",	//   SEQ_LAYER_ControlType_None,
+  "Note",	//   SEQ_LAYER_ControlType_Note,
+  "Vel,",	//   SEQ_LAYER_ControlType_Velocity,
+  "Crd.",	//   SEQ_LAYER_ControlType_Chord,
+  "Vel.",	//   SEQ_LAYER_ControlType_Chord_Velocity,
+  "Len.",	//   SEQ_LAYER_ControlType_Length,
+  " CC "	//   SEQ_LAYER_ControlType_CC
 };
-
-static const seq_layer_ctrl_type_t seq_layer_v_ctrl_type_table[9] = {
-  SEQ_LAYER_ControlType_None,      // SEQ_LAYER_V_NONE
-  SEQ_LAYER_ControlType_Note,      // SEQ_LAYER_V_NOTE
-  SEQ_LAYER_ControlType_Chord1,    // SEQ_LAYER_V_CHORD1
-  SEQ_LAYER_ControlType_Chord2,    // SEQ_LAYER_V_CHORD2
-  SEQ_LAYER_ControlType_Velocity,  // SEQ_LAYER_V_VEL
-  SEQ_LAYER_ControlType_Chord1_Velocity, // SEQ_LAYER_V_CHORD1_VEL
-  SEQ_LAYER_ControlType_Chord2_Velocity, // SEQ_LAYER_V_CHORD2_VEL
-  SEQ_LAYER_ControlType_Length,    // SEQ_LAYER_V_LEN
-  SEQ_LAYER_ControlType_CC         // SEQ_LAYER_V_CC
-};
-
-
-// constant types (the whole track only uses the specified value)
-// Bit 3-0 is a unique number (0x0...0xf)
-// Bit 6-4 select the MIDI event status byte, bit 7 must be 1!
-//    0x8: not relevant for status byte (e.g. note length)
-//    0x9: Note
-//    0xb: CC
-#define SEQ_LAYER_C_NONE	0x80
-#define SEQ_LAYER_C_NOTE_A	0x91
-#define SEQ_LAYER_C_NOTE_B	0x92
-#define SEQ_LAYER_C_NOTE_C	0x93
-#define SEQ_LAYER_C_VEL		0x94
-#define SEQ_LAYER_C_LEN		0x05
-#define SEQ_LAYER_C_CC_A	0xb6
-#define SEQ_LAYER_C_CC_B	0xb7
-#define SEQ_LAYER_C_CC_C	0xb8
-#define SEQ_LAYER_C_CMEM_T	0x09
-
-static const char seq_layer_c_names[10][5] = {
-  "----",	// SEQ_LAYER_C_NONE
-  "NteA",	// SEQ_LAYER_C_NOTE_A
-  "NteB",	// SEQ_LAYER_C_NOTE_B
-  "NteC",	// SEQ_LAYER_C_NOTE_C
-  "Vel.",	// SEQ_LAYER_C_VEL
-  "Len.",	// SEQ_LAYER_C_LEN
-  "CC#A",	// SEQ_LAYER_C_CC_A
-  "CC#B",	// SEQ_LAYER_C_CC_B
-  "CC#C",	// SEQ_LAYER_C_CC_C
-  "CM-T"	// SEQ_LAYER_C_CMEM_T
-};
-
-static const seq_layer_ctrl_type_t seq_layer_c_ctrl_type_table[10] = {
-  SEQ_LAYER_ControlType_None,      // SEQ_LAYER_C_NONE
-  SEQ_LAYER_ControlType_Note,      // SEQ_LAYER_C_NOTE_A
-  SEQ_LAYER_ControlType_Note,      // SEQ_LAYER_C_NOTE_B
-  SEQ_LAYER_ControlType_Note,      // SEQ_LAYER_C_NOTE_C
-  SEQ_LAYER_ControlType_Velocity,  // SEQ_LAYER_C_VEL
-  SEQ_LAYER_ControlType_Length,    // SEQ_LAYER_C_LEN
-  SEQ_LAYER_ControlType_CC,        // SEQ_LAYER_C_CC_A
-  SEQ_LAYER_ControlType_CC,        // SEQ_LAYER_C_CC_B
-  SEQ_LAYER_ControlType_CC,        // SEQ_LAYER_C_CC_C
-  SEQ_LAYER_ControlType_CMEM_T     // SEQ_LAYER_C_CMEM_T
-};
-
-
-// the assignments depending on the event mode
-// note: on changes, adaptions have also to be made in SEQ_LAYER_GetEvnt_*!
-static const u8 seq_layer_table[SEQ_LAYER_EVNTMODE_NUM][6] = {
-  //      LayerA            LayerB            LayerC            Const1              Const2              Const3
-  { SEQ_LAYER_V_NOTE, SEQ_LAYER_V_VEL,  SEQ_LAYER_V_LEN,  SEQ_LAYER_C_NONE,   SEQ_LAYER_C_NONE,   SEQ_LAYER_C_NONE },	 // 1
-  { SEQ_LAYER_V_CHORD1,SEQ_LAYER_V_CHORD1_VEL, SEQ_LAYER_V_LEN, SEQ_LAYER_C_CMEM_T, SEQ_LAYER_C_NONE,  SEQ_LAYER_C_NONE }, // 2
-  { SEQ_LAYER_V_CHORD2,SEQ_LAYER_V_CHORD2_VEL, SEQ_LAYER_V_LEN, SEQ_LAYER_C_NONE,   SEQ_LAYER_C_NONE,  SEQ_LAYER_C_NONE }, // 3
-  { SEQ_LAYER_V_NOTE, SEQ_LAYER_V_NOTE, SEQ_LAYER_V_NOTE, SEQ_LAYER_C_VEL,    SEQ_LAYER_C_LEN,    SEQ_LAYER_C_NONE },	 // 4
-  { SEQ_LAYER_V_VEL,  SEQ_LAYER_V_VEL,  SEQ_LAYER_V_VEL,  SEQ_LAYER_C_NOTE_A, SEQ_LAYER_C_NOTE_B, SEQ_LAYER_C_NOTE_C },  // 5
-  { SEQ_LAYER_V_NOTE, SEQ_LAYER_V_VEL,  SEQ_LAYER_V_CC,   SEQ_LAYER_C_LEN,    SEQ_LAYER_C_NONE,   SEQ_LAYER_C_CC_C },	 // 6
-  { SEQ_LAYER_V_NOTE, SEQ_LAYER_V_CC,   SEQ_LAYER_V_LEN,  SEQ_LAYER_C_VEL,    SEQ_LAYER_C_CC_B,   SEQ_LAYER_C_NONE },    // 7
-  { SEQ_LAYER_V_NOTE, SEQ_LAYER_V_CC,   SEQ_LAYER_V_CC,   SEQ_LAYER_C_VEL,    SEQ_LAYER_C_CC_B,   SEQ_LAYER_C_CC_C },	 // 8
-  { SEQ_LAYER_V_VEL,  SEQ_LAYER_V_CC,   SEQ_LAYER_V_CC,   SEQ_LAYER_C_NOTE_A, SEQ_LAYER_C_CC_B,   SEQ_LAYER_C_CC_C },	 // 9
-  { SEQ_LAYER_V_CC,   SEQ_LAYER_V_CC,   SEQ_LAYER_V_LEN,  SEQ_LAYER_C_CC_A,   SEQ_LAYER_C_CC_B,   SEQ_LAYER_C_NONE },	 // 10
-  { SEQ_LAYER_V_CC,   SEQ_LAYER_V_CC,   SEQ_LAYER_V_CC,   SEQ_LAYER_C_CC_A,   SEQ_LAYER_C_CC_B,   SEQ_LAYER_C_CC_C }	 // 11
-};
-
-
-// define which event modes provide a special "drum mode" behaviour
-// Note: if more than 2 modes are used, SEQ_LAYER_CheckDrumMode has to be extented as well
-#define SEQ_LAYER_DRUM_MODE_EM1	(5-1)
-#define SEQ_LAYER_DRUM_MODE_EM2	(9-1)
-
-// define which event modes provide polyphonic recording
-// Note: if more than 1 mode is used, SEQ_LAYER_CheckPolyMode has to be extented as well
-#define SEQ_LAYER_POLY_MODE_EM1	(4-1)
-
-// maps layer A/B/C/D to the appr MIDI package number (0/1/2/4 - list entry of midi_packages returned by SEQ_LAYER_GetEvnt_x)
-// used by SEQ_LAYER_GetEvntOfParLayer for visualisation purposes
-static const u8 seq_layer_eventnum_map[SEQ_LAYER_EVNTMODE_NUM][4] = {
-  // map A  B  C  D
-  {      0, 0, 0, 0 }, // 1 - only one Note Event
-  {      0, 0, 0, 0 }, // 2 - Chord Event with 4 notes maximum
-  {      0, 0, 0, 0 }, // 3 - Chord Event with 4 notes maximum
-  {      0, 1, 2, 0 }, // 4 - three Note Events
-  {      0, 1, 2, 0 }, // 5 - three Note Events
-  {      0, 0, 1, 0 }, // 6 - one Note, one CC event
-  {      0, 1, 0, 0 }, // 7 - one Note, one CC event
-  {      0, 1, 0, 0 }, // 8 - one Note, two CC events
-  {      0, 1, 2, 0 }, // 9 - one Note, two CC events
-  {      0, 1, 0, 0 }, // 10 - two CC events
-  {      0, 1, 2, 0 }  // 11 - three CC events
-};
-
 
 // preset table - each entry contains the initial track configuration and the step settings
 // EVNT0 and CHN won't be overwritten
@@ -185,6 +66,14 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_MORPH_SPARE,    0x00 },
   { SEQ_CC_HUMANIZE_VALUE, 0x00 },
   { SEQ_CC_HUMANIZE_MODE,  0x00 },
+  { SEQ_CC_ASG_GATE,       0x01 },
+  { SEQ_CC_ASG_ACCENT,     0x02 },
+  { SEQ_CC_ASG_ROLL,       0x03 },
+  { SEQ_CC_ASG_SKIP,       0x04 },
+  { SEQ_CC_ASG_GLIDE,      0x05 },
+  { SEQ_CC_ASG_RANDOM_GATE, 0x06 },
+  { SEQ_CC_ASG_RANDOM_VALUE, 0x07 },
+  { SEQ_CC_ASG_NO_FX,      0x08 },
   { SEQ_CC_ECHO_REPEATS,   0x00 },
   { SEQ_CC_ECHO_DELAY,     0x07 }, // 1/8
   { SEQ_CC_ECHO_VELOCITY,  15 }, // 75%
@@ -195,64 +84,26 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { 0xff,                  0xff } // end marker
 };
 
-// parameters which will be selected depending on the event mode
-static const u8 seq_layer_preset_table_mode[][SEQ_LAYER_EVNTMODE_NUM+1] = {
-  // parameter                 1     2     3     4     5     6     7     8     9    10    11
-  { SEQ_CC_LAY_CONST_A1,     0x00, 0x00, 0x00, 0x64, 0x24, 0x11, 0x64, 0x64, 0x3c, 0x01, 0x01 },
-  { SEQ_CC_LAY_CONST_B1,     0x00, 0x00, 0x00, 0x11, 0x26, 0x00, 0x01, 0x01, 0x01, 0x10, 0x10 },
-  { SEQ_CC_LAY_CONST_C1,     0x00, 0x00, 0x00, 0x00, 0x2c, 0x01, 0x00, 0x10, 0x10, 0x00, 0x11 },
-  { SEQ_CC_ASG_GATE,            1,    1,    1,    1,    0,    1,    1,    1,    0,    1,    1 },
-  { SEQ_CC_ASG_ACCENT,          2,    2,    2,    2,    2,    2,    2,    2,    2,    2,    2 },
-  { SEQ_CC_ASG_ROLL,            3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3 },
-  { SEQ_CC_ASG_SKIP,            4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4 },
-  { SEQ_CC_ASG_GLIDE,           5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5 },
-  { SEQ_CC_ASG_RANDOM_GATE,     6,    6,    6,    6,    6,    6,    6,    6,    6,    6,    6 },
-  { SEQ_CC_ASG_RANDOM_VALUE,    7,    7,    7,    7,    7,    7,    7,    7,    7,    7,    7 },
-  { SEQ_CC_ASG_NO_FX,           8,    8,    8,    8,    8,    8,    8,    8,    8,    8,    8 },
-  { 0xff,                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }  // end marker
+
+// initial drum notes
+static const u8 seq_layer_preset_table_drum_notes[16] = {
+  0x24,
+  0x26,
+  0x29,
+  0x2b,
+  0x2f,
+  0x27,
+  0x46,
+  0x4b,
+  0x38,
+  0x31,
+  0x2e,
+  0x2a,
+  0x2c,
+  0x3c,
+  0x3d,
+  0x4c
 };
-
-
-// trigger layer value presets
-// each byte will be duplicated 4 times (for 32 steps)
-// only first trigger layer will be initialized with this value, remaining layers will be zeroed
-static const u8 seq_layer_preset_table_tlayer[SEQ_LAYER_EVNTMODE_NUM] = {
- //  1     2     3     4     5     6     7     8     9    10    11
-  0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11
-};
-
-
-// layer values - 4 entries per layer, they will be duplicated for all 32 steps per layer
-// each mode has a package of 3*4 bytes
-static const u8 seq_layer_preset_table_player[SEQ_LAYER_EVNTMODE_NUM][4*4] = {
-  //        Layer A                  Layer B                   Layer C                   Layer D
-  { 0x3c, 0x3c, 0x3c, 0x3c,  0x64, 0x64, 0x64, 0x64,   0x11, 0x11, 0x11, 0x11,   0x00, 0x00, 0x00, 0x00 }, // 1
-  { 0x40, 0x40, 0x40, 0x40,  0x64, 0x64, 0x64, 0x64,   0x11, 0x11, 0x11, 0x11,   0x00, 0x00, 0x00, 0x00 }, // 2
-  { 0x40, 0x40, 0x40, 0x40,  0x64, 0x64, 0x64, 0x64,   0x11, 0x11, 0x11, 0x11,   0x00, 0x00, 0x00, 0x00 }, // 3
-  { 0x3c, 0x3c, 0x3c, 0x3c,  0x3e, 0x3e, 0x3e, 0x3e,   0x40, 0x40, 0x40, 0x40,   0x00, 0x00, 0x00, 0x00 }, // 4
-  { 0x64, 0x00, 0x00, 0x00,  0x64, 0x00, 0x00, 0x00,   0x64, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00 }, // 5
-  { 0x3c, 0x3c, 0x3c, 0x3c,  0x64, 0x64, 0x64, 0x64,   0x40, 0x40, 0x40, 0x40,   0x00, 0x00, 0x00, 0x00 }, // 6
-  { 0x3c, 0x3c, 0x3c, 0x3c,  0x40, 0x40, 0x40, 0x40,   0x11, 0x11, 0x11, 0x11,   0x00, 0x00, 0x00, 0x00 }, // 7
-  { 0x3c, 0x3c, 0x3c, 0x3c,  0x40, 0x40, 0x40, 0x40,   0x40, 0x40, 0x40, 0x40,   0x00, 0x00, 0x00, 0x00 }, // 8
-  { 0x64, 0x00, 0x00, 0x00,  0x40, 0x40, 0x40, 0x40,   0x40, 0x40, 0x40, 0x40,   0x00, 0x00, 0x00, 0x00 }, // 9
-  { 0x40, 0x40, 0x40, 0x40,  0x40, 0x40, 0x40, 0x40,   0x11, 0x11, 0x11, 0x11,   0x00, 0x00, 0x00, 0x00 }, // 10
-  { 0x40, 0x40, 0x40, 0x40,  0x40, 0x40, 0x40, 0x40,   0x40, 0x40, 0x40, 0x40,   0x00, 0x00, 0x00, 0x00 }  // 11
-};
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -281,56 +132,16 @@ s32 SEQ_LAYER_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local inline function: returns the variable type which is assigned to a layer
-// depending on the event mode
-/////////////////////////////////////////////////////////////////////////////
-__inline static u8 SEQ_LAYER_GetVType(u8 event_mode, u8 par_layer)
-{
-  return seq_layer_table[event_mode][par_layer];
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local function: returns the constant type depending on the event mode
-/////////////////////////////////////////////////////////////////////////////
-__inline static u8 SEQ_LAYER_GetCType(u8 event_mode, u8 const_num)
-{
-  return seq_layer_table[event_mode][3 + const_num];
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the 4 character string of the variable type 
-// depending on event mode and assigned layer
-/////////////////////////////////////////////////////////////////////////////
-char *SEQ_LAYER_VTypeStr(u8 event_mode, u8 par_layer)
-{
-  return (char *)seq_layer_v_names[SEQ_LAYER_GetVType(event_mode, par_layer) & 0xf];
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the 4 character string of the constant type 
-// depending on event mode and constant number
-/////////////////////////////////////////////////////////////////////////////
-char *SEQ_LAYER_CTypeStr(u8 event_mode, u8 const_num)
-{
-  return (char *)seq_layer_c_names[SEQ_LAYER_GetCType(event_mode, const_num) & 0xf];
-}
-
-/////////////////////////////////////////////////////////////////////////////
 // This function returns the layer_evnt_t information based on given
-// parameter layer (used for visualisation purposes)
+// layer (used for visualisation purposes)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetEvntOfParLayer(u8 track, u8 step, u8 par_layer, seq_layer_evnt_t *layer_event)
+s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u8 step, u8 layer, seq_layer_evnt_t *layer_event)
 {
-  seq_layer_evnt_t layer_events[4];
+  seq_layer_evnt_t layer_events[16];
   s32 number_of_events = 0;
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  if( tcc->evnt_mode < SEQ_LAYER_EVNTMODE_NUM ) {
-    s32 (*getevnt_func)(u8 track, u8 step, seq_layer_evnt_t layer_events[4]) = seq_layer_getevnt_func[tcc->evnt_mode];
-    number_of_events = getevnt_func(track, step, layer_events);
-  }
+  number_of_events = SEQ_LAYER_GetEvents(track, step, layer_events);
 
   if( number_of_events <= 0 ) {
     // fill with dummy data
@@ -340,12 +151,19 @@ s32 SEQ_LAYER_GetEvntOfParLayer(u8 track, u8 step, u8 par_layer, seq_layer_evnt_
     return -1; // no valid event
   }
 
-  u8 event_num = seq_layer_eventnum_map[tcc->evnt_mode][par_layer];
+  u8 event_num;
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+    event_num = layer;
+  } else {
+    event_num = 0; // TODO
+  }
+
   layer_event->midi_package = layer_events[event_num].midi_package;
   layer_event->len = layer_events[event_num].len;
 
   return 0; // no error
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function returns the control type of a variable layer
@@ -354,341 +172,117 @@ seq_layer_ctrl_type_t SEQ_LAYER_GetVControlType(u8 track, u8 par_layer)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  if( tcc->evnt_mode >= SEQ_LAYER_EVNTMODE_NUM )
-    return SEQ_LAYER_ControlType_None; // invalid event mode
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+    return par_layer ? SEQ_LAYER_ControlType_Length : SEQ_LAYER_ControlType_Velocity; // TODO: variable assignments
+  } else {
+    if( par_layer == 0 ) {
+      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
+	return SEQ_LAYER_ControlType_CC;
+      else if( tcc->event_mode == SEQ_EVENT_MODE_Chord )
+	return SEQ_LAYER_ControlType_Chord;
+      else
+	return SEQ_LAYER_ControlType_Note;
+    } else if( par_layer == 1 ) {
+      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
+	return SEQ_LAYER_ControlType_CC;
+      else if( tcc->event_mode == SEQ_EVENT_MODE_Chord )
+	return SEQ_LAYER_ControlType_Chord_Velocity;
+      else
+	return SEQ_LAYER_ControlType_Velocity;
+    } else if( par_layer == 2 ) {
+      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
+	return SEQ_LAYER_ControlType_CC;
+      else
+	return SEQ_LAYER_ControlType_Length;
+    } else {
+      return SEQ_LAYER_ControlType_None; // TODO
+    }
+  }
 
-  return seq_layer_v_ctrl_type_table[seq_layer_table[tcc->evnt_mode][par_layer] & 0xf];
+  return SEQ_LAYER_ControlType_None;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the control type of a constant
+// This function returns the name of a control type as 4 character string
 /////////////////////////////////////////////////////////////////////////////
-seq_layer_ctrl_type_t SEQ_LAYER_GetCControlType(u8 track, u8 const_ix)
+char *SEQ_LAYER_GetVControlTypeString(u8 track, u8 par_layer)
+{
+  return (char *)seq_layer_names[SEQ_LAYER_GetVControlType(track, par_layer)];
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Layer Event Modes
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  u8 num_events = 0;
 
-  if( tcc->evnt_mode >= SEQ_LAYER_EVNTMODE_NUM )
-    return SEQ_LAYER_ControlType_None; // invalid event mode
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 step_par_layer = step % SEQ_PAR_NumStepsGet(track);
+    u8 num_layers = SEQ_TRG_NumLayersGet(track); // TODO: find proper solution to define 2*16 (Gate/Accent) case
+    u8 num_notes = (num_layers > 16) ? 16 : num_layers;
+    int drum;
+    for(drum=0; drum<num_notes; ++drum) {
+      seq_layer_evnt_t *e = &layer_events[drum];
+      mios32_midi_package_t *p = &e->midi_package;
+      p->type     = NoteOn;
+      p->event    = NoteOn;
+      p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
+      p->note     = tcc->lay_const[0*16 + drum];
 
-  return seq_layer_c_ctrl_type_table[seq_layer_table[tcc->evnt_mode][const_ix+3] & 0xf];
+      if( !SEQ_TRG_Get(track, step, drum) )
+	p->velocity = 0;
+      else {
+	// TODO: selection from variable layer
+	if( num_layers > num_notes ) {
+	  // gate/accent layers
+	  p->velocity = SEQ_TRG_Get(track, step, drum + 1*16) ? tcc->lay_const[2*16 + drum] : tcc->lay_const[1*16 + drum];
+	} else { // Vel_N/A
+	  p->velocity = tcc->lay_const[1*16 + drum];
+	}
+      }
+
+      e->len      = 0x11; // TODO: selection from variable layer
+
+      ++num_events;
+    }
+  } else {
+    // static assignments for Parameter Layer A/B/C
+    if( tcc->event_mode == SEQ_EVENT_MODE_Chord ) {
+      u8 chord_value = SEQ_PAR_Get(track, step, 0);
+      for(num_events=0; num_events<4; ++num_events) {
+	s32 note = SEQ_CHORD_NoteGet(num_events, chord_value);
+	if( note < 0 )
+	  break;
+
+	seq_layer_evnt_t *e = &layer_events[num_events];
+	mios32_midi_package_t *p = &e->midi_package;
+	p->type     = NoteOn;
+	p->event    = NoteOn;
+	p->chn      = tcc->midi_chn;
+	p->note     = note;
+	p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+	e->len      = SEQ_PAR_Get(track, step, 2);
+      }
+    } else {
+      seq_layer_evnt_t *e = &layer_events[0];
+      mios32_midi_package_t *p = &e->midi_package;
+      p->type     = NoteOn;
+      p->event    = NoteOn;
+      p->chn      = tcc->midi_chn;
+      p->note     = SEQ_PAR_Get(track, step, 0);
+      p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
+      e->len      = SEQ_PAR_Get(track, step, 2);
+      ++num_events;
+    }
+  }
+
+  return num_events;
 }
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #1 - Layer: Note/Vel/Len, Constants: -/-/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_1(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  seq_layer_evnt_t *e = &layer_events[0];
-  mios32_midi_package_t *p = &e->midi_package;
-  p->type     = NoteOn;
-  p->event    = NoteOn;
-  p->chn      = tcc->midi_chn;
-  p->note     = SEQ_PAR_Get(track, step, 0);
-  p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-  e->len      = SEQ_PAR_Get(track, step, 2);
-
-  return 1;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #2 - Layer: Chord/Vel/Len, Constants: -/-/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_2(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  u8 cmem_track = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1) % SEQ_CORE_NUM_TRACKS;
-  int num_steps = SEQ_PAR_NumStepsGet(track);
-
-  int i;
-  for(i=0; i<3; ++i) {
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(cmem_track, SEQ_PAR_Get(track, step, 0) % num_steps, i);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-    e->len      = SEQ_PAR_Get(track, step, 2);
-  }
-
-  return 3;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #3 - Layer: Chord/Vel/Len, Constants: -/-/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_3(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  u8 chord_value = SEQ_PAR_Get(track, step, 0);
-  int i;
-  for(i=0; i<4; ++i) {
-    s32 note = SEQ_CHORD_NoteGet(i, chord_value);
-    if( note < 0 )
-      break;
-
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = note;
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-    e->len      = SEQ_PAR_Get(track, step, 2);
-  }
-
-  return i;// events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #4 - Layer: Note/Note/Note, Constants: Vel/Len/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_4(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  u8 gate = SEQ_TRG_GateGet(track, step);
-  u8 velocity = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1);
-  u16 len = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1);
-
-  int i;
-  for(i=0; i<3; ++i) {
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, step, i);
-    p->velocity = gate ? velocity : 0x00;
-    e->len      = len;
-  }
-
-  return 3;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #5 - Layer: Vel/Vel/Vel, Constants: NoteA/NoteB/NoteC
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_5(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  u8 gate = SEQ_TRG_GateGet(track, step);
-
-  int i;
-  for(i=0; i<3; ++i) {
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1+16*i);
-    p->velocity = gate ? SEQ_PAR_Get(track, step, i) : 0x00;
-    e->len      = 15; // fixed length
-  }
-
-  return 3;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #6 - Layer: Note/Vel/CC, Constants: LenA/-/CC_C
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_6(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  {
-    seq_layer_evnt_t *e = &layer_events[0];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, step, 0);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-    e->len      = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1);
-  }
-
-  {
-    seq_layer_evnt_t *e = &layer_events[1];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type      = CC;
-    p->event     = CC;
-    p->chn       = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_C1);
-    p->value     = SEQ_PAR_Get(track, step, 2);
-    e->len       = -1;
-  }
-
-  return 2;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #7 - Layer: Note/CC/Len, Constants: VelA/CC_B/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_7(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  {
-    seq_layer_evnt_t *e = &layer_events[0];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, step, 0);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1)) : 0x00;
-    e->len      = SEQ_PAR_Get(track, step, 2);
-  }
-
-  {
-    seq_layer_evnt_t *e = &layer_events[1];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type      = CC;
-    p->event     = CC;
-    p->chn       = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1);
-    p->value     = SEQ_PAR_Get(track, step, 1);
-    e->len       = -1;
-  }
-
-  return 2;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #8 - Layer: Note/CC/CC, Constants: VelA/CC_B/CC_C
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_8(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  {
-    seq_layer_evnt_t *e = &layer_events[0];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_PAR_Get(track, step, 0);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? (SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1)) : 0x00;
-    e->len      = 15; // constant
-  }
-
-  int i;
-  for(i=0; i<2; ++i)
-  {
-    seq_layer_evnt_t *e = &layer_events[1+i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type      = CC;
-    p->event     = CC;
-    p->chn       = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1+16*i);
-    p->value     = SEQ_PAR_Get(track, step, 1+i);
-    e->len       = -1;
-  }
-
-  return 3;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #9 - Layer: Vel/CC/CC, Constants: NoteA/CC_B/CC_C
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_9(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  {
-    seq_layer_evnt_t *e = &layer_events[0];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = NoteOn;
-    p->event    = NoteOn;
-    p->chn      = tcc->midi_chn;
-    p->note     = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1);
-    p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 0) : 0x00;
-    e->len      = 15; // constant
-  }
-
-  int i;
-  for(i=0; i<2; ++i)
-  {
-    seq_layer_evnt_t *e = &layer_events[1+i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type      = CC;
-    p->event     = CC;
-    p->chn       = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1+16*i);
-    p->value     = SEQ_PAR_Get(track, step, 1+i);
-    e->len       = -1;
-  }
-
-  return 3;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #10 - Layer: CC/CC/Len, Constants: CC_A/CC_B/-
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_10(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  int i;
-  for(i=0; i<2; ++i) {
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = CC;
-    p->event    = CC;
-    p->chn      = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1+16*i);
-    p->value    = SEQ_PAR_Get(track, step, i);
-    e->len      = SEQ_PAR_Get(track, step, 2);
-  }
-
-  return 2;//events
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Layer Mode #11 - Layer: CC/CC/CC, Constants: CC_A/CC_B/CC_C
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LAYER_GetEvnt_11(u8 track, u8 step, seq_layer_evnt_t layer_events[4])
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  int i;
-  for(i=0; i<3; ++i) {
-    seq_layer_evnt_t *e = &layer_events[i];
-    mios32_midi_package_t *p = &e->midi_package;
-    p->type     = CC;
-    p->event    = CC;
-    p->chn      = tcc->midi_chn;
-    p->cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1+16*i);
-    p->value    = SEQ_PAR_Get(track, step, i);
-    e->len      = -1;
-  }
-
-  return 3;//events
-}
-
-
-// putting pointer to these functions into a global array
-// this approach should be faster than a switch statement
-// and it's more flexible for future enhancements (e.g. attach layer mode to a certain step)
-const void *seq_layer_getevnt_func[SEQ_LAYER_EVNTMODE_NUM] = {
-  &SEQ_LAYER_GetEvnt_1,
-  &SEQ_LAYER_GetEvnt_2,
-  &SEQ_LAYER_GetEvnt_3,
-  &SEQ_LAYER_GetEvnt_4,
-  &SEQ_LAYER_GetEvnt_5,
-  &SEQ_LAYER_GetEvnt_6,
-  &SEQ_LAYER_GetEvnt_7,
-  &SEQ_LAYER_GetEvnt_8,
-  &SEQ_LAYER_GetEvnt_9,
-  &SEQ_LAYER_GetEvnt_10,
-  &SEQ_LAYER_GetEvnt_11
-};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -702,7 +296,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
   int i;
   int cc;
 
-  u8 evnt_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVNT_MODE);
+  u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
 
   if( !only_layers ) {
     // copy static presets
@@ -713,41 +307,89 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
     }
 
     // copy evnt mode depending settings
-    i = 0;
-    while( (cc=seq_layer_preset_table_mode[i][0]) != 0xff ) {
-      SEQ_CC_Set(track, cc, seq_layer_preset_table_mode[i][1+evnt_mode]);
-      i++;
+    switch( event_mode ) {
+      case SEQ_EVENT_MODE_Note: {
+      } break;
+
+      case SEQ_EVENT_MODE_Chord: {
+      } break;
+
+      case SEQ_EVENT_MODE_CC: {
+      } break;
+
+      case SEQ_EVENT_MODE_Drum: {
+	int drum;
+	for(drum=0; drum<16; ++drum) {
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+drum, seq_layer_preset_table_drum_notes[drum]);
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+drum, 100);
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_C1+drum, 127);
+	}
+      } break;
     }
   }
 
-  // partitionate trigger layers
-  int num_t_layers = 8; // TODO: should depend on event mode
-  int num_t_steps = 256;
-  SEQ_TRG_TrackInit(track, num_t_steps, num_t_layers);
+  // get constraints of trigger layers
+  int num_t_layers = SEQ_TRG_NumLayersGet(track);
+  int num_t_steps  = SEQ_TRG_NumStepsGet(track);;
 
   // copy trigger layer values
   if( !all_triggers_cleared ) {
     int step8;
-    int trg_layer;
-    for(trg_layer=0; trg_layer<num_t_layers; ++trg_layer) {
-      u8 pattern = (trg_layer == 0) ? seq_layer_preset_table_tlayer[evnt_mode] : 0x00;
 
+    if( event_mode == SEQ_EVENT_MODE_CC ) {
+      // CC: enable gate for all steps
       for(step8=0; step8<(num_t_steps/8); ++step8)
-	SEQ_TRG_Set8(track, step8, trg_layer, pattern);
+	SEQ_TRG_Set8(track, step8, 0, 0xff);
+    } else {
+      // Note/Chord/Drum: enable trigger for each beat of (first) gate layer
+      for(step8=0; step8<(num_t_steps/8); ++step8)
+	SEQ_TRG_Set8(track, step8, 0, 0x11);
     }
   }
 
-  // partitionate parameter layers
-  int num_p_layers = 4; // TODO: should depend on event mode
-  int num_p_steps = 256;
-  SEQ_PAR_TrackInit(track, num_p_steps, num_p_layers);
+  // get constraints of parameter layers
+  int num_p_layers = SEQ_PAR_NumLayersGet(track);
+  int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
 
   // copy parameter layer values
   int step;
   int par_layer;
-  for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-    for(step=0; step<num_p_steps; ++step)
-      SEQ_PAR_Set(track, step, par_layer, seq_layer_preset_table_player[evnt_mode][par_layer*4 + (step%4)]);
+  switch( event_mode ) {
+    case SEQ_EVENT_MODE_Note: {
+      for(step=0; step<num_p_steps; ++step) {
+	SEQ_PAR_Set(track, step, 0, 0x3c); // C-3
+	SEQ_PAR_Set(track, step, 1,  100); // velocity
+	SEQ_PAR_Set(track, step, 2, 0x11); // length
+      }
+    } break;
+
+    case SEQ_EVENT_MODE_Chord: {
+      for(step=0; step<num_p_steps; ++step) {
+	SEQ_PAR_Set(track, step, 0, 0x40); // Chord
+	SEQ_PAR_Set(track, step, 1,  100); // velocity
+	SEQ_PAR_Set(track, step, 2, 0x11); // length
+      }
+    } break;
+
+    case SEQ_EVENT_MODE_CC: {
+      for(step=0; step<num_p_steps; ++step) {
+	SEQ_PAR_Set(track, step, 0, 0x40); // CC#16
+	SEQ_PAR_Set(track, step, 1, 0x40); // CC#17
+	SEQ_PAR_Set(track, step, 2, 0x40); // CC#18
+      }
+    } break;
+
+    case SEQ_EVENT_MODE_Drum: {
+      // TODO: variable routing
+      for(step=0; step<num_p_steps; ++step) {
+	SEQ_PAR_Set(track, step, 0,  100); // velocity
+	SEQ_PAR_Set(track, step, 1, 0x11); // length
+      }
+    } break;
+  }
+
+  if( event_mode != SEQ_EVENT_MODE_Drum ) {
+    // TODO: remaining layers
   }
 
   return 0; // no error

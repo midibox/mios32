@@ -152,8 +152,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
 #if DEFAULT_AUTO_FAST_BUTTON
     switch( SEQ_LAYER_GetVControlType(SEQ_UI_VisibleTrackGet(), ui_selected_par_layer) ) {
       case SEQ_LAYER_ControlType_Velocity:
-      case SEQ_LAYER_ControlType_Chord1_Velocity:
-      case SEQ_LAYER_ControlType_Chord2_Velocity:
+      case SEQ_LAYER_ControlType_Chord_Velocity:
       case SEQ_LAYER_ControlType_CC:
 	seq_ui_button_state.FAST_ENCODERS = 1;
 	break;

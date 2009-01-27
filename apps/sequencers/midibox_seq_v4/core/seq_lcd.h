@@ -29,7 +29,8 @@
 typedef enum {
   SEQ_LCD_CHARSET_None,
   SEQ_LCD_CHARSET_VBars,
-  SEQ_LCD_CHARSET_HBars
+  SEQ_LCD_CHARSET_HBars,
+  SEQ_LCD_CHARSET_DrumSymbols
 } seq_lcd_charset_t;
 
 
