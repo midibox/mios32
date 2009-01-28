@@ -558,7 +558,10 @@ static s32 PASTE_Track(u8 track)
 static s32 CLEAR_Track(u8 track)
 {
   // copy preset
-  SEQ_LAYER_CopyPreset(track, seq_core_options.PASTE_CLR_ALL ? 0 : 1, 0);
+  u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
+  u8 all_triggers_cleared = 0;
+  u8 drum_with_accent = SEQ_TRG_AssignmentGet(track, 1);
+  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, drum_with_accent);
 
   // clear all triggers
   memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);

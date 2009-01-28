@@ -63,7 +63,7 @@ extern char *SEQ_LAYER_GetVControlTypeString(u8 track, u8 par_layer);
 
 extern s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16]);
 
-extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared);
+extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 drum_with_accent);
 
 
 /////////////////////////////////////////////////////////////////////////////

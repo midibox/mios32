@@ -62,6 +62,7 @@ typedef struct {
   u16              par_steps;   // number of steps per parameter layer
   u8               trg_layers;  // number of trigger layers
   u16              trg_steps;   // number of steps per trigger layer
+  u8               drum_with_accent; // drum track with accent triggers
 } layer_config_t;
 
 
@@ -80,18 +81,20 @@ static s32 CopyPreset(u8 track, u8 config);
 static u8 selected_layer_config;
 
 static layer_config_t layer_config[] = {
-  //      mode           par_layers  par_steps  trg_layers  trg_steps
-  { SEQ_EVENT_MODE_Note,     4,         256,        8,         256 },
-  { SEQ_EVENT_MODE_Note,     8,         128,        8,         128 },
-  { SEQ_EVENT_MODE_Note,    16,          64,        8,          64 },
-  { SEQ_EVENT_MODE_Chord,    4,         256,        8,         256 },
-  { SEQ_EVENT_MODE_Chord,    8,         128,        8,         128 },
-  { SEQ_EVENT_MODE_Chord,   16,          64,        8,          64 },
-  { SEQ_EVENT_MODE_CC,       4,         256,        8,         256 },
-  { SEQ_EVENT_MODE_CC,       8,         128,        8,         128 },
-  { SEQ_EVENT_MODE_CC,      16,          64,        8,          64 },
-  { SEQ_EVENT_MODE_Drum,     2,          64,       32,          64 },
-  { SEQ_EVENT_MODE_Drum,     2,          64,       16,         128 }
+  //      mode           par_layers  par_steps  trg_layers  trg_steps  drum w/ accent
+  { SEQ_EVENT_MODE_Note,     4,         256,        8,         256,      0 },
+  { SEQ_EVENT_MODE_Note,     8,         128,        8,         128,      0 },
+  { SEQ_EVENT_MODE_Note,    16,          64,        8,          64,      0 },
+  { SEQ_EVENT_MODE_Chord,    4,         256,        8,         256,      0 },
+  { SEQ_EVENT_MODE_Chord,    8,         128,        8,         128,      0 },
+  { SEQ_EVENT_MODE_Chord,   16,          64,        8,          64,      0 },
+  { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      0 },
+  { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      0 },
+  { SEQ_EVENT_MODE_CC,      16,          64,        8,          64,      0 },
+  { SEQ_EVENT_MODE_Drum,     2,          64,     2*16,          64,      1 },
+  { SEQ_EVENT_MODE_Drum,     2,          64,       16,         128,      0 },
+  { SEQ_EVENT_MODE_Drum,     2,         128,      2*8,         128,      1 },
+  { SEQ_EVENT_MODE_Drum,     2,         128,        8,         256,      0 }
 };
 
 static u8 selected_layer;
@@ -427,9 +430,10 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   // Available Layer Constraints (Partitioning for 1024 bytes Par. memory, 2048 bits Trg. memory)
-  //    - 2 Parameter Layer with 64 steps and 2*16 Trigger Layers A-P with 128 steps taken for Gate and Accent
-  //    - 2 Parameter Layer with 64 steps and 16 Trigger Layers A-P with 256 steps taken for Gate
-
+  //    - 2 Parameter Layer with 64 steps and 2*16 Trigger Layers A-P with 64 steps taken for Gate and Accent
+  //    - 2 Parameter Layer with 64 steps and 16 Trigger Layers A-P with 128 steps taken for Gate
+  //    - 2 Parameter Layer with 64 steps and 2*8 Trigger Layers A-P with 128 steps taken for Gate and Accent
+  //    - 2 Parameter Layer with 64 steps and 8 Trigger Layers A-P with 256 steps taken for Gate
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = layer_config[selected_layer_config].event_mode;
@@ -464,17 +468,13 @@ static s32 LCD_Handler(u8 high_prio)
     const char event_mode_str[4][6] = { "Note ", "Chord", " CC  ", "Drum " };
     SEQ_LCD_PrintString(event_mode_str[event_mode]);
 
-    u16 par_steps = 256;
-    u16 trg_steps = 256;
-    u8 par_layers = 4;
-    u8 trg_layers = 8;
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      SEQ_LCD_PrintFormattedString("%2d/%1d   %3d/",
+      SEQ_LCD_PrintFormattedString(layer_config[selected_layer_config].par_steps >= 100 ? "%3d/%1d  %3d/" : "%2d/%1d   %3d/",
 				   layer_config[selected_layer_config].par_steps, 
 				   layer_config[selected_layer_config].par_layers,
 				   layer_config[selected_layer_config].trg_steps);
-      if( layer_config[selected_layer_config].trg_layers > 16 ) {
-	SEQ_LCD_PrintFormattedString("2*%2d ", layer_config[selected_layer_config].trg_layers/2);
+      if( layer_config[selected_layer_config].drum_with_accent ) {
+	SEQ_LCD_PrintFormattedString("2*%2d ", layer_config[selected_layer_config].trg_layers);
       } else {
 	SEQ_LCD_PrintFormattedString("%2d   ", layer_config[selected_layer_config].trg_layers);
       }
@@ -628,7 +628,10 @@ static s32 CopyPreset(u8 track, u8 config)
 
   SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, layer_config[config].event_mode);
 
-  return SEQ_LAYER_CopyPreset(track, 0, 0); // 0=all settings, 0=triggers initialized
+  u8 only_layers = 0;
+  u8 all_triggers_cleared = 0;
+  u8 drum_with_accent = layer_config[config].drum_with_accent;
+  return SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, drum_with_accent);
 }
 
 
