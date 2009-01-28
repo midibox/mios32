@@ -213,15 +213,34 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   if( high_prio )
     return 0; // there are no high-priority updates
 
+
+  // layout common track:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // G1T1 xxxxxxxxxxxxxxx  PC:Length TA:Gate Step  1   G#1_ Vel:127_Len: 75%    xxxxx
+  // ....
+
+  // layout drum track:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // G1T1 xxxxxxxxxxxxxxx  PA:Vel.   TA:Gate Step  1   G#1_ Vel:127_Len: 75%    xxxxx
+  // ....
+
+
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   seq_layer_evnt_t layer_event;
   SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
 
+  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
+
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
+
+  SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+  SEQ_LCD_PrintSpaces(1);
 
   switch( edit_mode ) {
     case SEQ_UI_EDIT_MODE_COPY: {
@@ -275,61 +294,64 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     } break;
 
     default: {
-      SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-      SEQ_LCD_PrintSpaces(2);
-
-      SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
-      SEQ_LCD_PrintChar(':');
-
-      switch( SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) ) {
-        case SEQ_LAYER_ControlType_Note:
-	  SEQ_LCD_PrintString("Note   ");
-	  break;
-
-        case SEQ_LAYER_ControlType_Velocity:
-        case SEQ_LAYER_ControlType_Chord_Velocity:
-          SEQ_LCD_PrintString("Vel.   ");
-          break;
-    
-        case SEQ_LAYER_ControlType_Chord:
-          SEQ_LCD_PrintString("Chord  ");
-          break;
-    
-        case SEQ_LAYER_ControlType_Length:
-          SEQ_LCD_PrintString("Length ");
-          break;
-    
-        case SEQ_LAYER_ControlType_CC:
-          SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
-          break;
-    
-        default:
-          SEQ_LCD_PrintString("???    ");
-          break;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
+	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintFormattedString("Chn.%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
+      } else {
+	SEQ_LCD_PrintTrackLabel(visible_track, (char *)seq_core_trk[visible_track].name);
       }
     }
   }
-  
-  SEQ_LCD_PrintFormattedString("Chn%2d", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
-  SEQ_LCD_PrintChar('/');
-  SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
-  SEQ_LCD_PrintSpaces(1);
 
-  SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
-  SEQ_LCD_PrintChar(' ');
+  SEQ_LCD_PrintSpaces(2);
 
-  SEQ_LCD_PrintStepView(ui_selected_step_view);
+  SEQ_LCD_PrintChar('P');
+  SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
+  SEQ_LCD_PrintChar(':');
 
+  switch( layer_ctrl_type ) {
+    case SEQ_LAYER_ControlType_Note:
+      SEQ_LCD_PrintString("Note   ");
+      break;
 
-  ///////////////////////////////////////////////////////////////////////////
-  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
+    case SEQ_LAYER_ControlType_Velocity:
+    case SEQ_LAYER_ControlType_Chord_Velocity:
+      SEQ_LCD_PrintString("Vel.   ");
+      break;
+    
+    case SEQ_LAYER_ControlType_Chord:
+      SEQ_LCD_PrintString("Chord  ");
+      break;
+    
+    case SEQ_LAYER_ControlType_Length:
+      SEQ_LCD_PrintString("Length ");
+      break;
+    
+    case SEQ_LAYER_ControlType_CC:
+      SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+      break;
+    
+    default:
+      SEQ_LCD_PrintString("???    ");
+      break;
+  }
+
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+    u8 selected_trg_layer = accent_available ? (ui_selected_trg_layer >= (SEQ_TRG_NumLayersGet(visible_track)/2)) : 0;
+    SEQ_LCD_PrintString(selected_trg_layer ? "TB:Acc. " : "TA:Gate ");
+  } else {
+    SEQ_LCD_PrintFormattedString("T%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
 
-  SEQ_LCD_PrintFormattedString("Step");
-  SEQ_LCD_PrintSelectedStep(ui_selected_step, 15);
-  SEQ_LCD_PrintChar(':');
+  SEQ_LCD_PrintFormattedString("Step%3d   ", ui_selected_step+1);
 
   if( layer_event.midi_package.event == CC ) {
     SEQ_LCD_PrintFormattedString("CC#%3d %3d",
@@ -360,18 +382,15 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   SEQ_LCD_PrintString(" Len:");
   SEQ_LCD_PrintGatelength(layer_event.len);
-  SEQ_LCD_PrintSpaces(1);
+  SEQ_LCD_PrintSpaces(4);
 
-  int i;
-  const char trg_chars[8] = "gsagrgv";
-  for(i=0; i<7; ++i) {
-    u8 trg_layer;
-    if( !(trg_layer=SEQ_TRG_AssignmentGet(visible_track, i)) )
-      SEQ_LCD_PrintChar('-');
-    else
-      SEQ_LCD_PrintChar(SEQ_TRG_Get(visible_track, ui_selected_step, trg_layer-1) ? (trg_chars[i]-32) : trg_chars[i]);
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+    u8 drum = accent_available ? (ui_selected_trg_layer % (SEQ_TRG_NumLayersGet(visible_track)/2)) : ui_selected_trg_layer;
+    SEQ_LCD_PrintTrackDrum(visible_track, drum, (char *)seq_core_trk[visible_track].name);
+  } else {
+    SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
   }
-
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -494,15 +513,16 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       seq_layer_evnt_t layer_event;
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
+      u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+      u8 accent_offset = SEQ_TRG_NumLayersGet(visible_track)/2;
+      u8 drum = accent_available ? (ui_selected_trg_layer % accent_offset) : ui_selected_trg_layer;
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 gate = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer);
-	u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-	u8 accent = accent_available ? SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer + 16) : 0;
+	u8 gate = SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, drum);
+	u8 accent = accent_available ? SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, drum + accent_offset) : 0;
 
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
-	// TODO: show accent flag if available with character 4/5
-	SEQ_LCD_PrintChar(gate ? 0x01 : 0x00);
+	SEQ_LCD_PrintChar((accent << 1) | gate);
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {

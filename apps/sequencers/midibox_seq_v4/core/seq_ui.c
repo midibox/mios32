@@ -71,6 +71,8 @@ u16 ui_hold_msg_ctr;
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
 seq_ui_page_t ui_stepview_prev_page;
+seq_ui_page_t ui_trglayer_prev_page;
+seq_ui_page_t ui_parlayer_prev_page;
 
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
@@ -691,6 +693,7 @@ static s32 SEQ_UI_Button_All(s32 depressed)
 
 static s32 SEQ_UI_Button_StepView(s32 depressed)
 {
+
 #if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.STEPVIEW ^= 1; // toggle STEPVIEW pressed (will also be released once GP button has been pressed)
@@ -760,11 +763,59 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 
 static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 {
-  if( depressed ) return -1; // ignore when button depressed
-
   if( trg_layer >= 3 ) return -2; // max. 3 trglayer buttons
 
-  ui_selected_trg_layer = trg_layer;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+
+  if( num_t_layers <= 3 ) {
+    // 3 layers: direct selection with LayerA/B/C button
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.TRG_LAYER_SEL = 0;
+    ui_selected_trg_layer = trg_layer;
+  } else if( num_t_layers <= 4 ) {
+    // 4 layers: LayerC Button toggles between C and D
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.TRG_LAYER_SEL = 0;
+    if( trg_layer == 3 )
+      ui_selected_trg_layer = (ui_selected_trg_layer == 3) ? 4 : 3;
+    else
+      ui_selected_trg_layer = trg_layer;
+  } else {
+    // >4 layers: LayerA/B button selects directly, Layer C button enters trigger assignment screen
+    // also used for drum tracks
+    if( trg_layer <= 1 ) {
+      if( depressed ) return -1; // ignore when button depressed
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+	if( accent_available )
+	  num_t_layers /= 2;
+
+	ui_selected_trg_layer %= num_t_layers;
+	if( trg_layer == 1 && accent_available )
+	  ui_selected_trg_layer += num_t_layers;
+      } else {
+	seq_ui_button_state.TRG_LAYER_SEL = 0;
+	ui_selected_trg_layer = trg_layer;
+      }
+    } else {
+#if DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER
+      if( depressed ) return -1; // ignore when button depressed
+      seq_ui_button_state.TRG_LAYER_SEL ^= 1; // toggle TRGSEL status (will also be released once GP button has been pressed)
+#else
+      // set mode
+      seq_ui_button_state.TRG_LAYER_SEL = depressed ? 0 : 1;
+#endif
+
+      if( seq_ui_button_state.TRG_LAYER_SEL ) {
+	ui_trglayer_prev_page = ui_page;
+	SEQ_UI_PageSet(SEQ_UI_PAGE_TRGSEL);
+      } else {
+	SEQ_UI_PageSet(ui_trglayer_prev_page);
+      }
+    }
+  }
 
   return 0; // no error
 }
@@ -1092,6 +1143,9 @@ s32 SEQ_UI_LCD_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
   // track LEDs
   SEQ_LED_PinSet(LED_TRACK1, (ui_selected_tracks & (1 << 0)));
   SEQ_LED_PinSet(LED_TRACK2, (ui_selected_tracks & (1 << 1)));
@@ -1101,7 +1155,7 @@ s32 SEQ_UI_LED_Handler(void)
   // parameter layer LEDs
   SEQ_LED_PinSet(LED_PAR_LAYER_A, (ui_selected_par_layer == 0));
   SEQ_LED_PinSet(LED_PAR_LAYER_B, (ui_selected_par_layer == 1));
-  SEQ_LED_PinSet(LED_PAR_LAYER_C, (ui_selected_par_layer == 2));
+  SEQ_LED_PinSet(LED_PAR_LAYER_C, (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
   
   // group LEDs
   SEQ_LED_PinSet(LED_GROUP1, (ui_selected_group == 0));
@@ -1110,9 +1164,17 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_GROUP4, (ui_selected_group == 3));
   
   // trigger layer LEDs
-  SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
-  SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
-  SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer == 2));
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+    u8 selected_trg_layer = accent_available ? (ui_selected_trg_layer >= (SEQ_TRG_NumLayersGet(visible_track)/2)) : 0;
+    SEQ_LED_PinSet(LED_TRG_LAYER_A, (selected_trg_layer == 0));
+    SEQ_LED_PinSet(LED_TRG_LAYER_B, (selected_trg_layer == 1));
+    SEQ_LED_PinSet(LED_TRG_LAYER_C, seq_ui_button_state.TRG_LAYER_SEL);
+  } else {
+    SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
+    SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
+    SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
+  }
   
   // remaining LEDs
   SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);

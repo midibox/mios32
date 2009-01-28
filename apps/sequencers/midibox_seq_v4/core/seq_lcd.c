@@ -36,6 +36,7 @@
 
 #include "seq_lcd.h"
 #include "seq_midi_port.h"
+#include "seq_cc.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -570,9 +571,12 @@ s32 SEQ_LCD_PrintTrackLabel(u8 track, char *track_name)
   if( found_char )
     SEQ_LCD_PrintStringPadded((char *)&track_name[5], 15);
   else {
-    SEQ_LCD_PrintFormattedString("<Track #%d", track+1);
-    SEQ_LCD_PrintChar('>');
-    SEQ_LCD_PrintSpaces((track > 9) ? 9 : 10);
+    // "  USB1 Chn.xx  "
+    SEQ_LCD_PrintChar(' ');
+    SEQ_LCD_PrintChar(' ');
+    SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(track, SEQ_CC_MIDI_PORT));
+    SEQ_LCD_PrintChar(' ');
+    SEQ_LCD_PrintFormattedString("Chn.%2d  ", SEQ_CC_Get(track, SEQ_CC_MIDI_CHANNEL)+1);
   }
 
   return 0; // no error
@@ -660,16 +664,3 @@ s32 SEQ_LCD_PrintStepView(u8 step_view)
 
   return 0; // no error
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// prints selected step (6 characters)
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintSelectedStep(u8 step_sel, u8 step_max)
-{
-  SEQ_LCD_PrintFormattedString("%3d/%2d", step_sel+1, step_max+1);
-
-  return 0; // no error
-}
-
-

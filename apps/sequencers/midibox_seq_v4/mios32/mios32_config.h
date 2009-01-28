@@ -78,6 +78,8 @@
 #define DEFAULT_BEHAVIOUR_BUTTON_SCRUB	0
 #define DEFAULT_BEHAVIOUR_BUTTON_MENU	0
 #define DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW 0
+#define DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER 0
+#define DEFAULT_BEHAVIOUR_BUTTON_PAR_LAYER 0
 
 
 // include SRIO setup here, so that we can propagate values to external modules
