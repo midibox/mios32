@@ -495,14 +495,14 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track); // TODO: find proper solution to define 2*16 (Gate/Accent) case
-	u8 num_notes = num_layers % 16;
-
 	u8 gate = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer);
-	u8 accent = (num_layers > num_notes) ? SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer + 16) : 0;
+	u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+	u8 accent = accent_available ? SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer + 16) : 0;
 
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
+	// TODO: show accent flag if available with character 4/5
+	// TODO: step view button: full view with 256 dots by using special characters
 	SEQ_LCD_PrintChar(gate ? 0x03 : 0x02);
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
