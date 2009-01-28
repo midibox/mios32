@@ -315,7 +315,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
   SEQ_LCD_PrintSpaces(1);
 
-  SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_par_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+  SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
   SEQ_LCD_PrintChar(' ');
 
   SEQ_LCD_PrintStepView(ui_selected_step_view);
@@ -446,7 +446,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       // we want to show triggers
-      SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbols);
+      SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
     } else {
       // we want to show vertical bars
       SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
@@ -502,8 +502,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
 	// TODO: show accent flag if available with character 4/5
-	// TODO: step view button: full view with 256 dots by using special characters
-	SEQ_LCD_PrintChar(gate ? 0x03 : 0x02);
+	SEQ_LCD_PrintChar(gate ? 0x01 : 0x00);
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {

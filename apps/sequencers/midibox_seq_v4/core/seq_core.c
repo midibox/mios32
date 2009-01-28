@@ -99,7 +99,7 @@ static u32 bpm_tick_prefetched_ctr;
 s32 SEQ_CORE_Init(u32 mode)
 {
   seq_core_options.ALL = 0;
-  seq_core_steps_per_measure = 16;
+  seq_core_steps_per_measure = 16-1;
   seq_core_global_scale = 0;
   seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
@@ -320,7 +320,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
     if( seq_core_state.FIRST_CLK )
       seq_core_state.ref_step = 0;
     else {
-      if( ++seq_core_state.ref_step >= seq_core_steps_per_measure ) {
+      if( ++seq_core_state.ref_step > seq_core_steps_per_measure ) {
 	seq_core_state.ref_step = 0;
 	synch_to_measure_req = 1;
       }

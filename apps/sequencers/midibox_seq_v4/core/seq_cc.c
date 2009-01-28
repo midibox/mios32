@@ -43,7 +43,7 @@ s32 SEQ_CC_Init(u32 mode)
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
     // clear all CCs
-    memset((u8 *)tcc, 0, 128);
+    memset((u8 *)tcc, 0, sizeof(seq_cc_trk_t));
 
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;

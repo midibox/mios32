@@ -1193,13 +1193,20 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // beat LED: tmp. for demo w/o real sequencer
   u8 sequencer_running = SEQ_BPM_IsRunning();
-  SEQ_LED_PinSet(LED_BEAT, (sequencer_running && (seq_core_state.ref_step & 3) == 0));
+  SEQ_LED_PinSet(LED_BEAT, sequencer_running && ((seq_core_state.ref_step & 3) == 0));
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
-  u8 played_step = seq_core_trk[SEQ_UI_VisibleTrackGet()].step;
-  if( sequencer_running && (played_step >> 4) == ui_selected_step_view )
-    pos_marker_mask = 1 << (played_step & 0xf);
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 played_step = seq_core_trk[visible_track].step;
+  if( seq_ui_button_state.STEPVIEW ) {
+    // if STEPVIEW button pressed: pos marker correlated to zoom ratio
+    if( sequencer_running )
+      pos_marker_mask = 1 << (played_step / (SEQ_TRG_NumStepsGet(visible_track)/16));
+  } else {
+    if( sequencer_running && (played_step >> 4) == ui_selected_step_view )
+      pos_marker_mask = 1 << (played_step & 0xf);
+  }
 
   // exit of pattern hasn't changed
   if( prev_ui_gp_leds == ui_gp_leds && prev_pos_marker_mask == pos_marker_mask )

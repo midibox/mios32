@@ -47,7 +47,7 @@ s32 SEQ_PAR_Init(u32 mode)
   // init parameter layer values
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    SEQ_PAR_TrackInit(track, 256, 4); // track, steps, parameter layers
+    SEQ_PAR_TrackInit(track, 64, 16); // track, steps, parameter layers
 
   return 0; // no error
 }
