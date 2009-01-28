@@ -19,7 +19,9 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
+#include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_trg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -30,7 +32,15 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  *gp_leds = 1 << ui_selected_step_view;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+  if( num_steps > 128 )
+    *gp_leds = 1 << ui_selected_step_view;
+  else if( num_steps > 64 )
+    *gp_leds = 3 << (2*ui_selected_step_view);
+  else
+    *gp_leds = 15 << (4*ui_selected_step_view);
 
   return 0; // no error
 }
@@ -46,7 +56,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int num_steps = SEQ_PAR_NumStepsGet(visible_track);
+  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -54,11 +64,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
-    if( encoder > (num_steps/16) )
-      return -1; // invalid step view
-
     // select new step view
-    ui_selected_step_view = encoder;
+    ui_selected_step_view = (encoder * (num_steps/16)) / 16;
 
     // select step within view
     ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
@@ -132,42 +139,99 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // >Pos< 17-  33-  49-  65-  81-  97- 113- 129- 145- 161- 177- 193- 209- 225- 241- 
-  // > 15<  32   48   64   80   96  112  128  144  160  176  192  208  224  240  256
+  // 1                   17                  33                  49
+  // *... *... *... *... *... *... *... *... *... *... *... *... *... *... *... *... 
 
-  // "Pos xxx is just a temporary marker to print the current position
 
-  // this requires high-prio updates!
-#if 0
-  if( !high_prio )
-    return 0; // there are no high-priority updates
-#endif
+  // 5 character usage in 256 step view (5 chars have to display 16 steps, 8 special chars available,
+  // due to this limitation, we only display 15 steps (shouldn't really hurt))
+  // 43210 43210 43210 43210 43210
+  // * * * * . . . * . . . * . . .  (Small charset)
 
+  // 5 character usage in 128 step view (5 chars have to display 8 steps):
+  // 43210 43210 43210 43210 43210
+  //  * *   . *   * .   . .         (Medium charset)
+
+  // 5 character usage in 64 step view (5 chars have to display 4 steps):
+  // 43210 43210 43210 43210 43210
+  //   *     *     *     *     *    (Big charset)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int num_steps = SEQ_PAR_NumStepsGet(visible_track);
-  int played_step = seq_core_trk[visible_track].step + 1;
-  int played_view = (played_step-1) / 16;
+  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+  int steps_per_item = num_steps / 16;
+  int played_step = SEQ_BPM_IsRunning() ? seq_core_trk[visible_track].step : -1;
 
   int i;
 
-  SEQ_LCD_CursorSet(0, 0);
-  for(i=0; i<(num_steps/16); ++i)
-    if( i == ui_selected_step_view && ui_cursor_flash )
-      SEQ_LCD_PrintSpaces(5);
-    else if( i == played_view )
-      SEQ_LCD_PrintString(">Pos<");
-    else
-      SEQ_LCD_PrintFormattedString("%3d- ", i*16+1);
+  if( !high_prio ) {
+    SEQ_LCD_CursorSet(0, 0);
+    for(i=0; i<16; ++i)
+      if( ((i*steps_per_item) % 16) || (((i*steps_per_item)/16) == ui_selected_step_view) && ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(5);
+      else
+	SEQ_LCD_PrintFormattedString("%-3d  ", i*steps_per_item+1);
+
+    // print trigger layer and name at the rightmost side
+    SEQ_LCD_CursorSet(73, 0);
+    SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+  }
 
   SEQ_LCD_CursorSet(0, 1);
-  for(i=0; i<(num_steps/16); ++i)
-    if( i == ui_selected_step_view && ui_cursor_flash )
-      SEQ_LCD_PrintSpaces(5);
-    else if( i == played_view )
-      SEQ_LCD_PrintFormattedString(">%3d<", played_step);
-    else
-      SEQ_LCD_PrintFormattedString("  %3d", i*16+16);
+  if( steps_per_item > 8 ) {
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsSmall);
+
+    for(i=0; i<16; ++i) {
+      u8 step = i*steps_per_item;
+      u8 step8 = step / 8;
+      u16 steps = (SEQ_TRG_Get8(visible_track, step8+1, ui_selected_trg_layer) << 8) |
+	          (SEQ_TRG_Get8(visible_track, step8+0, ui_selected_trg_layer) << 0);
+
+      if( played_step >= step && played_step < (step+16) )
+	steps ^= (1 << (played_step % 16));
+
+      int j;
+      for(j=0; j<5; ++j) {
+	SEQ_LCD_PrintChar(steps & 0x7);
+	steps >>= 3;
+      }
+    }
+  } else if( steps_per_item > 4 ) {
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsMedium);
+
+    for(i=0; i<16; ++i) {
+      u8 step = i*steps_per_item;
+      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, ui_selected_trg_layer);
+
+      if( played_step >= step && played_step < (step+8) )
+	steps ^= (1 << (played_step % 8));
+
+      int j;
+      for(j=0; j<5; ++j) {
+	SEQ_LCD_PrintChar(steps & 0x3);
+	steps >>= 2;
+      }
+    }
+  } else {
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
+
+    for(i=0; i<16; ++i) {
+      u8 step = i*steps_per_item;
+      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, ui_selected_trg_layer);
+      steps = (i % 1) ? ((steps & 0xf) >> 4) : (steps & 0xf);
+
+      int j;
+      for(j=0; j<4; ++j) {
+	u8 gate = steps & 0x1;
+	if( (step + j) == played_step ) {
+	  SEQ_LCD_PrintChar(gate ? 0x03 : 0x02);
+	} else {
+	  SEQ_LCD_PrintChar(gate);
+	}
+	steps >>= 1;
+      }
+      SEQ_LCD_PrintChar(' ');
+    }
+  }
 
   return 0; // no error
 }

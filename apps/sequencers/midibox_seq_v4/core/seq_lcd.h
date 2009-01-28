@@ -30,7 +30,9 @@ typedef enum {
   SEQ_LCD_CHARSET_None,
   SEQ_LCD_CHARSET_VBars,
   SEQ_LCD_CHARSET_HBars,
-  SEQ_LCD_CHARSET_DrumSymbols
+  SEQ_LCD_CHARSET_DrumSymbolsBig,
+  SEQ_LCD_CHARSET_DrumSymbolsMedium,
+  SEQ_LCD_CHARSET_DrumSymbolsSmall
 } seq_lcd_charset_t;
 
 

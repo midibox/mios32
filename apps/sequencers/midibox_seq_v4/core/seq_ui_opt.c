@@ -257,7 +257,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_STEPS_MEASURE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d", seq_core_steps_per_measure);
+    SEQ_LCD_PrintFormattedString("%3d", (int)seq_core_steps_per_measure + 1);
   }
   SEQ_LCD_PrintSpaces(8);
 
