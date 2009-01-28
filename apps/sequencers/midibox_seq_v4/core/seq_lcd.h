@@ -61,9 +61,9 @@ extern s32 SEQ_LCD_PrintPatternLabel(seq_pattern_t pattern, char *pattern_name);
 extern s32 SEQ_LCD_PrintTrackLabel(u8 track, char *track_name);
 extern s32 SEQ_LCD_PrintTrackCategory(u8 track, char *track_name);
 extern s32 SEQ_LCD_PrintTrackDrum(u8 track, u8 drum, char *track_name);
-extern s32 SEQ_LCD_PrintMIDIPort(mios32_midi_port_t port);
+extern s32 SEQ_LCD_PrintMIDIInPort(mios32_midi_port_t port);
+extern s32 SEQ_LCD_PrintMIDIOutPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintStepView(u8 step_view);
-extern s32 SEQ_LCD_PrintSelectedStep(u8 step_sel, u8 step_max);
 
 
 /////////////////////////////////////////////////////////////////////////////

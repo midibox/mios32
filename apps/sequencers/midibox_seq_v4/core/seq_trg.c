@@ -156,7 +156,7 @@ s32 SEQ_TRG_GateGet(u8 track, u16 step)
 s32 SEQ_TRG_AccentGet(u8 track, u16 step)
 {
   if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0; // directory controlled from SEQ_LAYER_GetEvents
+    return 0; // directly controlled from SEQ_LAYER_GetEvents
 
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;

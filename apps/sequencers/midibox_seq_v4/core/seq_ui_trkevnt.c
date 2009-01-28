@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
@@ -630,6 +631,14 @@ static s32 CopyPreset(u8 track, u8 config)
   SEQ_TRG_TrackInit(track, layer_config[config].trg_steps, layer_config[config].trg_layers);
 
   SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, layer_config[config].event_mode);
+
+  // BEGIN TMP
+  if( layer_config[config].event_mode == SEQ_EVENT_MODE_Drum ) {
+    memcpy((char *)seq_core_trk[track].name, " BD   SD   LT   MT   HT   CP   MA   RS   CB   CY   OH   CH  Smp1 Smp2 Smp3 Smp4 ", 80);
+  } else {
+    memset((char *)seq_core_trk[track].name, ' ', 80);
+  }
+  // END TMP
 
   u8 only_layers = 0;
   u8 all_triggers_cleared = 0;

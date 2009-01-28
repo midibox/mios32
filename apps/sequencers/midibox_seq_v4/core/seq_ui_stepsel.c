@@ -21,6 +21,8 @@
 
 #include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_cc.h"
+#include "seq_layer.h"
 #include "seq_trg.h"
 
 
@@ -82,7 +84,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, num_steps/16, incrementer);
+    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps/16)-1, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -157,9 +159,18 @@ static s32 LCD_Handler(u8 high_prio)
   //   *     *     *     *     *    (Big charset)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   int num_steps = SEQ_TRG_NumStepsGet(visible_track);
   int steps_per_item = num_steps / 16;
   int played_step = SEQ_BPM_IsRunning() ? seq_core_trk[visible_track].step : -1;
+
+  int num_layers = SEQ_TRG_NumLayersGet(visible_track);
+  u8 selected_trg_layer = ui_selected_trg_layer;
+  u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
+
+  if( event_mode == SEQ_EVENT_MODE_Drum && accent_available ) {
+    selected_trg_layer %= (num_layers / 2);
+  }
 
   int i;
 
@@ -171,9 +182,11 @@ static s32 LCD_Handler(u8 high_prio)
       else
 	SEQ_LCD_PrintFormattedString("%-3d  ", i*steps_per_item+1);
 
-    // print trigger layer and name at the rightmost side
-    SEQ_LCD_CursorSet(73, 0);
-    SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+    if( event_mode != SEQ_EVENT_MODE_Drum ) {
+      // print trigger layer and name at the rightmost side
+      SEQ_LCD_CursorSet(73, 0);
+      SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+    }
   }
 
   SEQ_LCD_CursorSet(0, 1);
@@ -183,8 +196,8 @@ static s32 LCD_Handler(u8 high_prio)
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
       u8 step8 = step / 8;
-      u16 steps = (SEQ_TRG_Get8(visible_track, step8+1, ui_selected_trg_layer) << 8) |
-	          (SEQ_TRG_Get8(visible_track, step8+0, ui_selected_trg_layer) << 0);
+      u16 steps = (SEQ_TRG_Get8(visible_track, step8+1, selected_trg_layer) << 8) |
+	          (SEQ_TRG_Get8(visible_track, step8+0, selected_trg_layer) << 0);
 
       if( played_step >= step && played_step < (step+16) )
 	steps ^= (1 << (played_step % 16));
@@ -200,7 +213,7 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, ui_selected_trg_layer);
+      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
 
       if( played_step >= step && played_step < (step+8) )
 	steps ^= (1 << (played_step % 8));
@@ -216,7 +229,7 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, ui_selected_trg_layer);
+      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
       steps = (i % 1) ? ((steps & 0xf) >> 4) : (steps & 0xf);
 
       int j;

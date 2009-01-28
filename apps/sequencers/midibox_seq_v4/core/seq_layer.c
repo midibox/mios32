@@ -233,7 +233,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
 	// TODO: selection from variable layer
 	if( accent_available ) {
 	  // gate/accent layers
-	  p->velocity = SEQ_TRG_Get(track, step, drum + 1*16) ? tcc->lay_const[2*16 + drum] : tcc->lay_const[1*16 + drum];
+	  p->velocity = SEQ_TRG_Get(track, step, drum + num_notes) ? tcc->lay_const[2*16 + drum] : tcc->lay_const[1*16 + drum];
 	} else { // Vel_N/A
 	  p->velocity = tcc->lay_const[1*16 + drum];
 	}

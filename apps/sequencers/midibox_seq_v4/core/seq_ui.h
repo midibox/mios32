@@ -38,7 +38,7 @@
 
 typedef union {
   struct {
-    unsigned ALL:16;
+    unsigned ALL:32;
   };
   struct {
     unsigned MENU_PRESSED:1;
@@ -50,6 +50,8 @@ typedef union {
     unsigned METRONOME:1;
     unsigned SCRUB:1;
     unsigned STEPVIEW:1;
+    unsigned PAR_LAYER_SEL:1;
+    unsigned TRG_LAYER_SEL:1;
     unsigned REW:1;
     unsigned FWD:1;
     unsigned COPY:1;
@@ -214,6 +216,8 @@ extern u16 ui_hold_msg_ctr;
 extern seq_ui_page_t ui_page;
 extern seq_ui_page_t ui_selected_page;
 extern seq_ui_page_t ui_stepview_prev_page;
+extern seq_ui_page_t ui_trglayer_prev_page;
+extern seq_ui_page_t ui_parlayer_prev_page;
 
 extern volatile u8 ui_cursor_flash;
 
