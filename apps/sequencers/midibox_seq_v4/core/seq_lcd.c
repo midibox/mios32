@@ -430,39 +430,11 @@ s32 SEQ_LCD_PrintArp(u8 arp)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintGatelength(u8 len)
 {
-  const char len_tab[24][5] = {
-    "  4%", // 0
-    "  8%", // 1
-    " 13%", // 2
-    " 17%", // 3
-    " 21%", // 4
-    " 25%", // 5
-    " 29%", // 6
-    " 33%", // 7
-    " 38%", // 8
-    " 42%", // 9
-    " 46%", // 10
-    " 50%", // 11
-    " 54%", // 12
-    " 58%", // 13
-    " 52%", // 14
-    " 67%", // 15
-    " 71%", // 16
-    " 75%", // 17
-    " 79%", // 18
-    " 83%", // 19
-    " 88%", // 20
-    " 92%", // 21
-    " 96%", // 22
-    "100%"  // 23
-  };
-
-  if( len < 24 ) { // gatelength
-    SEQ_LCD_PrintString((char *)len_tab[len]);
-  } else if( len < 32 ) { // gilde
+  if( len <= 96 ) {
+    int len_percent = (len*100)/96;
+    SEQ_LCD_PrintFormattedString("%3d%%", len_percent);
+  } else { // gilde
     SEQ_LCD_PrintString("Gld.");
-  } else { // multi trigger
-    SEQ_LCD_PrintFormattedString("%1dx%2d", (len>>5)+1, (len&0x1f)+1);
   }
 
   return 0; // no error
