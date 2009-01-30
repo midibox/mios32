@@ -57,41 +57,36 @@ typedef union {
 
 extern s32 SEQ_TRG_Init(u32 mode);
 
-extern s32 SEQ_TRG_TrackInit(u8 track, u16 steps, u16 trg_layers);
+extern s32 SEQ_TRG_TrackInit(u8 track, u16 steps, u8 trg_layers, u8 instruments);
+
+extern s32 SEQ_TRG_NumInstrumentsGet(u8 track);
 extern s32 SEQ_TRG_NumLayersGet(u8 track);
 extern s32 SEQ_TRG_NumStepsGet(u8 track);
 
 extern s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num);
 
-extern s32 SEQ_TRG_DrumHasAccentLayer(u8 track);
-extern s32 SEQ_TRG_DrumIsAccentLayer(u8 track, u8 trg_layer);
-extern s32 SEQ_TRG_DrumLayerGet(u8 track, u8 trg_layer);
+extern s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer, u8 trg_instrument);
+extern s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument);
 
-extern s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer);
-extern s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer);
+extern s32 SEQ_TRG_GateGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_AccentGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_RollGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_GlideGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_SkipGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_RandomGateGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_RandomValueGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_NoFxGet(u8 track, u16 step, u8 trg_instrument);
 
-extern s32 SEQ_TRG_DrumGet2x8(u8 track, u8 step8, u8 trg_layer);
-extern s32 SEQ_TRG_DrumGet(u8 track, u8 step, u8 trg_layer);
-
-extern s32 SEQ_TRG_GateGet(u8 track, u16 step);
-extern s32 SEQ_TRG_AccentGet(u8 track, u16 step);
-extern s32 SEQ_TRG_RollGet(u8 track, u16 step);
-extern s32 SEQ_TRG_GlideGet(u8 track, u16 step);
-extern s32 SEQ_TRG_SkipGet(u8 track, u16 step);
-extern s32 SEQ_TRG_RandomGateGet(u8 track, u16 step);
-extern s32 SEQ_TRG_RandomValueGet(u8 track, u16 step);
-extern s32 SEQ_TRG_NoFxGet(u8 track, u16 step);
-
-extern s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 value);
-extern s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value);
-extern s32 SEQ_TRG_GateSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_AccentSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_RollSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_GlideSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_SkipSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_RandomGateSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_RandomValueSet(u8 track, u16 step, u8 value);
-extern s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 value);
+extern s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_GateSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_AccentSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_RollSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_GlideSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_SkipSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_RandomGateSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_RandomValueSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 trg_instrument, u8 value);
 
 extern char *SEQ_TRG_TypeStr(u8 trg_num);
 extern char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer);

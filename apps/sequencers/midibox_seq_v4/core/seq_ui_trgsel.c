@@ -33,15 +33,12 @@ static s32 LED_Handler(u16 *gp_leds)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  int num_layers = SEQ_TRG_NumLayersGet(visible_track);
-  u8 selected_trg_layer = ui_selected_trg_layer;
-  u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
 
-  if( event_mode == SEQ_EVENT_MODE_Drum && accent_available ) {
-    selected_trg_layer %= (num_layers / 2);
-  }
+  if( event_mode == SEQ_EVENT_MODE_Drum )
+    *gp_leds = 1 << ui_selected_instrument;
+  else
+    *gp_leds = 1 << ui_selected_trg_layer;
 
-  *gp_leds = 1 << selected_trg_layer;
 
   return 0; // no error
 }
@@ -58,16 +55,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  int num_layers = SEQ_TRG_NumLayersGet(visible_track);
-  u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
 
-  if( event_mode == SEQ_EVENT_MODE_Drum && accent_available ) {
-    num_layers /= 2;
-  }
+  if( encoder <= SEQ_UI_ENCODER_GP16 ) {
+    // select new layer/instrument
 
-  if( encoder < num_layers ) {
-    // select new layer
-    ui_selected_trg_layer = encoder;
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      if( encoder >= SEQ_TRG_NumInstrumentsGet(visible_track) )
+	return -1;
+      ui_selected_instrument = encoder;
+    } else {
+      if( encoder >= SEQ_TRG_NumLayersGet(visible_track) )
+	return -1;
+      ui_selected_trg_layer = encoder;
+    }
 
 #if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
     // if toggle function active: jump back to previous menu
@@ -81,7 +81,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, num_layers-1, incrementer);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, SEQ_TRG_NumInstrumentsGet(visible_track)-1, incrementer);
+    } else {
+      return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, SEQ_TRG_NumLayersGet(visible_track)-1, incrementer);
+    }
   }
 
   return -1; // invalid or unsupported encoder
@@ -154,12 +158,9 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  int num_layers = SEQ_TRG_NumLayersGet(visible_track);
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-    if( accent_available )
-      num_layers /= 2;
+    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 0);
@@ -170,11 +171,12 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_CursorSet(0, 1);
 
     int i;
-    for(i=0; i<num_layers; ++i)
+    for(i=0; i<num_instruments; ++i)
       SEQ_LCD_PrintTrackDrum(visible_track, i, (char *)seq_core_trk[visible_track].name);
 
-    SEQ_LCD_PrintSpaces(80 - (5*num_layers));
+    SEQ_LCD_PrintSpaces(80 - (5*num_instruments));
   } else {
+    u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
 
     int i;
     for(i=0; i<num_layers; ++i)

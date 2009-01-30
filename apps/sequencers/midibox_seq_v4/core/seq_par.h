@@ -40,13 +40,14 @@
 
 extern s32 SEQ_PAR_Init(u32 mode);
 
-extern s32 SEQ_PAR_TrackInit(u8 track, u16 steps, u16 par_layers);
+extern s32 SEQ_PAR_TrackInit(u8 track, u16 steps, u8 par_layers, u8 instruments);
 
+extern s32 SEQ_PAR_NumInstrumentsGet(u8 track);
 extern s32 SEQ_PAR_NumLayersGet(u8 track);
 extern s32 SEQ_PAR_NumStepsGet(u8 track);
 
-extern s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 value);
-extern s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer);
+extern s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 par_instrument, u8 value);
+extern s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer, u8 par_instrument);
 
 
 /////////////////////////////////////////////////////////////////////////////

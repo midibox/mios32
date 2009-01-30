@@ -164,11 +164,6 @@ static s32 LCD_Handler(u8 high_prio)
   int steps_per_item = num_steps / 16;
   int played_step = SEQ_BPM_IsRunning() ? seq_core_trk[visible_track].step : -1;
 
-  u8 selected_trg_layer = ui_selected_trg_layer;
-  if( event_mode == SEQ_EVENT_MODE_Drum && SEQ_TRG_DrumHasAccentLayer(visible_track) ) {
-    selected_trg_layer = SEQ_TRG_DrumLayerGet(visible_track, selected_trg_layer);
-  }
-
   int i;
 
   if( !high_prio ) {
@@ -194,15 +189,9 @@ static s32 LCD_Handler(u8 high_prio)
       u8 step = i*steps_per_item;
       u8 step8 = step / 8;
 
-      u16 steps;
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	steps = ((SEQ_TRG_DrumGet2x8(visible_track, step8+1, selected_trg_layer) & 0xff) << 8) |
- 	        ((SEQ_TRG_DrumGet2x8(visible_track, step8+0, selected_trg_layer) & 0xff) << 0);
-      } else {
-	steps = (SEQ_TRG_Get8(visible_track, step8+1, selected_trg_layer) << 8) |
-	        (SEQ_TRG_Get8(visible_track, step8+0, selected_trg_layer) << 0);
-      }
-
+      u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
+      u16 steps = (SEQ_TRG_Get8(visible_track, step8+1, layer, ui_selected_instrument) << 8) |
+	          (SEQ_TRG_Get8(visible_track, step8+0, layer, ui_selected_instrument) << 0);
 
       if( played_step >= step && played_step < (step+16) )
 	steps ^= (1 << (played_step % 16));
@@ -218,11 +207,8 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u8 steps;
-      if( event_mode == SEQ_EVENT_MODE_Drum )
-	steps = SEQ_TRG_DrumGet2x8(visible_track, step / 8, selected_trg_layer);
-      else
-	steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
+      u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
+      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, layer, ui_selected_instrument);
 
       if( played_step >= step && played_step < (step+8) )
 	steps ^= (1 << (played_step % 8));
@@ -238,11 +224,10 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u16 steps;
+      u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
+      u16 steps = SEQ_TRG_Get8(visible_track, step / 8, layer, ui_selected_instrument);
       if( event_mode == SEQ_EVENT_MODE_Drum )
-	steps = SEQ_TRG_DrumGet2x8(visible_track, step / 8, selected_trg_layer); // note: returns accent flags in [15:8]
-      else
-	steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
+	steps |= SEQ_TRG_Get8(visible_track, step / 8, 1, ui_selected_instrument) << 8;
 
       if( i & 1 )
 	steps >>= 4;

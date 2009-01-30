@@ -38,6 +38,7 @@ u8 seq_trg_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_TRG_MAX_BYTES];
 
 static u8 trg_layer_num_steps8[SEQ_CORE_NUM_TRACKS];
 static u8 trg_layer_num_layers[SEQ_CORE_NUM_TRACKS];
+static u8 trg_layer_num_instruments[SEQ_CORE_NUM_TRACKS];
 
 static const char seq_trg_names[8][6] = {
   "Gate ", // 0
@@ -60,7 +61,7 @@ s32 SEQ_TRG_Init(u32 mode)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 
-    SEQ_TRG_TrackInit(track, 64, 8); // track, steps, trigger layers
+    SEQ_TRG_TrackInit(track, 64, 8, 1); // track, steps, trigger layers, instruments
 
     // special init value for first track: set gates on each beat
     if( track == 0 )
@@ -74,18 +75,28 @@ s32 SEQ_TRG_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Inits all trigger layers of the given track with the given constraints
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_TrackInit(u8 track, u16 steps, u16 trg_layers)
+s32 SEQ_TRG_TrackInit(u8 track, u16 steps, u8 trg_layers, u8 instruments)
 {
-  if( (trg_layers * (steps/8)) > SEQ_TRG_MAX_BYTES )
+  if( (instruments * trg_layers * (steps/8)) > SEQ_TRG_MAX_BYTES )
     return -1; // invalid configuration
 
   trg_layer_num_layers[track] = trg_layers;
   trg_layer_num_steps8[track] = steps/8;
+  trg_layer_num_instruments[track] = instruments;
 
   // init trigger layer values
   memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns number of instruments for a given track
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_NumInstrumentsGet(u8 track)
+{
+  return trg_layer_num_instruments[track];
 }
 
 
@@ -117,41 +128,13 @@ s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Drum mode: returns 1 if track supports accent triggers
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_DrumHasAccentLayer(u8 track)
-{
-  return seq_cc_trk[track].trg_assignments.accent;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Drum mode: returns 1 if trigger layer conrols accent
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_DrumIsAccentLayer(u8 track, u8 trg_layer)
-{
-  return seq_cc_trk[track].trg_assignments.accent &&
-         (trg_layer >= (trg_layer_num_layers[track] / 2));
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Drum mode: returns the drum instrument independing from gate/accent layer
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_DrumLayerGet(u8 track, u8 trg_layer)
-{
-  if( !seq_cc_trk[track].trg_assignments.accent )
-    return trg_layer;
-
-  return trg_layer % (trg_layer_num_layers[track] / 2);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // returns value of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer)
+s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer, u8 trg_instrument)
 {
-  u16 step_ix = (u16)trg_layer * (u16)trg_layer_num_steps8[track] + (step/8);
+  u8 num_t_layers = trg_layer_num_layers[track];
+  u8 num_t_steps8 = trg_layer_num_steps8[track];
+  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + (step/8);
   if( step_ix >= SEQ_TRG_MAX_BYTES )
     return 0; // invalid step position: return 0 (trigger not set)
 
@@ -163,9 +146,11 @@ s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer)
 /////////////////////////////////////////////////////////////////////////////
 // returns 8 steps of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer)
+s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument)
 {
-  u16 step_ix = (u16)trg_layer * (u16)trg_layer_num_steps8[track] + step8;
+  u8 num_t_layers = trg_layer_num_layers[track];
+  u8 num_t_steps8 = trg_layer_num_steps8[track];
+  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + step8;
   if( step_ix >= SEQ_TRG_MAX_BYTES )
     return 0; // invalid step position: return 0 (trigger not set)
 
@@ -174,118 +159,76 @@ s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Drum mode: returns 8 steps of a given trigger layer
-// bit [7:0]: gates, bit [15:8]: accents
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_DrumGet2x8(u8 track, u8 step8, u8 trg_layer)
-{
-  u16 step_ix = SEQ_TRG_DrumLayerGet(track, trg_layer) * (u16)trg_layer_num_steps8[track] + step8;
-  if( step_ix >= SEQ_TRG_MAX_BYTES )
-    return 0; // invalid step position: return 0 (trigger not set)
-
-  u8 gate = seq_trg_layer_value[track][step_ix];
-  u8 accent = 0;
-  if( SEQ_TRG_DrumHasAccentLayer(track) )
-    accent = seq_trg_layer_value[track][step_ix + (u16)trg_layer_num_steps8[track] * (trg_layer_num_layers[track] / 2)];
-
-  return (accent << 8) | gate;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Drum mode: returns a step of a given trigger layer
-// bit [0]: gate, bit [1]: accent
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_DrumGet(u8 track, u8 step, u8 trg_layer)
-{
-  u16 steps = SEQ_TRG_DrumGet2x8(track, step/8, trg_layer);
-  u8 step_mask = 1 << (step % 8);
-  return (((steps>>8) & step_mask) ? 2 : 0) | ((steps & step_mask) ? 1 : 0);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // returns value of assigned layers
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_GateGet(u8 track, u16 step)
+s32 SEQ_TRG_GateGet(u8 track, u16 step, u8 trg_instrument)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
   // gate always set if not assigned
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 1;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 1;
 }
 
-s32 SEQ_TRG_AccentGet(u8 track, u16 step)
+s32 SEQ_TRG_AccentGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0; // directly controlled from SEQ_LAYER_GetEvents
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_RollGet(u8 track, u16 step)
+s32 SEQ_TRG_RollGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_GlideGet(u8 track, u16 step)
+s32 SEQ_TRG_GlideGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.glide;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_SkipGet(u8 track, u16 step)
+s32 SEQ_TRG_SkipGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.skip;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_RandomGateGet(u8 track, u16 step)
+s32 SEQ_TRG_RandomGateGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_gate;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_RandomValueGet(u8 track, u16 step)
+s32 SEQ_TRG_RandomValueGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
-s32 SEQ_TRG_NoFxGet(u8 track, u16 step)
+s32 SEQ_TRG_NoFxGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.no_fx;
-  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1) : 0;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // sets value of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 value)
+s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 trg_instrument, u8 value)
 {
-  u16 step_ix = (u16)trg_layer * (u16)trg_layer_num_steps8[track] + (step/8);
+  u8 num_t_instruments = trg_layer_num_instruments[track];
+  if( trg_instrument >= num_t_instruments )
+    return -1;
+  u8 num_t_layers = trg_layer_num_layers[track];
+  if( trg_layer >= num_t_layers )
+    return -2;
+  u8 num_t_steps8 = trg_layer_num_steps8[track];
+  if( (step/8) >= num_t_steps8 )
+    return -3;
+
+  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + (step/8);
   if( step_ix >= SEQ_TRG_MAX_BYTES )
-    return -1; // invalid step position
+    return -4; // invalid step position
 
   u8 step_mask = 1 << (step % 8);
 
@@ -300,11 +243,21 @@ s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 // sets 8 steps of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value)
+s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument, u8 value)
 {
-  u16 step_ix = (u16)trg_layer * (u16)trg_layer_num_steps8[track] + step8;
+  u8 num_t_instruments = trg_layer_num_instruments[track];
+  if( trg_instrument >= num_t_instruments )
+    return -1;
+  u8 num_t_layers = trg_layer_num_layers[track];
+  if( trg_layer >= num_t_layers )
+    return -2;
+  u8 num_t_steps8 = trg_layer_num_steps8[track];
+  if( step8 >= num_t_steps8 )
+    return -3;
+
+  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + step8;
   if( step_ix >= SEQ_TRG_MAX_BYTES )
-    return -1; // invalid step position
+    return -4; // invalid step position
 
   seq_trg_layer_value[track][step_ix] = value;
 
@@ -315,52 +268,52 @@ s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 // sets value of assigned layers
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TRG_GateSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_GateSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_AccentSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_AccentSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_RollSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_RollSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_GlideSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_GlideSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.glide;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_SkipSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_SkipSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.skip;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_RandomGateSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_RandomGateSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_gate;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_RandomValueSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_RandomValueSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
-s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 value)
+s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 trg_instrument, u8 value)
 {
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.no_fx;
-  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, value) : -1;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
 

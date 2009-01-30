@@ -463,11 +463,17 @@ s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create)
   // it's better to disable caching here, since different sectors are accessed
   DFS_CachingEnabledSet(0);
 
-  if( create && (seq_file_dfs_errno = DFS_UnlinkFile(&vi, filepath, sector)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE] couldn't delete '%s' (file not found...)\n", filepath);
+  if( create ) {
+    if( seq_file_dfs_errno = DFS_UnlinkFile(&vi, filepath, sector) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_FILE] couldn't delete '%s' (file not found...)\n", filepath);
 #endif
-    // continue .. perhaps it didn't exist
+      // continue .. perhaps it didn't exist
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_FILE] old '%s' has been deleted\n", filepath);
+#endif
+    }
   }
   
   if( seq_file_dfs_errno = DFS_OpenFile(&vi, filepath, DFS_WRITE, sector, fileinfo) ) {

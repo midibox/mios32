@@ -113,8 +113,7 @@ s32 SEQ_LAYER_Init(u32 mode)
   for(track=0; track<16; ++track) {
     u8 only_layers = 0;
     u8 all_triggers_cleared = (track >= 1) ? 1 : 0; // triggers only set for first track
-    u8 drum_with_accent = 0;
-    SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, drum_with_accent);
+    SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
   }
 
 
@@ -214,13 +213,13 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
   u8 num_events = 0;
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
     u8 num_p_steps = SEQ_PAR_NumStepsGet(track);
     u16 step_par_layer = step % num_p_steps;
-    u8 accent_available = SEQ_TRG_DrumHasAccentLayer(track);
-    u8 num_t_layers = SEQ_TRG_NumLayersGet(track);
-    u8 num_notes = accent_available ? (num_t_layers/2) : num_t_layers;
-    int drum;
-    for(drum=0; drum<num_notes; ++drum) {
+
+    u8 drum;
+    for(drum=0; drum<num_instruments; ++drum) {
       seq_layer_evnt_t *e = &layer_events[drum];
       mios32_midi_package_t *p = &e->midi_package;
       p->type     = NoteOn;
@@ -228,28 +227,27 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
       p->note     = tcc->lay_const[0*16 + drum];
 
-      if( !SEQ_TRG_Get(track, step, drum) )
+      if( !SEQ_TRG_Get(track, step, 0, drum) )
 	p->velocity = 0;
       else {
-	if( !accent_available ) // TODO: selectable velocity assignment
-	  p->velocity = SEQ_PAR_Get(track, step_par_layer, drum);
+	if( num_p_layers == 2 ) // TODO: selectable velocity assignment
+	  p->velocity = SEQ_PAR_Get(track, step_par_layer, 0, drum);
 	else
 	  p->velocity = tcc->lay_const[1*16 + drum];
-
-	if( accent_available && SEQ_TRG_Get(track, step, drum + num_notes) ) {
-	  p->velocity = tcc->lay_const[2*16 + drum];
-	}
       }
 
       // TODO: selection from variable layer
-      e->len = 4*((accent_available ? SEQ_PAR_Get(track, step_par_layer, drum) : SEQ_PAR_Get(track, step_par_layer, drum + num_notes))+1);
+      e->len = ((num_p_layers == 2) 
+	? SEQ_PAR_Get(track, step_par_layer, 1, drum)
+	: SEQ_PAR_Get(track, step_par_layer, 0, drum)) + 1;
 
       ++num_events;
     }
   } else {
     // static assignments for Parameter Layer A/B/C
+    u8 instrument = 0;
     if( tcc->event_mode == SEQ_EVENT_MODE_Chord ) {
-      u8 chord_value = SEQ_PAR_Get(track, step, 0);
+      u8 chord_value = SEQ_PAR_Get(track, step, 0, instrument);
       for(num_events=0; num_events<4; ++num_events) {
 	s32 note = SEQ_CHORD_NoteGet(num_events, chord_value);
 	if( note < 0 )
@@ -261,8 +259,8 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	p->event    = NoteOn;
 	p->chn      = tcc->midi_chn;
 	p->note     = note;
-	p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-	e->len      = 4*SEQ_PAR_Get(track, step, 2) + 1;
+	p->velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, 1, instrument) : 0x00;
+	e->len      = SEQ_PAR_Get(track, step, 2, instrument) + 1;
       }
     } else {
       seq_layer_evnt_t *e = &layer_events[0];
@@ -270,9 +268,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       p->type     = NoteOn;
       p->event    = NoteOn;
       p->chn      = tcc->midi_chn;
-      p->note     = SEQ_PAR_Get(track, step, 0);
-      p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-      e->len      = 4*SEQ_PAR_Get(track, step, 2) + 1;
+      p->note     = SEQ_PAR_Get(track, step, 0, instrument);
+      p->velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, 1, instrument) : 0x00;
+      e->len      = SEQ_PAR_Get(track, step, 2, instrument) + 1;
       ++num_events;
     }
   }
@@ -287,7 +285,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 // "all_triggers_cleared": if 0, triggers will be initialized according to preset
 //                         if 1: triggers will be cleared
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 drum_with_accent)
+s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
 {
   int i;
   int cc;
@@ -302,7 +300,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
       i++;
     }
 
-    // copy evnt mode depending settings
+    // copy event mode depending settings
     switch( event_mode ) {
       case SEQ_EVENT_MODE_Note: {
 	// Trigger Layer Assignments
@@ -325,7 +323,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
       case SEQ_EVENT_MODE_Drum: {
 	// Trigger Layer Assignments
 	SEQ_CC_Set(track, SEQ_CC_ASG_GATE, 1);
-	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, drum_with_accent ? 2 : 0);
+	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, (SEQ_TRG_NumLayersGet(track) > 1) ? 2 : 0);
 	for(i=2; i<8; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, 0); // not relevant in drum mode
 
@@ -342,26 +340,30 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
 
 
   // get constraints of trigger layers
+  int num_t_instruments = SEQ_TRG_NumInstrumentsGet(track);
   int num_t_layers = SEQ_TRG_NumLayersGet(track);
   int num_t_steps  = SEQ_TRG_NumStepsGet(track);;
 
   // copy trigger layer values
   if( !all_triggers_cleared ) {
     int step8;
+    u8 instrument = 0;
+    u8 layer = 0;
 
     if( event_mode == SEQ_EVENT_MODE_CC ) {
       // CC: enable gate for all steps
       for(step8=0; step8<(num_t_steps/8); ++step8)
-	SEQ_TRG_Set8(track, step8, 0, 0xff);
+	SEQ_TRG_Set8(track, step8, layer, instrument, 0xff);
     } else {
       // Note/Chord/Drum: enable trigger for each beat of (first) gate layer
       for(step8=0; step8<(num_t_steps/8); ++step8)
-	SEQ_TRG_Set8(track, step8, 0, 0x11);
+	SEQ_TRG_Set8(track, step8, layer, instrument, 0x11);
     }
   }
 
 
   // get constraints of parameter layers
+  int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_p_layers = SEQ_PAR_NumLayersGet(track);
   int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
 
@@ -370,51 +372,52 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
   int par_layer;
   switch( event_mode ) {
     case SEQ_EVENT_MODE_Note: {
+      u8 instrument = 0;
       for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, 0x3c); // C-3
-	SEQ_PAR_Set(track, step, 1,  100); // velocity
-	SEQ_PAR_Set(track, step, 2, 0x11); // length
+	SEQ_PAR_Set(track, step, 0, instrument, 0x3c); // C-3
+	SEQ_PAR_Set(track, step, 1, instrument,  100); // velocity
+	SEQ_PAR_Set(track, step, 2, instrument, 0x47); // length
       }
     } break;
 
     case SEQ_EVENT_MODE_Chord: {
+      u8 instrument = 0;
       for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, 0x40); // Chord
-	SEQ_PAR_Set(track, step, 1,  100); // velocity
-	SEQ_PAR_Set(track, step, 2, 0x11); // length
+	SEQ_PAR_Set(track, step, 0, instrument, 0x40); // Chord
+	SEQ_PAR_Set(track, step, 1, instrument,  100); // velocity
+	SEQ_PAR_Set(track, step, 2, instrument, 0x47); // length
       }
     } break;
 
     case SEQ_EVENT_MODE_CC: {
+      u8 instrument = 0;
       for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, 0x40); // CC#16
-	SEQ_PAR_Set(track, step, 1, 0x40); // CC#17
-	SEQ_PAR_Set(track, step, 2, 0x40); // CC#18
+	SEQ_PAR_Set(track, step, 0, instrument, 0x40); // CC#16
+	SEQ_PAR_Set(track, step, 1, instrument, 0x40); // CC#17
+	SEQ_PAR_Set(track, step, 2, instrument, 0x40); // CC#18
       }
     } break;
 
     case SEQ_EVENT_MODE_Drum: {
-      // TODO: variable routing
-      if( drum_with_accent ) {
-	u8 layer;
-	for(layer=0; layer<num_p_layers; ++layer)
+      u8 instrument;
+      for(instrument=0; instrument<num_p_instruments; ++instrument) {
+	// TODO: variable routing
+	if( SEQ_TRG_NumLayersGet(track) > 1 ) {
+	  u8 layer = 0;
 	  for(step=0; step<num_p_steps; ++step) {
-	    SEQ_PAR_Set(track, step, layer, 0x11); // length
+	    SEQ_PAR_Set(track, step, layer, instrument, 0x47); // length
 	  }
-      } else {
-	u8 layer;
-	for(layer=0; layer<(num_p_layers/2); ++layer)
+	} else {
 	  for(step=0; step<num_p_steps; ++step) {
-	    SEQ_PAR_Set(track, step, layer,  100); // velocity
-	    SEQ_PAR_Set(track, step, layer + (num_p_layers/2), 0x11); // length
+	    SEQ_PAR_Set(track, step, 0, instrument, 100); // velocity
+	    SEQ_PAR_Set(track, step, 1, instrument, 0x47); // length
 	  }
+	}
       }
-	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, drum_with_accent ? 2 : 0);
-
     } break;
   }
 
-  if( event_mode != SEQ_EVENT_MODE_Drum ) {
+  if( num_p_layers > 3 ) {
     // TODO: remaining layers
   }
 

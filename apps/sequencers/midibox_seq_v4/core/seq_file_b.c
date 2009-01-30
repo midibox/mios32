@@ -37,7 +37,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 2
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -63,20 +63,20 @@
 //    seq_file_b_header_t
 //    Pattern 0: seq_file_b_pattern_t
 //               Track 0: seq_file_b_track_t
-//                        Parameter Layers (num_p_layers * p_layer_size)
-//                        Trigger Layers (num_t_layers * t_layer_size)
+//                        Parameter Layers (num_p_instruments * num_p_layers * p_layer_size)
+//                        Trigger Layers (num_t_instruments * num_t_layers * t_layer_size)
 //               Track 1: ...
 //    Pattern 1: ...
 //
 // Size for 64 patterns, 64*4 tracks,
-// each consists of 16 parameter and 8 trigger layers (format is flexible enough to change these numbers)
+// each consists of 1 instrument, 16 parameter and 8 trigger layers (format is flexible enough to change these numbers)
 // parameter layer has 64, trigger layer 256 steps (for easier partitioning, see comments below)
-// 10 + 24 + 64 * (24 + 4 * (214 + 16*64 + 8*256/8))
-// 10 + 24 + 64 * (24 + 4 * (214 + 1024  + 8*256/8))
-// 10 + 24 + 64 * (24 + 4 * 1494)
-// 10 + 24 + 64 * (24 + 5976)
-// 10 + 24 + 384000
-// -> 384034 bytes (good that SD cards are so cheap today ;)
+// 10 + 24 + 64 * (24 + 4 * (216 + 1*16*64 + 1*8*256/8))
+// 10 + 24 + 64 * (24 + 4 * (216 + 1024  + 256))
+// 10 + 24 + 64 * (24 + 4 * 1496)
+// 10 + 24 + 64 * (24 + 5984)
+// 10 + 24 + 384512
+// -> 384546 bytes (good that SD cards are so cheap today ;)
 
 // note: allocating more bytes will result into more FAT operations when seeking a pattern position
 // e.g. I tried 16 layers/256 steps, and it took ca. 10 mS to find the starting sector
@@ -104,12 +104,14 @@ typedef struct {
 
 typedef struct {
   char name[80];      // track name consists of 80 characters, no zero termination, patted with spaces
-  u8   num_p_layers;  // number of parameter layers (usually 3, we will provide more later)
-  u8   num_t_layers;  // number of trigger layers (usually 3, we will provide more later)
+  u8   num_p_instruments; // number of instruments (usually 1, or 16/8 for drum tracks)
+  u8   num_t_instruments; // number of instruments (usually 1, or 16/8 for drum tracks)
+  u8   num_p_layers;  // number of parameter layers (usually 4, 8 or 16)
+  u8   num_t_layers;  // number of trigger layers (usually 8, or 1/2 for drum tracks)
   u16  p_layer_size;  // size per parameter layer, e.g. 256 steps
   u16  t_layer_size;  // size per trigger layer (divided by 8, as each step has it's own bit)
   u8   cc[128];       // contains all CC parameters, prepared for 128
-} seq_file_b_track_t; // 154 bytes
+} seq_file_b_track_t; // 156 bytes
 
 
 
@@ -256,13 +258,15 @@ s32 SEQ_FILE_B_Create(u8 bank)
 
   // write predefined pattern size
   u8 num_tracks = 4;
+  u8 num_p_instruments = 1;
+  u8 num_t_instruments = 1;
   u8 num_p_layers = 16;
   u16 num_t_layers = 8;
   u16 p_layer_size = 64; // 256 steps if 4 layers
   u16 t_layer_size = 256/8;
 
   info->header.pattern_size = sizeof(seq_file_b_pattern_t) + 
-    num_tracks * (sizeof(seq_file_b_track_t) + num_p_layers*p_layer_size + num_t_layers*t_layer_size);
+    num_tracks * (sizeof(seq_file_b_track_t) + num_p_instruments*num_p_layers*p_layer_size + num_t_instruments*num_t_layers*t_layer_size);
   status |= SEQ_FILE_WriteHWord(&fi, info->header.pattern_size);
 
   // close file
@@ -418,6 +422,12 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 80);
     seq_core_trk[target_track].name[80] = 0;
 
+    u8 num_p_instruments;
+    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_instruments);
+
+    u8 num_t_instruments;
+    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_t_instruments);
+
     u8 num_p_layers;
     status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_layers);
 
@@ -443,7 +453,8 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, target_track+1, seq_core_trk[target_track].name);
-    DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d layers P:%d,T:%d steps\n", 
+    DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d instruments P:%d,T:%d layers P:%d,T:%d steps\n", 
+	   num_p_instruments, num_t_instruments,
 	   num_p_layers, num_t_layers,
 	   p_layer_size, 8*t_layer_size);
 #endif
@@ -454,7 +465,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
       SEQ_CC_Set(target_track, cc, cc_buffer[cc]);
 
     // partitionate parameter layer and clear all steps
-    SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers);
+    SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers, num_p_instruments);
 
     // reading Parameter layers
     u32 par_size = num_p_layers * p_layer_size;
@@ -472,7 +483,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 
 
     // partitionate trigger layer and clear all steps
-    SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers);
+    SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers, num_t_instruments);
 
     // reading Trigger layers
     u32 trg_size = num_t_layers * t_layer_size;
@@ -526,8 +537,23 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   u8 num_tracks = SEQ_CORE_NUM_TRACKS_PER_GROUP;
 
   // ok, we should at least check, if the resulting size is within the given range
-  u16 expected_pattern_size = sizeof(seq_file_b_pattern_t) + 
-    num_tracks * (sizeof(seq_file_b_track_t) + SEQ_PAR_MAX_BYTES + SEQ_TRG_MAX_BYTES);
+  u16 expected_pattern_size = sizeof(seq_file_b_pattern_t);
+
+  u8 track;
+  u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+  for(track=0; track<num_tracks; ++track, ++source_track) {
+    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(source_track);
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(source_track);
+    u16 p_layer_size = SEQ_PAR_NumStepsGet(source_track);
+    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(source_track);
+    u8 num_t_layers = SEQ_TRG_NumLayersGet(source_track);
+    u16 t_layer_size = SEQ_TRG_NumStepsGet(source_track)/8;
+
+    expected_pattern_size += sizeof(seq_file_b_track_t) + 
+      num_p_instruments*num_p_layers*p_layer_size + 
+      num_t_instruments*num_t_layers*t_layer_size;
+  }
+
   if( expected_pattern_size > info->header.pattern_size ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] Resulting pattern is too large for slot in bank (is: %d, max: %d)\n", 
@@ -584,16 +610,23 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   status |= SEQ_FILE_WriteByte(&fi, 0x00);
 
   // writing tracks
-  u8 track;
-  u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+  source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track=0; track<num_tracks; ++track, ++source_track) {
-    u16 num_p_layers = SEQ_PAR_NumLayersGet(track);
-    u16 p_layer_size = SEQ_PAR_NumStepsGet(track);
-    u16 num_t_layers = SEQ_TRG_NumLayersGet(track);
-    u16 t_layer_size = SEQ_TRG_NumStepsGet(track)/8;
+    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(source_track);
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(source_track);
+    u16 p_layer_size = SEQ_PAR_NumStepsGet(source_track);
+    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(source_track);
+    u8 num_t_layers = SEQ_TRG_NumLayersGet(source_track);
+    u16 t_layer_size = SEQ_TRG_NumStepsGet(source_track)/8;
 
     // write track name w/o zero terminator
     status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 80);
+
+    // write number of parameter instruments
+    status |= SEQ_FILE_WriteByte(&fi, num_p_instruments);
+
+    // write number of trigger instruments
+    status |= SEQ_FILE_WriteByte(&fi, num_t_instruments);
 
     // write number of parameter layers
     status |= SEQ_FILE_WriteByte(&fi, num_p_layers);
@@ -613,17 +646,16 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
       status |= SEQ_FILE_WriteByte(&fi, SEQ_CC_Get(source_track, cc));
 
     // write parameter layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[source_track], num_p_layers*p_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[source_track], num_p_instruments*num_p_layers*p_layer_size);
 
     // write trigger layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[source_track], num_t_layers*t_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[source_track], num_t_instruments*num_t_layers*t_layer_size);
   }
 
   // fill remaining bytes with zero if required
-  if( expected_pattern_size < info->header.pattern_size ) {
-    int i;
-    for(i=expected_pattern_size; i<info->header.pattern_size; ++i)
-      status |= SEQ_FILE_WriteByte(&fi, 0x00);
+  while( expected_pattern_size < info->header.pattern_size ) {
+    status |= SEQ_FILE_WriteByte(&fi, 0x00);
+    ++expected_pattern_size;
   }
 
   // close file
