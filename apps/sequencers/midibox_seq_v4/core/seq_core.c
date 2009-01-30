@@ -348,8 +348,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
 
-      // sustained note: play off event if sustain mode has been disabled
-      if( !tcc->mode.SUSTAIN && t->sustain_note.ALL ) {
+      // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
+      if( !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL && t->sustain_note.ALL ) {
 	SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
 	t->sustain_note.ALL = 0;
       }
@@ -393,6 +393,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         if( t->state.MUTED )
 	  continue;
   
+        // track disabled
+        if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Off )
+	  continue;
+  
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
@@ -407,14 +411,22 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             mios32_midi_package_t *p = &e->midi_package;
 
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
-            
+
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
-            
+
             // skip if velocity has been cleared by transpose function
             // (e.g. no key pressed in transpose mode)
-            if( p->type == NoteOn && !p->velocity )
+            if( p->type == NoteOn && !p->velocity ) {
+	      // stretched note, length < 96: queue off event
+	      if( t->state.STRETCHED_GL && t->sustain_note.ALL && (e->len < 96) ) {
+		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick+e->len, 0);
+		t->sustain_note.ALL = 0;
+		t->state.STRETCHED_GL = 0;
+	      }
 	      continue;
+	    }
+
 
             // force to scale
             if( tcc->mode.FORCE_SCALE ) {
@@ -438,27 +450,41 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             u32 gatelength = 0;
             u8 triggers = 0;
 
-            if( p->type == CC && e->len == -1 ) {
+            if( p->type == CC ) {
 	      // CC w/o gatelength, just play it
 	      triggers = 1;
-            } else if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
+            } else if( p->note && p->velocity && (e->len >= 0) ) {
 	      // Any other event with gatelength
-	      if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
-		// sustained note: play off event of previous step
+
+	      // sustained or stretched note: play off event of previous step
+	      if( t->sustain_note.ALL ) {
 		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
-		  
+		t->sustain_note.ALL = 0;
+		t->state.STRETCHED_GL = 0;
+	      }
+
+	      if( tcc->mode.SUSTAIN || e->len >= 96 ) {
 		// sustained note: play note at timestamp, but don't queue off event
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
 		  
 		t->sustain_port = tcc->midi_port;
 		t->sustain_note = *p;
 		t->sustain_note.velocity = 0; // clear velocity value
+
+		// notify stretched gatelength if not in sustain mode
+		if( !tcc->mode.SUSTAIN )
+		  t->state.STRETCHED_GL = 1;
 		// triggers/gatelength already 0 - don't queue additional notes
 	      } else {
 		triggers = 1;
 		gatelength = e->len << seq_core_bpm_div_int;
 	      }
-            }
+            } else if( t->state.STRETCHED_GL && t->sustain_note.ALL && (e->len < 96) ) {
+	      // stretched note, length < 96: queue off event
+	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick+e->len, 0);
+	      t->sustain_note.ALL = 0;
+	      t->state.STRETCHED_GL = 0;
+	    }
 
 #if 0
 		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
@@ -470,7 +496,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             
             // schedule events
             if( triggers ) {
-	      if( p->type == CC && !gatelength ) {
+	      if( p->type == CC ) {
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 		t->vu_meter = 0x7f; // for visualisation in mute menu
 	      } else {

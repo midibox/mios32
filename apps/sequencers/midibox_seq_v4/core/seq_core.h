@@ -53,7 +53,7 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned ALL:8;
+    unsigned ALL:16;
   };
   struct {
     unsigned DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
@@ -64,6 +64,7 @@ typedef union {
     unsigned REC_EVNT_ACTIVE:1; // set so long a note/CC is held (for note length measuring)
     unsigned REC_MUTE_NEXTSTEP:1; // for length...
     unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
+    unsigned STRETCHED_GL:1; // stretched gatelength
   };
 } seq_core_trk_state_t;
 
