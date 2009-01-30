@@ -416,7 +416,7 @@ static s32 RandomGenerator(u8 req)
 	u16 step;
 	u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
 	for(step=0; step<num_steps; ++step)
-	  SEQ_PAR_Set(visible_track, step, layer, SEQ_RANDOM_Gen_Range(base-range, base+range));
+	  SEQ_PAR_Set(visible_track, step, layer, ui_selected_instrument, SEQ_RANDOM_Gen_Range(base-range, base+range));
 
 
       ///////////////////////////////////////////////////////////////////////
@@ -434,10 +434,10 @@ static s32 RandomGenerator(u8 req)
 	u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 	for(step=0; step<num_steps; ++step) {
 	  if( probability == 15 ) // set all steps
-	    SEQ_TRG_Set(visible_track, step, layer, 1);
+	    SEQ_TRG_Set(visible_track, step, layer, ui_selected_instrument, 1);
 	  else {
 	    u8 rnd = SEQ_RANDOM_Gen_Range(1, 14);
-	    SEQ_TRG_Set(visible_track, step, layer, (probability >= rnd) ? 1 : 0);
+	    SEQ_TRG_Set(visible_track, step, layer, ui_selected_instrument, (probability >= rnd) ? 1 : 0);
 	  }
 	}
 

@@ -41,8 +41,8 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   *gp_leds =
-    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer) << 8) |
-    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer) << 0);
+    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
+    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
 
   return 0; // no error
 }
@@ -138,14 +138,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u16 step = ui_selected_step;
-	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer) ? 0 : 1;
+	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
 
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
 	  if( SEQ_UI_IsSelectedTrack(track) ) {
 	    u16 num_steps = SEQ_TRG_NumStepsGet(track);
 	    for(step=0; step<num_steps; ++step)
-	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, new_value);
 	  }
       } else {
 	// a) ALL function active, but ALL button not pressed: invert complete trigger layer
@@ -155,8 +155,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  if( SEQ_UI_IsSelectedTrack(track) ) {
 	    u16 num_steps = SEQ_TRG_NumStepsGet(track);
 	    for(step=0; step<num_steps; ++step) {
-	      u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer) ? 0 : 1;
-	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, new_value);
+	      u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
+	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, new_value);
 	    }
 	  }
 	}
@@ -166,8 +166,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	if( SEQ_UI_IsSelectedTrack(track) ) {
-	  u8 new_value = SEQ_TRG_Get(track, ui_selected_step, ui_selected_trg_layer) ? 0 : 1;
-	  SEQ_TRG_Set(track, ui_selected_step, ui_selected_trg_layer, new_value);
+	  u8 new_value = SEQ_TRG_Get(track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
+	  SEQ_TRG_Set(track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument, new_value);
 	}
       }
     }
@@ -339,21 +339,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       break;
   }
 
-  if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 selected_trg_layer = SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer);
-
-    SEQ_LCD_PrintFormattedString("T%c:", 'A' + selected_trg_layer);
-
-    if( selected_trg_layer == 0 ) {
-      SEQ_LCD_PrintString("Gate ");
-    } else if( SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer) ) {
-      SEQ_LCD_PrintString("Acc. ");
-    } else {
-      SEQ_LCD_PrintString("---- ");
-    }
-  } else {
-    SEQ_LCD_PrintFormattedString("T%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
-  }
+  SEQ_LCD_PrintFormattedString("T%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -372,7 +358,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);
       } else if( layer_ctrl_type == SEQ_LAYER_ControlType_Chord ||
 	       layer_ctrl_type == SEQ_LAYER_ControlType_Chord_Velocity ) {
-	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0);
+	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
 	u8 chord_ix = par_value & 0x0f;
 	u8 chord_oct = par_value >> 4;
 	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
@@ -393,8 +379,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintSpaces(4);
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 drum = SEQ_TRG_DrumLayerGet(visible_track, ui_selected_trg_layer);
-    SEQ_LCD_PrintTrackDrum(visible_track, drum, (char *)seq_core_trk[visible_track].name);
+    SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
   } else {
     SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
   }
@@ -521,7 +506,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 gate_accent = SEQ_TRG_DrumGet(visible_track, step + 16*ui_selected_step_view, ui_selected_trg_layer);
+	u8 gate_accent = SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 0, ui_selected_instrument);
+	if( SEQ_TRG_NumLayersGet(visible_track) >= 2 )
+	  gate_accent |= SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 1, ui_selected_instrument) << 1;
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(gate_accent);
@@ -545,7 +532,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
           case SEQ_LAYER_ControlType_Chord:
           case SEQ_LAYER_ControlType_Chord_Velocity:
 	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	      u8 par_value = SEQ_PAR_Get(visible_track, step, 0);
+	      u8 par_value = SEQ_PAR_Get(visible_track, step, 0, ui_selected_instrument);
 	      u8 chord_ix = par_value & 0x0f;
 	      u8 chord_oct = par_value >> 4;
 	      SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
@@ -623,10 +610,10 @@ static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_
   if( layer_ctrl_type != SEQ_LAYER_ControlType_Length &&
       layer_ctrl_type != SEQ_LAYER_ControlType_CC &&
       !change_gate &&
-      !SEQ_TRG_GateGet(track, step) )
+      !SEQ_TRG_GateGet(track, step, ui_selected_instrument) )
     return -1;
 
-  s32 old_value = SEQ_PAR_Get(track, step, ui_selected_par_layer);
+  s32 old_value = SEQ_PAR_Get(track, step, ui_selected_par_layer, ui_selected_instrument);
   s32 new_value = (forced_value >= 0) ? forced_value : (old_value + incrementer);
   if( new_value < 0 )
     new_value = 0;
@@ -637,14 +624,14 @@ static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_
   if( new_value == old_value )
     return -1;
 
-  SEQ_PAR_Set(track, step, ui_selected_par_layer, (u8)new_value);
+  SEQ_PAR_Set(track, step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
 
   if( layer_ctrl_type != SEQ_LAYER_ControlType_Length && layer_ctrl_type != SEQ_LAYER_ControlType_CC ) {
     // (de)activate gate depending on value
     if( new_value )
-      SEQ_TRG_GateSet(track, step, 1);
+      SEQ_TRG_GateSet(track, step, ui_selected_instrument, 1);
     else
-      SEQ_TRG_GateSet(track, step, 0);
+      SEQ_TRG_GateSet(track, step, ui_selected_instrument, 0);
   }
 
   return new_value;

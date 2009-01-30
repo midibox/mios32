@@ -150,6 +150,8 @@ extern s32 SEQ_UI_InstallEncoderCallback(void *callback);
 extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 
+extern s32 SEQ_UI_CheckSelections(void);
+
 extern u8  SEQ_UI_VisibleTrackGet(void);
 extern s32 SEQ_UI_IsSelectedTrack(u8 track);
 
@@ -207,6 +209,7 @@ extern u8 ui_selected_group;
 extern u8 ui_selected_tracks;
 extern u8 ui_selected_par_layer;
 extern u8 ui_selected_trg_layer;
+extern u8 ui_selected_instrument;
 extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;

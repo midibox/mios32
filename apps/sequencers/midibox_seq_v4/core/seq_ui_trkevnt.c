@@ -63,7 +63,7 @@ typedef struct {
   u16              par_steps;   // number of steps per parameter layer
   u8               trg_layers;  // number of trigger layers
   u16              trg_steps;   // number of steps per trigger layer
-  u8               drum_with_accent; // drum track with accent triggers
+  u8               instruments; // number of instruments per track
 } layer_config_t;
 
 
@@ -82,20 +82,20 @@ static s32 CopyPreset(u8 track, u8 config);
 static u8 selected_layer_config;
 
 static layer_config_t layer_config[] = {
-  //      mode           par_layers  par_steps  trg_layers  trg_steps  drum w/ accent
-  { SEQ_EVENT_MODE_Note,    16,          64,        8,          64,      0 },
-  { SEQ_EVENT_MODE_Note,     8,         128,        8,         128,      0 },
-  { SEQ_EVENT_MODE_Note,     4,         256,        8,         256,      0 },
-  { SEQ_EVENT_MODE_Chord,   16,          64,        8,          64,      0 },
-  { SEQ_EVENT_MODE_Chord,    8,         128,        8,         128,      0 },
-  { SEQ_EVENT_MODE_Chord,    4,         256,        8,         256,      0 },
-  { SEQ_EVENT_MODE_CC,      16,          64,        8,          64,      0 },
-  { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      0 },
-  { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      0 },
-  { SEQ_EVENT_MODE_Drum,    16,          64,     2*16,          64,      1 },
-  { SEQ_EVENT_MODE_Drum,  2*16,          32,       16,         128,      0 },
-  { SEQ_EVENT_MODE_Drum,     8,         128,      2*8,         128,      1 },
-  { SEQ_EVENT_MODE_Drum,   2*8,          64,        8,         256,      0 }
+  //      mode           par_layers  par_steps  trg_layers  trg_steps  instruments
+  { SEQ_EVENT_MODE_Note,    16,          64,        8,          64,      1 },
+  { SEQ_EVENT_MODE_Note,     8,         128,        8,         128,      1 },
+  { SEQ_EVENT_MODE_Note,     4,         256,        8,         256,      1 },
+  { SEQ_EVENT_MODE_Chord,   16,          64,        8,          64,      1 },
+  { SEQ_EVENT_MODE_Chord,    8,         128,        8,         128,      1 },
+  { SEQ_EVENT_MODE_Chord,    4,         256,        8,         256,      1 },
+  { SEQ_EVENT_MODE_CC,      16,          64,        8,          64,      1 },
+  { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      1 },
+  { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      1 },
+  { SEQ_EVENT_MODE_Drum,     1,          64,        2,          64,     16 },
+  { SEQ_EVENT_MODE_Drum,     2,          32,        1,         128,     16 },
+  { SEQ_EVENT_MODE_Drum,     1,         128,        2,         128,      8 },
+  { SEQ_EVENT_MODE_Drum,     2,          64,        1,         256,      8 }
 };
 
 static u8 selected_layer;
@@ -240,7 +240,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
     switch( ui_selected_item ) {
       case ITEM_DRUM_SELECT: {
-        u8 num_drums = layer_config[selected_layer_config].trg_layers / (layer_config[selected_layer_config].drum_with_accent ? 2 : 1);
+        u8 num_drums = layer_config[selected_layer_config].instruments;
         return SEQ_UI_Var8_Inc(&selected_drum, 0, num_drums-1, incrementer);
       } break;
       case ITEM_DRUM_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + selected_drum, 0, 127, incrementer);
@@ -471,27 +471,25 @@ static s32 LCD_Handler(u8 high_prio)
     const char event_mode_str[4][6] = { "Note ", "Chord", " CC  ", "Drum " };
     SEQ_LCD_PrintString(event_mode_str[event_mode]);
 
+    layer_config_t *lc = (layer_config_t *)&layer_config[selected_layer_config];
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       SEQ_LCD_PrintChar(' ');
       SEQ_LCD_PrintChar('(');
       SEQ_LCD_PrintSpaces(14); // for easier handling
       SEQ_LCD_CursorSet(12, 1);
 
-      if( !layer_config[selected_layer_config].drum_with_accent )
-	SEQ_LCD_PrintString("2*");
-      SEQ_LCD_PrintFormattedString("%d/", layer_config[selected_layer_config].par_steps);
-      if( layer_config[selected_layer_config].drum_with_accent )
-	SEQ_LCD_PrintString("2*");
-      SEQ_LCD_PrintFormattedString("%d", layer_config[selected_layer_config].trg_steps);
+      if( lc->par_layers > 1 )
+	SEQ_LCD_PrintFormattedString("%d*", lc->par_layers);
+      SEQ_LCD_PrintFormattedString("%d/", lc->par_steps);
+      if( lc->trg_layers > 1 )
+	SEQ_LCD_PrintFormattedString("%d*", lc->trg_layers);
+      SEQ_LCD_PrintFormattedString("%d", lc->trg_steps);
 
-      SEQ_LCD_PrintFormattedString(") %d", layer_config[selected_layer_config].trg_layers / (layer_config[selected_layer_config].drum_with_accent ? 2 : 1));
+      SEQ_LCD_PrintFormattedString(") %d", lc->instruments);
       SEQ_LCD_CursorSet(26, 1);
 
     } else {
-      SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", 
-				   layer_config[selected_layer_config].par_steps, 
-				   layer_config[selected_layer_config].par_layers,
-				   layer_config[selected_layer_config].trg_layers);
+      SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", lc->par_steps, lc->par_layers, lc->trg_layers);
     }
   }
 
@@ -631,14 +629,16 @@ static s32 CopyPreset(u8 track, u8 config)
   if( config >= (sizeof(layer_config)/sizeof(layer_config_t)) )
     return -1; // invalid config
 
-  // partitionate layers and clear all steps
-  SEQ_PAR_TrackInit(track, layer_config[config].par_steps, layer_config[config].par_layers);
-  SEQ_TRG_TrackInit(track, layer_config[config].trg_steps, layer_config[config].trg_layers);
+  layer_config_t *lc = (layer_config_t *)&layer_config[selected_layer_config];
 
-  SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, layer_config[config].event_mode);
+  // partitionate layers and clear all steps
+  SEQ_PAR_TrackInit(track, lc->par_steps, lc->par_layers, lc->instruments);
+  SEQ_TRG_TrackInit(track, lc->trg_steps, lc->trg_layers, lc->instruments);
+
+  SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, lc->event_mode);
 
   // BEGIN TMP
-  if( layer_config[config].event_mode == SEQ_EVENT_MODE_Drum ) {
+  if( lc->event_mode == SEQ_EVENT_MODE_Drum ) {
     memcpy((char *)seq_core_trk[track].name, " BD   SD   LT   MT   HT   CP   MA   RS   CB   CY   OH   CH  Smp1 Smp2 Smp3 Smp4 ", 80);
   } else {
     memset((char *)seq_core_trk[track].name, ' ', 80);
@@ -647,8 +647,7 @@ static s32 CopyPreset(u8 track, u8 config)
 
   u8 only_layers = 0;
   u8 all_triggers_cleared = 0;
-  u8 drum_with_accent = layer_config[config].drum_with_accent;
-  return SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, drum_with_accent);
+  return SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
 }
 
 
@@ -664,14 +663,14 @@ static s32 GetLayerConfig(u8 track)
   u16 par_steps = SEQ_PAR_NumStepsGet(track);
   u8 trg_layers = SEQ_TRG_NumLayersGet(track);
   u16 trg_steps = SEQ_TRG_NumStepsGet(track);
-  u8 drum_with_accent = (event_mode == SEQ_EVENT_MODE_Drum) && SEQ_TRG_AssignmentGet(track, 1);
+  u8 num_instruments = SEQ_PAR_NumInstrumentsGet(track);
 
   for(i=0; i<(sizeof(layer_config)/sizeof(layer_config_t)); ++i) {
     layer_config_t *lc = (layer_config_t *)&layer_config[i];
     if( lc->event_mode == event_mode &&
 	lc->par_layers == par_layers &&	lc->par_steps == par_steps &&
 	lc->trg_layers == trg_layers &&	lc->trg_steps == trg_steps &&
-	lc->drum_with_accent == drum_with_accent ) {
+	lc->instruments == num_instruments ) {
       return i;
     }
   }

@@ -376,7 +376,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    t->state.FIRST_CLK = 0;
   
 	    // if skip flag set for this flag: try again
-	    if( SEQ_TRG_SkipGet(track, t->step) )
+	    if( SEQ_TRG_SkipGet(track, t->step, 0) )
 	      ++skip_ctr;
 	    else
 	      break;
@@ -394,17 +394,19 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  continue;
   
         // if random gate trigger set: play step with 1:1 probability
-        if( SEQ_TRG_RandomGateGet(track, t->step) && (SEQ_RANDOM_Gen(0) & 1) )
+        if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
   
         // fetch MIDI events which should be played
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events);
         if( number_of_events > 0 ) {
-          int i;
+	  int i;
           seq_layer_evnt_t *e = &layer_events[0];
           for(i=0; i<number_of_events; ++e, ++i) {
             mios32_midi_package_t *p = &e->midi_package;
+
+	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
             
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
@@ -423,10 +425,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
             // roll/glide flag
             if( e->len >= 0 ) {
-	      if( SEQ_TRG_RollGet(track, t->step) )
-		e->len = 0x2c; // 2x12
-	      if( SEQ_TRG_GlideGet(track, t->step) )
-		e->len = 0x1f; // Glide
+#if 0
+	      // TODO
+	      if( SEQ_TRG_RollGet(track, t->step, instrument) )
+		e->len = ... 2x12
+#endif
+	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
+		e->len = 96; // Glide
             }
 
             // determine gate length
@@ -469,10 +474,14 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 		t->vu_meter = 0x7f; // for visualisation in mute menu
 	      } else {
-		// force velocity to 0x7f if accent flag set
-		if( SEQ_TRG_AccentGet(track, t->step) )
-		  p->velocity = 0x7f;
-		
+		// force velocity to 0x7f (drum mode: selectable value) if accent flag set
+		if( SEQ_TRG_AccentGet(track, t->step, instrument) ) {
+		  if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
+		    p->velocity = tcc->lay_const[2*16 + i];
+		  else
+		    p->velocity = 0x7f;
+		}
+
 		t->vu_meter = p->velocity; // for visualisation in mute menu
 		
 		if( loopback_port ) {
@@ -496,7 +505,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		}
 
 		// apply Fx if "No Fx" trigger is not set
-		if( !SEQ_TRG_NoFxGet(track, t->step) ) {
+		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		  // apply echo Fx if enabled
 		  if( tcc->echo_repeats && (p->type == CC || gatelength) )
 		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);

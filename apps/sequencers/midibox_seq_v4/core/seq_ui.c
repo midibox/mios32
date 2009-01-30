@@ -50,6 +50,7 @@ u8 ui_selected_group;
 u8 ui_selected_tracks;
 u8 ui_selected_par_layer;
 u8 ui_selected_trg_layer;
+u8 ui_selected_instrument;
 u8 ui_selected_step_view;
 u8 ui_selected_step;
 u8 ui_selected_item;
@@ -103,6 +104,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_tracks = (1 << 0);
   ui_selected_par_layer = 0;
   ui_selected_trg_layer = 0;
+  ui_selected_instrument = 0;
   ui_selected_step_view = 0;
   ui_selected_step = 0;
   ui_selected_item = 0;
@@ -146,6 +148,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_LAYER_ControlType_Velocity:
       case SEQ_LAYER_ControlType_Chord_Velocity:
       case SEQ_LAYER_ControlType_CC:
+      case SEQ_LAYER_ControlType_Length:
 	seq_ui_button_state.FAST_ENCODERS = 1;
 	break;
 
@@ -333,7 +336,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 #if 1
   MUTEX_SDCARD_TAKE;
 
-#if 0
+#if 1
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     SEQ_FILE_B_Create(bank);
@@ -759,12 +762,12 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
 
-  if( num_t_layers <= 3 ) {
+  if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 3 ) {
     // 3 layers: direct selection with LayerA/B/C button
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.TRG_LAYER_SEL = 0;
     ui_selected_trg_layer = trg_layer;
-  } else if( num_t_layers <= 4 ) {
+  } else if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 4 ) {
     // 4 layers: LayerC Button toggles between C and D
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.TRG_LAYER_SEL = 0;
@@ -773,21 +776,12 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
     else
       ui_selected_trg_layer = trg_layer;
   } else {
-    // >4 layers: LayerA/B button selects directly, Layer C button enters trigger assignment screen
+    // >4 layers or drum mode: LayerA/B button selects directly, Layer C button enters trigger assignment screen
     // also used for drum tracks
     if( trg_layer <= 1 ) {
       if( depressed ) return -1; // ignore when button depressed
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	if( SEQ_TRG_DrumHasAccentLayer(visible_track) )
-	  num_t_layers /= 2;
-
-	ui_selected_trg_layer %= num_t_layers;
-	if( trg_layer == 1 && SEQ_TRG_DrumHasAccentLayer(visible_track) )
-	  ui_selected_trg_layer += num_t_layers;
-      } else {
-	seq_ui_button_state.TRG_LAYER_SEL = 0;
-	ui_selected_trg_layer = trg_layer;
-      }
+      seq_ui_button_state.TRG_LAYER_SEL = 0;
+      ui_selected_trg_layer = trg_layer;
     } else {
 #if DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER
       if( depressed ) return -1; // ignore when button depressed
@@ -816,6 +810,9 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 {
+  // ensure that selections are matching with track constraints
+  SEQ_UI_CheckSelections();
+
   switch( pin ) {
 #if BUTTON_GP1 != BUTTON_DISABLED
     case BUTTON_GP1:   SEQ_UI_Button_GP(pin_value, 0); break;
@@ -1035,6 +1032,9 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   if( encoder > 16 )
     return -1; // encoder doesn't exist
 
+  // ensure that selections are matching with track constraints
+  SEQ_UI_CheckSelections();
+
   // limit incrementer
   if( incrementer > 3 )
     incrementer = 3;
@@ -1094,7 +1094,10 @@ s32 SEQ_UI_LCD_Handler(void)
     // perform low priority LCD update request if requested
     if( seq_ui_display_update_req ) {
       seq_ui_display_update_req = 0; // clear request
-      
+
+      // ensure that selections are matching with track constraints
+      SEQ_UI_CheckSelections();
+
       if( ui_lcd_callback != NULL )
 	ui_lcd_callback(0); // no high_prio
     }
@@ -1153,16 +1156,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_GROUP4, (ui_selected_group == 3));
   
   // trigger layer LEDs
-  if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 selected_trg_layer = SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer);
-    SEQ_LED_PinSet(LED_TRG_LAYER_A, (selected_trg_layer == 0));
-    SEQ_LED_PinSet(LED_TRG_LAYER_B, (selected_trg_layer == 1));
-    SEQ_LED_PinSet(LED_TRG_LAYER_C, seq_ui_button_state.TRG_LAYER_SEL);
-  } else {
-    SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
-    SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
-    SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
-  }
+  SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
+  SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
+  SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
   
   // remaining LEDs
   SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);
@@ -1380,6 +1376,39 @@ s32 SEQ_UI_MENU_Handler_Periodic()
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Should be regulary called to check if the layer/instrument/step selection
+// is valid for the current track
+// At least executed before button/encoder and LCD function calls
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_CheckSelections(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  if( ui_selected_instrument >= SEQ_PAR_NumInstrumentsGet(visible_track) )
+    ui_selected_instrument = 0;
+
+  if( ui_selected_par_layer >= SEQ_PAR_NumLayersGet(visible_track) )
+    ui_selected_par_layer = 0;
+
+  if( ui_selected_trg_layer >= SEQ_TRG_NumLayersGet(visible_track) )
+    ui_selected_trg_layer = 0;
+
+  if( ui_selected_step >= SEQ_TRG_NumStepsGet(visible_track) )
+    ui_selected_step = 0;
+
+  if( ui_selected_step_view >= (SEQ_TRG_NumStepsGet(visible_track)/16) ) {
+    ui_selected_step_view = 0;
+    ui_selected_step %= 16;
+  }
+  
+  if( ui_selected_step >= ui_selected_step_view*16 )
+    ui_selected_step_view = ui_selected_step / 16;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns the currently visible track
 /////////////////////////////////////////////////////////////////////////////
 u8 SEQ_UI_VisibleTrackGet(void)
@@ -1416,7 +1445,8 @@ s32 SEQ_UI_IsSelectedTrack(u8 track)
 s32 SEQ_UI_SelectedStepSet(u8 step)
 {
   ui_selected_step = step;
-  ui_selected_step_view = (ui_selected_step >= 16) ? 1 : 0;
+  SEQ_UI_CheckSelections();
+
   return 0; // no error
 }
 

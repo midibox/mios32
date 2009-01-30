@@ -502,6 +502,7 @@ static s32 COPY_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 PASTE_Track(u8 track)
 {
+  int instrument;
   int layer;
   int step;
 
@@ -520,27 +521,33 @@ static s32 PASTE_Track(u8 track)
   }
 
   // copy layers from buffer
+  int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_layers = SEQ_PAR_NumLayersGet(track);
   int num_steps = SEQ_PAR_NumStepsGet(track);
-  for(layer=0; layer<num_layers; ++layer) {
-    int step_offset = ui_selected_step;
-    for(step=step_begin; step<=step_end; ++step, ++step_offset) {
-      if( step_offset < num_steps ) {
-	u16 step_ix = layer * num_steps + step;
-	SEQ_PAR_Set(track, step_offset, layer, copypaste_par_layer[step_ix]);
+  for(instrument=0; instrument<num_instruments; ++instrument) {
+    for(layer=0; layer<num_layers; ++layer) {
+      int step_offset = ui_selected_step;
+      for(step=step_begin; step<=step_end; ++step, ++step_offset) {
+	if( step_offset < num_steps ) {
+	  u16 step_ix = instrument * layer * num_steps + step;
+	  SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
+	}
       }
     }
   }
 
+  num_instruments = SEQ_TRG_NumInstrumentsGet(track);
   num_layers = SEQ_TRG_NumLayersGet(track);
   num_steps = SEQ_TRG_NumStepsGet(track);
-  for(layer=0; layer<num_layers; ++layer) {
-    int step_offset = ui_selected_step;
-    for(step=step_begin; step<=step_end; ++step, ++step_offset) {
-      if( step_offset < (num_steps / 8) ) {
-	u8 step8_ix = layer * (num_steps / 8) + (step>>3);
-	u8 step_mask = (1 << (step&7));
-	SEQ_TRG_Set(track, step_offset, layer, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+  for(instrument=0; instrument<num_instruments; ++instrument) {
+    for(layer=0; layer<num_layers; ++layer) {
+      int step_offset = ui_selected_step;
+      for(step=step_begin; step<=step_end; ++step, ++step_offset) {
+	if( step_offset < (num_steps / 8) ) {
+	  u8 step8_ix = instrument * layer * (num_steps / 8) + (step>>3);
+	  u8 step_mask = (1 << (step&7));
+	  SEQ_TRG_Set(track, step_offset, layer, instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+	}
       }
     }
   }
@@ -560,8 +567,7 @@ static s32 CLEAR_Track(u8 track)
   // copy preset
   u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
   u8 all_triggers_cleared = 0;
-  u8 drum_with_accent = SEQ_TRG_AssignmentGet(track, 1);
-  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, drum_with_accent);
+  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
 
   // clear all triggers
   memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
@@ -618,12 +624,12 @@ static s32 MOVE_StoreStep(u8 track, u16 step, u8 buffer, u8 clr_triggers)
   int layer;
 
   for(layer=0; layer<16; ++layer)
-    move_par_layer[buffer][layer] = SEQ_PAR_Get(track, step, layer);
+    move_par_layer[buffer][layer] = SEQ_PAR_Get(track, step, layer, ui_selected_instrument);
 
   move_trg_layer[buffer] = 0;
   if( !clr_triggers ) {
     for(layer=0; layer<16; ++layer)
-      if( SEQ_TRG_Get(track, step, layer) )
+      if( SEQ_TRG_Get(track, step, layer, ui_selected_instrument) )
 	move_trg_layer[buffer] |= (1 << layer);
   }
 
@@ -635,10 +641,10 @@ static s32 MOVE_RestoreStep(u8 track, u16 step, u8 buffer)
   int layer;
 
   for(layer=0; layer<16; ++layer)
-    SEQ_PAR_Set(track, step, layer, move_par_layer[buffer][layer]);
+    SEQ_PAR_Set(track, step, layer, ui_selected_instrument, move_par_layer[buffer][layer]);
 
   for(layer=0; layer<16; ++layer)
-    SEQ_TRG_Set(track, step, layer, (move_trg_layer[buffer] & (1 << layer)) ? 1 : 0);
+    SEQ_TRG_Set(track, step, layer, ui_selected_instrument, (move_trg_layer[buffer] & (1 << layer)) ? 1 : 0);
 
   return 0; // no error
 }
@@ -649,6 +655,7 @@ static s32 MOVE_RestoreStep(u8 track, u16 step, u8 buffer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
 {
+  int instrument;
   int layer;
   int step;
 
@@ -663,39 +670,51 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
   if( first_step < last_step ) {
     if( incrementer >= 0 ) {
       // rightrotate parameter layers
+      int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
       int num_layers = SEQ_PAR_NumLayersGet(track);
-      for(layer=0; layer<num_layers; ++layer) {
-	u8 tmp = SEQ_PAR_Get(track, last_step, layer);
-	for(step=last_step; step>first_step; --step)
-	  SEQ_PAR_Set(track, step, layer, SEQ_PAR_Get(track, step-1, layer));
-	SEQ_PAR_Set(track, step, layer, tmp);
+      for(instrument=0; layer<num_instruments; ++instrument) {
+	for(layer=0; layer<num_layers; ++layer) {
+	  u8 tmp = SEQ_PAR_Get(track, last_step, layer, instrument);
+	  for(step=last_step; step>first_step; --step)
+	    SEQ_PAR_Set(track, step, layer, instrument, SEQ_PAR_Get(track, step-1, layer, instrument));
+	  SEQ_PAR_Set(track, step, layer, instrument, tmp);
+	}
       }
 
       // rightrotate trigger layers
+      num_instruments = SEQ_TRG_NumInstrumentsGet(track);
       num_layers = SEQ_TRG_NumLayersGet(track);
-      for(layer=0; layer<num_layers; ++layer) {
-	u8 tmp = SEQ_TRG_Get(track, last_step, layer);
-	for(step=last_step; step>first_step; --step)
-	  SEQ_TRG_Set(track, step, layer, SEQ_TRG_Get(track, step-1, layer));
-	SEQ_TRG_Set(track, step, layer, tmp);
+      for(instrument=0; layer<num_instruments; ++instrument) {
+	for(layer=0; layer<num_layers; ++layer) {
+	  u8 tmp = SEQ_TRG_Get(track, last_step, layer, instrument);
+	  for(step=last_step; step>first_step; --step)
+	    SEQ_TRG_Set(track, step, layer, instrument, SEQ_TRG_Get(track, step-1, layer, instrument));
+	  SEQ_TRG_Set(track, step, layer, instrument, tmp);
+	}
       }
     } else {
       // leftrotate parameter layers
+      int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
       int num_layers = SEQ_PAR_NumLayersGet(track);
-      for(layer=0; layer<num_layers; ++layer) {
-	u8 tmp = SEQ_PAR_Get(track, first_step, layer);
-	for(step=first_step; step<last_step; ++step)
-	  SEQ_PAR_Set(track, step, layer, SEQ_PAR_Get(track, step+1, layer));
-	SEQ_PAR_Set(track, step, layer, tmp);
+      for(instrument=0; layer<num_instruments; ++instrument) {
+	for(layer=0; layer<num_layers; ++layer) {
+	  u8 tmp = SEQ_PAR_Get(track, first_step, layer, instrument);
+	  for(step=first_step; step<last_step; ++step)
+	    SEQ_PAR_Set(track, step, layer, instrument, SEQ_PAR_Get(track, step+1, layer, instrument));
+	  SEQ_PAR_Set(track, step, layer, instrument, tmp);
+	}
       }
 
       // leftrotate trigger layers
+      num_instruments = SEQ_TRG_NumInstrumentsGet(track);
       num_layers = SEQ_TRG_NumLayersGet(track);
-      for(layer=0; layer<num_layers; ++layer) {
-	u8 tmp = SEQ_TRG_Get(track, first_step, layer);
-	for(step=first_step; step<last_step; ++step)
-	  SEQ_TRG_Set(track, step, layer, SEQ_TRG_Get(track, step+1, layer));
-	SEQ_TRG_Set(track, step, layer, tmp);
+      for(instrument=0; layer<num_instruments; ++instrument) {
+	for(layer=0; layer<num_layers; ++layer) {
+	  u8 tmp = SEQ_TRG_Get(track, first_step, layer, instrument);
+	  for(step=first_step; step<last_step; ++step)
+	    SEQ_TRG_Set(track, step, layer, instrument, SEQ_TRG_Get(track, step+1, layer, instrument));
+	  SEQ_TRG_Set(track, step, layer, instrument, tmp);
+	}
       }
     }
   }
