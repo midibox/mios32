@@ -57,11 +57,11 @@ typedef enum {
 
 extern s32 SEQ_LAYER_Init(u32 mode);
 
-extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u8 step, u8 layer, seq_layer_evnt_t *layer_event);
+extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, seq_layer_evnt_t *layer_event);
 extern seq_layer_ctrl_type_t SEQ_LAYER_GetVControlType(u8 track, u8 par_layer);
 extern char *SEQ_LAYER_GetVControlTypeString(u8 track, u8 par_layer);
 
-extern s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16]);
+extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16]);
 
 extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 drum_with_accent);
 

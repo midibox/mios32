@@ -63,8 +63,16 @@ extern s32 SEQ_TRG_NumStepsGet(u8 track);
 
 extern s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num);
 
+extern s32 SEQ_TRG_DrumHasAccentLayer(u8 track);
+extern s32 SEQ_TRG_DrumIsAccentLayer(u8 track, u8 trg_layer);
+extern s32 SEQ_TRG_DrumLayerGet(u8 track, u8 trg_layer);
+
 extern s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer);
 extern s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer);
+
+extern s32 SEQ_TRG_DrumGet2x8(u8 track, u8 step8, u8 trg_layer);
+extern s32 SEQ_TRG_DrumGet(u8 track, u8 step, u8 trg_layer);
+
 extern s32 SEQ_TRG_GateGet(u8 track, u16 step);
 extern s32 SEQ_TRG_AccentGet(u8 track, u16 step);
 extern s32 SEQ_TRG_RollGet(u8 track, u16 step);

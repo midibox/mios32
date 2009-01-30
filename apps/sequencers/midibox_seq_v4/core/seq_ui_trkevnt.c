@@ -92,10 +92,10 @@ static layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_CC,      16,          64,        8,          64,      0 },
   { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      0 },
   { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      0 },
-  { SEQ_EVENT_MODE_Drum,     2,          64,     2*16,          64,      1 },
-  { SEQ_EVENT_MODE_Drum,     2,          64,       16,         128,      0 },
-  { SEQ_EVENT_MODE_Drum,     2,         128,      2*8,         128,      1 },
-  { SEQ_EVENT_MODE_Drum,     2,         128,        8,         256,      0 }
+  { SEQ_EVENT_MODE_Drum,    16,          64,     2*16,          64,      1 },
+  { SEQ_EVENT_MODE_Drum,  2*16,          32,       16,         128,      0 },
+  { SEQ_EVENT_MODE_Drum,     8,         128,      2*8,         128,      1 },
+  { SEQ_EVENT_MODE_Drum,   2*8,          64,        8,         256,      0 }
 };
 
 static u8 selected_layer;
@@ -396,6 +396,7 @@ static s32 LCD_Handler(u8 high_prio)
   //       - Loopback (Number 000..127 assignable, name will be displayed)
   //       - Delay (+/- 96 ticks @384 ppqn)
   //       - Probability (100%..0%)
+  //       - "Roll/Flam Effect" (a selection of up to 128 different effects selectable for each step separately)
   // Chord: same like Note, but predefined Chords will be played
   // CC: Layer A/B/C play CCs (or other parameters) as well - no note number, no velocity, no length
 
@@ -409,19 +410,17 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type St/ParL St/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
-  // G1T1 Drum 64/2   128/2*16 USB1  10  yes Dly. Prb.   BD   C-1  100  127 Name INIT
+  // Trk. Type StepsP/T  Drums Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
+  // G1T1 Drum  (64/2*64) 16   USB1  10  yes Prb. ----   BD   C-1  100  127 Name INIT
 
-  // Trk. Type St/ParL St/TrgL Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
-  // G1T1 Drum 64/2   256/16   USB1  12   no Vel. Len.   SD   D-1  ---  --- Name INIT
+  // Trk. Type StepsP/T  Drums Port Chn. Glb LayA LayB  Drum Note VelN VelA Edit     
+  // G1T1 Drum  (2*64/256) 8   USB1  12   no Vel. Len.   SD   D-1  ---  --- Name INIT
 
 
   // Track Type "Drums":
-  //    2 parameter layers for each trigger layer (drum instrument).
-  //    If a trigger layer consists of 128 steps, the parameters will be mirrored (looped each 64 steps)
-  //    assignable to Velocity/Gatelength/Delay/Probability only
-  //    or to special parameter for drum mode: "Roll/Flam Effect" (a selection of up 
-  //    to 128 different effects selectable for each step separately)
+  //    1 or 2 parameter layers for each trigger layer (drum instrument).
+  //    If parameters layers consist of more than 1024 steps in total, steps > 1024 will be mirrored
+  //    assignable to Velocity/Gatelength/Delay/Probability/Roll/Flam only
   //    (no CC, no Pitch Bender, no Loopback, as they don't work note-wise, but 
   //     only channel wise
   //     just send them from a different track)
@@ -434,10 +433,10 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   // Available Layer Constraints (Partitioning for 1024 bytes Par. memory, 2048 bits Trg. memory)
-  //    - 2 Parameter Layer with 64 steps and 2*16 Trigger Layers A-P with 64 steps taken for Gate and Accent
-  //    - 2 Parameter Layer with 64 steps and 16 Trigger Layers A-P with 128 steps taken for Gate
-  //    - 2 Parameter Layer with 64 steps and 2*8 Trigger Layers A-P with 128 steps taken for Gate and Accent
-  //    - 2 Parameter Layer with 64 steps and 8 Trigger Layers A-P with 256 steps taken for Gate
+  //    - 16 Parameter Layers with 64 steps and 2*16 Trigger Layers A-P with 64 steps taken for Gate and Accent
+  //    - 2*16 Parameter Layer with 32 steps and 16 Trigger Layers A-P with 128 steps taken for Gate
+  //    - 8 Parameter Layer with 128 steps and 2*8 Trigger Layers A-P with 128 steps taken for Gate and Accent
+  //    - 2*8 Parameter Layer with 64 steps and 8 Trigger Layers A-P with 256 steps taken for Gate
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = layer_config[selected_layer_config].event_mode;
@@ -446,7 +445,7 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(0, 0);
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    SEQ_LCD_PrintString("Trk. Type St/ParL St/TrgL Port Chn. Glb Layer  controls                Edit     ");
+    SEQ_LCD_PrintString("Trk. Type StepsP/T  Drums Port Chn. Glb Layer  controls                Edit     ");
     SEQ_LCD_PrintString("LayA ");
     SEQ_LCD_PrintString("LayB ");
     SEQ_LCD_PrintString(" Drum Note VelN VelA Edit     ");
@@ -473,15 +472,21 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintString(event_mode_str[event_mode]);
 
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      SEQ_LCD_PrintFormattedString(layer_config[selected_layer_config].par_steps >= 100 ? "%3d/%1d  %3d/" : "%2d/%1d   %3d/",
-				   layer_config[selected_layer_config].par_steps, 
-				   layer_config[selected_layer_config].par_layers,
-				   layer_config[selected_layer_config].trg_steps);
-      if( layer_config[selected_layer_config].drum_with_accent ) {
-	SEQ_LCD_PrintFormattedString("2*%2d ", layer_config[selected_layer_config].trg_layers/2);
-      } else {
-	SEQ_LCD_PrintFormattedString("%2d   ", layer_config[selected_layer_config].trg_layers);
-      }
+      SEQ_LCD_PrintChar(' ');
+      SEQ_LCD_PrintChar('(');
+      SEQ_LCD_PrintSpaces(14); // for easier handling
+      SEQ_LCD_CursorSet(12, 1);
+
+      if( !layer_config[selected_layer_config].drum_with_accent )
+	SEQ_LCD_PrintString("2*");
+      SEQ_LCD_PrintFormattedString("%d/", layer_config[selected_layer_config].par_steps);
+      if( layer_config[selected_layer_config].drum_with_accent )
+	SEQ_LCD_PrintString("2*");
+      SEQ_LCD_PrintFormattedString("%d", layer_config[selected_layer_config].trg_steps);
+
+      SEQ_LCD_PrintFormattedString(") %d", layer_config[selected_layer_config].trg_layers / (layer_config[selected_layer_config].drum_with_accent ? 2 : 1));
+      SEQ_LCD_CursorSet(26, 1);
+
     } else {
       SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", 
 				   layer_config[selected_layer_config].par_steps, 

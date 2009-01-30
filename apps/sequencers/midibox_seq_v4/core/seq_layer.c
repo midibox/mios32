@@ -128,7 +128,7 @@ s32 SEQ_LAYER_Init(u32 mode)
 // This function returns the layer_evnt_t information based on given
 // layer (used for visualisation purposes)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u8 step, u8 layer, seq_layer_evnt_t *layer_event)
+s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, seq_layer_evnt_t *layer_event)
 {
   seq_layer_evnt_t layer_events[16];
   s32 number_of_events = 0;
@@ -208,14 +208,15 @@ char *SEQ_LAYER_GetVControlTypeString(u8 track, u8 par_layer)
 /////////////////////////////////////////////////////////////////////////////
 // Layer Event Modes
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
+s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   u8 num_events = 0;
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 step_par_layer = step % SEQ_PAR_NumStepsGet(track);
-    u8 accent_available = SEQ_TRG_AssignmentGet(track, 1);
+    u8 num_p_steps = SEQ_PAR_NumStepsGet(track);
+    u16 step_par_layer = step % num_p_steps;
+    u8 accent_available = SEQ_TRG_DrumHasAccentLayer(track);
     u8 num_t_layers = SEQ_TRG_NumLayersGet(track);
     u8 num_notes = accent_available ? (num_t_layers/2) : num_t_layers;
     int drum;
@@ -230,16 +231,18 @@ s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
       if( !SEQ_TRG_Get(track, step, drum) )
 	p->velocity = 0;
       else {
-	// TODO: selection from variable layer
-	if( accent_available ) {
-	  // gate/accent layers
-	  p->velocity = SEQ_TRG_Get(track, step, drum + num_notes) ? tcc->lay_const[2*16 + drum] : tcc->lay_const[1*16 + drum];
-	} else { // Vel_N/A
+	if( !accent_available ) // TODO: selectable velocity assignment
+	  p->velocity = SEQ_PAR_Get(track, step_par_layer, drum);
+	else
 	  p->velocity = tcc->lay_const[1*16 + drum];
+
+	if( accent_available && SEQ_TRG_Get(track, step, drum + num_notes) ) {
+	  p->velocity = tcc->lay_const[2*16 + drum];
 	}
       }
 
-      e->len      = 0x11; // TODO: selection from variable layer
+      // TODO: selection from variable layer
+      e->len = 4*((accent_available ? SEQ_PAR_Get(track, step_par_layer, drum) : SEQ_PAR_Get(track, step_par_layer, drum + num_notes))+1);
 
       ++num_events;
     }
@@ -259,7 +262,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
 	p->chn      = tcc->midi_chn;
 	p->note     = note;
 	p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-	e->len      = SEQ_PAR_Get(track, step, 2);
+	e->len      = 4*SEQ_PAR_Get(track, step, 2) + 1;
       }
     } else {
       seq_layer_evnt_t *e = &layer_events[0];
@@ -269,7 +272,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u8 step, seq_layer_evnt_t layer_events[16])
       p->chn      = tcc->midi_chn;
       p->note     = SEQ_PAR_Get(track, step, 0);
       p->velocity = SEQ_TRG_GateGet(track, step) ? SEQ_PAR_Get(track, step, 1) : 0x00;
-      e->len      = SEQ_PAR_Get(track, step, 2);
+      e->len      = 4*SEQ_PAR_Get(track, step, 2) + 1;
       ++num_events;
     }
   }
@@ -337,6 +340,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
     }
   }
 
+
   // get constraints of trigger layers
   int num_t_layers = SEQ_TRG_NumLayersGet(track);
   int num_t_steps  = SEQ_TRG_NumStepsGet(track);;
@@ -355,6 +359,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
 	SEQ_TRG_Set8(track, step8, 0, 0x11);
     }
   }
+
 
   // get constraints of parameter layers
   int num_p_layers = SEQ_PAR_NumLayersGet(track);
@@ -390,10 +395,22 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 d
 
     case SEQ_EVENT_MODE_Drum: {
       // TODO: variable routing
-      for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0,  100); // velocity
-	SEQ_PAR_Set(track, step, 1, 0x11); // length
+      if( drum_with_accent ) {
+	u8 layer;
+	for(layer=0; layer<num_p_layers; ++layer)
+	  for(step=0; step<num_p_steps; ++step) {
+	    SEQ_PAR_Set(track, step, layer, 0x11); // length
+	  }
+      } else {
+	u8 layer;
+	for(layer=0; layer<(num_p_layers/2); ++layer)
+	  for(step=0; step<num_p_steps; ++step) {
+	    SEQ_PAR_Set(track, step, layer,  100); // velocity
+	    SEQ_PAR_Set(track, step, layer + (num_p_layers/2), 0x11); // length
+	  }
       }
+	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, drum_with_accent ? 2 : 0);
+
     } break;
   }
 

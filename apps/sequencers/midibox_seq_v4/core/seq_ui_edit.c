@@ -340,9 +340,17 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   }
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-    u8 selected_trg_layer = accent_available ? (ui_selected_trg_layer >= (SEQ_TRG_NumLayersGet(visible_track)/2)) : 0;
-    SEQ_LCD_PrintString(selected_trg_layer ? "TB:Acc. " : "TA:Gate ");
+    u8 selected_trg_layer = SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer);
+
+    SEQ_LCD_PrintFormattedString("T%c:", 'A' + selected_trg_layer);
+
+    if( selected_trg_layer == 0 ) {
+      SEQ_LCD_PrintString("Gate ");
+    } else if( SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer) ) {
+      SEQ_LCD_PrintString("Acc. ");
+    } else {
+      SEQ_LCD_PrintString("---- ");
+    }
   } else {
     SEQ_LCD_PrintFormattedString("T%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
   }
@@ -385,8 +393,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintSpaces(4);
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-    u8 drum = accent_available ? (ui_selected_trg_layer % (SEQ_TRG_NumLayersGet(visible_track)/2)) : ui_selected_trg_layer;
+    u8 drum = SEQ_TRG_DrumLayerGet(visible_track, ui_selected_trg_layer);
     SEQ_LCD_PrintTrackDrum(visible_track, drum, (char *)seq_core_trk[visible_track].name);
   } else {
     SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
@@ -513,16 +520,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       seq_layer_evnt_t layer_event;
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
-      u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-      u8 accent_offset = SEQ_TRG_NumLayersGet(visible_track)/2;
-      u8 drum = accent_available ? (ui_selected_trg_layer % accent_offset) : ui_selected_trg_layer;
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 gate = SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, drum);
-	u8 accent = accent_available ? SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, drum + accent_offset) : 0;
-
+	u8 gate_accent = SEQ_TRG_DrumGet(visible_track, step + 16*ui_selected_step_view, ui_selected_trg_layer);
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
-	SEQ_LCD_PrintChar((accent << 1) | gate);
+	SEQ_LCD_PrintChar(gate_accent);
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {

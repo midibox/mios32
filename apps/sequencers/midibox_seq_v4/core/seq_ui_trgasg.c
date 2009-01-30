@@ -248,6 +248,12 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_TRGASG_Init(u32 mode)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // in drum mode: use trigger selection page instead!
+  if( SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE) == SEQ_EVENT_MODE_Drum )
+    return SEQ_UI_TRGSEL_Init(mode);
+
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);

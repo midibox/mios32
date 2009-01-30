@@ -164,12 +164,9 @@ static s32 LCD_Handler(u8 high_prio)
   int steps_per_item = num_steps / 16;
   int played_step = SEQ_BPM_IsRunning() ? seq_core_trk[visible_track].step : -1;
 
-  int num_layers = SEQ_TRG_NumLayersGet(visible_track);
   u8 selected_trg_layer = ui_selected_trg_layer;
-  u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-
-  if( event_mode == SEQ_EVENT_MODE_Drum && accent_available ) {
-    selected_trg_layer %= (num_layers / 2);
+  if( event_mode == SEQ_EVENT_MODE_Drum && SEQ_TRG_DrumHasAccentLayer(visible_track) ) {
+    selected_trg_layer = SEQ_TRG_DrumLayerGet(visible_track, selected_trg_layer);
   }
 
   int i;
@@ -196,8 +193,16 @@ static s32 LCD_Handler(u8 high_prio)
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
       u8 step8 = step / 8;
-      u16 steps = (SEQ_TRG_Get8(visible_track, step8+1, selected_trg_layer) << 8) |
-	          (SEQ_TRG_Get8(visible_track, step8+0, selected_trg_layer) << 0);
+
+      u16 steps;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	steps = ((SEQ_TRG_DrumGet2x8(visible_track, step8+1, selected_trg_layer) & 0xff) << 8) |
+ 	        ((SEQ_TRG_DrumGet2x8(visible_track, step8+0, selected_trg_layer) & 0xff) << 0);
+      } else {
+	steps = (SEQ_TRG_Get8(visible_track, step8+1, selected_trg_layer) << 8) |
+	        (SEQ_TRG_Get8(visible_track, step8+0, selected_trg_layer) << 0);
+      }
+
 
       if( played_step >= step && played_step < (step+16) )
 	steps ^= (1 << (played_step % 16));
@@ -213,7 +218,11 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
+      u8 steps;
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	steps = SEQ_TRG_DrumGet2x8(visible_track, step / 8, selected_trg_layer);
+      else
+	steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
 
       if( played_step >= step && played_step < (step+8) )
 	steps ^= (1 << (played_step % 8));
@@ -229,16 +238,22 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<16; ++i) {
       u8 step = i*steps_per_item;
-      u8 steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
-      steps = (i % 1) ? ((steps & 0xf) >> 4) : (steps & 0xf);
+      u16 steps;
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	steps = SEQ_TRG_DrumGet2x8(visible_track, step / 8, selected_trg_layer); // note: returns accent flags in [15:8]
+      else
+	steps = SEQ_TRG_Get8(visible_track, step / 8, selected_trg_layer);
+
+      if( i & 1 )
+	steps >>= 4;
 
       int j;
       for(j=0; j<4; ++j) {
-	u8 gate = steps & 0x1;
+	u8 accent_gate = ((steps & 0x100) ? 2 : 0) | (steps & 0x1);
 	if( (step + j) == played_step ) {
-	  SEQ_LCD_PrintChar(gate ? 0x03 : 0x02);
+	  SEQ_LCD_PrintChar(accent_gate ^ 3);
 	} else {
-	  SEQ_LCD_PrintChar(gate);
+	  SEQ_LCD_PrintChar(accent_gate);
 	}
 	steps >>= 1;
       }
