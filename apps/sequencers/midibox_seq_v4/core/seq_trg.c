@@ -117,6 +117,36 @@ s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Drum mode: returns 1 if track supports accent triggers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_DrumHasAccentLayer(u8 track)
+{
+  return seq_cc_trk[track].trg_assignments.accent;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Drum mode: returns 1 if trigger layer conrols accent
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_DrumIsAccentLayer(u8 track, u8 trg_layer)
+{
+  return seq_cc_trk[track].trg_assignments.accent &&
+         (trg_layer >= (trg_layer_num_layers[track] / 2));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Drum mode: returns the drum instrument independing from gate/accent layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_DrumLayerGet(u8 track, u8 trg_layer)
+{
+  if( !seq_cc_trk[track].trg_assignments.accent )
+    return trg_layer;
+
+  return trg_layer % (trg_layer_num_layers[track] / 2);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // returns value of a given trigger layer
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer)
@@ -140,6 +170,37 @@ s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer)
     return 0; // invalid step position: return 0 (trigger not set)
 
   return seq_trg_layer_value[track][step_ix];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Drum mode: returns 8 steps of a given trigger layer
+// bit [7:0]: gates, bit [15:8]: accents
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_DrumGet2x8(u8 track, u8 step8, u8 trg_layer)
+{
+  u16 step_ix = SEQ_TRG_DrumLayerGet(track, trg_layer) * (u16)trg_layer_num_steps8[track] + step8;
+  if( step_ix >= SEQ_TRG_MAX_BYTES )
+    return 0; // invalid step position: return 0 (trigger not set)
+
+  u8 gate = seq_trg_layer_value[track][step_ix];
+  u8 accent = 0;
+  if( SEQ_TRG_DrumHasAccentLayer(track) )
+    accent = seq_trg_layer_value[track][step_ix + (u16)trg_layer_num_steps8[track] * (trg_layer_num_layers[track] / 2)];
+
+  return (accent << 8) | gate;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Drum mode: returns a step of a given trigger layer
+// bit [0]: gate, bit [1]: accent
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TRG_DrumGet(u8 track, u8 step, u8 trg_layer)
+{
+  u16 steps = SEQ_TRG_DrumGet2x8(track, step/8, trg_layer);
+  u8 step_mask = 1 << (step % 8);
+  return (((steps>>8) & step_mask) ? 2 : 0) | ((steps & step_mask) ? 1 : 0);
 }
 
 

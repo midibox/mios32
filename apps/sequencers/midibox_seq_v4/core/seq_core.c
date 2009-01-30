@@ -282,7 +282,9 @@ s32 SEQ_CORE_Reset(void)
     seq_core_trk_t *t = &seq_core_trk[track];
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
+    u8 muted = t->state.MUTED; // save muted flag
     t->state.ALL = 0;
+    t->state.MUTED = muted; // restore muted flag
     SEQ_CORE_ResetTrkPos(t, tcc);
   }
 
@@ -436,29 +438,30 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      triggers = 1;
             } else if( (p->type == CC || (p->type != CC && p->note && p->velocity)) && (e->len >= 0) ) {
 	      // Any other event with gatelength
-	      if( e->len < 32 ) {
-		if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
-		  // sustained note: play off event of previous step
-		  SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
+	      if( p->type == NoteOn && tcc->mode.SUSTAIN ) {
+		// sustained note: play off event of previous step
+		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
 		  
-		  // sustained note: play note at timestamp, but don't queue off event
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
+		// sustained note: play note at timestamp, but don't queue off event
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
 		  
-		  t->sustain_port = tcc->midi_port;
-		  t->sustain_note = *p;
-		  t->sustain_note.velocity = 0; // clear velocity value
-		  // triggers/gatelength already 0 - don't queue additional notes
-		} else {
-		  triggers = 1;
-		  gatelength = (4*(e->len+1)) << seq_core_bpm_div_int;
-		}
+		t->sustain_port = tcc->midi_port;
+		t->sustain_note = *p;
+		t->sustain_note.velocity = 0; // clear velocity value
+		// triggers/gatelength already 0 - don't queue additional notes
 	      } else {
+		triggers = 1;
+		gatelength = e->len << seq_core_bpm_div_int;
+	      }
+            }
+
+#if 0
 		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
 		triggers = (e->len>>5) + 1;
 		gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
 		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
-	      }
-            }
+		// TODO: upcomming roll layer will allow this! :-)
+#endif
             
             // schedule events
             if( triggers ) {

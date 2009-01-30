@@ -38,16 +38,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -788,12 +778,11 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
     if( trg_layer <= 1 ) {
       if( depressed ) return -1; // ignore when button depressed
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-	if( accent_available )
+	if( SEQ_TRG_DrumHasAccentLayer(visible_track) )
 	  num_t_layers /= 2;
 
 	ui_selected_trg_layer %= num_t_layers;
-	if( trg_layer == 1 && accent_available )
+	if( trg_layer == 1 && SEQ_TRG_DrumHasAccentLayer(visible_track) )
 	  ui_selected_trg_layer += num_t_layers;
       } else {
 	seq_ui_button_state.TRG_LAYER_SEL = 0;
@@ -1165,8 +1154,7 @@ s32 SEQ_UI_LED_Handler(void)
   
   // trigger layer LEDs
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    u8 accent_available = SEQ_TRG_AssignmentGet(visible_track, 1);
-    u8 selected_trg_layer = accent_available ? (ui_selected_trg_layer >= (SEQ_TRG_NumLayersGet(visible_track)/2)) : 0;
+    u8 selected_trg_layer = SEQ_TRG_DrumIsAccentLayer(visible_track, ui_selected_trg_layer);
     SEQ_LED_PinSet(LED_TRG_LAYER_A, (selected_trg_layer == 0));
     SEQ_LED_PinSet(LED_TRG_LAYER_B, (selected_trg_layer == 1));
     SEQ_LED_PinSet(LED_TRG_LAYER_C, seq_ui_button_state.TRG_LAYER_SEL);
