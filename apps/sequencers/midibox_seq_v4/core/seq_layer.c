@@ -163,7 +163,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   u8 num_events = 0;
 
-  u8 handle_vu_meter = track == SEQ_UI_VisibleTrackGet();
+  u8 handle_vu_meter = (ui_page == SEQ_UI_PAGE_TRGSEL || ui_page == SEQ_UI_PAGE_PARSEL) && track == SEQ_UI_VisibleTrackGet();
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!

@@ -269,9 +269,8 @@ s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument)
     u8 value = SEQ_PAR_Get(track, step, par_layer, par_instrument);
     return (value >= 100) ? 0 : 100-value;
   }
-    return ;
 
-  return 0; // 100% probability
+  return 100; // 100% probability
 }
 
 
@@ -301,14 +300,14 @@ s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument)
 /////////////////////////////////////////////////////////////////////////////
 // returns the roll mode if assigned to any parameter layer
 //   0:      none
-//   1.. 15: 2U02..2U16
-//  16.. 31: 3U01..3U16
-//  32.. 47: 4U01..4U16
-//  48.. 63: 5U01..5U16
-//  64.. 79: 2D01..2D16
-//  80.. 95: 3D01..3D16
-//  96..111: 4D01..4D16
-// 112..127: 5D01..5D16
+//   1.. 15: 2D01..2D15
+//  16.. 31: 3D00..3D15
+//  32.. 47: 4D00..4D15
+//  48.. 63: 5D00..5D15
+//  64.. 79: 2U00..2U15
+//  80.. 95: 3U00..3U15
+//  96..111: 4U00..4U15
+// 112..127: 5U00..5U15
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument)
 {
