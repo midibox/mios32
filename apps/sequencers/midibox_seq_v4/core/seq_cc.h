@@ -23,7 +23,7 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// usage depends on event mode (e.g. drum tracks: MIDI channel for up to 16 trigger layers)
+// usage depends on event mode (e.g. drum tracks: MIDI notes for up to 16 trigger layers)
 #define SEQ_CC_LAY_CONST_A1	0x00
 #define SEQ_CC_LAY_CONST_A2	0x01
 #define SEQ_CC_LAY_CONST_A3	0x02
@@ -41,7 +41,7 @@
 #define SEQ_CC_LAY_CONST_A15	0x0e
 #define SEQ_CC_LAY_CONST_A16	0x0f
 
-// usage depends on event mode (e.g. drum tracks: MIDI note for up to 16 trigger layers)
+// usage depends on event mode (e.g. drum tracks: Normal Velocity for up to 16 trigger layers)
 #define SEQ_CC_LAY_CONST_B1	0x10
 #define SEQ_CC_LAY_CONST_B2	0x11
 #define SEQ_CC_LAY_CONST_B3	0x12
@@ -59,7 +59,7 @@
 #define SEQ_CC_LAY_CONST_B15	0x1e
 #define SEQ_CC_LAY_CONST_B16	0x1f
 
-// usage depends on event mode (e.g. drum tracks: CC1 number)
+// usage depends on event mode (e.g. drum tracks: Accented Velocity for up to 16 trigger layers)
 #define SEQ_CC_LAY_CONST_C1	0x20
 #define SEQ_CC_LAY_CONST_C2	0x21
 #define SEQ_CC_LAY_CONST_C3	0x22
@@ -77,7 +77,7 @@
 #define SEQ_CC_LAY_CONST_C15	0x2e
 #define SEQ_CC_LAY_CONST_C16	0x2f
 
-// usage depends on event mode (e.g. drum tracks: CC2 number or static velocity)
+// usage depends on event mode (e.g. drum tracks: local MIDI channel)
 #define SEQ_CC_LAY_CONST_D1	0x30
 #define SEQ_CC_LAY_CONST_D2	0x31
 #define SEQ_CC_LAY_CONST_D3	0x32
@@ -122,7 +122,9 @@
 #define SEQ_CC_HUMANIZE_VALUE	0x56
 #define SEQ_CC_HUMANIZE_MODE	0x57
 
-// free: 0x58..0x5f
+#define SEQ_CC_PAR_ASG_DRUM_LAYER_A 0x58
+#define SEQ_CC_PAR_ASG_DRUM_LAYER_B 0x59
+// free: 0x5a..0x5f
 
 #define SEQ_CC_ASG_GATE		0x60
 #define SEQ_CC_ASG_ACCENT	0x61
@@ -174,6 +176,8 @@ typedef struct {
   unsigned humanize_mode:4;   // humanize mode
   unsigned humanize_value:4;  // humanize intensity
 
+  u8       par_assignment_drum[2]; // only used in drum mode
+
   // new in MBSEQ V4
   unsigned echo_repeats:4;    // repeats (0..15)
   unsigned echo_delay:4;      // delay between echoed notes (different predefined lengths + Rnd1/2)
@@ -182,6 +186,15 @@ typedef struct {
   unsigned echo_fb_note:8;    // feedbacked note (-24..24 + random = 50 values)
   unsigned echo_fb_gatelength:8; // feedbacked gatelength 0%..200%, 5 step resolution (41 values)
   unsigned echo_fb_ticks:8;   // feedbacked ticks 0%..200%, 5 step resolution (41 values)
+
+  // temporary variables which will be updated on CC writes
+  s8 link_par_layer_note;        // parameter layer which stores the first note value (-1 if not assigned)
+  s8 link_par_layer_chord;       // parameter layer which stores the first chord value (-1 if not assigned)
+  s8 link_par_layer_velocity;    // parameter layer which stores the first velocity value (-1 if not assigned)
+  s8 link_par_layer_length;      // parameter layer which stores the first length value (-1 if not assigned)
+  s8 link_par_layer_probability; // parameter layer which stores probability value (-1 if not assigned)
+  s8 link_par_layer_delay;       // parameter layer which stores delay value (-1 if not assigned)
+  s8 link_par_layer_roll;        // parameter layer which stores roll value (-1 if not assigned)
 } seq_cc_trk_t;
 
 

@@ -401,8 +401,8 @@ static s32 RandomGenerator(u8 req)
 
 	// determine range
 	u8 base, range;
-	seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, layer);
-	if( layer_ctrl_type == SEQ_LAYER_ControlType_Length ) {
+	seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, layer);
+	if( layer_type == SEQ_PAR_Type_Length ) {
 	  base = 16;
 	  range = ((par_layer_range[layer] >> 2) - 1); // -> +/- 16
 	  if( !range || range > 128 ) // (on underrun...)

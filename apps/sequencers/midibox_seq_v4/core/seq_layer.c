@@ -23,22 +23,20 @@
 #include "seq_trg.h"
 #include "seq_par.h"
 #include "seq_chord.h"
+#include "seq_ui.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+// to display activity of selected track in trigger/parameter selection page
+u8 seq_layer_vu_meter[16];
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions and arrays
 /////////////////////////////////////////////////////////////////////////////
-
-// Control Type Names as 4 character string
-static const char seq_layer_names[][5] = {
-  "None",	//   SEQ_LAYER_ControlType_None,
-  "Note",	//   SEQ_LAYER_ControlType_Note,
-  "Vel,",	//   SEQ_LAYER_ControlType_Velocity,
-  "Crd.",	//   SEQ_LAYER_ControlType_Chord,
-  "Vel.",	//   SEQ_LAYER_ControlType_Chord_Velocity,
-  "Len.",	//   SEQ_LAYER_ControlType_Length,
-  " CC "	//   SEQ_LAYER_ControlType_CC
-};
 
 // preset table - each entry contains the initial track configuration and the step settings
 // EVNT0 and CHN won't be overwritten
@@ -158,59 +156,14 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, seq_layer_evnt_t *lay
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the control type of a variable layer
-/////////////////////////////////////////////////////////////////////////////
-seq_layer_ctrl_type_t SEQ_LAYER_GetVControlType(u8 track, u8 par_layer)
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
-  if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
-    return par_layer ? SEQ_LAYER_ControlType_Length : SEQ_LAYER_ControlType_Velocity; // TODO: variable assignments
-  } else {
-    if( par_layer == 0 ) {
-      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
-	return SEQ_LAYER_ControlType_CC;
-      else if( tcc->event_mode == SEQ_EVENT_MODE_Chord )
-	return SEQ_LAYER_ControlType_Chord;
-      else
-	return SEQ_LAYER_ControlType_Note;
-    } else if( par_layer == 1 ) {
-      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
-	return SEQ_LAYER_ControlType_CC;
-      else if( tcc->event_mode == SEQ_EVENT_MODE_Chord )
-	return SEQ_LAYER_ControlType_Chord_Velocity;
-      else
-	return SEQ_LAYER_ControlType_Velocity;
-    } else if( par_layer == 2 ) {
-      if( tcc->event_mode == SEQ_EVENT_MODE_CC )
-	return SEQ_LAYER_ControlType_CC;
-      else
-	return SEQ_LAYER_ControlType_Length;
-    } else {
-      return SEQ_LAYER_ControlType_None; // TODO
-    }
-  }
-
-  return SEQ_LAYER_ControlType_None;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the name of a control type as 4 character string
-/////////////////////////////////////////////////////////////////////////////
-char *SEQ_LAYER_GetVControlTypeString(u8 track, u8 par_layer)
-{
-  return (char *)seq_layer_names[SEQ_LAYER_GetVControlType(track, par_layer)];
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Layer Event Modes
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   u8 num_events = 0;
+
+  u8 handle_vu_meter = track == SEQ_UI_VisibleTrackGet();
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
@@ -230,48 +183,135 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       if( !SEQ_TRG_Get(track, step, 0, drum) )
 	p->velocity = 0;
       else {
-	if( num_p_layers == 2 ) // TODO: selectable velocity assignment
-	  p->velocity = SEQ_PAR_Get(track, step_par_layer, 0, drum);
+	if( num_p_layers == 2 )
+	  p->velocity = SEQ_PAR_VelocityGet(track, step_par_layer, drum);
 	else
 	  p->velocity = tcc->lay_const[1*16 + drum];
       }
 
-      // TODO: selection from variable layer
-      e->len = ((num_p_layers == 2) 
-	? SEQ_PAR_Get(track, step_par_layer, 1, drum)
-	: SEQ_PAR_Get(track, step_par_layer, 0, drum)) + 1;
+      if( handle_vu_meter && p->velocity ) {
+	seq_layer_vu_meter[drum] = p->velocity;
+      } else {
+	seq_layer_vu_meter[drum] &= 0x7f; // ensure that no static assignment is displayed
+      }
+
+      e->len = SEQ_PAR_LengthGet(track, step_par_layer, drum);
 
       ++num_events;
     }
   } else {
-    // static assignments for Parameter Layer A/B/C
     u8 instrument = 0;
-    if( tcc->event_mode == SEQ_EVENT_MODE_Chord ) {
-      u8 chord_value = SEQ_PAR_Get(track, step, 0, instrument);
-      for(num_events=0; num_events<4; ++num_events) {
-	s32 note = SEQ_CHORD_NoteGet(num_events, chord_value);
-	if( note < 0 )
-	  break;
+    int par_layer;
 
-	seq_layer_evnt_t *e = &layer_events[num_events];
-	mios32_midi_package_t *p = &e->midi_package;
-	p->type     = NoteOn;
-	p->event    = NoteOn;
-	p->chn      = tcc->midi_chn;
-	p->note     = note;
-	p->velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, 1, instrument) : 0x00;
-	e->len      = SEQ_PAR_Get(track, step, 2, instrument) + 1;
+    // get velocity and length from first parameter layer which holds it
+    // if not assigned, we will get back a default value
+    
+    u8 velocity = 100; // default velocity
+    if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
+      velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, par_layer, instrument) : 0;
+      if( handle_vu_meter )
+	seq_layer_vu_meter[par_layer] = velocity | 0x80;
+    }
+
+    u8 length = 71; // default length
+    if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
+      length = SEQ_PAR_Get(track, step, par_layer, instrument);
+      if( length > 95 )
+	length = 95;
+      ++length;
+	  
+      if( handle_vu_meter )
+	seq_layer_vu_meter[par_layer] = length | 0x80;
+    }
+
+    // go through all layers to generate events
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+      switch( tcc->lay_const[0*16 + par_layer] ) {
+
+        case SEQ_PAR_Type_Note: {
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+
+	  p->type     = NoteOn;
+	  p->event    = NoteOn;
+	  p->chn      = tcc->midi_chn;
+	  p->note     = SEQ_PAR_Get(track, step, par_layer, instrument);
+	  p->velocity = velocity;
+	  e->len      = length;
+	  ++num_events;
+
+	  if( handle_vu_meter && velocity )
+	    seq_layer_vu_meter[par_layer] = velocity;
+
+	} break;
+
+        case SEQ_PAR_Type_Chord: {
+	  u8 chord_value = SEQ_PAR_Get(track, step, par_layer, instrument);
+	  int i;
+	  for(i=0; i<4; ++i) {
+	    if( num_events >= 16 )
+	      break;
+
+	    s32 note = SEQ_CHORD_NoteGet(i, chord_value);
+	    if( note < 0 )
+	      break;
+
+	    seq_layer_evnt_t *e = &layer_events[num_events];
+	    mios32_midi_package_t *p = &e->midi_package;
+	    p->type     = NoteOn;
+	    p->event    = NoteOn;
+	    p->chn      = tcc->midi_chn;
+	    p->note     = note;
+	    p->velocity = velocity;
+	    e->len      = length;
+	    ++num_events;
+	  }
+
+	  if( handle_vu_meter && velocity )
+	    seq_layer_vu_meter[par_layer] = velocity;
+
+	} break;
+
+        case SEQ_PAR_Type_CC: {
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+
+	  p->type     = CC;
+	  p->event    = CC;
+	  p->chn      = tcc->midi_chn;
+	  p->note     = tcc->lay_const[1*16 + par_layer];
+	  p->value    = SEQ_PAR_Get(track, step, par_layer, instrument);
+	  e->len      = -1;
+	  ++num_events;
+
+	  if( handle_vu_meter )
+	    seq_layer_vu_meter[par_layer] = p->value | 0x80;
+
+	} break;
+
+        case SEQ_PAR_Type_PitchBend: {
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+	  p->type     = PitchBend;
+	  p->event    = PitchBend;
+	  p->chn      = tcc->midi_chn;
+	  p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
+	  p->evnt2    = value; // MSB
+	  e->len      = -1;
+	  ++num_events;
+
+	  if( handle_vu_meter )
+	    seq_layer_vu_meter[par_layer] = p->evnt2 | 0x80;
+
+	} break;
+
       }
-    } else {
-      seq_layer_evnt_t *e = &layer_events[0];
-      mios32_midi_package_t *p = &e->midi_package;
-      p->type     = NoteOn;
-      p->event    = NoteOn;
-      p->chn      = tcc->midi_chn;
-      p->note     = SEQ_PAR_Get(track, step, 0, instrument);
-      p->velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, 1, instrument) : 0x00;
-      e->len      = SEQ_PAR_Get(track, step, 2, instrument) + 1;
-      ++num_events;
+
+      if( num_events >= 16 )
+	break;
     }
   }
 
@@ -302,22 +342,32 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
 
     // copy event mode depending settings
     switch( event_mode ) {
-      case SEQ_EVENT_MODE_Note: {
-	// Trigger Layer Assignments
-	for(i=0; i<8; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
-      } break;
-
+      case SEQ_EVENT_MODE_Note:
       case SEQ_EVENT_MODE_Chord: {
 	// Trigger Layer Assignments
 	for(i=0; i<8; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
+
+	// Parameter Layer Assignments
+	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, (event_mode == SEQ_EVENT_MODE_Chord) ? SEQ_PAR_Type_Chord : SEQ_PAR_Type_Note);
+	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
+	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
+	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
+
+	for(i=0; i<16; ++i)
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
       } break;
 
       case SEQ_EVENT_MODE_CC: {
 	// Trigger Layer Assignments
 	for(i=0; i<8; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
+
+	// Parameter Layer Assignments
+	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, SEQ_PAR_Type_CC);
+
+	for(i=0; i<16; ++i)
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
       } break;
 
       case SEQ_EVENT_MODE_Drum: {
@@ -326,6 +376,15 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
 	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, (SEQ_TRG_NumLayersGet(track) > 1) ? 2 : 0);
 	for(i=2; i<8; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, 0); // not relevant in drum mode
+
+	// parameter layer assignments
+	if( SEQ_TRG_NumLayersGet(track) > 1 ) {
+	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
+	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
+	} else {
+	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Roll);
+	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
+	}
 
 	// Constant Layer Values
 	int drum;
@@ -362,64 +421,31 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
   }
 
 
-  // get constraints of parameter layers
-  int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
+  // copy parameter layer values
+  int par_layer;
   int num_p_layers = SEQ_PAR_NumLayersGet(track);
+  for(par_layer=0; par_layer<num_p_layers; ++par_layer)
+    SEQ_LAYER_CopyParLayerPreset(track, par_layer);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Copies parameter layer preset depending on selected parameter type
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_CopyParLayerPreset(u8 track, u8 par_layer)
+{
+  int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
 
-  // copy parameter layer values
+  u8 init_value = SEQ_PAR_InitValueGet(SEQ_PAR_AssignmentGet(track, par_layer));
+
   int step;
-  int par_layer;
-  switch( event_mode ) {
-    case SEQ_EVENT_MODE_Note: {
-      u8 instrument = 0;
-      for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, instrument, 0x3c); // C-3
-	SEQ_PAR_Set(track, step, 1, instrument,  100); // velocity
-	SEQ_PAR_Set(track, step, 2, instrument, 0x47); // length
-      }
-    } break;
-
-    case SEQ_EVENT_MODE_Chord: {
-      u8 instrument = 0;
-      for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, instrument, 0x40); // Chord
-	SEQ_PAR_Set(track, step, 1, instrument,  100); // velocity
-	SEQ_PAR_Set(track, step, 2, instrument, 0x47); // length
-      }
-    } break;
-
-    case SEQ_EVENT_MODE_CC: {
-      u8 instrument = 0;
-      for(step=0; step<num_p_steps; ++step) {
-	SEQ_PAR_Set(track, step, 0, instrument, 0x40); // CC#16
-	SEQ_PAR_Set(track, step, 1, instrument, 0x40); // CC#17
-	SEQ_PAR_Set(track, step, 2, instrument, 0x40); // CC#18
-      }
-    } break;
-
-    case SEQ_EVENT_MODE_Drum: {
-      u8 instrument;
-      for(instrument=0; instrument<num_p_instruments; ++instrument) {
-	// TODO: variable routing
-	if( SEQ_TRG_NumLayersGet(track) > 1 ) {
-	  u8 layer = 0;
-	  for(step=0; step<num_p_steps; ++step) {
-	    SEQ_PAR_Set(track, step, layer, instrument, 0x47); // length
-	  }
-	} else {
-	  for(step=0; step<num_p_steps; ++step) {
-	    SEQ_PAR_Set(track, step, 0, instrument, 100); // velocity
-	    SEQ_PAR_Set(track, step, 1, instrument, 0x47); // length
-	  }
-	}
-      }
-    } break;
-  }
-
-  if( num_p_layers > 3 ) {
-    // TODO: remaining layers
-  }
+  int instrument;
+  for(instrument=0; instrument<num_p_instruments; ++instrument)
+    for(step=0; step<num_p_steps; ++step)
+      SEQ_PAR_Set(track, step, par_layer, instrument, init_value);
 
   return 0; // no error
 }

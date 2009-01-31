@@ -74,7 +74,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     // due to historical reasons (from old times where MBSEQ CS was stuffed with pots): 
     // in arp mode, we increment in steps of 4
     if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator &&
-	SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer) == SEQ_LAYER_ControlType_Note )
+	SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) == SEQ_PAR_Type_Note )
       incrementer *= 4;
 
 
@@ -233,7 +233,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   seq_layer_evnt_t layer_event;
   SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
 
-  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(visible_track, ui_selected_par_layer);
+  seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
+
+  // TODO: tmp. solution to print chord velocity correctly
+  if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[visible_track].link_par_layer_chord == 0) )
+    layer_type = SEQ_PAR_Type_Chord;
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -312,31 +316,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
   SEQ_LCD_PrintChar(':');
 
-  switch( layer_ctrl_type ) {
-    case SEQ_LAYER_ControlType_Note:
-      SEQ_LCD_PrintString("Note   ");
-      break;
-
-    case SEQ_LAYER_ControlType_Velocity:
-    case SEQ_LAYER_ControlType_Chord_Velocity:
-      SEQ_LCD_PrintString("Vel.   ");
-      break;
-    
-    case SEQ_LAYER_ControlType_Chord:
-      SEQ_LCD_PrintString("Chord  ");
-      break;
-    
-    case SEQ_LAYER_ControlType_Length:
-      SEQ_LCD_PrintString("Length ");
-      break;
-    
-    case SEQ_LAYER_ControlType_CC:
-      SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
-      break;
-    
-    default:
-      SEQ_LCD_PrintString("???    ");
-      break;
+  if( layer_type == SEQ_PAR_Type_CC ) {
+    SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+  } else {
+    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+    SEQ_LCD_PrintSpaces(2);
   }
 
   SEQ_LCD_PrintFormattedString("T%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
@@ -356,8 +340,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
       if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);
-      } else if( layer_ctrl_type == SEQ_LAYER_ControlType_Chord ||
-	       layer_ctrl_type == SEQ_LAYER_ControlType_Chord_Velocity ) {
+      } else if( layer_type == SEQ_PAR_Type_Chord ) {
 	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
 	u8 chord_ix = par_value & 0x0f;
 	u8 chord_oct = par_value >> 4;
@@ -387,7 +370,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   ///////////////////////////////////////////////////////////////////////////
 
   // extra handling for gatelength (shows vertical bars)
-  if( layer_ctrl_type == SEQ_LAYER_ControlType_Length ) {
+  if( layer_type == SEQ_PAR_Type_Length ) {
 
     // we want to show horizontal bars
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_HBars);
@@ -552,9 +535,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {
-	switch( layer_ctrl_type ) {
-          case SEQ_LAYER_ControlType_Note:
-          case SEQ_LAYER_ControlType_Velocity:
+	switch( layer_type ) {
+          case SEQ_PAR_Type_None:
+	    SEQ_LCD_PrintString("None");
+	    break;
+
+          case SEQ_PAR_Type_Note:
+          case SEQ_PAR_Type_Velocity:
 	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
 	      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
 		SEQ_LCD_PrintArp(layer_event.midi_package.note);
@@ -566,10 +553,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	    }
 	    break;
 
-          case SEQ_LAYER_ControlType_Chord:
-          case SEQ_LAYER_ControlType_Chord_Velocity:
+	  case SEQ_PAR_Type_Chord:
 	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	      u8 par_value = SEQ_PAR_Get(visible_track, step, 0, ui_selected_instrument);
+	      u8 par_value = SEQ_PAR_Get(visible_track, step, ui_selected_par_layer, ui_selected_instrument);
 	      u8 chord_ix = par_value & 0x0f;
 	      u8 chord_oct = par_value >> 4;
 	      SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
@@ -579,13 +565,27 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	    }
 	    break;
 	  
-	  //case SEQ_LAYER_ControlType_Length:
+	  //case SEQ_PAR_Type_Length:
 	  //break;
 	  // extra handling -- see code above
 
-          case SEQ_LAYER_ControlType_CC:
-	    SEQ_LCD_PrintFormattedString("%3d", layer_event.midi_package.value);
-	    SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
+	  case SEQ_PAR_Type_CC:
+	  case SEQ_PAR_Type_PitchBend: {
+	    u8 value = layer_event.midi_package.value;
+	    SEQ_LCD_PrintFormattedString("%3d", value);
+	    SEQ_LCD_PrintVBar(value >> 4);
+	  } break;
+
+	  case SEQ_PAR_Type_Probability:
+	    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(visible_track, step, ui_selected_instrument));
+	    break;
+
+	  case SEQ_PAR_Type_Delay:
+	    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(visible_track, step, ui_selected_instrument));
+	    break;
+
+	  case SEQ_PAR_Type_Roll:
+	    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(visible_track, step, ui_selected_instrument));
 	    break;
 
           default:
@@ -641,11 +641,10 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate)
 {
-  seq_layer_ctrl_type_t layer_ctrl_type = SEQ_LAYER_GetVControlType(track, ui_selected_par_layer);
+  seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
 
-  // if not length or CC parameter: only change gate if requested
-  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length &&
-      layer_ctrl_type != SEQ_LAYER_ControlType_CC &&
+  // if note/chord/velocity parameter: only change gate if requested
+  if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) &&
       !change_gate &&
       !SEQ_TRG_GateGet(track, step, ui_selected_instrument) )
     return -1;
@@ -663,7 +662,7 @@ static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_
 
   SEQ_PAR_Set(track, step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
 
-  if( layer_ctrl_type != SEQ_LAYER_ControlType_Length && layer_ctrl_type != SEQ_LAYER_ControlType_CC ) {
+  if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity ) {
     // (de)activate gate depending on value
     if( new_value )
       SEQ_TRG_GateSet(track, step, ui_selected_instrument, 1);

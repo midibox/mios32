@@ -451,8 +451,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             u32 gatelength = 0;
             u8 triggers = 0;
 
-            if( p->type == CC ) {
-	      // CC w/o gatelength, just play it
+            if( p->type == CC || p->type == PitchBend ) {
+	      // CC/Pitchbend w/o gatelength, just play it
 	      triggers = 1;
             } else if( p->note && p->velocity && (e->len >= 0) ) {
 	      // Any other event with gatelength
@@ -496,7 +496,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             
             // schedule events
             if( triggers ) {
-	      if( p->type == CC ) {
+	      if( p->type == CC || p->type == PitchBend ) {
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 		t->vu_meter = 0x7f; // for visualisation in mute menu
 	      } else {
@@ -533,7 +533,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		// apply Fx if "No Fx" trigger is not set
 		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		  // apply echo Fx if enabled
-		  if( tcc->echo_repeats && (p->type == CC || gatelength) )
+		  if( tcc->echo_repeats && (p->type == CC || p->type == PitchBend || gatelength) )
 		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
 		}
 	      }
@@ -867,7 +867,7 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
   }
 
   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnOffEvent;
-  if( p.type == CC && !gatelength )
+  if( (p.type == CC || p.type == PitchBend) && !gatelength )
     event_type = SEQ_MIDI_OUT_CCEvent;
 
   // for the case that force-to-scale is activated
