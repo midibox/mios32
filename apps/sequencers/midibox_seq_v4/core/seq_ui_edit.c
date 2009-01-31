@@ -369,8 +369,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   ///////////////////////////////////////////////////////////////////////////
 
+  u8 show_drum_triggers = !edit_mode && event_mode == SEQ_EVENT_MODE_Drum && !ui_hold_msg_ctr;
+
   // extra handling for gatelength (shows vertical bars)
-  if( layer_type == SEQ_PAR_Type_Length ) {
+  if( !show_drum_triggers && layer_type == SEQ_PAR_Type_Length ) {
 
     // we want to show horizontal bars
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_HBars);
@@ -421,61 +423,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
     }
 
-#if 0
-    u8 previous_step_was_long_multi = 0; // hard to determine here... TODO
-
-    // show length of 16 steps
-    u8 step;
-    for(step=0; step<16; ++step) {
-      u8 visible_step = step + 16*ui_selected_step_view;
-      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
-
-      if( previous_step_was_long_multi || layer_event.len >= 32 ) { // multi note trigger?
-	if( !previous_step_was_long_multi ) {
-	  if( previous_length <= 24 && !layer_event.midi_package.velocity ) {
-	    SEQ_LCD_PrintSpaces(5);
-	    previous_length = 0;
-	  } else {
-	    SEQ_LCD_PrintGatelength(layer_event.len);
-	    SEQ_LCD_PrintChar(layer_event.midi_package.velocity ? ' ' : '?'); // notify about multi-triggered events 
-	    // with gate=0 and previous length >= 24 - we don't know how the core will react here
-
-	    // calculate total length of events -> previous_length
-	    previous_length = (layer_event.len>>5) * (layer_event.len & 0x1f);
-	    // long event if >= 24
-	    previous_step_was_long_multi = previous_length >= 24;
-	  }
-	} else {
-	  // continued long event
-	  // previous step took 24 steps
-	  previous_length -= 24;
-	  // print warning (!!!) if current step activated and overlapped by long multi trigger
-	  if( previous_step_was_long_multi && !layer_event.midi_package.velocity )
-	    SEQ_LCD_PrintString(">>>> ");
-	  else
-	    SEQ_LCD_PrintString("!!!! ");
-	  // still long event if >= 24
-	  previous_step_was_long_multi = previous_length >= 24;
-	}
-      } else {
-	previous_step_was_long_multi = 0;
-	// muted step? if previous gatelength <= 24, print spaces
-	if( !layer_event.midi_package.velocity && previous_length <= 24 ) {
-	  SEQ_LCD_PrintSpaces(5);
-	} else {
-	  if( layer_event.len >= 24 )
-	    SEQ_LCD_PrintHBar(15); // glide
-	  else
-	    SEQ_LCD_PrintHBar((layer_event.len-1) >> 1);
-	}
-	previous_length = (layer_event.midi_package.velocity || (previous_length > 24 && layer_event.len > 24)) ? layer_event.len : 0;
-      }
-    }
-#endif
-
   } else {
 
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    if( show_drum_triggers ) {
       // we want to show triggers
       SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
     } else {
@@ -525,10 +475,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       seq_layer_evnt_t layer_event;
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
 
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      if( show_drum_triggers ) {
 	u8 gate_accent = SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 0, ui_selected_instrument);
 	if( SEQ_TRG_NumLayersGet(visible_track) >= 2 )
 	  gate_accent |= SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 1, ui_selected_instrument) << 1;
+
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(gate_accent);
@@ -642,12 +593,17 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate)
 {
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // if note/chord/velocity parameter: only change gate if requested
   if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) &&
       !change_gate &&
       !SEQ_TRG_GateGet(track, step, ui_selected_instrument) )
     return -1;
+
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  if( event_mode == SEQ_EVENT_MODE_Drum )
+    ui_hold_msg_ctr = 1000; // show value for 1 second
 
   s32 old_value = SEQ_PAR_Get(track, step, ui_selected_par_layer, ui_selected_instrument);
   s32 new_value = (forced_value >= 0) ? forced_value : (old_value + incrementer);

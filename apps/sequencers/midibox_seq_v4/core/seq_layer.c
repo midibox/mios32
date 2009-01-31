@@ -111,7 +111,8 @@ s32 SEQ_LAYER_Init(u32 mode)
   for(track=0; track<16; ++track) {
     u8 only_layers = 0;
     u8 all_triggers_cleared = (track >= 1) ? 1 : 0; // triggers only set for first track
-    SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
+    u8 init_assignments = 1;
+    SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
   }
 
 
@@ -324,8 +325,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 // "only_layers" flag is used by CLR function
 // "all_triggers_cleared": if 0, triggers will be initialized according to preset
 //                         if 1: triggers will be cleared
+// "init_assignments": if 1, parameter/trigger assignments will be changed
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
+s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 init_assignments)
 {
   int i;
   int cc;
@@ -340,53 +342,74 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared)
       i++;
     }
 
+    // initialize assignments
+    if( init_assignments ) {
+      switch( event_mode ) {
+        case SEQ_EVENT_MODE_Note:
+        case SEQ_EVENT_MODE_Chord: {
+	  // Trigger Layer Assignments
+	  for(i=0; i<8; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
+
+	  // Parameter Layer Assignments
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, (event_mode == SEQ_EVENT_MODE_Chord) ? SEQ_PAR_Type_Chord : SEQ_PAR_Type_Note);
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
+
+	  for(i=0; i<16; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
+        } break;
+
+        case SEQ_EVENT_MODE_CC: {
+	  // Trigger Layer Assignments
+	  for(i=0; i<8; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
+
+	  // Parameter Layer Assignments
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, SEQ_PAR_Type_CC);
+
+	  for(i=0; i<16; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
+        } break;
+
+        case SEQ_EVENT_MODE_Drum: {
+	  // Trigger Layer Assignments
+	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE, 1);
+	  SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, (SEQ_TRG_NumLayersGet(track) > 1) ? 2 : 0);
+	  for(i=2; i<8; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, 0); // not relevant in drum mode
+
+	  // parameter layer assignments
+	  if( SEQ_TRG_NumLayersGet(track) > 1 ) {
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
+	  } else {
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Roll);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
+	  }
+
+	  // Constant Layer Values
+	  int drum;
+	  for(drum=0; drum<16; ++drum) {
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+drum, seq_layer_preset_table_drum_notes[drum]);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+drum, 100);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_C1+drum, 127);
+	  }
+	} break;
+      }
+    }
+
     // copy event mode depending settings
     switch( event_mode ) {
       case SEQ_EVENT_MODE_Note:
-      case SEQ_EVENT_MODE_Chord: {
-	// Trigger Layer Assignments
-	for(i=0; i<8; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
-
-	// Parameter Layer Assignments
-	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, (event_mode == SEQ_EVENT_MODE_Chord) ? SEQ_PAR_Type_Chord : SEQ_PAR_Type_Note);
-	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
-	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
-	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
-
-	for(i=0; i<16; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
-      } break;
-
+      case SEQ_EVENT_MODE_Chord:
       case SEQ_EVENT_MODE_CC: {
-	// Trigger Layer Assignments
-	for(i=0; i<8; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
-
-	// Parameter Layer Assignments
-	SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, SEQ_PAR_Type_CC);
-
 	for(i=0; i<16; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
-      } break;
+        } break;
 
       case SEQ_EVENT_MODE_Drum: {
-	// Trigger Layer Assignments
-	SEQ_CC_Set(track, SEQ_CC_ASG_GATE, 1);
-	SEQ_CC_Set(track, SEQ_CC_ASG_ACCENT, (SEQ_TRG_NumLayersGet(track) > 1) ? 2 : 0);
-	for(i=2; i<8; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, 0); // not relevant in drum mode
-
-	// parameter layer assignments
-	if( SEQ_TRG_NumLayersGet(track) > 1 ) {
-	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
-	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
-	} else {
-	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Roll);
-	  SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
-	}
-
-	// Constant Layer Values
 	int drum;
 	for(drum=0; drum<16; ++drum) {
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+drum, seq_layer_preset_table_drum_notes[drum]);
