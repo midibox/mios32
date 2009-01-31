@@ -158,6 +158,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 event_mode = layer_config[selected_layer_config].event_mode;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
@@ -225,7 +226,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return SEQ_UI_Var8_Inc(&selected_layer_config, 0, max_layer_config, incrementer);
     } break;
     case ITEM_MIDI_PORT: {
-      u8 visible_track = SEQ_UI_VisibleTrackGet();
       mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) ) {
@@ -244,8 +244,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         u8 num_drums = layer_config[selected_layer_config].instruments;
         return SEQ_UI_Var8_Inc(&selected_drum, 0, num_drums-1, incrementer);
       } break;
-      case ITEM_LAYER_A_SELECT: return SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_A, 0, SEQ_PAR_NUM_TYPES-1, incrementer);
-      case ITEM_LAYER_B_SELECT: return SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_B, 0, SEQ_PAR_NUM_TYPES-1, incrementer);
+      case ITEM_LAYER_A_SELECT: {
+        if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_A, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
+	  SEQ_LAYER_CopyParLayerPreset(visible_track, selected_layer);
+	  return 1;
+	}
+	return 0;
+      } break;
+      case ITEM_LAYER_B_SELECT: {
+        if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_B, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
+	  SEQ_LAYER_CopyParLayerPreset(visible_track, selected_layer);
+	  return 1;
+	}
+	return 0;
+      } break;
       case ITEM_DRUM_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + selected_drum, 0, 127, incrementer);
       case ITEM_DRUM_VEL_N:    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + selected_drum, 0, 127, incrementer);
       case ITEM_DRUM_VEL_A:    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + selected_drum, 0, 127, incrementer);
@@ -256,7 +268,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case ITEM_LAYER_PAR:     return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + selected_layer, 0, 127, incrementer);
       case ITEM_LAYER_CONTROL: {
 	// TODO: has to be done for all selected tracks
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	if( SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + selected_layer, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
 	  SEQ_LAYER_CopyParLayerPreset(visible_track, selected_layer);
 	  return 1;
@@ -541,6 +552,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(6);
     } else {
       SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, 1));
+      SEQ_LCD_PrintSpaces(1);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -664,7 +676,8 @@ static s32 CopyPreset(u8 track, u8 config)
 
   u8 only_layers = 0;
   u8 all_triggers_cleared = 0;
-  return SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
+  u8 init_assignments = 0;
+  return SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
 }
 
 

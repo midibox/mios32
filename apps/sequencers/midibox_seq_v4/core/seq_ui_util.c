@@ -567,7 +567,8 @@ static s32 CLEAR_Track(u8 track)
   // copy preset
   u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
   u8 all_triggers_cleared = 0;
-  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared);
+  u8 init_assignments = 1;
+  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
 
   // clear all triggers
   memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
