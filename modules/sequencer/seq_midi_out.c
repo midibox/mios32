@@ -131,6 +131,9 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 //! port at a given bpm_tick
 //! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \param[in] midi_package MIDI package
+//! If the re-schedule feature SEQ_MIDI_OUT_ReSchedule() should be used, the
+//! mios32_midi_package_t.cable field should be initialized with a tag (supported
+//! range: 0-15)
 //! \param[in] event_type the event type
 //! \param[in] timestamp the bpm_tick value at which the event should be sent
 //! \return 0 if event has been scheduled successfully
@@ -162,7 +165,10 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[SEQ_MIDI_OUT_Send:%d] %02x %02x %02x len:%d\n", timestamp, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
+#if DEBUG_VERBOSE_LEVEL == 1
+  if( event_type != SEQ_MIDI_OUT_ClkEvent )
+#endif
+  DEBUG_MSG("[SEQ_MIDI_OUT_Send:%u] (tag %d) %02x %02x %02x len:%u\n", timestamp, midi_package.cable, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
 #endif
 
   // search in queue for last item which has the same (or earlier) timestamp
@@ -177,8 +183,9 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     do {
       // Clock and Tempo events are sorted before CC and Note events at a given timestamp
       if( (event_type == SEQ_MIDI_OUT_ClkEvent || event_type == SEQ_MIDI_OUT_TempoEvent ) && 
-	  item->timestamp == timestamp &&
+	  item->timestamp >= timestamp &&
 	  (item->event_type == SEQ_MIDI_OUT_OnEvent || 
+	   item->event_type == SEQ_MIDI_OUT_OffEvent || 
 	   item->event_type == SEQ_MIDI_OUT_OnOffEvent || 
 	   item->event_type == SEQ_MIDI_OUT_CCEvent) ) {
 	// found any event with same timestamp, insert clock before these events
@@ -195,6 +202,12 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 	  item->timestamp == timestamp &&
 	  (item->event_type == SEQ_MIDI_OUT_OnEvent || item->event_type == SEQ_MIDI_OUT_OnOffEvent) ) {
 	// found On event with same timestamp, play CC before On event
+	insert_before_item = 1;
+	break;
+      }
+
+      if( item->timestamp > timestamp ) {
+	// found entry with later timestamp
 	insert_before_item = 1;
 	break;
       }
@@ -230,6 +243,88 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
   // schedule off event now if length > 16bit (since it cannot be stored in event record)
   if( event_type == SEQ_MIDI_OUT_OnOffEvent && len > 0xffff ) {
     return SEQ_MIDI_OUT_Send(port, midi_package, event_type, timestamp+len, 0);
+  }
+
+  // display queue
+#if DEBUG_VERBOSE_LEVEL >= 3
+  DEBUG_MSG("--- vvv ---\n");
+  item=midi_queue;
+  while( item != NULL ) {
+    DEBUG_MSG("[%u] (tag %d) %02x %02x %02x len:%u\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2, item->len);
+    item = item->next;
+  }
+  DEBUG_MSG("--- ^^^ ---\n");
+  
+#endif
+
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function re-schedules MIDI Off/OnOff events assigned to a given "tag"
+//! (0..15, stored in mios32_midi_package_t.cable of events which already have been
+//! sent.
+//!
+//! Usually only SEQ_MIDI_OUT_Off events will be re-scheduled, all events
+//! which don't match the event_type will be ignored so that no special tag is required
+//! for such events.
+//!
+//! Usecase: sustained notes can be realized this way: schedule a Note Off
+//! event at timestamp 0xffffffff, reschedule it to timestamp == bpm_tick
+//! once the sequencer determined, that the off event should be played.
+//!
+//! \param[in] tag (0..15) the mios32_midi_package.t.cable number of events which should be re-scheduled
+//! \param[in] event_type the event type which should be rescheduled
+//! \param[in] timestamp the bpm_tick value at which the event should be sent
+//! 
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 timestamp)
+{
+  // search in queue for items with the given tag
+
+  seq_midi_out_queue_item_t *prev_item = NULL;
+  seq_midi_out_queue_item_t *item = midi_queue;
+  while( item != NULL ) {
+    // filter event_type and tag
+    // and ignore events, which will be played with next invocation of the Out Handler to avoid,
+    // that a re-scheduled event will be checked again
+    if( (item->event_type == event_type) && (item->package.cable == tag) && (item->timestamp > timestamp) ) {
+
+      // ensure that we get a free memory slot by releasing the current item before queuing the off item
+      seq_midi_out_queue_item_t copy = *item;
+
+      // remove item from queue
+      seq_midi_out_queue_item_t *next_item = item->next;
+      SEQ_MIDI_OUT_SlotFree(item);
+
+      // fix link to next item
+      if( prev_item == NULL ) {
+	if( next_item == NULL ) {
+	  midi_queue = NULL;
+	  item = NULL;
+	} else {
+	  item = midi_queue;
+	  item->next = next_item;
+	}
+      } else {
+	item = next_item;
+	prev_item->next = item;
+      }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] (tag %d) %02x %02x %02x\n", timestamp, copy.package.cable, copy.package.evnt0, copy.package.evnt1, copy.package.evnt2);
+#endif
+
+      // re-schedule copied item at new timestamp
+      SEQ_MIDI_OUT_Send(copy.port, copy.package, copy.event_type, timestamp, copy.len);
+    } else {
+      // switch to next item
+      prev_item = item;
+      item = item->next;
+    }
   }
 
   return 0; // no error
@@ -312,7 +407,10 @@ s32 SEQ_MIDI_OUT_Handler(void)
   seq_midi_out_queue_item_t *item;
   while( (item=midi_queue) != NULL && item->timestamp <= SEQ_BPM_TickGet() ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%d] %02x %02x %02x\n", item->timestamp, item->package.evnt0, item->package.evnt1, item->package.evnt2);
+#if DEBUG_VERBOSE_LEVEL == 1
+    if( item->event_type != SEQ_MIDI_OUT_ClkEvent )
+#endif
+    DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%u] (tag %d) %02x %02x %02x\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2);
 #endif
 
     // if tempo event: change BPM stored in midi_package.ALL
@@ -332,7 +430,7 @@ s32 SEQ_MIDI_OUT_Handler(void)
       midi_queue = item->next;
       SEQ_MIDI_OUT_SlotFree(item);
 
-      SEQ_MIDI_OUT_Send(copy.port, copy.package, SEQ_MIDI_OUT_OffEvent, copy.timestamp + copy.len, 0);
+      SEQ_MIDI_OUT_Send(copy.port, copy.package, SEQ_MIDI_OUT_OffEvent, copy.len + copy.timestamp, 0);
     } else {
       // remove item from queue
       midi_queue = item->next;
@@ -342,7 +440,6 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
   return 0; // no error
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////
