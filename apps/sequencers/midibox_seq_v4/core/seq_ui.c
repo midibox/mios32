@@ -30,6 +30,7 @@
 #include "seq_led.h"
 #include "seq_midply.h"
 #include "seq_core.h"
+#include "seq_par.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_file.h"
@@ -144,11 +145,14 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
 
   if( auto_config ) {
 #if DEFAULT_AUTO_FAST_BUTTON
-    switch( SEQ_LAYER_GetVControlType(SEQ_UI_VisibleTrackGet(), ui_selected_par_layer) ) {
-      case SEQ_LAYER_ControlType_Velocity:
-      case SEQ_LAYER_ControlType_Chord_Velocity:
-      case SEQ_LAYER_ControlType_CC:
-      case SEQ_LAYER_ControlType_Length:
+    switch( SEQ_PAR_AssignmentGet(SEQ_UI_VisibleTrackGet(), ui_selected_par_layer) ) {
+      case SEQ_PAR_Type_Velocity:
+      case SEQ_PAR_Type_Length:
+      case SEQ_PAR_Type_CC:
+      case SEQ_PAR_Type_PitchBend:
+      case SEQ_PAR_Type_Probability:
+      case SEQ_PAR_Type_Delay:
+      case SEQ_PAR_Type_Loopback:
 	seq_ui_button_state.FAST_ENCODERS = 1;
 	break;
 
@@ -742,11 +746,47 @@ static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
 
 static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 {
-  if( depressed ) return -1; // ignore when button depressed
-
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
 
-  ui_selected_par_layer = par_layer;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+
+  if( num_p_layers <= 3 ) {
+    // 3 layers: direct selection with LayerA/B/C button
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.PAR_LAYER_SEL = 0;
+    ui_selected_par_layer = par_layer;
+  } else if( num_p_layers <= 4 ) {
+    // 4 layers: LayerC Button toggles between C and D
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.PAR_LAYER_SEL = 0;
+    if( par_layer == 3 )
+      ui_selected_par_layer = (ui_selected_par_layer == 3) ? 4 : 3;
+    else
+      ui_selected_par_layer = par_layer;
+  } else {
+    // >4 layers: LayerA/B button selects directly, Layer C button enters layer selection page
+    if( par_layer <= 1 ) {
+      if( depressed ) return -1; // ignore when button depressed
+      seq_ui_button_state.PAR_LAYER_SEL = 0;
+      ui_selected_par_layer = par_layer;
+    } else {
+#if DEFAULT_BEHAVIOUR_BUTTON_PAR_LAYER
+      if( depressed ) return -1; // ignore when button depressed
+      seq_ui_button_state.PAR_LAYER_SEL ^= 1; // toggle PARSEL status (will also be released once GP button has been pressed)
+#else
+      // set mode
+      seq_ui_button_state.PAR_LAYER_SEL = depressed ? 0 : 1;
+#endif
+
+      if( seq_ui_button_state.PAR_LAYER_SEL ) {
+	ui_parlayer_prev_page = ui_page;
+	SEQ_UI_PageSet(SEQ_UI_PAGE_PARSEL);
+      } else {
+	SEQ_UI_PageSet(ui_parlayer_prev_page);
+      }
+    }
+  }
 
   // set/clear encoder fast function if required
   SEQ_UI_InitEncSpeed(1); // auto config
@@ -776,7 +816,7 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
     else
       ui_selected_trg_layer = trg_layer;
   } else {
-    // >4 layers or drum mode: LayerA/B button selects directly, Layer C button enters trigger assignment screen
+    // >4 layers or drum mode: LayerA/B button selects directly, Layer C button enters trigger selection page
     // also used for drum tracks
     if( trg_layer <= 1 ) {
       if( depressed ) return -1; // ignore when button depressed
@@ -1362,12 +1402,22 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   if( ++vu_meter_prediv >= 4 ) {
     vu_meter_prediv = 0;
 
+
+    portENTER_CRITICAL();
+
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
-    portENTER_CRITICAL();
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++track)
       if( t->vu_meter )
 	--t->vu_meter;
+
+    int i;
+    u8 *vu_meter = (u8 *)&seq_layer_vu_meter[0];
+    for(i=0; i<sizeof(seq_layer_vu_meter); ++i, ++vu_meter) {
+      if( *vu_meter && !(*vu_meter & 0x80) ) // if bit 7 set: static value
+	*vu_meter -= 1;
+    }
+
     portEXIT_CRITICAL();
   }
 

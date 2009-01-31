@@ -33,6 +33,22 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+#define SEQ_PAR_NUM_TYPES 12
+typedef enum {
+  SEQ_PAR_Type_None=0,
+  SEQ_PAR_Type_Note=1,
+  SEQ_PAR_Type_Chord=2,
+  SEQ_PAR_Type_Velocity=3,
+  SEQ_PAR_Type_Length=4,
+  SEQ_PAR_Type_CC=5,
+  SEQ_PAR_Type_PitchBend=6,
+  SEQ_PAR_Type_Probability=7,
+  SEQ_PAR_Type_Delay=8,
+  SEQ_PAR_Type_Roll=9,
+  SEQ_PAR_Type_BaseNote=10,
+  SEQ_PAR_Type_Loopback=11
+} seq_par_layer_type_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -46,8 +62,24 @@ extern s32 SEQ_PAR_NumInstrumentsGet(u8 track);
 extern s32 SEQ_PAR_NumLayersGet(u8 track);
 extern s32 SEQ_PAR_NumStepsGet(u8 track);
 
+extern seq_par_layer_type_t SEQ_PAR_AssignmentGet(u8 track, u8 par_layer);
+
 extern s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 par_instrument, u8 value);
 extern s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer, u8 par_instrument);
+
+extern s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument);
+
+extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
+extern char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer);
+
+extern u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type);
 
 
 /////////////////////////////////////////////////////////////////////////////

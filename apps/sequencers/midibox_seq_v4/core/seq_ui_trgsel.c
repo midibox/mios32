@@ -39,7 +39,6 @@ static s32 LED_Handler(u16 *gp_leds)
   else
     *gp_leds = 1 << ui_selected_trg_layer;
 
-
   return 0; // no error
 }
 
@@ -69,7 +68,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       ui_selected_trg_layer = encoder;
     }
 
-#if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
+#if DEFAULT_BEHAVIOUR_BUTTON_TRGSEL
     // if toggle function active: jump back to previous menu
     // this is especially useful for the emulated MBSEQ, where we can only click on a single button
     // (trigger gets deactivated when clicking on GP button or moving encoder)
@@ -138,9 +137,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
-  if( high_prio )
-    return 0; // there are no high-priority updates
-
   // layout normal mode:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -154,36 +150,51 @@ static s32 LCD_Handler(u8 high_prio)
   // <--------------------------------------><-------------------------------------->
   // Select Drum Instrument:                                                         
   //  BD   SD   LT   MT   HT   CP   MA   RS   CB   CY   OH   CH  Smp1 Smp2 Smp3 Smp4 
-
+  // ...horizontal VU meters...
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+  if( high_prio && event_mode == SEQ_EVENT_MODE_Drum ) {
+    ///////////////////////////////////////////////////////////////////////////
+    // frequently update VU meters
+
+    SEQ_LCD_CursorSet(0, 1);
+
+    u8 drum;
+    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
+    for(drum=0; drum<num_instruments; ++drum)
+      SEQ_LCD_PrintHBar((seq_layer_vu_meter[drum] >> 3) & 0xf);
+
+    return 0; // no error
+  }
 
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("Select Drum Instrument:");
-    SEQ_LCD_PrintSpaces(17 + 40);
-
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 1);
 
     int i;
     for(i=0; i<num_instruments; ++i)
-      SEQ_LCD_PrintTrackDrum(visible_track, i, (char *)seq_core_trk[visible_track].name);
+      if( i == ui_selected_instrument && ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(5);
+      else
+	SEQ_LCD_PrintTrackDrum(visible_track, i, (char *)seq_core_trk[visible_track].name);
 
     SEQ_LCD_PrintSpaces(80 - (5*num_instruments));
   } else {
     u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
 
+    SEQ_LCD_CursorSet(0, 0);
     int i;
-    for(i=0; i<num_layers; ++i)
-      SEQ_LCD_PrintString(SEQ_TRG_TypeStr(i));
+    for(i=0; i<num_layers; ++i) {
+      if( i == ui_selected_trg_layer && ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(5);
+      else
+	SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, i));
+    }
 
-    //	  u8 value = SEQ_CC_Get(visible_track, SEQ_CC_ASG_GATE+i);
- 
     SEQ_LCD_PrintSpaces(80 - (5*num_layers));
 
     ///////////////////////////////////////////////////////////////////////////
@@ -221,6 +232,9 @@ s32 SEQ_UI_TRGSEL_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  // we want to show horizontal VU meters
+  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_HBars);
 
   return 0; // no error
 }

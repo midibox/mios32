@@ -21,6 +21,7 @@
 
 #include "seq_core.h"
 #include "seq_cc.h"
+#include "seq_par.h"
 #include "seq_layer.h"
 
 
@@ -28,6 +29,13 @@
 // global variables
 /////////////////////////////////////////////////////////////////////////////
 seq_cc_trk_t seq_cc_trk[SEQ_CORE_NUM_TRACKS];
+
+
+/////////////////////////////////////////////////////////////////////////////
+// local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 CC_LinkUpdate(u8 track);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,12 +77,18 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 
   if( cc < 0x40 ) {
     tcc->lay_const[cc] = value;
+    if( tcc->event_mode != SEQ_EVENT_MODE_Drum )
+      CC_LinkUpdate(track);
   } else {
     switch( cc ) {
       case SEQ_CC_MODE: tcc->mode.playmode = value; break;
       case SEQ_CC_MODE_FLAGS: tcc->mode.flags = value; break;
   
-      case SEQ_CC_MIDI_EVENT_MODE: tcc->event_mode = value; break;
+      case SEQ_CC_MIDI_EVENT_MODE: 
+	tcc->event_mode = value; 
+	CC_LinkUpdate(track);
+	break;
+
       case SEQ_CC_MIDI_CHANNEL: tcc->midi_chn = value; break;
       case SEQ_CC_MIDI_PORT: tcc->midi_port = value; break;
     
@@ -104,7 +118,16 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_ASG_RANDOM_GATE: tcc->trg_assignments.random_gate = value; break;
       case SEQ_CC_ASG_RANDOM_VALUE: tcc->trg_assignments.random_value = value; break;
       case SEQ_CC_ASG_NO_FX: tcc->trg_assignments.no_fx = value; break;
-    
+
+      case SEQ_CC_PAR_ASG_DRUM_LAYER_A:
+	tcc->par_assignment_drum[0] = value;
+	CC_LinkUpdate(track);
+	break;
+      case SEQ_CC_PAR_ASG_DRUM_LAYER_B:
+	tcc->par_assignment_drum[1] = value;
+	CC_LinkUpdate(track);
+	break;
+
 #if 0  
       case SEQ_CC_CHANGE_STEP: break; // TODO
 #endif
@@ -177,6 +200,9 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ASG_RANDOM_VALUE: return tcc->trg_assignments.random_value;
     case SEQ_CC_ASG_NO_FX: return tcc->trg_assignments.no_fx;
 
+    case SEQ_CC_PAR_ASG_DRUM_LAYER_A: return tcc->par_assignment_drum[0];
+    case SEQ_CC_PAR_ASG_DRUM_LAYER_B: return tcc->par_assignment_drum[1];
+
 #if 0  
     case SEQ_CC_CHANGE_STEP: return 0; // TODO
 #endif
@@ -191,4 +217,45 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
   }
 
   return -2; // invalid CC
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called whenever the event mode or par layer assignments have been changed
+/////////////////////////////////////////////////////////////////////////////
+static s32 CC_LinkUpdate(u8 track)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  seq_par_layer_type_t *par_asg = (tcc->event_mode == SEQ_EVENT_MODE_Drum)
+    ? (seq_par_layer_type_t *)&seq_cc_trk[track].par_assignment_drum[0]
+    : (seq_par_layer_type_t *)&seq_cc_trk[track].lay_const[0*16];
+
+  tcc->link_par_layer_note = -1;
+  tcc->link_par_layer_chord = -1;
+  tcc->link_par_layer_velocity = -1;
+  tcc->link_par_layer_length = -1;
+  tcc->link_par_layer_probability = -1;
+  tcc->link_par_layer_delay = -1;
+  tcc->link_par_layer_roll = -1;
+
+  u8 num_layers = SEQ_PAR_NumLayersGet(track);
+  if( num_layers ) {
+    // search backwards to ensure that first assignments will be taken
+    int layer;
+    for(layer=num_layers-1; layer>=0; --layer) {
+      switch( par_asg[layer] ) {
+        case SEQ_PAR_Type_Note: tcc->link_par_layer_note = layer; break;
+        case SEQ_PAR_Type_Chord: tcc->link_par_layer_chord = layer; break;
+        case SEQ_PAR_Type_Velocity: tcc->link_par_layer_velocity = layer; break;
+        case SEQ_PAR_Type_Length: tcc->link_par_layer_length = layer; break;
+        case SEQ_PAR_Type_Probability: tcc->link_par_layer_probability = layer; break;
+        case SEQ_PAR_Type_Delay: tcc->link_par_layer_delay = layer; break;
+        case SEQ_PAR_Type_Roll: tcc->link_par_layer_roll = layer; break;
+      }
+    }
+  }
+
+  return 0; // no error
 }
