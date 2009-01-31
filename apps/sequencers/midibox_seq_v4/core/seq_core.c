@@ -397,6 +397,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
+
+	// if not in drum mode (only checked once)
+	// if probability < 100: play step with given probability
+	if( tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
+	  u8 rnd_probability;
+	  if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, 0)) < 100 &&
+	      SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
+	    continue;
+	}
   
         // fetch MIDI events which should be played
         seq_layer_evnt_t layer_events[16];
@@ -413,6 +422,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    // instrument layers only used for drum tracks
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
 
+	    // individual for each instrument in drum mode:
+	    // if probability < 100: play step with given probability
+	    if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+	      u8 rnd_probability;
+	      if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, instrument)) < 100 &&
+		  SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
+		continue;
+	    }
+  
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
 
@@ -486,13 +504,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      t->state.STRETCHED_GL = 0;
 	    }
 
-#if 0
-		// thanks to MIDI queueing mechanism, realisation is much more elegant than on MBSEQ V3!!! :-)
-		triggers = (e->len>>5) + 1;
-		gatelength = (4 * (e->len & 0x1f)) << seq_core_bpm_div_int;
-		// TODO: here we could add a special FX, e.g. lowering velocity on each trigger, similar to echo function
-		// TODO: upcomming roll layer will allow this! :-)
-#endif
+
+	    // roll/flam?
+	    u8 roll_mode;
+	    if( triggers && (roll_mode=SEQ_PAR_RollModeGet(track, t->step, instrument)) )
+	      triggers = ((roll_mode & 0x30)>>4) + 2;
+
             
             // schedule events
             if( triggers ) {
@@ -520,9 +537,25 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		    u32 half_gatelength = gatelength/2;
 		    if( !half_gatelength )
 		      half_gatelength = 1;
+
       	      
-		    for(i=0; i<triggers; ++i)
-		      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+		    mios32_midi_package_t p_multi = *p;
+		    u16 roll_attenuation = 256 - (16 * ((roll_mode & 0x0f) + 1));
+		    if( roll_mode & 0x40 ) { // upwards
+		      for(i=triggers-1; i>=0; --i) {
+			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+			u16 velocity = roll_attenuation * p_multi.velocity;
+			p_multi.velocity = velocity >> 8;
+		      }
+		    } else { // downwards
+		      for(i=0; i<triggers; ++i) {
+			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+			if( roll_mode ) {
+			  u16 velocity = roll_attenuation * p_multi.velocity;
+			  p_multi.velocity = velocity >> 8;
+			}
+		      }
+		    }
 		  } else {
 		    if( !gatelength )
 		      gatelength = 1;

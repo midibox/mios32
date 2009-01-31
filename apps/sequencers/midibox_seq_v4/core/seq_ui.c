@@ -337,7 +337,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.METRONOME ^= 1;
 
-#if 1
+#if 0
   MUTEX_SDCARD_TAKE;
 
 #if 1

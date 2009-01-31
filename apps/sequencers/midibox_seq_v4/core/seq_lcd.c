@@ -469,8 +469,8 @@ s32 SEQ_LCD_PrintRollMode(u8 roll_mode)
 
   return SEQ_LCD_PrintFormattedString("%d%c%02d", 
 				      ((roll_mode & 0x30)>>4) + 2,
-				      (roll_mode & 0x40) ? 'D' : 'U',
-				      (roll_mode&0xf) + 1);
+				      (roll_mode & 0x40) ? 'U' : 'D',
+				      roll_mode&0xf);
 }
 
 
