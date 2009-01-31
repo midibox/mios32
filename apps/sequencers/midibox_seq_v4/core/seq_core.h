@@ -64,6 +64,7 @@ typedef union {
     unsigned REC_EVNT_ACTIVE:1; // set so long a note/CC is held (for note length measuring)
     unsigned REC_MUTE_NEXTSTEP:1; // for length...
     unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
+    unsigned SUSTAINED:1;    // sustained note
     unsigned STRETCHED_GL:1; // stretched gatelength
   };
 } seq_core_trk_state_t;
@@ -78,8 +79,6 @@ typedef struct seq_core_trk_t {
   u8                   step_saved;       // for replay mechanism
   u8                   step_fwd_ctr;     // step forward counter
   u8                   arp_pos;          // arpeggiator position
-  mios32_midi_port_t   sustain_port;     // port of sustained note
-  mios32_midi_package_t sustain_note;    // sustained note
   u8                   vu_meter;         // for visualisation in mute menu
 } seq_core_trk_t;
 

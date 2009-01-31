@@ -468,17 +468,16 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers, num_p_instruments);
 
     // reading Parameter layers
-    u32 par_size = num_p_layers * p_layer_size;
+    u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
     u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
     if( par_size_taken )
       SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_par_layer_value[target_track], par_size_taken);
 
     // read remaining bytes into dummy buffer
-    if( par_size > par_size_taken ) {
-      u32 i;
+    while( par_size > par_size_taken ) {
       u8 dummy;
-      for(i=par_size_taken; i<par_size; ++i)
-	SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      ++par_size_taken;
     }
 
 
@@ -486,17 +485,16 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers, num_t_instruments);
 
     // reading Trigger layers
-    u32 trg_size = num_t_layers * t_layer_size;
+    u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
     u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
     if( trg_size_taken )
       SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_trg_layer_value[target_track], trg_size_taken);
 
     // read remaining bytes into dummy buffer
-    if( trg_size > trg_size_taken ) {
-      u32 i;
+    while( trg_size > trg_size_taken ) {
       u8 dummy;
-      for(i=trg_size_taken; i<trg_size; ++i)
-	SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      ++trg_size_taken;
     }
   }
 

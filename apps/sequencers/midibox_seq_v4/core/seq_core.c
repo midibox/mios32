@@ -125,7 +125,6 @@ s32 SEQ_CORE_Init(u32 mode)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     seq_core_trk_t *t = &seq_core_trk[track];
-    t->sustain_note.ALL = 0;
 
     // if track name only contains spaces, the UI will print 
     // the track number instead of an empty message
@@ -255,14 +254,12 @@ static s32 SEQ_CORE_PlayOffEvents(void)
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
-  // play sustained notes
+  // clear sustain/stretch flags
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     seq_core_trk_t *t = &seq_core_trk[track];
-    if( t->sustain_note.ALL ) {
-      MIOS32_MIDI_SendPackage(t->sustain_port, t->sustain_note);
-      t->sustain_note.ALL = 0;
-    }
+    t->state.SUSTAINED = 0;
+    t->state.STRETCHED_GL = 0;
   }
 
   return 0; // no error
@@ -349,9 +346,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	continue;
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL && t->sustain_note.ALL ) {
-	SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
-	t->sustain_note.ALL = 0;
+      if( !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL && t->state.SUSTAINED ) {
+	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	t->state.SUSTAINED = 0;
       }
   
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
@@ -410,6 +407,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
           for(i=0; i<number_of_events; ++e, ++i) {
             mios32_midi_package_t *p = &e->midi_package;
 
+	    // tag for scheduled events
+	    p->cable = track;
+
+	    // instrument layers only used for drum tracks
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
 
             // transpose notes/CCs
@@ -419,9 +420,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             // (e.g. no key pressed in transpose mode)
             if( p->type == NoteOn && !p->velocity ) {
 	      // stretched note, length < 96: queue off event
-	      if( t->state.STRETCHED_GL && t->sustain_note.ALL && (e->len < 96) ) {
-		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick+e->len, 0);
-		t->sustain_note.ALL = 0;
+	      if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
+		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+		t->state.SUSTAINED = 0;
 		t->state.STRETCHED_GL = 0;
 	      }
 	      continue;
@@ -457,21 +458,20 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      // Any other event with gatelength
 
 	      // sustained or stretched note: play off event of previous step
-	      if( t->sustain_note.ALL ) {
-		SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick, 0);
-		t->sustain_note.ALL = 0;
+	      if( t->state.SUSTAINED ) {
+		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+		t->state.SUSTAINED = 0;
 		t->state.STRETCHED_GL = 0;
 	      }
 
 	      if( tcc->mode.SUSTAIN || e->len >= 96 ) {
-		// sustained note: play note at timestamp, but don't queue off event
+		// sustained note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
-		  
-		t->sustain_port = tcc->midi_port;
-		t->sustain_note = *p;
-		t->sustain_note.velocity = 0; // clear velocity value
+		p->velocity = 0;
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
 		// notify stretched gatelength if not in sustain mode
+		t->state.SUSTAINED = 1;
 		if( !tcc->mode.SUSTAIN )
 		  t->state.STRETCHED_GL = 1;
 		// triggers/gatelength already 0 - don't queue additional notes
@@ -479,10 +479,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		triggers = 1;
 		gatelength = e->len << seq_core_bpm_div_int;
 	      }
-            } else if( t->state.STRETCHED_GL && t->sustain_note.ALL && (e->len < 96) ) {
-	      // stretched note, length < 96: queue off event
-	      SEQ_MIDI_OUT_Send(t->sustain_port, t->sustain_note, SEQ_MIDI_OUT_OffEvent, bpm_tick+e->len, 0);
-	      t->sustain_note.ALL = 0;
+            } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
+	      // stretched note, length < 96: queue off events
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	      t->state.SUSTAINED = 0;
 	      t->state.STRETCHED_GL = 0;
 	    }
 
