@@ -502,6 +502,7 @@ static s32 CopyPresetCategory(u8 num)
   const char preset_categories[][6] = {
     "     ",
     "Synth",
+    "Piano",
     "Bass ",
     "Drums",
     "Break",
@@ -531,6 +532,7 @@ static s32 CopyPresetLabel(u8 num)
     "Synthline      ",
     "Bassline       ",
     "Pads           ",
+    "Chords         ",
     "Lovely Arps    ",
     "Electr. Drums  ",
     "Heavy Beats    ",

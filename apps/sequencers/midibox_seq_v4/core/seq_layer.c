@@ -47,7 +47,7 @@ u8 seq_layer_vu_meter[16];
 static const u8 seq_layer_preset_table_static[][2] = {
   // parameter             value
   { SEQ_CC_MODE,           SEQ_CORE_TRKMODE_Normal },
-  { SEQ_CC_MODE_FLAGS,     0x01 },
+  { SEQ_CC_MODE_FLAGS,     0x09 },
   { SEQ_CC_DIRECTION,	   0x00 },
   { SEQ_CC_STEPS_REPLAY,   0x00 },
   { SEQ_CC_STEPS_FORWARD,  0x00 },
@@ -126,7 +126,7 @@ s32 SEQ_LAYER_Init(u32 mode)
 // This function returns the layer_evnt_t information based on given
 // layer (used for visualisation purposes)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, seq_layer_evnt_t *layer_event)
+s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event)
 {
   seq_layer_evnt_t layer_events[16];
   s32 number_of_events = 0;
@@ -144,7 +144,7 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, seq_layer_evnt_t *lay
 
   u8 event_num;
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
-    event_num = layer;
+    event_num = instrument;
   } else {
     event_num = 0; // TODO
   }
@@ -169,8 +169,6 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
     u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
-    u8 num_p_steps = SEQ_PAR_NumStepsGet(track);
-    u16 step_par_layer = step % num_p_steps;
 
     u8 drum;
     for(drum=0; drum<num_instruments; ++drum) {
@@ -185,7 +183,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	p->velocity = 0;
       else {
 	if( num_p_layers == 2 )
-	  p->velocity = SEQ_PAR_VelocityGet(track, step_par_layer, drum);
+	  p->velocity = SEQ_PAR_VelocityGet(track, step, drum);
 	else
 	  p->velocity = tcc->lay_const[1*16 + drum];
       }
@@ -196,7 +194,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	seq_layer_vu_meter[drum] &= 0x7f; // ensure that no static assignment is displayed
       }
 
-      e->len = SEQ_PAR_LengthGet(track, step_par_layer, drum);
+      e->len = SEQ_PAR_LengthGet(track, step, drum);
 
       ++num_events;
     }

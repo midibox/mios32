@@ -2,6 +2,12 @@
 /*
  * User Interface Routines
  *
+ * TODO: allow to loop the selected view while editing a track
+ * TODO: add loop fx page for setting loop point interactively
+ * TODO: scroll function should use this loop point
+ * TODO: utility page in drum mode: allow to handle only selected instrument
+ * TODO: chained tracks are obsolete, but we could combine 4 tracks to much larger track w/o much effort
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -760,8 +766,8 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
     // 4 layers: LayerC Button toggles between C and D
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.PAR_LAYER_SEL = 0;
-    if( par_layer == 3 )
-      ui_selected_par_layer = (ui_selected_par_layer == 3) ? 4 : 3;
+    if( par_layer == 2 )
+      ui_selected_par_layer = (ui_selected_par_layer == 2) ? 3 : 2;
     else
       ui_selected_par_layer = par_layer;
   } else {
@@ -811,8 +817,8 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
     // 4 layers: LayerC Button toggles between C and D
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.TRG_LAYER_SEL = 0;
-    if( trg_layer == 3 )
-      ui_selected_trg_layer = (ui_selected_trg_layer == 3) ? 4 : 3;
+    if( trg_layer == 2 )
+      ui_selected_trg_layer = (ui_selected_trg_layer == 2) ? 3 : 2;
     else
       ui_selected_trg_layer = trg_layer;
   } else {
@@ -1451,7 +1457,8 @@ s32 SEQ_UI_CheckSelections(void)
     ui_selected_step %= 16;
   }
   
-  if( ui_selected_step >= ui_selected_step_view*16 )
+  if( ui_selected_step < (16*ui_selected_step_view) || 
+      ui_selected_step >= (16*(ui_selected_step_view+1)) )
     ui_selected_step_view = ui_selected_step / 16;
 
   return 0; // no error
