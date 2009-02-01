@@ -189,17 +189,6 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 
   if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
-  else {
-    portENTER_CRITICAL();
-
-    // ensure that step position pointers match with the new track lengths
-    u8 track_i;
-    u8 track = group*SEQ_CORE_NUM_TRACKS_PER_GROUP;
-    for(track_i=0; track_i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track_i, ++track)
-      seq_core_trk[track].step %= (SEQ_CC_Get(track, SEQ_CC_LENGTH)+1);
-
-    portEXIT_CRITICAL();
-  }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   SEQ_UI_MENU_StopwatchCapture();

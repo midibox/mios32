@@ -126,13 +126,13 @@ typedef union {
     unsigned ALL:32;
   };
   struct {
-    unsigned type:8;
+    unsigned cin_cable:8;
     unsigned evnt0:8;
     unsigned evnt1:8;
     unsigned evnt2:8;
   };
   struct {
-    unsigned cin:4;
+    unsigned type:4;
     unsigned cable:4;
     mios32_midi_chn_t chn:4;
     mios32_midi_event_t event:4;
