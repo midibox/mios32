@@ -190,7 +190,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsSmall);
 
     for(i=0; i<16; ++i) {
-      u8 step = i*steps_per_item;
+      u16 step = i*steps_per_item;
       u8 step8 = step / 8;
 
       u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
@@ -210,7 +210,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsMedium);
 
     for(i=0; i<16; ++i) {
-      u8 step = i*steps_per_item;
+      u16 step = i*steps_per_item;
       u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
       u8 steps = SEQ_TRG_Get8(visible_track, step / 8, layer, ui_selected_instrument);
 
@@ -227,7 +227,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
 
     for(i=0; i<16; ++i) {
-      u8 step = i*steps_per_item;
+      u16 step = i*steps_per_item;
       u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
       u16 steps = SEQ_TRG_Get8(visible_track, step / 8, layer, ui_selected_instrument);
       if( event_mode == SEQ_EVENT_MODE_Drum )

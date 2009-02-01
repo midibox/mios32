@@ -416,11 +416,11 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   if( num_tracks > SEQ_CORE_NUM_TRACKS_PER_GROUP )
     num_tracks = SEQ_CORE_NUM_TRACKS_PER_GROUP;
 
-  u8 track;
-  u8 target_track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
-  for(track=0; track<num_tracks; ++track, ++target_track) {
-    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[target_track].name, 80);
-    seq_core_trk[target_track].name[80] = 0;
+  u8 track_i;
+  u8 track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+  for(track_i=0; track_i<num_tracks; ++track_i, ++track) {
+    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[track].name, 80);
+    seq_core_trk[track].name[80] = 0;
 
     u8 num_p_instruments;
     status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_instruments);
@@ -446,13 +446,13 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     // before changing CCs: we should stop here on error if read failed
     if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n", track+1, target_track+1, status);
+      DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n", track+1, track+1, status);
 #endif
       break;
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, target_track+1, seq_core_trk[target_track].name);
+    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, track+1, seq_core_trk[track].name);
     DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d instruments P:%d,T:%d layers P:%d,T:%d steps\n", 
 	   num_p_instruments, num_t_instruments,
 	   num_p_layers, num_t_layers,
@@ -462,7 +462,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     // reading CCs
     u8 cc;
     for(cc=0; cc<128; ++cc)
-      SEQ_CC_Set(target_track, cc, cc_buffer[cc]);
+      SEQ_CC_Set(track, cc, cc_buffer[cc]);
 
     // partitionate parameter layer and clear all steps
     SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers, num_p_instruments);
@@ -471,7 +471,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
     u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
     if( par_size_taken )
-      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_par_layer_value[target_track], par_size_taken);
+      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_par_layer_value[track], par_size_taken);
 
     // read remaining bytes into dummy buffer
     while( par_size > par_size_taken ) {
@@ -488,7 +488,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
     u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
     if( trg_size_taken )
-      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_trg_layer_value[target_track], trg_size_taken);
+      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_trg_layer_value[track], trg_size_taken);
 
     // read remaining bytes into dummy buffer
     while( trg_size > trg_size_taken ) {
@@ -537,15 +537,15 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   // ok, we should at least check, if the resulting size is within the given range
   u16 expected_pattern_size = sizeof(seq_file_b_pattern_t);
 
-  u8 track;
-  u8 source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
-  for(track=0; track<num_tracks; ++track, ++source_track) {
-    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(source_track);
-    u8 num_p_layers = SEQ_PAR_NumLayersGet(source_track);
-    u16 p_layer_size = SEQ_PAR_NumStepsGet(source_track);
-    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(source_track);
-    u8 num_t_layers = SEQ_TRG_NumLayersGet(source_track);
-    u16 t_layer_size = SEQ_TRG_NumStepsGet(source_track)/8;
+  u8 track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+  u8 track_i;
+  for(track_i=0; track_i<num_tracks; ++track_i, ++track) {
+    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 p_layer_size = SEQ_PAR_NumStepsGet(track);
+    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(track);
+    u8 num_t_layers = SEQ_TRG_NumLayersGet(track);
+    u16 t_layer_size = SEQ_TRG_NumStepsGet(track)/8;
 
     expected_pattern_size += sizeof(seq_file_b_track_t) + 
       num_p_instruments*num_p_layers*p_layer_size + 
@@ -608,17 +608,17 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   status |= SEQ_FILE_WriteByte(&fi, 0x00);
 
   // writing tracks
-  source_track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
-  for(track=0; track<num_tracks; ++track, ++source_track) {
-    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(source_track);
-    u8 num_p_layers = SEQ_PAR_NumLayersGet(source_track);
-    u16 p_layer_size = SEQ_PAR_NumStepsGet(source_track);
-    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(source_track);
-    u8 num_t_layers = SEQ_TRG_NumLayersGet(source_track);
-    u16 t_layer_size = SEQ_TRG_NumStepsGet(source_track)/8;
+  track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+  for(track_i=0; track_i<num_tracks; ++track_i, ++track) {
+    u8 num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 p_layer_size = SEQ_PAR_NumStepsGet(track);
+    u8 num_t_instruments = SEQ_TRG_NumInstrumentsGet(track);
+    u8 num_t_layers = SEQ_TRG_NumLayersGet(track);
+    u16 t_layer_size = SEQ_TRG_NumStepsGet(track)/8;
 
     // write track name w/o zero terminator
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[source_track].name, 80);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[track].name, 80);
 
     // write number of parameter instruments
     status |= SEQ_FILE_WriteByte(&fi, num_p_instruments);
@@ -641,13 +641,13 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
     // write 128 CCs
     u8 cc;
     for(cc=0; cc<128; ++cc)
-      status |= SEQ_FILE_WriteByte(&fi, SEQ_CC_Get(source_track, cc));
+      status |= SEQ_FILE_WriteByte(&fi, SEQ_CC_Get(track, cc));
 
     // write parameter layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[source_track], num_p_instruments*num_p_layers*p_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[track], num_p_instruments*num_p_layers*p_layer_size);
 
     // write trigger layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[source_track], num_t_instruments*num_t_layers*t_layer_size);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[track], num_t_instruments*num_t_layers*t_layer_size);
   }
 
   // fill remaining bytes with zero if required

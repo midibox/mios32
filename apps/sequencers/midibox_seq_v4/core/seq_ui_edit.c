@@ -231,7 +231,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   seq_layer_evnt_t layer_event;
-  SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, &layer_event);
+  SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
 
@@ -369,7 +369,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   ///////////////////////////////////////////////////////////////////////////
 
-  u8 show_drum_triggers = !edit_mode && event_mode == SEQ_EVENT_MODE_Drum && !ui_hold_msg_ctr;
+  u8 show_drum_triggers = (event_mode == SEQ_EVENT_MODE_Drum && (edit_mode || !ui_hold_msg_ctr));
 
   // extra handling for gatelength (shows vertical bars)
   if( !show_drum_triggers && layer_type == SEQ_PAR_Type_Length ) {
@@ -386,16 +386,16 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       previous_step = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 
     seq_layer_evnt_t layer_event;
-    SEQ_LAYER_GetEvntOfLayer(visible_track, previous_step, ui_selected_par_layer, &layer_event);
+    SEQ_LAYER_GetEvntOfLayer(visible_track, previous_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
     u16 previous_length = layer_event.len;
 
     u8 previous_step_was_long = 0; // hard to determine here... TODO
 
     // show length of 16 steps
-    u8 step;
+    u16 step;
     for(step=0; step<16; ++step) {
-      u8 visible_step = step + 16*ui_selected_step_view;
-      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
+      u16 visible_step = step + 16*ui_selected_step_view;
+      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
       if( previous_step_was_long ) {
 	// continued long event
@@ -452,18 +452,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	step_region_end = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 	break;
       default:
-	if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	  step_region_begin = -1;
-	  step_region_end = -1;
-	} else {
-	  step_region_begin = ui_selected_step;
-	  step_region_end = ui_selected_step;
-	}
+	step_region_begin = ui_selected_step;
+	step_region_end = ui_selected_step;
     }
 
-    u8 step;
+    u16 step;
     for(step=0; step<16; ++step) {
-      u8 visible_step = step + 16*ui_selected_step_view;
+      u16 visible_step = step + 16*ui_selected_step_view;
 
       if( ui_cursor_flash && 
 	  edit_mode != SEQ_UI_EDIT_MODE_NORMAL && 
@@ -473,12 +468,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 
       seq_layer_evnt_t layer_event;
-      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, &layer_event);
+      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
       if( show_drum_triggers ) {
-	u8 gate_accent = SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 0, ui_selected_instrument);
+	u8 gate_accent = SEQ_TRG_Get(visible_track, visible_step, 0, ui_selected_instrument);
 	if( SEQ_TRG_NumLayersGet(visible_track) >= 2 )
-	  gate_accent |= SEQ_TRG_Get(visible_track, step + 16*ui_selected_step_view, 1, ui_selected_instrument) << 1;
+	  gate_accent |= SEQ_TRG_Get(visible_track, visible_step, 1, ui_selected_instrument) << 1;
 
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
@@ -506,7 +501,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 	  case SEQ_PAR_Type_Chord:
 	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	      u8 par_value = SEQ_PAR_Get(visible_track, step, ui_selected_par_layer, ui_selected_instrument);
+	      u8 par_value;
+	      // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
+	      if( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) == SEQ_PAR_Type_Velocity )
+		par_value = SEQ_PAR_ChordGet(visible_track, visible_step, ui_selected_instrument);
+	      else
+		par_value = SEQ_PAR_Get(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument);
 	      u8 chord_ix = par_value & 0x0f;
 	      u8 chord_oct = par_value >> 4;
 	      SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
@@ -528,15 +528,15 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	  } break;
 
 	  case SEQ_PAR_Type_Probability:
-	    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(visible_track, step, ui_selected_instrument));
+	    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(visible_track, visible_step, ui_selected_instrument));
 	    break;
 
 	  case SEQ_PAR_Type_Delay:
-	    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(visible_track, step, ui_selected_instrument));
+	    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(visible_track, visible_step, ui_selected_instrument));
 	    break;
 
 	  case SEQ_PAR_Type_Roll:
-	    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(visible_track, step, ui_selected_instrument));
+	    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(visible_track, visible_step, ui_selected_instrument));
 	    break;
 
           default:
@@ -545,7 +545,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	}
       }
 
-      if( step_region_begin != -1 && step_region_end != -1 ) {
+      if( !show_drum_triggers ) {
 	SEQ_LCD_PrintChar((visible_step == step_region_end) ? '<' 
 			  : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
       }

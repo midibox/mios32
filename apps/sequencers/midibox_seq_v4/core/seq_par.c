@@ -157,9 +157,10 @@ s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 par_instrument, u8 value)
   u8 num_p_layers = par_layer_num_layers[track];
   if( par_layer >= num_p_layers )
     return -2;
-  u8 num_p_steps = par_layer_num_steps[track];
-  if( step >= num_p_steps )
-    return -3;
+  u16 num_p_steps = par_layer_num_steps[track];
+
+  // modulo of num_p_steps to allow mirroring of parameter layer in drum mode
+  step %= num_p_steps;
 
   u16 step_ix = (par_instrument * num_p_layers * num_p_steps) + (par_layer * num_p_steps) + step;
   if( step_ix >= SEQ_PAR_MAX_BYTES )
@@ -178,7 +179,11 @@ s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 par_instrument, u8 value)
 s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer, u8 par_instrument)
 {
   u8 num_p_layers = par_layer_num_layers[track];
-  u8 num_p_steps = par_layer_num_steps[track];
+  u16 num_p_steps = par_layer_num_steps[track];
+
+  // modulo of num_p_steps to allow mirroring of parameter layer in drum mode
+  step %= num_p_steps;
+
   u16 step_ix = (par_instrument * num_p_layers * num_p_steps) + (par_layer * num_p_steps) + step;
   if( step_ix >= SEQ_PAR_MAX_BYTES )
     return 0; // invalid step position: return 0 (parameter not set)

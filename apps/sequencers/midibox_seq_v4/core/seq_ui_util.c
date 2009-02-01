@@ -151,7 +151,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case MSG_PASTE: {
       // change paste offset
-      int num_steps = SEQ_PAR_NumStepsGet(visible_track);
+      int num_steps = SEQ_TRG_NumStepsGet(visible_track);
       if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) ) {
 	SEQ_UI_SelectedStepSet(ui_selected_step); // set new visible step/view
 	return 1; // value changed
@@ -182,9 +182,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       } else {
 
 	// increment step -> this will move it
-	u8 new_step = ui_selected_step;
-	int num_steps = SEQ_PAR_NumStepsGet(visible_track);
-	if( SEQ_UI_Var8_Inc(&new_step, 0, num_steps-1, incrementer) ) {
+	u16 new_step = ui_selected_step;
+	int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+	if( SEQ_UI_Var16_Inc(&new_step, 0, num_steps-1, incrementer) ) {
 	  // restore old value
 	  MOVE_RestoreStep(visible_track, ui_selected_step, MOVE_BUFFER_OLD);
 	  // set new visible step/view
@@ -262,7 +262,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	// print message
 	in_menu_msg = MSG_PASTE;
 	// select first step
-	SEQ_UI_SelectedStepSet(0);
+	SEQ_UI_SelectedStepSet(16 * ui_selected_step_view);
       }
       return 1;
 
@@ -306,7 +306,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	// print message
 	in_menu_msg = MSG_SCROLL;
 	// select first step
-	SEQ_UI_SelectedStepSet(0);
+	SEQ_UI_SelectedStepSet(16 * ui_selected_step_view);
       }
       return 1;
 
@@ -529,7 +529,7 @@ static s32 PASTE_Track(u8 track)
       int step_offset = ui_selected_step;
       for(step=step_begin; step<=step_end; ++step, ++step_offset) {
 	if( step_offset < num_steps ) {
-	  u16 step_ix = instrument * layer * num_steps + step;
+	  u16 step_ix = (instrument * num_layers * num_steps) + layer * num_steps + step;
 	  SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
 	}
       }
@@ -543,8 +543,8 @@ static s32 PASTE_Track(u8 track)
     for(layer=0; layer<num_layers; ++layer) {
       int step_offset = ui_selected_step;
       for(step=step_begin; step<=step_end; ++step, ++step_offset) {
-	if( step_offset < (num_steps / 8) ) {
-	  u8 step8_ix = instrument * layer * (num_steps / 8) + (step>>3);
+	if( step_offset < num_steps ) {
+	  u8 step8_ix = (instrument * num_layers * (num_steps/8)) + layer * (num_steps/8) + (step/8);
 	  u8 step_mask = (1 << (step&7));
 	  SEQ_TRG_Set(track, step_offset, layer, instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
 	}
@@ -567,7 +567,7 @@ static s32 CLEAR_Track(u8 track)
   // copy preset
   u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
   u8 all_triggers_cleared = 0;
-  u8 init_assignments = 1;
+  u8 init_assignments = 0;
   SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
 
   // clear all triggers
@@ -673,7 +673,7 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
       // rightrotate parameter layers
       int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
       int num_layers = SEQ_PAR_NumLayersGet(track);
-      for(instrument=0; layer<num_instruments; ++instrument) {
+      for(instrument=0; instrument<num_instruments; ++instrument) {
 	for(layer=0; layer<num_layers; ++layer) {
 	  u8 tmp = SEQ_PAR_Get(track, last_step, layer, instrument);
 	  for(step=last_step; step>first_step; --step)
@@ -685,7 +685,7 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
       // rightrotate trigger layers
       num_instruments = SEQ_TRG_NumInstrumentsGet(track);
       num_layers = SEQ_TRG_NumLayersGet(track);
-      for(instrument=0; layer<num_instruments; ++instrument) {
+      for(instrument=0; instrument<num_instruments; ++instrument) {
 	for(layer=0; layer<num_layers; ++layer) {
 	  u8 tmp = SEQ_TRG_Get(track, last_step, layer, instrument);
 	  for(step=last_step; step>first_step; --step)
@@ -697,7 +697,7 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
       // leftrotate parameter layers
       int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
       int num_layers = SEQ_PAR_NumLayersGet(track);
-      for(instrument=0; layer<num_instruments; ++instrument) {
+      for(instrument=0; instrument<num_instruments; ++instrument) {
 	for(layer=0; layer<num_layers; ++layer) {
 	  u8 tmp = SEQ_PAR_Get(track, first_step, layer, instrument);
 	  for(step=first_step; step<last_step; ++step)
@@ -709,7 +709,7 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
       // leftrotate trigger layers
       num_instruments = SEQ_TRG_NumInstrumentsGet(track);
       num_layers = SEQ_TRG_NumLayersGet(track);
-      for(instrument=0; layer<num_instruments; ++instrument) {
+      for(instrument=0; instrument<num_instruments; ++instrument) {
 	for(layer=0; layer<num_layers; ++layer) {
 	  u8 tmp = SEQ_TRG_Get(track, first_step, layer, instrument);
 	  for(step=first_step; step<last_step; ++step)
