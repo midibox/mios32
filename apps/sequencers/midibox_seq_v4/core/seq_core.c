@@ -24,6 +24,7 @@
 #include "seq_random.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
+#include "seq_scale.h"
 #include "seq_midi_in.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -446,7 +447,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      continue;
 	    }
 
-
+  
             // force to scale
             if( tcc->mode.FORCE_SCALE ) {
 	      u8 scale, root_selection, root;
@@ -534,13 +535,26 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		} else {
 		  if( triggers > 1 ) {
 		    int i;
+#if 1
+		    // force gatelength depending on number of triggers
+		    if( triggers < 4 ) {
+		      //   number of triggers:    2   3   4   5
+		      const u8 gatelength_tab[4] = { 48, 32, 36, 32 };
+		      // strategy:
+		      // 2 triggers: played within 1 step at 0 and 48
+		      // 3 triggers: played within 1 step at 0, 32 and 64
+		      // 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
+		      // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
+		      gatelength = gatelength_tab[triggers-2];
+		    }
+#endif
+
 		    u32 half_gatelength = gatelength/2;
 		    if( !half_gatelength )
 		      half_gatelength = 1;
-
       	      
 		    mios32_midi_package_t p_multi = *p;
-		    u16 roll_attenuation = 256 - (16 * ((roll_mode & 0x0f) + 1));
+		    u16 roll_attenuation = 256 - (2 * triggers * (16 - (roll_mode & 0x0f))); // magic formula for nice effects
 		    if( roll_mode & 0x40 ) { // upwards
 		      for(i=triggers-1; i>=0; --i) {
 			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);

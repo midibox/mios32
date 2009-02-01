@@ -47,7 +47,7 @@ u8 seq_layer_vu_meter[16];
 static const u8 seq_layer_preset_table_static[][2] = {
   // parameter             value
   { SEQ_CC_MODE,           SEQ_CORE_TRKMODE_Normal },
-  { SEQ_CC_MODE_FLAGS,     0x09 },
+  { SEQ_CC_MODE_FLAGS,     0x03 },
   { SEQ_CC_DIRECTION,	   0x00 },
   { SEQ_CC_STEPS_REPLAY,   0x00 },
   { SEQ_CC_STEPS_FORWARD,  0x00 },
