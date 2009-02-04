@@ -430,7 +430,7 @@ s32 SEQ_LCD_PrintArp(u8 arp)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintGatelength(u8 len)
 {
-  if( len <= 96 ) {
+  if( len < 96 ) {
     int len_percent = (len*100)/96;
     SEQ_LCD_PrintFormattedString("%3d%%", len_percent);
   } else { // gilde

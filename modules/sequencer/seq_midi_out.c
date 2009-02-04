@@ -596,7 +596,8 @@ static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item)
 #else
       alloc_flags[pos/SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH] &= ~(1 << (pos%SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH));
 #endif
-      --seq_midi_out_allocated;
+      if( seq_midi_out_allocated ) // TODO: check why it can happen that out_allocated == 0
+	--seq_midi_out_allocated;
     } else {
       // should never happen! (can be checked by setting a breakpoint or ptintf to this location)
       return;

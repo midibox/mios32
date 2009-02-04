@@ -224,3 +224,61 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   return status;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Fixes a pattern (load/modify/store)
+// Can be used on format changes
+// Uses group as temporal "storage"
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PATTERN_Fix(u8 group, seq_pattern_t pattern)
+{
+  s32 status;
+
+  MUTEX_SDCARD_TAKE;
+
+  MIOS32_MIDI_SendDebugMessage("Loading bank #%d pattern %d\n", pattern.bank+1, pattern.pattern+1);
+  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    MIOS32_MIDI_SendDebugMessage("Read failed with status: %d\n", status);
+  } else {
+    // insert modification here
+    int track_i;
+    int track = group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+    for(track_i=0; track_i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track_i, ++track) {
+      // Usage example (disabled as it isn't required anymore)
+      // seq_cc_trk[track].clkdiv.value = 15; // due to changed resultion
+    }
+
+    MIOS32_MIDI_SendDebugMessage("Saving bank #%d pattern %d\n", pattern.bank+1, pattern.pattern+1);
+    if( (status=SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group)) < 0 ) {
+      SEQ_UI_SDCardErrMsg(2000, status);
+      MIOS32_MIDI_SendDebugMessage("Write failed with status: %d\n", status);
+    }
+  }
+
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Fixes all patterns of all banks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PATTERN_FixAll(void)
+{
+  s32 status = 0;
+
+  int bank;
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
+    int pattern_i;
+    for(pattern_i=0; pattern_i<SEQ_FILE_B_NumPatterns(bank); ++pattern_i) {
+      seq_pattern_t pattern;
+      pattern.bank = bank;
+      pattern.pattern = pattern_i;
+      if( (status=SEQ_PATTERN_Fix(0, pattern)) < 0 )
+	return status; // break process
+    }
+  }
+
+  return status;
+}

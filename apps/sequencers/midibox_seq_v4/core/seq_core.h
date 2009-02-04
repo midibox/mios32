@@ -73,8 +73,9 @@ typedef union {
 typedef struct seq_core_trk_t {
   seq_core_trk_state_t state;            // various status flags (see structure definition above)
   char                 name[81];         // the track name (80 chars + zero terminator)
-  u8                   step;             // track position
-  u8                   div_ctr;          // clock divider counter
+  u8                   step;             // current track position
+  u16                  next_step_ctr;    // next step tick counter
+  u16                  bpm_tick_delay;   // delay of current step
   u8                   step_replay_ctr;  // step replay counter
   u8                   step_saved;       // for replay mechanism
   u8                   step_fwd_ctr;     // step forward counter
@@ -143,11 +144,11 @@ typedef union {
     unsigned ALL:8;
   };
   struct {
-    unsigned value:6;        // clock divider value
+    u8 value;                // clock divider value
     unsigned flags:6;        // combines all flags (for CC access)
   };
   struct {
-    unsigned value:6;        // clock divider value
+    u8       value;          // clock divider value
     unsigned SYNCH_TO_MEASURE:1; // synch to globally selectable measure
     unsigned TRIPLETS:1;     // play triplets
   };

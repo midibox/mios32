@@ -413,7 +413,7 @@ static s32 LCD_Handler(u8 high_prio)
   //       - CC (Number 000..127 assignable, GM controller name will be displayed)
   //       - Pitch Bender
   //       - Loopback (Number 000..127 assignable, name will be displayed)
-  //       - Delay (+/- 96 ticks @384 ppqn)
+  //       - Delay (0..95 ticks @384 ppqn)
   //       - Probability (100%..0%)
   //       - "Roll/Flam Effect" (a selection of up to 128 different effects selectable for each step separately)
   // Chord: same like Note, but predefined Chords will be played

@@ -242,7 +242,7 @@ s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns the first layer which controls note length
-// returns 1..96 (71 if no length assigned)
+// returns 1..96 (96 for glide, 71 if no length assigned)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument)
 {
@@ -281,7 +281,7 @@ s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns the step delay if assigned to any parameter layer
-// Delay ranges from -95..95
+// Delay ranges from 0..95
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument)
 {
@@ -290,12 +290,7 @@ s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument)
 
   if( (par_layer=tcc->link_par_layer_delay) >= 0 ) {
     s32 value = SEQ_PAR_Get(track, step, par_layer, par_instrument);
-    if( value >= 128 ) {
-      value = 0 - value;
-      return (value < -95) ? -95 : value;
-    } else {
-      return (value > 95) ? 95 : value;
-    }
+    return (value > 95) ? 95 : value;
   }
 
   return 0; // no delay
