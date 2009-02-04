@@ -389,38 +389,22 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LAYER_GetEvntOfLayer(visible_track, previous_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
     u16 previous_length = layer_event.len;
 
-    u8 previous_step_was_long = 0; // hard to determine here... TODO
-
     // show length of 16 steps
     u16 step;
     for(step=0; step<16; ++step) {
       u16 visible_step = step + 16*ui_selected_step_view;
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
-      if( previous_step_was_long ) {
-	// continued long event
-	// previous step took 96 steps
-	previous_length -= 96;
-	// print warning (!!!) if current step activated and overlapped by long event
-	if( previous_step_was_long && !layer_event.midi_package.velocity )
-	  SEQ_LCD_PrintString(">>>> ");
-	else
-	  SEQ_LCD_PrintString("!!!! ");
-	// still long event if > 96
-	previous_step_was_long = previous_length > 96;
+      // muted step? if previous gatelength <= 96, print spaces
+      if( !layer_event.midi_package.velocity && previous_length < 96 ) {
+	SEQ_LCD_PrintSpaces(5);
       } else {
-	previous_step_was_long = 0;
-	// muted step? if previous gatelength <= 96, print spaces
-	if( !layer_event.midi_package.velocity && previous_length <= 96 ) {
-	  SEQ_LCD_PrintSpaces(5);
-	} else {
-	  if( layer_event.len >= 96 )
-	    SEQ_LCD_PrintHBar(15); // glide
-	  else
-	    SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/100);
-	}
-	previous_length = (layer_event.midi_package.velocity || (previous_length > 96 && layer_event.len > 96)) ? layer_event.len : 0;
+	if( layer_event.len >= 96 )
+	  SEQ_LCD_PrintHBar(15); // glide or stretched event
+	else
+	  SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/100);
       }
+      previous_length = (layer_event.midi_package.velocity || (previous_length >= 96 && layer_event.len >= 96)) ? layer_event.len : 0;
     }
 
   } else {

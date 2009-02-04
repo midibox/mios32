@@ -44,8 +44,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static const char quicksel_str[8][6] = { "  1  ", "  2  ", "  4  ", "  8  ", "  8T ", "  16 ", "  16T", "  32 " };
-static const u8 quicksel_timebase[8] = {   63,      31,      15,       7,    7 | 0x80,    3,   3 | 0x80,    1   };
+static const char quicksel_str[8][6] =  { "  1  ", "  2  ", "  4  ", "  8  ", "  8T ", "  16 ", "  16T", "  32 " };
+static const u16 quicksel_timebase[8] = {  255,      127,     63,      31,   31|0x100,    15,   15|0x100,    7   };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,8 @@ static const u8 quicksel_timebase[8] = {   63,      31,      15,       7,    7 |
 /////////////////////////////////////////////////////////////////////////////
 static s32 QUICKSEL_SearchItem(u8 track)
 {
-  u8 search_pattern = SEQ_CC_Get(track, SEQ_CC_CLK_DIVIDER) | 
-                    ((SEQ_CC_Get(track, SEQ_CC_CLKDIV_FLAGS)&2)<<6);
+  u16 search_pattern = SEQ_CC_Get(track, SEQ_CC_CLK_DIVIDER) | 
+                    ((SEQ_CC_Get(track, SEQ_CC_CLKDIV_FLAGS)&2)<<7);
   int i;
   for(i=0; i<8; ++i)
     if( quicksel_timebase[i] == search_pattern )
@@ -130,8 +130,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       {
 	int quicksel = encoder - 8;
 	ui_selected_item = ITEM_TIMEBASE_1 + quicksel;
-	SEQ_UI_CC_Set(SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0x7f);
-	SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x80) ? (1<<1) : 0);
+	SEQ_UI_CC_Set(SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0xff);
+	SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x100) ? (1<<1) : 0);
 	return 1; // value has been changed
       }
   }
@@ -139,7 +139,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_DIVIDER:       return SEQ_UI_CC_Inc(SEQ_CC_CLK_DIVIDER, 0, 63, incrementer);
+    case ITEM_DIVIDER:       return SEQ_UI_CC_Inc(SEQ_CC_CLK_DIVIDER, 0, 255, incrementer);
     case ITEM_TRIPLET:       return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
     case ITEM_SYNCH_TO_MEASURE: return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<0), (incrementer >= 0) ? (1<<0) : 0);
   }

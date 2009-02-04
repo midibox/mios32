@@ -100,10 +100,8 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 
       case SEQ_CC_LENGTH:
 	// ensure that step position pointer matches with the new track length
-	portENTER_CRITICAL();
 	tcc->length = value;
 	seq_core_trk[track].step %= ((u16)value+1);
-	portEXIT_CRITICAL();
 	break;
 
       case SEQ_CC_LOOP: tcc->loop = value; break;

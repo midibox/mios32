@@ -192,6 +192,16 @@ s32 SEQ_CORE_Handler(void)
       // cancel prefetch requests/counter
       bpm_tick_prefetch_req = 0;
       bpm_tick_prefetched_ctr = 0;
+
+      // TODO: set new song position
+
+      seq_core_state.FIRST_CLK = 1;
+      int track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	seq_core_trk_t *t = &seq_core_trk[track];
+	seq_cc_trk_t *tcc = &seq_cc_trk[track];
+	SEQ_CORE_ResetTrkPos(t, tcc);
+      }      
     }
 
     u32 bpm_tick;
@@ -351,24 +361,23 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
 	t->state.SUSTAINED = 0;
       }
-  
+
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
       if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
         SEQ_CORE_ResetTrkPos(t, tcc);
   
-      // MEMO: due to compatibilty reasons, the clock-predivider is currently multiplied by 4 (previously we used 96ppqn)
-      u16 prediv = bpm_tick % ((4 * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int);
-      if( t->state.FIRST_CLK || (!prediv && ++t->div_ctr > tcc->clkdiv.value) ) {
-        t->div_ctr = 0;
-  
+      if( t->state.FIRST_CLK || !(--t->next_step_ctr) ) {
+        t->next_step_ctr = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int;
+
         // increment step if not in arpeggiator mode or arp position == 0
         if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
 	  u8 skip_ctr = 0;
 	  do {
 	    // determine next step depending on direction mode
-	    if( !t->state.FIRST_CLK )
+	    if( !t->state.FIRST_CLK ) {
 	      SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+	    }
 	    
 	    // clear "first clock" flag (on following clock ticks we can continue as usual)
 	    t->state.FIRST_CLK = 0;
@@ -381,19 +390,21 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    
 	  } while( skip_ctr < 32 ); // try 32 times maximum
         }
-  
-  
+
         // solo function: don't play MIDI event if track not selected
-        if( seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track) )
-	  continue;
-  
         // mute function
-        if( t->state.MUTED )
-	  continue;
-  
         // track disabled
-        if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Off )
+        if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
+	    t->state.MUTED || // Mute function
+	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off ) { // track disabled
+	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
+	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	    t->state.STRETCHED_GL = 0;
+	    t->state.SUSTAINED = 0;
+	  }
 	  continue;
+	}
+  
   
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
@@ -435,12 +446,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
 
+
             // skip if velocity has been cleared by transpose function
             // (e.g. no key pressed in transpose mode)
             if( p->type == NoteOn && !p->velocity ) {
 	      // stretched note, length < 96: queue off event
 	      if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
-		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + t->bpm_tick_delay);
 		t->state.SUSTAINED = 0;
 		t->state.STRETCHED_GL = 0;
 	      }
@@ -455,16 +467,19 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      SEQ_SCALE_Note(p, scale, root);
             }
 
-            // roll/glide flag
+            // glide trigger
             if( e->len >= 0 ) {
-#if 0
-	      // TODO
-	      if( SEQ_TRG_RollGet(track, t->step, instrument) )
-		e->len = ... 2x12
-#endif
 	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
 		e->len = 96; // Glide
             }
+
+	    // get delay of step (0..95)
+	    // note: negative delays stored in step parameters would require to pre-generate bpm_ticks, 
+	    // which would reduce the immediate response on value/trigger changes
+	    // therefore negative delays are only supported for groove patterns, and they are
+	    // applied over the whole track (e.g. drum mode: all instruments of the appr. track)
+	    u16 prev_bpm_tick_delay = t->bpm_tick_delay;
+	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument) << seq_core_bpm_div_int;
 
             // determine gate length
             u32 gatelength = 0;
@@ -478,14 +493,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED ) {
-		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+		SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + prev_bpm_tick_delay);
 		t->state.SUSTAINED = 0;
 		t->state.STRETCHED_GL = 0;
 	      }
 
 	      if( tcc->mode.SUSTAIN || e->len >= 96 ) {
 		// sustained note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick, 0);
+		t->vu_meter = p->velocity; // for visualisation in mute menu
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick + t->bpm_tick_delay, 0);
 		p->velocity = 0;
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
@@ -500,7 +516,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      }
             } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
 	      // stretched note, length < 96: queue off events
-	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + prev_bpm_tick_delay);
 	      t->state.SUSTAINED = 0;
 	      t->state.STRETCHED_GL = 0;
 	    }
@@ -515,7 +531,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             // schedule events
             if( triggers ) {
 	      if( p->type == CC || p->type == PitchBend ) {
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 		t->vu_meter = 0x7f; // for visualisation in mute menu
 	      } else {
 		// force velocity to 0x7f (drum mode: selectable value) if accent flag set
@@ -557,13 +573,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		    u16 roll_attenuation = 256 - (2 * triggers * (16 - (roll_mode & 0x0f))); // magic formula for nice effects
 		    if( roll_mode & 0x40 ) { // upwards
 		      for(i=triggers-1; i>=0; --i) {
-			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 			u16 velocity = roll_attenuation * p_multi.velocity;
 			p_multi.velocity = velocity >> 8;
 		      }
 		    } else { // downwards
 		      for(i=0; i<triggers; ++i) {
-			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick+i*gatelength, half_gatelength);
+			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 			if( roll_mode ) {
 			  u16 velocity = roll_attenuation * p_multi.velocity;
 			  p_multi.velocity = velocity >> 8;
@@ -573,7 +589,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		  } else {
 		    if( !gatelength )
 		      gatelength = 1;
-		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, gatelength);
+		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }		    
 		}
 
@@ -581,7 +597,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		  // apply echo Fx if enabled
 		  if( tcc->echo_repeats && (p->type == CC || p->type == PitchBend || gatelength) )
-		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick, gatelength);
+		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
 		}
 	      }
             }
@@ -606,12 +622,12 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
   // don't increment on first clock event
   t->state.FIRST_CLK = 1;
 
+  // clear delay
+  t->bpm_tick_delay = 0;
+
   // reset step REPLAY and FWD counters
   t->step_replay_ctr = 0;
   t->step_fwd_ctr = 0;
-
-  // reset clock divider
-  t->div_ctr = 0;
 
   // reset record state and other record specific variables
   if( 0 ) { // TODO: define record mode
