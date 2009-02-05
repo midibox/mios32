@@ -77,11 +77,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP2:
       ui_selected_item = ITEM_STEPS_MEASURE;
+      // special feature: this encoder increments *10
+      incrementer *= 10;
       break;
     case SEQ_UI_ENCODER_GP3:
       ui_selected_item = ITEM_STEPS_MEASURE;
-      // special feature: this encoder increments *10
-      incrementer *= 10;
       break;
 
     case SEQ_UI_ENCODER_GP4:

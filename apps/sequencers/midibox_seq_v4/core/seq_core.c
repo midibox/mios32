@@ -25,6 +25,7 @@
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_scale.h"
+#include "seq_groove.h"
 #include "seq_midi_in.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -121,6 +122,9 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset force-to-scale module
   SEQ_SCALE_Init(0);
+
+  // reset groove module
+  SEQ_GROOVE_Init(0);
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -479,7 +483,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    // therefore negative delays are only supported for groove patterns, and they are
 	    // applied over the whole track (e.g. drum mode: all instruments of the appr. track)
 	    u16 prev_bpm_tick_delay = t->bpm_tick_delay;
-	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument) << seq_core_bpm_div_int;
+	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument) + SEQ_GROOVE_DelayGet(track, t->step);
+	    // ensure that delay not greater than 95
+	    if( t->bpm_tick_delay > 95 )
+	      t->bpm_tick_delay = 95;
+
+	    // scale delay (0..95) over next clock counter to consider the selected clock divider
+	    if( t->bpm_tick_delay )
+	      t->bpm_tick_delay = (t->bpm_tick_delay * t->next_step_ctr) / 96;
+
 
             // determine gate length
             u32 gatelength = 0;
@@ -490,6 +502,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      triggers = 1;
             } else if( p->note && p->velocity && (e->len >= 0) ) {
 	      // Any other event with gatelength
+
+	      // groove it
+	      SEQ_GROOVE_Event(track, t->step, e);
 
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED ) {
@@ -512,7 +527,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		// triggers/gatelength already 0 - don't queue additional notes
 	      } else {
 		triggers = 1;
-		gatelength = e->len << seq_core_bpm_div_int;
+		gatelength = e->len;
 	      }
             } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
 	      // stretched note, length < 96: queue off events
@@ -561,7 +576,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		      // 3 triggers: played within 1 step at 0, 32 and 64
 		      // 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
 		      // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
-		      gatelength = gatelength_tab[triggers-2];
+
+		      // in addition, scale length (0..95) over next clock counter to consider the selected clock divider
+		      gatelength = (gatelength_tab[triggers-2] * t->next_step_ctr) / 96;
 		    }
 #endif
 
@@ -589,6 +606,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		  } else {
 		    if( !gatelength )
 		      gatelength = 1;
+		    else // scale length (0..95) over next clock counter to consider the selected clock divider
+		      gatelength = (gatelength * t->next_step_ctr) / 96;
 		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }		    
 		}
