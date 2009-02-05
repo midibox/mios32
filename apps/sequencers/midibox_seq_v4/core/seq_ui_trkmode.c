@@ -271,16 +271,48 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
   SEQ_LCD_PrintString("Hold Sort  Restart  ForceScale  Sustain ");
+  SEQ_LCD_CursorSet(40, 1);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_CursorSet(40, 1);
-  u16 flags = SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS);
-  SEQ_LCD_PrintFormattedString(" %s  %s    %s       %s        %s   ",
-				  (flags & (1<<1)) ? "on " : "off",
-				  (flags & (1<<0)) ? "off" : "on ", // SORT is inverted!
-				  (flags & (1<<2)) ? "on " : "off",
-				  (flags & (1<<3)) ? "on " : "off",
-				  (flags & (1<<4)) ? "on " : "off");
+  if( ui_selected_item == ITEM_HOLD && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 1)) ? "on " : "off");
+  }
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_SORT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 0)) ? "off" : "on "); // SORT is inverted!
+  }
+  SEQ_LCD_PrintSpaces(4);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_RESTART && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 2)) ? "on " : "off");
+  }
+  SEQ_LCD_PrintSpaces(7);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_FORCE_SCALE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 3)) ? "on " : "off");
+  }
+  SEQ_LCD_PrintSpaces(8);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_SUSTAIN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 4)) ? "on " : "off");
+  }
+  SEQ_LCD_PrintSpaces(3);
 
   return 0; // no error
 }

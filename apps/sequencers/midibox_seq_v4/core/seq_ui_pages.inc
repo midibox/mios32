@@ -31,6 +31,7 @@ typedef enum {
   SEQ_UI_PAGE_TRKDIV,
   SEQ_UI_PAGE_TRKLEN,
   SEQ_UI_PAGE_TRKTRAN,
+  SEQ_UI_PAGE_TRKGRV,
   SEQ_UI_PAGE_TRGASG,
   SEQ_UI_PAGE_TRKRND,
   SEQ_UI_PAGE_FX_ECHO,
@@ -62,6 +63,7 @@ extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
 extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
 extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
+extern s32 SEQ_UI_TRKGRV_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
 extern s32 SEQ_UI_TRKRND_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
@@ -98,6 +100,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Track ClockDivider", (void *)&SEQ_UI_TRKDIV_Init },
   { "Track Length      ", (void *)&SEQ_UI_TRKLEN_Init },
   { "Track Transpose   ", (void *)&SEQ_UI_TRKTRAN_Init },
+  { "Track Groove      ", (void *)&SEQ_UI_TRKGRV_Init },
   { "Track Triggers    ", (void *)&SEQ_UI_TRGASG_Init },
   { "Random Generator  ", (void *)&SEQ_UI_TRKRND_Init },
   { "Track Fx: Echo    ", (void *)&SEQ_UI_FX_ECHO_Init },
@@ -118,7 +121,7 @@ static const seq_ui_page_t ui_shortcut_menu_pages[16] = {
   SEQ_UI_PAGE_TRKDIV,      // GP5
   SEQ_UI_PAGE_TRKLEN,      // GP6
   SEQ_UI_PAGE_TRKTRAN,     // GP7
-  SEQ_UI_PAGE_NONE,        // GP8
+  SEQ_UI_PAGE_TRKGRV,      // GP8
   SEQ_UI_PAGE_TRGASG,      // GP9
   SEQ_UI_PAGE_FX,          // GP10
   SEQ_UI_PAGE_NONE,        // GP11
