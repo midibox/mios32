@@ -31,6 +31,12 @@
 /////////////////////////////////////////////////////////////////////////////
 #define IO_SETTLE_DELAY 10
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Should JTAG pins checked as well?
+/////////////////////////////////////////////////////////////////////////////
+#define CHECK_JTAG_PINS 0
+
 /////////////////////////////////////////////////////////////////////////////
 // This table defines the neighboured pins of a STM32F103RE chip (64 pin package)
 /////////////////////////////////////////////////////////////////////////////
@@ -88,14 +94,18 @@ static const io_pin_t io_pin_table[] = {
   { "PA11", GPIOA, GPIO_Pin_11,  0x00 },
   { "PA12", GPIOA, GPIO_Pin_12,  0x00 },
 #endif
+#if CHECK_JTAG_PINS
   { "PA13", GPIOA, GPIO_Pin_13,  0x00 },
   { "PA14", GPIOA, GPIO_Pin_14,  0x00 },
   { "PA15", GPIOA, GPIO_Pin_15,  0x00 },
+#endif
   { "PC10", GPIOC, GPIO_Pin_10,  0x00 },
   { "PC11", GPIOC, GPIO_Pin_11,  (1 << EXPECTED_FAIL_IPL) }, // On-Board Pull-Up connected
   { "PD2",  GPIOD, GPIO_Pin_2,   0x00 },
+#if CHECK_JTAG_PINS
   { "PB3",  GPIOB, GPIO_Pin_3,   0x00 },
   { "PB4",  GPIOB, GPIO_Pin_4,   0x00 },
+#endif
   { "PB5",  GPIOB, GPIO_Pin_5,   (1 << EXPECTED_FAIL_IPL) }, // On-Board Pull-Up connected
   { "PB6",  GPIOB, GPIO_Pin_6,   (1 << EXPECTED_FAIL_IPL) }, // On-Board Pull-Up connected
   { "PB7",  GPIOB, GPIO_Pin_7,   0x00 },
@@ -127,8 +137,10 @@ s32 CHECK_Pins(void)
   int pin;
   int num_pins = sizeof(io_pin_table)/sizeof(io_pin_t);
 
+#if CHECK_JTAG_PINS
   // ensure that JTAG pins are disabled
   GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE); // "ENABLE" enables the disable...
+#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("\n");
