@@ -46,7 +46,9 @@
 
 // ISTR events
 // mask defining which events has to be handled by the device application software
-#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
+//#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
+#define IMR_MSK (CNTR_CTRM | CNTR_RESETM )
+// TK: disabled SOF interrupt, since it isn't really used and disturbs debugging
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -977,7 +979,8 @@ static void MIOS32_USB_CB_Init(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
 
     // Set interrupt mask
-    wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
+    // wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
+    wInterrupt_Mask = CNTR_RESETM;
     _SetCNTR(wInterrupt_Mask);
 
     // USB interrupts initialization

@@ -26,10 +26,6 @@
 
 #include <usb_lib.h>
 
-#ifndef MIOS32_DONT_USE_FREERTOS
-#include <FreeRTOS.h>
-#include <portmacro.h>
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -134,15 +130,7 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
   if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
-
-    // disable execution of other tasks while USB_MIDI_Handler() is processed
-#ifndef MIOS32_DONT_USE_FREERTOS
-    portENTER_CRITICAL(); // port specific FreeRTOS function to disable tasks (nested)
-#endif
     MIOS32_USB_MIDI_Handler();
-#ifndef MIOS32_DONT_USE_FREERTOS
-    portEXIT_CRITICAL(); // port specific FreeRTOS function to enable tasks (nested)
-#endif
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
@@ -288,6 +276,8 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 {
   s16 count;
 
+  // atomic operation to avoid conflict with other interrupts
+  MIOS32_IRQ_Disable();
   // check if we can receive new data and get packages to be received from OUT pipe
   if( rx_buffer_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
 
@@ -306,11 +296,9 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
 	  rx_buffer[rx_buffer_head] = package.ALL;
 
-	  MIOS32_IRQ_Disable();
 	  if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
 	    rx_buffer_head = 0;
 	  ++rx_buffer_size;
-	  MIOS32_IRQ_Enable();
 	}
       } while( --count >= 0 );
 
@@ -321,6 +309,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       SetEPRxValid(ENDP1);
     }
   }
+  MIOS32_IRQ_Enable();
 }
 
 
@@ -332,7 +321,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(void)
 {
   // package has been sent
   tx_buffer_busy = 0;
-
+  
   // check for next package
   MIOS32_USB_MIDI_TxBufferHandler();
 }
