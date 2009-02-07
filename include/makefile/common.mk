@@ -35,7 +35,7 @@ NM      = $(MIOS32_GCC_PREFIX)-nm
 SIZE    = $(MIOS32_GCC_PREFIX)-size
 
 # default linker flags
-LDFLAGS += -T$(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
+LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
 
 # default assembler flags
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
