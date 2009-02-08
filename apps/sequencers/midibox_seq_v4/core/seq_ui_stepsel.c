@@ -186,6 +186,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   SEQ_LCD_CursorSet(0, 1);
+
   if( steps_per_item > 8 ) {
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsSmall);
 
@@ -227,11 +228,22 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
 
     for(i=0; i<16; ++i) {
+      u8 gate_trg_asg, second_trg_asg;
+
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	gate_trg_asg = 1;
+	second_trg_asg = 2;
+      } else {
+	gate_trg_asg = SEQ_TRG_AssignmentGet(visible_track, 0);
+	u8 accent_trg_asg = SEQ_TRG_AssignmentGet(visible_track, 1);
+	second_trg_asg = (ui_selected_trg_layer == (gate_trg_asg-1)) ? accent_trg_asg : SEQ_TRG_AssignmentGet(visible_track, ui_selected_trg_layer);
+      }
+
       u16 step = i*steps_per_item;
-      u8 layer = (event_mode == SEQ_EVENT_MODE_Drum) ? 0 : ui_selected_trg_layer;
-      u16 steps = SEQ_TRG_Get8(visible_track, step / 8, layer, ui_selected_instrument);
-      if( event_mode == SEQ_EVENT_MODE_Drum )
-	steps |= SEQ_TRG_Get8(visible_track, step / 8, 1, ui_selected_instrument) << 8;
+      u16 steps = gate_trg_asg ? SEQ_TRG_Get8(visible_track, step / 8, gate_trg_asg-1, ui_selected_instrument) : 0xff;
+
+      if( second_trg_asg )
+	steps |= SEQ_TRG_Get8(visible_track, step / 8, second_trg_asg-1, ui_selected_instrument) << 8;
 
       if( i & 1 )
 	steps >>= 4;

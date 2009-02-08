@@ -180,8 +180,8 @@ s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
 
   if( add_velocity ) {
     s16 value = e->midi_package.velocity + add_velocity;
-    if( value < 0 )
-      value = 0;
+    if( value < 1 )
+      value = 1;
     else if( value > 127 )
       value = 127;
     e->midi_package.velocity = value;

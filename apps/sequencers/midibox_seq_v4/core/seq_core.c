@@ -26,6 +26,7 @@
 #include "seq_layer.h"
 #include "seq_scale.h"
 #include "seq_groove.h"
+#include "seq_humanize.h"
 #include "seq_midi_in.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -125,6 +126,9 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset groove module
   SEQ_GROOVE_Init(0);
+
+  // reset humanizer module
+  SEQ_HUMANIZE_Init(0);
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -483,7 +487,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             }
 
             // glide trigger
-            if( e->len >= 0 ) {
+            if( e->len > 0 ) {
 	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
 		e->len = 96; // Glide
             }
@@ -495,9 +499,6 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    // applied over the whole track (e.g. drum mode: all instruments of the appr. track)
 	    u16 prev_bpm_tick_delay = t->bpm_tick_delay;
 	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument);
-	    // ensure that delay not greater than 95
-	    if( t->bpm_tick_delay > 95 )
-	      t->bpm_tick_delay = 95;
 
 	    // scale delay (0..95) over next clock counter to consider the selected clock divider
 	    if( t->bpm_tick_delay )
@@ -516,6 +517,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	      // groove it
 	      SEQ_GROOVE_Event(track, t->step, e);
+
+	      // humanize it
+	      SEQ_HUMANIZE_Event(track, t->step, e);
 
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED ) {
@@ -550,8 +554,16 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	    // roll/flam?
 	    u8 roll_mode;
-	    if( triggers && (roll_mode=SEQ_PAR_RollModeGet(track, t->step, instrument)) )
-	      triggers = ((roll_mode & 0x30)>>4) + 2;
+	    if( triggers ) {
+	      // get roll mode from parameter layer
+	      roll_mode=SEQ_PAR_RollModeGet(track, t->step, instrument);
+	      // with less priority (parameter == 0): force roll mode if Roll trigger is set
+	      if( !roll_mode && SEQ_TRG_RollGet(track, t->step, instrument) )
+		roll_mode = 0x16; // 3D06
+	      // if roll mode != 0: increase number of triggers
+	      if( roll_mode )
+		triggers = ((roll_mode & 0x30)>>4) + 2;
+	    }
 
             
             // schedule events
