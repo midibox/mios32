@@ -113,8 +113,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( ui_selected_item ) {
     case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
     case ITEM_GROOVE_STYLE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_STYLE, 0, SEQ_GROOVE_NumGet()-1, incrementer);
-    case ITEM_GROOVE_VALUE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 15, incrementer);
-    case ITEM_HUMANIZE_VALUE:    return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE_VALUE, 0, 15, incrementer);
+    case ITEM_GROOVE_VALUE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer);
+    case ITEM_HUMANIZE_VALUE:    return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE_VALUE, 0, 127, incrementer);
     case ITEM_HUMANIZE_NOTE:     return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x01, (incrementer >= 0) ? 0x01 : 0x00);
     case ITEM_HUMANIZE_VELOCITY: return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x02, (incrementer >= 0) ? 0x02 : 0x00);
     case ITEM_HUMANIZE_LENGTH:   return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x04, (incrementer >= 0) ? 0x04 : 0x00);
@@ -243,18 +243,18 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GROOVE_VALUE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
+    SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE));
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE));
   }
 
-  SEQ_LCD_PrintSpaces(15 + 5);
+  SEQ_LCD_PrintSpaces(14 + 4);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_VALUE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
+    SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_VALUE));
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_VALUE));
   }
   SEQ_LCD_PrintSpaces(8);
 
