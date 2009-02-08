@@ -17,6 +17,8 @@
 // local variables to bridge objects to C functions
 static NSObject *_self;
 
+NSString *dirName;
+
 
 //////////////////////////////////////////////////////////////////////////////
 // init local variables
@@ -24,6 +26,29 @@ static NSObject *_self;
 - (void) awakeFromNib
 {
 	_self = self;
+	dirName = NULL;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// set SD Card storage directory
+//////////////////////////////////////////////////////////////////////////////
+void SDCARD_Wrapper_setDir(NSString *_dirName)
+{
+	if( _dirName == nil ) {
+		dirName = nil;
+	} else {
+		dirName = [[NSString alloc] initWithString:_dirName];
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// returns SD Card storage directory
+//////////////////////////////////////////////////////////////////////////////
+NSString *SDCARD_Wrapper_getDir(void)
+{
+	return dirName;
 }
 
 
@@ -46,7 +71,7 @@ s32 MIOS32_SDCARD_Init(u32 mode)
 s32 MIOS32_SDCARD_PowerOn(void)
 {
 	// Nothing to do
-	return 0; // no error
+	return (dirName == nil) ? -1 : 0;
 }
 
 
@@ -58,7 +83,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
 s32 MIOS32_SDCARD_PowerOff(void)
 {
 	// nothing to do
-	return 0; // no error
+	return (dirName == nil) ? -1 : 0;
 }
 
 
@@ -70,8 +95,7 @@ s32 MIOS32_SDCARD_PowerOff(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_CheckAvailable(u8 high_speed)
 {
-        // always available
-        return 1;
+	return (dirName == nil) ? 0 : 1;
 }
 
 
@@ -86,7 +110,7 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 high_speed)
 s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 {
 	// nothing to do
-	return 0;
+	return (dirName == nil) ? -1 : 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,7 +140,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 	for(i=0; i<512; ++i)
 		buffer[i] = 0xff;
 	
-	return 0;
+	return (dirName == nil) ? -1 : 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -142,7 +166,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 {
 	// TODO
-	return 0;
+	return (dirName == nil) ? -1 : 0;
 }
 
 

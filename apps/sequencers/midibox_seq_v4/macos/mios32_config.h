@@ -14,6 +14,9 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
+// function used to output debug messages (must be printf compatible!)
+#define DEBUG_MSG UI_printf
+
 
 #define MID_PLAYER_TEST 0
 

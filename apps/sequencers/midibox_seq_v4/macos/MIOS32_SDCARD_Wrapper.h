@@ -12,4 +12,7 @@
 
 }
 
+extern void SDCARD_Wrapper_setDir(NSString *_dirName);
+extern NSString *SDCARD_Wrapper_getDir(void);
+
 @end

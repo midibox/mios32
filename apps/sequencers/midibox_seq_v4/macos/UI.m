@@ -272,6 +272,22 @@ s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 }
 
 
+//////////////////////////////////////////////////////////////////////////////
+// printf compatible function to output debug messages
+// referenced in mios32_config.h (DEBUG_MSG macro)
+//////////////////////////////////////////////////////////////////////////////
+s32 UI_printf(char *format, ...)
+{
+  char buffer[1024];
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  NSLog(@"%s", buffer);
+  
+  return 0; // no error
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Tasks
@@ -465,6 +481,25 @@ s32 TASKS_Init(u32 mode)
 	for(delay=0; delay<2000; ++delay)
 		MIOS32_DELAY_Wait_uS(1000);
 #endif
+
+	// SD Card path selection
+	int result;
+    NSOpenPanel *oPanel = [NSOpenPanel openPanel];
+ 
+    [oPanel setAllowsMultipleSelection:NO];
+	[oPanel setCanChooseDirectories:YES];
+	[oPanel setCanChooseFiles:NO];
+    [oPanel setTitle:@"Choose SD Card Storage Directory"];
+    [oPanel setMessage:@"Choose the directory where your MIDIbox SEQ V4 files should be located."];
+    [oPanel setDelegate:self];
+    result = [oPanel runModalForDirectory:NSHomeDirectory() file:nil];
+    if (result == NSOKButton) {
+		NSArray *selectedDirs = [oPanel filenames];
+		SDCARD_Wrapper_setDir([selectedDirs objectAtIndex:0]);  // only the first directory selection is relevant
+    } else {
+		SDCARD_Wrapper_setDir(nil);  // disable SD card access
+	}
+
 }
 
 

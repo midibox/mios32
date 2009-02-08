@@ -234,9 +234,9 @@ static s32 CC_LinkUpdate(u8 track)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  seq_par_layer_type_t *par_asg = (tcc->event_mode == SEQ_EVENT_MODE_Drum)
-    ? (seq_par_layer_type_t *)&seq_cc_trk[track].par_assignment_drum[0]
-    : (seq_par_layer_type_t *)&seq_cc_trk[track].lay_const[0*16];
+  u8 *par_asg = (tcc->event_mode == SEQ_EVENT_MODE_Drum)
+    ? (u8 *)&seq_cc_trk[track].par_assignment_drum[0]
+    : (u8 *)&seq_cc_trk[track].lay_const[0*16];
 
   tcc->link_par_layer_note = -1;
   tcc->link_par_layer_chord = -1;
@@ -251,7 +251,7 @@ static s32 CC_LinkUpdate(u8 track)
     // search backwards to ensure that first assignments will be taken
     int layer;
     for(layer=num_layers-1; layer>=0; --layer) {
-      switch( par_asg[layer] ) {
+      switch( (seq_par_layer_type_t)par_asg[layer] ) {
         case SEQ_PAR_Type_Note: tcc->link_par_layer_note = layer; break;
         case SEQ_PAR_Type_Chord: tcc->link_par_layer_chord = layer; break;
         case SEQ_PAR_Type_Velocity: tcc->link_par_layer_velocity = layer; break;
