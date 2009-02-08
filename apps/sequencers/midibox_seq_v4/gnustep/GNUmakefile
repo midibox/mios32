@@ -18,6 +18,7 @@ midibox_seq_v4_OBJC_FILES=\
 	./build/MIOS32_STOPWATCH_Wrapper.m \
 	./build/MIOS32_SYS_Wrapper.m \
 	./build/MIOS32_TIMER_Wrapper.m \
+	./build/DOSFS_Wrapper.m \
 	./build/SEQButton.m \
 	./build/SEQEncoder.m \
 	./build/UI.m \
@@ -30,7 +31,6 @@ midibox_seq_v4_C_FILES=\
 	./build/mios32_midi.c \
 	./build/mios32_uart_midi.c \
 	./build/dfs_sdcard.c \
-	./build/dosfs.c \
 	./build/mid_parser.c \
 	./build/seq_bpm.c \
 	./build/seq_midi_out.c \
