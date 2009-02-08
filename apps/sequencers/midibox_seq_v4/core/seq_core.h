@@ -74,7 +74,9 @@ typedef struct seq_core_trk_t {
   seq_core_trk_state_t state;            // various status flags (see structure definition above)
   char                 name[81];         // the track name (80 chars + zero terminator)
   u8                   step;             // current track position
-  u16                  next_step_ctr;    // next step tick counter
+  u16                  step_length;      // length of the current step
+  u32                  timestamp_next_step; // timestamp at which the next step will be played
+  u32                  timestamp_next_step_ref; // timestamp of next step w/o groove delay
   u16                  bpm_tick_delay;   // delay of current step
   u8                   step_replay_ctr;  // step replay counter
   u8                   step_saved;       // for replay mechanism

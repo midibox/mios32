@@ -28,94 +28,21 @@
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  struct {
-    unsigned s1:4;
-    unsigned s2:4;
-    unsigned s3:4;
-    unsigned s4:4;
-    unsigned s5:4;
-    unsigned s6:4;
-    unsigned s7:4;
-    unsigned s8:4;
-    unsigned s9:4;
-    unsigned s10:4;
-    unsigned s11:4;
-    unsigned s12:4;
-    unsigned s13:4;
-    unsigned s14:4;
-    unsigned s15:4;
-    unsigned s16:4;
-  };
-
-  struct {
-    u8 steps[8]; // unfortunately "unsigned steps:4[8]" doesn't work
-  };
-} seq_groove_steps_t;
-
-
 typedef struct {
   char name[13];
-  seq_groove_steps_t delay;
-  seq_groove_steps_t length;
-  seq_groove_steps_t velocity;
+  s8   add_step_delay[16];
+  s8   add_step_length[16];
+  s8   add_step_velocity[16];
 } seq_groove_entry_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions to improve readability
+// Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define D__0    0
-#define D__1    1
-#define D__2    2
-#define D__3    3
-#define D__4    4
-#define D__5    5
-#define D__6    6
-#define D__7    7
-#define D__8    8
-#define D__9    9
-#define D_10   10
-#define D_11   11
-#define D_12   12
-#define D_13   13
-#define D_14   14
-#define DVAR   15
-
-#define V020    0
-#define V030    1
-#define V040    2
-#define V050    3
-#define V060    4
-#define V070    5
-#define V080    6
-#define V090    7
-#define V100    8
-#define V110    9
-#define V120   10
-#define V130   11
-#define V140   12
-#define V150   13
-#define V160   14
-#define VVAR   15
-
-#define L020    0
-#define L030    1
-#define L040    2
-#define L050    3
-#define L060    4
-#define L070    5
-#define L080    6
-#define L090    7
-#define L100    8
-#define L110    9
-#define L120   10
-#define L130   11
-#define L140   12
-#define L150   13
-#define L160   14
-#define LVAR   15
+// these special values insert the variable "intensity" parameter
+#define VPOS  127
+#define VNEG -128
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -124,45 +51,45 @@ typedef struct {
 
 static const seq_groove_entry_t seq_groove_table[] = {
   { " -- off --  ", // dummy entry, changes here have no effect!
-    { D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0, D__0 },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100 }
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "  Shuffle   ",
-    { D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100 }
+    { VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "Inv. Shuffle",
-    { DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0, DVAR, D__0 },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100 }
+    { VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "  Shuffle2  ",
-    { D__0, D__8, D__0, DVAR, D__0, D__8, D__0, DVAR, D__0, D__8, D__0, DVAR, D__0, D__8, D__0, DVAR },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, V120, V100, V080, V100, V120, V100, V080, V100, V120, V100, V080, V100, V120, V100, V080 }
+    {    0,   32,    0, VPOS,    0,   32,    0, VPOS,    0,   32,    0, VPOS,    0,   32,    0, VPOS }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,   20,    0,  -20,    0,   20,    0,  -20,    0,   20,    0,  -20,    0,   20,    0,  -20 }, // Velocity
   },
 
   { "  Shuffle3  ",
-    { D__0, D__8, D__4, DVAR, D__0, D__8, D__4, DVAR, D__0, D__8, D__4, DVAR, D__0, D__8, D__4, DVAR },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, V080, V060, V080, V100, V080, V060, V080, V100, V080, V060, V080, V100, V080, V060, V080 }
+    {    0,   32,   16, VPOS,    0,   32,   16, VPOS,    0,   32,   16, VPOS,    0,   32,   16, VPOS }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,  -10,  -20,  -10,    0,  -10,  -20,  -10,    0,  -10,  -20,  -10,    0,  -10,  -20,  -10 }, // Velocity
   },
 
   { "  Shuffle4  ",
-    { D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8 },
-    { L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100, L100 },
-    { V100, DVAR, V100, DVAR, V100, DVAR, V100, DVAR, V100, DVAR, V100, DVAR, V100, DVAR, V100, DVAR }
+    {  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16 }, // Delay
+    {    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG }, // Gatelength
+    {    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS }, // Velocity
   },
 
   { "  Shuffle5  ",
-    { D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8, D__0, D__8 },
-    { DVAR, L100, DVAR, L100, DVAR, L100, DVAR, L100, DVAR, L100, DVAR, L100, DVAR, L100, DVAR, L100 },
-    { V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100, V100 }
+    {  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16 }, // Delay
+    { VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG }, // Gatelength
+    { VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS }, // Velocity
   }
 };
 
@@ -216,13 +143,15 @@ s32 SEQ_GROOVE_DelayGet(u8 track, u8 step)
   step %= 16;
 
   // get delay value
-  u8 delay = seq_groove_table[groove].delay.steps[step>>1];
-  delay = (step & 1) ? ((delay >> 4) & 0x0f) : (delay & 0x0f);
+  s8 delay = seq_groove_table[groove].add_step_delay[step];
 
-  if( delay >= 15 )
+  // insert positive/negative intensity
+  if( delay == VPOS )
     delay = tcc->groove_value;
+  else if( delay == VNEG )
+    delay = -tcc->groove_value;
 
-  return 4 * delay; // currently 0, 4, 8, ... 60
+  return delay;
 }
 
 
@@ -242,27 +171,39 @@ s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   step %= 16;
 
   // get velocity modifier
-  u8 velocity = seq_groove_table[groove].velocity.steps[step>>1];
-  velocity = (step & 1) ? ((velocity >> 4) & 0x0f) : (velocity & 0x0f);
+  s8 add_velocity = seq_groove_table[groove].add_step_velocity[step];
+  // insert positive/negative intensity
+  if( add_velocity == VPOS )
+    add_velocity = tcc->groove_value;
+  else if( add_velocity == VNEG )
+    add_velocity = -tcc->groove_value;
 
-  if( velocity >= 15 )
-    velocity = tcc->groove_value;
-
-  if( velocity != 8 ) { // 8 == 100%
-    u16 value = ((20 + 10*velocity) * e->midi_package.velocity) / 100;
-    e->midi_package.velocity = (value >= 127) ? 127 : value;
+  if( add_velocity ) {
+    s16 value = e->midi_package.velocity + add_velocity;
+    if( value < 0 )
+      value = 0;
+    else if( value > 127 )
+      value = 127;
+    e->midi_package.velocity = value;
   }
 
-  // get gatelength modifier
-  u8 length = seq_groove_table[groove].length.steps[step>>1];
-  length = (step & 1) ? ((length >> 4) & 0x0f) : (length & 0x0f);
+  // get gatelength modifier if len < 96 (glide not active)
+  if( e->len < 96 ) {
+    s8 add_length = seq_groove_table[groove].add_step_length[step];
+    // insert positive/negative intensity
+    if( add_length == VPOS )
+      add_length = tcc->groove_value;
+    else if( add_length == VNEG )
+      add_length = -tcc->groove_value;
 
-  if( length >= 15 )
-    length = tcc->groove_value;
-
-  if( length != 8 ) { // 8 == 100%
-    u16 value = ((20 + 10*length) * e->len) / 100;
-    e->len = (value >= 95) ? 95 : value;
+    if( add_length ) {
+      s16 value = e->len + add_length;
+      if( value < 1 )
+	value = 1;
+      else if( value > 95 )
+	value = 95;
+      e->len = value;
+    }
   }
 
   return 0; // no error

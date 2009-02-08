@@ -371,8 +371,16 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
         SEQ_CORE_ResetTrkPos(t, tcc);
   
-      if( t->state.FIRST_CLK || !(--t->next_step_ctr) ) {
-        t->next_step_ctr = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6)) << seq_core_bpm_div_int;
+      if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
+	// calculate step length
+	u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+        t->step_length = step_length_pre << seq_core_bpm_div_int;
+
+	// set timestamp of next step w/o groove delay (reference timestamp)
+	if( t->state.FIRST_CLK )
+	  t->timestamp_next_step_ref = bpm_tick + t->step_length;
+	else
+	  t->timestamp_next_step_ref += t->step_length;
 
         // increment step if not in arpeggiator mode or arp position == 0
         if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
@@ -393,6 +401,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      break;
 	    
 	  } while( skip_ctr < 32 ); // try 32 times maximum
+
+	  // calculate number of cycles to next step
+	  t->timestamp_next_step = t->timestamp_next_step_ref + (SEQ_GROOVE_DelayGet(track, t->step + 1) << seq_core_bpm_div_int);
         }
 
         // solo function: don't play MIDI event if track not selected
@@ -483,14 +494,14 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    // therefore negative delays are only supported for groove patterns, and they are
 	    // applied over the whole track (e.g. drum mode: all instruments of the appr. track)
 	    u16 prev_bpm_tick_delay = t->bpm_tick_delay;
-	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument) + SEQ_GROOVE_DelayGet(track, t->step);
+	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument);
 	    // ensure that delay not greater than 95
 	    if( t->bpm_tick_delay > 95 )
 	      t->bpm_tick_delay = 95;
 
 	    // scale delay (0..95) over next clock counter to consider the selected clock divider
 	    if( t->bpm_tick_delay )
-	      t->bpm_tick_delay = (t->bpm_tick_delay * t->next_step_ctr) / 96;
+	      t->bpm_tick_delay = (t->bpm_tick_delay * t->step_length) / 96;
 
 
             // determine gate length
@@ -578,7 +589,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		      // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
 
 		      // in addition, scale length (0..95) over next clock counter to consider the selected clock divider
-		      gatelength = (gatelength_tab[triggers-2] * t->next_step_ctr) / 96;
+		      gatelength = (gatelength_tab[triggers-2] * t->step_length) / 96;
 		    }
 #endif
 
@@ -607,7 +618,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		    if( !gatelength )
 		      gatelength = 1;
 		    else // scale length (0..95) over next clock counter to consider the selected clock divider
-		      gatelength = (gatelength * t->next_step_ctr) / 96;
+		      gatelength = (gatelength * t->step_length) / 96;
 		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }		    
 		}

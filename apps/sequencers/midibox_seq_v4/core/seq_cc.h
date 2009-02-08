@@ -169,12 +169,12 @@ typedef struct {
   unsigned transpose_semi:4;  // semitons transpose
   unsigned transpose_oct:4;   // octave transpose
   unsigned groove_style:4;    // groove style
-  unsigned groove_value:4;    // groove intensity
   unsigned morph_mode:4;      // morph mode
   unsigned morph_spare:4;     // for future morph extensions
-  seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V
   unsigned humanize_mode:4;   // humanize mode
-  unsigned humanize_value:4;  // humanize intensity
+  u8       groove_value;      // groove intensity
+  u8       humanize_value;    // humanize intensity
+  seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V
 
   u8       par_assignment_drum[2]; // only used in drum mode
 
