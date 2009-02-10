@@ -83,8 +83,8 @@
 
 
 // should output pins to LCD (SER/E1/E2/RW) be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
-#define APP_LCD_OUTPUTS_OD     1
-// MEMO: PCD8544 works at 3.3V, level shifting (and open drain mode) not required
+#define APP_LCD_OUTPUTS_OD     0
+// MEMO: DOGM128 works at 3.3V, level shifting (and open drain mode) not required
 // TODO: try this out later
 
 
@@ -191,7 +191,11 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd(0x00); //20-2 - Booster ratio register (must be preceeded by 20-1)
   APP_LCD_Cmd(0x27); //17 - VO volt reg set 
   APP_LCD_Cmd(0x81); //18-1 - Elect vol control - contrast
-  APP_LCD_Cmd(0x10); //18-2 - Contrast level dec 22	
+#if 0
+  APP_LCD_Cmd(0x16); //18-2 - Contrast level dec 22	
+#else
+  APP_LCD_Cmd(0x10); //18-2 - Contrast level dec 16
+#endif
   APP_LCD_Cmd(0xAC); //19-1 - Static Indicator - set off
   APP_LCD_Cmd(0x00); //19-2 - No Indicator
   APP_LCD_Cmd(0xAF); //20 - Display ON
@@ -236,10 +240,11 @@ s32 APP_LCD_Data(u8 data)
   // increment graphical cursor
   ++mios32_lcd_x;
   // if end of display segment reached: set X position of all segments to 0
-  if( (mios32_lcd_x % 128) == 0 ){
+  if( (mios32_lcd_x % 128) == 0 ) {
       APP_LCD_Cmd(0x10); // Set upper nibble to 0
-	  return APP_LCD_Cmd(0x00); // Set lower nibble to 0
-	}
+      return APP_LCD_Cmd(0x00); // Set lower nibble to 0
+  }
+
   return 0; // no error
 }
 
@@ -271,12 +276,13 @@ s32 APP_LCD_Clear(void)
   s32 error = 0;
   u8 x, y;
 
-  // select all LCDs
-  APP_LCD_SerCSWrite(0x00, 1); // CS, dc
-
   // send data
-  for(y=0; y<6; ++y) {
+  for(y=0; y<8; ++y) {
     error |= MIOS32_LCD_CursorSet(0, y);
+
+    // select all LCDs
+    APP_LCD_SerCSWrite(0x00, 1); // CS, dc
+
     for(x=0; x<128; ++x)
       APP_LCD_SerLCDWrite(0x00);
   }
@@ -473,7 +479,7 @@ static void APP_LCD_SerCSWrite(u8 data, u8 dc)
 static void APP_LCD_SerLCDWrite(u8 data)
 {
   // shift in 8bit data
-  // PCD8544 datasheet specifies a setup/hold time of 100 nS
+  // DOGM128 spec allows up to 20 MHz
 
   PIN_SDA(data & 0x80); // D7
   PIN_LCDSCLK_0; // setup delay

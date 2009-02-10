@@ -257,12 +257,13 @@ s32 APP_LCD_Clear(void)
   s32 error = 0;
   u8 x, y;
 
-  // select all LCDs
-  APP_LCD_SerCSWrite(0x00, 1); // CS, dc
-
   // send data
   for(y=0; y<6; ++y) {
     error |= MIOS32_LCD_CursorSet(0, y);
+
+    // select all LCDs
+    APP_LCD_SerCSWrite(0x00, 1); // CS, dc
+
     for(x=0; x<84; ++x)
       APP_LCD_SerLCDWrite(0x00);
   }
