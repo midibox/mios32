@@ -96,6 +96,8 @@ static u8  mux_ctr;
 static u16 ain_pin_values[NUM_AIN_PINS];
 static u32 ain_pin_changed[NUM_CHANGE_WORDS];
 
+static s32 (*service_prepare_callback)(void);
+
 #endif
 
 
@@ -152,6 +154,9 @@ s32 MIOS32_AIN_Init(u32 mode)
 #if !MIOS32_AIN_CHANNEL_MASK
   return -1; // no AIN pins selected
 #else
+
+  // disable service prepare callback function
+  service_prepare_callback = NULL;
 
   // clear arrays and variables
   for(i=0; i<NUM_CHANNELS_MAX; ++i) {
@@ -316,6 +321,33 @@ s32 MIOS32_AIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Installs an optional "Service Prepare" callback function, which is called
+//! before all ADC channels are scanned.
+//!
+//! It is useful to switch additional multiplexers, to reconfigure ADC
+//! pins of touch panels, etc.
+//!
+//! The scan will be started if the callback function returns 0
+//!
+//! The scan will be skipped if the callback function returns a value >= 1
+//! so that it is possible to insert setup times while switching analog inputs.
+//!
+//! An usage example can be found unter $MIOS32_PATH/apps/examples/dog_g_touchpanel
+//!
+//! \param[in] *_callback_service_prepare pointer to callback function:<BR>
+//! \code
+//!    s32 AIN_ServicePrepare(void);
+//! \endcode
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_AIN_ServicePrepareCallback_Init(void *_service_prepare_callback)
+{
+  service_prepare_callback = _service_prepare_callback;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! Returns value of an AIN Pin
 //! \param[in] pin number
 //! \return AIN pin value - resolution depends on the selected MIOS32_AIN_OVERSAMPLING_RATE!
@@ -379,6 +411,11 @@ s32 MIOS32_AIN_Handler(void *_callback)
       }
     }
   }
+
+  // execute optional "service prepare" callback function
+  // skip scan if it returns a value >= 1
+  if( service_prepare_callback != NULL && service_prepare_callback() >= 1 )
+    return 0; // scan skipped - no error
 
   // start next scan
   ADC_SoftwareStartConvCmd(ADC1, ENABLE);

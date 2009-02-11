@@ -94,6 +94,8 @@
 
 extern s32 MIOS32_AIN_Init(u32 mode);
 
+extern s32 MIOS32_AIN_ServicePrepareCallback_Init(void *_service_prepare_callback);
+
 extern s32 MIOS32_AIN_PinGet(u32 pin);
 
 extern s32 MIOS32_AIN_Handler(void *callback);
