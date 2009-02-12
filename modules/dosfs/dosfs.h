@@ -367,6 +367,15 @@ void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch);
 uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch);
 
 
+/*
+// TK: added 2009-02-12
+	Close a file
+	No original function of DosFS driver
+	It has no effect if writing to SD Card, it's only used by the DosFS wrapper in emulation
+*/
+uint32_t DFS_Close(PFILEINFO fileinfo);
+
+
 
 // TK: added 2008-18-12
 // for caching - this feature has to be explicitely enabled, as it isn't reentrant
