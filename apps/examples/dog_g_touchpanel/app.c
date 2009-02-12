@@ -69,11 +69,8 @@ void APP_Background(void)
   // clear LCD
   MIOS32_LCD_Clear();
 
-  // use normal font
-  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-
-  static u8 last_touchpanel_x = 0;
-  static u8 last_touchpanel_y = 0;
+  u8 last_touchpanel_x = 0;
+  u8 last_touchpanel_y = 0;
 
   // endless loop - LED will flicker on each iteration
   while( 1 ) {
@@ -108,7 +105,6 @@ void APP_Background(void)
       last_touchpanel_x = touchpanel_x;
       last_touchpanel_y = touchpanel_y;
     }
-    // print text
   }
 }
 
@@ -213,14 +209,14 @@ s32 AIN_ServicePrepare(void)
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     // C0 (Right) = 3.3V
-    GPIO_SetBits  (GPIOC, GPIO_Pin_0);
+    GPIO_SetBits(GPIOC, GPIO_Pin_0);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     // C1 (Top) used as ADC Input
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
     GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     // switch C3 (Bottom) to high impedance state
@@ -237,7 +233,7 @@ s32 AIN_ServicePrepare(void)
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     // C3 (Bottom) = 3.3V
-    GPIO_SetBits  (GPIOC, GPIO_Pin_3);
+    GPIO_SetBits(GPIOC, GPIO_Pin_3);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
@@ -262,7 +258,7 @@ s32 AIN_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
-  // remember last X/Y position
+  // used to determine changes in X/Y position
   static u8 last_touchpanel_x = 0;
   static u8 last_touchpanel_y = 0;
 

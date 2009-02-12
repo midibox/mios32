@@ -96,9 +96,10 @@ static u8  mux_ctr;
 static u16 ain_pin_values[NUM_AIN_PINS];
 static u32 ain_pin_changed[NUM_CHANGE_WORDS];
 
+#endif
+
 static s32 (*service_prepare_callback)(void);
 
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
