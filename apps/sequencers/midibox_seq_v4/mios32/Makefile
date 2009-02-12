@@ -54,6 +54,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_file.c \
 		../core/seq_file_b.c \
 		../core/seq_file_m.c \
+		../core/seq_file_c.c \
 		../core/seq_layer.c \
 		../core/seq_random.c \
 		../core/seq_trg.c \

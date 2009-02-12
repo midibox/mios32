@@ -11,15 +11,13 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_FILE_B_H
-#define _SEQ_FILE_B_H
+#ifndef _SEQ_FILE_C_H
+#define _SEQ_FILE_C_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
-
-#define SEQ_FILE_B_NUM_BANKS 8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -31,17 +29,14 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_FILE_B_Init(u32 mode);
-extern s32 SEQ_FILE_B_LoadAllBanks(void);
-extern s32 SEQ_FILE_B_UnloadAllBanks(void);
+extern s32 SEQ_FILE_C_Init(u32 mode);
+extern s32 SEQ_FILE_C_Load(void);
+extern s32 SEQ_FILE_C_Unload(void);
 
-extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
+extern s32 SEQ_FILE_C_Valid(void);
 
-extern s32 SEQ_FILE_B_Create(u8 bank);
-extern s32 SEQ_FILE_B_Open(u8 bank);
-
-extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
-extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
+extern s32 SEQ_FILE_C_Read(void);
+extern s32 SEQ_FILE_C_Write(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,4 +44,4 @@ extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_FILE_B_H */
+#endif /* _SEQ_FILE_C_H */

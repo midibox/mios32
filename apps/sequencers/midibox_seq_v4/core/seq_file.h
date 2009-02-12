@@ -54,6 +54,12 @@
 #define SEQ_FILE_M_ERR_NO_FILE         -150 // no or invalid bank file
 #define SEQ_FILE_M_ERR_M_TOO_LARGE     -151 // during map write: map too large for slot in bank
 
+// used by seq_file_c.c
+#define SEQ_FILE_C_ERR_FORMAT          -160 // invalid config file format
+#define SEQ_FILE_C_ERR_READ            -161 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_C_ERR_WRITE           -162 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_C_ERR_NO_FILE         -163 // no or invalid config file
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -76,6 +82,7 @@ extern char *SEQ_FILE_VolumeLabel(void);
 
 extern s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath);
 extern s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
+extern s32 SEQ_FILE_ReadLine(PFILEINFO fileinfo, u8 *buffer, u32 max_len);
 extern s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte);
 extern s32 SEQ_FILE_ReadHWord(PFILEINFO fileinfo, u16 *hword);
 extern s32 SEQ_FILE_ReadWord(PFILEINFO fileinfo, u32 *word);
