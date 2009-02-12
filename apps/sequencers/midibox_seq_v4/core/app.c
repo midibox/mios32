@@ -38,6 +38,7 @@
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
+#include "seq_file_c.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -126,9 +127,7 @@ void APP_Init(void)
   SEQ_UI_Init(0);
 
   // initial load of filesystem
-  SEQ_FILE_Init(0); // TODO: periodically check if SD card connected/disconnected during runtime
-  SEQ_FILE_B_Init(0);
-  SEQ_FILE_M_Init(0);
+  SEQ_FILE_Init(0);
 
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);
@@ -308,7 +307,7 @@ void SEQ_TASK_Period1S(void)
       for(bank=0; bank<8; ++bank)
 	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
       char str2[21];
-      sprintf(str2, "Mixer: %d", SEQ_FILE_M_NumMaps() ? 1 : 0);
+      sprintf(str2, "Mixer: %d Config: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_C_Valid());
       SEQ_UI_SDCardMsg(2000, str1, str2);
     }
   } else if( status < 0 ) {

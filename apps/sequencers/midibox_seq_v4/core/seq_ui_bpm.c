@@ -16,8 +16,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
+
+#include "seq_file_c.h"
+
 #include "seq_cc.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
@@ -73,13 +78,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
       ui_selected_item = ITEM_BPM;
+      // special feature: these two encoders increment *10
+      incrementer *= 10;
       break;
 
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
       ui_selected_item = ITEM_BPM;
-      // special feature: these two encoders increment *10
-      incrementer *= 10;
       break;
 
     case SEQ_UI_ENCODER_GP8:
@@ -247,6 +252,23 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local exit function
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  s32 status;
+
+  // write config file
+  MUTEX_SDCARD_TAKE;
+  if( (status=SEQ_FILE_C_Write()) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_BPM_Init(u32 mode)
@@ -256,6 +278,7 @@ s32 SEQ_UI_BPM_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   return 0; // no error
 }

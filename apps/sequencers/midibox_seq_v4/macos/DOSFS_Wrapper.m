@@ -203,7 +203,7 @@ uint32_t DFS_OpenFile(PVOLINFO volinfo, uint8_t *path, uint8_t mode, uint8_t *sc
 	[fullPath getCString:fullPathC];
 
 //	NSLog(@"Opening '%s'\n", fullPathC);
-	FILE *f = fopen(fullPathC, "r");
+	FILE *f = fopen(fullPathC, (mode == DFS_WRITE) ? "w+" : "r");
 	if( f == NULL )
 		return DFS_NOTFOUND;
 
@@ -255,7 +255,13 @@ void DFS_Seek(PFILEINFO fileinfo, uint32_t offset, uint8_t *scratch)
 */
 uint32_t DFS_UnlinkFile(PVOLINFO volinfo, uint8_t *path, uint8_t *scratch)
 {
-	// TODO
+	NSString *fullPath = [[NSString alloc] initWithFormat:@"%@/%s", SDCARD_Wrapper_getDir(), path];
+	char fullPathC[1024];
+	[fullPath getCString:fullPathC];
+
+//	NSLog(@"Removing '%s'\n", fullPathC);
+	unlink(fullPathC);
+
 	return DFS_OK;
 }
 
@@ -272,6 +278,20 @@ uint32_t DFS_WriteFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, ui
 	fileinfo->pointer += *successcount;
 
 	return *successcount ? DFS_OK : DFS_ERRMISC;
+}
+
+
+/*
+	This function only exists in emulation
+*/
+uint32_t DFS_Close(PFILEINFO fileinfo)
+{
+	if( fileinfo->volinfo != NULL )
+		fclose((FILE *)fileinfo->volinfo);
+
+	fileinfo->volinfo = NULL;
+
+	return DFS_OK;
 }
 
 

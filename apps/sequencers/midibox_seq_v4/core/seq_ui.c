@@ -42,6 +42,7 @@
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
+#include "seq_file_c.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,7 @@ static s32 (*ui_button_callback)(seq_ui_button_t button, s32 depressed);
 static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
 static s32 (*ui_led_callback)(u16 *gp_leds);
 static s32 (*ui_lcd_callback)(u8 high_prio);
+static s32 (*ui_exit_callback)(void);
 
 static u16 ui_gp_leds;
 
@@ -211,6 +213,12 @@ s32 SEQ_UI_InstallLCDCallback(void *callback)
   return 0; // no error
 }
 
+s32 SEQ_UI_InstallExitCallback(void *callback)
+{
+  ui_exit_callback = callback;
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Change the menu page
@@ -218,6 +226,11 @@ s32 SEQ_UI_InstallLCDCallback(void *callback)
 s32 SEQ_UI_PageSet(seq_ui_page_t page)
 {
   if( page != ui_page ) {
+
+    // call page exit callback
+    if( ui_exit_callback != NULL )
+      ui_exit_callback();
+
     // disable hooks of previous page and request re-initialisation
     portENTER_CRITICAL();
     ui_page = page;
@@ -225,6 +238,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_encoder_callback = NULL;
     ui_led_callback = NULL;
     ui_lcd_callback = NULL;
+    ui_exit_callback = NULL;
     portEXIT_CRITICAL();
 
 #if DEFAULT_BEHAVIOUR_BUTTON_MENU

@@ -16,8 +16,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
+
+#include "seq_file_c.h"
 
 #include "seq_core.h"
 #include "seq_cc.h"
@@ -320,6 +324,23 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local exit function
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  s32 status;
+
+  // write config file
+  MUTEX_SDCARD_TAKE;
+  if( (status=SEQ_FILE_C_Write()) < 0 )
+    SEQ_UI_SDCardErrMsg(2000, status);
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_OPT_Init(u32 mode)
@@ -329,6 +350,7 @@ s32 SEQ_UI_OPT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   return 0; // no error
 }

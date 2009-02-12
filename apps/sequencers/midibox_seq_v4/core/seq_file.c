@@ -99,6 +99,12 @@ s32 SEQ_FILE_Init(u32 mode)
   // for status message
   status_msg_ctr = 5;
 
+  // init:
+  SEQ_FILE_C_Init(0); // config file access
+  SEQ_FILE_B_Init(0); // pattern file access
+  SEQ_FILE_M_Init(0); // mixer file access
+
+
   return 0; // no error
 }
 
@@ -137,9 +143,10 @@ s32 SEQ_FILE_CheckSDCard(void)
       return error; // break here!
     }
 
-    // load all banks
+    // load all file infos
     SEQ_FILE_B_LoadAllBanks();
     SEQ_FILE_M_LoadAllBanks();
+    SEQ_FILE_C_Load();
 
     // status message after 3 seconds
     status_msg_ctr = 3;
@@ -152,9 +159,10 @@ s32 SEQ_FILE_CheckSDCard(void)
 #endif
     volume_available = 0;
 
-    // unload all banks
+    // invalidate all file infos
     SEQ_FILE_B_UnloadAllBanks();
     SEQ_FILE_M_UnloadAllBanks();
+    SEQ_FILE_C_Unload();
 
     return 2; // SD card has been disconnected
   }
@@ -398,6 +406,29 @@ s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len)
   return 0; // no error
 }
 
+s32 SEQ_FILE_ReadLine(PFILEINFO fileinfo, u8 *buffer, u32 max_len)
+{
+  s32 status;
+  u32 num_read = 0;
+
+  while( (fileinfo->pointer < fileinfo->filelen) && (++num_read < max_len) ) {
+    status = SEQ_FILE_ReadBuffer(fileinfo, buffer, 1);
+
+    if( status < 0 )
+      return status;
+
+    if( *buffer == '\n' )
+      break;
+
+    ++buffer;
+  }
+
+  ++buffer;
+  *buffer = 0;
+
+  return num_read;
+}
+
 s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte)
 {
   s32 status = 0;
@@ -619,6 +650,9 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
       }
     }
   }
+
+  // close file
+  DFS_Close(fileinfo);
 
 #if SEQ_FILE_WRITE_BUFFER_MALLOC
   // free memory

@@ -80,6 +80,7 @@
 		526F87F10EEA126A00441997 /* PYMIDIVirtualDestination.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CA0EEA126A00441997 /* PYMIDIVirtualDestination.m */; };
 		526F87F20EEA126A00441997 /* PYMIDIVirtualEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */; };
 		526F87F30EEA126A00441997 /* PYMIDIVirtualSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */; };
+		5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */ = {isa = PBXBuildFile; fileRef = 5278A3290F44B6FD00DF885C /* seq_file_c.c */; };
 		5282AE090F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */; };
 		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
 		52988C2F0F1A84680046F70C /* seq_chord.c in Sources */ = {isa = PBXBuildFile; fileRef = 52988C2D0F1A84680046F70C /* seq_chord.c */; };
@@ -244,6 +245,8 @@
 		526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualEndpoint.m; sourceTree = "<group>"; };
 		526F87CD0EEA126A00441997 /* PYMIDIVirtualSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualSource.h; sourceTree = "<group>"; };
 		526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualSource.m; sourceTree = "<group>"; };
+		5278A3290F44B6FD00DF885C /* seq_file_c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_c.c; path = ../core/seq_file_c.c; sourceTree = SOURCE_ROOT; };
+		5278A32A0F44B6FD00DF885C /* seq_file_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_c.h; path = ../core/seq_file_c.h; sourceTree = SOURCE_ROOT; };
 		5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_STOPWATCH_Wrapper.h; sourceTree = "<group>"; };
 		5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_STOPWATCH_Wrapper.m; sourceTree = "<group>"; };
 		5282AE180F18C4AF00901181 /* seq_ui_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_menu.c; path = ../core/seq_ui_menu.c; sourceTree = SOURCE_ROOT; };
@@ -420,6 +423,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5278A3290F44B6FD00DF885C /* seq_file_c.c */,
+				5278A32A0F44B6FD00DF885C /* seq_file_c.h */,
 				525B4B670F3F86A40077C87B /* seq_humanize.c */,
 				525B4B680F3F86A40077C87B /* seq_humanize.h */,
 				525E4C540F3B996400B29461 /* seq_groove.c */,
@@ -792,6 +797,7 @@
 				525E4C580F3B996400B29461 /* seq_ui_trkgrv.c in Sources */,
 				524682C20F3F15FC006D2FBE /* DOSFS_Wrapper.m in Sources */,
 				525B4B690F3F86A40077C87B /* seq_humanize.c in Sources */,
+				5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
