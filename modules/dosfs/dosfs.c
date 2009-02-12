@@ -1287,3 +1287,15 @@ uint32_t DFS_WriteFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, ui
 			return DFS_ERRMISC;
 	return result;
 }
+
+
+/*
+// TK: added 2009-02-12
+	Close a file
+	No original function of DosFS driver
+	It has no effect if writing to SD Card, it's only used by the DosFS wrapper in emulation
+*/
+uint32_t DFS_Close(PFILEINFO fileinfo)
+{
+  return DFS_OK;
+}

@@ -36,3 +36,8 @@ TK 2008-18-12
 added missing pendant to DFS_CanonicalToDir;
 char *DFS_DirToCanonical(char *dest, char *src)
 expects a 13 byte buffer in *dest
+
+TK 2009-02-12
+added dummy "DFS_Close" function
+It has no effect if writing to SD Card, it's only used by the DosFS wrapper 
+in emulation
