@@ -217,22 +217,21 @@ s32 SEQ_FILE_M_Create(void)
   info->header.map_size = sizeof(seq_file_m_map_header_t) + num_chn * num_par;
   status |= SEQ_FILE_WriteHWord(&fi, info->header.map_size);
 
+  // create empty map slots
+  u32 map;
+  for(map=0; map<info->header.num_maps; ++map) {
+    u32 pos;
+    for(pos=0; pos<info->header.map_size; ++pos)
+      status |= SEQ_FILE_WriteByte(&fi, 0x00);
+  }
+
   // close file
   status |= SEQ_FILE_WriteClose(&fi);
 
-  if( status >= 0 ) {
-    // bank valid - start to append maps
+  if( status >= 0 )
+    // bank valid - caller should fill the map slots with useful data now
     info->valid = 1;
 
-    // appending map
-    u16 map;
-    for(map=0; map<info->header.num_maps; ++map) {
-      status |= SEQ_FILE_M_MapWrite(map);
-    }
-
-    // bank invalid again - we have to use SEQ_FILE_M_Open() after a create to init the fileinfo array
-    info->valid = 0;
-  }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Bank file created with status %d\n", status);

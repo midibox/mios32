@@ -52,6 +52,17 @@
 # define MUTEX_MIDIIN_GIVE { xSemaphoreGive(xMIDIINSemaphore); }
 #endif
 
+
+// LCD access
+#ifdef MIOS32_FAMILY_EMULATION
+# define MUTEX_LCD_TAKE { }
+# define MUTEX_LCD_GIVE { }
+#else
+  extern xSemaphoreHandle xLCDSemaphore;
+# define MUTEX_LCD_TAKE { while( xSemaphoreTake(xLCDSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_LCD_GIVE { xSemaphoreGive(xLCDSemaphore); }
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////

@@ -150,6 +150,8 @@ extern s32 SEQ_UI_InstallEncoderCallback(void *callback);
 extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 
+extern s32 SEQ_UI_LCD_Update(void);
+
 extern s32 SEQ_UI_CheckSelections(void);
 
 extern u8  SEQ_UI_VisibleTrackGet(void);
