@@ -301,14 +301,91 @@ void SEQ_TASK_Period1S(void)
     } else if( !SEQ_FILE_VolumeAvailable() ) {
       SEQ_UI_SDCardMsg(2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
     } else {
-      char str1[21];
-      sprintf(str1, "Banks: ........");
+      s32 status = 0;
+
+      // create non-existing banks if required
       u8 bank;
       for(bank=0; bank<8; ++bank)
-	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
-      char str2[21];
-      sprintf(str2, "Mixer: %d Config: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_C_Valid());
-      SEQ_UI_SDCardMsg(2000, str1, str2);
+	if( !SEQ_FILE_B_NumPatterns(bank) ) {
+	  // print SD Card message
+	  char str1[21];
+	  sprintf(str1, "Creating Bank #%d", bank+1);
+	  char str2[21];
+	  sprintf(str2, "DON'T POWER-OFF!");
+	  SEQ_UI_SDCardMsg(2000, str1, str2);
+
+	  // update LCD immediately (since background task not running)
+	  SEQ_UI_LCD_Update();
+
+	  // create bank
+	  if( (status=SEQ_FILE_B_Create(bank)) < 0 )
+	    break;
+
+	  // fill patterns with useful data
+	  u16 pattern;
+	  for(pattern=0; pattern<SEQ_FILE_B_NumPatterns(bank) && status >= 0; ++pattern) {
+	    sprintf(str1, "Writing Pattern %d:%c%d", bank+1, 'A'+(pattern>>3), (pattern%8)+1);
+	    SEQ_UI_SDCardMsg(2000, str1, str2);
+	    SEQ_UI_LCD_Update();
+
+	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
+	    u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
+	    status=SEQ_FILE_B_PatternWrite(bank, pattern, group);
+	    portEXIT_CRITICAL();
+	  }
+
+	  if( status < 0 )
+	    break;
+
+	  // open bank
+	  if( (status=SEQ_FILE_B_Open(bank)) < 0 )
+	    break;
+	}
+
+      // create non-existing mixer maps if required
+      if( status >= 0 && !SEQ_FILE_M_NumMaps() ) {
+	// print SD Card message
+	char str1[21];
+	sprintf(str1, "Creating Mixer Maps");
+	char str2[21];
+	sprintf(str2, "DON'T POWER-OFF!");
+	SEQ_UI_SDCardMsg(2000, str1, str2);
+
+	// update LCD immediately (since background task not running)
+	SEQ_UI_LCD_Update();
+
+	// create maps
+	if( (status=SEQ_FILE_M_Create()) >= 0 ) {
+	  u16 map;
+	  for(map=0; map<SEQ_FILE_M_NumMaps() && status >= 0; ++map) {
+	    sprintf(str1, "Writing Map #%d", map+1);
+	    SEQ_UI_SDCardMsg(2000, str1, str2);
+	    SEQ_UI_LCD_Update();
+
+	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
+	    status = SEQ_FILE_M_MapWrite(map);
+	    portEXIT_CRITICAL();
+	  }
+
+	  if( status >= 0 )
+	    status=SEQ_FILE_M_Open();
+	}
+      }
+
+      // no need to check for existing config file (will be created once config data is stored)
+
+      if( status < 0 ) {
+	SEQ_UI_SDCardErrMsg(2000, status);
+      } else {
+	char str1[21];
+	sprintf(str1, "Banks: ........");
+	u8 bank;
+	for(bank=0; bank<8; ++bank)
+	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
+	char str2[21];
+	sprintf(str2, "Mixer: %d Config: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_C_Valid());
+	SEQ_UI_SDCardMsg(2000, str1, str2);
+      }
     }
   } else if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);

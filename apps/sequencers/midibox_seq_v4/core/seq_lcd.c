@@ -33,6 +33,7 @@
 
 #include <mios32.h>
 #include <stdarg.h>
+#include "tasks.h"
 
 #include "seq_lcd.h"
 #include "seq_midi_port.h"
@@ -188,6 +189,8 @@ s32 SEQ_LCD_Update(u8 force)
   int next_x = -1;
   int next_y = -1;
 
+  MUTEX_LCD_TAKE;
+
   int x, y;
   u8 *ptr = (u8 *)lcd_buffer;
   for(y=0; y<LCD_MAX_LINES; ++y)
@@ -211,6 +214,8 @@ s32 SEQ_LCD_Update(u8 force)
       ++ptr;
     }
 
+  MUTEX_LCD_GIVE;
+
   return 0; // no error
 }
 
@@ -221,9 +226,12 @@ s32 SEQ_LCD_Update(u8 force)
 s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 {
   static seq_lcd_charset_t current_charset = SEQ_LCD_CHARSET_None;
+  s32 status = 0;
 
   if( charset != current_charset ) {
     current_charset = charset;
+
+    MUTEX_LCD_TAKE;
 
     int dev;
     for(dev=0; dev<2; ++dev) {
@@ -245,12 +253,14 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_drum_symbols_small);
 	  break;
         default:
-	  return -1; // charset doesn't exist
+	  status = -1; // charset doesn't exist
       }
     }
+
+    MUTEX_LCD_GIVE;
   }
 
-  return 0; // no error
+  return status; // no error
 }
 
 

@@ -356,30 +356,6 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   // toggle mode
   if( depressed ) return -1; // ignore when button depressed
   seq_ui_button_state.METRONOME ^= 1;
-
-
-#if 0
-  SEQ_PATTERN_FixAll();
-#else
-
-#if 0
-  MUTEX_SDCARD_TAKE;
-
-#if 1
-  u8 bank;
-  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
-    SEQ_FILE_B_Create(bank);
-    SEQ_FILE_B_Open(bank);
-  }
-#else
-    SEQ_FILE_M_Create();
-    SEQ_FILE_M_Open();
-#endif
-
-  MUTEX_SDCARD_GIVE;
-#endif
-#endif
-
 #else
   // set mode
   seq_ui_button_state.METRONOME = depressed ? 0 : 1;
@@ -1119,6 +1095,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 }
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Update LCD messages
 // Usually called from background task
@@ -1169,6 +1146,19 @@ s32 SEQ_UI_LCD_Handler(void)
     }
   }
 
+  // transfer all changed characters to LCD
+  SEQ_UI_LCD_Update();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called from SEQ_UI_LCD_Handler(), but optionally also from other tasks
+// to update the LCD screen immediately
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_LCD_Update(void)
+{
   // if SD card message active: copy over the text
   if( sdcard_msg_ctr ) {
     const char animation_l[4][3] = {
@@ -1179,7 +1169,7 @@ s32 SEQ_UI_LCD_Handler(void)
 
     int line;
     for(line=0; line<2; ++line) {
-      SEQ_LCD_CursorSet(40, line);
+      SEQ_LCD_CursorSet(0, line); // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
       SEQ_LCD_PrintFormattedString(" %s| %-20s |%s ",
 				   (char *)animation_l[anum], 
 				   (char *)sdcard_msg[line], 
@@ -1188,11 +1178,9 @@ s32 SEQ_UI_LCD_Handler(void)
   }
 
   // transfer all changed characters to LCD
-  SEQ_LCD_Update(0);
-
-  return 0; // no error
+  // SEQ_LCD_Update provides a MUTEX handling to allow updates from different tasks
+  return SEQ_LCD_Update(0);
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -268,23 +268,21 @@ s32 SEQ_FILE_B_Create(u8 bank)
     num_tracks * (sizeof(seq_file_b_track_t) + num_p_instruments*num_p_layers*p_layer_size + num_t_instruments*num_t_layers*t_layer_size);
   status |= SEQ_FILE_WriteHWord(&fi, info->header.pattern_size);
 
+  // create empty pattern slots
+  u32 pattern;
+  for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
+    u32 pos;
+    for(pos=0; pos<info->header.pattern_size; ++pos)
+      status |= SEQ_FILE_WriteByte(&fi, 0x00);
+  }
+
   // close file
   status |= SEQ_FILE_WriteClose(&fi);
 
-  if( status >= 0 ) {
-    // bank valid - start to append patterns
+  if( status >= 0 )
+    // bank valid - caller should fill the pattern slots with useful data now
     info->valid = 1;
 
-    // appending patterns
-    u16 pattern;
-    for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
-      u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
-      status |= SEQ_FILE_B_PatternWrite(bank, pattern, group);
-    }
-
-    // bank invalid again - we have to use SEQ_FILE_B_Open() after a create to init the fileinfo array
-    info->valid = 0;
-  }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Bank file created with status %d\n", status);

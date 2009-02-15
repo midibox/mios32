@@ -203,9 +203,18 @@ uint32_t DFS_OpenFile(PVOLINFO volinfo, uint8_t *path, uint8_t mode, uint8_t *sc
 	[fullPath getCString:fullPathC];
 
 //	NSLog(@"Opening '%s'\n", fullPathC);
-	FILE *f = fopen(fullPathC, (mode == DFS_WRITE) ? "w+" : "r");
-	if( f == NULL )
-		return DFS_NOTFOUND;
+	FILE *f;
+	if( mode == DFS_WRITE ) {
+		f = fopen(fullPathC, "r+"); // try to open file for read/write access
+		if( f == NULL ) // if file doesn't exist
+			f = fopen(fullPathC, "w+"); // create a new file
+		if( f == NULL )
+			return DFS_NOTFOUND;
+	} else {
+		f = fopen(fullPathC, "r");
+		if( f == NULL )
+			return DFS_NOTFOUND;
+	}
 
 	// determine file length and set pointer
 	fseek(f, 0 , SEEK_END);
@@ -286,8 +295,10 @@ uint32_t DFS_WriteFile(PFILEINFO fileinfo, uint8_t *scratch, uint8_t *buffer, ui
 */
 uint32_t DFS_Close(PFILEINFO fileinfo)
 {
-	if( fileinfo->volinfo != NULL )
+	if( fileinfo->volinfo != NULL ) {
+//		fseek((FILE *)fileinfo->volinfo, 0 , SEEK_END); // important for write operations, otherwise file will be truncated!
 		fclose((FILE *)fileinfo->volinfo);
+	}
 
 	fileinfo->volinfo = NULL;
 
