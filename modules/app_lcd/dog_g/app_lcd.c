@@ -2,8 +2,6 @@
 /*
  * for up to 8 * DOG GLCD (every display provides a resolution of 128x64) 
  *
- *   ******* SOMEBODY PLEASE TEST THIS AS I HAVEN'T *******
- *
  * This driver allows to drive up to 8 of them, every display is connected
  * to a dedicated chip select line. They can be addressed with
  * following (graphical) cursor positions:
