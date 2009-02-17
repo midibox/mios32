@@ -136,9 +136,9 @@ int main(void)
   if( (*reset_vector >> 24) == 0x08 ) {
     // reset all peripherals
 #ifdef MIOS32_BOARD_STM32_PRIMER
-    RCC_APB2PeriphResetCmd(0xfffffff7, ENABLE); // Primer: don't reset GPIOB due to USB disconnect pin
+    RCC_APB2PeriphResetCmd(0xfffffff0, ENABLE); // Primer: don't reset GPIOA/AF + GPIOB due to USB detach pin
 #else
-    RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
+    RCC_APB2PeriphResetCmd(0xfffffff8, ENABLE); // MBHP_CORE_STM32: don't reset GPIOA/AF due to USB pins
 #endif
     RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
     RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);

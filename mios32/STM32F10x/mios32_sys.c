@@ -62,22 +62,24 @@ s32 MIOS32_SYS_Init(u32 mode)
     return -1; // unsupported mode
 
   // Enable GPIOA, GPIOB, GPIOC, GPIOD, GPIOE and AFIO clocks
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |RCC_APB2Periph_GPIOC
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC
 			 | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO, ENABLE);
 
   // Activate pull-ups on all pins by default
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
-  GPIO_InitStructure.GPIO_Pin   = 0xffff;
+  GPIO_InitStructure.GPIO_Pin   = 0xffff & ~GPIO_Pin_11 & ~GPIO_Pin_12; // exclude USB pins
   GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin   = 0xffff;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
   GPIO_Init(GPIOD, &GPIO_InitStructure);
   //  GPIO_Init(GPIOE, &GPIO_InitStructure);
 
 #ifdef MIOS32_BOARD_STM32_PRIMER
   // special measure for STM32 Primer
-  // ensure that pull-down is active on USB disconnect pin
+  // ensure that pull-down is active on USB detach pin
   GPIO_InitStructure.GPIO_Pin   = 0xffff & ~GPIO_Pin_12;
   GPIO_Init(GPIOB, &GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
@@ -200,9 +202,9 @@ s32 MIOS32_SYS_Reset(void)
 #else
   //  NVIC_GenerateSystemReset();
 #ifdef MIOS32_BOARD_STM32_PRIMER
-  RCC_APB2PeriphResetCmd(0xfffffff7, ENABLE); // Primer: don't reset GPIOB due to USB disconnect pin
+  RCC_APB2PeriphResetCmd(0xfffffff0, ENABLE); // Primer: don't reset GPIOA/AF + GPIOB due to USB detach pin
 #else
-  RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
+  RCC_APB2PeriphResetCmd(0xfffffff8, ENABLE); // MBHP_CORE_STM32: don't reset GPIOA/AF due to USB pins
 #endif
   RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
   RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
