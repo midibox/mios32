@@ -14,6 +14,12 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 
 
 
+#define mod_sxh_privvars 8
+#define mod_sxh_ports 8
+
+extern const unsigned char mod_sxh_porttypes[mod_sxh_ports];
+
+
 
 void mod_init_sxh(unsigned char nodeid);
 

@@ -6,6 +6,8 @@ copyright stryd_one
 bite me corp 2008
 
 big props to nILS for being my fourth eye and TK for obvious reasons
+stay tuned for UI prototyping courtesy of lucem!
+
 */
 
 
@@ -79,7 +81,7 @@ unsigned char node_add(unsigned char moduletype) {
 				topolisthead->next = topoinsert;					// restore the old root to the next pointer
 				topolisthead->nodeid = newnodeid;					// and insert the new node at the root
 				node[newnodeid].process_req++;
-				nodes_proc(newnodeid);								// if it's sorted ok, process from here down
+				mod_preprocess(newnodeid);							// if it's sorted ok, process from here down
 				return newnodeid;									// return the ID of the new node
 			} else {
 				return dead_nodeid;
@@ -217,14 +219,14 @@ unsigned char nodeid_free(unsigned char nodeid) {
 
 
 
-edge_t *edge_add(unsigned char tail_nodeid, unsigned char tail_moduleport, unsigned char head_nodeid, unsigned char head_moduleport) {
+edge_t *edge_add(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {
 	edge_t *newedge = NULL;
 	
 	if (tail_nodeid != head_nodeid) {
 		
 		if (node[tail_nodeid].indegree < dead_indegree) {			// if tail node exists
 			if (node[head_nodeid].indegree < max_indegree) {		// if head node exists and we aren't about to bust the maximum indegree
-				if ((tail_moduleport < mod_ports[(node[tail_nodeid].moduletype)]) && (head_moduleport < mod_ports[(node[head_nodeid].moduletype)])) {
+				if ((tail_port < mod_ports[(node[tail_nodeid].moduletype)]) && (head_port < mod_ports[(node[head_nodeid].moduletype)])) { // if the ports are real
 					edge_t *curredge = NULL;						// declare pointer to previous edge
 					edge_t *newedge = pvPortMalloc(sizeof(edge_t));	// malloc a new edge_t, store pointer in temp var
 					edge_t *edgepointer = node[tail_nodeid].edgelist; 			// load up the list header
@@ -236,25 +238,33 @@ edge_t *edge_add(unsigned char tail_nodeid, unsigned char tail_moduleport, unsig
 						while ((edgepointer->next) != NULL) {		// if there is more than one edge
 							edgepointer = edgepointer->next;		// search until we find the last edge
 						}											// otherwise stay with the first and only edge
-							
+						
 						edgepointer->next = newedge;				// store new edge pointer in last edge
 					}
 					
-					newedge->tailport = tail_moduleport;
+					newedge->tailnodeid = tail_nodeid;
+					newedge->tailport = tail_port;
 					newedge->headnodeid = head_nodeid;
-					newedge->headport = head_moduleport;
+					newedge->headport = head_port;
+					newedge->msgxlate = edge_get_xlator(tail_nodeid, tail_port, head_nodeid, head_port);
 					
 					(node[head_nodeid].indegree)++;					// increment the indegree of the head node
+					
+					
+					if (newedge->msgxlate == NULL) {
+						edge_del(tail_nodeid, newedge, 0); // if this edge can't be translated, delete it
+						return NULL;
+					}
 					
 					if (toposort() != 0) {							// topo search will barf on a cycle
 						if (edge_del(tail_nodeid, newedge, 1) != 0) {			// if it does delete the culprit and try again.
 							return NULL;							// if it doesn't sort cleanly like before... something has gone very wrong
 						}
 						
-						return NULL;								// nILS - when the user creates a cycle just pop up a message saying "Singular matrix. Fuck you."
+						return NULL;								// nILS - "when the user creates a cycle just pop up a message saying "Singular matrix. Fuck you."" ...LOL!
 					} else {
 						node[tail_nodeid].process_req++;
-						nodes_proc(tail_nodeid);					// if it's sorted ok, process from here down
+						mod_preprocess(tail_nodeid);					// if it's sorted ok, process from here down
 						return newedge;								// and return the pointer to the new edge
 					}
 					
@@ -283,77 +293,52 @@ unsigned char edge_del(unsigned char tailnodeid, edge_t *deledge, unsigned char 
 	edge_t *thisedge;
 	edge_t *prevedge;
 
-	if (deledge != NULL) {
-		if (node[tailnodeid].indegree < dead_indegree) {			// handle dead tailnode 
-			thisedge = node[tailnodeid].edgelist;
-			if (thisedge == deledge) {								// if are we deleting the first (or only) edge
-				node[tailnodeid].edgelist = deledge->next;			// fix the pointer to point at next edge (NULL if no next edge)
+	if (tailnodeid < max_nodes){
+		if (deledge != NULL) {
+			if (node[tailnodeid].indegree < dead_indegree) {			// handle dead tailnode 
+				thisedge = node[tailnodeid].edgelist;
+				if (thisedge == deledge) {								// if are we deleting the first (or only) edge
+					node[tailnodeid].edgelist = deledge->next;			// fix the pointer to point at next edge (NULL if no next edge)
+				} else {
+					while (thisedge != deledge) {						// skip through the list
+						prevedge = thisedge;							// keep track of this edge
+						thisedge = thisedge->next;						// then advance to the next edge
+						if (thisedge == NULL) return 5;					// bail out if we don't find the edge
+					}													// repeat until we find the edge to be deleted and have its previous edge
+					prevedge->next = deledge->next;						// otherwise fix the pointer on the previous edge
+				}
+				
+				unsigned char head_port_type = mod_get_port_type((deledge->headnodeid), (deledge->headport));	// Find out what port type the head port is
+				(*mod_deadport_table[head_port_type])((deledge->headnodeid), (deledge->headport));				// and fill it with a dead value
+				
+				(node[(deledge->headnodeid)].indegree)--;				// decrement the head node's indegree
+				vPortFree(deledge);										// delete the edge
+				if (dosort > 0) {
+					return toposort();									// redo the toposort if signalled to
+				} else {
+					return 0;											// otherwise just return successful
+				}
+				
 			} else {
-				while (thisedge != deledge) {						// skip through the list
-					prevedge = thisedge;							// keep track of this edge
-					thisedge = thisedge->next;						// then advance to the next edge
-				}													// repeat until we find the edge to be deleted and have its previous edge
-				prevedge->next = deledge->next;						// otherwise fix the pointer on the previous edge
-			}
-			
-			(node[(deledge->headnodeid)].indegree)--;				// decrement the indegree
-			vPortFree(deledge);										// free up ram
-			if (dosort > 0) {
-				return toposort();									// redo the toposort if signalled to
-			} else {
-				return 0;											// otherwise just return successful
+				return 6;
 			}
 			
 		} else {
-			return 6;
+			return 5;
 		}
 		
-	} else {
-		return 5;
 	}
 	
 }
 
 
 
-
-
-void nodes_proc(unsigned char startnodeid) {
-	nodelist_t *topolist;
-	unsigned char procnodeid;
-	if (node_count > 0) {											// handle no nodes
-		topolist = topolisthead;									// follow list of topo sorted nodeids
-		if (topolist != NULL) {										// handle dead list
-			//if (topolist->nodeid < dead_nodeid) {
-			if (startnodeid < dead_nodeid) {						// if we are not processing from the root
-				while ((topolist->nodeid) != startnodeid) {			// search for the start node
-					topolist = topolist->next;						// through each entry in the topolist
-				}													// then we'll process from the root of the topo list
-				
-			}														// or from 
-			
-			while (topolist != NULL) {								// for each entry in the topolist from there on
-				procnodeid = topolist->nodeid;						// get the nodeid
-				if (procnodeid < max_nodes) {
-					if (node[procnodeid].process_req > 0) {			// only process nodes which request it
-						mod_process(procnodeid);					// crunch the numbers according to function pointer
-						
-						mod_propagate(procnodeid);					// spread out the ports to the downstream nodes
-						
-						node[procnodeid].process_req = 0;			// clear the process request
-					}
-					
-				}
-				
-				topolist = topolist->next;							// and move onto the next node in the sorted list
-			}
-			
-			//}
-			
-		}
-		
-	}
-	
+void (*edge_get_xlator(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port)) (unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {
+	unsigned char tail_port_type = mod_get_port_type(tail_nodeid, tail_port);
+	unsigned char head_port_type = mod_get_port_type(head_nodeid, head_port);
+	if (tail_port_type == dead_porttype) return NULL;
+	if (head_port_type == dead_porttype) return NULL;
+	return mod_xlate_table[((tail_port_type*max_porttypes)+head_port_type)];
 }
 
 
@@ -361,7 +346,7 @@ void nodes_proc(unsigned char startnodeid) {
 
 
 unsigned char toposort(void) {
-	unsigned char n;	
+	unsigned char n;
 	unsigned char returnval = 0;
 	unsigned char test_node_count = 0;
 	unsigned char sorted_node_count = 0;

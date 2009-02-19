@@ -6,6 +6,8 @@ copyright stryd_one
 bite me corp 2008
 
 big props to nILS for being my fourth eye and TK for obvious reasons
+stay tuned for UI prototyping courtesy of lucem!
+
 */
 
 
@@ -27,6 +29,19 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #include "ui.h"
 
 #include <seq_midi_out.h>
+
+
+const unsigned char mod_sxh_porttypes[mod_sxh_ports] = {
+	dead_porttype,
+	dead_porttype,
+	dead_porttype,
+	dead_porttype, //dummies until i do something real
+	dead_porttype,
+	dead_porttype,
+	dead_porttype,
+	dead_porttype,
+};
+
 
 
 

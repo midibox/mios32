@@ -22,8 +22,10 @@ THUMB_SOURCE = tasks.c \
 				../core/mclock.c \
 				../core/patterns.c \
 				../core/mod_send.c \
+				../core/mod_xlate.c \
 				../core/modules.c \
 \
+				../core/mod_sclk.c \
 				../core/mod_sxh.c \
 				../core/mod_seq.c \
 				../core/mod_midiout.c
