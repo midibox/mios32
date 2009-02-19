@@ -6,6 +6,8 @@ copyright stryd_one
 bite me corp 2008
 
 big props to nILS for being my fourth eye and TK for obvious reasons
+stay tuned for UI prototyping courtesy of lucem!
+
 */
 
 
@@ -36,15 +38,12 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
-unsigned char testmodule1; //FIXME TESTING
-unsigned char testmodule2; //FIXME TESTING
-edge_t *testedge1; //FIXME TESTING
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-static void vx_midi_rx(mios32_midi_port_t port, u8 midi_byte);
+static s32 vx_midi_rx(mios32_midi_port_t port, u8 midi_byte);
 static void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte);
 
 
@@ -65,7 +64,7 @@ void APP_Init(void) {
 
 	MIOS32_LCD_FColourSet(0x00, 0x00, 0xff);
 	MIOS32_LCD_CursorSet(2, 2);
-	MIOS32_LCD_PrintString("vX0.0");
+	MIOS32_LCD_PrintString("vX0.1");
 	
 	// initialize SEQ module MIDI handler
 	SEQ_MIDI_OUT_Init(0);
@@ -78,30 +77,9 @@ void APP_Init(void) {
 	
 
 	// install MIDI Rx/Tx callback functions
-	MIOS32_MIDI_DirectRxTxCallback_Init(vx_midi_rx, vx_midi_tx);
+	MIOS32_MIDI_DirectRxCallback_Init(vx_midi_rx);
 	
 	TASKS_Init();
-	
-	// FIXME TESTING
-		
-	sclock_init(0, 8, 1, 1, 1);
-
-	sclock[0].status = 0x80; 
-		
-	sclock_init(1, 10, 1, 1, 1);
-
-	sclock[1].status = 0x80; 
-	
-	
-	testmodule1 = node_add(1);
-	
-	mod_set_clocksource(testmodule1, 0); //FIXME TESTING
-	
-	testmodule2 = node_add(1);
-	
-	mod_set_clocksource(testmodule2, 1); //FIXME TESTING
-	
-	// FIXME TESTING
 	
 }
 
@@ -117,17 +95,67 @@ void APP_Background(void) {
 //  This hook is called when a complete MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package) {
+	
+unsigned char testmodule1; //FIXME TESTING
+unsigned char testmodule2; //FIXME TESTING
+edge_t *testedge1; //FIXME TESTING
+unsigned char testmodule3; //FIXME TESTING
+unsigned char testmodule4; //FIXME TESTING
+edge_t *testedge2; //FIXME TESTING
+unsigned char testmodule5; //FIXME TESTING
+unsigned char testmodule6; //FIXME TESTING
+edge_t *testedge3; //FIXME TESTING
+	
+	
 	// buffer up the incoming events
 	// notify each host node by incrementing the process_req flag
 	// process all the nodes downstream of the host node
-	if (midi_package.evnt2 == 0x7f) {
+	if ((midi_package.type == NoteOn) && (midi_package.evnt2 == 0x7f)) { //FIXME TESTING
 		
-		testmodule1 = node_add(1);
+	testmodule1 = node_add(0);
 		
-		mod_set_clocksource(testmodule1, 0); //FIXME TESTING
+	testmodule2 = node_add(1);
+	
+	testedge1 = edge_add(testmodule1, MOD_SCLK_PORT_NEXTTICK, testmodule2, MOD_SEQ_PORT_NEXTTICK);
+	
+	
+	testmodule3 = node_add(0);
+	
+	testmodule4 = node_add(1);
+	
+	testedge2 = edge_add(testmodule3, MOD_SCLK_PORT_NEXTTICK, testmodule4, MOD_SEQ_PORT_NEXTTICK);
+/**/
+	
+/**/
+	node[testmodule3].ports[MOD_SCLK_PORT_NUMERATOR] = 7;
+	node[testmodule3].process_req++;
+	mod_preprocess(testmodule3);
+
+	
+	testmodule5 = node_add(0);
+	
+	testmodule6 = node_add(1);
+	
+	testedge3 = edge_add(testmodule5, MOD_SCLK_PORT_NEXTTICK, testmodule6, MOD_SEQ_PORT_NEXTTICK);
+/**/
+	
+/**/
+	node[testmodule5].ports[MOD_SCLK_PORT_NUMERATOR] = 9;
+	node[testmodule5].ports[MOD_SCLK_PORT_DENOMINATOR] = 2;
+	node[testmodule5].process_req++;
+	mod_preprocess(testmodule5);
+
+	
+	
+	
 	
 	}
-	
+	//FIXME TESTING BPM Master
+	if (midi_package.evnt0 == 0xB0) {
+		if (midi_package.evnt1 == 0x40) SEQ_BPM_Start();
+		if (midi_package.evnt1 == 0x45) SEQ_BPM_Stop();
+		if (midi_package.evnt1 == 0x7c) SEQ_BPM_Cont();
+	}
 }
 
 
@@ -199,8 +227,9 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value) {
 // to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
 // avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
 /////////////////////////////////////////////////////////////////////////////
-void vx_midi_rx(mios32_midi_port_t port, u8 midi_byte) {
+s32 vx_midi_rx(mios32_midi_port_t port, u8 midi_byte) {
 	SEQ_BPM_NotifyMIDIRx(midi_byte);
+	return 0;
 }
 
 void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte) {
@@ -212,9 +241,21 @@ void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte) {
 // This task is switched each 1ms
 /////////////////////////////////////////////////////////////////////////////
 void vx_task_rack_tick(void) {
-	mod_tick();				 										// send the output queues
-	mclock_tick();													// check for sclock ticks
-    SEQ_MIDI_OUT_Handler();											// send timestamped MIDI events
+	
+	//FIXME TESTING 
+	MIOS32_BOARD_LED_Set(0xffffffff, 2);
+	
+	mod_tick();														// send the output queues and then preprocess
+	
+	//FIXME TESTING 
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
+	
+	mclock_tick();													// check for clock ticks
+	
+	//FIXME TESTING 
+	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+	
+	SEQ_MIDI_OUT_Handler();											// send timestamped MIDI events
 }
 
 
@@ -237,38 +278,6 @@ const portTickType xDelay = 500 / portTICK_RATE_MS;
 
 
 	while (1) {
-		vportMallInfo_t memuse = vPortMallInfo();
-		
-		MIOS32_LCD_Clear();
-		
-		//MIOS32_LCD_FColourSet(0x00, 0x00, 0xff);
-		MIOS32_LCD_CursorSet(1, 4);
-		/* This is the total size of the heap */
-		MIOS32_LCD_PrintFormattedString( "Total %u B", memuse.totalheap);
-		
-		MIOS32_LCD_CursorSet(1, 5);
-		/* This is the total size of memory occupied by chunks handed out by malloc. */
-		MIOS32_LCD_PrintFormattedString( "In use %d B", memuse.totalheap - memuse.freespace);
-		
-		MIOS32_LCD_CursorSet(1, 6);
-		/* This is the total size of memory occupied by free (not in use) chunks. */
-		MIOS32_LCD_PrintFormattedString( "Free %u B", memuse.freespace);
-		
-		MIOS32_LCD_CursorSet(1, 7);
-		/* This is the total number of chunks free to allocate with malloc. */
-		MIOS32_LCD_PrintFormattedString( "Free %u chunks", memuse.freeblocks);
-		
-		MIOS32_LCD_CursorSet(1, 8);
-		/* This is the size of the bottom-most free chunk that normally borders
-		the start of the heap (i.e., the smallest available block). */
-		MIOS32_LCD_PrintFormattedString( "Smallest is %d B", memuse.smallestblock);
-		
-		MIOS32_LCD_CursorSet(1, 9);
-		/* This is the size of the top-most free chunk that normally borders
-		the end of the heap (i.e., the largest available block). */
-		MIOS32_LCD_PrintFormattedString( "Largest is %d B", memuse.largestblock);
-		
-		
 		// Do CS stuff
 		vTaskDelay( xDelay );
 	}

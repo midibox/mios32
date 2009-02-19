@@ -6,12 +6,21 @@ copyright stryd_one
 bite me corp 2008
 
 big props to nILS for being my fourth eye and TK for obvious reasons
+stay tuned for UI prototyping courtesy of lucem!
+
 */
 
 
 #ifndef _MOD_MIDIOUT_H
 #define _MOD_MIDIOUT_H
 
+
+
+
+#define mod_midiout_privvars 0
+#define mod_midiout_ports 12
+
+extern const unsigned char mod_midiout_porttypes[mod_midiout_ports];
 
 
 

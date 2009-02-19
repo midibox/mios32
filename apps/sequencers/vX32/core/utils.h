@@ -6,6 +6,8 @@ copyright stryd_one
 bite me corp 2008
 
 big props to nILS for being my fourth eye and TK for obvious reasons
+stay tuned for UI prototyping courtesy of lucem!
+
 */
 
 
