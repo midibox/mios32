@@ -10,8 +10,8 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
-// I2S device connected to J8 (-> SPI2), therefore we have to use SPI1 (-> J16) for SRIO chain
-#define MIOS32_SRIO_SPI 1
+// I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
+#define MIOS32_SRIO_SPI 0
 
 // I2S support has to be enabled explicitely
 #define MIOS32_USE_I2S

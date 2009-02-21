@@ -19,10 +19,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // Which SPI peripheral should be used
-// allowed values: 1 and 2
-// (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
 #ifndef MIOS32_SDCARD_SPI
-#define MIOS32_SDCARD_SPI 1
+#define MIOS32_SDCARD_SPI 0
+#endif
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#ifndef MIOS32_SDCARD_SPI_RC_PIN
+#define MIOS32_SDCARD_SPI_RC_PIN 0
 #endif
 
 

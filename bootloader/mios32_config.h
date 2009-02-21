@@ -17,6 +17,7 @@
 // disable code modules
 //#define MIOS32_DONT_USE_SYS
 //#define MIOS32_DONT_USE_IRQ
+#define MIOS32_DONT_USE_SPI
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT

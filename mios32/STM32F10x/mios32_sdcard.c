@@ -45,46 +45,6 @@
 #if !defined(MIOS32_DONT_USE_SDCARD)
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Following local definitions depend on the selected SPI
-/////////////////////////////////////////////////////////////////////////////
-
-#if MIOS32_SDCARD_SPI == 1
-
-# define MIOS32_SDCARD_CSN_PORT   GPIOA
-# define MIOS32_SDCARD_CSN_PIN    GPIO_Pin_4
-# define MIOS32_SDCARD_SCLK_PORT  GPIOA
-# define MIOS32_SDCARD_SCLK_PIN   GPIO_Pin_5
-# define MIOS32_SDCARD_DIN_PORT   GPIOA
-# define MIOS32_SDCARD_DIN_PIN    GPIO_Pin_6   // connected to DO pin of SD Card!
-# define MIOS32_SDCARD_DOUT_PORT  GPIOA
-# define MIOS32_SDCARD_DOUT_PIN   GPIO_Pin_7   // connected to DI pin of SD Card!
-
-# define MIOS32_SDCARD_SPI_PTR    SPI1
-# define MIOS32_SDCARD_DMA_RX_PTR DMA1_Channel2
-# define MIOS32_SDCARD_DMA_TX_PTR DMA1_Channel3
-
-#elif MIOS32_SDCARD_SPI == 2
-
-# define MIOS32_SDCARD_CSN_PORT   GPIOB
-# define MIOS32_SDCARD_CSN_PIN    GPIO_Pin_12
-# define MIOS32_SDCARD_SCLK_PORT  GPIOB
-# define MIOS32_SDCARD_SCLK_PIN   GPIO_Pin_13
-# define MIOS32_SDCARD_DIN_PORT   GPIOB
-# define MIOS32_SDCARD_DIN_PIN    GPIO_Pin_14   // connected to DO pin of SD Card!
-# define MIOS32_SDCARD_DOUT_PORT  GPIOB
-# define MIOS32_SDCARD_DOUT_PIN   GPIO_Pin_15   // connected to DI pin of SD Card!
-
-# define MIOS32_SDCARD_SPI_PTR    SPI2
-# define MIOS32_SDCARD_DMA_RX_PTR DMA1_Channel4
-# define MIOS32_SDCARD_DMA_TX_PTR DMA1_Channel5
-
-#else
-# error "Unsupported SPI peripheral number"
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -105,24 +65,6 @@
 #define SDCMD_WRITE_SINGLE_BLOCK_CRC 0xff
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Help Macros
-/////////////////////////////////////////////////////////////////////////////
-
-#define PIN_CSN_0  { MIOS32_SDCARD_CSN_PORT->BRR  = MIOS32_SDCARD_CSN_PIN; }
-#define PIN_CSN_1  { MIOS32_SDCARD_CSN_PORT->BSRR = MIOS32_SDCARD_CSN_PIN; }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-static s32 MIOS32_SDCARD_SPI_Init(u8 fast);
-
-static s32 MIOS32_SDCARD_TransferByte(u8 b);
-
-
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes SPI pins and peripheral to access MMC/SD Card
 //! \param[in] mode currently only mode 0 supported
@@ -134,67 +76,11 @@ s32 MIOS32_SDCARD_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // init GPIO structure
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  // ensure that fast pin drivers are activated
+  MIOS32_SPI_IO_Init(MIOS32_SDCARD_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 
-  // SCLK and DOUT are outputs assigned to alternate functions
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
-  GPIO_InitStructure.GPIO_Pin   = MIOS32_SDCARD_SCLK_PIN;
-  GPIO_Init(MIOS32_SDCARD_SCLK_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin   = MIOS32_SDCARD_DOUT_PIN;
-  GPIO_Init(MIOS32_SDCARD_DOUT_PORT, &GPIO_InitStructure);
-
-  // CSN output assigned to GPIO
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Pin   = MIOS32_SDCARD_CSN_PIN;
-  GPIO_Init(MIOS32_SDCARD_CSN_PORT, &GPIO_InitStructure);
-  PIN_CSN_1;
-
-  // DIN is input with pull-up
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
-  GPIO_InitStructure.GPIO_Pin   = MIOS32_SDCARD_DIN_PIN;
-  GPIO_Init(MIOS32_SDCARD_DIN_PORT, &GPIO_InitStructure);
-
-  // enable SPI peripheral clock (APB2 == high speed)
-#if MIOS32_SDCARD_SPI == 1
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-#elif MIOS32_SDCARD_SPI == 2
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
-#endif
-
-  // initialize SPI interface
-  MIOS32_SDCARD_SPI_Init(0); // slow clock
-
-  // enable DMA1 clock
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-
-  // DMA Configuration for SPI Rx Event
-  DMA_InitTypeDef DMA_InitStructure;
-  DMA_StructInit(&DMA_InitStructure);
-  DMA_Cmd(MIOS32_SDCARD_DMA_RX_PTR, DISABLE);
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&MIOS32_SDCARD_SPI_PTR->DR;
-  DMA_InitStructure.DMA_MemoryBaseAddr = 0; // will be configured later
-  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-  DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
-  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-  DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-  DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-  DMA_Init(MIOS32_SDCARD_DMA_RX_PTR, &DMA_InitStructure);
-
-  // DMA Configuration for SPI Tx Event
-  // (partly re-using previous DMA setup)
-  DMA_Cmd(MIOS32_SDCARD_DMA_TX_PTR, DISABLE);
-  DMA_InitStructure.DMA_MemoryBaseAddr = 0; // will be configured later
-  DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
-  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  DMA_Init(MIOS32_SDCARD_DMA_TX_PTR, &DMA_InitStructure);
+  // init SPI port for slow frequency access (ca. 0.3 MBit/s)
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
   return 0; // no error
 }
@@ -210,17 +96,17 @@ s32 MIOS32_SDCARD_PowerOn(void)
   int i;
 
   // ensure that chip select line deactivated
-  PIN_CSN_1;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
-  // initialize SPI interface
-  MIOS32_SDCARD_SPI_Init(0); // slow clock
+  // init SPI port for slow frequency access (ca. 0.3 MBit/s)
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
   // send 80 clock cycles to start up
   for(i=0; i<10; ++i)
-    MIOS32_SDCARD_TransferByte(0xff);
+    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // activate chip select
-  PIN_CSN_0;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
   // wait for 1 mS
   MIOS32_DELAY_Wait_uS(1000);
@@ -230,7 +116,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
     return status; // return error code
 
   // deactivate chip select
-  PIN_CSN_1;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   // send CMD1 to reset the media - this must be repeated until SD Card is fully initialized
   for(i=0; i<16384; ++i) {
@@ -242,15 +128,16 @@ s32 MIOS32_SDCARD_PowerOn(void)
   }
 
   if( i == 16384 ) {
-    PIN_CSN_1; // deactivate chip select
+     // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     return -2; // return error code
   }
 
-  // initialize SPI interface for fast mode
-  MIOS32_SDCARD_SPI_Init(1); // fast clock
+  // init SPI port for fast frequency access (ca. 18 MBit/s)
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
   // deactivate chip select
-  PIN_CSN_1;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   return 0; // no error
 }
@@ -317,17 +204,17 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
       return 0; // SD card not available anymore
 
     // deactivate chip select
-    PIN_CSN_1;
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
   } else {
     // ensure that SPI interface is clocked at low speed
-    MIOS32_SDCARD_SPI_Init(0);
+    MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
     // send CMD0 to reset the media
     if( MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC) < 0 )
       return 0; // SD card still not available
 
     // deactivate chip select
-    PIN_CSN_1;
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
     // run power-on sequence
     if( MIOS32_SDCARD_PowerOn() < 0 )
@@ -352,24 +239,24 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
   u8 ret;
 
   // activate chip select
-  PIN_CSN_0;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
   // transfer to card
-  MIOS32_SDCARD_TransferByte(cmd);
-  MIOS32_SDCARD_TransferByte((addr >> 24) & 0xff);
-  MIOS32_SDCARD_TransferByte((addr >> 16) & 0xff);
-  MIOS32_SDCARD_TransferByte((addr >>  8) & 0xff);
-  MIOS32_SDCARD_TransferByte((addr >>  0) & 0xff);
-  MIOS32_SDCARD_TransferByte(crc);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, cmd);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, (addr >> 24) & 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, (addr >> 16) & 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, (addr >>  8) & 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, (addr >>  0) & 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, crc);
 
   u8 timeout = 0;
 
   if( cmd == SDCMD_SEND_STATUS ) {
     // one dummy read
-    MIOS32_SDCARD_TransferByte(0xff);
+    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
     // read two bytes (only last value will be returned)
-    ret=MIOS32_SDCARD_TransferByte(0xff);
-    ret=MIOS32_SDCARD_TransferByte(0xff);
+    ret=MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+    ret=MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
     // all-one read: we expect that SD card is not connected: notify timeout!
     if( ret == 0xff )
@@ -377,7 +264,7 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
   } else {
     // wait for response
     for(i=0; i<8; ++i) {
-      if( (ret=MIOS32_SDCARD_TransferByte(0xff)) != 0xff )
+      if( (ret=MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff)) != 0xff )
 	break;
     }
     if( i == 8 )
@@ -385,11 +272,11 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
   }
 
   // required clocking (see spec)
-  MIOS32_SDCARD_TransferByte(0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // deactivate chip-select on timeout, and return error code
   if( timeout ) {
-    PIN_CSN_1; // deactivate chip select
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     return -1;
   }
 
@@ -427,41 +314,28 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 
   // wait for start token of the data block
   for(i=0; i<65536; ++i) { // TODO: check if sufficient
-    u8 ret = MIOS32_SDCARD_TransferByte(0xff);
+    u8 ret = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
     if( ret != 0xff )
       break;
   }
   if( i == 65536 ) {
-    PIN_CSN_1; // deactivate chip select
-    return -257; // return error code
+    // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    return -257;
   }
 
   // read 512 bytes via DMA
-  DMA_Cmd(MIOS32_SDCARD_DMA_RX_PTR, DISABLE);
-  MIOS32_SDCARD_DMA_RX_PTR->CMAR = (u32)buffer;
-  MIOS32_SDCARD_DMA_RX_PTR->CNDTR = 512;
-  MIOS32_SDCARD_DMA_RX_PTR->CCR |= DMA_MemoryInc_Enable; // enable memory addr. increment
-  DMA_Cmd(MIOS32_SDCARD_DMA_RX_PTR, ENABLE);
-
-  DMA_Cmd(MIOS32_SDCARD_DMA_TX_PTR, DISABLE);
-  u8 dummy_byte = 0xff;
-  MIOS32_SDCARD_DMA_TX_PTR->CMAR = (u32)&dummy_byte;
-  MIOS32_SDCARD_DMA_TX_PTR->CNDTR = 512;
-  MIOS32_SDCARD_DMA_TX_PTR->CCR &= ~DMA_MemoryInc_Enable; // disable memory addr. increment - bytes read from dummy buffer
-  DMA_Cmd(MIOS32_SDCARD_DMA_TX_PTR, ENABLE);
-
-  // wait until all bytes have been received
-  while( MIOS32_SDCARD_DMA_RX_PTR->CNDTR );
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, NULL, buffer, 512, NULL);
 
   // read (and ignore) CRC
-  MIOS32_SDCARD_TransferByte(0xff);
-  MIOS32_SDCARD_TransferByte(0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // required for clocking (see spec)
-  MIOS32_SDCARD_TransferByte(0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // deactivate chip select
-  PIN_CSN_1;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   return 0; // no error
 }
@@ -496,103 +370,44 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
     return (status < 0) ? -256 : status; // return timeout indicator or error flags
 
   // send start token
-  MIOS32_SDCARD_TransferByte(0xfe);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xfe);
 
   // send 512 bytes of data via DMA
-  DMA_Cmd(MIOS32_SDCARD_DMA_RX_PTR, DISABLE);
-  u8 dummy_byte = 0xff;
-  MIOS32_SDCARD_DMA_RX_PTR->CMAR = (u32)&dummy_byte;
-  MIOS32_SDCARD_DMA_RX_PTR->CNDTR = 512;
-  MIOS32_SDCARD_DMA_RX_PTR->CCR &= ~DMA_MemoryInc_Enable; // disable memory addr. increment - bytes written into dummy buffer
-  DMA_Cmd(MIOS32_SDCARD_DMA_RX_PTR, ENABLE);
-
-  DMA_Cmd(MIOS32_SDCARD_DMA_TX_PTR, DISABLE);
-  MIOS32_SDCARD_DMA_TX_PTR->CMAR = (u32)buffer;
-  MIOS32_SDCARD_DMA_TX_PTR->CNDTR = 512;
-  MIOS32_SDCARD_DMA_TX_PTR->CCR &= ~DMA_MemoryInc_Enable; // disable memory addr. increment - bytes read from dummy buffer
-  MIOS32_SDCARD_DMA_TX_PTR->CCR |= DMA_MemoryInc_Enable; // enable memory addr. increment
-  DMA_Cmd(MIOS32_SDCARD_DMA_TX_PTR, ENABLE);
-
-  // wait until all bytes have been transmitted/received
-  while( MIOS32_SDCARD_DMA_RX_PTR->CNDTR );
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, buffer, NULL, 512, NULL);
 
   // send CRC
-  MIOS32_SDCARD_TransferByte(0xff);
-  MIOS32_SDCARD_TransferByte(0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // read response
-  u8 response = MIOS32_SDCARD_TransferByte(0xff);
+  u8 response = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
   if( (response & 0x0f) != 0x5 ) {
-    PIN_CSN_1; // deactivate chip select
-    return -257; // return error code (write operation not accepted)
+    // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    return -257;
   }
 
   // wait for write completion
   for(i=0; i<32*65536; ++i) { // TODO: check if sufficient
-    u8 ret = MIOS32_SDCARD_TransferByte(0xff);
+    u8 ret = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
     if( ret != 0x00 )
       break;
   }
   if( i == 32*65536 ) {
-    PIN_CSN_1; // deactivate chip select
-    return -258; // return error code
+    // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    return -258;
   }
 
   // required for clocking (see spec)
-  MIOS32_SDCARD_TransferByte(0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
   // deactivate chip select
-  PIN_CSN_1;
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   return 0; // no error
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local function: initialize SPI
-/////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_SDCARD_SPI_Init(u8 fast)
-{
-  // SPI configuration
-  SPI_InitTypeDef SPI_InitStructure;
-  SPI_StructInit(&SPI_InitStructure);
-  SPI_InitStructure.SPI_Direction           = SPI_Direction_2Lines_FullDuplex;
-  SPI_InitStructure.SPI_Mode                = SPI_Mode_Master;
-  SPI_InitStructure.SPI_DataSize            = SPI_DataSize_8b;
-  SPI_InitStructure.SPI_CPOL                = SPI_CPOL_High;
-  SPI_InitStructure.SPI_CPHA                = SPI_CPHA_2Edge;
-  SPI_InitStructure.SPI_NSS                 = SPI_NSS_Soft;
-#if MIOS32_SDCARD_SPI == 2
-  SPI_InitStructure.SPI_BaudRatePrescaler   = fast ? SPI_BaudRatePrescaler_2 : SPI_BaudRatePrescaler_128; // ca. 55 nS / 2 uS period @ 72/2 MHz (SPI2 located in APB1 domain)
-#else
-  SPI_InitStructure.SPI_BaudRatePrescaler   = fast ? SPI_BaudRatePrescaler_4 : SPI_BaudRatePrescaler_256; // ca. 55 nS / 2 uS period @ 72 MHz
-#endif
-  SPI_InitStructure.SPI_FirstBit            = SPI_FirstBit_MSB;
-  SPI_InitStructure.SPI_CRCPolynomial       = 7;
-  SPI_Init(MIOS32_SDCARD_SPI_PTR, &SPI_InitStructure);
-
-  // enable SPI
-  SPI_Cmd(MIOS32_SDCARD_SPI_PTR, ENABLE);
-
-  // enable SPI interrupts to DMA
-  SPI_I2S_DMACmd(MIOS32_SDCARD_SPI_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local function: send single byte to SD Card, return received byte
-/////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_SDCARD_TransferByte(u8 b)
-{
-  // send byte
-  MIOS32_SDCARD_SPI_PTR->DR = b;
-  // wait until SPI transfer finished
-  while( MIOS32_SDCARD_SPI_PTR->SR & SPI_I2S_FLAG_BSY );
-  // return received byte
-  return MIOS32_SDCARD_SPI_PTR->DR;
-}
 
 //! \}
 

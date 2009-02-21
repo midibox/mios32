@@ -16,6 +16,9 @@ into your local mios32_config.h file
 // disable code modules
 #define MIOS32_DONT_USE_SYS
 #define MIOS32_DONT_USE_IRQ
+#define MIOS32_DONT_USE_SPI
+#define MIOS32_DONT_USE_SPI0
+#define MIOS32_DONT_USE_SPI1
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
@@ -61,9 +64,13 @@ into your local mios32_config.h file
 #define MIOS32_SRIO_NUM_SR 16
 
 // Which SPI peripheral should be used
-// allowed values: 1 and 2
-// (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
-#define MIOS32_SRIO_SPI 2
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_SRIO_SPI 1
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_SRIO_SPI_RC_PIN 0
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #define MIOS32_SRIO_OUTPUTS_OD 1
@@ -291,6 +298,10 @@ into your local mios32_config.h file
 
 
 // Which SPI peripheral should be used to access SDCard
-// allowed values: 1 and 2
-// (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
-#define MIOS32_SDCARD_SPI 1
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_SDCARD_SPI 0
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_SDCARD_SPI_RC_PIN 0
