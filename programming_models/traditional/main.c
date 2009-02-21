@@ -51,6 +51,9 @@ int main(void)
 #ifndef MIOS32_DONT_USE_DELAY
   MIOS32_DELAY_Init(0);
 #endif
+#ifndef MIOS32_DONT_USE_SPI
+  MIOS32_SPI_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_SRIO
   MIOS32_SRIO_Init(0);
 #endif

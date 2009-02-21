@@ -12,7 +12,7 @@
 //! disabled by default, and has to be enabled via MIOS32_USE_I2S in
 //! mios32_config.h<BR>
 //! MIOS32_SRIO should either be disabled via MIOS32_DONT_USE_SRIO, or 
-//! mapped to SPI1 (-> J16 of MBHP_CORE_STM32 module) via MIOS32_SRIO_SPI 1
+//! mapped to SPI0 (-> J16 of MBHP_CORE_STM32 module) via MIOS32_SRIO_SPI 0
 //!
 //! I2S is configured for standard Philips format with 2x16 bits for L/R
 //! channel at 48 kHz by default. Other protocols/sample rates can be selected

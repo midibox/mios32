@@ -27,16 +27,21 @@
 
 
 // Which SPI peripheral should be used
-// allowed values: 1 and 2
-// (note: SPI1 will allocate DMA channel 2 and 3, SPI2 will allocate DMA channel 4 and 5)
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
 #ifndef MIOS32_SRIO_SPI
 #ifdef MIOS32_BOARD_STM32_PRIMER
-# define MIOS32_SRIO_SPI 1 // since RCLK conflicts with USB detach pin @B12
+# define MIOS32_SRIO_SPI 0 // since RCLK conflicts with USB detach pin @B12
 #else
-# define MIOS32_SRIO_SPI 2
+# define MIOS32_SRIO_SPI 1
 #endif
 #endif
 
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#ifndef MIOS32_SRIO_SPI_RC_PIN
+#define MIOS32_SRIO_SPI_RC_PIN 0
+#endif
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #ifndef MIOS32_SRIO_OUTPUTS_OD

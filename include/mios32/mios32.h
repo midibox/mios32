@@ -53,6 +53,7 @@ extern "C" {
 
 #include <mios32_irq.h>
 #include <mios32_sys.h>
+#include <mios32_spi.h>
 #include <mios32_srio.h>
 #include <mios32_din.h>
 #include <mios32_dout.h>
