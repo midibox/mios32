@@ -23,6 +23,7 @@
 //!
 //! \todo we could add a software emulated SPI port for J19
 //!
+//! \{
 /* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
