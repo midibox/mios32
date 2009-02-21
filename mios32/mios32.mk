@@ -15,6 +15,7 @@ CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
 # add modules to thumb sources
 # TODO: provide makefile option to add code to ARM sources
 THUMB_SOURCE += \
+	$(MIOS32_PATH)/mios32/common/mios32_srio.c \
 	$(MIOS32_PATH)/mios32/common/mios32_din.c \
 	$(MIOS32_PATH)/mios32/common/mios32_dout.c \
 	$(MIOS32_PATH)/mios32/common/mios32_enc.c \
@@ -23,18 +24,17 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_com.c \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
+	$(MIOS32_PATH)/mios32/common/mios32_sdcard.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_bsl.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_sys.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_irq.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_spi.c \
-	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_srio.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_iic_midi.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_i2s.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_board.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_timer.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_stopwatch.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_delay.c \
-	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_sdcard.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_ain.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb.c \
