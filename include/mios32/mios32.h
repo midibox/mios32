@@ -77,6 +77,7 @@ extern "C" {
 #include <mios32_stopwatch.h>
 #include <mios32_delay.h>
 #include <mios32_sdcard.h>
+#include <mios32_enc28j60.h>
 
 
 /////////////////////////////////////////////////////////////////////////////

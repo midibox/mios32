@@ -9,13 +9,12 @@
 //! The SDIO peripheral is not used to ensure compatibility with "mid density"
 //! devices of the STM32 family, and future derivatives != STM32
 //!
-//! MIOS32_SDCARD_Init(0) has to be called only once to initialize the GPIO pins,
-//! clocks, SPI and DMA
+//! MIOS32_SDCARD_Init(0) has to be called only once to initialize the driver.
 //!
-//! MIOS32_SDCARD_PowerOn() should be called to connect with the SD Card. If an error
-//! is returned, it can be assumed that no SD Card is connected. The function
-//! can be called again (after a certain time) to retry a connection, resp. for
-//! an auto-detection during runtime
+//! MIOS32_SDCARD_CheckAvailable() should be called to connect with the SD Card. 
+//! If 0 is returned, it can be assumed that no SD Card is connected. 
+//! The function can be called periodically from a low priority task to retry
+//! a connection, resp. for an auto-detection during runtime
 //!
 //! MIOS32_SDCARD_SectorRead/SectorWrite allow to read/write a 512 byte sector.
 //!
@@ -133,9 +132,6 @@ s32 MIOS32_SDCARD_PowerOn(void)
     return -2; // return error code
   }
 
-  // init SPI port for fast frequency access (ca. 18 MBit/s)
-  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
-
   // deactivate chip select
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
@@ -145,7 +141,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Disconnects from SD Card
-//! \return < 0 if initialisation sequence failed
+//! \return < 0 on errors
 //! \todo not implemented yet
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_PowerOff(void)
@@ -199,6 +195,10 @@ s32 MIOS32_SDCARD_PowerOff(void)
 s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
 {
   if( was_available ) {
+    // init SPI port for fast frequency access (ca. 18 MBit/s)
+    // this is required for the case that the SPI port is shared with other devices
+    MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+
     // send STATUS command to check if media is available
     if( MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_STATUS, 0, SDCMD_SEND_STATUS_CRC) < 0 )
       return 0; // SD card not available anymore
@@ -309,6 +309,10 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
   s32 status;
   int i;
 
+  // init SPI port for fast frequency access (ca. 18 MBit/s)
+  // this is required for the case that the SPI port is shared with other devices
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_SINGLE_BLOCK, sector << 9, SDCMD_READ_SINGLE_BLOCK_CRC)) )
     return (status < 0) ? -256 : status; // return timeout indicator or error flags
 
@@ -365,6 +369,10 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 {
   s32 status;
   int i;
+
+  // init SPI port for fast frequency access (ca. 18 MBit/s)
+  // this is required for the case that the SPI port is shared with other devices
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_WRITE_SINGLE_BLOCK, sector << 9, SDCMD_WRITE_SINGLE_BLOCK_CRC)) )
     return (status < 0) ? -256 : status; // return timeout indicator or error flags

@@ -41,6 +41,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_STOPWATCH
 #define MIOS32_DONT_USE_DELAY
 #define MIOS32_DONT_USE_SDCARD
+#define MIOS32_DONT_USE_ENC28J60
 
 // calls to FreeRTOS required? (e.g. to disable tasks on critical sections)
 #define MIOS32_DONT_USE_FREERTOS
@@ -305,3 +306,29 @@ into your local mios32_config.h file
 // Which RC pin of the SPI port should be used
 // allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
 #define MIOS32_SDCARD_SPI_RC_PIN 0
+
+
+// Which SPI peripheral should be used to access ENC28J60
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_ENC28J60_SPI 0
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_ENC28J60_SPI_RC_PIN 0
+
+// maximum frame size
+// must be <= 1518 (IEEE 802.3 specified limit)
+#define MIOS32_ENC28J60_MAX_FRAME_SIZE 1518
+
+// if 0: half duplex operation
+// if 1: full duplex operation
+#define MIOS32_ENC28J60_FULL_DUPLEX 1
+
+// a unique MAC address in your network (6 bytes are required)
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0x01
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0x02
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0x03
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0x04
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0x05
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0x06
