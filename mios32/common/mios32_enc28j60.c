@@ -243,9 +243,9 @@ s32 MIOS32_ENC28J60_PowerOn(void)
   status |= MIOS32_ENC28J60_WritePHYReg(PHLCON, 0x3472);
 
   // Set the MAC and PHY into the proper duplex state
-#if defined(FULL_DUPLEX)
+#if MIOS32_ENC28J60_FULL_DUPLEX
   status |= MIOS32_ENC28J60_WritePHYReg(PHCON1, PHCON1_PDPXMD);
-#elif defined(HALF_DUPLEX)
+#else
   status |= MIOS32_ENC28J60_WritePHYReg(PHCON1, 0x0000);
 #endif
   status |= MIOS32_ENC28J60_BankSel(ERDPTL);                // Return to default Bank 0
