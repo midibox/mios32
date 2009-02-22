@@ -87,8 +87,8 @@ typedef struct __attribute__ ((packed)) // __attribute__((aligned(2), packed))
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 WasDiscarded = 1;
-static u16 NextPacketLocation = RXSTART;
+static u8 WasDiscarded;
+static u16 NextPacketLocation;
 
 static u8 rev_id;
 
@@ -104,7 +104,7 @@ s32 MIOS32_ENC28J60_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  return 0; // no error
+  return MIOS32_ENC28J60_PowerOn();
 }
 
 
