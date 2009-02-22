@@ -22,3 +22,6 @@ MIOS32 based usage examples can be found under
 
 Modifications:
   - uip/uip-neighbor.c: commented out "printf"
+  - delected doc/html directory (ca. 7 MB), since the files are 
+    available on the web under 
+      http://www.sics.se/~adam/uip/uip-1.0-refman/
