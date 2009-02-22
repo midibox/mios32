@@ -91,6 +91,9 @@
 
 static void (*spi_callback[2])(void);
 
+static u8 tx_dummy_byte;
+static u8 rx_dummy_byte;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -640,8 +643,8 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
     dma_rx_ptr->CCR |= DMA_MemoryInc_Enable;
   } else {
     // disable memory addr. increment - bytes written into dummy buffer
-    u8 dummy_byte = 0xff;
-    dma_rx_ptr->CMAR = (u32)&dummy_byte;
+    rx_dummy_byte = 0xff;
+    dma_rx_ptr->CMAR = (u32)&rx_dummy_byte;
     dma_rx_ptr->CCR &= ~DMA_MemoryInc_Enable;
   }
   dma_rx_ptr->CNDTR = len;
@@ -656,8 +659,8 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
     dma_tx_ptr->CCR |= DMA_MemoryInc_Enable;
   } else {
     // disable memory addr. increment - bytes read from dummy buffer
-    u8 dummy_byte = 0xff;
-    dma_tx_ptr->CMAR = (u32)&dummy_byte;
+    tx_dummy_byte = 0xff;
+    dma_tx_ptr->CMAR = (u32)&tx_dummy_byte;
     dma_tx_ptr->CCR &= ~DMA_MemoryInc_Enable;
   }
   dma_tx_ptr->CNDTR = len;
