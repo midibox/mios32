@@ -39,7 +39,7 @@ LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
 DEBUG     =	-g
-OPTIMIZE  =	-O0
+OPTIMIZE  =	-Os
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)
 
