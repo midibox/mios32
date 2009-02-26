@@ -619,6 +619,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
     return 0;
 
   // send hex dump line by line
+  u8 *src_begin = src;
   u8 *src_end;
   for(src_end=(u8 *)((size_t)src + len - 1); src < src_end;) {
     u8 buffer[80+5+3+1]; // we need at least 8+2+3*16+2+16 chars + 5 for header + 3 for command + F7
@@ -641,7 +642,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
     // build line:
     // add source address
     u8 offset = sizeof(mios32_midi_sysex_header) + 3;
-    sprintf((char *)((size_t)buffer+offset), "%08X ", (u32)src);
+    sprintf((char *)((size_t)buffer+offset), "%08X ", (u32)(src-src_begin));
     offset += 9;
 
     // add up to 16 bytes
