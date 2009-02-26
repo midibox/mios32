@@ -598,6 +598,95 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sends an hex dump (formatted representation of memory content) to the 
+//! MIOS Terminal in MIOS Studio.
+//!
+//! The MIDI port used for debugging (MIDI_DEBUG) can be declared in mios32_config.h:
+//! \code
+//!   #define MIOS32_MIDI_DEBUG_PORT USB0
+//! \endcode
+//! (USB0 is the default value)
+//!
+//! Optionally, the port can be changed during runtime with MIOS32_MIDI_DebugPortSet
+//! \param[in] *src pointer to memory location which should be dumped
+//! \param[in] len number of bytes which should be sent
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
+{
+  // check if any byte has to be sent
+  if( !len )
+    return 0;
+
+  // send hex dump line by line
+  u8 *src_end;
+  for(src_end=(u8 *)((size_t)src + len - 1); src < src_end;) {
+    u8 buffer[80+5+3+1]; // we need at least 8+2+3*16+2+16 chars + 5 for header + 3 for command + F7
+    int i;
+
+    // create SysEx header
+    u8 *sysex_buffer_ptr = buffer;
+    for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+      *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
+
+    // device ID
+    *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
+
+    // debug message: ack code
+    *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
+
+    // command identifier
+    *sysex_buffer_ptr++ = 0x40; // string
+
+    // build line:
+    // add source address
+    u8 offset = sizeof(mios32_midi_sysex_header) + 3;
+    sprintf((char *)((size_t)buffer+offset), "%08X ", (u32)src);
+    offset += 9;
+
+    // add up to 16 bytes
+    u8 *src_chars = src; // for later
+    for(i=0; i<16; ++i) {
+      sprintf((char *)((size_t)buffer+offset), (src <= src_end) ? " %02X" : "   ", *src);
+      offset += 3;
+
+      ++src;
+    }
+
+    // add two spaces
+    for(i=0; i<2; ++i) {
+      *(buffer+offset) = ' ';
+      ++offset;
+    }
+
+    // add characters
+    for(i=0; i<16; ++i) {
+      if( *src_chars < 32 || *src_chars >= 128 )
+	*(buffer+offset) = '.';
+      else
+	*(buffer+offset) = *src_chars;
+
+      ++offset;
+      if( src_chars == src_end )
+	break;
+
+      ++src_chars;
+    }
+
+    // add F7
+    *(buffer+offset) = 0xf7;
+    ++offset;
+
+    s32 status = MIOS32_MIDI_SendSysEx(debug_port, buffer, offset);
+    if( status < 0 )
+      return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Checks for incoming MIDI messages, calls either the callback_event or
 //! callback_sysex function with following parameters:
 //! \code
