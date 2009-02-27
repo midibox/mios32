@@ -641,33 +641,29 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 
     // build line:
     // add source address
-    u8 offset = sizeof(mios32_midi_sysex_header) + 3;
-    sprintf((char *)((size_t)buffer+offset), "%08X ", (u32)(src-src_begin));
-    offset += 9;
+    sprintf((char *)sysex_buffer_ptr, "%08X ", (u32)(src-src_begin));
+    sysex_buffer_ptr += 9;
 
     // add up to 16 bytes
     u8 *src_chars = src; // for later
     for(i=0; i<16; ++i) {
-      sprintf((char *)((size_t)buffer+offset), (src <= src_end) ? " %02X" : "   ", *src);
-      offset += 3;
+      sprintf((char *)sysex_buffer_ptr, (src <= src_end) ? " %02X" : "   ", *src);
+      sysex_buffer_ptr += 3;
 
       ++src;
     }
 
     // add two spaces
-    for(i=0; i<2; ++i) {
-      *(buffer+offset) = ' ';
-      ++offset;
-    }
+    for(i=0; i<2; ++i)
+      *sysex_buffer_ptr++ = ' ';
 
     // add characters
     for(i=0; i<16; ++i) {
       if( *src_chars < 32 || *src_chars >= 128 )
-	*(buffer+offset) = '.';
+	*sysex_buffer_ptr++ = '.';
       else
-	*(buffer+offset) = *src_chars;
+	*sysex_buffer_ptr++ = *src_chars;
 
-      ++offset;
       if( src_chars == src_end )
 	break;
 
@@ -675,10 +671,9 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
     }
 
     // add F7
-    *(buffer+offset) = 0xf7;
-    ++offset;
+    *sysex_buffer_ptr++ = 0xf7;
 
-    s32 status = MIOS32_MIDI_SendSysEx(debug_port, buffer, offset);
+    s32 status = MIOS32_MIDI_SendSysEx(debug_port, buffer, (u32)(sysex_buffer_ptr-buffer));
     if( status < 0 )
       return status;
   }
