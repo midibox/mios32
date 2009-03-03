@@ -17,8 +17,8 @@
 #include <mios32.h>
 #include <string.h>
 
-#include "uip_osc.h"
 #include "uip.h"
+#include "osc_server.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

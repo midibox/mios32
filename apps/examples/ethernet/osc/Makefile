@@ -16,7 +16,7 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = app.c \
                   uip_task.c \
-		  uip_osc.c \
+		  osc_server.c \
 		  telnetd.c \
 		  shell.c
 
