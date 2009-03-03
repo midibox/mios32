@@ -27,9 +27,15 @@
 //! </UL>
 //!
 //! So, a node either defines the link to the next node which is part of the
-//! address path, or it defines the method which should be called plus
-//! a 32bit argument. The argument could be useful for re-using the same function for
+//! address path, or it defines the method which should be called.
+//!
+//! The optional 32bit argument could be useful for re-using the same function for
 //! multiple purposes to save memory.
+//! Each node contains such an argument value.<BR>
+//! It is ORed for each individual path while scanning the search tree, so that it
+//! is possible to allocate certain bitfields for each node (e.g. /sid* will add the SID
+//! number to bit [31:30] of the argument value, and /sid*/*/<method> will add the parameter
+//! address)
 //!
 //! OSC allows to use wildcards in the address path like *, ?, [] and {}.<BR>
 //! The MIOS32 implementation currently only supports '*' and '?'<BR>
@@ -71,7 +77,7 @@
 //!   <LI>number of arguments
 //!   <LI>an array of argument tags
 //!   <LI>pointer to arguments (have to be fetched with MIOS32_OSC_Get*() functions)
-//! <UL>
+//! </UL>
 //!
 //! An example for a search tree construction and OSC method handling can be found
 //! under $MIOS32_PATH/apps/examples/ethernet/osc
@@ -104,7 +110,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree);
-static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree);
+static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, mios32_osc_search_tree_t *search_tree);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -478,7 +484,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
 
   // finally parse for elements which are matching the OSC address
   osc_args->num_path_parts = 0;
-  return MIOS32_OSC_SearchPath((char *)&path[1], osc_args, search_tree);
+  return MIOS32_OSC_SearchPath((char *)&path[1], osc_args, 0x00000000, search_tree);
 }
 
 
@@ -487,7 +493,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
 // searches in search_tree for matching OSC addresses
 // returns -4 if MIOS32_OSC_MAX_PATH_PARTS has been exceeded
 /////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree)
+static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, mios32_osc_search_tree_t *search_tree)
 {
   if( osc_args->num_path_parts >= MIOS32_OSC_MAX_PATH_PARTS )
     return -4; // maximum number of path parts exceeded
@@ -533,12 +539,16 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, mios32
       osc_args->path_part[num_path_parts] = (char *)search_tree->address;
       osc_args->num_path_parts = num_path_parts + 1;
 
+      // OR method args of current node to the args to propagate optional parameters
+      u32 combined_method_arg = method_arg | search_tree->method_arg;
+
       if( search_tree->osc_method ) {
 	void (*osc_method)(mios32_osc_args_t *osc_args, u32 method_arg) = search_tree->osc_method;
-	osc_method(osc_args, search_tree->method_arg);
+	osc_method(osc_args, combined_method_arg);
       } else if( search_tree->next ) {
+
 	// continue search in next hierarchy level
-	s32 status = MIOS32_OSC_SearchPath((char *)&path[sep_pos+1], osc_args, search_tree->next);
+	s32 status = MIOS32_OSC_SearchPath((char *)&path[sep_pos+1], osc_args, combined_method_arg, search_tree->next);
 	if( status < 0 )
 	  return status;
       }
