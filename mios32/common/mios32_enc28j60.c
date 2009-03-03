@@ -482,11 +482,9 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   if( header.NextPacketPointer > RXSTOP ||
       (header.NextPacketPointer & 1) ||
       header.StatusVector.bits.Zero ||
-      header.StatusVector.bits.CRCError ||
-      header.StatusVector.bits.ByteCount > 1518u ||
-      !header.StatusVector.bits.ReceiveOk) {
+      header.StatusVector.bits.ByteCount > 1518u ) {
 
-    MIOS32_MIDI_SendDebugMessage("[MIOS32_ENC28J60_PackageReceive] glitch detected - Ptr: %04x, Status: %02x%02x %02x%02x\n",
+    MIOS32_MIDI_SendDebugMessage("[MIOS32_ENC28J60_PackageReceive] glitch detected - Ptr: %04x, Status: %04x %02x%02x\n",
 				 header.NextPacketPointer,
 				 header.StatusVector.bits.ByteCount,
 				 header.StatusVector.v[3], header.StatusVector.v[2]);
@@ -502,9 +500,9 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   // Mark this packet as discardable
   WasDiscarded = 0;
 
-  // still something to read?
+  // empty package or CRC/symbol errors?
   u16 packet_len = header.StatusVector.bits.ByteCount;
-  if( !packet_len ) {
+  if( !packet_len || header.StatusVector.bits.CRCError || !header.StatusVector.bits.ReceiveOk ) {
     status = MIOS32_ENC28J60_MACDiscardRx(); // discard package immediately
     return (status < 0) ? status : 0;
   }

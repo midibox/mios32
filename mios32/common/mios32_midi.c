@@ -622,7 +622,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
   u8 *src_begin = src;
   u8 *src_end;
   for(src_end=(u8 *)((size_t)src + len - 1); src < src_end;) {
-    u8 buffer[80+5+3+1]; // we need at least 8+2+3*16+2+16 chars + 5 for header + 3 for command + F7
+    u8 buffer[80+5+3+1]; // we need at least 8+2+3*16+2+16+1 chars + 5 for header + 3 for command + F7
     int i;
 
     // create SysEx header
@@ -669,6 +669,9 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 
       ++src_chars;
     }
+
+    // linebreak
+    *sysex_buffer_ptr++ = '\n';
 
     // add F7
     *sysex_buffer_ptr++ = 0xf7;
