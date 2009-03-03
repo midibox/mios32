@@ -35,8 +35,8 @@
 //! The MIOS32 implementation currently only supports '*' and '?'<BR>
 //! Examples: '/sid?/osc/finetune' or '/sid?/osc/fine*' or '/cs/led/*'
 //! 
-//! Once the method has been found, the appr. function will be called with
-//! the OSC arguments which are part of the packet (+ the method argument):<BR>
+//! While searching through the tree, the appr. functions of all matching methods 
+//! will be called with the OSC arguments which are part of the packet (+ the method argument):<BR>
 //! \code
 //!   void osc_method(mios32_osc_args_t *osc_args, u32 method_arg)
 //! \endcode
