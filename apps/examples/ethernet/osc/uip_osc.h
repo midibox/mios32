@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for uIP OSC daemon
+ * Header file for uIP OSC daemon/server
  *
  * ==========================================================================
  *
@@ -19,8 +19,8 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef UIP_OSC_PORT
-#define UIP_OSC_PORT 10000
+#ifndef OSC_SERVER_PORT
+#define OSC_SERVER_PORT 10000
 #endif
 
 
@@ -35,8 +35,8 @@ typedef unsigned int uip_udp_appstate_t;
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 UIP_OSC_Init(u32 mode);
-extern s32 UIP_OSC_AppCall(void);
+extern s32 OSC_SERVER_Init(u32 mode);
+extern s32 OSC_SERVER_AppCall(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

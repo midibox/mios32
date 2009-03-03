@@ -44,7 +44,7 @@
 //! While searching through the tree, the appr. functions of all matching methods 
 //! will be called with the OSC arguments which are part of the packet (+ the method argument):<BR>
 //! \code
-//!   void osc_method(mios32_osc_args_t *osc_args, u32 method_arg)
+//!   s32 osc_method(mios32_osc_args_t *osc_args, u32 method_arg)
 //! \endcode
 //!
 //! All specified OSC arguments are supported, such as following "tags":
@@ -543,7 +543,7 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 me
       u32 combined_method_arg = method_arg | search_tree->method_arg;
 
       if( search_tree->osc_method ) {
-	void (*osc_method)(mios32_osc_args_t *osc_args, u32 method_arg) = search_tree->osc_method;
+	s32 (*osc_method)(mios32_osc_args_t *osc_args, u32 method_arg) = search_tree->osc_method;
 	osc_method(osc_args, combined_method_arg);
       } else if( search_tree->next ) {
 
