@@ -81,6 +81,9 @@ int main(void)
 #ifndef MIOS32_DONT_USE_MIDI
   MIOS32_MIDI_Init(0);
 #endif
+#ifndef MIOS32_DONT_USE_OSC
+  MIOS32_OSC_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_COM
   MIOS32_COM_Init(0);
 #endif

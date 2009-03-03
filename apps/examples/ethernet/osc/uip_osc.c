@@ -1,6 +1,6 @@
 // $Id$
 /*
- * OSC daemon for uIP
+ * OSC daemon/server for uIP
  *
  * ==========================================================================
  *
@@ -25,7 +25,7 @@
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -34,11 +34,13 @@
 
 static struct uip_udp_conn *osc_conn = NULL;
 
+static mios32_osc_search_tree_t parse_root[];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the OSC daemon
 /////////////////////////////////////////////////////////////////////////////
-s32 UIP_OSC_Init(u32 mode)
+s32 OSC_SERVER_Init(u32 mode)
 {
   // remove open connection
   if(osc_conn != NULL) {
@@ -49,8 +51,8 @@ s32 UIP_OSC_Init(u32 mode)
   uip_ipaddr_t ripaddr;
   uip_ipaddr(ripaddr, 10,0,0,2);
 
-  if( (osc_conn=uip_udp_new(&ripaddr, HTONS(UIP_OSC_PORT))) != NULL ) {
-    uip_udp_bind(osc_conn, HTONS(UIP_OSC_PORT));
+  if( (osc_conn=uip_udp_new(&ripaddr, HTONS(OSC_SERVER_PORT))) != NULL ) {
+    uip_udp_bind(osc_conn, HTONS(OSC_SERVER_PORT));
 #if DEBUG_VERBOSE_LEVEL >= 1
     MIOS32_MIDI_SendDebugMessage("[UIP_OSC] listen to %d.%d.%d.%d:%d\n", 
 				 (osc_conn->ripaddr[0] >> 0) & 0xff,
@@ -70,26 +72,44 @@ s32 UIP_OSC_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called by UIP when a new UDP package has been received
+// Called by UIP when a new UDP datagram has been received
 // (UIP_UDP_APPCALL has been configured accordingly in uip-conf.h)
 /////////////////////////////////////////////////////////////////////////////
+s32 OSC_SERVER_AppCall(void)
+{
+  if( uip_udp_conn->rport == HTONS(OSC_SERVER_PORT) ) {
+    if( uip_poll() ) {
+      // called each second
+    }
 
-const char str_sid1[] = "sid1";
-const char str_sid2[] = "sid2";
-const char str_sid3[] = "sid3";
-const char str_sid4[] = "sid4";
+    if( uip_newdata() ) {
+      // new UDP package has been received
+#if DEBUG_VERBOSE_LEVEL >= 2
+      MIOS32_MIDI_SendDebugMessage("[UIP_OSC] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
+				   (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
+				   (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
+				   (uip_udp_conn->ripaddr[1] >> 0) & 0xff,
+				   (uip_udp_conn->ripaddr[1] >> 8) & 0xff,
+				   HTONS(uip_udp_conn->rport),
+				   uip_len);
+      MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
+#endif
+      s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
+      if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	MIOS32_MIDI_SendDebugMessage("[UIP_OSC] invalid OSC packet, status %d\n", status);
+#endif
+      }
+    }
+  }
+}
 
-const char str_osc[] = "osc";
-const char str_filter[] = "filter";
 
-const char str_transpose[] = "transpose";
-const char str_finetune[] = "finetune";
-const char str_pulsewidth[] = "pulsewidth";
-
-const char str_cutoff[] = "cutoff";
-const char str_resonance[] = "resonance";
-
-void osc_method(mios32_osc_args_t *osc_args, u32 method_arg)
+/////////////////////////////////////////////////////////////////////////////
+// OSC Debug Output
+// Called by all methods if verbose level >= 1
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
   {
@@ -193,61 +213,132 @@ void osc_method(mios32_osc_args_t *osc_args, u32 method_arg)
     }
   }
 #endif  
+
+  return 0; // no error
 }
 
-mios32_osc_search_tree_t parse_osc[] = {
-  { str_transpose, NULL, &osc_method, 0x00000001 },
-  { str_finetune, NULL, &osc_method, 0x00000002 },
-  { str_pulsewidth, NULL, &osc_method, 0x00000003 },
-  { NULL, NULL, NULL, 0 } // terminator
-};
 
-mios32_osc_search_tree_t parse_filter[] = {
-  { str_cutoff, NULL, &osc_method, 0x00000004 },
-  { str_resonance, NULL, &osc_method, 0x00000005 },
-  { NULL, NULL, NULL, 0 } // terminator
-};
-
-mios32_osc_search_tree_t parse_sid[] = {
-  { str_osc, parse_osc, NULL, 0 },
-  { str_filter, parse_filter, NULL, 0 },
-  { NULL, NULL, NULL, 0 } // terminator
-};
-
-mios32_osc_search_tree_t parse_root[] = {
-  { str_sid1, parse_sid, NULL, 0 },
-  { str_sid2, parse_sid, NULL, 0 },
-  { str_sid3, parse_sid, NULL, 0 },
-  { str_sid4, parse_sid, NULL, 0 },
-  { NULL, NULL, NULL, 0 } // terminator
-};
-
-
-s32 UIP_OSC_AppCall(void)
+/////////////////////////////////////////////////////////////////////////////
+// Method to control a single LED
+// Path: /cs/led/set <led-number> <value>
+// <led-number> can be float32 or int32
+// <value> can be float32 (<1: clear, >=1: set), int32 (0 or != 0) or TRUE/FALSE
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_LED_Set(mios32_osc_args_t *osc_args, u32 method_arg)
 {
-  if( uip_udp_conn->rport == HTONS(UIP_OSC_PORT) ) {
-    if( uip_poll() ) {
-      // called each second
-    }
-
-    if( uip_newdata() ) {
-      // new UDP package has been received
-#if DEBUG_VERBOSE_LEVEL >= 2
-      MIOS32_MIDI_SendDebugMessage("[UIP_OSC] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
-				   (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
-				   (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
-				   (uip_udp_conn->ripaddr[1] >> 0) & 0xff,
-				   (uip_udp_conn->ripaddr[1] >> 8) & 0xff,
-				   HTONS(uip_udp_conn->rport),
-				   uip_len);
-      MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
-#endif
-      s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
-      if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	MIOS32_MIDI_SendDebugMessage("[UIP_OSC] invalid OSC packet, status %d\n", status);
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
 #endif
-      }
-    }
+
+  // we expect at least 2 arguments
+  if( osc_args->num_args < 2 )
+    return -1; // wrong number of arguments
+
+  // LED number can be float or integer
+  int pin;
+  switch( osc_args->arg_type[0] ) {
+    case 'i': // int32
+      pin = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+      break;
+    case 'f': // float32
+      pin = (int)MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]);
+      break;
+    default:
+      return -2; // wrong argument type for first parameter
   }
+
+  // LED value can be float, integer, TRUE or FALSE
+  int value;
+  switch( osc_args->arg_type[1] ) {
+    case 'i': // int32
+      value = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]) ? 1 : 0;
+      break;
+    case 'f': // float32
+      value = (MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) >= 1.0) ? 1 : 0;
+      break;
+    case 'T': // TRUE
+      value = 1;
+      break;
+    case 'F': // FALSE
+      value = 0;
+      break;
+    default:
+      return -3; // wrong argument type for second parameter
+  }
+
+  MIOS32_DOUT_PinSet(pin, value);
+
+  return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to control all LEDs
+// Path: /cs/led/set_all <value>
+// <value> can be float32 (<1: clear, >=1: set), int32 (0 or != 0) or TRUE/FALSE
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_LED_SetAll(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // SR value can be float, integer, TRUE or FALSE
+  u8 sr_value = 0xff;
+  switch( osc_args->arg_type[0] ) {
+    case 'i': // int32
+      sr_value = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]) ? 0xff : 0x00;
+      break;
+    case 'f': // float32
+      sr_value = (MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) >= 1.0) ? 0xff : 0x00;
+      break;
+    case 'T': // TRUE
+      sr_value = 0xff;
+      break;
+    case 'F': // FALSE
+      sr_value = 0x00;
+      break;
+    default:
+      return -3; // wrong argument type for second parameter
+  }
+
+  // set all SRs
+  int sr;
+  for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr)
+    MIOS32_DOUT_SRSet(sr, sr_value);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Search Tree for OSC Methods (used by MIOS32_OSC_ParsePacket())
+/////////////////////////////////////////////////////////////////////////////
+
+
+static const char str_cs[] = "cs";
+
+static const char str_led[] = "led";
+
+static const char str_set[] = "set";
+static const char str_set_all[] = "set_all";
+
+static mios32_osc_search_tree_t parse_led[] = {
+  { str_set, NULL, &OSC_SERVER_Method_LED_Set, 0x00000000 },
+  { str_set_all, NULL, &OSC_SERVER_Method_LED_SetAll, 0x00000000 },
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+static mios32_osc_search_tree_t parse_cs[] = {
+  { str_led, parse_led, NULL, 0 },
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+static mios32_osc_search_tree_t parse_root[] = {
+  { str_cs, parse_cs, NULL, 0 },
+  { NULL, NULL, NULL, 0 } // terminator
+};

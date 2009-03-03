@@ -110,7 +110,7 @@ static void UIP_TASK_Handler(void *pvParameters)
   telnetd_init();
 
   // start OSC daemon
-  UIP_OSC_Init(0);
+  OSC_SERVER_Init(0);
 
   // endless loop
   while( 1 ) {
