@@ -115,7 +115,7 @@ typedef u16 uip_stats_t;
 /*#include "resolv.h"*/
 /*#include "webclient.h"*/
 
-#include "uip_osc.h"
+#include "osc_server.h"
 #define UIP_UDP_APPCALL OSC_SERVER_AppCall
 
 
