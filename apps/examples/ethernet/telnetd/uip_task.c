@@ -27,6 +27,8 @@
 #include "network-device.h"
 #include "timer.h"
 
+#include "uip_task.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Task Priorities

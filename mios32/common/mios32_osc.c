@@ -83,8 +83,47 @@
 //! under $MIOS32_PATH/apps/examples/ethernet/osc
 //!
 //!
-//! Client Part (sending OSC packets):<BR>
-//! TODO<BR>
+//! Client Part (sending OSC packets):
+//!
+//! Outgoing OSC packets can be "constructed" on-the-fly with MIOS32_OSC_Put* functions.
+//!
+//! No high-level functions (with large argument lists) are provided to save stack space,
+//! and to give the application the highest flexibility. Even unspecified OSC packages
+//! can be created if desired.
+//!
+//! Following example demonstrates the usage. Note that each MIOS32_OSC_Put* function
+//! returns the pointer to the next entry, so that items can be appended without
+//! the need for additional pointer calculations.
+//!
+//! \code
+//! /////////////////////////////////////////////////////////////////////////////
+//! // Send a Button Value
+//! // Path: /cs/button/state <button-number> <0 or 1>
+//! /////////////////////////////////////////////////////////////////////////////
+//! s32 OSC_CLIENT_SendButtonState(mios32_osc_timetag_t timetag, u32 button, u8 pressed)
+//! {
+//!   // create the OSC packet
+//!   u8 packet[128];
+//!   u8 *end_ptr = packet;
+//!   u8 *insert_len_ptr;
+//! 
+//!   end_ptr = MIOS32_OSC_PutString(end_ptr, "#bundle");
+//!   end_ptr = MIOS32_OSC_PutTimetag(end_ptr, timetag);
+//!   insert_len_ptr = end_ptr; // remember this address - we will insert the length later
+//!   end_ptr += 4;
+//!   end_ptr = MIOS32_OSC_PutString(end_ptr, "/cs/button/state");
+//!   end_ptr = MIOS32_OSC_PutString(end_ptr, ",ii");
+//!   end_ptr = MIOS32_OSC_PutInt(end_ptr, button);
+//!   end_ptr = MIOS32_OSC_PutInt(end_ptr, pressed);
+//! 
+//!   // now insert the message length
+//!   MIOS32_OSC_PutWord(insert_len_ptr, (u32)(end_ptr-insert_len_ptr-4));
+//! 
+//!   // send packet and exit
+//!   return OSC_SERVER_SendPacket(packet, (u32)(end_ptr-packet));
+//! }
+//! \endcode
+//!
 //! \{
 /* ==========================================================================
  *
@@ -141,6 +180,21 @@ u32 MIOS32_OSC_GetWord(u8 *buffer)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Puts a word (4 bytes) into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] word 32bit word
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutWord(u8 *buffer, u32 word)
+{
+  *buffer++ = (word >> 24) & 0xff;
+  *buffer++ = (word >> 16) & 0xff;
+  *buffer++ = (word >>  8) & 0xff;
+  *buffer++ = (word >>  0) & 0xff;
+  return buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! Gets a timetag (8 bytes) from buffer
 //! \param[in] buffer pointer to OSC message buffer 
 //! \return timetag (seconds and fraction part)
@@ -154,6 +208,19 @@ mios32_osc_timetag_t MIOS32_OSC_GetTimetag(u8 *buffer)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Puts a timetag (8 bytes) into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] timetag the timetag which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutTimetag(u8 *buffer, mios32_osc_timetag_t timetag)
+{
+  buffer = MIOS32_OSC_PutWord(buffer, timetag.seconds);
+  buffer = MIOS32_OSC_PutWord(buffer, timetag.fraction);
+  return buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! Gets a word (4 bytes) from buffer and converts it to a 32bit signed integer.
 //! \param[in] buffer pointer to OSC message buffer 
 //! \return 32bit signed integer
@@ -161,6 +228,17 @@ mios32_osc_timetag_t MIOS32_OSC_GetTimetag(u8 *buffer)
 s32 MIOS32_OSC_GetInt(u8 *buffer)
 {
   return (s32)MIOS32_OSC_GetWord(buffer);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a 32bit signed integer into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] value the integer value which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutInt(u8 *buffer, s32 value)
+{
+  return MIOS32_OSC_PutWord(buffer, (u32)value);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -185,6 +263,20 @@ float MIOS32_OSC_GetFloat(u8 *buffer)
 #endif
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a float with normal precission into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] value the float value which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutFloat(u8 *buffer, float value)
+{
+  union { u32 word; float f; } converted;
+  converted.f = value;
+  return MIOS32_OSC_PutWord(buffer, converted.word);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //! Returns pointer to a string in message buffer
 //! \param[in] buffer pointer to OSC message buffer 
@@ -193,6 +285,26 @@ float MIOS32_OSC_GetFloat(u8 *buffer)
 char *MIOS32_OSC_GetString(u8 *buffer)
 {
   return buffer; // OSC protocol ensures zero termination (checked in MIOS32_OSC_SearchElement)
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a string into buffer and pads with 0 until word boundary has been reached
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] value the string which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutString(u8 *buffer, char *str)
+{
+  u8 *buffer_start = buffer;
+
+  buffer = (u8 *)stpcpy(buffer, str);
+  *buffer++ = 0;
+
+  // pad with zeroes until word boundary is reached
+  while( (u32)(buffer-buffer_start) % 4 )
+    *buffer++ = 0;
+
+  return buffer;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -215,6 +327,59 @@ u8 *MIOS32_OSC_GetBlobData(u8 *buffer)
   return buffer+4;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts an OSC-Blob into buffer and pads with 0 until word boundary has been reached
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] data blob data
+//! \param[in] len blob size
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutBlob(u8 *buffer, u8 *data, u32 len)
+{
+  // ensure that length considers word alignment
+  u32 aligned_len = (len+3) & 0xfffffffc;
+
+  // add length
+  buffer = MIOS32_OSC_PutWord(buffer, aligned_len);
+
+  // add bytes
+  int i;
+  for(i=0; i<len; ++i)
+    *buffer++ = *data++;
+
+  // pad with zeroes
+  while( i % 4 )
+    *buffer++ = 0;
+
+  return buffer;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Gets two words (8 bytes) from buffer and converts them to a 64bit signed integer.
+//! \param[in] buffer pointer to OSC message buffer 
+//! \return 64bit signed integer
+/////////////////////////////////////////////////////////////////////////////
+long long MIOS32_OSC_GetLongLong(u8 *buffer)
+{
+  return ((long long)MIOS32_OSC_GetWord(buffer) << 32) | MIOS32_OSC_GetWord(buffer+4);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a 64bit signed integer into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] value the "long long" value which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutLongLong(u8 *buffer, long long value)
+{
+  buffer = MIOS32_OSC_PutWord(buffer, (u32)(value >> 32));
+  buffer = MIOS32_OSC_PutWord(buffer, (u32)value);
+  return buffer;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Gets two words (8 bytes) from buffer and converts them to a float with 
 //! double precession
@@ -232,20 +397,24 @@ double MIOS32_OSC_GetDouble(u8 *buffer)
   // according to http://gcc.gnu.org/ml/gcc-bugs/2003-02/msg01128.html this isn't a bug...
   // workaround:
   union { long long word; double d; } converted;
-  converted.word = ((long long)MIOS32_OSC_GetWord(buffer) << 32) | MIOS32_OSC_GetWord(buffer+4);
+  converted.word = MIOS32_OSC_GetLongLong(buffer);
   return converted.d;
 #endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Gets two words (8 bytes) from buffer and converts them to a 64bit signed integer.
+//! Puts a float with double precission into buffer
 //! \param[in] buffer pointer to OSC message buffer 
-//! \return 64bit signed integer
+//! \param[in] value the double value which should be inserted
+//! \return buffer pointer behind the inserted entry
 /////////////////////////////////////////////////////////////////////////////
-long long MIOS32_OSC_GetLongLong(u8 *buffer)
+u8 *MIOS32_OSC_PutDouble(u8 *buffer, double value)
 {
-  return ((long long)MIOS32_OSC_GetWord(buffer) << 32) | MIOS32_OSC_GetWord(buffer+4);
+  union { long long word; double d; } converted;
+  converted.d = value;
+  return MIOS32_OSC_PutLongLong(buffer, converted.word);
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a character
@@ -256,6 +425,19 @@ char MIOS32_OSC_GetChar(u8 *buffer)
 {
   return *buffer; // just for completeness..
 }
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a character into buffer and pads with 3 zeros (word aligned)
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] c the character which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutChar(u8 *buffer, char c)
+{
+  return MIOS32_OSC_PutWord(buffer, (u32)c);
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a MIDI package
@@ -273,6 +455,18 @@ mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer)
   p.evnt1 = *(buffer+2);
   p.evnt2 = *(buffer+3);
   return p;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Puts a MIDI package into buffer
+//! \param[in] buffer pointer to OSC message buffer 
+//! \param[in] p the MIDI package which should be inserted
+//! \return buffer pointer behind the inserted entry
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p)
+{
+  u32 word = p.cable | (p.evnt0 << 8) | (p.evnt1 << 16) | (p.evnt2 << 24);
+  return MIOS32_OSC_PutWord(buffer, word);
 }
 
 

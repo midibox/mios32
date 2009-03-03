@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for uIP OSC daemon/server
+ * Header file for OSC client functions
  *
  * ==========================================================================
  *
@@ -11,37 +11,30 @@
  * ==========================================================================
  */
 
-#ifndef _OSC_SERVER_H
-#define _OSC_SERVER_H
+#ifndef _OSC_CLIENT_H
+#define _OSC_CLIENT_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef OSC_SERVER_PORT
-#define OSC_SERVER_PORT 10000
-#endif
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
-
-typedef unsigned int uip_udp_appstate_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 OSC_SERVER_Init(u32 mode);
-extern s32 OSC_SERVER_AppCall(void);
-extern s32 OSC_SERVER_SendPacket(u8 *packet, u32 len);
+extern s32 OSC_CLIENT_Init(u32 mode);
+extern s32 OSC_CLIENT_SendButtonState(mios32_osc_timetag_t timetag, u32 button, u8 pressed);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _OSC_SERVER_H */
+#endif /* _OSC_CLIENT_H */
