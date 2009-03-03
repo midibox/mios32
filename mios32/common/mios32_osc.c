@@ -34,7 +34,7 @@
 //! Each node contains such an argument value.<BR>
 //! It is ORed for each individual path while scanning the search tree, so that it
 //! is possible to allocate certain bitfields for each node (e.g. /sid* will add the SID
-//! number to bit [31:30] of the argument value, and /sid*/*/<method> will add the parameter
+//! number to bit [31:30] of the argument value, and /sid*/*/&lt;method&gt; will add the parameter
 //! address)
 //!
 //! OSC allows to use wildcards in the address path like *, ?, [] and {}.<BR>
