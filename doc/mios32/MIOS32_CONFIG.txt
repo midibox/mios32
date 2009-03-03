@@ -27,6 +27,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_MF
 #define MIOS32_DONT_USE_LCD
 #define MIOS32_DONT_USE_MIDI
+#define MIOS32_DONT_USE_OSC
 #define MIOS32_DONT_USE_COM
 #define MIOS32_DONT_USE_USB
 #define MIOS32_DONT_USE_USB_MIDI
@@ -85,6 +86,17 @@ into your local mios32_config.h file
 
 // the default MIDI port for debugging output via MIOS32_MIDI_SendDebugMessage
 #define MIOS32_MIDI_DEBUG_PORT USB0
+
+
+// OSC: maximum number of path parts (e.g. /a/b/c/d -> 4 parts)
+#ifndef MIOS32_OSC_MAX_PATH_PARTS
+#define MIOS32_OSC_MAX_PATH_PARTS 8
+#endif
+
+// OSC: maximum number of OSC arguments in message
+#ifndef MIOS32_OSC_MAX_ARGS
+#define MIOS32_OSC_MAX_ARGS 8
+#endif
 
 
 // the default COM port for COM output
