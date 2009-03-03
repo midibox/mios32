@@ -18,6 +18,8 @@
 #include <string.h>
 
 #include "uip.h"
+#include "uip_task.h"
+
 #include "osc_server.h"
 
 
@@ -25,7 +27,7 @@
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -36,12 +38,18 @@ static struct uip_udp_conn *osc_conn = NULL;
 
 static mios32_osc_search_tree_t parse_root[];
 
+static u8 *osc_send_packet;
+static u32 osc_send_len;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the OSC daemon
 /////////////////////////////////////////////////////////////////////////////
 s32 OSC_SERVER_Init(u32 mode)
 {
+  // disable send packet
+  osc_send_packet = NULL;
+
   // remove open connection
   if(osc_conn != NULL) {
     uip_udp_remove(osc_conn);
@@ -54,7 +62,7 @@ s32 OSC_SERVER_Init(u32 mode)
   if( (osc_conn=uip_udp_new(&ripaddr, HTONS(OSC_SERVER_PORT))) != NULL ) {
     uip_udp_bind(osc_conn, HTONS(OSC_SERVER_PORT));
 #if DEBUG_VERBOSE_LEVEL >= 1
-    MIOS32_MIDI_SendDebugMessage("[UIP_OSC] listen to %d.%d.%d.%d:%d\n", 
+    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] listen to %d.%d.%d.%d:%d\n", 
 				 (osc_conn->ripaddr[0] >> 0) & 0xff,
 				 (osc_conn->ripaddr[0] >> 8) & 0xff,
 				 (osc_conn->ripaddr[1] >> 0) & 0xff,
@@ -63,7 +71,7 @@ s32 OSC_SERVER_Init(u32 mode)
 #endif
   } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    MIOS32_MIDI_SendDebugMessage("[UIP_OSC] FAILED to create connection (no free ports)\n");
+    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] FAILED to create connection (no free ports)\n");
 #endif
   }
 
@@ -79,13 +87,19 @@ s32 OSC_SERVER_AppCall(void)
 {
   if( uip_udp_conn->rport == HTONS(OSC_SERVER_PORT) ) {
     if( uip_poll() ) {
-      // called each second
+      // called each second or on request (-> uip_udp_periodic_conn)
+
+      if( osc_send_packet != NULL ) {
+	// send datagram
+	uip_send(osc_send_packet, osc_send_len);
+	osc_send_packet = NULL;
+      }
     }
 
     if( uip_newdata() ) {
       // new UDP package has been received
 #if DEBUG_VERBOSE_LEVEL >= 2
-      MIOS32_MIDI_SendDebugMessage("[UIP_OSC] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
+      MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
 				   (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
 				   (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
 				   (uip_udp_conn->ripaddr[1] >> 0) & 0xff,
@@ -97,11 +111,76 @@ s32 OSC_SERVER_AppCall(void)
       s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
       if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	MIOS32_MIDI_SendDebugMessage("[UIP_OSC] invalid OSC packet, status %d\n", status);
+	MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] invalid OSC packet, status %d\n", status);
 #endif
       }
     }
   }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called by OSC client to send an UDP datagram
+// To ensure proper mutex handling, functions inside the server have to
+// use OSC_SERVER_SendPacket_Internal instead to avoid a hang-up while
+// waiting for a mutex which the server already got
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_SendPacket_Internal(u8 *packet, u32 len)
+{
+  // exit immediately if length == 0
+  if( len == 0 )
+    return 0;
+
+  // exit immediately if connection not ready
+  if( osc_conn == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] dropped SendPacket due to missing connection\n");
+#endif
+    return -1; // connection not established
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Send Datagram to %d.%d.%d.%d:%d (%d bytes)\n", 
+			       (osc_conn->ripaddr[0] >> 0) & 0xff,
+			       (osc_conn->ripaddr[0] >> 8) & 0xff,
+			       (osc_conn->ripaddr[1] >> 0) & 0xff,
+			       (osc_conn->ripaddr[1] >> 8) & 0xff,
+			       HTONS(osc_conn->rport),
+			       len);
+  MIOS32_MIDI_SendDebugHexDump(packet, len);
+#endif
+
+  // store pointer and len in global variable, so that OSC_SERVER_AppCall() can take over
+  osc_send_packet = packet;
+  osc_send_len = len;
+
+  // force processing for a connection
+  // this will call OSC_SERVER_AppCall() with uip_poll() set
+  // note: the packet cannot be send directly from here, we have to use the uIP framework!
+  uip_udp_periodic_conn(osc_conn);
+
+  // send packet immediately
+  if(uip_len > 0) {
+    uip_arp_out();
+    network_device_send();
+    uip_len = 0;
+  }
+
+  return 0; // no error
+}
+
+s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
+{
+  // take over exclusive access to UIP functions
+  MUTEX_UIP_TAKE;
+
+  // send packet
+  s32 status = OSC_SERVER_SendPacket_Internal(packet, len);
+
+  // release exclusive access to UIP functions
+  MUTEX_UIP_GIVE;
+
+  return status;
 }
 
 

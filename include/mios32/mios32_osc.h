@@ -66,16 +66,35 @@ typedef struct {
 extern s32 MIOS32_OSC_Init(u32 mode);
 
 extern u32 MIOS32_OSC_GetWord(u8 *buffer);
+extern u8 *MIOS32_OSC_PutWord(u8 *buffer, u32 word);
+
 extern mios32_osc_timetag_t MIOS32_OSC_GetTimetag(u8 *buffer);
+extern u8 *MIOS32_OSC_PutTimetag(u8 *buffer, mios32_osc_timetag_t timetag);
+
 extern s32 MIOS32_OSC_GetInt(u8 *buffer);
+extern u8 *MIOS32_OSC_PutInt(u8 *buffer, s32 value);
+
 extern float MIOS32_OSC_GetFloat(u8 *buffer);
+extern u8 *MIOS32_OSC_PutFloat(u8 *buffer, float value);
+
 extern char *MIOS32_OSC_GetString(u8 *buffer);
+extern u8 *MIOS32_OSC_PutString(u8 *buffer, char *str);
+
 extern u32 MIOS32_OSC_GetBlobLength(u8 *buffer);
 extern u8 *MIOS32_OSC_GetBlobData(u8 *buffer);
-extern double MIOS32_OSC_GetDouble(u8 *buffer);
+extern u8 *MIOS32_OSC_PutBlob(u8 *buffer, u8 *data, u32 len);
+
 extern long long MIOS32_OSC_GetLongLong(u8 *buffer);
+extern u8 *MIOS32_OSC_PutLongLong(u8 *buffer, long long value);
+
+extern double MIOS32_OSC_GetDouble(u8 *buffer);
+extern u8 *MIOS32_OSC_PutDouble(u8 *buffer, double value);
+
 extern char MIOS32_OSC_GetChar(u8 *buffer);
+extern u8 *MIOS32_OSC_PutChar(u8 *buffer, char c);
+
 extern mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer);
+extern u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p);
 
 extern s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search_tree);
 

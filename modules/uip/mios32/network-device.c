@@ -85,7 +85,7 @@ int network_device_read(void)
 void network_device_send(void)
 {
   u16 header_len = UIP_LLH_LEN + UIP_TCPIP_HLEN;
-  s32 status = MIOS32_ENC28J60_PackageSend((u8 *)uip_buf, header_len,
+  s32 status = MIOS32_ENC28J60_PackageSend((u8 *)uip_buf, (uip_len >= header_len) ? header_len : uip_len,
 					   (u8 *)uip_appdata, (uip_len > header_len) ? (uip_len-header_len) : 0);
 
   if( status < 0 ) {

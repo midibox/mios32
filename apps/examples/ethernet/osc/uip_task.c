@@ -27,6 +27,11 @@
 #include "network-device.h"
 #include "timer.h"
 
+#include "uip_task.h"
+
+#include "osc_server.h"
+#include "osc_client.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Task Priorities
@@ -34,6 +39,11 @@
 
 // lower priority than MIOS32 hooks
 #define PRIORITY_TASK_UIP		( tskIDLE_PRIORITY + 2 )
+
+
+// for mutual exclusive access to uIP functions
+// The mutex is handled with MUTEX_UIP_TAKE and MUTEX_UIP_GIVE macros
+xSemaphoreHandle xUIPSemaphore;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,7 +59,6 @@
 static void UIP_TASK_Handler(void *pvParameters);
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the uIP task
 /////////////////////////////////////////////////////////////////////////////
@@ -58,12 +67,12 @@ s32 UIP_TASK_Init(u32 mode)
   if( mode > 0 )
     return -1; // only mode 0 supported yet
 
+  xUIPSemaphore = xSemaphoreCreateMutex();
+
   xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
 
   return 0; // no error
 }
-
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -77,6 +86,9 @@ static void UIP_TASK_Handler(void *pvParameters)
 
   // Initialise the xLastExecutionTime variable on task entry
   portTickType xLastExecutionTime = xTaskGetTickCount();
+
+  // take over exclusive access to UIP functions
+  MUTEX_UIP_TAKE;
 
   // init uIP timers
   timer_set(&periodic_timer, CLOCK_SECOND / 2);
@@ -109,12 +121,19 @@ static void UIP_TASK_Handler(void *pvParameters)
   // start telnet daemon
   telnetd_init();
 
-  // start OSC daemon
+  // start OSC daemon and client
+  OSC_CLIENT_Init(0);
   OSC_SERVER_Init(0);
+
+  // release exclusive access to UIP functions
+  MUTEX_UIP_GIVE;
 
   // endless loop
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // take over exclusive access to UIP functions
+    MUTEX_UIP_TAKE;
 
     if( !(clock_time_tick() % 100) ) {
       // each 100 mS: check availablility of network device
@@ -179,6 +198,9 @@ static void UIP_TASK_Handler(void *pvParameters)
 	}
       }
     }
+
+    // release exclusive access to UIP functions
+    MUTEX_UIP_GIVE;
   }
 }
 

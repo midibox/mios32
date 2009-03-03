@@ -24,6 +24,7 @@
 
 #include "app.h"
 
+#include "osc_client.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
@@ -167,7 +168,12 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 #if DEBUG_VERBOSE_LEVEL >= 1
   MIOS32_MIDI_SendDebugMessage("[DIN] %d %d\n", pin, pin_value ? 0 : 1);
 #endif
-  MIOS32_DOUT_PinSet(pin, pin_value ? 0 : 1);
+
+  // send button state as OSC message
+  mios32_osc_timetag_t timetag;
+  timetag.seconds = 0;
+  timetag.fraction = 1;
+  OSC_CLIENT_SendButtonState(timetag, pin, pin_value ? 0 : 1);
 }
 
 
