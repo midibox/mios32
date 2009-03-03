@@ -20,7 +20,7 @@
 //! during runtime. Each node of the tree consists of a mios32_osc_search_tree_t
 //! structure which defines:
 //! <UL>
-//!   <LI>the OSC address part</LI>
+//!   <LI>the OSC address part or NULL if there are no more address parts/methods in the "OSC container"</LI>
 //!   <LI>a link to the next address part or NULL if the leaf has been reached (method reached)</LI>
 //!   <LI>if leaf: pointer to function which dispatches the addressed OSC method</LI>
 //!   <LI>optional arguments for method (32bit)
