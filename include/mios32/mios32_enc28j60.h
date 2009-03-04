@@ -44,13 +44,15 @@
 #endif
 
 // a unique MAC address in your network (6 bytes are required)
+// If all bytes are 0, the serial number of STM32 will be taken instead,
+// which should be unique in your private network.
 #ifndef MIOS32_ENC28J60_MY_MAC_ADDR1
-#define MIOS32_ENC28J60_MY_MAC_ADDR1 0x01
-#define MIOS32_ENC28J60_MY_MAC_ADDR2 0x02
-#define MIOS32_ENC28J60_MY_MAC_ADDR3 0x03
-#define MIOS32_ENC28J60_MY_MAC_ADDR4 0x04
-#define MIOS32_ENC28J60_MY_MAC_ADDR5 0x05
-#define MIOS32_ENC28J60_MY_MAC_ADDR6 0x06
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
 #endif
 
 
@@ -69,6 +71,9 @@ extern s32 MIOS32_ENC28J60_PowerOn(void);
 extern s32 MIOS32_ENC28J60_PowerOff(void);
 extern s32 MIOS32_ENC28J60_CheckAvailable(u8 was_available);
 extern s32 MIOS32_ENC28J60_LinkAvailable(void);
+
+extern s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6]);
+extern u8 MIOS32_ENC28J60_MAC_AddrGetSet(void);
 
 extern s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2);
 extern s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size);

@@ -30,13 +30,13 @@
 // predefined user timer priorities (-> MIOS32_TIMER)
 #define MIOS32_IRQ_PRIO_LOW       12  // lower than RTOS
 #define MIOS32_IRQ_PRIO_MID        8  // higher than RTOS
-#define MIOS32_IRQ_PRIO_HIGH       5  // same like SRIO, AIN, etc...
-#define MIOS32_IRQ_PRIO_HIGHEST    4  // higher than SRIO, AIN, etc...
+#define MIOS32_IRQ_PRIO_HIGH       5  // same like SPI, AIN, etc...
+#define MIOS32_IRQ_PRIO_HIGHEST    4  // higher than SPI, AIN, etc...
 
 
 
-// DMA Channel IRQ used by MIOS32_SRIO, called each mS
-#define MIOS32_IRQ_SRIO_DMA_PRIORITY    MIOS32_IRQ_PRIO_HIGH
+// DMA Channel IRQ used by MIOS32_SPI
+#define MIOS32_IRQ_SPI_DMA_PRIORITY    MIOS32_IRQ_PRIO_HIGH
 
 
 // DMA Channel IRQ used by MIOS32_I2S, 

@@ -31,6 +31,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_ENC28J60)
@@ -92,6 +93,8 @@ static u16 NextPacketLocation;
 
 static u8 rev_id;
 
+static u8 mac_addr[6];
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes SPI pins and peripheral to access ENC28J60
@@ -103,6 +106,14 @@ s32 MIOS32_ENC28J60_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // set default mac address
+  // if all-0, 
+  u8 default_mac_addr[6] = {
+    MIOS32_ENC28J60_MY_MAC_ADDR1, MIOS32_ENC28J60_MY_MAC_ADDR2, MIOS32_ENC28J60_MY_MAC_ADDR3,
+    MIOS32_ENC28J60_MY_MAC_ADDR4, MIOS32_ENC28J60_MY_MAC_ADDR5, MIOS32_ENC28J60_MY_MAC_ADDR6
+  };
+  memcpy(mac_addr, default_mac_addr, 6);
 
   return MIOS32_ENC28J60_PowerOn();
 }
@@ -221,16 +232,11 @@ s32 MIOS32_ENC28J60_PowerOn(void)
   status |= MIOS32_ENC28J60_WriteReg((u8)MAMXFLL, (MIOS32_ENC28J60_MAX_FRAME_SIZE) & 0xff);
   status |= MIOS32_ENC28J60_WriteReg((u8)MAMXFLH, ((MIOS32_ENC28J60_MAX_FRAME_SIZE) >> 8) & 0xff);
         
-  // Enter Bank 3 and initialize physical MAC address registers
-  status |= MIOS32_ENC28J60_BankSel(MAADR1);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR1, MIOS32_ENC28J60_MY_MAC_ADDR1);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR2, MIOS32_ENC28J60_MY_MAC_ADDR2);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR3, MIOS32_ENC28J60_MY_MAC_ADDR3);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR4, MIOS32_ENC28J60_MY_MAC_ADDR4);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR5, MIOS32_ENC28J60_MY_MAC_ADDR5);
-  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR6, MIOS32_ENC28J60_MY_MAC_ADDR6);
+  // initialize physical MAC address registers
+  status |= MIOS32_ENC28J60_MAC_AddrSet(mac_addr);
 
-  // Disable the CLKOUT output to reduce EMI generation
+  // Enter Bank 3 and Disable the CLKOUT output to reduce EMI generation
+  status |= MIOS32_ENC28J60_BankSel(ECOCON);
   status |= MIOS32_ENC28J60_WriteReg((u8)ECOCON, 0x00);   // Output off (0V)
   //status |= MIOS32_ENC28J60_WriteReg((u8)ECOCON, 0x01); // 25.000MHz
   //status |= MIOS32_ENC28J60_WriteReg((u8)ECOCON, 0x03); // 8.3333MHz (*4 with PLL is 33.3333MHz)
@@ -342,6 +348,80 @@ s32 MIOS32_ENC28J60_LinkAvailable(void)
     return 0; // e.g. ENC28J60 not connected
 
   return (status & PHSTAT1_LLSTAT) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Changes the MAC address.
+//!
+//! Usually called by MIOS32_ENC28J60_PowerOn(), but could also be used
+//! during runtime.
+//!
+//! The default MAC address is predefined by MIOS32_ENC28J60_MY_MAC_ADDR[123456]
+//! and can be overruled in mios32_config.h if desired.
+//!
+//! \param[in] new_mac_addr an array with 6 bytes which define the MAC
+//! address. If all bytes are 0 (default), the serial number of STM32 will be
+//! taken instead, which should be unique in your private network.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6])
+{
+  s32 status;
+
+  // re-init SPI port for fast frequency access (ca. 18 MBit/s)
+  // this is required for the case that the SPI port is shared with other devices
+  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 )
+    return status;
+
+  // check for all-zero
+  int i;
+  int ored = 0;
+  for(i=0; i<6; ++i)
+    ored |= new_mac_addr[i];
+
+  if( ored ) {
+    // MAC address != 0 -> take over new address
+    memcpy(mac_addr, new_mac_addr, 6);
+  } else {
+    // get serial number
+    char serial[32];
+    MIOS32_SYS_SerialNumberGet(serial);
+    int len = strlen(serial);
+    if( len < 12 ) {
+      // no serial number or not large enough - we should at least set the MAC address to != 0
+      for(i=0; i<6; ++i)
+	mac_addr[i] = i;
+    } else {
+      for(i=0; i<6; ++i) {
+	// convert hex string to dec
+	char digitl = serial[len-i*2 - 1];
+	char digith = serial[len-i*2 - 2];
+	mac_addr[i] = ((digitl >= 'A') ? (digitl-'A'+10) : (digitl-'0')) |
+	  (((digith >= 'A') ? (digith-'A'+10) : (digith-'0')) << 4);
+      }
+    }
+  }
+
+  status |= MIOS32_ENC28J60_BankSel(MAADR1);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR1, mac_addr[0]);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR2, mac_addr[1]);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR3, mac_addr[2]);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR4, mac_addr[3]);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR5, mac_addr[4]);
+  status |= MIOS32_ENC28J60_WriteReg((u8)MAADR6, mac_addr[5]);
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the current MAC address
+//! \return u8 pointer with 6 bytes
+/////////////////////////////////////////////////////////////////////////////
+u8 *MIOS32_ENC28J60_MAC_AddrGet(void)
+{
+  return mac_addr;
 }
 
 
