@@ -24,6 +24,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_osc.c \
 	$(MIOS32_PATH)/mios32/common/mios32_com.c \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
+	$(MIOS32_PATH)/mios32/common/mios32_iic_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
 	$(MIOS32_PATH)/mios32/common/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/common/mios32_sdcard.c \
@@ -32,7 +33,6 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_sys.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_irq.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_spi.c \
-	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_iic_midi.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_i2s.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_board.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_timer.c \
