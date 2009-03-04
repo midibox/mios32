@@ -30,7 +30,7 @@
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -192,4 +192,18 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+#if 1
+  if( pin == 7 )
+    return;
+#endif
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  MIOS32_MIDI_SendDebugMessage("[AIN] %d %d\n", pin, pin_value);
+#endif
+
+  // send AIN value as OSC message
+  mios32_osc_timetag_t timetag;
+  timetag.seconds = 0;
+  timetag.fraction = 1;
+  OSC_CLIENT_SendPotValue(timetag, pin, (float)pin_value / 4095.0);
 }

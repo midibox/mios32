@@ -19,6 +19,26 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// Ethernet configuration
+// can be overruled in mios32_config.h
+
+#ifndef MY_IP_ADDRESS
+//                      10        .    0        .    0       .    3
+#define MY_IP_ADDRESS ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  3 << 0)
+#endif
+
+#ifndef MY_NETMASK
+//                     255        .  255        .  255       .    0
+#define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
+#endif
+
+#ifndef MY_GATEWAY
+//                      10        .    0        .    0       .    1
+#define MY_GATEWAY    (  0 << 24) | (  0 << 16) | (  0 << 8) | (  1 << 0)
+#endif
+
+
+
 #include <FreeRTOS.h>
 #include <semphr.h>
 

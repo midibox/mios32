@@ -19,6 +19,13 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// can be overruled in mios32_config.h
+#ifndef OSC_REMOTE_IP
+//                      10        .    0        .    0       .    2
+#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+#endif
+
+// can be overruled in mios32_config.h
 #ifndef OSC_SERVER_PORT
 #define OSC_SERVER_PORT 10000
 #endif

@@ -101,3 +101,9 @@ void network_device_send(void)
 #endif
   }
 }
+
+
+unsigned char *network_device_mac_addr(void)
+{
+  return (unsigned char *)MIOS32_ENC28J60_MAC_AddrGet();
+}

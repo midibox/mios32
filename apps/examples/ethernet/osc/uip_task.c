@@ -101,21 +101,35 @@ static void UIP_TASK_Handler(void *pvParameters)
   uip_init();
 
   // set my ethernet address
-  uip_ethaddr.addr[0] = MIOS32_ENC28J60_MY_MAC_ADDR1;
-  uip_ethaddr.addr[1] = MIOS32_ENC28J60_MY_MAC_ADDR2;
-  uip_ethaddr.addr[2] = MIOS32_ENC28J60_MY_MAC_ADDR3;
-  uip_ethaddr.addr[3] = MIOS32_ENC28J60_MY_MAC_ADDR4;
-  uip_ethaddr.addr[4] = MIOS32_ENC28J60_MY_MAC_ADDR5;
-  uip_ethaddr.addr[5] = MIOS32_ENC28J60_MY_MAC_ADDR6;
+  unsigned char *mac_addr = network_device_mac_addr();
+  {
+    int i;
+    for(i=0; i<6; ++i)
+      uip_ethaddr.addr[i] = mac_addr[i];
+  }
 
   // set my IP address
-  uip_ipaddr(ipaddr, 10,0,0,3);
+  uip_ipaddr(ipaddr,
+	     ((MY_IP_ADDRESS)>>24) & 0xff,
+	     ((MY_IP_ADDRESS)>>16) & 0xff,
+	     ((MY_IP_ADDRESS)>> 8) & 0xff,
+	     ((MY_IP_ADDRESS)>> 0) & 0xff);
   uip_sethostaddr(ipaddr);
-  uip_ipaddr(ipaddr, 255,255,255,0);
+
+  // set my netmask
+  uip_ipaddr(ipaddr,
+	     ((MY_NETMASK)>>24) & 0xff,
+	     ((MY_NETMASK)>>16) & 0xff,
+	     ((MY_NETMASK)>> 8) & 0xff,
+	     ((MY_NETMASK)>> 0) & 0xff);
   uip_setnetmask(ipaddr);
 
   // default router
-  uip_ipaddr(ipaddr, 10,0,0,1);
+  uip_ipaddr(ipaddr,
+	     ((MY_GATEWAY)>>24) & 0xff,
+	     ((MY_GATEWAY)>>16) & 0xff,
+	     ((MY_GATEWAY)>> 8) & 0xff,
+	     ((MY_GATEWAY)>> 0) & 0xff);
   uip_setdraddr(ipaddr);
 
   // start telnet daemon
