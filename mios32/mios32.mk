@@ -25,6 +25,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_com.c \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
+	$(MIOS32_PATH)/mios32/common/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/common/mios32_sdcard.c \
 	$(MIOS32_PATH)/mios32/common/mios32_enc28j60.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_bsl.c \
@@ -38,7 +39,6 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_stopwatch.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_delay.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_ain.c \
-	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_midi.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_com.c \
