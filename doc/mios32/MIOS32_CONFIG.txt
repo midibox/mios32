@@ -19,6 +19,7 @@ into your local mios32_config.h file
 #define MIOS32_DONT_USE_SPI
 #define MIOS32_DONT_USE_SPI0
 #define MIOS32_DONT_USE_SPI1
+#define MIOS32_DONT_USE_SPI2
 #define MIOS32_DONT_USE_SRIO
 #define MIOS32_DONT_USE_DIN
 #define MIOS32_DONT_USE_DOUT
@@ -89,14 +90,10 @@ into your local mios32_config.h file
 
 
 // OSC: maximum number of path parts (e.g. /a/b/c/d -> 4 parts)
-#ifndef MIOS32_OSC_MAX_PATH_PARTS
 #define MIOS32_OSC_MAX_PATH_PARTS 8
-#endif
 
 // OSC: maximum number of OSC arguments in message
-#ifndef MIOS32_OSC_MAX_ARGS
 #define MIOS32_OSC_MAX_ARGS 8
-#endif
 
 
 // the default COM port for COM output
@@ -223,13 +220,8 @@ into your local mios32_config.h file
 #define MIOS32_LCD_MAX_MAP_LINES 4
 
 // The boot message which is print during startup and returned on a SysEx query
-#ifndef MIOS32_LCD_BOOT_MSG_LINE1
 #define MIOS32_LCD_BOOT_MSG_LINE1 "Unnamed App."
-#endif
-
-#ifndef MIOS32_LCD_BOOT_MSG_LINE2
 #define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
-#endif
 
 
 // bit mask to enable channels
@@ -263,6 +255,7 @@ into your local mios32_config.h file
 #define MIOS32_AIN_MUX_PINS 0
 
 // control pins to select the muxed channel
+// only relevant if MIOS32_AIN_MUX_PINS > 0
 #define MIOS32_AIN_MUX0_PIN   GPIO_Pin_4 // J5C.A8
 #define MIOS32_AIN_MUX0_PORT  GPIOC
 #define MIOS32_AIN_MUX1_PIN   GPIO_Pin_5 // J5C.A9
@@ -274,16 +267,13 @@ into your local mios32_config.h file
 // number of motorfaders (0-16)
 #define MIOS32_MF_NUM 0
 
+// Which SPI peripheral should be used
+// allowed values: 0, 1 or 2
+#define MIOS32_MF_SPI 2
 
-#define MIOS32_MF_RCLK_PORT  GPIOC
-#define MIOS32_MF_RCLK_PIN   GPIO_Pin_13
-#define MIOS32_MF_SCLK_PORT  GPIOB
-#define MIOS32_MF_SCLK_PIN   GPIO_Pin_6
-#define MIOS32_MF_DOUT_PORT  GPIOB
-#define MIOS32_MF_DOUT_PIN   GPIO_Pin_5
-
-// should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
-#define MIOS32_MF_OUTPUTS_OD 0
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
+#define MIOS32_MF_SPI_RC_PIN 0
 
 
 // MCLK at J15b:E not enabled by default - has to be done in mios32_config.h
@@ -338,9 +328,11 @@ into your local mios32_config.h file
 #define MIOS32_ENC28J60_FULL_DUPLEX 1
 
 // a unique MAC address in your network (6 bytes are required)
-#define MIOS32_ENC28J60_MY_MAC_ADDR1 0x01
-#define MIOS32_ENC28J60_MY_MAC_ADDR2 0x02
-#define MIOS32_ENC28J60_MY_MAC_ADDR3 0x03
-#define MIOS32_ENC28J60_MY_MAC_ADDR4 0x04
-#define MIOS32_ENC28J60_MY_MAC_ADDR5 0x05
-#define MIOS32_ENC28J60_MY_MAC_ADDR6 0x06
+// If all bytes are 0, the serial number of STM32 will be taken instead,
+// which should be unique in your private network.
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0

@@ -27,15 +27,6 @@
 // Local defines/macros
 /////////////////////////////////////////////////////////////////////////////
 
-#define PIN_DOUT(b) { MIOS32_MF_DOUT_PORT->BSRR = (b) ? MIOS32_MF_DOUT_PIN : (MIOS32_MF_DOUT_PIN << 16); }
-
-#define PIN_RCLK_0  { MIOS32_MF_RCLK_PORT->BRR  = MIOS32_MF_RCLK_PIN; }
-#define PIN_RCLK_1  { MIOS32_MF_RCLK_PORT->BSRR = MIOS32_MF_RCLK_PIN; }
-
-#define PIN_SCLK_0  { MIOS32_MF_SCLK_PORT->BRR  = MIOS32_MF_SCLK_PIN; }
-#define PIN_SCLK_1  { MIOS32_MF_SCLK_PORT->BSRR = MIOS32_MF_SCLK_PIN; }
-
-
 #define REPEAT_CTR_RELOAD         31  // retries to reach target position
 #define TIMEOUT_CTR_RELOAD       255 // give up after how many mS
 #define MANUAL_MOVE_CTR_RELOAD   255 // ignore new position request for how many mS
@@ -107,29 +98,14 @@ s32 MIOS32_MF_Init(u32 mode)
   return -1; // no motorfaders
 #else
 
-  // set default state of output pins
-  PIN_SCLK_1;
-  PIN_RCLK_1;
-  PIN_DOUT(1);
+  // initial state of RCLK
+  MIOS32_SPI_RC_PinSet(MIOS32_MF_SPI, MIOS32_MF_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
-  // configure output pins
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-#if MIOS32_MF_OUTPUTS_OD
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_OD;
-#else
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-#endif
+  // init GPIO structure
+  MIOS32_SPI_IO_Init(MIOS32_MF_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 
-  GPIO_InitStructure.GPIO_Pin = MIOS32_MF_RCLK_PIN;
-  GPIO_Init(MIOS32_MF_RCLK_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = MIOS32_MF_SCLK_PIN;
-  GPIO_Init(MIOS32_MF_SCLK_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = MIOS32_MF_DOUT_PIN;
-  GPIO_Init(MIOS32_MF_DOUT_PORT, &GPIO_InitStructure);
+  // init SPI port for fast baudrate
+  MIOS32_SPI_TransferModeInit(MIOS32_MF_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
 
   int i;
   for(i=0; i<MIOS32_MF_NUM; ++i) {
@@ -137,7 +113,7 @@ s32 MIOS32_MF_Init(u32 mode)
     mf_state[i].ALL1 = 0;
     mf_state[i].ALL2 = 0;
 
-    mf_state[i].config.cfg.deadband = 31;
+    mf_state[i].config.cfg.deadband = 15;
     mf_state[i].config.cfg.pwm_period = 3;
     mf_state[i].config.cfg.pwm_duty_cycle_down = 1;
     mf_state[i].config.cfg.pwm_duty_cycle_up = 1;
@@ -165,19 +141,25 @@ s32 MIOS32_MF_FaderMove(u32 mf, u16 pos)
     return -1;
 
   // skip if fader currently manually moved (feedback killer)
-  if( !mf_state[mf].manual_move_ctr ) {
-    // following sequence must be atomic
-    MIOS32_IRQ_Disable();
+  if( mf_state[mf].manual_move_ctr )
+    return 0; // no error
 
-    // set new motor position
-    mf_state[mf].pos = pos;
+  // skip if current position already inside MF deadband (we cannot do it better anyhow...)
+  s32 mf_delta = MIOS32_AIN_PinGet(mf) - pos;
+  if( abs(mf_delta) < mf_state[mf].config.cfg.deadband )
+    return 0; // no error
 
-    // reinit repeat and timeout counter
-    mf_state[mf].repeat_ctr = REPEAT_CTR_RELOAD;
-    mf_state[mf].timeout_ctr = TIMEOUT_CTR_RELOAD;
+  // following sequence must be atomic
+  MIOS32_IRQ_Disable();
 
-    MIOS32_IRQ_Enable();
-  }
+  // set new motor position
+  mf_state[mf].pos = pos;
+
+  // reinit repeat and timeout counter
+  mf_state[mf].repeat_ctr = REPEAT_CTR_RELOAD;
+  mf_state[mf].timeout_ctr = TIMEOUT_CTR_RELOAD;
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 #endif
@@ -453,7 +435,7 @@ s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas)
 	    } else {
 	      // slow down motor via PWM if distance between current and target position < 0x180
 	      if( mf->config.cfg.pwm_period && abs_mf_delta < 0x180 ) {
-		if( ++mf->pwm_ctr >= mf->config.cfg.pwm_period )
+		if( ++mf->pwm_ctr > mf->config.cfg.pwm_period )
 		  mf->pwm_ctr = 0;
 		
 		if( mf->pwm_ctr > ((mf_delta > 0) ? mf->config.cfg.pwm_duty_cycle_up : mf->config.cfg.pwm_duty_cycle_up) ) {
@@ -490,35 +472,46 @@ s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas)
 #if MIOS32_MF_NUM
 static void MIOS32_MF_UpdateSR(void)
 {
-  int i, j;
+  int i;
 
   // shift in 8bit data
-  // whole function takes ca. 1.5 uS @ 72MHz
-
 #if MIOS32_MF_NUM > 8
   for(i=12; i>=0; i-=4) { // 2 MBHP_MF modules
 #else
   for(i=4; i>=0; i-=4) { // 1 MBHP_MF module
 #endif
+    u8 buffer = 0;
+
     mf_state_t *mf_state_ptr = (mf_state_t *)&mf_state[i];
-    for(j=0; j<4; ++j) {
-      PIN_DOUT(mf_state_ptr->up);
-      PIN_SCLK_0; // setup delay
-      PIN_SCLK_1;
-      PIN_DOUT(mf_state_ptr->down);
-      PIN_SCLK_0; // setup delay
-      PIN_SCLK_1;
-      mf_state_ptr++;
-    }
+    if( mf_state_ptr->up )
+      buffer |= 0x01;
+    if( mf_state_ptr->down )
+      buffer |= 0x02;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x04;
+    if( mf_state_ptr->down )
+      buffer |= 0x08;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x10;
+    if( mf_state_ptr->down )
+      buffer |= 0x20;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x40;
+    if( mf_state_ptr->down )
+      buffer |= 0x80;
+
+    MIOS32_SPI_TransferByte(MIOS32_MF_SPI, buffer);
   }
 
   // transfer to output register
-  PIN_RCLK_0;
-  PIN_RCLK_0;
-  PIN_RCLK_0;
-
-  PIN_RCLK_1;  // idle state
-  PIN_DOUT(1); // idle state
+  MIOS32_SPI_RC_PinSet(MIOS32_MF_SPI, MIOS32_MF_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+  MIOS32_SPI_RC_PinSet(MIOS32_MF_SPI, MIOS32_MF_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 }
 #endif
 

@@ -61,6 +61,7 @@
 
 
 // control pins to select the muxed channel
+// only relevant if MIOS32_AIN_MUX_PINS > 0
 #ifndef MIOS32_AIN_MUX0_PIN
 #define MIOS32_AIN_MUX0_PIN   GPIO_Pin_4 // J5C.A8
 #endif

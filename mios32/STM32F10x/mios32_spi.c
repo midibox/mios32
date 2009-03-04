@@ -3,14 +3,21 @@
 //!
 //! Hardware Abstraction Layer for SPI ports of STM32
 //!
-//! Two ports are provided at J16 (SPI0) and J8/9 (SPI1) of the 
-//! MBHP_CORE_STM32 module.
+//! Three ports are provided at J16 (SPI0), J8/9 (SPI1) and J19 (SPI2) of the 
+//! MBHP_CORE_STM32 module..
 //!
 //! J16 provides two RCLK (alias Chip Select) lines, and is normaly
 //! connected to a SD Card or/and an Ethernet Interface like ENC28J60.
 //!
 //! J8/9 only supports a single RCLK line, and is normaly connected to
 //! the SRIO chain to scan DIN/DOUT modules.
+//!
+//! J19 provides two RCLK (alias Chip Select) lines.<BR>
+//! It's a software emulated SPI, therefore the selected spi_prescaler has no
+//! effect! Bytes are transfered so fast as possible. The usage of
+//! MIOS32_SPI_PIN_DRIVER_STRONG is strongly recommented ;)<BR>
+//! DMA transfers are not supported by the emulation, so that 
+//! MIOS32_SPI_TransferBlock() will consume CPU time (but the callback handling does work).
 //!
 //! If SPI low-level functions should be used to access other peripherals,
 //! please ensure that the appr. MIOS32_* drivers are disabled (e.g.
@@ -20,8 +27,6 @@
 //! Note that additional chip select lines can be easily added by using
 //! the remaining free GPIOs of the core module. Shared SPI ports should be
 //! arbitrated with (FreeRTOS based) Mutexes to avoid collisions!
-//!
-//! \todo we could add a software emulated SPI port for J19
 //!
 //! \{
 /* ==========================================================================
@@ -85,14 +90,41 @@
 #define MIOS32_SPI1_MOSI_PIN   GPIO_Pin_15
 
 
+#define MIOS32_SPI2_PTR        NULL
+#define MIOS32_SPI2_DMA_RX_PTR NULL
+#define MIOS32_SPI2_DMA_TX_PTR NULL
+#define MIOS32_SPI2_DMA_RX_IRQ_FLAGS 0
+#define MIOS32_SPI2_DMA_IRQ_CHANNEL NULL
+#define MIOS32_SPI2_DMA_IRQHANDLER_FUNC NULL
+
+#define MIOS32_SPI2_RCLK1_PORT GPIOC
+#define MIOS32_SPI2_RCLK1_PIN  GPIO_Pin_13
+#define MIOS32_SPI2_RCLK2_PORT GPIOC
+#define MIOS32_SPI2_RCLK2_PIN  GPIO_Pin_14
+#define MIOS32_SPI2_SCLK_PORT  GPIOB
+#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_SPI2_MISO_PORT  GPIOB
+#define MIOS32_SPI2_MISO_PIN   GPIO_Pin_7
+#define MIOS32_SPI2_MOSI_PORT  GPIOB
+#define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
+
+// help macros for SW emulation
+#define MIOS32_SPI2_SET_MOSI(b) { MIOS32_SPI2_MOSI_PORT->BSRR = (b) ? MIOS32_SPI2_MOSI_PIN : (MIOS32_SPI2_MOSI_PIN << 16); }
+#define MIOS32_SPI2_GET_MISO    ( MIOS32_SPI2_MISO_PORT->IDR & MIOS32_SPI2_MISO_PIN )
+#define MIOS32_SPI2_SET_SCLK_0  { MIOS32_SPI2_SCLK_PORT->BRR  = MIOS32_SPI2_SCLK_PIN; }
+#define MIOS32_SPI2_SET_SCLK_1  { MIOS32_SPI2_SCLK_PORT->BSRR = MIOS32_SPI2_SCLK_PIN; }
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static void (*spi_callback[2])(void);
+static void (*spi_callback[3])(void);
 
 static u8 tx_dummy_byte;
 static u8 rx_dummy_byte;
+
+static mios32_spi_mode_t sw_spi2_mode;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -172,7 +204,7 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // Configure DMA interrupt
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SPI0_DMA_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SRIO_DMA_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SPI_DMA_PRIORITY; // defined in mios32_irq.h
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
@@ -236,12 +268,33 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // Configure DMA interrupt
   NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SPI1_DMA_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SRIO_DMA_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SPI_DMA_PRIORITY; // defined in mios32_irq.h
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 
 #endif /* MIOS32_DONT_USE_SPI1 */
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // SPI2 (software emulated)
+  ///////////////////////////////////////////////////////////////////////////
+#ifndef MIOS32_DONT_USE_SPI2
+
+  // disable callback function
+  spi_callback[2] = NULL;
+
+  // set RC pin(s) to 1
+  MIOS32_SPI_RC_PinSet(2, 0, 1); // spi, rc_pin, pin_value
+  MIOS32_SPI_RC_PinSet(2, 1, 1); // spi, rc_pin, pin_value
+
+  // IO configuration
+  MIOS32_SPI_IO_Init(2, MIOS32_SPI_PIN_DRIVER_WEAK_OD);
+
+  // initial SPI peripheral configuration
+  MIOS32_SPI_TransferModeInit(2, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
+
+#endif /* MIOS32_DONT_USE_SPI2 */
 
   return 0; // no error
 }
@@ -250,7 +303,7 @@ s32 MIOS32_SPI_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 //! (Re-)initializes SPI IO Pins
 //! By default, all output pins are configured with weak open drain drivers for 2 MHz
-//! \param[in] spi SPI number (0 or 1)
+//! \param[in] spi SPI number (0, 1 or 2)
 //! \param[in] spi_pin_driver configures the driver strength:
 //! <UL>
 //!   <LI>MIOS32_SPI_PIN_DRIVER_STRONG: configures outputs for up to 50 MHz
@@ -359,6 +412,29 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
       break;
 #endif
 
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+      // RCLK, SCLK and DOUT assigned to GPIO (due to SW emulation)
+      GPIO_InitStructure.GPIO_Mode = gp_mode;
+      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_SCLK_PIN;
+      GPIO_Init(MIOS32_SPI2_SCLK_PORT, &GPIO_InitStructure);
+      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MOSI_PIN;
+      GPIO_Init(MIOS32_SPI2_MOSI_PORT, &GPIO_InitStructure);
+      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK1_PIN;
+      GPIO_Init(MIOS32_SPI2_RCLK1_PORT, &GPIO_InitStructure);
+      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK2_PIN;
+      GPIO_Init(MIOS32_SPI2_RCLK2_PORT, &GPIO_InitStructure);
+    
+      // DIN is input with pull-up
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MISO_PIN;
+      GPIO_Init(MIOS32_SPI2_MISO_PORT, &GPIO_InitStructure);
+
+      break;
+#endif
+
     default:
       return -2; // unsupported SPI port
   }
@@ -372,7 +448,7 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 //! By default, all SPI peripherals are configured with 
 //! MIOS32_SPI_MODE_CLK1_PHASE1 and MIOS32_SPI_PRESCALER_128
 //!
-//! \param[in] spi SPI number (0 or 1)
+//! \param[in] spi SPI number (0, 1 or 2)
 //! \param[in] spi_mode configures clock and capture phase:
 //! <UL>
 //!   <LI>MIOS32_SPI_MODE_CLK0_PHASE0: Idle level of clock is 0, data captured at rising edge
@@ -457,6 +533,31 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
       break;
 #endif
 
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+      // no clock prescaler for SW emulated SPI
+      // remember mode settings
+      sw_spi2_mode = spi_mode;
+
+      // set clock idle level
+      switch( sw_spi2_mode ) {
+        case MIOS32_SPI_MODE_CLK0_PHASE0:
+        case MIOS32_SPI_MODE_CLK0_PHASE1:
+	  MIOS32_SPI2_SET_SCLK_0;
+	  break;
+        case MIOS32_SPI_MODE_CLK1_PHASE0:
+        case MIOS32_SPI_MODE_CLK1_PHASE1:
+	  MIOS32_SPI2_SET_SCLK_1;
+	  break;
+        default:
+	  return -4; // invalid SPI clock/phase mode
+      }
+
+      break;
+#endif
+
     default:
       return -2; // unsupported SPI port
   }
@@ -467,7 +568,7 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 
 /////////////////////////////////////////////////////////////////////////////
 //! Controls the RC (Register Clock alias Chip Select) pin of a SPI port
-//! \param[in] spi SPI number (0 or 1)
+//! \param[in] spi SPI number (0, 1 or 2)
 //! \param[in] rc_pin RCLK pin (0 or 1 for RCLK1 or RCLK2)
 //! \param[in] pin_value 0 or 1
 //! \return 0 if no error
@@ -521,6 +622,31 @@ s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
       break;
 #endif
 
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+      switch( rc_pin ) {
+        case 0:
+	  if( pin_value )
+	    MIOS32_SPI2_RCLK1_PORT->BSRR = MIOS32_SPI2_RCLK1_PIN;
+	  else
+	    MIOS32_SPI2_RCLK1_PORT->BRR  = MIOS32_SPI2_RCLK1_PIN;
+	  break;
+
+        case 1:
+	  if( pin_value )
+	    MIOS32_SPI2_RCLK2_PORT->BSRR = MIOS32_SPI2_RCLK2_PIN;
+	  else
+	    MIOS32_SPI2_RCLK2_PORT->BRR  = MIOS32_SPI2_RCLK2_PIN;
+	  break;
+
+        default:
+	  return -3; // unsupported RC pin
+      }
+      break;
+#endif
+
     default:
       return -2; // unsupported SPI port
   }
@@ -531,11 +657,12 @@ s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Transfers a byte to SPI output and reads back the return value from SPI input
-//! \param[in] spi SPI number (0 or 1)
+//! \param[in] spi SPI number (0, 1 or 2)
 //! \param[in] b the byte which should be transfered
 //! \return >= 0: the read byte
 //! \return -1 if disabled SPI port selected
 //! \return -2 if unsupported SPI port selected
+//! \return -3 if unsupported SPI mode configured via MIOS32_SPI_TransferModeInit()
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 {
@@ -557,6 +684,166 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
       spi_ptr = MIOS32_SPI1_PTR;
       break;
 #endif
+
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+    // Software Emulation
+    {
+      u8 in_data = 0;
+
+      switch( sw_spi2_mode ) {
+        case MIOS32_SPI_MODE_CLK0_PHASE0:
+	  // not tested on real HW yet!
+	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  break;
+
+        case MIOS32_SPI_MODE_CLK0_PHASE1:
+	  // not tested on real HW yet!
+	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
+	  MIOS32_SPI2_SET_SCLK_1;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  break;
+
+        case MIOS32_SPI_MODE_CLK1_PHASE0:
+	  // not tested on real HW yet!
+	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  break;
+
+        case MIOS32_SPI_MODE_CLK1_PHASE1:
+	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  break;
+
+        default:
+	  return -3; // unsupported SPI mode
+      }
+
+      return in_data; // END of SW emulation - EXIT here!
+#endif
+    } break;
 
     default:
       return -2; // unsupported SPI port
@@ -586,7 +873,7 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Transfers a block of bytes via DMA.
-//! \param[in] spi SPI number (0 or 1)
+//! \param[in] spi SPI number (0, 1 or 2)
 //! \param[in] send_buffer pointer to buffer which should be sent.<BR>
 //! If NULL, 0xff (all-one) will be sent.
 //! \param[in] receive_buffer pointer to buffer which should get the received values.<BR>
@@ -622,6 +909,42 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
       dma_tx_ptr = MIOS32_SPI1_DMA_TX_PTR;
       dma_rx_ptr = MIOS32_SPI1_DMA_RX_PTR;
       break;
+#endif
+
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+    // Software Emulation
+    {
+      u32 pos;
+
+      // we have 4 cases:
+      if( receive_buffer != NULL ) {
+	if( send_buffer != NULL ) {
+	  for(pos=0; pos<len; ++len)
+	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, *send_buffer++);
+	} else {
+	  for(pos=0; pos<len; ++len)
+	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, 0xff);
+	}
+      } else {
+	// TODO: we could use an optimized "send only" function to speed up the SW emulation!
+	if( send_buffer != NULL ) {
+	  for(pos=0; pos<len; ++len)
+	    MIOS32_SPI_TransferByte(spi, *send_buffer++);
+	} else {
+	  // nothing to do...
+	}
+      }
+
+      // set callback function
+      spi_callback[spi] = callback;
+      if( spi_callback[spi] != NULL )
+	spi_callback[spi]();
+
+      return 0;; // END of SW emulation - EXIT here!
+    } break;
 #endif
 
     default:
