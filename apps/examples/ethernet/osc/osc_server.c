@@ -27,7 +27,7 @@
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,11 @@ s32 OSC_SERVER_Init(u32 mode)
 
   // create new connection
   uip_ipaddr_t ripaddr;
-  uip_ipaddr(ripaddr, 10,0,0,2);
+  uip_ipaddr(ripaddr,
+	     ((OSC_REMOTE_IP)>>24) & 0xff,
+	     ((OSC_REMOTE_IP)>>16) & 0xff,
+	     ((OSC_REMOTE_IP)>> 8) & 0xff,
+	     ((OSC_REMOTE_IP)>> 0) & 0xff);
 
   if( (osc_conn=uip_udp_new(&ripaddr, HTONS(OSC_SERVER_PORT))) != NULL ) {
     uip_udp_bind(osc_conn, HTONS(OSC_SERVER_PORT));
@@ -298,6 +302,78 @@ static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Help function which returns a positive float
+// returns -1 if argument isn't a float
+/////////////////////////////////////////////////////////////////////////////
+static float OSC_SERVER_GetFloat(u8 arg_type, u8 *arg_ptr)
+{
+  float value;
+
+  switch( arg_type ) {
+    case 'f': // float32
+      value = MIOS32_OSC_GetFloat(arg_ptr);
+      break;
+    default:
+      return -1.0; // wrong argument type
+  }
+
+  return value;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function which converts a positive float or integer argument into integer
+// returns -1 if argument neither float nor integer
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_GetIntOrFloat(u8 arg_type, u8 *arg_ptr)
+{
+  s32 value;
+
+  switch( arg_type ) {
+    case 'i': // int32
+      value = MIOS32_OSC_GetInt(arg_ptr);
+      break;
+    case 'f': // float32
+      value = (s32)MIOS32_OSC_GetFloat(arg_ptr);
+      break;
+    default:
+      return -1; // wrong argument type
+  }
+
+  return value;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function which converts a positive float, integer, TRUE or FALSE
+// into a binary value (0 or 1)
+// returns -1 if type doesn't match
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_GetBinary(u8 arg_type, u8 *arg_ptr)
+{
+  s32 value;
+
+  switch( arg_type ) {
+    case 'i': // int32
+      value = MIOS32_OSC_GetInt(arg_ptr) ? 1 : 0;
+      break;
+    case 'f': // float32
+      value = (MIOS32_OSC_GetFloat(arg_ptr) >= 1.0) ? 1 : 0;
+      break;
+    case 'T': // TRUE
+      value = 1;
+      break;
+    case 'F': // FALSE
+      value = 0;
+      break;
+    default:
+      return -1; // wrong argument type
+  }
+
+  return value;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Method to control a single LED
 // Path: /cs/led/set <led-number> <value>
 // <led-number> can be float32 or int32
@@ -313,37 +389,15 @@ static s32 OSC_SERVER_Method_LED_Set(mios32_osc_args_t *osc_args, u32 method_arg
   if( osc_args->num_args < 2 )
     return -1; // wrong number of arguments
 
-  // LED number can be float or integer
-  int pin;
-  switch( osc_args->arg_type[0] ) {
-    case 'i': // int32
-      pin = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
-      break;
-    case 'f': // float32
-      pin = (int)MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]);
-      break;
-    default:
-      return -2; // wrong argument type for first parameter
-  }
+  // get LED number
+  s32 pin;
+  if( (pin=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) < 0 )
+    return -2; // wrong argument type for first parameter
 
-  // LED value can be float, integer, TRUE or FALSE
-  int value;
-  switch( osc_args->arg_type[1] ) {
-    case 'i': // int32
-      value = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]) ? 1 : 0;
-      break;
-    case 'f': // float32
-      value = (MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) >= 1.0) ? 1 : 0;
-      break;
-    case 'T': // TRUE
-      value = 1;
-      break;
-    case 'F': // FALSE
-      value = 0;
-      break;
-    default:
-      return -3; // wrong argument type for second parameter
-  }
+  // get LED value (binary: 0 or 1)
+  s32 value;
+  if( (value=OSC_SERVER_GetBinary(osc_args->arg_type[1], osc_args->arg_ptr[1])) < 0 )
+    return -3; // wrong argument type for second parameter
 
   MIOS32_DOUT_PinSet(pin, value);
 
@@ -367,23 +421,13 @@ static s32 OSC_SERVER_Method_LED_SetAll(mios32_osc_args_t *osc_args, u32 method_
     return -1; // wrong number of arguments
 
   // SR value can be float, integer, TRUE or FALSE
-  u8 sr_value = 0xff;
-  switch( osc_args->arg_type[0] ) {
-    case 'i': // int32
-      sr_value = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]) ? 0xff : 0x00;
-      break;
-    case 'f': // float32
-      sr_value = (MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) >= 1.0) ? 0xff : 0x00;
-      break;
-    case 'T': // TRUE
-      sr_value = 0xff;
-      break;
-    case 'F': // FALSE
-      sr_value = 0x00;
-      break;
-    default:
-      return -3; // wrong argument type for second parameter
-  }
+  // get SR value (binary: 0 or 1)
+  s32 value;
+  if( (value=OSC_SERVER_GetBinary(osc_args->arg_type[0], osc_args->arg_ptr[0])) < 0 )
+    return -2; // wrong argument type for first parameter
+
+  // convert to 0x00 or 0xff
+  u8 sr_value = value ? 0xff : 0x00;
 
   // set all SRs
   int sr;
@@ -395,29 +439,194 @@ static s32 OSC_SERVER_Method_LED_SetAll(mios32_osc_args_t *osc_args, u32 method_
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Method to control a single Motorfader
+// Path: /cs/mf/set <motorfader-number> <value>
+// <value> has to be a float32 (range 0.00000..1.00000)
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_MF_Set(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 2 arguments
+  if( osc_args->num_args < 2 )
+    return -1; // wrong number of arguments
+
+  // get MF number
+  s32 mf;
+  if( (mf=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) < 0 )
+    return -2; // wrong argument type for first parameter
+
+  // get MF value
+  float value;
+  if( (value=OSC_SERVER_GetFloat(osc_args->arg_type[1], osc_args->arg_ptr[1])) < 0 )
+    return -3; // wrong argument type for second parameter
+
+  // scale to AIN resolution
+  u32 mf_pos = (u32)(value * 4095.0);
+  if( mf_pos > 4095 )
+    mf_pos = 4095;
+
+  // move fader
+  MIOS32_MF_TouchDetectionReset(mf); // force move regardless of touch detection state
+  MIOS32_MF_FaderMove(mf, mf_pos);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to control all Motorfaders
+// Path: /cs/mf/set_all <value>
+// <value> has to be a float32 (range 0.00000..1.00000)
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_MF_SetAll(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // get MF value
+  float value;
+  if( (value=OSC_SERVER_GetFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) < 0 )
+    return -2; // wrong argument type for first parameter
+
+  // scale to AIN resolution
+  u32 mf_pos = (u32)(value * 4095.0);
+  if( mf_pos > 4095 )
+    mf_pos = 4095;
+
+  // move all faders
+  u8 mf;
+  for(mf=0; mf<MIOS32_MF_NUM; ++mf) {
+    MIOS32_MF_TouchDetectionReset(mf); // force move regardless of touch detection state
+    MIOS32_MF_FaderMove(mf, mf_pos);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to configure the MF
+// Pathes: /cfg/mf/deadband <motorfader-number> <value>              (method_arg == 0x00000000)
+// Pathes: /cfg/mf/pwm_period <motorfader-number> <value>            (method_arg == 0x00000001)
+// Pathes: /cfg/mf/pwm_duty_cycle_down <motorfader-number> <value>   (method_arg == 0x00000002)
+// Pathes: /cfg/mf/pwm_duty_cycle_up <motorfader-number> <value>     (method_arg == 0x00000003)
+// <value> can be float32 or int32
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_MF_Config(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 2 arguments
+  if( osc_args->num_args < 2 )
+    return -1; // wrong number of arguments
+
+  // get MF number
+  s32 mf;
+  if( (mf=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) < 0 )
+    return -2; // wrong argument type for first parameter
+
+  // get configuration value
+  float value;
+  if( (value=OSC_SERVER_GetFloat(osc_args->arg_type[1], osc_args->arg_ptr[1])) < 0 )
+    return -3; // wrong argument type for second parameter
+
+  // get current configuration
+  mios32_mf_config_t config = MIOS32_MF_ConfigGet(mf);
+
+  // change value
+  switch( method_arg ) {
+    case 0x00000000:
+      config.cfg.deadband = value;
+      break;
+    case 0x00000001:
+      config.cfg.pwm_period = value;
+      break;
+    case 0x00000002:
+      config.cfg.pwm_duty_cycle_down = value;
+      break;
+    case 0x00000003:
+      config.cfg.pwm_duty_cycle_up = value;
+      break;
+    default:
+      return -5; // invalid method_arg
+  }
+
+  // set config
+  MIOS32_MF_ConfigSet(mf, config);
+
+  // note: if motorfader doesn't exist, this will be silently ignored
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Search Tree for OSC Methods (used by MIOS32_OSC_ParsePacket())
 /////////////////////////////////////////////////////////////////////////////
 
 
 static const char str_cs[] = "cs";
+static const char str_cfg[] = "cfg";
 
 static const char str_led[] = "led";
+static const char str_mf[] = "mf";
 
 static const char str_set[] = "set";
 static const char str_set_all[] = "set_all";
 
-static mios32_osc_search_tree_t parse_led[] = {
+static const char str_deadband[] = "deadband";
+static const char str_pwm_period[] = "pwm_period";
+static const char str_pwm_duty_cycle_down[] = "pwm_duty_cycle_down";
+static const char str_pwm_duty_cycle_up[] = "pwm_duty_cycle_up";
+
+
+static mios32_osc_search_tree_t parse_cs_led[] = {
   { str_set, NULL, &OSC_SERVER_Method_LED_Set, 0x00000000 },
   { str_set_all, NULL, &OSC_SERVER_Method_LED_SetAll, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_cs[] = {
-  { str_led, parse_led, NULL, 0 },
+static mios32_osc_search_tree_t parse_cs_mf[] = {
+  { str_set, NULL, &OSC_SERVER_Method_MF_Set, 0x00000000 },
+  { str_set_all, NULL, &OSC_SERVER_Method_MF_SetAll, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
+static mios32_osc_search_tree_t parse_cfg_mf[] = { // using same method with different args to select the parameter
+  { str_deadband, NULL, &OSC_SERVER_Method_MF_Config, 0x00000000 },
+  { str_pwm_period, NULL, &OSC_SERVER_Method_MF_Config, 0x00000001 },
+  { str_pwm_duty_cycle_down, NULL, &OSC_SERVER_Method_MF_Config, 0x00000002 },
+  { str_pwm_duty_cycle_up, NULL, &OSC_SERVER_Method_MF_Config, 0x00000003 },
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+
+
+static mios32_osc_search_tree_t parse_cs[] = {
+  { str_led, parse_cs_led, NULL, 0 },
+  { str_mf, parse_cs_mf, NULL, 0 },
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+static mios32_osc_search_tree_t parse_cfg[] = {
+  { str_mf, parse_cfg_mf, NULL, 0x00000000 },
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+
+
 static mios32_osc_search_tree_t parse_root[] = {
-  { str_cs, parse_cs, NULL, 0 },
+  { str_cs, parse_cs, NULL, 0x00000000 },
+  { str_cfg, parse_cfg, NULL, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };

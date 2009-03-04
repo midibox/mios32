@@ -20,5 +20,6 @@ extern void network_device_check(void);
 extern int network_device_available(void);
 extern int network_device_read(void);
 extern void network_device_send(void);
+extern unsigned char *network_device_mac_addr(void);
 
 #endif /* __NETWORK_DEVICE_H__ */

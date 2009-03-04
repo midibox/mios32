@@ -31,6 +31,7 @@
 
 extern s32 OSC_CLIENT_Init(u32 mode);
 extern s32 OSC_CLIENT_SendButtonState(mios32_osc_timetag_t timetag, u32 button, u8 pressed);
+extern s32 OSC_CLIENT_SendPotValue(mios32_osc_timetag_t timetag, u32 pot, float value);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -21,12 +21,15 @@
 #define MIOS32_ENC28J60_FULL_DUPLEX 1
 #define MIOS32_ENC28J60_MAX_FRAME_SIZE 420
 
-#define MIOS32_ENC28J60_MY_MAC_ADDR1 0x01
-#define MIOS32_ENC28J60_MY_MAC_ADDR2 0x02
-#define MIOS32_ENC28J60_MY_MAC_ADDR3 0x03
-#define MIOS32_ENC28J60_MY_MAC_ADDR4 0x04
-#define MIOS32_ENC28J60_MY_MAC_ADDR5 0x05
-#define MIOS32_ENC28J60_MY_MAC_ADDR6 0x06
+// a unique MAC address in your network (6 bytes are required)
+// If all bytes are 0, the serial number of STM32 will be taken instead,
+// which should be unique in your private network.
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
 
 
 #endif /* _MIOS32_CONFIG_H */
