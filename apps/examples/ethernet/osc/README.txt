@@ -83,4 +83,17 @@ Incoming:
   o /cfg/mf/pwm_duty_cycle_up <motorfader-number> <value>
     <value> can be float32 or int32
 
+
+
+Random Notes
+============
+
+If an OSC message is sent, but no application listens to the OSC port as
+specified in mios32_config.h (by default 10.0.0.2:10000), uIP will print
+the debug message "icmp: not icmp echo." to the MIOS Terminal
+This is normal (and very helpful).
+uIP isn't able to resolve the IP address
+
+In a real application UIP_CONF_LOGGING should be disabled in uip-conf.h
+
 ===============================================================================
