@@ -32,34 +32,63 @@ stay tuned for UI prototyping courtesy of lucem!
 
 
 
-void mod_xlate_time_time(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // timestamp - timestamp
+/////////////////////////////////////////////////////////////////////////////
+// Global prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Port translator functions
+/////////////////////////////////////////////////////////////////////////////
+
+void mod_xlate_time_time(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// timestamp - timestamp
 u32 *from, *to;
 from = (u32 *) &(node[tail_nodeid].ports[tail_port]);
 to = (u32 *) &(node[head_nodeid].ports[head_port]);
 *to = *from;
 }
-void mod_xlate_time_value(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // timestamp - value
+
+void mod_xlate_time_value(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// timestamp - value
 }
-void mod_xlate_time_flag(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // timestamp - flag
+
+void mod_xlate_time_flag(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// timestamp - flag
 }
-void mod_xlate_value_time(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // value - timestamp
+
+void mod_xlate_value_time(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// value - timestamp
 }
-void mod_xlate_value_value(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // value - value
+
+void mod_xlate_value_value(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// value - value
 u8 *from, *to;
 from = (u8 *) &(node[tail_nodeid].ports[tail_port]);
 to = (u8 *) &(node[head_nodeid].ports[head_port]);
 *to = *from;
 }
-void mod_xlate_value_flag(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // value - flag
+
+void mod_xlate_value_flag(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// value - flag
 }
-void mod_xlate_flag_time(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // flag - timestamp
+
+void mod_xlate_flag_time(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// flag - timestamp
 }
-void mod_xlate_flag_value(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // flag - value
+
+void mod_xlate_flag_value(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// flag - value
 }
-void mod_xlate_flag_flag(unsigned char tail_nodeid, unsigned char tail_port, unsigned char head_nodeid, unsigned char head_port) {	 // flag - flag
+
+void mod_xlate_flag_flag(unsigned char tail_nodeid, unsigned char tail_port, 
+						unsigned char head_nodeid, unsigned char head_port) {	// flag - flag
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Write dead values to ports according to their type
+/////////////////////////////////////////////////////////////////////////////
 
 void mod_deadport_time(unsigned char nodeid, unsigned char port) {
 	u32 *deadport;

@@ -24,13 +24,13 @@
 
 #define PRIORITY_TASK_MIDI 			( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_RACK 			( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_UI		( tskIDLE_PRIORITY + 1 )
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period1mS(void *pvParameters);
+static void TASK_UI(void *pvParameters);
 static void TASK_MIDI(void *pvParameters);
 static void TASK_Rack(void *pvParameters);
 
@@ -41,7 +41,7 @@ static void TASK_Rack(void *pvParameters);
 
 xTaskHandle xRackHandle;
 xTaskHandle xMIDIHandle;
-xTaskHandle xPeriod1msHandle;
+xTaskHandle xUIHandle;
 
 
 
@@ -49,7 +49,7 @@ xTaskHandle xPeriod1msHandle;
 // Initialize all tasks
 /////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode) {
-  xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, &xPeriod1msHandle);
+  xTaskCreate(TASK_UI, (signed portCHAR *)"UI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UI, &xUIHandle);
   xTaskCreate(TASK_MIDI, (signed portCHAR *)"MIDI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, &xMIDIHandle);
   xTaskCreate(TASK_Rack, (signed portCHAR *)"Rack", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_RACK, &xRackHandle);
 
@@ -60,7 +60,7 @@ s32 TASKS_Init(u32 mode) {
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period1mS(void *pvParameters) {
+static void TASK_UI(void *pvParameters) {
   portTickType xLastExecutionTime;
 
   // Initialise the xLastExecutionTime variable on task entry
@@ -69,14 +69,14 @@ static void TASK_Period1mS(void *pvParameters) {
 	while( 1 ) {
 		vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 		// continue in application hook
-		vx_task_period1ms();
+		vx_task_ui();
 	}
   
 }
 
 // use this function to resume the task
-void vx_task_period1ms_resume(void) {
-    vTaskResume(xPeriod1msHandle);
+void vx_task_ui_resume(void) {
+    vTaskResume(xUIHandle);
 }
 
 

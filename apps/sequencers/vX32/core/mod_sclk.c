@@ -31,23 +31,40 @@ stay tuned for UI prototyping courtesy of lucem!
 #include <seq_midi_out.h>
 
 
-const unsigned char mod_sclk_porttypes[mod_sclk_ports] = {
-	mod_porttype_value, //status
-	mod_porttype_value, //numerator
-	mod_porttype_value, //denominator
-	dead_porttype, //padding
-	mod_porttype_timestamp, //cycle length
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
-	mod_porttype_timestamp, //next tick
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
-	mod_porttype_timestamp, //sync tick
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+const mod_moduledata_t mod_sclk_moduledata = {
+	&mod_init_sclk,																// name of functions to initialise
+	&mod_proc_sclk,																// name of functions to process
+	&mod_uninit_sclk,															// name of functions to uninitialise
+	mod_sclk_ports,																// size of char array to allocate
+	mod_sclk_privvars,															// size of char array to allocate
+	mod_sclk_porttypes,															// pointer to port type lists
+	"SubClock",																	// 8 character name
+};
+
+
+
+const mod_portdata_t mod_sclk_porttypes[mod_sclk_ports] = {
+	mod_porttype_value, "Status  ",												//status
+	mod_porttype_value, "Numrator",												//numerator
+	mod_porttype_value, "Denomntr",												//denominator
+	dead_porttype, "NoPatch!",													//padding
+	mod_porttype_timestamp, "LngthOut",											//cycle length
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	mod_porttype_timestamp, "ClockOut",											//next tick
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	mod_porttype_timestamp, "Clock In",											//sync tick
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
 };
 
 //port pointers for use in functions, copy and use as requ'd
@@ -81,7 +98,11 @@ const unsigned char mod_sclk_porttypes[mod_sclk_ports] = {
 	*/
 
 
-void mod_init_sclk(unsigned char nodeid) {						// initialize a subclock module
+/////////////////////////////////////////////////////////////////////////////
+// local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+void mod_init_sclk(unsigned char nodeid) {										// initialize a subclock module
 	u8 *portstatus;
 	portstatus = (u8 *) &(node[nodeid].ports[MOD_SCLK_PORT_STATUS]);
 	u8 *portnumerator;
@@ -111,7 +132,7 @@ void mod_init_sclk(unsigned char nodeid) {						// initialize a subclock module
 	
 }
 
-void mod_proc_sclk(unsigned char nodeid) { 						// do stuff with inputs and push to the outputs 
+void mod_proc_sclk(unsigned char nodeid) { 										// do stuff with inputs and push to the outputs 
 	u32 *portnexttick;
 	portnexttick = (u32 *) &(node[nodeid].ports[MOD_SCLK_PORT_NEXTTICK]);
 	
@@ -121,11 +142,11 @@ void mod_proc_sclk(unsigned char nodeid) { 						// do stuff with inputs and pus
 	
 }
 
-void mod_uninit_sclk(unsigned char nodeid) { 						// uninitialize a sample and hold module
+void mod_uninit_sclk(unsigned char nodeid) { 									// uninitialize a sample and hold module
 }
 
 
-u32 mod_reset_sclk(unsigned char nodeid) {							// reset a seq module
+u32 mod_reset_sclk(unsigned char nodeid) {										// reset a seq module
 	u32 *portsynctick;
 	portsynctick = (u32 *) &(node[nodeid].ports[MOD_SCLK_PORT_SYNCTICK]);
 	
@@ -140,7 +161,8 @@ u32 mod_reset_sclk(unsigned char nodeid) {							// reset a seq module
 	
 }
 
-u32 mod_sclk_getnexttick(unsigned char nodeid) {					// 
+
+u32 mod_sclk_getnexttick(unsigned char nodeid) {
 
 	s8 *portstatus;
 	portstatus = (s8 *) &(node[nodeid].ports[MOD_SCLK_PORT_STATUS]);
@@ -232,9 +254,9 @@ u32 mod_sclk_getnexttick(unsigned char nodeid) {					//
 			*privcountdown = *privquotient;
 			if ((*privmodulus) > 0) {
 				*privmodcounter = *privmodcounter + *privmodulus;
-				if (*privmodcounter > *privmodulus) {						// If the SubClock Modulus Counter is greater than SubClock Modulus then
-					(*privcountdown)++;										// The SubClock Countdown is incremented by 1 (this is the distribution of the modulus)
-					*privmodcounter = *privmodcounter - *portnumerator;		// The SubClock Numerator is subtracted from SubClock Modulus Counter (this controls how often the modulus is distributed)
+				if (*privmodcounter > *privmodulus) {							// If the SubClock Modulus Counter is greater than SubClock Modulus then
+					(*privcountdown)++;											// The SubClock Countdown is incremented by 1 (this is the distribution of the modulus)
+					*privmodcounter = *privmodcounter - *portnumerator;			// The SubClock Numerator is subtracted from SubClock Modulus Counter (this controls how often the modulus is distributed)
 					
 				}
 				
@@ -275,7 +297,7 @@ void mod_sclk_resetcounters(unsigned char nodeid) {
 	privmodulus = (u16 *) &(node[nodeid].privvars[MOD_SCLK_PRIV_MODULUS]);
 	
 	
-	*portcyclelen = ((mclock.cyclelen) * (*portdenominator)); // heh once upon a time this was processor intensive. now it's three cycles. LOL.
+	*portcyclelen = ((mclock.cyclelen) * (*portdenominator)); 					// heh once upon a time this was processor intensive. now it's three cycles. LOL.
 	*privquotient = ((*portcyclelen) / (*portnumerator));
 	*privmodulus = ((*portcyclelen) % (*portnumerator));
 	

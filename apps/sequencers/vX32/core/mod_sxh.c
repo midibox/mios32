@@ -31,27 +31,48 @@ stay tuned for UI prototyping courtesy of lucem!
 #include <seq_midi_out.h>
 
 
-const unsigned char mod_sxh_porttypes[mod_sxh_ports] = {
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
-	dead_porttype, //dummies until i do something real
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
-	dead_porttype,
+
+/////////////////////////////////////////////////////////////////////////////
+// Global Variables
+/////////////////////////////////////////////////////////////////////////////
+
+const mod_moduledata_t mod_sxh_moduledata = {
+	&mod_init_sxh,																// name of functions to initialise
+	&mod_proc_sxh,																// name of functions to process
+	&mod_uninit_sxh,															// name of functions to uninitialise
+	mod_sxh_ports,																// size of char array to allocate
+	mod_sxh_privvars,															// size of char array to allocate
+	mod_sxh_porttypes,															// pointer to port type lists
+	"SamplHld",																	// 8 character name
+};
+
+
+
+const mod_portdata_t mod_sxh_porttypes[mod_sxh_ports] = {
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 													//dummies until i do something real
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
+	dead_porttype, "NoPatch!", 
 };
 
 
 
 
-void mod_init_sxh(unsigned char nodeid) {						// initialize a sample and hold module
+/////////////////////////////////////////////////////////////////////////////
+// Global prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+void mod_init_sxh(unsigned char nodeid) {										// initialize a sample and hold module
 }
 
-void mod_proc_sxh(unsigned char nodeid) { 						// do stuff with inputs and push to the outputs 
+void mod_proc_sxh(unsigned char nodeid) { 										// do stuff with inputs and push to the outputs 
 	
 }
 
-void mod_uninit_sxh(unsigned char nodeid) { 					// uninitialize a sample and hold module
+void mod_uninit_sxh(unsigned char nodeid) { 									// uninitialize a sample and hold module
 }
 

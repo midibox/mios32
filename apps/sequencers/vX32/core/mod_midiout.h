@@ -17,18 +17,35 @@ stay tuned for UI prototyping courtesy of lucem!
 
 
 
-#define mod_midiout_privvars 0
-#define mod_midiout_ports 12
+/////////////////////////////////////////////////////////////////////////////
+// Global definitions
+/////////////////////////////////////////////////////////////////////////////
 
-extern const unsigned char mod_midiout_porttypes[mod_midiout_ports];
+#define mod_midiout_privvars 0													// number of private var bytes in this module
+#define mod_midiout_ports 12													// number of port bytes in this module
 
 
 
-void mod_init_midiout(unsigned char nodeid);
+/////////////////////////////////////////////////////////////////////////////
+// Export global variables
+/////////////////////////////////////////////////////////////////////////////
 
-void mod_proc_midiout(unsigned char nodeid); 					//do stuff with inputs and push to the outputs 
+extern const mod_moduledata_t mod_midiout_moduledata;							// array holding this module's data
 
-void mod_uninit_midiout(unsigned char nodeid);
+
+extern const mod_portdata_t mod_midiout_porttypes[mod_midiout_ports];			// array holding this module's ports' data
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+void mod_init_midiout(unsigned char nodeid);									// function to init this module
+
+void mod_proc_midiout(unsigned char nodeid);									// do stuff with inputs and push to the outputs 
+
+void mod_uninit_midiout(unsigned char nodeid);									// function to uninit this module
 
 
 
