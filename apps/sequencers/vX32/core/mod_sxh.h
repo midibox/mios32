@@ -13,19 +13,30 @@ big props to nILS for being my fourth eye and TK for obvious reasons
 #define _MOD_SXH_H
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Global definitions
+/////////////////////////////////////////////////////////////////////////////
 
-#define mod_sxh_privvars 8
-#define mod_sxh_ports 8
-
-extern const unsigned char mod_sxh_porttypes[mod_sxh_ports];
+#define mod_sxh_privvars 8														// number of private var bytes in this module
+#define mod_sxh_ports 8															// number of port bytes in this module
 
 
 
-void mod_init_sxh(unsigned char nodeid);
+/////////////////////////////////////////////////////////////////////////////
+// Export global variables
+/////////////////////////////////////////////////////////////////////////////
 
-void mod_proc_sxh(unsigned char nodeid); 					//do stuff with inputs and push to the outputs 
+extern const mod_moduledata_t mod_sxh_moduledata;								// array holding this module's data
 
-void mod_uninit_sxh(unsigned char nodeid);
+extern const mod_portdata_t mod_sxh_porttypes[mod_sxh_ports];					// array holding this module's ports' data
+
+
+
+void mod_init_sxh(unsigned char nodeid);										// function to init this module
+
+void mod_proc_sxh(unsigned char nodeid); 										//do stuff with inputs and push to the outputs 
+
+void mod_uninit_sxh(unsigned char nodeid);										// function to uninit this module
 
 
 

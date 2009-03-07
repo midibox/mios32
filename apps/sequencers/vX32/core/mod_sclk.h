@@ -17,8 +17,12 @@ stay tuned for UI prototyping courtesy of lucem!
 
 
 
-#define mod_sclk_ports 16
-#define mod_sclk_privvars 16
+/////////////////////////////////////////////////////////////////////////////
+// Global definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#define mod_sclk_ports 16														// number of port bytes in this module
+#define mod_sclk_privvars 16													// number of private var bytes in this module
 
 
 #define MOD_SCLK_PORT_STATUS 0
@@ -58,19 +62,33 @@ stay tuned for UI prototyping courtesy of lucem!
 #define MOD_SCLK_PORT_STATUS_BIT_GOTSYNC 4
 
 
-extern const unsigned char mod_sclk_porttypes[mod_sclk_ports];
+
+/////////////////////////////////////////////////////////////////////////////
+// Export global variables
+/////////////////////////////////////////////////////////////////////////////
+
+extern const mod_moduledata_t mod_sclk_moduledata;								// array holding this module's data
+
+extern const mod_portdata_t mod_sclk_porttypes[mod_sclk_ports];					// array holding this module's ports' data
 
 
-void mod_init_sclk(unsigned char nodeid);
 
-void mod_proc_sclk(unsigned char nodeid); 					//do stuff with inputs and push to the outputs 
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
 
-void mod_uninit_sclk(unsigned char nodeid);
+void mod_init_sclk(unsigned char nodeid);										// function to init this module
 
-u32 mod_reset_sclk(unsigned char nodeid);
+void mod_proc_sclk(unsigned char nodeid); 										//do stuff with inputs and push to the outputs 
 
-u32 mod_sclk_getnexttick(unsigned char nodeid);
+void mod_uninit_sclk(unsigned char nodeid);										// function to uninit this module
 
-void mod_sclk_resetcounters(unsigned char nodeid);
+u32 mod_reset_sclk(unsigned char nodeid);										// function to reset this module
+
+
+u32 mod_sclk_getnexttick(unsigned char nodeid);									// module-specific functions
+
+void mod_sclk_resetcounters(unsigned char nodeid);								// module-specific functions
+
 
 #endif /* _MOD_SCLK_H */

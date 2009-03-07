@@ -27,14 +27,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // called from tasks.c
-extern s32 tasks_init(u32 mode);
+extern s32 tasks_init(u32 mode);												// add the tasks to FreeRTOS
 
-extern void vx_task_rack_tick(void);
-extern void vx_task_rack_resume(void);
-extern void vx_task_midi(void);
-extern void vx_task_midi_resume(void);
-extern void vx_task_period1ms(void);
-extern void vx_task_period1ms_resume(void);
+extern void vx_task_rack_tick(void);											// task handles the vX rack
+extern void vx_task_rack_resume(void);											// resume the above task if it is stopped
+extern void vx_task_midi(void);													// task handles MIDI I/O
+extern void vx_task_midi_resume(void);											// resume the above task if it is stopped
+extern void vx_task_ui(void);													// task handles user interfacing
+extern void vx_task_ui_resume(void);											// resume the above task if it is stopped
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

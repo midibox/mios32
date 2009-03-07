@@ -32,7 +32,10 @@ stay tuned for UI prototyping courtesy of lucem!
 
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Global Variables
+/////////////////////////////////////////////////////////////////////////////
 
-signed char *vpattern[max_vpatterns];
+signed char *vpattern[max_vpatterns];											// array of pointers to value patterns
 
-signed char *bpattern[max_bpatterns];
+signed char *bpattern[max_bpatterns];											// array of pointers to binary patterns
