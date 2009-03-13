@@ -207,7 +207,6 @@ s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
   {
     // for debugging: merge path parts to complete path
     char path[128]; // should be enough?
@@ -308,7 +307,6 @@ static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
       }
     }
   }
-#endif  
 
   return 0; // no error
 }
@@ -562,6 +560,159 @@ static s32 OSC_SERVER_Method_Fil8(mios32_osc_args_t *osc_args, u32 method_arg)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Method to access the SID frequency register directly
+// Path: /sid*/*/*/direct/frq <value>
+// <value> has to be a float32 or int32 in the range 0..3905 (Hz)
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_DirectFrq(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // get value
+  s32 value;
+  if( (value=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) <= INVALID_ARGUMENT )
+    return -2; // wrong argument type for first parameter
+
+  // ensure that frequency is positive
+  if( value < 0 )
+    value = 0;
+
+  // determine SID frequency register value
+  s32 frq_value = (s32)((float)value * 16.777216);
+  if( frq_value > 65535 )
+    frq_value = 65535;
+
+  // forward to MBNet
+  u8 sid = (method_arg >> 24) & 0xf;
+  u8 lr = (method_arg >> 31) & 1;
+  u8 osc = ((method_arg >> 28) & 0x03);
+  u16 addr = 0xfe00 + lr*0x20 + 7*osc + (method_arg & 0xfff);
+  return MBNET_TASK_PatchWrite16(sid, addr, (u16)frq_value);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to access a 16bit SID register directly
+// Path: /sid*/*/*/direct/* <value>
+// <value> has to be a float32 or int32 in the range 0..65535
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_Direct16(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // get value
+  s32 value;
+  if( (value=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) <= INVALID_ARGUMENT )
+    return -2; // wrong argument type for first parameter
+
+  // ensure that value is in allowed range
+  if( value < 0 )
+    value = 0;
+  else if( value > 65535 )
+    value = 65535;
+
+  // forward to MBNet
+  u8 sid = (method_arg >> 24) & 0xf;
+  u8 lr = (method_arg >> 31) & 1;
+  u8 osc = ((method_arg >> 28) & 0x03);
+  u16 addr = 0xfe00 + lr*0x20 + 7*osc + (method_arg & 0xfff);
+  return MBNET_TASK_PatchWrite16(sid, addr, (u16)value);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to access a 8bit SID register directly
+// Path: /sid*/*/*/direct/* <value>
+// <value> has to be a float32 or int32 in the range 0..255
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_Direct8(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // get value
+  s32 value;
+  if( (value=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) <= INVALID_ARGUMENT )
+    return -2; // wrong argument type for first parameter
+
+  // ensure that value is in allowed range
+  if( value < 0 )
+    value = 0;
+  else if( value > 255 )
+    value = 255;
+
+  // forward to MBNet
+  u8 sid = (method_arg >> 24) & 0xf;
+  u8 lr = (method_arg >> 31) & 1;
+  u8 osc = ((method_arg >> 28) & 0x03);
+  u16 addr = 0xfe00 + lr*0x20 + 7*osc + (method_arg & 0xfff);
+  return MBNET_TASK_PatchWrite8(sid, addr, (u8)value);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Method to set the gates of all SIDs
+// Path: /gates <gates1> <gates2> <gates3> <gates4>
+// <gates*> has to be a float32 or int32
+// bit [2:0] (left channel) and [6:4] (right channel) are used
+// Each bit controls the gate of an oscillator
+/////////////////////////////////////////////////////////////////////////////
+static s32 OSC_SERVER_Method_DirectGates(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  OSC_SERVER_DebugMessage(osc_args, method_arg);
+#endif
+
+  // we expect at least 4 arguments
+  if( osc_args->num_args < 4 )
+    return -1; // wrong number of arguments
+
+  // get gate values
+  s32 g1;
+  if( (g1=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[0], osc_args->arg_ptr[0])) <= INVALID_ARGUMENT )
+    return -2; // wrong argument type for first parameter
+
+  s32 g2;
+  if( (g2=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[1], osc_args->arg_ptr[1])) <= INVALID_ARGUMENT )
+    return -3; // wrong argument type for second parameter
+
+  s32 g3;
+  if( (g3=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[2], osc_args->arg_ptr[2])) <= INVALID_ARGUMENT )
+    return -4; // wrong argument type for third parameter
+
+  s32 g4;
+  if( (g4=OSC_SERVER_GetIntOrFloat(osc_args->arg_type[3], osc_args->arg_ptr[3])) <= INVALID_ARGUMENT )
+    return -5; // wrong argument type for fourth parameter
+
+  // forward to MBNet
+  u16 addr = 0xfe80;
+  s32 status = 0;
+  status |= MBNET_TASK_PatchWrite8(0x00, addr, (u8)g1);
+  status |= MBNET_TASK_PatchWrite8(0x01, addr, (u8)g2);
+  status |= MBNET_TASK_PatchWrite8(0x02, addr, (u8)g3);
+  status |= MBNET_TASK_PatchWrite8(0x03, addr, (u8)g4);
+  return status;
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Search Tree for OSC Methods (used by MIOS32_OSC_ParsePacket())
@@ -582,6 +733,7 @@ static const char str_3[] = "3";
 
 static const char str_osc[] = "osc";
 static const char str_filter[] = "filter";
+static const char str_direct[] = "direct";
 
 static const char str_transpose[] = "transpose";
 static const char str_finetune[] = "finetune";
@@ -590,6 +742,11 @@ static const char str_pulsewidth[] = "pulsewidth";
 static const char str_cutoff[] = "cutoff";
 static const char str_resonance[] = "resonance";
 
+static const char str_frq[] = "frq";
+static const char str_ctrl[] = "ctrl";
+static const char str_adsr[] = "adsr";
+
+static const char str_gates[] = "gates";
 
 
 static mios32_osc_search_tree_t parse_sid_osc[] = {
@@ -607,8 +764,18 @@ static mios32_osc_search_tree_t parse_sid_filter[] = {
 };
 
 
+static mios32_osc_search_tree_t parse_sid_direct[] = {
+  { str_frq,        NULL, &OSC_SERVER_Method_DirectFrq,   0x00000000 }, // bit [11:0] selects offset in SID address range
+  { str_pulsewidth, NULL, &OSC_SERVER_Method_Direct16,    0x00000002 }, // bit [11:0] selects offset in SID address range
+  { str_ctrl,       NULL, &OSC_SERVER_Method_Direct8,     0x00000004 }, // bit [11:0] selects offset in SID address range
+  { str_adsr,       NULL, &OSC_SERVER_Method_Direct16,    0x00000005 }, // bit [11:0] selects offset in SID address range
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+
 static mios32_osc_search_tree_t parse_sid_123[] = {
   { str_osc,    parse_sid_osc,    NULL, 0x00000000 },
+  { str_direct, parse_sid_direct, NULL, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
@@ -630,9 +797,10 @@ static mios32_osc_search_tree_t parse_sid[] = {
 
 
 static mios32_osc_search_tree_t parse_root[] = {
-  { str_sid1, parse_sid, NULL, 0x00000000 }, // bit [27:24] selects SID1
-  { str_sid2, parse_sid, NULL, 0x01000000 }, // bit [27:24] selects SID2
-  { str_sid3, parse_sid, NULL, 0x02000000 }, // bit [27:24] selects SID3
-  { str_sid4, parse_sid, NULL, 0x03000000 }, // bit [27:24] selects SID4
+  { str_sid1,  parse_sid, NULL, 0x00000000 }, // bit [27:24] selects SID1
+  { str_sid2,  parse_sid, NULL, 0x01000000 }, // bit [27:24] selects SID2
+  { str_sid3,  parse_sid, NULL, 0x02000000 }, // bit [27:24] selects SID3
+  { str_sid4,  parse_sid, NULL, 0x03000000 }, // bit [27:24] selects SID4
+  { str_gates, NULL,      &OSC_SERVER_Method_DirectGates, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };

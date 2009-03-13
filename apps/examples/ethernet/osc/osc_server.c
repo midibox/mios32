@@ -194,7 +194,6 @@ s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
   {
     // for debugging: merge path parts to complete path
     char path[128]; // should be enough?
@@ -295,7 +294,6 @@ static s32 OSC_SERVER_DebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
       }
     }
   }
-#endif  
 
   return 0; // no error
 }
