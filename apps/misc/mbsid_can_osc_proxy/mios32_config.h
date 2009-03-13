@@ -67,4 +67,11 @@
 #define MBNET_SLAVE_NODES_END   0x03
 
 
+// disable SRIO, AIN, Encoders, COM (not used - prevent that it consumes CPU time)
+#define MIOS32_DONT_USE_SRIO
+#define MIOS32_DONT_USE_AIN
+#define MIOS32_DONT_USE_ENC
+#define MIOS32_DONT_USE_COM
+
+
 #endif /* _MIOS32_CONFIG_H */

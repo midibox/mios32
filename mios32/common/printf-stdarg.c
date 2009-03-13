@@ -30,6 +30,7 @@
 
 
 #include <stdarg.h>
+#include <mios32.h>
 
 static void printchar(char **str, int c)
 {
@@ -39,7 +40,9 @@ static void printchar(char **str, int c)
 		**str = c;
 		++(*str);
 	}
+#ifndef MIOS32_DONT_USE_COM
 	else MIOS32_COM_SendChar(1, c); // (void)putchar(c);
+#endif
 }
 
 #define PAD_RIGHT 1
