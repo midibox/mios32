@@ -7,7 +7,7 @@
  * #define MIOS32_DONT_USE_USB
  *
  *
- * TODO: CAN Bus error handling!
+ * TODO: try recovery on CAN Bus errors
  * TODO: remove slaves from info list which timed out during transaction!
  *
  * ==========================================================================
@@ -55,6 +55,9 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+// error state flags
+mbnet_state_t mbnet_state;
+
 // my node ID
 static u8 my_node_id = 0xff; // (node not configured)
 
@@ -82,6 +85,12 @@ static u32 tos12_ctr = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNET_BusErrorCheck(void);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initializes CAN interface
 // IN: <mode>: currently only mode 0 supported
 // OUT: returns < 0 if initialisation failed
@@ -94,6 +103,9 @@ s32 MBNET_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // clear state flags
+  mbnet_state.ALL = 0;
 
   // set default node ID to 0xff (node not configured)
   // The application has to use MBNET_NodeIDSet() to initialise it, and to configure the CAN filters
@@ -274,6 +286,22 @@ s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Returns the MBNet error state:
+// OUT: 0 if no errors
+//      -1 if MBNet reached panic state (failing transactions, automatic retries to recover)
+//      -2 if MBNet reached "permanent off" state (recovery not possible)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_ErrorStateGet(void)
+{
+  if( mbnet_state.PERMANENT_OFF )
+    return -2;
+  if( mbnet_state.PANIC )
+    return -1;
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // internal function to send a MBNet message
@@ -286,8 +314,11 @@ static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
   // select an empty transmit mailbox
   s8 mailbox = -1;
   do {
+    // exit immediately if CAN bus errors (CAN doesn't send messages anymore)
+    if( MBNET_BusErrorCheck() < 0 )
+      return -3; // transmission error
+
     // TODO: timeout required?
-    // TODO: check for CAN bus errors
     if     ( CAN->TSR & (1 << 26) ) // TME0
       mailbox = 0;
     else if( CAN->TSR & (1 << 27) ) // TME1
@@ -459,7 +490,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
       if( (mbnet_id.control & 0xff) == slave_id ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[MBNET] got ACK from slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		  slave_id,
+		  mbnet_id.control & 0xff,
 		  mbnet_id.tos,
 		  *dlc,
 		  ack_msg->bytes[0], ack_msg->bytes[1], ack_msg->bytes[2], ack_msg->bytes[3],
@@ -478,7 +509,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNET] ERROR: ACK from unexpected slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		  mbnet_id.node,
+		  mbnet_id.control & 0xff,
 		  mbnet_id.tos,
 		  *dlc,
 		  ack_msg->bytes[0], ack_msg->bytes[1], ack_msg->bytes[2], ack_msg->bytes[3],
@@ -517,9 +548,9 @@ s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
       MBNET_SendReqAgain(slave_id);
       timeout_ctr = 0;
     }
-  } while( (error == -4 || error == -5) && ++timeout_ctr < 1000 );
+  } while( (error == -4 || error == -5) && ++timeout_ctr < 5000 );
 
-  if( timeout_ctr == 1000 ) {
+  if( timeout_ctr == 5000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[MBNET] ACK polling for slave ID %02x timed out!\n", slave_id);
 #endif
@@ -557,9 +588,9 @@ s32 MBNET_Handler(void *_callback)
     u8 again = 0;
     do {
 #if MBNET_SLAVE_NODES_BEGIN > 0
-      if( search_slave_id < MBNET_SLAVE_NODES_BEGIN || search_slave_id > MBNET_SLAVE_NODES_END )
+      if( search_slave_id < MBNET_SLAVE_NODES_BEGIN || search_slave_id >= MBNET_SLAVE_NODES_END )
 #else
-      if( search_slave_id > MBNET_SLAVE_NODES_END )
+      if( search_slave_id >= MBNET_SLAVE_NODES_END )
 #endif
 	search_slave_id = MBNET_SLAVE_NODES_BEGIN-1; // restart
 
@@ -567,7 +598,7 @@ s32 MBNET_Handler(void *_callback)
       ++search_slave_id;
 
       if( search_slave_id == my_node_id )
-	++search_slave_id; // skip my own ID
+	again = 1; // skip my own ID
     } while( again );
 
     // search slave if not found yet, and retry counter hasn't reached end yet
@@ -618,8 +649,6 @@ s32 MBNET_Handler(void *_callback)
 	}
       }
     }
-    
-
   }
 
   u8 again = 0;   // allows to poll the FIFO again
@@ -782,4 +811,44 @@ s32 MBNET_Handler(void *_callback)
   } while( again || locked != -1);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local function:
+// Used during transmit or receive polling to determine if a bus error has occured
+// (e.g. receiver passive or no nodes connected to bus)
+// In this case, all pending transmissions will be aborted
+// The mbnet_state.PANIC flag is set to report to the application, that the
+// bus is not ready for transactions (flag accessible via MBNET_ErrorStateGet).
+// This flag will be cleared by WaitAck once we got back a message from any slave
+// OUT: returns -1 if bus permanent off (requires re-initialisation)
+//      returns -2 if panic state reached
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNET_BusErrorCheck(void)
+{
+  // check if permanent off state is reached
+  if( mbnet_state.PERMANENT_OFF )
+    return -1; // requires re-initialisation
+
+  // exit if CAN not in error warning state
+  if( !(CAN->ESR & (1 << 0)) ) // EWGF
+    return 0; // no error
+
+  // abort all pending transmissions
+  CAN->TSR |= (1 << 23) | (1 << 15) | (1 << 7); // set ABRQ[210]
+
+  // notify that an abort has happened
+  mbnet_state.PANIC = 1;
+
+  // TODO: try to recover
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[MBNET] ERRORs detected (CAN_ESR=0x%08x) - permanent off state reached!\n", CAN->ESR);
+#endif
+
+  // recovery not possible: prevent MBNet accesses
+  mbnet_state.PERMANENT_OFF = 1;
+
+  return -1; // bus permanent off
 }

@@ -86,6 +86,17 @@ typedef union {
 } mbnet_msg_t;
 
 
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned PANIC:1;
+    unsigned PERMANENT_OFF:1;
+  };
+} mbnet_state_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -96,6 +107,8 @@ extern s32 MBNET_NodeIDSet(u8 node_id);
 extern s32 MBNET_NodeIDGet(void);
 
 extern s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info);
+
+extern s32 MBNET_ErrorStateGet(void);
 
 extern s32 MBNET_SendReq(u8 slave_id, mbnet_tos_req_t tos_req, u16 control, mbnet_msg_t msg, u8 dlc);
 extern s32 MBNET_SendReqAgain(u8 slave_id);

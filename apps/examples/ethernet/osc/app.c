@@ -23,6 +23,7 @@
 #include <portmacro.h>
 
 #include "app.h"
+#include "uip_task.h"
 
 #include "osc_client.h"
 
