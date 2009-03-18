@@ -46,7 +46,10 @@ midibox_seq_v4_C_FILES=\
 	./build/seq_core.c \
 	./build/seq_file.c \
 	./build/seq_file_b.c \
+	./build/seq_file_c.c \
 	./build/seq_file_m.c \
+	./build/seq_groove.c \
+	./build/seq_humanize.c \
 	./build/seq_layer.c \
 	./build/seq_lcd.c \
 	./build/seq_led.c \
@@ -68,14 +71,17 @@ midibox_seq_v4_C_FILES=\
 	./build/seq_ui_mixer.c \
 	./build/seq_ui_mute.c \
 	./build/seq_ui_opt.c \
+	./build/seq_ui_parsel.c \
 	./build/seq_ui_pattern.c \
 	./build/seq_ui_save.c \
 	./build/seq_ui_stepsel.c \
 	./build/seq_ui_todo.c \
 	./build/seq_ui_trgasg.c \
+	./build/seq_ui_trgsel.c \
 	./build/seq_ui_trkdir.c \
 	./build/seq_ui_trkdiv.c \
 	./build/seq_ui_trkevnt.c \
+	./build/seq_ui_trkgrv.c \
 	./build/seq_ui_trklen.c \
 	./build/seq_ui_trkmode.c \
 	./build/seq_ui_trkrnd.c \
