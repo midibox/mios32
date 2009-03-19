@@ -300,7 +300,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 	    rx_buffer_head = 0;
 	  ++rx_buffer_size;
 	}
-      } while( --count >= 0 );
+      } while( --count > 0 );
 
       // notify, that data has been put into buffer
       rx_buffer_new_data = 0;
