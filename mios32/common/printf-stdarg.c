@@ -219,7 +219,7 @@ int vsprintf(char *out, const char *format, va_list args)
 }
 
 
-int snprintf( char *buf, unsigned int count, const char *format, ... )
+int snprintf( char *buf, size_t count, const char *format, ... )
 {
         va_list args;
         
