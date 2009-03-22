@@ -125,6 +125,9 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
 
     // TODO: stall here if previous pattern change hasn't been finished yet!
 
+    // in song mode it has to be considered, that this function is called multiple times
+    // to request pattern changes for all groups
+
     // else request change
     portENTER_CRITICAL();
     pattern.REQ = 1;
@@ -132,10 +135,11 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
     portEXIT_CRITICAL();
 
     // pregenerate bpm ticks
-    SEQ_CORE_AddForwardDelay(50); // mS
-
-    // resume low-prio pattern handler
-    SEQ_TASK_PatternResume();
+    // (won't be generated again if there is already an ongoing request)
+    if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
+      // resume low-prio pattern handler
+      SEQ_TASK_PatternResume();
+    }
   }
 
   return 0; // no error

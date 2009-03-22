@@ -38,6 +38,7 @@
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
+#include "seq_file_s.h"
 #include "seq_file_c.h"
 
 
@@ -372,6 +373,36 @@ void SEQ_TASK_Period1S(void)
 	}
       }
 
+      // create non-existing song slots if required
+      if( status >= 0 && !SEQ_FILE_S_NumSongs() ) {
+	// print SD Card message
+	char str1[21];
+	sprintf(str1, "Creating Songs");
+	char str2[21];
+	sprintf(str2, "DON'T POWER-OFF!");
+	SEQ_UI_SDCardMsg(2000, str1, str2);
+
+	// update LCD immediately (since background task not running)
+	SEQ_UI_LCD_Update();
+
+	// create songs
+	if( (status=SEQ_FILE_S_Create()) >= 0 ) {
+	  u16 song;
+	  for(song=0; song<SEQ_FILE_S_NumSongs() && status >= 0; ++song) {
+	    sprintf(str1, "Writing Song #%d", song+1);
+	    SEQ_UI_SDCardMsg(2000, str1, str2);
+	    SEQ_UI_LCD_Update();
+
+	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
+	    status = SEQ_FILE_S_SongWrite(song);
+	    portEXIT_CRITICAL();
+	  }
+
+	  if( status >= 0 )
+	    status=SEQ_FILE_S_Open();
+	}
+      }
+
       // no need to check for existing config file (will be created once config data is stored)
 
       if( status < 0 ) {
@@ -383,7 +414,7 @@ void SEQ_TASK_Period1S(void)
 	for(bank=0; bank<8; ++bank)
 	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
 	char str2[21];
-	sprintf(str2, "Mixer: %d Config: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_C_Valid());
+	sprintf(str2, "M: %d  S: %d  Cfg: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_S_NumSongs() ? 1 : 0, SEQ_FILE_C_Valid());
 	SEQ_UI_SDCardMsg(2000, str1, str2);
       }
     }

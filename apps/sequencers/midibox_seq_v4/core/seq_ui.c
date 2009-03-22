@@ -36,13 +36,11 @@
 #include "seq_led.h"
 #include "seq_midply.h"
 #include "seq_core.h"
+#include "seq_song.h"
 #include "seq_par.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_file.h"
-#include "seq_file_b.h"
-#include "seq_file_m.h"
-#include "seq_file_c.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -641,6 +639,13 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // toggle active mode if already in song page
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    SEQ_SONG_ActiveSet(SEQ_SONG_ActiveGet() ? 0 : 1);
+  }
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_SONG);
+
   return 0; // no error
 }
 
@@ -1218,7 +1223,10 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);
   SEQ_LED_PinSet(LED_MUTE, ui_page == SEQ_UI_PAGE_MUTE);
   SEQ_LED_PinSet(LED_PATTERN, ui_page == SEQ_UI_PAGE_PATTERN);
-  SEQ_LED_PinSet(LED_SONG, 0);
+  if( SEQ_SONG_ActiveGet() )
+    SEQ_LED_PinSet(LED_SONG, 1);
+  else
+    SEQ_LED_PinSet(LED_SONG, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
   
   SEQ_LED_PinSet(LED_SOLO, seq_ui_button_state.SOLO);
   SEQ_LED_PinSet(LED_FAST, seq_ui_button_state.FAST_ENCODERS);
