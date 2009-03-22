@@ -31,6 +31,7 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_pattern.h"
+#include "seq_song.h"
 #include "seq_random.h"
 #include "seq_ui.h"
 
@@ -130,6 +131,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset humanizer module
   SEQ_HUMANIZE_Init(0);
 
+  // reset song module
+  SEQ_SONG_Init(0);
+
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
@@ -179,19 +183,20 @@ s32 SEQ_CORE_Handler(void)
     // note: don't remove any request check - clocks won't be propagated
     // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
-      SEQ_CORE_PlayOffEvents();
       SEQ_CORE_SendMIDIClockEvent(0xfc, 0);
+      SEQ_CORE_PlayOffEvents();
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
+      SEQ_CORE_SendMIDIClockEvent(0xfb, 0);
       // release pause mode
       ui_seq_pause = 0;
-      SEQ_CORE_SendMIDIClockEvent(0xfb, 0);
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
-      SEQ_CORE_Reset();
       SEQ_CORE_SendMIDIClockEvent(0xfa, 0);
+      SEQ_SONG_Reset();
+      SEQ_CORE_Reset();
     }
 
     u16 new_song_pos;
@@ -201,6 +206,7 @@ s32 SEQ_CORE_Handler(void)
       bpm_tick_prefetch_req = 0;
       bpm_tick_prefetched_ctr = 0;
 
+      SEQ_SONG_Reset();
       // TODO: set new song position
 
       seq_core_state.FIRST_CLK = 1;
@@ -651,6 +657,15 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   
   // clear "first clock" flag if it was set before
   seq_core_state.FIRST_CLK = 0;
+
+  // in song mode:
+  // increment song position shortly before we reset the reference step
+  // TODO: implement prefetching until end of step!
+  if( SEQ_SONG_ActiveGet() &&
+      seq_core_state.ref_step == seq_core_steps_per_measure &&
+      (bpm_tick % (96 << seq_core_bpm_div_int)) == 0 ) {
+    SEQ_SONG_NextPos();
+  }
 
   return 0; // no error
 }

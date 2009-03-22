@@ -25,6 +25,7 @@ typedef enum {
   SEQ_UI_PAGE_EDIT,
   SEQ_UI_PAGE_MUTE,
   SEQ_UI_PAGE_PATTERN,
+  SEQ_UI_PAGE_SONG,
   SEQ_UI_PAGE_TRKEVNT,
   SEQ_UI_PAGE_TRKMODE,
   SEQ_UI_PAGE_TRKDIR,
@@ -57,6 +58,7 @@ extern s32 SEQ_UI_PARSEL_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
 extern s32 SEQ_UI_MUTE_Init(u32 mode);
 extern s32 SEQ_UI_PATTERN_Init(u32 mode);
+extern s32 SEQ_UI_SONG_Init(u32 mode);
 extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
 extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
@@ -94,6 +96,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Edit              ", (void *)&SEQ_UI_EDIT_Init },
   { "Mute Tracks       ", (void *)&SEQ_UI_MUTE_Init },
   { "Patterns          ", (void *)&SEQ_UI_PATTERN_Init },
+  { "Song              ", (void *)&SEQ_UI_SONG_Init },
   { "Track Events      ", (void *)&SEQ_UI_TRKEVNT_Init },
   { "Track Mode        ", (void *)&SEQ_UI_TRKMODE_Init },
   { "Track Direction   ", (void *)&SEQ_UI_TRKDIR_Init },

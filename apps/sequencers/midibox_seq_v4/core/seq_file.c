@@ -103,6 +103,7 @@ s32 SEQ_FILE_Init(u32 mode)
   SEQ_FILE_C_Init(0); // config file access
   SEQ_FILE_B_Init(0); // pattern file access
   SEQ_FILE_M_Init(0); // mixer file access
+  SEQ_FILE_S_Init(0); // song file access
 
 
   return 0; // no error
@@ -146,6 +147,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     // load all file infos
     SEQ_FILE_B_LoadAllBanks();
     SEQ_FILE_M_LoadAllBanks();
+    SEQ_FILE_S_LoadAllBanks();
     SEQ_FILE_C_Load();
 
     // status message after 3 seconds
@@ -162,6 +164,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     // invalidate all file infos
     SEQ_FILE_B_UnloadAllBanks();
     SEQ_FILE_M_UnloadAllBanks();
+    SEQ_FILE_S_UnloadAllBanks();
     SEQ_FILE_C_Unload();
 
     return 2; // SD card has been disconnected
