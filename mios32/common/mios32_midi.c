@@ -470,10 +470,10 @@ s32 MIOS32_MIDI_SendTick(mios32_midi_port_t port)
 s32 MIOS32_MIDI_SendStart(mios32_midi_port_t port)
 { return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfa, 0x00, 0x00); }
 
-s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port)
+s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port)
 { return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfb, 0x00, 0x00); }
 
-s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port)
+s32 MIOS32_MIDI_SendStop(mios32_midi_port_t port)
 { return MIOS32_MIDI_SendSpecialEvent(port, 0x5, 0xfc, 0x00, 0x00); }
 
 s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port)
