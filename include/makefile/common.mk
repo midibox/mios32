@@ -129,3 +129,39 @@ clean:
 # clean temporary files + project image
 cleanall: clean
 	rm -f *.hex *.bin
+
+
+# for use with graphviz and egypt
+callgraph: egyptall egypt_tidy egypt_all egypt_project
+
+
+egyptall: CFLAGS += -dr
+egyptall: all
+
+egypt_tidy:
+	@rm -fR egypt
+	@echo "-------------------------------------------------------------------------------"
+	@echo "Generating call graphs in .dot files"
+	@echo "-------------------------------------------------------------------------------"
+	@mkdir egypt
+	@mv *.expand egypt/
+
+egypt_all:
+	@perl $(MIOS32_PATH)/etc/egypt/egypt egypt/*.expand > egypt/$(PROJECT).dot
+
+
+egypt_project: EGYPTFILES = find egypt/*.expand -maxdepth 1 ! -name "mios32_*.expand" ! -name "stm32f10x*.expand" ! -name "usb_*.expand" ! -name "printf-stdarg.c*.expand" ! -name "crt0_STM32x.c*.expand" ! -name "app_lcd.c*.expand" ! -name "heap_*.expand" ! -name "list.c*.expand" ! -name "port.c*.expand" ! -name "queue.c*.expand" ! -name "main.c*.expand"
+egypt_project:
+	@perl $(MIOS32_PATH)/etc/egypt/egypt `$(EGYPTFILES)` > egypt/$(PROJECT)_NoMIOS.dot
+
+
+callgraph_convert:
+	@$(MIOS32_SHELL) $(MIOS32_PATH)/etc/egypt/dot_output.sh
+
+callgraph_all: callgraph callgraph_convert
+
+callgraph_clean: 
+	@rm -fR egypt
+
+# shortcut for impatient coders. If you don't know what this is don't use it!
+notall: $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym projectinfo
