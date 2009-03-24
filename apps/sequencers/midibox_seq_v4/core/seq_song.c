@@ -121,6 +121,8 @@ s32 SEQ_SONG_NumSet(u32 song)
 
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set song active mode
+// 0: phrase mode
+// 1: song mode
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_ActiveGet(void)
 {
@@ -238,7 +240,8 @@ s32 SEQ_SONG_FetchPos(void)
     // branch depending on action
     switch( s->action ) {
       case SEQ_SONG_ACTION_Stop:
-	SEQ_BPM_Stop();
+	if( song_active ) // not in phrase mode
+	  SEQ_BPM_Stop();
 	break;
 
       case SEQ_SONG_ACTION_JmpPos:
@@ -247,12 +250,14 @@ s32 SEQ_SONG_FetchPos(void)
 	break;
 
       case SEQ_SONG_ACTION_JmpSong: {
-	u32 new_song_num = s->action_value % SEQ_SONG_NUM;
+	if( song_active ) { // not in phrase mode
+	  u32 new_song_num = s->action_value % SEQ_SONG_NUM;
 
-	SEQ_SONG_Save(song_num);
-	SEQ_SONG_Load(new_song_num);
-	song_pos = 0;
-	again = 1;
+	  SEQ_SONG_Save(song_num);
+	  SEQ_SONG_Load(new_song_num);
+	  song_pos = 0;
+	  again = 1;
+	}
       } break;
 
       case SEQ_SONG_ACTION_SelMixerMap:
@@ -365,6 +370,10 @@ s32 SEQ_SONG_Save(u32 song)
   if( (status=SEQ_FILE_S_SongWrite(song)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
+
+  // no auto-save required anymore?
+  if( status >= 0 )
+    something_has_been_changed = 0;
 
   return status;
 }
