@@ -207,7 +207,7 @@ s32 SEQ_FILE_M_Create(void)
 #endif
 
   // number of maps
-  info->header.num_maps = 128;
+  info->header.num_maps = SEQ_MIXER_NUM;
   status |= SEQ_FILE_WriteHWord(&fi, info->header.num_maps);
 
   // write predefined map size

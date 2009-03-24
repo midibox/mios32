@@ -285,6 +285,8 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
+  u8 load_sd_content = 0;
+
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
 
@@ -342,6 +344,7 @@ void SEQ_TASK_Period1S(void)
 	  if( (status=SEQ_FILE_B_Open(bank)) < 0 )
 	    break;
 	}
+
 
       // create non-existing mixer maps if required
       if( status >= 0 && !SEQ_FILE_M_NumMaps() ) {
@@ -403,6 +406,7 @@ void SEQ_TASK_Period1S(void)
 	}
       }
 
+
       // no need to check for existing config file (will be created once config data is stored)
 
       if( status < 0 ) {
@@ -416,6 +420,9 @@ void SEQ_TASK_Period1S(void)
 	char str2[21];
 	sprintf(str2, "M: %d  S: %d  Cfg: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_S_NumSongs() ? 1 : 0, SEQ_FILE_C_Valid());
 	SEQ_UI_SDCardMsg(2000, str1, str2);
+
+	// request to load content of SD card
+	load_sd_content = 1;
       }
     }
   } else if( status < 0 ) {
@@ -423,6 +430,18 @@ void SEQ_TASK_Period1S(void)
   }
 
   MUTEX_SDCARD_GIVE;
+
+  // load content of SD card if requested ((re-)connection detected)
+  if( load_sd_content ) {
+    // TODO: should we load the patterns when SD Card has been detected?
+    // disadvantage: currently edited patterns are destroyed - this could be fatal during a live session if there is a bad contact!
+
+    if( SEQ_MIXER_Load(SEQ_MIXER_NumGet()) < 0 ) // function prints error message on error
+      return;
+
+    if( SEQ_SONG_Load(SEQ_SONG_NumGet()) < 0 ) // function prints error message on error
+      return;
+  }
 }
 
 

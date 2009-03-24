@@ -57,7 +57,6 @@ static const char in_menu_msg_str[6][9] = {
 
 static u8 show_mixer_util_page;
 
-static u8 mixer_map;
 static u8 mixer_par;
 
 static u8 copypaste_buffer_filled = 0;
@@ -102,8 +101,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #endif
     if( show_mixer_util_page ) {
       // only used to select map
-      if( SEQ_FILE_M_NumMaps() && (encoder == SEQ_UI_ENCODER_GP1) )
-	return SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer);
+      if( SEQ_FILE_M_NumMaps() && (encoder == SEQ_UI_ENCODER_GP1) ) {
+	u8 mixer_map = SEQ_MIXER_NumGet();
+        if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
+	  SEQ_MIXER_NumSet(mixer_map);
+	  return 1; // value changed
+	}
+	return 0; // no change
+      }
       return -1;
     }
 
@@ -244,7 +249,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
         case SEQ_UI_BUTTON_GP6: // Load
 	  // load page
-	  SEQ_MIXER_Load(mixer_map);
+	  SEQ_MIXER_Load(SEQ_MIXER_NumGet());
 	  // print message
 	  in_menu_msg = MSG_LOAD & 0x7f;
 	  ui_hold_msg_ctr = 1000;
@@ -252,7 +257,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
         case SEQ_UI_BUTTON_GP7: // Save
 	  // store current page
-	  SEQ_MIXER_Save(mixer_map);
+	  SEQ_MIXER_Save(SEQ_MIXER_NumGet());
 	  // print message
 	  in_menu_msg = MSG_SAVE & 0x7f;
 	  ui_hold_msg_ctr = 1000;
@@ -341,7 +346,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(26);
 
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintFormattedString("%3d  Copy Paste Clr      Load Save Dump ", mixer_map+1);
+    SEQ_LCD_PrintFormattedString("%3d  Copy Paste Clr      Load Save Dump ", SEQ_MIXER_NumGet()+1);
     SEQ_LCD_PrintFormattedString(" CC1  CC2  CC3  CC4");
     SEQ_LCD_PrintSpaces(21);
   } else {
@@ -353,11 +358,11 @@ static s32 LCD_Handler(u8 high_prio)
     //  127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_
 
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintFormattedString("Mixer Map #%3d", mixer_map+1);
+    SEQ_LCD_PrintFormattedString("Mixer Map #%3d", SEQ_MIXER_NumGet()+1);
     SEQ_LCD_PrintSpaces(6);
     SEQ_LCD_PrintString(SEQ_MIXER_MapNameGet()); // 20 characters
 
-    SEQ_LCD_PrintFormattedString("Page [%2d] ", mixer_par+1);
+    SEQ_LCD_PrintFormattedString("Page%2d  ", mixer_par+1);
 
     if( mixer_par < SEQ_MIXER_PAR_CC1_NUM ) {
       if( mixer_par < 8 ) {
@@ -383,7 +388,7 @@ static s32 LCD_Handler(u8 high_prio)
     }
 
     SEQ_LCD_PrintMIDIOutPort(SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_PORT));
-    SEQ_LCD_PrintFormattedString(" Chn#%2d", SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_CHANNEL));
+    SEQ_LCD_PrintFormattedString(" Chn#%2d", SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_CHANNEL)+1);
 
 
     /////////////////////////////////////////////////////////////////////////
@@ -432,7 +437,7 @@ s32 SEQ_UI_MIXER_Init(u32 mode)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
 
   // disabled: don't change previous settings (values will be initialized with 0 by gcc)
-  // mixer_map = 0;
+  // SEQ_MIXER_NumSet(0);
   // mixer_par = 0;
 
   // copypaste_buffer_filled = 0;
@@ -498,7 +503,7 @@ s32 SEQ_UI_MIXER_Undo(u8 mixer_map)
     return -1;
 
   // exit if we are not in the same map
-  if( undo_map != mixer_map )
+  if( undo_map != SEQ_MIXER_NumGet() )
     return -1;
 
   u8 chn;
@@ -524,7 +529,7 @@ s32 SEQ_UI_MIXER_UndoUpdate(void)
   }
 
   // remember mixer map
-  undo_map = mixer_map;
+  undo_map = SEQ_MIXER_NumGet();
 
   // notify that undo buffer is filled
   undo_buffer_filled = 1;

@@ -33,10 +33,20 @@ char seq_mixer_map_name[21];
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 mixer_map;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIXER_Init(u32 mode)
 {
+  // select first map
+  mixer_map = 0;
+
   // clear mixer page
   SEQ_MIXER_Clear();
 
@@ -50,6 +60,25 @@ s32 SEQ_MIXER_Init(u32 mode)
 char *SEQ_MIXER_MapNameGet(void)
 {
   return seq_mixer_map_name;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Get/Set mixer map number
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIXER_NumGet(void)
+{
+  return mixer_map;
+}
+
+s32 SEQ_MIXER_NumSet(u8 map)
+{
+  if( map >= SEQ_MIXER_NUM )
+    return -1; // invalid map number
+
+  mixer_map = map;
+
+  return 0; // no error
 }
 
 
@@ -177,10 +206,16 @@ s32 SEQ_MIXER_Load(u8 map)
 {
   s32 status;
 
+  if( map >= SEQ_MIXER_NUM )
+    return -1; // invalid map number
+
   MUTEX_SDCARD_TAKE;
   if( (status=SEQ_FILE_M_MapRead(map)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
+
+  // change to new map
+  mixer_map = map;
 
   return status;
 }
@@ -193,10 +228,16 @@ s32 SEQ_MIXER_Save(u8 map)
 {
   s32 status;
 
+  if( map >= SEQ_MIXER_NUM )
+    return -1; // invalid map number
+
   MUTEX_SDCARD_TAKE;
   if( (status=SEQ_FILE_M_MapWrite(map)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
+
+  // change to new map
+  mixer_map = map;
 
   return status;
 }

@@ -19,6 +19,10 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// number of mixer map
+#define SEQ_MIXER_NUM 128
+
+// number of channels and parameters per map
 #define SEQ_MIXER_NUM_CHANNELS   16
 #define SEQ_MIXER_NUM_PARAMETERS 16
 
@@ -54,6 +58,9 @@ typedef enum {
 extern s32 SEQ_MIXER_Init(u32 mode);
 
 extern char *SEQ_MIXER_MapNameGet(void);
+
+extern s32 SEQ_MIXER_NumGet(void);
+extern s32 SEQ_MIXER_NumSet(u8 map);
 
 extern s32 SEQ_MIXER_Set(u8 chn, seq_mixer_par_t par, u8 value);
 extern s32 SEQ_MIXER_Get(u8 chn, seq_mixer_par_t par);
