@@ -41,6 +41,8 @@ void network_device_init(void)
   netdev_available = (status >= 0);
 #if DEBUG_VERBOSE_LEVEL >= 1
   MIOS32_MIDI_SendDebugMessage("[network_device_init] status %d, available: %d\n", status, netdev_available);
+  if( status >= 0 )
+    MIOS32_MIDI_SendDebugMessage("[network_device_init] ENC28J60 RevID: 0x%02x\n", MIOS32_ENC28J60_RevIDGet());
 #endif
 }
 
@@ -50,7 +52,7 @@ void network_device_check(void)
   netdev_available = MIOS32_ENC28J60_CheckAvailable(prev_netdev_available);
 
   if( netdev_available && !prev_netdev_available ) {
-    MIOS32_MIDI_SendDebugMessage("[network_device_check] ENC28J60 has been connected\n");
+    MIOS32_MIDI_SendDebugMessage("[network_device_check] ENC28J60 has been connected, RevID: 0x%02x\n", MIOS32_ENC28J60_RevIDGet());
   } else if( !netdev_available && prev_netdev_available ) {
     MIOS32_MIDI_SendDebugMessage("[network_device_check] ENC28J60 has been disconnected\n");
   }

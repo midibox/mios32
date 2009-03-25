@@ -352,6 +352,17 @@ s32 MIOS32_ENC28J60_LinkAvailable(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Returns ENC28J60 Revision ID<BR>
+//! Value is only valid if MIOS32_ENC28J60_PowerOn() passed without errors.
+//! \return revision id (8-bit value)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_ENC28J60_RevIDGet(void)
+{
+  return rev_id;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Changes the MAC address.
 //!
 //! Usually called by MIOS32_ENC28J60_PowerOn(), but could also be used

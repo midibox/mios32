@@ -71,6 +71,7 @@ extern s32 MIOS32_ENC28J60_PowerOn(void);
 extern s32 MIOS32_ENC28J60_PowerOff(void);
 extern s32 MIOS32_ENC28J60_CheckAvailable(u8 was_available);
 extern s32 MIOS32_ENC28J60_LinkAvailable(void);
+extern s32 MIOS32_ENC28J60_RevIDGet(void);
 
 extern s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6]);
 extern u8 MIOS32_ENC28J60_MAC_AddrGetSet(void);
