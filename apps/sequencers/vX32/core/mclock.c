@@ -20,6 +20,8 @@ stay tuned for UI prototyping courtesy of lucem!
 
 #include <mios32.h>
 
+
+#include "tasks.h"
 #include "app.h"
 #include "graph.h"
 #include "mclock.h"
@@ -37,12 +39,14 @@ stay tuned for UI prototyping courtesy of lucem!
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-mclock_t mclock;																// Allocate the Master Clock struct
+mclock_t mClock;                                                                // Allocate the Master Clock struct
 
-u32 mod_tick_timestamp = dead_timestamp;										// initial global clock timestamp
+u32 mod_Tick_Timestamp = DEAD_TIMESTAMP;                                        // initial global clock timestamp
+static u32 SEQ_BPM_Timestamp = DEAD_TIMESTAMP;                                  // real timestamp as per the sequencer engine
+static unsigned char reset_Req = 0;                                          // keeps track of the first tick
 
-unsigned int midiclockcounter;													// counts SEQ_BPM module ticks at vxppqn resolution
-unsigned int midiclockdivider;													// divider value used to generate 24ppqn output
+unsigned int midiclockcounter;                                                  // counts SEQ_BPM module ticks at VXPPQN resolution
+unsigned int midiclockdivider;                                                  // divider value used to generate 24ppqn output
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,24 +57,25 @@ unsigned int midiclockdivider;													// divider value used to generate 24p
 // Initialise the clocks
 /////////////////////////////////////////////////////////////////////////////
 
-void clocks_init(void) {
-	
-	SEQ_BPM_TickSet(0);															// reset sequencer
-	
-	SEQ_BPM_Init(0);															// initialize SEQ module sequencer
-	
-	SEQ_BPM_PPQN_Set(vxppqn);													// set internal clock resolution as per the define (usually 384)
-	mclock_setbpm(120.0);														// Master BPM
-	
-	
-	mclock.status = 0;															// bit 7 is run/stop
-	mclock.ticked = 0;															// we haven't gotten that far yet
-	mclock.timesigu = 4;														// Upper value of the Master Time Signature, min 2
-	mclock.timesigl = 4;														// Lower value of the Master Time Signature, min 2
-	mclock.res = SEQ_BPM_PPQN_Get();											// fill this from the SEQ_BPM module to be safe
-	
-	mclock_init();																// init the vX master clock
-	
+void Clocks_Init(void) {
+    
+    SEQ_BPM_TickSet(0);                                                         // reset sequencer
+    
+    SEQ_BPM_Init(0);                                                            // initialize SEQ module sequencer
+    
+    SEQ_BPM_PPQN_Set(VXPPQN);                                                   // set internal clock resolution as per the define (usually 384)
+    MClock_SetBPM(100.0);                                                       // Master BPM
+    
+    
+    mClock.status.all = 0;                                                      // bit 7 is run/stop
+    mClock.ticked = 0;                                                          // we haven't gotten that far yet
+    mClock.timesigu = 4;                                                        // Upper value of the Master Time Signature, min 2
+    mClock.timesigl = 4;                                                        // Lower value of the Master Time Signature, min 2
+    mClock.res = SEQ_BPM_PPQN_Get();                                            // fill this from the SEQ_BPM module to be safe
+    mClock.rt_latency = VXLATENCY;                                              // initialise from define
+    
+    MClock_Init();                                                              // init the vX master clock
+    MClock_Reset();
 }
 
 
@@ -79,26 +84,48 @@ void clocks_init(void) {
 // Initialise the vX master clock
 /////////////////////////////////////////////////////////////////////////////
 
-void mclock_init(void) {
-	mclock.cyclelen = (unsigned int) 
-	(((SEQ_BPM_PPQN_Get() * 4) * mclock.timesigu) / mclock.timesigl);			// Length of master track measured in ticks.
+void MClock_Init(void) {
+    mClock.cyclelen = (unsigned int) 
+    (((SEQ_BPM_PPQN_Get() * 4) * mClock.timesigu) / mClock.timesigl);           // Length of master track measured in ticks.
 
-	midiclockdivider = (SEQ_BPM_PPQN_Get())/24;									// Set up the divider for 24ppqn output
+    midiclockdivider = (SEQ_BPM_PPQN_Get())/24;                                 // Set up the divider for 24ppqn output
 }
 
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Set the BPM the vX master clock
+// Functions for user control
 /////////////////////////////////////////////////////////////////////////////
 
-void mclock_setbpm(unsigned char bpm) {
-	if (SEQ_BPM_Set(bpm) < 0) {
-		util_clrbit((mclock.status), MCLOCK_STATUS_RUN);						// handle failure by pausing master clock
-	} else {
-		mclock.bpm = bpm;														// store the tempo
-	}
-	
+
+void MClock_User_SetBPM(float bpm) {
+    MClock_SetBPM(bpm);
+}
+
+void MClock_User_Start(void) {
+    SEQ_BPM_Start();
+}
+
+void MClock_User_Continue(void) {
+    SEQ_BPM_Cont();
+}
+
+void MClock_User_Stop(void) {
+    SEQ_BPM_Stop();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Set the BPM of the vX master clock
+/////////////////////////////////////////////////////////////////////////////
+
+void MClock_SetBPM(float bpm) {
+    if (SEQ_BPM_Set(bpm) < 0) {
+        mClock.status.run = 0;                                                  // handle failure by pausing master clock
+    } else {
+        mClock.bpm = bpm;                                                       // store the tempo
+    }
+    
 }
 
 
@@ -107,63 +134,96 @@ void mclock_setbpm(unsigned char bpm) {
 // Called as often as possible to check for master clock ticks
 /////////////////////////////////////////////////////////////////////////////
 
-void mclock_tick(void) {
-	unsigned char i;
-	u8 num_loops = 0;
-	u8 again = 0;
+void MClock_Tick(void) {
+    unsigned char i;
+    u8 num_loops = 0;
+    u8 again = 0;
 
-	u16 new_song_pos;
+    u16 new_song_pos;
 
-	do {																		// let's check to see what SEQ_BPM has for us
-		++num_loops;
-		
-		if( SEQ_BPM_ChkReqStop() ) {
-			mclock_stop();
-		}
-		
-		if( SEQ_BPM_ChkReqCont() ) {
-			mclock_continue();
-		}
-		
-		if( SEQ_BPM_ChkReqStart() ) {
-			mclock_reset();
-			mclock_continue();
-		}
-		
-		
-		if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
-			mclock_stop();
-		}
-		
-		if( SEQ_BPM_ChkReqClk(&mod_tick_timestamp) > 0 ) {
-			mclock.ticked++;
-			again = 1; 															// check all requests again after execution of this part
-		}
-		
-	} while( again && num_loops < 10 );
-	
-	
-	if (mod_tick_timestamp > dead_timestamp) mclock_reset();					// dude get some sleep it's been playing for days!
-	
-	if (util_getbit((mclock.status), MCLOCK_STATUS_RUN)) {						// if we're running
-		while (mclock.ticked > 0) {												// and the master clock has ticked
-			
-			if (SEQ_BPM_IsMaster()) {											// send MIDI clocks if needed
-				if (midiclockcounter == 0) {
-					MIOS32_MIDI_SendClock(DEFAULT);
-					midiclockcounter = midiclockdivider;
-					
-				}
-				
-				midiclockcounter--;
-				
-			}
-			
-			mclock.ticked--;
-		}
-		
-	}
-	
+    do {                                                                        // let's check to see what SEQ_BPM has for us
+        ++num_loops;
+        
+        if( SEQ_BPM_ChkReqStop() ) {
+            if (SEQ_BPM_IsMaster()) MIOS32_MIDI_SendStop(DEFAULT);
+            MClock_Stop();
+        }
+        
+        if( SEQ_BPM_ChkReqCont() ) {
+            if (SEQ_BPM_IsMaster()) MIOS32_MIDI_SendContinue(DEFAULT);
+            MClock_Continue();
+        }
+        
+        
+        if( SEQ_BPM_ChkReqStart() ) {
+            if (SEQ_BPM_IsMaster()) MIOS32_MIDI_SendStart(DEFAULT);
+            MClock_Continue();
+            reset_Req = 1;                                                      // reset and then catch up to the correct time at high speed
+        }
+                
+        if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
+            mClock.status.spp_hunt = 1;                                         // start hunting for song position
+        }
+        
+        
+        if( SEQ_BPM_ChkReqClk(&SEQ_BPM_Timestamp) > 0 ) {
+            mClock.ticked++;
+            again = 1;                                                          // check all requests again after execution of this part
+        }
+        
+    } while (again && num_loops < 10);                                          // check a few times to be sure none are lost
+    
+    
+    
+    if (SEQ_BPM_Timestamp == mod_Tick_Timestamp) {                              // if we caught up with SPP
+        mClock.status.spp_hunt = 0;                                             // continue as normal
+    }
+    
+    
+    if (SEQ_BPM_Timestamp < mod_Tick_Timestamp) {                               // if the SEQ_BPM engine says the timestamp has gone backwards, we got SPP and it's jumped back
+        reset_Req = 1;                                                          // reset and then 
+        mClock.status.spp_hunt = 1;                                             // catch up to the correct time at high speed
+    }
+    
+    if (SEQ_BPM_Timestamp >= DEAD_TIMESTAMP) {
+        reset_Req = 1;                                                          // dude get some sleep it's been playing for days!
+    }
+    
+    
+    
+    if ((mClock.status.run > 0) ||                                              // if we're running
+        (mClock.status.spp_hunt > 0)) {                                           // or just hunting for song position
+        
+        if (reset_Req == 0) {                                                   // if we've already seen the first tick
+            if (SEQ_BPM_Timestamp > mod_Tick_Timestamp) {                       // if the SEQ_BPM engine timestamp has advanced beyond the vX's
+                mod_Tick_Timestamp++;                                           // let's see the next one
+            }
+            
+        } else {                                                                // otherwise
+            MClock_Reset();                                                     // so start from zero and process like crazy until we catch up!
+        }
+        
+        
+        if (mClock.status.run > 0) {
+            if (SEQ_BPM_IsMaster()) {                                           // send MIDI clocks if needed
+                while (mClock.ticked > 0) {                                     // and the master clock has ticked
+                    if (midiclockcounter == 0) {
+                        MIOS32_MIDI_SendClock(DEFAULT);
+                        midiclockcounter = midiclockdivider;
+                    }
+                    
+                    midiclockcounter--;
+                    mClock.ticked--;
+                }
+                
+            }
+            
+        }
+        
+        
+        
+    }
+    
 }
 
 
@@ -172,38 +232,44 @@ void mclock_tick(void) {
 // Called to respond to MIDI Continue messages (play!)
 /////////////////////////////////////////////////////////////////////////////
 
-void mclock_continue(void) {
-	util_setbit((mclock.status), MCLOCK_STATUS_RUN);							// just set the run bit and bounce
+void MClock_Continue(void) {
+    mClock.status.run = 1;                                                      // just set the run bit and bounce
 }
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Called to respond to MIDI Start messages (play from the beginning)
-/////////////////////////////////////////////////////////////////////////////
-
-void mclock_reset(void) {
-	SEQ_MIDI_OUT_FlushQueue();													// flush the SEQ_MIDI queues which should be empty anyways
-	midiclockcounter = 0;														// reset the counter
-	
-	SEQ_BPM_TickSet(0);															// reset BPM tick
-	mod_tick_timestamp = SEQ_BPM_TickGet();										// we'll get this from SEQ_BPM just in case but we already know it's 0
-	
-	util_setbit((mclock.status), MCLOCK_STATUS_RESETREQ);						// Set global reset flag
-	mod_preprocess(dead_nodeid);												// preprocess all modules, so they can catch the reset
-	util_clrbit((mclock.status), MCLOCK_STATUS_RESETREQ);						// Clear the flag
-	
-}
-
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Called to respond to MIDI Stop messages (pause/stop are the same)
 /////////////////////////////////////////////////////////////////////////////
 
-void mclock_stop(void) {
-	util_clrbit((mclock.status), MCLOCK_STATUS_RUN);							// clear the bit
-	
-	SEQ_MIDI_OUT_FlushQueue();													// and flush the queues
+void MClock_Stop(void) {
+    mClock.status.run = 0;                                                      // clear the bit
+    
+    SEQ_MIDI_OUT_FlushQueue();                                                  // and flush the queues
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called to respond to MIDI Start messages (play from the beginning) and SPP
+/////////////////////////////////////////////////////////////////////////////
+
+void MClock_Reset(void) {
+    SEQ_MIDI_OUT_FlushQueue();                                                  // flush the SEQ_MIDI queues which should be empty anyways
+    midiclockcounter = 0;                                                       // reset the counter
+    reset_Req = 0;                                                              // we just did that
+    mClock.ticked = 0;                                                          // and we need to reset this too
+    
+    SEQ_BPM_TickSet(0);                                                         // reset BPM tick
+
+    SEQ_BPM_Timestamp = mod_Tick_Timestamp = 0;                                 // we'll force this to zero in case it's already advanced
+    
+    mClock.status.reset_req = 1;                                                // Set global reset flag
+    Mod_PreProcess(DEAD_NODEID);                                                // preprocess all modules, so they can catch the reset
+    mClock.status.reset_req = 0;                                                // Clear the flag
+    
+}
+
+
+
+// FIXME todo
+// 'strict' and 'nice' MIDI clocks - send as per timer, or send as per rack ticks

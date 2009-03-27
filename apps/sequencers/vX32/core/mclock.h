@@ -19,14 +19,18 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef vxppqn
-#define vxppqn 384																// internal clock resolution. should be a multiple of 24
+#ifndef VXPPQN
+#define VXPPQN 384                                                              // internal clock resolution. should be a multiple of 24
+#endif
+
+#ifndef VXLATENCY
+#define VXLATENCY 24                                                              // internal clock resolution. should be a multiple of 24
 #endif
 
 
-#ifndef mclocktimernumber
-#define mclocktimernumber 0														// used to force a specific timer to be used for master clock. not in use. 
-//#define SEQ_BPM_MIOS32_TIMER_NUM mclocktimernumber
+#ifndef MCLOCKTIMERNUMBER
+#define MCLOCKTIMERNUMBER 0                                                     // used to force a specific timer to be used for master clock. not in use. 
+//#define SEQ_BPM_MIOS32_TIMER_NUM MCLOCKTIMERNUMBER
 #endif
 
 
@@ -35,21 +39,36 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-	unsigned char status;														// bit 7 is run/stop
-	unsigned int ticked;														// Counter to show how many ticks are waiting to be processed
-	
-	unsigned char timesigu;														// Upper value of the Master Time Signature, max 16
-	unsigned char timesigl;														// Lower value of the Master Time Signature, min 2
-	unsigned int res;															// MIDI Clock PPQN
-	unsigned char bpm;															// Master BPM
-	
-	unsigned int cyclelen;														// Length of master track measured in ticks.
-}mclock_t;
+typedef union {
+    struct {
+        unsigned all: 8;
+    };
+    struct {
+        unsigned run: 1;
+        unsigned spp_hunt: 1;
+        unsigned reset_req: 1;
+    };
+} mclockstatus_t;
 
-																				// bits of the status char above
-#define MCLOCK_STATUS_RUN 7														// bit 7 is run/stop request
-#define MCLOCK_STATUS_RESETREQ 0												// bit 0 is master reset request
+typedef struct {
+    mclockstatus_t status;                                                      // bit 7 is run/stop
+    float bpm;                                                                  // Master BPM
+    
+    unsigned int res;                                                           // MIDI Clock PPQN
+    unsigned int ticked;                                                        // Counter to show how many ticks are waiting to be processed
+    
+    unsigned int cyclelen;                                                      // Length of master track measured in ticks.
+    unsigned int rt_latency;                                                      // Length of master track measured in ticks.
+
+    unsigned char timesigu;                                                     // Upper value of the Master Time Signature, max 16
+    unsigned char timesigl;                                                     // Lower value of the Master Time Signature, min 2
+ 
+} mclock_t;
+
+                                                                                // bits of the status char above
+#define MCLOCK_STATUS_RUN 7                                                     // bit 7 is run/stop request
+#define MCLOCK_STATUS_SPP_HUNT 6                                                // bit 6 is SPP hunt flag (kills output when hunting for the correct song position)
+#define MCLOCK_STATUS_RESETREQ 0                                                // bit 0 is master reset request
 
 
 
@@ -57,9 +76,9 @@ typedef struct {
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern mclock_t mclock;															// Allocate the Master Clock struct
+extern mclock_t mClock;                                                         // Allocate the Master Clock struct
 
-extern u32 mod_tick_timestamp;													// holds the master clock timestamp
+extern u32 mod_Tick_Timestamp;                                                  // holds the master clock timestamp
 
 
 
@@ -67,21 +86,30 @@ extern u32 mod_tick_timestamp;													// holds the master clock timestamp
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern void clocks_init(void);
+extern void Clocks_Init(void);
 
-extern void mclock_init(void);
+extern void MClock_Init(void);
 
-extern void mclock_setbpm(unsigned char bpm);
+extern void MClock_SetBPM(float bpm);
 
-extern void mclock_tick(void);
+extern void MClock_Tick(void);
 
 
-extern void mclock_stop(void);
+extern void MClock_Stop(void);
 
-extern void mclock_continue(void);
+extern void MClock_Continue(void);
 
-extern void mclock_reset(void);
+extern void MClock_Reset(void);
 
+
+
+extern void MClock_User_SetBPM(float bpm);
+
+extern void MClock_User_Start(void);
+
+extern void MClock_User_Continue(void);
+
+extern void MClock_User_Stop(void);
 
 
 #endif /* _MCLOCK_H */

@@ -15,24 +15,30 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
-#include <queue.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_MIDI 			( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_RACK 			( tskIDLE_PRIORITY + 3 )
-#define PRIORITY_TASK_UI		( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_RACK          ( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_MIDI          ( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_UI            ( tskIDLE_PRIORITY + 1 )
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
+// Global Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_UI(void *pvParameters);
 static void TASK_MIDI(void *pvParameters);
 static void TASK_Rack(void *pvParameters);
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+xSemaphoreHandle xGraphSemaphore;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,88 +50,88 @@ xTaskHandle xMIDIHandle;
 xTaskHandle xUIHandle;
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Initialize all tasks
 /////////////////////////////////////////////////////////////////////////////
-s32 TASKS_Init(u32 mode) {
-  xTaskCreate(TASK_UI, (signed portCHAR *)"UI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UI, &xUIHandle);
-  xTaskCreate(TASK_MIDI, (signed portCHAR *)"MIDI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, &xMIDIHandle);
-  xTaskCreate(TASK_Rack, (signed portCHAR *)"Rack", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_RACK, &xRackHandle);
 
-  return 0; // no error
+s32 TASKS_Init(u32 mode) {
+    xTaskCreate(TASK_UI, (signed portCHAR *)"UI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UI, &xUIHandle);
+    xTaskCreate(TASK_MIDI, (signed portCHAR *)"MIDI", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, &xMIDIHandle);
+    xTaskCreate(TASK_Rack, (signed portCHAR *)"Rack", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_RACK, &xRackHandle);
+
+    xGraphSemaphore = xSemaphoreCreateMutex();
+
+    return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS
+// This task handles User Interfacing to the Rack every 2mS
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_UI(void *pvParameters) {
-  portTickType xLastExecutionTime;
+    portTickType xLastExecutionTime;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
+    // Initialise the xLastExecutionTime variable on task entry
+    xLastExecutionTime = xTaskGetTickCount();
 
-	while( 1 ) {
-		vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-		// continue in application hook
-		vx_task_ui();
-	}
+    while( 1 ) {
+        vTaskDelayUntil(&xLastExecutionTime, 2 / portTICK_RATE_MS);
+        // continue in application hook
+        vX_Task_UI();
+    }
   
 }
 
 // use this function to resume the task
-void vx_task_ui_resume(void) {
+void vX_Task_UI_Resume(void) {
     vTaskResume(xUIHandle);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS as well
-// it handles sequencer and MIDI events
+// This task handles sequencer and MIDI events every mS
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_MIDI(void *pvParameters) {
-  portTickType xLastExecutionTime;
+    portTickType xLastExecutionTime;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
+    // Initialise the xLastExecutionTime variable on task entry
+    xLastExecutionTime = xTaskGetTickCount();
 
-	while( 1 ) {
-		vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-		
-		// continue in application hook
-		vx_task_midi();
-	}
+    while( 1 ) {
+        vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+        
+        // continue in application hook
+        vX_Task_MIDI();
+    }
   
 }
 
 // use this function to resume the task
-void vx_task_midi_resume(void) {
+void vX_Task_MIDI_Resume(void) {
     vTaskResume(xMIDIHandle);
 }
 
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is triggered from SEQ_PATTERN_Change to transport the new patch
-// into RAM
+// This task handles the Rack every mS
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Rack(void *pvParameters) {
-  portTickType xLastExecutionTime;
+    portTickType xLastExecutionTime;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
+    // Initialise the xLastExecutionTime variable on task entry
+    xLastExecutionTime = xTaskGetTickCount();
 
-	while( 1 ) {
-		vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-		
-		// continue in application hook
-		vx_task_rack_tick();
-	}
+    while( 1 ) {
+        vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+        
+        // continue in application hook
+        vX_Task_Rack_Tick();
+    }
   
 }
 
 // use this function to resume the task
-void vx_task_rack_resume(void) {
+void vX_Task_Rack_Tick_Resume(void) {
     vTaskResume(xRackHandle);
 }

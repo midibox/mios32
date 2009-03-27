@@ -1,4 +1,4 @@
-/* $Id:  $ */
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -20,18 +20,18 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef max_vpatterns															// number of value patterns allowed to be created
-#define max_vpatterns 0xfe														// maximum 254
+#ifndef MAX_VPATTERNS                                                           // number of value patterns allowed to be created
+#define MAX_VPATTERNS 0xfe                                                      // maximum 254
 #endif
 
-#ifndef max_bpatterns															// number of binary patterns allowed to be created
-#define max_bpatterns 0xfe														// maximum 254
+#ifndef MAX_BPATTERNS                                                           // number of binary patterns allowed to be created
+#define MAX_BPATTERNS 0xfe                                                      // maximum 254
 #endif
 
 
-																				// do not change defines below here
-#define dead_vpattern (max_vpatterns+1)											// don't change
-#define dead_bpattern (max_bpatterns+1)											// don't change
+                                                                                // do not change defines below here
+#define DEAD_VPATTERN (MAX_VPATTERNS+1)                                         // don't change
+#define DEAD_BPATTERN (MAX_BPATTERNS+1)                                         // don't change
 
 
 
@@ -39,9 +39,9 @@ stay tuned for UI prototyping courtesy of lucem!
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern signed char *vpattern[max_vpatterns];									// array of pointers to value patterns
+extern signed char *vPattern[MAX_VPATTERNS];                                    // array of pointers to value patterns
 
-extern signed char *bpattern[max_bpatterns];									// array of pointers to binary patterns
+extern signed char *bPattern[MAX_BPATTERNS];                                    // array of pointers to binary patterns
 
 
 #endif /* _PATTERNS_H */

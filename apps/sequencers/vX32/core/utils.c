@@ -20,6 +20,8 @@ stay tuned for UI prototyping courtesy of lucem!
 
 #include <mios32.h>
 
+
+#include "tasks.h"
 #include "app.h"
 #include "graph.h"
 #include "mclock.h"
@@ -35,31 +37,31 @@ stay tuned for UI prototyping courtesy of lucem!
 /////////////////////////////////////////////////////////////////////////////
 
 /* 
-// -128..0..127  --->  0..127		  // 		 0 --> 64
+// -128..0..127  --->  0..127         //         0 --> 64
 u8 util_s8tou7(s8 input) {
-	u8 out = (u8)(input+64);
-	out = out%128;
-	return out;
+    u8 out = (u8)(input+64);
+    out = out%128;
+    return out;
 }
 */
 
 
 /* 
-// -128..0..127  --->  0..63		  // 		-32 --> 0 		 0 --> 32 		 32 --> 64
+// -128..0..127  --->  0..63          //        -32 --> 0        0 --> 32        32 --> 64
 u8 util_s8tou6(s8 input) {
-	u8 out = (u8)(input+32);
-	out = out%64;
-	return out;
+    u8 out = (u8)(input+32);
+    out = out%64;
+    return out;
 }
  */
 
 
 /* 
-// -128..0..127  --->  0..63		  // 		-32 --> 0 		 0 --> 32 		 32 --> 64
+// -128..0..127  --->  0..63          //        -32 --> 0        0 --> 32        32 --> 64
 u8 util_s8tou4(s8 input) {
-	u8 out = (u8)(input+8);
-	out = out%16;
-	return out;
+    u8 out = (u8)(input+8);
+    out = out%16;
+    return out;
 }
 */
 
