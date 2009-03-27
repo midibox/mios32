@@ -459,7 +459,7 @@ s32 BSL_SYSEX_SendMem(mios32_midi_port_t port, u32 addr, u32 len)
       value8 <<= 1;
 
       if( ++bit_ctr7 >= 7 ) {
-	checksum += *sysex_buffer_ptr++ = value7;
+	checksum += *sysex_buffer_ptr++ = (value7 << (7-bit_ctr7));
 	value7 = 0;
 	bit_ctr7 = 0;
       }
