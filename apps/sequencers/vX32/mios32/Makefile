@@ -25,10 +25,10 @@ THUMB_SOURCE = tasks.c \
 				../core/mod_xlate.c \
 				../core/modules.c \
 \
-				../core/mod_sclk.c \
-				../core/mod_sxh.c \
-				../core/mod_seq.c \
-				../core/mod_midiout.c
+				../core/vxmodules/mod_sclk.c \
+				../core/vxmodules/mod_sxh.c \
+				../core/vxmodules/mod_seq.c \
+				../core/vxmodules/mod_midiout.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -50,10 +50,11 @@ LIBS =
 LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	vX32
 
-DEBUG     =	-g
 OPTIMIZE  =	-Os
+DEBUG     =	-g
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)
+# CFLAGS =	 $(OPTIMIZE)
 
 
 ################################################################################

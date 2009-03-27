@@ -1,4 +1,4 @@
-/* $Id:  $ */
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -20,6 +20,8 @@ stay tuned for UI prototyping courtesy of lucem!
 
 #include <mios32.h>
 
+
+#include "tasks.h"
 #include "app.h"
 #include "graph.h"
 #include "mclock.h"
@@ -36,6 +38,6 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
-signed char *vpattern[max_vpatterns];											// array of pointers to value patterns
+signed char *vPattern[MAX_VPATTERNS];                                           // array of pointers to value patterns
 
-signed char *bpattern[max_bpatterns];											// array of pointers to binary patterns
+signed char *bPattern[MAX_BPATTERNS];                                           // array of pointers to binary patterns

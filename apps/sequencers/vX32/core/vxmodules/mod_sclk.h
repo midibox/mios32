@@ -1,4 +1,4 @@
-/* $Id:  $ */
+/* $Id$ */
 /*
 vX32 pre-alpha
 not for any use whatsoever
@@ -21,8 +21,9 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define mod_sclk_ports 16														// number of port bytes in this module
-#define mod_sclk_privvars 16													// number of private var bytes in this module
+#define mod_sclk_ports 16                                                       // number of port bytes in this module
+#define mod_sclk_privvars 16                                                    // number of private var bytes in this module
+#define MOD_SCLK_BUFFERS 0                                                      // outbuffer count
 
 
 #define MOD_SCLK_PORT_STATUS 0
@@ -67,9 +68,11 @@ stay tuned for UI prototyping courtesy of lucem!
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern const mod_moduledata_t mod_sclk_moduledata;								// array holding this module's data
+extern mod_moduledata_t mod_SClk_ModuleData;                              // array holding this module's data
 
-extern const mod_portdata_t mod_sclk_porttypes[mod_sclk_ports];					// array holding this module's ports' data
+extern mod_portdata_t mod_SClk_PortTypes[mod_sclk_ports];                 // array holding this module's ports' data
+
+extern mod_portdata_t mod_SClk_PrivVarTypes[mod_sclk_privvars];           // array holding this module's privvars' data
 
 
 
@@ -77,18 +80,20 @@ extern const mod_portdata_t mod_sclk_porttypes[mod_sclk_ports];					// array hol
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-void mod_init_sclk(unsigned char nodeid);										// function to init this module
+void Mod_Init_SClk(unsigned char nodeID);                                       // function to init this module
 
-void mod_proc_sclk(unsigned char nodeid); 										//do stuff with inputs and push to the outputs 
+void Mod_Proc_SClk(unsigned char nodeID);                                       // do stuff with inputs and push to the outputs 
 
-void mod_uninit_sclk(unsigned char nodeid);										// function to uninit this module
+void Mod_Tick_SClk(unsigned char nodeID);                                       // set a new timestamp
 
-u32 mod_reset_sclk(unsigned char nodeid);										// function to reset this module
+void Mod_UnInit_SClk(unsigned char nodeID);                                     // function to uninit this module
+
+u32 Mod_Reset_SClk(unsigned char nodeID);                                       // function to reset this module
 
 
-u32 mod_sclk_getnexttick(unsigned char nodeid);									// module-specific functions
+u32 Mod_SClk_GetNextTick(unsigned char nodeID);                                 // module-specific functions
 
-void mod_sclk_resetcounters(unsigned char nodeid);								// module-specific functions
+void Mod_SClk_ResetCounters(unsigned char nodeID);                              // module-specific functions
 
 
 #endif /* _MOD_SCLK_H */

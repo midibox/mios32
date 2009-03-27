@@ -12,10 +12,18 @@
 #define _TASKS_H
 
 
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#include <task.h>
+#include <queue.h>
+#include <semphr.h>
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+# define MUTEX_GRAPH_TAKE xSemaphoreTake(xGraphSemaphore, (portTickType)1)
+# define MUTEX_GRAPH_GIVE xSemaphoreGive(xGraphSemaphore)
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -23,22 +31,26 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Export global variables
+/////////////////////////////////////////////////////////////////////////////
+
+
+extern xSemaphoreHandle xGraphSemaphore;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 // called from tasks.c
-extern s32 tasks_init(u32 mode);												// add the tasks to FreeRTOS
+extern s32 Tasks_Init(u32 mode);                                                // add the tasks to FreeRTOS
 
-extern void vx_task_rack_tick(void);											// task handles the vX rack
-extern void vx_task_rack_resume(void);											// resume the above task if it is stopped
-extern void vx_task_midi(void);													// task handles MIDI I/O
-extern void vx_task_midi_resume(void);											// resume the above task if it is stopped
-extern void vx_task_ui(void);													// task handles user interfacing
-extern void vx_task_ui_resume(void);											// resume the above task if it is stopped
-
-/////////////////////////////////////////////////////////////////////////////
-// Export global variables
-/////////////////////////////////////////////////////////////////////////////
+extern void vX_Task_Rack_Tick(void);                                            // task handles the vX rack
+extern void vX_Task_Rack_Tick_Resume(void);                                     // resume the above task if it is stopped
+extern void vX_Task_MIDI(void);                                                 // task handles MIDI I/O
+extern void vX_Task_MIDI_Resume(void);                                          // resume the above task if it is stopped
+extern void vX_Task_UI(void);                                                   // task handles user interfacing
+extern void vX_Task_UI_Resume(void);                                            // resume the above task if it is stopped
 
 
 #endif /* _TASKS_H */

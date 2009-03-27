@@ -20,8 +20,8 @@ stay tuned for UI prototyping courtesy of lucem!
 
 #include <mios32.h>
 
-#include "tasks.h"
 
+#include "tasks.h"
 #include "app.h"
 #include "graph.h"
 #include "mclock.h"
@@ -49,48 +49,48 @@ stay tuned for UI prototyping courtesy of lucem!
 // local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 vx_midi_rx(mios32_midi_port_t port, u8 midi_byte);					// MIOS callback
-static void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte);					// MIOS callback
+static s32 vX_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte);                   // MIOS callback
+static void vX_MIDI_Tx(mios32_midi_port_t port, u8 midi_byte);                  // MIOS callback
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void) {
-	MIOS32_DELAY_Init(0);
-	MIOS32_BOARD_LED_Init(0xffffffff);
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);
-	
-	
-	MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
-	MIOS32_LCD_Clear();
-	
-	MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
-	MIOS32_LCD_CursorSet(6, 3);
-	MIOS32_LCD_PrintString("vX32 a-21");
-	
-	MIOS32_LCD_BColourSet(0x00, 0x00, 0xff);
-	MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
-	MIOS32_LCD_CursorSet(6, 5);
-	MIOS32_LCD_PrintString("Blackjack");
-	MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
-	MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
-	
-	
-	
-	SEQ_MIDI_OUT_Init(0);														// initialize SEQ module MIDI handler
-	
-	mod_init_moduledata();														// initialize vX modules
-	
-	
-	graph_init();																// initialize vX Rack
-	
-	clocks_init();																// initialize vX Clocks
-	
-	MIOS32_MIDI_DirectRxCallback_Init(vx_midi_rx);								// install MIDI Rx/Tx callback functions
-	
-	TASKS_Init();																// start threads
-	
+    MIOS32_DELAY_Init(0);
+    MIOS32_BOARD_LED_Init(0xffffffff);
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);
+    
+    
+    MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
+    MIOS32_LCD_Clear();
+    
+    MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
+    MIOS32_LCD_CursorSet(6, 3);
+    MIOS32_LCD_PrintString("vX32 a-24");
+    
+    MIOS32_LCD_BColourSet(0x00, 0x00, 0xff);
+    MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
+    MIOS32_LCD_CursorSet(6, 5);
+    MIOS32_LCD_PrintString("Seven");
+    MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
+    MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
+    
+    
+    
+    SEQ_MIDI_OUT_Init(0);                                                       // initialize SEQ module MIDI handler
+    
+    Mod_Init_ModuleData();                                                      // initialize vX modules
+    
+    
+    Graph_Init();                                                               // initialize vX Rack
+    
+    Clocks_Init();                                                              // initialize vX Clocks
+    
+    MIOS32_MIDI_DirectRxCallback_Init(vX_MIDI_Rx);                              // install MIDI Rx/Tx callback functions
+    
+    TASKS_Init();                                                               // start threads
+    
 }
 
 
@@ -105,7 +105,7 @@ void APP_Background(void) {
 //  This hook is called when a complete MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package) {
-	
+    
 static unsigned char testmodule1; //FIXME TESTING
 static unsigned char testmodule2; //FIXME TESTING
 static edge_t *testedge1; //FIXME TESTING
@@ -115,62 +115,64 @@ static edge_t *testedge2; //FIXME TESTING
 static unsigned char testmodule5; //FIXME TESTING
 static unsigned char testmodule6; //FIXME TESTING
 static edge_t *testedge3; //FIXME TESTING
-	
-	
-	// buffer up the incoming events
-	// notify each host node by incrementing the process_req flag
-	// process all the nodes downstream of the host node
-	if ((midi_package.type == NoteOn) && (midi_package.evnt2 == 0x7f)) { //FIXME TESTING
-		
-	testmodule1 = node_add(0);
-		
-	testmodule2 = node_add(1);
-	
-	testedge1 = edge_add(testmodule1, MOD_SCLK_PORT_NEXTTICK, testmodule2, MOD_SEQ_PORT_NEXTTICK);
-	
-	
-	testmodule3 = node_add(0);
-	
-	testmodule4 = node_add(1);
-	
-	testedge2 = edge_add(testmodule3, MOD_SCLK_PORT_NEXTTICK, testmodule4, MOD_SEQ_PORT_NEXTTICK);
-/**/
-	
-/**/
-	node[testmodule3].ports[MOD_SCLK_PORT_NUMERATOR] = 7;
-	node[testmodule3].process_req++;
-	mod_preprocess(testmodule3);
-/*
-	
-	testmodule5 = node_add(0);
-	
-	testmodule6 = node_add(1);
-	
-	testedge3 = edge_add(testmodule5, MOD_SCLK_PORT_NEXTTICK, testmodule6, MOD_SEQ_PORT_NEXTTICK);
-	
-	node[testmodule5].ports[MOD_SCLK_PORT_NUMERATOR] = 9;
-	node[testmodule5].ports[MOD_SCLK_PORT_DENOMINATOR] = 2;
-	node[testmodule5].process_req++;
-	mod_preprocess(testmodule5);
-*/
-	
-	testedge3 = edge_add(testmodule2, MOD_SEQ_PORT_CURRENTSTEP, testmodule4, MOD_SEQ_PORT_NOTE0_NOTE);
-	
-	
-	}
-	//FIXME TESTING BPM Master
-	if (midi_package.evnt0 == 0xB0) {
-		if (midi_package.evnt1 == 0x40) SEQ_BPM_Start();
-		if (midi_package.evnt1 == 0x45) SEQ_BPM_Stop();
-		if (midi_package.evnt1 == 0x7c) SEQ_BPM_Cont();
-		if (midi_package.evnt1 == 0x7d) {
-			MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x02, node_del(testmodule3));
-		}
-		if (midi_package.evnt1 == 0x7e) {
-			//edge_del(testedge3, 1);
-			MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x01, edge_del(testedge3, 1));
-		}
-	}
+
+static edge_t *testedge4; //FIXME TESTING
+static edge_t *testedge5; //FIXME TESTING
+    
+
+    // buffer up the incoming events
+    // notify each host node by incrementing the process_req flag
+    // process all the nodes downstream of the host node
+    if ((midi_package.type == NoteOn) && (midi_package.evnt2 == 0x7f)) { //FIXME TESTING
+        
+    testmodule1 = UI_NewModule(MOD_MODULETYPE_SCLK);
+    testmodule2 = UI_NewModule(MOD_MODULETYPE_SEQ);
+    
+    node[testmodule1].ports[MOD_SCLK_PORT_NUMERATOR] = 4;
+    node[testmodule1].process_req++;
+    
+    testedge1 = UI_NewCable(testmodule1, MOD_SCLK_PORT_NEXTTICK, testmodule2, MOD_SEQ_PORT_NEXTTICK);
+    
+    
+    
+    testmodule3 = UI_NewModule(MOD_MODULETYPE_SCLK);    
+    testmodule4 = UI_NewModule(MOD_MODULETYPE_SEQ);
+    
+    node[testmodule3].ports[MOD_SCLK_PORT_NUMERATOR] = 8;
+    node[testmodule3].process_req++;
+    
+    testedge2 = UI_NewCable(testmodule3, MOD_SCLK_PORT_NEXTTICK, testmodule4, MOD_SEQ_PORT_NEXTTICK);
+    
+    
+    
+    testmodule5 = UI_NewModule(0);    
+    testmodule6 = UI_NewModule(1);
+    
+    testedge3 = UI_NewCable(testmodule5, MOD_SCLK_PORT_NEXTTICK, testmodule6, MOD_SEQ_PORT_NEXTTICK);
+    
+    node[testmodule5].ports[MOD_SCLK_PORT_NUMERATOR] = 5;
+    node[testmodule5].process_req++;
+    
+    
+    
+    testedge4 = UI_NewCable(testmodule2, MOD_SEQ_PORT_CURRENTSTEP, testmodule4, MOD_SEQ_PORT_NOTE0_NOTE);
+    testedge5 = UI_NewCable(testmodule4, MOD_SEQ_PORT_CURRENTSTEP, testmodule6, MOD_SEQ_PORT_NOTE0_NOTE);
+    
+    
+    }
+
+    //FIXME TESTING BPM Master
+    if (midi_package.evnt0 == 0xB0) {
+        if (midi_package.evnt1 == 0x40) MClock_User_Start();
+        if (midi_package.evnt1 == 0x45) MClock_User_Stop();
+        if (midi_package.evnt1 == 0x7c) MClock_User_Continue();
+        if (midi_package.evnt1 == 0x7d) {
+            MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x02, UI_RemoveModule(testmodule3));
+        }
+        if (midi_package.evnt1 == 0x7e) {
+            MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x01, UI_RemoveCable(testmodule2, MOD_SEQ_PORT_CURRENTSTEP, testmodule4, MOD_SEQ_PORT_NOTE0_NOTE));
+        }
+    }
 }
 
 
@@ -207,10 +209,10 @@ void APP_SRIO_ServiceFinish(void) {
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value) {
-	// jump to the CS handler
-	// edit a value of one of the modules according to the menus
-	// notify modified node by incrementing the process_req flag
-	// process all the nodes downstream of the host node
+    // jump to the CS handler
+    // edit a value of one of the modules according to the menus
+    // notify modified node by incrementing the process_req flag
+    // process all the nodes downstream of the host node
 }
 
 
@@ -220,7 +222,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value) {
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer) {
-	// see APP_DIN_NotifyToggle
+    // see APP_DIN_NotifyToggle
 }
 
 
@@ -242,12 +244,12 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value) {
 // to trigger MIDI Rx/Tx LEDs or to trigger on MIDI clock events. In order to
 // avoid MIDI buffer overruns, the max. recommented execution time is 100 uS!
 /////////////////////////////////////////////////////////////////////////////
-s32 vx_midi_rx(mios32_midi_port_t port, u8 midi_byte) {
-	SEQ_BPM_NotifyMIDIRx(midi_byte);								// Forward incoming MIDI to the SEQ_BPM module
-	return 0;
+s32 vX_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte) {
+    SEQ_BPM_NotifyMIDIRx(midi_byte);                                // Forward incoming MIDI to the SEQ_BPM module
+    return 0;
 }
 
-void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte) {
+void vX_MIDI_Tx(mios32_midi_port_t port, u8 midi_byte) {
 }
 
 
@@ -255,53 +257,49 @@ void vx_midi_tx(mios32_midi_port_t port, u8 midi_byte) {
 /////////////////////////////////////////////////////////////////////////////
 // This task is switched each 1ms
 /////////////////////////////////////////////////////////////////////////////
-void vx_task_rack_tick(void) {
-	
-	//FIXME TESTING 
-	MIOS32_BOARD_LED_Set(0xffffffff, 2);										// Red LED
-	
-	mod_tick();																	// send the output queues and then preprocess
+void vX_Task_Rack_Tick(void) {
+    unsigned int timeout = RACK_TICK_TIMEOUT;
+    while (--timeout > 0) {
+            if (MUTEX_GRAPH_TAKE == pdTRUE) {                                           // Take the Mutex to write to the graph
 
-	//FIXME TESTING 
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);										// Green LED
-	
-	mod_preprocess(dead_nodeid);												// preprocess data ASAP
-	
-
-	//FIXME TESTING
-	MIOS32_BOARD_LED_Set(0xffffffff, 3);										// Both LEDs
-	
-	mclock_tick();																// check for clock ticks
-	
+            MIOS32_BOARD_LED_Set(0xffffffff, 1);                                    // Green LED
+            
+            Mod_PreProcess(DEAD_NODEID);                                            // preprocess data ASAP
+            
+            MIOS32_BOARD_LED_Set(0xffffffff, 2);                                    // Red LED
+            
+            Mod_Tick();                                                             // send the output queues and then preprocess
+            
+            MIOS32_BOARD_LED_Set(0xffffffff, 0);                                    // Both LEDs
+            
+            MClock_Tick();                                                          // check for clock ticks
+            
+            MUTEX_GRAPH_GIVE;                                                            // Give back the Mutex to write to the graph
+            break;
+        }
+        
+    }
+                                                                                // timeout! Who's hogging the mutex? We should never get here!
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is switched each 1ms
 /////////////////////////////////////////////////////////////////////////////
-void vx_task_midi(void) {
-	//FIXME TESTING
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);										// LED off
-	SEQ_MIDI_OUT_Handler();														// send timestamped MIDI events
-	// handle buffers of incoming MIDI data
+void vX_Task_MIDI(void) {
+    MIOS32_BOARD_LED_Set(0xffffffff, 0);                                        // LED off
+    SEQ_MIDI_OUT_Handler();                                                     // send timestamped MIDI events
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is switched each 1ms
 /////////////////////////////////////////////////////////////////////////////
-void vx_task_ui(void) {
-static unsigned int perfctr = 2500;
-
-const portTickType xDelay = 500 / portTICK_RATE_MS;
-
-
-
-	while (1) {
-																				// Do CS stuff
-		vTaskDelay( xDelay );
-	}
-
+void vX_Task_UI(void) {
+    UI_Tick();
+    
 }
 
 
+// FIXME todo
+// inputs! DIN/MIDI/ETH/etc....

@@ -20,23 +20,16 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define max_moduletypes 4														// number of module types. maximum 254
+#define MAX_MODULETYPES 4                                                       // number of module types. maximum 254
 
-#define max_porttypes 3															// number of port types. don't go crazy here, keep it minimal
-
-
-#define mod_porttype_timestamp 0												// must be max_porttypes defines here
-#define mod_porttype_value 1
-#define mod_porttype_flag 2
+#define MOD_MODULETYPE_SCLK 0
+#define MOD_MODULETYPE_SEQ 1
+#define MOD_MODULETYPE_MIDIOUT 2
+#define MOD_MODULETYPE_SXH 3
 
 
-
-																				// don't change defines below here
-#define dead_moduletype (max_moduletypes+1)										// don't change
-#define dead_porttype (max_porttypes+1)											// don't change
-#define dead_value (signed char)(-128)											// don't change
-#define dead_timestamp 0xFFFFFFF0												// don't change
-#define reset_timestamp 0xFFFFFFFF												// don't change
+                                                                                // don't change defines below here
+#define DEAD_MODULETYPE (MAX_MODULETYPES+1)                                     // don't change
 
 
 
@@ -44,20 +37,28 @@ stay tuned for UI prototyping courtesy of lucem!
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef struct {																// port type and name
-	unsigned char porttype;
-	unsigned char portname[8];
+typedef const struct {                                                                // port type and name
+    const unsigned char porttype;
+    const char portname[8];
 } mod_portdata_t;
 
 
-typedef struct {																// module type data like functions for processing etc
-	void (*init_fn) (unsigned char nodeid);
-	void (*proc_fn) (unsigned char nodeid);
-	void (*uninit_fn) (unsigned char nodeid);
-	unsigned char ports;
-	unsigned char privvars;
-	const mod_portdata_t *porttypes;
-	unsigned char name[8];
+typedef const struct {                                                                // module type data like functions for processing etc
+    void (*init_fn) (unsigned char nodeID);
+    void (*proc_fn) (unsigned char nodeID);
+    void (*tick_fn) (unsigned char nodeID);
+    void (*uninit_fn) (unsigned char nodeID);
+    
+    const unsigned char ports;
+    const unsigned char privvars;
+    
+    const unsigned char buffers;
+    const unsigned char buffertype;
+    
+    const mod_portdata_t *porttypes;
+    const mod_portdata_t *privvartypes;
+    
+    const char name[MODULE_NAME_STRING_LENGTH];
 } mod_moduledata_t;
 
 
@@ -66,81 +67,83 @@ typedef struct {																// module type data like functions for processin
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-const mod_moduledata_t *mod_moduledata_type[max_moduletypes];					// array of module data
-
-
-extern void (*mod_init[max_moduletypes]) (unsigned char nodeid);				// array of module init functions
-
-extern void (*mod_process_type[max_moduletypes]) (unsigned char nodeid);		// array of module processing functions
-
-extern void (*mod_uninit_type[max_moduletypes]) (unsigned char nodeid);			// array of module init functions
-
-
-extern unsigned char mod_ports[max_moduletypes];								// array of sizes in bytes of ports per module type
-
-extern unsigned char mod_privvars[max_moduletypes];								// array of sizes in bytes of private vars per module type
-
-extern const mod_portdata_t *mod_porttypes[max_moduletypes];					// array of port doto per module type
+mod_moduledata_t *mod_ModuleData_Type[MAX_MODULETYPES];                         // array of module data
 
 
 
-extern void (*const mod_xlate_table[(max_porttypes*max_porttypes)]) 			// array of translator functions from any port type to any port type
-						(unsigned char tail_nodeid, unsigned char tail_port,
-						unsigned char head_nodeid, unsigned char head_port);	// Do it like this: return mod_xlate_table[(tail_port_type*max_porttypes)+head_port_type)];
+extern void (*mod_Init_Type[MAX_MODULETYPES]) (unsigned char nodeID);           // array of module init functions
 
-extern void (*const mod_deadport_table[(max_porttypes)]) 
-						(unsigned char nodeid, unsigned char port);				// array of functions for writing dead values to ports
+extern void (*mod_Process_Type[MAX_MODULETYPES]) (unsigned char nodeID);        // array of module processing functions
 
+extern void (*mod_Tick_Type[MAX_MODULETYPES]) (unsigned char nodeID);           // array of module ticking functions
 
-
-extern const unsigned char mod_outbuffer_count[max_moduletypes];				// array of outbuffer counts per module type
+extern void (*mod_UnInit_Type[MAX_MODULETYPES]) (unsigned char nodeID);         // array of module init functions
 
 
+extern unsigned char mod_Ports[MAX_MODULETYPES];                                // array of sizes in bytes of ports per module type
 
-extern void mod_init_moduledata(void);											// function for initialising module data on startup
-
-extern unsigned char mod_get_port_type
-									(unsigned char nodeid, unsigned char port);	// returns port type
+extern unsigned char mod_PrivVars[MAX_MODULETYPES];                             // array of sizes in bytes of private vars per module type
 
 
-extern void mod_preprocess(unsigned char startnodeid);							// does preprocessing for all modules
+extern mod_portdata_t *mod_PortTypes[MAX_MODULETYPES];                          // array of port doto per module type
+
+extern mod_portdata_t *mod_PrivVarTypes[MAX_MODULETYPES];                       // array of port doto per module type
 
 
-void mod_process(unsigned char nodeid);											// does preprocessing for one module
-
-void mod_propagate(unsigned char nodeid);										// pushes data out from ports on a module to all modules it is patched into
+extern unsigned char mod_ReProcess;                                             // counts number of modules which have requested reprocessing (eg after distributing a reset timestamp)
 
 
 
-extern void mod_tick(void);														// check for ticks on modules
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+extern void Mod_Init_ModuleData(void);                                          // function for initialising module data on startup
 
 
-extern void mod_setnexttick														// set the node[nodeid].nexttick value and handle it right. never write that value directly.
-							(unsigned char nodeid, u32 timestamp, 
-							u32 ( *mod_reset_type)(unsigned char resetnodeid));
-
-extern void mod_tickpriority(unsigned char nodeid);								// sets node[nodeid].downstream tick for this node and all nodes that patch in to it
-
-void mod_uninit(unsigned char nodeid);											// ununitialised a module according to it's module type
+extern void Mod_PreProcess(unsigned char startnodeID);                          // does preprocessing for all modules
 
 
-void mod_init_graph(unsigned char nodeid, unsigned char moduletype);			// mandatory graph inits, gets called automatically
+void Mod_Process(unsigned char nodeID);                                         // does preprocessing for one module
 
-void mod_uninit_graph(unsigned char nodeid);									// mandatory graph uninits, gets called automatically
+void Mod_Tick_Node(unsigned char nodeID);                                       // does preprocessing for one module
 
-extern unsigned char mod_reprocess;												// counts number of modules which have requested reprocessing (eg after distributing a reset timestamp)
+void Mod_Propagate(unsigned char nodeID);                                       // pushes data out from ports on a module to all modules it is patched into
 
 
-																				// includes for required functions
+
+extern void Mod_Tick(void);                                                     // check for ticks on modules
+
+
+extern void Mod_SetNextTick                                                     // set the node[nodeID].nexttick value and handle it right. never write that value directly.
+                            (unsigned char nodeID, u32 timestamp, 
+                            u32 ( *mod_reset_type)(unsigned char resetnodeID));
+
+extern void Mod_TickPriority(unsigned char nodeID);                             // sets node[nodeID].downstream tick for this node and all nodes that patch in to it
+
+void Mod_UnInit(unsigned char nodeID);                                          // ununitialised a module according to it's module type
+
+
+void Mod_Init_Graph(unsigned char nodeID, unsigned char moduletype);            // mandatory graph inits, gets called automatically
+
+void Mod_UnInit_Graph(unsigned char nodeID);                                    // mandatory graph uninits, gets called automatically
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Includes
+/////////////////////////////////////////////////////////////////////////////
+
+                                                                                // includes for required functions
 #include "mod_send.h"
 
 #include "mod_xlate.h"
 
-																				// includes for modules
-#include "mod_sclk.h"
-#include "mod_seq.h"
-#include "mod_midiout.h"
-#include "mod_sxh.h"
-																				// modules just need to be added here and to the mod_moduledata_type array to include them in the app
+                                                                                // includes for modules
+#include "vxmodules/mod_sclk.h"
+#include "vxmodules/mod_seq.h"
+#include "vxmodules/mod_midiout.h"
+#include "vxmodules/mod_sxh.h"
+                                                                                // modules just need to be added here and to the mod_ModuleData_Type array to include them in the app
 
 #endif /* _MODULES_H */
