@@ -394,17 +394,32 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
     MIOS32_IRQ_Disable();
 
     if( midi_byte == 0xf8 ) { // MIDI clock
+
       // we've measured a new delay between two F8 events
       incoming_clk_delay = incoming_clk_ctr;
       incoming_clk_ctr = 0;
 
-      // how many clocks (still) need to be triggered?
-      if( running >= 2 )
-	bpm_req_clk_ctr += (ppqn/24) - sent_clk_ctr;
-
-      // clear interpolation clock counter and get new SENT_CLK delay
-      sent_clk_ctr = 0;
+      // get new SENT_CLK delay
       sent_clk_delay = incoming_clk_delay / (ppqn/24);
+
+      // how many clocks (still) need to be triggered?
+      if( running >= 2 ) {
+	int open_requests = (ppqn/24) - sent_clk_ctr;
+	if( open_requests > 0 ) {
+	  bpm_req_clk_ctr += open_requests;
+	  bpm_tick += open_requests;
+	}
+      }
+
+      if( running ) {
+	// send clock immediately if sequencer running
+	sent_clk_ctr = 1;
+	++bpm_tick;
+	++bpm_req_clk_ctr;
+      } else {
+	// sequencer not running: don't request new clock(s)
+	sent_clk_ctr = 0;
+      }
 
       // if first clock after start or continue event: set run state to 2
       // (now we start to send BPM ticks)
@@ -617,7 +632,7 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
       // ensure that bpm_tick never gets negative (e.g. if clock wasn't polled for long time)
       bpm_req_clk_ctr = bpm_tick;
     }
-    if( (req=bpm_req_clk_ctr) ) {
+    if( req=bpm_req_clk_ctr ) {
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
       --bpm_req_clk_ctr;
     }
