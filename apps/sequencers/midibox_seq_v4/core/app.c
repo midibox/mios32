@@ -111,6 +111,7 @@ void APP_Init(void)
   SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_OUT_Init(0);
+  SEQ_MIDI_ROUTER_Init(0);
 
   // init mixer page
   SEQ_MIXER_Init(0);
@@ -162,6 +163,7 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
+  SEQ_MIDI_ROUTER_Receive(port, midi_package);
   SEQ_MIDI_IN_Receive(port, midi_package);
 }
 

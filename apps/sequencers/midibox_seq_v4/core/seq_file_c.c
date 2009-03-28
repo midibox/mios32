@@ -30,6 +30,8 @@
 
 
 #include "seq_bpm.h"
+#include "seq_midi_in.h"
+#include "seq_midi_router.h"
 #include "seq_core.h"
 
 
@@ -199,6 +201,63 @@ s32 SEQ_FILE_C_Read(void)
 	  seq_core_global_scale_ctrl = atoi(value_str);
 	} else if( strcmp(line_buffer, "GlobalScaleRoot") == 0 ) {
 	  seq_core_global_scale_root_selection = atoi(value_str);
+	} else if( strcmp(line_buffer, "MIDI_DefaultPort") == 0 ) {
+	  MIOS32_MIDI_DefaultPortSet(atoi(value_str));
+	} else if( strcmp(line_buffer, "MIDI_IN_Channel") == 0 ) {
+	  seq_midi_in_channel = atoi(value_str);
+	} else if( strcmp(line_buffer, "MIDI_IN_Port") == 0 ) {
+		 seq_midi_in_port = (mios32_midi_port_t)atoi(value_str);
+	} else if( strcmp(line_buffer, "MIDI_IN_TA_Split") == 0 ) {
+	  int value = atoi(value_str);
+	  if( value )
+	    seq_midi_in_ta_split_note |= 0x80;
+	  else
+	    seq_midi_in_ta_split_note &= ~0x80;
+	} else if( strcmp(line_buffer, "MIDI_IN_TA_SplitNote") == 0 ) {
+	  int value = atoi(value_str);
+	  seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
+	} else if( strcmp(line_buffer, "MIDI_OUT_MClock") == 0 ) {
+	  seq_midi_router_mclk_out = (mios32_midi_port_t)atoi(value_str);
+	} else if( strcmp(line_buffer, "MIDI_RouterNode") == 0 ) {
+	  // very primitive and error-prone scan routine for 5 decimal values
+	  int values[5];
+	  int i;
+	  for(i=0; i<5; ++i) {
+	    if( i < 4 ) {
+	      if( (space=strchr(value_str, ' ')) == NULL )
+		break;
+
+	      *space = 0;
+	    }
+
+	    values[i] = (mios32_midi_port_t)atoi(value_str);
+
+	    if( i < 4 ) {
+	      size_t space_pos = space-line_buffer;
+	      value_str = (char *)(line_buffer + space_pos + 1);
+	    }
+	  }
+
+	  if( i != 5 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode: missing parameter %d\n", i);
+#endif
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+	    DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode %d %d %d %d %d\n", values[0], values[1], values[2], values[3], values[4]);
+#endif
+	    if( values[0] >= SEQ_MIDI_ROUTER_NUM_NODES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode: invalid node number %d\n", values[0]);
+#endif
+	    } else {
+	      seq_midi_router_node_t *n = &seq_midi_router_node[values[0]];
+	      n->src_port = values[1];
+	      n->src_chn = values[2];
+	      n->dst_port = values[3];
+	      n->dst_chn = values[4];
+	    }
+	  }
 	} else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[SEQ_FILE_C] unknown setting: %s %s", line_buffer, value_str);
@@ -284,6 +343,31 @@ s32 SEQ_FILE_C_Write(void)
 
   sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_IN_Channel %d\n", seq_midi_in_channel);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_OUT_MClock %d\n", seq_midi_router_mclk_out);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  u8 node;
+  seq_midi_router_node_t *n = &seq_midi_router_node[0];
+  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+    sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+  }
 
   // close file
   status |= SEQ_FILE_WriteClose(&fi);

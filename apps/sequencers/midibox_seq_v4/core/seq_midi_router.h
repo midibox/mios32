@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MIDI Input routines
+ * Header file for MIDI router functions
  *
  * ==========================================================================
  *
@@ -11,39 +11,48 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_MIDI_IN_H
-#define _SEQ_MIDI_IN_H
+#ifndef _SEQ_MIDI_ROUTER_H
+#define _SEQ_MIDI_ROUTER_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#define SEQ_MIDI_ROUTER_NUM_NODES 8
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
+
+typedef union {
+  struct {
+    unsigned ALL:32;
+  };
+  struct {
+    u8 src_port; // don't use mios32_midi_port_t, since data width is important for save/restore function
+    u8 src_chn; // 0 == All, 1..16: specific source channel
+
+    u8 dst_port;
+    u8 dst_chn; // 0 == All, 1..16: specific destination channel
+  };
+} seq_midi_router_node_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_MIDI_IN_Init(u32 mode);
-
-extern s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-
-extern s32 SEQ_MIDI_IN_TransposerNoteGet(u8 hold);
-extern s32 SEQ_MIDI_IN_ArpNoteGet(u8 hold, u8 sorted, u8 key_num);
+extern s32 SEQ_MIDI_ROUTER_Init(u32 mode);
+extern s32 SEQ_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 seq_midi_in_channel;
-extern mios32_midi_port_t seq_midi_in_port;
-extern u8 seq_midi_in_ta_split_note;
+extern seq_midi_router_node_t seq_midi_router_node[SEQ_MIDI_ROUTER_NUM_NODES];
+extern u8 seq_midi_router_mclk_out;
 
-
-#endif /* _SEQ_MIDI_IN_H */
+#endif /* _SEQ_MIDI_ROUTER_H */
