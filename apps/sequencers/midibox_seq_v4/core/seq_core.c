@@ -28,6 +28,7 @@
 #include "seq_groove.h"
 #include "seq_humanize.h"
 #include "seq_midi_in.h"
+#include "seq_midi_router.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_pattern.h"
@@ -66,7 +67,6 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
-static s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,18 +183,18 @@ s32 SEQ_CORE_Handler(void)
     // note: don't remove any request check - clocks won't be propagated
     // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
-      SEQ_CORE_SendMIDIClockEvent(0xfc, 0);
+      SEQ_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
-      SEQ_CORE_SendMIDIClockEvent(0xfb, 0);
+      SEQ_ROUTER_SendMIDIClockEvent(0xfb, 0);
       // release pause mode
       ui_seq_pause = 0;
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
-      SEQ_CORE_SendMIDIClockEvent(0xfa, 0);
+      SEQ_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_SONG_Reset();
       SEQ_CORE_Reset();
     }
@@ -353,7 +353,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
   // send MIDI clock on each 16th tick (since we are working at 384ppqn)
   if( (bpm_tick % (16 << seq_core_bpm_div_int)) == 0 )
-    SEQ_CORE_SendMIDIClockEvent(0xf8, bpm_tick);
+    SEQ_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
 
   // process all tracks
@@ -1039,32 +1039,6 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
   }
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function sends a MIDI clock/Start/Stop/Continue event to all output
-// ports which have been enabled for this function.
-// if bpm_tick == 0, the event will be sent immediately, otherwise it will
-// be queued
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
-{
-  // TODO: currently only in master mode - we will allow to optionally send in slave mode as well
-  // TODO: MIDI clock port routing, currently only sent on UART0
-  if( SEQ_BPM_IsMaster() ) {
-    mios32_midi_package_t p;
-    p.ALL = 0;
-    p.type = 0x5; // Single-byte system common message
-    p.evnt0 = evnt0;
-
-    if( bpm_tick )
-      SEQ_MIDI_OUT_Send(UART0, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
-    else
-      MIOS32_MIDI_SendPackage(UART0, p);
-  }
-
-  return 0; // no error;
 }
 
 

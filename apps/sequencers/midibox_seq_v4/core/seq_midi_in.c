@@ -71,6 +71,16 @@ static s32 SEQ_MIDI_IN_Notestack_Push(seq_midi_in_notestack_t *n, u8 new_note, u
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
+u8 seq_midi_in_channel;
+
+// which port should be used? (0: All)
+mios32_midi_port_t seq_midi_in_port;
+
+// Transposer/Arpeggiator split note
+// (bit 7 enables/disables split)
+u8 seq_midi_in_ta_split_note;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -85,10 +95,6 @@ static u8 transposer_hold_note;
 // last arp notes which have been played
 static u8 arp_sorted_hold[4];
 static u8 arp_unsorted_hold[4];
-
-// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
-static u8 seq_midi_in_channel;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -108,8 +114,10 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   arp_sorted_hold[2] = arp_unsorted_hold[2] = 0x43; // G-3
   arp_sorted_hold[3] = arp_unsorted_hold[3] = 0x48; // C-4
 
+  // stored in global config:
   seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
-  // will be stored in global config later
+  seq_midi_in_port = DEFAULT; // All ports
+  seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
 
   return 0; // no error
 }
@@ -122,7 +130,9 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 {
   s32 status = 0;
 
-  // TODO: here we could filter the MIDI port
+  // filter MIDI port (if 0: no filter, listen to all ports)
+  if( seq_midi_in_port && port != seq_midi_in_port )
+    return status;
 
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
@@ -157,88 +167,94 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
 {
   seq_midi_in_notestack_t *n;
 
+  u8 ta_split_enabled = seq_midi_in_ta_split_note & 0x80;
+  u8 ta_split_note = seq_midi_in_ta_split_note & 0x7f;
+
+
   ///////////////////////////////////////////////////////////////////////////
   // Transposer
   ///////////////////////////////////////////////////////////////////////////
 
-  n = &notestack[NOTESTACK_TRANSPOSER];
-  if( velocity ) { // Note On
-    SEQ_MIDI_IN_Notestack_Push(n, note, 0); // unsorted
-    transposer_hold_note = n->note[0];
-
-    // will only be used if enabled in OPT menu
-    seq_core_keyb_scale_root = note % 12;
-  } else { // Note Off
-    if( SEQ_MIDI_IN_Notestack_Pop(n, note) > 0 && n->len ) {
+  if( !ta_split_enabled || (note < ta_split_note) ) {
+    n = &notestack[NOTESTACK_TRANSPOSER];
+    if( velocity ) { // Note On
+      SEQ_MIDI_IN_Notestack_Push(n, note, 0); // unsorted
       transposer_hold_note = n->note[0];
+
+      // will only be used if enabled in OPT menu
+      seq_core_keyb_scale_root = note % 12;
+    } else { // Note Off
+      if( SEQ_MIDI_IN_Notestack_Pop(n, note) > 0 && n->len ) {
+	transposer_hold_note = n->note[0];
+      }
     }
-  }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  {
-    int i;
-    DEBUG_MSG("[T Notestack] IN: %02x %02x  LEN: %d  Notes:", note, velocity, n->len);
-    for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      DEBUG_MSG(" %02x", n->note[i]);
-    DEBUG_MSG("\n");
-  }
+    {
+      int i;
+      DEBUG_MSG("[T Notestack] IN: %02x %02x  LEN: %d  Notes:", note, velocity, n->len);
+      for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
+        DEBUG_MSG(" %02x", n->note[i]);
+      DEBUG_MSG("\n");
+    }
 #endif
+  }
 
 
   ///////////////////////////////////////////////////////////////////////////
   // Arpeggiator
   ///////////////////////////////////////////////////////////////////////////
 
-  // TODO: keyboard split
+  if( !ta_split_enabled || (note >= ta_split_note) ) {
+    if( velocity ) { // Note On
+      // if no note in note stack anymore, reset position of all tracks with RESTART flag set
+      if( !notestack[NOTESTACK_ARP_UNSORTED].len ) {
+        u8 track;
+        for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+	  if( seq_cc_trk[track].mode.RESTART ) {
+	    portENTER_CRITICAL();
+	    seq_core_trk[track].state.POS_RESET = 1;
+	    portEXIT_CRITICAL();
+	  }
 
-  if( velocity ) { // Note On
-    // if no note in note stack anymore, reset position of all tracks with RESTART flag set
-    if( !notestack[NOTESTACK_ARP_UNSORTED].len ) {
-      u8 track;
-      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	if( seq_cc_trk[track].mode.RESTART ) {
-	  portENTER_CRITICAL();
-	  seq_core_trk[track].state.POS_RESET = 1;
-	  portEXIT_CRITICAL();
-	}
+	// and invalidate hold stacks
+	int i;
+	for(i=0; i<4; ++i)
+	  arp_sorted_hold[i] = arp_unsorted_hold[i] = 0;
+      }
 
-      // and invalidate hold stacks
+      // add to stacks
+      SEQ_MIDI_IN_Notestack_Push(&notestack[NOTESTACK_ARP_SORTED], note, 1);
+      SEQ_MIDI_IN_Notestack_Push(&notestack[NOTESTACK_ARP_UNSORTED], note, 0);
+
+      // copy to hold stack
       int i;
-      for(i=0; i<4; ++i)
-	arp_sorted_hold[i] = arp_unsorted_hold[i] = 0;
+      for(i=0; i<4; ++i) {
+	arp_unsorted_hold[i] = (i < notestack[NOTESTACK_ARP_UNSORTED].len) ? notestack[NOTESTACK_ARP_UNSORTED].note[i] : 0;
+	arp_sorted_hold[i] = (i < notestack[NOTESTACK_ARP_SORTED].len) ? notestack[NOTESTACK_ARP_SORTED].note[i] : 0;
+      }
+
+    } else { // Note Off
+      // remove note from sorted/unsorted stack (not hold stacks)
+      SEQ_MIDI_IN_Notestack_Pop(&notestack[NOTESTACK_ARP_SORTED], note);
+      SEQ_MIDI_IN_Notestack_Pop(&notestack[NOTESTACK_ARP_UNSORTED], note);
     }
-
-    // add to stacks
-    SEQ_MIDI_IN_Notestack_Push(&notestack[NOTESTACK_ARP_SORTED], note, 1);
-    SEQ_MIDI_IN_Notestack_Push(&notestack[NOTESTACK_ARP_UNSORTED], note, 0);
-
-    // copy to hold stack
-    int i;
-    for(i=0; i<4; ++i) {
-      arp_unsorted_hold[i] = (i < notestack[NOTESTACK_ARP_UNSORTED].len) ? notestack[NOTESTACK_ARP_UNSORTED].note[i] : 0;
-      arp_sorted_hold[i] = (i < notestack[NOTESTACK_ARP_SORTED].len) ? notestack[NOTESTACK_ARP_SORTED].note[i] : 0;
-    }
-
-  } else { // Note Off
-    // remove note from sorted/unsorted stack (not hold stacks)
-    SEQ_MIDI_IN_Notestack_Pop(&notestack[NOTESTACK_ARP_SORTED], note);
-    SEQ_MIDI_IN_Notestack_Pop(&notestack[NOTESTACK_ARP_UNSORTED], note);
-  }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  {
-    int i;
-    DEBUG_MSG("[ARP Sorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_SORTED].len);
-    for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_SORTED].note[i]);
-    DEBUG_MSG("\n");
+    {
+      int i;
+      DEBUG_MSG("[ARP Sorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_SORTED].len);
+      for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
+        DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_SORTED].note[i]);
+      DEBUG_MSG("\n");
 
-    DEBUG_MSG("[ARP Unsorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_UNSORTED].len);
-    for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
-      DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_UNSORTED].note[i]);
-    DEBUG_MSG("\n");
-  }
+      DEBUG_MSG("[ARP Unsorted] IN: %02x %02x  LEN: %d  Notes:", note, velocity, notestack[NOTESTACK_ARP_UNSORTED].len);
+      for(i=0; i<SEQ_MIDI_IN_NOTESTACK_SIZE; ++i)
+        DEBUG_MSG(" %02x", notestack[NOTESTACK_ARP_UNSORTED].note[i]);
+      DEBUG_MSG("\n");
+    }
 #endif
+  }
 
   return 0; // no error
 }
