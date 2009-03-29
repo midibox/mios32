@@ -1,16 +1,3 @@
-#
-# changes in MIOS trunk
-#
-
-* Applied patch to uip.c to correct problem with uip_len, as per the
-  known bugs page on the uIP website
-  
-
-#
-# original changelog
-#
-
-
 * A new API: protosockets that are similar to BSD sockets but does not
   require any underlying multithreading system. 
 
