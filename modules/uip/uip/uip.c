@@ -1887,11 +1887,12 @@ htons(u16_t val)
 void
 uip_send(const void *data, int len)
 {
+  uip_slen = len; // fix as per http://www.sics.se/~adam/uip/index.php/Known_bugs
   if(len > 0) {
-    uip_slen = len;
     if(data != uip_sappdata) {
       memcpy(uip_sappdata, (data), uip_slen);
     }
   }
 }
+
 /** @} */
