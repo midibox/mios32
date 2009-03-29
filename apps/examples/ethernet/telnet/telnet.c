@@ -160,63 +160,43 @@ void telnet_app(void)
 /////////////////////////////////////////////////////////////////////////////
 
 void telnet_connected(struct telnet_state *s) {
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
+
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[telnet] Connected!");
 #endif
 
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
 }
 
 void telnet_closed(struct telnet_state *s) {
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
+
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[telnet] Closed.");
 #endif
 
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
 }
 
 void telnet_sent(struct telnet_state *s) {
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
+
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[telnet] Data sent.");
 #endif
 
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
 }
 
 void telnet_aborted(struct telnet_state *s) {
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
+
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[telnet] ABORT!");
 #endif
 
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
 }
 
 void telnet_timedout(struct telnet_state *s) {
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
+
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[telnet] TIME OUT!");
 #endif
 
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
 }
 
 
@@ -282,16 +262,10 @@ void telnet_sendstring(struct telnet_state *s, char *sendstring) {
 
 void telnet_newdata(struct telnet_state *s, char *data, u16_t len) {
     
-    // take over exclusive access to UIP functions
-    MUTEX_UIP_TAKE;
-    
 #if TN_DEBUG_VERBOSE_LEVEL >= 1
     // echo the data out to the debug function for testing
     DEBUG_MSG("[telnet] New Data %s", data);
 #endif
-
-    // release exclusive access to UIP functions
-    MUTEX_UIP_GIVE;
     
 }
 
