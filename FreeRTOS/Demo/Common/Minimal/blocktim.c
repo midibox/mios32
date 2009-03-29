@@ -1,49 +1,51 @@
 /*
-	FreeRTOS.org V5.0.3 - Copyright (C) 2003-2008 Richard Barry.
+	FreeRTOS.org V5.2.0 - Copyright (C) 2003-2009 Richard Barry.
 
 	This file is part of the FreeRTOS.org distribution.
 
-	FreeRTOS.org is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+	FreeRTOS.org is free software; you can redistribute it and/or modify it 
+	under the terms of the GNU General Public License (version 2) as published
+	by the Free Software Foundation and modified by the FreeRTOS exception.
 
-	FreeRTOS.org is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+	FreeRTOS.org is distributed in the hope that it will be useful,	but WITHOUT
+	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for 
+	more details.
 
-	You should have received a copy of the GNU General Public License
-	along with FreeRTOS.org; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License along 
+	with FreeRTOS.org; if not, write to the Free Software Foundation, Inc., 59 
+	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-	A special exception to the GPL can be applied should you wish to distribute
-	a combined work that includes FreeRTOS.org, without being obliged to provide
+	A special exception to the GPL is included to allow you to distribute a 
+	combined work that includes FreeRTOS.org without being obliged to provide
 	the source code for any proprietary components.  See the licensing section
-	of http://www.FreeRTOS.org for full details of how and when the exception
-	can be applied.
+	of http://www.FreeRTOS.org for full details.
 
-    ***************************************************************************
-    ***************************************************************************
-    *                                                                         *
-    * SAVE TIME AND MONEY!  We can port FreeRTOS.org to your own hardware,    *
-    * and even write all or part of your application on your behalf.          *
-    * See http://www.OpenRTOS.com for details of the services we provide to   *
-    * expedite your project.                                                  *
-    *                                                                         *
-    ***************************************************************************
-    ***************************************************************************
+
+	***************************************************************************
+	*                                                                         *
+	* Get the FreeRTOS eBook!  See http://www.FreeRTOS.org/Documentation      *
+	*                                                                         *
+	* This is a concise, step by step, 'hands on' guide that describes both   *
+	* general multitasking concepts and FreeRTOS specifics. It presents and   *
+	* explains numerous examples that are written using the FreeRTOS API.     *
+	* Full source code for all the examples is provided in an accompanying    *
+	* .zip file.                                                              *
+	*                                                                         *
+	***************************************************************************
+
+	1 tab == 4 spaces!
 
 	Please ensure to read the configuration and relevant port sections of the
 	online documentation.
 
-	http://www.FreeRTOS.org - Documentation, latest information, license and 
+	http://www.FreeRTOS.org - Documentation, latest information, license and
 	contact details.
 
-	http://www.SafeRTOS.com - A version that is certified for use in safety 
+	http://www.SafeRTOS.com - A version that is certified for use in safety
 	critical systems.
 
-	http://www.OpenRTOS.com - Commercial support, development, porting, 
+	http://www.OpenRTOS.com - Commercial support, development, porting,
 	licensing and training services.
 */
 
@@ -61,9 +63,14 @@
 /* Demo includes. */
 #include "blocktim.h"
 
-/* Task priorities. */
-#define bktPRIMARY_PRIORITY			( 3 )
-#define bktSECONDARY_PRIORITY		( 2 )
+/* Task priorities.  Allow these to be overridden. */
+#ifndef bktPRIMARY_PRIORITY
+	#define bktPRIMARY_PRIORITY			( 3 )
+#endif
+
+#ifndef bktSECONDARY_PRIORITY
+	#define bktSECONDARY_PRIORITY		( 2 )
+#endif
 
 /* Task behaviour. */
 #define bktQUEUE_LENGTH				( 5 )
@@ -101,10 +108,10 @@ void vCreateBlockTimeTasks( void )
     xTestQueue = xQueueCreate( bktQUEUE_LENGTH, sizeof( portBASE_TYPE ) );
 
 	/* vQueueAddToRegistry() adds the queue to the queue registry, if one is
-	in use.  The queue registry is provided as a means for kernel aware 
+	in use.  The queue registry is provided as a means for kernel aware
 	debuggers to locate queues and has no purpose if a kernel aware debugger
 	is not being used.  The call to vQueueAddToRegistry() will be removed
-	by the pre-processor if configQUEUE_REGISTRY_SIZE is not defined or is 
+	by the pre-processor if configQUEUE_REGISTRY_SIZE is not defined or is
 	defined to be less than 1. */
 	vQueueAddToRegistry( xTestQueue, ( signed portCHAR * ) "Block_Time_Queue" );
 
@@ -135,7 +142,7 @@ portTickType xTimeToBlock, xBlockedTime;
 			xTimeToBlock = bktPRIMARY_BLOCK_TIME << xItem;
 
 			xTimeWhenBlocking = xTaskGetTickCount();
-			
+
 			/* We should unblock after xTimeToBlock having not received
 			anything on the queue. */
 			if( xQueueReceive( xTestQueue, &xData, xTimeToBlock ) != errQUEUE_EMPTY )
@@ -186,7 +193,7 @@ portTickType xTimeToBlock, xBlockedTime;
 			xTimeToBlock = bktPRIMARY_BLOCK_TIME << xItem;
 
 			xTimeWhenBlocking = xTaskGetTickCount();
-			
+
 			/* We should unblock after xTimeToBlock having not received
 			anything on the queue. */
 			if( xQueueSend( xTestQueue, &xItem, xTimeToBlock ) != errQUEUE_FULL )
@@ -240,7 +247,7 @@ portTickType xTimeToBlock, xBlockedTime;
 		for( xItem = 0; xItem < bktQUEUE_LENGTH; xItem++ )
 		{
 			/* Now when we make space on the queue the other task should wake
-			but not execute as this task has higher priority. */				
+			but not execute as this task has higher priority. */
 			if( xQueueReceive( xTestQueue, &xData, bktDONT_BLOCK ) != pdPASS )
 			{
 				xErrorOccurred = pdTRUE;
@@ -274,7 +281,7 @@ portTickType xTimeToBlock, xBlockedTime;
 			}
 
 			/* Set the priority back down. */
-			vTaskPrioritySet( xSecondary, bktSECONDARY_PRIORITY );			
+			vTaskPrioritySet( xSecondary, bktSECONDARY_PRIORITY );
 		}
 
 		/* Let the other task timeout.  When it unblockes it will check that it
@@ -301,7 +308,7 @@ portTickType xTimeToBlock, xBlockedTime;
 				xErrorOccurred = pdTRUE;
 			}
 		}
-		
+
 		/* Wake the other task so it blocks attempting to read from  the
 		already	empty queue. */
 		vTaskResume( xSecondary );
@@ -317,7 +324,7 @@ portTickType xTimeToBlock, xBlockedTime;
 		for( xItem = 0; xItem < bktQUEUE_LENGTH; xItem++ )
 		{
 			/* Now when we place an item on the queue the other task should
-			wake but not execute as this task has higher priority. */				
+			wake but not execute as this task has higher priority. */
 			if( xQueueSend( xTestQueue, &xItem, bktDONT_BLOCK ) != pdPASS )
 			{
 				xErrorOccurred = pdTRUE;
@@ -349,7 +356,7 @@ portTickType xTimeToBlock, xBlockedTime;
 				queue function. */
 				xErrorOccurred = pdTRUE;
 			}
-			vTaskPrioritySet( xSecondary, bktSECONDARY_PRIORITY );			
+			vTaskPrioritySet( xSecondary, bktSECONDARY_PRIORITY );
 		}
 
 		/* Let the other task timeout.  When it unblockes it will check that it
@@ -387,9 +394,9 @@ portBASE_TYPE xData;
 		full so we block.  Note the time before we block so we can check the
 		wake time is as per that expected. */
 		xTimeWhenBlocking = xTaskGetTickCount();
-		
-		/* We should unblock after bktTIME_TO_BLOCK having not received
-		anything on the queue. */
+
+		/* We should unblock after bktTIME_TO_BLOCK having not sent
+		anything to the queue. */
 		xData = 0;
 		xRunIndicator = bktRUN_INDICATOR;
 		if( xQueueSend( xTestQueue, &xData, bktTIME_TO_BLOCK ) != errQUEUE_FULL )
@@ -423,7 +430,7 @@ portBASE_TYPE xData;
 
 		As per test three, but with the send and receive reversed. */
 		xTimeWhenBlocking = xTaskGetTickCount();
-		
+
 		/* We should unblock after bktTIME_TO_BLOCK having not received
 		anything on the queue. */
 		xRunIndicator = bktRUN_INDICATOR;

@@ -1,38 +1,40 @@
 /*
-	FreeRTOS.org V5.0.3 - Copyright (C) 2003-2008 Richard Barry.
+	FreeRTOS.org V5.2.0 - Copyright (C) 2003-2009 Richard Barry.
 
 	This file is part of the FreeRTOS.org distribution.
 
-	FreeRTOS.org is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+	FreeRTOS.org is free software; you can redistribute it and/or modify it 
+	under the terms of the GNU General Public License (version 2) as published
+	by the Free Software Foundation and modified by the FreeRTOS exception.
 
-	FreeRTOS.org is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+	FreeRTOS.org is distributed in the hope that it will be useful,	but WITHOUT
+	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for 
+	more details.
 
-	You should have received a copy of the GNU General Public License
-	along with FreeRTOS.org; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License along 
+	with FreeRTOS.org; if not, write to the Free Software Foundation, Inc., 59 
+	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-	A special exception to the GPL can be applied should you wish to distribute
-	a combined work that includes FreeRTOS.org, without being obliged to provide
+	A special exception to the GPL is included to allow you to distribute a 
+	combined work that includes FreeRTOS.org without being obliged to provide
 	the source code for any proprietary components.  See the licensing section
-	of http://www.FreeRTOS.org for full details of how and when the exception
-	can be applied.
+	of http://www.FreeRTOS.org for full details.
 
-    ***************************************************************************
-    ***************************************************************************
-    *                                                                         *
-    * SAVE TIME AND MONEY!  We can port FreeRTOS.org to your own hardware,    *
-    * and even write all or part of your application on your behalf.          *
-    * See http://www.OpenRTOS.com for details of the services we provide to   *
-    * expedite your project.                                                  *
-    *                                                                         *
-    ***************************************************************************
-    ***************************************************************************
+
+	***************************************************************************
+	*                                                                         *
+	* Get the FreeRTOS eBook!  See http://www.FreeRTOS.org/Documentation      *
+	*                                                                         *
+	* This is a concise, step by step, 'hands on' guide that describes both   *
+	* general multitasking concepts and FreeRTOS specifics. It presents and   *
+	* explains numerous examples that are written using the FreeRTOS API.     *
+	* Full source code for all the examples is provided in an accompanying    *
+	* .zip file.                                                              *
+	*                                                                         *
+	***************************************************************************
+
+	1 tab == 4 spaces!
 
 	Please ensure to read the configuration and relevant port sections of the
 	online documentation.
@@ -116,8 +118,8 @@ from within the interrupts. */
 	unsigned portBASE_TYPE uxSavedInterruptStatus;																			\
 		uxSavedInterruptStatus = portSET_INTERRUPT_MASK_FROM_ISR();															\
 		{																													\
-			xQueueSendFromISR( xNormallyEmptyQueue, ( void * ) &uxValueForNormallyEmptyQueue, &xHigherPriorityTaskWoken );	\
 			uxValueForNormallyEmptyQueue++;																					\
+			xQueueSendFromISR( xNormallyEmptyQueue, ( void * ) &uxValueForNormallyEmptyQueue, &xHigherPriorityTaskWoken );	\
 		}																													\
 		portCLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedInterruptStatus );														\
 	}																														\
@@ -130,8 +132,8 @@ from within the interrupts. */
 	unsigned portBASE_TYPE uxSavedInterruptStatus;																			\
 		uxSavedInterruptStatus = portSET_INTERRUPT_MASK_FROM_ISR();															\
 		{																													\
-			xQueueSendFromISR( xNormallyFullQueue, ( void * ) &uxValueForNormallyFullQueue, &xHigherPriorityTaskWoken ); 	\
 			uxValueForNormallyFullQueue++;																					\
+			xQueueSendFromISR( xNormallyFullQueue, ( void * ) &uxValueForNormallyFullQueue, &xHigherPriorityTaskWoken ); 	\
 		}																													\
 		portCLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedInterruptStatus );														\
 	}																														\
@@ -227,7 +229,6 @@ void vStartInterruptQueueTasks( void )
 	defined to be less than 1. */
 	vQueueAddToRegistry( xNormallyFullQueue, ( signed portCHAR * ) "NormallyFull" );
 	vQueueAddToRegistry( xNormallyEmptyQueue, ( signed portCHAR * ) "NormallyEmpty" );
-
 }
 /*-----------------------------------------------------------*/
 
@@ -241,7 +242,7 @@ static void prvRecordValue_NormallyFull( unsigned portBASE_TYPE uxValue, unsigne
 		{
 			prvQueueAccessLogError( __LINE__ );
 		}
-		
+
 		/* Log that this value has been received. */
 		ucNormallyFullReceivedValues[ uxValue ] = uxSource;
 	}
@@ -258,7 +259,7 @@ static void prvRecordValue_NormallyEmpty( unsigned portBASE_TYPE uxValue, unsign
 		{
 			prvQueueAccessLogError( __LINE__ );
 		}
-		
+
 		/* Log that this value has been received. */
 		ucNormallyEmptyReceivedValues[ uxValue ] = uxSource;
 	}
@@ -275,7 +276,7 @@ static void prvQueueAccessLogError( unsigned portBASE_TYPE uxLine )
 
 static void prvHigherPriorityNormallyEmptyTask( void *pvParameters )
 {
-unsigned portBASE_TYPE uxRxed, ux, uxTask1, uxTask2;
+unsigned portBASE_TYPE uxRxed, ux, uxTask1, uxTask2, uxErrorCount1 = 0, uxErrorCount2 = 0;
 
 	/* The timer should not be started until after the scheduler has started.
 	More than one task is running this code so we check the parameter value
@@ -299,23 +300,24 @@ unsigned portBASE_TYPE uxRxed, ux, uxTask1, uxTask2;
 			values are received and no values are duplicated. */
 			prvRecordValue_NormallyEmpty( uxRxed, ( unsigned portBASE_TYPE ) pvParameters );
 		}
-		
+
 		/* Ensure the other task running this code gets a chance to execute. */
 		taskYIELD();
-		
+
 		if( ( unsigned portBASE_TYPE ) pvParameters == intqHIGH_PRIORITY_TASK1 )
 		{
 			/* Have we received all the expected values? */
 			if( uxValueForNormallyEmptyQueue > ( intqNUM_VALUES_TO_LOG + intqVALUE_OVERRUN ) )
 			{
 				vTaskSuspend( xHighPriorityNormallyEmptyTask2 );
-				
+
 				uxTask1 = 0;
 				uxTask2 = 0;
-		
+
 				/* Loop through the array, checking that both tasks have
-				placed values into the array, and that no values are missing. */
-				for( ux = 0; ux < intqNUM_VALUES_TO_LOG; ux++ )
+				placed values into the array, and that no values are missing.
+				Start at 1 as we expect position 0 to be unused. */
+				for( ux = 1; ux < intqNUM_VALUES_TO_LOG; ux++ )
 				{
 					if( ucNormallyEmptyReceivedValues[ ux ] == 0 )
 					{
@@ -336,22 +338,38 @@ unsigned portBASE_TYPE uxRxed, ux, uxTask1, uxTask2;
 						}
 					}
 				}
-				
+
 				if( uxTask1 < intqMIN_ACCEPTABLE_TASK_COUNT )
 				{
 					/* Only task 2 seemed to log any values. */
-					prvQueueAccessLogError( __LINE__ );
+					uxErrorCount1++;
+					if( uxErrorCount1 > 2 )
+					{
+						prvQueueAccessLogError( __LINE__ );
+					}
 				}
-				
+				else
+				{
+					uxErrorCount1 = 0;
+				}
+
 				if( uxTask2 < intqMIN_ACCEPTABLE_TASK_COUNT  )
 				{
 					/* Only task 1 seemed to log any values. */
-					prvQueueAccessLogError( __LINE__ );
+					uxErrorCount2++;
+					if( uxErrorCount2 > 2 )
+					{
+						prvQueueAccessLogError( __LINE__ );
+					}
 				}
-				
+				else
+				{
+					uxErrorCount2 = 0;
+				}
+
 				/* Clear the array again, ready to start a new cycle. */
 				memset( ucNormallyEmptyReceivedValues, 0x00, sizeof( ucNormallyEmptyReceivedValues ) );
-				
+
 				uxHighPriorityLoops1++;
 				uxValueForNormallyEmptyQueue = 0;
 
@@ -361,7 +379,7 @@ unsigned portBASE_TYPE uxRxed, ux, uxTask1, uxTask2;
 				priority tasks.  The lower priority task will resume us
 				if it receives something.  We will then resume the other
 				higher priority task. */
-				vTaskSuspend( NULL );		
+				vTaskSuspend( NULL );
 				vTaskResume( xHighPriorityNormallyEmptyTask2 );
 			}
 		}
@@ -376,9 +394,9 @@ portBASE_TYPE xQueueStatus;
 
 	/* The parameters are not being used so avoid compiler warnings. */
 	( void ) pvParameters;
-	
+
 	for( ;; )
-	{	
+	{
 		if( ( xQueueStatus = xQueueReceive( xNormallyEmptyQueue, &uxRxed, intqONE_TICK_DELAY ) ) != errQUEUE_EMPTY )
 		{
 			/* We should only obtain a value when the high priority task is
@@ -389,7 +407,7 @@ portBASE_TYPE xQueueStatus;
 			}
 
 			prvRecordValue_NormallyEmpty( uxRxed, intqLOW_PRIORITY_TASK );
-			
+
 			/* Wake the higher priority task again. */
 			vTaskResume( xHighPriorityNormallyEmptyTask1 );
 			uxLowPriorityLoops1++;
@@ -399,19 +417,19 @@ portBASE_TYPE xQueueStatus;
 			/* Raise our priority while we send so we can preempt the higher
 			priority task, and ensure we get the Tx value into the queue. */
 			vTaskPrioritySet( NULL, intqHIGHER_PRIORITY + 1 );
-			
+
 			portENTER_CRITICAL();
 			{
-				uxValue = uxValueForNormallyEmptyQueue;
 				uxValueForNormallyEmptyQueue++;
+				uxValue = uxValueForNormallyEmptyQueue;
 			}
 			portEXIT_CRITICAL();
-			
+
 			if( xQueueSend( xNormallyEmptyQueue, &uxValue, portMAX_DELAY ) != pdPASS )
 			{
 				prvQueueAccessLogError( __LINE__ );
 			}
-			
+
 			vTaskPrioritySet( NULL, intqLOWER_PRIORITY );
 		}
 	}
@@ -425,27 +443,27 @@ portBASE_TYPE xQueueStatus;
 
 	/* The parameters are not being used so avoid compiler warnings. */
 	( void ) pvParameters;
-	
+
 	/* Make sure the queue starts full or near full.  >> 1 as there are two
 	high priority tasks. */
 	for( ux = 0; ux < ( intqQUEUE_LENGTH >> 1 ); ux++ )
 	{
 		portENTER_CRITICAL();
 		{
-			uxValueToTx = uxValueForNormallyFullQueue;
 			uxValueForNormallyFullQueue++;
+			uxValueToTx = uxValueForNormallyFullQueue;
 		}
 		portEXIT_CRITICAL();
 
-		xQueueSend( xNormallyFullQueue, &uxValueToTx, intqSHORT_DELAY );		
+		xQueueSend( xNormallyFullQueue, &uxValueToTx, intqSHORT_DELAY );
 	}
 
 	for( ;; )
 	{
 		portENTER_CRITICAL();
 		{
-			uxValueToTx = uxValueForNormallyFullQueue;
 			uxValueForNormallyFullQueue++;
+			uxValueToTx = uxValueForNormallyFullQueue;
 		}
 		portEXIT_CRITICAL();
 
@@ -458,39 +476,40 @@ portBASE_TYPE xQueueStatus;
 
 		/* Allow the other task running this code to run. */
 		taskYIELD();
-		
+
 		/* Have all the expected values been sent to the queue? */
 		if( uxValueToTx > ( intqNUM_VALUES_TO_LOG + intqVALUE_OVERRUN ) )
 		{
 			/* Make sure the other high priority task completes its send of
 			any values below intqNUM_VALUE_TO_LOG. */
 			vTaskDelay( intqSHORT_DELAY );
-			
+
 			vTaskSuspend( xHighPriorityNormallyFullTask2 );
-			
+
 			if( xWasSuspended == pdTRUE )
 			{
 				/* We would have expected the other high priority task to have
 				set this back to false by now. */
 				prvQueueAccessLogError( __LINE__ );
 			}
-			
+
 			/* Set the suspended flag so an error is not logged if the other
 			task recognises a time out when it is unsuspended. */
 			xWasSuspended = pdTRUE;
-	
-			for( ux = 0; ux < intqNUM_VALUES_TO_LOG; ux++ )
+
+			/* Start at 1 as we expect position 0 to be unused. */
+			for( ux = 1; ux < intqNUM_VALUES_TO_LOG; ux++ )
 			{
 				if( ucNormallyFullReceivedValues[ ux ] == 0 )
 				{
 					/* A value was missing. */
 					prvQueueAccessLogError( __LINE__ );
 				}
-			}				
+			}
 
 			/* Reset the array ready for the next cycle. */
-			memset( ucNormallyFullReceivedValues, 0x00, sizeof( ucNormallyFullReceivedValues ) );				
-			
+			memset( ucNormallyFullReceivedValues, 0x00, sizeof( ucNormallyFullReceivedValues ) );
+
 			uxHighPriorityLoops2++;
 			uxValueForNormallyFullQueue = 0;
 
@@ -500,7 +519,7 @@ portBASE_TYPE xQueueStatus;
 			priority tasks.  The lower priority task will resume us
 			if it receives something.  We will then resume the other
 			higher priority task. */
-			vTaskSuspend( NULL );	
+			vTaskSuspend( NULL );
 			vTaskResume( xHighPriorityNormallyFullTask2 );
 		}
 	}
@@ -514,27 +533,27 @@ portBASE_TYPE xQueueStatus;
 
 	/* The parameters are not being used so avoid compiler warnings. */
 	( void ) pvParameters;
-	
+
 	/* Make sure the queue starts full or near full.  >> 1 as there are two
 	high priority tasks. */
 	for( ux = 0; ux < ( intqQUEUE_LENGTH >> 1 ); ux++ )
 	{
 		portENTER_CRITICAL();
 		{
-			uxValueToTx = uxValueForNormallyFullQueue;
 			uxValueForNormallyFullQueue++;
+			uxValueToTx = uxValueForNormallyFullQueue;
 		}
 		portEXIT_CRITICAL();
 
-		xQueueSend( xNormallyFullQueue, &uxValueToTx, intqSHORT_DELAY );		
+		xQueueSend( xNormallyFullQueue, &uxValueToTx, intqSHORT_DELAY );
 	}
 
 	for( ;; )
 	{
 		portENTER_CRITICAL();
 		{
-			uxValueToTx = uxValueForNormallyFullQueue;
 			uxValueForNormallyFullQueue++;
+			uxValueToTx = uxValueForNormallyFullQueue;
 		}
 		portEXIT_CRITICAL();
 
@@ -548,7 +567,7 @@ portBASE_TYPE xQueueStatus;
 		}
 
 		xWasSuspended = pdFALSE;
-		
+
 		taskYIELD();
 	}
 }
@@ -561,9 +580,9 @@ portBASE_TYPE xQueueStatus;
 
 	/* The parameters are not being used so avoid compiler warnings. */
 	( void ) pvParameters;
-	
+
 	for( ;; )
-	{	
+	{
 		if( ( xQueueStatus = xQueueSend( xNormallyFullQueue, &uxTxed, intqONE_TICK_DELAY ) ) != errQUEUE_FULL )
 		{
 			/* We would only expect to succeed when the higher priority task
@@ -581,7 +600,7 @@ portBASE_TYPE xQueueStatus;
 			/* Raise our priority while we receive so we can preempt the higher
 			priority task, and ensure we get the value from the queue. */
 			vTaskPrioritySet( NULL, intqHIGHER_PRIORITY + 1 );
-			
+
 			if( xQueueReceive( xNormallyFullQueue, &uxValue, portMAX_DELAY ) != pdPASS )
 			{
 				prvQueueAccessLogError( __LINE__ );
@@ -590,7 +609,7 @@ portBASE_TYPE xQueueStatus;
 			{
 				prvRecordValue_NormallyFull( uxValue, intqLOW_PRIORITY_TASK );
 			}
-			
+
 			vTaskPrioritySet( NULL, intqLOWER_PRIORITY );
 		}
 	}
@@ -606,11 +625,11 @@ static unsigned portBASE_TYPE uxNextOperation = 0;
 	accesses on the queues. */
 
 	uxNextOperation++;
-	
+
 	if( uxNextOperation & ( unsigned portBASE_TYPE ) 0x01 )
 	{
 		timerNORMALLY_EMPTY_TX();
-		timerNORMALLY_EMPTY_TX();	
+		timerNORMALLY_EMPTY_TX();
 		timerNORMALLY_EMPTY_TX();
 	}
 	else
@@ -619,7 +638,7 @@ static unsigned portBASE_TYPE uxNextOperation = 0;
 		timerNORMALLY_FULL_RX();
 		timerNORMALLY_FULL_RX();
 	}
-	
+
 	return xHigherPriorityTaskWoken;
 }
 /*-----------------------------------------------------------*/
@@ -634,7 +653,7 @@ static unsigned portBASE_TYPE uxNextOperation = 0;
 	accesses on the queues. */
 
 	uxNextOperation++;
-	
+
 	if( uxNextOperation & ( unsigned portBASE_TYPE ) 0x01 )
 	{
 		timerNORMALLY_EMPTY_TX();
@@ -644,14 +663,14 @@ static unsigned portBASE_TYPE uxNextOperation = 0;
 		timerNORMALLY_EMPTY_RX();
 	}
 	else
-	{	
+	{
 		timerNORMALLY_FULL_RX();
 		timerNORMALLY_FULL_TX();
 		timerNORMALLY_FULL_TX();
 		timerNORMALLY_FULL_TX();
 		timerNORMALLY_FULL_TX();
 	}
-	
+
 	return xHigherPriorityTaskWoken;
 }
 /*-----------------------------------------------------------*/
@@ -660,7 +679,7 @@ static unsigned portBASE_TYPE uxNextOperation = 0;
 portBASE_TYPE xAreIntQueueTasksStillRunning( void )
 {
 static unsigned portBASE_TYPE uxLastHighPriorityLoops1 = 0, uxLastHighPriorityLoops2 = 0, uxLastLowPriorityLoops1 = 0, uxLastLowPriorityLoops2 = 0;
-	
+
 	/* xErrorStatus can be set outside of this function.  This function just
 	checks that all the tasks are still cycling. */
 
@@ -669,17 +688,17 @@ static unsigned portBASE_TYPE uxLastHighPriorityLoops1 = 0, uxLastHighPriorityLo
 		/* The high priority 1 task has stalled. */
 		prvQueueAccessLogError( __LINE__ );
 	}
-	
+
 	uxLastHighPriorityLoops1 = uxHighPriorityLoops1;
-	
+
 	if( uxHighPriorityLoops2 == uxLastHighPriorityLoops2 )
 	{
 		/* The high priority 2 task has stalled. */
 		prvQueueAccessLogError( __LINE__ );
 	}
-	
+
 	uxLastHighPriorityLoops2 = uxHighPriorityLoops2;
-	
+
 	if( uxLowPriorityLoops1 == uxLastLowPriorityLoops1 )
 	{
 		/* The low priority 1 task has stalled. */
