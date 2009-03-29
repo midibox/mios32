@@ -1,49 +1,51 @@
 /*
-	FreeRTOS.org V5.0.3 - Copyright (C) 2003-2008 Richard Barry.
+	FreeRTOS.org V5.2.0 - Copyright (C) 2003-2009 Richard Barry.
 
 	This file is part of the FreeRTOS.org distribution.
 
-	FreeRTOS.org is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+	FreeRTOS.org is free software; you can redistribute it and/or modify it 
+	under the terms of the GNU General Public License (version 2) as published
+	by the Free Software Foundation and modified by the FreeRTOS exception.
 
-	FreeRTOS.org is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+	FreeRTOS.org is distributed in the hope that it will be useful,	but WITHOUT
+	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for 
+	more details.
 
-	You should have received a copy of the GNU General Public License
-	along with FreeRTOS.org; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License along 
+	with FreeRTOS.org; if not, write to the Free Software Foundation, Inc., 59 
+	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-	A special exception to the GPL can be applied should you wish to distribute
-	a combined work that includes FreeRTOS.org, without being obliged to provide
+	A special exception to the GPL is included to allow you to distribute a 
+	combined work that includes FreeRTOS.org without being obliged to provide
 	the source code for any proprietary components.  See the licensing section
-	of http://www.FreeRTOS.org for full details of how and when the exception
-	can be applied.
+	of http://www.FreeRTOS.org for full details.
 
-    ***************************************************************************
-    ***************************************************************************
-    *                                                                         *
-    * SAVE TIME AND MONEY!  We can port FreeRTOS.org to your own hardware,    *
-    * and even write all or part of your application on your behalf.          *
-    * See http://www.OpenRTOS.com for details of the services we provide to   *
-    * expedite your project.                                                  *
-    *                                                                         *
-    ***************************************************************************
-    ***************************************************************************
+
+	***************************************************************************
+	*                                                                         *
+	* Get the FreeRTOS eBook!  See http://www.FreeRTOS.org/Documentation      *
+	*                                                                         *
+	* This is a concise, step by step, 'hands on' guide that describes both   *
+	* general multitasking concepts and FreeRTOS specifics. It presents and   *
+	* explains numerous examples that are written using the FreeRTOS API.     *
+	* Full source code for all the examples is provided in an accompanying    *
+	* .zip file.                                                              *
+	*                                                                         *
+	***************************************************************************
+
+	1 tab == 4 spaces!
 
 	Please ensure to read the configuration and relevant port sections of the
 	online documentation.
 
-	http://www.FreeRTOS.org - Documentation, latest information, license and 
+	http://www.FreeRTOS.org - Documentation, latest information, license and
 	contact details.
 
-	http://www.SafeRTOS.com - A version that is certified for use in safety 
+	http://www.SafeRTOS.com - A version that is certified for use in safety
 	critical systems.
 
-	http://www.OpenRTOS.com - Commercial support, development, porting, 
+	http://www.OpenRTOS.com - Commercial support, development, porting,
 	licensing and training services.
 */
 
@@ -54,6 +56,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "StackMacros.h"
 
 /*
  * Macro to define the amount of stack available to the idle task.
@@ -72,6 +75,10 @@ typedef struct tskTaskControlBlock
 	unsigned portBASE_TYPE	uxPriority;			/*< The priority of the task where 0 is the lowest priority. */
 	portSTACK_TYPE			*pxStack;			/*< Points to the start of the stack. */
 	signed portCHAR			pcTaskName[ configMAX_TASK_NAME_LEN ];/*< Descriptive name given to the task when created.  Facilitates debugging only. */
+
+	#if ( portSTACK_GROWTH > 0 )
+		portSTACK_TYPE *pxEndOfStack;			/*< Used for stack overflow checking on architectures where the stack grows up from low memory. */
+	#endif
 
 	#if ( portCRITICAL_NESTING_IN_TCB == 1 )
 		unsigned portBASE_TYPE uxCriticalNesting;
@@ -135,9 +142,7 @@ static volatile unsigned portBASE_TYPE uxSchedulerSuspended		= ( unsigned portBA
 static volatile unsigned portBASE_TYPE uxMissedTicks			= ( unsigned portBASE_TYPE ) 0;
 static volatile portBASE_TYPE xMissedYield						= ( portBASE_TYPE ) pdFALSE;
 static volatile portBASE_TYPE xNumOfOverflows					= ( portBASE_TYPE ) 0;
-#if ( configUSE_TRACE_FACILITY == 1 )
-	static unsigned portBASE_TYPE uxTaskNumber = 0; /*lint !e956 Static is deliberate - this is guarded before use. */
-#endif
+static unsigned portBASE_TYPE uxTaskNumber = 0;
 
 /* Debugging and trace facilities private variables and macros. ------------*/
 
@@ -252,79 +257,6 @@ register tskTCB *pxTCB;																								\
 		prvAddTaskToReadyQueue( pxTCB );																			\
 	}																												\
 }
-/*-----------------------------------------------------------*/
-
-/*
- * Call the stack overflow hook function if the stack of the task being swapped
- * out is currently overflowed, or looks like it might have overflowed in the
- * past.
- *
- * Setting configCHECK_FOR_STACK_OVERFLOW to 1 will cause the macro to check
- * the current stack state only - comparing the current top of stack value to
- * the stack limit.  Setting configCHECK_FOR_STACK_OVERFLOW to greater than 1
- * will also cause the last few stack bytes to be checked to ensure the value
- * to which the bytes were set when the task was created have not been 
- * overwritten.  Note this second test does not guarantee that an overflowed
- * stack will always be recognised.
- */
-
-#if( configCHECK_FOR_STACK_OVERFLOW == 0 )
-
-	/* FreeRTOSConfig.h is not set to check for stack overflows. */
-	#define taskCHECK_FOR_STACK_OVERFLOW()
-
-#endif /* configCHECK_FOR_STACK_OVERFLOW == 0 */
-
-#if( ( configCHECK_FOR_STACK_OVERFLOW > 0 ) && ( portSTACK_GROWTH >= 0 ) )
-
-	/* This is an invalid setting. */
-	#error configCHECK_FOR_STACK_OVERFLOW can only be set to a non zero value on architectures where the stack grows down from high memory.
-
-#endif /* ( configCHECK_FOR_STACK_OVERFLOW > 0 ) && ( portSTACK_GROWTH >= 0 ) */
-
-#if( configCHECK_FOR_STACK_OVERFLOW == 1 )
-
-	/* Only the current stack state is to be checked. */
-	#define taskCHECK_FOR_STACK_OVERFLOW()																\
-	{																									\
-	extern void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName );		\
-																										\
-		/* Is the currently saved stack pointer within the stack limit? */								\
-		if( pxCurrentTCB->pxTopOfStack <= pxCurrentTCB->pxStack )										\
-		{																								\
-			vApplicationStackOverflowHook( ( xTaskHandle ) pxCurrentTCB, pxCurrentTCB->pcTaskName );	\
-		}																								\
-	}
-
-#endif /* configCHECK_FOR_STACK_OVERFLOW == 1 */
-
-#if( configCHECK_FOR_STACK_OVERFLOW > 1 )
-
-	/* Both the current statck state and the stack fill bytes are to be checked. */
-	#define taskCHECK_FOR_STACK_OVERFLOW()																											\
-	{																																				\
-	extern void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName );													\
-	static const unsigned portCHAR ucExpectedStackBytes[] = {	tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE,		\
-																tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE,		\
-																tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE,		\
-																tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE,		\
-																tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE, tskSTACK_FILL_BYTE };	\
-																																					\
-		/* Is the currently saved stack pointer within the stack limit? */																			\
-		if( pxCurrentTCB->pxTopOfStack <= pxCurrentTCB->pxStack )																					\
-		{																																			\
-			vApplicationStackOverflowHook( ( xTaskHandle ) pxCurrentTCB, pxCurrentTCB->pcTaskName );												\
-		}																																			\
-																																					\
-		/* Has the extremity of the task stack ever been written over? */																			\
-		if( memcmp( ( void * ) pxCurrentTCB->pxStack, ( void * ) ucExpectedStackBytes, sizeof( ucExpectedStackBytes ) ) != 0 )						\
-		{																																			\
-			vApplicationStackOverflowHook( ( xTaskHandle ) pxCurrentTCB, pxCurrentTCB->pcTaskName );												\
-		}																																			\
-	}
-
-#endif /* #if( configCHECK_FOR_STACK_OVERFLOW > 1 ) */
-
 /*-----------------------------------------------------------*/
 
 /*
@@ -449,6 +381,11 @@ tskTCB * pxNewTCB;
 		#else
 		{
 			pxTopOfStack = pxNewTCB->pxStack;	
+
+			/* If we want to use stack checking on architectures that use
+			a positive stack growth direction then we also need to store the
+			other extreme of the stack space. */
+			pxNewTCB->pxEndOfStack = pxNewTCB->pxStack + ( usStackDepth - 1 );
 		}
 		#endif
 
@@ -498,9 +435,9 @@ tskTCB * pxNewTCB;
 			{
 				/* Add a counter into the TCB for tracing only. */
 				pxNewTCB->uxTCBNumber = uxTaskNumber;
-				uxTaskNumber++;
 			}
 			#endif
+			uxTaskNumber++;
 
 			prvAddTaskToReadyQueue( pxNewTCB );
 
@@ -578,6 +515,10 @@ tskTCB * pxNewTCB;
 			there is a task that has been deleted and that it should therefore
 			check the xTasksWaitingTermination list. */
 			++uxTasksDeleted;
+
+			/* Increment the uxTaskNumberVariable also so kernel aware debuggers
+			can detect that the task lists need re-generating. */			
+			uxTaskNumber++;
 		}
 		taskEXIT_CRITICAL();
 
@@ -1074,9 +1015,9 @@ void vTaskEndScheduler( void )
 
 void vTaskSuspendAll( void )
 {
-	portENTER_CRITICAL();
-		++uxSchedulerSuspended;
-	portEXIT_CRITICAL();
+	/* A critical section is not required as the variable is of type
+	portBASE_TYPE. */
+	++uxSchedulerSuspended;
 }
 /*----------------------------------------------------------*/
 
@@ -1179,13 +1120,9 @@ portTickType xTicks;
 
 unsigned portBASE_TYPE uxTaskGetNumberOfTasks( void )
 {
-unsigned portBASE_TYPE uxNumberOfTasks;
-
-	taskENTER_CRITICAL();
-		uxNumberOfTasks = uxCurrentNumberOfTasks;
-	taskEXIT_CRITICAL();
-
-	return uxNumberOfTasks;
+	/* A critical section is not required because the variables are of type
+	portBASE_TYPE. */
+	return uxCurrentNumberOfTasks;
 }
 /*-----------------------------------------------------------*/
 
@@ -1411,7 +1348,8 @@ void vTaskIncrementTick( void )
 			xTCB = ( tskTCB * ) xTask;
 		}
 		
-		/* Save the hook function in the TCB. */
+		/* Save the hook function in the TCB.  A critical section is required as
+		the value can be accessed from an interrupt. */
 		portENTER_CRITICAL();
 			xTCB->pxTaskTag = pxTagValue;
 		portEXIT_CRITICAL();
@@ -1464,7 +1402,8 @@ void vTaskSwitchContext( void )
 		return;
 	}
 
-	taskCHECK_FOR_STACK_OVERFLOW();
+	taskFIRST_CHECK_FOR_STACK_OVERFLOW();
+	taskSECOND_CHECK_FOR_STACK_OVERFLOW();
 
 	/* Find the highest priority queue that contains ready tasks. */
 	while( listLIST_IS_EMPTY( &( pxReadyTasksLists[ uxTopReadyPriority ] ) ) )
@@ -1919,9 +1858,21 @@ tskTCB *pxNewTCB;
 	unsigned portBASE_TYPE uxTaskGetStackHighWaterMark( xTaskHandle xTask )
 	{
 	tskTCB *pxTCB;
+	unsigned portCHAR *pcEndOfStack;
 
 		pxTCB = prvGetTCBFromHandle( xTask );
-		return usTaskCheckFreeStackSpace( ( unsigned portCHAR * ) pxTCB->pxStack );
+
+		#if portSTACK_GROWTH < 0
+		{
+			pcEndOfStack = ( unsigned portCHAR * ) pxTCB->pxStack;
+		}
+		#else
+		{
+			pcEndOfStack = ( unsigned portCHAR * ) pxTCB->pxEndOfStack;
+		}
+		#endif
+
+		return usTaskCheckFreeStackSpace( pcEndOfStack );
 	}
 
 #endif
@@ -1946,15 +1897,10 @@ tskTCB *pxNewTCB;
 
 	xTaskHandle xTaskGetCurrentTaskHandle( void )
 	{
-	xTaskHandle xReturn;
-
-		portENTER_CRITICAL();
-		{
-			xReturn = ( xTaskHandle ) pxCurrentTCB;
-		}
-		portEXIT_CRITICAL();
-
-		return xReturn;
+		/* A critical section is not required as this is not called from
+		an interrupt and the current TCB will always be the same for any
+		individual execution thread. */
+		return pxCurrentTCB;
 	}
 
 #endif

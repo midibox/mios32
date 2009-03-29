@@ -1,49 +1,51 @@
 /*
-	FreeRTOS.org V5.0.3 - Copyright (C) 2003-2008 Richard Barry.
+	FreeRTOS.org V5.2.0 - Copyright (C) 2003-2009 Richard Barry.
 
 	This file is part of the FreeRTOS.org distribution.
 
-	FreeRTOS.org is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+	FreeRTOS.org is free software; you can redistribute it and/or modify it 
+	under the terms of the GNU General Public License (version 2) as published
+	by the Free Software Foundation and modified by the FreeRTOS exception.
 
-	FreeRTOS.org is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+	FreeRTOS.org is distributed in the hope that it will be useful,	but WITHOUT
+	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for 
+	more details.
 
-	You should have received a copy of the GNU General Public License
-	along with FreeRTOS.org; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License along 
+	with FreeRTOS.org; if not, write to the Free Software Foundation, Inc., 59 
+	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-	A special exception to the GPL can be applied should you wish to distribute
-	a combined work that includes FreeRTOS.org, without being obliged to provide
+	A special exception to the GPL is included to allow you to distribute a 
+	combined work that includes FreeRTOS.org without being obliged to provide
 	the source code for any proprietary components.  See the licensing section
-	of http://www.FreeRTOS.org for full details of how and when the exception
-	can be applied.
+	of http://www.FreeRTOS.org for full details.
 
-    ***************************************************************************
-    ***************************************************************************
-    *                                                                         *
-    * SAVE TIME AND MONEY!  We can port FreeRTOS.org to your own hardware,    *
-    * and even write all or part of your application on your behalf.          *
-    * See http://www.OpenRTOS.com for details of the services we provide to   *
-    * expedite your project.                                                  *
-    *                                                                         *
-    ***************************************************************************
-    ***************************************************************************
+
+	***************************************************************************
+	*                                                                         *
+	* Get the FreeRTOS eBook!  See http://www.FreeRTOS.org/Documentation      *
+	*                                                                         *
+	* This is a concise, step by step, 'hands on' guide that describes both   *
+	* general multitasking concepts and FreeRTOS specifics. It presents and   *
+	* explains numerous examples that are written using the FreeRTOS API.     *
+	* Full source code for all the examples is provided in an accompanying    *
+	* .zip file.                                                              *
+	*                                                                         *
+	***************************************************************************
+
+	1 tab == 4 spaces!
 
 	Please ensure to read the configuration and relevant port sections of the
 	online documentation.
 
-	http://www.FreeRTOS.org - Documentation, latest information, license and 
+	http://www.FreeRTOS.org - Documentation, latest information, license and
 	contact details.
 
-	http://www.SafeRTOS.com - A version that is certified for use in safety 
+	http://www.SafeRTOS.com - A version that is certified for use in safety
 	critical systems.
 
-	http://www.OpenRTOS.com - Commercial support, development, porting, 
+	http://www.OpenRTOS.com - Commercial support, development, porting,
 	licensing and training services.
 */
 
@@ -114,7 +116,7 @@ static void prvFlashCoRoutine( xCoRoutineHandle xHandle, unsigned portBASE_TYPE 
 static xQueueHandle xFlashQueue;
 
 /* This will be set to pdFALSE if we detect an error. */
-static unsigned portBASE_TYPE uxCoRoutineFlashStatus = pdPASS;
+static portBASE_TYPE xCoRoutineFlashStatus = pdPASS;
 
 /*-----------------------------------------------------------*/
 
@@ -177,7 +179,7 @@ static const portTickType xFlashRates[ crfMAX_FLASH_TASKS ] = { 150 / portTICK_R
 			/* For the reasons stated at the top of the file we should always
 			find that we can post to the queue.  If we could not then an error
 			has occurred. */
-			uxCoRoutineFlashStatus = pdFAIL;
+			xCoRoutineFlashStatus = pdFAIL;
 		}
 
 		crDELAY( xHandle, xFlashRates[ uxIndex ] );
@@ -207,7 +209,7 @@ unsigned portBASE_TYPE uxLEDToFlash;
 		if( xResult != pdPASS )
 		{
 			/* We would not expect to wake unless we received something. */
-			uxCoRoutineFlashStatus = pdFAIL;
+			xCoRoutineFlashStatus = pdFAIL;
 		}
 		else
 		{
@@ -225,6 +227,6 @@ portBASE_TYPE xAreFlashCoRoutinesStillRunning( void )
 {
 	/* Return pdPASS or pdFAIL depending on whether an error has been detected
 	or not. */
-	return uxCoRoutineFlashStatus;
+	return xCoRoutineFlashStatus;
 }
 
