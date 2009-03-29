@@ -25,3 +25,5 @@ Modifications:
   - delected doc/html directory (ca. 7 MB), since the files are 
     available on the web under 
       http://www.sics.se/~adam/uip/uip-1.0-refman/
+  - Applied patch to uip.c to correct problem with uip_len, as per the
+      known bugs page on the uIP website
