@@ -206,8 +206,14 @@ into your local mios32_config.h file
 // Baudrate of UART first interface
 #define MIOS32_UART0_BAUDRATE 31250
 
+// should UART0 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART0_TX_OD 1
+
 // Baudrate of UART second interface
 #define MIOS32_UART1_BAUDRATE 31250
+
+// should UART0 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART1_TX_OD 1
 
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #define MIOS32_UART0_ASSIGNMENT 1
