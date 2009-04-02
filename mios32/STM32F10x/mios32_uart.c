@@ -93,8 +93,8 @@ s32 MIOS32_UART_Init(u32 mode)
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 
-  // outputs as push-pull
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  // outputs as open-drain
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
   GPIO_InitStructure.GPIO_Pin = MIOS32_UART0_TX_PIN;
   GPIO_Init(MIOS32_UART0_TX_PORT, &GPIO_InitStructure);
 #if MIOS32_UART_NUM >= 2
