@@ -34,6 +34,7 @@
 #include "seq_pattern.h"
 #include "seq_song.h"
 #include "seq_random.h"
+#include "seq_record.h"
 #include "seq_ui.h"
 
 
@@ -49,11 +50,6 @@
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
 #define STOPWATCH_PERFORMANCE_MEASURING 1
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -687,12 +683,10 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
   t->step_fwd_ctr = 0;
 
   // reset record state and other record specific variables
-  if( 0 ) { // TODO: define record mode
-    t->state.REC_EVNT_ACTIVE = 0;
-    t->state.REC_MUTE_NEXTSTEP = 0;
-    // record_step = 0;
-    // record_current_event1 = 0;
-    // record_length_ctr = 0;
+  if( ui_page = SEQ_UI_PAGE_TRKREC ) {
+    t->state.REC_EVENT_ACTIVE = 0;
+    t->state.REC_MUTE_NEXT_STEP = 0;
+    SEQ_RECORD_Reset();
   }
 
   // next part depends on forward/backward direction

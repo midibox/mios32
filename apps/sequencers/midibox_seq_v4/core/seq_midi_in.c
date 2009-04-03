@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include "tasks.h"
 
+#include "seq_ui.h"
 #include "seq_midi_in.h"
 #include "seq_cc.h"
 #include "seq_core.h"
@@ -133,6 +134,10 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // filter MIDI port (if 0: no filter, listen to all ports)
   if( seq_midi_in_port && port != seq_midi_in_port )
     return status;
+
+  // if not loopback and MIDI channel matching: forward to record function in record page
+  if( ui_page == SEQ_UI_PAGE_TRKREC && !((port & 0xf0) == 0xf0) && midi_package.chn == (seq_midi_in_channel-1) )
+    return SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
 
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 

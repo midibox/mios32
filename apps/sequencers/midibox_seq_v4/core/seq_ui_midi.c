@@ -172,7 +172,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       else if( incrementer < 0 )
 	seq_midi_in_ta_split_note &= ~0x80;
       else
-	return 0; // no change
+	seq_midi_in_ta_split_note ^= 0x80;
       return 1; // value changed
 
     case ITEM_TA_SPLIT_NOTE: {
@@ -217,7 +217,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       else if( incrementer < 0 )
 	seq_midi_router_mclk_out = 0;
       else
-	return 0; // no change
+	seq_midi_router_mclk_out ^= 0xff;
       return 1; // value changed
   }
 
@@ -242,16 +242,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
-    // re-use encoder handler - only select UI item, don't increment
-    // exception: TA Split enable
-    if( button == SEQ_UI_BUTTON_GP5 || button == SEQ_UI_BUTTON_GP6 )
-      return Encoder_Handler((int)button, (seq_midi_in_ta_split_note & 0x80) ? -1 : 1); // toggle
-
-    // exception: MIDI Clock Out enable
-    if( button == SEQ_UI_BUTTON_GP15 || button == SEQ_UI_BUTTON_GP16 )
-      return Encoder_Handler((int)button, seq_midi_router_mclk_out ? -1 : 1); // toggle
-
-    return Encoder_Handler((int)button, 0); // no increment
+    // re-use encoder handler - only select UI item, don't increment, flags will be toggled
+    return Encoder_Handler((int)button, 0);
   }
 
   // remaining buttons:
