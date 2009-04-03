@@ -169,8 +169,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     // TODO: different in poly recording mode
     SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, 0);
 
-    // start sequencer if auto start enabled
-    if( seq_record_options.AUTO_START )
+    // start sequencer if not running and auto start enabled
+    if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START )
       SEQ_BPM_Start();
 
   }
