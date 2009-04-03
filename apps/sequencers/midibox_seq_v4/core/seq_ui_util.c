@@ -330,21 +330,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP9: // select Save Page
       if( depressed ) return -1;
-      SEQ_UI_PageSet(SEQ_UI_PAGE_SAVE);
-      return 0;
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_SAVE);
 
     case SEQ_UI_BUTTON_GP10: // select Record Page
       if( depressed ) return -1;
-      return -1; // TODO
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
 
     case SEQ_UI_BUTTON_GP11: // select Mixer Page
       if( depressed ) return -1;
-      return -1; // TODO
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_MIXER);
 
     case SEQ_UI_BUTTON_GP12: // select Options Page
       if( depressed ) return -1;
-      SEQ_UI_PageSet(SEQ_UI_PAGE_OPT);
-      return 0;
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_OPT);
 
     case SEQ_UI_BUTTON_GP13: // select Port Mute page
       if( depressed ) return -1;

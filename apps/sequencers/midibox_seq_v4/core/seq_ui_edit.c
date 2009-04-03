@@ -293,7 +293,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       if( ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(15);
       } else {
-	SEQ_LCD_PrintString("RECORDING MODE ");
+	SEQ_LCD_PrintString("RECORDING      ");
       }
     } break;
 

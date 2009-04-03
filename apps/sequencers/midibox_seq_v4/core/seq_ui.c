@@ -1411,8 +1411,12 @@ s32 SEQ_UI_MENU_Handler_Periodic()
 
 
   // used in some pages for temporary messages
-  if( ui_hold_msg_ctr )
+  if( ui_hold_msg_ctr ) {
     --ui_hold_msg_ctr;
+
+    if( !ui_hold_msg_ctr )
+      seq_ui_display_update_req = 1;
+  }
 
   // used for temporary SD Card messages
   if( sdcard_msg_ctr )
