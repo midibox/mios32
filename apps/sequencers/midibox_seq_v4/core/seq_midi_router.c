@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include <seq_midi_out.h>
 
+#include "tasks.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
 
@@ -71,11 +72,16 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 	  mios32_midi_package_t fwd_package = midi_package;
 	  if( n->dst_chn <= 16 )
 	    fwd_package.chn = (n->dst_chn-1);
+	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(n->dst_port, fwd_package);
+	  MUTEX_MIDIOUT_GIVE;
 	}
       } else {
-	if( n->dst_chn >= 17 ) // SysEx, MIDI Clock, etc... only forwarded if destination channel set to "All"
+	if( n->dst_chn >= 17 ) { // SysEx, MIDI Clock, etc... only forwarded if destination channel set to "All"
+	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
     }
   }
@@ -111,8 +117,11 @@ s32 SEQ_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
       if( MIOS32_MIDI_CheckAvailable(port) ) {
 	if( bpm_tick )
 	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
-	else
+	else {
+	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(port, p);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
     }
   }

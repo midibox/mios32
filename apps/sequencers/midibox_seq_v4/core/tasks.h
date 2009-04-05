@@ -53,6 +53,17 @@
 #endif
 
 
+// MIDI OUT handler
+#ifdef MIOS32_FAMILY_EMULATION
+# define MUTEX_MIDIOUT_TAKE { }
+# define MUTEX_MIDIOUT_GIVE { }
+#else
+  extern xSemaphoreHandle xMIDIOUTSemaphore;
+# define MUTEX_MIDIOUT_TAKE { while( xSemaphoreTake(xMIDIOUTSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_MIDIOUT_GIVE { xSemaphoreGive(xMIDIOUTSemaphore); }
+#endif
+
+
 // LCD access
 #ifdef MIOS32_FAMILY_EMULATION
 # define MUTEX_LCD_TAKE { }

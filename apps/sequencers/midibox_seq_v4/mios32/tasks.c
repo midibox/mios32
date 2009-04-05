@@ -31,8 +31,9 @@
 // for emulation
 xSemaphoreHandle xSDCardSemaphore;
 
-// Mutex for MIDI IN handler
+// Mutex for MIDI IN/OUT handler
 xSemaphoreHandle xMIDIINSemaphore;
+xSemaphoreHandle xMIDIOUTSemaphore;
 
 // Mutex for LCD access
 xSemaphoreHandle xLCDSemaphore;
@@ -78,6 +79,7 @@ s32 TASKS_Init(u32 mode)
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateMutex();
   xMIDIINSemaphore = xSemaphoreCreateMutex();
+  xMIDIOUTSemaphore = xSemaphoreCreateMutex();
   xLCDSemaphore = xSemaphoreCreateMutex();
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 

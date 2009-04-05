@@ -23,6 +23,7 @@
 #include "seq_trg.h"
 #include "seq_par.h"
 #include "seq_chord.h"
+#include "seq_record.h"
 #include "seq_ui.h"
 
 
@@ -142,22 +143,33 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
     return -1; // no valid event
   }
 
+  // search layer to which the event belongs to
   u8 event_num;
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
-    event_num = instrument;
+    for(event_num=0; event_num<number_of_events; ++event_num) {
+      if( instrument == layer_events[event_num].layer_tag )
+	break;
+    }
   } else {
-    event_num = 0; // TODO
+    for(event_num=0; event_num<number_of_events; ++event_num) {
+      if( layer == layer_events[event_num].layer_tag )
+	break;
+    }
   }
+
+  if( event_num >= number_of_events )
+    event_num = 0;
 
   layer_event->midi_package = layer_events[event_num].midi_package;
   layer_event->len = layer_events[event_num].len;
+  layer_event->layer_tag = layer;
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Layer Event Modes
+// Returns all events of a selected step
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 {
@@ -195,9 +207,11 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       }
 
       e->len = SEQ_PAR_LengthGet(track, step, drum);
+      e->layer_tag = drum;
 
       ++num_events;
     }
+    // TODO: CC and Pitch Bend in Drum Mode
   } else {
     u8 instrument = 0;
     int par_layer;
@@ -218,7 +232,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       if( length > 95 )
 	length = 95;
       ++length;
-	  
+
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = length | 0x80;
     }
@@ -238,6 +252,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	  p->note     = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  p->velocity = velocity;
 	  e->len      = length;
+	  e->layer_tag = par_layer;
 	  ++num_events;
 
 	  if( handle_vu_meter && velocity )
@@ -264,6 +279,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	    p->note     = note;
 	    p->velocity = velocity;
 	    e->len      = length;
+	    e->layer_tag = par_layer;
 	    ++num_events;
 	  }
 
@@ -282,6 +298,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	  p->note     = tcc->lay_const[1*16 + par_layer];
 	  p->value    = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  e->len      = -1;
+	  e->layer_tag = par_layer;
 	  ++num_events;
 
 	  if( handle_vu_meter )
@@ -300,6 +317,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	  p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
 	  p->evnt2    = value; // MSB
 	  e->len      = -1;
+	  e->layer_tag = par_layer;
 	  ++num_events;
 
 	  if( handle_vu_meter )
@@ -315,6 +333,141 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
   }
 
   return num_events;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Used for recording: insert an event into a selected step
+// The return value matches with the layer where the new event has been inserted.
+// if < 0, no event has been inserted.
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
+{
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+
+    // all events but Notes are ignored (CC/PitchBend are working channel based, and not drum instr. based)
+    if( layer_event.midi_package.event == NoteOn ) {
+      u8 drum;
+      for(drum=0; drum<num_instruments; ++drum) {
+	u8 drum_note = tcc->lay_const[0*16 + drum];
+	if( drum_note == layer_event.midi_package.note ) {
+	  SEQ_TRG_GateSet(track, step, drum, 1);
+	  
+	  int par_layer;
+	  if( (par_layer=tcc->link_par_layer_velocity) >= 0 )
+	    SEQ_PAR_Set(track, step, par_layer, drum, layer_event.midi_package.velocity);
+	  
+	  return drum; // drum note has been inserted - return instrument layer
+	}
+      }
+    }
+  } else {
+    u8 instrument = 0;
+    int par_layer;
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+
+    // in poly mode: check if note already recorded
+    if( seq_record_options.POLY_RECORD && layer_event.midi_package.event == NoteOn ) {
+      for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+	seq_par_layer_type_t par_type = tcc->lay_const[0*16 + par_layer];
+	if( (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord) && 
+	    SEQ_PAR_Get(track, step, par_layer, instrument) == layer_event.midi_package.note ) {
+
+	  // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
+	  SEQ_TRG_GateSet(track, step, instrument, 1);
+
+	  if( tcc->link_par_layer_velocity >= 0 )
+	    SEQ_PAR_Set(track, step, tcc->link_par_layer_velocity, instrument, layer_event.midi_package.velocity);
+
+	  if( tcc->link_par_layer_length >= 0 )
+	    SEQ_PAR_Set(track, step, tcc->link_par_layer_length, instrument, (layer_event.len >= 95) ? 95 : layer_event.len);
+
+	  // return the parameter layer
+	  return par_layer;
+	}
+      }
+    }
+
+    // go through all layers to search for matching event
+    u8 note_ctr = 0;
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+      switch( tcc->lay_const[0*16 + par_layer] ) {
+
+        case SEQ_PAR_Type_Note:
+        case SEQ_PAR_Type_Chord: {
+	  if( layer_event.midi_package.event == NoteOn ) {
+
+	    // in poly mode: skip if note number doesn't match with poly counter
+	    if( seq_record_options.POLY_RECORD && note_ctr != t->rec_poly_ctr ) {
+	      ++note_ctr;
+	      break;
+	    }
+
+	    // if first note (reached again): clear remaining notes
+	    // always active in mono mode (TODO: good? Or should we record on the selected par layer?)
+	    if( !seq_record_options.POLY_RECORD || t->rec_poly_ctr == 0 ) {
+	      u8 remaining_par_layer;
+	      for(remaining_par_layer=par_layer+1; remaining_par_layer<num_p_layers; ++remaining_par_layer) {
+		seq_par_layer_type_t par_type = tcc->lay_const[0*16 + remaining_par_layer];
+		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord )
+		  SEQ_PAR_Set(track, step, remaining_par_layer, instrument, 0x00);
+	      }
+	    }
+
+	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.note);
+
+	    // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
+	    SEQ_TRG_GateSet(track, step, instrument, 1);
+
+	    if( tcc->link_par_layer_velocity >= 0 )
+	      SEQ_PAR_Set(track, step, tcc->link_par_layer_velocity, instrument, layer_event.midi_package.velocity);
+
+	    if( tcc->link_par_layer_length >= 0 )
+	      SEQ_PAR_Set(track, step, tcc->link_par_layer_length, instrument, (layer_event.len >= 95) ? 95 : layer_event.len);
+
+	    // in poly mode: continue search for next free note, wrap if end of layer is reached
+	    if( seq_record_options.POLY_RECORD ) {
+	      u8 remaining_par_layer;
+	      for(remaining_par_layer=par_layer+1; remaining_par_layer<num_p_layers; ++remaining_par_layer) {
+		seq_par_layer_type_t par_type = tcc->lay_const[0*16 + remaining_par_layer];
+		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord ) {
+		  ++t->rec_poly_ctr; // switch to next note
+		  break;
+		}
+	      }
+
+	      // out of notes - restart at 0
+	      if( remaining_par_layer >= num_p_layers )
+		t->rec_poly_ctr = 0;
+	    }
+
+	    return par_layer;
+	  }
+	} break;
+
+        case SEQ_PAR_Type_CC: {
+	  if( layer_event.midi_package.event == CC && layer_event.midi_package.cc_number == tcc->lay_const[1*16 + par_layer] ) {
+	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.value);
+	    return par_layer;
+	  }
+	} break;
+
+        case SEQ_PAR_Type_PitchBend: {
+	  if( layer_event.midi_package.event == PitchBend ) {
+	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt1); // MSB
+	    return par_layer;
+	  }
+	} break;
+      }
+    }
+  }
+
+  return -1; // no matching event found!
 }
 
 

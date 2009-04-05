@@ -453,6 +453,8 @@ void SEQ_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_MIDI(void)
 {
+  MUTEX_MIDIOUT_TAKE;
+
   // execute sequencer handler
 #if MID_PLAYER_TEST
   SEQ_MIDPLY_Handler();
@@ -462,6 +464,8 @@ void SEQ_TASK_MIDI(void)
 
   // send timestamped MIDI events
   SEQ_MIDI_OUT_Handler();
+
+  MUTEX_MIDIOUT_GIVE;
 }
 
 

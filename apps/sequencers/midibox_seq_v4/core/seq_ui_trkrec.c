@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
+#include "seq_cc.h"
+#include "seq_trg.h"
 #include "seq_record.h"
 
 
@@ -137,23 +139,53 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.AUTO_START ^= 1;
       return 1;
 
-    case ITEM_RECORD_STEP:
-      return SEQ_UI_Var8_Inc(&seq_record_step, 0, SEQ_TRG_NumStepsGet(visible_track)-1, incrementer);
+    case ITEM_RECORD_STEP: {
+      u8 step = seq_record_step;
+      if( SEQ_UI_Var8_Inc(&step, 0, SEQ_CC_Get(visible_track, SEQ_CC_LENGTH), incrementer) > 0 ) {
+	u8 track;
+	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+	  SEQ_RECORD_Reset(track);
+
+	seq_record_step = step;
+
+	// print edit screen
+	SEQ_RECORD_PrintEditScreen();
+
+	return 1;
+      }
+      return 0;
+    }
 
     case ITEM_TOGGLE_GATE: {
+      // toggle gate of current step
       u8 gate;
+#if 0
+      // not logical in combination with increment step
       if( incrementer > 0 )
 	gate = 1;
       else if( incrementer < 0 )
 	gate = 0;
       else
+#endif
 	gate = SEQ_TRG_GateGet(visible_track, seq_record_step, ui_selected_instrument) ? 0 : 1;
 
       int i;
-      for(i=0; i<SEQ_TRG_NumInstrumentsGet(); ++i)
+      for(i=0; i<SEQ_TRG_NumInstrumentsGet(visible_track); ++i)
 	SEQ_TRG_GateSet(visible_track, seq_record_step, i, gate);
-      
+
+      // increment step
+      int next_step = seq_record_step + 1;
+      if( next_step > SEQ_CC_Get(visible_track, SEQ_CC_LENGTH) )
+	next_step = 0;
+
+      for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)
+	SEQ_RECORD_Reset(i);
+
+      seq_record_step = next_step;
+
+      // print edit screen
       SEQ_RECORD_PrintEditScreen();
+
       return 1;
     }
   }

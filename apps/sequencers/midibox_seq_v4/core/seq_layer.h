@@ -26,6 +26,7 @@
 typedef struct {
   mios32_midi_package_t midi_package;
   s16                   len;
+  u8                    layer_tag;
 } seq_layer_evnt_t;
 
 
@@ -46,6 +47,7 @@ extern s32 SEQ_LAYER_Init(u32 mode);
 extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event);
 
 extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16]);
+extern s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event);
 
 extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 init_assignments);
 extern s32 SEQ_LAYER_CopyParLayerPreset(u8 track, u8 par_layer);
