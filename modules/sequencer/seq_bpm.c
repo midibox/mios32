@@ -632,7 +632,7 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
       // ensure that bpm_tick never gets negative (e.g. if clock wasn't polled for long time)
       bpm_req_clk_ctr = bpm_tick;
     }
-    if( req=bpm_req_clk_ctr ) {
+    if(( req=bpm_req_clk_ctr )) {
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
       --bpm_req_clk_ctr;
     }
