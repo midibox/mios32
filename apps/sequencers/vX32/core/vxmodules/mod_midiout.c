@@ -54,18 +54,18 @@ mod_moduledata_t mod_MIDIOut_ModuleData = {
 
 
 mod_portdata_t mod_MIDIOut_PortTypes[MOD_MIDIOUT_PORTS] = {
-    MOD_PORTTYPE_VALUE, "HW Buss ",                                             //hardware port
-    MOD_PORTTYPE_VALUE, "Byte 0  ",                                             //byte 1 (status)
-    MOD_PORTTYPE_VALUE, "Byte 1  ",                                             //byte 2 (note #)
-    MOD_PORTTYPE_VALUE, "Byte 2  ",                                             //byte 3 (velocity)
-    MOD_PORTTYPE_TIMESTAMP, "Length  ",                                         //length
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    MOD_PORTTYPE_TIMESTAMP, "Clock In",                                         //next tick
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {MOD_PORTTYPE_VALUE, "HW Buss "},                                           //hardware port
+    {MOD_PORTTYPE_VALUE, "Byte 0  "},                                           //byte 1 (status)
+    {MOD_PORTTYPE_VALUE, "Byte 1  "},                                           //byte 2 (note #)
+    {MOD_PORTTYPE_VALUE, "Byte 2  "},                                           //byte 3 (velocity)
+    {MOD_PORTTYPE_TIMESTAMP, "Length  "},                                       //length
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {MOD_PORTTYPE_TIMESTAMP, "Clock In"},                                       //next tick
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
 };
 
 mod_portdata_t mod_MIDIOut_PrivVarTypes[MOD_MIDIOUT_PRIVVARS] = {

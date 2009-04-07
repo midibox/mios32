@@ -304,7 +304,7 @@ u32 UI_GetPort(unsigned char nodeID, unsigned char port) {
     while (--timeout > 0) {
         if (MUTEX_GRAPH_TAKE == pdTRUE) {                                       // Take the Mutex to write to the graph
 
-            Mod_GetPort(nodeID, port);
+            return Mod_GetPort(nodeID, port);
             
             MUTEX_GRAPH_GIVE;                                                   // Give back the Mutex to write to the graph
             break;
@@ -313,6 +313,8 @@ u32 UI_GetPort(unsigned char nodeID, unsigned char port) {
         }
         
     }
+    
+    return DEAD_TIMESTAMP;
     
 }
 
@@ -326,7 +328,7 @@ u32 UI_GetPort(unsigned char nodeID, unsigned char port) {
 
 unsigned char UI_GetPortType(unsigned char nodeID, unsigned char port) {
     unsigned int timeout = UI_GRAPHMOD_TIMEOUT;
-    unsigned char returntype;
+    unsigned char returntype = DEAD_PORTTYPE;
     while (--timeout > 0) {
         if (MUTEX_GRAPH_TAKE == pdTRUE) {                                       // Take the Mutex to write to the graph
 
@@ -354,7 +356,7 @@ unsigned char UI_GetPortType(unsigned char nodeID, unsigned char port) {
 
 const char *UI_GetPortTypeName(unsigned char porttype) {
     unsigned int timeout = UI_GRAPHMOD_TIMEOUT;
-    const char *returnstring;
+    const char *returnstring = NULL;
     while (--timeout > 0) {
         if (MUTEX_GRAPH_TAKE == pdTRUE) {                                       // Take the Mutex to write to the graph
 

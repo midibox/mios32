@@ -240,7 +240,6 @@ void Mod_PreProcess(unsigned char startnodeID) {
 /////////////////////////////////////////////////////////////////////////////
 
 void Mod_Tick(void) {
-    unsigned char i;
     nodelist_t *topolist;
     unsigned char ticknodeID;
     unsigned char module_ticked = DEAD_NODEID;

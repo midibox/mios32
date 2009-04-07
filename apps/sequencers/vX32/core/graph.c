@@ -222,6 +222,8 @@ unsigned char NodeID_Gen(void) {
 
         return DEAD_NODEID;                                                     // error handling if were full
     }
+    
+        return DEAD_NODEID;                                                     // error handling if were full
 }
 
 
@@ -499,7 +501,6 @@ edge_t *Edge_Add(unsigned char tail_nodeID, unsigned char tail_port, unsigned ch
                 if ((tail_port < mod_Ports[(node[tail_nodeID].moduletype)]) 
                 && (head_port < mod_Ports[(node[head_nodeID].moduletype)])) {   // if the ports are valid
                     
-                    edge_t *curredge = NULL;                                    // declare pointer to current edge
                     edge_t *newedge = pvPortMalloc(sizeof(edge_t));             // malloc a new edge_t, store pointer in temp var
                     edge_t *edgepointer = node[tail_nodeID].edgelist;           // load up the edge list header
                     
@@ -880,7 +881,7 @@ unsigned char TopoSort(void) {
     edge_t *edgepointer;
     
     nodelist_t *topolist;
-    nodelist_t *topolisttail;
+    nodelist_t *topolisttail = NULL;
     
     TopoList_Clear();
     

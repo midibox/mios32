@@ -87,9 +87,9 @@ void APP_Init(void) {
     
     Clocks_Init();                                                              // initialize vX Clocks
     
-    MIOS32_MIDI_DirectRxCallback_Init(vX_MIDI_Rx);                              // install MIDI Rx/Tx callback functions
+    MIOS32_MIDI_DirectRxCallback_Init((void *)vX_MIDI_Rx);                              // install MIDI Rx/Tx callback functions
     
-    TASKS_Init();                                                               // start threads
+    TASKS_Init(0);                                                              // start threads
     
 }
 
@@ -167,10 +167,10 @@ static edge_t *testedge5; //FIXME TESTING
         if (midi_package.evnt1 == 0x45) MClock_User_Stop();
         if (midi_package.evnt1 == 0x7c) MClock_User_Continue();
         if (midi_package.evnt1 == 0x7d) {
-            MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x02, UI_RemoveModule(testmodule3));
+            MIOS32_MIDI_SendCC(DEFAULT, Chn3, 0x02, UI_RemoveModule(testmodule3));
         }
         if (midi_package.evnt1 == 0x7e) {
-            MIOS32_MIDI_SendCC(DEFAULT, 0x02, 0x01, UI_RemoveCable(testmodule2, MOD_SEQ_PORT_CURRENTSTEP, testmodule4, MOD_SEQ_PORT_NOTE0_NOTE));
+            MIOS32_MIDI_SendCC(DEFAULT, Chn3, 0x01, UI_RemoveCable(testmodule2, MOD_SEQ_PORT_CURRENTSTEP, testmodule4, MOD_SEQ_PORT_NOTE0_NOTE));
         }
     }
 }

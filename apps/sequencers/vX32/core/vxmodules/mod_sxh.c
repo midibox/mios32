@@ -56,26 +56,26 @@ mod_moduledata_t mod_SxH_ModuleData = {
 
 
 mod_portdata_t mod_SxH_PortTypes[MOD_SXH_PORTS] = {
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //dummies until i do something real
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"},                                                // dummies until i do something real
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
 };
 
 
 mod_portdata_t mod_SxH_PrivVarTypes[MOD_SXH_PRIVVARS] = {
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //dummies until i do something real
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"},                                                // dummies until i do something real
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
+    {DEAD_PORTTYPE, "NoPatch!"}, 
 };
 
 
@@ -99,4 +99,5 @@ void Mod_UnInit_SxH(unsigned char nodeID) {                                     
 }
 
 u32 Mod_Reset_SxH(unsigned char nodeID) {                                       // function to reset this module
+    return DEAD_TIMESTAMP;
 }
