@@ -18,6 +18,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <FreeRTOS.h>
 
 #include "seq_midi_out.h"
 #include "seq_bpm.h"
