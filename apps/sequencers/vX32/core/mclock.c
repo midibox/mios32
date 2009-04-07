@@ -135,7 +135,6 @@ void MClock_SetBPM(float bpm) {
 /////////////////////////////////////////////////////////////////////////////
 
 void MClock_Tick(void) {
-    unsigned char i;
     u8 num_loops = 0;
     u8 again = 0;
 

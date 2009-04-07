@@ -67,7 +67,7 @@ typedef const struct {                                                          
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-mod_moduledata_t *mod_ModuleData_Type[MAX_MODULETYPES];                         // array of module data
+extern mod_moduledata_t *mod_ModuleData_Type[MAX_MODULETYPES];                         // array of module data
 
 
 

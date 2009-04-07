@@ -56,41 +56,41 @@ mod_moduledata_t mod_SClk_ModuleData = {
 
 
 mod_portdata_t mod_SClk_PortTypes[mod_sclk_ports] = {
-    MOD_PORTTYPE_VALUE, "Status  ",                                             //status
-    MOD_PORTTYPE_VALUE, "Numrator",                                             //numerator
-    MOD_PORTTYPE_VALUE, "Denomntr",                                             //denominator
-    DEAD_PORTTYPE, "NoPatch!",                                                  //padding
-    MOD_PORTTYPE_TIMESTAMP, "LngthOut",                                         //cycle length
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    MOD_PORTTYPE_TIMESTAMP, "ClockOut",                                         //next tick
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    MOD_PORTTYPE_TIMESTAMP, "Clock In",                                         //sync tick
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {MOD_PORTTYPE_VALUE, "Status  "},                                           //status
+    {MOD_PORTTYPE_VALUE, "Numrator"},                                           //numerator
+    {MOD_PORTTYPE_VALUE, "Denomntr"},                                           //denominator
+    {DEAD_PORTTYPE, "NoPatch!"},                                                 //padding
+    {MOD_PORTTYPE_TIMESTAMP, "LngthOut"},                                       //cycle length
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {MOD_PORTTYPE_TIMESTAMP, "ClockOut"},                                       //next tick
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {MOD_PORTTYPE_TIMESTAMP, "Clock In"},                                       //sync tick
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
 };
 
 mod_portdata_t mod_SClk_PrivVarTypes[mod_sclk_privvars] = {
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //dummies until i do something real
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //dummies until i do something real
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
 };
 
 //port pointers for use in functions, copy and use as requ'd
@@ -291,6 +291,8 @@ u32 Mod_SClk_GetNextTick(unsigned char nodeID) {
             
             util_setbit(*portstatus, MOD_SCLK_PORT_STATUS_BIT_GOTSYNC);
             
+        } else {                                                                // we aren't trying to sync so just go on from here
+            newtick = node[nodeID].nexttick;
         }
         
         

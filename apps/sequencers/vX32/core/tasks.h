@@ -22,6 +22,14 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef MIOS32_FAMILY_EMULATION
+#ifdef JUCED
+#define ENDLESSLOOP 0
+#endif
+#else
+#define ENDLESSLOOP 1
+#endif
+
 # define MUTEX_GRAPH_TAKE xSemaphoreTake(xGraphSemaphore, (portTickType)1)
 # define MUTEX_GRAPH_GIVE xSemaphoreGive(xGraphSemaphore)
 
@@ -43,7 +51,7 @@ extern xSemaphoreHandle xGraphSemaphore;
 /////////////////////////////////////////////////////////////////////////////
 
 // called from tasks.c
-extern s32 Tasks_Init(u32 mode);                                                // add the tasks to FreeRTOS
+extern s32 TASKS_Init(u32 mode);                                                // add the tasks to FreeRTOS
 
 extern void vX_Task_Rack_Tick(void);                                            // task handles the vX rack
 extern void vX_Task_Rack_Tick_Resume(void);                                     // resume the above task if it is stopped

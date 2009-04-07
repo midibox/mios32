@@ -50,11 +50,83 @@ SysEx ID:
 
 F0 00 08 60 00    MIDIbox vX32 Sequencer    (F0 00 08 60 nn is stryd_one's Manufacturer ID where nn is the device ID)
 
+===============================================================================
+SVN Download:
+
+svn co svn+ssh://svn@svnmios.midibox.org/mios32 mios32
+
+===============================================================================
+Jucetice:
+
+Install/build:
+
+Dependencies:
+sudo aptitude install build-essential libX11-dev libxinerama-dev libpthread-stubs0-dev libfreetype6-dev libgl1-mesa-dev libasound2-dev liblua50-dev lua50 libjack-dev jackd libuuid1 uuid-dev xorg-dev dssi-dev dssi-utils ladspa-sdk liblo0
+
+
+
+Checkout and build:
+Juced:
+
+svn checkout http://juced.googlecode.com/svn/trunk/ juced
+cd ./juced/tools/linux
+./manage make all (or just ./manage make lib)
+cd ../../juce/extras/the jucer/build/linux
+make
+
+........or........
+JUCE:
+mkdir juced
+cd juced
+svn co https://juce.svn.sourceforge.net/svnroot/juce/tags/version_1_46 juce 
+cd build/linux
+make CONFIG=Release
+make CONFIG=Debug
+cd ../../juce/extras/the jucer/build/linux
+make
+
+
+
+
+Skeleton files as per:
+
+/juced/juce/extras/example projects/common
+(no longer using the ones from http://www.rawmaterialsoftware.com/juceforum/viewtopic.php?t=1935)
+
+
+
+References:
+
+Juced at Google code:
+http://code.google.com/p/juced/
+
+Forum index:
+http://www.rawmaterialsoftware.com/juceforum/index.php
+
+Jucetice blog:
+http://www.anticore.org/jucetice/
+
+File share:
+http://www.anticore.org/juce/
+
+Juce upstream home:
+http://rawmaterialsoftware.com/juce/download.php
+
+Juce API doco:
+http://www.rawmaterialsoftware.com/juce/api/main.html
+
+Get MIDI Devs example:
+http://rawmaterialsoftware.com/juceforum/viewtopic.php?t=2365
+
+Codeblocks Project to makefile python script:
+http://pix.test.at/wiki/cbp2makefile
+python cbp2makefile.py vXJuce.cbp Makefile
+
 
 ===============================================================================
 SVN Commands:
 
-Add Id in file header like this:
+To add Id in file header like this:
 /* $Id: modules.h 390 2009-03-07 12:24:00Z stryd_one $ */
 
 In each dir:
@@ -120,6 +192,7 @@ cd $MIOS32_PATH
 geany -g ~/.config/geany/tags/vX32.c.tags $( find $MIOS32_PATH/apps/sequencers/vX32/ -iname *.h )
 geany -g ~/.config/geany/tags/vX32.C.tags $( find $MIOS32_PATH/apps/sequencers/vX32/ -iname *.h )
 
+Then restart geany
 See also:
 http://www.midibox.org/forum/index.php/topic,13218.0/topicseen.html
 

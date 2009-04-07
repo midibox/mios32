@@ -74,12 +74,12 @@ static void TASK_UI(void *pvParameters) {
     // Initialise the xLastExecutionTime variable on task entry
     xLastExecutionTime = xTaskGetTickCount();
 
-    while( 1 ) {
+    do {
         vTaskDelayUntil(&xLastExecutionTime, 2 / portTICK_RATE_MS);
         // continue in application hook
         vX_Task_UI();
-    }
-  
+    } while ( ENDLESSLOOP );
+      
 }
 
 // use this function to resume the task
@@ -97,12 +97,12 @@ static void TASK_MIDI(void *pvParameters) {
     // Initialise the xLastExecutionTime variable on task entry
     xLastExecutionTime = xTaskGetTickCount();
 
-    while( 1 ) {
+    do {
         vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
         
         // continue in application hook
         vX_Task_MIDI();
-    }
+    } while ( ENDLESSLOOP );
   
 }
 
@@ -122,12 +122,11 @@ static void TASK_Rack(void *pvParameters) {
     // Initialise the xLastExecutionTime variable on task entry
     xLastExecutionTime = xTaskGetTickCount();
 
-    while( 1 ) {
+    do {
         vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
         
-        // continue in application hook
         vX_Task_Rack_Tick();
-    }
+    } while( ENDLESSLOOP );
   
 }
 

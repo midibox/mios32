@@ -56,73 +56,73 @@ mod_moduledata_t mod_Seq_ModuleData = {
 
 
 mod_portdata_t mod_Seq_PortTypes[MOD_SEQ_PORTS] = {
-    MOD_PORTTYPE_VALUE, "Status  ",                                             //status
-    MOD_PORTTYPE_VALUE, "Channel ",                                             //chan
-    MOD_PORTTYPE_VALUE, "BaseNote",                                             //note
-    MOD_PORTTYPE_VALUE, "BaseVel",                                              //vel
-    MOD_PORTTYPE_TIMESTAMP, "LengthIn",                                         //length reference
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //length reference
-    MOD_PORTTYPE_TIMESTAMP, "Clock In",                                         //next tick
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //next tick
-    MOD_PORTTYPE_VALUE, "BaseStep",                                             //currentstep
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //currentstep
-    MOD_PORTTYPE_VALUE, "Len Mult",                                             //length mult
-    MOD_PORTTYPE_VALUE, "Len Div ",                                             //length div
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //dummies until i get around to making proper modules heheh
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {MOD_PORTTYPE_VALUE, "Status  "},                                           //status
+    {MOD_PORTTYPE_VALUE, "Channel "},                                           //chan
+    {MOD_PORTTYPE_VALUE, "BaseNote"},                                           //note
+    {MOD_PORTTYPE_VALUE, "BaseVel"},                                            //vel
+    {MOD_PORTTYPE_TIMESTAMP, "LengthIn"},                                       //length reference
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //length reference
+    {MOD_PORTTYPE_TIMESTAMP, "Clock In"},                                       //next tick
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //next tick
+    {MOD_PORTTYPE_VALUE, "BaseStep"},                                           //currentstep
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //currentstep
+    {MOD_PORTTYPE_VALUE, "Len Mult"},                                           //length mult
+    {MOD_PORTTYPE_VALUE, "Len Div "},                                           //length div
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //dummies until i get around to making proper modules heheh
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
 };
 
 mod_portdata_t mod_Seq_PrivVarTypes[MOD_SEQ_PRIVVARS] = {
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!",                                                  //dummies until i get around to making proper modules heheh
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
-    DEAD_PORTTYPE, "NoPatch!", 
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},                                                //dummies until i get around to making proper modules heheh
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
+    {DEAD_PORTTYPE, "NoPatch!"},
 };
 
 

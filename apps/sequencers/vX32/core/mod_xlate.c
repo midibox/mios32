@@ -48,25 +48,25 @@ const char mod_PortType_Name[MAX_PORTTYPES][PORTTYPE_NAME_STRING_LENGTH] = {
 void (*const mod_Xlate_Table[MAX_PORTTYPES][MAX_PORTTYPES]) 
                         (unsigned char tail_nodeID, unsigned char tail_port,
                         unsigned char head_nodeID, unsigned char head_port) = {
-    &Mod_Xlate_Time_Time,                                                       // timestamp - timestamp
+    {&Mod_Xlate_Time_Time,                                                       // timestamp - timestamp
     &Mod_Xlate_Time_Value,                                                      // timestamp - value
     &Mod_Xlate_Time_Package,                                                    // timestamp - value
-    &Mod_Xlate_Time_Flag,                                                       // timestamp - flag
+    &Mod_Xlate_Time_Flag},                                                       // timestamp - flag
 
-    &Mod_Xlate_Value_Time,                                                      // value - timestamp
+    {&Mod_Xlate_Value_Time,                                                      // value - timestamp
     &Mod_Xlate_Value_Value,                                                     // value - value
     &Mod_Xlate_Value_Package,                                                   // value - value
-    &Mod_Xlate_Value_Flag,                                                      // value - flag
+    &Mod_Xlate_Value_Flag},                                                      // value - flag
 
-    &Mod_Xlate_Package_Time,                                                    // value - timestamp
+    {&Mod_Xlate_Package_Time,                                                    // value - timestamp
     &Mod_Xlate_Package_Value,                                                   // value - value
     &Mod_Xlate_Package_Package,                                                 // value - value
-    &Mod_Xlate_Package_Flag,                                                    // value - flag
+    &Mod_Xlate_Package_Flag},                                                    // value - flag
 
-    &Mod_Xlate_Flag_Time,                                                       // flag - timestamp
+    {&Mod_Xlate_Flag_Time,                                                       // flag - timestamp
     &Mod_Xlate_Flag_Value,                                                      // flag - value
     &Mod_Xlate_Flag_Package,                                                    // flag - value
-    &Mod_Xlate_Flag_Flag,                                                       // flag - flag
+    &Mod_Xlate_Flag_Flag},                                                       // flag - flag
 };
 
 
@@ -280,8 +280,8 @@ void Mod_DeadPort_Package(unsigned char nodeID, unsigned char port) {
 void Mod_DeadPort_Flag(unsigned char nodeID, unsigned char port) {
     u8 *deadport;
     deadport = (u8 *) &node[nodeID].ports[port];
-    if (*deadport != DEAD_VALUE) {
-        *deadport = DEAD_VALUE;
+    if (*deadport != DEAD_FLAG) {
+        *deadport = DEAD_FLAG;
         node[nodeID].process_req++;                                             // request processing
     }
     

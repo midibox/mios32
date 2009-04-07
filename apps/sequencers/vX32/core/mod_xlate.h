@@ -32,6 +32,7 @@ stay tuned for UI prototyping courtesy of lucem!
 #define DEAD_PORTTYPE (MAX_PORTTYPES+1)                                         // don't change
 #define DEAD_VALUE (signed char)(-128)                                          // don't change
 #define DEAD_PACKAGE 0xFFFFFFFF                                                 // don't change
+#define DEAD_FLAG 0xFF                                                          // don't change
 #define DEAD_TIMESTAMP 0xFFFFFFF0                                               // don't change
 #define RT_TIMESTAMP 0xFFFFFFFE                                                 // don't change
 #define RESET_TIMESTAMP 0xFFFFFFFF                                              // don't change
