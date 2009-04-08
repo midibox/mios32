@@ -758,7 +758,7 @@ s32 MIOS32_ENC28J60_ReadPHYReg(u8 reg)
   status |= MIOS32_ENC28J60_BankSel(MIREGADR);
   status |= MIOS32_ENC28J60_WriteReg((u8)MICMD, 0x00);
 
-  u16 hword;
+  u16 hword = 0;
   status = MIOS32_ENC28J60_ReadMACReg((u8)MIRDL);
   if( status >= 0 )
     hword = status;

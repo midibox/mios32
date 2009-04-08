@@ -261,7 +261,7 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
   // forward to Tx callback function and break if package has been filtered
   if( direct_tx_callback_func != NULL ) {
     s32 status;
-    if( status = direct_tx_callback_func(port, package) )
+    if( (status=direct_tx_callback_func(port, package)) )
       return status;
   }
 
@@ -321,7 +321,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
   // forward to Tx callback function and break if package has been filtered
   if( direct_tx_callback_func != NULL ) {
     s32 status;
-    if( status = direct_tx_callback_func(port, package) )
+    if( (status=direct_tx_callback_func(port, package)) )
       return status;
   }
 

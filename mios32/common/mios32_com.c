@@ -316,7 +316,7 @@ s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_Receive_Handler(void *_callback)
 {
-  u8 port;
+  u8 port = DEFAULT;
 
   void (*callback)(mios32_com_port_t port, u8 byte) = _callback;
 

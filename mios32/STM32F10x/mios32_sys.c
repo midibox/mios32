@@ -55,7 +55,7 @@ extern u32 mios32_sys_isr_vector;
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SYS_Init(u32 mode)
 {
-  ErrorStatus HSEStartUpStatus;
+  ErrorStatus HSEStartUpStatus = ERROR;
 
   // currently only mode 0 supported
   if( mode != 0 )
