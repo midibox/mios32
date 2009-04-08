@@ -42,8 +42,6 @@ static void TASK_Hooks(void *pvParameters);
 /////////////////////////////////////////////////////////////////////////////
 int main(void)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-
   // initialize hardware and MIOS32 modules
 #ifndef MIOS32_DONT_USE_SYS
   MIOS32_SYS_Init(0);

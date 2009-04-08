@@ -551,7 +551,8 @@ static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
       return NULL;
     }
 
-    ix = ++ix % (SEQ_MIDI_OUT_MAX_EVENTS / SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH);
+    ++ix;
+    ix %= (SEQ_MIDI_OUT_MAX_EVENTS / SEQ_MIDI_OUT_MALLOC_FLAG_WIDTH);
   }
 #endif
 

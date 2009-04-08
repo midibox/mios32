@@ -284,7 +284,7 @@ u8 *MIOS32_OSC_PutFloat(u8 *buffer, float value)
 /////////////////////////////////////////////////////////////////////////////
 char *MIOS32_OSC_GetString(u8 *buffer)
 {
-  return buffer; // OSC protocol ensures zero termination (checked in MIOS32_OSC_SearchElement)
+  return (char *)buffer; // OSC protocol ensures zero termination (checked in MIOS32_OSC_SearchElement)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -297,7 +297,7 @@ u8 *MIOS32_OSC_PutString(u8 *buffer, char *str)
 {
   u8 *buffer_start = buffer;
 
-  buffer = (u8 *)stpcpy(buffer, str);
+  buffer = (u8 *)stpcpy((char *)buffer, str);
   *buffer++ = 0;
 
   // pad with zeroes until word boundary is reached
@@ -488,7 +488,7 @@ s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search
   mios32_osc_args_t osc_args;
 
   // check if we got a bundle
-  if( strncmp(packet, "#bundle", len) == 0 ) {
+  if( strncmp((char *)packet, "#bundle", len) == 0 ) {
     u32 pos = 8;
 
     // we expect at least 8 bytes for the timetag
@@ -565,7 +565,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
     return -3; // unsupported element format
 
   // path: determine string length
-  size_t path_len = strnlen(path, len);
+  size_t path_len = strnlen((char *)path, len);
 
   // check for valid string
   if( path_len < 2 || path[path_len] != 0 ) // expect at least two characters, e.g. "/*"
@@ -585,7 +585,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
 
   // tags: determine string length
   u8 *tags = (u8 *)(buffer + tags_pos);
-  size_t tags_len = strnlen(tags, len-tags_pos);
+  size_t tags_len = strnlen((char *)tags, len-tags_pos);
 
   // check for valid string
   if( tags_len == 0 || tags[tags_len] != 0 )
@@ -633,7 +633,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
       case 's':   // OSC-string
       case 'S': { // OSC alternate string
 	known_arg = 1;
-	char *str = osc_args->arg_ptr[osc_args->num_args];
+	char *str = (char *)osc_args->arg_ptr[osc_args->num_args];
 	size_t str_len = strnlen(str, len-arg_pos);
 	// check for valid string
 	if( str_len == 0 || str[str_len] != 0 )

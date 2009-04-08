@@ -345,7 +345,7 @@ s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
 s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
 {
   // -> forward to app_lcd
-  APP_LCD_BColourSet(r, g, b);
+  return APP_LCD_BColourSet(r, g, b);
 }
 
 
@@ -360,7 +360,7 @@ s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
 s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b)
 {
   // -> forward to app_lcd
-  APP_LCD_FColourSet(r, g, b);
+  return APP_LCD_FColourSet(r, g, b);
 }
 
 //! \}

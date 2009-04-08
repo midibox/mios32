@@ -29,15 +29,19 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
+#if MIOS32_IIC_MIDI_NUM
 static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port);
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+#if MIOS32_IIC_MIDI_NUM
 // available interfaces
 static u8 iic_port_available = 0;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -365,6 +369,7 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 //! \return always 0 if invalid IIC port (>= 8)
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
+#if MIOS32_IIC_MIDI_NUM
 static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
 {
   switch( iic_port ) {
@@ -410,6 +415,7 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
 #endif
   }
 }
+#endif
 
 //! \}
 

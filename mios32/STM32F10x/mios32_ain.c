@@ -146,8 +146,6 @@ const u8 mux_selection_order[8] = { 5, 7, 3, 1, 2, 4, 0, 6 };
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Init(u32 mode)
 {
-  int i;
-
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -155,6 +153,7 @@ s32 MIOS32_AIN_Init(u32 mode)
 #if !MIOS32_AIN_CHANNEL_MASK
   return -1; // no AIN pins selected
 #else
+  int i;
 
   // disable service prepare callback function
   service_prepare_callback = NULL;
@@ -379,9 +378,6 @@ s32 MIOS32_AIN_PinGet(u32 pin)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Handler(void *_callback)
 {
-  int chn, mux;
-  void (*callback)(s32 pin, u16 value) = _callback;
-
   // no callback function?
   if( _callback == NULL )
     return -1;
@@ -389,6 +385,9 @@ s32 MIOS32_AIN_Handler(void *_callback)
 #if !MIOS32_AIN_CHANNEL_MASK
   return -1; // no analog input selected
 #else
+  int chn, mux;
+  void (*callback)(s32 pin, u16 value) = _callback;
+
   // exit if scan hasn't been finished yet
   if( mux_ctr || oversampling_ctr )
     return 0;

@@ -38,8 +38,10 @@ static const s32 bs_size[8] = {
   MIOS32_IIC_BS7_SIZE
 };
 
+#if MIOS32_IIC_BS_NUM
 // available BankSticks
 static u8 bs_available = 0;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
