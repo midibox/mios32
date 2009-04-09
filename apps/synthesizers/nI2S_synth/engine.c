@@ -473,7 +473,7 @@ void ENGINE_ReloadSampleBuffer(u32 state)
 		o = &oscillators[0];
 		utout2 = o->accumulator;
 		ac = o->pitchedAccumValue;
-/*
+
 		// porta mode?
 		if (o->portaStart != o->pitchedAccumValue) {
 			ac = o->portaStart;
@@ -489,7 +489,7 @@ void ENGINE_ReloadSampleBuffer(u32 state)
 					o->portaStart -= 1;
 			}
 		}
-*/
+
 		if (routing[T_OSC1_PITCH].source) {
 			// there's a source assigned
 			ac = ENGINE_modulateU(ac, ENGINE_getModulator(routing[T_OSC1_PITCH].source), routing[T_OSC1_PITCH].depth);
@@ -623,8 +623,8 @@ void ENGINE_ReloadSampleBuffer(u32 state)
 			// fixme vel curve
 			// acc = (o->velocity > 0x40) ? o->velocity : 0x40; 
 			// set velocity
-//			acc32 *= o->velocity;
-//			acc32 /= 128;
+			acc32 *= o->velocity;
+			acc32 /= 128;
 
 			// do more magic here
 			// ...
