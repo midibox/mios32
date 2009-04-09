@@ -93,7 +93,7 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 	} else
 	if (engine == ENGINE_DRUM) {
 		if ((midi_package.event == NoteOn) && (midi_package.velocity > 0)) {
-			// note off
+			// note on
 			DRUM_noteOn(midi_package.note, midi_package.velocity, 0);
 			return;
 		}
