@@ -79,7 +79,7 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 	// if note event over MIDI channel #1 controls note of both oscillators
 	if (engine == ENGINE_SYNTH) {
 		if ((midi_package.event == NoteOn) && (midi_package.velocity > 0)) {
-			// note off
+			// note on
 			ENGINE_noteOn(midi_package.note, midi_package.velocity, 0);
 			MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 			return;
