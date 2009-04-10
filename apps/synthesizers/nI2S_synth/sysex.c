@@ -144,7 +144,7 @@ void SYSEX_CmdFinished(u8 bufLen) {
 		// MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
 
 		// toggle addresses for drums
-		if (address > 0x8000) {
+		if (address >= 0x8000) {
 			index = (address >> 8) & 0x0F;
 			address &= 0xF0FF;
 			MIOS32_MIDI_SendDebugMessage("i:%d a:%d", index, address);
