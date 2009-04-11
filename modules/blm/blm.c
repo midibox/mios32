@@ -79,7 +79,7 @@ s32 BLM_Init(u32 mode)
   blm_button_debounce_ctr = 0;
 #elif BLM_DEBOUNCE_MODE == 2
   for(i=0; i<8*BLM_NUM_ROWS; ++i)
-    blm_button_debounce_ctr[i];
+    blm_button_debounce_ctr[i] = 0;
 #endif
 
   // select first column
