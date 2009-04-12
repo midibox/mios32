@@ -24,11 +24,11 @@ void *pvPortMalloc( size_t xWantedSize )
 {
 void *pvReturn;
 
-	vTaskSuspendAll();
+	//vTaskSuspendAll();
 	{
 		pvReturn = malloc( xWantedSize );
 	}
-	xTaskResumeAll();
+	//xTaskResumeAll();
 
 	return pvReturn;
 }
@@ -38,11 +38,11 @@ void vPortFree( void *pv )
 {
 	if( pv )
 	{
-		vTaskSuspendAll();
+		//vTaskSuspendAll();
 		{
 			free( pv );
 		}
-		xTaskResumeAll();
+		//xTaskResumeAll();
 	}
 }
 
