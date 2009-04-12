@@ -3,14 +3,14 @@
 ##################################################################
 
 # Project name
-PROJECT = Project
+PROJECT = vXjuce
 
 
 # Path to app sources
-CORE_DIR = ../../core/
+CORE_DIR = ../core/
 
 # Path to MIOSJUCE
-MIOSJUCE_PATH = ../../MIOSJUCE/
+MIOSJUCE_PATH = ../MIOSJUCE/
 
 
 # Operating system
@@ -23,7 +23,20 @@ OS = LINUX
 
 # App sources
 OBJS += $(CORE_DIR)../mios32/tasks.o \
-		$(CORE_DIR)app.o 
+		$(CORE_DIR)app.o \
+		$(CORE_DIR)utils.o \
+		$(CORE_DIR)ui.o \
+		$(CORE_DIR)graph.o \
+		$(CORE_DIR)mclock.o \
+		$(CORE_DIR)patterns.o \
+		$(CORE_DIR)mod_send.o \
+		$(CORE_DIR)mod_xlate.o \
+		$(CORE_DIR)modules.o \
+\
+		$(CORE_DIR)vxmodules/mod_sclk.o \
+		$(CORE_DIR)vxmodules/mod_sxh.o \
+		$(CORE_DIR)vxmodules/mod_seq.o \
+		$(CORE_DIR)vxmodules/mod_midiout.o
 
 # App include paths
 CFLAGS += -I $(CORE_DIR)

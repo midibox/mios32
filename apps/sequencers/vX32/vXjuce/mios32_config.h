@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mios32_config.h 404 2009-03-27 22:16:01Z stryd_one $ */
 /*
  * Local MIOS32 configuration file
  *
@@ -27,7 +27,7 @@
 #define MIOS32_USB_PRODUCT_ID   0x03ff                              // ==1000; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
 #define MIOS32_USB_VERSION_ID   0x0100                              // v1.00
 
-#define MIOS32_LCD_BOOT_MSG_LINE1 "vX32 alpha-28"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "vX32 alpha-24"
 
 
 #define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"

@@ -22,11 +22,7 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifdef MIOS32_FAMILY_EMULATION
-#ifdef JUCED
-#define ENDLESSLOOP 0
-#endif
-#else
+#ifndef ENDLESSLOOP
 #define ENDLESSLOOP 1
 #endif
 

@@ -67,12 +67,12 @@ void APP_Init(void) {
     
     MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
     MIOS32_LCD_CursorSet(6, 3);
-    MIOS32_LCD_PrintString("vX32 a-24");
+    MIOS32_LCD_PrintString("vX32 a-28");
     
     MIOS32_LCD_BColourSet(0x00, 0x00, 0xff);
     MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
     MIOS32_LCD_CursorSet(6, 5);
-    MIOS32_LCD_PrintString("Seven");
+    MIOS32_LCD_PrintString("Plenty");
     MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
     MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
     

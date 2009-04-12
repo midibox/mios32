@@ -536,6 +536,8 @@ edge_t *Edge_Add(unsigned char tail_nodeID, unsigned char tail_port, unsigned ch
                     newedge->tailport = tail_port;
                     newedge->headnodeID = head_nodeID;
                     newedge->headport = head_port;
+                    newedge->next = NULL;
+                    newedge->head_next = NULL;
                     newedge->msgxlate = Edge_Get_Xlator(tail_nodeID, tail_port, 
                                                         head_nodeID, head_port);
                     

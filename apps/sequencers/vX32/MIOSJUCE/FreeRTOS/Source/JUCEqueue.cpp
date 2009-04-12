@@ -14,7 +14,7 @@
 #include <JUCEqueue.hpp>
 
 
-static MutexList_t *MutexList;
+static MutexList_t *MutexList = NULL;
 CriticalSection queuelistmutex;
 int mutexID = 0;
 
@@ -28,14 +28,21 @@ xSemaphoreHandle JUCESemaphoreCreateMutex(void)
 
 int JUCESemaphoreTake(xSemaphoreHandle Semaphore)
 {
-	return (MutexList_GetPointer(Semaphore))->tryEnter();
-	
+	if (MutexList_GetPointer(Semaphore) != NULL)
+	{
+		return (MutexList_GetPointer(Semaphore))->tryEnter();
+	}
+	return 0;
 }
 
 int JUCESemaphoreGive(xSemaphoreHandle Semaphore)
 {
-	(MutexList_GetPointer(Semaphore))->exit();
-	return 1;
+	if (MutexList_GetPointer(Semaphore) != NULL)
+	{
+		(MutexList_GetPointer(Semaphore))->exit();
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -55,24 +62,32 @@ void MutexList_Add(CriticalSection *mutexPointer, int mutexID)
 void MutexList_Del(CriticalSection *mutexPointer)
 {
 	queuelistmutex.enter();
-	MutexList_t *temp = MutexList;
-	MutexList_t *prev = NULL;
-	while (temp->mutexPointer != mutexPointer)
+	if (mutexPointer != NULL &&
+		MutexList != NULL) 
 	{
-		prev = temp;
-		temp = temp->next;
+		MutexList_t *temp = MutexList;
+		MutexList_t *prev = NULL;
+		
+		while (temp != NULL)
+		{
+			if (temp->mutexPointer == mutexPointer)
+			{
+				break;
+			}
+			prev = temp;
+			temp = temp->next;
+		}
+		
+		if (prev == NULL) 
+		{
+			MutexList = temp->next;
+		} else {
+			prev->next = temp->next;
+		}
+		
+		delete temp;
+		queuelistmutex.exit();
 	}
-	
-	if (prev == NULL) 
-	{
-		MutexList = temp->next;
-	} else {
-		prev->next = temp->next;
-	}
-	
-	delete temp;
-	queuelistmutex.exit();
-	
 }
 
 CriticalSection *MutexList_GetPointer(int mutexID)

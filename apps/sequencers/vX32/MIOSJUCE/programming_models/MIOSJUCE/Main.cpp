@@ -7,7 +7,13 @@
   ==============================================================================
 */
 
-#include "includes.h"
+// This file lets us set up any special config that we need for this app..
+#include "juce_AppConfig.h"
+
+// And this includes all the juce headers..
+#include <juce.h>
+
+// one for the main component. The app can include the rest.
 #include "MainComponent.h"
 
 //==============================================================================
@@ -30,12 +36,13 @@ public:
         // to our window.
 
         MainComponent* const contentComponent = new MainComponent();
-
+        
         setContentComponent (contentComponent, true, true);
 
         centreWithSize (getWidth(), getHeight());
 
         setVisible (true);
+        setResizable(true, false);
     }
 
     ~MIOSJUCEWindow()

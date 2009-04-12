@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-extern void JUCETaskCreate(void (*pvTaskCode)(void * ), char *pcName, 
+extern void JUCETaskCreate(void (*pvTaskCode)(void * ), const signed char *pcName, 
 					void *pvParameters, int uxPriority, int *pxCreatedTask);
 
 extern long JUCETaskGetTickCount(void);
