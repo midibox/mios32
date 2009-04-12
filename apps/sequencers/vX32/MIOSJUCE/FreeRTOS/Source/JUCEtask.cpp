@@ -12,31 +12,66 @@
 #include <JUCEtask.h>
 #include <JUCEtask.hpp>
 
-
-static taskList_t* TaskList;
+static bool arrayinited = false;
+static JUCETask *taskArray[MAX_JUCETASKS];
 CriticalSection tasklistmutex;
 
 
-void JUCETaskCreate(void (*pvTaskCode)(void * ), char *pcName, 
+void JUCETaskCreate(void (*pvTaskCode)(void * ), const signed char *pcName,
 					void *pvParameters, int uxPriority, int *pxCreatedTask)
 {
+	tasklistmutex.enter();
+	if (arrayinited != true)
+	{
+		for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
+		{
+			taskArray[i] = NULL;
+		}
+		arrayinited = true;
+	}
+	unsigned int thisID = MAX_JUCETASKS;
+	for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
+	{
+		if (taskArray[i] == NULL)
+		{
+			thisID = i;
+			break;
+		}
+	}
+	if (thisID == MAX_JUCETASKS) return;
 	JUCETask *newtask;
-	String newname = pcName;
+	String newname = (const char*) pcName;
 	newtask = new JUCETask(newname);
 	newtask->TaskFunction = pvTaskCode;
 	newtask->parameters = pvParameters;
-	*pxCreatedTask = newtask->getThreadId();
-	
+	newtask->iD = thisID;
+	taskArray[thisID] = newtask;
+	if (pxCreatedTask != NULL) *pxCreatedTask = thisID;
+
 	newtask->startThread(uxPriority);
+	tasklistmutex.exit();
 }
 
 long JUCETaskGetTickCount(void)
 {
-	int tempID = JUCETask::getCurrentThreadId();
-	JUCETask *temppointer;
-	temppointer = TaskList_GetPointer(tempID);
-	if (temppointer != NULL) return temppointer->tickcounter;
+	// damn this isn't working. 
+	// You can't get a pointer to the currently running thread
+	// because it returns a thread class pointer
+	// and these are implementad as subclasses (as it should be)
+	// and upcasting is a no-no.
+	// 
+	// fortunately delayuntil is ignoring it anyway
+	// but it prevents a 100% freertos emulation.
+	// timing on PCs isn't really mS accurate anyway....
+	// so who cares?
+	// run core32 if you want timing!
+	
+	//tasklistmutex.enter();
+	//JUCETask *temppointer;
+	//temppointer =  Thread::getCurrentThread();
+	//if (temppointer != NULL) return temppointer->tickcounter;
 	return 0xffffffff;
+	//tasklistmutex.exit();
 }
 
 void JUCETaskDelay(long time)
@@ -46,22 +81,55 @@ void JUCETaskDelay(long time)
 
 void JUCETaskSuspend(int taskID)
 {
-	(TaskList_GetPointer(taskID))->wait(-1);
+	tasklistmutex.enter();
+	JUCETask *thistask;
+	thistask = taskArray[taskID];
+	tasklistmutex.exit();
+	if (thistask != NULL) 
+	{
+		if (Thread::getCurrentThreadId() != thistask->getThreadId())
+		{
+			thistask->stopThread(5000);
+		}
+		
+		else thistask->signalThreadShouldExit();
+		
+	}
+	
 }
 
 
 void JUCETaskResume(int taskID)
 {
-	(TaskList_GetPointer(taskID))->notify();
+	tasklistmutex.enter();
+	JUCETask *thistask;
+	thistask = taskArray[taskID];
+	tasklistmutex.exit();
+	if (thistask != NULL) thistask->startThread();
 }
 
 
 void JUCETaskSuspendAll(void)
 {
-	taskList_t *temp = TaskList;	
-	while (temp != NULL)
+	tasklistmutex.enter();
+	JUCETask *thistaskArray[MAX_JUCETASKS];
+	for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
 	{
-		temp->taskPointer->wait(-1);
+		thistaskArray[i] = taskArray[i];		
+	}
+	tasklistmutex.exit();
+	
+	for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
+	{
+		if (thistaskArray[i] != NULL)
+		{
+			if ( Thread::getCurrentThreadId() != thistaskArray[i]->getThreadId() )
+			{
+				thistaskArray[i]->stopThread(5000);
+			}
+			
+		}
+		
 	}
 	
 }
@@ -69,107 +137,25 @@ void JUCETaskSuspendAll(void)
 
 void JUCETaskResumeAll(void)
 {
-	taskList_t *temp = TaskList;	
-	while (temp != NULL)
-	{
-		temp->taskPointer->notify();
-	}
-	
-}
-
-
-
-
-void TaskList_Add(JUCETask *taskPointer, int taskID)
-{
 	tasklistmutex.enter();
-	taskList_t *root = TaskList;
-	taskList_t *newentry = new taskList_t;
-	newentry->taskID = taskID;
-	newentry->taskPointer = taskPointer;
-	newentry->next = root;
-	TaskList = newentry;
-	tasklistmutex.exit();
-}
-
-void TaskList_Del(JUCETask *taskPointer)
-{
-	tasklistmutex.enter();
-	taskList_t *temp = TaskList;
-	taskList_t *prev = NULL;
-	while (temp->taskPointer != taskPointer)
+	JUCETask *thistaskArray[MAX_JUCETASKS];
+	for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
 	{
-		prev = temp;
-		temp = temp->next;
+		thistaskArray[i] = taskArray[i];		
 	}
-	
-	if (prev == NULL) 
-	{
-		TaskList = temp->next;
-	} else {
-		prev->next = temp->next;
-	}
-	
-	delete temp;
 	tasklistmutex.exit();
 	
-}
-
-
-JUCETask *TaskList_GetPointer(int taskID)
-{
-	tasklistmutex.enter();
-	taskList_t *temp = TaskList;
-	JUCETask *returnPointer = NULL;
-	
-	while (temp != NULL)
+	for (unsigned int i = 0; i < MAX_JUCETASKS; i++)
 	{
-		if (temp->taskID == taskID)
+		if (thistaskArray[i] != NULL)
 		{
-			returnPointer = temp->taskPointer;
-			break;
+			thistaskArray[i]->startThread();
 		}
 		
-		temp = temp->next;
 	}
 	
-	tasklistmutex.exit();
-	return returnPointer;
-	
-}
-
-int TaskList_GetID(JUCETask *taskPointer)
-{
-	tasklistmutex.enter();
-	taskList_t *temp = TaskList;
-	int returnID = -1;
-	
-	while (temp != NULL)
-	{
-		if (temp->taskPointer == taskPointer)
-		{
-			returnID = temp->taskID;
-			break;
-		}
-		
-		temp = temp->next;
-	}
-	tasklistmutex.exit();
-	
-	return returnID;
 }
 
 
 
 
-JUCETask::JUCETask(const String& threadName) : Thread(threadName)
-{
-	TaskList_Add(this, getThreadId());
-}
-	
-JUCETask::~JUCETask()
-{
-	TaskList_Del(this);
-	// allow the thread 2 seconds to stop cleanly - should be plenty of time.
-	stopThread (2000);
-}

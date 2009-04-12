@@ -3,7 +3,7 @@
 
   This is an automatically generated file created by the Jucer!
 
-  Creation date:  12 Apr 2009 10:44:35 pm
+  Creation date:  12 Apr 2009 10:44:22 pm
 
   Be careful when adding custom code to these files, as only the code within
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
@@ -19,14 +19,12 @@
   ==============================================================================
 */
 
-#ifndef __JUCER_HEADER_MAINCOMPONENT_MAINCOMPONENT_286B3BD0__
-#define __JUCER_HEADER_MAINCOMPONENT_MAINCOMPONENT_286B3BD0__
+#ifndef __JUCER_HEADER_APPCOMPONENT_APPCOMPONENT_1B34A945__
+#define __JUCER_HEADER_APPCOMPONENT_APPCOMPONENT_1B34A945__
 
 //[Headers]     -- You can add your own extra header files here --
-#include "MIDIDialog.h"
 //[/Headers]
 
-#include <AppComponent.h>
 
 
 //==============================================================================
@@ -37,34 +35,21 @@
     Describe your class and how it works here!
                                                                     //[/Comments]
 */
-class MainComponent  : public Component,
-                       public ButtonListener
+class AppComponent  : public Component,
+                      public ButtonListener
 {
 public:
     //==============================================================================
-    MainComponent ();
-    ~MainComponent();
+    AppComponent ();
+    ~AppComponent();
 
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
-
-    // this wraps the midi devices
-    AudioDeviceManager midiDeviceManager;
-
-    AudioDeviceManager *GetMIDIManager()
-    {
-        return &midiDeviceManager;
-    }
-
-    void mouseMove(const MouseEvent &e);
-
-
     //[/UserMethods]
 
     void paint (Graphics& g);
     void resized();
     void buttonClicked (Button* buttonThatWasClicked);
-    void parentSizeChanged();
 
 
     //==============================================================================
@@ -75,17 +60,16 @@ private:
     //[/UserVariables]
 
     //==============================================================================
-    AppComponent* UserApp;
-    Label* MIOSJUCELabel;
-    Label* credits;
-    TextButton* quitButton;
-    TextButton* ioButton;
+    TextButton* StartButton;
+    TextButton* StopButton;
+    TextButton* contButton;
+    TextButton* testButton;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
-    MainComponent (const MainComponent&);
-    const MainComponent& operator= (const MainComponent&);
+    AppComponent (const AppComponent&);
+    const AppComponent& operator= (const AppComponent&);
 };
 
 
-#endif   // __JUCER_HEADER_MAINCOMPONENT_MAINCOMPONENT_286B3BD0__
+#endif   // __JUCER_HEADER_APPCOMPONENT_APPCOMPONENT_1B34A945__
