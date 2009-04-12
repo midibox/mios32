@@ -13,6 +13,12 @@
 // And this includes all the juce headers..
 #include <juce.h>
 
+// this is so that the global MIDI settings can be exported to the wrapper
+#include <JUCEmidi.hpp>
+
+// this is for the global dialogs like MIDI IO and About for the wrapper
+#include "MIOSJUCEDialogs.h"
+
 // one for the main component. The app can include the rest.
 #include "MainComponent.h"
 
@@ -22,7 +28,7 @@
     show a component from the MainComponent.cpp file (you can open this file using
     the Jucer to edit it).
 */
-class MIOSJUCEWindow  : public DocumentWindow
+class MIOSJUCEWindow : public DocumentWindow
 {
 public:
     //==============================================================================
@@ -32,17 +38,24 @@ public:
                           DocumentWindow::allButtons,
                           true)
     {
+        
+        // create the MIDI Device Manager
+        midiDeviceManager = new AudioDeviceManager();
+        
         // Create an instance of our main content component, and add it 
         // to our window.
-
         MainComponent* const contentComponent = new MainComponent();
-        
         setContentComponent (contentComponent, true, true);
-
         centreWithSize (getWidth(), getHeight());
-
+        
+        // setup the window
+        MenuItems* MIOSJUCEMenu= new MenuItems();
+        setMenuBar(MIOSJUCEMenu);
+        setUsingNativeTitleBar(true);
         setVisible (true);
         setResizable(true, false);
+        setResizeLimits(250,200,8192,8192);
+        
     }
 
     ~MIOSJUCEWindow()

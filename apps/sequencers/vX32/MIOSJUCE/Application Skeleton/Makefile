@@ -22,7 +22,7 @@ OS = LINUX
 # Add your MIOS app sources here....
 
 # App sources
-OBJS += $(CORE_DIR)../mios32/tasks.o \
+OBJS += $(CORE_DIR)tasks.o \
 		$(CORE_DIR)app.o 
 
 # App include paths
@@ -157,7 +157,7 @@ WINDRES =
 # Make targets
 #################################
 
-all: cleanall Release
+all: Release
 
 # setup
 setup:
@@ -189,7 +189,7 @@ Release: CFLAGS += -O2
 Release: OUTDIR = $(OBJS_DIR)$(RELEASE_DIR)
 Release: BINDIR = $(BIN_DIR)$(RELEASE_DIR)
 Release: JUCELIB = $(LIBJUCE_PATH)$(LIBJUCE_RELEASE)
-Release: $(OBJS) link
+Release: cleanRelease $(OBJS) link
 
 
 # Target: Debug
@@ -197,7 +197,7 @@ Debug: CFLAGS += -g
 Debug: OUTDIR = $(OBJS_DIR)$(DEBUG_DIR)
 Debug: BINDIR = $(BIN_DIR)$(DEBUG_DIR)
 Debug: JUCELIB = $(LIBJUCE_PATH)$(LIBJUCE_DEBUG)
-Debug: $(OBJS) link
+Debug: cleanDebug $(OBJS) link
 
 
 
