@@ -38,6 +38,4 @@ void FILTER_setCutoff(u16 c);
 void FILTER_setResonance(u16 r);
 void FILTER_setFilter(u8 f);
 
-s16 FILTER_bandpass(s16 input);
-
 #endif

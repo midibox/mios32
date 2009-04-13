@@ -12,15 +12,6 @@
  *                                                                          *
  ****************************************************************************/
 
-/* TODO *********************************************************************
- * trigger matrix (mainly envelopes)
- * extended wave blending/mixing
- * new mod targets/sources
- * lfo depth offset before multiply
- * mod behaviour not cool
- * ...
- ****************************************************************************/
-
 /////////////////////////////////////////////////////////////////////////////
 // Include files
 /////////////////////////////////////////////////////////////////////////////
@@ -411,7 +402,8 @@ void ENGINE_noteOn(u8 note, u8 vel, u8 steal)
 	MIOS32_MIDI_SendDebugMessage("noteStackLen = %d", noteStackLen);
 	#endif
 
-	ENGINE_setPitchbend(2, oscillators[0].pitchbend.value);
+	ENGINE_setPitchbend(0, oscillators[0].pitchbend.value);
+	ENGINE_setPitchbend(1, oscillators[1].pitchbend.value);
 
 	reattack = (noteStackLen > 1) || steal;
 	
@@ -426,14 +418,12 @@ void ENGINE_noteOn(u8 note, u8 vel, u8 steal)
 	} else {
 		oscillators[1].portaStart = oscillators[1].pitchedAccumValue;
 	}
-	
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Fills the buffer with nicey sample sounds ;D
 /////////////////////////////////////////////////////////////////////////////
-void ENGINE_ReloadSampleBuffer(u32 state)
-{
+void ENGINE_ReloadSampleBuffer(u32 state) {
 	// transfer new samples to the lower/upper sample buffer range
 	int i;
 	u16 out;
@@ -645,6 +635,21 @@ void ENGINE_ReloadSampleBuffer(u32 state)
 		tout += tout2;
 		tout /= 4;
 
+/* PHASE DISTORTION FUN
+		tout = oscillators[0].sample;
+		tout *= oscillators[0].volume;
+		tout /= 32768;
+
+		tout2 = oscillators[1].sample;
+		tout2 *= oscillators[0].accumValue;
+		tout2 /= 65536;
+		tout2 *= oscillators[1].volume;
+		tout2 /= 32768;
+
+		tout += tout2;
+		tout /= 4;
+*/
+
 		// hand over merged sample to ENGINE_postProcess for fx
 		tout = ENGINE_postProcess(tout);
 		
@@ -697,6 +702,17 @@ void ENGINE_setOscVolume(u8 osc, u16 vol) {
 
 void ENGINE_setOscFinetune(u8 osc, s8 ft) {
 	oscillators[osc].finetune = (ft < 0) ? -(ft * ft) / 128 : (ft * ft) / 128;
+}
+
+
+void ENGINE_setOscTranspose(u8 osc, s8 trans) {
+	oscillators[osc].transpose = trans;
+
+	// update accum values
+	oscillators[osc].accumValue = accumValueByNote[noteStack[noteStackIndex].note + oscillators[osc].transpose];
+
+	// ENGINE_setPitchbend(2, 0);
+	ENGINE_noteOn(oscillators[osc].accumNote, oscillators[osc].velocity, 0);
 }
 
 void ENGINE_setPitchbend(u8 osc, s16 pb) {
@@ -752,15 +768,6 @@ void ENGINE_setMasterVolume(u16 vol) {
 
 void ENGINE_setEngineFlags(u8 f) {
 	engineFlags.all = f;
-}
-
-void ENGINE_setOscTranspose(u8 osc, s8 trans) {
-	oscillators[osc].transpose = trans;
-
-	// update accum values
-	oscillators[osc].accumValue = accumValueByNote[noteStack[noteStackIndex].note + oscillators[osc].transpose];
-
-	ENGINE_setPitchbend(osc, oscillators[osc].pitchbend.value);
 }
 
 void ENGINE_setOscPW(u8 osc, u16 pw) {
@@ -981,7 +988,7 @@ s16 ENGINE_postProcess(s16 sample) {
 		}
 		
 		// fixme: filters still operate on 0..65535
-		tout = FILTER_filter((u16) (tout + 32768), tout2) - 32768;
+		tout = FILTER_filter(tout, tout2);
 	}
 
 	// routing target T_MASTER_VOLUME is right here
@@ -1003,10 +1010,6 @@ s16 ENGINE_postProcess(s16 sample) {
 	// XOR
 	tout ^= voice.xor;
 
-	// set volume
-	tout *= voice.masterVolume; 
-	tout /= 65536;
-
 	// add delay
 	tout2 = delayBuffer[(delayIndex - voice.delayTime) & 0x3FFF];
 	tout2 *= voice.delayFeedback;
@@ -1026,6 +1029,10 @@ s16 ENGINE_postProcess(s16 sample) {
 	if (engineFlags.interpolate)
 		tout = (tout + voice.lastSample) / 2;
 		
+	// set volume
+	tout *= voice.masterVolume; 
+	tout /= 65536;
+
 	return tout;
 }
 

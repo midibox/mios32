@@ -30,6 +30,32 @@
  *  Licensed for personal non-commercial use only.                          *
  *  All other rights reserved.                                              *
  *                                                                          *
+ ****************************************************************************
+ *                                                                          *
+ * CHANGELOG                                                                *
+ *                                                                          *
+ * v0.0.0 - 2009/04/09 - initial release                                    *
+ * v0.0.1 - 2009/04/13 - "Bashful"                                          *
+ *   * various bugfixes (thanks TK)                                         *
+ *   * lead engine:                                                         *
+ *       - transpose works instantly now                                    *
+ *   * drum engine:                                                         *
+ *       - notes that trigger the drums are now selectable                  *
+ *   * fx chain:                                                            *
+ *       - added a state variable filter                                    *
+ *       - moved master volume all the way to the end of the chain          *
+ *   * editor:                                                              *
+ *       - mixup with volume/overdrive/mix knobs in the drum editor fixed   *
+ ****************************************************************************
+ *                                                                          *
+ * TODO                                                                     *
+ *   - lots                                                                 *
+ *   - fix filters (signed/unsigned)                                        *
+ *   - fix "fixme"s                                                         *
+ *   - copy waveblender from temp files back in                             *
+ *   - new mod targets/sources                                              *
+ *   - lfo depth offset before multiply                                     *
+ *   - fix mod behaviour                                                    *
  ****************************************************************************/
 
 /////////////////////////////////////////////////////////////////////////////

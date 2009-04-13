@@ -56,6 +56,8 @@ typedef struct {
 	u16 volume;				// volume of that voice
 	s16 sample;				// output sample
 	
+	u8 trigger; 			// note that triggers the drum
+	
 	unsigned gate:1;
 	unsigned sineMod:1;
 	unsigned waveform:1;
@@ -91,78 +93,46 @@ void DRUM_noteOff(u8 note) {
 }
 
 void DRUM_noteOn(u8 note, u8 vel, u8 steal) {
+	u8 n;
+	u8 drum = 255;
+	
 	// trigger correspoding to note
-	switch (note) {
-		case 48:
-			sine_drums[0].gate = 1;
-			sine_drums[0].accumulator = 0;
-			sine_drums[0].tick = 0;
-			sine_drums[0].sineMod = 1;
-			sine_drums[0].sineEnvAccum = 0;
-			sine_drums[0].sineEnv = 0;
-			sine_drums[0].noiseEnvAccum = 0;
-			sine_drums[0].noiseFilterAccum = sine_drums[0].noiseFilterCutoff;
-			sine_drums[0].noiseEnv = 0;
-			sine_drums[0].velocity = vel;
+	for (n=0; n<SINE_DRUMS; n++) {
+		if (note == sine_drums[n].trigger) {
+			drum = n;
 			break;
-		case 50:
-			sine_drums[1].gate = 1;
-			sine_drums[1].accumulator = 0;
-			sine_drums[1].tick = 0;
-			sine_drums[1].sineMod = 1;
-			sine_drums[1].sineEnvAccum = 0;
-			sine_drums[1].sineEnv = 0;
-			sine_drums[1].noiseEnvAccum = 0;
-			sine_drums[1].noiseFilterAccum = sine_drums[1].noiseFilterCutoff;
-			sine_drums[1].noiseEnv = 0;
-			sine_drums[1].velocity = vel;
-			break;
-		case 52:
-			sine_drums[2].gate = 1;
-			sine_drums[2].accumulator = 0;
-			sine_drums[2].tick = 0;
-			sine_drums[2].sineMod = 1;
-			sine_drums[2].sineEnvAccum = 0;
-			sine_drums[2].sineEnv = 0;
-			sine_drums[2].noiseEnvAccum = 0;
-			sine_drums[2].noiseFilterAccum = sine_drums[2].noiseFilterCutoff;
-			sine_drums[2].noiseEnv = 0;
-			sine_drums[2].velocity = vel;
-			break;
-		case 53:
-			sine_drums[3].gate = 1;
-			sine_drums[3].accumulator = 0;
-			sine_drums[3].tick = 0;
-			sine_drums[3].sineMod = 1;
-			sine_drums[3].sineEnvAccum = 0;
-			sine_drums[3].sineEnv = 0;
-			sine_drums[3].noiseEnvAccum = 0;
-			sine_drums[3].noiseFilterAccum = sine_drums[2].noiseFilterCutoff;
-			sine_drums[3].noiseEnv = 0;
-			sine_drums[3].velocity = vel;
-			break;
-		default: 
-			// MIOS32_MIDI_SendDebugMessage("n:%d v:%d", note, vel);
-			;
+		}
 	}
+
+	// exit if the note isn't listed
+	if (drum >= SINE_DRUMS) return;
+	
+	// reset voice
+	sine_drums[drum].gate = 1;
+	sine_drums[drum].accumulator = 0;
+	sine_drums[drum].tick = 0;
+	sine_drums[drum].sineMod = 1;
+	sine_drums[drum].sineEnvAccum = 0;
+	sine_drums[drum].sineEnv = 0;
+	sine_drums[drum].noiseEnvAccum = 0;
+	sine_drums[drum].noiseFilterAccum = sine_drums[0].noiseFilterCutoff;
+	sine_drums[drum].noiseEnv = 0;
+	sine_drums[drum].velocity = vel;
+
+	// MIOS32_MIDI_SendDebugMessage("n:%d v:%d", note, vel);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Fills the buffer with nicey sample sounds ;D
 /////////////////////////////////////////////////////////////////////////////
 void DRUM_ReloadSampleBuffer(u32 state) {
-	/*
-	if (samplesInBuffer > 47) {
-		return;
-	}
-	*/
-
 	u8 n, i;
 	u16 out;
 	s32 fnoise, tout, tout2, ac;
 	s16 noise; // noise sample
 
 	// debug: measure time for 8 samples
+	#ifdef DRUM_VERBOSE
 	if (dead == 0) {
 		// send execution time via MIDI interface
 		u32 delay = MIOS32_STOPWATCH_ValueGet();
@@ -172,8 +142,7 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 		// reset timer to measure every 6000th iteration (1Hz)
 		dead = 6000;
 	}	
-	
-
+	#endif
 	
 	u32 *buffer = (u32 *)&sample_buffer[state ? (SAMPLE_BUFFER_SIZE/2) : 0];
 
@@ -352,10 +321,12 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 		*buffer++ = out << 16 | out;
 	}
 
+	#ifdef DRUM_VERBOSE
 	dead--;
 	if (dead == 0) {
 		MIOS32_STOPWATCH_Reset();
 	}
+	#endif
 }
 
 void DRUM_setSineDrum_SineFreqInitial(u8 voice, u16 value) {
@@ -464,9 +435,24 @@ void DRUM_setSineDrum_Waveform(u8 index, u8 value) {
 void DRUM_setSineDrum_FilterType(u8 index, u8 value) {
 	sine_drums[index].filterType = value;
 	
+	#ifdef DRUM_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("filter %d:%d", index, sine_drums[index].filterType);
+	#endif
 }
 
 void DRUM_init(void) {
 	noise_counter = 22222;
+	
+	sine_drums[0].trigger = 48;
+	sine_drums[1].trigger = 50;
+	sine_drums[2].trigger = 52;
+	sine_drums[3].trigger = 53;
+}
+
+void DRUM_setSineDrum_TriggerNote(u8 index, u8 value) {
+	sine_drums[index].trigger = value;
+
+	#ifdef DRUM_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("trigger %d:%d", index, value);
+	#endif
 }
