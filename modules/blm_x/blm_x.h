@@ -84,7 +84,6 @@
 #endif
 
 
-// 0: no debouncing
 // 1: cheap debouncing (all buttons the same time)
 // 2: individual debouncing of all buttons
 #ifndef BLM_X_DEBOUNCE_MODE
@@ -95,7 +94,7 @@
 // (debounce-mode 1) or any individual (debounce-mode 2) button will be done.
 // the counter(s) decrement every scan-cycle (all rows scaned)
 #ifndef BLM_X_DEBOUNCE_DELAY
-#define BLM_X_DEBOUNCE_DELAY = 0
+#define BLM_X_DEBOUNCE_DELAY 0
 #endif
 
 
@@ -124,6 +123,7 @@ extern s32 BLM_X_BtnHandler(void *notify_hook);
 extern s32 BLM_X_BtnGet(u32 btn);
 
 extern s32 BLM_X_LEDSet(u32 led, u32 color, u32 value);
+extern s32 BLM_X_LEDColorSet(u32 led, u32 color_mask);
 extern s32 BLM_X_LEDGet(u32 led, u32 color);
 
 
