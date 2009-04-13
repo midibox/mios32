@@ -72,8 +72,7 @@ s32 BLM_X_Init(void){
 #endif
 		}
 	for(i=0; i<BLM_X_NUM_LED_SR; ++i)
-		BLM_X_led_rows[r][i] = 0x00;
-	}
+		BLM_X_LED_rows[r][i] = 0x00;
 // clear debounce counter for debounce-mode 1
 #if BLM_X_DEBOUNCE_MODE == 1
 	BLM_X_debounce_ctr = 0;
@@ -100,7 +99,7 @@ s32 BLM_X_PrepareRow(void){
 	// if less than five rows, each cathode line has a twin (other nibble).
 	dout_value = ~(1 << BLM_X_current_row);
 #if (BLM_X_NUM_ROWS < 5)
-	dout_value ^= (1 << (BLM_X_current_row + 4))
+	dout_value ^= (1 << (BLM_X_current_row + 4));
 #endif
 	// apply inversion mask (required when sink drivers are connected to the cathode lines)
 	dout_value ^= BLM_X_ROWSEL_INV_MASK;
@@ -135,7 +134,7 @@ s32 BLM_X_GetRow(void){
 			MIOS32_IRQ_Disable();
 			// if a second change happens before the last change was notified (clear
 			// changed flags), the change flag will be unset (two changes -> original value)
-			if(BLM_X_btn_rows_changed[BLM_X_current_row][sr] ^= sr_value ^ BLM_X_btn_rows[BLM_X_current_row][sr])
+			if( BLM_X_btn_rows_changed[BLM_X_current_row][sr] ^= (sr_value ^ BLM_X_btn_rows[BLM_X_current_row][sr]) )
 				BLM_X_debounce_ctr = BLM_X_DEBOUNCE_DELAY;//restart debounce delay
 			//copy new values to BLM_X_btn_rows
 			BLM_X_btn_rows[BLM_X_current_row][sr] = sr_value;
@@ -193,7 +192,7 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 	if( _notify_hook == NULL )
 		return -2;
 	// walk all rows & serial registers to check for changed pins
-	for(r = 0; r < BLM_X_NUM_ROWS){
+	for(r = 0; r < BLM_X_NUM_ROWS; r++){
 		for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
 			//*** fetch changed / values, reset changed. should not be interrupted ***
 			MIOS32_IRQ_Disable();
@@ -223,7 +222,7 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 s32 BLM_X_BtnGet(u32 btn){
 	u32 row,sr,pin;
 	// check if pin available
-	if( pin >= BLM_X_NUM_ROWS * BLM_X_BTN_NUM_COLS )
+	if( btn >= BLM_X_NUM_ROWS * BLM_X_BTN_NUM_COLS )
 		return -1;
 	// compute row,sr & pin
 	row = btn / BLM_X_BTN_NUM_COLS;
@@ -242,7 +241,7 @@ s32 BLM_X_BtnGet(u32 btn){
 s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 	u32 row,sr,pin;
 	// check if pin available
-	if( pin >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
+	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
@@ -250,21 +249,21 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 	pin %= 8;
 	// set value
 	if( value )
-		BLM_X_led_rows[row][sr] |= (1 << pin);//set pin
+		BLM_X_LED_rows[row][sr] |= (1 << pin);//set pin
 	else
-		BLM_X_led_rows[row][sr] &= ~(1 << pin);//clear pin
+		BLM_X_LED_rows[row][sr] &= ~(1 << pin);//clear pin
 	return 0;
 	}
 	
 /////////////////////////////////////////////////////////////////////////////
 // sets all colors of a LED
-// IN: LED number in <led>, color in <colors> (each bit represents a color, LSB = color 0)
+// IN: LED number in <led>, color in <color_mask> (each bit represents a color, LSB = color 0)
 // OUT: returns < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
-s32 BLM_X_LEDColorSet(u32 led, u32 color){
+s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 	u32 row,sr,pin,c;
 	// check if pin available
-	if( pin >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
+	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS )
 		return -1;
 	// compute row,sr
 	row = led / BLM_X_BTN_NUM_COLS;
@@ -273,10 +272,10 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color){
 		sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
 		pin %= 8;
 		// set value
-		if( color & (1 << c) )
-			BLM_X_led_rows[row][sr] |= (1 << pin);//set pin
+		if( color_mask & (1 << c) )
+			BLM_X_LED_rows[row][sr] |= (1 << pin);//set pin
 		else
-			BLM_X_led_rows[row][sr] &= ~(1 << pin);//clear pin
+			BLM_X_LED_rows[row][sr] &= ~(1 << pin);//clear pin
 		}
 	return 0;
 	}
@@ -290,13 +289,13 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color){
 s32 BLM_X_LEDGet(u32 led, u32 color){
 	u32 row,sr,pin;
 	// check if pin available
-	if( pin >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
+	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
 	sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
 	pin %= 8;
 	// return value
-	return (BLM_X_led_rows[row][sr] & (1 << pin)) ? 1 : 0;
+	return (BLM_X_LED_rows[row][sr] & (1 << pin)) ? 1 : 0;
 	}
 
