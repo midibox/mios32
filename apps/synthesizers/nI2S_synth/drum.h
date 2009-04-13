@@ -41,5 +41,6 @@ void DRUM_setSineDrum_Volume(u8 voice, u16 value);
 void DRUM_setSineDrum_Overdrive(u8 voice, u16 value);
 void DRUM_setSineDrum_Waveform(u8 index, u8 value); 
 void DRUM_setSineDrum_FilterType(u8 index, u8 value); 
+void DRUM_setSineDrum_TriggerNote(u8 index, u8 value);
 
 #endif

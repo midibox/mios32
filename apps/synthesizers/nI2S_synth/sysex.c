@@ -339,6 +339,8 @@ void SYSEX_CmdFinished(u8 bufLen) {
 				DRUM_setSineDrum_Waveform(index, value); break;
 			case 0x800E: // sine drum: filter type
 				DRUM_setSineDrum_FilterType(index, value); break;
+			case 0x800F: // sine drum: trigger note
+				DRUM_setSineDrum_TriggerNote(index, value); break;
 			
 			default:
 				MIOS32_MIDI_SendDebugMessage("Unknown address: %d", address);
