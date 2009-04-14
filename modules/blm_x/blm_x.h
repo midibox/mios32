@@ -61,7 +61,7 @@
 #endif
 
 
-// define the first shift register to which the anodes of the LEDs are connected
+// define the first DOUT shift register to which the anodes of the LEDs are connected
 #ifndef BLM_X_LED_SR
 #define BLM_X_LED_SR	1
 #endif
@@ -101,10 +101,17 @@
 /////////////////////////////////////////////////////////////////////////////
 // Computed defines
 /////////////////////////////////////////////////////////////////////////////
-
+#if (BLM_X_BTN_NUM_COLS % 8) == 0
 #define BLM_X_NUM_BTN_SR (BLM_X_BTN_NUM_COLS / 8)
-#define BLM_X_NUM_LED_SR  ( (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) / 8)
+#else
+#define BLM_X_NUM_BTN_SR (BLM_X_BTN_NUM_COLS / 8 + 1)
+#endif
 
+#if ((BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) % 8) == 0
+#define BLM_X_NUM_LED_SR  ( (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) / 8)
+#else
+#define BLM_X_NUM_LED_SR  ( (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) / 8 + 1)
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////

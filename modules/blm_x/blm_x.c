@@ -39,10 +39,10 @@ u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 BLM_X_current_row;
+u8 BLM_X_current_row;
 
-static u8 BLM_X_btn_rows[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
-static u8 BLM_X_btn_rows_changed[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
+u8 BLM_X_btn_rows[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
+u8 BLM_X_btn_rows_changed[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
 
 #if BLM_X_DEBOUNCE_MODE == 1
 u8 BLM_X_debounce_ctr; // for cheap debouncing
@@ -73,12 +73,12 @@ s32 BLM_X_Init(void){
 		}
 	for(i=0; i<BLM_X_NUM_LED_SR; ++i)
 		BLM_X_LED_rows[r][i] = 0x00;
-// clear debounce counter for debounce-mode 1
+	// clear debounce counter for debounce-mode 1
 #if BLM_X_DEBOUNCE_MODE == 1
 	BLM_X_debounce_ctr = 0;
 #endif
-	// prepare to switch to the first row on next call of BLM_X_PrepareRow
-	BLM_X_current_row = BLM_X_NUM_ROWS - 1;
+	// init current row
+	BLM_X_current_row = 0;
 	return 0;
 	}
 
@@ -120,7 +120,10 @@ s32 BLM_X_PrepareRow(void){
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_GetRow(void){
 	u8 sr_value,pin_mask;
-	u32 sr,pin;
+	u32 sr,pin,scanned_row;
+	//since the row set in BLM_PrepareRow will only take effect after the DIN's are already scanned,
+	//the button-row read here is one step back to the current row
+	scanned_row = BLM_X_current_row ? (BLM_X_current_row -1) : (BLM_X_NUM_ROWS - 1);
 	// ensure that change won't be propagated to normal DIN handler
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++)
 		MIOS32_DIN_SRChangedGetAndClear(BLM_X_BTN_SR + sr, 0xff);
@@ -134,38 +137,38 @@ s32 BLM_X_GetRow(void){
 			MIOS32_IRQ_Disable();
 			// if a second change happens before the last change was notified (clear
 			// changed flags), the change flag will be unset (two changes -> original value)
-			if( BLM_X_btn_rows_changed[BLM_X_current_row][sr] ^= (sr_value ^ BLM_X_btn_rows[BLM_X_current_row][sr]) )
-				BLM_X_debounce_ctr = BLM_X_DEBOUNCE_DELAY;//restart debounce delay
+			if( BLM_X_btn_rows_changed[scanned_row][sr] ^= (sr_value ^ BLM_X_btn_rows[scanned_row][sr]) )
+				BLM_X_debounce_ctr = BLM_X_DEBOUNCE_DELAY * BLM_X_NUM_ROWS;//restart debounce delay
 			//copy new values to BLM_X_btn_rows
-			BLM_X_btn_rows[BLM_X_current_row][sr] = sr_value;
+			BLM_X_btn_rows[scanned_row][sr] = sr_value;
 			MIOS32_IRQ_Enable();
 			//*** end atomic block ***
 			} 
 		}
-	else if(!BLM_X_current_row)
-		--BLM_X_debounce_ctr;//debounce control will be decremented once each scan-cycle
+	else
+		--BLM_X_debounce_ctr;//decrement debounce control
 #elif BLM_X_DEBOUNCE_MODE == 2
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
 		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_SR + sr);
 		//walk the 8 DIN pins of the SR
 		for(pin = 0 < 8; pin++){
 			//debounce-handling for individual buttons
-			if(BLM_X_debounce_ctr[sr*8 + pin])
-				BLM_X_debounce_ctr[sr*8 + pin]--;
+			if(BLM_X_debounce_ctr[scanned_row][sr*8 + pin])
+				BLM_X_debounce_ctr[scanned_row][sr*8 + pin]--;
 			else{
 				pin_mask = 1 << pin;
 				//*** set change notification and new value. should not be interrupted ***
 				MIOS32_IRQ_Disable();
 				// set change-notification-bit. if a second change happens before the last change was notified (clear
 				// changed flags), the change flag will be unset (two changes -> original value)
-				if( ( BLM_X_btn_rows_changed[BLM_X_current_row][sr] ^= 
-				(sr_value & pin_mask) ^ (BLM_X_btn_rows[BLM_X_current_row][sr] & pin_mask) ) & pin_mask )
-					BLM_X_debounce_ctr[sr*8 + pin] = BLM_X_DEBOUNCE_DELAY;//restart debounce delay
+				if( ( BLM_X_btn_rows_changed[scanned_row][sr] ^= 
+				(sr_value & pin_mask) ^ (BLM_X_btn_rows[scanned_row][sr] & pin_mask) ) & pin_mask )
+					BLM_X_debounce_ctr[scanned_row][sr*8 + pin] = BLM_X_DEBOUNCE_DELAY;//restart debounce delay
 				//set the new value bit
 				if(sr_value & pin_mask)
-					BLM_X_btn_rows[BLM_X_current_row][sr] |= pin_mask;//set value bit
+					BLM_X_btn_rows[scanned_row][sr] |= pin_mask;//set value bit
 				else
-					BLM_X_btn_rows[BLM_X_current_row][sr] &= ~pin_mask;//clear value bit
+					BLM_X_btn_rows[scanned_row][sr] &= ~pin_mask;//clear value bit
 				MIOS32_IRQ_Enable();
 				//*** end atomic block ***
 				}
