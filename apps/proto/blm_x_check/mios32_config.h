@@ -11,4 +11,21 @@
 #define _MIOS32_CONFIG_H
 
 
+#define BLM_X_NUM_ROWS 4
+#define BLM_X_BTN_NUM_COLS 4
+#define BLM_X_LED_NUM_COLS 4
+#define BLM_X_LED_NUM_COLORS 3
+
+#define BLM_X_ROWSEL_SR	4
+#define BLM_X_LED_SR	5
+#define BLM_X_BTN_SR	4
+
+#define BLM_X_ROWSEL_INV_MASK	0x00
+#define BLM_X_DEBOUNCE_MODE 1
+#define BLM_X_DEBOUNCE_DELAY 0
+
+
+
 #endif /* _MIOS32_CONFIG_H */
+
+

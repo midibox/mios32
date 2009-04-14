@@ -45,6 +45,7 @@ static void TASK_BLM_Check(void *pvParameters);
 u8 last_btn = 0;
 u8 last_btn_value = 1;
 u32 last_led_color = 0;
+u32 btn_change_count = 0;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -73,6 +74,8 @@ void APP_Background(void){
 		// print text on LCD screen
 		MIOS32_LCD_CursorSet(0, 0);
 		MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
+		MIOS32_LCD_CursorSet(0, 1);
+		MIOS32_LCD_PrintFormattedString("%5d", btn_change_count);
 		}
 	}
 
@@ -151,14 +154,17 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 
 // will be called on BLM pin changes (see TASK_BLM_Check)
 void BLM_Button_NotifyToggle(u32 btn, u32 value){
-	last_led_color++;
-	if(btn != last_btn || (last_led_color >> BLM_X_LED_NUM_COLORS) )
-		last_led_color = 0;
-	// output LED color
-	BLM_X_LEDColorSet(btn,last_led_color);
-	// store btn / value
+	if(!value){
+		last_led_color++;
+		if(btn != last_btn || (last_led_color >> BLM_X_LED_NUM_COLORS) )
+			last_led_color = 0;
+		// output LED color
+		BLM_X_LEDColorSet(btn,last_led_color);
+		// store btn / value
+		}
 	last_btn = btn;
 	last_btn_value = value;
+	btn_change_count++;
 	}
 
 static void TASK_BLM_Check(void *pvParameters){
