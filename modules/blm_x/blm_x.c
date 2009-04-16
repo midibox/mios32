@@ -95,8 +95,8 @@ s32 BLM_X_PrepareRow(void){
 	// increment current row, wrap at BLM_X_NUM_ROWS
 	if( ++BLM_X_current_row >= BLM_X_NUM_ROWS )
 		BLM_X_current_row = 0;
-	// select next DOUT/DIN column (selected cathode line = 0, all others 1).
-	// if less than five rows, each cathode line has a twin (other nibble).
+	// select next DOUT/DIN row (selected cathode line = 0, all others 1).
+	// if less than five rows, each cathode line has a twin (second nibble).
 	dout_value = ~(1 << BLM_X_current_row);
 #if (BLM_X_NUM_ROWS < 5)
 	dout_value ^= (1 << (BLM_X_current_row + 4));
@@ -105,7 +105,7 @@ s32 BLM_X_PrepareRow(void){
 	dout_value ^= BLM_X_ROWSEL_INV_MASK;
 	// output on CATHODES register
 	MIOS32_DOUT_SRSet(BLM_X_ROWSEL_SR, dout_value);
-	// output value of LED rows depending on current column
+	// output value of LED rows depending on current row
 	for(i = 0;i < BLM_X_NUM_LED_SR;i++)
 		MIOS32_DOUT_SRSet(BLM_X_LED_SR + i, BLM_X_LED_rows[BLM_X_current_row][i]);
   return 0;
@@ -113,7 +113,7 @@ s32 BLM_X_PrepareRow(void){
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function gets the DIN values of the selected column
+// This function gets the DIN values of the selected row
 // It should be called from the APP_SRIO_ServiceFinish hook
 // IN: -
 // OUT: returns -1 on errors
@@ -151,7 +151,7 @@ s32 BLM_X_GetRow(void){
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
 		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_SR + sr);
 		//walk the 8 DIN pins of the SR
-		for(pin = 0 < 8; pin++){
+		for(pin = 0;pin < 8; pin++){
 			//debounce-handling for individual buttons
 			if(BLM_X_debounce_ctr[scanned_row][sr*8 + pin])
 				BLM_X_debounce_ctr[scanned_row][sr*8 + pin]--;
