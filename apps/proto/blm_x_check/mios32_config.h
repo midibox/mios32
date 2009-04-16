@@ -1,4 +1,3 @@
-// $Id: mios32_config.h 23 2008-09-16 17:34:42Z tk $
 /*
  * Local MIOS32 configuration file
  *
@@ -21,8 +20,8 @@
 #define BLM_X_BTN_SR	4
 
 #define BLM_X_ROWSEL_INV_MASK	0x00
-#define BLM_X_DEBOUNCE_MODE 1
-#define BLM_X_DEBOUNCE_DELAY 0
+#define BLM_X_DEBOUNCE_MODE 2
+#define BLM_X_DEBOUNCE_DELAY 1
 
 
 

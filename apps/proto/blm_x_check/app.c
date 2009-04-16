@@ -70,7 +70,7 @@ void APP_Background(void){
 	// endless loop: print status information on LCD
 	while( 1 ) {
 		// toggle the state of all LEDs (allows to measure the execution speed with a scope)
-		MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+		//MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 		// print text on LCD screen
 		MIOS32_LCD_CursorSet(0, 0);
 		MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
@@ -107,7 +107,9 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void){
-	// prepare DOUT registers to drive the row
+	//sets board led's to 0 (enables to measure the time consumed by the srio-service & blm stuff
+	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+	//prepare DOUT registers to drive the row
 	BLM_X_PrepareRow();
 	}
 
@@ -118,6 +120,8 @@ void APP_SRIO_ServicePrepare(void){
 void APP_SRIO_ServiceFinish(void){
 	// call the BLM_GetRow function after scan is finished to capture the read DIN values
 	BLM_X_GetRow();
+	//sets board led's back to 1 (enables to measure the time consumed by the srio-service & blm stuff
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 	}
 
 
