@@ -131,7 +131,7 @@ CFLAGS += -I $(MIOSJUCE_PATH)/include/mios32/
 
 
 # Required GCC flags
-CFLAGS += -Wall -I/usr/include/
+CFLAGS += -Wall -I/usr/include/ -I ./
 # Linker flags
 LDFLAGS += -lfreetype -lpthread -lX11 -lXinerama -lGL -lasound
 # Link libs

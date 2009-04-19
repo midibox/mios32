@@ -7,10 +7,12 @@ PROJECT = vXjuce
 
 
 # Path to app sources
-CORE_DIR = ../core/
+CORE_DIR = ../../core/src/
+VX_DIR = ../../vxmodules/src/
+
 
 # Path to MIOSJUCE
-MIOSJUCE_PATH = ../MIOSJUCE/
+MIOSJUCE_PATH = ../../MIOSJUCE/
 
 
 # Operating system
@@ -33,13 +35,13 @@ OBJS += $(CORE_DIR)tasks.o \
 		$(CORE_DIR)mod_xlate.o \
 		$(CORE_DIR)modules.o \
 \
-		$(CORE_DIR)vxmodules/mod_sclk.o \
-		$(CORE_DIR)vxmodules/mod_sxh.o \
-		$(CORE_DIR)vxmodules/mod_seq.o \
-		$(CORE_DIR)vxmodules/mod_midiout.o
+		$(VX_DIR)mod_sclk.o \
+		$(VX_DIR)mod_sxh.o \
+		$(VX_DIR)mod_seq.o \
+		$(VX_DIR)mod_midiout.o
 
 # App include paths
-CFLAGS += -I $(CORE_DIR)
+CFLAGS += -I $(CORE_DIR)../inc -I $(VX_DIR)../inc 
 
 
 # Module sources
@@ -62,11 +64,11 @@ CFLAGS += -I $(MIOS32_PATH)/modules/sequencer
 # Add your emulation UI sources here....
 
 # CS emulation sources
-OBJS += ./AppComponent.o
+OBJS += ../../vXjuce/src/AppComponent.o
 
 
 # CS emulation includes
-CFLAGS += -I ./
+CFLAGS += -I ../../vXjuce/inc/
 
 # End emulation UI sources
 #################################
@@ -86,6 +88,8 @@ CFLAGS += -I ./
 # Emulation wrappers
 #################################
 
+
+
 # JUCE libraries
 LIBJUCE_PATH = $(MIOSJUCE_PATH)juced/juce/bin/
 LIBJUCE_RELEASE = libjuce.a 
@@ -96,12 +100,14 @@ CFLAGS += -I $(MIOSJUCE_PATH)juced/juce/
 
 
 
+
 # MIOSJUCE programming model sources
 OBJS += $(MIOSJUCE_PATH)programming_models/MIOSJUCE/Main.o \
 		$(MIOSJUCE_PATH)programming_models/MIOSJUCE/MainComponent.o 
 
 # MIOSJUCE programming model flags
 CFLAGS += -DENDLESSLOOP=0
+
 
 
 
@@ -133,20 +139,27 @@ OBJS += $(MIOSJUCE_PATH)mios32/JUCEmios32.o \
 		$(MIOSJUCE_PATH)mios32/JUCEtimer.o
 
 # MIOS emulation includes
-CFLAGS += -I $(MIOSJUCE_PATH)programming_models/MIOSJUCE/
+CFLAGS += -I $(MIOSJUCE_PATH)programming_models/MIOSJUCE/ \
+		 -I $(MIOSJUCE_PATH)include/mios32/
+
+
+
 
 # MIOS defines
 CFLAGS += -DMIOS32_FAMILY_EMULATION -DJUCED -DMIOS32_FAMILY_STR=\"EMULATION\" -DMIOS32_BOARD_STR=\"JUCED\" -D$(OS)
 
 # MIOS includes
-CFLAGS += -I $(MIOSJUCE_PATH)/include/mios32/
+CFLAGS += -I $(MIOS32_PATH)/include/mios32/
+
 
 
 
 # Required GCC flags
-CFLAGS += -Wall -I/usr/include/
+CFLAGS += -Wall -I/usr/include/ -I ./
+
 # Linker flags
 LDFLAGS += -lfreetype -lpthread -lX11 -lXinerama -lGL -lasound
+
 # Link libs
 # LDFLAGS += /usr/lib/libfreetype.a /usr/lib/libpthread.a /usr/lib/libX11.a /usr/lib/libXinerama.a /usr/lib/libGL.so
 
@@ -156,6 +169,8 @@ BIN_DIR = bin/
 
 DEBUG_DIR=Debug/
 RELEASE_DIR = Release/
+
+
 
 # Compiler names if you want to override them
 CPP = g++
