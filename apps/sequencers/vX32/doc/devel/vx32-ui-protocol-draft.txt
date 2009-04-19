@@ -1,0 +1,289 @@
+vX32 virtual modular polyrhythmic sequencer
+Midibox Hardware Platform 32
+------------------------------------------------------------------------------
+User Interface Data Exchange Protocol Specification
+------------------------------------------------------------------------------
+Draft 1.0
+------------------------------------------------------------------------------
+lucem
+stryd_one
+------------------------------------------------------------------------------
+
+TOC
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+- 1. Overview
+- 2. General Description
+- 3. Functional Message Type Description
+- 4. Technical Message Type Description
+- 5. Implementation notes
+- 6. Addendum and Erratum
+- 7. Version history
+
+------------------------------------------------------------------------------
+1. Overview
+------------------------------------------------------------------------------
+In order to establish communication between the two fundamental parts of the
+vX32 sequencer, a protocol for communication over two or more types of 
+transport media needs to be specified and implemented.
+
+------------------------------------------------------------------------------
+2. General Description
+------------------------------------------------------------------------------
+
+2.1 Purpose
+---------------------------------------
+The purpose of this communication protocol is to standardize the data exchange
+between the two integral, but seperated parts of the vX32 sequencer.
+Between the two endpoint types, a great variety of data needs to be exchanged
+rapidly and in a timely manner; there is however no need to apply strict
+realtime constraints on the communication whatsoever.
+
+2.2 Layers
+---------------------------------------
+Similarly to the much-hated OSI / ISO reference model, the vX32 Protocol can
+be regarded as a layered protocol system.
+
+Transport Layer:	The transport layer describes the physical medium and
+			the inherently used lower layer data protocol which
+			transport the protocol data between the endpoints.
+			In version 1.0, those will include:
+				- MIDI
+				- USB MIDI
+				- UDP over Ethernet (10 BASE-T)
+
+Packet Layer:		The packet layer describes the protocol used to package
+			messages into data packages.
+			These depend on the underlying transport medium, so
+			these form pairs forming one "transport hyperlayer".	
+			In version 1.0, those will include:
+				- MIDI SysEx
+				- OSC (Open Sound Protocol) over UDP
+
+Control Layer:		The control layer organises the encoding of data streams
+			according to the requirements of the underlying packet layer.
+			On the receiving end, it reverses these operations.
+
+Serialize Layer:	The serialize layer translates packages into the respective
+			protocol data structures and vice versa.
+			In the OSI/ISO model, this translates to the Presentation
+			and Application layers; the serialize layer is usually the 
+			API the vX developer uses, while the control layer is used
+			only for control purposes regarding which medium to use
+			and which interface, if more than one is present (like MIDI).
+	
+2.3 Endpoints
+---------------------------------------
+There are two endpoint classes, which describe the different roles of the
+ui device and the sequencer device.
+
+	2.3.1 The Sequencer
+	------------------------------------
+	Simply put, the sequencer is the machine doing the actual sequencing
+	and containing the complete set of runtime data.
+	It is designed to be remotely controlled, and almost no control
+	options are available locally.
+	It is intended that in a regular environment, this device is a dedicated
+	hardware incorporating the Midibox Core32 running the vX32 app under MIOS32.
+	It is however entirely possible to run it as an emulated version on any
+	computer, or even on the same computer as the Control Surface.
+	
+	2.3.2 The Control Surface / User Interface
+	------------------------------------
+	The Control Surface, or User Interface, is a dedicated device used to handle
+	human interaction with the sequencer. It acts as a remote control, and can
+	be connected to the sequencer using the described hardware connections.
+	It can be represented by either a dedicated hardware device or a piece
+	of software running on a regular computer.
+
+------------------------------------------------------------------------------
+3. Functional Message Type Description:
+------------------------------------------------------------------------------
+This is a list of required protocol features from a functional point of view.
+For the implementation and technical feature list, look at the following 
+sections. The functional descriptions do not necessarily have to match
+1:1 with the technical implementation, as similar features spread over
+different functional and logical domains might share the same implementation.
+
+3.1 Transport Control
+---------------------------------------
+	3.1.1 Transport Control Message Type
+	------------------------------------
+		3.1.1.1 Start
+		3.1.1.2 Pause
+		3.1.1.3 Stop
+		3.1.1.4 Fast Forward
+		3.1.1.5 Rewind
+		3.1.1.6	Go to Timecode
+		3.1.1.7 Get Timecode
+		3.1.1.8 Master Clock
+			3.1.1.8.1 Pull Master Clock Value
+			3.1.1.8.2 Push Master Clock Value
+				3.1.1.8.2.1 Push, Change Immediate
+				3.1.1.8.2.2 Push, Change Time Conditional
+			3.1.1.8.3 Master Clock Event Callback
+
+3.2 Module Data
+---------------------------------------
+	3.2.1 Module Port Data
+	------------------------------------
+		3.2.1.1 Pull
+			Params:
+				Module ID
+				Port ID
+			Returns:
+				Port Value
+				Error State
+
+		3.2.1.2 Push
+			3.2.1.2.1 Push, Change Immediate
+			3.2.1.2.2 Push, Change Time Conditional
+			(common for both)
+			Params:
+				Module ID
+				Port ID
+				Value
+			Returns:
+				Error State
+
+		3.2.1.3 Callback on Port Value Change
+			Params:
+				Module ID
+				Callback Flags
+			Returns:
+				Error State
+
+	3.2.2 Module Internal Data
+	------------------------------------
+		3.2.2.1 Pull
+			Params:
+				Module ID
+				Var ID
+			Returns:
+				Var Value
+				Error State		
+
+		3.2.2.2 Push
+			3.2.2.2.1 Push, Change Immediate
+			3.2.2.2.2 Push, Change Time Conditional
+			(common for both)
+			Params:
+				Module ID
+				Var ID
+				Value
+			Returns:
+				Error State
+
+		3.2.2.3 Callback on Internal Value Change
+			Params:
+				Module ID
+				Callback flags
+			Returns:
+				Error State
+
+	3.2.3 Module Clock Data
+	------------------------------------
+
+	3.2.4 Module Meta Data
+	------------------------------------
+
+	3.2.5 Module Dump Transfer
+	------------------------------------
+
+	3.2.6 Module Events
+	------------------------------------
+	
+3.3 Rack Management
+---------------------------------------
+	3.3.1 Modules
+		3.3.1.1 Create Module
+		3.3.1.2 Search Module
+		3.3.1.3 Copy Module
+		3.3.1.4 Delete Module
+	3.3.2 Edges (Module Interconnections)
+		3.3.2.1 Create Edge
+		3.3.2.2 Search Edge
+		3.3.2.3 Delete Edge
+	3.3.3 Zones
+		3.3.3.1 Create Zone
+		3.3.3.2 Search Zone
+		3.3.3.3 Delete Zone
+	3.3.4 Patterns
+		3.3.4.1 Create Pattern
+		3.3.4.2 Search Pattern
+		3.3.4.3 Copy Pattern
+		3.3.4.4 Delete Pattern
+
+3.4 System Management 
+---------------------------------------
+	3.4.1 System Settings
+	3.4.2 MIDI Settings
+	3.4.3 OSC Settings
+	3.4.4 UI Settings
+	3.4.5 Storage Settings
+	3.4.6 Live Debug Options
+	3.4.7 File Transfer
+	3.4.8 System Dump Transfer
+
+3.5 General-use packages
+---------------------------------------
+	3.5.1 Empty Package
+	3.5.2 Error Report Package
+
+------------------------------------------------------------------------------
+4. Technical Message Type Description
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+5. Implementation notes
+------------------------------------------------------------------------------
+
+5.0 Endianness
+---------------------------------------
+The whole protocol stack will expect integral values wider than 8bit in 
+little endian byte order.
+
+5.1 Encoding strategies
+---------------------------------------
+Data contained in a package can be encoded due to the needs of the underlying 
+transport medium. Encoding can be done in the following ways:
+	- do not encode at all
+	- split bytewise into nibbles (a special case of the following strategy) 
+	- stretch into n-bit wide chunks mapped to bytes where n <= 7
+As encoding is a layer of its own, it is transparent to the user and depends
+on the limitations of the used transport protocol.
+
+	5.1.1 Encoded packages Header
+	------------------------------------
+	Encoded packages are preceded by a fixed-length header detailing:
+	- a magic number (8 bit) to determine encoded or unencoded packages
+	- an 8 bit value determining the encoding strategy used
+	- the length of the package in bytes including the header and footer (16 bit)
+
+	5.1.2 Encoded packages Footer
+	------------------------------------
+	The footer is 8 bit checksum of the whole package content without header
+	following the encoded package data body.
+
+5.2 Package Header
+---------------------------------------
+The Package Header precedes a variable-length data block and is of a fixed length.
+Inside the data block, additional headers can be implemented.
+The Package Header contains following information:
+- length of the entire package in bytes including the header (16 bit, highest bit always 0)
+- number of packages (8 bit)
+- sequence number (8 bit)
+- sequence identifier (8 bit)
+- error flags code (16 bit)
+- control flags code (8 bit)
+- package type identifier (high byte of a 16 bit word)
+- type variant identifier (low byte of a 16 bit word)
+- A magic number to determine encoded data from unencoded (8 bit, at the very start)
+
+------------------------------------------------------------------------------
+6. Addendum and Erratum
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+7. Version History
+------------------------------------------------------------------------------
+

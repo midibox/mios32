@@ -140,10 +140,10 @@ void Mod_UnInit_Graph(unsigned char nodeID);                                    
 #include "mod_xlate.h"
 
                                                                                 // includes for modules
-#include "vxmodules/mod_sclk.h"
-#include "vxmodules/mod_seq.h"
-#include "vxmodules/mod_midiout.h"
-#include "vxmodules/mod_sxh.h"
+#include "mod_sclk.h"
+#include "mod_seq.h"
+#include "mod_midiout.h"
+#include "mod_sxh.h"
                                                                                 // modules just need to be added here and to the mod_ModuleData_Type array to include them in the app
 
 #endif /* _MODULES_H */

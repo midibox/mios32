@@ -11,7 +11,7 @@
 
 #include <mios32.h>
 
-#include "tasks.h"
+#include <tasks.h>
 
 #include <FreeRTOS.h>
 #include <task.h>

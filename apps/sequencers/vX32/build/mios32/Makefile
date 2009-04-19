@@ -14,28 +14,28 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE = tasks.c \
-				app.c \
-				utils.c \
-				ui.c \
-				graph.c \
-				mclock.c \
-				patterns.c \
-				mod_send.c \
-				mod_xlate.c \
-				modules.c \
+THUMB_SOURCE =  ../../core/src/tasks.c \
+				../../core/src/app.c \
+				../../core/src/utils.c \
+				../../core/src/ui.c \
+				../../core/src/graph.c \
+				../../core/src/mclock.c \
+				../../core/src/patterns.c \
+				../../core/src/mod_send.c \
+				../../core/src/mod_xlate.c \
+				../../core/src/modules.c \
 \
-				vxmodules/mod_sclk.c \
-				vxmodules/mod_sxh.c \
-				vxmodules/mod_seq.c \
-				vxmodules/mod_midiout.c
+				../../vxmodules/src/mod_sclk.c \
+				../../vxmodules/src/mod_sxh.c \
+				../../vxmodules/src/mod_seq.c \
+				../../vxmodules/src/mod_midiout.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
 ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
-C_INCLUDE = 	-I . 
+C_INCLUDE = 	-I . -I ../../core/inc/ -I ../../vxmodules/inc/
 				
 A_INCLUDE = 	-I .
 
