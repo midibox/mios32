@@ -62,7 +62,7 @@ typedef union {
     unsigned BACKWARD:1;    // if set, the track will be played in backward direction
     unsigned FIRST_CLK:1;   // don't increment on the first clock event
     unsigned REC_EVENT_ACTIVE:1; // set so long a note is held (for note length measuring)
-    unsigned REC_MUTE_NEXT_STEP:1; // if step has already been played
+    unsigned REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
     unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
     unsigned SUSTAINED:1;    // sustained note
     unsigned STRETCHED_GL:1; // stretched gatelength

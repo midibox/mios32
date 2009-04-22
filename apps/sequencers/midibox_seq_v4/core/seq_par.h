@@ -79,7 +79,7 @@ extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument);
 extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
 extern char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer);
 
-extern u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type);
+extern u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer);
 
 
 /////////////////////////////////////////////////////////////////////////////

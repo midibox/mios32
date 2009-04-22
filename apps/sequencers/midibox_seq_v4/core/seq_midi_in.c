@@ -75,8 +75,11 @@ static s32 SEQ_MIDI_IN_Notestack_Push(seq_midi_in_notestack_t *n, u8 new_note, u
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_channel;
 
-// which port should be used? (0: All)
+// which IN port should be used? (0: All)
 mios32_midi_port_t seq_midi_in_port;
+
+// which port is used for MIDI clock input? (0: All)
+mios32_midi_port_t seq_midi_in_mclk_port;
 
 // Transposer/Arpeggiator split note
 // (bit 7 enables/disables split)
@@ -118,6 +121,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   // stored in global config:
   seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_port = DEFAULT; // All ports
+  seq_midi_in_mclk_port = DEFAULT; // All ports
   seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
 
   return 0; // no error

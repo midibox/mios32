@@ -133,7 +133,7 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
   s32 number_of_events = 0;
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  number_of_events = SEQ_LAYER_GetEvents(track, step, layer_events);
+  number_of_events = SEQ_LAYER_GetEvents(track, step, layer_events, 1);
 
   if( number_of_events <= 0 ) {
     // fill with dummy data
@@ -171,7 +171,7 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 /////////////////////////////////////////////////////////////////////////////
 // Returns all events of a selected step
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
+s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   u8 num_events = 0;
@@ -187,6 +187,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
       seq_layer_evnt_t *e = &layer_events[drum];
       mios32_midi_package_t *p = &e->midi_package;
       p->type     = NoteOn;
+      p->cable    = track;
       p->event    = NoteOn;
       p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
       p->note     = tcc->lay_const[0*16 + drum];
@@ -245,19 +246,22 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
         case SEQ_PAR_Type_Note: {
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 note = SEQ_PAR_Get(track, step, par_layer, instrument);
 
-	  p->type     = NoteOn;
-	  p->event    = NoteOn;
-	  p->chn      = tcc->midi_chn;
-	  p->note     = SEQ_PAR_Get(track, step, par_layer, instrument);
-	  p->velocity = velocity;
-	  e->len      = length;
-	  e->layer_tag = par_layer;
-	  ++num_events;
+	  if( note || insert_empty_notes ) {
+	    p->type     = NoteOn;
+	    p->cable    = track;
+	    p->event    = NoteOn;
+	    p->chn      = tcc->midi_chn;
+	    p->note     = note;
+	    p->velocity = velocity;
+	    e->len      = length;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+	  }
 
-	  if( handle_vu_meter && velocity )
+	  if( handle_vu_meter && note && velocity )
 	    seq_layer_vu_meter[par_layer] = velocity;
-
 	} break;
 
         case SEQ_PAR_Type_Chord: {
@@ -274,6 +278,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	    seq_layer_evnt_t *e = &layer_events[num_events];
 	    mios32_midi_package_t *p = &e->midi_package;
 	    p->type     = NoteOn;
+	    p->cable    = track;
 	    p->event    = NoteOn;
 	    p->chn      = tcc->midi_chn;
 	    p->note     = note;
@@ -293,6 +298,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	  mios32_midi_package_t *p = &e->midi_package;
 
 	  p->type     = CC;
+	  p->cable    = track;
 	  p->event    = CC;
 	  p->chn      = tcc->midi_chn;
 	  p->note     = tcc->lay_const[1*16 + par_layer];
@@ -312,6 +318,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16])
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
 	  p->type     = PitchBend;
+	  p->cable    = track;
 	  p->event    = PitchBend;
 	  p->chn      = tcc->midi_chn;
 	  p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
@@ -613,7 +620,7 @@ s32 SEQ_LAYER_CopyParLayerPreset(u8 track, u8 par_layer)
   int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
 
-  u8 init_value = SEQ_PAR_InitValueGet(SEQ_PAR_AssignmentGet(track, par_layer));
+  u8 init_value = SEQ_PAR_InitValueGet(SEQ_PAR_AssignmentGet(track, par_layer), par_layer);
 
   int step;
   int instrument;

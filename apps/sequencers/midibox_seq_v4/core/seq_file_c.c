@@ -206,7 +206,9 @@ s32 SEQ_FILE_C_Read(void)
 	} else if( strcmp(line_buffer, "MIDI_IN_Channel") == 0 ) {
 	  seq_midi_in_channel = atoi(value_str);
 	} else if( strcmp(line_buffer, "MIDI_IN_Port") == 0 ) {
-		 seq_midi_in_port = (mios32_midi_port_t)atoi(value_str);
+	  seq_midi_in_port = (mios32_midi_port_t)atoi(value_str);
+	} else if( strcmp(line_buffer, "MIDI_IN_MClock_Port") == 0 ) {
+	  seq_midi_in_mclk_port = (mios32_midi_port_t)atoi(value_str);
 	} else if( strcmp(line_buffer, "MIDI_IN_TA_Split") == 0 ) {
 	  int value = atoi(value_str);
 	  if( value )
@@ -351,6 +353,9 @@ s32 SEQ_FILE_C_Write(void)
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "MIDI_IN_MClock_Port %d\n", (u8)seq_midi_in_mclk_port);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);

@@ -426,10 +426,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         // track disabled
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
 	    t->state.MUTED || // Mute function
-	    t->state.REC_MUTE_NEXT_STEP || // Mute function of recording function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off ) { // track disabled
-
-	  t->state.REC_MUTE_NEXT_STEP = 0;
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
 	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
@@ -457,7 +454,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
         // fetch MIDI events which should be played
         seq_layer_evnt_t layer_events[16];
-        s32 number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events);
+        s32 number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
         if( number_of_events > 0 ) {
 	  int i;
 
@@ -472,9 +469,6 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
           seq_layer_evnt_t *e = &layer_events[0];
           for(i=0; i<number_of_events; ++e, ++i) {
             mios32_midi_package_t *p = &e->midi_package;
-
-	    // tag for scheduled events
-	    p->cable = track;
 
 	    // instrument layers only used for drum tracks
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
