@@ -347,12 +347,15 @@ char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer)
 /////////////////////////////////////////////////////////////////////////////
 // Returns initial value of given parameter assignment type
 /////////////////////////////////////////////////////////////////////////////
-u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type)
+u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer)
 {
   if( par_type >= SEQ_PAR_NUM_TYPES )
     return 0;
-  else
-    return seq_par_default_value[par_type];
+
+  if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord) )
+    return 0x00; // Note/Chords are 0 by default if not in Layer A
+
+  return seq_par_default_value[par_type];
 }
 
 

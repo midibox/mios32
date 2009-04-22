@@ -483,8 +483,9 @@ void SEQ_TASK_Pattern(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
-  // TODO: here we could filter a certain port
-  SEQ_BPM_NotifyMIDIRx(midi_byte);
+  // filter MIDI In port which controls the MIDI clock (0: all ports)
+  if( !seq_midi_in_mclk_port || port == seq_midi_in_mclk_port )
+    SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering
 }

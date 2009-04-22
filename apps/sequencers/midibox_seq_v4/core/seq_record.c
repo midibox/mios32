@@ -80,6 +80,7 @@ s32 SEQ_RECORD_Reset(u8 track)
   // init track specific variables
   MIOS32_IRQ_Disable();
   t->state.REC_EVENT_ACTIVE = 0;
+  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 0;
   t->rec_last_note = 0;
   t->rec_timestamp = 0;
   t->rec_poly_ctr = 0;
@@ -201,22 +202,49 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   layer_event.midi_package.chn = tcc->midi_chn;
   mios32_midi_port_t rec_port = tcc->midi_port;
 
+  // take MIDI Out/Sequencer semaphore
+  MUTEX_MIDIOUT_TAKE;
+
   if( rec_event ) {
     // send Note Off events of current track
-    MUTEX_MIDIOUT_TAKE;
     if( SEQ_BPM_IsRunning() )
       SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, 0);
     else
       SEQ_MIDI_OUT_FlushQueue();
-    MUTEX_MIDIOUT_GIVE;
 
+    u8 dont_play_step_now = 0;
     if( !seq_record_options.STEP_RECORD ) {
       u8 new_step = t->step;
       if( new_step != seq_record_step )
 	t->rec_poly_ctr = 0;
       seq_record_step = new_step;
+
+      // take next step if it will be reached "soon" (>80% of current step)
+      if( SEQ_BPM_IsRunning() ) {
+	u32 timestamp = SEQ_BPM_TickGet();
+	u8 shift_event = 0;
+	if( t->timestamp_next_step_ref <= timestamp )
+	  shift_event = 1;
+	else {
+	  s32 diff = (s32)t->timestamp_next_step_ref - (s32)timestamp;
+	  u32 tolerance = (t->step_length * 20) / 100; // usually 20% of 96 ticks -> 19 ticks
+	  // TODO: we could vary the tolerance depending on the BPM rate: than slower the clock, than lower the tolerance
+	  // as a simple replacement for constant time measuring
+	  if( diff < tolerance)
+	    shift_event = 1;
+	}
+
+	if( shift_event ) {
+	  int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
+	  if( next_step > tcc->length ) // TODO: handle this correctly if track is played backwards
+	    next_step = tcc->loop;
+	  MIOS32_MIDI_SendDebugMessage("Shifted step %d -> %d\n", seq_record_step, next_step);
+	  seq_record_step = next_step;
+	  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 1; // next step won't be overwritten
+	  dont_play_step_now = 1; // next step will be played be sequencer, and not immediately
+	}
+      }
     }
-    // TODO: take next step if it will be reached "soon" (e.g. 8 bpm_ticks before it will be played)
 
     // insert event into track (function will return >= 0 if event
     // has been inserted into the (returned) layer.
@@ -243,11 +271,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	SEQ_BPM_CheckAutoMaster();
 	// start generator
 	SEQ_BPM_Start();
-      } else {
-	// play events
-	MUTEX_MIDIOUT_TAKE;
+      }
+
+      if( !dont_play_step_now ) {
         seq_layer_evnt_t layer_events[16];
-        s32 number_of_events = SEQ_LAYER_GetEvents(track, seq_record_step, layer_events);
+        s32 number_of_events = SEQ_LAYER_GetEvents(track, seq_record_step, layer_events, 0);
         if( number_of_events > 0 ) {
 	  int i;
           seq_layer_evnt_t *e = &layer_events[0];
@@ -262,13 +290,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    }
 	  }
 	}
-	MUTEX_MIDIOUT_GIVE;
       }
 
       if( seq_record_options.STEP_RECORD && !seq_record_options.POLY_RECORD ) {
-	int next_step = seq_record_step + 1;
+	int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
 	if( next_step > tcc->length )
-	  next_step = 0;
+	  next_step = tcc->loop;
 
 	int i;
 	for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)
@@ -281,10 +308,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
   // forward event directly if it hasn't been recorded
   if( !rec_event ) { // note: rec_event could be changed to 0 inside "if( rec_event )" branch, therefore it's checked again
-    MUTEX_MIDIOUT_TAKE;
     MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
-    MUTEX_MIDIOUT_GIVE;
   }
+
+  // give MIDI Out/Sequencer semaphore
+  MUTEX_MIDIOUT_GIVE;
 
   // temporary print edit screen
   SEQ_RECORD_PrintEditScreen();
@@ -332,18 +360,22 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
   // if event is active
   if( t->state.REC_EVENT_ACTIVE ) {
-    // set length of previous step to maximum, and of the new step to minimum
-    if( tcc->link_par_layer_length >= 0 ) {
-      SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, 95);
-      SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, 1);
-    }
+    if( !t->state.REC_DONT_OVERWRITE_NEXT_STEP ) {
+      // set length of previous step to maximum, and of the new step to minimum
+      if( tcc->link_par_layer_length >= 0 ) {
+	SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, 95);
+	SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, 1);
+      }
 
-    // disable gate of new step
-    SEQ_TRG_GateSet(track, new_step, instrument, 0);
+      // disable gate of new step
+      SEQ_TRG_GateSet(track, new_step, instrument, 0);
+    }
 
     // take over new timestamp
     t->rec_timestamp = bpm_tick;
   }
+
+  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 0;
 
   return 0; // no error
 }
