@@ -8,6 +8,8 @@
  
 #define MIOS32_LCD_BOOT_MSG_LINE1 "BLM_X Module Test"
 
+#define MIOS32_MIDI_DEBUG_PORT USB0
+
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
@@ -18,10 +20,10 @@
 #define BLM_X_LED_NUM_COLORS 3
 
 #define BLM_X_ROWSEL_DOUT_SR	4
-#define BLM_X_LED_FIRST_DIN_SR	5
-#define BLM_X_BTN_FIRST_DOUT_SR	4
+#define BLM_X_LED_FIRST_DOUT_SR	5
+#define BLM_X_BTN_FIRST_DIN_SR	4
 
-#define BLM_X_ROWSEL_INV_MASK	0x00
+#define BLM_X_ROWSEL_INV_MASK	0xff
 
 #define BLM_X_DEBOUNCE_MODE 2
 
