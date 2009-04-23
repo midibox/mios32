@@ -1,4 +1,3 @@
-// $Id: app.c 108 2008-10-26 13:08:31Z tk $
 /*
  * Checks the handling of a button/LED matrix driven by the blm_x module
  *
@@ -44,8 +43,11 @@ static void TASK_BLM_Check(void *pvParameters);
 
 u8 last_btn = 0;
 u8 last_btn_value = 1;
+
 u32 last_led_color = 0;
+
 u32 btn_change_count = 0;
+u32 last_btn_change_count = 1;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -56,8 +58,11 @@ void APP_Init(void){
 	MIOS32_BOARD_LED_Init(0xffffffff);
 	// initialize BLM driver
 	BLM_X_Init();
+	BLM_X_DebounceDelaySet(0);
 	// start BLM check task
 	xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
+	//send init message
+	MIOS32_MIDI_SendDebugMessage("BLM_X Test-Application Started");
 	}
 
 
@@ -69,13 +74,16 @@ void APP_Background(void){
 	MIOS32_LCD_Clear();
 	// endless loop: print status information on LCD
 	while( 1 ) {
-		// toggle the state of all LEDs (allows to measure the execution speed with a scope)
-		//MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
-		// print text on LCD screen
 		MIOS32_LCD_CursorSet(0, 0);
-		MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
-		MIOS32_LCD_CursorSet(0, 1);
-		MIOS32_LCD_PrintFormattedString("%5d", btn_change_count);
+		// print text on LCD screen, send debug message
+		if(btn_change_count != last_btn_change_count){
+			MIOS32_LCD_CursorSet(0, 0);
+			MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
+			MIOS32_MIDI_SendDebugMessage("Button #%3d %c - Changes: %5d", last_btn, last_btn_value ? 'o' : '*',btn_change_count);
+			MIOS32_LCD_CursorSet(0, 1);
+			MIOS32_LCD_PrintFormattedString("Btn changes: %5d", btn_change_count);
+			last_btn_change_count = btn_change_count;
+			}
 		}
 	}
 
@@ -159,13 +167,15 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 // will be called on BLM pin changes (see TASK_BLM_Check)
 void BLM_Button_NotifyToggle(u32 btn, u32 value){
 	if(!value){
+		// increment LED color, swap to 0 when all available color bits are set
 		last_led_color++;
 		if(btn != last_btn || (last_led_color >> BLM_X_LED_NUM_COLORS) )
 			last_led_color = 0;
 		// output LED color
 		BLM_X_LEDColorSet(btn,last_led_color);
-		// store btn / value
+		MIOS32_MIDI_SendDebugMessage("LED #%3d color set to 0x%08x", btn, last_led_color);
 		}
+	// store btn & value, increment button change counter
 	last_btn = btn;
 	last_btn_value = value;
 	btn_change_count++;
@@ -173,7 +183,7 @@ void BLM_Button_NotifyToggle(u32 btn, u32 value){
 
 static void TASK_BLM_Check(void *pvParameters){
 	portTickType xLastExecutionTime;
-  	// Initialise the xLastExecutionTime variable on task entry
+  	// Initialize the xLastExecutionTime variable on task entry
   	xLastExecutionTime = xTaskGetTickCount();
   	while( 1 ) {
    	vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
