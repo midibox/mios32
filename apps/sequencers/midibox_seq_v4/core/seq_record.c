@@ -52,7 +52,7 @@ u8 seq_record_step;
 /////////////////////////////////////////////////////////////////////////////
 
 // one bit for each note, 32*4 = 128 notes supported (covers all notes of one MIDI channel)
-u32 played_notes[4];
+static u32 played_notes[4];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -246,12 +246,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
 	  if( next_step > tcc->length ) // TODO: handle this correctly if track is played backwards
 	    next_step = tcc->loop;
-#if DEBUG_VERBOSE_LEVEL >= 0
+#if DEBUG_VERBOSE_LEVEL >= 1
 	  MIOS32_MIDI_SendDebugMessage("Shifted step %d -> %d\n", seq_record_step, next_step);
 #endif
 	  seq_record_step = next_step;
 	  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 1; // next step won't be overwritten
-	  dont_play_step_now = 1; // next step will be played be sequencer, and not immediately
+	  dont_play_step_now = 1; // next step will be played by sequencer, and not immediately
 	}
       }
 
