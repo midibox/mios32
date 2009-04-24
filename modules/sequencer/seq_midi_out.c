@@ -304,18 +304,12 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
       // remove item from queue
       seq_midi_out_queue_item_t *next_item = item->next;
       SEQ_MIDI_OUT_SlotFree(item);
+      item = next_item;
 
       // fix link to next item
       if( prev_item == NULL ) {
-	if( next_item == NULL ) {
-	  midi_queue = NULL;
-	  item = NULL;
-	} else {
-	  item = midi_queue;
-	  item->next = next_item;
-	}
+	midi_queue = item;
       } else {
-	item = next_item;
 	prev_item->next = item;
       }
 
@@ -325,6 +319,29 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
 
       // re-schedule copied item at new timestamp
       SEQ_MIDI_OUT_Send(copy.port, copy.package, copy.event_type, timestamp, copy.len);
+
+      // determine new prev_item if required
+      // TODO: find more elegant solution which doesn't require to search through the linked list!
+      if( item != NULL ) {
+	prev_item = NULL;
+	seq_midi_out_queue_item_t *tmp_item = midi_queue;
+	while( tmp_item != NULL ) {
+	  if( tmp_item->next == item ) {
+	    prev_item = tmp_item;
+	    break;
+	  } else
+	    tmp_item = tmp_item->next;
+	}
+
+	if( prev_item == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 0
+	  // (always print out - this condition should never happen!)
+	  DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] Malfunction - prev_item not found anymore!\n", timestamp);
+#endif
+	  return -1; // data corruption!
+	}
+      }
+
     } else {
       // switch to next item
       prev_item = item;
