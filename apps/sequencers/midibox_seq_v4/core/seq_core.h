@@ -61,7 +61,6 @@ typedef union {
     unsigned POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
     unsigned BACKWARD:1;    // if set, the track will be played in backward direction
     unsigned FIRST_CLK:1;   // don't increment on the first clock event
-    unsigned REC_EVENT_ACTIVE:1; // set so long a note is held (for note length measuring)
     unsigned REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
     unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
     unsigned SUSTAINED:1;    // sustained note
@@ -83,7 +82,6 @@ typedef struct seq_core_trk_t {
   u8                   step_fwd_ctr;     // step forward counter
   u8                   arp_pos;          // arpeggiator position
   u8                   vu_meter;         // for visualisation in mute menu
-  u8                   rec_last_note;    // for recording function
   u32                  rec_timestamp;    // for recording function
   u8                   rec_poly_ctr;     // for recording function
 } seq_core_trk_t;
