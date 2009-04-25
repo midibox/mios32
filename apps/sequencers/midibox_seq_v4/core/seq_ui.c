@@ -26,7 +26,7 @@
 
 #include <mios32.h>
 #include <string.h>
-#include <blm8x8.h>
+#include <blm_x.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 
@@ -1349,7 +1349,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 #if DEFAULT_SRM_ENABLED && DEFAULT_SRM_DOUT_M_MAPPING == 1
   // for wilba's frontpanel
 
-  // BLM8X8 DOUT -> GP LED mapping
+  // BLM_X DOUT -> GP LED mapping
   // 0 = 15,16	1 = 13,14	2 = 11,12	3 = 9,10
   // 4 = 1,2	5 = 3,4		6 = 5,6		7 = 7,8
 
@@ -1368,7 +1368,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 #endif
 
   int sr;
-  const u8 blm8x8_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
+  const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
   u16 gp_mask = 1 << 0;
   for(sr=0; sr<8; ++sr) {
     u8 pattern = 0;
@@ -1384,8 +1384,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       pattern |= 0x10;
     gp_mask <<= 1;
 
-    u8 mapped_sr = blm8x8_sr_map[sr];
-    blm8x8_led_row[mapped_sr] = (blm8x8_led_row[mapped_sr] & 0x0f) | pattern;
+    u8 mapped_sr = blm_x_sr_map[sr];
+    BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
   }
 #endif
 

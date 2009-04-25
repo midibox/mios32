@@ -108,8 +108,8 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
-# BLM8x8
-include $(MIOS32_PATH)/modules/blm8x8/blm8x8.mk
+# BLM_X
+include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk

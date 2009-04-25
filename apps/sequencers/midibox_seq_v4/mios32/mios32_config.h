@@ -89,10 +89,15 @@
 // include SRIO setup here, so that we can propagate values to external modules
 #include "srio_mapping.h"
 
-// forward to BLM8x8 driver
-#define BLM8X8_DOUT	          DEFAULT_SRM_DOUT_M
-#define BLM8X8_DOUT_CATHODES	  DEFAULT_SRM_DOUT_CATHODESM
-#define BLM8X8_CATHODES_INV_MASK  DEFAULT_SRM_CATHODES_INV_MASK_M
-#define BLM8X8_DIN	          DEFAULT_SRM_DIN_M
+// configure BLM_X driver
+#define BLM_X_NUM_ROWS            8
+#define BLM_X_BTN_NUM_COLS        8
+#define BLM_X_LED_NUM_COLS        8
+#define BLM_X_LED_NUM_COLORS      1
+#define BLM_X_ROWSEL_DOUT_SR      DEFAULT_SRM_DOUT_CATHODESM-1
+#define BLM_X_LED_FIRST_DOUT_SR   DEFAULT_SRM_DOUT_M-1
+#define BLM_X_BTN_FIRST_DIN_SR    DEFAULT_SRM_DIN_M-1
+#define BLM_X_ROWSEL_INV_MASK     DEFAULT_SRM_CATHODES_INV_MASK_M
+#define BLM_X_DEBOUNCE_MODE       1 // no mode 0?
 
 #endif /* _MIOS32_CONFIG_H */
