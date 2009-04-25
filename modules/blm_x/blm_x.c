@@ -188,7 +188,7 @@ s32 BLM_X_GetRow(void){
 // This function should be called from a task to check for button changes
 // periodically. Events (change from 0->1 or from 1->0) will be notified 
 // via the given callback function <notify_hook> with following parameters:
-//   <notifcation-hook>(s32 pin, s32 value)
+//   <notifcation-hook>(u32 pin, u32 value)
 // IN: -
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -363,4 +363,3 @@ s32 BLM_X_DebounceDelaySet(u8 delay){
 u8 BLM_X_DebounceDelayGet(void){
 	return debounce_delay;
 	}
-
