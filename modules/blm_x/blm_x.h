@@ -155,7 +155,7 @@ extern u8 BLM_X_DebounceDelayGet(void);
 // one row needs (num_cols * num_colors) bits, each register holds 8 bits,
 // first color first, last color last.
 // [color 0, col 0][color 0, col 1]...[color 1, col 0][color 1, col 1]....
-extern u8 BLM_X_LED_ROWS[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
+extern u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
 
 
 #endif /* _BLM_X_H */
