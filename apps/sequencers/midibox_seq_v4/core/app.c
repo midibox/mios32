@@ -16,7 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include <blm8x8.h>
+#include <blm_x.h>
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -104,7 +104,7 @@ void APP_Init(void)
 
 #if DEFAULT_SRM_ENABLED
   // init BLM
-  BLM8X8_Init(0);
+  BLM_X_Init();
 #endif
 
   // initialize MIDI handlers
@@ -190,8 +190,8 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 void APP_SRIO_ServicePrepare(void)
 {
 #if DEFAULT_SRM_ENABLED
-  // prepare DOUT registers of 8x8 BLM to drive the column
-  BLM8X8_PrepareCol();
+  // prepare DOUT registers of 8x8 BLM to drive the row
+  BLM_X_PrepareRow();
 #endif
 }
 
@@ -202,8 +202,8 @@ void APP_SRIO_ServicePrepare(void)
 void APP_SRIO_ServiceFinish(void)
 {
 #if DEFAULT_SRM_ENABLED
-  // call the BLM8X8_GetRow function after scan is finished to capture the read DIN values
-  BLM8X8_GetRow();
+  // call the BL_X_GetRow function after scan is finished to capture the read DIN values
+  BLM_X_GetRow();
 #endif
 }
 
@@ -224,12 +224,12 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when a BLM8x8 button has been toggled
+// This hook is called when a BLM_X button has been toggled
 // (see also SEQ_TASK_Period1mS)
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 #if DEFAULT_SRM_ENABLED
-void APP_BLM8X8_NotifyToggle(u32 pin, u32 pin_value)
+void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("BLM Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
@@ -276,8 +276,8 @@ void SEQ_TASK_Period1mS(void)
   SEQ_UI_MENU_Handler_Periodic();
 
 #if DEFAULT_SRM_ENABLED
-  // check for BLM8x8 pin changes, call button handler of sequencer on each toggled pin
-  BLM8X8_ButtonHandler(APP_BLM8X8_NotifyToggle);
+  // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
+  BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
 #endif
 }
 
