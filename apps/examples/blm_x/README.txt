@@ -40,10 +40,12 @@ LED-colors as 32-bit hex-number.
 The number of button-changes is also counted and reported to LCD / MIOS-Studio
 console. This value helps you to detect bouncing buttons. Use the BLM_X_DebounceDelaySet(..)
 function to set/modify the debounce_delay (number of scan-cycles to ignore button changes
-after a change). The default value is 0, as the scan cycle (1mS x BLM_X_NUM_ROWS) could be
-enough delay for a lot of applications. Note that there's also the choice between debounce
-mode 1 (global button debouncing), and mode 2 (individual button debouncing). Mode 2 is a 
-bit more resource-consuming. You can set mode by defining it in your mios32_config.h file.
+after a change). 
+By default, debouncing is disabled (BLM_X_DEBOUNCE_MODE=0), as the scan cycle 
+(1mS x BLM_X_NUM_ROWS) is enough delay for most of applications / hardware. 
+Note that there's also the choice between debounce mode 1 (global button debouncing),
+and mode 2 (individual button debouncing). Mode 2 is a bit more resource-consuming. 
+You can set mode by defining it in your mios32_config.h file.
 
 Refer also the README.txt file in the modules/blm_x folder for descriptions to all available 
 configuration options.
