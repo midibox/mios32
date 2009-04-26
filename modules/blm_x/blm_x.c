@@ -44,8 +44,8 @@ static u8 current_row;
 
 #if (BLM_X_BTN_FIRST_DIN_SR > 0)
 
-static u8 btn_rows[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
-static u8 btn_rows_changed[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
+static volatile u8 btn_rows[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
+static volatile u8 btn_rows_changed[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
 
 #if BLM_X_DEBOUNCE_MODE == 1
 static u16 debounce_ctr; // for cheap debouncing
@@ -142,7 +142,8 @@ s32 BLM_X_GetRow(void){
 	// ensure that change won't be propagated to normal DIN handler
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++)
 		MIOS32_DIN_SRChangedGetAndClear(BLM_X_BTN_FIRST_DIN_SR - 1 + sr, 0xff);	
-#if BLM_X_DEBOUNCE_MODE == 1
+#if (BLM_X_DEBOUNCE_MODE < 2)
+#if (BLM_X_DEBOUNCE_MODE == 1)
 	// cheap debounce handling. ignore any changes if debounce_ctr > 0
 	if(!debounce_ctr){
 #endif
@@ -153,7 +154,7 @@ s32 BLM_X_GetRow(void){
 			// if a second change happens before the last change was notified (clear
 			// changed flags), the change flag will be unset (two changes -> original value)
 			if( btn_rows_changed[scanned_row][sr] ^= (sr_value ^ btn_rows[scanned_row][sr]) ){
-#if BLM_X_DEBOUNCE_MODE == 1
+#if (BLM_X_DEBOUNCE_MODE == 1)
 				debounce_ctr = debounce_delay * BLM_X_NUM_ROWS;//restart debounce delay
 #endif
 				}
@@ -162,16 +163,15 @@ s32 BLM_X_GetRow(void){
 			MIOS32_IRQ_Enable();
 			//*** end atomic block ***
 			} 
-#if BLM_X_DEBOUNCE_MODE == 1
+#if (BLM_X_DEBOUNCE_MODE == 1)
 		}
 	else
 		--debounce_ctr;//decrement debounce control
 #endif
-#if BLM_X_DEBOUNCE_MODE == 2
+#endif
+#if (BLM_X_DEBOUNCE_MODE == 2)
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
 		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR - 1 + sr);
-		//*** set change notification and new value. should not be interrupted ***
-		MIOS32_IRQ_Disable();
 		//walk the 8 DIN pins of the SR
 		for(pin = 0;pin < 8; pin++){
 			//debounce-handling for individual buttons
@@ -179,6 +179,8 @@ s32 BLM_X_GetRow(void){
 				debounce_ctr[scanned_row][sr*8 + pin]--;
 			else{
 				pin_mask = 1 << pin;
+				//*** set change notification and new value. should not be interrupted ***
+				MIOS32_IRQ_Disable();
 				// set change-notification-bit. if a second change happens before the last change was notified (clear
 				// changed flags), the change flag will be unset (two changes -> original value)
 				if( ( btn_rows_changed[scanned_row][sr] ^= 
@@ -189,10 +191,10 @@ s32 BLM_X_GetRow(void){
 					btn_rows[scanned_row][sr] |= pin_mask;//set value bit
 				else
 					btn_rows[scanned_row][sr] &= ~pin_mask;//clear value bit
+				MIOS32_IRQ_Enable();
+				//*** end atomic block ***
 				}
 			}
-		MIOS32_IRQ_Enable();
-		//*** end atomic block ***	
 		} 	
 #endif
 	return 0;
