@@ -13,7 +13,7 @@ can configure 1 up to 8 row-select-lines. I decided to call the select-lines "ro
 instead of "cols", because I think it's more natural to read the button/LED numbers
 from left to right instead of top to bottom.
 The number of columns is only limited by the number of DIN's and DOUT's you have
-connected to the core.
+connected to the core and MIOS32_SRIO_NUM_SR configuration.
 The module also supports multi-color-LED's (or just x LED's per matrix-crosspoint). One
 common application is to control three-color LED's for each button.
 
@@ -39,42 +39,61 @@ Debounce-modes 1 and 2 are available: mode 1 uses a single counter, which decrem
 (BLM_X_NUM_ROWS rows scanned), and will be set to debounce_delay again each time a button-state was
 changed. Until the counter is 0, all button changes will be ignored. 
 Debounce-mode 2 uses individual counters for each button, which consumes a bit more memory and 
-performance.
+performance. 
+You can disable debouncing completly by setting BLM_X_DEBOUNCE_MODE = 0
 
 
 Configuration
 -------------
 The module can be configured by overriding defines. The values shown here are default-values:
 
-// number of rows for button/LED matrix (max. 8)
+// Number of rows for button/LED matrix (max. 8)
 #define BLM_X_NUM_ROWS 4
 
-// number of cols for DIN matrix.
-// this value affects the number of DIN serial-registers used
+// Number of cols for DIN matrix.
+// This value affects the number of DIN serial-registers used.
 #define BLM_X_BTN_NUM_COLS 4
 
-// number of cols for DOUT matrix.
-// this value affects the number of DOUT serial-registers used
+// Number of cols for DOUT matrix.
+// This value affects the number of DOUT serial-registers used.
 #define BLM_X_LED_NUM_COLS 4
 
-// number of colors / different LEDS used at one matrix-crosspoint.
-// this value affects the number of DOUT serial-registers used
+// Number of colors / different LEDS used at one matrix-crosspoint.
+// This value affects the number of DOUT serial-registers used.
 #define BLM_X_LED_NUM_COLORS 3
 
 // DOUT shift register to which the cathodes of the LEDs are connected (row selectors).
-// if less than 5 rows are defined, the higher nibble of the SR outputs will be always 
-// identical to the lower nibble.
-#define BLM_X_ROWSEL_DOUT_SR	0
+// If less than 5 rows are defined, the higher nibble of the SR outputs will be always 
+// identical to the lower nibble. Note that SR's are counted from 1.
+#define BLM_X_ROWSEL_DOUT_SR	1
 
-// first DOUT shift register to which the anodes of the LEDs are connected. the number
-// of registers used is ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
-// registers will be used
-#define BLM_X_LED_FIRST_DOUT_SR	1
+// First DOUT shift register to which the anodes of the LEDs are connected. The number
+// of registers used is: ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
+// registers will be used.
+// SR's are counted from 1, set this to 0 if you only use buttons in your matrix.
+#define BLM_X_LED_FIRST_DOUT_SR	2
 
 
-// first DIN shift registers to which the button matrix is connected.
-// subsequent shift registers will be used, if more than 8 cols are defined.
-#define BLM_X_BTN_FIRST_DIN_SR	0
+// First DIN shift registers to which the button matrix is connected.
+// Subsequent shift registers will be used, if more than 8 cols are defined.
+// SR's are counted from 1, set this to 0 if you only use LED's in your matrix.
+#define BLM_X_BTN_FIRST_DIN_SR	1
+
+// Set an inversion mask for the row selection shift registers if sink drivers (transistors)
+// have been added to the cathode lines. 
+// Note: with no sink drivers connected, the LED's brightnes may be affected by the number
+// of active LED's in the same row.
+// Settings: 0x00 - no sink drivers
+//           0xff - sink drivers connected to D7..D0
+//           0x0f - sink drivers connected to D3..D0
+//           0xf0 - sink drivers connected to D7..D4
+#define BLM_X_ROWSEL_INV_MASK	0x00
+
+
+// 0: no debouncing
+// 1: cheap debouncing (all buttons the same time)
+// 2: individual debouncing of all buttons
+#define BLM_X_DEBOUNCE_MODE 0
 
 
 Module Functions
@@ -123,7 +142,7 @@ color_mask provides the states, the least significant bit represents the color 0
 
 s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value);
 Sets a virtual LED-register's value. Returns 0 on success, -1 if the
-sr is not available.
+SR is not available.
 
 
 extern s32 BLM_X_LEDGet(u32 led, u32 color);
@@ -136,7 +155,7 @@ Gets a virtual LED-register's value. Returns 0 if the register is not available.
 
 extern s32 BLM_X_DebounceDelaySet(u8 delay);
 Sets the debounce-delay (number of scan-cycles to ignore button changes after
-a change).
+a change). Returns -1 if buttons are disabled (BLM_X_BTN_FIRST_DIN_SR == 0).
 
 
 extern u8 BLM_X_DebounceDelayGet(void);

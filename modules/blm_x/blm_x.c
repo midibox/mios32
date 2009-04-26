@@ -32,8 +32,9 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
 u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -41,17 +42,20 @@ u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
 
 static u8 current_row;
 
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
+
 static u8 btn_rows[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
 static u8 btn_rows_changed[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR];
 
 #if BLM_X_DEBOUNCE_MODE == 1
-static u8 debounce_ctr; // for cheap debouncing
+static u16 debounce_ctr; // for cheap debouncing
 #elif BLM_X_DEBOUNCE_MODE == 2
 static u8 debounce_ctr[BLM_X_NUM_ROWS][BLM_X_NUM_BTN_SR*8]; // for expensive debouncing
 #endif
 
-static u8 debounce_delay;
+#endif
 
+static u8 debounce_delay;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the Button/LED matrix
@@ -59,25 +63,28 @@ static u8 debounce_delay;
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_Init(void){
 	u32 r,i;
-	//** todo: check configuration defines, return -1 if problem found **
-	// set button value to initial value (1) and clear "changed" status of all buttons
-	// clear all LEDs
+	//walk all rows for initialization of LED's / buttons
 	for(r=0; r<BLM_X_NUM_ROWS; ++r) {
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
+		// set button value to initial value (1) and clear "changed" status of all buttons
 		for(i=0; i<BLM_X_NUM_BTN_SR; ++i){
 			btn_rows[r][i] = 0xff;
 			btn_rows_changed[r][i] = 0x00;
 			}
-	// clear debounce counter for debounce-mode 2
 #if BLM_X_DEBOUNCE_MODE == 2
+		// clear debounce counter for debounce-mode 2
 		for(i=0; i < BLM_X_NUM_BTN_SR*8 ; ++i)
 			debounce_ctr[r][i] = 0;
 #endif
+#endif
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)	
+		// initialize LED-rows
+		for(i=0; i<BLM_X_NUM_LED_SR; ++i)
+			BLM_X_LED_rows[r][i] = 0x00;	
+#endif
 		}
-	// initialize LED-rows
-	for(i=0; i<BLM_X_NUM_LED_SR; ++i)
-		BLM_X_LED_rows[r][i] = 0x00;
 	// clear debounce counter for debounce-mode 1
-#if BLM_X_DEBOUNCE_MODE == 1
+#if ( (BLM_X_DEBOUNCE_MODE == 1) && (BLM_X_BTN_FIRST_DIN_SR > 0) )
 	debounce_ctr = 0;
 #endif
    // init debounce-delay
@@ -109,10 +116,12 @@ s32 BLM_X_PrepareRow(void){
 	// apply inversion mask (required when sink drivers are connected to the cathode lines)
 	dout_value ^= BLM_X_ROWSEL_INV_MASK;
 	// output on CATHODES register
-	MIOS32_DOUT_SRSet(BLM_X_ROWSEL_DOUT_SR, dout_value);
+	MIOS32_DOUT_SRSet(BLM_X_ROWSEL_DOUT_SR - 1, dout_value);
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)	
 	// output value of LED rows depending on current row
 	for(i = 0;i < BLM_X_NUM_LED_SR;i++)
-		MIOS32_DOUT_SRSet(BLM_X_LED_FIRST_DOUT_SR + i, BLM_X_LED_rows[current_row][i]);
+		MIOS32_DOUT_SRSet(BLM_X_LED_FIRST_DOUT_SR - 1 + i, BLM_X_LED_rows[current_row][i]);
+#endif
   return 0;
 }
 
@@ -124,6 +133,7 @@ s32 BLM_X_PrepareRow(void){
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_GetRow(void){
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	u8 sr_value,pin_mask;
 	u32 sr,pin,scanned_row;
 	//since the row set in BLM_PrepareRow will only take effect after the DIN's are already scanned,
@@ -131,30 +141,35 @@ s32 BLM_X_GetRow(void){
 	scanned_row = current_row ? (current_row -1) : (BLM_X_NUM_ROWS - 1);
 	// ensure that change won't be propagated to normal DIN handler
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++)
-		MIOS32_DIN_SRChangedGetAndClear(BLM_X_BTN_FIRST_DIN_SR + sr, 0xff);
-	// cheap debounce handling. ignore any changes if debounce_ctr > 0
+		MIOS32_DIN_SRChangedGetAndClear(BLM_X_BTN_FIRST_DIN_SR - 1 + sr, 0xff);	
 #if BLM_X_DEBOUNCE_MODE == 1
-	//only scan for changes if debounce-ctr is zero
+	// cheap debounce handling. ignore any changes if debounce_ctr > 0
 	if(!debounce_ctr){
+#endif
 		for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
-			sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR + sr);
+			sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR - 1 + sr);
 			//*** set change notification and new value. should not be interrupted ***
 			MIOS32_IRQ_Disable();
 			// if a second change happens before the last change was notified (clear
 			// changed flags), the change flag will be unset (two changes -> original value)
-			if( btn_rows_changed[scanned_row][sr] ^= (sr_value ^ btn_rows[scanned_row][sr]) )
+			if( btn_rows_changed[scanned_row][sr] ^= (sr_value ^ btn_rows[scanned_row][sr]) ){
+#if BLM_X_DEBOUNCE_MODE == 1
 				debounce_ctr = debounce_delay * BLM_X_NUM_ROWS;//restart debounce delay
+#endif
+				}
 			//copy new values to btn_rows
 			btn_rows[scanned_row][sr] = sr_value;
 			MIOS32_IRQ_Enable();
 			//*** end atomic block ***
 			} 
+#if BLM_X_DEBOUNCE_MODE == 1
 		}
 	else
 		--debounce_ctr;//decrement debounce control
-#elif BLM_X_DEBOUNCE_MODE == 2
+#endif
+#if BLM_X_DEBOUNCE_MODE == 2
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
-		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR + sr);
+		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR - 1 + sr);
 		//walk the 8 DIN pins of the SR
 		for(pin = 0;pin < 8; pin++){
 			//debounce-handling for individual buttons
@@ -181,6 +196,9 @@ s32 BLM_X_GetRow(void){
 		} 	
 #endif
 	return 0;
+#else
+	return -1;//buttons disabled
+#endif
 	}
 
 
@@ -193,6 +211,7 @@ s32 BLM_X_GetRow(void){
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_BtnHandler(void *_notify_hook){
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	u8 changed, values, pin_mask;
 	u32 r,sr,pin;
 	void (*notify_hook)(u32 btn, u32 value) = _notify_hook;
@@ -209,7 +228,9 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 			btn_rows_changed[r][sr] = 0;
 			MIOS32_IRQ_Enable();
 			//*** end atomic block ***
-			//walk pins and notify changes
+			//check if any changes in this SR..
+			if(!changed) continue;
+			//..walk pins and notify changes
 			for(pin = 0; pin < 8; pin++){
 				pin_mask = 1 << pin;
 				if(changed & pin_mask)
@@ -217,8 +238,10 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 				}
 			}
 		}
-	
 	return 0;
+#else
+	return -1;//buttons disabled
+#endif
 	}
 
 
@@ -228,28 +251,36 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 // OUT: button value (0 or 1), returns < 0 if button not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_BtnGet(u32 btn){
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	u32 row,sr,pin;
 	// check if pin available
 	if( btn >= BLM_X_NUM_ROWS * BLM_X_BTN_NUM_COLS )
 		return -1;
-	// compute row,sr & pin
+	// compute row,SR & pin
 	row = btn / BLM_X_BTN_NUM_COLS;
 	sr = (pin = btn % BLM_X_BTN_NUM_COLS) / 8;
 	pin %= 8;
 	// return value
 	return ( btn_rows[row][sr] & (1 << pin) ) ? 1 : 0;
+#else
+	return -1;//buttons disabled
+#endif
 	}
 	
 	
 /////////////////////////////////////////////////////////////////////////////
-// returns the buttons serial-register value for a row / sr
-// IN: button row in <row>, row-sr in <sr>
+// returns the buttons serial-register value for a row / SR
+// IN: button row in <row>, row-SR in <sr>
 // OUT: serial register value (0 if register not available)
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_X_BtnSRGet(u8 row, u8 sr){
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	if (row > BLM_X_NUM_ROWS -1 || sr > BLM_X_NUM_BTN_SR - 1)
 		return 0;
 	return btn_rows[row][sr];
+#else
+	return 0;//buttons disabled
+#endif
 	}
 
 
@@ -259,6 +290,7 @@ u8 BLM_X_BtnSRGet(u8 row, u8 sr){
 // OUT: returns < 0 if LED not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)	
 	u32 row,sr,pin;
 	// check if pin available
 	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
@@ -273,6 +305,9 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 	else
 		BLM_X_LED_rows[row][sr] &= ~(1 << pin);//clear pin
 	return 0;
+#else
+	return -1;//LED's disabled
+#endif
 	}
 	
 /////////////////////////////////////////////////////////////////////////////
@@ -281,11 +316,12 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 // OUT: returns < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
 	u32 row,sr,pin,c;
 	// check if pin available
 	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS )
 		return -1;
-	// compute row,sr
+	// compute row,SR
 	row = led / BLM_X_BTN_NUM_COLS;
 	for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
 		//compute sr,pin
@@ -298,6 +334,9 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 			BLM_X_LED_rows[row][sr] &= ~(1 << pin);//clear pin
 		}
 	return 0;
+#else
+	return -1;//LED's disabled
+#endif	
 	}
 
 
@@ -307,6 +346,7 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 // OUT: returns LED state value or < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDGet(u32 led, u32 color){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
 	u32 row,sr,pin;
 	// check if pin available
 	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
@@ -317,30 +357,41 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
 	pin %= 8;
 	// return value
 	return (BLM_X_LED_rows[row][sr] & (1 << pin)) ? 1 : 0;
+#else
+	return -1;//LED's disabled
+#endif
 	}
 	
 /////////////////////////////////////////////////////////////////////////////
-// returns the LED serial-register value for a row / sr
-// IN: LED row in <row>, row-sr in <sr>
+// returns the LED serial-register value for a row / SR
+// IN: LED row in <row>, row-SR in <sr>
 // OUT: serial register value (0 if register not available)
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_X_LEDSRGet(u8 row, u8 sr){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
 	if (row > BLM_X_NUM_ROWS -1 || sr > BLM_X_NUM_LED_SR - 1)
 		return 0;
 	return BLM_X_LED_rows[row][sr];
+#else
+	return 0;//LED's disabled
+#endif
 	}
 
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the LED serial-register value for a row / sr
-// IN: LED row in <row>, row-sr in <sr>
-// OUT: < 0 on error (sr not available), 0 on success
+// IN: LED row in <row>, row-SR in <sr>
+// OUT: < 0 on error (SR not available), 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)	
 	if (row > BLM_X_NUM_ROWS -1 || sr > BLM_X_NUM_LED_SR - 1)
 		return -1;
 	BLM_X_LED_rows[row][sr] = sr_value;
 	return 0;
+#else
+	return -1;//LED's disabled
+#endif
 	}
 	
 /////////////////////////////////////////////////////////////////////////////
@@ -349,10 +400,12 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 // OUT: returns < 0 on error, 0 on success
 /////////////////////////////////////////////////////////////////////////////	
 s32 BLM_X_DebounceDelaySet(u8 delay){
-	if(delay > 0xff / BLM_X_NUM_ROWS)
-		return -1;
+#if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	debounce_delay = delay;
 	return 0;
+#else
+	return -1;//buttons disabled
+#endif
 	}
 
 /////////////////////////////////////////////////////////////////////////////
