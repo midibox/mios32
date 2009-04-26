@@ -25,18 +25,18 @@
 
 //---------------------------- matrix dimensions ------------------------------------------
 
-// number of rows for button/LED matrix (max. 8)
+// number of rows for button/LED matrix (1 - max. 8)
 #ifndef BLM_X_NUM_ROWS
 #define BLM_X_NUM_ROWS 4
 #endif
 
-// number of cols for DIN matrix.
+// number of cols for button-matrix.
 // this value affects the number of DIN serial-registers used
 #ifndef BLM_X_BTN_NUM_COLS
 #define BLM_X_BTN_NUM_COLS 4
 #endif
 
-// number of cols for DOUT matrix.
+// number of cols for led-matrix.
 // this value affects the number of DOUT serial-registers used
 #ifndef BLM_X_LED_NUM_COLS
 #define BLM_X_LED_NUM_COLS 4
@@ -57,22 +57,24 @@
 // if less than 5 rows are defined, the higher nibble of the SR outputs will be always 
 // identical to the lower nibble.
 #ifndef BLM_X_ROWSEL_DOUT_SR
-#define BLM_X_ROWSEL_DOUT_SR	0
+#define BLM_X_ROWSEL_DOUT_SR	1
 #endif
 
 
 // first DOUT shift register to which the anodes of the LEDs are connected. the number
 // of registers used is ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
-// registers will be used
+// registers will be used.
+// set this to 0 if you only use buttons in your matrix (no LED's)
 #ifndef BLM_X_LED_FIRST_DOUT_SR
-#define BLM_X_LED_FIRST_DOUT_SR	1
+#define BLM_X_LED_FIRST_DOUT_SR	2
 #endif
 
 
 // first DIN shift registers to which the button matrix is connected.
 // subsequent shift registers will be used, if more than 8 cols are defined.
+// set this to 0 if you only use LED's in your matrix (no buttons)
 #ifndef BLM_X_BTN_FIRST_DIN_SR
-#define BLM_X_BTN_FIRST_DIN_SR	0
+#define BLM_X_BTN_FIRST_DIN_SR	1
 #endif
 
 //--------------------------- additional options --------------------------
@@ -87,11 +89,11 @@
 #define BLM_X_ROWSEL_INV_MASK	0x00
 #endif
 
-
+// 0: no debouncing
 // 1: cheap debouncing (all buttons the same time)
 // 2: individual debouncing of all buttons
 #ifndef BLM_X_DEBOUNCE_MODE
-#define BLM_X_DEBOUNCE_MODE 2
+#define BLM_X_DEBOUNCE_MODE 0
 #endif
 
 
@@ -106,11 +108,10 @@
 #endif
 
 #if ((BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) % 8) == 0
-#define BLM_X_NUM_LED_SR  ( (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) / 8)
+#define BLM_X_NUM_LED_SR  (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8)
 #else
-#define BLM_X_NUM_LED_SR  ( (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS) / 8 + 1)
+#define BLM_X_NUM_LED_SR  (BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8 + 1)
 #endif
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -155,7 +156,8 @@ extern u8 BLM_X_DebounceDelayGet(void);
 // one row needs (num_cols * num_colors) bits, each register holds 8 bits,
 // first color first, last color last.
 // [color 0, col 0][color 0, col 1]...[color 1, col 0][color 1, col 1]....
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
 extern u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
-
+#endif
 
 #endif /* _BLM_X_H */
