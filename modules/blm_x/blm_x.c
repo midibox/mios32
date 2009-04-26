@@ -170,6 +170,8 @@ s32 BLM_X_GetRow(void){
 #if BLM_X_DEBOUNCE_MODE == 2
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
 		sr_value = MIOS32_DIN_SRGet(BLM_X_BTN_FIRST_DIN_SR - 1 + sr);
+		//*** set change notification and new value. should not be interrupted ***
+		MIOS32_IRQ_Disable();
 		//walk the 8 DIN pins of the SR
 		for(pin = 0;pin < 8; pin++){
 			//debounce-handling for individual buttons
@@ -177,8 +179,6 @@ s32 BLM_X_GetRow(void){
 				debounce_ctr[scanned_row][sr*8 + pin]--;
 			else{
 				pin_mask = 1 << pin;
-				//*** set change notification and new value. should not be interrupted ***
-				MIOS32_IRQ_Disable();
 				// set change-notification-bit. if a second change happens before the last change was notified (clear
 				// changed flags), the change flag will be unset (two changes -> original value)
 				if( ( btn_rows_changed[scanned_row][sr] ^= 
@@ -189,10 +189,10 @@ s32 BLM_X_GetRow(void){
 					btn_rows[scanned_row][sr] |= pin_mask;//set value bit
 				else
 					btn_rows[scanned_row][sr] &= ~pin_mask;//clear value bit
-				MIOS32_IRQ_Enable();
-				//*** end atomic block ***
 				}
 			}
+		MIOS32_IRQ_Enable();
+		//*** end atomic block ***	
 		} 	
 #endif
 	return 0;
