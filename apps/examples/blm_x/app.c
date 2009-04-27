@@ -58,11 +58,18 @@ void APP_Init(void){
 	MIOS32_BOARD_LED_Init(0xffffffff);
 	// initialize BLM driver
 	BLM_X_Init();
-	BLM_X_DebounceDelaySet(0);
+	BLM_X_DebounceDelaySet(1);
 	// start BLM check task
 	xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
 	//send init message
 	MIOS32_MIDI_SendDebugMessage("BLM_X Test-Application Started");
+	//display all possible LED color combinations (if matrix is big enough!)
+	for(i=0;i < BLM_X_NUM_ROWS*BLM_X_LED_NUM_COLS; i++){
+		if((++last_led_color) >> BLM_X_LED_NUM_COLORS)
+			last_led_color = 1;
+		BLM_X_LEDColorSet(i,last_led_color);
+		}
+	last_led_color = 0;
 	}
 
 
