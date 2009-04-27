@@ -30,7 +30,7 @@
 // following pages are directly accessible with the GP buttons inside the Fx menu
 static const seq_ui_page_t shortcut_menu_pages[16] = {
   SEQ_UI_PAGE_FX_ECHO,     // GP1
-  SEQ_UI_PAGE_NONE,        // GP2
+  SEQ_UI_PAGE_FX_HUMANIZE, // GP2
   SEQ_UI_PAGE_NONE,        // GP3
   SEQ_UI_PAGE_NONE,        // GP4
   SEQ_UI_PAGE_NONE,        // GP5
@@ -128,8 +128,8 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(32 + 40);
 
   SEQ_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintString("Echo");
-  SEQ_LCD_PrintSpaces(36 + 40);
+  SEQ_LCD_PrintString("Echo Hum. ");
+  SEQ_LCD_PrintSpaces(30 + 40);
 
   return 0; // no error
 }

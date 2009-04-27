@@ -48,11 +48,6 @@
 #define MSG_NO_BANK 0x82
 
 
-// tmp.
-#define PRESET_LABELS_MAX     32
-#define PRESET_CATEGORIES_MAX 16
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -60,12 +55,6 @@ static seq_pattern_t save_pattern[SEQ_CORE_NUM_GROUPS];
 
 static u8 in_menu_msg;
 static u32 in_menu_msg_error_status;
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-static s32 CopyPresetCategory(u8 num);
-static s32 CopyPresetLabel(u8 num);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -235,8 +224,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( ui_edit_name_cursor >= 5 ) // set cursor to category field if required (more intuitive usage)
 	ui_edit_name_cursor = 0;
 
-      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, PRESET_CATEGORIES_MAX-1, incrementer) ) {
-	CopyPresetCategory(ui_edit_preset_num_category);
+      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
+	SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&ui_edit_name[0]);
 	return 1;
       }
       return 0;
@@ -245,8 +234,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( ui_edit_name_cursor < 5 ) // set cursor to category field if required (more intuitive usage)
 	ui_edit_name_cursor = 5;
 
-      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, PRESET_LABELS_MAX-1, incrementer) ) {
-	CopyPresetLabel(ui_edit_preset_num_label);
+      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, SEQ_LABEL_NumPresets()-1, incrementer) ) {
+	SEQ_LABEL_CopyPreset(ui_edit_preset_num_label, (char *)&ui_edit_name[5]);
 	return 1;
       }
       return 0;
@@ -488,66 +477,6 @@ s32 SEQ_UI_SAVE_Init(u32 mode)
   ui_edit_name_cursor = 0;
   ui_edit_preset_num_category = 0;
   ui_edit_preset_num_label = 0;
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Temporary function which copies a preset category
-// will be loaded from SD-Card later
-/////////////////////////////////////////////////////////////////////////////
-static s32 CopyPresetCategory(u8 num)
-{
-  const char preset_categories[][6] = {
-    "     ",
-    "Synth",
-    "Piano",
-    "Bass ",
-    "Drums",
-    "Break",
-    "MBSID",
-    "MBFM ",
-    "Ctrl"
-  };
-
-  if( num < (sizeof(preset_categories)/6) ) {
-    memcpy((char *)&ui_edit_name[0], (char *)&preset_categories[num], 5);
-  } else {
-    memcpy((char *)&ui_edit_name[0], ".....", 5);
-  }
-
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Temporary function which copies a preset label
-// will be loaded from SD-Card later
-/////////////////////////////////////////////////////////////////////////////
-static s32 CopyPresetLabel(u8 num)
-{
-  const char preset_labels[][16] = {
-    "               ",
-    "Vintage        ",
-    "Synthline      ",
-    "Bassline       ",
-    "Pads           ",
-    "Chords         ",
-    "Lovely Arps    ",
-    "Electr. Drums  ",
-    "Heavy Beats    ",
-    "Simple Beats   ",
-    "CC Tracks      ",
-    "Experiments    ",
-    "Live Played    ",
-    "Transposer     "
-  };
-
-  if( num < (sizeof(preset_labels)/16) ) {
-    memcpy((char *)&ui_edit_name[5], (char *)&preset_labels[num], 15);
-  } else {
-    memcpy((char *)&ui_edit_name[5], "...............", 15);
-  }
 
   return 0; // no error
 }

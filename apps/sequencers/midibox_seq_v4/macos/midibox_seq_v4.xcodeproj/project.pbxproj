@@ -97,6 +97,8 @@
 		52BB40240F8684D700CFA609 /* seq_ui_trkrec.c in Sources */ = {isa = PBXBuildFile; fileRef = 52BB40230F8684D700CFA609 /* seq_ui_trkrec.c */; };
 		52BBD94C0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */; };
 		52BBD9510F12CEAF00C76C61 /* dfs_sdcard.c in Sources */ = {isa = PBXBuildFile; fileRef = 52BBD94F0F12CEAF00C76C61 /* dfs_sdcard.c */; };
+		52C3934C0FA643A80000FD51 /* seq_label.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C393490FA643A80000FD51 /* seq_label.c */; };
+		52C3934D0FA643A80000FD51 /* seq_ui_fx_humanize.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C3934B0FA643A80000FD51 /* seq_ui_fx_humanize.c */; };
 		52C4BC590F0EB3600063D223 /* seq_ui_fx.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C4BC570F0EB3600063D223 /* seq_ui_fx.c */; };
 		52C4BC5A0F0EB3600063D223 /* seq_ui_fx_echo.c in Sources */ = {isa = PBXBuildFile; fileRef = 52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */; };
 		52C74ED90EE2B8E700187414 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C74ED80EE2B8E700187414 /* CoreMIDI.framework */; };
@@ -276,6 +278,9 @@
 		52BBD94A0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SDCARD_Wrapper.h; sourceTree = "<group>"; };
 		52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SDCARD_Wrapper.m; sourceTree = "<group>"; };
 		52BBD94F0F12CEAF00C76C61 /* dfs_sdcard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dfs_sdcard.c; path = ../../../../modules/dosfs/dfs_sdcard.c; sourceTree = SOURCE_ROOT; };
+		52C393490FA643A80000FD51 /* seq_label.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_label.c; path = ../core/seq_label.c; sourceTree = SOURCE_ROOT; };
+		52C3934A0FA643A80000FD51 /* seq_label.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_label.h; path = ../core/seq_label.h; sourceTree = SOURCE_ROOT; };
+		52C3934B0FA643A80000FD51 /* seq_ui_fx_humanize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_humanize.c; path = ../core/seq_ui_fx_humanize.c; sourceTree = SOURCE_ROOT; };
 		52C4BC570F0EB3600063D223 /* seq_ui_fx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx.c; path = ../core/seq_ui_fx.c; sourceTree = SOURCE_ROOT; };
 		52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_echo.c; path = ../core/seq_ui_fx_echo.c; sourceTree = SOURCE_ROOT; };
 		52C74ED80EE2B8E700187414 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = /System/Library/Frameworks/CoreMIDI.framework; sourceTree = "<absolute>"; };
@@ -358,6 +363,9 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				52C393490FA643A80000FD51 /* seq_label.c */,
+				52C3934A0FA643A80000FD51 /* seq_label.h */,
+				52C3934B0FA643A80000FD51 /* seq_ui_fx_humanize.c */,
 				524AE14C0F8696BF008C64B8 /* seq_record.c */,
 				52BB40230F8684D700CFA609 /* seq_ui_trkrec.c */,
 				52D51C710F7E59B3005C90ED /* seq_midi_router.c */,
@@ -832,6 +840,8 @@
 				52D51C750F7E59B3005C90ED /* seq_ui_midi.c in Sources */,
 				52BB40240F8684D700CFA609 /* seq_ui_trkrec.c in Sources */,
 				524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */,
+				52C3934C0FA643A80000FD51 /* seq_label.c in Sources */,
+				52C3934D0FA643A80000FD51 /* seq_ui_fx_humanize.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -903,7 +913,7 @@
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
 					../../../../drivers/MacOS,
-					../../../../modules/blm8x8,
+					../../../../modules/blm_x,
 					../../../../include/mios32,
 					.,
 				);
@@ -931,7 +941,7 @@
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
 					../../../../drivers/MacOS,
-					../../../../modules/blm8x8,
+					../../../../modules/blm_x,
 					../../../../include/mios32,
 					.,
 				);

@@ -35,6 +35,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_trgasg.c \
 		../core/seq_ui_fx.c \
 		../core/seq_ui_fx_echo.c \
+		../core/seq_ui_fx_humanize.c \
 		../core/seq_ui_util.c \
 		../core/seq_ui_bpm.c \
 		../core/seq_ui_opt.c \
@@ -67,6 +68,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_par.c \
 		../core/seq_mixer.c \
 		../core/seq_song.c \
+		../core/seq_label.c \
 		../core/seq_lcd.c \
 		../core/seq_led.c
 
