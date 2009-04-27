@@ -166,7 +166,12 @@ a change).
 
 Performance
 -----------
-The whole SRIO service takes ca. 280uS without the BLM-X module hooks, and ca.
-300uS with the hooks (tested so far with 4x4x3 matrix and the expensive debounce-mode 2), so
-all this is really no matter of performance.
+The whole SRIO service takes ca. 
+- ca. 280uS without the BLM-X module hooks
+- ca.290uS with 4 rows, 4 cols, 3 colors, debounce mode 2 (LEDs & buttons)
+- ca. 320uS with 8 rows, 16 cols, 3 colors, debounce mode 2 (LEDs & buttons)
+
+Most of this additional time is consumed by heavy debouncing (mode 2). Without any
+debouncing (not required in most applications, 4 rows == 4mS scan cycle), this
+additional time will be dramatically lower.
 
