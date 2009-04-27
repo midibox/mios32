@@ -125,6 +125,7 @@ void APP_Init(void)
 #endif
 
   // init user interface
+  SEQ_LABEL_Init(0);
   SEQ_LED_Init(0);
   SEQ_UI_Init(0);
 
