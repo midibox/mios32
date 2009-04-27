@@ -20,7 +20,12 @@ Required hardware:
 ===============================================================================
 
 This application checks the handling of a Button/LED matrix driven by the blm_x
-module. 
+module.
+
+After startup, the application will walk through all LED matrix-crosspoints and 
+set all possible color combinations. When the last possible color is reached,
+it starts again with the first color. With tripple-color-LED's you get 7 possible
+color comibnations (without all off).
 
 The first push on a button resets all LED's at this button to 0 (off). Each
 subsequent push on the same button switches to the next color (combination
