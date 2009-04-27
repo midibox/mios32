@@ -55,6 +55,18 @@ You can set mode by defining it in your mios32_config.h file.
 Refer also the README.txt file in the modules/blm_x folder for descriptions to all available 
 configuration options.
 
+Performance
+-----------
+The whole SRIO service takes ca. 
+- ca. 280uS without the BLM-X module hooks
+- ca.290uS with 4 rows, 4 cols, 3 colors, debounce mode 2 (LEDs & buttons)
+- ca. 320uS with 8 rows, 16 cols, 3 colors, debounce mode 2 (LEDs & buttons)
+
+Most of this additional time is consumed by heavy debouncing (mode 2). Without any
+debouncing (not required in most applications, 4 rows == 4mS scan cycle), this
+additional time will be dramatically lower.
+
+
 
 Connecting the Button-LED matrix to the serial registers
 ---------------------------------------------------------
