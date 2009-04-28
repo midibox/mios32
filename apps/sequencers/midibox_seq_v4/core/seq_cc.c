@@ -112,7 +112,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_GROOVE_VALUE: tcc->groove_value = value; break;
       case SEQ_CC_GROOVE_STYLE: tcc->groove_style = value; break;
       case SEQ_CC_MORPH_MODE: tcc->morph_mode = value; break;
-      case SEQ_CC_MORPH_SPARE: tcc->morph_spare = value; break;
+      case SEQ_CC_MORPH_DST_TRK: tcc->morph_dst_trk = value; break;
       case SEQ_CC_HUMANIZE_VALUE: tcc->humanize_value = value; break;
       case SEQ_CC_HUMANIZE_MODE: tcc->humanize_mode = value; break;
     
@@ -193,7 +193,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_GROOVE_VALUE: return tcc->groove_value;
     case SEQ_CC_GROOVE_STYLE: return tcc->groove_style;
     case SEQ_CC_MORPH_MODE: return tcc->morph_mode;
-    case SEQ_CC_MORPH_SPARE: return tcc->morph_spare;
+    case SEQ_CC_MORPH_DST_TRK: return tcc->morph_dst_trk;
     case SEQ_CC_HUMANIZE_VALUE: return tcc->humanize_value;
     case SEQ_CC_HUMANIZE_MODE: return tcc->humanize_mode;
   

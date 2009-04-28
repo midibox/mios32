@@ -51,6 +51,7 @@ extern s32 SEQ_LCD_PrintSpaces(u8 num);
 extern s32 SEQ_LCD_PrintStringPadded(char *str, u32 width);
 extern s32 SEQ_LCD_PrintVBar(u8 value);
 extern s32 SEQ_LCD_PrintHBar(u8 value);
+extern s32 SEQ_LCD_PrintLongHBar(u8 value);
 extern s32 SEQ_LCD_PrintNote(u8 note);
 extern s32 SEQ_LCD_PrintArp(u8 note);
 extern s32 SEQ_LCD_PrintGatelength(u8 len);

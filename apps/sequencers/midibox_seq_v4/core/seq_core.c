@@ -124,6 +124,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset groove module
   SEQ_GROOVE_Init(0);
 
+  // reset morph module
+  SEQ_MORPH_Init(0);
+
   // reset humanizer module
   SEQ_HUMANIZE_Init(0);
 
@@ -331,13 +334,6 @@ s32 SEQ_CORE_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
-#if 0
-  // handle external clock divider
-  if( !(bpm_tick % (1 << (seq_core_bpm_div_ext+1))) ) {
-    // TODO: send external clock
-  }
-#endif
-
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
@@ -372,7 +368,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	continue;
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL && t->state.SUSTAINED ) {
+      if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL ) {
 	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
 	t->state.SUSTAINED = 0;
       }
@@ -442,8 +438,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
 
-	// if not in drum mode (only checked once)
+	// check probability if not in drum mode
 	// if probability < 100: play step with given probability
+	// in drum mode, the probability is checked for each individual instrument inside the layer event loop
 	if( tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	  u8 rnd_probability;
 	  if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, 0)) < 100 &&
@@ -529,7 +526,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      SEQ_GROOVE_Event(track, t->step, e);
 
 	      // humanize it
-	      SEQ_HUMANIZE_Event(track, t->step, e);
+	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) )
+		SEQ_HUMANIZE_Event(track, t->step, e);
 
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED )

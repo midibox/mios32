@@ -62,7 +62,7 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_GROOVE_VALUE,   0x00 },
   { SEQ_CC_GROOVE_STYLE,   0x00 },
   { SEQ_CC_MORPH_MODE,     0x00 },
-  { SEQ_CC_MORPH_SPARE,    0x00 },
+  { SEQ_CC_MORPH_DST_TRK,  0x00 },
   { SEQ_CC_HUMANIZE_VALUE, 0x00 },
   { SEQ_CC_HUMANIZE_MODE,  0x00 },
   { SEQ_CC_ECHO_REPEATS,   0x00 },
@@ -239,9 +239,16 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     }
 
     // go through all layers to generate events
+    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
     u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
-    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-      switch( tcc->lay_const[0*16 + par_layer] ) {
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
+
+      // usually no function assigned to layer - skip it immediately to speed up the loop
+      if( *layer_type_ptr == SEQ_PAR_Type_None )
+	continue;
+
+      // branch depending on layer type
+      switch( *layer_type_ptr ) {
 
         case SEQ_PAR_Type_Note: {
 	  seq_layer_evnt_t *e = &layer_events[num_events];

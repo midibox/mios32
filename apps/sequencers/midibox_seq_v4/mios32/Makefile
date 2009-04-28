@@ -30,6 +30,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_trklen.c \
 		../core/seq_ui_trktran.c \
 		../core/seq_ui_trkgrv.c \
+		../core/seq_ui_trkmorph.c \
 		../core/seq_ui_trkrnd.c \
 		../core/seq_ui_trkrec.c \
 		../core/seq_ui_trgasg.c \
@@ -53,6 +54,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_core.c \
 		../core/seq_scale.c \
 		../core/seq_groove.c \
+		../core/seq_morph.c \
 		../core/seq_humanize.c \
 		../core/seq_chord.c \
 		../core/seq_pattern.c \

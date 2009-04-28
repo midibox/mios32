@@ -372,6 +372,29 @@ s32 SEQ_LCD_PrintHBar(u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints a long horizontal bar for a 7bit value
+// (32 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintLongHBar(u8 value)
+{
+  int i;
+
+  const u8 hbar_table[4] = { 1, 2, 3, 3 };
+
+  for(i=0; i<32; ++i) {
+    if( (value/4) < i )
+      SEQ_LCD_PrintChar(' ');
+    else if( (value/4) > i )
+      SEQ_LCD_PrintChar(3);
+    else
+      SEQ_LCD_PrintChar(hbar_table[value%4]);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints a note string (3 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintNote(u8 note)

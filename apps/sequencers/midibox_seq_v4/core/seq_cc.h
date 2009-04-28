@@ -118,7 +118,7 @@
 #define SEQ_CC_GROOVE_VALUE	0x52
 #define SEQ_CC_GROOVE_STYLE	0x53
 #define SEQ_CC_MORPH_MODE	0x54
-#define SEQ_CC_MORPH_SPARE	0x55
+#define SEQ_CC_MORPH_DST_TRK	0x55
 #define SEQ_CC_HUMANIZE_VALUE	0x56
 #define SEQ_CC_HUMANIZE_MODE	0x57
 
@@ -170,7 +170,7 @@ typedef struct {
   unsigned transpose_oct:4;   // octave transpose
   unsigned groove_style:4;    // groove style
   unsigned morph_mode:4;      // morph mode
-  unsigned morph_spare:4;     // for future morph extensions
+  unsigned morph_dst_trk:4;   // morph destination track
   unsigned humanize_mode:4;   // humanize mode
   u8       groove_value;      // groove intensity
   u8       humanize_value;    // humanize intensity

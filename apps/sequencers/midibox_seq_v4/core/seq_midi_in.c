@@ -21,6 +21,7 @@
 #include "seq_ui.h"
 #include "seq_midi_in.h"
 #include "seq_cc.h"
+#include "seq_morph.h"
 #include "seq_core.h"
 
 
@@ -63,6 +64,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity);
+static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 
 static s32 SEQ_MIDI_IN_Notestack_Pop(seq_midi_in_notestack_t *n, u8 old_note);
 static s32 SEQ_MIDI_IN_Notestack_Push(seq_midi_in_notestack_t *n, u8 new_note, u8 sort);
@@ -150,14 +152,22 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // Note Events: ignore channel if loopback
   if( ((port & 0xf0) == 0xf0) || midi_package.chn == (seq_midi_in_channel-1) ) {
     switch( midi_package.event ) {
+
       case NoteOff: 
 	MUTEX_MIDIIN_TAKE;
 	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
 	MUTEX_MIDIIN_GIVE;
 	break;
+
       case NoteOn:
 	MUTEX_MIDIIN_TAKE;
 	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
+	MUTEX_MIDIIN_GIVE;
+	break;
+
+      case CC:
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
 	MUTEX_MIDIIN_GIVE;
 	break;
     }
@@ -263,6 +273,24 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
       DEBUG_MSG("\n");
     }
 #endif
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// CC has been received over selected port and channel
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
+{
+  switch( cc ) {
+    case 0x01: // ModWheel -> Morph Value
+      // update screen immediately if in morph page
+      if( ui_page == SEQ_UI_PAGE_TRKMORPH )
+	seq_ui_display_update_req = 1;
+      // forward morph value
+      return SEQ_MORPH_ValueSet(value);
   }
 
   return 0; // no error
