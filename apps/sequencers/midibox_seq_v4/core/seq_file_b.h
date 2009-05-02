@@ -43,6 +43,8 @@ extern s32 SEQ_FILE_B_Open(u8 bank);
 extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
 extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group);
 
+extern s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern_name);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

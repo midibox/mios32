@@ -232,6 +232,21 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns pattern name of a bank w/o overwriting RAM
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PATTERN_PeekName(seq_pattern_t pattern, char *pattern_name)
+{
+  s32 status;
+
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_B_PatternPeekName(pattern.bank, pattern.pattern, 0, pattern_name); // always cached!
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Fixes a pattern (load/modify/store)
 // Can be used on format changes
 // Uses group as temporal "storage"
@@ -266,6 +281,7 @@ s32 SEQ_PATTERN_Fix(u8 group, seq_pattern_t pattern)
 
   return status;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Fixes all patterns of all banks

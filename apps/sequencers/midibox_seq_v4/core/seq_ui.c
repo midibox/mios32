@@ -74,7 +74,6 @@ seq_ui_page_t ui_parlayer_prev_page;
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
 
-char ui_edit_name[21];
 u8 ui_edit_name_cursor;
 u8 ui_edit_preset_num_category;
 u8 ui_edit_preset_num_label;
