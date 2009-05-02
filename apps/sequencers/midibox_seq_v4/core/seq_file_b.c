@@ -135,6 +135,10 @@ typedef struct {
 
 static seq_file_b_info_t seq_file_b_info[SEQ_FILE_B_NUM_BANKS];
 
+static u8 cached_pattern_name[21];
+static u8 cached_bank;
+static u8 cached_pattern;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -355,6 +359,10 @@ s32 SEQ_FILE_B_Open(u8 bank)
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] bank is valid! Number of Patterns: %d, Pattern Size: %d\n", info->header.num_patterns, info->header.pattern_size);
 #endif
+
+  // finally (re-)load cached pattern name - status of this function doesn't matter
+  char dummy[21];
+  SEQ_FILE_B_PatternPeekName(cached_bank, cached_pattern, 1, dummy); // non-cached!
 
   return 0; // no error
 }
@@ -661,4 +669,94 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #endif
 
   return (status < 0) ? SEQ_FILE_B_ERR_WRITE : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns a pattern name from disk w/o overwriting patterns in RAM
+//
+// used in SAVE menu to display the pattern name which will be overwritten
+// 
+// function can be called frequently w/o performance loss, as the name
+// of bank/pattern will be cached.
+// non_cached=1 forces an update regardless of bank/pattern number
+//
+// *name will contain 20 characters + 0 terminator regardless of status
+//
+// returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern_name)
+{
+  if( !non_cached && cached_bank == bank && cached_pattern == pattern ) {
+    // name is in cache
+    memcpy(pattern_name, cached_pattern_name, 21);
+    return 0; // no error
+  }
+
+  cached_bank = bank;
+  cached_pattern = pattern;
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ_FILE_B] Loading Pattern Name for %d:%d\n", bank, pattern);
+#endif
+
+  // initial pattern name
+  memcpy(cached_pattern_name, "-----<Disk Error>   ", 21);
+
+  if( bank >= SEQ_FILE_B_NUM_BANKS )
+    return SEQ_FILE_B_ERR_INVALID_BANK;
+
+  seq_file_b_info_t *info = &seq_file_b_info[bank];
+
+  if( !info->valid )
+    return SEQ_FILE_B_ERR_NO_FILE;
+
+  if( pattern >= info->header.num_patterns )
+    return SEQ_FILE_B_ERR_INVALID_PATTERN;
+
+  // change to file position
+  s32 status;
+  u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
+  if( (status=SEQ_FILE_Seek((PFILEINFO)&info->file, offset)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
+#endif
+    return SEQ_FILE_B_ERR_READ;
+  }
+
+  // read name
+  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)cached_pattern_name, 20);
+  cached_pattern_name[20] = 0;
+
+  // fill category with "-----" if it is empty
+  int i;
+  u8 found_char = 0;
+  for(i=0; i<5; ++i)
+    if( cached_pattern_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+  if( !found_char )
+    memcpy(&cached_pattern_name[0], "-----", 5);
+
+
+  // fill label with "<empty>" if it is empty
+  found_char = 0;
+  for(i=5; i<20; ++i)
+    if( cached_pattern_name[i] != ' ' ) {
+      found_char = 1;
+      break;
+    }
+  if( !found_char )
+    memcpy(&cached_pattern_name[5], "<empty>        ", 15);
+
+  
+  // copy into return variable
+  memcpy(pattern_name, cached_pattern_name, 21);
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ_FILE_B] Loading Pattern Name for %d:%d successfull\n", bank, pattern);
+#endif
+
+  return 0; // no error
 }

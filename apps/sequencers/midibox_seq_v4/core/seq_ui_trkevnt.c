@@ -90,7 +90,7 @@ static s32 CopyPreset(u8 track, u8 config);
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 edit_mode;
+static u8 edit_label_mode;
 
 static u8 selected_layer_config;
 static u8 selected_layer_config_track;
@@ -122,13 +122,13 @@ static s32 LED_Handler(u16 *gp_leds)
     // flash INIT LED if current preset doesn't match with old preset
     // this notifies the user, that he should press the "INIT" button
     u8 visible_track = SEQ_UI_VisibleTrackGet();
-    if( !edit_mode && selected_layer_config != GetLayerConfig(visible_track) )
+    if( !edit_label_mode && selected_layer_config != GetLayerConfig(visible_track) )
       *gp_leds = 0x8000;
 
     return 0;
   }
 
-  if( edit_mode ) {
+  if( edit_label_mode ) {
     switch( ui_selected_item ) {
       case ITEM_GXTY: *gp_leds = 0x0001; break;
       case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
@@ -139,8 +139,8 @@ static s32 LED_Handler(u16 *gp_leds)
       case ITEM_EDIT_CURSOR:   *gp_leds = 0x0200; break;
       case ITEM_EDIT_INS:      *gp_leds = 0x0400; break;
       case ITEM_EDIT_CLR:      *gp_leds = 0x0800; break;
-      case ITEM_EDIT_PRESET_CATEG:  *gp_leds = 0x2000; break;
-      case ITEM_EDIT_PRESET_LABEL:  *gp_leds = 0x4000; break;
+      case ITEM_EDIT_PRESET_CATEG:  *gp_leds = 0x4000; break;
+      case ITEM_EDIT_PRESET_LABEL:  *gp_leds = 0x8000; break;
     }
   } else if( layer_config[selected_layer_config].event_mode == SEQ_EVENT_MODE_Drum ) {
     switch( ui_selected_item ) {
@@ -170,7 +170,7 @@ static s32 LED_Handler(u16 *gp_leds)
   }
 
   // always flash "edit track" LED if name is edited
-  if( edit_mode )
+  if( edit_label_mode )
     *gp_leds |= 0x0080;
 
   return 0; // no error
@@ -190,7 +190,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   if( encoder >= SEQ_UI_ENCODER_GP9 && encoder <= SEQ_UI_ENCODER_GP16 ) {
-    if( edit_mode ) {
+    if( edit_label_mode ) {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9:
 	  ui_selected_item = ITEM_EDIT_CHAR;
@@ -209,18 +209,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  break;
 
         case SEQ_UI_ENCODER_GP13:
+        case SEQ_UI_ENCODER_GP14:
 	  return -1; // not mapped
 
-        case SEQ_UI_ENCODER_GP14:
+        case SEQ_UI_ENCODER_GP15:
 	  ui_selected_item = ITEM_EDIT_PRESET_CATEG;
 	  break;
 
-        case SEQ_UI_ENCODER_GP15:
+        case SEQ_UI_ENCODER_GP16:
 	  ui_selected_item = ITEM_EDIT_PRESET_LABEL;
 	  break;
-
-        case SEQ_UI_ENCODER_GP16:
-	  return -1; // not mapped
       }
     } else {
       if( selected_layer_config != GetLayerConfig(visible_track) ) {
@@ -308,10 +306,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
 
-    case ITEM_EDIT_NAME: return SEQ_UI_Var8_Inc(&edit_mode, 0, 1, incrementer);
+    case ITEM_EDIT_NAME: return SEQ_UI_Var8_Inc(&edit_label_mode, 0, 1, incrementer);
   }
 
-  if( edit_mode ) {
+  if( edit_label_mode ) {
     switch( ui_selected_item ) {
     case ITEM_EDIT_CHAR:
       return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_edit_name_cursor], 32, 127, incrementer);
@@ -418,7 +416,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   u8 event_mode = layer_config[selected_layer_config].event_mode;
 
   if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 ) {
-    if( edit_mode ) {
+    if( edit_label_mode ) {
       switch( button ) {
         case SEQ_UI_BUTTON_GP9:
 	  ui_selected_item = ITEM_EDIT_CHAR;
@@ -435,18 +433,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  return Encoder_Handler(SEQ_UI_ENCODER_GP12, 1);
 
         case SEQ_UI_BUTTON_GP13:
-	  return Encoder_Handler(SEQ_UI_ENCODER_GP13, 1);
-
         case SEQ_UI_BUTTON_GP14:
+	  return -1; // not mapped
+
+        case SEQ_UI_BUTTON_GP15:
 	  ui_selected_item = ITEM_EDIT_PRESET_CATEG;
 	  break;
 
-        case SEQ_UI_BUTTON_GP15:
+        case SEQ_UI_BUTTON_GP16:
 	  ui_selected_item = ITEM_EDIT_PRESET_LABEL;
 	  break;
-
-        case SEQ_UI_BUTTON_GP16:
-	  return -1; // not mapped
       }
     } else {
       if( selected_layer_config != GetLayerConfig(visible_track) ) {
@@ -514,11 +510,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP8:
       // toggle "edit name" mode
-      return Encoder_Handler((seq_ui_encoder_t)button, edit_mode ? -1 : 1);
+      return Encoder_Handler((seq_ui_encoder_t)button, edit_label_mode ? -1 : 1);
 
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
-      if( edit_mode ) {
+      if( edit_label_mode ) {
 	if( ++ui_selected_item >= NUM_OF_ITEMS_EDIT_MODE )
 	  ui_selected_item = 0;
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -532,7 +528,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Left:
-      if( edit_mode ) {
+      if( edit_label_mode ) {
 	if( ui_selected_item == 0 )
 	  ui_selected_item = NUM_OF_ITEMS_EDIT_MODE-1;
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -633,7 +629,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Type Steps/ParL/TrgL Port Chn. EditCategory: xxxxx   Label: xxxxxxxxxxxxxxx
-  // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr       Presets       
+  // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr    Preset Cat./Label
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -659,7 +655,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("Edit");
   }
 
-  if( edit_mode ) {
+  if( edit_label_mode ) {
     SEQ_LCD_PrintString("Category: ");
     SEQ_LCD_PrintTrackCategory(visible_track, seq_core_trk[visible_track].name);
     SEQ_LCD_PrintString("   Label: ");
@@ -745,8 +741,8 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( edit_mode ) {
-    SEQ_LCD_PrintString("Char  Cur  Ins  Clr       Presets       ");
+  if( edit_label_mode ) {
+    SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Cat./Label");
 
   ///////////////////////////////////////////////////////////////////////////
   } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
@@ -860,7 +856,7 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
 
-  edit_mode = 0;
+  edit_label_mode = 0;
   selected_layer_config_track = SEQ_UI_VisibleTrackGet();
   selected_layer_config = GetLayerConfig(selected_layer_config_track);
 

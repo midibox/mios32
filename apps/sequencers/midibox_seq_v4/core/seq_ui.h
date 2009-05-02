@@ -226,7 +226,6 @@ extern seq_ui_page_t ui_parlayer_prev_page;
 
 extern volatile u8 ui_cursor_flash;
 
-extern char ui_edit_name[21];
 extern u8 ui_edit_name_cursor;
 extern u8 ui_edit_preset_num_category;
 extern u8 ui_edit_preset_num_label;
