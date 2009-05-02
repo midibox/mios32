@@ -9,7 +9,9 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
-#define MIOS32_LCD_BOOT_MSG_LINE1 "Application Name"
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "App. Template"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 <your name>"
 
 
 #endif /* _MIOS32_CONFIG_H */
