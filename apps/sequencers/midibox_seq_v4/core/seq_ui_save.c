@@ -177,9 +177,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GROUP:
+      edit_label_mode = 0; // turn off save mode
       return SEQ_UI_Var8_Inc(&ui_selected_group, 0, SEQ_CORE_NUM_GROUPS-1, incrementer);
 
     case ITEM_BANK: {
+      edit_label_mode = 0; // turn off save mode
       u8 tmp = save_pattern[ui_selected_group].bank;
       if( SEQ_UI_Var8_Inc(&tmp, 0, SEQ_FILE_B_NUM_BANKS-1, incrementer) ) {
 	save_pattern[ui_selected_group].bank = tmp;
@@ -189,6 +191,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_PATTERN: {
+      edit_label_mode = 0; // turn off save mode
       u8 tmp = save_pattern[ui_selected_group].pattern;
       u8 max_patterns = SEQ_FILE_B_NumPatterns(save_pattern[ui_selected_group].bank);
 

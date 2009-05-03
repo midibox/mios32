@@ -184,33 +184,37 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
     u8 drum;
     for(drum=0; drum<num_instruments; ++drum) {
-      seq_layer_evnt_t *e = &layer_events[drum];
-      mios32_midi_package_t *p = &e->midi_package;
-      p->type     = NoteOn;
-      p->cable    = track;
-      p->event    = NoteOn;
-      p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
-      p->note     = tcc->lay_const[0*16 + drum];
+      u8 note = tcc->lay_const[0*16 + drum];
+      u8 velocity = 0;
 
-      if( !SEQ_TRG_Get(track, step, 0, drum) )
-	p->velocity = 0;
-      else {
+      if( SEQ_TRG_Get(track, step, 0, drum) ) {
 	if( num_p_layers == 2 )
-	  p->velocity = SEQ_PAR_VelocityGet(track, step, drum);
+	  velocity = SEQ_PAR_VelocityGet(track, step, drum);
 	else
-	  p->velocity = tcc->lay_const[1*16 + drum];
+	  velocity = tcc->lay_const[1*16 + drum];
       }
 
-      if( handle_vu_meter && p->velocity ) {
-	seq_layer_vu_meter[drum] = p->velocity;
+      if( handle_vu_meter && velocity ) {
+	seq_layer_vu_meter[drum] = velocity;
       } else {
 	seq_layer_vu_meter[drum] &= 0x7f; // ensure that no static assignment is displayed
       }
 
-      e->len = SEQ_PAR_LengthGet(track, step, drum);
-      e->layer_tag = drum;
+      if( (note && velocity) || insert_empty_notes ) {
+	seq_layer_evnt_t *e = &layer_events[num_events];
+	mios32_midi_package_t *p = &e->midi_package;
 
-      ++num_events;
+	p->type     = NoteOn;
+	p->cable    = track;
+	p->event    = NoteOn;
+	p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
+	p->note     = note;
+	p->velocity = velocity;
+	e->len = SEQ_PAR_LengthGet(track, step, drum);
+	e->layer_tag = drum;
+
+	++num_events;
+      }
     }
     // TODO: CC and Pitch Bend in Drum Mode
   } else {
