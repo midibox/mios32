@@ -510,14 +510,15 @@ s32 SEQ_LCD_PrintRollMode(u8 roll_mode)
 /////////////////////////////////////////////////////////////////////////////
 // prints selected group/track (4 characters)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintGxTy(u8 group, u8 selected_tracks)
+s32 SEQ_LCD_PrintGxTy(u8 group, u16 selected_tracks)
 {
   const char selected_tracks_tab[16] = { '-', '1', '2', 'M', '3', 'M', 'M', 'M', '4', 'M', 'M', 'M', 'M', 'M', 'M', 'A' };
+  u8 track4 = (selected_tracks >> (group*4)) & 0x0f;
 
   SEQ_LCD_PrintChar('G');
   SEQ_LCD_PrintChar('1' + group);
   SEQ_LCD_PrintChar('T');
-  SEQ_LCD_PrintChar(selected_tracks_tab[selected_tracks & 0xf]);
+  SEQ_LCD_PrintChar(selected_tracks_tab[track4 & 0xf]);
 
   return 0; // no error
 }

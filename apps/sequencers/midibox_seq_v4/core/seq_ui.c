@@ -53,7 +53,7 @@ u8 seq_ui_display_init_req;
 seq_ui_button_state_t seq_ui_button_state;
 
 u8 ui_selected_group;
-u8 ui_selected_tracks;
+u16 ui_selected_tracks;
 u8 ui_selected_par_layer;
 u8 ui_selected_trg_layer;
 u8 ui_selected_instrument;
@@ -93,11 +93,9 @@ static s32 (*ui_exit_callback)(void);
 
 static u16 ui_gp_leds;
 
-
 #define SDCARD_MSG_MAX_CHAR 21
 static char sdcard_msg[2][SDCARD_MSG_MAX_CHAR];
 static u16 sdcard_msg_ctr;
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -722,13 +720,26 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Track(s32 depressed, u32 track)
+static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
 {
-  if( depressed ) return -1; // ignore when button depressed
+  static u8 button_state = 0x0f; // all 4 buttons depressed
 
-  if( track >= 4 ) return -2; // max. 4 track buttons
+  if( track_button >= 4 ) return -2; // max. 4 track buttons
 
-  ui_selected_tracks = (1 << track); // TODO: multi-selections!
+  if( depressed ) {
+    button_state |= (1 << track_button);
+    return 0; // no error
+  }
+
+  button_state &= ~(1 << track_button);
+
+  if( button_state == (~(1 << track_button) & 0xf) ) {
+    // if only one select button pressed: radio-button function (1 of 4)
+    ui_selected_tracks = 1 << (track_button + 4*ui_selected_group);
+  } else {
+    // if more than one select button pressed: toggle function (4 of 4)
+    ui_selected_tracks ^= 1 << (track_button + 4*ui_selected_group);
+  }
 
   // set/clear encoder fast function if required
   SEQ_UI_InitEncSpeed(1); // auto config
@@ -742,7 +753,17 @@ static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
 
   if( group >= 4 ) return -2; // max. 4 group buttons
 
-  ui_selected_group = group;
+  // if group has changed:
+  if( group != ui_selected_group ) {
+    // get current track selection
+    u16 old_tracks = ui_selected_tracks >> (4*ui_selected_group);
+
+    // select new group
+    ui_selected_group = group;
+
+    // take over old track selection
+    ui_selected_tracks = old_tracks << (4*ui_selected_group);
+  }
 
   // set/clear encoder fast function if required
   SEQ_UI_InitEncSpeed(1); // auto config
@@ -1197,10 +1218,11 @@ s32 SEQ_UI_LED_Handler(void)
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   // track LEDs
-  SEQ_LED_PinSet(LED_TRACK1, (ui_selected_tracks & (1 << 0)));
-  SEQ_LED_PinSet(LED_TRACK2, (ui_selected_tracks & (1 << 1)));
-  SEQ_LED_PinSet(LED_TRACK3, (ui_selected_tracks & (1 << 2)));
-  SEQ_LED_PinSet(LED_TRACK4, (ui_selected_tracks & (1 << 3)));
+  u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);
+  SEQ_LED_PinSet(LED_TRACK1, (selected_tracks & (1 << 0)));
+  SEQ_LED_PinSet(LED_TRACK2, (selected_tracks & (1 << 1)));
+  SEQ_LED_PinSet(LED_TRACK3, (selected_tracks & (1 << 2)));
+  SEQ_LED_PinSet(LED_TRACK4, (selected_tracks & (1 << 3)));
   
   // parameter layer LEDs
   SEQ_LED_PinSet(LED_PAR_LAYER_A, (ui_selected_par_layer == 0));
@@ -1491,13 +1513,14 @@ u8 SEQ_UI_VisibleTrackGet(void)
 {
   u8 offset = 0;
 
-  if( ui_selected_tracks & (1 << 3) )
+  u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);
+  if( selected_tracks & (1 << 3) )
     offset = 3;
-  if( ui_selected_tracks & (1 << 2) )
+  if( selected_tracks & (1 << 2) )
     offset = 2;
-  if( ui_selected_tracks & (1 << 1) )
+  if( selected_tracks & (1 << 1) )
     offset = 1;
-  if( ui_selected_tracks & (1 << 0) )
+  if( selected_tracks & (1 << 0) )
     offset = 0;
 
   return 4*ui_selected_group + offset;
@@ -1509,9 +1532,7 @@ u8 SEQ_UI_VisibleTrackGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_IsSelectedTrack(u8 track)
 {
-  if( (track>>2) != ui_selected_group )
-    return 0;
-  return (ui_selected_tracks & (1 << (track&3))) ? 1 : 0;
+  return (ui_selected_tracks & (1 << track)) ? 1 : 0;
 }
 
 
@@ -1547,7 +1568,7 @@ s32 SEQ_UI_GxTyInc(s32 incrementer)
   if( gxty == prev_gxty )
     return 0; // no change
 
-  ui_selected_tracks = 1 << (gxty % 4);
+  ui_selected_tracks = 1 << gxty;
   ui_selected_group = gxty / 4;
 
   return 1; // value changed

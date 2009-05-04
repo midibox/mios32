@@ -164,9 +164,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     } else {
       // c) ALL function not active: toggle step
       u8 track;
+
+      u8 new_value = SEQ_TRG_Get(visible_track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	if( SEQ_UI_IsSelectedTrack(track) ) {
-	  u8 new_value = SEQ_TRG_Get(track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
 	  SEQ_TRG_Set(track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument, new_value);
 	}
       }

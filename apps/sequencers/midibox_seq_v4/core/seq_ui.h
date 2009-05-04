@@ -208,7 +208,7 @@ extern u8 seq_ui_display_init_req;
 extern seq_ui_button_state_t seq_ui_button_state;
 
 extern u8 ui_selected_group;
-extern u8 ui_selected_tracks;
+extern u16 ui_selected_tracks;
 extern u8 ui_selected_par_layer;
 extern u8 ui_selected_trg_layer;
 extern u8 ui_selected_instrument;

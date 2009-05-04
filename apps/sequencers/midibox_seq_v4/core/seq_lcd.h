@@ -59,7 +59,7 @@ extern s32 SEQ_LCD_PrintProbability(u8 probability);
 extern s32 SEQ_LCD_PrintStepDelay(s32 delay);
 extern s32 SEQ_LCD_PrintRollMode(u8 roll_mode);
 
-extern s32 SEQ_LCD_PrintGxTy(u8 group, u8 track);
+extern s32 SEQ_LCD_PrintGxTy(u8 group, u16 selected_tracks);
 extern s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern);
 extern s32 SEQ_LCD_PrintPatternCategory(seq_pattern_t pattern, char *pattern_name);
 extern s32 SEQ_LCD_PrintPatternLabel(seq_pattern_t pattern, char *pattern_name);
