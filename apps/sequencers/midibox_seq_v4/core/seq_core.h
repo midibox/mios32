@@ -22,6 +22,8 @@
 #define SEQ_CORE_NUM_TRACKS_PER_GROUP  4
 #define SEQ_CORE_NUM_TRACKS            (SEQ_CORE_NUM_TRACKS_PER_GROUP*SEQ_CORE_NUM_GROUPS)
 
+#define SEQ_CORE_NUM_BPM_PRESETS       16
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -172,6 +174,9 @@ extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
+extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
+extern s32 SEQ_CORE_BPM_SweepHandler(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
@@ -185,8 +190,13 @@ extern u8 seq_core_global_scale_ctrl;
 extern u8 seq_core_global_scale_root_selection;
 extern u8 seq_core_keyb_scale_root;
 
+extern u8 seq_core_bpm_preset_num;
+extern float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
+extern float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
+
 extern u8 seq_core_bpm_div_int;
 extern u8 seq_core_bpm_div_ext;
+
 
 extern seq_core_state_t seq_core_state;
 extern seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];

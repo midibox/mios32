@@ -78,11 +78,16 @@ u8 seq_core_global_scale_root;
 u8 seq_core_global_scale_root_selection;
 u8 seq_core_keyb_scale_root;
 
+u8 seq_core_bpm_preset_num;
+float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
+float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
+
 u8 seq_core_bpm_div_int;
 u8 seq_core_bpm_div_ext;
 
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -92,12 +97,17 @@ seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 static u32 bpm_tick_prefetch_req;
 static u32 bpm_tick_prefetched_ctr;
 
+static float seq_core_bpm_target;
+static float seq_core_bpm_sweep_inc;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Init(u32 mode)
 {
+  int i;
+
   seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16-1;
   seq_core_global_scale = 0;
@@ -106,6 +116,13 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
   seq_core_bpm_div_int = 0; // (frequently used, therefore not part of seq_core_options union)
   seq_core_bpm_div_ext = 1;
+
+  seq_core_bpm_preset_num = 13; // 140.0
+  for(i=0; i<SEQ_CORE_NUM_BPM_PRESETS; ++i) {
+    seq_core_bpm_preset_tempo[i] = 75.0 + 5.0*i;
+    seq_core_bpm_preset_ramp[i] = 0.0;
+  }
+  seq_core_bpm_sweep_inc = 0.0;
 
   seq_core_state.ALL = 0;
 
@@ -159,7 +176,7 @@ s32 SEQ_CORE_Init(u32 mode)
   SEQ_BPM_Init(0);
 
   SEQ_BPM_PPQN_Set(384);
-  SEQ_BPM_Set(140.0);
+  SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], 0.0);
 
 #if STOPWATCH_PERFORMANCE_MEASURING
   SEQ_UI_MENU_StopwatchInit();
@@ -1065,3 +1082,50 @@ s32 SEQ_CORE_AddForwardDelay(u16 delay_ms)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function updates the BPM rate in a given sweep time
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp)
+{
+  if( sweep_ramp <= 0.0 ) {
+    seq_core_bpm_target = bpm;
+    SEQ_BPM_Set(seq_core_bpm_target);
+    seq_core_bpm_sweep_inc = 0.0;
+  } else {
+    seq_core_bpm_target = bpm;
+    seq_core_bpm_sweep_inc = (seq_core_bpm_target - SEQ_BPM_Get()) / (10.0 * sweep_ramp);
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function should be called each mS to update the BPM
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_BPM_SweepHandler(void)
+{
+  static u8 prescaler = 0;
+
+  // next step each 100 mS
+  if( ++prescaler < 100 )
+    return 0;
+  prescaler = 0;
+
+  if( seq_core_bpm_sweep_inc != 0.0 ) {
+    float current_bpm = SEQ_BPM_Get();
+    float tolerance = 0.1;
+
+    if( (seq_core_bpm_sweep_inc > 0.0 && current_bpm >= (seq_core_bpm_target-tolerance)) ||
+	(seq_core_bpm_sweep_inc < 0.0 && current_bpm <= (seq_core_bpm_target+tolerance)) ) {
+      seq_core_bpm_sweep_inc = 0.0; // final value reached
+      SEQ_BPM_Set(seq_core_bpm_target);
+    } else {
+      SEQ_BPM_Set(current_bpm + seq_core_bpm_sweep_inc);
+    }
+  }
+
+  return 0; // no error
+}
+
