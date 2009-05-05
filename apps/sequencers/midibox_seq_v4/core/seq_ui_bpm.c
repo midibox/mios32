@@ -32,11 +32,20 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       4
+#define NUM_OF_ITEMS       6
 #define ITEM_MODE          0
-#define ITEM_BPM           1
-#define ITEM_IDIV          2
-#define ITEM_EDIV          3
+#define ITEM_PRESET        1
+#define ITEM_BPM           2
+#define ITEM_RAMP          3
+#define ITEM_IDIV          4
+#define ITEM_EDIV          5
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 preset_sel_mode;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,13 +56,19 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  switch( ui_selected_item ) {
-    case ITEM_MODE: *gp_leds = 0x0007; break;
-    case ITEM_BPM: *gp_leds = 0x0078; break;
-  }
+  if( preset_sel_mode ) {
+    *gp_leds = 1 << seq_core_bpm_preset_num;
+  } else {
+    switch( ui_selected_item ) {
+      case ITEM_MODE: *gp_leds = 0x0001; break;
+      case ITEM_PRESET: *gp_leds = 0x0002; break;
+      case ITEM_BPM: *gp_leds = 0x000c; break;
+      case ITEM_RAMP: *gp_leds = 0x0010; break;
+    }
 
-  *gp_leds |= (1 << (seq_core_bpm_div_int+8));
-  *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
+    *gp_leds |= (1 << (seq_core_bpm_div_int+8));
+    *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
+  }
 
   return 0; // no error
 }
@@ -68,27 +83,47 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  if( preset_sel_mode ) {
+    // encoder selects preset
+    if( encoder <= SEQ_UI_ENCODER_GP16 ) {
+      // set preset
+      seq_core_bpm_preset_num = encoder;
+      // change Tempo
+      SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+      // and exit preset mode
+      preset_sel_mode = 0;
+    }
+
+    return -1; // ignore remaining encoders
+  }
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
-    case SEQ_UI_ENCODER_GP2:
-    case SEQ_UI_ENCODER_GP3:
       ui_selected_item = ITEM_MODE;
       break;
 
-    case SEQ_UI_ENCODER_GP4:
-    case SEQ_UI_ENCODER_GP5:
+    case SEQ_UI_ENCODER_GP2:
+      ui_selected_item = ITEM_PRESET;
+      break;
+
+    case SEQ_UI_ENCODER_GP3:
       ui_selected_item = ITEM_BPM;
       // special feature: these two encoders increment *10
       incrementer *= 10;
       break;
 
-    case SEQ_UI_ENCODER_GP6:
-    case SEQ_UI_ENCODER_GP7:
+    case SEQ_UI_ENCODER_GP4:
       ui_selected_item = ITEM_BPM;
       break;
 
+    case SEQ_UI_ENCODER_GP5:
+      ui_selected_item = ITEM_RAMP;
+      break;
+
+    case SEQ_UI_ENCODER_GP6:
+    case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      return 0; // Tap Tempo not for encoder
+      return -1; // not mapped to encoder
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
@@ -118,10 +153,25 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 0; // value hasn't been changed
     } break;
 
+    case ITEM_PRESET: {
+      return SEQ_UI_Var8_Inc(&seq_core_bpm_preset_num, 0, SEQ_CORE_NUM_BPM_PRESETS-1, incrementer);
+    } break;
+
     case ITEM_BPM: {
-      u16 value = (u16)(SEQ_BPM_Get()*10);
+      u16 value = (u16)(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num]*10);
       if( SEQ_UI_Var16_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
-	SEQ_BPM_Set((float)value/10.0);
+	// set new BPM
+      	seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
+	SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
+
+    case ITEM_RAMP: {
+      u16 value = (u16)seq_core_bpm_preset_ramp[seq_core_bpm_preset_num];
+      if( SEQ_UI_Var16_Inc(&value, 0, 99, incrementer) ) {
+	seq_core_bpm_preset_ramp[seq_core_bpm_preset_num] = (float)value;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -149,12 +199,42 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
+  if( preset_sel_mode ) {
+    // GP button selects preset
+    if( button <= SEQ_UI_BUTTON_GP16 ) {
+      // re-use encoder handler - only select UI item, don't increment
+      return Encoder_Handler((int)button, 0);
+    }
+
+    // TODO
+    // too bad, that the menu handling concept doesn't allow to react on exit button here
+    // this would allow to exit preset selection mode w/o exiting BPM page
+
+    return -1; // ignore remaining buttons
+  }
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
+    switch( button ) {
+      case SEQ_UI_BUTTON_GP6:
+	// enter preset selection mode
+	preset_sel_mode = 1;
+	return 1;
+
+      case SEQ_UI_BUTTON_GP7:
+	// set Tempo
+	SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+	return 1;
+
+      case SEQ_UI_BUTTON_GP8:
+	// TODO Tap Tempo
+	return 1;
+    }
+
     // re-use encoder handler - only select UI item, don't increment
     return Encoder_Handler((int)button, 0);
   }
@@ -196,38 +276,79 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // BPM Clock Mode   Beats per Minute   Tap    Global Clock Dividers (Int./Ext.)    
-  //     Master            140.0        Tempo  >1<   2    4    8    2   >4<   8   16 
+  //  Mode Preset Tempo  Ramp  Fire  Set Tap    Global Clock Dividers (Int./Ext.)    
+  // Master   1   140.0   1s  Preset  Tempo   >1<   2    4    8    2   >4<   8   16 
 
+
+  if( preset_sel_mode ) {
+    int i;
+
+    SEQ_LCD_CursorSet(0, 0);
+    for(i=0; i<16; ++i) {
+      float bpm = seq_core_bpm_preset_tempo[i];
+      if( i == seq_core_bpm_preset_num ) {
+	SEQ_LCD_PrintFormattedString(ui_cursor_flash ? ">   <" : ">%3d<", (int)bpm);
+      } else {
+	SEQ_LCD_PrintFormattedString(" %3d ", (int)bpm);
+      }
+    }
+
+    SEQ_LCD_CursorSet(0, 1);
+    for(i=0; i<16; ++i) {
+      float ramp = seq_core_bpm_preset_ramp[i];
+      if( i == seq_core_bpm_preset_num ) {
+	SEQ_LCD_PrintFormattedString(ui_cursor_flash ? ">   <" : ">%2ds<", (int)ramp);
+      } else {
+	SEQ_LCD_PrintFormattedString(" %2ds ", (int)ramp);
+      }
+    }
+
+    return 0; // no error
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("BPM Clock Mode   Beats per Minute   Tap    Global Clock Dividers (Int./Ext.)    ");
+  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp  Fire  Set Tap    Global Clock Dividers (Int./Ext.)    ");
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintSpaces(4);
   if( ui_selected_item == ITEM_MODE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
-    const char mode_str[3][7] = { "Auto  ", "Master", "Slave "};
+    const char mode_str[3][7] = { " Auto ", "Master", "Slave "};
     SEQ_LCD_PrintString((char *)mode_str[SEQ_BPM_ModeGet()]);
   }
-  SEQ_LCD_PrintSpaces(11);
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_PRESET && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(2);
+  } else {
+    SEQ_LCD_PrintFormattedString("%2d", seq_core_bpm_preset_num+1);
+  }
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_BPM && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
-    float bpm = SEQ_BPM_Get();
+    float bpm = seq_core_bpm_preset_tempo[seq_core_bpm_preset_num];
     SEQ_LCD_PrintFormattedString("%3d.%d", (int)bpm, (int)(10*bpm)%10);
+  }
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_RAMP && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    float ramp = seq_core_bpm_preset_ramp[seq_core_bpm_preset_num];
+    SEQ_LCD_PrintFormattedString("%2ds", (int)ramp);
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(9);
-  SEQ_LCD_PrintString("Tempo");
+  SEQ_LCD_PrintString("  Preset  Tempo  ");
 
   ///////////////////////////////////////////////////////////////////////////
   int i;
@@ -279,6 +400,8 @@ s32 SEQ_UI_BPM_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
+
+  preset_sel_mode = 0;
 
   return 0; // no error
 }

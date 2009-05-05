@@ -280,6 +280,9 @@ void SEQ_TASK_Period1mS(void)
   // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
   BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
 #endif
+
+  // update BPM
+  SEQ_CORE_BPM_SweepHandler();
 }
 
 

@@ -81,6 +81,8 @@
 		526F87F10EEA126A00441997 /* PYMIDIVirtualDestination.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CA0EEA126A00441997 /* PYMIDIVirtualDestination.m */; };
 		526F87F20EEA126A00441997 /* PYMIDIVirtualEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */; };
 		526F87F30EEA126A00441997 /* PYMIDIVirtualSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */; };
+		527828F40FB0ADCB009822EB /* seq_morph.c in Sources */ = {isa = PBXBuildFile; fileRef = 527828F20FB0ADCB009822EB /* seq_morph.c */; };
+		527828F60FB0ADD9009822EB /* seq_ui_trkmorph.c in Sources */ = {isa = PBXBuildFile; fileRef = 527828F50FB0ADD9009822EB /* seq_ui_trkmorph.c */; };
 		5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */ = {isa = PBXBuildFile; fileRef = 5278A3290F44B6FD00DF885C /* seq_file_c.c */; };
 		5282AE090F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */; };
 		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
@@ -255,6 +257,10 @@
 		526F87CC0EEA126A00441997 /* PYMIDIVirtualEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualEndpoint.m; sourceTree = "<group>"; };
 		526F87CD0EEA126A00441997 /* PYMIDIVirtualSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualSource.h; sourceTree = "<group>"; };
 		526F87CE0EEA126A00441997 /* PYMIDIVirtualSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualSource.m; sourceTree = "<group>"; };
+		527828F20FB0ADCB009822EB /* seq_morph.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_morph.c; path = ../core/seq_morph.c; sourceTree = SOURCE_ROOT; };
+		527828F30FB0ADCB009822EB /* seq_morph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_morph.h; path = ../core/seq_morph.h; sourceTree = SOURCE_ROOT; };
+		527828F50FB0ADD9009822EB /* seq_ui_trkmorph.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkmorph.c; path = ../core/seq_ui_trkmorph.c; sourceTree = SOURCE_ROOT; };
+		527828F70FB0ADEC009822EB /* seq_record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_record.h; path = ../core/seq_record.h; sourceTree = SOURCE_ROOT; };
 		5278A3290F44B6FD00DF885C /* seq_file_c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_c.c; path = ../core/seq_file_c.c; sourceTree = SOURCE_ROOT; };
 		5278A32A0F44B6FD00DF885C /* seq_file_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_c.h; path = ../core/seq_file_c.h; sourceTree = SOURCE_ROOT; };
 		5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_STOPWATCH_Wrapper.h; sourceTree = "<group>"; };
@@ -458,6 +464,10 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				527828F70FB0ADEC009822EB /* seq_record.h */,
+				527828F50FB0ADD9009822EB /* seq_ui_trkmorph.c */,
+				527828F20FB0ADCB009822EB /* seq_morph.c */,
+				527828F30FB0ADCB009822EB /* seq_morph.h */,
 				5278A3290F44B6FD00DF885C /* seq_file_c.c */,
 				5278A32A0F44B6FD00DF885C /* seq_file_c.h */,
 				525B4B670F3F86A40077C87B /* seq_humanize.c */,
@@ -842,6 +852,8 @@
 				524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */,
 				52C3934C0FA643A80000FD51 /* seq_label.c in Sources */,
 				52C3934D0FA643A80000FD51 /* seq_ui_fx_humanize.c in Sources */,
+				527828F40FB0ADCB009822EB /* seq_morph.c in Sources */,
+				527828F60FB0ADD9009822EB /* seq_ui_trkmorph.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
