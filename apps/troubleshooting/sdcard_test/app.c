@@ -19,78 +19,267 @@
 #include "app.h"
 #include <FreeRTOS.h>
 #include <task.h>
+#include <queue.h>
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+
+#define PRIORITY_TASK_DISPLAY	( tskIDLE_PRIORITY + 1 )
+
+#define MAX_FIRST_SECTOR 0xFF
+#define MAX_SUBSEQ_CHECK_ERRORS  0x10
+#define CHECK_STEP 0xF2
+#define INITIAL_SECTOR_INC 0x1000
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Display(void *pvParameters);
+
+static void init_sdcard_buffer(void);
+static s32 check_sdcard_buffer(void);
+static void clear_sdcard_buffer(void);
+static s32 check_sector_rw(void);
+static s32 sdcard_try_connect();
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
-#define max_first_sector 0xFF
-#define max_subseq_check_errors  0x10
-#define check_step 0xF2
-#define initial_sector_inc 0x1000
+//test-pases:
+//0x00 init
+//0x01 determine first rw sector
+//0x02 determine last rw sector
+//0x03 deep check
+//0xff check done
+volatile u8 phase,dummy = 0;
 
-u8 phase = 0;//0x00 init;0x01 determine first rw sector;0x02 determine last rw sector;0x03 deep check;0xff check done;
-u32 sector;
-u32 sector_inc;//current sector increment
+volatile u32 sector;
 
-u32 bad_sector_count;
-u32 first_sector_rw;
-u32 last_sector_rw;
-u8 last_error_code;
-u8 last_error_op;
-u16 subseq_check_errors;
 
-u8 was_available;
+volatile u32 bad_sector_count;
+volatile u32 first_sector_rw;
+volatile u32 last_sector_rw;
+volatile s32 last_error_code;
+volatile u8 last_error_op;//'a' (available) 'r' (read) ; 'w' (write) ; 'c' (compare)
+volatile u16 subseq_check_errors;
 
-///////////////////////////////////////////////////////////////////////////////
-// Application functions
-///////////////////////////////////////////////////////////////////////////////
+u8 sdcard_buffer[0x200];
 
-void init_sdcard_buffer(void);
-u8 check_sdcard_buffer(void);
-void clear_sdcard_buffer(void);
-u8 check_sector_rw(void);
-void print_long_hex(u32);
+u8 was_available = 0;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
-void APP_Init(void)
-{
-  s32 i;
-
-  // initialize all LEDs
-  MIOS32_BOARD_LED_Init(0xffffffff);
-  MIOS32_SDCARD_Init(0);
-  was_available = 0;
- 
-}
+void APP_Init(void){
+	// initialize all LEDs
+	MIOS32_BOARD_LED_Init(0xffffffff);
+	MIOS32_MIDI_SendDebugMessage("SD-Card Test init...");
+	MIOS32_SDCARD_Init(0);
+	// setup display task
+	xTaskCreate(TASK_Display, (signed portCHAR *)"Display", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DISPLAY, NULL);
+	}
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
-void APP_Background(void)
-{
-/* Block for 500ms. */
- const portTickType xDelay = 1000 / portTICK_RATE_MS;
-  // init LCD
-  MIOS32_LCD_Clear();
- // endless loop: print status information on LCD
-  while( 1 ) {
-  MIOS32_LCD_Clear();
-  MIOS32_LCD_CursorSet(0,0);
- if(was_available = MIOS32_SDCARD_CheckAvailable(was_available))
-	MIOS32_LCD_PrintString("SDCard available!");
-  else
-  	MIOS32_LCD_PrintString("SDCard not available");
-	vTaskDelay( xDelay );
+void APP_Background(void){
+	u32 sector_inc;//current sector increment
+	MIOS32_MIDI_SendDebugMessage("SD-Card Test started...");
+  	while( 1 ) {
+		switch(phase){
+			case 0x02:
+				MIOS32_MIDI_SendDebugMessage("try to connect to SD Card...");
+				sector_inc = INITIAL_SECTOR_INC;//current sector increment
+				first_sector_rw = 0xffffffff;
+				last_sector_rw = 0xffffffff;
+				sector = 0;
+				bad_sector_count = 0;
+				last_error_code = 0;
+				last_error_op = 0;
+				subseq_check_errors = 0;
+			  	// Connect to SD-Card
+				if(sdcard_try_connect())
+					phase = 0x03;
+				break;		
+			case 0x03://determine first rw sector
+				if(!check_sector_rw()){
+					if(sector < MAX_FIRST_SECTOR)
+						sector++;
+					else
+						phase = 0xff;
+					}
+				else{
+					first_sector_rw=sector;
+					last_sector_rw=sector;
+					phase = 0x04;
+					while(sector_inc > 0xffffffff - last_sector_rw)
+						sector_inc >>= 1;
+					sector = last_sector_rw + sector_inc;
+					}
+				break;
+			case 0x04://determine last rw sector
+				if(!check_sector_rw()){
+					if(sector_inc == 1){
+						phase = 0x05;
+						sector = first_sector_rw;
+						}
+					else{
+						sector_inc >>= 1;
+						sector = last_sector_rw + sector_inc;
+						}
+					}
+				else{
+					last_sector_rw = sector;
+					while(sector_inc > 0xffffffff - last_sector_rw)
+						sector_inc >>= 1;
+					sector += sector_inc;
+					}
+				break;
+			case 0x05://deep check all sectors
+				if(sector > last_sector_rw){
+					phase = 0xff;
+					subseq_check_errors = 0;
+					}
+				else{
+					if(!check_sector_rw()){
+						bad_sector_count++;
+						subseq_check_errors++;
+						if(subseq_check_errors > MAX_SUBSEQ_CHECK_ERRORS){
+							phase = 0xff;
+							}
+						}
+					else
+						subseq_check_errors=0;
+					sector += CHECK_STEP;
+					}
+				break;
+			}
+		}
+	}
 
-   
-  }
-}
+static void init_sdcard_buffer(void){
+	u16 i;
+	u8 value = sector % 0xff;
+	for(i = 0; i < 0x200;i++){
+		sdcard_buffer[i] = value;
+		value = (value < 0xff) ? value + 1 : 0;
+		}
+	}
+
+static s32 check_sdcard_buffer(void){
+	u16 i;
+	u8 value = sector % 0xff;
+	for(i = 0; i < 0x200;i++){
+		if(sdcard_buffer[i] != value)
+			return 0;
+		value = (value < 0xff) ? value + 1 : 0;
+		}
+	return 1;
+	}
+	
+static void clear_sdcard_buffer(void){
+	u16 i;
+	for(i = 0; i < 0x200;i++)
+		sdcard_buffer[i] = 0;
+	}
+
+static s32 check_sector_rw(void){
+	s32 resp;
+	init_sdcard_buffer();
+	if(resp = MIOS32_SDCARD_SectorWrite(sector,sdcard_buffer)){
+		last_error_op = 'w';
+		last_error_code = resp;
+		sdcard_try_connect();
+		return 0;
+		}
+	clear_sdcard_buffer();
+	if(resp = MIOS32_SDCARD_SectorRead(sector,sdcard_buffer)){
+		last_error_op = 'r';
+		last_error_code = resp;
+		sdcard_try_connect();
+		return 0;
+		}
+	if(!check_sdcard_buffer()){
+		last_error_op = 'c';
+		last_error_code = 0;
+		return 0;
+		}	
+	return 1;
+	}
+
+static s32 sdcard_try_connect(){
+	if(!(was_available = MIOS32_SDCARD_CheckAvailable(was_available))){
+		last_error_op = 'a';
+		last_error_code = 0;
+		phase = 0xff;
+		return  0;
+		}
+	return 1;
+	}
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is running endless in background to drive display-output
+/////////////////////////////////////////////////////////////////////////////
+
+
+static void TASK_Display(void *pvParameters){
+	u32 delay_ms;
+	char * op_str;
+	while(1){
+		MIOS32_LCD_Clear();
+		MIOS32_LCD_CursorSet(0,0);
+		delay_ms = 100;
+		switch(phase){
+			case 0x00:
+				MIOS32_LCD_PrintString("SD CARD CHECK");
+				MIOS32_LCD_CursorSet(0,1);
+				MIOS32_LCD_PrintString("INITIALIZAION..");
+				phase = 0x01;
+				delay_ms = 1000;
+				break;
+			case 0x01:
+				phase = 0x02;
+				break;
+			case 0x03:
+				MIOS32_LCD_PrintFormattedString("FS 0x%08X",sector);
+				break;
+			case 0x04:
+				MIOS32_LCD_PrintFormattedString("LS 0x%08X",sector);
+				break;
+			case 0x05:
+				MIOS32_LCD_PrintFormattedString("0x%08X BAD 0x%08X",sector,bad_sector_count);
+				MIOS32_LCD_CursorSet(0,1);
+				MIOS32_LCD_PrintFormattedString("0x%08X",last_sector_rw);
+				break;
+			case 0xff:
+				if(first_sector_rw != 0xffffffff && !subseq_check_errors){
+					MIOS32_LCD_PrintFormattedString("0x%08X BAD 0x%08X",first_sector_rw,bad_sector_count);
+					MIOS32_LCD_CursorSet(0,1);
+					MIOS32_LCD_PrintFormattedString("0x%08X",last_sector_rw);
+					}
+				else{
+					switch(last_error_op){
+						case 'r': op_str = "READ";break;
+						case 'w': op_str = "WRITE";break;
+						case 'a': op_str = "CONNECT";break;
+						case 'c': op_str = "COMPARE";break;
+						}
+					MIOS32_LCD_PrintFormattedString("ABORT ON %s",op_str);
+					MIOS32_LCD_CursorSet(0,1);
+					MIOS32_LCD_PrintFormattedString("ERROR CODE %d",last_error_code);
+					}
+				break;
+			}
+		vTaskDelay(delay_ms / portTICK_RATE_MS);
+		}
+	}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -138,10 +327,10 @@ void APP_SRIO_ServiceFinish(void)
 // This hook is called when a button has been toggled
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
-{
- 
-}
+void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
+	if(pin_value == 0 && pin == 0)
+		phase = 0x00;	
+	}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -151,7 +340,6 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
- 
 }
 
 
