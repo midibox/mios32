@@ -10,6 +10,6 @@
 #define _MIOS32_CONFIG_H
 
 #define MIOS32_LCD_BOOT_MSG_LINE1 "SD-Card Check"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 Matthias Mächler"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 M. Maechler"
 
 #endif /* _MIOS32_CONFIG_H */
