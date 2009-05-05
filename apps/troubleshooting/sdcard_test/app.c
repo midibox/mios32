@@ -55,7 +55,7 @@ static s32 sdcard_try_connect();
 //0x02 determine last rw sector
 //0x03 deep check
 //0xff check done
-volatile u8 phase,dummy = 0;
+volatile u8 phase;
 
 volatile u32 sector;
 
@@ -64,18 +64,22 @@ volatile u32 bad_sector_count;
 volatile u32 first_sector_rw;
 volatile u32 last_sector_rw;
 volatile s32 last_error_code;
-volatile u8 last_error_op;//'a' (available) 'r' (read) ; 'w' (write) ; 'c' (compare)
-volatile u16 subseq_check_errors;
 
+//'a' (available) ; 'r' (read) ; 'w' (write) ;'c' (compare)
+volatile u8 last_error_op;
+
+volatile u16 subseq_check_errors;
 u8 sdcard_buffer[0x200];
 
-u8 was_available = 0;
+u8 was_available;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void){
+	phase = 0;
+	was_available = 0;
 	// initialize all LEDs
 	MIOS32_BOARD_LED_Init(0xffffffff);
 	MIOS32_MIDI_SendDebugMessage("SD-Card Test init...");
@@ -94,7 +98,6 @@ void APP_Background(void){
   	while( 1 ) {
 		switch(phase){
 			case 0x02:
-				MIOS32_MIDI_SendDebugMessage("try to connect to SD Card...");
 				sector_inc = INITIAL_SECTOR_INC;//current sector increment
 				first_sector_rw = 0xffffffff;
 				last_sector_rw = 0xffffffff;
@@ -104,6 +107,7 @@ void APP_Background(void){
 				last_error_op = 0;
 				subseq_check_errors = 0;
 			  	// Connect to SD-Card
+				MIOS32_MIDI_SendDebugMessage("Try to connect to SD Card...");
 				if(sdcard_try_connect())
 					phase = 0x03;
 				break;		
@@ -165,7 +169,8 @@ void APP_Background(void){
 
 static void init_sdcard_buffer(void){
 	u16 i;
-	u8 value = sector % 0xff;
+	u8 value;
+   value = sector % 0xff;
 	for(i = 0; i < 0x200;i++){
 		sdcard_buffer[i] = value;
 		value = (value < 0xff) ? value + 1 : 0;
@@ -174,7 +179,8 @@ static void init_sdcard_buffer(void){
 
 static s32 check_sdcard_buffer(void){
 	u16 i;
-	u8 value = sector % 0xff;
+	u8 value;
+   value = sector % 0xff;
 	for(i = 0; i < 0x200;i++){
 		if(sdcard_buffer[i] != value)
 			return 0;
@@ -229,8 +235,9 @@ static s32 sdcard_try_connect(){
 
 
 static void TASK_Display(void *pvParameters){
-	u32 delay_ms;
+	u32 delay_ms, dm_counter;
 	char * op_str;
+	char dm_phase;
 	while(1){
 		MIOS32_LCD_Clear();
 		MIOS32_LCD_CursorSet(0,0);
@@ -245,23 +252,37 @@ static void TASK_Display(void *pvParameters){
 				break;
 			case 0x01:
 				phase = 0x02;
+				dm_counter = 1;
+				dm_phase = 0;
 				break;
 			case 0x03:
 				MIOS32_LCD_PrintFormattedString("FS 0x%08X",sector);
+				if(!dm_counter)
+					MIOS32_MIDI_SendDebugMessage("Search first w/r sector 0x%08X",sector);
 				break;
 			case 0x04:
 				MIOS32_LCD_PrintFormattedString("LS 0x%08X",sector);
+				if(!dm_counter)
+					MIOS32_MIDI_SendDebugMessage("Search last w/r sector 0x%08X",sector);
 				break;
 			case 0x05:
-				MIOS32_LCD_PrintFormattedString("0x%08X BAD 0x%08X",sector,bad_sector_count);
+				MIOS32_LCD_PrintFormattedString("0x%08X BAD %d",sector,bad_sector_count);
 				MIOS32_LCD_CursorSet(0,1);
 				MIOS32_LCD_PrintFormattedString("0x%08X",last_sector_rw);
+				if(!dm_counter)
+					MIOS32_MIDI_SendDebugMessage("0x%08X of 0x%08X sectors checked, %d bad sectors",
+						sector,last_sector_rw,bad_sector_count);
 				break;
 			case 0xff:
 				if(first_sector_rw != 0xffffffff && !subseq_check_errors){
-					MIOS32_LCD_PrintFormattedString("0x%08X BAD 0x%08X",first_sector_rw,bad_sector_count);
+					MIOS32_LCD_PrintFormattedString("0x%08X BAD %d",first_sector_rw,bad_sector_count);
 					MIOS32_LCD_CursorSet(0,1);
 					MIOS32_LCD_PrintFormattedString("0x%08X",last_sector_rw);
+					if(!dm_counter && dm_phase!=phase){
+						MIOS32_MIDI_SendDebugMessage("Sectors 0x%08X - 0x%08X checked, %d bad sectors",
+							first_sector_rw,last_sector_rw,bad_sector_count);
+						dm_phase = phase;
+						}
 					}
 				else{
 					switch(last_error_op){
@@ -273,9 +294,14 @@ static void TASK_Display(void *pvParameters){
 					MIOS32_LCD_PrintFormattedString("ABORT ON %s",op_str);
 					MIOS32_LCD_CursorSet(0,1);
 					MIOS32_LCD_PrintFormattedString("ERROR CODE %d",last_error_code);
+					if(!dm_counter && dm_phase!=phase){
+						MIOS32_MIDI_SendDebugMessage("Abort on %s, ERROR_CODE=",op_str,last_error_code);
+						dm_phase = phase;
+						}
 					}
 				break;
 			}
+		dm_counter = dm_counter ? dm_counter - 1 : 10;
 		vTaskDelay(delay_ms / portTICK_RATE_MS);
 		}
 	}
