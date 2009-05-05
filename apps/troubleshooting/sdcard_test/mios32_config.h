@@ -1,4 +1,3 @@
-// $Id: mios32_config.h 23 2008-09-16 17:34:42Z tk $
 /*
  * Local MIOS32 configuration file
  *
@@ -10,6 +9,7 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
-#define MIOS32_LCD_BOOT_MSG_LINE1 "SD-Card Test"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "SD-Card Check"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 Matthias Mächler"
 
 #endif /* _MIOS32_CONFIG_H */
