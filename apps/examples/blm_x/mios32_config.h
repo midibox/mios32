@@ -7,6 +7,7 @@
  */
  
 #define MIOS32_LCD_BOOT_MSG_LINE1 "BLM_X Module Test"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 M. Maechler"
 
 #define MIOS32_MIDI_DEBUG_PORT USB0
 
