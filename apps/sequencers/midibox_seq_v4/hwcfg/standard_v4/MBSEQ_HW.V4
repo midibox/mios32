@@ -1,0 +1,273 @@
+##################################################
+# Setup File for Standard Frontpanel
+# $Id$
+##################################################
+
+
+##################################################
+# Shift Register Setup
+##################################################
+
+# number of first and second DOUT shift register used for GP LEDs
+GP_DOUT_SR_L    3
+GP_DOUT_SR_R    4
+
+# DOUTs for Dual Color option:
+GP_DOUT_SR_L2  15
+GP_DOUT_SR_R2  16
+
+# set this value to 1 if each track has its own set of 16 LEDs to display unmuted steps and current sequencer position
+# or if you are using a button/led matrix for misc. button/LED functions
+SRM_ENABLED     0
+
+# define the shift registers to which the anodes of these LEDs are connected
+# Note: they can be equal to DEFAULT_GP_DOUT_SR_[LH], this saves two shift registers, but doesn't allow a separate view of UI selections
+SRM_DOUT_L1	6
+SRM_DOUT_R1	9
+
+# for misc. LED functions
+SRM_DOUT_M	0
+
+# define the shift register to which the cathodes of these LEDs are connected
+# Note that the whole shift register (8 pins) will be allocated! The 4 select lines are duplicated (4 for LED matrix, 4 for button matrix)
+# The second DOUT_CATHODES2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
+SRM_DOUT_CATHODES1  5
+SRM_DOUT_CATHODES2  8
+
+# another select line for misc. button/led functions - all 8 select pins are used for a 8x8 button/led matrix
+SRM_DOUT_CATHODESM  0
+
+# 0: no mapping of Misc LEDs
+# 1: enable GP LED -> DOUT_M mapping for Wilba's MB-SEQ PCB
+SRM_DOUT_M_MAPPING  1
+
+# set an inversion mask for the DOUT shift registers if sink drivers (transistors)
+# have been added to the cathode lines
+# Settings: 0x00 - no sink drivers
+#           0xf0 - sink drivers connected to D0..D3
+#           0x0f - sink drivers connected to D7..D4
+SRM_CATHODES_INV_MASK 0x00
+
+# same for misc. button/led functions
+SRM_CATHODES_INV_MASK_M 0x00
+
+# set this to 1, if DUO colour LEDs are connected to the LED matrix
+SRM_DOUT_DUOCOLOUR  1
+
+# define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
+SRM_DOUT_L2  7
+SRM_DOUT_R2  10
+
+# set this to 1 if a button matrix is connected
+SRM_BUTTONS_ENABLED 0
+# set this to 1 if these buttons should only control the "step triggers" (gate, and other assigned triggers) - and no UI functions
+SRM_BUTTONS_NO_UI   1
+# define the DIN shift registers to which the button matrix is connected
+SRM_DIN_L  11
+SRM_DIN_R  12
+
+# 8x8 matrix for misc. button functions
+SRM_DIN_M  0
+
+
+##################################################
+# LED assignments to DOUT pins
+# SR = 0: LED disabled
+# SR = 1..16:  directly forwarded to DOUT pin
+# SR = 17..31: forwarded to a 8x8 LED matrix
+##################################################
+
+#           SR  Pin
+LED_TRACK1   1   0
+LED_TRACK2   1   1
+LED_TRACK3   1   2
+LED_TRACK4   1   3
+
+#                SR  Pin
+LED_PAR_LAYER_A   1   4
+LED_PAR_LAYER_B   1   5
+LED_PAR_LAYER_C   1   6
+
+#         SR  Pin
+LED_BEAT   1   7
+
+#           SR  Pin
+LED_EDIT     2   0
+LED_MUTE     2   1
+LED_PATTERN  2   2
+LED_SONG     2   3
+
+#           SR  Pin
+LED_SOLO     2   4
+LED_FAST     2   5
+LED_ALL      2   6
+
+#           SR  Pin
+LED_GROUP1  11   0
+LED_GROUP2  11   1
+LED_GROUP3  11   2
+LED_GROUP4  11   3
+
+#                SR  Pin
+LED_TRG_LAYER_A  12   0
+LED_TRG_LAYER_B  12   1
+LED_TRG_LAYER_C  12   2
+
+#          SR  Pin
+LED_PLAY   12   3
+LED_STOP   12   4
+LED_PAUSE  12   5
+LED_REW    12   6
+LED_FWD    12   7
+
+#              SR  Pin
+LED_MENU       13   0
+LED_SCRUB      13   1
+LED_METRONOME  13   2
+LED_UTILITY    13   3
+LED_COPY       13   4
+LED_PASTE      13   5
+LED_CLEAR      13   6
+
+#       SR  Pin
+LED_F1  14   0
+LED_F2  14   1
+LED_F3  14   2
+LED_F4  14   3
+
+#              SR  Pin
+LED_STEP_VIEW  14   5
+
+#         SR  Pin
+LED_DOWN  14   6
+LED_UP    14   7
+
+
+
+##################################################
+# Button assignments to DIN pins
+# SR = 0: Button disabled
+# SR = 1..16:  directly triggered from DIN pin
+# SR = 17..31: triggered from a 8x8 button matrix
+##################################################
+
+#            SR  Pin
+BUTTON_DOWN   1   0
+BUTTON_UP     1   1
+BUTTON_LEFT   0   0
+BUTTON_RIGHT  0   0
+
+#                SR  Pin
+BUTTON_SCRUB      1   2
+BUTTON_METRONOME  1   3
+
+#             SR  Pin
+BUTTON_STOP    1   4
+BUTTON_PAUSE   1   5
+BUTTON_PLAY    1   6
+BUTTON_REW     1   7
+BUTTON_FWD     2   8
+
+#          SR  Pin
+BUTTON_F1   2   1
+BUTTON_F2   2   2
+BUTTON_F3   2   3
+BUTTON_F4   2   4
+
+#              SR  Pin
+BUTTON_MENU     2   5
+BUTTON_SELECT   2   6
+BUTTON_EXIT     2   7
+
+#              SR  Pin
+BUTTON_TRACK1   3   0
+BUTTON_TRACK2   3   1
+BUTTON_TRACK3   3   2
+BUTTON_TRACK4   3   3
+
+#                  SR  Pin
+BUTTON_PAR_LAYER_A  3   4
+BUTTON_PAR_LAYER_B  3   4
+BUTTON_PAR_LAYER_C  3   4
+
+#               SR  Pin
+BUTTON_EDIT      4   0
+BUTTON_MUTE      4   1
+BUTTON_PATTERN   4   2
+BUTTON_SONG      4   3
+
+#            SR  Pin
+BUTTON_SOLO   4   4
+BUTTON_FAST   4   5
+BUTTON_ALL    4   6
+
+#            SR  Pin
+BUTTON_GP1    7   0
+BUTTON_GP2    7   1
+BUTTON_GP3    7   2
+BUTTON_GP4    7   3
+BUTTON_GP5    7   4
+BUTTON_GP6    7   5
+BUTTON_GP7    7   6
+BUTTON_GP8    7   7
+BUTTON_GP9   10   0
+BUTTON_GP10  10   1
+BUTTON_GP11  10   2
+BUTTON_GP12  10   3
+BUTTON_GP13  10   4
+BUTTON_GP14  10   5
+BUTTON_GP15  10   6
+BUTTON_GP16  19   7
+
+#              SR  Pin
+BUTTON_GROUP1  13   0
+BUTTON_GROUP2  13   1
+BUTTON_GROUP3  13   2
+BUTTON_GROUP4  13   3
+
+#                   SR  Pin
+BUTTON_TRG_LAYER_A  13   4
+BUTTON_TRG_LAYER_B  13   5
+BUTTON_TRG_LAYER_C  13   6
+
+#                 SR  Pin
+BUTTON_STEP_VIEW  13   7
+
+#                 SR  Pin
+BUTTON_TAP_TEMPO  14   0
+
+#               SR  Pin
+BUTTON_UTILITY  14   1
+BUTTON_COPY     14   2
+BUTTON_PASTE    14   3
+BUTTON_CLEAR    14   4
+
+
+##################################################
+# Encoder Functions
+# SR = 0: encoder disabled
+# SR = 1..16: DIN assignment
+# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3
+##################################################
+
+#              SR  Pin  Type
+ENC_DATAWHEEL   1   0   DETENTED2
+
+#        SR  Pin  Type
+ENC_GP1   5   0   DETENTED2
+ENC_GP2   5   2   DETENTED2
+ENC_GP3   5   4   DETENTED2
+ENC_GP4   5   6   DETENTED2
+ENC_GP5   6   0   DETENTED2
+ENC_GP6   6   2   DETENTED2
+ENC_GP7   6   4   DETENTED2
+ENC_GP8   6   6   DETENTED2
+ENC_GP9   8   0   DETENTED2
+ENC_GP10  8   2   DETENTED2
+ENC_GP11  8   4   DETENTED2
+ENC_GP12  8   6   DETENTED2
+ENC_GP13  9   0   DETENTED2
+ENC_GP14  9   2   DETENTED2
+ENC_GP15  9   4   DETENTED2
+ENC_GP16  9   6   DETENTED2
+

@@ -16,6 +16,7 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
+		../core/seq_hwcfg.c  \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
 		../core/seq_ui_menu.c \
@@ -64,6 +65,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_file_m.c \
 		../core/seq_file_s.c \
 		../core/seq_file_c.c \
+		../core/seq_file_hw.c \
 		../core/seq_layer.c \
 		../core/seq_random.c \
 		../core/seq_trg.c \

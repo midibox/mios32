@@ -41,7 +41,7 @@
 #define SEQ_FILE_B_ERR_INVALID_PATTERN -130 // invalid pattern number
 #define SEQ_FILE_B_ERR_FORMAT          -131 // invalid bank file format
 #define SEQ_FILE_B_ERR_READ            -132 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_B_ERR_WRITE           -133 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_B_ERR_WRITE           -133 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_B_ERR_NO_FILE         -134 // no or invalid bank file
 #define SEQ_FILE_B_ERR_P_TOO_LARGE     -135 // during pattern write: pattern too large for slot in bank
 
@@ -50,7 +50,7 @@
 #define SEQ_FILE_M_ERR_INVALID_MAP     -146 // invalid map number
 #define SEQ_FILE_M_ERR_FORMAT          -147 // invalid bank file format
 #define SEQ_FILE_M_ERR_READ            -148 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_M_ERR_WRITE           -149 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_M_ERR_WRITE           -149 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_M_ERR_NO_FILE         -150 // no or invalid bank file
 #define SEQ_FILE_M_ERR_M_TOO_LARGE     -151 // during map write: map too large for slot in bank
 
@@ -59,15 +59,21 @@
 #define SEQ_FILE_S_ERR_INVALID_SONG    -161 // invalid song number
 #define SEQ_FILE_S_ERR_FORMAT          -162 // invalid bank file format
 #define SEQ_FILE_S_ERR_READ            -163 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_S_ERR_WRITE           -164 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_S_ERR_WRITE           -164 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_S_ERR_NO_FILE         -165 // no or invalid bank file
 #define SEQ_FILE_S_ERR_S_TOO_LARGE     -166 // during song write: song too large for slot in bank
 
 // used by seq_file_c.c
 #define SEQ_FILE_C_ERR_FORMAT          -176 // invalid config file format
 #define SEQ_FILE_C_ERR_READ            -177 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_C_ERR_WRITE           -178 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_C_ERR_WRITE           -178 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_C_ERR_NO_FILE         -179 // no or invalid config file
+
+// used by seq_file_hw.c
+#define SEQ_FILE_HW_ERR_FORMAT         -192 // invalid config file format
+#define SEQ_FILE_HW_ERR_READ           -193 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_HW_ERR_WRITE          -194 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_HW_ERR_NO_FILE        -195 // no or invalid config file
 
 
 /////////////////////////////////////////////////////////////////////////////

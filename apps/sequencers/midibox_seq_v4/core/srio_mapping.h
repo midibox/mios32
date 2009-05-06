@@ -27,10 +27,6 @@
 #endif
 
 
-// values to disable LED/button functions
-#define BUTTON_DISABLED 0xffffffff
-#define LED_DISABLED    0xffffffff
-
 #if SRIO_MAPPING == 0
 #include "srio_mapping_v4.h"
 #elif SRIO_MAPPING == 1
