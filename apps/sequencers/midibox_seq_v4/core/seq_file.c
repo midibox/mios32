@@ -27,6 +27,12 @@
 
 #include "seq_file.h"
 
+#include "seq_file_b.h"
+#include "seq_file_m.h"
+#include "seq_file_s.h"
+#include "seq_file_c.h"
+#include "seq_file_hw.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -100,6 +106,7 @@ s32 SEQ_FILE_Init(u32 mode)
   status_msg_ctr = 5;
 
   // init:
+  SEQ_FILE_HW_Init(0); // hardware config file access
   SEQ_FILE_C_Init(0); // config file access
   SEQ_FILE_B_Init(0); // pattern file access
   SEQ_FILE_M_Init(0); // mixer file access
@@ -149,6 +156,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     SEQ_FILE_M_LoadAllBanks();
     SEQ_FILE_S_LoadAllBanks();
     SEQ_FILE_C_Load();
+    SEQ_FILE_HW_Load();
 
     // status message after 3 seconds
     status_msg_ctr = 3;
@@ -166,6 +174,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     SEQ_FILE_M_UnloadAllBanks();
     SEQ_FILE_S_UnloadAllBanks();
     SEQ_FILE_C_Unload();
+    SEQ_FILE_HW_Unload();
 
     return 2; // SD card has been disconnected
   }
@@ -414,19 +423,22 @@ s32 SEQ_FILE_ReadLine(PFILEINFO fileinfo, u8 *buffer, u32 max_len)
   s32 status;
   u32 num_read = 0;
 
-  while( (fileinfo->pointer < fileinfo->filelen) && (++num_read < max_len) ) {
+  while( fileinfo->pointer < fileinfo->filelen ) {
     status = SEQ_FILE_ReadBuffer(fileinfo, buffer, 1);
 
     if( status < 0 )
       return status;
 
-    if( *buffer == '\n' )
+    ++num_read;
+
+    if( *buffer == '\n' || *buffer == '\r' )
       break;
 
-    ++buffer;
+    if( num_read < max_len )
+      ++buffer;
   }
 
-  ++buffer;
+  // replace newline by terminator
   *buffer = 0;
 
   return num_read;

@@ -6,7 +6,6 @@
  * TODO: add loop fx page for setting loop point interactively
  * TODO: scroll function should use this loop point
  * TODO: utility page in drum mode: allow to handle only selected instrument
- * TODO: chained tracks are obsolete, but we could combine 4 tracks to much larger track w/o much effort
  *
  * ==========================================================================
  *
@@ -32,6 +31,7 @@
 
 #include "tasks.h"
 #include "seq_ui.h"
+#include "seq_hwcfg.h"
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midply.h"
@@ -877,217 +877,111 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 {
+  int i;
+
   // ensure that selections are matching with track constraints
   SEQ_UI_CheckSelections();
-
-  switch( pin ) {
-#if BUTTON_GP1 != BUTTON_DISABLED
-    case BUTTON_GP1:   SEQ_UI_Button_GP(pin_value, 0); break;
-#endif
-#if BUTTON_GP2 != BUTTON_DISABLED
-    case BUTTON_GP2:   SEQ_UI_Button_GP(pin_value, 1); break;
-#endif
-#if BUTTON_GP3 != BUTTON_DISABLED
-    case BUTTON_GP3:   SEQ_UI_Button_GP(pin_value, 2); break;
-#endif
-#if BUTTON_GP4 != BUTTON_DISABLED
-    case BUTTON_GP4:   SEQ_UI_Button_GP(pin_value, 3); break;
-#endif
-#if BUTTON_GP5 != BUTTON_DISABLED
-    case BUTTON_GP5:   SEQ_UI_Button_GP(pin_value, 4); break;
-#endif
-#if BUTTON_GP6 != BUTTON_DISABLED
-    case BUTTON_GP6:   SEQ_UI_Button_GP(pin_value, 5); break;
-#endif
-#if BUTTON_GP7 != BUTTON_DISABLED
-    case BUTTON_GP7:   SEQ_UI_Button_GP(pin_value, 6); break;
-#endif
-#if BUTTON_GP8 != BUTTON_DISABLED
-    case BUTTON_GP8:   SEQ_UI_Button_GP(pin_value, 7); break;
-#endif
-#if BUTTON_GP9 != BUTTON_DISABLED
-    case BUTTON_GP9:   SEQ_UI_Button_GP(pin_value, 8); break;
-#endif
-#if BUTTON_GP10 != BUTTON_DISABLED
-    case BUTTON_GP10:  SEQ_UI_Button_GP(pin_value, 9); break;
-#endif
-#if BUTTON_GP11 != BUTTON_DISABLED
-    case BUTTON_GP11:  SEQ_UI_Button_GP(pin_value, 10); break;
-#endif
-#if BUTTON_GP12 != BUTTON_DISABLED
-    case BUTTON_GP12:  SEQ_UI_Button_GP(pin_value, 11); break;
-#endif
-#if BUTTON_GP13 != BUTTON_DISABLED
-    case BUTTON_GP13:  SEQ_UI_Button_GP(pin_value, 12); break;
-#endif
-#if BUTTON_GP14 != BUTTON_DISABLED
-    case BUTTON_GP14:  SEQ_UI_Button_GP(pin_value, 13); break;
-#endif
-#if BUTTON_GP15 != BUTTON_DISABLED
-    case BUTTON_GP15:  SEQ_UI_Button_GP(pin_value, 14); break;
-#endif
-#if BUTTON_GP16 != BUTTON_DISABLED
-    case BUTTON_GP16:  SEQ_UI_Button_GP(pin_value, 15); break;
-#endif
-
-#if BUTTON_LEFT != BUTTON_DISABLED
-    case BUTTON_LEFT:  SEQ_UI_Button_Left(pin_value); break;
-#endif
-#if BUTTON_RIGHT != BUTTON_DISABLED
-    case BUTTON_RIGHT: SEQ_UI_Button_Right(pin_value); break;
-#endif
-
-#if BUTTON_DOWN != BUTTON_DISABLED
-    case BUTTON_DOWN:  SEQ_UI_Button_Down(pin_value); break;
-#endif
-#if BUTTON_UP != BUTTON_DISABLED
-    case BUTTON_UP:    SEQ_UI_Button_Up(pin_value); break;
-#endif
-
-#if BUTTON_SCRUB != BUTTON_DISABLED
-    case BUTTON_SCRUB: SEQ_UI_Button_Scrub(pin_value); break;
-#endif
-#if BUTTON_METRONOME != BUTTON_DISABLED
-    case BUTTON_METRONOME: SEQ_UI_Button_Metronome(pin_value); break;
-#endif
-
-#if BUTTON_STOP != BUTTON_DISABLED
-    case BUTTON_STOP:  SEQ_UI_Button_Stop(pin_value); break;
-#endif
-#if BUTTON_PAUSE != BUTTON_DISABLED
-    case BUTTON_PAUSE: SEQ_UI_Button_Pause(pin_value); break;
-#endif
-#if BUTTON_PLAY != BUTTON_DISABLED
-    case BUTTON_PLAY:  SEQ_UI_Button_Play(pin_value); break;
-#endif
-#if BUTTON_REW != BUTTON_DISABLED
-    case BUTTON_REW:   SEQ_UI_Button_Rew(pin_value); break;
-#endif
-#if BUTTON_FWD != BUTTON_DISABLED
-    case BUTTON_FWD:   SEQ_UI_Button_Fwd(pin_value); break;
-#endif
-
-#if BUTTON_F1 != BUTTON_DISABLED
-    case BUTTON_F1:    SEQ_UI_Button_F1(pin_value); break;
-#endif
-#if BUTTON_F2 != BUTTON_DISABLED
-    case BUTTON_F2:    SEQ_UI_Button_F2(pin_value); break;
-#endif
-#if BUTTON_F3 != BUTTON_DISABLED
-    case BUTTON_F3:    SEQ_UI_Button_F3(pin_value); break;
-#endif
-#if BUTTON_F4 != BUTTON_DISABLED
-    case BUTTON_F4:    SEQ_UI_Button_F4(pin_value); break;
-#endif
-
-#if BUTTON_UTILITY != BUTTON_DISABLED
-    case BUTTON_UTILITY: SEQ_UI_Button_Utility(pin_value); break;
-#endif
-#if BUTTON_COPY != BUTTON_DISABLED
-    case BUTTON_COPY:  SEQ_UI_Button_Copy(pin_value); break;
-#endif
-#if BUTTON_PASTE != BUTTON_DISABLED
-    case BUTTON_PASTE: SEQ_UI_Button_Paste(pin_value); break;
-#endif
-#if BUTTON_CLEAR != BUTTON_DISABLED
-    case BUTTON_CLEAR: SEQ_UI_Button_Clear(pin_value); break;
-#endif
-
-#if BUTTON_MENU != BUTTON_DISABLED
-    case BUTTON_MENU:  SEQ_UI_Button_Menu(pin_value); break;
-#endif
-#if BUTTON_SELECT != BUTTON_DISABLED
-    case BUTTON_SELECT:SEQ_UI_Button_Select(pin_value); break;
-#endif
-#if BUTTON_EXIT != BUTTON_DISABLED
-    case BUTTON_EXIT:  SEQ_UI_Button_Exit(pin_value); break;
-#endif
-
-#if BUTTON_TRACK1 != BUTTON_DISABLED
-    case BUTTON_TRACK1: SEQ_UI_Button_Track(pin_value, 0); break;
-#endif
-#if BUTTON_TRACK2 != BUTTON_DISABLED
-    case BUTTON_TRACK2: SEQ_UI_Button_Track(pin_value, 1); break;
-#endif
-#if BUTTON_TRACK3 != BUTTON_DISABLED
-    case BUTTON_TRACK3: SEQ_UI_Button_Track(pin_value, 2); break;
-#endif
-#if BUTTON_TRACK4 != BUTTON_DISABLED
-    case BUTTON_TRACK4: SEQ_UI_Button_Track(pin_value, 3); break;
-#endif
-
-#if BUTTON_PAR_LAYER_A != BUTTON_DISABLED
-    case BUTTON_PAR_LAYER_A: SEQ_UI_Button_ParLayer(pin_value, 0); break;
-#endif
-#if BUTTON_PAR_LAYER_B != BUTTON_DISABLED
-    case BUTTON_PAR_LAYER_B: SEQ_UI_Button_ParLayer(pin_value, 1); break;
-#endif
-#if BUTTON_PAR_LAYER_C != BUTTON_DISABLED
-    case BUTTON_PAR_LAYER_C: SEQ_UI_Button_ParLayer(pin_value, 2); break;
-#endif
-
-#if BUTTON_EDIT != BUTTON_DISABLED
-    case BUTTON_EDIT:   SEQ_UI_Button_Edit(pin_value); break;
-#endif
-#if BUTTON_MUTE != BUTTON_DISABLED
-    case BUTTON_MUTE:   SEQ_UI_Button_Mute(pin_value); break;
-#endif
-#if BUTTON_PATTERN != BUTTON_DISABLED
-    case BUTTON_PATTERN:SEQ_UI_Button_Pattern(pin_value); break;
-#endif
-#if BUTTON_SONG != BUTTON_DISABLED
-    case BUTTON_SONG:   SEQ_UI_Button_Song(pin_value); break;
-#endif
-
-#if BUTTON_SOLO != BUTTON_DISABLED
-    case BUTTON_SOLO:   SEQ_UI_Button_Solo(pin_value); break;
-#endif
-#if BUTTON_FAST != BUTTON_DISABLED
-    case BUTTON_FAST:   SEQ_UI_Button_Fast(pin_value); break;
-#endif
-#if BUTTON_ALL != BUTTON_DISABLED
-    case BUTTON_ALL:    SEQ_UI_Button_All(pin_value); break;
-#endif
-
-#if BUTTON_GROUP1 != BUTTON_DISABLED
-    case BUTTON_GROUP1: SEQ_UI_Button_Group(pin_value, 0); break;
-#endif
-#if BUTTON_GROUP2 != BUTTON_DISABLED
-    case BUTTON_GROUP2: SEQ_UI_Button_Group(pin_value, 1); break;
-#endif
-#if BUTTON_GROUP3 != BUTTON_DISABLED
-    case BUTTON_GROUP3: SEQ_UI_Button_Group(pin_value, 2); break;
-#endif
-#if BUTTON_GROUP4 != BUTTON_DISABLED
-    case BUTTON_GROUP4: SEQ_UI_Button_Group(pin_value, 3); break;
-#endif
-
-#if BUTTON_TRG_LAYER_A != BUTTON_DISABLED
-    case BUTTON_TRG_LAYER_A: SEQ_UI_Button_TrgLayer(pin_value, 0); break;
-#endif
-#if BUTTON_TRG_LAYER_B != BUTTON_DISABLED
-    case BUTTON_TRG_LAYER_B: SEQ_UI_Button_TrgLayer(pin_value, 1); break;
-#endif
-#if BUTTON_TRG_LAYER_C != BUTTON_DISABLED
-    case BUTTON_TRG_LAYER_C: SEQ_UI_Button_TrgLayer(pin_value, 2); break;
-#endif
-
-#if BUTTON_STEP_VIEW != BUTTON_DISABLED
-    case BUTTON_STEP_VIEW: SEQ_UI_Button_StepView(pin_value); break;
-#endif
-
-#if BUTTON_TAP_TEMPO != BUTTON_DISABLED
-    case BUTTON_TAP_TEMPO:   SEQ_UI_Button_TapTempo(pin_value); break;
-#endif
-
-    default:
-      return -1; // button function not mapped to physical button
-  }
 
   // request display update
   seq_ui_display_update_req = 1;
 
-  return 0; // no error
+
+  // MEMO: we could also use a jump table with references to the functions
+  // here, but this "spagetthi code" simplifies the configuration and
+  // the resulting ASM doesn't look that bad!
+
+  for(i=0; i<SEQ_HWCFG_NUM_GP; ++i)
+    if( pin == seq_hwcfg_button.gp[i] )
+      return SEQ_UI_Button_GP(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_TRACK; ++i)
+    if( pin == seq_hwcfg_button.track[i] )
+      return SEQ_UI_Button_Track(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_GROUP; ++i)
+    if( pin == seq_hwcfg_button.group[i] )
+      return SEQ_UI_Button_Group(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_PAR_LAYER; ++i)
+    if( pin == seq_hwcfg_button.par_layer[i] )
+      return SEQ_UI_Button_ParLayer(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_TRG_LAYER; ++i)
+    if( pin == seq_hwcfg_button.trg_layer[i] )
+      return SEQ_UI_Button_TrgLayer(pin_value, i);
+
+  if( pin == seq_hwcfg_button.left )
+    return SEQ_UI_Button_Left(pin_value);
+  if( pin == seq_hwcfg_button.right )
+    return SEQ_UI_Button_Right(pin_value);
+  if( pin == seq_hwcfg_button.down )
+    return SEQ_UI_Button_Down(pin_value);
+  if( pin == seq_hwcfg_button.up )
+    return SEQ_UI_Button_Up(pin_value);
+
+  if( pin == seq_hwcfg_button.scrub )
+    return SEQ_UI_Button_Scrub(pin_value);
+  if( pin == seq_hwcfg_button.metronome )
+    return SEQ_UI_Button_Metronome(pin_value);
+
+  if( pin == seq_hwcfg_button.stop )
+    return SEQ_UI_Button_Stop(pin_value);
+  if( pin == seq_hwcfg_button.pause )
+    return SEQ_UI_Button_Pause(pin_value);
+  if( pin == seq_hwcfg_button.play )
+    return SEQ_UI_Button_Play(pin_value);
+  if( pin == seq_hwcfg_button.rew )
+    return SEQ_UI_Button_Rew(pin_value);
+  if( pin == seq_hwcfg_button.fwd )
+    return SEQ_UI_Button_Fwd(pin_value);
+
+  if( pin == seq_hwcfg_button.utility )
+    return SEQ_UI_Button_Utility(pin_value);
+  if( pin == seq_hwcfg_button.copy )
+    return SEQ_UI_Button_Copy(pin_value);
+  if( pin == seq_hwcfg_button.paste )
+    return SEQ_UI_Button_Paste(pin_value);
+  if( pin == seq_hwcfg_button.clear )
+    return SEQ_UI_Button_Clear(pin_value);
+
+  if( pin == seq_hwcfg_button.menu )
+    return SEQ_UI_Button_Menu(pin_value);
+  if( pin == seq_hwcfg_button.select )
+    return SEQ_UI_Button_Select(pin_value);
+  if( pin == seq_hwcfg_button.exit )
+    return SEQ_UI_Button_Exit(pin_value);
+
+  if( pin == seq_hwcfg_button.f1 )
+    return SEQ_UI_Button_F1(pin_value);
+  if( pin == seq_hwcfg_button.f2 )
+    return SEQ_UI_Button_F2(pin_value);
+  if( pin == seq_hwcfg_button.f3 )
+    return SEQ_UI_Button_F3(pin_value);
+  if( pin == seq_hwcfg_button.f4 )
+    return SEQ_UI_Button_F4(pin_value);
+
+  if( pin == seq_hwcfg_button.edit )
+    return SEQ_UI_Button_Edit(pin_value);
+  if( pin == seq_hwcfg_button.mute )
+    return SEQ_UI_Button_Mute(pin_value);
+  if( pin == seq_hwcfg_button.pattern )
+    return SEQ_UI_Button_Pattern(pin_value);
+  if( pin == seq_hwcfg_button.song )
+    return SEQ_UI_Button_Song(pin_value);
+
+  if( pin == seq_hwcfg_button.solo )
+    return SEQ_UI_Button_Solo(pin_value);
+  if( pin == seq_hwcfg_button.fast )
+    return SEQ_UI_Button_Fast(pin_value);
+  if( pin == seq_hwcfg_button.all )
+    return SEQ_UI_Button_All(pin_value);
+
+  if( pin == seq_hwcfg_button.step_view )
+    return SEQ_UI_Button_StepView(pin_value);
+  if( pin == seq_hwcfg_button.tap_tempo )
+    return SEQ_UI_Button_TapTempo(pin_value);
+
+  return -1; // button not mapped
 }
 
 
@@ -1219,65 +1113,65 @@ s32 SEQ_UI_LED_Handler(void)
 
   // track LEDs
   u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);
-  SEQ_LED_PinSet(LED_TRACK1, (selected_tracks & (1 << 0)));
-  SEQ_LED_PinSet(LED_TRACK2, (selected_tracks & (1 << 1)));
-  SEQ_LED_PinSet(LED_TRACK3, (selected_tracks & (1 << 2)));
-  SEQ_LED_PinSet(LED_TRACK4, (selected_tracks & (1 << 3)));
+  SEQ_LED_PinSet(seq_hwcfg_led.track[0], (selected_tracks & (1 << 0)));
+  SEQ_LED_PinSet(seq_hwcfg_led.track[1], (selected_tracks & (1 << 1)));
+  SEQ_LED_PinSet(seq_hwcfg_led.track[2], (selected_tracks & (1 << 2)));
+  SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
   
   // parameter layer LEDs
-  SEQ_LED_PinSet(LED_PAR_LAYER_A, (ui_selected_par_layer == 0));
-  SEQ_LED_PinSet(LED_PAR_LAYER_B, (ui_selected_par_layer == 1));
-  SEQ_LED_PinSet(LED_PAR_LAYER_C, (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], (ui_selected_par_layer == 0));
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
   
   // group LEDs
-  SEQ_LED_PinSet(LED_GROUP1, (ui_selected_group == 0));
-  SEQ_LED_PinSet(LED_GROUP2, (ui_selected_group == 1));
-  SEQ_LED_PinSet(LED_GROUP3, (ui_selected_group == 2));
-  SEQ_LED_PinSet(LED_GROUP4, (ui_selected_group == 3));
+  SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_group == 0));
+  SEQ_LED_PinSet(seq_hwcfg_led.group[1], (ui_selected_group == 1));
+  SEQ_LED_PinSet(seq_hwcfg_led.group[2], (ui_selected_group == 2));
+  SEQ_LED_PinSet(seq_hwcfg_led.group[3], (ui_selected_group == 3));
   
   // trigger layer LEDs
-  SEQ_LED_PinSet(LED_TRG_LAYER_A, (ui_selected_trg_layer == 0));
-  SEQ_LED_PinSet(LED_TRG_LAYER_B, (ui_selected_trg_layer == 1));
-  SEQ_LED_PinSet(LED_TRG_LAYER_C, (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[1], (ui_selected_trg_layer == 1));
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[2], (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
   
   // remaining LEDs
-  SEQ_LED_PinSet(LED_EDIT, ui_page == SEQ_UI_PAGE_EDIT);
-  SEQ_LED_PinSet(LED_MUTE, ui_page == SEQ_UI_PAGE_MUTE);
-  SEQ_LED_PinSet(LED_PATTERN, ui_page == SEQ_UI_PAGE_PATTERN);
+  SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.pattern, ui_page == SEQ_UI_PAGE_PATTERN);
   if( SEQ_SONG_ActiveGet() )
-    SEQ_LED_PinSet(LED_SONG, 1);
+    SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
   else
-    SEQ_LED_PinSet(LED_SONG, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
+    SEQ_LED_PinSet(seq_hwcfg_led.song, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
   
-  SEQ_LED_PinSet(LED_SOLO, seq_ui_button_state.SOLO);
-  SEQ_LED_PinSet(LED_FAST, seq_ui_button_state.FAST_ENCODERS);
-  SEQ_LED_PinSet(LED_ALL, seq_ui_button_state.CHANGE_ALL_STEPS);
+  SEQ_LED_PinSet(seq_hwcfg_led.solo, seq_ui_button_state.SOLO);
+  SEQ_LED_PinSet(seq_hwcfg_led.fast, seq_ui_button_state.FAST_ENCODERS);
+  SEQ_LED_PinSet(seq_hwcfg_led.all, seq_ui_button_state.CHANGE_ALL_STEPS);
   
-  SEQ_LED_PinSet(LED_PLAY, SEQ_BPM_IsRunning());
-  SEQ_LED_PinSet(LED_STOP, !SEQ_BPM_IsRunning() && !ui_seq_pause);
-  SEQ_LED_PinSet(LED_PAUSE, ui_seq_pause);
+  SEQ_LED_PinSet(seq_hwcfg_led.play, SEQ_BPM_IsRunning());
+  SEQ_LED_PinSet(seq_hwcfg_led.stop, !SEQ_BPM_IsRunning() && !ui_seq_pause);
+  SEQ_LED_PinSet(seq_hwcfg_led.pause, ui_seq_pause);
 
-  SEQ_LED_PinSet(LED_REW, seq_ui_button_state.REW);
-  SEQ_LED_PinSet(LED_FWD, seq_ui_button_state.FWD);
+  SEQ_LED_PinSet(seq_hwcfg_led.rew, seq_ui_button_state.REW);
+  SEQ_LED_PinSet(seq_hwcfg_led.fwd, seq_ui_button_state.FWD);
   
-  SEQ_LED_PinSet(LED_STEPVIEW, seq_ui_button_state.STEPVIEW);
+  SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEPVIEW);
 
-  SEQ_LED_PinSet(LED_MENU, seq_ui_button_state.MENU_PRESSED);
-  SEQ_LED_PinSet(LED_SCRUB, seq_ui_button_state.SCRUB);
-  SEQ_LED_PinSet(LED_METRONOME, seq_ui_button_state.METRONOME);
+  SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
+  SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
+  SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_ui_button_state.METRONOME);
 
-  SEQ_LED_PinSet(LED_UTILITY, ui_page == SEQ_UI_PAGE_UTIL);
-  SEQ_LED_PinSet(LED_COPY, seq_ui_button_state.COPY);
-  SEQ_LED_PinSet(LED_PASTE, seq_ui_button_state.PASTE);
-  SEQ_LED_PinSet(LED_CLEAR, seq_ui_button_state.CLEAR);
+  SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
+  SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
+  SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
 
-  SEQ_LED_PinSet(LED_F1, seq_ui_button_state.F1);
-  SEQ_LED_PinSet(LED_F2, seq_ui_button_state.F2);
-  SEQ_LED_PinSet(LED_F3, seq_ui_button_state.F3);
-  SEQ_LED_PinSet(LED_F4, seq_ui_button_state.F4);
+  SEQ_LED_PinSet(seq_hwcfg_led.f1, seq_ui_button_state.F1);
+  SEQ_LED_PinSet(seq_hwcfg_led.f2, seq_ui_button_state.F2);
+  SEQ_LED_PinSet(seq_hwcfg_led.f3, seq_ui_button_state.F3);
+  SEQ_LED_PinSet(seq_hwcfg_led.f4, seq_ui_button_state.F4);
 
-  SEQ_LED_PinSet(LED_DOWN, seq_ui_button_state.DOWN);
-  SEQ_LED_PinSet(LED_UP, seq_ui_button_state.UP);
+  SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
+  SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
 
 
   // in MENU page: overrule GP LEDs so long MENU button is pressed/active
@@ -1322,7 +1216,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // beat LED: tmp. for demo w/o real sequencer
   u8 sequencer_running = SEQ_BPM_IsRunning();
-  SEQ_LED_PinSet(LED_BEAT, sequencer_running && ((seq_core_state.ref_step & 3) == 0));
+  SEQ_LED_PinSet(seq_hwcfg_led.beat, sequencer_running && ((seq_core_state.ref_step & 3) == 0));
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
@@ -1479,6 +1373,9 @@ s32 SEQ_UI_MENU_Handler_Periodic()
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_CheckSelections(void)
 {
+  if( (ui_selected_tracks >> (4*ui_selected_group)) == 0 )
+    ui_selected_tracks = 1 << (4*ui_selected_group);
+
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   if( ui_selected_instrument >= SEQ_PAR_NumInstrumentsGet(visible_track) )

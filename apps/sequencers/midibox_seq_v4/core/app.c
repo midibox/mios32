@@ -25,6 +25,8 @@
 
 #include "app.h"
 
+#include "seq_hwcfg.h"
+
 #include "seq_core.h"
 #include "seq_led.h"
 #include "seq_ui.h"
@@ -40,38 +42,13 @@
 #include "seq_file_m.h"
 #include "seq_file_s.h"
 #include "seq_file_c.h"
+#include "seq_file_hw.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 0
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Encoder Configuration
-/////////////////////////////////////////////////////////////////////////////
-#define NUM_ENCODERS 17
-const mios32_enc_config_t encoders[NUM_ENCODERS] = {
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 6, .cfg.pos=2 }, // Data Wheel
-
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=6 }, // V-Pot 1
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=4 }, // V-Pot 2
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=2 }, // V-Pot 3
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 1, .cfg.pos=0 }, // V-Pot 4
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=6 }, // V-Pot 5
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=4 }, // V-Pot 6
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=2 }, // V-Pot 7
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 3, .cfg.pos=0 }, // V-Pot 8
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=6 }, // V-Pot 9
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=4 }, // V-Pot 10
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=2 }, // V-Pot 11
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=0 }, // V-Pot 12
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=6 }, // V-Pot 13
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=4 }, // V-Pot 14
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=2 }, // V-Pot 15
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 5, .cfg.pos=0 }, // V-Pot 16
-};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,11 +68,8 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
-#if 1
-  // initialize encoders
-  for(i=0; i<NUM_ENCODERS; ++i)
-    MIOS32_ENC_ConfigSet(i, encoders[i]);
-#endif
+  // initialize hardware soft-config
+  SEQ_HWCFG_Init(0);
 
   // initialize second CLCD
   MIOS32_LCD_DeviceSet(1);
@@ -424,7 +398,12 @@ void SEQ_TASK_Period1S(void)
 	for(bank=0; bank<8; ++bank)
 	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
 	char str2[21];
-	sprintf(str2, "M: %d  S: %d  Cfg: %d", SEQ_FILE_M_NumMaps() ? 1 : 0, SEQ_FILE_S_NumSongs() ? 1 : 0, SEQ_FILE_C_Valid());
+	sprintf(str2, 
+		"M:%d  S:%d  C:%d HW:%d", 
+		SEQ_FILE_M_NumMaps() ? 1 : 0, 
+		SEQ_FILE_S_NumSongs() ? 1 : 0, 
+		SEQ_FILE_C_Valid(),
+		SEQ_FILE_HW_Valid());
 	SEQ_UI_SDCardMsg(2000, str1, str2);
 
 	// request to load content of SD card

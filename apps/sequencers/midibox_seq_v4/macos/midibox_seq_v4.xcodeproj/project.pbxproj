@@ -123,6 +123,8 @@
 		52ECBDCC0F76DD1F00576C54 /* seq_file_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDC70F76DD1F00576C54 /* seq_file_s.c */; };
 		52ECBDCD0F76DD1F00576C54 /* seq_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDC90F76DD1F00576C54 /* seq_song.c */; };
 		52ECBDCE0F76DD1F00576C54 /* seq_ui_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDCB0F76DD1F00576C54 /* seq_ui_song.c */; };
+		52EEE7D30FB2039200524AC0 /* seq_hwcfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52EEE7D10FB2039200524AC0 /* seq_hwcfg.c */; };
+		52EEE7DB0FB227B300524AC0 /* seq_file_hw.c in Sources */ = {isa = PBXBuildFile; fileRef = 52EEE7D90FB227B300524AC0 /* seq_file_hw.c */; };
 		52F3E3D70F0F87A600355951 /* seq_ui_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F3E3D60F0F87A600355951 /* seq_ui_util.c */; };
 		52F714280F1ABB590043546F /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F714270F1ABB590043546F /* printf-stdarg.c */; };
 		52F8CD860F197F3A00539304 /* seq_file_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F8CD820F197F3A00539304 /* seq_file_m.c */; };
@@ -333,6 +335,10 @@
 		52ECBDC90F76DD1F00576C54 /* seq_song.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_song.c; path = ../core/seq_song.c; sourceTree = SOURCE_ROOT; };
 		52ECBDCA0F76DD1F00576C54 /* seq_song.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_song.h; path = ../core/seq_song.h; sourceTree = SOURCE_ROOT; };
 		52ECBDCB0F76DD1F00576C54 /* seq_ui_song.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_song.c; path = ../core/seq_ui_song.c; sourceTree = SOURCE_ROOT; };
+		52EEE7D10FB2039200524AC0 /* seq_hwcfg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_hwcfg.c; path = ../core/seq_hwcfg.c; sourceTree = SOURCE_ROOT; };
+		52EEE7D20FB2039200524AC0 /* seq_hwcfg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_hwcfg.h; path = ../core/seq_hwcfg.h; sourceTree = SOURCE_ROOT; };
+		52EEE7D90FB227B300524AC0 /* seq_file_hw.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_hw.c; path = ../core/seq_file_hw.c; sourceTree = SOURCE_ROOT; };
+		52EEE7DA0FB227B300524AC0 /* seq_file_hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_hw.h; path = ../core/seq_file_hw.h; sourceTree = SOURCE_ROOT; };
 		52F3E3D60F0F87A600355951 /* seq_ui_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_util.c; path = ../core/seq_ui_util.c; sourceTree = SOURCE_ROOT; };
 		52F714270F1ABB590043546F /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "printf-stdarg.c"; path = "../../../../mios32/common/printf-stdarg.c"; sourceTree = SOURCE_ROOT; };
 		52F8CD820F197F3A00539304 /* seq_file_m.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_m.c; path = ../core/seq_file_m.c; sourceTree = SOURCE_ROOT; };
@@ -464,6 +470,10 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52EEE7D90FB227B300524AC0 /* seq_file_hw.c */,
+				52EEE7DA0FB227B300524AC0 /* seq_file_hw.h */,
+				52EEE7D10FB2039200524AC0 /* seq_hwcfg.c */,
+				52EEE7D20FB2039200524AC0 /* seq_hwcfg.h */,
 				527828F70FB0ADEC009822EB /* seq_record.h */,
 				527828F50FB0ADD9009822EB /* seq_ui_trkmorph.c */,
 				527828F20FB0ADCB009822EB /* seq_morph.c */,
@@ -854,6 +864,8 @@
 				52C3934D0FA643A80000FD51 /* seq_ui_fx_humanize.c in Sources */,
 				527828F40FB0ADCB009822EB /* seq_morph.c in Sources */,
 				527828F60FB0ADD9009822EB /* seq_ui_trkmorph.c in Sources */,
+				52EEE7D30FB2039200524AC0 /* seq_hwcfg.c in Sources */,
+				52EEE7DB0FB227B300524AC0 /* seq_file_hw.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -38,7 +38,9 @@
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 0
+
+// Note: verbose level 1 is default - it prints error messages!
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -97,7 +99,7 @@ s32 SEQ_FILE_C_Load(void)
 {
   s32 error;
   error = SEQ_FILE_C_Read();
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Tried to open config file, status: %d\n", error);
 #endif
 
@@ -145,12 +147,12 @@ s32 SEQ_FILE_C_Read(void)
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_C.V4", SEQ_FILES_PATH);
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s'\n", filepath);
 #endif
 
   if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_C] failed to open file, status: %d\n", status);
 #endif
     return status;
@@ -158,23 +160,31 @@ s32 SEQ_FILE_C_Read(void)
 
   // change to file header
   if( (status=SEQ_FILE_Seek(&fi, 0)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_C] failed to change offset in file, status: %d\n", status);
 #endif
     return SEQ_FILE_C_ERR_READ;
   }
 
   // read config values
-  char line_buffer[128];
+  char _line_buffer[80];
+  char *line_buffer;
   do {
+    line_buffer = _line_buffer;
     status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 128);
 
     if( status > 1 ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 3
       DEBUG_MSG("[SEQ_FILE_C] read: %s", line_buffer);
 #endif
 
       // sscanf consumes too much memory, therefore we parse directly
+      while( *line_buffer == ' ' || *line_buffer == '\t' )
+	++line_buffer;
+      
+      if( *line_buffer == 0 || *line_buffer == '#' )
+	continue;
+
       char *space = strchr(line_buffer, ' ');
       if( space != NULL ) {
 	// separate line buffer into keyword and value string
@@ -242,7 +252,7 @@ s32 SEQ_FILE_C_Read(void)
 
 	  if( i != 5 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode: missing parameter %d\n", i);
+	    DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: missing parameter %d\n", i);
 #endif
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -250,7 +260,7 @@ s32 SEQ_FILE_C_Read(void)
 #endif
 	    if( values[0] >= SEQ_MIDI_ROUTER_NUM_NODES ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode: invalid node number %d\n", values[0]);
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: invalid node number %d\n", values[0]);
 #endif
 	    } else {
 	      seq_midi_router_node_t *n = &seq_midi_router_node[values[0]];
@@ -262,12 +272,12 @@ s32 SEQ_FILE_C_Read(void)
 	  }
 	} else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[SEQ_FILE_C] unknown setting: %s %s", line_buffer, value_str);
+	  DEBUG_MSG("[SEQ_FILE_C] ERROR unknown setting: %s %s", line_buffer, value_str);
 #endif
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[SEQ_FILE_C] no space separator in following line: %s", line_buffer);
+	DEBUG_MSG("[SEQ_FILE_C] ERROR no space separator in following line: %s", line_buffer);
 #endif
       }
     }
@@ -277,7 +287,7 @@ s32 SEQ_FILE_C_Read(void)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_C] error while reading file, status: %d\n", status);
+    DEBUG_MSG("[SEQ_FILE_C] ERROR while reading file, status: %d\n", status);
 #endif
     return SEQ_FILE_C_ERR_READ;
   }
@@ -302,7 +312,7 @@ s32 SEQ_FILE_C_Write(void)
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_C.V4", SEQ_FILES_PATH);
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s' for writing\n", filepath);
 #endif
 
@@ -382,7 +392,7 @@ s32 SEQ_FILE_C_Write(void)
   if( status >= 0 )
     info->valid = 1;
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] config file written with status %d\n", status);
 #endif
 
