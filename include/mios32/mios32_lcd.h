@@ -32,6 +32,13 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
 #endif
 
+// the startup delay in mS
+// if 0, no message will be print
+#ifndef MIOS32_LCD_BOOT_MSG_DELAY
+#define MIOS32_LCD_BOOT_MSG_DELAY 2000
+#endif
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
