@@ -96,6 +96,10 @@
 #define BLM_X_DEBOUNCE_MODE 0
 #endif
 
+#ifndef BLM_X_COLOR_MODE
+#define BLM_X_COLOR_MODE 0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Computed defines
@@ -141,6 +145,7 @@ extern s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value);
 
 // get LED states
 extern s32 BLM_X_LEDGet(u32 led, u32 color);
+extern u32 BLM_X_LEDColorGet(u32 led);
 extern u8 BLM_X_LEDSRGet(u8 row, u8 sr);
 
 // set / get debounce-delay

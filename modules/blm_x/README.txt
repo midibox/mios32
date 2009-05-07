@@ -28,9 +28,16 @@ You will need one DOUT serial-register for the select-lines. If there are less t
 For the buttons you will need [ceil(BLM_X_BTN_NUM_COLS / 8)] DIN SR's. 
 
 For the LED's you will need [ceil(BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8)] DOUT SR's. 
-The colors will be just chained up ([LED-col 0, color 0][LED-col 1, color 0]....[LED-col 1, color0]...).
-If you want to work directly on the virtual SR's, you may prefer to choose BLM_X_LED_NUM_COLS values like
-4,8,12,16 etc. If you set LED states only by module functions, you don't have to care.
+
+In color-mode 0 ,the colors will be mapped to the registers grouped by colors (standard mode):
+	[LED-col 0, color 0][LED-col 1, color 0][LED-col 2, color 0]....[LED-col 0, color1][LED-col 1, color1]...
+In color-mode 1 ,the colors will be mapped to the registers grouped by LED-column:
+	[LED-col 0, color 0][LED-col 0, color 1][LED-col 0, color 2]....[LED-col 1, color0][LED-col 1, color1]...
+Choose the mode that fits your plans to wire the LED-matrix on the hardware side.
+
+If you want to work directly on the virtual SR's (bypass LED-set / -get functions), you may prefer to 
+choose BLM_X_LED_NUM_COLS values like 4,8,12,16 etc. and color-mode 0. If you set LED states only by 
+module functions, you don't have to care about this on the software side.
 
 
 Debouncing
@@ -95,6 +102,10 @@ The module can be configured by overriding defines. The values shown here are de
 // 2: individual debouncing of all buttons
 #define BLM_X_DEBOUNCE_MODE 0
 
+// 0: colors will be mapped to serial registers grouped by color (see section "Serial registers")
+// 1: colors will be mapped to serial registers grouped by LED-columns (see section "Serial registers")
+BLM_X_COLOR_MODE 0
+
 
 Module Functions
 ----------------
@@ -145,20 +156,25 @@ Sets a virtual LED-register's value. Returns 0 on success, -1 if the
 SR is not available.
 
 
-extern s32 BLM_X_LEDGet(u32 led, u32 color);
+s32 BLM_X_LEDGet(u32 led, u32 color);
 Returns the status of a LED/color (1 if set), -1 if the LED/color is not available.
 
 
-extern u8 BLM_X_LEDSRGet(u8 row, u8 sr);
+32 BLM_X_LEDColorGet(u32 led);
+Returns the color-mask of a LED. Bit 0 (LSB) represents color 0, Bit 1 color 1 etc.
+The function will return 0 if the LED is not available.
+
+
+u8 BLM_X_LEDSRGet(u8 row, u8 sr);
 Gets a virtual LED-register's value. Returns 0 if the register is not available.
 
 
-extern s32 BLM_X_DebounceDelaySet(u8 delay);
+s32 BLM_X_DebounceDelaySet(u8 delay);
 Sets the debounce-delay (number of scan-cycles to ignore button changes after
 a change). Returns -1 if buttons are disabled (BLM_X_BTN_FIRST_DIN_SR == 0).
 
 
-extern u8 BLM_X_DebounceDelayGet(void);
+u8 BLM_X_DebounceDelayGet(void);
 Gets the debounce-delay (number of scan-cycles to ignore button changes after
 a change).
 

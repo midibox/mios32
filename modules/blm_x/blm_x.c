@@ -208,7 +208,7 @@ s32 BLM_X_GetRow(void){
 // This function should be called from a task to check for button changes
 // periodically. Events (change from 0->1 or from 1->0) will be notified 
 // via the given callback function <notify_hook> with following parameters:
-//   <notifcation-hook>(u32 pin, u32 value)
+//   <notifcation-hook>(u32 btn, u32 value)
 // IN: -
 // OUT: returns -1 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -255,7 +255,7 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
 s32 BLM_X_BtnGet(u32 btn){
 #if (BLM_X_BTN_FIRST_DIN_SR > 0)
 	u32 row,sr,pin;
-	// check if pin available
+	// check if button available
 	if( btn >= BLM_X_NUM_ROWS * BLM_X_BTN_NUM_COLS )
 		return -1;
 	// compute row,SR & pin
@@ -289,17 +289,21 @@ u8 BLM_X_BtnSRGet(u8 row, u8 sr){
 /////////////////////////////////////////////////////////////////////////////
 // sets a LED's value
 // IN: LED number in <led>, color in <color>, LED value in <value>
-// OUT: returns < 0 if LED not available
+// OUT: returns < 0 if LED/color not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 #if (BLM_X_LED_FIRST_DOUT_SR > 0)	
 	u32 row,sr,pin;
-	// check if pin available
+	// check if LED/color available
 	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
+	#if BLM_X_COLOR_MODE==0
 	sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
+	#elif BLM_X_COLOR_MODE==1
+	sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
+	#endif
 	pin %= 8;
 	// set value
 	if( value )
@@ -315,19 +319,23 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 /////////////////////////////////////////////////////////////////////////////
 // sets all colors of a LED
 // IN: LED number in <led>, color in <color_mask> (each bit represents a color, LSB = color 0)
-// OUT: returns < 0 if pin not available
+// OUT: returns < 0 if LED/color not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 #if (BLM_X_LED_FIRST_DOUT_SR > 0)
 	u32 row,sr,pin,c;
-	// check if pin available
+	// check if LED available
 	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS )
 		return -1;
 	// compute row,SR
 	row = led / BLM_X_BTN_NUM_COLS;
 	for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
 		//compute sr,pin
+		#if BLM_X_COLOR_MODE==0
 		sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
+		#elif BLM_X_COLOR_MODE==1
+		sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
+		#endif
 		pin %= 8;
 		// set value
 		if( color_mask & (1 << c) )
@@ -341,6 +349,40 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 #endif	
 	}
 
+/////////////////////////////////////////////////////////////////////////////
+// gets all colors of a LED
+// IN: LED number in <led>
+// OUT: color mask of the LED (bit 0: color 0; bit 1: color 1 etc.)
+//      returns 0 if LED not available
+/////////////////////////////////////////////////////////////////////////////
+u32 BLM_X_LEDColorGet(u32 led){
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
+	u32 row,sr,pin,c,color;
+	// check if LED available
+	if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS)
+		return 0;
+	// compute row,SR
+	row = led / BLM_X_BTN_NUM_COLS;
+	color = 0;
+	for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
+		//compute sr,pin
+		#if BLM_X_COLOR_MODE==0
+		sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
+		#elif BLM_X_COLOR_MODE==1
+		sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
+		#endif
+		pin %= 8;
+		// get value
+		if( BLM_X_LED_rows[row][sr] & (1 << pin) )
+			color |= (1 << c);//set pin
+		else
+			color &= ~(1 << c);//clear pin
+		}
+	return color;
+#else
+	return 0;//LED's disabled
+#endif	
+	}
 
 /////////////////////////////////////////////////////////////////////////////
 // returns the status of a LED / color
@@ -355,7 +397,11 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
+	#if BLM_X_COLOR_MODE==0
 	sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
+	#elif BLM_X_COLOR_MODE==1
+	sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
+	#endif
 	pin %= 8;
 	// return value
 	return (BLM_X_LED_rows[row][sr] & (1 << pin)) ? 1 : 0;
