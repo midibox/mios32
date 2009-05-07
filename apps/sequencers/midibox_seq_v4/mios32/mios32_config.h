@@ -12,6 +12,7 @@
 
 
 // The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Alpha"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
@@ -99,5 +100,14 @@
 #define BLM_X_BTN_FIRST_DIN_SR    DEFAULT_SRM_DIN_M
 #define BLM_X_ROWSEL_INV_MASK     DEFAULT_SRM_CATHODES_INV_MASK_M
 #define BLM_X_DEBOUNCE_MODE       0
+
+
+#if 0
+// unfortunately doesn't work, changes in BLM_X driver required
+#define BLM_X_ROWSEL_DOUT_SR      seq_hwcfg_srm.dout_cathodesm
+#define BLM_X_LED_FIRST_DOUT_SR   seq_hwcfg_srm.dout_m
+#define BLM_X_BTN_FIRST_DIN_SR    seq_hwcfg_srm.din_m
+#define BLM_X_ROWSEL_INV_MASK     seq_hwcfg_srm.cathodes_inv_mask_m
+#endif
 
 #endif /* _MIOS32_CONFIG_H */

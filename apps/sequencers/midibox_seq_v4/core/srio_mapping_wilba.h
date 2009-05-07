@@ -18,12 +18,6 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEFAULT_GP_DOUT_SR_L    3       // first GP DOUT shift register assigned to SR#3
-#define DEFAULT_GP_DOUT_SR_R    4       // second GP DOUT shift register assigned to SR#4
-
-
-#define DEFAULT_GP_DOUT_SR_L2   15      // GP dual color: first GP DOUT shift register assigned to SR#14
-#define DEFAULT_GP_DOUT_SR_R2   16      // GP dual color: second GP DOUT shift register assigned to SR#15
 
 // === Shift Register Matrix ===
 //

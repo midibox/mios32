@@ -281,8 +281,10 @@ void SEQ_TASK_Period1S(void)
   } else if( status == 3 ) {
     if( !SEQ_FILE_SDCardAvailable() ) {
       SEQ_UI_SDCardMsg(2000, "  No SD Card found  ", "        :-(");
+      SEQ_FILE_HW_LockConfig(); // lock configuration
     } else if( !SEQ_FILE_VolumeAvailable() ) {
       SEQ_UI_SDCardMsg(2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
+      SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
       s32 status = 0;
 

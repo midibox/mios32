@@ -20,4 +20,4 @@ In distance to other configuration files, it won't be loaded again
 if the SD Card is reconnected to avoid sequencer hick-ups during
 runtime, and to cover the special case where files should be loaded
 from a SD card which contains a MBSEQ_HW.V4 file for a different
-configuration.
+hardware.
