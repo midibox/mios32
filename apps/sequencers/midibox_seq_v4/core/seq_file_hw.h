@@ -34,6 +34,9 @@ extern s32 SEQ_FILE_HW_Load(void);
 extern s32 SEQ_FILE_HW_Unload(void);
 
 extern s32 SEQ_FILE_HW_Valid(void);
+extern s32 SEQ_FILE_HW_ConfigLocked(void);
+
+extern s32 SEQ_FILE_HW_LockConfig(void);
 
 extern s32 SEQ_FILE_HW_Read(void);
 

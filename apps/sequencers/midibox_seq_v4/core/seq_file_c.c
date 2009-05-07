@@ -131,6 +131,25 @@ s32 SEQ_FILE_C_Valid(void)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a decimal or hex value
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  return l; // value is valid
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // reads the config file content (again)
@@ -167,10 +186,8 @@ s32 SEQ_FILE_C_Read(void)
   }
 
   // read config values
-  char _line_buffer[80];
-  char *line_buffer;
+  char line_buffer[80];
   do {
-    line_buffer = _line_buffer;
     status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 128);
 
     if( status > 1 ) {
@@ -179,101 +196,95 @@ s32 SEQ_FILE_C_Read(void)
 #endif
 
       // sscanf consumes too much memory, therefore we parse directly
-      while( *line_buffer == ' ' || *line_buffer == '\t' )
-	++line_buffer;
-      
-      if( *line_buffer == 0 || *line_buffer == '#' )
-	continue;
+      char *separators = " \t";
+      char *brkt;
+      char *parameter;
 
-      char *space = strchr(line_buffer, ' ');
-      if( space != NULL ) {
-	// separate line buffer into keyword and value string
-	size_t space_pos = space-line_buffer;
-	char *value_str = (char *)(line_buffer + space_pos + 1);
-	line_buffer[space_pos] = 0;
+      if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
 
-	// search for keywords
-    	       if( strcmp(line_buffer, "BPMx10") == 0 ) {
-	  SEQ_BPM_Set((float)atoi(value_str)/10);
-	} else if( strcmp(line_buffer, "BPM_Mode") == 0 ) {
-	  SEQ_BPM_ModeSet(atoi(value_str));
-	} else if( strcmp(line_buffer, "BPM_IntDiv") == 0 ) {
-	  seq_core_bpm_div_int = atoi(value_str);
-	} else if( strcmp(line_buffer, "BPM_ExtDiv") == 0 ) {
-	  seq_core_bpm_div_ext = atoi(value_str);
-	} else if( strcmp(line_buffer, "SynchedPatternChange") == 0 ) {
-	  seq_core_options.SYNCHED_PATTERN_CHANGE = atoi(value_str);
-	} else if( strcmp(line_buffer, "StepsPerMeasure") == 0 ) {
-	  seq_core_steps_per_measure = atoi(value_str);
-	} else if( strcmp(line_buffer, "GlobalScale") == 0 ) {
-	  seq_core_global_scale = atoi(value_str);
-	} else if( strcmp(line_buffer, "GlobalScaleCtrl") == 0 ) {
-	  seq_core_global_scale_ctrl = atoi(value_str);
-	} else if( strcmp(line_buffer, "GlobalScaleRoot") == 0 ) {
-	  seq_core_global_scale_root_selection = atoi(value_str);
-	} else if( strcmp(line_buffer, "MIDI_DefaultPort") == 0 ) {
-	  MIOS32_MIDI_DefaultPortSet(atoi(value_str));
-	} else if( strcmp(line_buffer, "MIDI_IN_Channel") == 0 ) {
-	  seq_midi_in_channel = atoi(value_str);
-	} else if( strcmp(line_buffer, "MIDI_IN_Port") == 0 ) {
-	  seq_midi_in_port = (mios32_midi_port_t)atoi(value_str);
-	} else if( strcmp(line_buffer, "MIDI_IN_MClock_Port") == 0 ) {
-	  seq_midi_in_mclk_port = (mios32_midi_port_t)atoi(value_str);
-	} else if( strcmp(line_buffer, "MIDI_IN_TA_Split") == 0 ) {
-	  int value = atoi(value_str);
-	  if( value )
-	    seq_midi_in_ta_split_note |= 0x80;
-	  else
-	    seq_midi_in_ta_split_note &= ~0x80;
-	} else if( strcmp(line_buffer, "MIDI_IN_TA_SplitNote") == 0 ) {
-	  int value = atoi(value_str);
-	  seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
-	} else if( strcmp(line_buffer, "MIDI_OUT_MClock") == 0 ) {
-	  seq_midi_router_mclk_out = (mios32_midi_port_t)atoi(value_str);
-	} else if( strcmp(line_buffer, "MIDI_RouterNode") == 0 ) {
-	  // very primitive and error-prone scan routine for 5 decimal values
-	  int values[5];
-	  int i;
-	  for(i=0; i<5; ++i) {
-	    if( i < 4 ) {
-	      if( (space=strchr(value_str, ' ')) == NULL )
+	if( *parameter == '#' ) {
+	  // ignore comments
+	} else {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_C] ERROR invalid value for parameter '%s'\n", parameter);
+#endif
+	  } else if( strcmp(parameter, "BPMx10") == 0 ) {
+	    SEQ_BPM_Set((float)value/10);
+	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
+	    SEQ_BPM_ModeSet(value);
+	  } else if( strcmp(parameter, "BPM_IntDiv") == 0 ) {
+	    seq_core_bpm_div_int = value;
+	  } else if( strcmp(parameter, "BPM_ExtDiv") == 0 ) {
+	    seq_core_bpm_div_ext = value;
+	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
+	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
+	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
+	    seq_core_steps_per_measure = value;
+	  } else if( strcmp(parameter, "GlobalScale") == 0 ) {
+	    seq_core_global_scale = value;
+	  } else if( strcmp(parameter, "GlobalScaleCtrl") == 0 ) {
+	    seq_core_global_scale_ctrl = value;
+	  } else if( strcmp(parameter, "GlobalScaleRoot") == 0 ) {
+	    seq_core_global_scale_root_selection = value;
+	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
+	    MIOS32_MIDI_DefaultPortSet(value);
+	  } else if( strcmp(parameter, "MIDI_IN_Channel") == 0 ) {
+	    seq_midi_in_channel = value;
+	  } else if( strcmp(parameter, "MIDI_IN_Port") == 0 ) {
+	    seq_midi_in_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_IN_MClock_Port") == 0 ) {
+	    seq_midi_in_mclk_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_IN_TA_Split") == 0 ) {
+	    if( value )
+	      seq_midi_in_ta_split_note |= 0x80;
+	    else
+	      seq_midi_in_ta_split_note &= ~0x80;
+	  } else if( strcmp(parameter, "MIDI_IN_TA_SplitNote") == 0 ) {
+	    seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
+	  } else if( strcmp(parameter, "MIDI_OUT_MClock") == 0 ) {
+	    seq_midi_router_mclk_out = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
+	    int values[5];
+
+	    values[0] = value;
+	    int i;
+	    for(i=1; i<5; ++i) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      values[i] = get_dec(word);
+	      if( values[i] < 0 ) {
 		break;
-
-	      *space = 0;
+	      }
 	    }
 
-	    values[i] = (mios32_midi_port_t)atoi(value_str);
-
-	    if( i < 4 ) {
-	      size_t space_pos = space-line_buffer;
-	      value_str = (char *)(line_buffer + space_pos + 1);
-	    }
-	  }
-
-	  if( i != 5 ) {
+	    if( i != 5 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: missing parameter %d\n", i);
-#endif
-	  } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	    DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode %d %d %d %d %d\n", values[0], values[1], values[2], values[3], values[4]);
-#endif
-	    if( values[0] >= SEQ_MIDI_ROUTER_NUM_NODES ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: invalid node number %d\n", values[0]);
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: missing parameter %d\n", i);
 #endif
 	    } else {
-	      seq_midi_router_node_t *n = &seq_midi_router_node[values[0]];
-	      n->src_port = values[1];
-	      n->src_chn = values[2];
-	      n->dst_port = values[3];
-	      n->dst_chn = values[4];
-	    }
-	  }
-	} else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[SEQ_FILE_C] ERROR unknown setting: %s %s", line_buffer, value_str);
+#if DEBUG_VERBOSE_LEVEL >= 2
+	      DEBUG_MSG("[SEQ_FILE_C] MIDI_RouterNode %d %d %d %d %d\n", values[0], values[1], values[2], values[3], values[4]);
 #endif
+	      if( values[0] >= SEQ_MIDI_ROUTER_NUM_NODES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: invalid node number %d\n", values[0]);
+#endif
+	      } else {
+		seq_midi_router_node_t *n = &seq_midi_router_node[values[0]];
+		n->src_port = values[1];
+		n->src_chn = values[2];
+		n->dst_port = values[3];
+		n->dst_chn = values[4];
+	      }
+	    }
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown parameter: %s", line_buffer);
+#endif
+	  }
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1

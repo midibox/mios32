@@ -879,6 +879,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 {
   int i;
 
+  // ignore so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
   // ensure that selections are matching with track constraints
   SEQ_UI_CheckSelections();
 
@@ -990,6 +994,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 {
+  // ignore so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
   if( encoder > 16 )
     return -1; // encoder doesn't exist
 
@@ -1039,11 +1047,22 @@ s32 SEQ_UI_LCD_Handler(void)
     seq_ui_display_update_req = 1;
   }
 
-  // in MENU page: overrule LCD output so long MENU button is pressed/active
-  if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
+  // print boot screen so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() ) {
+    SEQ_LCD_Clear();
     SEQ_LCD_CursorSet(0, 0);
-    //                      <-------------------------------------->
-    //                      0123456789012345678901234567890123456789
+    //                   <-------------------------------------->
+    //                   0123456789012345678901234567890123456789
+    SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+    SEQ_LCD_CursorSet(40, 0);
+    SEQ_LCD_PrintString("Searching for SD Card...");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
+    // TODO: print nice animation
+  } else if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
+    SEQ_LCD_CursorSet(0, 0);
+    //                   <-------------------------------------->
+    //                   0123456789012345678901234567890123456789
     SEQ_LCD_PrintString("Menu Shortcuts:");
     SEQ_LCD_PrintSpaces(25 + 40);
     SEQ_LCD_CursorSet(0, 1);
@@ -1108,6 +1127,10 @@ s32 SEQ_UI_LCD_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  // ignore so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
@@ -1210,6 +1233,10 @@ s32 SEQ_UI_LED_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler_Periodic()
 {
+  // ignore so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
   // GP LEDs are only updated when ui_gp_leds or pos_marker_mask has changed
   static u16 prev_ui_gp_leds = 0x0000;
   static u16 prev_pos_marker_mask = 0x0000;
@@ -1239,27 +1266,24 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // transfer to GP LEDs
 
-#ifdef DEFAULT_GP_DOUT_SR_L
-# ifdef DEFAULT_GP_DOUT_SR_L2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, (ui_gp_leds >> 0) & 0xff);
-# else
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L-1, ((ui_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
-# endif
-#endif
-#ifdef DEFAULT_GP_DOUT_SR_R
-# ifdef DEFAULT_GP_DOUT_SR_R2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, (ui_gp_leds >> 8) & 0xff);
-#else
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R-1, ((ui_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
-#endif
-#endif
+  if( seq_hwcfg_led.gp_dout_sr_l ) {
+    if( seq_hwcfg_led.gp_dout_sr_l2 )
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l-1, (ui_gp_leds >> 0) & 0xff);
+    else
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l-1, ((ui_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
+  }
 
-#ifdef DEFAULT_GP_DOUT_SR_L2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_L2-1, (pos_marker_mask >> 0) & 0xff);
-#endif
-#ifdef DEFAULT_GP_DOUT_SR_R2
-  SEQ_LED_SRSet(DEFAULT_GP_DOUT_SR_R2-1, (pos_marker_mask >> 8) & 0xff);
-#endif
+  if( seq_hwcfg_led.gp_dout_sr_r ) {
+    if( seq_hwcfg_led.gp_dout_sr_r2 )
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r-1, (ui_gp_leds >> 8) & 0xff);
+    else
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r-1, ((ui_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
+  }
+
+  if( seq_hwcfg_led.gp_dout_sr_l2 )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l2-1, (pos_marker_mask >> 0) & 0xff);
+  if( seq_hwcfg_led.gp_dout_sr_r2 )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r2-1, (pos_marker_mask >> 8) & 0xff);
 
 #if DEFAULT_SRM_ENABLED && DEFAULT_SRM_DOUT_M_MAPPING == 1
   // for wilba's frontpanel

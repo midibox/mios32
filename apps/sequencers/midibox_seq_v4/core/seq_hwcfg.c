@@ -123,6 +123,14 @@ seq_hwcfg_button_t seq_hwcfg_button = {
 
 
 seq_hwcfg_led_t seq_hwcfg_led = {
+  // GP LEDs DOUT shiftregister assignments
+  .gp_dout_sr_l = 3,
+  .gp_dout_sr_r = 4,
+  .gp_dout_sr_l2 = 15,
+  .gp_dout_sr_r2 = 16,
+
+  // DOUT pin assignments
+
   //             SR    ignore    Pin
   .track[0] = ((( 1   -1)<<3)+    0),
   .track[1] = ((( 1   -1)<<3)+    1),
@@ -187,6 +195,35 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .down = (((14   -1)<<3)+    6),
   .up   = (((14   -1)<<3)+    7),
+};
+
+
+seq_hwcfg_srm_t seq_hwcfg_srm = {
+  .enabled = 0,
+  .dout_l1 = 6,
+  .dout_r1 = 9,
+  .dout_m = 0,
+
+  .dout_cathodes1 = 5,
+  .dout_cathodes2 = 8,
+  .dout_cathodesm = 0,
+
+  .dout_m_mapping = 1,
+
+  .cathodes_inv_mask = 0x00,
+  .cathodes_inv_mask_m = 0x00,
+
+  .dout_duocolour = 1,
+
+  .dout_l2 = 7,
+  .dout_r2 = 10,
+
+  .buttons_enabled = 0,
+  .buttons_no_ui = 1,
+
+  .din_l = 11,
+  .din_r = 12,
+  .din_m = 0,
 };
 
 

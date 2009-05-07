@@ -229,6 +229,10 @@ into your local mios32_config.h file
 #define MIOS32_LCD_BOOT_MSG_LINE1 "Unnamed App."
 #define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
 
+// the startup delay in mS
+// if 0, no message will be print
+#define MIOS32_LCD_BOOT_MSG_DELAY 2000
+
 
 // bit mask to enable channels
 //

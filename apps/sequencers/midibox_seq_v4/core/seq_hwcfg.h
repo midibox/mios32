@@ -88,6 +88,11 @@ typedef struct {
 
 
 typedef struct {
+  u8 gp_dout_sr_l;
+  u8 gp_dout_sr_r;
+  u8 gp_dout_sr_l2;
+  u8 gp_dout_sr_r2;
+
   u8 track[SEQ_HWCFG_NUM_TRACK];
 
   u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
@@ -134,6 +139,35 @@ typedef struct {
 } seq_hwcfg_led_t;
 
 
+typedef struct {
+  u8 enabled;
+  u8 dout_l1;
+  u8 dout_r1;
+  u8 dout_m;
+
+  u8 dout_cathodes1;
+  u8 dout_cathodes2;
+  u8 dout_cathodesm;
+
+  u8 dout_m_mapping;
+
+  u8 cathodes_inv_mask;
+  u8 cathodes_inv_mask_m;
+
+  u8 dout_duocolour;
+
+  u8 dout_l2;
+  u8 dout_r2;
+
+  u8 buttons_enabled;
+  u8 buttons_no_ui;
+
+  u8 din_l;
+  u8 din_r;
+  u8 din_m;
+} seq_hwcfg_srm_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -146,6 +180,7 @@ extern s32 SEQ_HWCFG_Init(u32 mode);
 
 extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_led_t seq_hwcfg_led;
+extern seq_hwcfg_srm_t seq_hwcfg_srm;
 
 
 #endif /* _SEQ_HWCFG_H */
