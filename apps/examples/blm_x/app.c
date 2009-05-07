@@ -88,7 +88,7 @@ void APP_Background(void){
 			MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
 			MIOS32_MIDI_SendDebugMessage("Button #%3d %c - Changes: %5d", last_btn, last_btn_value ? 'o' : '*',btn_change_count);
 			MIOS32_LCD_CursorSet(0, 1);
-			MIOS32_LCD_PrintFormattedString("Btn changes: %5d", btn_change_count);
+			MIOS32_LCD_PrintFormattedString("Color:0x%X Count:%d", BLM_X_LEDColorGet(last_btn), btn_change_count);
 			last_btn_change_count = btn_change_count;
 			}
 		}

@@ -39,8 +39,8 @@ Note that you could theoretically control up to 32 LED's each matrix-point!
 The most usual application will be to drive just two- or three-color-LED's.
 
 If a button-state-change occurs, it will be displayed on a connected LCD and
-sent to the MIOS-Studio console. In the console you will also receive the set
-LED-colors as 32-bit hex-number.
+sent to the MIOS-Studio console. In the console and on the LCD you will also 
+see the set LED-colors as hex-number.
 
 The number of button-changes is also counted and reported to LCD / MIOS-Studio
 console. This value helps you to detect bouncing buttons. Use the BLM_X_DebounceDelaySet(..)
