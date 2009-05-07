@@ -95,16 +95,18 @@ int main(void)
   // initialize application
   APP_Init();
 
+#if MIOS32_LCD_BOOT_MSG_DELAY
   // print boot message
-#ifndef MIOS32_DONT_USE_LCD
+# ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_PrintBootMessage();
-#endif
+# endif
 
-  // wait for 2 seconds
-#ifndef MIOS32_DONT_USE_DELAY
+  // wait for given delay (usually 2 seconds)
+# ifndef MIOS32_DONT_USE_DELAY
   int delay = 0;
-  for(delay=0; delay<2000; ++delay)
+  for(delay=0; delay<MIOS32_LCD_BOOT_MSG_DELAY; ++delay)
     MIOS32_DELAY_Wait_uS(1000);
+# endif
 #endif
 
   // start the task which calls the application hooks
