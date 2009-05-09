@@ -130,7 +130,7 @@ FILE_PATTERNS          = *.c \
                          *.vhd \
                          *.vhdl
 RECURSIVE              = YES
-EXCLUDE                = ../../modules/uip
+EXCLUDE                = ../../modules/uip ../../mios32/MIOSJUCE
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = 
 EXCLUDE_SYMBOLS        = 
