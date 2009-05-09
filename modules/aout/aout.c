@@ -89,8 +89,8 @@
 //! overloaded in mios32_config.h if required):
 //! <UL>
 //!   <LI>AOUT_NUM_CHANNELS (default: 8)<BR>
-//!     maximum number of AOUT channels (1..32)<BR>
-//!     Can be changed via soft-configuration during runtime
+//!     Maximum number of AOUT channels (1..32)<BR>
+//!     Number of channels within this range can be changed via soft-configuration during runtime.
 //!   <LI>AOUT_SPI (default: 2)<BR>
 //!     allowed values: 0 (J16), 1 (J8/9) and 2 (J19)
 //!   <LI>AOUT_SPI_RC_PIN (default: 0)<BR>
