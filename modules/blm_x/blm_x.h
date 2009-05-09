@@ -56,6 +56,8 @@
 // DOUT shift register to which the cathodes of the LEDs are connected (row selectors).
 // if less than 5 rows are defined, the higher nibble of the SR outputs will be always 
 // identical to the lower nibble.
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_ROWSEL_DOUT_SR
 #define BLM_X_ROWSEL_DOUT_SR	1
 #endif
@@ -65,6 +67,8 @@
 // of registers used is ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
 // registers will be used.
 // set this to 0 if you only use buttons in your matrix (no LED's)
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_LED_FIRST_DOUT_SR
 #define BLM_X_LED_FIRST_DOUT_SR	2
 #endif
@@ -73,6 +77,8 @@
 // first DIN shift registers to which the button matrix is connected.
 // subsequent shift registers will be used, if more than 8 cols are defined.
 // set this to 0 if you only use LED's in your matrix (no buttons)
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_BTN_FIRST_DIN_SR
 #define BLM_X_BTN_FIRST_DIN_SR	1
 #endif
@@ -85,6 +91,8 @@
 //           0xff - sink drivers connected to D7..D0
 //           0x0f - sink drivers connected to D3..D0
 //           0xf0 - sink drivers connected to D7..D4
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_ROWSEL_INV_MASK
 #define BLM_X_ROWSEL_INV_MASK	0x00
 #endif
@@ -96,6 +104,10 @@
 #define BLM_X_DEBOUNCE_MODE 0
 #endif
 
+// 0: colors will be mapped to serial registers grouped by color (see section "Serial registers")
+// 1: colors will be mapped to serial registers grouped by LED-columns (see section "Serial registers")
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_COLOR_MODE
 #define BLM_X_COLOR_MODE 0
 #endif
@@ -121,6 +133,19 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  struct {
+    unsigned ALL:32;
+  } all;
+  struct {
+    unsigned rowsel_dout_sr:4;
+    unsigned led_first_dout_sr:4;
+	 unsigned btn_first_din_sr:4;
+    unsigned rowsel_inv_mask:8;
+    unsigned color_mode:1;
+	 unsigned debounce_delay:8;
+  } cfg;
+} blm_x_config_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -148,9 +173,9 @@ extern s32 BLM_X_LEDGet(u32 led, u32 color);
 extern u32 BLM_X_LEDColorGet(u32 led);
 extern u8 BLM_X_LEDSRGet(u8 row, u8 sr);
 
-// set / get debounce-delay
-extern s32 BLM_X_DebounceDelaySet(u8 delay);
-extern u8 BLM_X_DebounceDelayGet(void);
+// set / get blm_x soft configuration sturct
+extern s32 BLM_X_ConfigSet(blm_x_config_t config);
+extern blm_x_config_t BLM_X_ConfigGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
