@@ -43,9 +43,9 @@ sent to the MIOS-Studio console. In the console and on the LCD you will also
 see the set LED-colors as hex-number.
 
 The number of button-changes is also counted and reported to LCD / MIOS-Studio
-console. This value helps you to detect bouncing buttons. Use the BLM_X_DebounceDelaySet(..)
-function to set/modify the debounce_delay (number of scan-cycles to ignore button changes
-after a change). 
+console. This value helps you to detect bouncing buttons. Use the BLM_X_ConfigGet(..) /
+BLM_X_ConfigSet(..) functions to set/modify the debounce_delay (number of scan-cycles 
+to ignore button changes after a change). 
 By default, debouncing is disabled (BLM_X_DEBOUNCE_MODE=0), as the scan cycle 
 (1mS x BLM_X_NUM_ROWS) is enough delay for most of applications / hardware. 
 Note that there's also the choice between debounce mode 1 (global button debouncing),
