@@ -28,6 +28,11 @@
 #define SEQ_HWCFG_NUM_PAR_LAYER  3
 #define SEQ_HWCFG_NUM_TRG_LAYER  3
 
+// following constants can be safely changed (therefore documented)
+
+// max. number of SRs which can be used for triggering gates (each SR provides 8 gates)
+#define SEQ_HWCFG_NUM_SR_DOUT_GATES 8
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -182,5 +187,7 @@ extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_led_t seq_hwcfg_led;
 extern seq_hwcfg_srm_t seq_hwcfg_srm;
 
+extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
+extern u8 seq_hwcfg_dout_gate_1ms;
 
 #endif /* _SEQ_HWCFG_H */

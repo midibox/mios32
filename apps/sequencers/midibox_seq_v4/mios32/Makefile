@@ -117,6 +117,9 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 # BLM_X
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
+# AOUT Driver
+include $(MIOS32_PATH)/modules/aout/aout.mk
+
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 

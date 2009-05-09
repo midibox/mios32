@@ -16,10 +16,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include <blm_x.h>
 
+#include <aout.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
+#include <blm_x.h>
 
 #include "tasks.h"
 
@@ -80,6 +81,9 @@ void APP_Init(void)
   // init BLM
   BLM_X_Init();
 #endif
+
+  // initialize AOUT driver
+  AOUT_Init(0);
 
   // initialize MIDI handlers
   SEQ_MIDI_PORT_Init(0);
@@ -450,6 +454,13 @@ void SEQ_TASK_MIDI(void)
   // send timestamped MIDI events
   SEQ_MIDI_OUT_Handler();
 
+  // update AOUTs
+  AOUT_Update();
+
+  // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
+  // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
+  MIOS32_BOARD_J5_Set(AOUT_DigitalPinsGet());
+
   MUTEX_MIDIOUT_GIVE;
 }
 
@@ -485,4 +496,3 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 
   return 0; // no error, no filtering
 }
-

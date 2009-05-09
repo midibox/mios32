@@ -24,6 +24,7 @@
 
 #include <dosfs.h>
 #include <string.h>
+#include <aout.h>
 
 #include "seq_file.h"
 #include "seq_file_hw.h"
@@ -226,6 +227,7 @@ s32 SEQ_FILE_HW_Read(void)
       char *separators = " \t";
       char *brkt;
       char *parameter;
+      int hlp;
 
       if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
 
@@ -265,7 +267,6 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] Button %s: SR %d Pin %d (DIN: 0x%02x)", line_buffer, sr, pin, din_value);
 #endif
 
-	  int hlp;
 	  if( strcmp(parameter, "DOWN") == 0 ) {
 	    seq_hwcfg_button.down = din_value;
 	  } else if( strcmp(parameter, "UP") == 0 ) {
@@ -378,7 +379,6 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] LED %s: SR %d Pin %d (DOUT: 0x%02x)", parameter, sr, pin, dout_value);
 #endif
 
-	  int hlp;
 	  if( strncmp(parameter, "TRACK", 5) == 0 && // TRACK[1234]
 		     (hlp=parameter[5]-'1') >= 0 && hlp < 4 ) {
 	    seq_hwcfg_led.track[hlp] = dout_value;
@@ -619,6 +619,76 @@ s32 SEQ_FILE_HW_Read(void)
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown SRM_* name '%s'!", parameter);
 #endif
 	  }
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// misc
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 aout_type = get_dec(word);
+	  if( aout_type < 0 || aout_type >= 4 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid AOUT interface type '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  aout_config_t config;
+	  config = AOUT_ConfigGet();
+	  config.if_type = aout_type;
+	  config.if_option = (config.if_type == AOUT_IF_74HC595) ? 0xffffffff : 0x00000000; // AOUT_LC: select 8/8 bit configuration
+	  config.num_channels = 8;
+	  config.chn_inverted = 0;
+	  AOUT_ConfigSet(config);
+	  AOUT_IF_Init(0);
+
+	} else if( strncmp(parameter, "DOUT_GATE_SR", 12) == 0 && // DOUT_GATE_SR%d
+		     (hlp=atoi(parameter+12)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_dout_gate_sr[hlp-1] = sr;
+
+	} else if( strcmp(parameter, "J5_ENABLED") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 j5_enabled = get_dec(word);
+	  if( j5_enabled < 0 || j5_enabled > 2 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: expecting 0, 1 or 2!", parameter);
+#endif
+	    continue;
+	  }
+
+	  int i;
+	  mios32_board_pin_mode_t pin_mode = MIOS32_BOARD_PIN_MODE_INPUT_PD;
+	  if( j5_enabled == 1 )
+	    pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_PP;
+	  if( j5_enabled == 2 )
+	    pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_OD;
+
+	  for(i=0; i<12; ++i)
+	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
+
+	} else if( strcmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 trg_enabled = get_dec(word);
+	  if( trg_enabled < 0 || trg_enabled > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: expecting 0 or 1!", parameter);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_dout_gate_1ms = trg_enabled;
+
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// unknown
