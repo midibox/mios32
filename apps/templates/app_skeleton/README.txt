@@ -1,3 +1,5 @@
+$Id: $
+
 <Application Title>
 ===============================================================================
 Copyright (C) <year> <your name> (<your email address>)
