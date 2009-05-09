@@ -54,11 +54,14 @@ u32 last_btn_change_count = 1;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void){
 	s32 i;
+	blm_x_config_t blm_x_conf;
 	// initialize all LEDs
 	MIOS32_BOARD_LED_Init(0xffffffff);
 	// initialize BLM driver
 	BLM_X_Init();
-	BLM_X_DebounceDelaySet(1);
+	blm_x_conf = BLM_X_ConfigGet();
+	blm_x_conf.cfg.debounce_delay = 10;
+	BLM_X_ConfigSet(blm_x_conf);
 	// start BLM check task
 	xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
 	//send init message
