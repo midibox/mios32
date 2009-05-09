@@ -32,6 +32,8 @@
 		523E38CD0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 523E38CC0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m */; };
 		523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */; };
 		524682C20F3F15FC006D2FBE /* DOSFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */; };
+		524A6FF90FB63949006134D1 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 524A6FF70FB63949006134D1 /* aout.c */; };
+		524A700A0FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */; };
 		524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */ = {isa = PBXBuildFile; fileRef = 524AE14C0F8696BF008C64B8 /* seq_record.c */; };
 		5251924F0F13DDBD007A6BFF /* seq_scale.c in Sources */ = {isa = PBXBuildFile; fileRef = 5251924D0F13DDBD007A6BFF /* seq_scale.c */; };
 		525192540F13DDDA007A6BFF /* seq_ui_save.c in Sources */ = {isa = PBXBuildFile; fileRef = 525192530F13DDDA007A6BFF /* seq_ui_save.c */; };
@@ -192,6 +194,10 @@
 		523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_stepsel.c; path = ../core/seq_ui_stepsel.c; sourceTree = SOURCE_ROOT; };
 		524682C00F3F15FC006D2FBE /* DOSFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOSFS_Wrapper.h; sourceTree = "<group>"; };
 		524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOSFS_Wrapper.m; sourceTree = "<group>"; };
+		524A6FF70FB63949006134D1 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
+		524A6FF80FB63949006134D1 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
+		524A70080FB63AF5006134D1 /* MIOS32_SPI_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SPI_Wrapper.h; sourceTree = "<group>"; };
+		524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SPI_Wrapper.m; sourceTree = "<group>"; };
 		524AE14C0F8696BF008C64B8 /* seq_record.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_record.c; path = ../core/seq_record.c; sourceTree = SOURCE_ROOT; };
 		5251924D0F13DDBD007A6BFF /* seq_scale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_scale.c; path = ../core/seq_scale.c; sourceTree = SOURCE_ROOT; };
 		5251924E0F13DDBD007A6BFF /* seq_scale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_scale.h; path = ../core/seq_scale.h; sourceTree = SOURCE_ROOT; };
@@ -375,6 +381,8 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				524A70080FB63AF5006134D1 /* MIOS32_SPI_Wrapper.h */,
+				524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */,
 				52C393490FA643A80000FD51 /* seq_label.c */,
 				52C3934A0FA643A80000FD51 /* seq_label.h */,
 				52C3934B0FA643A80000FD51 /* seq_ui_fx_humanize.c */,
@@ -470,6 +478,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				524A6FF70FB63949006134D1 /* aout.c */,
+				524A6FF80FB63949006134D1 /* aout.h */,
 				52EEE7D90FB227B300524AC0 /* seq_file_hw.c */,
 				52EEE7DA0FB227B300524AC0 /* seq_file_hw.h */,
 				52EEE7D10FB2039200524AC0 /* seq_hwcfg.c */,
@@ -866,6 +876,8 @@
 				527828F60FB0ADD9009822EB /* seq_ui_trkmorph.c in Sources */,
 				52EEE7D30FB2039200524AC0 /* seq_hwcfg.c in Sources */,
 				52EEE7DB0FB227B300524AC0 /* seq_file_hw.c in Sources */,
+				524A6FF90FB63949006134D1 /* aout.c in Sources */,
+				524A700A0FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
