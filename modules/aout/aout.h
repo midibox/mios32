@@ -18,8 +18,8 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// maximum number of AOUT channels (1..32)
-// (can be changed via soft-configuration during runtime)
+// Maximum number of AOUT channels (1..32)
+// (Number of channels within this range can be changed via soft-configuration during runtime.)
 #ifndef AOUT_NUM_CHANNELS
 #define AOUT_NUM_CHANNELS 8
 #endif
