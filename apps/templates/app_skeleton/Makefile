@@ -1,4 +1,4 @@
-# $Id: $
+# $Id$
 
 ################################################################################
 # following setup taken from environment variables
