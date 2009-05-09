@@ -39,6 +39,8 @@ If you want to work directly on the virtual SR's (bypass LED-set / -get function
 choose BLM_X_LED_NUM_COLS values like 4,8,12,16 etc. and color-mode 0. If you set LED states only by 
 module functions, you don't have to care about this on the software side.
 
+Note that serial register assignment / color mode can be re-configured by software ( BLM_X_ConfigSet(..) ).
+
 
 Debouncing
 ----------
@@ -49,6 +51,7 @@ Debounce-mode 2 uses individual counters for each button, which consumes a bit m
 performance. 
 You can disable debouncing completly by setting BLM_X_DEBOUNCE_MODE = 0
 
+Note that the debounce-delay can be configured by software ( BLM_X_ConfigSet(..) ).
 
 Configuration
 -------------
@@ -72,18 +75,24 @@ The module can be configured by overriding defines. The values shown here are de
 // DOUT shift register to which the cathodes of the LEDs are connected (row selectors).
 // If less than 5 rows are defined, the higher nibble of the SR outputs will be always 
 // identical to the lower nibble. Note that SR's are counted from 1.
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_ROWSEL_DOUT_SR	1
 
 // First DOUT shift register to which the anodes of the LEDs are connected. The number
 // of registers used is: ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
 // registers will be used.
 // SR's are counted from 1, set this to 0 if you only use buttons in your matrix.
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_LED_FIRST_DOUT_SR	2
 
 
 // First DIN shift registers to which the button matrix is connected.
 // Subsequent shift registers will be used, if more than 8 cols are defined.
 // SR's are counted from 1, set this to 0 if you only use LED's in your matrix.
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_BTN_FIRST_DIN_SR	1
 
 // Set an inversion mask for the row selection shift registers if sink drivers (transistors)
@@ -94,6 +103,8 @@ The module can be configured by overriding defines. The values shown here are de
 //           0xff - sink drivers connected to D7..D0
 //           0x0f - sink drivers connected to D3..D0
 //           0xf0 - sink drivers connected to D7..D4
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_ROWSEL_INV_MASK	0x00
 
 
@@ -104,6 +115,8 @@ The module can be configured by overriding defines. The values shown here are de
 
 // 0: colors will be mapped to serial registers grouped by color (see section "Serial registers")
 // 1: colors will be mapped to serial registers grouped by LED-columns (see section "Serial registers")
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 BLM_X_COLOR_MODE 0
 
 
@@ -169,15 +182,18 @@ u8 BLM_X_LEDSRGet(u8 row, u8 sr);
 Gets a virtual LED-register's value. Returns 0 if the register is not available.
 
 
-s32 BLM_X_DebounceDelaySet(u8 delay);
-Sets the debounce-delay (number of scan-cycles to ignore button changes after
-a change). Returns -1 if buttons are disabled (BLM_X_BTN_FIRST_DIN_SR == 0).
+s32 BLM_X_ConfigSet(blm_x_config_t config);
+Sets the blm_x configuration structure, it has the following members:
+	.cfg.rowsel_dout_sr; //see description of BLM_X_ROWSEL_DOUT_SR define. default = BLM_X_ROWSEL_DOUT_SR
+	.cfg.led_first_dout_sr; //see description of BLM_X_LED_FIRST_DOUT_SR define. default = BLM_X_LED_FIRST_DOUT_SR
+	.cfg.btn_first_din_sr; //see description of BLM_X_BTN_FIRST_DIN_SR define. default = BLM_X_BTN_FIRST_DIN_SR
+	.cfg.rowsel_inv_mask; //see description of BLM_X_ROWSEL_INV_MASK define. default = BLM_X_ROWSEL_INV_MASK
+	.cfg.color_mode; //see description of BLM_X_COLOR_MODE define. default = BLM_X_COLOR_MODE
+	.cfg.debounce_delay; //number of scan cycles to ignore button changes after change. default = 0
 
 
-u8 BLM_X_DebounceDelayGet(void);
-Gets the debounce-delay (number of scan-cycles to ignore button changes after
-a change).
-
+u8 blm_x_config_t BLM_X_ConfigGet(void);
+Gets the blm_x configuration structure. See also BLM_X_ConfigSet for description of struct members.
 
 
 Performance
