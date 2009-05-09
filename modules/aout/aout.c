@@ -114,7 +114,7 @@
 //! a 4x1k Pull-Up resistor array should be installed, since the IO pins
 //! are configured in open-drain mode for 3.3V->5V level shifting.
 //!
-//! \example see $MIOS32_PATH/apps/examples/aout
+//! An usage example can be found under $MIOS32_PATH/apps/examples/aout
 //!
 //! \todo Add AOUT driver for integrated 2-channel DAC of STM32F103RE
 //!
@@ -638,3 +638,5 @@ s32 AOUT_Update(void)
 
   return status ? -4 : 0; // SPI transfer error?
 }
+
+//! \}
