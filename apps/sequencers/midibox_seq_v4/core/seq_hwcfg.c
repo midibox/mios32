@@ -227,6 +227,10 @@ seq_hwcfg_srm_t seq_hwcfg_srm = {
 };
 
 
+u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
+u8 seq_hwcfg_dout_gate_1ms;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local constant arrays
 /////////////////////////////////////////////////////////////////////////////
@@ -263,6 +267,11 @@ s32 SEQ_HWCFG_Init(u32 mode)
   // initialize encoders
   for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
     MIOS32_ENC_ConfigSet(i, enc_config[i]);
+
+  // disable gate SRs
+  for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i)
+    seq_hwcfg_dout_gate_sr[i] = 0;
+  seq_hwcfg_dout_gate_1ms = 0;
 
   return 0; // no error
 }

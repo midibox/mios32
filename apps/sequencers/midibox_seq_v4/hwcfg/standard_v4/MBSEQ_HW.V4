@@ -71,6 +71,45 @@ SRM_DIN_M  0
 
 
 ##################################################
+# CV and Gate/Trigger/Sync Setup
+##################################################
+
+# define the AOUT interface which is connected to the core
+#  1: a MBHP_AOUT module
+#  2: up to 4 (chained) MBHP_AOUT_LC modules in 8/8 bit configuration
+#  3: a MBHP_AOUT_NG module
+AOUT_INTERFACE_TYPE 1
+
+# additional gate triggers are available on common digital output pins of the
+# DOUT shift register chain - they are assigned to AOUT channel #16 (Note C-1, C#1, D-1, ...)
+# define the shift registers which should be used here (each provides 8 gates)
+# Note that SRs assigned to this function cannot be used as LED outputs (exclusive function)
+# Allowed values: 1-16, 0 disables the function, all other values invalid and not allowed
+DOUT_GATE_SR1   0
+DOUT_GATE_SR2   0
+DOUT_GATE_SR3   0
+DOUT_GATE_SR4   0
+DOUT_GATE_SR5   0
+DOUT_GATE_SR6   0
+DOUT_GATE_SR7   0
+DOUT_GATE_SR8   0
+
+# if set to 1, the DOUT "gates" will send 1mS pulses
+# useful for analog drums
+DOUT_1MS_TRIGGER 0
+
+# should J5A/B/C outputs be enabled (0: no, 1: yes, 2: yes, but in open drain mode)?
+#  - the 8 AOUT gates will be forwarded to J5A/B
+#  - DIN sync clock will be forwarded to J5C:A0
+#  - DIN sync start/stop will be forwarded to J5C:A1
+#  - if open drain mode enabled (option 2), external pull-ups have to be connected to J5 pins
+#    (advantage: pin levels can be pulled to 5V)
+#
+# NEVER USE THIS TOGETHER WITH ANALOG POTS - IT WILL CAUSE A SHORT CIRCUIT!
+J5_ENABLED 1
+
+
+##################################################
 # LED assignments to DOUT pins
 # SR = 0: LED disabled
 # SR = 1..16:  directly forwarded to DOUT pin

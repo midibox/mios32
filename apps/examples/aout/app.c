@@ -105,9 +105,10 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 #endif
 
   // for easier handling: Note Off -> Note On with velocity 0
-  if( midi_package.event == NoteOff )
+  if( midi_package.event == NoteOff ) {
+    midi_package.event = NoteOn;
     midi_package.velocity = 0;
-
+  }
 
   // some spagetthi code to simplify understanding and adaptions
 
