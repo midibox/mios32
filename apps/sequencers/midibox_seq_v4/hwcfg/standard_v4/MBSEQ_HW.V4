@@ -226,8 +226,8 @@ BUTTON_TRACK4   3   3
 
 #                  SR  Pin
 BUTTON_PAR_LAYER_A  3   4
-BUTTON_PAR_LAYER_B  3   4
-BUTTON_PAR_LAYER_C  3   4
+BUTTON_PAR_LAYER_B  3   5
+BUTTON_PAR_LAYER_C  3   6
 
 #               SR  Pin
 BUTTON_EDIT      4   0
