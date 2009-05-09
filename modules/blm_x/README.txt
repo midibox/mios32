@@ -192,7 +192,7 @@ Sets the blm_x configuration structure, it has the following members:
 	.cfg.debounce_delay; //number of scan cycles to ignore button changes after change. default = 0
 
 
-u8 blm_x_config_t BLM_X_ConfigGet(void);
+blm_x_config_t BLM_X_ConfigGet(void);
 Gets the blm_x configuration structure. See also BLM_X_ConfigSet for description of struct members.
 
 
