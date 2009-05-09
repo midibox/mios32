@@ -1,4 +1,4 @@
-// $Id: app.c 108 2008-10-26 13:08:31Z tk $
+// $Id$
 /*
  * MIOS32 Application Template
  *
