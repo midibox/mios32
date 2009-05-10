@@ -68,39 +68,16 @@
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
+// configure BLM_X driver (not supported by emulation!)
+#define BLM_X_NUM_ROWS            8
+#define BLM_X_BTN_NUM_COLS        8
+#define BLM_X_LED_NUM_COLS        8
+#define BLM_X_LED_NUM_COLORS      1
+#define BLM_X_ROWSEL_DOUT_SR      255 // dummy, will be changed in seq_file_hw.c
+#define BLM_X_LED_FIRST_DOUT_SR   255 // dummy, will be changed in seq_file_hw.c
+#define BLM_X_BTN_FIRST_DIN_SR    255 // dummy, will be changed in seq_file_hw.c
+#define BLM_X_ROWSEL_INV_MASK     0   // dummy, will be changed in seq_file_hw.c
+#define BLM_X_DEBOUNCE_MODE       0
 
-// the speed value for the datawheel (#0) which is used when the "FAST" button is activated:
-#define DEFAULT_DATAWHEEL_SPEED_VALUE	3
-
-// the speed value for the additional encoders (#1-#16) which is used when the "FAST" button is activated:
-#define DEFAULT_ENC_SPEED_VALUE		3
-
-// Auto FAST mode: if a layer is assigned to velocity or CC, the fast button will be automatically
-// enabled - in other cases (e.g. Note or Length), the fast button will be automatically disabled
-#define DEFAULT_AUTO_FAST_BUTTON        1
-
-
-// Toggle behaviour of various buttons
-// 0: active mode so long button pressed
-// 1: pressing button toggles the mode
-#define DEFAULT_BEHAVIOUR_BUTTON_FAST	1
-#define DEFAULT_BEHAVIOUR_BUTTON_ALL	1
-#define DEFAULT_BEHAVIOUR_BUTTON_SOLO	1
-#define DEFAULT_BEHAVIOUR_BUTTON_METRON	1
-#define DEFAULT_BEHAVIOUR_BUTTON_SCRUB	1
-#define DEFAULT_BEHAVIOUR_BUTTON_MENU	1
-#define DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW 1
-#define DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER 1
-#define DEFAULT_BEHAVIOUR_BUTTON_PAR_LAYER 1
-
-
-// include SRIO setup here, so that we can propagate values to external modules
-#include "srio_mapping.h"
-
-// forward to BLM8x8 driver
-#define BLM8X8_DOUT	          DEFAULT_SRM_DOUT_M
-#define BLM8X8_DOUT_CATHODES	  DEFAULT_SRM_DOUT_CATHODESM
-#define BLM8X8_CATHODES_INV_MASK  DEFAULT_SRM_CATHODES_INV_MASK_M
-#define BLM8X8_DIN	          DEFAULT_SRM_DIN_M
 
 #endif /* _MIOS32_CONFIG_H */

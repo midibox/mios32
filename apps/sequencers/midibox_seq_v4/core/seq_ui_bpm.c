@@ -45,7 +45,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 preset_sel_mode;
+u8 store_file_required;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -56,19 +56,15 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  if( preset_sel_mode ) {
-    *gp_leds = 1 << seq_core_bpm_preset_num;
-  } else {
-    switch( ui_selected_item ) {
-      case ITEM_MODE: *gp_leds = 0x0001; break;
-      case ITEM_PRESET: *gp_leds = 0x0002; break;
-      case ITEM_BPM: *gp_leds = 0x000c; break;
-      case ITEM_RAMP: *gp_leds = 0x0010; break;
-    }
-
-    *gp_leds |= (1 << (seq_core_bpm_div_int+8));
-    *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
+  switch( ui_selected_item ) {
+    case ITEM_MODE: *gp_leds = 0x0001; break;
+    case ITEM_PRESET: *gp_leds = 0x0002; break;
+    case ITEM_BPM: *gp_leds = 0x000c; break;
+    case ITEM_RAMP: *gp_leds = 0x0010; break;
   }
+
+  *gp_leds |= (1 << (seq_core_bpm_div_int+8));
+  *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
 
   return 0; // no error
 }
@@ -83,20 +79,6 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  if( preset_sel_mode ) {
-    // encoder selects preset
-    if( encoder <= SEQ_UI_ENCODER_GP16 ) {
-      // set preset
-      seq_core_bpm_preset_num = encoder;
-      // change Tempo
-      SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
-      // and exit preset mode
-      preset_sel_mode = 0;
-    }
-
-    return -1; // ignore remaining encoders
-  }
-
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_MODE;
@@ -131,6 +113,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP12:
       ui_selected_item = ITEM_IDIV;
       seq_core_bpm_div_int = (u8)encoder & 3;
+      store_file_required = 1;
       return 1;
 
     case SEQ_UI_ENCODER_GP13:
@@ -139,6 +122,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP16:
       ui_selected_item = ITEM_EDIV;
       seq_core_bpm_div_ext = (u8)encoder & 3;
+      store_file_required = 1;
       return 1;
   }
 
@@ -148,6 +132,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = SEQ_BPM_ModeGet();
       if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
 	SEQ_BPM_ModeSet(value);
+	store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -163,6 +148,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	// set new BPM
       	seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
 	SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+	store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -172,16 +158,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 value = (u16)seq_core_bpm_preset_ramp[seq_core_bpm_preset_num];
       if( SEQ_UI_Var16_Inc(&value, 0, 99, incrementer) ) {
 	seq_core_bpm_preset_ramp[seq_core_bpm_preset_num] = (float)value;
+	store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
     } break;
 
-    case ITEM_IDIV:
-      return SEQ_UI_Var8_Inc(&seq_core_bpm_div_int, 0, 3, incrementer);
+    case ITEM_IDIV: {
+      if( SEQ_UI_Var8_Inc(&seq_core_bpm_div_int, 0, 3, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
 
-    case ITEM_EDIV:
-      return SEQ_UI_Var8_Inc(&seq_core_bpm_div_ext, 0, 3, incrementer);
+    case ITEM_EDIV: {
+      if( SEQ_UI_Var8_Inc(&seq_core_bpm_div_ext, 0, 3, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value has been changed
+      } else
+	return 0; // value hasn't been changed
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -199,20 +196,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
-  if( preset_sel_mode ) {
-    // GP button selects preset
-    if( button <= SEQ_UI_BUTTON_GP16 ) {
-      // re-use encoder handler - only select UI item, don't increment
-      return Encoder_Handler((int)button, 0);
-    }
-
-    // TODO
-    // too bad, that the menu handling concept doesn't allow to react on exit button here
-    // this would allow to exit preset selection mode w/o exiting BPM page
-
-    return -1; // ignore remaining buttons
-  }
-
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
@@ -221,8 +204,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #endif
     switch( button ) {
       case SEQ_UI_BUTTON_GP6:
-	// enter preset selection mode
-	preset_sel_mode = 1;
+	// enter preset selection page
+	SEQ_UI_PageSet(SEQ_UI_PAGE_BPM_PRESETS);
 	return 1;
 
       case SEQ_UI_BUTTON_GP7:
@@ -279,32 +262,6 @@ static s32 LCD_Handler(u8 high_prio)
   //  Mode Preset Tempo  Ramp  Fire  Set Tap    Global Clock Dividers (Int./Ext.)    
   // Master   1   140.0   1s  Preset  Tempo   >1<   2    4    8    2   >4<   8   16 
 
-
-  if( preset_sel_mode ) {
-    int i;
-
-    SEQ_LCD_CursorSet(0, 0);
-    for(i=0; i<16; ++i) {
-      float bpm = seq_core_bpm_preset_tempo[i];
-      if( i == seq_core_bpm_preset_num ) {
-	SEQ_LCD_PrintFormattedString(ui_cursor_flash ? ">   <" : ">%3d<", (int)bpm);
-      } else {
-	SEQ_LCD_PrintFormattedString(" %3d ", (int)bpm);
-      }
-    }
-
-    SEQ_LCD_CursorSet(0, 1);
-    for(i=0; i<16; ++i) {
-      float ramp = seq_core_bpm_preset_ramp[i];
-      if( i == seq_core_bpm_preset_num ) {
-	SEQ_LCD_PrintFormattedString(ui_cursor_flash ? ">   <" : ">%2ds<", (int)ramp);
-      } else {
-	SEQ_LCD_PrintFormattedString(" %2ds ", (int)ramp);
-      }
-    }
-
-    return 0; // no error
-  }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -377,13 +334,17 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 static s32 EXIT_Handler(void)
 {
-  s32 status;
+  s32 status = 0;
 
-  // write config file
-  MUTEX_SDCARD_TAKE;
-  if( (status=SEQ_FILE_C_Write()) < 0 )
-    SEQ_UI_SDCardErrMsg(2000, status);
-  MUTEX_SDCARD_GIVE;
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    if( (status=SEQ_FILE_C_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    store_file_required = 0;
+  }
 
   return status;
 }
@@ -401,7 +362,7 @@ s32 SEQ_UI_BPM_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
-  preset_sel_mode = 0;
+  store_file_required = 0;
 
   return 0; // no error
 }

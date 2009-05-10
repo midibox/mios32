@@ -25,6 +25,7 @@
 #include <dosfs.h>
 #include <string.h>
 #include <aout.h>
+#include <blm_x.h>
 
 #include "seq_file.h"
 #include "seq_file_hw.h"
@@ -238,6 +239,50 @@ s32 SEQ_FILE_HW_Read(void)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	// BUTTON_BEH
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "BUTTON_BEH_", 11) == 0 ) {
+	  parameter += 11;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 flag = get_dec(word);
+	  if( flag < 0 || flag > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_BEH_%s definition: expecting 0 or 1, got '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  if( strcmp(parameter, "FAST") == 0 ) {
+	    seq_hwcfg_button_beh.fast = flag;
+	  } else if( strcmp(parameter, "ALL") == 0 ) {
+	    seq_hwcfg_button_beh.all = flag;
+	  } else if( strcmp(parameter, "SOLO") == 0 ) {
+	    seq_hwcfg_button_beh.solo = flag;
+	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
+	    seq_hwcfg_button_beh.metronome = flag;
+	  } else if( strcmp(parameter, "SCRUB") == 0 ) {
+	    seq_hwcfg_button_beh.scrub = flag;
+	  } else if( strcmp(parameter, "MENU") == 0 ) {
+	    seq_hwcfg_button_beh.menu = flag;
+	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
+	    seq_hwcfg_button_beh.step_view = flag;
+	  } else if( strcmp(parameter, "TRG_LAYER") == 0 ) {
+	    seq_hwcfg_button_beh.trg_layer = flag;
+	  } else if( strcmp(parameter, "PAR_LAYER") == 0 ) {
+	    seq_hwcfg_button_beh.par_layer = flag;
+	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	    seq_hwcfg_button_beh.track_sel = flag;
+	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	    seq_hwcfg_button_beh.tempo_preset = flag;
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button behaviour function 'BUTTON_BEH_%s'!", parameter);
+#endif
+	  }
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	// BUTTON_
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strncmp(parameter, "BUTTON_", 7) == 0 ) {
@@ -256,7 +301,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  s32 pin = get_dec(word);
 	  if( pin < 0 || pin >= 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid pin value 's'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid pin value '%s'!", parameter, word);
 #endif
 	    continue;
 	  }
@@ -289,14 +334,6 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.rew = din_value;
 	  } else if( strcmp(parameter, "FWD") == 0 ) {
 	    seq_hwcfg_button.fwd = din_value;
-	  } else if( strcmp(parameter, "F1") == 0 ) {
-	    seq_hwcfg_button.f1 = din_value;
-	  } else if( strcmp(parameter, "F2") == 0 ) {
-	    seq_hwcfg_button.f2 = din_value;
-	  } else if( strcmp(parameter, "F3") == 0 ) {
-	    seq_hwcfg_button.f3 = din_value;
-	  } else if( strcmp(parameter, "F4") == 0 ) {
-	    seq_hwcfg_button.f4 = din_value;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button.menu = din_value;
 	  } else if( strcmp(parameter, "SELECT") == 0 ) {
@@ -334,8 +371,18 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.trg_layer[hlp] = din_value;
 	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_button.step_view = din_value;
+	  } else if( strcmp(parameter, "TRG_LAYER_SEL") == 0 ) {
+	    seq_hwcfg_button.trg_layer_sel = din_value;
+	  } else if( strcmp(parameter, "PAR_LAYER_SEL") == 0 ) {
+	    seq_hwcfg_button.par_layer_sel = din_value;
+	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	    seq_hwcfg_button.track_sel = din_value;
 	  } else if( strcmp(parameter, "TAP_TEMPO") == 0 ) {
 	    seq_hwcfg_button.tap_tempo = din_value;
+	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	    seq_hwcfg_button.tempo_preset = din_value;
+	  } else if( strcmp(parameter, "SYNC_EXT") == 0 ) {
+	    seq_hwcfg_button.sync_ext = din_value;
 	  } else if( strcmp(parameter, "UTILITY") == 0 ) {
 	    seq_hwcfg_button.utility = din_value;
 	  } else if( strcmp(parameter, "COPY") == 0 ) {
@@ -369,7 +416,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  s32 pin = get_dec(word);
 	  if( pin < 0 || pin >= 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid pin value 's'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid pin value '%s'!", parameter, word);
 #endif
 	    continue;
 	  }
@@ -431,16 +478,20 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.paste = dout_value;
 	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_led.clear = dout_value;
-	  } else if( strcmp(parameter, "F1") == 0 ) {
-	    seq_hwcfg_led.f1 = dout_value;
-	  } else if( strcmp(parameter, "F2") == 0 ) {
-	    seq_hwcfg_led.f2 = dout_value;
-	  } else if( strcmp(parameter, "F3") == 0 ) {
-	    seq_hwcfg_led.f3 = dout_value;
-	  } else if( strcmp(parameter, "F4") == 0 ) {
-	    seq_hwcfg_led.f4 = dout_value;
 	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_led.step_view = dout_value;
+	  } else if( strcmp(parameter, "TRG_LAYER_SEL") == 0 ) {
+	    seq_hwcfg_led.trg_layer_sel = dout_value;
+	  } else if( strcmp(parameter, "PAR_LAYER_SEL") == 0 ) {
+	    seq_hwcfg_led.par_layer_sel = dout_value;
+	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	    seq_hwcfg_led.track_sel = dout_value;
+	  } else if( strcmp(parameter, "TAP_TEMPO") == 0 ) {
+	    seq_hwcfg_led.tap_tempo = dout_value;
+	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	    seq_hwcfg_led.tempo_preset = dout_value;
+	  } else if( strcmp(parameter, "SYNC_EXT") == 0 ) {
+	    seq_hwcfg_led.sync_ext = dout_value;
 	  } else if( strcmp(parameter, "DOWN") == 0 ) {
 	    seq_hwcfg_led.down = dout_value;
 	  } else if( strcmp(parameter, "UP") == 0 ) {
@@ -462,8 +513,21 @@ s32 SEQ_FILE_HW_Read(void)
 	  s32 sr = get_dec(word);
 	  if( sr < 0 || sr > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid SR value '%s'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid first value '%s'!", parameter, word);
 #endif
+	    continue;
+	  }
+
+	  if( strcmp(parameter, "DATAWHEEL_FAST_SPEED") == 0 ) {
+	    seq_hwcfg_enc.datawheel_fast_speed = sr;
+	    continue;
+	  }
+	  if( strcmp(parameter, "GP_FAST_SPEED") == 0 ) {
+	    seq_hwcfg_enc.gp_fast_speed = sr;
+	    continue;
+	  }
+	  if( strcmp(parameter, "AUTO_FAST") == 0 ) {
+	    seq_hwcfg_enc.auto_fast = sr;
 	    continue;
 	  }
 
@@ -471,7 +535,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  s32 pin = get_dec(word);
 	  if( pin < 0 || pin >= 8 ) { // should we check for odd pin values (1/3/5/7) as well?
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid pin value 's'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid pin value '%s'!", parameter, word);
 #endif
 	    continue;
 	  }
@@ -585,19 +649,25 @@ s32 SEQ_FILE_HW_Read(void)
 	  } else if( strcmp(parameter, "DOUT_R1") == 0 ) {
 	    seq_hwcfg_srm.dout_r1 = value;
 	  } else if( strcmp(parameter, "DOUT_M") == 0 ) {
-	    seq_hwcfg_srm.dout_m = value;
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.led_first_dout_sr = value;
+	    BLM_X_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_CATHODES1") == 0 ) {
 	    seq_hwcfg_srm.dout_cathodes1 = value;
 	  } else if( strcmp(parameter, "DOUT_CATHODES2") == 0 ) {
 	    seq_hwcfg_srm.dout_cathodes2 = value;
 	  } else if( strcmp(parameter, "DOUT_CATHODESM") == 0 ) {
-	    seq_hwcfg_srm.dout_cathodesm = value;
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.rowsel_dout_sr = value;
+	    BLM_X_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_M_MAPPING") == 0 ) {
 	    seq_hwcfg_srm.dout_m_mapping = value;
 	  } else if( strcmp(parameter, "CATHODES_INV_MASK") == 0 ) {
 	    seq_hwcfg_srm.cathodes_inv_mask = value;
 	  } else if( strcmp(parameter, "CATHODES_INV_MASK_M") == 0 ) {
-	    seq_hwcfg_srm.cathodes_inv_mask_m = value;
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.rowsel_inv_mask = value;
+	    BLM_X_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
 	    seq_hwcfg_srm.dout_duocolour = value;
 	  } else if( strcmp(parameter, "DOUT_L2") == 0 ) {
@@ -613,7 +683,9 @@ s32 SEQ_FILE_HW_Read(void)
 	  } else if( strcmp(parameter, "DIN_R") == 0 ) {
 	    seq_hwcfg_srm.din_r = value;
 	  } else if( strcmp(parameter, "DIN_M") == 0 ) {
-	    seq_hwcfg_srm.din_m = value;
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.btn_first_din_sr = value;
+	    BLM_X_ConfigSet(config);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown SRM_* name '%s'!", parameter);

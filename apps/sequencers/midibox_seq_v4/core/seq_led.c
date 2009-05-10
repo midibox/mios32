@@ -17,9 +17,7 @@
 
 #include <mios32.h>
 
-#if DEFAULT_SRM_ENABLED
 #include <blm_x.h>
-#endif
 
 #include "seq_led.h"
 
@@ -47,10 +45,8 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
   if( pin < 128 )
     return MIOS32_DOUT_PinSet(pin, value);
 
-#if DEFAULT_SRM_ENABLED
   if( pin < 196 )
     BLM_X_LEDSet(pin-128, 0, value);
-#endif
 
   return -1; // pin not available
 }
@@ -65,10 +61,8 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
   if( sr < 16 )
     return MIOS32_DOUT_SRSet(sr, value);
 
-#if DEFAULT_SRM_ENABLED
   if( sr < 24 )
     BLM_X_LEDSRSet(sr-16, 0, value);
-#endif
 
   return -1; // SR not available
 }

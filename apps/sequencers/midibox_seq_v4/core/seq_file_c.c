@@ -212,8 +212,44 @@ s32 SEQ_FILE_C_Read(void)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_C] ERROR invalid value for parameter '%s'\n", parameter);
 #endif
-	  } else if( strcmp(parameter, "BPMx10") == 0 ) {
-	    SEQ_BPM_Set((float)value/10);
+	  } else if( strcmp(parameter, "BPMx10_P") == 0 ) {
+	    if( value >= SEQ_CORE_NUM_BPM_PRESETS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid preset slot %d for parameter '%s'\n", value, parameter);
+#endif
+	      continue;
+	    }
+
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 tempo = get_dec(word);
+
+	    if( tempo < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid or missing tempo for parameter '%s'\n", parameter);
+#endif
+	      continue;
+	    }
+
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 ramp = get_dec(word);
+
+	    if( ramp < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid or missing ramp for parameter '%s'\n", parameter);
+#endif
+	      continue;
+	    }
+
+	    seq_core_bpm_preset_tempo[value] = (float)(tempo/10.0);
+	    seq_core_bpm_preset_ramp[value] = (float)(ramp/10.0);
+	  } else if( strcmp(parameter, "BPM_Preset") == 0 ) {
+	    if( value >= SEQ_CORE_NUM_BPM_PRESETS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid preset number %d for parameter '%s'\n", value, parameter);
+#endif
+	      continue;
+	    }
+	    seq_core_bpm_preset_num = value;
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	    SEQ_BPM_ModeSet(value);
 	  } else if( strcmp(parameter, "BPM_IntDiv") == 0 ) {
@@ -306,6 +342,9 @@ s32 SEQ_FILE_C_Read(void)
   // file is valid! :)
   info->valid = 1;
 
+  // change tempo to given preset
+  SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+
   return 0; // no error
 }
 
@@ -340,7 +379,16 @@ s32 SEQ_FILE_C_Write(void)
   char line_buffer[128];
 
   // write config values
-  sprintf(line_buffer, "BPMx10 %d\n", (int)(SEQ_BPM_Get()*10));
+  u8 bpm_preset;
+  for(bpm_preset=0; bpm_preset<SEQ_CORE_NUM_BPM_PRESETS; ++bpm_preset) {
+    sprintf(line_buffer, "BPMx10_P %d %d %d\n", 
+	    bpm_preset,
+	    (int)(seq_core_bpm_preset_tempo[bpm_preset]*10),
+	    (int)(seq_core_bpm_preset_ramp[bpm_preset]*10));
+    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+  }
+
+  sprintf(line_buffer, "BPM_Preset %d\n", seq_core_bpm_preset_num);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());

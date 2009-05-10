@@ -77,10 +77,8 @@ void APP_Init(void)
   MIOS32_LCD_Init(0);
   MIOS32_LCD_DeviceSet(0);
 
-#if DEFAULT_SRM_ENABLED
   // init BLM
   BLM_X_Init();
-#endif
 
   // initialize AOUT driver
   AOUT_Init(0);
@@ -168,10 +166,10 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
-#if DEFAULT_SRM_ENABLED
-  // prepare DOUT registers of 8x8 BLM to drive the row
-  BLM_X_PrepareRow();
-#endif
+  if( seq_hwcfg_srm.enabled ) {
+    // prepare DOUT registers of 8x8 BLM to drive the row
+    BLM_X_PrepareRow();
+  }
 }
 
 
@@ -180,10 +178,10 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
-#if DEFAULT_SRM_ENABLED
-  // call the BL_X_GetRow function after scan is finished to capture the read DIN values
-  BLM_X_GetRow();
-#endif
+  if( seq_hwcfg_srm.enabled ) {
+    // call the BL_X_GetRow function after scan is finished to capture the read DIN values
+    BLM_X_GetRow();
+  }
 }
 
 
@@ -207,7 +205,6 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 // (see also SEQ_TASK_Period1mS)
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-#if DEFAULT_SRM_ENABLED
 void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -217,7 +214,6 @@ void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
   // forward to UI button handler
   SEQ_UI_Button_Handler(pin + 128, pin_value);
 }
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -254,10 +250,10 @@ void SEQ_TASK_Period1mS(void)
   // for menu handling (e.g. flashing cursor, doubleclick counter, etc...)
   SEQ_UI_MENU_Handler_Periodic();
 
-#if DEFAULT_SRM_ENABLED
-  // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
-  BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
-#endif
+  if( seq_hwcfg_srm.enabled ) {
+    // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
+    BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
+  }
 
   // update BPM
   SEQ_CORE_BPM_SweepHandler();

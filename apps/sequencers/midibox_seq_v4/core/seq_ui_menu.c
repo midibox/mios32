@@ -109,6 +109,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Down:
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
 
+    case SEQ_UI_BUTTON_GP5:
+    case SEQ_UI_BUTTON_GP6:
+    case SEQ_UI_BUTTON_GP7:
+    case SEQ_UI_BUTTON_GP8:
     case SEQ_UI_BUTTON_Exit:
       SEQ_UI_PageSet(ui_selected_page);
       return 1;
