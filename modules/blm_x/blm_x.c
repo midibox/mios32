@@ -22,9 +22,6 @@
 
 #include <mios32.h>
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
 #include "blm_x.h"
 
 
