@@ -51,7 +51,7 @@ Debounce-mode 2 uses individual counters for each button, which consumes a bit m
 performance. 
 You can disable debouncing completly by setting BLM_X_DEBOUNCE_MODE = 0
 
-Note that the debounce-delay can be configured by software ( BLM_X_ConfigSet(..) ).
+Debounce-delay can be configured by software ( BLM_X_ConfigSet(..) ), and will be set to 0 by default.
 
 Configuration
 -------------
