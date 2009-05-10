@@ -113,7 +113,7 @@ J5_ENABLED 1
 # LED assignments to DOUT pins
 # SR = 0: LED disabled
 # SR = 1..16:  directly forwarded to DOUT pin
-# SR = 17..31: forwarded to a 8x8 LED matrix
+# SR = 17..24: forwarded to a 8x8 LED matrix
 ##################################################
 
 #           SR  Pin
@@ -168,14 +168,15 @@ LED_COPY        0   0
 LED_PASTE       0   0
 LED_CLEAR       0   0
 
-#       SR  Pin
-LED_F1   0   0
-LED_F2   0   0
-LED_F3   0   0
-LED_F4   0   0
+#                  SR  Pin
+LED_STEP_VIEW      19   1
+LED_PAR_LAYER_SEL   0   0
+LED_TRG_LAYER_SEL   0   0
+LED_TRACK_SEL       0   0
 
-#              SR  Pin
-LED_STEP_VIEW  19   1
+LED_TAP_TEMPO       0   0
+LED_TEMPO_PRESET    0   0
+LED_SYNC_EXT        0   0
 
 #         SR  Pin
 LED_DOWN   0   0
@@ -187,7 +188,7 @@ LED_UP     0   0
 # Button assignments to DIN pins
 # SR = 0: Button disabled
 # SR = 1..16:  directly triggered from DIN pin
-# SR = 17..31: triggered from a 8x8 button matrix
+# SR = 17..24: triggered from a 8x8 button matrix
 ##################################################
 
 #            SR  Pin
@@ -206,12 +207,6 @@ BUTTON_PAUSE  18   4
 BUTTON_PLAY   18   5
 BUTTON_REW    19   4
 BUTTON_FWD    17   5
-
-#          SR  Pin
-BUTTON_F1   2   1
-BUTTON_F2   2   2
-BUTTON_F3   2   3
-BUTTON_F4   2   4
 
 #              SR  Pin
 BUTTON_MENU    23   5
@@ -269,17 +264,54 @@ BUTTON_TRG_LAYER_A  18   6
 BUTTON_TRG_LAYER_B  18   7
 BUTTON_TRG_LAYER_C  17   6
 
-#                 SR  Pin
-BUTTON_STEP_VIEW  21   5
 
-#                 SR  Pin
-BUTTON_TAP_TEMPO   0   0
+# Following button functions are usually assigned to Fx
+# buttons, or to dedicated (labeled) buttons
+# In Wilba's frontpanel layout:
+# F1 is located at SR 19 Pin 3
+# F2 is located at SR 18 Pin 2
+# F3 is located at SR 18 Pin 3
+# F4 is located at SR 17 Pin 2
+# and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
+
+#                    SR  Pin
+BUTTON_TEMPO_PRESET  19   3
+BUTTON_PAR_LAYER_SEL 18   2
+BUTTON_TRG_LAYER_SEL 18   3
+BUTTON_TRACK_SEL     17   2
 
 #               SR  Pin
 BUTTON_UTILITY  19   2
 BUTTON_COPY     23   3
 BUTTON_PASTE    24   2
 BUTTON_CLEAR    24   3
+
+#                 SR  Pin
+BUTTON_STEP_VIEW  21   5
+
+#                 SR  Pin
+BUTTON_TAP_TEMPO   0   0
+BUTTON_SYNC_EXT    0   0
+
+
+
+##################################################
+# Button behaviour
+# 0: active mode so long button pressed
+# 1: pressing button toggles the mode
+##################################################
+
+BUTTON_BEH_FAST         1
+BUTTON_BEH_ALL          1
+BUTTON_BEH_SOLO         1
+BUTTON_BEH_METRONOME    1
+BUTTON_BEH_SCRUB        0
+BUTTON_BEH_MENU         0
+BUTTON_BEH_STEP_VIEW    0
+BUTTON_BEH_TRG_LAYER    0
+BUTTON_BEH_PAR_LAYER    0
+BUTTON_BEH_TRACK_SEL    0
+BUTTON_BEH_TEMPO_PRESET 0
 
 
 ##################################################
@@ -291,6 +323,9 @@ BUTTON_CLEAR    24   3
 
 #              SR  Pin  Type
 ENC_DATAWHEEL   6   2   DETENTED2
+
+# the speed value for the datawheel which is used when the "FAST" button is activated:
+ENC_DATAWHEEL_FAST_SPEED 3
 
 #        SR  Pin  Type
 ENC_GP1   1   6   DETENTED2
@@ -309,3 +344,10 @@ ENC_GP13  5   6   DETENTED2
 ENC_GP14  5   4   DETENTED2
 ENC_GP15  5   2   DETENTED2
 ENC_GP16  5   0   DETENTED2
+
+# the speed value for GP encoders which is used when the "FAST" button is activated:
+ENC_GP_FAST_SPEED 3
+
+# Auto FAST mode: if a layer is assigned to velocity or CC, the fast button will be automatically
+# enabled - in other cases (e.g. Note or Length), the fast button will be automatically disabled
+ENC_AUTO_FAST        1

@@ -53,11 +53,6 @@ typedef struct {
   u8 rew;
   u8 fwd;
 
-  u8 f1;
-  u8 f2;
-  u8 f3;
-  u8 f4;
-
   u8 menu;
   u8 select;
   u8 exit;
@@ -81,15 +76,34 @@ typedef struct {
 
   u8 trg_layer[SEQ_HWCFG_NUM_TRG_LAYER];
 
+  u8 utility;
   u8 step_view;
+  u8 trg_layer_sel;
+  u8 par_layer_sel;
+  u8 track_sel;
 
   u8 tap_tempo;
+  u8 tempo_preset;
+  u8 sync_ext;
 
-  u8 utility;
   u8 copy;
   u8 paste;
   u8 clear;
 } seq_hwcfg_button_t;
+
+typedef union {
+  unsigned fast:1;
+  unsigned all:1;
+  unsigned solo:1;
+  unsigned metronome:1;
+  unsigned scrub:1;
+  unsigned menu:1;
+  unsigned step_view:1;
+  unsigned trg_layer:1;
+  unsigned par_layer:1;
+  unsigned track_sel:1;
+  unsigned tempo_preset:1;
+} seq_hwcfg_button_beh_t;
 
 
 typedef struct {
@@ -132,32 +146,38 @@ typedef struct {
   u8 paste;
   u8 clear;
 
-  u8 f1;
-  u8 f2;
-  u8 f3;
-  u8 f4;
-
   u8 step_view;
+  u8 trg_layer_sel;
+  u8 par_layer_sel;
+  u8 track_sel;
+
+  u8 tap_tempo;
+  u8 tempo_preset;
+  u8 sync_ext;
 
   u8 down;
   u8 up;
 } seq_hwcfg_led_t;
 
 
+typedef union {
+  u8 datawheel_fast_speed;
+  u8 gp_fast_speed;
+  u8 auto_fast;
+} seq_hwcfg_enc_t;
+
+
 typedef struct {
   u8 enabled;
   u8 dout_l1;
   u8 dout_r1;
-  u8 dout_m;
 
   u8 dout_cathodes1;
   u8 dout_cathodes2;
-  u8 dout_cathodesm;
 
   u8 dout_m_mapping;
 
   u8 cathodes_inv_mask;
-  u8 cathodes_inv_mask_m;
 
   u8 dout_duocolour;
 
@@ -169,8 +189,8 @@ typedef struct {
 
   u8 din_l;
   u8 din_r;
-  u8 din_m;
 } seq_hwcfg_srm_t;
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,8 +204,10 @@ extern s32 SEQ_HWCFG_Init(u32 mode);
 /////////////////////////////////////////////////////////////////////////////
 
 extern seq_hwcfg_button_t seq_hwcfg_button;
+extern seq_hwcfg_button_beh_t seq_hwcfg_button_beh;
 extern seq_hwcfg_led_t seq_hwcfg_led;
 extern seq_hwcfg_srm_t seq_hwcfg_srm;
+extern seq_hwcfg_enc_t seq_hwcfg_enc;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 extern u8 seq_hwcfg_dout_gate_1ms;

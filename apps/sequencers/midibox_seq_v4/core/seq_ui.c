@@ -67,9 +67,6 @@ u16 ui_hold_msg_ctr;
 
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
-seq_ui_page_t ui_stepview_prev_page;
-seq_ui_page_t ui_trglayer_prev_page;
-seq_ui_page_t ui_parlayer_prev_page;
 
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
@@ -147,7 +144,10 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
   mios32_enc_config_t enc_config;
 
   if( auto_config ) {
-#if DEFAULT_AUTO_FAST_BUTTON
+
+    if( !seq_hwcfg_enc.auto_fast )
+      return 0; // auto mode not enabled - ignore auto reconfiguration request
+
     switch( SEQ_PAR_AssignmentGet(SEQ_UI_VisibleTrackGet(), ui_selected_par_layer) ) {
       case SEQ_PAR_Type_Velocity:
       case SEQ_PAR_Type_Length:
@@ -162,10 +162,6 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       default:
 	seq_ui_button_state.FAST_ENCODERS = 0;
     }
-#else
-    // auto mode not enabled - ignore auto reconfiguration request
-    return 0;
-#endif
   }
 
   // change for datawheel and GP encoders
@@ -173,7 +169,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
   for(enc=0; enc<17; ++enc) {
     enc_config = MIOS32_ENC_ConfigGet(enc);
     enc_config.cfg.speed = seq_ui_button_state.FAST_ENCODERS ? FAST : NORMAL;
-    enc_config.cfg.speed_par = (enc == 0) ? DEFAULT_DATAWHEEL_SPEED_VALUE : DEFAULT_ENC_SPEED_VALUE;
+    enc_config.cfg.speed_par = (enc == 0) ? seq_hwcfg_enc.datawheel_fast_speed : seq_hwcfg_enc.gp_fast_speed;
     MIOS32_ENC_ConfigSet(enc, enc_config);
   }
 
@@ -236,9 +232,8 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_exit_callback = NULL;
     portEXIT_CRITICAL();
 
-#if DEFAULT_BEHAVIOUR_BUTTON_MENU
-    seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
-#endif
+    if( seq_hwcfg_button_beh.menu )
+      seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
 
     // request display initialisation
     seq_ui_display_init_req = 1;
@@ -333,28 +328,28 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
 
 static s32 SEQ_UI_Button_Scrub(s32 depressed)
 {
-#if DEFAULT_BEHAVIOUR_BUTTON_SCRUB
-  // toggle mode
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.SCRUB ^= 1;
-#else
-  // set mode
-  seq_ui_button_state.SCRUB = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.scrub ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.SCRUB ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.SCRUB = depressed ? 0 : 1;
+  }
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Metronome(s32 depressed)
 {
-#if DEFAULT_BEHAVIOUR_BUTTON_METRON
-  // toggle mode
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.METRONOME ^= 1;
-#else
-  // set mode
-  seq_ui_button_state.METRONOME = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.metronome ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.METRONOME ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.METRONOME = depressed ? 0 : 1;
+  }
 
   return 0; // no error
 }
@@ -441,39 +436,40 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_F1(s32 depressed)
+static s32 SEQ_UI_Button_TempoPreset(s32 depressed)
 {
-  seq_ui_button_state.F1 = depressed ? 0 : 1;
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
-  if( depressed ) return -1; // ignore when button depressed
+  if( seq_hwcfg_button_beh.tempo_preset ) {
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.TEMPO_PRESET ^= 1; // toggle TEMPO_PRESET pressed (will also be released once GP button has been pressed)
+  } else {
+    // set mode
+    seq_ui_button_state.TEMPO_PRESET = depressed ? 0 : 1;
+  }
 
-  // change to utility page
-  SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  if( seq_ui_button_state.TEMPO_PRESET ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_BPM_PRESETS);
+  } else {
+    SEQ_UI_PageSet(prev_page);
+  }
 
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_F2(s32 depressed)
+static s32 SEQ_UI_Button_TapTempo(s32 depressed)
 {
-  seq_ui_button_state.F2 = depressed ? 0 : 1;
+  seq_ui_button_state.TAP_TEMPO = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
 
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_F3(s32 depressed)
+static s32 SEQ_UI_Button_SyncExt(s32 depressed)
 {
-  seq_ui_button_state.F3 = depressed ? 0 : 1;
-
-  if( depressed ) return -1; // ignore when button depressed
-
-  return 0; // no error
-}
-
-static s32 SEQ_UI_Button_F4(s32 depressed)
-{
-  seq_ui_button_state.F4 = depressed ? 0 : 1;
+  seq_ui_button_state.SYNC_EXT = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
 
@@ -555,17 +551,16 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
 
 static s32 SEQ_UI_Button_Menu(s32 depressed)
 {
-  // TODO: define generic #define for this button behaviour
-#if DEFAULT_BEHAVIOUR_BUTTON_MENU
-  // toggle mode
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
-  seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
-#else
-  // set mode
-  seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
-  seq_ui_button_state.MENU_PRESSED = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.menu ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
+    seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
+  } else {
+    // set mode
+    seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
+    seq_ui_button_state.MENU_PRESSED = depressed ? 0 : 1;
+  }
 
   return 0; // no error
 }
@@ -648,28 +643,28 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
 
 static s32 SEQ_UI_Button_Solo(s32 depressed)
 {
-#if DEFAULT_BEHAVIOUR_BUTTON_ALL
-  // toggle mode
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.SOLO ^= 1;
-#else
-  // set mode
-  seq_ui_button_state.SOLO = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.solo ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.SOLO ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.SOLO = depressed ? 0 : 1;
+  }
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_Fast(s32 depressed)
 {
-#if DEFAULT_BEHAVIOUR_BUTTON_FAST
-  // toggle mode
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.FAST_ENCODERS ^= 1;
-#else
-  // set mode
-  seq_ui_button_state.FAST_ENCODERS = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.fast ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.FAST_ENCODERS ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.FAST_ENCODERS = depressed ? 0 : 1;
+  }
 
   SEQ_UI_InitEncSpeed(0); // no auto config
 
@@ -680,42 +675,57 @@ static s32 SEQ_UI_Button_All(s32 depressed)
 {
   seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE = depressed ? 0 : 1;
 
-#if DEFAULT_BEHAVIOUR_BUTTON_ALL
-  // toggle mode
-  if( depressed ) return -1;
-  seq_ui_button_state.CHANGE_ALL_STEPS ^= 1;
-#else
-  // set mode
-  seq_ui_button_state.CHANGE_ALL_STEPS = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.all ) {
+    // toggle mode
+    if( depressed ) return -1;
+    seq_ui_button_state.CHANGE_ALL_STEPS ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.CHANGE_ALL_STEPS = depressed ? 0 : 1;
+  }
 
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_StepView(s32 depressed)
 {
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
-#if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
-  if( depressed ) return -1; // ignore when button depressed
-  seq_ui_button_state.STEPVIEW ^= 1; // toggle STEPVIEW pressed (will also be released once GP button has been pressed)
-#else
-  // set mode
-  seq_ui_button_state.STEPVIEW = depressed ? 0 : 1;
-#endif
+  if( seq_hwcfg_button_beh.step_view ) {
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.STEP_VIEW ^= 1; // toggle STEP_VIEW pressed (will also be released once GP button has been pressed)
+  } else {
+    // set mode
+    seq_ui_button_state.STEP_VIEW = depressed ? 0 : 1;
+  }
 
-  if( seq_ui_button_state.STEPVIEW ) {
-    ui_stepview_prev_page = ui_page;
+  if( seq_ui_button_state.STEP_VIEW ) {
+    prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_STEPSEL);
   } else {
-    SEQ_UI_PageSet(ui_stepview_prev_page);
+    SEQ_UI_PageSet(prev_page);
   }
 
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_TapTempo(s32 depressed)
+static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 {
-  if( depressed ) return -1; // ignore when button depressed
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  if( seq_hwcfg_button_beh.track_sel ) {
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.TRACK_SEL ^= 1; // toggle TRACKSEL status (will also be released once GP button has been pressed)
+  } else {
+    seq_ui_button_state.TRACK_SEL = depressed ? 0 : 1;
+  }
+
+  if( seq_ui_button_state.TRACK_SEL ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_TRACKSEL);
+  } else {
+    SEQ_UI_PageSet(prev_page);
+  }
 
   return 0; // no error
 }
@@ -771,6 +781,30 @@ static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
+{
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  if( seq_hwcfg_button_beh.par_layer ) {
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.PAR_LAYER_SEL ^= 1; // toggle PARSEL status (will also be released once GP button has been pressed)
+  } else {
+    seq_ui_button_state.PAR_LAYER_SEL = depressed ? 0 : 1;
+  }
+
+  if( seq_ui_button_state.PAR_LAYER_SEL ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_PARSEL);
+  } else {
+    SEQ_UI_PageSet(prev_page);
+  }
+
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 {
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
@@ -798,25 +832,33 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
       seq_ui_button_state.PAR_LAYER_SEL = 0;
       ui_selected_par_layer = par_layer;
     } else {
-#if DEFAULT_BEHAVIOUR_BUTTON_PAR_LAYER
-      if( depressed ) return -1; // ignore when button depressed
-      seq_ui_button_state.PAR_LAYER_SEL ^= 1; // toggle PARSEL status (will also be released once GP button has been pressed)
-#else
-      // set mode
-      seq_ui_button_state.PAR_LAYER_SEL = depressed ? 0 : 1;
-#endif
-
-      if( seq_ui_button_state.PAR_LAYER_SEL ) {
-	ui_parlayer_prev_page = ui_page;
-	SEQ_UI_PageSet(SEQ_UI_PAGE_PARSEL);
-      } else {
-	SEQ_UI_PageSet(ui_parlayer_prev_page);
-      }
+      return SEQ_UI_Button_ParLayerSel(depressed);
     }
   }
 
   // set/clear encoder fast function if required
   SEQ_UI_InitEncSpeed(1); // auto config
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
+{
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  if( seq_hwcfg_button_beh.trg_layer ) {
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.TRG_LAYER_SEL ^= 1; // toggle TRGSEL status (will also be released once GP button has been pressed)
+  } else {
+    seq_ui_button_state.TRG_LAYER_SEL = depressed ? 0 : 1;
+  }
+
+  if( seq_ui_button_state.TRG_LAYER_SEL ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_TRGSEL);
+  } else {
+    SEQ_UI_PageSet(prev_page);
+  }
 
   return 0; // no error
 }
@@ -850,20 +892,7 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
       seq_ui_button_state.TRG_LAYER_SEL = 0;
       ui_selected_trg_layer = trg_layer;
     } else {
-#if DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER
-      if( depressed ) return -1; // ignore when button depressed
-      seq_ui_button_state.TRG_LAYER_SEL ^= 1; // toggle TRGSEL status (will also be released once GP button has been pressed)
-#else
-      // set mode
-      seq_ui_button_state.TRG_LAYER_SEL = depressed ? 0 : 1;
-#endif
-
-      if( seq_ui_button_state.TRG_LAYER_SEL ) {
-	ui_trglayer_prev_page = ui_page;
-	SEQ_UI_PageSet(SEQ_UI_PAGE_TRGSEL);
-      } else {
-	SEQ_UI_PageSet(ui_trglayer_prev_page);
-      }
+      return SEQ_UI_Button_TrgLayerSel(depressed);
     }
   }
 
@@ -901,6 +930,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   for(i=0; i<SEQ_HWCFG_NUM_TRACK; ++i)
     if( pin == seq_hwcfg_button.track[i] )
       return SEQ_UI_Button_Track(pin_value, i);
+  if( pin == seq_hwcfg_button.track_sel )
+    return SEQ_UI_Button_TrackSel(pin_value);
 
   for(i=0; i<SEQ_HWCFG_NUM_GROUP; ++i)
     if( pin == seq_hwcfg_button.group[i] )
@@ -909,10 +940,14 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   for(i=0; i<SEQ_HWCFG_NUM_PAR_LAYER; ++i)
     if( pin == seq_hwcfg_button.par_layer[i] )
       return SEQ_UI_Button_ParLayer(pin_value, i);
+  if( pin == seq_hwcfg_button.par_layer_sel )
+    return SEQ_UI_Button_ParLayerSel(pin_value);
 
   for(i=0; i<SEQ_HWCFG_NUM_TRG_LAYER; ++i)
     if( pin == seq_hwcfg_button.trg_layer[i] )
       return SEQ_UI_Button_TrgLayer(pin_value, i);
+  if( pin == seq_hwcfg_button.trg_layer_sel )
+    return SEQ_UI_Button_TrgLayerSel(pin_value);
 
   if( pin == seq_hwcfg_button.left )
     return SEQ_UI_Button_Left(pin_value);
@@ -955,14 +990,12 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( pin == seq_hwcfg_button.exit )
     return SEQ_UI_Button_Exit(pin_value);
 
-  if( pin == seq_hwcfg_button.f1 )
-    return SEQ_UI_Button_F1(pin_value);
-  if( pin == seq_hwcfg_button.f2 )
-    return SEQ_UI_Button_F2(pin_value);
-  if( pin == seq_hwcfg_button.f3 )
-    return SEQ_UI_Button_F3(pin_value);
-  if( pin == seq_hwcfg_button.f4 )
-    return SEQ_UI_Button_F4(pin_value);
+  if( pin == seq_hwcfg_button.tap_tempo )
+    return SEQ_UI_Button_TapTempo(pin_value);
+  if( pin == seq_hwcfg_button.tempo_preset )
+    return SEQ_UI_Button_TempoPreset(pin_value);
+  if( pin == seq_hwcfg_button.sync_ext )
+    return SEQ_UI_Button_SyncExt(pin_value);
 
   if( pin == seq_hwcfg_button.edit )
     return SEQ_UI_Button_Edit(pin_value);
@@ -1140,11 +1173,13 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.track[1], (selected_tracks & (1 << 1)));
   SEQ_LED_PinSet(seq_hwcfg_led.track[2], (selected_tracks & (1 << 2)));
   SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
+  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, seq_ui_button_state.TRACK_SEL);
   
   // parameter layer LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], (ui_selected_par_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, seq_ui_button_state.PAR_LAYER_SEL);
   
   // group LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_group == 0));
@@ -1156,6 +1191,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[1], (ui_selected_trg_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[2], (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, seq_ui_button_state.TRG_LAYER_SEL);
   
   // remaining LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
@@ -1177,7 +1213,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.rew, seq_ui_button_state.REW);
   SEQ_LED_PinSet(seq_hwcfg_led.fwd, seq_ui_button_state.FWD);
   
-  SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEPVIEW);
+  SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEP_VIEW);
 
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
@@ -1188,10 +1224,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
   SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
 
-  SEQ_LED_PinSet(seq_hwcfg_led.f1, seq_ui_button_state.F1);
-  SEQ_LED_PinSet(seq_hwcfg_led.f2, seq_ui_button_state.F2);
-  SEQ_LED_PinSet(seq_hwcfg_led.f3, seq_ui_button_state.F3);
-  SEQ_LED_PinSet(seq_hwcfg_led.f4, seq_ui_button_state.F4);
+  SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, seq_ui_button_state.TAP_TEMPO);
+  SEQ_LED_PinSet(seq_hwcfg_led.tempo_preset, seq_ui_button_state.TEMPO_PRESET);
+  SEQ_LED_PinSet(seq_hwcfg_led.sync_ext, seq_ui_button_state.SYNC_EXT);
 
   SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
@@ -1249,8 +1284,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
   u16 pos_marker_mask = 0x0000;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 played_step = seq_core_trk[visible_track].step;
-  if( seq_ui_button_state.STEPVIEW ) {
-    // if STEPVIEW button pressed: pos marker correlated to zoom ratio
+  if( seq_ui_button_state.STEP_VIEW ) {
+    // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
     if( sequencer_running )
       pos_marker_mask = 1 << (played_step / (SEQ_TRG_NumStepsGet(visible_track)/16));
   } else {
@@ -1285,48 +1320,48 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_hwcfg_led.gp_dout_sr_r2 )
     SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r2-1, (pos_marker_mask >> 8) & 0xff);
 
-#if DEFAULT_SRM_ENABLED && DEFAULT_SRM_DOUT_M_MAPPING == 1
-  // for wilba's frontpanel
+  if( seq_hwcfg_srm.enabled && seq_hwcfg_srm.dout_m_mapping ) {
+    // for wilba's frontpanel
 
-  // BLM_X DOUT -> GP LED mapping
-  // 0 = 15,16	1 = 13,14	2 = 11,12	3 = 9,10
-  // 4 = 1,2	5 = 3,4		6 = 5,6		7 = 7,8
+    // BLM_X DOUT -> GP LED mapping
+    // 0 = 15,16	1 = 13,14	2 = 11,12	3 = 9,10
+    // 4 = 1,2	5 = 3,4		6 = 5,6		7 = 7,8
 
-  // bit 7: first green (i.e. GP1-G)
-  // bit 6: first red (i.e. GP1-R)
-  // bit 5: second green (i.e. GP2-G)
-  // bit 4: second red (i.e. GP2-R)
+    // bit 7: first green (i.e. GP1-G)
+    // bit 6: first red (i.e. GP1-R)
+    // bit 5: second green (i.e. GP2-G)
+    // bit 4: second red (i.e. GP2-R)
 
-  // this mapping routine takes ca. 5 uS
-  // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
+    // this mapping routine takes ca. 5 uS
+    // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
 
-  u16 modified_gp_leds = ui_gp_leds;
+    u16 modified_gp_leds = ui_gp_leds;
 #if 1
-  // extra: red LED is lit exclusively for higher contrast
-  modified_gp_leds &= ~pos_marker_mask;
+    // extra: red LED is lit exclusively for higher contrast
+    modified_gp_leds &= ~pos_marker_mask;
 #endif
 
-  int sr;
-  const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
-  u16 gp_mask = 1 << 0;
-  for(sr=0; sr<8; ++sr) {
-    u8 pattern = 0;
+    int sr;
+    const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
+    u16 gp_mask = 1 << 0;
+    for(sr=0; sr<8; ++sr) {
+      u8 pattern = 0;
 
-    if( modified_gp_leds & gp_mask )
-      pattern |= 0x80;
-    if( pos_marker_mask & gp_mask )
-      pattern |= 0x40;
-    gp_mask <<= 1;
-    if( modified_gp_leds & gp_mask )
-      pattern |= 0x20;
-    if( pos_marker_mask & gp_mask )
-      pattern |= 0x10;
-    gp_mask <<= 1;
+      if( modified_gp_leds & gp_mask )
+	pattern |= 0x80;
+      if( pos_marker_mask & gp_mask )
+	pattern |= 0x40;
+      gp_mask <<= 1;
+      if( modified_gp_leds & gp_mask )
+	pattern |= 0x20;
+      if( pos_marker_mask & gp_mask )
+	pattern |= 0x10;
+      gp_mask <<= 1;
 
-    u8 mapped_sr = blm_x_sr_map[sr];
-    BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
+      u8 mapped_sr = blm_x_sr_map[sr];
+      BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
+    }
   }
-#endif
 
   return 0; // no error
 }

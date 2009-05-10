@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Mute page
+ * Track Selection page
  *
  * ==========================================================================
  *
@@ -25,15 +25,21 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 multi_sel;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-  u8 track;
+  if( ui_cursor_flash ) // if flashing flag active: no LED flag set
+    return 0;
 
-  for(track=0; track<16; ++track)
-    if( seq_core_trk[track].state.MUTED )
-      *gp_leds |= (1 << track);
+  *gp_leds = ui_selected_tracks;
 
   return 0; // no error
 }
@@ -54,12 +60,32 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
-    // access to seq_core_trk[] must be atomic!
-    portENTER_CRITICAL();
-    seq_core_trk[encoder].state.MUTED = incrementer >= 0;
-    portEXIT_CRITICAL();
+    if( multi_sel ) {
+      // next GP: toggle function (16 of 16)
+      ui_selected_tracks ^= (1 << (u8)encoder);
+    } else {
+      // first GP: radio-button function (1 of 16)
+      ui_selected_tracks = (1 << (u8)encoder);
+      multi_sel = 1; // start multi-selection
+    }
+    ui_selected_group = (u8)encoder / 4;
 
     return 1; // value changed
+  }
+
+  if( encoder == SEQ_UI_ENCODER_Datawheel ) {
+    // switch to next track
+    int visible_track = SEQ_UI_VisibleTrackGet();
+    if( incrementer > 0 ) {
+      if( ++visible_track >= SEQ_CORE_NUM_TRACKS )
+	visible_track = SEQ_CORE_NUM_TRACKS-1;
+    } else if( incrementer < 0 ) {
+      if( --visible_track < 0 )
+	visible_track = 0;
+    }
+    ui_selected_tracks = (1 << visible_track);
+    multi_sel = 1; // re-start multi-selection
+    ui_selected_group = visible_track / 4;
   }
 
   return -1; // invalid or unsupported encoder
@@ -75,7 +101,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  if( depressed ) return 0; // ignore when button depressed
+  if( depressed )
+    return 0; // ignored
 
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -83,12 +110,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
-    // access to seq_core_trk[] must be atomic!
-    portENTER_CRITICAL();
-    seq_core_trk[button].state.MUTED ^= 1;
-    portEXIT_CRITICAL();
+    // re-using encoder handler
+    return Encoder_Handler((seq_ui_encoder_t)button, 1);
+  }
 
-    return 1; // value always changed
+  switch( button ) {
+    case SEQ_UI_BUTTON_Select:
+    case SEQ_UI_BUTTON_Right:
+    case SEQ_UI_BUTTON_Up:
+      return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
+
+    case SEQ_UI_BUTTON_Left:
+    case SEQ_UI_BUTTON_Down:
+      return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
   }
 
   return -1; // invalid or unsupported button
@@ -141,7 +175,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MUTE_Init(u32 mode)
+s32 SEQ_UI_TRACKSEL_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
@@ -151,6 +185,8 @@ s32 SEQ_UI_MUTE_Init(u32 mode)
 
   // we want to show horizontal VU meters
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_HBars);
+
+  multi_sel = 0;
 
   return 0; // no error
 }

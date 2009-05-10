@@ -43,6 +43,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+u8 store_file_required;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -124,16 +131,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
+      store_file_required = 1;
       return 1;
 
     case ITEM_STEPS_MEASURE:
-      return SEQ_UI_Var8_Inc(&seq_core_steps_per_measure, 0, 255, incrementer);
+      if( SEQ_UI_Var8_Inc(&seq_core_steps_per_measure, 0, 255, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
 
     case ITEM_FOLLOW_SONG:
       if( incrementer )
 	seq_core_options.FOLLOW_SONG = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.FOLLOW_SONG ^= 1;
+      store_file_required = 1;
       return 1;
 
     case ITEM_PASTE_CLR_ALL:
@@ -141,26 +154,47 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.PASTE_CLR_ALL ^= 1;
+      store_file_required = 1;
       return 1;
 
     case ITEM_SCALE_CTRL:
-      return SEQ_UI_Var8_Inc(&seq_core_global_scale_ctrl, 0, 4, incrementer);
+      if( SEQ_UI_Var8_Inc(&seq_core_global_scale_ctrl, 0, 4, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
 
     case ITEM_SCALE_ROOT:
       if( seq_core_global_scale_ctrl == 0 ) {
-	return SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer); // Keyb, C..H
+	if( SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
+	  store_file_required = 1;
+	  return 1;
+	}
+	return 0;
       } else {
 	u8 group = seq_core_global_scale_ctrl-1;
-	return SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root, 0, 12, incrementer); // Keyb, C..H
+	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
+	  store_file_required = 1;
+	  return 1;
+	}
+	return 0;
       }
 
     case ITEM_SCALE: {
       u8 scale_max = SEQ_SCALE_NumGet()-1;
       if( seq_core_global_scale_ctrl == 0 ) {
-	return SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer);
+	if( SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer) >= 0 ) {
+	  store_file_required = 1;
+	  return 1;
+	}
+	return 0;
       } else {
 	u8 group = seq_core_global_scale_ctrl-1;
-	return SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale, 0, scale_max, incrementer); // Keyb, C..H
+	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale, 0, scale_max, incrementer) >= 0 ) { // Keyb, C..H
+	  store_file_required = 1;
+	  return 1;
+	}
+	return 0;
       }
     } break;
   }
@@ -321,13 +355,17 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 static s32 EXIT_Handler(void)
 {
-  s32 status;
+  s32 status = 0;
 
-  // write config file
-  MUTEX_SDCARD_TAKE;
-  if( (status=SEQ_FILE_C_Write()) < 0 )
-    SEQ_UI_SDCardErrMsg(2000, status);
-  MUTEX_SDCARD_GIVE;
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    if( (status=SEQ_FILE_C_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    store_file_required = 0;
+  }
 
   return status;
 }
@@ -344,6 +382,8 @@ s32 SEQ_UI_OPT_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
+
+  store_file_required = 0;
 
   return 0; // no error
 }

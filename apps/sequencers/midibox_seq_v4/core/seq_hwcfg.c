@@ -48,12 +48,6 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .rew   = ((( 1   -1)<<3)+    7),
   .fwd   = ((( 2   -1)<<3)+    0),
 
-  //       SR   ignore    Pin
-  .f1 = ((( 2   -1)<<3)+    1),
-  .f2 = ((( 2   -1)<<3)+    2),
-  .f3 = ((( 2   -1)<<3)+    3),
-  .f4 = ((( 2   -1)<<3)+    4),
-
   //           SR   ignore    Pin
   .menu   = ((( 2   -1)<<3)+    5),
   .select = ((( 2   -1)<<3)+    6),
@@ -110,15 +104,69 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .trg_layer[1] = (((13   -1)<<3)+    5),
   .trg_layer[2] = (((13   -1)<<3)+    6),
 
+#ifdef MIOS32_FAMILY_EMULATION
   //              SR   ignore    Pin
-  .step_view = (((13   -1)<<3)+    7),
-  .tap_tempo = (((14   -1)<<3)+    0),
+  .utility       = (((14   -1)<<3)+    1),
+  .step_view     = (((13   -1)<<3)+    7),
+  .par_layer_sel = ((( 2   -1)<<3)+    2),
+  .trg_layer_sel = ((( 2   -1)<<3)+    3),
+  .track_sel     = ((( 2   -1)<<3)+    4),
+
+
+  //                 SR   ignore    Pin
+  .tap_tempo    = ((( 0   -1)<<3)+    0),
+  .tempo_preset = ((( 2   -1)<<3)+    1),
+  .sync_ext     = ((( 0   -1)<<3)+    0),
 
   //            SR   ignore    Pin
-  .utility = (((14   -1)<<3)+    1),
   .copy    = (((14   -1)<<3)+    2),
   .paste   = (((14   -1)<<3)+    3),
   .clear   = (((14   -1)<<3)+    4),
+#else
+  //              SR   ignore    Pin
+  .utility       = ((( 2   -1)<<3)+    1),
+  .step_view     = ((( 2   -1)<<3)+    2),
+  .trg_layer_sel = ((( 2   -1)<<3)+    3),
+  .track_sel     = ((( 2   -1)<<3)+    4),
+
+  .par_layer_sel = ((( 0   -1)<<3)+    0),
+
+
+  //                 SR   ignore    Pin
+  .tap_tempo    = ((( 0   -1)<<3)+    0),
+  .tempo_preset = ((( 0   -1)<<3)+    0),
+  .sync_ext     = ((( 0   -1)<<3)+    0),
+
+  //            SR   ignore    Pin
+  .copy    = ((( 0   -1)<<3)+    0),
+  .paste   = ((( 0   -1)<<3)+    0),
+  .clear   = ((( 0   -1)<<3)+    0),
+#endif
+};
+
+
+seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
+  .fast = 1,
+  .all = 1,
+  .solo = 1,
+  .metronome = 1,
+#ifdef MIOS32_FAMILY_EMULATION
+  .scrub = 1,
+  .menu = 1,
+  .step_view = 1,
+  .trg_layer = 1,
+  .par_layer = 1,
+  .track_sel = 1,
+  .tempo_preset = 1,
+#else
+  .scrub = 0,
+  .menu = 0,
+  .step_view = 0,
+  .trg_layer = 0,
+  .par_layer = 0,
+  .track_sel = 0,
+  .tempo_preset = 0,
+#endif
 };
 
 
@@ -167,6 +215,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .trg_layer[1] = (((12   -1)<<3)+    1),
   .trg_layer[2] = (((12   -1)<<3)+    2),
 
+#ifdef MIOS32_FAMILY_EMULATION
   //          SR    ignore    Pin
   .play  = (((12   -1)<<3)+    3),
   .stop  = (((12   -1)<<3)+    4),
@@ -183,18 +232,59 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .paste     = (((13   -1)<<3)+    5),
   .clear     = (((13   -1)<<3)+    6),
 
-  //       SR    ignore    Pin
-  .f1 = (((14   -1)<<3)+    0),
-  .f2 = (((14   -1)<<3)+    1),
-  .f3 = (((14   -1)<<3)+    2),
-  .f4 = (((14   -1)<<3)+    3),
-
   //               SR    ignore    Pin
-  .step_view  = (((14   -1)<<3)+    5),
+  .step_view     = (((14   -1)<<3)+    5),
+  .par_layer_sel = (((14   -1)<<3)+    1),
+  .trg_layer_sel = (((14   -1)<<3)+    2),
+  .track_sel     = (((14   -1)<<3)+    3),
+
+  //                 SR    ignore    Pin
+  .tap_tempo    = ((( 0   -1)<<3)+    0),
+  .tempo_preset = (((14   -1)<<3)+    0),
+  .sync_ext     = ((( 0   -1)<<3)+    0),
 
   //         SR    ignore    Pin
   .down = (((14   -1)<<3)+    6),
   .up   = (((14   -1)<<3)+    7),
+#else
+  //          SR    ignore    Pin
+  .play  = ((( 0   -1)<<3)+    0),
+  .stop  = ((( 0   -1)<<3)+    0),
+  .pause = ((( 0   -1)<<3)+    0),
+  .rew   = ((( 0   -1)<<3)+    0),
+  .fwd   = ((( 0   -1)<<3)+    0),
+
+  //              SR    ignore    Pin
+  .menu      = ((( 0   -1)<<3)+    0),
+  .scrub     = ((( 0   -1)<<3)+    0),
+  .metronome = ((( 0   -1)<<3)+    0),
+  .utility   = ((( 0   -1)<<3)+    0),
+  .copy      = ((( 0   -1)<<3)+    0),
+  .paste     = ((( 0   -1)<<3)+    0),
+  .clear     = ((( 0   -1)<<3)+    0),
+
+  //               SR    ignore    Pin
+  .step_view     = ((( 0   -1)<<3)+    0),
+  .par_layer_sel = ((( 0   -1)<<3)+    0),
+  .trg_layer_sel = ((( 0   -1)<<3)+    0),
+  .track_sel     = ((( 0   -1)<<3)+    0),
+
+  //                 SR    ignore    Pin
+  .tap_tempo    = ((( 0   -1)<<3)+    0),
+  .tempo_preset = ((( 0   -1)<<3)+    0),
+  .sync_ext     = ((( 0   -1)<<3)+    0),
+
+  //         SR    ignore    Pin
+  .down = ((( 0   -1)<<3)+    0),
+  .up   = ((( 0   -1)<<3)+    0),
+#endif
+};
+
+
+seq_hwcfg_enc_t seq_hwcfg_enc = {
+  .datawheel_fast_speed = 3,
+  .gp_fast_speed = 3,
+  .auto_fast = 1,
 };
 
 
@@ -202,16 +292,13 @@ seq_hwcfg_srm_t seq_hwcfg_srm = {
   .enabled = 0,
   .dout_l1 = 6,
   .dout_r1 = 9,
-  .dout_m = 0,
 
   .dout_cathodes1 = 5,
   .dout_cathodes2 = 8,
-  .dout_cathodesm = 0,
 
   .dout_m_mapping = 1,
 
   .cathodes_inv_mask = 0x00,
-  .cathodes_inv_mask_m = 0x00,
 
   .dout_duocolour = 1,
 
@@ -223,7 +310,6 @@ seq_hwcfg_srm_t seq_hwcfg_srm = {
 
   .din_l = 11,
   .din_r = 12,
-  .din_m = 0,
 };
 
 
