@@ -60,7 +60,7 @@ void APP_Init(void){
 	// initialize BLM driver
 	BLM_X_Init();
 	blm_x_conf = BLM_X_ConfigGet();
-	blm_x_conf.cfg.debounce_delay = 10;
+	blm_x_conf.debounce_delay = 10;
 	BLM_X_ConfigSet(blm_x_conf);
 	// start BLM check task
 	xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
