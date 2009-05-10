@@ -107,10 +107,10 @@ typedef union {
 
 
 typedef struct {
-  u8 gp_dout_sr_l;
-  u8 gp_dout_sr_r;
-  u8 gp_dout_sr_l2;
-  u8 gp_dout_sr_r2;
+  u8 gp_dout_l_sr;
+  u8 gp_dout_r_sr;
+  u8 gp_dout_l2_sr;
+  u8 gp_dout_r2_sr;
 
   u8 track[SEQ_HWCFG_NUM_TRACK];
 
@@ -169,27 +169,16 @@ typedef union {
 
 typedef struct {
   u8 enabled;
-  u8 dout_l1;
-  u8 dout_r1;
-
-  u8 dout_cathodes1;
-  u8 dout_cathodes2;
-
-  u8 dout_m_mapping;
-
-  u8 cathodes_inv_mask;
-
   u8 dout_duocolour;
-
-  u8 dout_l2;
-  u8 dout_r2;
-
   u8 buttons_enabled;
   u8 buttons_no_ui;
+} seq_hwcfg_blm_t;
 
-  u8 din_l;
-  u8 din_r;
-} seq_hwcfg_srm_t;
+
+typedef struct {
+  u8 enabled;
+  u8 dout_gp_mapping;
+} seq_hwcfg_blm8x8_t;
 
 
 
@@ -206,7 +195,8 @@ extern s32 SEQ_HWCFG_Init(u32 mode);
 extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_button_beh_t seq_hwcfg_button_beh;
 extern seq_hwcfg_led_t seq_hwcfg_led;
-extern seq_hwcfg_srm_t seq_hwcfg_srm;
+extern seq_hwcfg_blm_t seq_hwcfg_blm;
+extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];

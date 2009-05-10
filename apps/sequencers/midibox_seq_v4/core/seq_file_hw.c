@@ -590,105 +590,133 @@ s32 SEQ_FILE_HW_Read(void)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
-	// GP_DOUT_SR_
+	// GP_DOUT_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "GP_DOUT_SR_", 11) == 0 ) {
-	  parameter += 11;
+	} else if( strncmp(parameter, "GP_DOUT_", 8) == 0 ) {
+	  parameter += 8;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
 	  if( sr < 0 || sr > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in GP_DOUT_SR_%s definition: invalid SR value '%s'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in GP_DOUT_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
 	    continue;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
-	  DEBUG_MSG("[SEQ_FILE_HW] GP_DOUT_SR_%s: SR %d", parameter, sr);
+	  DEBUG_MSG("[SEQ_FILE_HW] GP_DOUT_%s: SR %d", parameter, sr);
 #endif
 
-	  if( strcmp(parameter, "L") == 0 ) {
-	    seq_hwcfg_led.gp_dout_sr_l = sr;
-	  } else if( strcmp(parameter, "R") == 0 ) {
-	    seq_hwcfg_led.gp_dout_sr_r = sr;
-	  } else if( strcmp(parameter, "L2") == 0 ) {
-	    seq_hwcfg_led.gp_dout_sr_l2 = sr;
-	  } else if( strcmp(parameter, "R2") == 0 ) {
-	    seq_hwcfg_led.gp_dout_sr_r2 = sr;
+	  if( strcmp(parameter, "L_SR") == 0 ) {
+	    seq_hwcfg_led.gp_dout_l_sr = sr;
+	  } else if( strcmp(parameter, "R_SR") == 0 ) {
+	    seq_hwcfg_led.gp_dout_r_sr = sr;
+	  } else if( strcmp(parameter, "L2_SR") == 0 ) {
+	    seq_hwcfg_led.gp_dout_l2_sr = sr;
+	  } else if( strcmp(parameter, "R2_SR") == 0 ) {
+	    seq_hwcfg_led.gp_dout_r2_sr = sr;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown GP_DOUT_SR_ name '%s'!", parameter);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown GP_DOUT_* name '%s'!", parameter);
 #endif
 	  }
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
-	// SRM_
+	// BLM_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "SRM_", 4) == 0 ) {
+	} else if( strncmp(parameter, "BLM_", 4) == 0 ) {
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
 	  if( value < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in SRM_%s definition: invalid value '%s'!", parameter, word);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BLM_%s definition: invalid value '%s'!", parameter, word);
 #endif
 	    continue;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
-	  DEBUG_MSG("[SEQ_FILE_HW] SRM_%s: %d", parameter, value);
+	  DEBUG_MSG("[SEQ_FILE_HW] BLM_%s: %d", parameter, value);
 #endif
 
 	  if( strcmp(parameter, "ENABLED") == 0 ) {
-	    seq_hwcfg_srm.enabled = value;
-	  } else if( strcmp(parameter, "DOUT_L1") == 0 ) {
-	    seq_hwcfg_srm.dout_l1 = value;
-	  } else if( strcmp(parameter, "DOUT_R1") == 0 ) {
-	    seq_hwcfg_srm.dout_r1 = value;
-	  } else if( strcmp(parameter, "DOUT_M") == 0 ) {
-	    blm_x_config_t config = BLM_X_ConfigGet();
-	    config.led_first_dout_sr = value;
-	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_CATHODES1") == 0 ) {
-	    seq_hwcfg_srm.dout_cathodes1 = value;
-	  } else if( strcmp(parameter, "DOUT_CATHODES2") == 0 ) {
-	    seq_hwcfg_srm.dout_cathodes2 = value;
-	  } else if( strcmp(parameter, "DOUT_CATHODESM") == 0 ) {
+	    seq_hwcfg_blm.enabled = value;
+	  } else if( strcmp(parameter, "DOUT_L1_SR") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_R1_SR") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_CATHODES_SR1") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_CATHODES_SR2") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
+	    seq_hwcfg_blm.dout_duocolour = value;
+	  } else if( strcmp(parameter, "DOUT_L2_SR") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DOUT_R2_SR") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "BUTTONS_ENABLED") == 0 ) {
+	    seq_hwcfg_blm.buttons_enabled = value;
+	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
+	    seq_hwcfg_blm.buttons_no_ui = value;
+	  } else if( strcmp(parameter, "DIN_L_SR") == 0 ) {
+	    // TODO
+	  } else if( strcmp(parameter, "DIN_R_SR") == 0 ) {
+	    // TODO
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM_* name '%s'!", parameter);
+#endif
+	  }
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// BLM8X8_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "BLM8X8_", 7) == 0 ) {
+	  parameter += 7;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BLM8X8_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] BLM8X8_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_blm8x8.enabled = value;
+	  } else if( strcmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.rowsel_dout_sr = value;
 	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_M_MAPPING") == 0 ) {
-	    seq_hwcfg_srm.dout_m_mapping = value;
-	  } else if( strcmp(parameter, "CATHODES_INV_MASK") == 0 ) {
-	    seq_hwcfg_srm.cathodes_inv_mask = value;
-	  } else if( strcmp(parameter, "CATHODES_INV_MASK_M") == 0 ) {
+	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.rowsel_inv_mask = value;
 	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
-	    seq_hwcfg_srm.dout_duocolour = value;
-	  } else if( strcmp(parameter, "DOUT_L2") == 0 ) {
-	    seq_hwcfg_srm.dout_l2 = value;
-	  } else if( strcmp(parameter, "DOUT_R2") == 0 ) {
-	    seq_hwcfg_srm.dout_r2 = value;
-	  } else if( strcmp(parameter, "BUTTONS_ENABLED") == 0 ) {
-	    seq_hwcfg_srm.buttons_enabled = value;
-	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
-	    seq_hwcfg_srm.buttons_no_ui = value;
-	  } else if( strcmp(parameter, "DIN_L") == 0 ) {
-	    seq_hwcfg_srm.din_l = value;
-	  } else if( strcmp(parameter, "DIN_R") == 0 ) {
-	    seq_hwcfg_srm.din_r = value;
-	  } else if( strcmp(parameter, "DIN_M") == 0 ) {
+	  } else if( strcmp(parameter, "DOUT_LED_SR") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.led_first_dout_sr = value;
+	    BLM_X_ConfigSet(config);
+	  } else if( strcmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
+	    seq_hwcfg_blm8x8.dout_gp_mapping = value;
+	  } else if( strcmp(parameter, "DIN_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.btn_first_din_sr = value;
 	    BLM_X_ConfigSet(config);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown SRM_* name '%s'!", parameter);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM8X8_* name '%s'!", parameter);
 #endif
 	  }
 

@@ -166,7 +166,7 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
-  if( seq_hwcfg_srm.enabled ) {
+  if( seq_hwcfg_blm8x8.enabled ) {
     // prepare DOUT registers of 8x8 BLM to drive the row
     BLM_X_PrepareRow();
   }
@@ -178,7 +178,7 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
-  if( seq_hwcfg_srm.enabled ) {
+  if( seq_hwcfg_blm8x8.enabled ) {
     // call the BL_X_GetRow function after scan is finished to capture the read DIN values
     BLM_X_GetRow();
   }
@@ -250,7 +250,7 @@ void SEQ_TASK_Period1mS(void)
   // for menu handling (e.g. flashing cursor, doubleclick counter, etc...)
   SEQ_UI_MENU_Handler_Periodic();
 
-  if( seq_hwcfg_srm.enabled ) {
+  if( seq_hwcfg_blm8x8.enabled ) {
     // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
     BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
   }
