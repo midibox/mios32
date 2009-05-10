@@ -88,12 +88,12 @@ s32 BLM_X_Init(void){
 	debounce_ctr = 0;
 #endif
    // init config
-	blm_x_config.cfg.rowsel_dout_sr = BLM_X_ROWSEL_DOUT_SR;
-	blm_x_config.cfg.led_first_dout_sr = BLM_X_LED_FIRST_DOUT_SR;
-	blm_x_config.cfg.btn_first_din_sr = BLM_X_BTN_FIRST_DIN_SR;
-	blm_x_config.cfg.rowsel_inv_mask = BLM_X_ROWSEL_INV_MASK;
-	blm_x_config.cfg.color_mode = BLM_X_COLOR_MODE;
-	blm_x_config.cfg.debounce_delay = 0;
+	blm_x_config.rowsel_dout_sr = BLM_X_ROWSEL_DOUT_SR;
+	blm_x_config.led_first_dout_sr = BLM_X_LED_FIRST_DOUT_SR;
+	blm_x_config.btn_first_din_sr = BLM_X_BTN_FIRST_DIN_SR;
+	blm_x_config.rowsel_inv_mask = BLM_X_ROWSEL_INV_MASK;
+	blm_x_config.color_mode = BLM_X_COLOR_MODE;
+	blm_x_config.debounce_delay = 0;
 	// init current row
 	current_row = 0;
 	return 0;
@@ -119,13 +119,13 @@ s32 BLM_X_PrepareRow(void){
 	dout_value ^= (1 << (current_row + 4));
 #endif
 	// apply inversion mask (required when sink drivers are connected to the cathode lines)
-	dout_value ^= blm_x_config.cfg.rowsel_inv_mask;
+	dout_value ^= blm_x_config.rowsel_inv_mask;
 	// output on CATHODES register
-	MIOS32_DOUT_SRSet(blm_x_config.cfg.rowsel_dout_sr - 1, dout_value);
+	MIOS32_DOUT_SRSet(blm_x_config.rowsel_dout_sr - 1, dout_value);
 #if (BLM_X_LED_FIRST_DOUT_SR > 0)	
 	// output value of LED rows depending on current row
 	for(i = 0;i < BLM_X_NUM_LED_SR;i++)
-		MIOS32_DOUT_SRSet(blm_x_config.cfg.led_first_dout_sr - 1 + i, BLM_X_LED_rows[current_row][i]);
+		MIOS32_DOUT_SRSet(blm_x_config.led_first_dout_sr - 1 + i, BLM_X_LED_rows[current_row][i]);
 #endif
   return 0;
 }
@@ -146,21 +146,21 @@ s32 BLM_X_GetRow(void){
 	scanned_row = current_row ? (current_row -1) : (BLM_X_NUM_ROWS - 1);
 	// ensure that change won't be propagated to normal DIN handler
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++)
-		MIOS32_DIN_SRChangedGetAndClear(blm_x_config.cfg.btn_first_din_sr - 1 + sr, 0xff);	
+		MIOS32_DIN_SRChangedGetAndClear(blm_x_config.btn_first_din_sr - 1 + sr, 0xff);	
 #if (BLM_X_DEBOUNCE_MODE < 2)
 #if (BLM_X_DEBOUNCE_MODE == 1)
 	// cheap debounce handling. ignore any changes if debounce_ctr > 0
 	if(!debounce_ctr){
 #endif
 		for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
-			sr_value = MIOS32_DIN_SRGet(blm_x_config.cfg.btn_first_din_sr - 1 + sr);
+			sr_value = MIOS32_DIN_SRGet(blm_x_config.btn_first_din_sr - 1 + sr);
 			//*** set change notification and new value. should not be interrupted ***
 			MIOS32_IRQ_Disable();
 			// if a second change happens before the last change was notified (clear
 			// changed flags), the change flag will be unset (two changes -> original value)
 			if( btn_rows_changed[scanned_row][sr] ^= (sr_value ^ btn_rows[scanned_row][sr]) ){
 #if (BLM_X_DEBOUNCE_MODE == 1)
-				debounce_ctr = blm_x_config.cfg.debounce_delay * BLM_X_NUM_ROWS;//restart debounce delay
+				debounce_ctr = blm_x_config.debounce_delay * BLM_X_NUM_ROWS;//restart debounce delay
 #endif
 				}
 			//copy new values to btn_rows
@@ -176,7 +176,7 @@ s32 BLM_X_GetRow(void){
 #endif
 #if (BLM_X_DEBOUNCE_MODE == 2)
 	for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
-		sr_value = MIOS32_DIN_SRGet(blm_x_config.cfg.btn_first_din_sr - 1 + sr);
+		sr_value = MIOS32_DIN_SRGet(blm_x_config.btn_first_din_sr - 1 + sr);
 		//walk the 8 DIN pins of the SR
 		for(pin = 0;pin < 8; pin++){
 			//debounce-handling for individual buttons
@@ -190,7 +190,7 @@ s32 BLM_X_GetRow(void){
 				// changed flags), the change flag will be unset (two changes -> original value)
 				if( ( btn_rows_changed[scanned_row][sr] ^= 
 				(sr_value & pin_mask) ^ (btn_rows[scanned_row][sr] & pin_mask) ) & pin_mask )
-					debounce_ctr[scanned_row][sr*8 + pin] = blm_x_config.cfg.debounce_delay;//restart debounce delay
+					debounce_ctr[scanned_row][sr*8 + pin] = blm_x_config.debounce_delay;//restart debounce delay
 				//set the new value bit
 				if(sr_value & pin_mask)
 					btn_rows[scanned_row][sr] |= pin_mask;//set value bit
@@ -304,7 +304,7 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
-	if(blm_x_config.cfg.color_mode == 0)
+	if(blm_x_config.color_mode == 0)
 		sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
 	else
 		sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
@@ -335,7 +335,7 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
 	row = led / BLM_X_BTN_NUM_COLS;
 	for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
 		//compute sr,pin
-		if(blm_x_config.cfg.color_mode == 0)
+		if(blm_x_config.color_mode == 0)
 			sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
 		else
 			sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
@@ -369,7 +369,7 @@ u32 BLM_X_LEDColorGet(u32 led){
 	color = 0;
 	for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
 		//compute sr,pin
-		if(blm_x_config.cfg.color_mode == 0)
+		if(blm_x_config.color_mode == 0)
 			sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
 		else
 			sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
@@ -399,7 +399,7 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
 		return -1;
 	// compute row,sr,pin
 	row = led / BLM_X_BTN_NUM_COLS;
-	if(blm_x_config.cfg.color_mode == 0)
+	if(blm_x_config.color_mode == 0)
 		sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
 	else
 		sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
@@ -446,12 +446,12 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 /////////////////////////////////////////////////////////////////////////////
 // sets the blm_x soft configurations
 // IN: config, struct with members:
-//		.cfg.rowsel_dout_sr
-//		.cfg.led_first_dout_sr
-//		.cfg.led_first_din_sr
-//		.cfg.rowsel_inv_mask
-//		.cfg.color_mode
-//		.cfg.debounce_delay
+//		.rowsel_dout_sr
+//		.led_first_dout_sr
+//		.led_first_din_sr
+//		.rowsel_inv_mask
+//		.color_mode
+//		.debounce_delay
 // OUT: returns < 0 on error, 0 on success
 /////////////////////////////////////////////////////////////////////////////	
 s32 BLM_X_ConfigSet(blm_x_config_t config){
@@ -463,12 +463,12 @@ s32 BLM_X_ConfigSet(blm_x_config_t config){
 // gets the blm_x soft configurations
 // IN: -
 // OUT: struct with members:
-//		.cfg.rowsel_dout_sr
-//		.cfg.led_first_dout_sr
-//		.cfg.led_first_din_sr
-//		.cfg.rowsel_inv_mask
-//		.cfg.color_mode
-//		.cfg.debounce_delay
+//		.rowsel_dout_sr
+//		.led_first_dout_sr
+//		.led_first_din_sr
+//		.rowsel_inv_mask
+//		.color_mode
+//		.debounce_delay
 /////////////////////////////////////////////////////////////////////////////	
 blm_x_config_t BLM_X_ConfigGet(void){
 	return blm_x_config;

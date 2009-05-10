@@ -133,19 +133,14 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  struct {
-    unsigned ALL:32;
-  } all;
-  struct {
-    unsigned rowsel_dout_sr:4;
-    unsigned led_first_dout_sr:4;
-	 unsigned btn_first_din_sr:4;
-    unsigned rowsel_inv_mask:8;
-    unsigned color_mode:1;
-	 unsigned debounce_delay:8;
-  } cfg;
-} blm_x_config_t;
+typedef struct {
+	u8 rowsel_dout_sr;
+	u8 led_first_dout_sr;
+	u8 btn_first_din_sr;
+	u8 rowsel_inv_mask;
+	u8 color_mode;
+	u8 debounce_delay;
+	} blm_x_config_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
