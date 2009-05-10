@@ -82,7 +82,8 @@ The module can be configured by overriding defines. The values shown here are de
 // First DOUT shift register to which the anodes of the LEDs are connected. The number
 // of registers used is: ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
 // registers will be used.
-// SR's are counted from 1, set this to 0 if you only use buttons in your matrix.
+// SR's are counted from 1. Value 0 disables LED handling (only use button matrix). Note
+// that if you disable LED's, you can't reconfigure this by software.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_LED_FIRST_DOUT_SR	2
@@ -90,7 +91,8 @@ The module can be configured by overriding defines. The values shown here are de
 
 // First DIN shift registers to which the button matrix is connected.
 // Subsequent shift registers will be used, if more than 8 cols are defined.
-// SR's are counted from 1, set this to 0 if you only use LED's in your matrix.
+// SR's are counted from 1. Value 0 disables button handling (only use LED matrix). Note
+// that if you disable buttons, you can't reconfigure this by software.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #define BLM_X_BTN_FIRST_DIN_SR	1
