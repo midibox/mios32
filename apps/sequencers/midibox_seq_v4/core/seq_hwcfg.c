@@ -172,10 +172,16 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
 
 seq_hwcfg_led_t seq_hwcfg_led = {
   // GP LEDs DOUT shiftregister assignments
-  .gp_dout_sr_l = 3,
-  .gp_dout_sr_r = 4,
-  .gp_dout_sr_l2 = 15,
-  .gp_dout_sr_r2 = 16,
+  .gp_dout_l_sr = 3,
+  .gp_dout_r_sr = 4,
+
+#ifdef MIOS32_FAMILY_EMULATION
+  .gp_dout_l2_sr = 15,
+  .gp_dout_r2_sr = 16,
+#else
+  .gp_dout_l2_sr = 0,
+  .gp_dout_r2_sr = 0,
+#endif
 
   // DOUT pin assignments
 
@@ -288,28 +294,16 @@ seq_hwcfg_enc_t seq_hwcfg_enc = {
 };
 
 
-seq_hwcfg_srm_t seq_hwcfg_srm = {
+seq_hwcfg_blm_t seq_hwcfg_blm = {
   .enabled = 0,
-  .dout_l1 = 6,
-  .dout_r1 = 9,
-
-  .dout_cathodes1 = 5,
-  .dout_cathodes2 = 8,
-
-  .dout_m_mapping = 1,
-
-  .cathodes_inv_mask = 0x00,
-
   .dout_duocolour = 1,
-
-  .dout_l2 = 7,
-  .dout_r2 = 10,
-
-  .buttons_enabled = 0,
+  .buttons_enabled = 1,
   .buttons_no_ui = 1,
+};
 
-  .din_l = 11,
-  .din_r = 12,
+seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
+  .enabled = 0,
+  .dout_gp_mapping = 1,
 };
 
 

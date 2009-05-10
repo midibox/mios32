@@ -9,65 +9,84 @@
 ##################################################
 
 # number of first and second DOUT shift register used for GP LEDs
-GP_DOUT_SR_L    3
-GP_DOUT_SR_R    4
+GP_DOUT_L_SR    3
+GP_DOUT_R_SR    4
 
 # DOUTs for Dual Color option:
-GP_DOUT_SR_L2  15
-GP_DOUT_SR_R2  16
+GP_DOUT_L2_SR  0
+GP_DOUT_R2_SR  0
+
+
+##################################################
+# Optional BLM Matrix
+##################################################
 
 # set this value to 1 if each track has its own set of 16 LEDs to display unmuted steps and current sequencer position
 # or if you are using a button/led matrix for misc. button/LED functions
-SRM_ENABLED     0
+BLM_ENABLED     0
 
 # define the shift registers to which the anodes of these LEDs are connected
-# Note: they can be equal to DEFAULT_GP_DOUT_SR_[LH], this saves two shift registers, but doesn't allow a separate view of UI selections
-SRM_DOUT_L1	6
-SRM_DOUT_R1	9
-
-# for misc. LED functions
-SRM_DOUT_M	0
+# Note: they can be equal to GP_DOUT_[LH]_SR, this saves two shift registers, but doesn't allow a separate view of UI selections
+BLM_DOUT_L1_SR	6
+BLM_DOUT_R1_SR	9
 
 # define the shift register to which the cathodes of these LEDs are connected
 # Note that the whole shift register (8 pins) will be allocated! The 4 select lines are duplicated (4 for LED matrix, 4 for button matrix)
 # The second DOUT_CATHODES2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
-SRM_DOUT_CATHODES1  5
-SRM_DOUT_CATHODES2  8
-
-# another select line for misc. button/led functions - all 8 select pins are used for a 8x8 button/led matrix
-SRM_DOUT_CATHODESM  0
-
-# 0: no mapping of Misc LEDs
-# 1: enable GP LED -> DOUT_M mapping for Wilba's MB-SEQ PCB
-SRM_DOUT_M_MAPPING  1
+BLM_DOUT_CATHODES_SR1  5
+BLM_DOUT_CATHODES_SR2  8
 
 # set an inversion mask for the DOUT shift registers if sink drivers (transistors)
 # have been added to the cathode lines
 # Settings: 0x00 - no sink drivers
 #           0xf0 - sink drivers connected to D0..D3
 #           0x0f - sink drivers connected to D7..D4
-SRM_CATHODES_INV_MASK 0x00
-
-# same for misc. button/led functions
-SRM_CATHODES_INV_MASK_M 0x00
+BLM_DOUT_CATHODES_INV_MASK 0x00
 
 # set this to 1, if DUO colour LEDs are connected to the LED matrix
-SRM_DOUT_DUOCOLOUR  1
+BLM_DOUT_DUOCOLOUR  1
 
 # define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
-SRM_DOUT_L2  7
-SRM_DOUT_R2  10
+BLM_DOUT_L2_SR  7
+BLM_DOUT_R2_SR  10
 
 # set this to 1 if a button matrix is connected
-SRM_BUTTONS_ENABLED 0
+BLM_BUTTONS_ENABLED 1
+
 # set this to 1 if these buttons should only control the "step triggers" (gate, and other assigned triggers) - and no UI functions
-SRM_BUTTONS_NO_UI   1
+BLM_BUTTONS_NO_UI   1
+
 # define the DIN shift registers to which the button matrix is connected
-SRM_DIN_L  11
-SRM_DIN_R  12
+BLM_DIN_L_SR  11
+BLM_DIN_R_SR  12
+
+
+
+##################################################
+# Additional 8x8 BLM as used for Wilba's Frontpannel
+##################################################
+
+# set to 1 to enable 8x8 BLM driver
+BLM8X8_ENABLED  0
+
+# to which shift register are the select lines connected?
+# Allowed values: 0 to disable, 1..16 to assign shift register
+BLM8X8_DOUT_CATHODES_SR  1
+
+# set an inversion mask for the DOUT shift registers if sink drivers (transistors)
+# have been added to the cathode lines
+BLM8X8_DOUT_CATHODES_INV_MASK 0x00
+
+# to which shift register are the LED anode lines connected?
+# Allowed values: 0 to disable, 1..16 to assign shift register
+BLM8X8_DOUT_LED_SR	2
+
+# 0: no mapping of 8x8 LEDs
+# 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
+BLM8X8_DOUT_GP_MAPPING  1
 
 # 8x8 matrix for misc. button functions
-SRM_DIN_M  0
+BLM8X8_DIN_SR  2
 
 
 ##################################################

@@ -1301,26 +1301,26 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // transfer to GP LEDs
 
-  if( seq_hwcfg_led.gp_dout_sr_l ) {
-    if( seq_hwcfg_led.gp_dout_sr_l2 )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l-1, (ui_gp_leds >> 0) & 0xff);
+  if( seq_hwcfg_led.gp_dout_l_sr ) {
+    if( seq_hwcfg_led.gp_dout_l2_sr )
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_gp_leds >> 0) & 0xff);
     else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l-1, ((ui_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, ((ui_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
   }
 
-  if( seq_hwcfg_led.gp_dout_sr_r ) {
-    if( seq_hwcfg_led.gp_dout_sr_r2 )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r-1, (ui_gp_leds >> 8) & 0xff);
+  if( seq_hwcfg_led.gp_dout_r_sr ) {
+    if( seq_hwcfg_led.gp_dout_r2_sr )
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, (ui_gp_leds >> 8) & 0xff);
     else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r-1, ((ui_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, ((ui_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
   }
 
-  if( seq_hwcfg_led.gp_dout_sr_l2 )
-    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_l2-1, (pos_marker_mask >> 0) & 0xff);
-  if( seq_hwcfg_led.gp_dout_sr_r2 )
-    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_sr_r2-1, (pos_marker_mask >> 8) & 0xff);
+  if( seq_hwcfg_led.gp_dout_l2_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l2_sr-1, (pos_marker_mask >> 0) & 0xff);
+  if( seq_hwcfg_led.gp_dout_r2_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r2_sr-1, (pos_marker_mask >> 8) & 0xff);
 
-  if( seq_hwcfg_srm.enabled && seq_hwcfg_srm.dout_m_mapping ) {
+  if( seq_hwcfg_blm8x8.enabled && seq_hwcfg_blm8x8.dout_gp_mapping ) {
     // for wilba's frontpanel
 
     // BLM_X DOUT -> GP LED mapping
