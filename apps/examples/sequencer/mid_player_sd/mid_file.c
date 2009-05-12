@@ -145,9 +145,19 @@ static s32 MID_FILE_mount_fs(void)
     }
   }
 
+  // check for partition type, if we don't get one of these types, it can be assumed that the partition
+  // is located at the first sector instead MBR ("superfloppy format")
+  // see also http://mirror.href.com/thestarman/asm/mbr/PartTypes.htm
+  if( ptype != 0x04 && ptype != 0x06 && ptype != 0x0b && ptype != 0x0c && ptype != 0x0e ) {
+    pstart = 0;
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MID_FILE] Partition 0 start sector 0x%-08.8lX active %-02.2hX type %-02.2hX size %-08.8lX\n", pstart, pactive, ptype, psize);
+    DEBUG_MSG("[SEQ_FILE] Partition 0 start sector %u (invalid type, assuming superfloppy format)\n", pstart);
 #endif
+  } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE] Partition 0 start sector %u active 0x%02x type 0x%02x size %u\n", pstart, pactive, ptype, psize);
+#endif
+  }
 
   if (DFS_GetVolInfo(0, sector, pstart, &vi)) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -158,11 +168,11 @@ static s32 MID_FILE_mount_fs(void)
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MID_FILE] Volume label '%s'\n", vi.label);
-  DEBUG_MSG("[MID_FILE] %d sector/s per cluster, %d reserved sector/s, volume total %d sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
-  DEBUG_MSG("[MID_FILE] %d sectors per FAT, first FAT at sector #%d, root dir at #%d.\n",vi.secperfat,vi.fat1,vi.rootdir);
+  DEBUG_MSG("[MID_FILE] %u sector/s per cluster, %u reserved sector/s, volume total %u sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
+  DEBUG_MSG("[MID_FILE] %u sectors per FAT, first FAT at sector #%u, root dir at #%u.\n",vi.secperfat,vi.fat1,vi.rootdir);
   DEBUG_MSG("[MID_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
-  DEBUG_MSG("[MID_FILE] %d root dir entries, data area commences at sector #%d.\n",vi.rootentries,vi.dataarea);
-  DEBUG_MSG("[MID_FILE] %d clusters (%d bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
+  DEBUG_MSG("[MID_FILE] %u root dir entries, data area commences at sector #%u.\n",vi.rootentries,vi.dataarea);
+  DEBUG_MSG("[MID_FILE] %u clusters (%u bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
   if (vi.filesystem == FAT12)
     DEBUG_MSG("FAT12.\n");
   else if (vi.filesystem == FAT16)
