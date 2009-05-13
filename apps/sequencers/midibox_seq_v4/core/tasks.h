@@ -37,8 +37,8 @@
 # define MUTEX_SDCARD_GIVE { }
 #else
   extern xSemaphoreHandle xSDCardSemaphore;
-# define MUTEX_SDCARD_TAKE { while( xSemaphoreTake(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
-# define MUTEX_SDCARD_GIVE { xSemaphoreGive(xSDCardSemaphore); }
+# define MUTEX_SDCARD_TAKE { while( xSemaphoreTakeRecursive(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_SDCARD_GIVE { xSemaphoreGiveRecursive(xSDCardSemaphore); }
 #endif
 
 
@@ -48,8 +48,8 @@
 # define MUTEX_MIDIIN_GIVE { }
 #else
   extern xSemaphoreHandle xMIDIINSemaphore;
-# define MUTEX_MIDIIN_TAKE { while( xSemaphoreTake(xMIDIINSemaphore, (portTickType)1) != pdTRUE ); }
-# define MUTEX_MIDIIN_GIVE { xSemaphoreGive(xMIDIINSemaphore); }
+# define MUTEX_MIDIIN_TAKE { while( xSemaphoreTakeRecursive(xMIDIINSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_MIDIIN_GIVE { xSemaphoreGiveRecursive(xMIDIINSemaphore); }
 #endif
 
 
@@ -59,8 +59,8 @@
 # define MUTEX_MIDIOUT_GIVE { }
 #else
   extern xSemaphoreHandle xMIDIOUTSemaphore;
-# define MUTEX_MIDIOUT_TAKE { while( xSemaphoreTake(xMIDIOUTSemaphore, (portTickType)1) != pdTRUE ); }
-# define MUTEX_MIDIOUT_GIVE { xSemaphoreGive(xMIDIOUTSemaphore); }
+# define MUTEX_MIDIOUT_TAKE { while( xSemaphoreTakeRecursive(xMIDIOUTSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_MIDIOUT_GIVE { xSemaphoreGiveRecursive(xMIDIOUTSemaphore); }
 #endif
 
 
@@ -70,8 +70,8 @@
 # define MUTEX_LCD_GIVE { }
 #else
   extern xSemaphoreHandle xLCDSemaphore;
-# define MUTEX_LCD_TAKE { while( xSemaphoreTake(xLCDSemaphore, (portTickType)1) != pdTRUE ); }
-# define MUTEX_LCD_GIVE { xSemaphoreGive(xLCDSemaphore); }
+# define MUTEX_LCD_TAKE { while( xSemaphoreTakeRecursive(xLCDSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_LCD_GIVE { xSemaphoreGiveRecursive(xLCDSemaphore); }
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
