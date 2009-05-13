@@ -77,10 +77,10 @@ s32 TASKS_Init(u32 mode)
   xTaskCreate(TASK_Pattern,   (signed portCHAR *)"Pattern",   configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
 
   // create semaphores
-  xSDCardSemaphore = xSemaphoreCreateMutex();
-  xMIDIINSemaphore = xSemaphoreCreateMutex();
-  xMIDIOUTSemaphore = xSemaphoreCreateMutex();
-  xLCDSemaphore = xSemaphoreCreateMutex();
+  xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
+  xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
+  xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+  xLCDSemaphore = xSemaphoreCreateRecursiveMutex();
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 
   return 0; // no error
