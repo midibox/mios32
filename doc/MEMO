@@ -88,7 +88,7 @@ MBHP_CORE_STM32: dito (TODO: check if free available for download)
 For uploading code, OpenOCD is required, a "known good" version
 can be downloaded from: http://www.yagarto.de/howto/openocd/index.html#install
 
-Newer versions than r717 might fail (or not) for STM32 - they are continuosly
+Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
 
 STR9 comStick: install WinARM
@@ -121,11 +121,11 @@ Note, that the installation of FatFryer is not required, as CircleOS
 is not used. 
 
 Download of .bin file: install OpenOCD
-Download a known good version from repository:
-  svn -r 717 co svn://svn.berlios.de/openocd/trunk openocd
-and build it
+Download a known good version:
+http://developer.berlios.de/project/showfiles.php?group_id=4148
+and build it if a precompiled binary isn't available for your OS
 
-Newer versions than r717 might fail (or not) for STM32 - they are continuosly
+Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
 
 OpenOCD usage: see "Quickstart" below, translate DOS commands to
@@ -182,11 +182,11 @@ gcc sources can be downloaded from:
 and simply recompiled for your Linux installation
 
 Download of .bin file: install OpenOCD
-Download a known good version from repository:
-  svn -r 717 co svn://svn.berlios.de/openocd/trunk openocd
-and build it
+Download a known good version:
+http://developer.berlios.de/project/showfiles.php?group_id=4148
+and build it if a precompiled binary isn't available for your OS
 
-Newer versions than r717 might fail (or not) for STM32 - they are continuosly
+Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
 
 OpenOCD usage: see "Quickstart" below, translate DOS commands to
@@ -248,7 +248,7 @@ b) go into an application directory, e.g.
 
 c) build the project with
 
-     gmake -s
+     make -s
 
    (-s will lead to a less verbose output)
 
@@ -289,7 +289,7 @@ from "arm-none-eabi" to the common "arm-elf"
 In addition we need OpenOCD to upload code.
 Download: http://www.yagarto.de/howto/openocd/index.html#install
 
-Newer versions than r717 might fail (or not) for STM32 - they are continuosly
+Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
 
 
@@ -314,7 +314,7 @@ b) go into an application directory, e.g.
 
 c) build the project with
 
-     gmake -s
+     make -s
 
    (-s will lead to a less verbose output)
 
