@@ -84,14 +84,15 @@ typedef struct {
 
   u8 tap_tempo;
   u8 tempo_preset;
-  u8 sync_ext;
+  u8 ext_restart;
 
   u8 copy;
   u8 paste;
   u8 clear;
 } seq_hwcfg_button_t;
 
-typedef union {
+
+typedef struct {
   unsigned fast:1;
   unsigned all:1;
   unsigned solo:1;
@@ -153,7 +154,7 @@ typedef struct {
 
   u8 tap_tempo;
   u8 tempo_preset;
-  u8 sync_ext;
+  u8 ext_restart;
 
   u8 down;
   u8 up;

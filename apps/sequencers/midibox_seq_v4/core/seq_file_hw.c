@@ -25,6 +25,7 @@
 #include <dosfs.h>
 #include <string.h>
 #include <aout.h>
+#include <blm.h>
 #include <blm_x.h>
 
 #include "seq_file.h"
@@ -381,8 +382,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.tap_tempo = din_value;
 	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_button.tempo_preset = din_value;
-	  } else if( strcmp(parameter, "SYNC_EXT") == 0 ) {
-	    seq_hwcfg_button.sync_ext = din_value;
+	  } else if( strcmp(parameter, "EXT_RESTART") == 0 ) {
+	    seq_hwcfg_button.ext_restart = din_value;
 	  } else if( strcmp(parameter, "UTILITY") == 0 ) {
 	    seq_hwcfg_button.utility = din_value;
 	  } else if( strcmp(parameter, "COPY") == 0 ) {
@@ -490,8 +491,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.tap_tempo = dout_value;
 	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_led.tempo_preset = dout_value;
-	  } else if( strcmp(parameter, "SYNC_EXT") == 0 ) {
-	    seq_hwcfg_led.sync_ext = dout_value;
+	  } else if( strcmp(parameter, "EXT_RESTART") == 0 ) {
+	    seq_hwcfg_led.ext_restart = dout_value;
 	  } else if( strcmp(parameter, "DOWN") == 0 ) {
 	    seq_hwcfg_led.down = dout_value;
 	  } else if( strcmp(parameter, "UP") == 0 ) {
@@ -645,29 +646,47 @@ s32 SEQ_FILE_HW_Read(void)
 	  if( strcmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_blm.enabled = value;
 	  } else if( strcmp(parameter, "DOUT_L1_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_l1_sr = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_R1_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_r1_sr = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_CATHODES_SR1") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_cathodes_sr1 = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_CATHODES_SR2") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_cathodes_sr2 = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.cathodes_inv_mask = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
 	    seq_hwcfg_blm.dout_duocolour = value;
 	  } else if( strcmp(parameter, "DOUT_L2_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_l2_sr = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DOUT_R2_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.dout_r2_sr = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "BUTTONS_ENABLED") == 0 ) {
 	    seq_hwcfg_blm.buttons_enabled = value;
 	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
 	    seq_hwcfg_blm.buttons_no_ui = value;
 	  } else if( strcmp(parameter, "DIN_L_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.din_l_sr = value;
+	    BLM_ConfigSet(config);
 	  } else if( strcmp(parameter, "DIN_R_SR") == 0 ) {
-	    // TODO
+	    blm_config_t config = BLM_ConfigGet();
+	    config.din_r_sr = value;
+	    BLM_ConfigSet(config);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM_* name '%s'!", parameter);

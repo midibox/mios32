@@ -116,7 +116,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //                 SR   ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
   .tempo_preset = ((( 2   -1)<<3)+    1),
-  .sync_ext     = ((( 0   -1)<<3)+    0),
+  .ext_restart  = ((( 0   -1)<<3)+    0),
 
   //            SR   ignore    Pin
   .copy    = (((14   -1)<<3)+    2),
@@ -135,7 +135,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //                 SR   ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
   .tempo_preset = ((( 0   -1)<<3)+    0),
-  .sync_ext     = ((( 0   -1)<<3)+    0),
+  .ext_restart  = ((( 0   -1)<<3)+    0),
 
   //            SR   ignore    Pin
   .copy    = ((( 0   -1)<<3)+    0),
@@ -247,7 +247,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //                 SR    ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
   .tempo_preset = (((14   -1)<<3)+    0),
-  .sync_ext     = ((( 0   -1)<<3)+    0),
+  .ext_restart  = ((( 0   -1)<<3)+    0),
 
   //         SR    ignore    Pin
   .down = (((14   -1)<<3)+    6),
@@ -278,7 +278,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //                 SR    ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
   .tempo_preset = ((( 0   -1)<<3)+    0),
-  .sync_ext     = ((( 0   -1)<<3)+    0),
+  .ext_restart  = ((( 0   -1)<<3)+    0),
 
   //         SR    ignore    Pin
   .down = ((( 0   -1)<<3)+    0),

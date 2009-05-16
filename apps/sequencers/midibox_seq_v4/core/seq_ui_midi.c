@@ -33,7 +33,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       11
+#define NUM_OF_ITEMS       10
 #define ITEM_DEF_PORT      0
 #define ITEM_IN_PORT       1
 #define ITEM_IN_CHN        2
@@ -44,8 +44,6 @@
 #define ITEM_R_SRC_CHN     7
 #define ITEM_R_DST_PORT    8
 #define ITEM_R_DST_CHN     9
-#define ITEM_MCLK_IN       10
-#define ITEM_MCLK_OUT      11
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,8 +73,6 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_R_SRC_CHN: *gp_leds = 0x0400; break;
     case ITEM_R_DST_PORT: *gp_leds = 0x0800; break;
     case ITEM_R_DST_CHN: *gp_leds = 0x1000; break;
-    case ITEM_MCLK_IN: *gp_leds = 0x6000; break;
-    case ITEM_MCLK_OUT: *gp_leds = 0x8000; break;
   }
 
   return 0; // no error
@@ -140,12 +136,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
-      ui_selected_item = ITEM_MCLK_IN;
-      break;
-
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_MCLK_OUT;
-      break;
+      return -1; // not used (yet)
   }
 
   // for GP encoders and Datawheel
@@ -237,26 +229,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1; // value changed
       }
       return 0; // no change
-
-    case ITEM_MCLK_IN: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_in_mclk_port = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
-    } break;
-
-    case ITEM_MCLK_OUT:
-      if( incrementer > 0 )
-	seq_midi_router_mclk_out = 0xff;
-      else if( incrementer < 0 )
-	seq_midi_router_mclk_out = 0;
-      else
-	seq_midi_router_mclk_out ^= 0xff;
-      store_file_required = 1;
-      return 1; // value changed
   }
 
   return -1; // invalid or unsupported encoder
@@ -321,15 +293,15 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn     MIDI Clock 
-  //    USB0   Def. #16     off       C-3     #1  Def. All  Def. # 1     I:All  O:off
+  //  Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn                
+  //    USB0   Def. #16     off       C-3     #1  Def. All  Def. # 1
 
 
   seq_midi_router_node_t *n = &seq_midi_router_node[selected_router_node];
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn     MIDI Clock ");
+  SEQ_LCD_PrintString(" Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn                ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -440,28 +412,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("#%2d", n->dst_chn);
     }
   }
-  SEQ_LCD_PrintSpaces(5);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("I:");
-  if( ui_selected_item == ITEM_MCLK_IN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    if( seq_midi_in_mclk_port )
-      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port)));
-    else
-      SEQ_LCD_PrintString("All ");
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-  ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("O:");
-  if( ui_selected_item == ITEM_MCLK_OUT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_midi_router_mclk_out ? "All" : "off");
-  }
+  SEQ_LCD_PrintSpaces(17);
 
 
   return 0; // no error

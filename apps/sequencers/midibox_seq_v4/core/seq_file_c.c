@@ -252,10 +252,8 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_bpm_preset_num = value;
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	    SEQ_BPM_ModeSet(value);
-	  } else if( strcmp(parameter, "BPM_IntDiv") == 0 ) {
-	    seq_core_bpm_div_int = value;
-	  } else if( strcmp(parameter, "BPM_ExtDiv") == 0 ) {
-	    seq_core_bpm_div_ext = value;
+	  } else if( strcmp(parameter, "BPM_TrgPPQN") == 0 ) {
+	    seq_core_bpm_trg_ppqn = value;
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
 	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
@@ -316,6 +314,14 @@ s32 SEQ_FILE_C_Read(void)
 		n->dst_chn = values[4];
 	      }
 	    }
+	  } else if( strcmp(parameter, "METRONOME_Port") == 0 ) {
+	    seq_core_metronome_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "METRONOME_Channel") == 0 ) {
+	    seq_core_metronome_chn = value;
+	  } else if( strcmp(parameter, "METRONOME_NoteM") == 0 ) {
+	    seq_core_metronome_note_m = value;
+	  } else if( strcmp(parameter, "METRONOME_NoteB") == 0 ) {
+	    seq_core_metronome_note_b = value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown parameter: %s", line_buffer);
@@ -348,6 +354,7 @@ s32 SEQ_FILE_C_Read(void)
   return 0; // no error
 }
 
+#include <tasks.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // writes the config file
@@ -394,10 +401,7 @@ s32 SEQ_FILE_C_Write(void)
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "BPM_IntDiv %d\n", seq_core_bpm_div_int);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "BPM_ExtDiv %d\n", seq_core_bpm_div_ext);
+  sprintf(line_buffer, "BPM_TrgPPQN %d\n", seq_core_bpm_trg_ppqn);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
@@ -442,6 +446,18 @@ s32 SEQ_FILE_C_Write(void)
     sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
     status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
   }
+
+  sprintf(line_buffer, "METRONOME_Port %d\n", (u8)seq_core_metronome_port);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "METRONOME_Channel %d\n", (u8)seq_core_metronome_chn);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "METRONOME_NoteM %d\n", (u8)seq_core_metronome_note_m);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "METRONOME_NoteB %d\n", (u8)seq_core_metronome_note_b);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   // close file
   status |= SEQ_FILE_WriteClose(&fi);

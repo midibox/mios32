@@ -23,8 +23,10 @@
 
 #include "seq_file_c.h"
 
-#include "seq_cc.h"
 #include "seq_bpm.h"
+#include "seq_midi_in.h"
+#include "seq_midi_router.h"
+#include "seq_midi_port.h"
 #include "seq_core.h"
 
 
@@ -32,13 +34,14 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       6
+#define NUM_OF_ITEMS       7
 #define ITEM_MODE          0
 #define ITEM_PRESET        1
 #define ITEM_BPM           2
 #define ITEM_RAMP          3
-#define ITEM_IDIV          4
-#define ITEM_EDIV          5
+#define ITEM_TRG_PPQN      4
+#define ITEM_MCLK_IN       5
+#define ITEM_MCLK_OUT      6
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,18 +56,21 @@ u8 store_file_required;
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
+  if( seq_core_state.EXT_RESTART_REQ )
+    *gp_leds = 0x6000;
+
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_MODE: *gp_leds = 0x0001; break;
-    case ITEM_PRESET: *gp_leds = 0x0002; break;
-    case ITEM_BPM: *gp_leds = 0x000c; break;
-    case ITEM_RAMP: *gp_leds = 0x0010; break;
+    case ITEM_MODE: *gp_leds |= 0x0001; break;
+    case ITEM_PRESET: *gp_leds |= 0x0002; break;
+    case ITEM_BPM: *gp_leds |= 0x000c; break;
+    case ITEM_RAMP: *gp_leds |= 0x0010; break;
+    case ITEM_MCLK_IN: *gp_leds |= 0x0300; break;
+    case ITEM_MCLK_OUT: *gp_leds |= 0x0400; break;
+    case ITEM_TRG_PPQN: *gp_leds |= 0x1800; break;
   }
-
-  *gp_leds |= (1 << (seq_core_bpm_div_int+8));
-  *gp_leds |= (1 << (seq_core_bpm_div_ext+12));
 
   return 0; // no error
 }
@@ -109,21 +115,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
-    case SEQ_UI_ENCODER_GP11:
-    case SEQ_UI_ENCODER_GP12:
-      ui_selected_item = ITEM_IDIV;
-      seq_core_bpm_div_int = (u8)encoder & 3;
-      store_file_required = 1;
-      return 1;
+      ui_selected_item = ITEM_MCLK_IN;
+      break;
 
+    case SEQ_UI_ENCODER_GP11:
+      ui_selected_item = ITEM_MCLK_OUT;
+      break;
+
+    case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = ITEM_TRG_PPQN;
+      break;
+
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_EDIV;
-      seq_core_bpm_div_ext = (u8)encoder & 3;
-      store_file_required = 1;
-      return 1;
+      return -1; // not used (yet)
   }
 
   // for GP encoders and Datawheel
@@ -164,21 +171,34 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 0; // value hasn't been changed
     } break;
 
-    case ITEM_IDIV: {
-      if( SEQ_UI_Var8_Inc(&seq_core_bpm_div_int, 0, 3, incrementer) >= 0 ) {
+    case ITEM_MCLK_IN: {
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_in_mclk_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_MCLK_OUT:
+      if( incrementer > 0 )
+	seq_midi_router_mclk_out = 0xff;
+      else if( incrementer < 0 )
+	seq_midi_router_mclk_out = 0;
+      else
+	seq_midi_router_mclk_out ^= 0xff;
+      store_file_required = 1;
+      return 1; // value changed
+
+    case ITEM_TRG_PPQN: {
+      if( SEQ_UI_Var16_Inc(&seq_core_bpm_trg_ppqn, 0, 383, incrementer) ) {
 	store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
     } break;
 
-    case ITEM_EDIV: {
-      if( SEQ_UI_Var8_Inc(&seq_core_bpm_div_ext, 0, 3, incrementer) >= 0 ) {
-	store_file_required = 1;
-	return 1; // value has been changed
-      } else
-	return 0; // value hasn't been changed
-    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -204,16 +224,25 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #endif
     switch( button ) {
       case SEQ_UI_BUTTON_GP6:
-	// enter preset selection page
-	SEQ_UI_PageSet(SEQ_UI_PAGE_BPM_PRESETS);
-	return 1;
-
       case SEQ_UI_BUTTON_GP7:
-	// set Tempo
+	// fire preset
 	SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
 	return 1;
 
       case SEQ_UI_BUTTON_GP8:
+	// enter preset selection page
+	SEQ_UI_PageSet(SEQ_UI_PAGE_BPM_PRESETS);
+	return 1;
+
+      case SEQ_UI_BUTTON_GP14:
+      case SEQ_UI_BUTTON_GP15:
+	// external restart request should be atomic
+	portENTER_CRITICAL();
+	seq_core_state.EXT_RESTART_REQ = 1;
+	portEXIT_CRITICAL();
+	return 1;
+
+      case SEQ_UI_BUTTON_GP16:
 	// TODO Tap Tempo
 	return 1;
     }
@@ -259,13 +288,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Mode Preset Tempo  Ramp  Fire  Set Tap    Global Clock Dividers (Int./Ext.)    
-  // Master   1   140.0   1s  Preset  Tempo   >1<   2    4    8    2   >4<   8   16 
-
+  //  Mode Preset Tempo  Ramp    Fire  PresetMIDI Clk Ports  DIN PPQN    Ext.    Tap 
+  // Master   1   140.0   1s    Preset  Page  I:All  O:off      24      Restart Tempo
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp  Fire  Set Tap    Global Clock Dividers (Int./Ext.)    ");
+  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  PresetMIDI Clk Ports  DIN PPQN    ");
+  SEQ_LCD_PrintString(seq_core_state.EXT_RESTART_REQ ? "Ongoing" : " Ext.  ");
+  SEQ_LCD_PrintString(" Tap ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -305,24 +335,39 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("  Preset  Tempo  ");
+  SEQ_LCD_PrintString("    Preset  Page  ");
 
   ///////////////////////////////////////////////////////////////////////////
-  int i;
-  for(i=0; i<4; ++i) {
-    if( seq_core_bpm_div_int == i && ui_cursor_flash )
-      SEQ_LCD_PrintSpaces(5);
+  SEQ_LCD_PrintString("I:");
+  if( ui_selected_item == ITEM_MCLK_IN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    if( seq_midi_in_mclk_port )
+      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port)));
     else
-      SEQ_LCD_PrintFormattedString("  %2d ", 1 << i);
+      SEQ_LCD_PrintString("All ");
   }
+  SEQ_LCD_PrintSpaces(1);
 
-  for(i=0; i<4; ++i) {
-    if( seq_core_bpm_div_ext == i && ui_cursor_flash )
-      SEQ_LCD_PrintSpaces(5);
-    else {
-      SEQ_LCD_PrintFormattedString("  %2d ", 1 << (i+1));
-    }
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintString("O:");
+  if( ui_selected_item == ITEM_MCLK_OUT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString(seq_midi_router_mclk_out ? "All" : "off");
   }
+  SEQ_LCD_PrintSpaces(5);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_TRG_PPQN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintFormattedString("%3d", seq_core_bpm_trg_ppqn);
+  }
+  SEQ_LCD_PrintSpaces(6);
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintString("Restart Tempo");
 
 
   return 0; // no error

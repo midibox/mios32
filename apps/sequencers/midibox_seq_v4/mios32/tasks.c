@@ -43,9 +43,9 @@ xSemaphoreHandle xLCDSemaphore;
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_MIDI		( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_TASK_MIDI		( tskIDLE_PRIORITY + 4 )
 #define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_PERIOD1S		( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_PERIOD1S		( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PATTERN           ( tskIDLE_PRIORITY + 1 )
 
 
