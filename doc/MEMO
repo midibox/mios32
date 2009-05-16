@@ -86,7 +86,7 @@ STM32 Primer: install the toolchain which comes with the CD (Ride7)
 
 MBHP_CORE_STM32: dito (TODO: check if free available for download)
 For uploading code, OpenOCD is required, a "known good" version
-can be downloaded from: http://www.yagarto.de/howto/openocd/index.html#install
+can be downloaded from: http://developer.berlios.de/project/showfiles.php?group_id=4148
 
 Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
@@ -287,7 +287,7 @@ from "arm-none-eabi" to the common "arm-elf"
 
 
 In addition we need OpenOCD to upload code.
-Download: http://www.yagarto.de/howto/openocd/index.html#install
+Download: http://developer.berlios.de/project/showfiles.php?group_id=4148
 
 Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
