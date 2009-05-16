@@ -68,6 +68,23 @@
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
+// configure BLM driver
+#define BLM_DOUT_L1_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DOUT_R1_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DOUT_CATHODES_SR1	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DOUT_CATHODES_SR2	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_CATHODES_INV_MASK	0x00
+#define BLM_DOUT_L2_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DOUT_R2_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DOUT_L3_SR	0 // not used
+#define BLM_DOUT_R3_SR	0 // not used
+#define BLM_DIN_L_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_DIN_R_SR	255 // dummy, will be changed in seq_file_hw.c
+#define BLM_NUM_COLOURS 2
+#define BLM_NUM_ROWS    8
+#define BLM_DEBOUNCE_MODE 1
+
+
 // configure BLM_X driver (not supported by emulation!)
 #define BLM_X_NUM_ROWS            8
 #define BLM_X_BTN_NUM_COLS        8

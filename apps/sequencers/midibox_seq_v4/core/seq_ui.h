@@ -47,7 +47,6 @@ typedef union {
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
     unsigned FAST_ENCODERS:1;
     unsigned SOLO:1;
-    unsigned METRONOME:1;
     unsigned SCRUB:1;
     unsigned STEP_VIEW:1;
     unsigned PAR_LAYER_SEL:1;
@@ -60,7 +59,6 @@ typedef union {
     unsigned CLEAR:1;
     unsigned TAP_TEMPO:1;
     unsigned TEMPO_PRESET:1;
-    unsigned SYNC_EXT:1;
     unsigned UP:1;
     unsigned DOWN:1;
   };
@@ -135,6 +133,7 @@ extern s32 SEQ_UI_Init(u32 mode);
 extern s32 SEQ_UI_InitEncSpeed(u32 auto_config);
 
 extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
+extern s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();

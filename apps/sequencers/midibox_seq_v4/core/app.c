@@ -20,6 +20,7 @@
 #include <aout.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
+#include <blm.h>
 #include <blm_x.h>
 
 #include "tasks.h"
@@ -77,7 +78,8 @@ void APP_Init(void)
   MIOS32_LCD_Init(0);
   MIOS32_LCD_DeviceSet(0);
 
-  // init BLM
+  // init BLMs
+  BLM_Init(0);
   BLM_X_Init();
 
   // initialize AOUT driver
@@ -166,6 +168,11 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
+  if( seq_hwcfg_blm.enabled ) {
+    // prepare DOUT registers of BLM to drive the column
+    BLM_PrepareCol();
+  }
+
   if( seq_hwcfg_blm8x8.enabled ) {
     // prepare DOUT registers of 8x8 BLM to drive the row
     BLM_X_PrepareRow();
@@ -178,6 +185,11 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
+  if( seq_hwcfg_blm.enabled ) {
+    // call the BL_GetRow function after scan is finished to capture the read DIN values
+    BLM_GetRow();
+  }
+
   if( seq_hwcfg_blm8x8.enabled ) {
     // call the BL_X_GetRow function after scan is finished to capture the read DIN values
     BLM_X_GetRow();
@@ -201,6 +213,24 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This hook is called when a BLM button has been toggled
+// (see also SEQ_TASK_Period1mS)
+// pin_value is 1 when button released, and 0 when button pressed
+/////////////////////////////////////////////////////////////////////////////
+void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
+{
+  u8 row = pin / 16;
+  u8 pin_of_row = pin % 16;
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("BLM Pin %3d (Row%d:D%d) = %d\n", pin, row, pin_of_row, pin_value);
+#endif
+
+  // forward to UI BLM button handler
+  SEQ_UI_BLM_Button_Handler(row, pin_of_row, pin_value);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called when a BLM_X button has been toggled
 // (see also SEQ_TASK_Period1mS)
 // pin_value is 1 when button released, and 0 when button pressed
@@ -208,7 +238,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("BLM Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
+  DEBUG_MSG("BLM8x8 Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 
   // forward to UI button handler
@@ -249,6 +279,11 @@ void SEQ_TASK_Period1mS(void)
 
   // for menu handling (e.g. flashing cursor, doubleclick counter, etc...)
   SEQ_UI_MENU_Handler_Periodic();
+
+  if( seq_hwcfg_blm.enabled ) {
+    // check for BLM pin changes, call button handler of sequencer on each toggled pin
+    BLM_ButtonHandler(APP_BLM_NotifyToggle);
+  }
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // check for BLM_X pin changes, call button handler of sequencer on each toggled pin

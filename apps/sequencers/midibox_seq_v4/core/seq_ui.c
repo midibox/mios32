@@ -90,6 +90,9 @@ static s32 (*ui_exit_callback)(void);
 
 static u16 ui_gp_leds;
 
+#define NUM_BLM_LED_SRS (2*4)
+static u8 ui_blm_leds[NUM_BLM_LED_SRS];
+
 #define SDCARD_MSG_MAX_CHAR 21
 static char sdcard_msg[2][SDCARD_MSG_MAX_CHAR];
 static u16 sdcard_msg_ctr;
@@ -345,10 +348,10 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   if( seq_hwcfg_button_beh.metronome ) {
     // toggle mode
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.METRONOME ^= 1;
+    seq_core_state.METRONOME ^= 1;
   } else {
     // set mode
-    seq_ui_button_state.METRONOME = depressed ? 0 : 1;
+    seq_core_state.METRONOME = depressed ? 0 : 1;
   }
 
   return 0; // no error
@@ -452,7 +455,8 @@ static s32 SEQ_UI_Button_TempoPreset(s32 depressed)
     prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_BPM_PRESETS);
   } else {
-    SEQ_UI_PageSet(prev_page);
+    if( ui_page == SEQ_UI_PAGE_BPM_PRESETS )
+      SEQ_UI_PageSet(prev_page);
   }
 
   return 0; // no error
@@ -467,11 +471,13 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_SyncExt(s32 depressed)
+static s32 SEQ_UI_Button_ExtRestart(s32 depressed)
 {
-  seq_ui_button_state.SYNC_EXT = depressed ? 0 : 1;
-
   if( depressed ) return -1; // ignore when button depressed
+
+  portENTER_CRITICAL();
+  seq_core_state.EXT_RESTART_REQ = 1;
+  portEXIT_CRITICAL();
 
   return 0; // no error
 }
@@ -504,7 +510,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
 
     s32 status = SEQ_UI_UTIL_CopyButton(depressed);
 
-    if( depressed )
+    if( depressed && ui_page != SEQ_UI_PAGE_UTIL )
       SEQ_UI_PageSet(prev_page);
 
     return status;
@@ -529,7 +535,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 
     s32 status = SEQ_UI_UTIL_PasteButton(depressed);
 
-    if( depressed )
+    if( depressed && ui_page != SEQ_UI_PAGE_UTIL )
       SEQ_UI_PageSet(prev_page);
 
     return status;
@@ -703,7 +709,8 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
     prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_STEPSEL);
   } else {
-    SEQ_UI_PageSet(prev_page);
+    if( ui_page == SEQ_UI_PAGE_STEPSEL )
+      SEQ_UI_PageSet(prev_page);
   }
 
   return 0; // no error
@@ -724,7 +731,8 @@ static s32 SEQ_UI_Button_TrackSel(s32 depressed)
     prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_TRACKSEL);
   } else {
-    SEQ_UI_PageSet(prev_page);
+    if( ui_page == SEQ_UI_PAGE_TRACKSEL )
+      SEQ_UI_PageSet(prev_page);
   }
 
   return 0; // no error
@@ -796,7 +804,8 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
     prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_PARSEL);
   } else {
-    SEQ_UI_PageSet(prev_page);
+    if( ui_page == SEQ_UI_PAGE_PARSEL )
+      SEQ_UI_PageSet(prev_page);
   }
 
   // set/clear encoder fast function if required
@@ -857,7 +866,8 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
     prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_TRGSEL);
   } else {
-    SEQ_UI_PageSet(prev_page);
+    if( ui_page == SEQ_UI_PAGE_TRGSEL )
+      SEQ_UI_PageSet(prev_page);
   }
 
   return 0; // no error
@@ -994,8 +1004,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_TapTempo(pin_value);
   if( pin == seq_hwcfg_button.tempo_preset )
     return SEQ_UI_Button_TempoPreset(pin_value);
-  if( pin == seq_hwcfg_button.sync_ext )
-    return SEQ_UI_Button_SyncExt(pin_value);
+  if( pin == seq_hwcfg_button.ext_restart )
+    return SEQ_UI_Button_ExtRestart(pin_value);
 
   if( pin == seq_hwcfg_button.edit )
     return SEQ_UI_Button_Edit(pin_value);
@@ -1019,6 +1029,35 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_TapTempo(pin_value);
 
   return -1; // button not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// BLM Button handler
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
+{
+  // ignore so long hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
+  if( row >= SEQ_CORE_NUM_TRACKS_PER_GROUP )
+    return -1; // more than 4 tracks not supported (yet) - could be done in this function w/o much effort
+
+  if( pin >= 16 )
+    return -1; // more than 16 step buttons not supported (yet) - could be done by selecting the step view
+
+  // select track depending on row
+  ui_selected_tracks = 1 << (row + 4*ui_selected_group);
+
+  // ensure that selections are matching with track constraints
+  SEQ_UI_CheckSelections();
+
+  // request display update
+  seq_ui_display_update_req = 1;
+
+  // emulate general purpose button
+  return SEQ_UI_Button_GP(pin_value, pin);
 }
 
 
@@ -1160,6 +1199,8 @@ s32 SEQ_UI_LCD_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  int i;
+
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
@@ -1217,7 +1258,7 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
-  SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_ui_button_state.METRONOME);
+  SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
 
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
   SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
@@ -1226,7 +1267,7 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, seq_ui_button_state.TAP_TEMPO);
   SEQ_LED_PinSet(seq_hwcfg_led.tempo_preset, seq_ui_button_state.TEMPO_PRESET);
-  SEQ_LED_PinSet(seq_hwcfg_led.sync_ext, seq_ui_button_state.SYNC_EXT);
+  SEQ_LED_PinSet(seq_hwcfg_led.ext_restart, seq_core_state.EXT_RESTART_REQ);
 
   SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
@@ -1257,6 +1298,14 @@ s32 SEQ_UI_LED_Handler(void)
 
     ui_gp_leds = new_ui_gp_leds;
   }
+
+
+  // BLM LEDs
+  u8 visible_track0 = 4*ui_selected_group;
+  u8 visible_sr0  = 2*ui_selected_step_view;
+
+  for(i=0; i<NUM_BLM_LED_SRS; ++i)
+    ui_blm_leds[i] = SEQ_TRG_Get8(visible_track0+(i>>1), visible_sr0+(i&1), ui_selected_trg_layer, ui_selected_instrument);
 
   return 0; // no error
 }
@@ -1300,7 +1349,6 @@ s32 SEQ_UI_LED_Handler_Periodic()
   prev_pos_marker_mask = pos_marker_mask;
 
   // transfer to GP LEDs
-
   if( seq_hwcfg_led.gp_dout_l_sr ) {
     if( seq_hwcfg_led.gp_dout_l2_sr )
       SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_gp_leds >> 0) & 0xff);
@@ -1319,6 +1367,50 @@ s32 SEQ_UI_LED_Handler_Periodic()
     SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l2_sr-1, (pos_marker_mask >> 0) & 0xff);
   if( seq_hwcfg_led.gp_dout_r2_sr )
     SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r2_sr-1, (pos_marker_mask >> 8) & 0xff);
+
+
+  if( seq_hwcfg_blm.enabled ) {
+    // Red LEDs (position marker)
+    int track_ix;
+    for(track_ix=0; track_ix<(NUM_BLM_LED_SRS/2); ++track_ix) {
+      u16 pos_marker_mask = 0x0000;
+      if( sequencer_running ) {
+	u8 track = ui_selected_group + track_ix;
+	u8 played_step = seq_core_trk[track].step;
+	if( (played_step >> 4) == ui_selected_step_view )
+	  pos_marker_mask = 1 << (played_step & 0xf);
+      }
+
+      // Prepare Green LEDs (triggers)
+      u8 green_l = ui_blm_leds[2*track_ix+0];
+      u8 green_r = ui_blm_leds[2*track_ix+1];
+
+      // Red LEDs (position marker)
+      if( seq_hwcfg_blm.dout_duocolour ) {
+	BLM_DOUT_SRSet(1, 2*track_ix+0, pos_marker_mask & 0xff);
+	BLM_DOUT_SRSet(1, 2*track_ix+1, (pos_marker_mask >> 8) & 0xff);
+
+	if( seq_hwcfg_blm.dout_duocolour == 2 ) {
+	  // Colour Mode 2: clear green LED, so that only one LED is lit
+	  if( pos_marker_mask & 0x00ff )
+	    green_l &= ~pos_marker_mask;
+	  else if( pos_marker_mask & 0xff00 )
+	    green_r &= ~(pos_marker_mask >> 8);
+	}
+      } else {
+	// If Duo-LEDs not enabled: invert Green LEDs
+	if( pos_marker_mask & 0x00ff )
+	  green_l ^= pos_marker_mask;
+	else if( pos_marker_mask & 0xff00 )
+	  green_r ^= (pos_marker_mask >> 8);
+      }
+
+      // Set Green LEDs
+      BLM_DOUT_SRSet(0, 2*track_ix+0, green_l);
+      BLM_DOUT_SRSet(0, 2*track_ix+1, green_r);
+    }
+  }
+
 
   if( seq_hwcfg_blm8x8.enabled && seq_hwcfg_blm8x8.dout_gp_mapping ) {
     // for wilba's frontpanel

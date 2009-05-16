@@ -82,8 +82,12 @@ u8 seq_core_bpm_preset_num;
 float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
 float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
 
-u8 seq_core_bpm_div_int;
-u8 seq_core_bpm_div_ext;
+u16 seq_core_bpm_trg_ppqn;
+
+mios32_midi_port_t seq_core_metronome_port;
+u8 seq_core_metronome_chn;
+u8 seq_core_metronome_note_m;
+u8 seq_core_metronome_note_b;
 
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
@@ -114,8 +118,12 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
-  seq_core_bpm_div_int = 0; // (frequently used, therefore not part of seq_core_options union)
-  seq_core_bpm_div_ext = 1;
+  seq_core_bpm_trg_ppqn = 24;
+
+  seq_core_metronome_port = DEFAULT;
+  seq_core_metronome_chn = 10;
+  seq_core_metronome_note_m = 0x25; // C#1
+  seq_core_metronome_note_b = 0x25; // C#1
 
   seq_core_bpm_preset_num = 13; // 140.0
   for(i=0; i<SEQ_CORE_NUM_BPM_PRESETS; ++i) {
@@ -354,21 +362,44 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
-  if( (bpm_tick % ((384/4) << seq_core_bpm_div_int)) == 0 ) {
-    if( seq_core_state.FIRST_CLK )
-      seq_core_state.ref_step = 0;
-    else {
-      if( ++seq_core_state.ref_step > seq_core_steps_per_measure ) {
-	seq_core_state.ref_step = 0;
-	synch_to_measure_req = 1;
-      }
-    }
+  if( (bpm_tick % (384/4)) == 0 &&
+      (seq_core_state.FIRST_CLK || ++seq_core_state.ref_step > seq_core_steps_per_measure) ) {
+    seq_core_state.ref_step = 0;
+    synch_to_measure_req = 1;
   }
 
   // send MIDI clock on each 16th tick (since we are working at 384ppqn)
-  if( (bpm_tick % (16 << seq_core_bpm_div_int)) == 0 )
+  if( (bpm_tick % 16) == 0 )
     SEQ_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
+  // send metronome tick on each beat if enabled
+  if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 384) == 0 ) {
+    mios32_midi_package_t p;
+
+    p.type     = NoteOn;
+    p.cable    = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
+    p.event    = NoteOn;
+    p.chn      = seq_core_metronome_chn-1;
+    p.note     = seq_core_metronome_note_b;
+    p.velocity = 96;
+    u16 len = 20; // ca. 25% of a 16th
+
+    if( synch_to_measure_req ) {
+      if( seq_core_metronome_note_m )
+	p.note = seq_core_metronome_note_m; // if this note isn't defined, use B note instead
+      p.velocity = 127;
+    }
+
+    if( p.note )
+      SEQ_MIDI_OUT_Send(seq_core_metronome_port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
+  }
+
+  // send FA if external restart has been requested
+  if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
+    seq_core_state.EXT_RESTART_REQ = 0; // remove request
+    seq_ui_display_update_req = 1; // request display update
+    SEQ_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
+  }
 
   // process all tracks
   // first the loopback ports, thereafter parameters sent to common MIDI ports
@@ -398,7 +429,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
 	// calculate step length
 	u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
-        t->step_length = step_length_pre << seq_core_bpm_div_int;
+        t->step_length = step_length_pre;
 
 	// set timestamp of next step w/o groove delay (reference timestamp)
 	if( t->state.FIRST_CLK )
@@ -428,7 +459,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  } while( skip_ctr < 32 ); // try 32 times maximum
 
 	  // calculate number of cycles to next step
-	  t->timestamp_next_step = t->timestamp_next_step_ref + (SEQ_GROOVE_DelayGet(track, t->step + 1) << seq_core_bpm_div_int);
+	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
 
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
@@ -698,7 +729,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   // TODO: implement prefetching until end of step!
   if( SEQ_SONG_ActiveGet() &&
       seq_core_state.ref_step == seq_core_steps_per_measure &&
-      (bpm_tick % (96 << seq_core_bpm_div_int)) == 0 ) {
+      (bpm_tick % 96) == 0 ) {
     SEQ_SONG_NextPos();
   }
 

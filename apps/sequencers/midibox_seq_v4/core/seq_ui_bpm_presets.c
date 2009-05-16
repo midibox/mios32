@@ -66,8 +66,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     seq_core_bpm_preset_num = button;
     // change Tempo
     SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+#if 0
     // and enter BPM page again
     SEQ_UI_PageSet(SEQ_UI_PAGE_BPM);
+#endif
+    // (NO!)
     return 1;
   }
 

@@ -43,7 +43,9 @@ BLM_DOUT_CATHODES_SR2  8
 #           0x0f - sink drivers connected to D7..D4
 BLM_DOUT_CATHODES_INV_MASK 0x00
 
-# set this to 1, if DUO colour LEDs are connected to the LED matrix
+# 0: no DUO colour LEDs are connected to the LED matrix (position marker inverts step LED)
+# 1: DUO colour LEDs are connected to the LED matrix, second LED displays position marker
+# 2: Like option 1, but the first LED is turned off when the position marker activates the second LED
 BLM_DOUT_DUOCOLOUR  1
 
 # define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
@@ -195,7 +197,7 @@ LED_TRACK_SEL       0   0
 
 LED_TAP_TEMPO       0   0
 LED_TEMPO_PRESET    0   0
-LED_SYNC_EXT        0   0
+LED_EXT_RESTART     0   0
 
 #         SR  Pin
 LED_DOWN   0   0
@@ -303,7 +305,7 @@ BUTTON_PAR_LAYER_SEL  0   0
 #                   SR  Pin
 BUTTON_TAP_TEMPO     0   0
 BUTTON_TEMPO_PRESET  0   0
-BUTTON_SYNC_EXT      0   0
+BUTTON_EXT_RESTART   0   0
 
 #               SR  Pin
 BUTTON_COPY      0   0

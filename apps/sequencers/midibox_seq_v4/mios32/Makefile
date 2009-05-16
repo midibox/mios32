@@ -44,6 +44,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_opt.c \
 		../core/seq_ui_save.c \
 		../core/seq_ui_midi.c \
+		../core/seq_ui_metronome.c \
 		../core/seq_ui_mixer.c \
 		../core/seq_ui_stepsel.c \
 		../core/seq_ui_trgsel.c \
@@ -115,6 +116,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# BLM
+include $(MIOS32_PATH)/modules/blm/blm.mk
 
 # BLM_X
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
