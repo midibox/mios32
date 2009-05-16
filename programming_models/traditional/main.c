@@ -35,6 +35,7 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Hooks(void *pvParameters);
+static void TASK_MIDI_Hooks(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +115,9 @@ int main(void)
 
   // start the task which calls the application hooks
   xTaskCreate(TASK_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+#if !defined(MIOS32_DONT_USE_MIDI)
+  xTaskCreate(TASK_MIDI_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+#endif
 
   // start the scheduler
   vTaskStartScheduler();
@@ -165,6 +169,33 @@ void vApplicationIdleHook(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// MIDI task (separated from TASK_Hooks() to ensure parallel handling of
+// MIDI events if a hook in TASK_Hooks() blocks)
+/////////////////////////////////////////////////////////////////////////////
+#if !defined(MIOS32_DONT_USE_MIDI)
+static void TASK_MIDI_Hooks(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+#if !defined(MIOS32_DONT_USE_USB_MIDI)
+    // handle USB messages
+    MIOS32_USB_MIDI_Handler();
+#endif
+
+    // check for incoming MIDI messages and call hooks
+    MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Remaining application hooks
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Hooks(void *pvParameters)
@@ -190,16 +221,6 @@ static void TASK_Hooks(void *pvParameters)
 #if !defined(MIOS32_DONT_USE_AIN)
     // check for AIN pin changes, call APP_AIN_NotifyChange on each pin change
     MIOS32_AIN_Handler(APP_AIN_NotifyChange);
-#endif
-
-#if !defined(MIOS32_DONT_USE_MIDI)
-#ifndef MIOS32_DONT_USE_USB_MIDI
-    // handle USB messages
-    MIOS32_USB_MIDI_Handler();
-#endif
-    
-    // check for incoming MIDI messages and call hooks
-    MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
 #endif
 
 #if !defined(MIOS32_DONT_USE_COM)
