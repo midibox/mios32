@@ -20,6 +20,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages
+/////////////////////////////////////////////////////////////////////////////
+
+#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Encoder Configuration
 /////////////////////////////////////////////////////////////////////////////
 #define NUM_ENCODERS 8
@@ -58,6 +66,20 @@ void APP_Init(void)
   // initialize encoders
   for(i=0; i<NUM_ENCODERS; ++i)
     MIOS32_ENC_ConfigSet(i, encoders[i]);
+
+
+  // send welcome message to MIOS terminal
+#if DEBUG_VERBOSE_LEVEL >= 1
+  // print welcome message on MIOS terminal
+  DEBUG_MSG("\n");
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("\n");
+  DEBUG_MSG("Play MIDI Notes over Channel #1 or press button\n");
+  DEBUG_MSG("to control the LEDs.\n");
+  DEBUG_MSG("\n");
+#endif
 }
 
 
@@ -89,6 +111,11 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("Received MIDI Event: %02X %02X %02X\n", 
+	    midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
+#endif
+
   // if note event over MIDI channel #1 has been received, toggle appr. DOUT pin
   // change note off events to note on with velocity 0 for easier handling
   if( midi_package.event == NoteOff ) {
@@ -96,7 +123,7 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     midi_package.velocity = 0x00;
   }
 
-  // note event over channel #1? set DOUT pin
+  // note event over channel #1 sets a DOUT pin
   if( midi_package.chn == Chn1 && midi_package.event == NoteOn )
     MIOS32_DOUT_PinSet(midi_package.note, midi_package.velocity);
 }
@@ -140,6 +167,10 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("APP_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
+#endif
+
   // remember pin and value
   last_din_pin = pin;
   last_din_value = pin_value;
@@ -159,6 +190,10 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("APP_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
+#endif
+
   // remember last pin and direction
   last_enc = encoder;
   last_enc_dir = (incrementer > 0) ? 1 : 0;

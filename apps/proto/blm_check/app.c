@@ -26,6 +26,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages
+/////////////////////////////////////////////////////////////////////////////
+
+#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -55,17 +63,35 @@ u8 last_dout_value = 1;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
   // initialize BLM driver
   BLM_Init(0);
-  BLM_DebounceDelaySet(10);
+
+  // Debounce delay can be changed here
+  blm_config_t config = BLM_ConfigGet();
+  config.debounce_delay = 0;
+  BLM_ConfigSet(config);
 
   // start BLM check task
   xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
+
+  // send welcome message to MIOS terminal
+#if DEBUG_VERBOSE_LEVEL >= 1
+  // print welcome message on MIOS terminal
+  DEBUG_MSG("\n");
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("\n");
+  DEBUG_MSG("Debounce Delay: %d\n", config.debounce_delay);
+  DEBUG_MSG("\n");
+  DEBUG_MSG("Play MIDI Notes over Channel #1 with different velocities\n");
+  DEBUG_MSG("or press BLM buttons to control the LEDs.\n");
+  DEBUG_MSG("\n");
+#endif
+
 }
 
 
@@ -100,7 +126,10 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 {
   unsigned char pin, pin_state;
 
-  MIOS32_MIDI_SendPackage(port, midi_package);
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("Received MIDI Event: %02X %02X %02X\n", 
+	    midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
+#endif
 
   pin = (midi_package.note - BLM_MIDI_STARTNOTE) & 0x7f;
   if( midi_package.chn == Chn1 && ((midi_package.event == NoteOff) || (midi_package.event == NoteOn)) && (pin < 0x40 ) )
@@ -197,6 +226,10 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 // will be called on BLM pin changes (see TASK_BLM_Check)
 void DIN_BLM_NotifyToggle(u32 pin, u32 pin_value)
 {
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("DIN_BLM_NotifyToggle(%d, %d)\n", pin, pin_value);
+#endif
+
   // remember pin and value
   last_din_pin = pin;
   last_din_value = pin_value;

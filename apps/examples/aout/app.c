@@ -100,8 +100,8 @@ void APP_Background(void)
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("Received MIDI Event: %02X %02X %02X\n", 
-		midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
+  DEBUG_MSG("Received MIDI Event: %02X %02X %02X\n", 
+	    midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
 #endif
 
   // for easier handling: Note Off -> Note On with velocity 0
