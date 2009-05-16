@@ -1,5 +1,5 @@
 // $Id$
-//! \defgroup AOUT
+//! \defgroup BLM
 //!
 //! Button/Single/Duo/Triple (RGB)-LED driver
 //!
