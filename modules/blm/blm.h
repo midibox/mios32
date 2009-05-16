@@ -26,22 +26,22 @@
 
 // define the shift registers to which the anodes of the LEDs are connected
 // ensure, that BLM_NUM_COLOURS is set to >= 1
-#ifndef BLM_DOUT_L1
-#define BLM_DOUT_L1	2
+#ifndef BLM_DOUT_L1_SR
+#define BLM_DOUT_L1_SR	2
 #endif
-#ifndef BLM_DOUT_R1
-#define BLM_DOUT_R1	5
+#ifndef BLM_DOUT_R1_SR
+#define BLM_DOUT_R1_SR	5
 #endif
 
 
 // define the shift register to which the cathodes of the LEDs are connected
 // Note that the whole shift register (8 pins) will be allocated! The 4 select lines are duplicated (4 for LED matrix, 4 for button matrix)
-// The second DOUT_CATHODES2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
-#ifndef BLM_DOUT_CATHODES1
-#define BLM_DOUT_CATHODES1	1
+// The second DOUT_CATHODES_SR2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
+#ifndef BLM_DOUT_CATHODES_SR1
+#define BLM_DOUT_CATHODES_SR1	1
 #endif
-#ifndef BLM_DOUT_CATHODES2
-#define BLM_DOUT_CATHODES2	4
+#ifndef BLM_DOUT_CATHODES_SR2
+#define BLM_DOUT_CATHODES_SR2	4
 #endif
 
 
@@ -56,28 +56,28 @@
 
 // define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
 // ensure, that BLM_NUM_COLOURS is set to >= 2
-#ifndef BLM_DOUT_L2
-#define BLM_DOUT_L2	3
+#ifndef BLM_DOUT_L2_SR
+#define BLM_DOUT_L2_SR	3
 #endif
-#ifndef BLM_DOUT_R2
-#define BLM_DOUT_R2	6
+#ifndef BLM_DOUT_R2_SR
+#define BLM_DOUT_R2_SR	6
 #endif
 
 // define the shift registers to which the anodes of the "third colour" (blue) LEDs are connected
 // ensure, that BLM_NUM_COLOURS is set to 3
-#ifndef BLM_DOUT_L3
-#define BLM_DOUT_L3	7
+#ifndef BLM_DOUT_L3_SR
+#define BLM_DOUT_L3_SR	7
 #endif
-#ifndef BLM_DOUT_R3
-#define BLM_DOUT_R3	8
+#ifndef BLM_DOUT_R3_SR
+#define BLM_DOUT_R3_SR	8
 #endif
 
 // define the DIN shift registers to which the button matrix is connected
-#ifndef BLM_DIN_L
-#define BLM_DIN_L	1
+#ifndef BLM_DIN_L_SR
+#define BLM_DIN_L_SR	1
 #endif
-#ifndef BLM_DIN_R
-#define BLM_DIN_R	2
+#ifndef BLM_DIN_R_SR
+#define BLM_DIN_R_SR	2
 #endif
 
 // number of colours (currently only 1..3 supported)
@@ -103,6 +103,21 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+  u8 dout_l1_sr;
+  u8 dout_r1_sr;
+  u8 dout_cathodes_sr1;
+  u8 dout_cathodes_sr2;
+  u8 cathodes_inv_mask;
+  u8 dout_l2_sr;
+  u8 dout_r2_sr;
+  u8 dout_l3_sr;
+  u8 dout_r3_sr;
+  u8 din_l_sr;
+  u8 din_r_sr;
+  u8 debounce_delay;
+} blm_config_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -120,8 +135,8 @@ extern s32 BLM_DOUT_PinGet(u32 colour, u32 pin);
 extern s32 BLM_DOUT_SRSet(u32 colour, u32 sr, u8 value);
 extern u8 BLM_DOUT_SRGet(u32 colour, u32 sr);
 
-extern s32 BLM_DebounceDelaySet(u8 delay);
-extern u8 BLM_DebounceDelayGet(void);
+extern s32 BLM_ConfigSet(blm_config_t config);
+extern blm_config_t BLM_ConfigGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -11,4 +11,9 @@
 #define _MIOS32_CONFIG_H
 
 
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "SRIO Demo"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T.Klose"
+
+
 #endif /* _MIOS32_CONFIG_H */

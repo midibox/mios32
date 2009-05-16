@@ -1,8 +1,10 @@
 // $Id$
-/*
- * Button/Single/Duo/Triple (RGB)-LED driver
- *
- * ==========================================================================
+//! \defgroup AOUT
+//!
+//! Button/Single/Duo/Triple (RGB)-LED driver
+//!
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -16,9 +18,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-
-#include <FreeRTOS.h>
-#include <portmacro.h>
 
 #include "blm.h"
 
@@ -35,12 +34,12 @@ u8 blm_led_row[BLM_NUM_COLOURS][BLM_NUM_ROWS];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static blm_config_t blm_config;
+
 static u8 blm_selected_column;
 
 static u8 blm_button_row[BLM_NUM_ROWS];
 static u8 blm_button_row_changed[BLM_NUM_ROWS];
-
-static u8 blm_button_debounce_delay;
 
 #if BLM_DEBOUNCE_MODE == 1
 static u8 blm_button_debounce_ctr; // cheapo
@@ -50,11 +49,10 @@ static u8 blm_button_debounce_ctr[8*BLM_NUM_ROWS]; // expensive
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes the button LED matrix
-// IN: <mode>: currently only mode 0 supported
-//             later we could provide different pin mappings and operation 
-//             modes (e.g. output only)
-// OUT: returns < 0 if initialisation failed
+//! Initializes the button LED matrix
+//! Should be called from Init() during startup
+//! \param[in] mode currently only mode 0 supported
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_Init(u32 mode)
 {
@@ -63,6 +61,21 @@ s32 BLM_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // take over configuration from default settings
+  blm_config.dout_l1_sr = BLM_DOUT_L1_SR;
+  blm_config.dout_r1_sr = BLM_DOUT_R1_SR;
+  blm_config.dout_cathodes_sr1 = BLM_DOUT_CATHODES_SR1;
+  blm_config.dout_cathodes_sr2 = BLM_DOUT_CATHODES_SR2;
+  blm_config.cathodes_inv_mask = BLM_CATHODES_INV_MASK;
+  blm_config.dout_l2_sr = BLM_DOUT_L2_SR;
+  blm_config.dout_r2_sr = BLM_DOUT_R2_SR;
+  blm_config.dout_l3_sr = BLM_DOUT_L3_SR;
+  blm_config.dout_r3_sr = BLM_DOUT_R3_SR;
+  blm_config.din_l_sr = BLM_DIN_L_SR;
+  blm_config.din_r_sr = BLM_DIN_R_SR;
+  blm_config.debounce_delay = 0;
+
 
   // set button value to initial value (1) and clear "changed" status of all 64 buttons
   // clear all LEDs
@@ -83,13 +96,11 @@ s32 BLM_Init(u32 mode)
 #endif
 
   // select first column
-#if BLM_DOUT_CATHODES1
-  MIOS32_DOUT_SRSet(BLM_DOUT_CATHODES1 - 1, (1 << 4) | (1 << 0));
-#endif
+  if( blm_config.dout_cathodes_sr1 )
+    MIOS32_DOUT_SRSet(blm_config.dout_cathodes_sr1 - 1, (1 << 4) | (1 << 0));
 
-#if BLM_DOUT_CATHODES2
-  MIOS32_DOUT_SRSet(BLM_DOUT_CATHODES2 - 1, (1 << 4) | (1 << 0));
-#endif
+  if( blm_config.dout_cathodes_sr2 )
+    MIOS32_DOUT_SRSet(blm_config.dout_cathodes_sr2 - 1, (1 << 4) | (1 << 0));
 
   // remember that this column has been selected
   blm_selected_column = 0;
@@ -99,10 +110,49 @@ s32 BLM_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function prepares the DOUT register to drive a column
-// It should be called from the APP_SRIO_ServicePrepare
-// IN: -
-// OUT: returns -1 on errors
+//! Configures the BLM driver.
+//!
+//! See blm.h for more informations
+//!
+//! \param[in] config a structure with following members:
+//! <UL>
+//!   <LI>config.dout_l1_sr (LED anodes, left side)
+//!   <LI>config.dout_r1_sr (LED anodes, right side)
+//!   <LI>config.dout_cathodes_sr1 (LED cathodes and button selection lines (2 * 4 bit))
+//!   <LI>config.dout_cathodes_sr2 (optional second SR which outputs the same values)
+//!   <LI>config.cathodes_inv_mask (inversion mask for cathodes)
+//!   <LI>config.dout_l2_sr (for 2-colour LED option)
+//!   <LI>config.dout_r2_sr (for 2-colour LED option)
+//!   <LI>config.dout_l3_sr (for 3-colour LED option)
+//!   <LI>config.dout_r3_sr (for 3-colour LED option)
+//!   <LI>config.debounce_delay (used if debounce mode >= 1)
+//! </UL>
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 BLM_ConfigSet(blm_config_t config)
+{
+  // ensure that update is atomic
+  MIOS32_IRQ_Disable();
+  blm_config = config;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns current BLM configuration
+//! \return config structure see BLM_ConfigSet()
+/////////////////////////////////////////////////////////////////////////////
+blm_config_t BLM_ConfigGet(void)
+{
+  return blm_config;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function prepares the DOUT register to drive a column.<BR>
+//! It should be called from the APP_SRIO_ServicePrepare()
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_PrepareCol(void)
 {
@@ -123,42 +173,34 @@ s32 BLM_PrepareCol(void)
   dout_value ^= BLM_CATHODES_INV_MASK;
 
   // output on CATHODES* registers
-#if BLM_DOUT_CATHODES1
-  MIOS32_DOUT_SRSet(BLM_DOUT_CATHODES1 - 1, dout_value);
-#endif
-#if BLM_DOUT_CATHODES2
-  MIOS32_DOUT_SRSet(BLM_DOUT_CATHODES2 - 1, dout_value);
-#endif
+  if( blm_config.dout_cathodes_sr1 )
+    MIOS32_DOUT_SRSet(blm_config.dout_cathodes_sr1 - 1, dout_value);
+  if( blm_config.dout_cathodes_sr2 )
+    MIOS32_DOUT_SRSet(blm_config.dout_cathodes_sr2 - 1, dout_value);
 
   // determine row offset (0..7) depending on selected column
   row_offset = blm_selected_column << 1;
 
   // output value of LED rows depending on current column
 #if BLM_NUM_COLOURS >= 1
-#if BLM_DOUT_L1
-  MIOS32_DOUT_SRSet(BLM_DOUT_L1 - 1, blm_led_row[0][row_offset+0]);
-#endif
-#if BLM_DOUT_R1
-  MIOS32_DOUT_SRSet(BLM_DOUT_R1 - 1, blm_led_row[0][row_offset+1]);
-#endif
+  if( blm_config.dout_l1_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_l1_sr - 1, blm_led_row[0][row_offset+0]);
+  if( blm_config.dout_r1_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_r1_sr - 1, blm_led_row[0][row_offset+1]);
 #endif
 
 #if BLM_NUM_COLOURS >= 2
-#if BLM_DOUT_L2
-  MIOS32_DOUT_SRSet(BLM_DOUT_L2 - 1, blm_led_row[1][row_offset+0]);
-#endif
-#if BLM_DOUT_R2
-  MIOS32_DOUT_SRSet(BLM_DOUT_R2 - 1, blm_led_row[1][row_offset+1]);
-#endif
+  if( blm_config.dout_l2_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_l2_sr - 1, blm_led_row[1][row_offset+0]);
+  if( blm_config.dout_r2_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_r2_sr - 1, blm_led_row[1][row_offset+1]);
 #endif
 
 #if BLM_NUM_COLOURS >= 3
-#if BLM_DOUT_L3
-  MIOS32_DOUT_SRSet(BLM_DOUT_L3 - 1, blm_led_row[2][row_offset+0]);
-#endif
-#if BLM_DOUT_R3
-  MIOS32_DOUT_SRSet(BLM_DOUT_R3 - 1, blm_led_row[2][row_offset+1]);
-#endif
+  if( blm_config.dout_l3_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_l3_sr - 1, blm_led_row[2][row_offset+0]);
+  if( blm_config.dout_r3_sr )
+    MIOS32_DOUT_SRSet(blm_config.dout_r3_sr - 1, blm_led_row[2][row_offset+1]);
 #endif
 
   return 0;
@@ -166,10 +208,9 @@ s32 BLM_PrepareCol(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function gets the DIN values of the selected column
-// It should be called from the APP_SRIO_ServiceFinish hook
-// IN: -
-// OUT: returns -1 on errors
+//! This function gets the DIN values of the selected column.<BR>
+//! It should be called from the APP_SRIO_ServiceFinish() hook
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_GetRow(void)
 {
@@ -190,15 +231,15 @@ s32 BLM_GetRow(void)
 
     sr_value = 0xff; // if no DIN register selected
     if( side == 0 ) {
-#if BLM_DIN_L
-      MIOS32_DIN_SRChangedGetAndClear(BLM_DIN_L-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value = MIOS32_DIN_SRGet(BLM_DIN_L-1);
-#endif
+      if( blm_config.din_l_sr ) {
+	MIOS32_DIN_SRChangedGetAndClear(blm_config.din_l_sr-1, 0xff); // ensure that change won't be propagated to normal DIN handler
+	sr_value = MIOS32_DIN_SRGet(blm_config.din_l_sr-1);
+      }
     } else { // side == 1
-#if BLM_DIN_R
-      MIOS32_DIN_SRChangedGetAndClear(BLM_DIN_R-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value = MIOS32_DIN_SRGet(BLM_DIN_R-1);
-#endif
+      if( blm_config.din_r_sr ) {
+	MIOS32_DIN_SRChangedGetAndClear(blm_config.din_r_sr-1, 0xff); // ensure that change won't be propagated to normal DIN handler
+	sr_value = MIOS32_DIN_SRGet(blm_config.din_r_sr-1);
+      }
     }
 
 #if BLM_DEBOUNCE_MODE == 2
@@ -225,7 +266,7 @@ s32 BLM_GetRow(void)
 	  blm_button_row_changed[sr] |= mask;
 
 	  // reload debounce counter
-	  blm_button_debounce_ctr[pin] = blm_button_debounce_delay;
+	  blm_button_debounce_ctr[pin] = blm_config.debounce_delay;
 	}
       }
     }
@@ -250,7 +291,7 @@ s32 BLM_GetRow(void)
 #if BLM_DEBOUNCE_MODE == 1
       // reload debounce counter if any pin has changed
       if( changed )
-	blm_button_debounce_ctr = blm_button_debounce_delay;
+	blm_button_debounce_ctr = blm_config.debounce_delay;
 #endif
     }
 
@@ -262,12 +303,11 @@ s32 BLM_GetRow(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from a task to check for button changes
-// periodically. Events (change from 0->1 or from 1->0) will be notified 
-// via the given callback function <notify_hook> with following parameters:
-//   <notifcation-hook>(s32 pin, s32 value)
-// IN: -
-// OUT: returns -1 on errors
+//! This function should be called from a task to check for button changes
+//! periodically. Events (change from 0->1 or from 1->0) will be notified 
+//! via the given callback function <notify_hook> with following parameters:
+//!   <notifcation-hook>(s32 pin, s32 value)
+//! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_ButtonHandler(void *_notify_hook)
 {
@@ -305,9 +345,10 @@ s32 BLM_ButtonHandler(void *_notify_hook)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of BLM DIN pin
-// IN: pin number
-// OUT: pin value (0 or 1), returns < 0 if pin not available
+//! Returns value of BLM DIN pin
+//! \param[in] pin number of pin
+//! \return pin value (0 or 1)
+//! \return < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DIN_PinGet(u32 pin)
 {
@@ -319,9 +360,9 @@ s32 BLM_DIN_PinGet(u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of BLM DIN "virtual" shift register
-// IN: SR number in <sr>
-// OUT: returns < 0 if pin not available
+//! Returns value of BLM DIN "virtual" shift register
+//! \param[in] sr number of shift register
+//! \return < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_DIN_SRGet(u32 sr)
 {
@@ -334,9 +375,11 @@ u8 BLM_DIN_SRGet(u32 sr)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// sets red/green/blue LED to 0 or Vss
-// IN: colour selection (0/1/2) in <colour>, pin number in <pin>, pin value in <value>
-// OUT: returns < 0 if pin not available
+//! Sets red/green/blue LED to 0 or Vss
+//! \param[in] colour the colour selection (0/1/2)
+//! \param[in] pin the pin number
+//! \param[in] value the pin value
+//! \return < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_PinSet(u32 colour, u32 pin, u32 value)
 {
@@ -359,9 +402,10 @@ s32 BLM_DOUT_PinSet(u32 colour, u32 pin, u32 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns red/green/blue LED status
-// IN: colour selection (0/1/2) in <colour>, pin number in <pin>
-// OUT: returns pin value or < 0 if pin not available
+//! Returns red/green/blue LED status
+//! \param[in] colour the colour selection (0/1/2)
+//! \param[in] pin the pin number
+//! \return < 0 if pin not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_PinGet(u32 colour, u32 pin)
 {
@@ -377,9 +421,11 @@ s32 BLM_DOUT_PinGet(u32 colour, u32 pin)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// sets red or green "virtual" shift register
-// IN: colour selection (0/1/2) in <colour>, SR number in <sr>, SR value in <value>
-// OUT: returns < 0 if SR not available
+//! Sets red or green "virtual" shift register
+//! \param[in] colour the colour selection (0/1/2)
+//! \param[in] sr the shift register number
+//! \param[in] value the shift register value
+//! \return < 0 if SR not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_DOUT_SRSet(u32 colour, u32 sr, u8 value)
 {
@@ -397,9 +443,10 @@ s32 BLM_DOUT_SRSet(u32 colour, u32 sr, u8 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns content of red or green "virtual" shift register
-// IN: colour selection (0/1/2) in <colour>, SR number in <sr>
-// OUT: returns SR value or < 0 if SR not available
+//! Returns content of red or green "virtual" shift register
+//! \param[in] colour the colour selection (0/1/2)
+//! \param[in] sr the shift register number
+//! \return < 0 if SR not available
 /////////////////////////////////////////////////////////////////////////////
 u8 BLM_DOUT_SRGet(u32 colour, u32 sr)
 {
@@ -414,26 +461,4 @@ u8 BLM_DOUT_SRGet(u32 colour, u32 sr)
   return blm_led_row[colour][sr];
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// sets the debounce delay
-// IN: debounce delay (8bit value)
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 BLM_DebounceDelaySet(u8 delay)
-{
-  blm_button_debounce_delay = delay;
-
-  return 0;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// returns the debounce delay
-// IN: -
-// OUT: debounce delay (8bit value)
-/////////////////////////////////////////////////////////////////////////////
-u8 BLM_DebounceDelayGet(void)
-{
-  return blm_button_debounce_delay;
-}
-
+//! \}
