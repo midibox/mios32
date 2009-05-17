@@ -43,6 +43,11 @@ volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
 // change notification flags
 volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
+// for debouncing
+static u8 debounce_time;
+static u8 debounce_ctr;
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -105,7 +110,73 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // (cleared on each ScanStart, set on each DMA IRQ invokation for proper synchronisation)
   srio_values_transfered = 1;
 
+  // initial debounce time (debouncing disabled)
+  debounce_time = 0;
+  debounce_ctr = 0;
+  
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the debounce counter reload value of the DIN SR registers
+//! \return debounce counter reload value (0 if disabled, otherwise 1..255)
+/////////////////////////////////////////////////////////////////////////////
+u32 MIOS32_SRIO_DebounceGet(void)
+{
+  return debounce_time;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the debounce counter reload value for the DIN SR registers which are 
+//! not assigned to rotary encoders (or other drivers which get use of
+//! MIOS32_DIN_SRChangedGetAndClear()) to debounce low-quality buttons.
+//!
+//! Debouncing is realized in the following way: on every button movement 
+//! the debounce preload value will be loaded into the debounce counter 
+//! register. The counter will be decremented on every SRIO update cycle (usually 1 mS)
+//! So long as this counter isn't zero, button changes will still be recorded, 
+//! but they won't trigger the APP_DIN_NotifyToggle hook.
+//!
+//! No (intended) button movement will get lost, but the latency will be 
+//! increased. Example: if the update frequency is set to 1 mS, and the 
+//! debounce value to 32, the first button movement will be regognized 
+//! with a worst-case latency of 1 mS. Every additional button movement 
+//! which happens within 32 mS will be regognized within a worst-case 
+//! latency of 32 mS. After the debounce time has passed, the worst-case 
+//! latency is 1 mS again.
+//!
+//! This function affects all DIN registers. If the application should 
+//! record pin changes from digital sensors which are switching very fast, 
+//! then debouncing should be ommited.
+//!
+//! \param[in] debounce_time delay in mS (1..255)<BR>
+//!            0 disables debouncing (default)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SRIO_DebounceSet(u8 _debounce_time)
+{
+  debounce_time = _debounce_time;
+
+  // lower counter value if new value is less than old one
+  if( debounce_ctr > debounce_time )
+    debounce_ctr = debounce_time;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Internally used function to start the debounce delay after a button
+//! has been moved.<BR>
+//! This function is used by MIOS32_DIN_Handler(), there is no need to use
+//! it in a common application.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SRIO_DebounceStart(void)
+{
+  debounce_ctr = debounce_time;
+  return 0; // no error
 }
 
 
@@ -174,8 +245,26 @@ static void MIOS32_SRIO_DMA_Callback(void)
   }
 
   // call user specific hook if requested
+  // it has to be called before button debouncing is handled
+  // to ensure that the encoder driver, but also other drivers (e.g. BLM) are working properly
+  // regardless if debouncing is enabled or not
   if( srio_scan_finished_hook != NULL )
     srio_scan_finished_hook();
+
+  // so long debounce counter is != 0, clear all "changed" flags to ignore button movements 
+  // at this time. In order to ensure, that a new final state of a button won't get lost, 
+  // the DIN values are XORed with the "changed" flags (yes, this idea is ill, but it works! :)
+  // Even the encoder handler (or others which are notified by the scan_finished_hook) still
+  // work properly, because they are clearing the appr. "changed" flags, so that the DIN
+  // values won't be touched by the XOR operation.
+  if( debounce_time && debounce_ctr ) {
+    --debounce_ctr;
+
+    for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+      mios32_srio_din[i] ^= mios32_srio_din_changed[i];
+      mios32_srio_din_changed[i] = 0;
+    }
+  }
 
   // next transfer has to be started with MIOS32_SRIO_ScanStart
 }

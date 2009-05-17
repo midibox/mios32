@@ -32,6 +32,12 @@ extern s32 MIOS32_UART_MIDI_Init(u32 mode);
 
 extern s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port);
 
+extern s32 MIOS32_UART_MIDI_RS_OptimisationSet(u8 uart_port, u8 enable);
+extern s32 MIOS32_UART_MIDI_RS_OptimisationGet(u8 uart_port);
+extern s32 MIOS32_UART_MIDI_RS_Reset(u8 uart_port);
+
+extern s32 MIOS32_UART_MIDI_Periodic_mS(void);
+
 extern s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t package);
 extern s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package);
 extern s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package);

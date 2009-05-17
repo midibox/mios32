@@ -61,7 +61,12 @@
 
 extern s32 MIOS32_SRIO_Init(u32 mode);
 
+extern u32 MIOS32_SRIO_DebounceGet(void);
+extern s32 MIOS32_SRIO_DebounceSet(u8 debounce_time);
+extern s32 MIOS32_SRIO_DebounceStart(void);
+
 extern s32 MIOS32_SRIO_ScanStart(void *notify_hook);
+
 
 
 /////////////////////////////////////////////////////////////////////////////
