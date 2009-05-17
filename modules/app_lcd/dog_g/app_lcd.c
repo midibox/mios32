@@ -58,56 +58,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Pin definitions for MBHP_CoRE_STM32 board
+// Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-#define APP_LCD_SCLK_PORT      GPIOA
-#define APP_LCD_SCLK_PIN       GPIO_Pin_8
-
-#define APP_LCD_RCLK_PORT      GPIOC
-#define APP_LCD_RCLK_PIN       GPIO_Pin_9
-
-#define APP_LCD_SER_PORT       GPIOC
-#define APP_LCD_SER_PIN        GPIO_Pin_8
-
-#define APP_LCD_LCDSCLK_PORT   GPIOC
-#define APP_LCD_LCDSCLK_PIN    GPIO_Pin_7
-
-#define APP_LCD_SDA_PORT       GPIOB
-#define APP_LCD_SDA_PIN        GPIO_Pin_2
-
-#define APP_LCD_D7_PORT        GPIOC
-#define APP_LCD_D7_PIN         GPIO_Pin_12
-
-
-// should output pins to LCD (SER/E1/E2/RW) be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
-#define APP_LCD_OUTPUTS_OD     0
+// 0: J15 pins are configured in Push Pull Mode (3.3V)
+// 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
+#define APP_LCD_OUTPUT_MODE  0
 // MEMO: DOGM128 works at 3.3V, level shifting (and open drain mode) not required
-// TODO: try this out later
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Help Macros
-/////////////////////////////////////////////////////////////////////////////
-
-#define PIN_SER(b)  { APP_LCD_SER_PORT->BSRR = (b) ? APP_LCD_SER_PIN : (APP_LCD_SER_PIN << 16); }
-#define PIN_SDA(b)  { APP_LCD_SDA_PORT->BSRR  = (b) ? APP_LCD_SDA_PIN  : (APP_LCD_SDA_PIN << 16); }
-
-#define PIN_LCDSCLK_0  { APP_LCD_LCDSCLK_PORT->BRR  = APP_LCD_LCDSCLK_PIN; }
-#define PIN_LCDSCLK_1  { APP_LCD_LCDSCLK_PORT->BSRR = APP_LCD_LCDSCLK_PIN; }
-
-#define PIN_RCLK_0  { APP_LCD_RCLK_PORT->BRR  = APP_LCD_RCLK_PIN; }
-#define PIN_RCLK_1  { APP_LCD_RCLK_PORT->BSRR = APP_LCD_RCLK_PIN; }
-
-#define PIN_SCLK_0  { APP_LCD_SCLK_PORT->BRR  = APP_LCD_SCLK_PIN; }
-#define PIN_SCLK_1  { APP_LCD_SCLK_PORT->BSRR = APP_LCD_SCLK_PIN; }
-
-#define PIN_D7_IN   (APP_LCD_D7_PORT->IDR & APP_LCD_D7_PIN)
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global variables
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -118,64 +75,32 @@ static u32 display_available = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-static void APP_LCD_SerCSWrite(u8 data, u8 dc);
-static void APP_LCD_SerLCDWrite(u8 data);
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initializes application specific LCD driver
 // IN: <mode>: optional configuration
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Init(u32 mode)
 {
-  u32 delay;
+  // currently only mode 0 supported
+  if( mode != 0 )
+    return -1; // unsupported mode
 
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-
-  PIN_SCLK_0;
-  PIN_RCLK_0;
-  PIN_LCDSCLK_0;
-  PIN_SDA(0);
-
-  // configure push-pull pins
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // weak driver to reduce transients
-
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_SCLK_PIN;
-  GPIO_Init(APP_LCD_SCLK_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_RCLK_PIN;
-  GPIO_Init(APP_LCD_RCLK_PORT, &GPIO_InitStructure);
-
-  // configure open-drain pins (if OD option enabled)
-#if APP_LCD_OUTPUTS_OD
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
-#endif
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_SER_PIN;
-  GPIO_Init(APP_LCD_SER_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_LCDSCLK_PIN;
-  GPIO_Init(APP_LCD_LCDSCLK_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_SDA_PIN;
-  GPIO_Init(APP_LCD_SDA_PORT, &GPIO_InitStructure);
-
-  // configure "busy" input with pull-up
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-  GPIO_InitStructure.GPIO_Pin = APP_LCD_D7_PIN;
-  GPIO_Init(APP_LCD_D7_PORT, &GPIO_InitStructure);
-
+  if( MIOS32_BOARD_J15_PortInit(APP_LCD_OUTPUT_MODE) < 0 )
+    return -2; // failed to initialize J15
 
   // enable display by default
   display_available |= (1 << mios32_lcd_device);
 
+  // set LCD type
+  mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
+
   // initialize LCD
-  for(delay=0; delay<50000; ++delay) PIN_SDA(0); // 50 mS Delay
+#ifdef MIOS32_DONT_USE_DELAY
+  u32 delay;
+  for(delay=0; delay<50000; ++delay) MIOS32_BOARD_J15_RW_Set(0); // ca. 50 mS Delay
+#else
+  MIOS32_DELAY_Wait_uS(50000); // exact 50 mS delay
+#endif
 
   // initialisation sequence based on EA-DOGL/M datasheet
   
@@ -229,18 +154,19 @@ s32 APP_LCD_Data(u8 data)
   if( cs >= 8 )
     return -1; // invalid CS line
 
-  APP_LCD_SerCSWrite(~(1 << cs), 1); // CS, dc
-  //  APP_LCD_SerCSWrite(~0x02, 1); // CS, dc
+  // chip select and DC
+  MIOS32_BOARD_J15_DataSet(~(1 << cs));
+  MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
   // send data
-  APP_LCD_SerLCDWrite(data);
+  MIOS32_BOARD_J15_SerDataShift(data);
 
   // increment graphical cursor
   ++mios32_lcd_x;
   // if end of display segment reached: set X position of all segments to 0
   if( (mios32_lcd_x % 128) == 0 ) {
-      APP_LCD_Cmd(0x10); // Set upper nibble to 0
-      return APP_LCD_Cmd(0x00); // Set lower nibble to 0
+    APP_LCD_Cmd(0x10); // Set upper nibble to 0
+    return APP_LCD_Cmd(0x00); // Set lower nibble to 0
   }
 
   return 0; // no error
@@ -255,10 +181,11 @@ s32 APP_LCD_Data(u8 data)
 s32 APP_LCD_Cmd(u8 cmd)
 {
   // select all LCDs
-  APP_LCD_SerCSWrite(0x00, 0); // CS, dc
+  MIOS32_BOARD_J15_DataSet(0x00);
+  MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
 
   // send command
-  APP_LCD_SerLCDWrite(cmd);
+  MIOS32_BOARD_J15_SerDataShift(cmd);
 
   return 0; // no error
 }
@@ -274,15 +201,19 @@ s32 APP_LCD_Clear(void)
   s32 error = 0;
   u8 x, y;
 
+  // use default font
+  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+
   // send data
   for(y=0; y<8; ++y) {
     error |= MIOS32_LCD_CursorSet(0, y);
 
     // select all LCDs
-    APP_LCD_SerCSWrite(0x00, 1); // CS, dc
+    MIOS32_BOARD_J15_DataSet(0x00);
+    MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
     for(x=0; x<128; ++x)
-      APP_LCD_SerLCDWrite(0x00);
+      MIOS32_BOARD_J15_SerDataShift(0x00);
   }
 
   // set X=0, Y=0
@@ -420,87 +351,4 @@ s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
 {
   return -1; // n.a.
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-// Help Functions
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-
-// 74HC595 register update - the CS lines are connected to the 8 outputs
-static void APP_LCD_SerCSWrite(u8 data, u8 dc)
-{
-  // shift in 8bit data
-  // whole function takes ca. 1.5 uS @ 72MHz
-  // thats acceptable for a (C)LCD, which is normaly busy after each access for ca. 20..40 uS
-
-  PIN_SER(data & 0x80); // D7
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x40); // D6
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x20); // D5
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x10); // D4
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x08); // D3
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x04); // D2
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x02); // D1
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-  PIN_SER(data & 0x01); // D0
-  PIN_SCLK_0; // setup delay
-  PIN_SCLK_1;
-
-  // transfer to output register
-  PIN_RCLK_1;
-  PIN_RCLK_1;
-  PIN_RCLK_1;
-  PIN_RCLK_0;
-
-  // set DC line
-  PIN_SER(dc);
-
-  PIN_RCLK_1;
-}
-
-// serial transfer to LCD
-static void APP_LCD_SerLCDWrite(u8 data)
-{
-  // shift in 8bit data
-  // DOGM128 spec allows up to 20 MHz
-
-  PIN_SDA(data & 0x80); // D7
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x40); // D6
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x20); // D5
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x10); // D4
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x08); // D3
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x04); // D2
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x02); // D1
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
-  PIN_SDA(data & 0x01); // D0
-  PIN_LCDSCLK_0; // setup delay
-  PIN_LCDSCLK_1;
 }
