@@ -183,10 +183,8 @@ static void TASK_MIDI_Hooks(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
-#if !defined(MIOS32_DONT_USE_USB_MIDI)
-    // handle USB messages
-    MIOS32_USB_MIDI_Handler();
-#endif
+    // handle timeout/expire counters and USB packages
+    MIOS32_MIDI_Periodic_mS();
 
     // check for incoming MIDI messages and call hooks
     MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);

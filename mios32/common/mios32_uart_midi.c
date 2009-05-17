@@ -44,8 +44,13 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 // handler data structure
+#if MIOS32_UART_NUM
 static midi_rec_t midi_rec[MIOS32_UART_NUM];
 
+static u8 rs_optimisation;
+static u8 rs_last[MIOS32_UART_NUM];
+static u16 rs_expire_ctr[MIOS32_UART_NUM];
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes UART MIDI layer
@@ -55,7 +60,11 @@ static midi_rec_t midi_rec[MIOS32_UART_NUM];
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_Init(u32 mode)
 {
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART enabled
+#else
   int i;
+
 
   // currently only mode 0 supported
   if( mode != 0 )
@@ -77,7 +86,13 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
     return -1; // initialisation of U(S)ART Interface failed
 #endif
 
+  // enable running status optimisation by default for all ports
+  rs_optimisation = ~0; // -> all-one
+  for(i=0; i<MIOS32_UART_NUM; ++i)
+    MIOS32_UART_MIDI_RS_Reset(i);
+
   return 0; // no error
+#endif
 }
 
 
@@ -111,6 +126,116 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function enables/disables running status optimisation for a given
+//! MIDI OUT port to improve bandwidth if MIDI events with the same
+//! status byte are sent back-to-back.<BR>
+//! Note that the optimisation is enabled by default.
+//! \param[in] uart_port UART number (0..1)
+//! \param[in] enable 0=optimisation disabled, 1=optimisation enabled
+//! \return -1 if port not available
+//! \return 0 on success
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_MIDI_RS_OptimisationSet(u8 uart_port, u8 enable)
+{
+#if MIOS32_UART_NUM == 0
+  return -1; // all UARTs explicitely disabled
+#else
+  if( uart_port >= MIOS32_UART_NUM )
+    return -1; // port not available
+
+  u8 mask = 1 << uart_port;
+  rs_optimisation &= ~mask;
+  if( enable )
+    rs_optimisation |= mask;
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the running status optimisation enable/disable flag
+//! for the given MIDI OUT port.
+//! \param[in] uart_port UART number (0..1)
+//! \return -1 if port not available
+//! \return 0 if optimisation disabled
+//! \return 1 if optimisation enabled
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_MIDI_RS_OptimisationGet(u8 uart_port)
+{
+#if MIOS32_UART_NUM == 0
+  return -1; // all UARTs explicitely disabled
+#else
+  if( uart_port >= MIOS32_UART_NUM )
+    return -1; // port not available
+
+  return (rs_optimisation & (1 << uart_port)) ? 1 : 0;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function resets the current running status, so that it will be sent
+//! again with the next MIDI Out package.
+//! \param[in] uart_port UART number (0..1)
+//! \return -1 if port not available
+//! \return < 0 on errors
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_MIDI_RS_Reset(u8 uart_port)
+{
+#if MIOS32_UART_NUM == 0
+  return -1; // all UARTs explicitely disabled
+#else
+  if( uart_port >= MIOS32_UART_NUM )
+    return -1; // port not available
+
+  MIOS32_IRQ_Disable();
+  rs_last[uart_port] = 0xff;
+  rs_expire_ctr[uart_port] = 0;
+  MIOS32_IRQ_Enable();
+
+  return 0;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function should be called periodically each mS to handle timeout
+//! and expire counters.
+//!
+//! Not for use in an application - this function is called from
+//! MIOS32_MIDI_Periodic_mS(), which is called by a task in the programming
+//! model!
+//! 
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_MIDI_Periodic_mS(void)
+{
+#if MIOS32_UART_NUM
+  u8 uart_port;
+
+  // increment the expire counters for running status optimisation.
+  //
+  // The running status will expire after 1000 ticks (1 second) 
+  // to ensure, that the current status will be sent at least each second
+  // to cover the case that the MIDI cable is (re-)connected during runtime.
+  MIOS32_IRQ_Disable();
+  for(uart_port=0; uart_port<MIOS32_UART_NUM; ++uart_port) {
+    if( rs_expire_ctr[uart_port] < 65535 )
+      ++rs_expire_ctr[uart_port];
+  }
+  MIOS32_IRQ_Enable();
+  // (atomic operation not required in MIOS32_UART_MIDI_PackageSend_NonBlocking() due to single-byte accesses)
+#endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function sends a new MIDI package to the selected UART_MIDI port
 //! \param[in] uart_port UART_MIDI module number (0..1)
 //! \param[in] package MIDI package
@@ -132,6 +257,39 @@ s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t
   u8 len = mios32_midi_pcktype_num_bytes[package.cin];
   if( len ) {
     u8 buffer[3] = {package.evnt0, package.evnt1, package.evnt2};
+
+    if( rs_expire_ctr[uart_port] > 1000 ) {
+      // the current RS is expired each second to ensure that a status byte will be sent
+      // if the MIDI cable is (re)connected during runtime
+      MIOS32_UART_MIDI_RS_Reset(uart_port);
+#if 0
+      // for optional monitoring of the optimisation
+      MIOS32_MIDI_SendDebugMessage("[MIOS32_UART_MIDI:%d] RS 0x%02x expired!\n", uart_port);
+#endif
+    } else {
+      if( (rs_optimisation & (1 << uart_port)) &&
+	  package.cin >= NoteOff && package.cin <= PitchBend &&
+	  len > 1 ) { // (len check is a failsafe measure)
+	if( package.evnt0 == rs_last[uart_port] ) {
+	  buffer[0] = package.evnt1;
+	  buffer[1] = package.evnt2;
+	  --len;
+#if 0
+	  // for optional monitoring of the optimisation
+	  MIOS32_MIDI_SendDebugMessage("[MIOS32_UART_MIDI:%d] RS optimized (%02x) %02x %02x\n", uart_port, package.evnt0, package.evnt1, package.evnt2);
+#endif
+	} else {
+	  // new running status
+	  rs_expire_ctr[uart_port] = 0;
+	}
+      }
+    }
+
+    // note: packages != Note Off, On, ... Pitch Bend will disable running status - thats acceptable
+    // only realtime events won't touch it (according to MIDI spec)
+    if( package.evnt0 < 0xf8 )
+      rs_last[uart_port] = package.evnt0;
+
 
     switch( MIOS32_UART_TxBufferPutMore(uart_port, buffer, len) ) {
       case  0: return  0; // transfer successfull
@@ -170,6 +328,7 @@ s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
 //! \param[out] package pointer to MIDI package (received package will be put into the given variable
 //! \return 0: no error
 //! \return -1: no package in buffer
+//! \return -2: incoming MIDI package timed out
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package)

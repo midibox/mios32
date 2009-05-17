@@ -41,6 +41,8 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port);
 #if MIOS32_IIC_MIDI_NUM
 // available interfaces
 static u8 iic_port_available = 0;
+
+static u8 rs_optimisation;
 #endif
 
 
@@ -104,6 +106,13 @@ s32 MIOS32_IIC_MIDI_Init(u32 mode)
   // scan for available MBHP_IIC_MIDI modules
   if( MIOS32_IIC_MIDI_ScanInterfaces() < 0 )
     return -2; // we don't expect that any other task accesses the IIC port yet!
+
+#if MIOS32_IIC_MIDI_NUM
+  // enable running status optimisation by default for all ports
+  rs_optimisation = ~0; // -> all-one
+
+  // TODO: send optimisation flag to IIC_MIDI device once it has been scanned!
+#endif
 
   return 0; // no error
 #endif
@@ -185,6 +194,99 @@ s32 MIOS32_IIC_MIDI_CheckAvailable(u8 iic_port)
 #else
   return (iic_port_available & (1 << iic_port)) ? 1 : 0;
 #endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function enables/disables running status optimisation for a given
+//! MIDI OUT port to improve bandwidth if MIDI events with the same
+//! status byte are sent back-to-back.<BR>
+//! Note that the optimisation is enabled by default.
+//! \param[in] iic_port module number (0..7)
+//! \param[in] enable 0=optimisation disabled, 1=optimisation enabled
+//! \return -1 if port not available
+//! \return 0 on success
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_RS_OptimisationSet(u8 iic_port, u8 enable)
+{
+#if MIOS32_IIC_MIDI_NUM == 0
+  return -1; // port not available
+#else
+  if( iic_port >= MIOS32_IIC_MIDI_NUM )
+    return -1; // port not available
+
+  u8 mask = 1 << iic_port;
+  rs_optimisation &= ~mask;
+  if( enable )
+    rs_optimisation |= mask;
+
+  // TODO: send optimisation flag to IIC_MIDI device!
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the running status optimisation enable/disable flag
+//! for the given MIDI OUT port.
+//! \param[in] iic_port module number (0..7)
+//! \return -1 if port not available
+//! \return 0 if optimisation disabled
+//! \return 1 if optimisation enabled
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_RS_OptimisationGet(u8 iic_port)
+{
+#if MIOS32_IIC_MIDI_NUM == 0
+  return -1; // port not available
+#else
+  if( iic_port >= MIOS32_IIC_MIDI_NUM )
+    return -1; // port not available
+
+  return (rs_optimisation & (1 << iic_port)) ? 1 : 0;
+#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function resets the current running status, so that it will be sent
+//! again with the next MIDI Out package.
+//! \param[in] iic_port module number (0..7)
+//! \return -1 if port not available
+//! \return < 0 on errors
+//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_RS_Reset(u8 iic_port)
+{
+#if MIOS32_IIC_MIDI_NUM == 0
+  return -1; // port not available
+#else
+  if( iic_port >= MIOS32_IIC_MIDI_NUM )
+    return -1; // port not available
+
+  // TODO: send RS status reset command to IIC_MIDI device!
+
+  return 0;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function should be called periodically each mS to handle timeout
+//! and expire counters.
+//!
+//! Not for use in an application - this function is called from
+//! MIOS32_MIDI_Periodic_mS(), which is called by a task in the programming
+//! model!
+//! 
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IIC_MIDI_Periodic_mS(void)
+{
+  // currently only a dummy - RS optimisation handled by IIC_MIDI device
+
+  return 0;
 }
 
 

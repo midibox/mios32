@@ -130,7 +130,7 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
   if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
-    MIOS32_USB_MIDI_Handler();
+    MIOS32_USB_MIDI_TxBufferHandler();
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
@@ -211,13 +211,20 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 }
 
 
+
 /////////////////////////////////////////////////////////////////////////////
-//! This handler should be called from a RTOS task to check for
-//! incoming/outgoing USB packages
+//! This function should be called periodically each mS to handle timeout
+//! and expire counters.
+//!
+//! For USB MIDI it also checks for incoming/outgoing USB packages!
+//!
+//! Not for use in an application - this function is called from
+//! MIOS32_MIDI_Periodic_mS(), which is called by a task in the programming
+//! model!
+//! 
 //! \return < 0 on errors
-//! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_Handler(void)
+s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
   // check for received packages
   MIOS32_USB_MIDI_RxBufferHandler();

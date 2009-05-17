@@ -63,7 +63,7 @@ extern s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package
 extern s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t package);
 extern s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package);
 
-extern s32 MIOS32_USB_MIDI_Handler(void);
+extern s32 MIOS32_USB_MIDI_Periodic_mS(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

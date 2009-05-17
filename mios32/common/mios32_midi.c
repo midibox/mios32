@@ -222,11 +222,129 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 
     case 4:
       return 0; // Ethernet not implemented yet
-      
-    default:
-      // invalid port
-      return 0;
   }
+
+  return 0; // invalid port
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function enables/disables running status optimisation for a given
+//! MIDI OUT port to improve bandwidth if MIDI events with the same
+//! status byte are sent back-to-back.<BR>
+//! The optimisation is currently only used for UART based port (enabled by
+//! default), IIC: TODO, USB: not required).
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] enable 0=optimisation disabled, 1=optimisation enabled
+//! \return -1 if port not available or if it doesn't support running status
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable)
+{
+  // if default/debug port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
+  }
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+      return -1; // not required for USB
+
+    case 2:
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_RS_OptimisationSet(port & 0xf, enable);
+#else
+      return -1; // UART_MIDI has been disabled
+#endif
+
+    case 3:
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_RS_OptimisationSet(port & 0xf, enable);
+#else
+      return -1; // IIC_MIDI has been disabled
+#endif
+  }
+
+  return -1; // invalid port
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the running status optimisation enable/disable flag
+//! for the given MIDI OUT port.
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return -1 if port not available or if it doesn't support running status
+//! \return 0 if optimisation disabled
+//! \return 1 if optimisation enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port)
+{
+  // if default/debug port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
+  }
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+      return -1; // not required for USB
+
+    case 2:
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_RS_OptimisationGet(port & 0xf);
+#else
+      return -1; // UART_MIDI has been disabled
+#endif
+
+    case 3:
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_RS_OptimisationGet(port & 0xf);
+#else
+      return -1; // IIC_MIDI has been disabled
+#endif
+  }
+
+  return -1; // invalid port
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function resets the current running status, so that it will be sent
+//! again with the next MIDI Out package.
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \return -1 if port not available or if it doesn't support running status
+//! \return 0 if optimisation disabled
+//! \return 1 if optimisation enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port)
+{
+  // if default/debug port: select mapped port
+  if( !(port & 0xf0) ) {
+    port = (port == MIDI_DEBUG) ? debug_port : default_port;
+  }
+
+  // branch depending on selected port
+  switch( port >> 4 ) {
+    case 1:
+      return -1; // not required for USB
+
+    case 2:
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+      return MIOS32_UART_MIDI_RS_Reset(port & 0xf);
+#else
+      return -1; // UART_MIDI has been disabled
+#endif
+
+    case 3:
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      return MIOS32_IIC_MIDI_RS_Reset(port & 0xf);
+#else
+      return -1; // IIC_MIDI has been disabled
+#endif
+  }
+
+  return -1; // invalid port
 }
 
 
@@ -692,6 +810,9 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 //!    callback_event(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 //!    callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
 //! \endcode
+//!
+//! Not for use in an application - this function is called by
+//! by a task in the programming model!
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
@@ -848,6 +969,36 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
   } while( again );
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function should be called periodically each mS to handle timeout
+//! and expire counters.
+//!
+//! Not for use in an application - this function is called by
+//! by a task in the programming model!
+//! 
+//! \param[in] uart_port UART number (0..1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_Periodic_mS(void)
+{
+  s32 status = 0;
+
+#ifndef MIOS32_DONT_USE_USB_MIDI
+  status |= MIOS32_USB_MIDI_Periodic_mS();
+#endif
+
+#ifndef MIOS32_DONT_USE_UART_MIDI
+  status |= MIOS32_UART_MIDI_Periodic_mS();
+#endif
+
+#ifndef MIOS32_DONT_USE_IIC_MIDI
+  status |= MIOS32_IIC_MIDI_Periodic_mS();
+#endif
+
+  return status;
 }
 
 

@@ -41,7 +41,7 @@ s32 MIOS32_DIN_Init(u32 mode)
     mios32_srio_din[i] = 0xff; // passive state
     mios32_srio_din_changed[i] = 0;
   }
-  
+
   return 0;
 }
 
@@ -124,85 +124,6 @@ u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Disables the auto-repeat feature for the appr. pin
-//! \param[in] pin pin number (0..127)
-//! \return < 0 on errors
-//! \todo not implemented yet
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS_DIN_PinAutoRepeatDisable(u32 pin)
-{
-  // not implemented yet
-  return -1;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! Enables the auto-repeat feature for the appr. pin
-//! \param[in] pin pin number (0..127)
-//! \return < 0 on errors
-//! \todo not implemented yet
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS_DIN_PinAutoRepeatEnable(u32 pin)
-{
-  // not implemented yet
-  return -1;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! queries the auto-repeat state of a DIN pin
-//! \param[in] pin pin number (0..127)
-//! \return 1 if auto-repeat has been enabled for this pin
-//! \return 0 if auto-repeat has been disabled for this pin
-//! \return -1 if pin nor available
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS_DIN_PinAutoRepeatGet(u32 pin)
-{
-  // not implemented yet
-  return 0; // auto repeat not enabled
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! Returns the debounce counter reload value of the DIN SR registers
-//! \return debounce counter reload value
-//! \todo not implemented yet
-/////////////////////////////////////////////////////////////////////////////
-u32 MIOS_DIN_DebounceGet(void)
-{
-  // TODO
-  return 0;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! Sets the debounce counter reload value for the DIN SR registers which are 
-//! not assigned to rotary encoders to debounce low-quality buttons.
-//!
-//! Debouncing is realized in the following way: on every button movement 
-//! the debounce preload value will be loaded into the debounce counter 
-//! register. The counter will be decremented on every SRIO update cycle. 
-//! So long as this counter isn't zero, button changes will still be recorded, 
-//! but they won't trigger the USER_DIN_NotifyToggle function (FIXME)
-//!
-//! No (intended) button movement will get lost, but the latency will be 
-//! increased. Example: if the update frequency is set to 1 mS, and the 
-//! debounce value to 32, the first button movement will be regognized 
-//! with a worst-case latency of 1 mS. Every additional button movement 
-//! which happens within 32 mS will be regognized within a worst-case 
-//! latency of 32 mS. After the debounce time has passed, the worst-case 
-//! latency is 1 mS again.
-//!
-//! This function affects all DIN registers. If the application should 
-//! record pin changes from digital sensors which are switching very fast, 
-//! then debouncing should be ommited.
-//! \return < 0 on errors
-//! \todo not implemented yet
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS_DIN_DebounceSet(u32 debounce_time)
-{
-  // TODO
-  return -1;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 //! Checks for pin changes, and calls given callback function with following parameters:
 //! \code
 //!   void DIN_NotifyToggle(u32 pin, u32 value)
@@ -238,8 +159,13 @@ s32 MIOS32_DIN_Handler(void *_callback)
 
     // check all 8 pins of the SR
     for(sr_pin=0; sr_pin<8; ++sr_pin)
-      if( changed & (1 << sr_pin) )
+      if( changed & (1 << sr_pin) ) {
+	// call the notification function
 	callback(8*sr+sr_pin, (mios32_srio_din[sr] & (1 << sr_pin)) ? 1 : 0);
+
+	// start debouncing (if enabled in SRIO driver)
+	MIOS32_SRIO_DebounceStart();
+      }
   }
 
   return 0;

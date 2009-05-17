@@ -187,6 +187,10 @@ extern s32 MIOS32_MIDI_Init(u32 mode);
 
 extern s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port);
 
+extern s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable);
+extern s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port);
+extern s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port);
+
 extern s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_package_t package);
 extern s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
 
@@ -216,6 +220,8 @@ extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
 extern s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len);
 
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event, void *callback_sysex);
+
+extern s32 MIOS32_MIDI_Periodic_mS(void);
 
 extern s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx);
 
