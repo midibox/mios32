@@ -238,6 +238,8 @@ extern mios32_midi_port_t MIOS32_MIDI_DebugPortGet(void);
 extern s32 MIOS32_MIDI_DeviceIDSet(u8 device_id);
 extern u8  MIOS32_MIDI_DeviceIDGet(void);
 
+extern s32 MIOS32_MIDI_TimeOutCallback_Init(void *callback_timeout);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

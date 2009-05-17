@@ -117,6 +117,7 @@ static mios32_midi_port_t debug_port   = MIOS32_MIDI_DEBUG_PORT;
 
 static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
+static s32 (*timeout_callback_func)(mios32_midi_port_t port);
 
 static sysex_state_t sysex_state;
 static u8 sysex_device_id;
@@ -135,6 +136,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
 static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
 static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str);
+static s32 MIOS32_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -157,6 +159,9 @@ s32 MIOS32_MIDI_Init(u32 mode)
   // disable Rx/Tx callback functions
   direct_rx_callback_func = NULL;
   direct_tx_callback_func = NULL;
+
+  // timeout callback function
+  timeout_callback_func = NULL;
 
   // initialize interfaces
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
@@ -833,62 +838,62 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
     // it would allow to add/remove interfaces dynamically
     // this would also allow to give certain ports a higher priority (to add them multiple times to the list)
     // it would also improve this spagetthi code ;)
-    s32 error = -1;
+    s32 status = -1;
     switch( intf++ ) {
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      case 0: error = MIOS32_USB_MIDI_PackageReceive(&package); port = USB0 + package.cable; break;
+      case 0: status = MIOS32_USB_MIDI_PackageReceive(&package); port = USB0 + package.cable; break;
 #else
-      case 0: error = -1; break;
+      case 0: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART0_ASSIGNMENT == 1
-      case 1: error = MIOS32_UART_MIDI_PackageReceive(0, &package); port = UART0; break;
+      case 1: status = MIOS32_UART_MIDI_PackageReceive(0, &package); port = UART0; break;
 #else
-      case 1: error = -1; break;
+      case 1: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART1_ASSIGNMENT == 1
-      case 2: error = MIOS32_UART_MIDI_PackageReceive(1, &package); port = UART1; break;
+      case 2: status = MIOS32_UART_MIDI_PackageReceive(1, &package); port = UART1; break;
 #else
-      case 2: error = -1; break;
+      case 2: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 3: error = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
+      case 3: status = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
 #else
-      case 3: error = -1; break;
+      case 3: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 4: error = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
+      case 4: status = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
 #else
-      case 4: error = -1; break;
+      case 4: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 5: error = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
+      case 5: status = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
 #else
-      case 5: error = -1; break;
+      case 5: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 6: error = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
+      case 6: status = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
 #else
-      case 6: error = -1; break;
+      case 6: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 7: error = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
+      case 7: status = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
 #else
-      case 7: error = -1; break;
+      case 7: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 8: error = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
+      case 8: status = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
 #else
-      case 8: error = -1; break;
+      case 8: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 9: error = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
+      case 9: status = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
 #else
-      case 9: error = -1; break;
+      case 9: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 10: error = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+      case 10: status = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
 #else
-      case 10: error = -1; break;
+      case 10: status = -1; break;
 #endif
       default:
 	// allow 10 forwards maximum to yield some CPU time for other tasks
@@ -898,11 +903,14 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	} else {
 	  again = 0; // no more interfaces to be processed
 	}
-	error = -1; // empty round - no message
+	status = -1; // empty round - no message
     }
 
-    // message received?
-    if( error >= 0 ) {
+    // timeout?
+    if( status == -10 ) {
+      MIOS32_MIDI_TimeOut(port);
+      again = 0;
+    } else if( status >= 0 ) { // message received?
       // notify that a package has been forwarded
       ++packages_forwarded;
       ++total_packages_forwarded;
@@ -1445,6 +1453,64 @@ static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 
   // finally send SysEx stream
   return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs the Timeout callback function which is executed on incomplete
+//! MIDI packages received via UART, or on incomplete SysEx streams.
+//!
+//! A timeout is detected after 1 second.
+//!
+//! On a timeout, it is recommented to reset MIDI parsing relevant variables,
+//! e.g. the state of a SysEx parser.
+//!
+//! Example:
+//! \code
+//! s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
+//! {
+//!   // if my SysEx parser receives a command (MY_SYSEX flag set), abort parser if port matches
+//!   if( sysex_state.MY_SYSEX && port == last_sysex_port )
+//!     MySYSEX_CmdFinished();
+//!
+//!   return 0; // no error
+//! }
+//! \endcode
+//!
+//! The callback function has been installed in an Init() function with:
+//! \code
+//!   MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
+//! \endcode
+//! \param[in] callback_timeout the callback function (NULL disables the callback)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_TimeOutCallback_Init(void *callback_timeout)
+{
+  timeout_callback_func = callback_timeout;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called if a MIDI parser runs into timeout
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_TimeOut(mios32_midi_port_t port)
+{
+  // if MIOS32 receives a SysEx command (MY_SYSEX flag set), abort parser if port matches
+  if( sysex_state.MY_SYSEX && port == last_sysex_port )
+    MIOS32_MIDI_SYSEX_CmdFinished();
+
+  // optional hook to application
+  if( timeout_callback_func != NULL )
+    timeout_callback_func(port);
+
+#if 1
+  // this debug message should always be active, so that common users are informed about the exception
+  MIOS32_MIDI_SendDebugMessage("[MIOS32_MIDI_Receive_Handler] Timeout on port 0x%02x\n", port);
+#endif
+
+  return 0; // no error
 }
 
 #endif /* MIOS32_DONT_USE_MIDI */

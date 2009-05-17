@@ -58,6 +58,7 @@
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
+static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,6 +117,9 @@ void APP_Init(void)
   // install MIDI Rx/Tx callback functions
   MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
   MIOS32_MIDI_DirectTxCallback_Init(NOTIFY_MIDI_Tx);
+
+  // install timeout callback function
+  MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
 }
 
 
@@ -527,3 +531,17 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 
   return 0; // no error, no filtering
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_TimeoutCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
+{  
+  // TODO: display this message on screen
+  MIOS32_MIDI_SendDebugMessage("[NOTIFY_MIDI_Timeout] Timeout on port 0x%02x\n", port);
+
+  return 0;
+}
+
+
