@@ -36,6 +36,7 @@ typedef struct {
   u8 expected_bytes;
   u8 wait_bytes;
   u8 sysex_ctr;
+  u16 timeout_ctr;
 } midi_rec_t;
 
 
@@ -47,10 +48,33 @@ typedef struct {
 #if MIOS32_UART_NUM
 static midi_rec_t midi_rec[MIOS32_UART_NUM];
 
+// seperated from midi_rec, since midi_rec variables are
+// only used for parser and could be reseted on a timeout
 static u8 rs_optimisation;
 static u8 rs_last[MIOS32_UART_NUM];
 static u16 rs_expire_ctr[MIOS32_UART_NUM];
 #endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+
+// internal function to reset the record structure
+static s32 MIOS32_UART_MIDI_RecordReset(u8 uart_port)
+{
+  midi_rec_t *midix = &midi_rec[uart_port];// simplify addressing of midi record
+
+  midix->package.ALL = 0;
+  midix->running_status = 0x00;
+  midix->expected_bytes = 0x00;
+  midix->wait_bytes = 0x00;
+  midix->sysex_ctr = 0x00;
+  midix->timeout_ctr = 0;
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes UART MIDI layer
@@ -71,13 +95,8 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
     return -1; // unsupported mode
 
   // initialize MIDI record
-  for(i=0; i<MIOS32_UART_NUM; ++i) {
-    midi_rec[i].package.ALL = 0;
-    midi_rec[i].running_status = 0x00;
-    midi_rec[i].expected_bytes = 0x00;
-    midi_rec[i].wait_bytes = 0x00;
-    midi_rec[i].sysex_ctr = 0x00;
-  }
+  for(i=0; i<MIOS32_UART_NUM; ++i)
+    MIOS32_UART_MIDI_RecordReset(i);
 
   // if any MIDI assignment:
 #if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1
@@ -87,6 +106,7 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
 #endif
 
   // enable running status optimisation by default for all ports
+  // clear timeout counters
   rs_optimisation = ~0; // -> all-one
   for(i=0; i<MIOS32_UART_NUM; ++i)
     MIOS32_UART_MIDI_RS_Reset(i);
@@ -217,15 +237,20 @@ s32 MIOS32_UART_MIDI_Periodic_mS(void)
 #if MIOS32_UART_NUM
   u8 uart_port;
 
-  // increment the expire counters for running status optimisation.
-  //
-  // The running status will expire after 1000 ticks (1 second) 
-  // to ensure, that the current status will be sent at least each second
-  // to cover the case that the MIDI cable is (re-)connected during runtime.
   MIOS32_IRQ_Disable();
   for(uart_port=0; uart_port<MIOS32_UART_NUM; ++uart_port) {
+    // increment the expire counters for running status optimisation.
+    //
+    // The running status will expire after 1000 ticks (1 second) 
+    // to ensure, that the current status will be sent at least each second
+    // to cover the case that the MIDI cable is (re-)connected during runtime.
     if( rs_expire_ctr[uart_port] < 65535 )
       ++rs_expire_ctr[uart_port];
+
+    // increment timeout counter for incoming packages
+    // an incomplete event will be timed out after 1000 ticks (1 second)
+    if( midi_rec[uart_port].timeout_ctr < 65535 )
+      ++midi_rec[uart_port].timeout_ctr;
   }
   MIOS32_IRQ_Enable();
   // (atomic operation not required in MIOS32_UART_MIDI_PackageSend_NonBlocking() due to single-byte accesses)
@@ -328,7 +353,7 @@ s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
 //! \param[out] package pointer to MIDI package (received package will be put into the given variable
 //! \return 0: no error
 //! \return -1: no package in buffer
-//! \return -2: incoming MIDI package timed out
+//! \return -10: incoming MIDI package timed out (incomplete package received)
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package)
@@ -351,6 +376,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
     if( byte & 0x80 ) { // new MIDI status
       if( byte >= 0xf8 ) { // events >= 0xf8 don't change the running status and can just be forwarded
 	// Realtime messages don't change the running status and can be sent immediately
+	// They also don't touch the timeout counter!
 	package->cin = 0xf; // F: single byte
 	package->evnt0 = byte;
 	package->evnt1 = 0x00;
@@ -394,6 +420,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	}
 
 	midix->wait_bytes = midix->expected_bytes;
+	midix->timeout_ctr = 0; // reset timeout counter
       }
     } else {
       if( midix->running_status == 0xf0 ) {
@@ -415,7 +442,9 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	}
       } else { // Common MIDI message or 0xf1 >= status >= 0xf7
 	if( !midix->wait_bytes ) {
+	  // received new MIDI event with running status
 	  midix->wait_bytes = midix->expected_bytes - 1;
+	  midix->timeout_ctr = 0; // reset timeout counter
 	} else {
 	  --midix->wait_bytes;
 	}
@@ -455,6 +484,14 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	}
       }
     }
+  }
+
+  // incoming MIDI package timed out (incomplete package received)
+  if( midix->wait_bytes && midix->timeout_ctr > 1000 ) { // 1000 mS = 1 second
+    // stop waiting
+    MIOS32_UART_MIDI_RecordReset(uart_port);
+    // notify that incomplete package has been received
+    return -10;
   }
 
   // return 0 if new package in buffer, otherwise -1

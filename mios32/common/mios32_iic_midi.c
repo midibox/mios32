@@ -391,6 +391,8 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
   if( !MIOS32_IIC_MIDI_GetRI(iic_port) )
     return -1;
 
+  // TODO: error -10 (package timeout) not supported yet
+
   u8 buffer[4];
 
   // request IIC
@@ -438,6 +440,7 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
 //! \return -1: no package in buffer
 //! \return -2: IIC interface allocated - retry (only in Non Blocking mode)
 //! \return -3: IIC error during transfer
+//! \return -10: IIC package timed out
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_t *package)
@@ -454,6 +457,7 @@ s32 MIOS32_IIC_MIDI_PackageReceive_NonBlocking(u8 iic_port, mios32_midi_package_
 //! \return 0: no error
 //! \return -1: no package in buffer
 //! \return -3: IIC error during transfer
+//! \return -10: IIC package timed out
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
