@@ -50,6 +50,15 @@ extern s32 MIOS32_BOARD_J5_Get(void);
 extern s32 MIOS32_BOARD_J5_PinGet(u8 pin);
 
 
+extern s32 MIOS32_BOARD_J15_PortInit(u32 mode);
+extern s32 MIOS32_BOARD_J15_DataSet(u8 data);
+extern s32 MIOS32_BOARD_J15_SerDataShift(u8 data);
+extern s32 MIOS32_BOARD_J15_RS_Set(u8 rs);
+extern s32 MIOS32_BOARD_J15_RW_Set(u8 rw);
+extern s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e);
+extern s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out);
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////

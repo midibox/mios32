@@ -301,6 +301,9 @@ s32 APP_LCD_Clear(void)
 {
   int x, y;
 
+  // use default font
+  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+
   // clear whole 128x128 screen with background colour
 
   // ST7637 specific function to set view
