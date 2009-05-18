@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include "app.h"
 
+#include "mios32_config.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
