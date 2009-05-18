@@ -151,6 +151,7 @@ s32 MIOS32_IIC_Init(u32 mode)
 
     // now accessible for other tasks
     iic_rec[i].iic_semaphore = 0;
+    iic_rec[i].last_transfer_error = 0;
   }
 
   // configure and enable I2C2 interrupts
@@ -215,6 +216,7 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Semaphore handling: requests the IIC interface
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \param[in] semaphore_type is either IIC_Blocking or IIC_Non_Blocking
 //! \return Non_Blocking: returns -1 to request a retry
 //! \return 0 if IIC interface free
@@ -245,6 +247,7 @@ s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Semaphore handling: releases the IIC interface for other tasks
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferFinished(u8 iic_port)
@@ -263,6 +266,7 @@ s32 MIOS32_IIC_TransferFinished(u8 iic_port)
 //! Will be updated by MIOS32_IIC_TransferCheck(), so that the error status
 //! doesn't get lost (the check function will return 0 when called again)<BR>
 //! Will be cleared when a new transfer has been started successfully
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \return last error status
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
@@ -276,6 +280,7 @@ s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Checks if transfer is finished
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \return 0 if no ongoing transfer
 //! \return 1 if ongoing transfer
 //! \return < 0 if error during transfer
@@ -308,6 +313,7 @@ s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Waits until transfer is finished
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \return 0 if no ongoing transfer
 //! \return < 0 if error during transfer
 /////////////////////////////////////////////////////////////////////////////
@@ -358,6 +364,7 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 //!         if the first received byte is 0
 //!   <LI>IIC_Write_WithoutStop: don't send stop condition after transfer to allow
 //!         a restart condition (e.g. used to access EEPROMs)
+//! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \param[in] address of IIC device (bit 0 always cleared)
 //! \param[in] *buffer pointer to transmit/receive buffer
 //! \param[in] len number of bytes which should be transmitted/received
