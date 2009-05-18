@@ -23,6 +23,11 @@
 #define MIOS32_IIC_BS_ADDR_BASE 0xa0
 #endif
 
+// IIC port
+#ifndef MIOS32_IIC_BS_PORT
+#define MIOS32_IIC_BS_PORT 0
+#endif
+
 // max number of BankSticks (0..8)
 // has to be set to >0 in mios32_config.h to enable BankStick Support
 #ifndef MIOS32_IIC_BS_NUM

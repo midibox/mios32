@@ -36,15 +36,16 @@
 
 
 // error flags
-#define MIOS32_IIC_ERROR_GENERAL                    -1
-#define MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE  -2
-#define MIOS32_IIC_ERROR_TIMEOUT                    -3
-#define MIOS32_IIC_ERROR_ARBITRATION_LOST           -4
-#define MIOS32_IIC_ERROR_BUS                        -5
-#define MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED        -6
-#define MIOS32_IIC_ERROR_UNEXPECTED_EVENT           -7
-#define MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN          -8
-#define MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH   -9
+#define MIOS32_IIC_ERROR_INVALID_PORT               -1
+#define MIOS32_IIC_ERROR_GENERAL                    -2
+#define MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE  -3
+#define MIOS32_IIC_ERROR_TIMEOUT                    -4
+#define MIOS32_IIC_ERROR_ARBITRATION_LOST           -5
+#define MIOS32_IIC_ERROR_BUS                        -6
+#define MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED        -7
+#define MIOS32_IIC_ERROR_UNEXPECTED_EVENT           -8
+#define MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN          -9
+#define MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH   -10
 
 
 // if previous transfer failed, this offset will be added to error status
@@ -74,14 +75,14 @@ typedef enum {
 
 extern s32 MIOS32_IIC_Init(u32 mode);
 
-extern s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type);
-extern s32 MIOS32_IIC_TransferFinished(void);
+extern s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type);
+extern s32 MIOS32_IIC_TransferFinished(u8 iic_port);
 
-extern s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len);
-extern s32 MIOS32_IIC_TransferCheck(void);
-extern s32 MIOS32_IIC_TransferWait(void);
+extern s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len);
+extern s32 MIOS32_IIC_TransferCheck(u8 iic_port);
+extern s32 MIOS32_IIC_TransferWait(u8 iic_port);
 
-extern s32 MIOS32_IIC_LastErrorGet(void);
+extern s32 MIOS32_IIC_LastErrorGet(u8 iic_port);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

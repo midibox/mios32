@@ -150,7 +150,7 @@ s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
   };
 
   // try to get the IIC peripheral
-  if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+  if( MIOS32_IIC_TransferBegin(MIOS32_IIC_MIDI_PORT, IIC_Non_Blocking) < 0 )
     return -2; // request a retry
 
   u8 iic_port;
@@ -162,9 +162,9 @@ s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
       s32 error = -1;
 
       while( error < 0 && retries-- ) {
-	s32 error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, NULL, 0);
+	s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_MIDI_PORT, IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, NULL, 0);
 	if( !error )
-	  error = MIOS32_IIC_TransferWait();
+	  error = MIOS32_IIC_TransferWait(MIOS32_IIC_MIDI_PORT);
 	if( !error )
 	  iic_port_available |= (1 << iic_port);
       }
@@ -172,7 +172,7 @@ s32 MIOS32_IIC_MIDI_ScanInterfaces(void)
   }
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_MIDI_PORT);
 
   return 0; // no error during scan
 #endif
@@ -308,29 +308,29 @@ static s32 _MIOS32_IIC_MIDI_PackageSend(u8 iic_port, mios32_midi_package_t packa
     s32 error = -1;
 
     if( non_blocking_mode ) {
-      if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+      if( MIOS32_IIC_TransferBegin(MIOS32_IIC_MIDI_PORT, IIC_Non_Blocking) < 0 )
 	return -2; // retry until interface available
 
-      error = MIOS32_IIC_TransferCheck();
+      error = MIOS32_IIC_TransferCheck(MIOS32_IIC_MIDI_PORT);
       if( error ) {
-	MIOS32_IIC_TransferFinished();
+	MIOS32_IIC_TransferFinished(MIOS32_IIC_MIDI_PORT);
 	return -2; // retry, regardless if MBHP_IIC_MIDI module is busy or not accessible
       }
-      error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, len);
+      error = MIOS32_IIC_Transfer(MIOS32_IIC_MIDI_PORT, IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, len);
     } else {
       u8 retries = 3; // for blocking mode: retry to access the MBHP_IIC_MIDI module 3 times
 
-      MIOS32_IIC_TransferBegin(IIC_Blocking);
+      MIOS32_IIC_TransferBegin(MIOS32_IIC_MIDI_PORT, IIC_Blocking);
 
       error = -1;
       while( error < 0 && retries-- ) {
-	error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, len);
+	error = MIOS32_IIC_Transfer(MIOS32_IIC_MIDI_PORT, IIC_Write, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, len);
 	if( !error )
-	  error = MIOS32_IIC_TransferWait();
+	  error = MIOS32_IIC_TransferWait(MIOS32_IIC_MIDI_PORT);
       }
     }
 
-    MIOS32_IIC_TransferFinished();
+    MIOS32_IIC_TransferFinished(MIOS32_IIC_MIDI_PORT);
 
     return (error < 0) ? -3 : 0; // IIC error if status < 0
   } else {
@@ -397,15 +397,15 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
 
   // request IIC
   if( non_blocking_mode ) {
-    if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+    if( MIOS32_IIC_TransferBegin(MIOS32_IIC_MIDI_PORT, IIC_Non_Blocking) < 0 )
       return -2; // request retry
   } else {
-    MIOS32_IIC_TransferBegin(IIC_Blocking);
+    MIOS32_IIC_TransferBegin(MIOS32_IIC_MIDI_PORT, IIC_Blocking);
   }
 
-  s32 error = MIOS32_IIC_Transfer(IIC_Read_AbortIfFirstByteIs0, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, 4);
+  s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_MIDI_PORT, IIC_Read_AbortIfFirstByteIs0, MIOS32_IIC_MIDI_ADDR_BASE + 2*iic_port, buffer, 4);
   if( !error )
-    error = MIOS32_IIC_TransferWait();
+    error = MIOS32_IIC_TransferWait(MIOS32_IIC_MIDI_PORT);
 
   if( !error ) {
     error = MIOS32_MIDI_SendPackageToRxCallback(IIC0 + iic_port, *package);
@@ -425,7 +425,7 @@ static s32 _MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *p
   }
 
   // release IIC port
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_MIDI_PORT);
 
   return error;
 #endif

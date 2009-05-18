@@ -5,8 +5,6 @@
 //! 
 //! Applications shouldn't call these functions directly, instead please use \ref MIOS32_MIDI layer functions
 //! 
-//! \todo optional running status optimisation for MIDI Out
-//!
 //! \{
 /* ==========================================================================
  *
