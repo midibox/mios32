@@ -43,16 +43,16 @@ s32 BENCHMARK_Reset(void)
   s32 status;
 
   // try to get the IIC peripheral
-  if( (status=MIOS32_IIC_TransferBegin(IIC_Blocking)) < 0 )
+  if( (status=MIOS32_IIC_TransferBegin(0, IIC_Blocking)) < 0 )
     return status; // request a retry
 
   // try to access EEPROM
-  status = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_BS_ADDR_BASE, NULL, 0);
+  status = MIOS32_IIC_Transfer(0, IIC_Write, MIOS32_IIC_BS_ADDR_BASE, NULL, 0);
   if( status >= 0 )
-    status = MIOS32_IIC_TransferWait();
+    status = MIOS32_IIC_TransferWait(0);
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(0);
 
   return status;
 }
@@ -71,22 +71,22 @@ s32 BENCHMARK_Start_Reads(void)
   int i;
 
   for(i=0; i<1000; ++i) {
-    if( (status=MIOS32_IIC_TransferBegin(IIC_Blocking)) < 0 )
+    if( (status=MIOS32_IIC_TransferBegin(0, IIC_Blocking)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_Transfer(IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
+    if( (status=MIOS32_IIC_Transfer(0, IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_TransferWait()) < 0 )
+    if( (status=MIOS32_IIC_TransferWait(0)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_Transfer(IIC_Read, MIOS32_IIC_BS_ADDR_BASE, &read_buffer, 1)) < 0 )
+    if( (status=MIOS32_IIC_Transfer(0, IIC_Read, MIOS32_IIC_BS_ADDR_BASE, &read_buffer, 1)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_TransferWait()) < 0 )
+    if( (status=MIOS32_IIC_TransferWait(0)) < 0 )
       return status;
 
-    MIOS32_IIC_TransferFinished();
+    MIOS32_IIC_TransferFinished(0);
   }
 
   return 0; // no error
@@ -106,22 +106,22 @@ s32 BENCHMARK_Start_BlockReads(void)
   int i;
 
   for(i=0; i<1000; ++i) {
-    if( (status=MIOS32_IIC_TransferBegin(IIC_Blocking)) < 0 )
+    if( (status=MIOS32_IIC_TransferBegin(0, IIC_Blocking)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_Transfer(IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
+    if( (status=MIOS32_IIC_Transfer(0, IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_TransferWait()) < 0 )
+    if( (status=MIOS32_IIC_TransferWait(0)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_Transfer(IIC_Read, MIOS32_IIC_BS_ADDR_BASE, read_buffer, 64)) < 0 )
+    if( (status=MIOS32_IIC_Transfer(0, IIC_Read, MIOS32_IIC_BS_ADDR_BASE, read_buffer, 64)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_TransferWait()) < 0 )
+    if( (status=MIOS32_IIC_TransferWait(0)) < 0 )
       return status;
 
-    MIOS32_IIC_TransferFinished();
+    MIOS32_IIC_TransferFinished(0);
   }
 
   return 0; // no error
@@ -141,16 +141,16 @@ s32 BENCHMARK_Start_Writes(void)
   int i;
 
   for(i=0; i<1000; ++i) {
-    if( (status=MIOS32_IIC_TransferBegin(IIC_Blocking)) < 0 )
+    if( (status=MIOS32_IIC_TransferBegin(0, IIC_Blocking)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_Transfer(IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
+    if( (status=MIOS32_IIC_Transfer(0, IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE, addr_buffer, 2)) < 0 )
       return status;
 
-    if( (status=MIOS32_IIC_TransferWait()) < 0 )
+    if( (status=MIOS32_IIC_TransferWait(0)) < 0 )
       return status;
 
-    MIOS32_IIC_TransferFinished();
+    MIOS32_IIC_TransferFinished(0);
   }
 
   return 0; // no error
