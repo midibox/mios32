@@ -23,6 +23,11 @@
 #define MIOS32_IIC_MIDI_ADDR_BASE 0x10
 #endif
 
+// IIC port
+#ifndef MIOS32_IIC_MIDI_PORT
+#define MIOS32_IIC_MIDI_PORT 0
+#endif
+
 // max number of IIC MIDI interfaces (0..8)
 // has to be set to >0 in mios32_config.h to enable IIC MIDI!
 #ifndef MIOS32_IIC_MIDI_NUM

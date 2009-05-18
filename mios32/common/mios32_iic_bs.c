@@ -90,7 +90,7 @@ s32 MIOS32_IIC_BS_ScanBankSticks(void)
   return 0; // BankSticks not explicitely enabled in mios32_config.h
 #else
   // try to get the IIC peripheral
-  if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+  if( MIOS32_IIC_TransferBegin(MIOS32_IIC_BS_PORT, IIC_Non_Blocking) < 0 )
     return -2; // request a retry
 
   u8 bs;
@@ -102,9 +102,9 @@ s32 MIOS32_IIC_BS_ScanBankSticks(void)
       s32 error = -1;
 
       while( error < 0 && retries-- ) {
-	s32 error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
+	s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
 	if( !error )
-	  error = MIOS32_IIC_TransferWait();
+	  error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 	if( !error )
 	  bs_available |= (1 << bs);
       }
@@ -112,7 +112,7 @@ s32 MIOS32_IIC_BS_ScanBankSticks(void)
   }
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_BS_PORT);
 
   return 0; // no error during scan
 #endif
@@ -162,24 +162,24 @@ s32 MIOS32_IIC_BS_Read(u8 bs, u16 address, u8 *buffer, u8 len)
     return -3;
 
   // try to get the IIC peripheral
-  if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+  if( MIOS32_IIC_TransferBegin(MIOS32_IIC_BS_PORT, IIC_Non_Blocking) < 0 )
     return -2; // request a retry
 
   // send IIC address and EEPROM address
   // to avoid issues with litte/big endian: copy address into temporary buffer
   u8 addr_buffer[2] = {(u8)(address>>8), (u8)address};
-  s32 error = MIOS32_IIC_Transfer(IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE + 2*bs, addr_buffer, 2);
+  s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write_WithoutStop, MIOS32_IIC_BS_ADDR_BASE + 2*bs, addr_buffer, 2);
   if( !error )
-    error = MIOS32_IIC_TransferWait();
+    error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 
   // now receive byte(s)
   if( !error )
-    error = MIOS32_IIC_Transfer(IIC_Read, MIOS32_IIC_BS_ADDR_BASE + 2*bs, buffer, len);
+    error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Read, MIOS32_IIC_BS_ADDR_BASE + 2*bs, buffer, len);
   if( !error )
-    error = MIOS32_IIC_TransferWait();
+    error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_BS_PORT);
 
   // return error status
   return error < 0 ? -1 : 0;
@@ -215,7 +215,7 @@ s32 MIOS32_IIC_BS_Write(u8 bs, u16 address, u8 *buffer, u8 len)
     return -3;
 
   // try to get the IIC peripheral
-  if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+  if( MIOS32_IIC_TransferBegin(MIOS32_IIC_BS_PORT, IIC_Non_Blocking) < 0 )
     return -2; // request a retry
 
   // send IIC address, EEPROM address and data to EEPROM
@@ -226,12 +226,12 @@ s32 MIOS32_IIC_BS_Write(u8 bs, u16 address, u8 *buffer, u8 len)
   for(i=0; i<len; ++i)
     eeprom_buffer[i+2] = buffer[i];
 
-  s32 error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, eeprom_buffer, len+2);
+  s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, eeprom_buffer, len+2);
   if( !error )
-    error = MIOS32_IIC_TransferWait();
+    error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_BS_PORT);
 
   // return error status
   return error < 0 ? -1 : 0;
@@ -259,16 +259,16 @@ s32 MIOS32_IIC_BS_CheckWriteFinished(u8 bs)
     return -3;
 
   // try to get the IIC peripheral
-  if( MIOS32_IIC_TransferBegin(IIC_Non_Blocking) < 0 )
+  if( MIOS32_IIC_TransferBegin(MIOS32_IIC_BS_PORT, IIC_Non_Blocking) < 0 )
     return -2; // request a retry
 
   // only send the address, check for ACK/NAK flag
-  s32 error = MIOS32_IIC_Transfer(IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
+  s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
   if( !error )
-    error = MIOS32_IIC_TransferWait();
+    error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 
   // release IIC peripheral
-  MIOS32_IIC_TransferFinished();
+  MIOS32_IIC_TransferFinished(MIOS32_IIC_BS_PORT);
 
   if( error == MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED )
     return 1; // got a NAK

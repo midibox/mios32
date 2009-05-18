@@ -74,7 +74,7 @@
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static void MIOS32_IIC_InitPeripheral(void);
+static void MIOS32_IIC_InitPeripheral(u8 iic_port);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,21 +94,31 @@ typedef union {
 } transfer_state_t;
 
 
+typedef struct {
+  I2C_TypeDef *base;
+
+  u8 iic_address;
+  u8 tx_buffer[MIOS32_IIC_BUFFER_SIZE];
+  u8 *rx_buffer_ptr;
+  volatile u8 buffer_len;
+  volatile u8 buffer_ix;
+
+  volatile transfer_state_t transfer_state;
+  volatile s32 transfer_error;
+  volatile s32 last_transfer_error;
+
+  volatile u8 iic_semaphore;
+} iic_rec_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 iic_address;
-static u8 tx_buffer[MIOS32_IIC_BUFFER_SIZE];
-static u8 *rx_buffer_ptr;
-static volatile u8 buffer_len;
-static volatile u8 buffer_ix;
+// tmp. here
+#define MIOS32_IIC_NUM 1
 
-static volatile transfer_state_t transfer_state;
-static volatile s32 transfer_error;
-static volatile s32 last_transfer_error = 0;
-
-static volatile u8 iic_semaphore = 1; // if 1, interface hasn't been initialized yet, or is allocated by another task
+static iic_rec_t iic_rec[MIOS32_IIC_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -118,6 +128,8 @@ static volatile u8 iic_semaphore = 1; // if 1, interface hasn't been initialized
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Init(u32 mode)
 {
+  int i;
+
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -133,11 +145,13 @@ s32 MIOS32_IIC_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC_SDA_PIN;
   GPIO_Init(MIOS32_IIC_SDA_PORT, &GPIO_InitStructure);
 
-  // configure I2C peripheral
-  MIOS32_IIC_InitPeripheral();
+  for(i=0; i<MIOS32_IIC_NUM; ++i) {
+    // configure I2C peripheral
+    MIOS32_IIC_InitPeripheral(i);
 
-  // now accessible for other tasks
-  iic_semaphore = 0;
+    // now accessible for other tasks
+    iic_rec[i].iic_semaphore = 0;
+  }
 
   // configure and enable I2C2 interrupts
   NVIC_InitTypeDef NVIC_InitStructure;
@@ -159,22 +173,33 @@ s32 MIOS32_IIC_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // internal function to (re-)initialize the I2C peripheral
 /////////////////////////////////////////////////////////////////////////////
-static void MIOS32_IIC_InitPeripheral(void)
+static void MIOS32_IIC_InitPeripheral(u8 iic_port)
 {
   I2C_InitTypeDef  I2C_InitStructure;
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
 
-  // enable peripheral clock of I2C
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+  switch( iic_port ) {
+    case 0:
+      // define base address
+      iicx->base = I2C2;
+
+      // enable peripheral clock of I2C
+      RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+      break;
+
+    default:
+      return;
+  }
 
   // trigger software reset via I2C_DeInit
-  I2C_DeInit(I2C2);
+  I2C_DeInit(iicx->base);
 
   // clear transfer state and error value
-  transfer_state.ALL = 0;
-  transfer_error = 0;
+  iicx->transfer_state.ALL = 0;
+  iicx->transfer_error = 0;
 
   // enable I2C peripheral
-  I2C_Cmd(I2C2, ENABLE);
+  I2C_Cmd(iicx->base, ENABLE);
 
   // configure I2C peripheral
   I2C_StructInit(&I2C_InitStructure);
@@ -184,7 +209,7 @@ static void MIOS32_IIC_InitPeripheral(void)
   I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
   I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
   I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
-  I2C_Init(I2C2, &I2C_InitStructure);
+  I2C_Init(iicx->base, &I2C_InitStructure);
 }
 
 
@@ -194,22 +219,26 @@ static void MIOS32_IIC_InitPeripheral(void)
 //! \return Non_Blocking: returns -1 to request a retry
 //! \return 0 if IIC interface free
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type)
+s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type)
 {
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   s32 status = -1;
+
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
 
   do {
     MIOS32_IRQ_Disable();
-    if( !iic_semaphore ) {
-      iic_semaphore = 1;
+    if( !iicx->iic_semaphore ) {
+      iicx->iic_semaphore = 1;
       status = 0;
     }
     MIOS32_IRQ_Enable();
   } while( semaphore_type == IIC_Blocking && status != 0 );
 
   // clear transfer errors of last transmission
-  last_transfer_error = 0;
-  transfer_error = 0;
+  iicx->last_transfer_error = 0;
+  iicx->transfer_error = 0;
 
   return status;
 }
@@ -218,9 +247,12 @@ s32 MIOS32_IIC_TransferBegin(mios32_iic_semaphore_t semaphore_type)
 //! Semaphore handling: releases the IIC interface for other tasks
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_TransferFinished(void)
+s32 MIOS32_IIC_TransferFinished(u8 iic_port)
 {
-  iic_semaphore = 0;
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
+
+  iic_rec[iic_port].iic_semaphore = 0;
 
   return 0; // no error
 }
@@ -233,9 +265,12 @@ s32 MIOS32_IIC_TransferFinished(void)
 //! Will be cleared when a new transfer has been started successfully
 //! \return last error status
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_LastErrorGet(void)
+s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
 {
-  return last_transfer_error;
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
+
+  return iic_rec[iic_port].last_transfer_error;
 }
 
 
@@ -245,20 +280,25 @@ s32 MIOS32_IIC_LastErrorGet(void)
 //! \return 1 if ongoing transfer
 //! \return < 0 if error during transfer
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_TransferCheck(void)
+s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 {
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
+
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
+
   // error during transfer?
-  if( transfer_error ) {
+  if( iicx->transfer_error ) {
     // store error status for MIOS32_IIC_LastErrorGet() function
-    last_transfer_error = transfer_error;
+    iicx->last_transfer_error = iicx->transfer_error;
     // clear current error status
-    transfer_error = 0;
+    iicx->transfer_error = 0;
     // and exit
-    return last_transfer_error;
+    return iicx->last_transfer_error;
   }
 
   // ongoing transfer?
-  if( transfer_state.BUSY )
+  if( iicx->transfer_state.BUSY )
     return 1;
 
   // no transfer
@@ -271,20 +311,24 @@ s32 MIOS32_IIC_TransferCheck(void)
 //! \return 0 if no ongoing transfer
 //! \return < 0 if error during transfer
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_TransferWait(void)
+s32 MIOS32_IIC_TransferWait(u8 iic_port)
 {
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   u32 repeat_ctr = MIOS32_IIC_TIMEOUT_VALUE;
-  u8 last_buffer_ix = buffer_ix;
+  u8 last_buffer_ix = iicx->buffer_ix;
+
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
 
   while( --repeat_ctr > 0 ) {
     // check if buffer index has changed - if so, reload repeat counter
-    if( buffer_ix != last_buffer_ix ) {
+    if( iicx->buffer_ix != last_buffer_ix ) {
       repeat_ctr = MIOS32_IIC_TIMEOUT_VALUE;
-      last_buffer_ix = buffer_ix;
+      last_buffer_ix = iicx->buffer_ix;
     }
 
     // get transfer state
-    s32 check_state = MIOS32_IIC_TransferCheck();
+    s32 check_state = MIOS32_IIC_TransferCheck(iic_port);
 
     // exit if transfer finished or error detected
     if( check_state <= 0 )
@@ -294,12 +338,12 @@ s32 MIOS32_IIC_TransferWait(void)
   // timeout error - something is stalling...
 
   // send stop condition
-  I2C_GenerateSTOP(I2C2, ENABLE);
+  I2C_GenerateSTOP(iicx->base, ENABLE);
 
   // re-initialize peripheral
-  MIOS32_IIC_InitPeripheral();
+  MIOS32_IIC_InitPeripheral(iic_port);
 
-  return (last_transfer_error=MIOS32_IIC_ERROR_TIMEOUT);
+  return (iicx->last_transfer_error=MIOS32_IIC_ERROR_TIMEOUT);
 }
 
 
@@ -322,65 +366,69 @@ s32 MIOS32_IIC_TransferWait(void)
 //!      transfer got an error (the previous task didn't use \ref MIOS32_IIC_TransferWait
 //!      to poll the transfer state)
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len)
+s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len)
 {
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   s32 error;
 
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
+
   // wait until previous transfer finished
-  if( (error = MIOS32_IIC_TransferWait()) ) // transmission error during previous transfer
+  if( (error = MIOS32_IIC_TransferWait(iic_port)) ) // transmission error during previous transfer
     return error + MIOS32_IIC_ERROR_PREV_OFFSET;
 
   // disable interrupts
-  I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
 
   // clear transfer state and error value
-  transfer_state.ALL = 0;
-  transfer_error = 0;
+  iicx->transfer_state.ALL = 0;
+  iicx->transfer_error = 0;
 
   // set buffer length and start index
-  buffer_len = len;
-  buffer_ix = 0;
+  iicx->buffer_len = len;
+  iicx->buffer_ix = 0;
 
   // branch depending on read/write
   if( transfer == IIC_Read || transfer == IIC_Read_AbortIfFirstByteIs0 ) {
     // take new address/buffer/len
-    iic_address = address | 1; // set bit 0 for read operation
-    rx_buffer_ptr = buffer;
+    iicx->iic_address = address | 1; // set bit 0 for read operation
+    iicx->rx_buffer_ptr = buffer;
     // special option for optimized MBHP_IIC_MIDI
-    transfer_state.ABORT_IF_FIRST_BYTE_0 = transfer == IIC_Read_AbortIfFirstByteIs0 ? 1 : 0;
+    iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 = transfer == IIC_Read_AbortIfFirstByteIs0 ? 1 : 0;
   } else if( transfer == IIC_Write || transfer == IIC_Write_WithoutStop ) {
     // check length
     if( len > MIOS32_IIC_BUFFER_SIZE )
-      return (last_transfer_error=MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH);
+      return (iicx->last_transfer_error=MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH);
 
     // take new address/buffer/len
-    iic_address = address & 0xfe; // clear bit 0 for write operation
-    rx_buffer_ptr = NULL; // ensure that nothing will be received
+    iicx->iic_address = address & 0xfe; // clear bit 0 for write operation
+    iicx->rx_buffer_ptr = NULL; // ensure that nothing will be received
 
     if( len ) {
       // copy destination buffer into tx_buffer
-      u8 *tmp_buffer_ptr = tx_buffer;
+      u8 *tmp_buffer_ptr = iicx->tx_buffer;
       u8 i;
       for(i=0; i<len; ++i)
 	*tmp_buffer_ptr++ = *buffer++; // copies faster than using indexed arrays
     }
   } else
-    return (last_transfer_error=MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE);
+    return (iicx->last_transfer_error=MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE);
 
   // start with ACK
-  I2C_AcknowledgeConfig(I2C2, ENABLE);
+  I2C_AcknowledgeConfig(iicx->base, ENABLE);
 
   // enable I2V2 event, buffer and error interrupt
-  I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
 
   // clear last error status
-  last_transfer_error = 0;
+  iicx->last_transfer_error = 0;
 
   // notify that transfer has started
-  transfer_state.BUSY = 1;
+  iicx->transfer_state.BUSY = 1;
 
   // send start condition
-  I2C_GenerateSTART(I2C2, ENABLE);
+  I2C_GenerateSTART(iicx->base, ENABLE);
 
   return 0; // no error
 }
@@ -392,6 +440,7 @@ s32 MIOS32_IIC_Transfer(mios32_iic_transfer_t transfer, u8 address, u8 *buffer, 
 /////////////////////////////////////////////////////////////////////////////
 void I2C2_EV_IRQHandler(void)
 {
+  iic_rec_t *iicx = &iic_rec[0];// simplify addressing of record
   u8 b;
 
 #if 0
@@ -402,104 +451,104 @@ void I2C2_EV_IRQHandler(void)
   for(delay=0; delay<1000; ++delay);
 #endif
 
-  switch( I2C_GetLastEvent(I2C2) ) {
+  switch( I2C_GetLastEvent(iicx->base) ) {
     case I2C_EVENT_MASTER_MODE_SELECT:
       // send IIC address
-      I2C_Send7bitAddress(I2C2, iic_address, 
-			  (iic_address & 1)
+      I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
+			  (iicx->iic_address & 1)
 			  ? I2C_Direction_Receiver
 			  : I2C_Direction_Transmitter);
 
       // address sent, if no byte should be sent: request NAK now!
-      if( buffer_len == 0 ) {
+      if( iicx->buffer_len == 0 ) {
 	// request NAK
-	I2C_AcknowledgeConfig(I2C2, DISABLE);
+	I2C_AcknowledgeConfig(iicx->base, DISABLE);
 	// request stop condition
-	I2C_GenerateSTOP(I2C2, ENABLE);
-	transfer_state.STOP_REQUESTED = 1;
+	I2C_GenerateSTOP(iicx->base, ENABLE);
+	iicx->transfer_state.STOP_REQUESTED = 1;
       }
       break;
 
     case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED:
       // address sent, transfer first byte - check if we already have to request NAK/Stop
-      if( buffer_len == 1 ) {
+      if( iicx->buffer_len == 1 ) {
 	// request NAK
-	I2C_AcknowledgeConfig(I2C2, DISABLE);
+	I2C_AcknowledgeConfig(iicx->base, DISABLE);
 	// request stop condition
-	I2C_GenerateSTOP(I2C2, ENABLE);
-	transfer_state.STOP_REQUESTED = 1;
+	I2C_GenerateSTOP(iicx->base, ENABLE);
+	iicx->transfer_state.STOP_REQUESTED = 1;
       }
       break;
       
     case I2C_EVENT_MASTER_BYTE_RECEIVED:
       // get received data
-      b = I2C_ReceiveData(I2C2);
+      b = I2C_ReceiveData(iicx->base);
 
-      if( rx_buffer_ptr == NULL ) {
+      if( iicx->rx_buffer_ptr == NULL ) {
 	// failsave: really requested a receive transfer?
 	// ignore...
-      } else if( buffer_ix >= buffer_len ) {
+      } else if( iicx->buffer_ix >= iicx->buffer_len ) {
 	// failsave: still place in buffer?
 	// stop transfer, notify error
-	transfer_state.RX_OVERRUN = 1;
+	iicx->transfer_state.RX_OVERRUN = 1;
 	// request NAK
-	I2C_AcknowledgeConfig(I2C2, DISABLE);
+	I2C_AcknowledgeConfig(iicx->base, DISABLE);
 	// request stop condition
-	I2C_GenerateSTOP(I2C2, ENABLE);
-	transfer_state.STOP_REQUESTED = 1;
+	I2C_GenerateSTOP(iicx->base, ENABLE);
+	iicx->transfer_state.STOP_REQUESTED = 1;
       } else {
-	rx_buffer_ptr[buffer_ix++] = b;
+	iicx->rx_buffer_ptr[iicx->buffer_ix++] = b;
 	// request NAK and stop condition before receiving last data
-	if( (buffer_ix == buffer_len-1) || (transfer_state.ABORT_IF_FIRST_BYTE_0 && buffer_ix == 1 && b == 0x00) ) {
+	if( (iicx->buffer_ix == iicx->buffer_len-1) || (iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 && iicx->buffer_ix == 1 && b == 0x00) ) {
 	  // request NAK
-	  I2C_AcknowledgeConfig(I2C2, DISABLE);
+	  I2C_AcknowledgeConfig(iicx->base, DISABLE);
 	  // request stop condition
-	  I2C_GenerateSTOP(I2C2, ENABLE);
-	  transfer_state.STOP_REQUESTED = 1;
-	} else if( transfer_state.STOP_REQUESTED ) { // last byte received
-	  transfer_state.BUSY = 0;
+	  I2C_GenerateSTOP(iicx->base, ENABLE);
+	  iicx->transfer_state.STOP_REQUESTED = 1;
+	} else if( iicx->transfer_state.STOP_REQUESTED ) { // last byte received
+	  iicx->transfer_state.BUSY = 0;
 #if 0
 	  // disabled due to peripheral imperfections (sometimes an additional byte is received)
 	  // set error state to Rx Overrun if notified on previous byte
-	  if( transfer_state.RX_OVERRUN ) {
-	    transfer_error = MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN;
+	  if( iicx->transfer_state.RX_OVERRUN ) {
+	    iicx->transfer_error = MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN;
 	  }
 #endif
 	  // disable all interrupts
-	  I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+	  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
 	}
       }
       break;
 
     case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
     case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
-      if( buffer_ix < buffer_len ) {
-	I2C_SendData(I2C2, tx_buffer[buffer_ix++]);
-      } else if( buffer_len == 0 ) {
+      if( iicx->buffer_ix < iicx->buffer_len ) {
+	I2C_SendData(iicx->base, iicx->tx_buffer[iicx->buffer_ix++]);
+      } else if( iicx->buffer_len == 0 ) {
 	// only relevant if no bytes should be sent (only address to check ACK response)
 	// transfer finished
-	transfer_state.BUSY = 0;
+	iicx->transfer_state.BUSY = 0;
 	// disable all interrupts
-	I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+	I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       } else {
 	// send stop condition
-	I2C_GenerateSTOP(I2C2, ENABLE);
+	I2C_GenerateSTOP(iicx->base, ENABLE);
 	// request unbusy
-	transfer_state.STOP_REQUESTED = 1;
+	iicx->transfer_state.STOP_REQUESTED = 1;
 
 	// Disable the I2C_IT_BUF interrupt after sending the last buffer data 
 	// (last EV8) to not allow a new interrupt with TxE - only BTF will generate it
-	I2C_ITConfig(I2C2, I2C_IT_BUF, DISABLE);
+	I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
       }
 
       break;
 
     case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
-      if( transfer_state.STOP_REQUESTED ) {
+      if( iicx->transfer_state.STOP_REQUESTED ) {
 	// transfer finished
-	transfer_state.BUSY = 0;
+	iicx->transfer_state.BUSY = 0;
 	// disable all interrupts
-	I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+	I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       }
       break;
 
@@ -508,14 +557,14 @@ void I2C2_EV_IRQHandler(void)
       // e.g. this can happen during receive if BTF flag is set, so that the pipeline flow cannot be guaranteed
       // we have to ensure, that the handler won't be invoked endless, therefore:
       // disable interrupts
-      I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       // notify error
-      transfer_state.BUSY = 0;
-      transfer_error = MIOS32_IIC_ERROR_UNEXPECTED_EVENT;
+      iicx->transfer_state.BUSY = 0;
+      iicx->transfer_error = MIOS32_IIC_ERROR_UNEXPECTED_EVENT;
       // do dummy read to send NAK + STOP condition
-      I2C_AcknowledgeConfig(I2C2, DISABLE);
-      b = I2C_ReceiveData(I2C2);
-      I2C_GenerateSTOP(I2C2, ENABLE);
+      I2C_AcknowledgeConfig(iicx->base, DISABLE);
+      b = I2C_ReceiveData(iicx->base);
+      I2C_GenerateSTOP(iicx->base, ENABLE);
   }
 }
 
@@ -526,35 +575,36 @@ void I2C2_EV_IRQHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 void I2C2_ER_IRQHandler(void)
 {
+  iic_rec_t *iicx = &iic_rec[0];// simplify addressing of record
   // note that only one error number is available
   // the order of these checks defines the priority
 
   // bus error (start/stop condition during read
   // unlikely, should only be relevant for slave mode?)
-  if( I2C_GetITStatus(I2C2, I2C_IT_BERR) ) {
-    I2C_ClearITPendingBit(I2C2, I2C_IT_BERR);
-    transfer_error = MIOS32_IIC_ERROR_BUS;
+  if( I2C_GetITStatus(iicx->base, I2C_IT_BERR) ) {
+    I2C_ClearITPendingBit(iicx->base, I2C_IT_BERR);
+    iicx->transfer_error = MIOS32_IIC_ERROR_BUS;
   }
 
   // arbitration lost
-  if( I2C_GetITStatus(I2C2, I2C_IT_ARLO) ) {
-    I2C_ClearITPendingBit(I2C2, I2C_IT_ARLO);
-    transfer_error = MIOS32_IIC_ERROR_ARBITRATION_LOST;
+  if( I2C_GetITStatus(iicx->base, I2C_IT_ARLO) ) {
+    I2C_ClearITPendingBit(iicx->base, I2C_IT_ARLO);
+    iicx->transfer_error = MIOS32_IIC_ERROR_ARBITRATION_LOST;
   }
 
   // no acknowledge received from slave (e.g. slave not connected)
-  if( I2C_GetITStatus(I2C2, I2C_IT_AF) ) {
-    I2C_ClearITPendingBit(I2C2, I2C_IT_AF);
-    transfer_error = MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED;
+  if( I2C_GetITStatus(iicx->base, I2C_IT_AF) ) {
+    I2C_ClearITPendingBit(iicx->base, I2C_IT_AF);
+    iicx->transfer_error = MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED;
     // send stop condition to release bus
-    I2C_GenerateSTOP(I2C2, ENABLE);
+    I2C_GenerateSTOP(iicx->base, ENABLE);
   }
 
   // disable interrupts
-  I2C_ITConfig(I2C2, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
 
   // notify that transfer has finished (due to the error)
-  transfer_state.BUSY = 0;
+  iicx->transfer_state.BUSY = 0;
 }
 
 //! \}
