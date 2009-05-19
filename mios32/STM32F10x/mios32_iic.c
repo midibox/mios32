@@ -62,12 +62,12 @@
 // Duty cycle definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef MIOS32_IIC0_DutyCycle
-#define MIOS32_IIC0_DutyCycle I2C_DutyCycle_2
+#ifndef MIOS32_IIC0_DUTYCYCLE
+#define MIOS32_IIC0_DUTYCYCLE I2C_DutyCycle_2
 #endif
 
-#ifndef MIOS32_IIC1_DutyCycle
-#define MIOS32_IIC1_DutyCycle I2C_DutyCycle_2
+#ifndef MIOS32_IIC1_DUTYCYCLE
+#define MIOS32_IIC1_DUTYCYCLE I2C_DutyCycle_2
 #endif
 
 
@@ -236,7 +236,7 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
       // set I2C clock bus clock params
-      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DutyCycle;
+      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DUTYCYCLE;
       I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
 
       break;
@@ -250,7 +250,7 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
       
       // set I2C clock bus clock params
-      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DutyCycle;
+      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DUTYCYCLE;
       I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
 
       break;
