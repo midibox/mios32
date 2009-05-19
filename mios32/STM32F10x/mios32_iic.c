@@ -220,6 +220,13 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   I2C_InitTypeDef  I2C_InitStructure;
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
 
+  // prepare I2C init-struct
+  I2C_StructInit(&I2C_InitStructure);
+  I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+  I2C_InitStructure.I2C_OwnAddress1 = 0;
+  I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
+  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+
   switch( iic_port ) {
     case 0:
       // define base address
@@ -227,6 +234,10 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
 
       // enable peripheral clock of I2C
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
+      // set I2C clock bus clock params
+      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DutyCycle;
+      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
 
       break;
 
@@ -237,6 +248,10 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
 
       // enable peripheral clock of I2C
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+      
+      // set I2C clock bus clock params
+      I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DutyCycle;
+      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
 
       break;
 #endif
@@ -256,18 +271,6 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   I2C_Cmd(iicx->base, ENABLE);
 
   // configure I2C peripheral
-  I2C_StructInit(&I2C_InitStructure);
-  I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-  if( iic_port == 0 ) {
-    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DutyCycle;
-    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
-  } else if( iic_port == 1 ) {
-    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DutyCycle;
-    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
-  }
-  I2C_InitStructure.I2C_OwnAddress1 = 0;
-  I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
   I2C_Init(iicx->base, &I2C_InitStructure);
 }
 
@@ -670,11 +673,20 @@ static void ER_IRQHandler(iic_rec_t *iicx)
 // interrupt vectors
 /////////////////////////////////////////////////////////////////////////////
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! interrupt handler for I2C2 events
+//! \note shouldn't be called directly from application
+/////////////////////////////////////////////////////////////////////////////
 void I2C2_EV_IRQHandler(void)
 {
   EV_IRQHandler((iic_rec_t *)&iic_rec[0]);
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! interrupt handler for I2C2 errors
+//! \note shouldn't be called directly from application
+/////////////////////////////////////////////////////////////////////////////
 void I2C2_ER_IRQHandler(void)
 {
   ER_IRQHandler((iic_rec_t *)&iic_rec[0]);
@@ -682,6 +694,10 @@ void I2C2_ER_IRQHandler(void)
 
 
 #if MIOS32_IIC_NUM >= 2
+/////////////////////////////////////////////////////////////////////////////
+//! interrupt handler for I2C1 events
+//! \note shouldn't be called directly from application
+/////////////////////////////////////////////////////////////////////////////
 void I2C1_EV_IRQHandler(void)
 {
   EV_IRQHandler((iic_rec_t *)&iic_rec[1]);
