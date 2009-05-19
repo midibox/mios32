@@ -458,6 +458,7 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
   if( transfer == IIC_Read || transfer == IIC_Read_AbortIfFirstByteIs0 ) {
     // take new address/buffer/len
     iicx->iic_address = address | 1; // set bit 0 for read operation
+    iicx->tx_buffer_ptr = NULL; // ensure that previous TX buffer won't be accessed
     iicx->rx_buffer_ptr = buffer;
     // special option for optimized MBHP_IIC_MIDI
     iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 = transfer == IIC_Read_AbortIfFirstByteIs0 ? 1 : 0;
@@ -591,7 +592,8 @@ static void EV_IRQHandler(iic_rec_t *iicx)
     case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
     case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
       if( iicx->buffer_ix < iicx->buffer_len ) {
-	I2C_SendData(iicx->base, iicx->tx_buffer_ptr[iicx->buffer_ix++]);
+	// checking tx_buffer_ptr for NULL is a failsafe measure.
+	I2C_SendData(iicx->base, (iicx->tx_buffer_ptr == NULL) ? 0 : iicx->tx_buffer_ptr[iicx->buffer_ix++]);
       } else if( iicx->buffer_len == 0 ) {
 	// only relevant if no bytes should be sent (only address to check ACK response)
 	// transfer finished
