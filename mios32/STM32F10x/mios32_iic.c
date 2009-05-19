@@ -145,14 +145,6 @@ static void ER_IRQHandler(iic_rec_t *iicx);
 
 static iic_rec_t iic_rec[MIOS32_IIC_NUM];
 
-#if MIOS32_IIC0_BUFFER_SIZE
-static u8 iic0_tx_buffer[MIOS32_IIC0_BUFFER_SIZE];
-#endif
-
-#if MIOS32_IIC_NUM >= 2 && MIOS32_IIC1_BUFFER_SIZE
-static u8 iic1_tx_buffer[MIOS32_IIC1_BUFFER_SIZE];
-#endif
-
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes IIC driver
@@ -233,9 +225,6 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       // define base address
       iicx->base = I2C2;
 
-      // init tx buffer
-      iicx->tx_buffer_ptr = iic0_tx_buffer;
-
       // enable peripheral clock of I2C
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
@@ -245,9 +234,6 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
     case 1:
       // define base address
       iicx->base = I2C1;
-
-      // init tx buffer
-      iicx->tx_buffer_ptr = iic1_tx_buffer;
 
       // enable peripheral clock of I2C
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
@@ -476,27 +462,10 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
     // special option for optimized MBHP_IIC_MIDI
     iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 = transfer == IIC_Read_AbortIfFirstByteIs0 ? 1 : 0;
   } else if( transfer == IIC_Write || transfer == IIC_Write_WithoutStop ) {
-    // check length
-    int size=0;
-    if( iic_port == 0 )
-      size = MIOS32_IIC0_BUFFER_SIZE;
-    else if( iic_port == 1 )
-      size = MIOS32_IIC1_BUFFER_SIZE;
-
-    if( len > size )
-      return (iicx->last_transfer_error=MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH);
-
     // take new address/buffer/len
     iicx->iic_address = address & 0xfe; // clear bit 0 for write operation
+    iicx->tx_buffer_ptr = buffer;
     iicx->rx_buffer_ptr = NULL; // ensure that nothing will be received
-
-    if( len ) {
-      // copy destination buffer into tx_buffer
-      u8 *tmp_buffer_ptr = iicx->tx_buffer_ptr;
-      u8 i;
-      for(i=0; i<len; ++i)
-	*tmp_buffer_ptr++ = *buffer++; // copies faster than using indexed arrays
-    }
   } else
     return (iicx->last_transfer_error=MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE);
 
