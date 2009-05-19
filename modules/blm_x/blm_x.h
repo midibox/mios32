@@ -59,7 +59,7 @@
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_ROWSEL_DOUT_SR
-#define BLM_X_ROWSEL_DOUT_SR	1
+#define BLM_X_ROWSEL_DOUT_SR  1
 #endif
 
 
@@ -70,7 +70,7 @@
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_LED_FIRST_DOUT_SR
-#define BLM_X_LED_FIRST_DOUT_SR	2
+#define BLM_X_LED_FIRST_DOUT_SR  2
 #endif
 
 
@@ -80,7 +80,7 @@
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_BTN_FIRST_DIN_SR
-#define BLM_X_BTN_FIRST_DIN_SR	1
+#define BLM_X_BTN_FIRST_DIN_SR  1
 #endif
 
 //--------------------------- additional options --------------------------
@@ -94,7 +94,7 @@
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
 #ifndef BLM_X_ROWSEL_INV_MASK
-#define BLM_X_ROWSEL_INV_MASK	0x00
+#define BLM_X_ROWSEL_INV_MASK  0x00
 #endif
 
 // 0: no debouncing
@@ -134,13 +134,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-	u8 rowsel_dout_sr;
-	u8 led_first_dout_sr;
-	u8 btn_first_din_sr;
-	u8 rowsel_inv_mask;
-	u8 color_mode;
-	u8 debounce_delay;
-	} blm_x_config_t;
+  u8 rowsel_dout_sr;
+  u8 led_first_dout_sr;
+  u8 btn_first_din_sr;
+  u8 rowsel_inv_mask;
+  u8 color_mode;
+  u8 debounce_delay;
+  } blm_x_config_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes

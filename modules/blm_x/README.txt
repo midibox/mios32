@@ -30,9 +30,9 @@ For the buttons you will need [ceil(BLM_X_BTN_NUM_COLS / 8)] DIN SR's.
 For the LED's you will need [ceil(BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8)] DOUT SR's. 
 
 In color-mode 0 ,the colors will be mapped to the registers grouped by colors (standard mode):
-	[LED-col 0, color 0][LED-col 1, color 0][LED-col 2, color 0]....[LED-col 0, color1][LED-col 1, color1]...
+  [LED-col 0, color 0][LED-col 1, color 0][LED-col 2, color 0]....[LED-col 0, color1][LED-col 1, color1]...
 In color-mode 1 ,the colors will be mapped to the registers grouped by LED-column:
-	[LED-col 0, color 0][LED-col 0, color 1][LED-col 0, color 2]....[LED-col 1, color0][LED-col 1, color1]...
+  [LED-col 0, color 0][LED-col 0, color 1][LED-col 0, color 2]....[LED-col 1, color0][LED-col 1, color1]...
 Choose the mode that fits your plans to wire the LED-matrix on the hardware side.
 
 If you want to work directly on the virtual SR's (bypass LED-set / -get functions), you may prefer to 
@@ -77,7 +77,7 @@ The module can be configured by overriding defines. The values shown here are de
 // identical to the lower nibble. Note that SR's are counted from 1.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
-#define BLM_X_ROWSEL_DOUT_SR	1
+#define BLM_X_ROWSEL_DOUT_SR  1
 
 // First DOUT shift register to which the anodes of the LEDs are connected. The number
 // of registers used is: ceil(BLM_X_LED_NUM_COLS*BLM_X_LED_NUM_COLORS / 8), subsequent
@@ -86,7 +86,7 @@ The module can be configured by overriding defines. The values shown here are de
 // that if you disable LED's, you can't reconfigure this by software.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
-#define BLM_X_LED_FIRST_DOUT_SR	2
+#define BLM_X_LED_FIRST_DOUT_SR  2
 
 
 // First DIN shift registers to which the button matrix is connected.
@@ -95,7 +95,7 @@ The module can be configured by overriding defines. The values shown here are de
 // that if you disable buttons, you can't reconfigure this by software.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
-#define BLM_X_BTN_FIRST_DIN_SR	1
+#define BLM_X_BTN_FIRST_DIN_SR  1
 
 // Set an inversion mask for the row selection shift registers if sink drivers (transistors)
 // have been added to the cathode lines. 
@@ -107,7 +107,7 @@ The module can be configured by overriding defines. The values shown here are de
 //           0xf0 - sink drivers connected to D7..D4
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
-#define BLM_X_ROWSEL_INV_MASK	0x00
+#define BLM_X_ROWSEL_INV_MASK  0x00
 
 
 // 0: no debouncing
@@ -186,12 +186,12 @@ Gets a virtual LED-register's value. Returns 0 if the register is not available.
 
 s32 BLM_X_ConfigSet(blm_x_config_t config);
 Sets the blm_x configuration structure, it has the following members:
-	.cfg.rowsel_dout_sr; //see description of BLM_X_ROWSEL_DOUT_SR define. default = BLM_X_ROWSEL_DOUT_SR
-	.cfg.led_first_dout_sr; //see description of BLM_X_LED_FIRST_DOUT_SR define. default = BLM_X_LED_FIRST_DOUT_SR
-	.cfg.btn_first_din_sr; //see description of BLM_X_BTN_FIRST_DIN_SR define. default = BLM_X_BTN_FIRST_DIN_SR
-	.cfg.rowsel_inv_mask; //see description of BLM_X_ROWSEL_INV_MASK define. default = BLM_X_ROWSEL_INV_MASK
-	.cfg.color_mode; //see description of BLM_X_COLOR_MODE define. default = BLM_X_COLOR_MODE
-	.cfg.debounce_delay; //number of scan cycles to ignore button changes after change. default = 0
+  .cfg.rowsel_dout_sr; //see description of BLM_X_ROWSEL_DOUT_SR define. default = BLM_X_ROWSEL_DOUT_SR
+  .cfg.led_first_dout_sr; //see description of BLM_X_LED_FIRST_DOUT_SR define. default = BLM_X_LED_FIRST_DOUT_SR
+  .cfg.btn_first_din_sr; //see description of BLM_X_BTN_FIRST_DIN_SR define. default = BLM_X_BTN_FIRST_DIN_SR
+  .cfg.rowsel_inv_mask; //see description of BLM_X_ROWSEL_INV_MASK define. default = BLM_X_ROWSEL_INV_MASK
+  .cfg.color_mode; //see description of BLM_X_COLOR_MODE define. default = BLM_X_COLOR_MODE
+  .cfg.debounce_delay; //number of scan cycles to ignore button changes after change. default = 0
 
 
 blm_x_config_t BLM_X_ConfigGet(void);
