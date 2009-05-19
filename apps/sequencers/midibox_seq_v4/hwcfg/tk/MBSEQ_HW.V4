@@ -312,6 +312,11 @@ BUTTON_COPY      0   0
 BUTTON_PASTE     0   0
 BUTTON_CLEAR     0   0
 
+#                SR  Pin
+BUTTON_MORPH      0   0
+BUTTON_MIXER      0   0
+BUTTON_TRANSPOSE  0   0
+
 
 ##################################################
 # Button behaviour

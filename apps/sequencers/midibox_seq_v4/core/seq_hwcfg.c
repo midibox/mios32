@@ -141,6 +141,14 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .copy    = ((( 0   -1)<<3)+    0),
   .paste   = ((( 0   -1)<<3)+    0),
   .clear   = ((( 0   -1)<<3)+    0),
+
+  // button functions w/o LED support (mostly requested by users who don't use LEDs for these buttons anyhow)
+
+  //              SR   ignore    Pin
+  .morph     = ((( 0   -1)<<3)+    0),
+  .mixer     = ((( 0   -1)<<3)+    0),
+  .transpose = ((( 0   -1)<<3)+    0),
+
 #endif
 };
 

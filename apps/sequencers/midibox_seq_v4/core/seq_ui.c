@@ -910,6 +910,35 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 }
 
 
+static s32 SEQ_UI_Button_Morph(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKMORPH);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Mixer(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_MIXER);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Transpose(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKTRAN);
+
+  return 0; // no error
+}
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Button handler
@@ -1027,6 +1056,13 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_StepView(pin_value);
   if( pin == seq_hwcfg_button.tap_tempo )
     return SEQ_UI_Button_TapTempo(pin_value);
+
+  if( pin == seq_hwcfg_button.morph )
+    return SEQ_UI_Button_Morph(pin_value);
+  if( pin == seq_hwcfg_button.mixer )
+    return SEQ_UI_Button_Mixer(pin_value);
+  if( pin == seq_hwcfg_button.transpose )
+    return SEQ_UI_Button_Transpose(pin_value);
 
   return -1; // button not mapped
 }

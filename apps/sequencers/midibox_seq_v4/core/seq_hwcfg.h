@@ -89,6 +89,10 @@ typedef struct {
   u8 copy;
   u8 paste;
   u8 clear;
+
+  u8 morph;
+  u8 mixer;
+  u8 transpose;
 } seq_hwcfg_button_t;
 
 
