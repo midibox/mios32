@@ -392,6 +392,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.paste = din_value;
 	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_button.clear = din_value;
+	  } else if( strcmp(parameter, "MORPH") == 0 ) {
+	    seq_hwcfg_button.morph = din_value;
+	  } else if( strcmp(parameter, "MIXER") == 0 ) {
+	    seq_hwcfg_button.mixer = din_value;
+	  } else if( strcmp(parameter, "TRANSPOSE") == 0 ) {
+	    seq_hwcfg_button.transpose = din_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button function 'BUTTON_%s'!", parameter);
