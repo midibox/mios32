@@ -126,15 +126,25 @@ into your local mios32_config.h file
 #define MIOS32_USB_MIDI_DATA_OUT_SIZE          64
 
 
-// sets the IIC bus frequency in kHz (400000 max!)
-#define MIOS32_IIC_BUS_FREQUENCY 400000
+// number of IIC devices (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
+#define MIOS32_IIC_NUM 1
+
+// sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
+#define MIOS32_IIC0_BUS_FREQUENCY 400000
+
+// bus frequency for I2C1 device
+#define MIOS32_IIC1_BUS_FREQUENCY 400000
+
+// sets the buffer size used for background transmit/receive
+// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
+#define MIOS32_IIC0_BUFFER_SIZE 66
+
+// same for the optional second IIC port
+#define MIOS32_IIC1_BUFFER_SIZE 66
 
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
 #define MIOS32_IIC_TIMEOUT_VALUE 5000
 
-// sets the buffer size used for background transmit/receive
-// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
-#define MIOS32_IIC_BUFFER_SIZE 66
 
 
 // base address of first MBHP_IIC_MIDI module
