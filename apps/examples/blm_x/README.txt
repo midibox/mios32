@@ -15,7 +15,7 @@ Required hardware:
    o MBHP_CORE_STM32 or STM32 Primer
    o at least one MBHP_DIN module
    o at least one MBHP_DOUT module
-	o Button and/or LED matrix connected to DIN's / DOUT's
+   o Button and/or LED matrix connected to DIN's / DOUT's
 
 ===============================================================================
 
