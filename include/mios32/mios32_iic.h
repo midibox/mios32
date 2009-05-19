@@ -24,24 +24,29 @@
 #endif
 
 // sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
-#ifndef MIOS32_IIC_0_BUS_FREQUENCY
-#define MIOS32_IIC_0_BUS_FREQUENCY 400000
+#ifndef MIOS32_IIC0_BUS_FREQUENCY
+#define MIOS32_IIC0_BUS_FREQUENCY 400000
 #endif
 
 // bus frequency for I2C1 device
-#ifndef MIOS32_IIC_1_BUS_FREQUENCY
-#define MIOS32_IIC_1_BUS_FREQUENCY 400000
+#ifndef MIOS32_IIC1_BUS_FREQUENCY
+#define MIOS32_IIC1_BUS_FREQUENCY 400000
+#endif
+
+// sets the buffer size used for background transmit/receive
+// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
+#ifndef MIOS32_IIC0_BUFFER_SIZE
+#define MIOS32_IIC0_BUFFER_SIZE 66
+#endif
+
+// same for the optional second IIC port
+#ifndef MIOS32_IIC1_BUFFER_SIZE
+#define MIOS32_IIC1_BUFFER_SIZE 66
 #endif
 
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
 #ifndef MIOS32_IIC_TIMEOUT_VALUE
 #define MIOS32_IIC_TIMEOUT_VALUE 5000
-#endif
-
-// sets the buffer size used for background transmit/receive
-// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
-#ifndef MIOS32_IIC_BUFFER_SIZE
-#define MIOS32_IIC_BUFFER_SIZE 66
 #endif
 
 

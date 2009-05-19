@@ -48,26 +48,26 @@
 // Pin definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define MIOS32_IIC_0_SCL_PORT    GPIOB
-#define MIOS32_IIC_0_SCL_PIN     GPIO_Pin_10
-#define MIOS32_IIC_0_SDA_PORT    GPIOB
-#define MIOS32_IIC_0_SDA_PIN     GPIO_Pin_11
+#define MIOS32_IIC0_SCL_PORT    GPIOB
+#define MIOS32_IIC0_SCL_PIN     GPIO_Pin_10
+#define MIOS32_IIC0_SDA_PORT    GPIOB
+#define MIOS32_IIC0_SDA_PIN     GPIO_Pin_11
 
-#define MIOS32_IIC_1_SCL_PORT    GPIOB
-#define MIOS32_IIC_1_SCL_PIN     GPIO_Pin_6
-#define MIOS32_IIC_1_SDA_PORT    GPIOB
-#define MIOS32_IIC_1_SDA_PIN     GPIO_Pin_7
+#define MIOS32_IIC1_SCL_PORT    GPIOB
+#define MIOS32_IIC1_SCL_PIN     GPIO_Pin_6
+#define MIOS32_IIC1_SDA_PORT    GPIOB
+#define MIOS32_IIC1_SDA_PIN     GPIO_Pin_7
 
 /////////////////////////////////////////////////////////////////////////////
 // Duty cycle definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef MIOS32_IIC_0_DutyCycle
-#define MIOS32_IIC_0_DutyCycle I2C_DutyCycle_2
+#ifndef MIOS32_IIC0_DutyCycle
+#define MIOS32_IIC0_DutyCycle I2C_DutyCycle_2
 #endif
 
-#ifndef MIOS32_IIC_1_DutyCycle
-#define MIOS32_IIC_1_DutyCycle I2C_DutyCycle_2
+#ifndef MIOS32_IIC1_DutyCycle
+#define MIOS32_IIC1_DutyCycle I2C_DutyCycle_2
 #endif
 
 
@@ -117,7 +117,7 @@ typedef struct {
   I2C_TypeDef *base;
 
   u8 iic_address;
-  u8 tx_buffer[MIOS32_IIC_BUFFER_SIZE];
+  u8 *tx_buffer_ptr;
   u8 *rx_buffer_ptr;
   volatile u8 buffer_len;
   volatile u8 buffer_ix;
@@ -134,8 +134,8 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 static void MIOS32_IIC_InitPeripheral(u8 iic_port);
-static void I2C_EV_IRQHandler(iic_rec_t *iicx);
-static void I2C_ER_IRQHandler(iic_rec_t *iicx);
+static void EV_IRQHandler(iic_rec_t *iicx);
+static void ER_IRQHandler(iic_rec_t *iicx);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -144,6 +144,14 @@ static void I2C_ER_IRQHandler(iic_rec_t *iicx);
 
 
 static iic_rec_t iic_rec[MIOS32_IIC_NUM];
+
+#if MIOS32_IIC0_BUFFER_SIZE
+static u8 iic0_tx_buffer[MIOS32_IIC0_BUFFER_SIZE];
+#endif
+
+#if MIOS32_IIC_NUM >= 2 && MIOS32_IIC1_BUFFER_SIZE
+static u8 iic1_tx_buffer[MIOS32_IIC1_BUFFER_SIZE];
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -165,16 +173,16 @@ s32 MIOS32_IIC_Init(u32 mode)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC_0_SCL_PIN;
-  GPIO_Init(MIOS32_IIC_0_SCL_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC_0_SDA_PIN;
-  GPIO_Init(MIOS32_IIC_0_SDA_PORT, &GPIO_InitStructure);
-  
-#if MIOS32_IIC_NUM > 1
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC_1_SCL_PIN;
-  GPIO_Init(MIOS32_IIC_1_SCL_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC_1_SDA_PIN;
-  GPIO_Init(MIOS32_IIC_1_SDA_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
+  GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
+  GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
+
+#if MIOS32_IIC_NUM >= 2
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC1_SCL_PIN;
+  GPIO_Init(MIOS32_IIC1_SCL_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC1_SDA_PIN;
+  GPIO_Init(MIOS32_IIC1_SDA_PORT, &GPIO_InitStructure);
 #endif
 
   for(i=0; i<MIOS32_IIC_NUM; ++i) {
@@ -194,7 +202,7 @@ s32 MIOS32_IIC_Init(u32 mode)
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
   
-#if MIOS32_IIC_NUM > 1
+#if MIOS32_IIC_NUM >= 2
   NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQChannel;
   NVIC_Init(&NVIC_InitStructure);
 #endif
@@ -203,7 +211,7 @@ s32 MIOS32_IIC_Init(u32 mode)
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_IIC_ER_PRIORITY;
   NVIC_Init(&NVIC_InitStructure);
 
-#if MIOS32_IIC_NUM > 1
+#if MIOS32_IIC_NUM >= 2
   NVIC_InitStructure.NVIC_IRQChannel = I2C1_ER_IRQChannel;
   NVIC_Init(&NVIC_InitStructure);
 #endif
@@ -246,12 +254,12 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   // configure I2C peripheral
   I2C_StructInit(&I2C_InitStructure);
   I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-  if(iic_port == 0){
-    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC_0_DutyCycle;
-    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC_0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
-  } else if(iic_port == 1){
-    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC_1_DutyCycle;
-    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC_1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
+  if( iic_port == 0 ) {
+    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DutyCycle;
+    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
+  } else if( iic_port == 1 ) {
+    I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DutyCycle;
+    I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
   }
   I2C_InitStructure.I2C_OwnAddress1 = 0;
   I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
@@ -451,7 +459,13 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
     iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 = transfer == IIC_Read_AbortIfFirstByteIs0 ? 1 : 0;
   } else if( transfer == IIC_Write || transfer == IIC_Write_WithoutStop ) {
     // check length
-    if( len > MIOS32_IIC_BUFFER_SIZE )
+    int size=0;
+    if( iic_port == 0 )
+      size = MIOS32_IIC0_BUFFER_SIZE;
+    else if( iic_port == 1 )
+      size = MIOS32_IIC1_BUFFER_SIZE;
+
+    if( len > size )
       return (iicx->last_transfer_error=MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH);
 
     // take new address/buffer/len
@@ -460,7 +474,7 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
 
     if( len ) {
       // copy destination buffer into tx_buffer
-      u8 *tmp_buffer_ptr = iicx->tx_buffer;
+      u8 *tmp_buffer_ptr = iicx->tx_buffer_ptr;
       u8 i;
       for(i=0; i<len; ++i)
 	*tmp_buffer_ptr++ = *buffer++; // copies faster than using indexed arrays
@@ -488,30 +502,9 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! interrupt handler for I2C2 events
-//! \note shouldn't be called directly from application
-/////////////////////////////////////////////////////////////////////////////
-void I2C2_EV_IRQHandler(void)
-{
-  I2C_EV_IRQHandler(&iic_rec[0]);// simplify addressing of record
-}
-
-#if MIOS32_IIC_NUM > 1
-/////////////////////////////////////////////////////////////////////////////
-//! interrupt handler for I2C1 events
-//! \note shouldn't be called directly from application
-/////////////////////////////////////////////////////////////////////////////
-void I2C1_EV_IRQHandler(void)
-{
-  I2C_EV_IRQHandler(&iic_rec[1]);// simplify addressing of record
-}
-#endif
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Internal function for handling IIC event interrupts
 /////////////////////////////////////////////////////////////////////////////
-static void I2C_EV_IRQHandler(iic_rec_t *iicx)
+static void EV_IRQHandler(iic_rec_t *iicx)
 {
   u8 b;
 
@@ -553,7 +546,7 @@ static void I2C_EV_IRQHandler(iic_rec_t *iicx)
       break;
       
     case I2C_EVENT_MASTER_BYTE_RECEIVED:
-#if (I2C_ENABLE_LATE_DATA_HANDLING == 1)
+#if I2C_ENABLE_LATE_DATA_HANDLING == 1
     case I2C_EVENT_MASTER_BYTE_RECEIVED_BTF://BTF set, IRQ handler is late (BTF is cleared with I2C_ReceiveData() )
 #endif
       // get received data
@@ -595,10 +588,23 @@ static void I2C_EV_IRQHandler(iic_rec_t *iicx)
       }
       break;
 
+
+    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
+      if( iicx->transfer_state.STOP_REQUESTED ) {
+        // transfer finished
+        iicx->transfer_state.BUSY = 0;
+        // disable all interrupts
+        I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      } 
+#if I2C_ENABLE_LATE_DATA_HANDLING == 0
+      break;
+#endif
+      // no break if new handling is used - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
+
     case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
     case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
       if( iicx->buffer_ix < iicx->buffer_len ) {
-	I2C_SendData(iicx->base, iicx->tx_buffer[iicx->buffer_ix++]);
+	I2C_SendData(iicx->base, iicx->tx_buffer_ptr[iicx->buffer_ix++]);
       } else if( iicx->buffer_len == 0 ) {
 	// only relevant if no bytes should be sent (only address to check ACK response)
 	// transfer finished
@@ -615,20 +621,6 @@ static void I2C_EV_IRQHandler(iic_rec_t *iicx)
 	// (last EV8) to not allow a new interrupt with TxE - only BTF will generate it
 	I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
       }
-
-      break;
-
-    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
-      if( iicx->transfer_state.STOP_REQUESTED ) {
-        // transfer finished
-        iicx->transfer_state.BUSY = 0;
-        // disable all interrupts
-        I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-      } 
-#if (I2C_ENABLE_LATE_DATA_HANDLING == 1)
-      else
-        I2C_SendData(iicx->base, iicx->tx_buffer[iicx->buffer_ix++]);// late IRQ handling
-#endif
       break;
       
     default:
@@ -649,29 +641,9 @@ static void I2C_EV_IRQHandler(iic_rec_t *iicx)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! interrupt handler for I2C2 errors
-//! \note shouldn't be called directly from application
-/////////////////////////////////////////////////////////////////////////////
-void I2C2_ER_IRQHandler(void)
-{
-  I2C_ER_IRQHandler(&iic_rec[0]);// simplify addressing of record
-}
-
-#if MIOS32_IIC_NUM > 1
-/////////////////////////////////////////////////////////////////////////////
-//! interrupt handler for I2C1 errors
-//! \note shouldn't be called directly from application
-/////////////////////////////////////////////////////////////////////////////
-void I2C1_ER_IRQHandler(void)
-{
-  I2C_ER_IRQHandler(&iic_rec[1]);// simplify addressing of record
-}
-#endif
-
-/////////////////////////////////////////////////////////////////////////////
 // Internal function for handling IIC error interrupts
 /////////////////////////////////////////////////////////////////////////////
-static void I2C_ER_IRQHandler(iic_rec_t *iicx)
+static void ER_IRQHandler(iic_rec_t *iicx)
 {
   // note that only one error number is available
   // the order of these checks defines the priority
@@ -703,6 +675,39 @@ static void I2C_ER_IRQHandler(iic_rec_t *iicx)
   // notify that transfer has finished (due to the error)
   iicx->transfer_state.BUSY = 0;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// interrupt vectors
+/////////////////////////////////////////////////////////////////////////////
+
+void I2C2_EV_IRQHandler(void)
+{
+  EV_IRQHandler((iic_rec_t *)&iic_rec[0]);
+}
+
+void I2C2_ER_IRQHandler(void)
+{
+  ER_IRQHandler((iic_rec_t *)&iic_rec[0]);
+}
+
+
+#if MIOS32_IIC_NUM >= 2
+void I2C1_EV_IRQHandler(void)
+{
+  EV_IRQHandler((iic_rec_t *)&iic_rec[1]);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! interrupt handler for I2C1 errors
+//! \note shouldn't be called directly from application
+/////////////////////////////////////////////////////////////////////////////
+void I2C1_ER_IRQHandler(void)
+{
+  ER_IRQHandler((iic_rec_t *)&iic_rec[1]);
+}
+#endif
+
 
 //! \}
 
