@@ -16,7 +16,7 @@ Required hardware:
 
 Optional hardware:
    o DIN module (1x SR)
-	o Character LC Display
+   o Character LC Display
 
 ===============================================================================
 
