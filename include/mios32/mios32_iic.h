@@ -33,17 +33,6 @@
 #define MIOS32_IIC1_BUS_FREQUENCY 400000
 #endif
 
-// sets the buffer size used for background transmit/receive
-// (66 for EEPROM page writes: 2 bytes for address, 64 bytes for page)
-#ifndef MIOS32_IIC0_BUFFER_SIZE
-#define MIOS32_IIC0_BUFFER_SIZE 66
-#endif
-
-// same for the optional second IIC port
-#ifndef MIOS32_IIC1_BUFFER_SIZE
-#define MIOS32_IIC1_BUFFER_SIZE 66
-#endif
-
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
 #ifndef MIOS32_IIC_TIMEOUT_VALUE
 #define MIOS32_IIC_TIMEOUT_VALUE 5000
@@ -60,7 +49,6 @@
 #define MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED        -7
 #define MIOS32_IIC_ERROR_UNEXPECTED_EVENT           -8
 #define MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN          -9
-#define MIOS32_IIC_ERROR_TX_BUFFER_NOT_BIG_ENOUGH   -10
 
 
 // if previous transfer failed, this offset will be added to error status
