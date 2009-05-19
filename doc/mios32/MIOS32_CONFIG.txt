@@ -132,8 +132,14 @@ into your local mios32_config.h file
 // sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
 #define MIOS32_IIC0_BUS_FREQUENCY 400000
 
-// bus frequency for I2C1 device
+// bus frequency for I2C1 peripheral
 #define MIOS32_IIC1_BUS_FREQUENCY 400000
+
+// bus-clock duty-cycle for I2C2 peripheral (I2C_DutyCycle_2 / I2C_DutyCycle_16_9)
+#define MIOS32_IIC0_DutyCycle I2C_DutyCycle_2
+
+// bus-clock duty-cycle for I2C1 peripheral (I2C_DutyCycle_2 / I2C_DutyCycle_16_9)
+#define MIOS32_IIC1_DutyCycle I2C_DutyCycle_2
 
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
 #define MIOS32_IIC_TIMEOUT_VALUE 5000
