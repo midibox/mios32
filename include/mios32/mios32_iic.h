@@ -18,9 +18,19 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// number of IIC devices (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
+#ifndef MIOS32_IIC_NUM
+#define MIOS32_IIC_NUM 1
+#endif
+
 // sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
-#ifndef MIOS32_IIC_BUS_FREQUENCY
-#define MIOS32_IIC_BUS_FREQUENCY 400000
+#ifndef MIOS32_IIC_0_BUS_FREQUENCY
+#define MIOS32_IIC_0_BUS_FREQUENCY 400000
+#endif
+
+// bus frequency for I2C1 device
+#ifndef MIOS32_IIC_1_BUS_FREQUENCY
+#define MIOS32_IIC_1_BUS_FREQUENCY 400000
 #endif
 
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
