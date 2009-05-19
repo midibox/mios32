@@ -28,7 +28,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_BLM_CHECK		( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_BLM_CHECK    ( tskIDLE_PRIORITY + 2 )
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,56 +53,57 @@ u32 last_btn_change_count = 1;
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void){
-	s32 i;
-	blm_x_config_t blm_x_conf;
-	// initialize all LEDs
-	MIOS32_BOARD_LED_Init(0xffffffff);
-	// initialize BLM driver
-	BLM_X_Init();
-	blm_x_conf = BLM_X_ConfigGet();
-	blm_x_conf.debounce_delay = 10;
-	BLM_X_ConfigSet(blm_x_conf);
-	// start BLM check task
-	xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
-	//send init message
-	MIOS32_MIDI_SendDebugMessage("BLM_X Test-Application Started");
-	//display all possible LED color combinations (if matrix is big enough!)
-	for(i=0;i < BLM_X_NUM_ROWS*BLM_X_LED_NUM_COLS; i++){
-		if((++last_led_color) >> BLM_X_LED_NUM_COLORS)
-			last_led_color = 1;
-		BLM_X_LEDColorSet(i,last_led_color);
-		}
-	last_led_color = 0;
-	}
+  s32 i;
+  blm_x_config_t blm_x_conf;
+  // initialize all LEDs
+  MIOS32_BOARD_LED_Init(0xffffffff);
+  // initialize BLM driver
+  BLM_X_Init();
+  blm_x_conf = BLM_X_ConfigGet();
+  blm_x_conf.debounce_delay = 10;
+  BLM_X_ConfigSet(blm_x_conf);
+  // start BLM check task
+  xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
+  //send init message
+  MIOS32_MIDI_SendDebugMessage("BLM_X Test-Application Started");
+  //display all possible LED color combinations (if matrix is big enough!)
+  for(i=0;i < BLM_X_NUM_ROWS*BLM_X_LED_NUM_COLS; i++){
+    if((++last_led_color) >> BLM_X_LED_NUM_COLORS)
+      last_led_color = 1;
+    BLM_X_LEDColorSet(i,last_led_color);
+    }
+  last_led_color = 0;
+  }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void){
-	// init LCD
-	MIOS32_LCD_Clear();
-	// endless loop: print status information on LCD
-	while( 1 ) {
-		MIOS32_LCD_CursorSet(0, 0);
-		// print text on LCD screen, send debug message
-		if(btn_change_count != last_btn_change_count){
-			MIOS32_LCD_CursorSet(0, 0);
-			MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
-			MIOS32_MIDI_SendDebugMessage("Button #%3d %c - Changes: %5d", last_btn, last_btn_value ? 'o' : '*',btn_change_count);
-			MIOS32_LCD_CursorSet(0, 1);
-			MIOS32_LCD_PrintFormattedString("Color:0x%X Count:%d", BLM_X_LEDColorGet(last_btn), btn_change_count);
-			last_btn_change_count = btn_change_count;
-			}
-		}
-	}
+  // init LCD
+  MIOS32_LCD_Clear();
+  // endless loop: print status information on LCD
+  while( 1 ) {
+    MIOS32_LCD_CursorSet(0, 0);
+    // print text on LCD screen, send debug message
+    if(btn_change_count != last_btn_change_count){
+      MIOS32_LCD_CursorSet(0, 0);
+      MIOS32_LCD_PrintFormattedString("Button #%3d %c", last_btn, last_btn_value ? 'o' : '*');
+      MIOS32_MIDI_SendDebugMessage("Button #%3d %c - Changes: %5d", last_btn, last_btn_value ? 'o' : '*',btn_change_count);
+      MIOS32_LCD_CursorSet(0, 1);
+      MIOS32_LCD_PrintFormattedString("Color:0x%X Count:%d", BLM_X_LEDColorGet(last_btn), btn_change_count);
+      last_btn_change_count = btn_change_count;
+      }
+    }
+  }
 
 
 /////////////////////////////////////////////////////////////////////////////
 //  This hook is called when a complete MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package){
-	}
+void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -125,22 +126,22 @@ void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void){
-	//sets board led's to 0 (enables to measure the time consumed by the srio-service & blm stuff
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);
-	//prepare DOUT registers to drive the row
-	BLM_X_PrepareRow();
-	}
+  //sets board led's to 0 (enables to measure the time consumed by the srio-service & blm stuff
+  MIOS32_BOARD_LED_Set(0xffffffff, 0);
+  //prepare DOUT registers to drive the row
+  BLM_X_PrepareRow();
+  }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void){
-	// call the BLM_GetRow function after scan is finished to capture the read DIN values
-	BLM_X_GetRow();
-	//sets board led's back to 1 (enables to measure the time consumed by the srio-service & blm stuff
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);
-	}
+  // call the BLM_GetRow function after scan is finished to capture the read DIN values
+  BLM_X_GetRow();
+  //sets board led's back to 1 (enables to measure the time consumed by the srio-service & blm stuff
+  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+  }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -176,28 +177,28 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 
 // will be called on BLM pin changes (see TASK_BLM_Check)
 void BLM_Button_NotifyToggle(u32 btn, u32 value){
-	if(!value){
-		// increment LED color, swap to 0 when all available color bits are set
-		last_led_color++;
-		if(btn != last_btn || (last_led_color >> BLM_X_LED_NUM_COLORS) )
-			last_led_color = 0;
-		// output LED color
-		BLM_X_LEDColorSet(btn,last_led_color);
-		MIOS32_MIDI_SendDebugMessage("LED #%3d color set to 0x%08x", btn, last_led_color);
-		}
-	// store btn & value, increment button change counter
-	last_btn = btn;
-	last_btn_value = value;
-	btn_change_count++;
-	}
+  if(!value){
+    // increment LED color, swap to 0 when all available color bits are set
+    last_led_color++;
+    if(btn != last_btn || (last_led_color >> BLM_X_LED_NUM_COLORS) )
+      last_led_color = 0;
+    // output LED color
+    BLM_X_LEDColorSet(btn,last_led_color);
+    MIOS32_MIDI_SendDebugMessage("LED #%3d color set to 0x%08x", btn, last_led_color);
+    }
+  // store btn & value, increment button change counter
+  last_btn = btn;
+  last_btn_value = value;
+  btn_change_count++;
+  }
 
 static void TASK_BLM_Check(void *pvParameters){
-	portTickType xLastExecutionTime;
-  	// Initialize the xLastExecutionTime variable on task entry
-  	xLastExecutionTime = xTaskGetTickCount();
-  	while( 1 ) {
-   	vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-    	// check for BLM pin changes, call BLM_Button_NotifyToggle on each toggled pin
-    	BLM_X_BtnHandler(BLM_Button_NotifyToggle);
-  		}
-	}
+  portTickType xLastExecutionTime;
+    // Initialize the xLastExecutionTime variable on task entry
+    xLastExecutionTime = xTaskGetTickCount();
+    while( 1 ) {
+     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+      // check for BLM pin changes, call BLM_Button_NotifyToggle on each toggled pin
+      BLM_X_BtnHandler(BLM_Button_NotifyToggle);
+      }
+  }
