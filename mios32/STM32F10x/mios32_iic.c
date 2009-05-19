@@ -233,9 +233,27 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       // define base address
       iicx->base = I2C2;
 
+      // init tx buffer
+      iicx->tx_buffer_ptr = iic0_tx_buffer;
+
       // enable peripheral clock of I2C
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
       break;
+
+#if MIOS32_IIC_NUM >= 2
+    case 1:
+      // define base address
+      iicx->base = I2C1;
+
+      // init tx buffer
+      iicx->tx_buffer_ptr = iic1_tx_buffer;
+
+      // enable peripheral clock of I2C
+      RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+
+      break;
+#endif
 
     default:
       return;
