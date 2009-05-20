@@ -355,3 +355,11 @@ into your local mios32_config.h file
 #define MIOS32_ENC28J60_MY_MAC_ADDR4 0
 #define MIOS32_ENC28J60_MY_MAC_ADDR5 0
 #define MIOS32_ENC28J60_MY_MAC_ADDR6 0
+
+
+// The DBGMCU_CR register allows to suspend peripherals when CPU is in halt
+// state to simplify debugging (e.g. no timer interrupt is triggered each
+// time the program is stepped)
+// See STM32 reference manual for the meaning of these flags.
+// By default, we suspend all peripherals which are provided by DBGMCU_CR
+#define MIOS32_SYS_STM32_DBGMCU_CR 0xffffff00

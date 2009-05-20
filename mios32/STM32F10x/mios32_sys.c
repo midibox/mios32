@@ -49,6 +49,9 @@ extern u32 mios32_sys_isr_vector;
 //!       (skipped if PLL already running - relevant for proper software 
 //!        reset, e.g. so that USB connection can survive)
 //!   <LI>sets base address of vector table
+//!   <LI>configures the suspend flags in DBGMCU_CR as specified in 
+//!       MIOS32_SYS_STM32_DBGMCU_CR (can be overruled in mios32_config.h)
+//!       to simplify debugging via JTAG
 //! </UL>
 //! \param[in] mode currently only mode 0 supported
 //! \return < 0 if initialisation failed
@@ -142,6 +145,10 @@ s32 MIOS32_SYS_Init(u32 mode)
 
   // Configure HCLK clock as SysTick clock source
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
+
+  // configure debug control register DBGMCU_CR (we want to stop timers in CPU HALT mode)
+  // flags can be overruled in mios32_config.h
+  MEM16(0xe0042004) = MIOS32_SYS_STM32_DBGMCU_CR;
 
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;

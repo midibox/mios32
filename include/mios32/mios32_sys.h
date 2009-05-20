@@ -18,6 +18,15 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// The DBGMCU_CR register allows to suspend peripherals when CPU is in halt
+// state to simplify debugging (e.g. no timer interrupt is triggered each
+// time the program is stepped)
+// See STM32 reference manual for the meaning of these flags.
+// By default, we suspend all peripherals which are provided by DBGMCU_CR
+#ifndef MIOS32_SYS_STM32_DBGMCU_CR
+#define MIOS32_SYS_STM32_DBGMCU_CR 0xffffff00
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
