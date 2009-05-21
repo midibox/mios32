@@ -15,4 +15,38 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2009 T.Klose"
 
 
+// function used to output debug messages (must be printf compatible!)
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+// ENC28J60 settings
+#define MIOS32_ENC28J60_FULL_DUPLEX 1
+#define MIOS32_ENC28J60_MAX_FRAME_SIZE 420
+
+// a unique MAC address in your network (6 bytes are required)
+// If all bytes are 0, the serial number of STM32 will be taken instead,
+// which should be unique in your private network.
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
+
+
+// Ethernet configuration:
+//                      10        .    0        .    0       .    3
+#define MY_IP_ADDRESS ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  3 << 0)
+
+//                     255        .  255        .  255       .    0
+#define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
+
+//                      10        .    0        .    0       .    1
+#define MY_GATEWAY    (  0 << 24) | (  0 << 16) | (  0 << 8) | (  1 << 0)
+
+//                      10        .    0        .    0       .    2
+#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+
+#define OSC_SERVER_PORT 8888
+
+
 #endif /* _MIOS32_CONFIG_H */

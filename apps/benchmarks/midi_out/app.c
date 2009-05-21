@@ -23,6 +23,9 @@
 
 #include "benchmark.h"
 #include "app.h"
+#include "uip_task.h"
+
+#include "osc_client.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -41,6 +44,13 @@ static u8 tested_port;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
@@ -50,11 +60,17 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+  // start uIP task
+  UIP_TASK_Init(0);
+
   // initialize stopwatch for measuring delays
   MIOS32_STOPWATCH_Init(100);
 
   // initialize benchmark
   BENCHMARK_Init(0);
+
+  // install MIDI Tx callback function
+  MIOS32_MIDI_DirectTxCallback_Init(NOTIFY_MIDI_Tx);
 
   // init benchmark result
   benchmark_cycles = 0;
@@ -168,6 +184,16 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
 	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (IIC0) with RS enabled\n", tested_port);
 	break;
 
+      case 6:
+	tested_port = 0xf0; // forwarded to OSC, see NOTIFY_MIDI_Tx()
+	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (OSC), one datagram per event\n", tested_port);
+	break;
+
+      case 7:
+	tested_port = 0xf1; // forwarded to OSC, see NOTIFY_MIDI_Tx()
+	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (OSC), 8 events bundled in a datagram\n", tested_port);
+	break;
+
       default:
 	MIOS32_MIDI_SendDebugMessage("This note isn't mapped to a test function.\n", tested_port);
 	return;
@@ -267,3 +293,34 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectTxCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // forward port 0xf0 messages to OSC client
+  if( port == 0xf0 ) {
+    mios32_osc_timetag_t timetag;
+    timetag.seconds = 0;
+    timetag.fraction = 0;
+    OSC_CLIENT_SendMIDIEvent(timetag, package);
+  } else if( port == 0xf1 && (package.note & 0x07) == 0 ) { // send 8 events bundled
+    mios32_osc_timetag_t timetag;
+    mios32_midi_package_t p[8];
+    timetag.seconds = 0;
+    timetag.fraction = 0;
+
+    int i;
+    for(i=0; i<8; ++i) {
+      p[i] = package;
+      ++package.note;
+    }
+    OSC_CLIENT_SendMIDIEventBundled(timetag, p, 8);
+  }
+
+  return 0; // no error, no filtering
+}
+
+

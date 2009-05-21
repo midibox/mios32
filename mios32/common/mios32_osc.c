@@ -465,7 +465,7 @@ mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer)
 /////////////////////////////////////////////////////////////////////////////
 u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p)
 {
-  u32 word = p.cable | (p.evnt0 << 8) | (p.evnt1 << 16) | (p.evnt2 << 24);
+  u32 word = (p.cable << 24) | (p.evnt0 << 16) | (p.evnt1 << 8) | (p.evnt2 << 0);
   return MIOS32_OSC_PutWord(buffer, word);
 }
 

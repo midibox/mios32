@@ -3,6 +3,7 @@
 */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "portmidi.h"
 #include "pmmacosxcm.h"
