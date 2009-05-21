@@ -48,9 +48,9 @@
 			name = PmDefaults;
 			productInstallPath = "$(USER_APPS_DIR)";
 			productName = pmdefaults;
-			productReference = 3D9D57CE0E12E22800C4C68D /* pmdefaults.app */;
+			productReference = 3D9D57CE0E12E22800C4C68D /* PmDefaults.app */;
 			productSettingsXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
@@ -212,21 +212,21 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 5851D5180479552300EE98CD /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3DBF24630B5967A500DAD93B /* mm */;
+			remoteGlobalIDString = 3DBF24630B5967A500DAD93B;
 			remoteInfo = mm;
 		};
 		3D4799F40F0EE7D10006C842 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5851D5180479552300EE98CD /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3D17A1900E13E25E00930576 /* libpmjni.jnilib */;
+			remoteGlobalIDString = 3D17A1900E13E25E00930576;
 			remoteInfo = libpmjni.jnilib;
 		};
 		3D4799F70F0EE7FB0006C842 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5851D5180479552300EE98CD /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3D17A1900E13E25E00930576 /* libpmjni.jnilib */;
+			remoteGlobalIDString = 3D17A1900E13E25E00930576;
 			remoteInfo = libpmjni.jnilib;
 		};
 		3D8DABA40D57B68A000FEBA8 /* PBXContainerItemProxy */ = {
@@ -347,7 +347,7 @@
 		3D65FEE20ECB7548008083A3 /* CoreServices */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = CoreServices; path = /System/Library/Frameworks/CoreServices.framework/CoreServices; sourceTree = "<absolute>"; };
 		3D9D57C30E12E1CF00C4C68D /* finddefault.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = finddefault.c; sourceTree = "<group>"; };
 		3D9D57C50E12E1E500C4C68D /* readbinaryplist.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = readbinaryplist.c; sourceTree = "<group>"; };
-		3D9D57CE0E12E22800C4C68D /* pmdefaults.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pmdefaults.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D9D57CE0E12E22800C4C68D /* PmDefaults.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PmDefaults.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D9D57DE0E12E39B00C4C68D /* JPortMidi.java */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.java; path = JPortMidi.java; sourceTree = "<group>"; };
 		3D9D57E20E12E39B00C4C68D /* JPortMidiApi.java */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.java; path = JPortMidiApi.java; sourceTree = "<group>"; };
 		3D9D57E40E12E39B00C4C68D /* JPortMidiException.java */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.java; path = JPortMidiException.java; sourceTree = "<group>"; };
@@ -652,7 +652,7 @@
 				D8684B810ACBFB0B009F6478 /* latency */,
 				3DBF24640B5967A500DAD93B /* mm */,
 				3DA60D6C0D3FBEA40036B654 /* midiclock */,
-				3D9D57CE0E12E22800C4C68D /* pmdefaults.app */,
+				3D9D57CE0E12E22800C4C68D /* PmDefaults.app */,
 				3D17A13D0E13D47F00930576 /* JPortMidiHeaders.jar */,
 				3D17A18C0E13E1EF00930576 /* jportmidi_JportMidiApi.h */,
 				3D17A1910E13E25E00930576 /* libpmjni.jnilib */,
@@ -914,10 +914,12 @@
 		5851D5180479552300EE98CD /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = D814401B0ACB28B600515C41 /* Build configuration list for PBXProject "pm_mac" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 5851D5140479552300EE98CD;
 			productRefGroup = 5851D5390479562300EE98CD /* Products */;
 			projectDirPath = "";
+			projectRoot = ..;
 			targets = (
 				D84A40D90ACD4A08001FC716 /* portmidi.dylib */,
 				D814404B0ACB2C1200515C41 /* libportmidi.a */,
@@ -1209,7 +1211,6 @@
 				JAVA_COMPILER = /usr/bin/javac;
 				JAVA_SOURCE_SUBDIR = .;
 				LIBRARY_STYLE = STATIC;
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOL_FLAGS = "";
@@ -1234,12 +1235,12 @@
 				DYLIB_CURRENT_VERSION = 1;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				JAVA_ARCHIVE_CLASSES = YES;
 				JAVA_ARCHIVE_TYPE = JAR;
 				JAVA_COMPILER = /usr/bin/javac;
 				JAVA_SOURCE_SUBDIR = .;
 				LIBRARY_STYLE = STATIC;
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOL_FLAGS = "";
@@ -1262,12 +1263,12 @@
 			buildSettings = {
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				JAVA_ARCHIVE_CLASSES = YES;
 				JAVA_ARCHIVE_TYPE = JAR;
 				JAVA_COMPILER = /usr/bin/javac;
 				JAVA_SOURCE_SUBDIR = .;
 				LIBRARY_STYLE = STATIC;
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOL_FLAGS = "";
@@ -1363,7 +1364,6 @@
 					"$(inherited)",
 					"$(SRCROOT)/../pm_java/pmjni",
 				);
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -1384,6 +1384,7 @@
 				COPY_PHASE_STRIP = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				JAVA_COMPILER = /usr/bin/javac;
 				JAVA_ONLY = YES;
 				JAVA_SOURCE_SUBDIR = .;
@@ -1391,7 +1392,6 @@
 					"$(inherited)",
 					"$(SRCROOT)/../pm_java/pmjni",
 				);
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -1410,6 +1410,7 @@
 		3D9D57D30E12E24600C4C68D /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_OPTIMIZATION_LEVEL = 0;
 				JAVA_COMPILER = /usr/bin/javac;
 				JAVA_ONLY = YES;
 				JAVA_SOURCE_SUBDIR = .;
@@ -1417,7 +1418,6 @@
 					"$(inherited)",
 					"$(SRCROOT)/../pm_java/pmjni",
 				);
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";

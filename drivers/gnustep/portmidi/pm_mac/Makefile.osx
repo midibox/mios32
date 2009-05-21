@@ -33,7 +33,7 @@ pmobjects = pm_common/pmutil.o pm_mac/pmmac.o  \
 
 current: all
 
-all: $(pmlib) $(ptlib) pm_test/test pm_test/osc_midi_proxy pm_test/sysex pm_test/midithread \
+all: $(pmlib) $(ptlib) pm_test/test pm_test/sysex pm_test/midithread \
 	pm_test/latency pm_test/midithru pm_test/qtest pm_test/mm
 	echo $$'\n\
 **** For instructions: make -f pm_mac\Makefile.osx help ****\n'
@@ -78,9 +78,6 @@ pm_mac/finddefault.o: pm_mac/Makefile.osx pm_mac/finddefault.c pm_mac/pmmacosxcm
 
 pm_test/test: pm_mac/Makefile.osx pm_test/test.o $(pmlib)
 	$(CC) pm_test/test.o -o pm_test/test $(pmlib) $(MACLIB)
-
-pm_test/osc_midi_proxy: pm_mac/Makefile.osx pm_test/osc_midi_proxy.o $(pmlib)
-	$(CC) pm_test/osc_midi_proxy.o -o pm_test/osc_midi_proxy $(pmlib) $(MACLIB)
 
 pm_test/sysex: pm_mac/Makefile.osx pm_test/sysex.o $(pmlib)
 	$(CC) pm_test/sysex.o -o pm_test/sysex $(pmlib) $(MACLIB)
@@ -131,7 +128,7 @@ backup: cleanest
 dylib: pm_mac/libportmidi.dylib
 
 pm_mac/libportmidi.dylib: $(PMSRC) $(PTSRC)
-	cc -single_module -g $(PMDLFLAGS) -Iporttime -Ipm_common $(ARCH) \
+	cc -single_module -g $(PMDLFLAGS) -Iporttime -Ipm_common -I/Developer/Headers/FlatCarbon $(ARCH) \
           -dynamiclib $(PMSRC) $(PTSRC) -o pm_mac/libportmidi.dylib \
 	  -flat_namespace -undefined suppress \
 	  -framework CoreMIDI -framework CoreFoundation \
@@ -139,9 +136,9 @@ pm_mac/libportmidi.dylib: $(PMSRC) $(PTSRC)
 
 install: porttime/porttime.h pm_common/portmidi.h \
 	   pm_mac/libportmidi.dylib
-	install porttime/porttime.h  $(PF)/include/
+	install porttime/porttime.h  $(PF)/include
 	install pm_common/portmidi.h $(PF)/include
-	install pm_mac/libportmidi.dylib $(PF)/lib/
+	install pm_mac/libportmidi.dylib $(PF)/lib
 
 # note - this uses xcode to build and install portmidi universal binaries
 install-with-xcode:

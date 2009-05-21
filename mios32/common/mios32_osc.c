@@ -151,6 +151,8 @@
 static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree);
 static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, mios32_osc_search_tree_t *search_tree);
 
+static size_t my_strnlen(char *str, size_t max_len);
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes OSC layer
@@ -565,7 +567,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
     return -3; // unsupported element format
 
   // path: determine string length
-  size_t path_len = strnlen((char *)path, len);
+  size_t path_len = my_strnlen((char *)path, len);
 
   // check for valid string
   if( path_len < 2 || path[path_len] != 0 ) // expect at least two characters, e.g. "/*"
@@ -585,7 +587,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
 
   // tags: determine string length
   u8 *tags = (u8 *)(buffer + tags_pos);
-  size_t tags_len = strnlen((char *)tags, len-tags_pos);
+  size_t tags_len = my_strnlen((char *)tags, len-tags_pos);
 
   // check for valid string
   if( tags_len == 0 || tags[tags_len] != 0 )
@@ -634,7 +636,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
       case 'S': { // OSC alternate string
 	known_arg = 1;
 	char *str = (char *)osc_args->arg_ptr[osc_args->num_args];
-	size_t str_len = strnlen(str, len-arg_pos);
+	size_t str_len = my_strnlen(str, len-arg_pos);
 	// check for valid string
 	if( str_len == 0 || str[str_len] != 0 )
 	  return -2; // invalid element format
@@ -755,6 +757,148 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 me
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends the argument list of a method to the debug terminal.
+//!
+//! By default, the message is sent via MIDI to the MIOS Studio terminal.
+//!
+//! Optionally another output function can be used (e.g. printf in emulation)
+//! by overruling MIOS32_OSC_DEBUG_MSG in mios32_config.h
+//!
+//! Usage Example:
+//! \code
+//! static s32 OSC_SERVER_MyOSCMethod(mios32_osc_args_t *osc_args, u32 method_arg)
+//! {
+//!   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
+//!
+//!   return 0; // no error
+//! }
+//! \endcode
+//!
+//! \param[in] osc_args pointer to OSC argument list as forwarded by MIOS32_OSC_ParsePacket()
+//! \param[in] method_args 32bit value as forwarded by MIOS32_OSC_ParsePacket()
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_OSC_SendDebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+  // for debugging: merge path parts to complete path
+  char path[128]; // should be enough?
+  int i;
+  char *path_ptr = path;
+
+  for(i=0; i<osc_args->num_path_parts; ++i) {
+    path_ptr = stpcpy(path_ptr, "/");
+    path_ptr = stpcpy(path_ptr, osc_args->path_part[i]);
+  }
+
+  MIOS32_OSC_DEBUG_MSG("[%s] timetag %d.%d (%d args), Method Arg: 0x%08x\n", 
+		       path,
+		       osc_args->timetag.seconds,
+		       osc_args->timetag.fraction,
+		       osc_args->num_args,
+		       method_arg);
+
+  for(i=0; i < osc_args->num_args; ++i) {
+    switch( osc_args->arg_type[i] ) {
+      case 'i': // int32
+	MIOS32_OSC_DEBUG_MSG("[%s] %d: %d (int32)\n", path, i, MIOS32_OSC_GetInt(osc_args->arg_ptr[i]));
+	  break;
+
+        case 'f': { // float32
+	  float value = MIOS32_OSC_GetFloat(osc_args->arg_ptr[i]);
+	  // note: the simple printf function doesn't support %f
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %d.%03d (float32)\n", path, i, 
+				       (int)value, (int)((value*1000))%1000);
+	} break;
+
+        case 's': // string
+        case 'S': // alternate string
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: '%s'\n", path, i, MIOS32_OSC_GetString(osc_args->arg_ptr[i]));
+	  break;
+
+        case 'b': // blob
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: blob with length %u\n", path, i, MIOS32_OSC_GetWord(osc_args->arg_ptr[i]));
+	  break;
+
+        case 'h': { // int64
+	  long long value = MIOS32_OSC_GetLongLong(osc_args->arg_ptr[i]);
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: 0x%08x%08x (int64)\n", path, i, 
+				       (u32)(value >> 32), (u32)value);
+	} break;
+
+        case 't': { // timetag
+	  mios32_osc_timetag_t timetag = MIOS32_OSC_GetTimetag(osc_args->arg_ptr[i]);
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: seconds %u fraction %u\n", path, i, 
+				       timetag.seconds, timetag.fraction);
+	} break;
+
+        case 'd': { // float64 (double)
+	  double value = MIOS32_OSC_GetDouble(osc_args->arg_ptr[i]);
+	  // note: the simple printf function doesn't support %f
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %d.%03d (float64)\n", path, i, 
+				       (int)value, (int)((value*1000))%1000);
+	} break;
+
+        case 'c': // ASCII character
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: char %c\n", path, i, MIOS32_OSC_GetChar(osc_args->arg_ptr[i]));
+	  break;
+
+        case 'r': // 32 bit RGBA color
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %08X (RGBA color)\n", path, i, MIOS32_OSC_GetWord(osc_args->arg_ptr[i]));
+	  break;
+
+        case 'm': // MIDI message
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %08X (MIDI)\n", path, i, MIOS32_OSC_GetMIDI(osc_args->arg_ptr[i]).ALL);
+	  break;
+
+        case 'T': // TRUE
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: TRUE\n", path, i);
+	  break;
+
+        case 'F': // FALSE
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: FALSE\n", path, i);
+	  break;
+
+        case 'N': // NIL
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: NIL\n", path, i);
+	  break;
+
+        case 'I': // Infinitum
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: Infinitum\n", path, i);
+	  break;
+
+        case '[': // beginning of array
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: [ (beginning of array)\n", path, i);
+	  break;
+
+        case ']': // end of array
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: [ (end of array)\n", path, i);
+	  break;
+
+        default:
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: unknown arg type '%c'\n", path, i, osc_args->arg_type[i]);
+	  break;
+      }
+  }
+
+  return 0; // no error
+}
+
+
+
+//
+// strnlen() not available for all libc's, therefore we use a local solution here
+static size_t my_strnlen(char *str, size_t max_len)
+{
+  size_t len = 0;
+
+  while( *str++ && (len < max_len) )
+    ++len;
+
+  return len;
 }
 
 

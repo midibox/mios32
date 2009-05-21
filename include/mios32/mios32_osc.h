@@ -29,6 +29,12 @@
 #define MIOS32_OSC_MAX_ARGS 8
 #endif
 
+// the output function which is used to print debug messages
+// could be replaced by printf (e.g. for emulations)
+#ifndef MIOS32_OSC_DEBUG_MSG
+#define MIOS32_OSC_DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
