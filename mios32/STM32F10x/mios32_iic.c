@@ -109,6 +109,7 @@ typedef union {
     unsigned STOP_REQUESTED:1;
     unsigned RX_OVERRUN:1;
     unsigned ABORT_IF_FIRST_BYTE_0:1;
+    unsigned WRITE_WITHOUT_STOP:1;
   };
 } transfer_state_t;
 
@@ -470,6 +471,8 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
     iicx->iic_address = address & 0xfe; // clear bit 0 for write operation
     iicx->tx_buffer_ptr = buffer;
     iicx->rx_buffer_ptr = NULL; // ensure that nothing will be received
+    // option to skip stop-condition generation after successful write
+    iicx->transfer_state.WRITE_WITHOUT_STOP = transfer == IIC_Write_WithoutStop ? 1 : 0;
   } else
     return (iicx->last_transfer_error=MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE);
 
@@ -519,8 +522,9 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       if( iicx->buffer_len == 0 ) {
 	// request NAK
 	I2C_AcknowledgeConfig(iicx->base, DISABLE);
-	// request stop condition
-	I2C_GenerateSTOP(iicx->base, ENABLE);
+	// request stop condition, exept on write-without-stop transfer-type
+	if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
+          I2C_GenerateSTOP(iicx->base, ENABLE);
 	iicx->transfer_state.STOP_REQUESTED = 1;
       }
       break;
@@ -570,8 +574,8 @@ static void EV_IRQHandler(iic_rec_t *iicx)
 	  // disabled due to peripheral imperfections (sometimes an additional byte is received)
 	  // set error state to Rx Overrun if notified on previous byte
 	  if( iicx->transfer_state.RX_OVERRUN ) {
-	  iicx->transfer_error = MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN;
-	}
+            iicx->transfer_error = MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN;
+          }
 #endif
 	  // disable all interrupts
 	  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
@@ -604,8 +608,9 @@ static void EV_IRQHandler(iic_rec_t *iicx)
 	// disable all interrupts
 	I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       } else {
-	// send stop condition
-	I2C_GenerateSTOP(iicx->base, ENABLE);
+	// request stop condition, exept on write-without-stop transfer-type
+	if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
+          I2C_GenerateSTOP(iicx->base, ENABLE);
 	// request unbusy
 	iicx->transfer_state.STOP_REQUESTED = 1;
 
