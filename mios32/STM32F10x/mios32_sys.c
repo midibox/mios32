@@ -148,7 +148,7 @@ s32 MIOS32_SYS_Init(u32 mode)
 
   // configure debug control register DBGMCU_CR (we want to stop timers in CPU HALT mode)
   // flags can be overruled in mios32_config.h
-  MEM16(0xe0042004) = MIOS32_SYS_STM32_DBGMCU_CR;
+  MEM32(0xe0042004) = MIOS32_SYS_STM32_DBGMCU_CR;
 
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;
