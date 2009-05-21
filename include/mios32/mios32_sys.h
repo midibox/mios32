@@ -24,7 +24,7 @@
 // See STM32 reference manual for the meaning of these flags.
 // By default, we suspend all peripherals which are provided by DBGMCU_CR
 #ifndef MIOS32_SYS_STM32_DBGMCU_CR
-#define MIOS32_SYS_STM32_DBGMCU_CR 0xffffff00
+#define MIOS32_SYS_STM32_DBGMCU_CR 0x001fff00
 #endif
 
 
