@@ -95,6 +95,10 @@ into your local mios32_config.h file
 // OSC: maximum number of OSC arguments in message
 #define MIOS32_OSC_MAX_ARGS 8
 
+// the output function which is used to print debug messages
+// could be replaced by printf (e.g. for emulations)
+#define MIOS32_OSC_DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
 
 // the default COM port for COM output
 #define MIOS32_COM_DEFAULT_PORT USB0
