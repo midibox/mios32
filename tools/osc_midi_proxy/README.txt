@@ -8,11 +8,14 @@ All other rights reserved.
 ===============================================================================
 
 This proxy forwards OSC messages of "MIDI" type to a MIDI Port and vice versa.
+The method name "/midi" is used, and m type packets are sent/received.
 
 The program has to be started with
-   osc_midi_proxy <port-number>
+   osc_midi_proxy <remote-host> <port>
 E.g.:
-   osc_midi_proxy 8888
+   osc_midi_proxy 10.0.0.3 8888
+or:
+   osc_midi_proxy www.midibox.org 8888   (HaHa ;)
 
 
 Currently only a makefile for MacOS is provided, but it shouldn't be so
@@ -25,9 +28,5 @@ Required Libraries:
 
 Some MIOS32 files are used as well (although this app doesn't run on a 
 microcontroller). They are taken from $MIOS32_PATH
-
-===============================================================================
-
-Note: MIDI IN->OSC Out direction not implemented yet (I've no use for it yet...)
 
 ===============================================================================
