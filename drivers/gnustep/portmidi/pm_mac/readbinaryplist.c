@@ -69,6 +69,7 @@ memory requested or calls longjmp, so callers don't have to check.
 
 #include <sys/types.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>

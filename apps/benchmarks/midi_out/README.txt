@@ -22,7 +22,7 @@ Optional hardware:
 ===============================================================================
 
 This benchmark sends 128 Note On events and 128 Note Off Events over different
-MIDI Ports (USB0, UART0, IIC0) with and without Running Status optimisation,
+MIDI Ports (USB0, UART0, IIC0, OSC) with and without Running Status optimisation,
 and measures the transfer time.
 
 The notes can be recorded with a sequencer for visualisation, see also this

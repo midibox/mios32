@@ -15,6 +15,11 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 THUMB_SOURCE    = app.c \
+                  uip_task.c \
+		  osc_server.c \
+		  osc_client.c \
+		  telnetd.c \
+		  shell.c \
 		  benchmark.c
 
 
@@ -51,6 +56,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# UIP driver
+include $(MIOS32_PATH)/modules/uip/uip.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
