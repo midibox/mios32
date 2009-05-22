@@ -39,6 +39,52 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+// note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
+// since these functions access the ports directly
+typedef struct {
+  GPIO_TypeDef *port;
+  u16 pin_mask;
+} srio_pin_t;
+
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#define SRIO_RESET_SUPPORTED 1
+
+#define SRIO_NUM_SCLK_PINS 3
+static const srio_pin_t srio_sclk_pin[SRIO_NUM_SCLK_PINS] = {
+  { GPIOA, GPIO_Pin_5  }, // SPI0
+  { GPIOB, GPIO_Pin_13 }, // SPI1
+  { GPIOB, GPIO_Pin_6  }, // SPI2
+};
+
+#define SRIO_NUM_RCLK_PINS 5
+static const srio_pin_t srio_rclk_pin[SRIO_NUM_RCLK_PINS] = {
+  { GPIOA, GPIO_Pin_4  }, // SPI0, RCLK1
+  { GPIOC, GPIO_Pin_15 }, // SPI0, RCLK2
+  { GPIOB, GPIO_Pin_12 }, // SPI1, RCLK1
+  { GPIOC, GPIO_Pin_13 }, // SPI2, RCLK1
+  { GPIOC, GPIO_Pin_14 }, // SPI2, RCLK2
+};
+
+#define SRIO_NUM_MOSI_PINS 3
+static const srio_pin_t srio_mosi_pin[SRIO_NUM_MOSI_PINS] = {
+  { GPIOA, GPIO_Pin_7  }, // SPI0
+  { GPIOB, GPIO_Pin_15 }, // SPI1
+  { GPIOB, GPIO_Pin_5  }, // SPI2
+};
+#else
+#define SRIO_RESET_SUPPORTED 0
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 ResetSRIOChains(void);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Main function
 /////////////////////////////////////////////////////////////////////////////
 int main(void)
@@ -47,8 +93,11 @@ int main(void)
   // initialize system
   ///////////////////////////////////////////////////////////////////////////
   MIOS32_SYS_Init(0);
+  MIOS32_DELAY_Init(0);
 
   MIOS32_BOARD_LED_Init(BSL_LED_MASK);
+
+  ResetSRIOChains();
 
   // initialize stopwatch which is used to measure a 2 second delay 
   // before application will be started
@@ -113,8 +162,9 @@ int main(void)
     u32 led_on = ((cnt % pwm_period) > pwm_duty) ? 1 : 0;
     MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
 
-    // handle USB messages
-    MIOS32_USB_MIDI_Handler();
+    // call periodic hook each mS (!!! important - not shorter due to timeout counters which are handled here)
+    if( (cnt % 10) == 0 )
+      MIOS32_MIDI_Periodic_mS();
 
     // check for incoming MIDI messages - no hooks are used
     // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
@@ -175,4 +225,98 @@ int main(void)
   }
 
   return 0; // will never be reached
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function resets the SRIO chains at J8/9, J16 and J19 by clocking
+// 128 times and strobing the RCLK
+//
+// It's required since no reset line is available for MBHP_DIN/DOUT modules
+//
+// It doesn't hurt to shift the clocks to SPI devices as well, since the
+// CS line is deactivated during the clocks are sent.
+//
+// All ports are configured for open drain mode. If push pull is expected, clocks
+// won't have an effect as well (no real issue, since SRIOs are always
+// used in OD mode)
+/////////////////////////////////////////////////////////////////////////////
+static s32 ResetSRIOChains(void)
+{
+#if SRIO_RESET_SUPPORTED == 0
+  return -1; // not supported
+#else
+  int i;
+
+  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+
+  // init GPIO driver modes
+  for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+    srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1 by default
+    GPIO_InitStructure.GPIO_Pin = srio_sclk_pin[i].pin_mask;
+    GPIO_Init(srio_sclk_pin[i].port, &GPIO_InitStructure);
+  }
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+    srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1 by default
+    GPIO_InitStructure.GPIO_Pin = srio_rclk_pin[i].pin_mask;
+    GPIO_Init(srio_rclk_pin[i].port, &GPIO_InitStructure);
+  }
+
+  for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
+    srio_mosi_pin[i].port->BRR = srio_mosi_pin[i].pin_mask; // MOSI=0 by default
+    GPIO_InitStructure.GPIO_Pin = srio_mosi_pin[i].pin_mask;
+    GPIO_Init(srio_mosi_pin[i].port, &GPIO_InitStructure);
+  }
+
+  // send 128 clocks to all SPI ports
+  int cycle;
+  for(cycle=0; cycle<128; ++cycle) {
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+      srio_sclk_pin[i].port->BRR = srio_sclk_pin[i].pin_mask; // SCLK=0
+
+    MIOS32_DELAY_Wait_uS(1);
+
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+      srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1
+
+    MIOS32_DELAY_Wait_uS(1);
+  }
+
+  // latch values
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+    srio_rclk_pin[i].port->BRR = srio_rclk_pin[i].pin_mask; // RCLK=0
+
+  MIOS32_DELAY_Wait_uS(1);
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+    srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1
+
+  MIOS32_DELAY_Wait_uS(1);
+
+  // switch back driver modes to input with pull-up enabled
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+
+  // init GPIO driver modes
+  for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+    GPIO_InitStructure.GPIO_Pin = srio_sclk_pin[i].pin_mask;
+    GPIO_Init(srio_sclk_pin[i].port, &GPIO_InitStructure);
+  }
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+    GPIO_InitStructure.GPIO_Pin = srio_rclk_pin[i].pin_mask;
+    GPIO_Init(srio_rclk_pin[i].port, &GPIO_InitStructure);
+  }
+
+  for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
+    GPIO_InitStructure.GPIO_Pin = srio_mosi_pin[i].pin_mask;
+    GPIO_Init(srio_mosi_pin[i].port, &GPIO_InitStructure);
+  }
+
+  return 0; // no error
+#endif
 }

@@ -8,13 +8,13 @@
 
 use Fcntl;
 
-if( scalar(@ARGV) != 3 ) {
-  die "Usage:   perl gen_inc_file.pl <bin-file> <inc-file> <array-name>\n" .
-      "Example: perl gen_inc_file.pl project.bin mios32_bsl_test.inc mios32_bsl_test_code\n";
+if( scalar(@ARGV) != 4 ) {
+  die "Usage:   perl gen_inc_file.pl <bin-file> <inc-file> <array-name> <code-section>\n" .
+      "Example: perl gen_inc_file.pl project.bin mios32_bsl_test.inc mios32_bsl_test_code mios32_bsl\n";
 }
 
-my ($bin_file, $inc_file, $array_name) = @ARGV;
-my $array_declaration = "__attribute__ ((section(\".mios32_bsl\"))) const u8";
+my ($bin_file, $inc_file, $array_name, $code_section) = @ARGV;
+my $array_declaration = $code_section ? "__attribute__ ((section(\".${code_section}\"))) const u8" : "const u8";
 my $dump_size = 0x4000; # reserved for BSL and EEPROM emulation
 
 # read .bin file into $content array

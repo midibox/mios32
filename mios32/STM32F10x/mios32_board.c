@@ -277,6 +277,9 @@ u32 MIOS32_BOARD_LED_Get(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
 {
+#if J5_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J5 not supported
+#else
   if( pin >= J5_NUM_PINS )
     return -1; // pin not supported
 
@@ -320,6 +323,7 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
   }
 
   return 0; // no error
+#endif
 }
 
 
@@ -645,9 +649,13 @@ s32 MIOS32_BOARD_J15_RS_Set(u8 rs)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J15_RW_Set(u8 rw)
 {
+#if J15_AVAILABLE == 0
+  return -1; // LCD port not available
+#else
   J15_PIN_RW(rw);
 
   return 0; // no error
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////

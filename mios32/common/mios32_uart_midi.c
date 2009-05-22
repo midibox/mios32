@@ -61,6 +61,7 @@ static u16 rs_expire_ctr[MIOS32_UART_NUM];
 // internal function to reset the record structure
 static s32 MIOS32_UART_MIDI_RecordReset(u8 uart_port)
 {
+#if MIOS32_UART_NUM > 0
   midi_rec_t *midix = &midi_rec[uart_port];// simplify addressing of midi record
 
   midix->package.ALL = 0;
@@ -69,7 +70,7 @@ static s32 MIOS32_UART_MIDI_RecordReset(u8 uart_port)
   midix->wait_bytes = 0x00;
   midix->sysex_ctr = 0x00;
   midix->timeout_ctr = 0;
-
+#endif
   return 0; // no error
 }
 
