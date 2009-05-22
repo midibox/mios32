@@ -55,15 +55,16 @@ PROVIDE (   Prefetch_Handler = 0 ) ;
 PROVIDE (   Abort_Handler = 0 ) ;
 PROVIDE (   FIQ_Handler = 0 ) ;
 
-PROVIDE (   NMIException = 0 ) ;
-PROVIDE (   HardFaultException = 0 ) ;
-PROVIDE (   MemManageException = 0 ) ;
-PROVIDE (   BusFaultException = 0 ) ;
-PROVIDE (   UsageFaultException = 0 ) ;
-PROVIDE (   SVCHandler = 0 ) ;
-PROVIDE (   DebugMonitor = 0 ) ;
-PROVIDE (   PendSVC = 0 ) ;
-PROVIDE (   SysTickHandler = 0 ) ;
+PROVIDE (   NMI_Handler = 0 ) ;
+PROVIDE (   HardFault_Handler = 0 ) ;
+PROVIDE (   MemManage_Handler = 0 ) ;
+PROVIDE (   BusFault_Handler = 0 ) ;
+PROVIDE (   UsageFault_Handler = 0 ) ;
+PROVIDE (   SVC_Handler = 0 ) ;
+PROVIDE (   DebugMon_Handler = 0 ) ;
+PROVIDE (   PendSV_Handler = 0 ) ;
+PROVIDE (   SysTick_Handler = 0 ) ;
+
 PROVIDE (   WWDG_IRQHandler = 0 ) ;
 PROVIDE (   PVD_IRQHandler = 0 ) ;
 PROVIDE (   TAMPER_IRQHandler = 0 ) ;

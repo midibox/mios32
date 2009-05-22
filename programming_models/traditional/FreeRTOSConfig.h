@@ -50,9 +50,6 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-/* Library includes. */
-#include <stm32f10x_lib.h>
-
 // MIOS32 specific predefines - can be overruled in your local mios32_config.h file
 #include "mios32_config.h"
 

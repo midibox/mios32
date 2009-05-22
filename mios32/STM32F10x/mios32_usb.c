@@ -908,7 +908,7 @@ s32 MIOS32_USB_Init(u32 mode)
 //! Interrupt handler for USB
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-void USB_LP_CAN_RX0_IRQHandler(void)
+void USB_LP_CAN1_RX0_IRQHandler(void)
 {
   wIstr = _GetISTR();
 
@@ -1016,8 +1016,7 @@ static void MIOS32_USB_CB_Init(void)
 
   // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
   NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_StructInit(&NVIC_InitStructure);
-  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN_RX0_IRQChannel;
+  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;

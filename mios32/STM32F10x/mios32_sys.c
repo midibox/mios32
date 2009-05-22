@@ -216,7 +216,14 @@ s32 MIOS32_SYS_Reset(void)
   RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
   RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
   RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+
+#if 0
   NVIC_GenerateCoreReset();
+#else
+  // not available in v3.0.0 library anymore? - copy from v2.0.1
+  SCB->AIRCR = NVIC_AIRCR_VECTKEY | (1 << NVIC_VECTRESET);
+#endif
+
 #endif
 
   while( 1 );
