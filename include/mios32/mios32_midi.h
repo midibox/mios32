@@ -54,6 +54,7 @@
 #define MIOS32_MIDI_SYSEX_DISACK_FRAME_ERROR          0x0c
 #define MIOS32_MIDI_SYSEX_DISACK_UNKNOWN_QUERY        0x0d
 #define MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND      0x0e
+#define MIOS32_MIDI_SYSEX_DISACK_PROG_ID_NOT_ALLOWED  0x0f
 
 
 /////////////////////////////////////////////////////////////////////////////

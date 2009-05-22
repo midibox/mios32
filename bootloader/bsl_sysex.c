@@ -42,11 +42,16 @@
 #define SRAM_START_ADDR   (0x20000000)
 #define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
+// location of device ID (can be overprogrammed... but not erased!)
+// must be 16bit aligned!
+#define BSL_DEVICE_ID_ADDR (0x08003ffe)
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 BSL_FetchDeviceIDFromFlash(void);
 
 static s32 BSL_SYSEX_Cmd_ReadMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
@@ -93,6 +98,8 @@ s32 BSL_SYSEX_Init(u32 mode)
   // so long flash hasn't been programmed completely
   halt_state = 0;
 
+  BSL_FetchDeviceIDFromFlash();
+
   return 0; // no error
 }
 
@@ -119,6 +126,20 @@ s32 BSL_SYSEX_ReleaseHaltState(void)
   halt_state = 0;
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Fetches device ID from flash location
+/////////////////////////////////////////////////////////////////////////////
+static s32 BSL_FetchDeviceIDFromFlash(void)
+{
+  // set device ID if < 0x80
+  u16 device_id = MEM16(BSL_DEVICE_ID_ADDR);
+  if( device_id < 0x80 )
+    MIOS32_MIDI_DeviceIDSet(device_id);
+
+  return 0; // no error
 }
 
 
@@ -317,12 +338,32 @@ s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_
       } else {
 	// program device ID if it has been changed
 	if( new_device_id != MIOS32_MIDI_DeviceIDGet() ) {
-	  // TODO: this will require an EEPROM emulation...
+	  // No EEPROM emulation used here (to save memory), accordingly the device ID can only be changed once!
+
+	  // if device ID has already been programmed, abort here to avoid invalid values!
+	  if( MIOS32_MIDI_DeviceIDGet() != 0x00 ) {
+	    BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_PROG_ID_NOT_ALLOWED);
+	    break;
+	  }
+
+	  MIOS32_IRQ_Disable();
+
+	  // FLASH_* routines are part of the STM32 code library
+	  FLASH_Unlock();
+
+	  FLASH_Status status;
+	  if( (status=FLASH_ProgramHalfWord(BSL_DEVICE_ID_ADDR, new_device_id)) != FLASH_COMPLETE ) {
+	    FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+	  }
+
+	  FLASH_Lock();	  
+
+	  MIOS32_IRQ_Enable();
 	}
 	// send acknowledge via old device ID
 	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
 	// change device ID
-	MIOS32_MIDI_DeviceIDSet(new_device_id);
+	BSL_FetchDeviceIDFromFlash();
 	// send acknowledge via new device ID
 	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
       }
@@ -502,15 +543,17 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
       if( (addr % FLASH_PAGE_SIZE) == 0 ) {
 	if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE ) {
 	  FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+	  MIOS32_IRQ_Enable();
 	  return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
 	}
       }
-      MIOS32_IRQ_Enable();
 
       if( (status=FLASH_ProgramHalfWord(addr, buffer[i+0] | ((u16)buffer[i+1] << 8))) != FLASH_COMPLETE ) {
 	FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+	MIOS32_IRQ_Enable();
 	return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
       }
+      MIOS32_IRQ_Enable();
 
       // TODO: verify programmed code
     }
