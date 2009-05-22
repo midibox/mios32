@@ -31,17 +31,17 @@
 
 #define TIMER0_BASE                 TIM2
 #define TIMER0_RCC   RCC_APB1Periph_TIM2
-#define TIMER0_IRQ                  TIM2_IRQChannel
+#define TIMER0_IRQ                  TIM2_IRQn
 #define TIMER0_IRQ_HANDLER     void TIM2_IRQHandler(void)
 
 #define TIMER1_BASE                 TIM3
 #define TIMER1_RCC   RCC_APB1Periph_TIM3
-#define TIMER1_IRQ                  TIM3_IRQChannel
+#define TIMER1_IRQ                  TIM3_IRQn
 #define TIMER1_IRQ_HANDLER     void TIM3_IRQHandler(void)
 
 #define TIMER2_BASE                 TIM5
 #define TIMER2_RCC   RCC_APB1Periph_TIM5
-#define TIMER2_IRQ                  TIM5_IRQChannel
+#define TIMER2_IRQ                  TIM5_IRQn
 #define TIMER2_IRQ_HANDLER     void TIM5_IRQHandler(void)
 
 

@@ -58,8 +58,8 @@
 #define MIOS32_SPI0_DMA_RX_PTR DMA1_Channel2
 #define MIOS32_SPI0_DMA_TX_PTR DMA1_Channel3
 #define MIOS32_SPI0_DMA_RX_IRQ_FLAGS (DMA1_FLAG_TC2 | DMA1_FLAG_TE2 | DMA1_FLAG_HT2 | DMA1_FLAG_GL2)
-#define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA1_Channel2_IRQChannel
-#define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMAChannel2_IRQHandler(void)
+#define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA1_Channel2_IRQn
+#define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMA1_Channel2_IRQHandler(void)
 
 #define MIOS32_SPI0_RCLK1_PORT GPIOA
 #define MIOS32_SPI0_RCLK1_PIN  GPIO_Pin_4
@@ -77,8 +77,8 @@
 #define MIOS32_SPI1_DMA_RX_PTR DMA1_Channel4
 #define MIOS32_SPI1_DMA_TX_PTR DMA1_Channel5
 #define MIOS32_SPI1_DMA_RX_IRQ_FLAGS (DMA1_FLAG_TC4 | DMA1_FLAG_TE4 | DMA1_FLAG_HT4 | DMA1_FLAG_GL4)
-#define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Channel4_IRQChannel
-#define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMAChannel4_IRQHandler(void)
+#define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Channel4_IRQn
+#define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMA1_Channel4_IRQHandler(void)
 
 #define MIOS32_SPI1_RCLK1_PORT GPIOB
 #define MIOS32_SPI1_RCLK1_PIN  GPIO_Pin_12
@@ -146,7 +146,6 @@ s32 MIOS32_SPI_Init(u32 mode)
   DMA_InitTypeDef DMA_InitStructure;
   DMA_StructInit(&DMA_InitStructure);
   NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_StructInit(&NVIC_InitStructure);
 
   ///////////////////////////////////////////////////////////////////////////
   // SPI0
