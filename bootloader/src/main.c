@@ -206,7 +206,15 @@ int main(void)
 
     // change stack pointer
     u32 *stack_pointer = (u32 *)0x08004000;
+#if 0
     __MSR_MSP(*stack_pointer);
+#else
+    u32 stack_pointer_value = *stack_pointer;
+    __asm volatile (		       \
+		    "   msr msp, %0\n" \
+                    :: "r" (stack_pointer_value) \
+                    );
+#endif
 
     // branch to application
     void (*application)(void) = (void *)*reset_vector;
