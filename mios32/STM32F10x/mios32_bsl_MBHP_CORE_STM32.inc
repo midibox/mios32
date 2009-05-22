@@ -1,5 +1,5 @@
 // $Id$
-// generated with 'gen_inc_file.pl project_MBHP_CORE_STM32.bin ../mios32/STM32F10x/mios32_bsl_MBHP_CORE_STM32.inc mios32_bsl_image mios32_bsl'
+// generated with 'gen_inc_file.pl project_MBHP_CORE_STM32.bin ../../mios32/STM32F10x/mios32_bsl_MBHP_CORE_STM32.inc mios32_bsl_image mios32_bsl'
 
 __attribute__ ((section(".mios32_bsl"))) const u8 mios32_bsl_image[16384] = {
 0x00,0x50,0x00,0x20,0x75,0x02,0x00,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,

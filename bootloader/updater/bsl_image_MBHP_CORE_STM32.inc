@@ -1,5 +1,5 @@
 // $Id$
-// generated with 'gen_inc_file.pl project_MBHP_CORE_STM32.bin updater/bsl_image_MBHP_CORE_STM32.inc bsl_image 0'
+// generated with 'gen_inc_file.pl project_MBHP_CORE_STM32.bin ../updater/bsl_image_MBHP_CORE_STM32.inc bsl_image 0'
 
 const u8 bsl_image[16384] = {
 0x00,0x50,0x00,0x20,0x75,0x02,0x00,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,

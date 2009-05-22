@@ -57,7 +57,7 @@ If the bootloader is up-to-date, you will get following messages:
 If the bootloader has to be updated, you will probably get following messages:
 
 | ====================
-| BootloaderUpdate
+| Bootloader V1.0
 | ====================
 | 
 | Checking Bootloader...
