@@ -17,7 +17,7 @@ LCD       =     dummy
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = crt0_STM32x.c \
+THUMB_SOURCE    = startup_stm32f10x_hd.c \
 		  main_dummy.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
