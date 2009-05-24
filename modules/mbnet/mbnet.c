@@ -125,7 +125,7 @@ s32 MBNET_Init(u32 mode)
   }
 
   // remap CAN pins
-  GPIO_PinRemapConfig(GPIO_Remap1_CAN, ENABLE);
+  GPIO_PinRemapConfig(GPIO_Remap1_CAN1, ENABLE);
 
   // configure CAN pins
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -140,7 +140,7 @@ s32 MBNET_Init(u32 mode)
   GPIO_Init(MBNET_TX_PORT, &GPIO_InitStructure);
 
   // enable CAN clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN, ENABLE);
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 
 #if 0
   // reset CAN
@@ -151,27 +151,27 @@ s32 MBNET_Init(u32 mode)
   // CAN initialisation
 
   // Request initialisation and wait until acknowledged
-  CAN->MCR = (1 << 0); // CAN_MCR_INRQ
+  CAN1->MCR = (1 << 0); // CAN_MCR_INRQ
   poll_ctr = 1000; // poll up to 1000 times
   // according to datasheet, CAN waits until all ongoing transfers are finished
-  while( !(CAN->MSR & (1 << 0)) ) { // CAN_MSR_INAK
+  while( !(CAN1->MSR & (1 << 0)) ) { // CAN_MSR_INAK
     if( --poll_ctr == 0 )
       return -1; // initialisation failed
   }
 
   // enable receive FIFO locked mode (if FIFO is full, next incoming message will be discarded)
-  CAN->MCR |= (1 << 3); // CAN_MCR_RFLM
+  CAN1->MCR |= (1 << 3); // CAN_MCR_RFLM
 
   // bit timings for 2 MBaud:
   // -> 72 Mhz / 2 / 3 -> 12 MHz --> 6 quanta for 2 MBaud
   //          normal mode               Resynch. Jump Width   Time Segment 1         Time Segment 2       Prescaler
-  CAN->BTR = (CAN_Mode_Normal << 30) | (CAN_SJW_1tq << 24) | (CAN_BS1_3tq << 16) | (CAN_BS2_2tq << 20) | (3 - 1);
+  CAN1->BTR = (CAN_Mode_Normal << 30) | (CAN_SJW_1tq << 24) | (CAN_BS1_3tq << 16) | (CAN_BS2_2tq << 20) | (3 - 1);
 
   // leave initialisation mode and wait for acknowledge
   // Datasheet: we expect that the bus is unbusy after CAN has monitored a sequence of 11 consecutive recessive bits
-  CAN->MCR &= ~(1 << 0); // CAN_MCR_INRQ
+  CAN1->MCR &= ~(1 << 0); // CAN_MCR_INRQ
   poll_ctr = 1000; // poll up to 1000 times
-  while( !(CAN->MSR & (1 << 0)) ) { // CAN_MSR_INAK
+  while( !(CAN1->MSR & (1 << 0)) ) { // CAN_MSR_INAK
     if( --poll_ctr == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNET] ----- initialisation FAILED! ------------------------------------------\n");
@@ -319,18 +319,18 @@ static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
       return -3; // transmission error
 
     // TODO: timeout required?
-    if     ( CAN->TSR & (1 << 26) ) // TME0
+    if     ( CAN1->TSR & (1 << 26) ) // TME0
       mailbox = 0;
-    else if( CAN->TSR & (1 << 27) ) // TME1
+    else if( CAN1->TSR & (1 << 27) ) // TME1
       mailbox = 1;
-    else if( CAN->TSR & (1 << 28) ) // TME2
+    else if( CAN1->TSR & (1 << 28) ) // TME2
       mailbox = 2;
   } while( mailbox == -1 ); // TODO: provide timeout mechanism
 
-  CAN->sTxMailBox[mailbox].TDTR = (dlc << 0); // set dlc, disable timestamp
-  CAN->sTxMailBox[mailbox].TDLR = msg.data_l;
-  CAN->sTxMailBox[mailbox].TDHR = msg.data_h;
-  CAN->sTxMailBox[mailbox].TIR = (mbnet_id.ALL << 3) | (1 << 2) | (1 << 0); // id field, EID flag, TX Req flag
+  CAN1->sTxMailBox[mailbox].TDTR = (dlc << 0); // set dlc, disable timestamp
+  CAN1->sTxMailBox[mailbox].TDLR = msg.data_l;
+  CAN1->sTxMailBox[mailbox].TDHR = msg.data_h;
+  CAN1->sTxMailBox[mailbox].TIR = (mbnet_id.ALL << 3) | (1 << 2) | (1 << 0); // id field, EID flag, TX Req flag
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   if( tos12_ctr <= 8 ) {
@@ -474,16 +474,16 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
   u8 again;   // allows to poll the FIFO again
   do {
     again = 0;
-    if( CAN->RF1R & 0x3 ) { // FMP1 contains number of messages
+    if( CAN1->RF1R & 0x3 ) { // FMP1 contains number of messages
       // get EID, MSG and DLC
       mbnet_id_t mbnet_id;
-      mbnet_id.ALL = CAN->sFIFOMailBox[1].RIR >> 3;
-      *dlc = CAN->sFIFOMailBox[1].RDTR & 0xf;
-      ack_msg->data_l = CAN->sFIFOMailBox[1].RDLR;
-      ack_msg->data_h = CAN->sFIFOMailBox[1].RDHR;
+      mbnet_id.ALL = CAN1->sFIFOMailBox[1].RIR >> 3;
+      *dlc = CAN1->sFIFOMailBox[1].RDTR & 0xf;
+      ack_msg->data_l = CAN1->sFIFOMailBox[1].RDLR;
+      ack_msg->data_h = CAN1->sFIFOMailBox[1].RDHR;
 
       // release FIFO, and check again next loop
-      CAN->RF1R = (1 << 5); // set RFOM1 flag
+      CAN1->RF1R = (1 << 5); // set RFOM1 flag
       again = 1;
 
       // response from expected slave? if not - ignore it!
@@ -658,17 +658,17 @@ s32 MBNET_Handler(void *_callback)
 #endif
   do {
     // check for incoming FIFO0 messages (MBNet requests)
-    if( CAN->RF0R & 0x3 ) { // FMP0 contains number of messages
+    if( CAN1->RF0R & 0x3 ) { // FMP0 contains number of messages
       // get EID, MSG and DLC
       mbnet_id_t mbnet_id;
-      mbnet_id.ALL = CAN->sFIFOMailBox[0].RIR >> 3;
-      u8 dlc = CAN->sFIFOMailBox[0].RDTR & 0xf;
+      mbnet_id.ALL = CAN1->sFIFOMailBox[0].RIR >> 3;
+      u8 dlc = CAN1->sFIFOMailBox[0].RDTR & 0xf;
       mbnet_msg_t req_msg;
-      req_msg.data_l = CAN->sFIFOMailBox[0].RDLR;
-      req_msg.data_h = CAN->sFIFOMailBox[0].RDHR;
+      req_msg.data_l = CAN1->sFIFOMailBox[0].RDLR;
+      req_msg.data_h = CAN1->sFIFOMailBox[0].RDHR;
 
       // release FIFO, and check again next loop
-      CAN->RF0R = (1 << 5); // set RFOM0 flag
+      CAN1->RF0R = (1 << 5); // set RFOM0 flag
       again = 1;
 
       // master node ID
@@ -832,11 +832,11 @@ static s32 MBNET_BusErrorCheck(void)
     return -1; // requires re-initialisation
 
   // exit if CAN not in error warning state
-  if( !(CAN->ESR & (1 << 0)) ) // EWGF
+  if( !(CAN1->ESR & (1 << 0)) ) // EWGF
     return 0; // no error
 
   // abort all pending transmissions
-  CAN->TSR |= (1 << 23) | (1 << 15) | (1 << 7); // set ABRQ[210]
+  CAN1->TSR |= (1 << 23) | (1 << 15) | (1 << 7); // set ABRQ[210]
 
   // notify that an abort has happened
   mbnet_state.PANIC = 1;
@@ -844,7 +844,7 @@ static s32 MBNET_BusErrorCheck(void)
   // TODO: try to recover
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[MBNET] ERRORs detected (CAN_ESR=0x%08x) - permanent off state reached!\n", CAN->ESR);
+  DEBUG_MSG("[MBNET] ERRORs detected (CAN_ESR=0x%08x) - permanent off state reached!\n", CAN1->ESR);
 #endif
 
   // recovery not possible: prevent MBNet accesses

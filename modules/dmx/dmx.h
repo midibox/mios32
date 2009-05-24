@@ -28,7 +28,7 @@
 #define DMX_RX_PORT     GPIOA
 #define DMX_RX_PIN      GPIO_Pin_10
 #define DMX             USART1
-#define DMX_IRQ_CHANNEL USART1_IRQChannel
+#define DMX_IRQ_CHANNEL USART1_IRQn
 #define DMX_IRQHANDLER_FUNC void USART1_IRQHandler(void)
 
 
