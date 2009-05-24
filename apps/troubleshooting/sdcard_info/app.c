@@ -101,43 +101,43 @@ s32 PrintSDCardInfos(void)
     // continue regardless if we got an error or not...
   } else {
     DEBUG_MSG("--------------------\n");
-    DEBUG_MSG("CSDStruct: %u\n", csd.CSDStruct);
-    DEBUG_MSG("SysSpecVersion: %u\n", csd.SysSpecVersion);
-    DEBUG_MSG("Reserved1: %u\n", csd.Reserved1);
-    DEBUG_MSG("TAAC: %u\n", csd.TAAC);
-    DEBUG_MSG("NSAC: %u\n", csd.NSAC);
-    DEBUG_MSG("MaxBusClkFrec: %u\n", csd.MaxBusClkFrec);
-    DEBUG_MSG("CardComdClasses: %u\n", csd.CardComdClasses);
-    DEBUG_MSG("RdBlockLen: %u\n", csd.RdBlockLen);
-    DEBUG_MSG("PartBlockRead: %u\n", csd.PartBlockRead);
-    DEBUG_MSG("WrBlockMisalign: %u\n", csd.WrBlockMisalign);
-    DEBUG_MSG("RdBlockMisalign: %u\n", csd.RdBlockMisalign);
-    DEBUG_MSG("DSRImpl: %u\n", csd.DSRImpl);
-    DEBUG_MSG("Reserved2: %u\n", csd.Reserved2);
-    DEBUG_MSG("DeviceSize: %u\n", csd.DeviceSize);
-    DEBUG_MSG("MaxRdCurrentVDDMin: %u\n", csd.MaxRdCurrentVDDMin);
-    DEBUG_MSG("MaxRdCurrentVDDMax: %u\n", csd.MaxRdCurrentVDDMax);
-    DEBUG_MSG("MaxWrCurrentVDDMin: %u\n", csd.MaxWrCurrentVDDMin);
-    DEBUG_MSG("MaxWrCurrentVDDMax: %u\n", csd.MaxWrCurrentVDDMax);
-    DEBUG_MSG("DeviceSizeMul: %u\n", csd.DeviceSizeMul);
-    DEBUG_MSG("EraseGrSize: %u\n", csd.EraseGrSize);
-    DEBUG_MSG("EraseGrMul: %u\n", csd.EraseGrMul);
-    DEBUG_MSG("WrProtectGrSize: %u\n", csd.WrProtectGrSize);
-    DEBUG_MSG("WrProtectGrEnable: %u\n", csd.WrProtectGrEnable);
-    DEBUG_MSG("ManDeflECC: %u\n", csd.ManDeflECC);
-    DEBUG_MSG("WrSpeedFact: %u\n", csd.WrSpeedFact);
-    DEBUG_MSG("MaxWrBlockLen: %u\n", csd.MaxWrBlockLen);
-    DEBUG_MSG("WriteBlockPaPartial: %u\n", csd.WriteBlockPaPartial);
-    DEBUG_MSG("Reserved3: %u\n", csd.Reserved3);
-    DEBUG_MSG("ContentProtectAppli: %u\n", csd.ContentProtectAppli);
-    DEBUG_MSG("FileFormatGrouop: %u\n", csd.FileFormatGrouop);
-    DEBUG_MSG("CopyFlag: %u\n", csd.CopyFlag);
-    DEBUG_MSG("PermWrProtect: %u\n", csd.PermWrProtect);
-    DEBUG_MSG("TempWrProtect: %u\n", csd.TempWrProtect);
-    DEBUG_MSG("FileFormat: %u\n", csd.FileFormat);
-    DEBUG_MSG("ECC: %u\n", csd.ECC);
-    DEBUG_MSG("msd_CRC: 0x%02x\n", csd.msd_CRC);
-    DEBUG_MSG("Reserved4: %u\n", csd.Reserved4);
+    DEBUG_MSG("- CSDStruct: %u\n", csd.CSDStruct);
+    DEBUG_MSG("- SysSpecVersion: %u\n", csd.SysSpecVersion);
+    DEBUG_MSG("- Reserved1: %u\n", csd.Reserved1);
+    DEBUG_MSG("- TAAC: %u\n", csd.TAAC);
+    DEBUG_MSG("- NSAC: %u\n", csd.NSAC);
+    DEBUG_MSG("- MaxBusClkFrec: %u\n", csd.MaxBusClkFrec);
+    DEBUG_MSG("- CardComdClasses: %u\n", csd.CardComdClasses);
+    DEBUG_MSG("- RdBlockLen: %u\n", csd.RdBlockLen);
+    DEBUG_MSG("- PartBlockRead: %u\n", csd.PartBlockRead);
+    DEBUG_MSG("- WrBlockMisalign: %u\n", csd.WrBlockMisalign);
+    DEBUG_MSG("- RdBlockMisalign: %u\n", csd.RdBlockMisalign);
+    DEBUG_MSG("- DSRImpl: %u\n", csd.DSRImpl);
+    DEBUG_MSG("- Reserved2: %u\n", csd.Reserved2);
+    DEBUG_MSG("- DeviceSize: %u\n", csd.DeviceSize);
+    DEBUG_MSG("- MaxRdCurrentVDDMin: %u\n", csd.MaxRdCurrentVDDMin);
+    DEBUG_MSG("- MaxRdCurrentVDDMax: %u\n", csd.MaxRdCurrentVDDMax);
+    DEBUG_MSG("- MaxWrCurrentVDDMin: %u\n", csd.MaxWrCurrentVDDMin);
+    DEBUG_MSG("- MaxWrCurrentVDDMax: %u\n", csd.MaxWrCurrentVDDMax);
+    DEBUG_MSG("- DeviceSizeMul: %u\n", csd.DeviceSizeMul);
+    DEBUG_MSG("- EraseGrSize: %u\n", csd.EraseGrSize);
+    DEBUG_MSG("- EraseGrMul: %u\n", csd.EraseGrMul);
+    DEBUG_MSG("- WrProtectGrSize: %u\n", csd.WrProtectGrSize);
+    DEBUG_MSG("- WrProtectGrEnable: %u\n", csd.WrProtectGrEnable);
+    DEBUG_MSG("- ManDeflECC: %u\n", csd.ManDeflECC);
+    DEBUG_MSG("- WrSpeedFact: %u\n", csd.WrSpeedFact);
+    DEBUG_MSG("- MaxWrBlockLen: %u\n", csd.MaxWrBlockLen);
+    DEBUG_MSG("- WriteBlockPaPartial: %u\n", csd.WriteBlockPaPartial);
+    DEBUG_MSG("- Reserved3: %u\n", csd.Reserved3);
+    DEBUG_MSG("- ContentProtectAppli: %u\n", csd.ContentProtectAppli);
+    DEBUG_MSG("- FileFormatGrouop: %u\n", csd.FileFormatGrouop);
+    DEBUG_MSG("- CopyFlag: %u\n", csd.CopyFlag);
+    DEBUG_MSG("- PermWrProtect: %u\n", csd.PermWrProtect);
+    DEBUG_MSG("- TempWrProtect: %u\n", csd.TempWrProtect);
+    DEBUG_MSG("- FileFormat: %u\n", csd.FileFormat);
+    DEBUG_MSG("- ECC: %u\n", csd.ECC);
+    DEBUG_MSG("- msd_CRC: 0x%02x\n", csd.msd_CRC);
+    DEBUG_MSG("- Reserved4: %u\n", csd.Reserved4);
     DEBUG_MSG("--------------------\n");
   }
   
@@ -201,10 +201,10 @@ s32 PrintSDCardInfos(void)
       u8 file_name[13];
       ++num_files;
       DFS_DirToCanonical(file_name, de.name);
-      DEBUG_MSG("  %s\n", file_name);
+      DEBUG_MSG("- %s\n", file_name);
     }
   }
-  DEBUG_MSG("Found %u files.\n", num_files);
+  DEBUG_MSG("Found %u directory entries.\n", num_files);
   DEBUG_MSG("--------------------\n");
 
   return 0; // no error
