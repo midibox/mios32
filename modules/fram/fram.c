@@ -89,7 +89,7 @@ s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u
             }
           }
         }
-      // transmit extension buffer with mem-address and first two data bytes
+      // transmit extension buffer with mem-address and first two data bytes, no stop condition
       MIOS32_IIC_Transfer(FRAM_IIC_PORT, IIC_Write_WithoutStop, device_addr, ext_buf, (buffer_len >= 2) ? 4 : (2 + buffer_len) );
       res = MIOS32_IIC_TransferWait(FRAM_IIC_PORT);
       // transmit buffer with mem-address and (buffer_len - 2) data bytes
@@ -99,10 +99,12 @@ s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u
         }
       break;
     case FRAM_Read:
+      // transmit mem-address in extension buffer, no stop
       MIOS32_IIC_Transfer(FRAM_IIC_PORT, IIC_Write_WithoutStop, device_addr, ext_buf, 2);
       res = MIOS32_IIC_TransferWait(FRAM_IIC_PORT);
-      if( res == 0 ){
-       res = MIOS32_IIC_Transfer(FRAM_IIC_PORT, IIC_Read, device_addr, buffer, buffer_len);
+      // receive bytes starting at mem-address transmitted
+      if( res == 0 && buffer_len > 0 ){
+       MIOS32_IIC_Transfer(FRAM_IIC_PORT, IIC_Read, device_addr, buffer, buffer_len);
        res = MIOS32_IIC_TransferWait(FRAM_IIC_PORT);
        }
       break;
