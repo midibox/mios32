@@ -53,14 +53,14 @@
 typedef enum{
   FRAM_Read,
   FRAM_Write
-}FRAM_transfer_t
+}FRAM_transfer_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 FRAM_Init(void);
-extern s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u32 mem_addr, u8 *buffer, u8 buffer_len);
+extern s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len);
 extern s32 FRAM_CheckDevice(u8 device_addr);
 
 #endif /* _FRAM_H */
