@@ -37,6 +37,6 @@ extern s32 MODULE_X_ThisAndThat(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 global_var;
+extern s32 MODULE_X_global_var;
 
 #endif /* _MODULE_X_H */
