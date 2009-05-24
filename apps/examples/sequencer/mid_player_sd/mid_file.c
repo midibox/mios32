@@ -151,11 +151,11 @@ static s32 MID_FILE_mount_fs(void)
   if( ptype != 0x04 && ptype != 0x06 && ptype != 0x0b && ptype != 0x0c && ptype != 0x0e ) {
     pstart = 0;
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE] Partition 0 start sector %u (invalid type, assuming superfloppy format)\n", pstart);
+    DEBUG_MSG("[MID_FILE] Partition 0 start sector %u (invalid type, assuming superfloppy format)\n", pstart);
 #endif
   } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE] Partition 0 start sector %u active 0x%02x type 0x%02x size %u\n", pstart, pactive, ptype, psize);
+    DEBUG_MSG("[MID_FILE] Partition 0 start sector %u active 0x%02x type 0x%02x size %u\n", pstart, pactive, ptype, psize);
 #endif
   }
 
@@ -172,16 +172,16 @@ static s32 MID_FILE_mount_fs(void)
   DEBUG_MSG("[MID_FILE] %u sectors per FAT, first FAT at sector #%u, root dir at #%u.\n",vi.secperfat,vi.fat1,vi.rootdir);
   DEBUG_MSG("[MID_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
   DEBUG_MSG("[MID_FILE] %u root dir entries, data area commences at sector #%u.\n",vi.rootentries,vi.dataarea);
-  DEBUG_MSG("[MID_FILE] %u clusters (%u bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
-  if (vi.filesystem == FAT12)
-    DEBUG_MSG("FAT12.\n");
+  char file_system[20];
+  if( vi.filesystem == FAT12 )
+    strcpy(file_system, "FAT12");
   else if (vi.filesystem == FAT16)
-    DEBUG_MSG("FAT16.\n");
+    strcpy(file_system, "FAT16");
   else if (vi.filesystem == FAT32)
-    DEBUG_MSG("FAT32.\n");
-  else {
-    DEBUG_MSG("[MID_FILE] [unknown]\n");
-  }
+    strcpy(file_system, "FAT32");
+  else
+    strcpy(file_system, "unknown FS");
+  DEBUG_MSG("[MID_FILE] %u clusters (%u bytes) in data area, filesystem IDd as %s\n", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE, file_system);
 #endif
 
   if( vi.filesystem != FAT12 && vi.filesystem != FAT16 && vi.filesystem != FAT32 )
