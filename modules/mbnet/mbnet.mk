@@ -8,7 +8,7 @@ C_INCLUDE += -I $(MIOS32_PATH)/modules/mbnet
 # add modules to thumb sources (TODO: provide makefile option to add code to ARM sources)
 THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/mbnet/mbnet.c \
-	$(DRIVER_LIB)/src/stm32f10x_can.c
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c
 
 
 

@@ -51,6 +51,8 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+# (for the case that the LCD driver hasn't already included the GLCD font package)
+include $(MIOS32_PATH)/modules/glcd_font/glcd_font.mk
 
 # DMX 
 include $(MIOS32_PATH)/modules/dmx/dmx.mk
