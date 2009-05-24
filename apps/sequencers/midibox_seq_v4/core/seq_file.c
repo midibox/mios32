@@ -249,16 +249,16 @@ static s32 SEQ_FILE_MountFS(void)
   DEBUG_MSG("[SEQ_FILE] %u sectors per FAT, first FAT at sector #%u, root dir at #%u.\n",vi.secperfat,vi.fat1,vi.rootdir);
   DEBUG_MSG("[SEQ_FILE] (For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
   DEBUG_MSG("[SEQ_FILE] %u root dir entries, data area commences at sector #%u.\n",vi.rootentries,vi.dataarea);
-  DEBUG_MSG("[SEQ_FILE] %u clusters (%u bytes) in data area, filesystem IDd as ", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE);
-  if (vi.filesystem == FAT12)
-    DEBUG_MSG("FAT12.\n");
+  char file_system[20];
+  if( vi.filesystem == FAT12 )
+    strcpy(file_system, "FAT12");
   else if (vi.filesystem == FAT16)
-    DEBUG_MSG("FAT16.\n");
+    strcpy(file_system, "FAT16");
   else if (vi.filesystem == FAT32)
-    DEBUG_MSG("FAT32.\n");
-  else {
-    DEBUG_MSG("[SEQ_FILE] [unknown]\n");
-  }
+    strcpy(file_system, "FAT32");
+  else
+    strcpy(file_system, "unknown FS");
+  DEBUG_MSG("[SEQ_FILE] %u clusters (%u bytes) in data area, filesystem IDd as %s", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE, file_system);
 #endif
 
 
