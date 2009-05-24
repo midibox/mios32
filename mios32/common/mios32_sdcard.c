@@ -54,6 +54,12 @@
 #define SDCMD_SEND_OP_COND	0x41
 #define SDCMD_SEND_OP_COND_CRC	0xf9
 
+#define SDCMD_SEND_CSD	        0x49
+#define SDCMD_SEND_CSD_CRC      0xff
+
+#define SDCMD_SEND_CID	        0x4a
+#define SDCMD_SEND_CID_CRC      0xff
+
 #define SDCMD_SEND_STATUS	0x4d
 #define SDCMD_SEND_STATUS_CRC	0xaf
 
@@ -412,6 +418,199 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 
   // deactivate chip select
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Reads the CID informations from SD Card
+//! \param[in] *cid pointer to buffer which holds the CID informations
+//! \return 0 if the informations haven been successfully read
+//! \return -error if error occured during read operation
+//! \return -256 if timeout during command has been sent
+//! \return -257 if timeout while waiting for start token
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
+{
+  s32 status;
+  int i;
+
+  // init SPI port for fast frequency access (ca. 18 MBit/s)
+  // this is required for the case that the SPI port is shared with other devices
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+
+  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CID, 0, SDCMD_SEND_CID_CRC)) )
+    return (status < 0) ? -256 : status; // return timeout indicator or error flags
+
+  // wait for start token of the data block
+  for(i=0; i<65536; ++i) { // TODO: check if sufficient
+    u8 ret = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+    if( ret != 0xff )
+      break;
+  }
+  if( i == 65536 ) {
+    // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    return -257;
+  }
+
+  // read 16 bytes via DMA
+  u8 cid_buffer[16];
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, NULL, cid_buffer, 16, NULL);
+
+  // read (and ignore) CRC
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+
+  // required for clocking (see spec)
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+
+  // deactivate chip select
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+  // sort returned informations into CID structure
+  // from STM Mass Storage example
+  /* Byte 0 */
+  cid->ManufacturerID = cid_buffer[0];
+  /* Byte 1 */
+  cid->OEM_AppliID = cid_buffer[1] << 8;
+  /* Byte 2 */
+  cid->OEM_AppliID |= cid_buffer[2];
+  /* Byte 3..7 */
+  for(i=0; i<5; ++i)
+    cid->ProdName[i] = cid_buffer[3+i];
+  cid->ProdName[5] = 0; // string terminator
+  /* Byte 8 */
+  cid->ProdRev = cid_buffer[8];
+  /* Byte 9 */
+  cid->ProdSN = cid_buffer[9] << 24;
+  /* Byte 10 */
+  cid->ProdSN |= cid_buffer[10] << 16;
+  /* Byte 11 */
+  cid->ProdSN |= cid_buffer[11] << 8;
+  /* Byte 12 */
+  cid->ProdSN |= cid_buffer[12];
+  /* Byte 13 */
+  cid->Reserved1 |= (cid_buffer[13] & 0xF0) >> 4;
+  /* Byte 14 */
+  cid->ManufactDate = (cid_buffer[13] & 0x0F) << 8;
+  /* Byte 15 */
+  cid->ManufactDate |= cid_buffer[14];
+  /* Byte 16 */
+  cid->msd_CRC = (cid_buffer[15] & 0xFE) >> 1;
+  cid->Reserved2 = 1;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Reads the CSD informations from SD Card
+//! \param[in] *csd pointer to buffer which holds the CSD informations
+//! \return 0 if the informations haven been successfully read
+//! \return -error if error occured during read operation
+//! \return -256 if timeout during command has been sent
+//! \return -257 if timeout while waiting for start token
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
+{
+  s32 status;
+  int i;
+
+  // init SPI port for fast frequency access (ca. 18 MBit/s)
+  // this is required for the case that the SPI port is shared with other devices
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+
+  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CSD, 0, SDCMD_SEND_CSD_CRC)) )
+    return (status < 0) ? -256 : status; // return timeout indicator or error flags
+
+  // wait for start token of the data block
+  for(i=0; i<65536; ++i) { // TODO: check if sufficient
+    u8 ret = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+    if( ret != 0xff )
+      break;
+  }
+  if( i == 65536 ) {
+    // deactivate chip select and return error code
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    return -257;
+  }
+
+  // read 16 bytes via DMA
+  u8 csd_buffer[16];
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, NULL, csd_buffer, 16, NULL);
+
+  // read (and ignore) CRC
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+
+  // required for clocking (see spec)
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+
+  // deactivate chip select
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+  // sort returned informations into CSD structure
+  // from STM Mass Storage example
+  /* Byte 0 */
+  csd->CSDStruct = (csd_buffer[0] & 0xC0) >> 6;
+  csd->SysSpecVersion = (csd_buffer[0] & 0x3C) >> 2;
+  csd->Reserved1 = csd_buffer[0] & 0x03;
+  /* Byte 1 */
+  csd->TAAC = csd_buffer[1] ;
+  /* Byte 2 */
+  csd->NSAC = csd_buffer[2];
+  /* Byte 3 */
+  csd->MaxBusClkFrec = csd_buffer[3];
+  /* Byte 4 */
+  csd->CardComdClasses = csd_buffer[4] << 4;
+  /* Byte 5 */
+  csd->CardComdClasses |= (csd_buffer[5] & 0xF0) >> 4;
+  csd->RdBlockLen = csd_buffer[5] & 0x0F;
+  /* Byte 6 */
+  csd->PartBlockRead = (csd_buffer[6] & 0x80) >> 7;
+  csd->WrBlockMisalign = (csd_buffer[6] & 0x40) >> 6;
+  csd->RdBlockMisalign = (csd_buffer[6] & 0x20) >> 5;
+  csd->DSRImpl = (csd_buffer[6] & 0x10) >> 4;
+  csd->Reserved2 = 0; /* Reserved */
+  csd->DeviceSize = (csd_buffer[6] & 0x03) << 10;
+  /* Byte 7 */
+  csd->DeviceSize |= (csd_buffer[7]) << 2;
+  /* Byte 8 */
+  csd->DeviceSize |= (csd_buffer[8] & 0xC0) >> 6;
+  csd->MaxRdCurrentVDDMin = (csd_buffer[8] & 0x38) >> 3;
+  csd->MaxRdCurrentVDDMax = (csd_buffer[8] & 0x07);
+  /* Byte 9 */
+  csd->MaxWrCurrentVDDMin = (csd_buffer[9] & 0xE0) >> 5;
+  csd->MaxWrCurrentVDDMax = (csd_buffer[9] & 0x1C) >> 2;
+  csd->DeviceSizeMul = (csd_buffer[9] & 0x03) << 1;
+  /* Byte 10 */
+  csd->DeviceSizeMul |= (csd_buffer[10] & 0x80) >> 7;
+  csd->EraseGrSize = (csd_buffer[10] & 0x7C) >> 2;
+  csd->EraseGrMul = (csd_buffer[10] & 0x03) << 3;
+  /* Byte 11 */
+  csd->EraseGrMul |= (csd_buffer[11] & 0xE0) >> 5;
+  csd->WrProtectGrSize = (csd_buffer[11] & 0x1F);
+  /* Byte 12 */
+  csd->WrProtectGrEnable = (csd_buffer[12] & 0x80) >> 7;
+  csd->ManDeflECC = (csd_buffer[12] & 0x60) >> 5;
+  csd->WrSpeedFact = (csd_buffer[12] & 0x1C) >> 2;
+  csd->MaxWrBlockLen = (csd_buffer[12] & 0x03) << 2;
+  /* Byte 13 */
+  csd->MaxWrBlockLen |= (csd_buffer[13] & 0xc0) >> 6;
+  csd->WriteBlockPaPartial = (csd_buffer[13] & 0x20) >> 5;
+  csd->Reserved3 = 0;
+  csd->ContentProtectAppli = (csd_buffer[13] & 0x01);
+  /* Byte 14 */
+  csd->FileFormatGrouop = (csd_buffer[14] & 0x80) >> 7;
+  csd->CopyFlag = (csd_buffer[14] & 0x40) >> 6;
+  csd->PermWrProtect = (csd_buffer[14] & 0x20) >> 5;
+  csd->TempWrProtect = (csd_buffer[14] & 0x10) >> 4;
+  csd->FileFormat = (csd_buffer[14] & 0x0C) >> 2;
+  csd->ECC = (csd_buffer[14] & 0x03);
+  /* Byte 15 */
+  csd->msd_CRC = (csd_buffer[15] & 0xFE) >> 1;
+  csd->Reserved4 = 1;
 
   return 0; // no error
 }
