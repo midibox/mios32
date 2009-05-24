@@ -26,6 +26,26 @@
 #define FRAM_IIC_PORT 1
 #endif
 
+#ifndef FRAM_MULTIPLEX_ENABLE
+#define FRAM_MULTIPLEX_ENABLE 1
+#endif
+
+#if FRAM_MULTIPLEX_ENABLE==1
+
+// defaults to J19:RC1
+#ifndef FRAM_MULTIPLEX_PORT_MSB
+#define FRAM_MULTIPLEX_PORT_MSB GPIOC
+#define FRAM_MULTIPLEX_PIN_MSB GPIO_Pin_13
+#endif
+
+// defaults to J19:RC2
+#ifndef FRAM_MULTIPLEX_PORT_LSB
+#define FRAM_MULTIPLEX_PORT_LSB GPIOC
+#define FRAM_MULTIPLEX_PIN_LSB GPIO_Pin_14
+#endif
+
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -33,7 +53,7 @@
 typedef enum{
   FRAM_Read,
   FRAM_Write
-  }FRAM_transfer_t
+}FRAM_transfer_t
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
