@@ -51,8 +51,7 @@ s32 FRAM_Init(void){
 
 /////////////////////////////////////////////////////////////////////////////
 // This function starts a FRAM transfer
-// IN: transfer_type (FRAM_Read_Blocking / FRAM_Read_Non_Blocking / 
-//       FRAM_Write_Blocking / FRAM_Write_Non_Blocking)
+// IN: transfer_type (FRAM_Read / FRAM_Write)
 //     device_addr: FRAM device number (address selector pin's)
 //     mem_addr: memory-address in FRAM memory
 //     buffer: pointer to r/w buffer
