@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -58,14 +59,14 @@
 
 static int osc_server_socket;
 
-PmStream *midi_out;
-PmStream *midi_in;
-int midi_out_port;
-int midi_in_port;
+static PmStream *midi_out;
+static PmStream *midi_in;
+static int midi_out_port;
+static int midi_in_port;
 
-volatile int terminated;
+static volatile int terminated;
 
-struct sockaddr_in remote_address_info;
+static struct sockaddr_in remote_address_info;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -126,7 +127,7 @@ int get_number(char *prompt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called on incoming MIDI events
+// This function is called periodically to check for incoming MIDI events
 /////////////////////////////////////////////////////////////////////////////
 void receive_poll(PtTimestamp timestamp, void *userData)
 {
@@ -197,7 +198,10 @@ static void proxy_handler(void)
   // It is recommended to start timer before PortMidi
   Pt_Start(1, receive_poll, 0);
   status = Pm_OpenInput(&midi_in, midi_in_port, NULL, 512, NULL, NULL);
-  printf("MIDI IN opened.\n");
+  {
+    const PmDeviceInfo *info = Pm_GetDeviceInfo(midi_in_port);
+    printf("MIDI IN '%s: %s' opened.\n", info->interf, info->name);
+  }
 
   if( status ) {
     printf(Pm_GetErrorText(status));
@@ -214,7 +218,10 @@ static void proxy_handler(void)
 		NULL, // (latency == 0 ? NULL : PMIDI_TIME_PROC),
 		NULL, // (latency == 0 ? NULL : PMIDI_TIME_INFO), 
 		0);   //  latency);
-  printf("MIDI OUT opened.\n");
+  {
+    const PmDeviceInfo *info = Pm_GetDeviceInfo(midi_out_port);
+    printf("MIDI OUT '%s: %s' opened.\n", info->interf, info->name);
+  }
 
   printf("Proxy is running!\n");
   terminated = 0;
@@ -242,28 +249,57 @@ static void proxy_handler(void)
 }
 
 
+int usage(char *program_name)
+{
+  printf("SYNTAX: %s <remote-host> <port> [--in <in-port-number>] [--out <out-port-number>]\n", program_name);
+  return 1;
+}
 
 
 int main(int argc, char* argv[])
 {
   int default_in;
+  int opt_in = -1;
   int default_out;
+  int opt_out = -1;
   int i = 0, n = 0;
-  char line[STRING_MAX];
   char *remote_host_name;
+  char *program_name = argv[0];
     
   struct sockaddr_in host_address_info;
   int host_port;
   int status;
   struct hostent *remote_host_info;
   long remote_address;
+  int ch;
 
-  if(argc < 3) {
-    printf("SYNTAX: osc_midi_proxy <remote-host> <port>\n");
-    return 0;
+  // options descriptor
+  const struct option longopts[] = {
+    { "in",    required_argument, NULL, 'i' },
+    { "out",   required_argument, NULL, 'o' },
+    { NULL,    0,                 NULL,  0 }
+  };
+
+  while( (ch=getopt_long(argc, argv, "io", longopts, NULL)) != -1 )
+    switch( ch ) {
+      case 'i':
+	opt_in = atoi(optarg);
+	break;
+      case 'o':
+	opt_out = atoi(optarg);
+	break;
+    default:
+      return usage(program_name);
+    }
+
+  argc -= optind;
+  argv += optind;
+
+  if(argc != 2) {
+    return usage(program_name);
   } else {
-    remote_host_name = argv[1];
-    host_port = atoi(argv[2]);
+    remote_host_name = argv[0];
+    host_port = atoi(argv[1]);
   }
 
   // make a socket
@@ -272,10 +308,10 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  /* get IP address from name */
+  // get IP address from name
   remote_host_info = gethostbyname(remote_host_name);
 
-  /* fill address struct */
+  // fill address struct
   memcpy(&remote_address, remote_host_info->h_addr, remote_host_info->h_length);
   remote_address_info.sin_addr.s_addr = remote_address;
   remote_address_info.sin_port        = htons(host_port);
@@ -292,31 +328,46 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  /* list device information */
+  // list device information
   default_in = Pm_GetDefaultInputDeviceID();
   default_out = Pm_GetDefaultOutputDeviceID();
 
-  // determine which output device to use
-  for(i = 0; i < Pm_CountDevices(); i++) {
-    char *deflt;
-    const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
-    if( info->output ) {
-      deflt = (i == default_out ? "default " : "");
-      printf("%d: %s, %s (%soutput)\n", i, info->interf, info->name, deflt);
+  if( opt_in >= 0 ) {
+    midi_in_port = opt_in;
+  } else {
+    // determine which input device to use
+    for(i = 0; i < Pm_CountDevices(); i++) {
+      char *deflt;
+      const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+      if( info->input ) {
+	deflt = (i == default_in ? "default " : "");
+	printf("[%2d] %s, %s (%sinput)\n", i, info->interf, info->name, deflt);
+      }
     }
+    midi_in_port = get_number("Type input number: ");
   }
-  midi_out_port = get_number("Type output number: ");
 
-  // determine which input device to use
-  for(i = 0; i < Pm_CountDevices(); i++) {
-    char *deflt;
-    const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
-    if( info->input ) {
-      deflt = (i == default_in ? "default " : "");
-      printf("%d: %s, %s (%sinput)\n", i, info->interf, info->name, deflt);
+  if( opt_out >= 0 ) {
+    midi_out_port = opt_out;
+  } else {
+    // determine which output device to use
+    for(i = 0; i < Pm_CountDevices(); i++) {
+      char *deflt;
+      const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+      if( info->output ) {
+	deflt = (i == default_out ? "default " : "");
+	printf("[%2d] %s: %s (%soutput)\n", i, info->interf, info->name, deflt);
+      }
     }
+    midi_out_port = get_number("Type output number: ");
   }
-  midi_in_port = get_number("Type input number: ");
+
+  if( opt_in == -1 || opt_out == -1 ) {
+    printf("HINT: next time you could select the MIDI In/Out port from command line with: %s ", program_name);
+    for(i=0; i<argc; ++i)
+      printf("%s ", argv[i]);
+    printf("--in %d --out %d\n", midi_in_port, midi_out_port);
+  }
   
   // start proxy loop
   proxy_handler();
