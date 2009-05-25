@@ -130,6 +130,7 @@ static mios32_midi_port_t debug_port   = MIOS32_MIDI_DEBUG_PORT;
 static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 (*timeout_callback_func)(mios32_midi_port_t port);
+static s32 (*debug_command_callback_func)(mios32_midi_port_t port, char c);
 
 static sysex_state_t sysex_state;
 static u8 sysex_device_id;
@@ -163,6 +164,7 @@ static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_CmdFinished(void);
 static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
+static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
 static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str);
@@ -186,11 +188,10 @@ s32 MIOS32_MIDI_Init(u32 mode)
   default_port = MIOS32_MIDI_DEFAULT_PORT;
   debug_port = MIOS32_MIDI_DEBUG_PORT;
 
-  // disable Rx/Tx callback functions
+  // disable callback functions
   direct_rx_callback_func = NULL;
   direct_tx_callback_func = NULL;
-
-  // timeout callback function
+  debug_command_callback_func = NULL;
   timeout_callback_func = NULL;
 
   // initialize interfaces
@@ -743,7 +744,7 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
 
   // command identifier
-  *sysex_buffer_ptr++ = 0x40; // string
+  *sysex_buffer_ptr++ = 0x40; // output string
 
   // search end of string and determine length
   u16 len = sizeof(mios32_midi_sysex_header) + 3;
@@ -800,7 +801,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
     *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
 
     // command identifier
-    *sysex_buffer_ptr++ = 0x40; // string
+    *sysex_buffer_ptr++ = 0x40; // output string
 
     // build line:
     // add source address
@@ -959,7 +960,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
       package.cable = 0;
 
       // branch depending on package type
-      if( package.type >= 0x8 ) {
+      if( package.type >= 0x8 && package.type < 0xf ) {
 	if( callback_event != NULL )
 	  callback_event(port, package);
       } else {
@@ -975,6 +976,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    break;
 
 	  case 0x4: // SysEx starts or continues (3 bytes)
+	  case 0xf: // Single byte is interpreted as SysEx as well (I noticed that portmidi sometimes sends single bytes!)
 	    if( package.evnt0 == 0xf0 ) {
 	      // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
 	      if( !sysex_timeout_ctr_flags.ALL ) {
@@ -996,12 +998,17 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    }
 
 	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
-	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
-	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
+	    if( package.type != 0x0f ) {
+	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
+	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
+	    }
+
 	    if( callback_sysex != NULL ) {
 	      callback_sysex(port, package.evnt0); // -> forwarded as SysEx
-	      callback_sysex(port, package.evnt1); // -> forwarded as SysEx
-	      callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	      if( package.type != 0x0f ) {
+		callback_sysex(port, package.evnt1); // -> forwarded as SysEx
+		callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+	      }
 	    }
 	    break;
 
@@ -1225,7 +1232,6 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
   return 0; // no error
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 //! This function allows to change the DEFAULT port.<BR>
 //! The preset which will be used after application reset can be set in
@@ -1390,6 +1396,9 @@ static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_
     case 0x00:
       MIOS32_MIDI_SYSEX_Cmd_Query(port, cmd_state, midi_in);
       break;
+    case 0x0d:
+      MIOS32_MIDI_SYSEX_Cmd_Debug(port, cmd_state, midi_in);
+      break;
     case 0x0f:
       MIOS32_MIDI_SYSEX_Cmd_Ping(port, cmd_state, midi_in);
       break;
@@ -1478,6 +1487,54 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Command 0D: Debug Input/Output
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
+{
+  static u8 debug_req = 0xff;
+
+  switch( cmd_state ) {
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
+      debug_req = 0xff;
+      break;
+
+    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
+      if( debug_req == 0xff ) {
+	debug_req = midi_in;
+      } else {
+	switch( debug_req ) {
+	  case 0x00: // input string
+	    if( debug_command_callback_func != NULL )
+	      debug_command_callback_func(last_sysex_port, (char)midi_in);
+	    break;
+
+	  case 0x40: // output string
+	    // not supported - DisAck will be sent
+	    break;
+
+	  default: // others
+	    // not supported - DisAck will be sent
+	    break;
+	}
+      }
+      break;
+
+    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
+      if( debug_req == 0x00 ) {
+	// send acknowledge
+	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
+      } else {
+	// send disacknowledge
+	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_UNSUPPORTED_DEBUG);
+      }
+  }
+
+  return 0; // no error
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Command 0F: Ping (just send back acknowledge)
 /////////////////////////////////////////////////////////////////////////////
@@ -1559,6 +1616,35 @@ static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 
   // finally send SysEx stream
   return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs the debug command callback function which is executed on incoming
+//! characters from a MIOS Terminal
+//!
+//! Example:
+//! \code
+//! s32 CONSOLE_Parse(mios32_midi_port_t port, char c)
+//! {
+//!   // see $MIOS32_PATH/apps/examples/midi_console/
+//!   
+//!   return 0; // no error
+//! }
+//! \endcode
+//!
+//! The callback function has been installed in an Init() function with:
+//! \code
+//!   MIOS32_MIDI_DebugCommandCallback_Init(CONSOLE_Parse);
+//! \endcode
+//! \param[in] callback_debug_command the callback function (NULL disables the callback)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_DebugCommandCallback_Init(void *callback_debug_command)
+{
+  debug_command_callback_func = callback_debug_command;
+
+  return 0; // no error
 }
 
 

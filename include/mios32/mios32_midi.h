@@ -34,7 +34,7 @@
 // Uses by MIOS32 SysEx parser
 /////////////////////////////////////////////////////////////////////////////
 
-// MIDI acknowledge reply codes
+// MIDI commands and acknowledge reply codes
 #define MIOS32_MIDI_SYSEX_DEBUG    0x0d
 #define MIOS32_MIDI_SYSEX_DISACK   0x0e
 #define MIOS32_MIDI_SYSEX_ACK      0x0f
@@ -55,6 +55,7 @@
 #define MIOS32_MIDI_SYSEX_DISACK_UNKNOWN_QUERY        0x0d
 #define MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND      0x0e
 #define MIOS32_MIDI_SYSEX_DISACK_PROG_ID_NOT_ALLOWED  0x0f
+#define MIOS32_MIDI_SYSEX_DISACK_UNSUPPORTED_DEBUG    0x10
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -238,6 +239,8 @@ extern mios32_midi_port_t MIOS32_MIDI_DebugPortGet(void);
 
 extern s32 MIOS32_MIDI_DeviceIDSet(u8 device_id);
 extern u8  MIOS32_MIDI_DeviceIDGet(void);
+
+extern s32 MIOS32_MIDI_DebugCommandCallback_Init(void *callback_debug_command);
 
 extern s32 MIOS32_MIDI_TimeOutCallback_Init(void *callback_timeout);
 

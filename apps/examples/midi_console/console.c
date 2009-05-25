@@ -41,6 +41,10 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 s32 CONSOLE_Init(u32 mode)
 {
+  // install the callback function which is called on incoming characters
+  // from MIOS Terminal
+  MIOS32_MIDI_DebugCommandCallback_Init(CONSOLE_Parse);
+
   // clear line buffer
   line_buffer[0] = 0;
   line_ix = 0;
@@ -51,13 +55,13 @@ s32 CONSOLE_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Parser
 /////////////////////////////////////////////////////////////////////////////
-s32 CONSOLE_Parse(mios32_com_port_t port, u8 byte)
+s32 CONSOLE_Parse(mios32_midi_port_t port, u8 byte)
 {
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
     // send back command string for debugging
-    MIOS32_COM_SendFormattedString(port, "Command: '%s'\n", line_buffer);
+    MIOS32_MIDI_SendDebugMessage("Command: '%s'\n", line_buffer);
 
     // example for parsing the command:
     char *separators = " \t";
@@ -68,17 +72,17 @@ s32 CONSOLE_Parse(mios32_com_port_t port, u8 byte)
       if( strncmp(parameter, "cmd1", 4) == 0 ) {
 	  parameter += 4;
 
-	  MIOS32_COM_SendFormattedString(port, "Command 'cmd1' has been parsed with following parameters:\n");
+	  MIOS32_MIDI_SendDebugMessage("Command 'cmd1' has been parsed with following parameters:\n");
 
 	  char *arg;
 	  int num_arg = 0;
 	  while( (arg = strtok_r(NULL, separators, &brkt)) ) {
 	    ++num_arg;
-	    MIOS32_COM_SendFormattedString(port, "Arg #%d: '%s'\n", num_arg, arg);
+	    MIOS32_MIDI_SendDebugMessage("Arg #%d: '%s'\n", num_arg, arg);
 	  }
-	  MIOS32_COM_SendFormattedString(port, "Found %d arguments\n", num_arg);
+	  MIOS32_MIDI_SendDebugMessage("Found %d arguments\n", num_arg);
       } else {
-	MIOS32_COM_SendFormattedString(port, "Unknown command - currently only 'cmd1 [<arg1>] ...' is supported. Please try!\n");
+	MIOS32_MIDI_SendDebugMessage("Unknown command - currently only 'cmd1 [<arg1>] ...' is supported. Please try!\n");
       }
     }
 

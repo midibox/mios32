@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Demo application for USB COM based debugging console
+ * Demo application for a Debug Console via MIDI
  *
  * ==========================================================================
  *
@@ -22,6 +22,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via MIDI
+// should be enabled for this application!
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
@@ -30,6 +38,16 @@ void APP_Init(void)
 
   // initialize console
   CONSOLE_Init(0);
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  // print welcome message on MIOS terminal
+  DEBUG_MSG("\n");
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("\n");
+  DEBUG_MSG("Please send some characters to the console (e.g. via 'mios_terminal')!");
+#endif
 }
 
 
@@ -74,8 +92,6 @@ void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
 {
-  // -> forward to debugging console
-  CONSOLE_Parse(port, byte);
 }
 
 
