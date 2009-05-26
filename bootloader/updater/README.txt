@@ -1,6 +1,6 @@
 $Id$
 
-Bootloader Update V1.0
+Bootloader Update V1.1
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -98,5 +98,11 @@ is reprogrammed.
 IMPORTANT: DON'T POWER-OFF THE CORE DURING THE BOOTLOADER IS PROGRAMMED!
 THIS CAN LEAD TO DATA CORRUPTION, SO THAT THE A JTAG OR COM INTERFACE IS
 REQUIRED TO INSTALL THE BOOTLOADER AGAIN!
+
+The green LED mounted on the MBHP_CORE_STM32 board will flicker if a check,
+the countdown or the flash erase/programming procedure is in progress.
+So long this happens, the core shouldn't be powered off or rebooted!
+
+Once the LED is permanently on, another application can be uploaded.
 
 ===============================================================================

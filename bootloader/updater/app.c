@@ -47,19 +47,24 @@ void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // turn off green LED as a clear indication that core shouldn't be powered-off/rebooted
+  MIOS32_BOARD_LED_Set(0xffffffff, 0);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Help functions
 /////////////////////////////////////////////////////////////////////////////
-s32 Wait1Second(void)
+s32 Wait1Second(u8 dont_toggle_led)
 {
   int i;
 
   for(i=0; i<50; ++i) {
-    // toggle LED and wait for 20 mS (sign of life)
-    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+    if( !dont_toggle_led ) {
+      // toggle LED and wait for 20 mS (sign of life)
+      MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+    }
     MIOS32_DELAY_Wait_uS(20000);
   }
 
@@ -168,13 +173,16 @@ void APP_Background(void)
     MIOS32_LCD_CursorSet(0, 1);
     MIOS32_LCD_PrintString("up-to-date! :-) ");
 
+    // turn on green LED as a clear indication that core can be powered-off/rebooted
+    MIOS32_BOARD_LED_Set(0xffffffff, 1);
+
     while( 1 ) {
       MIOS32_MIDI_SendDebugMessage("No mismatches found.\n");
       MIOS32_MIDI_SendDebugMessage("The bootloader is up-to-date!\n");
       MIOS32_MIDI_SendDebugMessage("You can upload another application now!\n");
 
       // wait for 1 second before printing the message again
-      Wait1Second();
+      Wait1Second(1); // don't toggle LED!
     }
   }
 
@@ -188,7 +196,7 @@ void APP_Background(void)
     MIOS32_LCD_CursorSet(0, 1);
     MIOS32_LCD_PrintFormattedString("in %2d seconds! ", i);
     MIOS32_MIDI_SendDebugMessage("Bootloader update in %d seconds!\n", i);
-    Wait1Second();
+    Wait1Second(0);
   }
 
   MIOS32_LCD_CursorSet(0, 0);
@@ -226,6 +234,9 @@ void APP_Background(void)
 
 
 
+  // turn on green LED as a clear indication that core can be powered-off/rebooted
+  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+
   if( !mismatches ) {
     MIOS32_LCD_CursorSet(0, 0);
     MIOS32_LCD_PrintString("Successful Update");
@@ -237,7 +248,7 @@ void APP_Background(void)
       MIOS32_MIDI_SendDebugMessage("You can upload another application now!\n");
 
       // wait for 1 second before printing the message again
-      Wait1Second();
+      Wait1Second(1);
     }
   } else {
     MIOS32_LCD_CursorSet(0, 0);
@@ -251,7 +262,7 @@ void APP_Background(void)
       MIOS32_MIDI_SendDebugMessage("Please contact support if required!\n");
 
       // wait for 1 second before printing the message again
-      Wait1Second();
+      Wait1Second(1);
     }
   }
 }
