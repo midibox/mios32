@@ -1,6 +1,6 @@
 $Id$
 
-MIOS Input/Output Terminal
+MIOS32 Input/Output Terminal
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -13,17 +13,17 @@ in MIOS Studio as very helpful debugging option.
 Messages sent with MIOS32_MIDI_SendDebug* are print by the terminal.
 
 In addition, it's also possible to send strings (commands) to the core, which
-is forwarded to APP_NotifyReceivedCOM()
+is forwarded to a callback function which has been installed with 
+MIOS32_MIDI_DebugCommandCallback_Init()
+
 
 The program can be started with:
-   mios_terminal [--in <in-port-number>] [--out <out-port-number>] [--device_id <sysex-device-id>]
+   mios32_scan [--device_id <sysex-device-id>]
 
 E.g.:
-   mios_terminal
-   (MIDI In/Out port numbers will be requested)
+   mios32_scan
 or:
-   mios_terminal --in 0 --out 16
-   (if you already know the numbers)
+   mios32_scan --device_id 1
 
 
 Currently only a makefile for MacOS is provided, but it shouldn't be so

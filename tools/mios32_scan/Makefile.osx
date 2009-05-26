@@ -20,11 +20,11 @@ OBJS = main.o
 current: all
 
 all: Makefile.osx $(OBJS)
-	$(CC) $(OBJS) -o mios32_terminal $(MACLIB)
+	$(CC) $(OBJS) -o mios32_scan $(MACLIB)
 
 main.o: Makefile.osx main.c
 	$(CC) -c main.c -o main.o
 
 clean:
 	rm -f *.o
-	rm -f mios32_terminal
+	rm -f mios32_scan
