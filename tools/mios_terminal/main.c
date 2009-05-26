@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MIOS Console
+ * MIOS Terminal
  * See README.txt for details
  *
  * ==========================================================================
@@ -48,7 +48,7 @@
 #define PMIDI_TIME_PROC   ((long (*)(void *)) Pt_Time)
 #define PMIDI_TIME_INFO   NULL
 
-#define STRING_MAX 256 // used for console input/output
+#define STRING_MAX 256 // used for terminal input/output
 
 const u8 midi_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x32 };
 
@@ -99,7 +99,7 @@ static volatile PtTimestamp current_timestamp;
 // Help functions
 /////////////////////////////////////////////////////////////////////////////
 
-// read a number from console
+// read a number from terminal
 int get_number(char *prompt)
 {
   char line[STRING_MAX];
@@ -263,9 +263,9 @@ void receive_poll(PtTimestamp timestamp, void *userData)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function handles OSC and MIDI messages
+// This function handles the MIOS terminal
 /////////////////////////////////////////////////////////////////////////////
-static void console_handler(void)
+static void terminal_handler(void)
 {
   s32 status;
 
@@ -300,7 +300,7 @@ static void console_handler(void)
     printf("MIDI OUT '%s: %s' opened.\n", info->interf, info->name);
   }
 
-  printf("MIOS Console is running!\n");
+  printf("MIOS Terminal is running!\n");
   terminated = 0;
 
   // handle keyboard input
@@ -431,8 +431,8 @@ int main(int argc, char* argv[])
     printf("--in %d --out %d\n", midi_in_port, midi_out_port);
   }
 
-  // start console
-  console_handler();
+  // start terminal
+  terminal_handler();
 
   return 0; // no error
 }
