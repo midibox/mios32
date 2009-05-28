@@ -297,7 +297,9 @@ RESULT Standard_ClearFeature(void)
         if (Related_Endpoint == ENDP0)
         {
           /* After clear the STALL, enable the default endpoint receiver */
-          SetEPRxCount(Related_Endpoint, Device_Property.MaxPacketSize);
+//          SetEPRxCount(Related_Endpoint, Device_Property.MaxPacketSize);
+// TK: we should reference MaxPacketSize() via pointer!
+          SetEPRxCount(Related_Endpoint, pProperty->MaxPacketSize);
           _SetEPRxStatus(Related_Endpoint, EP_RX_VALID);
         }
         else
@@ -968,7 +970,9 @@ uint8_t Out0_Process(void)
 *******************************************************************************/
 uint8_t Post0_Process(void)
 {
-  SetEPRxCount(ENDP0, Device_Property.MaxPacketSize);
+  //  SetEPRxCount(ENDP0, Device_Property.MaxPacketSize);
+// TK: we should reference to MaxPacketSize() via pointer!
+  SetEPRxCount(ENDP0, pProperty->MaxPacketSize);
 
   if (pInformation->ControlState == STALLED)
   {

@@ -41,6 +41,15 @@ extern void (*pEpInt_OUT[7])(void);   /*  Handles OUT interrupts   */
 void CTR_LP(void)
 {
   uint32_t wEPVal = 0;
+
+  // TK: inserted, was a global variable before which could lead to unintended overwrites
+  // if CTR_LP() was called from a different task
+  uint16_t wIstr;
+
+  // TK: same for this global variable, we have a conflict if CTR_LP() and CTR_HP()
+  // are called with different priorities
+  uint8_t EPindex;
+
   /* stay in loop while pending ints */
   while (((wIstr = _GetISTR()) & ISTR_CTR) != 0)
   {
@@ -158,6 +167,10 @@ void CTR_LP(void)
 void CTR_HP(void)
 {
   uint32_t wEPVal = 0;
+
+  // TK: made local - we have a conflict if CTR_LP() and CTR_HP()
+  // are called with different priorities
+  uint8_t EPindex;
 
   while (((wIstr = _GetISTR()) & ISTR_CTR) != 0)
   {
