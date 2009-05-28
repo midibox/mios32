@@ -22,7 +22,6 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/CMSIS/Core/CM3/core_cm3.c \
 	$(DRIVER_LIB)/CMSIS/Core/CM3/system_stm32f10x.c \
 	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_core.c \
-	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_init.c \
 	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_int.c \
 	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_mem.c \
 	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_regs.c

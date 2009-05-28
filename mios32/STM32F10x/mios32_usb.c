@@ -28,6 +28,7 @@
 #if !defined(MIOS32_DONT_USE_USB)
 
 #include <usb_lib.h>
+#include <string.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,26 +47,14 @@
 
 // ISTR events
 // mask defining which events has to be handled by the device application software
-//#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
-#define IMR_MSK (CNTR_CTRM | CNTR_RESETM )
+//#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM)
+#define IMR_MSK (CNTR_CTRM | CNTR_RESETM)
 // TK: disabled SOF interrupt, since it isn't really used and disturbs debugging
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
-
-typedef enum _RESUME_STATE
-{
-  RESUME_EXTERNAL,
-  RESUME_INTERNAL,
-  RESUME_LATER,
-  RESUME_WAIT,
-  RESUME_START,
-  RESUME_ON,
-  RESUME_OFF,
-  RESUME_ESOF
-} RESUME_STATE;
 
 typedef enum _DEVICE_STATE
 {
@@ -76,6 +65,29 @@ typedef enum _DEVICE_STATE
   ADDRESSED,
   CONFIGURED
 } DEVICE_STATE;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Global Variables used by STM32 USB Driver
+// (unfortunately no unique names are used...)
+/////////////////////////////////////////////////////////////////////////////
+
+/*  Points to the DEVICE_INFO/DEVICE_PROP_USER_STANDARD_REQUESTS structure of current device */
+/*  The purpose of this register is to speed up the execution */
+// TK: in addition, this allows to change USB driver during runtime
+DEVICE_INFO *pInformation;
+DEVICE Device_Table;
+DEVICE_PROP *pProperty;
+USER_STANDARD_REQUESTS *pUser_Standard_Requests;
+
+// stored in RAM, vectors can be changed on-the-fly
+void (*pEpInt_IN[7])(void) = {
+  NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process
+};
+
+void (*pEpInt_OUT[7])(void) = {
+  NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -743,55 +755,13 @@ static RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSett
 // USB callback vectors
 /////////////////////////////////////////////////////////////////////////////
 
-void (*pEpInt_IN[7])(void) = {
-#ifndef MIOS32_DONT_USE_USB_MIDI
-  MIOS32_USB_MIDI_EP1_IN_Callback,   // IN EP1
-#else
-  NOP_Process,                       // IN EP1
-#endif
-
-#ifdef MIOS32_USE_USB_COM
-  NOP_Process,                       // IN EP2
-  NOP_Process,                       // IN EP3
-  MIOS32_USB_COM_EP4_IN_Callback,    // IN EP4
-#else
-  NOP_Process,                       // IN EP2
-  NOP_Process,                       // IN EP3
-  NOP_Process,                       // IN EP4
-#endif
-
-  NOP_Process,                       // IN EP5
-  NOP_Process,                       // IN EP6
-  NOP_Process                        // IN EP7
-};
-
-void (*pEpInt_OUT[7])(void) = {
-#ifndef MIOS32_DONT_USE_USB_MIDI
-  MIOS32_USB_MIDI_EP1_OUT_Callback,  // OUT EP1
-#else
-  NOP_Process,                       // OUT EP1
-#endif
-#ifdef MIOS32_USE_USB_COM
-  NOP_Process,                       // OUT EP2
-  MIOS32_USB_COM_EP3_OUT_Callback,   // OUT EP3
-  NOP_Process,                       // OUT EP4
-#else
-  NOP_Process,                       // OUT EP2
-  NOP_Process,                       // OUT EP3
-  NOP_Process,                       // OUT EP4
-#endif
-  NOP_Process,                       // OUT EP5
-  NOP_Process,                       // OUT EP6
-  NOP_Process                        // OUT EP7
-};
-
-DEVICE Device_Table = {
+static const DEVICE My_Device_Table = {
   MIOS32_USB_EP_NUM,
   1
 };
 
-DEVICE_PROP Device_Property = {
-  MIOS32_USB_CB_Init,
+static const DEVICE_PROP My_Device_Property = {
+  0, // MIOS32_USB_CB_Init,
   MIOS32_USB_CB_Reset,
   MIOS32_USB_CB_Status_In,
   MIOS32_USB_CB_Status_Out,
@@ -805,7 +775,7 @@ DEVICE_PROP Device_Property = {
   0x40 /*MAX PACKET SIZE*/
 };
 
-USER_STANDARD_REQUESTS User_Standard_Requests = {
+static const USER_STANDARD_REQUESTS My_User_Standard_Requests = {
   NOP_Process, // MIOS32_USB_CB_GetConfiguration,
   MIOS32_USB_CB_SetConfiguration,
   NOP_Process, // MIOS32_USB_CB_GetInterface,
@@ -822,8 +792,8 @@ USER_STANDARD_REQUESTS User_Standard_Requests = {
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-// global interrupt status (also used by USB driver, therefore extern)
-volatile u16 wIstr;
+// USB Device informations
+static DEVICE_INFO My_Device_Info;
 
 // USB device status
 static vu32 bDeviceState = UNCONNECTED;
@@ -835,18 +805,49 @@ static vu32 bDeviceState = UNCONNECTED;
 //!   <UL>
 //!     <LI>if 0, USB peripheral won't be initialized if this has already been done before
 //!     <LI>if 1, USB peripheral re-initialisation will be forced
+//!     <LI>if 2, USB peripheral re-initialisation will be forced, STM32 driver hooks won't be overwritten.<BR>
+//!         This mode can be used for a local USB driver which installs it's own hooks during runtime.<BR>
+//!         The application can switch back to MIOS32 drivers (e.g. MIOS32_USB_MIDI) by calling MIOS32_USB_Init(1)
 //!   </UL>
 //! \return < 0 if initialisation failed
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_Init(u32 mode)
 {
+  u32 delay;
+
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
 
-  // currently only mode 0 and 1 supported
-  if( mode >= 2 )
+  // currently only mode 0..2 supported
+  if( mode >= 3 )
     return -1; // unsupported mode
+
+  // clear all USB interrupt requests
+  MIOS32_IRQ_Disable();
+  _SetCNTR(0); // Interrupt Mask
+  MIOS32_IRQ_Enable();
+
+  // if mode != 2: install MIOS32 hooks
+  // a local driver can install it's own hooks and call MIOS32_USB_Init(2) to force re-enumeration
+  if( mode != 2 ) {
+    pInformation = &My_Device_Info; // Note: usually no need to duplicate this for external drivers
+
+    // following hooks/pointers should be replaced by external drivers
+    memcpy(&Device_Table, (DEVICE *)&My_Device_Table, sizeof(Device_Table));
+    pProperty = (DEVICE_PROP *)&My_Device_Property;
+    pUser_Standard_Requests = (USER_STANDARD_REQUESTS *)&My_User_Standard_Requests;
+
+#ifndef MIOS32_DONT_USE_USB_MIDI
+    pEpInt_IN[0]  = MIOS32_USB_MIDI_EP1_IN_Callback;  // IN  EP1
+    pEpInt_OUT[0] = MIOS32_USB_MIDI_EP1_OUT_Callback; // OUT EP1
+#endif
+
+#ifdef MIOS32_USE_USB_COM
+    pEpInt_IN[3]  = MIOS32_USB_COM_EP4_IN_Callback;  // IN  EP4
+    pEpInt_OUT[2] = MIOS32_USB_COM_EP3_OUT_Callback, // OUT EP3
+#endif
+  }
 
   // change connection state to disconnected
 #ifndef MIOS32_DONT_USE_USB_MIDI
@@ -856,11 +857,32 @@ s32 MIOS32_USB_Init(u32 mode)
   MIOS32_USB_COM_ChangeConnectionState(0);
 #endif
 
+#if 0
+  // remaining initialisation done in STM32 USB driver
+  USB_Init();
+#else
+  // we don't use USB_Init() anymore for more flexibility
+  // e.g. changing USB driver during runtime via MIOS32_USB_Init(2)
+
+  pInformation->ControlState = 2;
+  pInformation->Current_Configuration = 0;
+
   // if mode == 0: don't initialize USB if not required (important for BSL)
-  u8 usb_configured = 0;
   if( mode == 0 && MIOS32_USB_IsInitialized() ) {
-    usb_configured = 1;
+
+#ifndef MIOS32_DONT_USE_USB_MIDI
+    // release ENDP1 Rx/Tx
+    SetEPTxStatus(ENDP1, EP_TX_NAK);
+    SetEPRxValid(ENDP1);
+#endif
+
+    pInformation->Current_Feature = MIOS32_USB_ConfigDescriptor[7];
+    pInformation->Current_Configuration = 1;
+    pUser_Standard_Requests->User_SetConfiguration();
+
   } else {
+    // force USB reset and power-down (this will also release the USB pins for direct GPIO control)
+    _SetCNTR(CNTR_FRES | CNTR_PDWN);
 
 #ifdef MIOS32_BOARD_STM32_PRIMER
     // configure USB disconnect pin
@@ -871,7 +893,6 @@ s32 MIOS32_USB_Init(u32 mode)
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-    u32 delay;
     for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
       GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 
@@ -885,20 +906,49 @@ s32 MIOS32_USB_Init(u32 mode)
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-    u32 delay;
+
     for(delay=0; delay<200000; ++delay) // produces a delay of ca. 50 mS @ 72 MHz (measured with scope)
       GPIOA->BRR = GPIO_Pin_12; // force pin to 0 (without this dummy code, an "empty" for loop could be removed by the compiler)
 #endif
+
+    // release power-down, still hold reset
+    _SetCNTR(CNTR_PDWN);
+
+    // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
+    for(delay=0; delay<10; ++delay) GPIOA->BRR = 0; // should be more than sufficient - add some dummy code here to ensure that the compiler doesn't optimize the empty for loop away
+
+    // CNTR_FRES = 0
+    _SetCNTR(0);
+
+    // Clear pending interrupts
+    _SetISTR(0);
+
+    // Configure USB clock
+    // USBCLK = PLLCLK / 1.5
+    RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
+    // Enable USB clock
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
   }
 
-  // remaining initialisation done in STM32 USB driver
-  USB_Init();
+  // don't set interrupt mask on custom driver installation
+  if( mode != 2 ) {
+    // clear pending interrupts (again)
+    _SetISTR(0);
 
-  if( usb_configured ) {
-    pInformation->Current_Feature = MIOS32_USB_ConfigDescriptor[7];
-    pInformation->Current_Configuration = 1;
-    pUser_Standard_Requests->User_SetConfiguration();
+    // set interrupts mask
+    _SetCNTR(IMR_MSK); // Interrupt mask
   }
+
+  bDeviceState = UNCONNECTED;
+
+  // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
+  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+#endif
 
   return 0; // no error
 }
@@ -910,18 +960,18 @@ s32 MIOS32_USB_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
-  wIstr = _GetISTR();
+  u16 wIstr = _GetISTR();
 
-  if( wIstr & ISTR_RESET & wInterrupt_Mask ) {
+  if( wIstr & ISTR_RESET ) {
     _SetISTR((u16)CLR_RESET);
-    Device_Property.Reset();
+    pProperty->Reset();
   }
 
-  if( wIstr & ISTR_SOF & wInterrupt_Mask ) {
+  if( wIstr & ISTR_SOF ) {
     _SetISTR((u16)CLR_SOF);
   }
 
-  if( wIstr & ISTR_CTR & wInterrupt_Mask ) {
+  if( wIstr & ISTR_CTR ) {
     // servicing of the endpoint correct transfer interrupt
     // clear of the CTR flag into the sub
     CTR_LP();
@@ -947,82 +997,6 @@ s32 MIOS32_USB_IsInitialized(void)
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
 
-// init routine
-static void MIOS32_USB_CB_Init(void)
-{
-  u32 delay;
-  u16 wRegVal;
-
-  pInformation->Current_Configuration = 0;
-
-  // Connect the device if USB not already initialized
-
-  // CNTR_PWDN = 0
-  if( !MIOS32_USB_IsInitialized() ) {
-    wRegVal = CNTR_FRES;
-    _SetCNTR(wRegVal);
-
-    // according to the reference manual, we have to wait at least for tSTARTUP = 1 uS before releasing reset
-    for(delay=0; delay<10; ++delay) GPIOA->BRR = 0; // should be more than sufficient - add some dummy code here to ensure that the compiler doesn't optimize the empty for loop away
-    
-    // CNTR_FRES = 0
-    wInterrupt_Mask = 0;
-    _SetCNTR(wInterrupt_Mask);
-
-    // Clear pending interrupts
-    _SetISTR(0);
-
-    // Configure USB clock
-    // USBCLK = PLLCLK / 1.5
-    RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
-    // Enable USB clock
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
-
-    // Set interrupt mask
-    // wInterrupt_Mask = CNTR_RESETM | CNTR_SUSPM | CNTR_WKUPM;
-    wInterrupt_Mask = CNTR_RESETM;
-    _SetCNTR(wInterrupt_Mask);
-
-    // USB interrupts initialization
-    // clear pending interrupts
-    _SetISTR(0);
-    wInterrupt_Mask = IMR_MSK;
-
-    // set interrupts mask
-    _SetCNTR(wInterrupt_Mask);
-  } else {
-#ifndef MIOS32_DONT_USE_USB_MIDI
-    // release ENDP1 Rx/Tx
-    SetEPTxStatus(ENDP1, EP_TX_NAK);
-    SetEPRxValid(ENDP1);
-#endif
-    // clear pending interrupts
-    _SetISTR(0);
-    // set interrupts mask
-    wInterrupt_Mask = IMR_MSK;
-    _SetCNTR(wInterrupt_Mask);
-  }
-
-  bDeviceState = UNCONNECTED;
-
-#ifndef MIOS32_DONT_USE_USB_MIDI
-  // propagate connection state to USB MIDI driver
-  MIOS32_USB_MIDI_ChangeConnectionState(0); // not connected
-#endif
-#ifdef MIOS32_USE_USB_COM
-  // propagate connection state to USB MIDI driver
-  MIOS32_USB_COM_ChangeConnectionState(0); // not connected
-#endif
-
-  // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
-}
-
 // reset routine
 static void MIOS32_USB_CB_Reset(void)
 {
@@ -1042,7 +1016,7 @@ static void MIOS32_USB_CB_Reset(void)
   SetEPRxAddr(ENDP0, MIOS32_USB_ENDP0_RXADDR);
   SetEPTxAddr(ENDP0, MIOS32_USB_ENDP0_TXADDR);
   Clear_Status_Out(ENDP0);
-  SetEPRxCount(ENDP0, Device_Property.MaxPacketSize);
+  SetEPRxCount(ENDP0, pProperty->MaxPacketSize);
   SetEPRxValid(ENDP0);
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
@@ -1098,9 +1072,7 @@ static void MIOS32_USB_CB_Reset(void)
 // update the device state to configured.
 static void MIOS32_USB_CB_SetConfiguration(void)
 {
-  DEVICE_INFO *pInfo = &Device_Info;
-
-  if (pInfo->Current_Configuration != 0) {
+  if (pInformation->Current_Configuration != 0) {
 #ifndef MIOS32_DONT_USE_USB_MIDI
     // propagate connection state to USB MIDI driver
     MIOS32_USB_MIDI_ChangeConnectionState(1); // connected
