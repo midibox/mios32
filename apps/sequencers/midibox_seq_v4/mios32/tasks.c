@@ -18,6 +18,8 @@
 
 #include <mios32.h>
 
+#include <msd.h>
+
 #include "tasks.h"
 
 
@@ -214,7 +216,7 @@ static void TASK_MSD(void *pvParameters)
 
         case MSD_INIT:
 	  // enable MSD USB driver
-	  if( MSD_Init() >= 0 )
+	  if( MSD_Init(0) >= 0 )
 	    msd_state = MSD_READY;
 	  else
 	    msd_state = MSD_SHUTDOWN;

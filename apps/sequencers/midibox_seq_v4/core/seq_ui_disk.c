@@ -161,7 +161,7 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(0, 0);
 
   SEQ_LCD_PrintString("  MSD USB ");
-  if( TASK_MSD_EnableGet() ) {
+  if( TASK_MSD_EnableGet() == 1 ) {
     char str[5];
     TASK_MSD_FlagStrGet(str);
     SEQ_LCD_PrintFormattedString("(%s)", str);
