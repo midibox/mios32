@@ -44,6 +44,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_opt.c \
 		../core/seq_ui_save.c \
 		../core/seq_ui_midi.c \
+		../core/seq_ui_disk.c \
 		../core/seq_ui_metronome.c \
 		../core/seq_ui_mixer.c \
 		../core/seq_ui_stepsel.c \
@@ -137,6 +138,9 @@ include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
 
 # Portable randomize module
 include $(MIOS32_PATH)/modules/random/random.mk
+
+# USB Mass Storage Device Driver
+include $(MIOS32_PATH)/modules/msd/msd.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

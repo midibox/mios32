@@ -94,6 +94,11 @@ extern void SEQ_TASK_Pattern(void);
 // located in tasks.c
 extern void SEQ_TASK_PatternResume(void);
 
+// located in tasks.c
+extern s32 TASK_MSD_EnableSet(u8 enable);
+extern s32 TASK_MSD_EnableGet();
+extern s32 TASK_MSD_FlagStrGet(char str[5]);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

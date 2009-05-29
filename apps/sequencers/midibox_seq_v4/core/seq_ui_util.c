@@ -350,7 +350,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP14: // free
       if( depressed ) return -1;
-      return -1; // TODO
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_DISK);
 
     case SEQ_UI_BUTTON_GP15: // mute all tracks
       if( depressed ) return -1;
@@ -408,7 +408,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk.        Utility Functions                       Quick Menu Change           
-  // G1T1 Copy Paste Clr Move Scrl Rand Undo Save Rec. Mix. Opt. PMte     Mute UnMute
+  // G1T1 Copy Paste Clr Move Scrl Rand Undo Save Rec. Mix. Opt. PMte Disk Mute UnMte
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -435,7 +435,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   SEQ_LCD_PrintString(" Copy Paste Clr Move Scrl Rand Undo ");
-  SEQ_LCD_PrintString("Save Rec. Mix. Opt. PMte     Mute UnMute");
+  SEQ_LCD_PrintString("Save Rec. Mix. Opt. PMte Disk Mute UnMte");
 
   return 0; // no error
 }
