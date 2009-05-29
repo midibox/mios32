@@ -418,6 +418,31 @@ void SEQ_TASK_PatternResume(void)
 }
 
 
+//////////////////////////////////////////////////////////////////////////////
+// MSD access not supported by Emulation
+//////////////////////////////////////////////////////////////////////////////
+
+s32 TASK_MSD_EnableSet(u8 enable)
+{
+	return -1; // not supported
+}
+
+s32 TASK_MSD_EnableGet()
+{
+	return -1; // not supported
+}
+
+s32 TASK_MSD_FlagStrGet(char str[5])
+{
+	str[0] = '-';
+	str[1] = '-';
+	str[2] = '-';
+	str[3] = '-';
+	str[4] = 0;
+	
+	return 0; // no error
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // initialisation hook for OS specific tasks

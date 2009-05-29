@@ -70,4 +70,7 @@ extern s32 MIOS32_USB_IsInitialized(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern void (*pEpInt_IN[7])(void);
+extern void (*pEpInt_OUT[7])(void);
+
 #endif /* _MIOS32_USB_H */

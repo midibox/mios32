@@ -33,6 +33,7 @@
 		523E38A20EEA071400E79FF4 /* MIOS32_COM_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 523E38A10EEA071400E79FF4 /* MIOS32_COM_Wrapper.m */; };
 		523E38CD0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 523E38CC0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m */; };
 		523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */; };
+		5240A23E0FD0857E00681363 /* seq_ui_disk.c in Sources */ = {isa = PBXBuildFile; fileRef = 5240A23D0FD0857E00681363 /* seq_ui_disk.c */; };
 		52417A630FB6DECF00D84E75 /* seq_ui_bpm_presets.c in Sources */ = {isa = PBXBuildFile; fileRef = 52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */; };
 		524682C20F3F15FC006D2FBE /* DOSFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */; };
 		524A6FF90FB63949006134D1 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 524A6FF70FB63949006134D1 /* aout.c */; };
@@ -200,6 +201,7 @@
 		523E38CB0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_ENC_Wrapper.h; sourceTree = "<group>"; };
 		523E38CC0EEA0B6C00E79FF4 /* MIOS32_ENC_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_ENC_Wrapper.m; sourceTree = "<group>"; };
 		523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_stepsel.c; path = ../core/seq_ui_stepsel.c; sourceTree = SOURCE_ROOT; };
+		5240A23D0FD0857E00681363 /* seq_ui_disk.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_disk.c; path = ../core/seq_ui_disk.c; sourceTree = SOURCE_ROOT; };
 		52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bpm_presets.c; path = ../core/seq_ui_bpm_presets.c; sourceTree = SOURCE_ROOT; };
 		524682C00F3F15FC006D2FBE /* DOSFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOSFS_Wrapper.h; sourceTree = "<group>"; };
 		524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOSFS_Wrapper.m; sourceTree = "<group>"; };
@@ -490,6 +492,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5240A23D0FD0857E00681363 /* seq_ui_disk.c */,
 				5218EEAD0FBF54D600482AC6 /* blm.c */,
 				5218EEAE0FBF54D600482AC6 /* blm.h */,
 				5218EE950FBEB74A00482AC6 /* seq_ui_metronome.c */,
@@ -902,6 +905,7 @@
 				52AE372C0FB6FD7C00F6866B /* seq_ui_tracksel.c in Sources */,
 				5218EE960FBEB74A00482AC6 /* seq_ui_metronome.c in Sources */,
 				5218EEAF0FBF54D600482AC6 /* blm.c in Sources */,
+				5240A23E0FD0857E00681363 /* seq_ui_disk.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -47,6 +47,7 @@ typedef enum {
   SEQ_UI_PAGE_SAVE,
   SEQ_UI_PAGE_METRONOME,
   SEQ_UI_PAGE_MIDI,
+  SEQ_UI_PAGE_DISK,
   SEQ_UI_PAGE_MIXER
 } seq_ui_page_t;
 
@@ -87,6 +88,7 @@ extern s32 SEQ_UI_OPT_Init(u32 mode);
 extern s32 SEQ_UI_SAVE_Init(u32 mode);
 extern s32 SEQ_UI_METRONOME_Init(u32 mode);
 extern s32 SEQ_UI_MIDI_Init(u32 mode);
+extern s32 SEQ_UI_DISK_Init(u32 mode);
 extern s32 SEQ_UI_MIXER_Init(u32 mode);
 
 
@@ -132,6 +134,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Save Pattern      ", (void *)&SEQ_UI_SAVE_Init },
   { "Metronome         ", (void *)&SEQ_UI_METRONOME_Init },
   { "MIDI Configuration", (void *)&SEQ_UI_MIDI_Init },
+  { "Disk (SD Card)    ", (void *)&SEQ_UI_DISK_Init },
   { "Mixer             ", (void *)&SEQ_UI_MIXER_Init }
 };
 
