@@ -32,7 +32,8 @@ OS side. An enumeration will be triggered as if the USB cable has
 been re-connected.
 
 The (optional) LCD displays the connection status.
-Once a SD Card has been connected, the right upper corner shows four characters:
+Once a SD Card has been connected, four characters at the right upper corner 
+inform about the status:
   o U: USB device ready (e.g. cable connected)
   o M: SD Card is mounted by OS, resp. is ready for mounting if U not displayed
   o R: Read access to SD Card
@@ -47,9 +48,9 @@ This means also: if a new application should be uploaded via USB MIDI, the
 SD Card has to be removed so that the MIDI device is available again.
 
 
-Please note: the USB access is very slow compared to the speed you know from
+Please note: the USB access is slow compared to the speed you know from
 common SD Card readers or USB sticks, because the device is accessed with
-a single parallel line and not with a parallel interface. 
+a single serial line and not with a parallel interface. 
 
 However, transfers are fast enough to upload/download data for MIOS32 
 applications w/o removing the SD Card from the MBHP_CORE_STM32 module.
