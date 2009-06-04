@@ -96,6 +96,15 @@ static s32 LED_Handler(u16 *gp_leds)
 	  *gp_leds = (1 << ((val>>3)&7)) | (0x100 << (val&7));
 	} break;
 
+        case SEQ_SONG_ACTION_Tempo: {
+	  *gp_leds = 0x0000; // how to handle this?
+	  break;
+	}
+
+        case SEQ_SONG_ACTION_Mutes: {
+	  *gp_leds = ((s.pattern_g4&0xf) << 12) | ((s.pattern_g3&0xf) << 8) | ((s.pattern_g2&0xf) << 4) | (s.pattern_g1&0xf);
+	} break;
+
         default:
 	  if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 ) {
 	    *gp_leds = 1 << ui_selected_item;
@@ -251,6 +260,65 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  if( SEQ_UI_Var8_Inc(&val, 0, num_mixer_maps-1, incrementer) >= 0 ) {
 	    s.action_value = val;
 	    SEQ_SONG_StepEntrySet(edit_pos, s);
+
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos();
+	    return 1; // value has been changed
+	  }
+	  return 0; // no change
+	}
+
+        case SEQ_SONG_ACTION_Tempo: {
+	  if( ui_selected_item == ITEM_G1 || ui_selected_item == ITEM_G2 ) {
+	    // BPM
+	    u8 val = (u8)s.action_value;
+	    if( SEQ_UI_Var8_Inc(&val, 25, 255, incrementer) >= 0 ) {
+	      s.action_value = val;
+	      SEQ_SONG_StepEntrySet(edit_pos, s);
+	      // in phrase mode and no song pos selected: fetch patterns immediately
+	      if( !SEQ_SONG_ActiveGet() )
+		SEQ_SONG_FetchPos();
+	      return 1; // value has been changed
+	    }
+	  } else {
+	    // Ramp
+	    u8 val = (u8)s.pattern_g1;
+	    if( SEQ_UI_Var8_Inc(&val, 0, 255, incrementer) >= 0 ) {
+	      s.pattern_g1 = val;
+	      SEQ_SONG_StepEntrySet(edit_pos, s);
+	      // in phrase mode and no song pos selected: fetch patterns immediately
+	      if( !SEQ_SONG_ActiveGet() )
+		SEQ_SONG_FetchPos();
+	      return 1; // value has been changed
+	    }
+	  }
+
+	  return 0; // no change
+	}
+
+        case SEQ_SONG_ACTION_Mutes: {
+	  u8 val;
+	  switch( ui_selected_item ) {
+	    case ITEM_G1: val = (u8)s.pattern_g1 & 0xf; break;
+	    case ITEM_G2: val = (u8)s.pattern_g2 & 0xf; break;
+	    case ITEM_G3: val = (u8)s.pattern_g3 & 0xf; break;
+	    case ITEM_G4: val = (u8)s.pattern_g4 & 0xf; break;
+	    default: return 0; // not mapped
+	  }
+
+	  if( SEQ_UI_Var8_Inc(&val, 0, 15, incrementer) >= 0 ) {
+	    switch( ui_selected_item ) {
+	      case ITEM_G1: s.pattern_g1 = val; break;
+	      case ITEM_G2: s.pattern_g2 = val; break;
+	      case ITEM_G3: s.pattern_g3 = val; break;
+	      case ITEM_G4: s.pattern_g4 = val; break;
+	      default: return 0; // not mapped
+	    }
+	    SEQ_SONG_StepEntrySet(edit_pos, s);
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos();
 	    return 1; // value has been changed
 	  }
 	  return 0; // no change
@@ -383,6 +451,33 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() && s.action != SEQ_SONG_ACTION_JmpSong )
+	      SEQ_SONG_FetchPos();
+	    return 1; // value has been changed
+
+	  case SEQ_SONG_ACTION_Tempo:
+	    s.action_value = 75 + 5*button;
+	    SEQ_SONG_StepEntrySet(edit_pos, s);
+
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos();
+	    return 1; // value has been changed
+
+	  case SEQ_SONG_ACTION_Mutes:
+	    if( button <= SEQ_UI_BUTTON_GP4 )
+	      s.pattern_g1 = (s.pattern_g1 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP8 )
+	      s.pattern_g2 = (s.pattern_g2 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP12 )
+	      s.pattern_g3 = (s.pattern_g3 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP16 )
+	      s.pattern_g4 = (s.pattern_g4 & 0x0f) ^ (1 << (button&3));
+	    else
+	      return 0; // never reached...
+	    SEQ_SONG_StepEntrySet(edit_pos, s);
+
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
 	      SEQ_SONG_FetchPos();
 	    return 1; // value has been changed
 
@@ -601,6 +696,15 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(16);
       break;
 
+    case SEQ_SONG_ACTION_Tempo:
+      SEQ_LCD_PrintString(" ->   BPM  Ramp");
+      SEQ_LCD_PrintSpaces(9);
+      break;
+
+    case SEQ_SONG_ACTION_Mutes:
+      SEQ_LCD_PrintString(" G1   G2   G3   G4      ");
+      break;
+
     default:
       if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
 	SEQ_LCD_PrintSpaces(24);
@@ -656,6 +760,14 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintString("Mixer");
 	break;
 
+      case SEQ_SONG_ACTION_Tempo:
+	SEQ_LCD_PrintString("Tempo");
+	break;
+
+      case SEQ_SONG_ACTION_Mutes:
+	SEQ_LCD_PrintString("Mutes");
+	break;
+
       default:
 	if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
 	  SEQ_LCD_PrintString(" ????");
@@ -690,6 +802,61 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintFormattedString("%3d", s.action_value + 1);
       }
       SEQ_LCD_PrintSpaces(12);
+      break;
+
+    case SEQ_SONG_ACTION_Tempo:
+      SEQ_LCD_PrintSpaces(6);
+      if( ui_selected_item >= ITEM_G1 && ui_selected_item <= ITEM_G2 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", s.action_value);
+      }
+
+      if( ui_selected_item >= ITEM_G3 && ui_selected_item <= ITEM_G4 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(7);
+      } else {
+	SEQ_LCD_PrintFormattedString("   %3ds", s.pattern_g1);
+      }
+
+      SEQ_LCD_PrintSpaces(4);
+      break;
+
+    case SEQ_SONG_ACTION_Mutes:
+      if( ui_selected_item == ITEM_G1 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	int i;
+	for(i=0; i<4; ++i)
+	  SEQ_LCD_PrintChar((s.pattern_g1 & (1 << i)) ? '*' : 'o');
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      if( ui_selected_item == ITEM_G2 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	int i;
+	for(i=0; i<4; ++i)
+	  SEQ_LCD_PrintChar((s.pattern_g2 & (1 << i)) ? '*' : 'o');
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      if( ui_selected_item == ITEM_G3 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	int i;
+	for(i=0; i<4; ++i)
+	  SEQ_LCD_PrintChar((s.pattern_g3 & (1 << i)) ? '*' : 'o');
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      if( ui_selected_item == ITEM_G4 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	int i;
+	for(i=0; i<4; ++i)
+	  SEQ_LCD_PrintChar((s.pattern_g4 & (1 << i)) ? '*' : 'o');
+      }
+      SEQ_LCD_PrintSpaces(5);
       break;
 
     default:
