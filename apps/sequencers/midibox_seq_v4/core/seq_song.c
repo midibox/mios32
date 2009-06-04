@@ -267,43 +267,69 @@ s32 SEQ_SONG_FetchPos(void)
 	again = 1;
 	break;
 
-    default:
-      if( s->action >= SEQ_SONG_ACTION_Loop1 && s->action <= SEQ_SONG_ACTION_Loop16 ) {
-	song_loop_ctr = 0;
-	song_loop_ctr_max = s->action - SEQ_SONG_ACTION_Loop1;
+      case SEQ_SONG_ACTION_Tempo: {
+	float bpm = (float)s->action_value;
+	if( bpm < 25.0 )
+	  bpm = 25.0;
+	float ramp = (float)s->pattern_g1;
+	SEQ_CORE_BPM_Update(bpm, ramp);
+	++song_pos;
+	again = 1;
+      } break;
 
-	seq_pattern_t p;
+      case SEQ_SONG_ACTION_Mutes: {
+	// access to seq_core_trk[] must be atomic!
+	portENTER_CRITICAL();
 
-	// TODO: implement prefetching until end of step!
+	u8 track = 0;
+	do { seq_core_trk[track].state.MUTED = (s->pattern_g1 & (1 << (track&3))) ? 1 : 0; } while( ++track < 4 );
+	do { seq_core_trk[track].state.MUTED = (s->pattern_g2 & (1 << (track&3))) ? 1 : 0; } while( ++track < 8 );
+	do { seq_core_trk[track].state.MUTED = (s->pattern_g3 & (1 << (track&3))) ? 1 : 0; } while( ++track < 12 );
+	do { seq_core_trk[track].state.MUTED = (s->pattern_g4 & (1 << (track&3))) ? 1 : 0; } while( ++track < 16 );
 
-	if( s->pattern_g1 < 0x80 ) {
-	  p.ALL = 0;
-	  p.pattern = s->pattern_g1;
-	  p.bank = s->bank_g1;
-	  SEQ_PATTERN_Change(0, p);
+	portEXIT_CRITICAL();
+
+	++song_pos;
+	again = 1;
+      } break;
+
+      default:
+	if( s->action >= SEQ_SONG_ACTION_Loop1 && s->action <= SEQ_SONG_ACTION_Loop16 ) {
+	  song_loop_ctr = 0;
+	  song_loop_ctr_max = s->action - SEQ_SONG_ACTION_Loop1;
+
+	  seq_pattern_t p;
+
+	  // TODO: implement prefetching until end of step!
+
+	  if( s->pattern_g1 < 0x80 ) {
+	    p.ALL = 0;
+	    p.pattern = s->pattern_g1;
+	    p.bank = s->bank_g1;
+	    SEQ_PATTERN_Change(0, p);
+	  }
+
+	  if( s->pattern_g2 < 0x80 ) {
+	    p.ALL = 0;
+	    p.pattern = s->pattern_g2;
+	    p.bank = s->bank_g2;
+	    SEQ_PATTERN_Change(1, p);
+	  }
+
+	  if( s->pattern_g3 < 0x80 ) {
+	    p.ALL = 0;
+	    p.pattern = s->pattern_g3;
+	    p.bank = s->bank_g3;
+	    SEQ_PATTERN_Change(2, p);
+	  }
+
+	  if( s->pattern_g4 < 0x80 ) {
+	    p.ALL = 0;
+	    p.pattern = s->pattern_g4;
+	    p.bank = s->bank_g4;
+	    SEQ_PATTERN_Change(3, p);
+	  }
 	}
-
-	if( s->pattern_g2 < 0x80 ) {
-	  p.ALL = 0;
-	  p.pattern = s->pattern_g2;
-	  p.bank = s->bank_g2;
-	  SEQ_PATTERN_Change(1, p);
-	}
-
-	if( s->pattern_g3 < 0x80 ) {
-	  p.ALL = 0;
-	  p.pattern = s->pattern_g3;
-	  p.bank = s->bank_g3;
-	  SEQ_PATTERN_Change(2, p);
-	}
-
-	if( s->pattern_g4 < 0x80 ) {
-	  p.ALL = 0;
-	  p.pattern = s->pattern_g4;
-	  p.bank = s->bank_g4;
-	  SEQ_PATTERN_Change(3, p);
-	}
-      }
     }
 
   } while( again );

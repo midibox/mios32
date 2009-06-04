@@ -445,6 +445,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    // determine next step depending on direction mode
 	    if( !t->state.FIRST_CLK ) {
 	      SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+
+#if 0
+	      // experimental (could be provided as a "progression" option later with definable length: inc step again on each 16th step
+	      if( synch_to_measure_req )
+		SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
+#endif
 	    }
 	    
 	    // clear "first clock" flag (on following clock ticks we can continue as usual)
