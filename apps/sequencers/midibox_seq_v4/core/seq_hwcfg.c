@@ -238,6 +238,8 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .fwd   = (((12   -1)<<3)+    7),
 
   //              SR    ignore    Pin
+  .exit      = ((( 0   -1)<<3)+    0),
+  .select    = ((( 0   -1)<<3)+    0),
   .menu      = (((13   -1)<<3)+    0),
   .scrub     = (((13   -1)<<3)+    1),
   .metronome = (((13   -1)<<3)+    2),

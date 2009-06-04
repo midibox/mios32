@@ -574,8 +574,11 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 static s32 SEQ_UI_Button_Select(s32 depressed)
 {
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
-    ui_button_callback(SEQ_UI_BUTTON_Select, depressed);
+  if( !seq_ui_button_state.MENU_PRESSED ) {
+    seq_ui_button_state.SELECT_PRESSED = depressed ? 0 : 1;
+    if( ui_button_callback != NULL )
+      ui_button_callback(SEQ_UI_BUTTON_Select, depressed);
+  }
   ui_cursor_flash_ctr = 0;
 
   return 0; // no error
@@ -586,6 +589,8 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
 
   u8 prev_ui_page = ui_page;
+
+  seq_ui_button_state.EXIT_PRESSED = depressed ? 0 : 1;
 
   // forward to menu page
   if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
@@ -604,6 +609,8 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
 
 static s32 SEQ_UI_Button_Edit(s32 depressed)
 {
+  seq_ui_button_state.EXIT_PRESSED = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   // change to edit page
@@ -617,6 +624,8 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
 
 static s32 SEQ_UI_Button_Mute(s32 depressed)
 {
+  seq_ui_button_state.MUTE_PRESSED = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
@@ -626,6 +635,8 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 
 static s32 SEQ_UI_Button_Pattern(s32 depressed)
 {
+  seq_ui_button_state.PATTERN_PRESSED = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN);
@@ -635,6 +646,8 @@ static s32 SEQ_UI_Button_Pattern(s32 depressed)
 
 static s32 SEQ_UI_Button_Song(s32 depressed)
 {
+  seq_ui_button_state.SONG_PRESSED = depressed ? 0 : 1;
+
   if( depressed ) return -1; // ignore when button depressed
 
   // toggle active mode if already in song page
@@ -1292,6 +1305,8 @@ s32 SEQ_UI_LED_Handler(void)
   
   SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEP_VIEW);
 
+  SEQ_LED_PinSet(seq_hwcfg_led.exit, seq_ui_button_state.EXIT_PRESSED);
+  SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
   SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);

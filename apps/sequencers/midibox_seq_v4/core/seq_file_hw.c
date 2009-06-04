@@ -471,6 +471,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.rew = dout_value;
 	  } else if( strcmp(parameter, "FWD") == 0 ) {
 	    seq_hwcfg_led.fwd = dout_value;
+	  } else if( strcmp(parameter, "EXIT") == 0 ) {
+	    seq_hwcfg_led.exit = dout_value;
+	  } else if( strcmp(parameter, "SELECT") == 0 ) {
+	    seq_hwcfg_led.select = dout_value;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_led.menu = dout_value;
 	  } else if( strcmp(parameter, "SCRUB") == 0 ) {

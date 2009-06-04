@@ -45,6 +45,12 @@ typedef union {
     unsigned MENU_FIRST_PAGE_SELECTED:1;
     unsigned CHANGE_ALL_STEPS:1;
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
+    unsigned SELECT_PRESSED:1;
+    unsigned EXIT_PRESSED:1;
+    unsigned EDIT_PRESSED:1;
+    unsigned MUTE_PRESSED:1;
+    unsigned PATTERN_PRESSED:1;
+    unsigned SONG_PRESSED:1;
     unsigned FAST_ENCODERS:1;
     unsigned SOLO:1;
     unsigned SCRUB:1;

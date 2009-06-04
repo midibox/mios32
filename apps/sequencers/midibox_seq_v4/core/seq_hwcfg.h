@@ -142,6 +142,8 @@ typedef struct {
   u8 rew;
   u8 fwd;
 
+  u8 exit;
+  u8 select;
   u8 menu;
   u8 scrub;
   u8 metronome;

@@ -181,6 +181,8 @@ LED_REW    19   2
 LED_FWD    17   2
 
 #              SR  Pin
+LED_EXIT        0   0
+LED_SELECT      0   0
 LED_MENU        0   0
 LED_SCRUB       0   0
 LED_METRONOME   0   0
