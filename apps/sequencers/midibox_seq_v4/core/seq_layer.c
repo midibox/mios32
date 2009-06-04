@@ -174,9 +174,10 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  u16 layer_muted = seq_core_trk[track].layer_muted;
   u8 num_events = 0;
 
-  u8 handle_vu_meter = (ui_page == SEQ_UI_PAGE_TRGSEL || ui_page == SEQ_UI_PAGE_PARSEL) && track == SEQ_UI_VisibleTrackGet();
+  u8 handle_vu_meter = (ui_page == SEQ_UI_PAGE_TRGSEL || ui_page == SEQ_UI_PAGE_PARSEL || ui_page == SEQ_UI_PAGE_MUTE) && track == SEQ_UI_VisibleTrackGet();
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
@@ -187,11 +188,15 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
       u8 note = tcc->lay_const[0*16 + drum];
       u8 velocity = 0;
 
-      if( SEQ_TRG_Get(track, step, 0, drum) ) {
-	if( num_p_layers == 2 )
-	  velocity = SEQ_PAR_VelocityGet(track, step, drum);
-	else
-	  velocity = tcc->lay_const[1*16 + drum];
+      if( !insert_empty_notes && (layer_muted & (1 << drum)) )
+	velocity = 0;
+      else {
+	if( SEQ_TRG_Get(track, step, 0, drum) ) {
+	  if( num_p_layers == 2 )
+	    velocity = SEQ_PAR_VelocityGet(track, step, drum);
+	  else
+	    velocity = tcc->lay_const[1*16 + drum];
+	}
       }
 
       if( handle_vu_meter && velocity ) {
@@ -259,6 +264,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  mios32_midi_package_t *p = &e->midi_package;
 	  u8 note = SEQ_PAR_Get(track, step, par_layer, instrument);
 
+	  if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
+	    note = 0;
+
 	  if( note || insert_empty_notes ) {
 	    p->type     = NoteOn;
 	    p->cable    = track;
@@ -283,6 +291,10 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      break;
 
 	    s32 note = SEQ_CHORD_NoteGet(i, chord_value);
+
+	    if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
+	      note = 0;
+
 	    if( note < 0 )
 	      break;
 
@@ -308,18 +320,20 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
 
-	  p->type     = CC;
-	  p->cable    = track;
-	  p->event    = CC;
-	  p->chn      = tcc->midi_chn;
-	  p->note     = tcc->lay_const[1*16 + par_layer];
-	  p->value    = SEQ_PAR_Get(track, step, par_layer, instrument);
-	  e->len      = -1;
-	  e->layer_tag = par_layer;
-	  ++num_events;
+	  if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	    p->type     = CC;
+	    p->cable    = track;
+	    p->event    = CC;
+	    p->chn      = tcc->midi_chn;
+	    p->note     = tcc->lay_const[1*16 + par_layer];
+	    p->value    = SEQ_PAR_Get(track, step, par_layer, instrument);
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
 
-	  if( handle_vu_meter )
-	    seq_layer_vu_meter[par_layer] = p->value | 0x80;
+	    if( handle_vu_meter )
+	      seq_layer_vu_meter[par_layer] = p->value | 0x80;
+	  }
 
 	} break;
 
@@ -328,18 +342,20 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  mios32_midi_package_t *p = &e->midi_package;
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
-	  p->type     = PitchBend;
-	  p->cable    = track;
-	  p->event    = PitchBend;
-	  p->chn      = tcc->midi_chn;
-	  p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
-	  p->evnt2    = value; // MSB
-	  e->len      = -1;
-	  e->layer_tag = par_layer;
-	  ++num_events;
+	  if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	    p->type     = PitchBend;
+	    p->cable    = track;
+	    p->event    = PitchBend;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
+	    p->evnt2    = value; // MSB
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
 
-	  if( handle_vu_meter )
-	    seq_layer_vu_meter[par_layer] = p->evnt2 | 0x80;
+	    if( handle_vu_meter )
+	      seq_layer_vu_meter[par_layer] = p->evnt2 | 0x80;
+	  }
 
 	} break;
 
@@ -502,6 +518,9 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
   int cc;
 
   u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+
+  // layer specific mutes always cleared to avoid confusion!
+  seq_core_trk[track].layer_muted = 0;
 
   if( !only_layers ) {
     // copy static presets
