@@ -36,6 +36,8 @@ PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
 	
 	_self = self;
 
+	
+	
 	// create virtual MIDI ports
 	for(i=0; i<NUM_MIDI_IN; ++i) {
 		NSMutableString *portName = [[NSMutableString alloc] init];
@@ -323,14 +325,18 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
     packet = packets->packet;
     for (i = 0; i < packets->numPackets; i++) {
         for (j = 0; j < packet->length; j++) { 
-		           
-            // Hand off the packet for processing when the next one starts
-            if ((packet->data[j] & 0x80) != 0 && messageSize > 0) {
-                [self handleMIDIMessage:message ofSize:messageSize];
-                messageSize = 0;
+
+            if (packet->data[j] >= 0xF8) 
+                [self handleMIDIMessage:(Byte *)packet->data ofSize:1];
+			else {
+				// Hand off the packet for processing when the next one starts
+				if ((packet->data[j] & 0x80) != 0 && (messageSize > 0 || packet->data[j] >= 0xf8) ) {
+					[self handleMIDIMessage:message ofSize:messageSize];
+					messageSize = 0;
+				}
+				
+				message[messageSize++] = packet->data[j];			// push the data into the message
             }
-            
-            message[messageSize++] = packet->data[j];			// push the data into the message
         }
         
         packet = MIDIPacketNext (packet);
