@@ -333,7 +333,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintFormattedString("Step%3d   ", ui_selected_step+1);
 
   if( layer_event.midi_package.event == CC ) {
-    SEQ_LCD_PrintFormattedString("CC#%3d %3d",
+    SEQ_LCD_PrintFormattedString("CC#%3d %3d ",
 				    layer_event.midi_package.cc_number,
 				    layer_event.midi_package.value);
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);

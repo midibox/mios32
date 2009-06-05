@@ -124,7 +124,12 @@
 
 #define SEQ_CC_PAR_ASG_DRUM_LAYER_A 0x58
 #define SEQ_CC_PAR_ASG_DRUM_LAYER_B 0x59
-// free: 0x5a..0x5f
+// free: 0x5a..0x5b
+
+#define SEQ_CC_STEPS_REPEAT      0x5c
+#define SEQ_CC_STEPS_SKIP        0x5d
+#define SEQ_CC_STEPS_RS_INTERVAL 0x5e
+// free: 0x5f
 
 #define SEQ_CC_ASG_GATE		0x60
 #define SEQ_CC_ASG_ACCENT	0x61
@@ -163,6 +168,9 @@ typedef struct {
   unsigned steps_replay:4;    // steps replay value
   unsigned steps_forward:4;   // steps forward value
   unsigned steps_jump_back:4; // steps jump back value
+  u8       steps_repeat;      // steps repeat value
+  u8       steps_skip;        // steps skip value
+  u8       steps_rs_interval; // interval of Repeat/Skip function
   seq_core_clkdiv_t clkdiv;     // clock divider and flags
   u8       length;            // track length
   u8       loop;              // loop point
