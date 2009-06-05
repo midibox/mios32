@@ -84,6 +84,9 @@ typedef struct seq_core_trk_t {
   u8                   step_replay_ctr;  // step replay counter
   u8                   step_saved;       // for replay mechanism
   u8                   step_fwd_ctr;     // step forward counter
+  u8                   step_interval_ctr; // step interval counter
+  u8                   step_repeat_ctr;  // step repeat counter
+  u8                   step_skip_ctr;    // step skip counter
   u16                  layer_muted;      // separate layer mutes
   u8                   arp_pos;          // arpeggiator position
   u8                   vu_meter;         // for visualisation in mute menu

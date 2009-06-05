@@ -645,8 +645,12 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 
     // write 128 CCs
     u8 cc;
-    for(cc=0; cc<128; ++cc)
-      status |= SEQ_FILE_WriteByte(&fi, SEQ_CC_Get(track, cc));
+    for(cc=0; cc<128; ++cc) {
+      s32 cc_value = SEQ_CC_Get(track, cc);
+      if( cc_value < 0 ) // set CC value to 0 if it doesn't exist (reserved CCs)
+	cc_value = 0;
+      status |= SEQ_FILE_WriteByte(&fi, cc_value);
+    }
 
     // write parameter layers
     status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[track], num_p_instruments*num_p_layers*p_layer_size);

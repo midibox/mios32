@@ -60,7 +60,7 @@ static s32 SEQ_CORE_PlayOffEvents(void);
 static s32 SEQ_CORE_Tick(u32 bpm_tick);
 
 static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
-static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse);
+static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
 
@@ -443,15 +443,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  u8 skip_ctr = 0;
 	  do {
 	    // determine next step depending on direction mode
-	    if( !t->state.FIRST_CLK ) {
-	      SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
-
-#if 0
-	      // experimental (could be provided as a "progression" option later with definable length: inc step again on each 16th step
-	      if( synch_to_measure_req )
-		SEQ_CORE_NextStep(t, tcc, 0); // 0=not reverse
-#endif
-	    }
+	    if( !t->state.FIRST_CLK )
+	      SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
 	    
 	    // clear "first clock" flag (on following clock ticks we can continue as usual)
 	    t->state.FIRST_CLK = 0;
@@ -754,9 +747,12 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
   // clear delay
   t->bpm_tick_delay = 0;
 
-  // reset step REPLAY and FWD counters
+  // reset step progression counters
   t->step_replay_ctr = 0;
   t->step_fwd_ctr = 0;
+  t->step_interval_ctr = 0;
+  t->step_repeat_ctr = 0;
+  t->step_skip_ctr = 0;
 
   // next part depends on forward/backward direction
   if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
@@ -781,20 +777,19 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
 /////////////////////////////////////////////////////////////////////////////
 // Determine next step depending on direction mode
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
+static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse)
 {
   int i;
   u8 save_step = 0;
   u8 new_step = 1;
 
   // handle progression parameters if position shouldn't be reset
-  if( !reverse && !t->state.POS_RESET ) {
+  if( !no_progression && !t->state.POS_RESET ) {
     if( ++t->step_fwd_ctr > tcc->steps_forward ) {
       t->step_fwd_ctr = 0;
       if( tcc->steps_jump_back ) {
-	for(i=0; i<tcc->steps_jump_back; ++i) {
-	  SEQ_CORE_NextStep(t, tcc, 1); // 1=reverse
-	}
+	for(i=0; i<tcc->steps_jump_back; ++i)
+	  SEQ_CORE_NextStep(t, tcc, 1, 1); // 1=no progression, 1=reverse
       }
       if( ++t->step_replay_ctr > tcc->steps_replay ) {
 	t->step_replay_ctr = 0;
@@ -802,6 +797,22 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, s32 reverse)
       } else {
 	t->step = t->step_saved;
 	new_step = 0; // don't calculate new step
+      }
+    }
+
+    if( ++t->step_interval_ctr > tcc->steps_rs_interval ) {
+      t->step_interval_ctr = 0;
+      t->step_repeat_ctr = tcc->steps_repeat;
+      t->step_skip_ctr = tcc->steps_skip;
+    }
+
+    if( t->step_repeat_ctr ) {
+      --t->step_repeat_ctr;
+      new_step = 0; // repeat step until counter reached zero
+    } else {
+      while( t->step_skip_ctr ) {
+	SEQ_CORE_NextStep(t, tcc, 1, 0); // 1=no progression, 0=not reverse
+	--t->step_skip_ctr;
       }
     }
   }
