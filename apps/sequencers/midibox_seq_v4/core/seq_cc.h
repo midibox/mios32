@@ -77,23 +77,7 @@
 #define SEQ_CC_LAY_CONST_C15	0x2e
 #define SEQ_CC_LAY_CONST_C16	0x2f
 
-// usage depends on event mode (e.g. drum tracks: local MIDI channel)
-#define SEQ_CC_LAY_CONST_D1	0x30
-#define SEQ_CC_LAY_CONST_D2	0x31
-#define SEQ_CC_LAY_CONST_D3	0x32
-#define SEQ_CC_LAY_CONST_D4	0x33
-#define SEQ_CC_LAY_CONST_D5	0x34
-#define SEQ_CC_LAY_CONST_D6	0x35
-#define SEQ_CC_LAY_CONST_D7	0x36
-#define SEQ_CC_LAY_CONST_D8	0x37
-#define SEQ_CC_LAY_CONST_D9	0x38
-#define SEQ_CC_LAY_CONST_D10	0x39
-#define SEQ_CC_LAY_CONST_D11	0x3a
-#define SEQ_CC_LAY_CONST_D12	0x3b
-#define SEQ_CC_LAY_CONST_D13	0x3c
-#define SEQ_CC_LAY_CONST_D14	0x3d
-#define SEQ_CC_LAY_CONST_D15	0x3e
-#define SEQ_CC_LAY_CONST_D16	0x3f
+// reserved: 0x30..0x3f
 
 #define SEQ_CC_MODE		0x40
 #define SEQ_CC_MODE_FLAGS	0x41
@@ -157,7 +141,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u8 lay_const[64];           // 4*16 constant parameters
+  u8 lay_const[3*16];           // 3*16 constant parameters
 
   seq_core_shared_t shared;   // shared mode parameters (each track holds another value)
   seq_core_trkmode_flags_t mode; // track mode and flags

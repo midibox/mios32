@@ -36,8 +36,6 @@ PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
 	
 	_self = self;
 
-	
-	
 	// create virtual MIDI ports
 	for(i=0; i<NUM_MIDI_IN; ++i) {
 		NSMutableString *portName = [[NSMutableString alloc] init];
@@ -75,6 +73,11 @@ s32 MIOS32_UART_Init(u32 mode)
   int i;
   for(i=0; i<NUM_MIDI_IN; ++i) {
     rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
+  }
+
+  // no running status optimisation
+  for(i=0; i<NUM_MIDI_OUT; ++i) {
+    MIOS32_UART_MIDI_RS_OptimisationSet(i, 0);
   }
 
   return 0; // no error

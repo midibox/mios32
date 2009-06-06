@@ -51,6 +51,7 @@ typedef union {
     unsigned FIRST_CLK:1;
     unsigned METRONOME:1;
     unsigned EXT_RESTART_REQ:1;
+    unsigned LOOP:1;
   };
 } seq_core_state_t;
 
@@ -166,6 +167,16 @@ typedef union {
 } seq_core_clkdiv_t;
 
 
+#define SEQ_CORE_NUM_LOOP_MODES 4
+typedef enum {
+  SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW,
+  SEQ_CORE_LOOP_MODE_ALL_TRACKS_STATIC,
+  SEQ_CORE_LOOP_MODE_SELECTED_TRACK_VIEW,
+  SEQ_CORE_LOOP_MODE_SELECTED_TRACK_STATIC,
+} seq_core_loop_mode_t;
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -209,5 +220,9 @@ extern u8 seq_core_metronome_note_b;
 
 extern seq_core_state_t seq_core_state;
 extern seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
+
+extern seq_core_loop_mode_t seq_core_glb_loop_mode;
+extern u8 seq_core_glb_loop_offset;
+extern u8 seq_core_glb_loop_steps;
 
 #endif /* _SEQ_CORE_H */

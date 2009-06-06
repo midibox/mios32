@@ -572,7 +572,7 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, 0); // not relevant in drum mode
 
 	  // parameter layer assignments
-	  if( SEQ_TRG_NumLayersGet(track) > 1 ) {
+	  if( SEQ_PAR_NumLayersGet(track) > 1 ) {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
 	  } else {
