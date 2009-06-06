@@ -52,6 +52,7 @@ typedef struct {
   u8 play;
   u8 rew;
   u8 fwd;
+  u8 loop;
 
   u8 menu;
   u8 select;
@@ -101,6 +102,7 @@ typedef struct {
   unsigned all:1;
   unsigned solo:1;
   unsigned metronome:1;
+  unsigned loop:1;
   unsigned scrub:1;
   unsigned menu:1;
   unsigned step_view:1;
@@ -141,6 +143,7 @@ typedef struct {
   u8 pause;
   u8 rew;
   u8 fwd;
+  u8 loop;
 
   u8 exit;
   u8 select;

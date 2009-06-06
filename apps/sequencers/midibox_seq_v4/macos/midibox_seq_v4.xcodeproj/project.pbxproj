@@ -104,6 +104,7 @@
 		52B7316B0EF4462B00496FC2 /* seq_ui_trktran.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731680EF4462B00496FC2 /* seq_ui_trktran.c */; };
 		52B731740EF5960D00496FC2 /* seq_midi_in.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B731730EF5960D00496FC2 /* seq_midi_in.c */; };
 		52B98C230EEC45D700454232 /* seq_cc.c in Sources */ = {isa = PBXBuildFile; fileRef = 52B98C210EEC45D700454232 /* seq_cc.c */; };
+		52BADC360FDAA80F0067648E /* seq_ui_fx_loop.c in Sources */ = {isa = PBXBuildFile; fileRef = 52BADC350FDAA80F0067648E /* seq_ui_fx_loop.c */; };
 		52BB40240F8684D700CFA609 /* seq_ui_trkrec.c in Sources */ = {isa = PBXBuildFile; fileRef = 52BB40230F8684D700CFA609 /* seq_ui_trkrec.c */; };
 		52BBD94C0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */; };
 		52BBD9510F12CEAF00C76C61 /* dfs_sdcard.c in Sources */ = {isa = PBXBuildFile; fileRef = 52BBD94F0F12CEAF00C76C61 /* dfs_sdcard.c */; };
@@ -302,6 +303,7 @@
 		52B731730EF5960D00496FC2 /* seq_midi_in.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_in.c; path = ../core/seq_midi_in.c; sourceTree = SOURCE_ROOT; };
 		52B98C210EEC45D700454232 /* seq_cc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cc.c; path = ../core/seq_cc.c; sourceTree = SOURCE_ROOT; };
 		52B98C220EEC45D700454232 /* seq_cc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cc.h; path = ../core/seq_cc.h; sourceTree = SOURCE_ROOT; };
+		52BADC350FDAA80F0067648E /* seq_ui_fx_loop.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_loop.c; path = ../core/seq_ui_fx_loop.c; sourceTree = SOURCE_ROOT; };
 		52BB40230F8684D700CFA609 /* seq_ui_trkrec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkrec.c; path = ../core/seq_ui_trkrec.c; sourceTree = SOURCE_ROOT; };
 		52BBD94A0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SDCARD_Wrapper.h; sourceTree = "<group>"; };
 		52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SDCARD_Wrapper.m; sourceTree = "<group>"; };
@@ -492,6 +494,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52BADC350FDAA80F0067648E /* seq_ui_fx_loop.c */,
 				5240A23D0FD0857E00681363 /* seq_ui_disk.c */,
 				5218EEAD0FBF54D600482AC6 /* blm.c */,
 				5218EEAE0FBF54D600482AC6 /* blm.h */,
@@ -906,6 +909,7 @@
 				5218EE960FBEB74A00482AC6 /* seq_ui_metronome.c in Sources */,
 				5218EEAF0FBF54D600482AC6 /* blm.c in Sources */,
 				5240A23E0FD0857E00681363 /* seq_ui_disk.c in Sources */,
+				52BADC360FDAA80F0067648E /* seq_ui_fx_loop.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

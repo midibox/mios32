@@ -92,6 +92,9 @@ u8 seq_core_metronome_note_b;
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
+seq_core_loop_mode_t seq_core_glb_loop_mode;
+u8 seq_core_glb_loop_offset;
+u8 seq_core_glb_loop_steps;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -133,6 +136,10 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_bpm_sweep_inc = 0.0;
 
   seq_core_state.ALL = 0;
+
+  seq_core_glb_loop_mode = SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW;
+  seq_core_glb_loop_offset = 0;
+  seq_core_glb_loop_steps = 16-1;
 
   // set initial seed of random generator
   SEQ_RANDOM_Gen(0xdeadbabe);
@@ -456,6 +463,58 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      break;
 	    
 	  } while( skip_ctr < 32 ); // try 32 times maximum
+
+	  // global loop mode handling
+	  // requirements:
+	  // o loop all or only select tracks
+	  // o allow to loop the step view (16 step window) or a definable number of steps
+	  // o wrap step position properly when loop mode is activated so that this
+	  //   doesn't "dirsturb" the sequence output (ensure that the track doesn't get out of sync)
+	  if( seq_core_state.LOOP ) {
+	    u8 loop_active = 0;
+	    int step_offset = 0;
+
+	    switch( seq_core_glb_loop_mode ) {
+	      case SEQ_CORE_LOOP_MODE_ALL_TRACKS_STATIC:
+		loop_active = 1;
+		break;
+
+	      case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_STATIC:
+		if( SEQ_UI_IsSelectedTrack(track) )
+		  loop_active = 1;
+		break;
+
+	      case SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW:
+		loop_active = 1;
+		// no break!
+
+	      case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_VIEW:
+		if( SEQ_UI_IsSelectedTrack(track) )
+		  loop_active = 1;
+
+		step_offset = 16 * ui_selected_step_view;
+		break;
+	    }
+
+	    if( loop_active ) {
+	      // wrap step position within given boundaries if required
+	      step_offset += seq_core_glb_loop_offset;
+	      step_offset %= ((int)tcc->length+1);
+
+	      int loop_steps = seq_core_glb_loop_steps + 1;
+	      int max_steps = (int)tcc->length + 1;
+	      if( loop_steps > max_steps )
+		loop_steps = max_steps;
+
+	      int new_step = (int)t->step;
+	      new_step = step_offset + ((new_step-step_offset) % loop_steps);
+
+	      if( new_step > tcc->length )
+		new_step = step_offset;
+	      t->step = new_step;
+
+	    }
+	  }
 
 	  // calculate number of cycles to next step
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);

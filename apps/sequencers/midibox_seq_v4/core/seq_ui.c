@@ -93,9 +93,10 @@ static u16 ui_gp_leds;
 #define NUM_BLM_LED_SRS (2*4)
 static u8 ui_blm_leds[NUM_BLM_LED_SRS];
 
-#define SDCARD_MSG_MAX_CHAR 21
-static char sdcard_msg[2][SDCARD_MSG_MAX_CHAR];
-static u16 sdcard_msg_ctr;
+#define UI_MSG_MAX_CHAR 21
+static char ui_msg[2][UI_MSG_MAX_CHAR];
+static u16 ui_msg_ctr;
+static seq_ui_msg_type_t ui_msg_type;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,7 +115,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_item = 0;
 
   ui_hold_msg_ctr = 0;
-  sdcard_msg_ctr = 0;
+  ui_msg_ctr = 0;
 
   ui_cursor_flash_ctr = 0;
   ui_cursor_flash = 0;
@@ -129,6 +130,7 @@ s32 SEQ_UI_Init(u32 mode)
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
+
 
   return 0; // no error
 }
@@ -329,34 +331,6 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Scrub(s32 depressed)
-{
-  if( seq_hwcfg_button_beh.scrub ) {
-    // toggle mode
-    if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.SCRUB ^= 1;
-  } else {
-    // set mode
-    seq_ui_button_state.SCRUB = depressed ? 0 : 1;
-  }
-
-  return 0; // no error
-}
-
-static s32 SEQ_UI_Button_Metronome(s32 depressed)
-{
-  if( seq_hwcfg_button_beh.metronome ) {
-    // toggle mode
-    if( depressed ) return -1; // ignore when button depressed
-    seq_core_state.METRONOME ^= 1;
-  } else {
-    // set mode
-    seq_core_state.METRONOME = depressed ? 0 : 1;
-  }
-
-  return 0; // no error
-}
-
 static s32 SEQ_UI_Button_Stop(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
@@ -439,6 +413,47 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Loop(s32 depressed)
+{
+  if( seq_hwcfg_button_beh.loop ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    // should be atomic
+    portENTER_CRITICAL();
+    seq_core_state.LOOP ^= 1;
+  } else {
+    // should be atomic
+    portENTER_CRITICAL();
+    // set mode
+    seq_core_state.LOOP = depressed ? 0 : 1;
+  }
+  portEXIT_CRITICAL();
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Loop Mode", seq_core_state.LOOP ? "    on" : "   off");
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Scrub(s32 depressed)
+{
+  // double function: -> Loop if menu button pressed
+  if( seq_ui_button_state.MENU_PRESSED )
+    return SEQ_UI_Button_Loop(depressed);
+
+  if( seq_hwcfg_button_beh.scrub ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.SCRUB ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.SCRUB = depressed ? 0 : 1;
+  }
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Scrub Mode", seq_ui_button_state.SCRUB ? "    on" : "   off");
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_TempoPreset(s32 depressed)
 {
   static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
@@ -475,9 +490,37 @@ static s32 SEQ_UI_Button_ExtRestart(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // should be atomic
   portENTER_CRITICAL();
   seq_core_state.EXT_RESTART_REQ = 1;
   portEXIT_CRITICAL();
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "External Restart", "requested");
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Metronome(s32 depressed)
+{
+  // double function: -> ExtRestart if menu button pressed
+  if( seq_ui_button_state.MENU_PRESSED )
+    return SEQ_UI_Button_ExtRestart(depressed);
+
+  if( seq_hwcfg_button_beh.metronome ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    // should be atomic
+    portENTER_CRITICAL();
+    seq_core_state.METRONOME ^= 1;
+  } else {
+    // should be atomic
+    portENTER_CRITICAL();
+    // set mode
+    seq_core_state.METRONOME = depressed ? 0 : 1;
+  }
+  portEXIT_CRITICAL();
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Metronome", seq_core_state.METRONOME ? "    on" : "   off");
 
   return 0; // no error
 }
@@ -510,8 +553,12 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
 
     s32 status = SEQ_UI_UTIL_CopyButton(depressed);
 
-    if( depressed && ui_page != SEQ_UI_PAGE_UTIL )
-      SEQ_UI_PageSet(prev_page);
+    if( depressed ) {
+      if( prev_page != SEQ_UI_PAGE_UTIL )
+	SEQ_UI_PageSet(prev_page);
+
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "copied");
+    }
 
     return status;
   }
@@ -535,8 +582,12 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 
     s32 status = SEQ_UI_UTIL_PasteButton(depressed);
 
-    if( depressed && ui_page != SEQ_UI_PAGE_UTIL )
-      SEQ_UI_PageSet(prev_page);
+    if( depressed ) {
+      if( prev_page != SEQ_UI_PAGE_UTIL )
+	SEQ_UI_PageSet(prev_page);
+
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "pasted");
+    }
 
     return status;
   }
@@ -549,6 +600,9 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Clear();
+
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+
     return 1;
   } else {
     return SEQ_UI_UTIL_ClearButton(depressed);
@@ -837,8 +891,14 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
   if( num_p_layers <= 3 ) {
     // 3 layers: direct selection with LayerA/B/C button
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.PAR_LAYER_SEL = 0;
-    ui_selected_par_layer = par_layer;
+    if( par_layer >= num_p_layers ) {
+      char str1[21];
+      sprintf(str1, "Parameter Layer %c", 'A'+par_layer);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
+    } else {
+      seq_ui_button_state.PAR_LAYER_SEL = 0;
+      ui_selected_par_layer = par_layer;
+    }
   } else if( num_p_layers <= 4 ) {
     // 4 layers: LayerC Button toggles between C and D
     if( depressed ) return -1; // ignore when button depressed
@@ -897,8 +957,14 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
   if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 3 ) {
     // 3 layers: direct selection with LayerA/B/C button
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.TRG_LAYER_SEL = 0;
-    ui_selected_trg_layer = trg_layer;
+    if( trg_layer >= num_t_layers ) {
+      char str1[21];
+      sprintf(str1, "Trigger Layer %c", 'A'+trg_layer);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
+    } else {
+      seq_ui_button_state.TRG_LAYER_SEL = 0;
+      ui_selected_trg_layer = trg_layer;
+    }
   } else if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 4 ) {
     // 4 layers: LayerC Button toggles between C and D
     if( depressed ) return -1; // ignore when button depressed
@@ -970,6 +1036,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   // request display update
   seq_ui_display_update_req = 1;
 
+  // stop current message if (new) button has been pressed
+  if( pin_value == 0 )
+    SEQ_UI_MsgStop();
+
 
   // MEMO: we could also use a jump table with references to the functions
   // here, but this "spagetthi code" simplifies the configuration and
@@ -1025,6 +1095,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Rew(pin_value);
   if( pin == seq_hwcfg_button.fwd )
     return SEQ_UI_Button_Fwd(pin_value);
+  if( pin == seq_hwcfg_button.loop )
+    return SEQ_UI_Button_Loop(pin_value);
 
   if( pin == seq_hwcfg_button.utility )
     return SEQ_UI_Button_Utility(pin_value);
@@ -1125,6 +1197,9 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   // ensure that selections are matching with track constraints
   SEQ_UI_CheckSelections();
 
+  // stop current message
+  SEQ_UI_MsgStop();
+
   // limit incrementer
   if( incrementer > 3 )
     incrementer = 3;
@@ -1218,23 +1293,66 @@ s32 SEQ_UI_LCD_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Update(void)
 {
-  // if SD card message active: copy over the text
-  if( sdcard_msg_ctr ) {
-    const char animation_l[4][3] = {
-      "  ", " >", ">>", "> " };
-    const char animation_r[4][3] = {
-      "  ", "< ", "<<", " <" };
-    int anum = (sdcard_msg_ctr % 1000) / 250;
+  // if UI message active: copy over the text
+  if( ui_msg_ctr ) {
+    const char *animation_l_ptr;
+    const char *animation_r_ptr;
+    u8 msg_x = 0;
+    u8 right_aligned = 0;
+
+    switch( ui_msg_type ) {
+      case SEQ_UI_MSG_SDCARD: {
+	//                             00112233
+	const char animation_l[2*4] = "   >>>> ";
+	//                             00112233
+	const char animation_r[2*4] = "  < << <";
+	animation_l_ptr = animation_l;
+	animation_r_ptr = animation_r;
+	msg_x = 0; // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
+	right_aligned = 0;
+      } break;
+
+      default: {
+	//                             00112233
+	const char animation_l[2*4] = "   **** ";
+	//                             00112233
+	const char animation_r[2*4] = "  * ** *";
+	animation_l_ptr = animation_l;
+	animation_r_ptr = animation_r;
+	msg_x = 39;
+	right_aligned = 1;
+      } break;
+
+    }
+    int anum = (ui_msg_ctr % 1000) / 250;
+
+    int len[2];
+    len[0] = strlen((char *)ui_msg[0]);
+    len[1] = strlen((char *)ui_msg[1]);
+    int len_max = len[0];
+    if( len[1] > len_max )
+      len_max = len[1];
+
+    if( right_aligned )
+      msg_x -= (9 + len_max);
 
     int line;
     for(line=0; line<2; ++line) {
-      SEQ_LCD_CursorSet(0, line); // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
-      SEQ_LCD_PrintFormattedString(" %s| %-20s |%s ",
-				   (char *)animation_l[anum], 
-				   (char *)sdcard_msg[line], 
-				   (char *)animation_r[anum]);
+      SEQ_LCD_CursorSet(msg_x, line);
+
+      // ensure that both lines are padded with same number of spaces
+      int end_pos = len[line];
+      while( end_pos < len_max )
+	ui_msg[line][end_pos++] = ' ';
+      ui_msg[line][end_pos] = 0;
+
+      SEQ_LCD_PrintFormattedString(" %c%c| %s |%c%c ",
+				   *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				   (char *)ui_msg[line], 
+				   *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
     }
   }
+
 
   // transfer all changed characters to LCD
   // SEQ_LCD_Update provides a MUTEX handling to allow updates from different tasks
@@ -1302,14 +1420,23 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_LED_PinSet(seq_hwcfg_led.rew, seq_ui_button_state.REW);
   SEQ_LED_PinSet(seq_hwcfg_led.fwd, seq_ui_button_state.FWD);
+
+  SEQ_LED_PinSet(seq_hwcfg_led.loop, seq_core_state.LOOP);
   
   SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEP_VIEW);
 
   SEQ_LED_PinSet(seq_hwcfg_led.exit, seq_ui_button_state.EXIT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
-  SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
-  SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
+
+  // handle double functions
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_core_state.LOOP);
+    SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.EXT_RESTART_REQ);
+  } else {
+    SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
+    SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
+  }
 
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
   SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
@@ -1535,9 +1662,9 @@ s32 SEQ_UI_MENU_Handler_Periodic()
       seq_ui_display_update_req = 1;
   }
 
-  // used for temporary SD Card messages
-  if( sdcard_msg_ctr )
-    --sdcard_msg_ctr;
+  // used for temporary messages
+  if( ui_msg_ctr )
+    --ui_msg_ctr;
 
   // VU meters (used in MUTE menu, could also be available as LED matrix...)
   static u8 vu_meter_prediv = 0; // predivider for VU meters
@@ -1802,14 +1929,26 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Print temporary messages after file operations
+// Print temporary user messages (e.g. warnings, errors)
 // expects mS delay and two lines, each up to 20 characters
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_SDCardMsg(u16 delay, char *line1, char *line2)
+s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *line2)
 {
-  sdcard_msg_ctr = delay;
-  strncpy((char *)sdcard_msg[0], line1, SDCARD_MSG_MAX_CHAR);
-  strncpy((char *)sdcard_msg[1], line2, SDCARD_MSG_MAX_CHAR);
+  ui_msg_type = msg_type;
+  ui_msg_ctr = delay;
+  strncpy((char *)ui_msg[0], line1, UI_MSG_MAX_CHAR);
+  strncpy((char *)ui_msg[1], line2, UI_MSG_MAX_CHAR);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Stops temporary message if no SD card warning
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MsgStop(void)
+{
+  if( ui_msg_type != SEQ_UI_MSG_SDCARD )
+    ui_msg_ctr = 0;
 
   return 0; // no error
 }
@@ -1823,5 +1962,5 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
   // TODO: add more verbose error messages, they are clearly defined in seq_file.h)
   char str[21];
   sprintf(str, "E%3d (DOSFS: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
-  return SEQ_UI_SDCardMsg(delay, "!! SD Card Error !!!", str);
+  return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
 }

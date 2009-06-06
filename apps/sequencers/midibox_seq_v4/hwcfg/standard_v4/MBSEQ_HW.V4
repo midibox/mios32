@@ -179,6 +179,7 @@ LED_STOP    0   0
 LED_PAUSE   0   0
 LED_REW     0   0
 LED_FWD     0   0
+LED_LOOP    0   0
 
 #              SR  Pin
 LED_EXIT        0   0
@@ -197,6 +198,7 @@ LED_PAR_LAYER_SEL   0   0
 LED_TRG_LAYER_SEL   0   0
 LED_TRACK_SEL       0   0
 
+#                  SR  Pin
 LED_TAP_TEMPO       0   0
 LED_TEMPO_PRESET    0   0
 LED_EXT_RESTART     0   0
@@ -230,6 +232,7 @@ BUTTON_PAUSE   1   5
 BUTTON_PLAY    1   6
 BUTTON_REW     1   7
 BUTTON_FWD     2   0
+BUTTON_LOOP    0   0
 
 #              SR  Pin
 BUTTON_MENU     2   5
@@ -331,6 +334,7 @@ BUTTON_BEH_FAST         1
 BUTTON_BEH_ALL          1
 BUTTON_BEH_SOLO         1
 BUTTON_BEH_METRONOME    1
+BUTTON_BEH_LOOP         1
 BUTTON_BEH_SCRUB        0
 BUTTON_BEH_MENU         0
 BUTTON_BEH_STEP_VIEW    0

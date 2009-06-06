@@ -105,7 +105,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .trg_layer[2] = (((13   -1)<<3)+    6),
 
 #ifdef MIOS32_FAMILY_EMULATION
-  //              SR   ignore    Pin
+  //                  SR   ignore    Pin
   .utility       = (((14   -1)<<3)+    1),
   .step_view     = (((13   -1)<<3)+    7),
   .par_layer_sel = ((( 2   -1)<<3)+    2),
@@ -123,7 +123,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .paste   = (((14   -1)<<3)+    3),
   .clear   = (((14   -1)<<3)+    4),
 #else
-  //              SR   ignore    Pin
+  //                  SR   ignore    Pin
   .utility       = ((( 2   -1)<<3)+    1),
   .step_view     = ((( 2   -1)<<3)+    2),
   .trg_layer_sel = ((( 2   -1)<<3)+    3),
@@ -141,6 +141,10 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .copy    = ((( 0   -1)<<3)+    0),
   .paste   = ((( 0   -1)<<3)+    0),
   .clear   = ((( 0   -1)<<3)+    0),
+#endif
+
+  //            SR   ignore    Pin
+  .loop    = ((( 0   -1)<<3)+    0),
 
   // button functions w/o LED support (mostly requested by users who don't use LEDs for these buttons anyhow)
 
@@ -148,8 +152,6 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .morph     = ((( 0   -1)<<3)+    0),
   .mixer     = ((( 0   -1)<<3)+    0),
   .transpose = ((( 0   -1)<<3)+    0),
-
-#endif
 };
 
 
@@ -158,6 +160,7 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .all = 1,
   .solo = 1,
   .metronome = 1,
+  .loop = 1,
 #ifdef MIOS32_FAMILY_EMULATION
   .scrub = 1,
   .menu = 1,
@@ -236,6 +239,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .pause = (((12   -1)<<3)+    5),
   .rew   = (((12   -1)<<3)+    6),
   .fwd   = (((12   -1)<<3)+    7),
+  .loop  = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
   .exit      = ((( 0   -1)<<3)+    0),
@@ -269,6 +273,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .pause = ((( 0   -1)<<3)+    0),
   .rew   = ((( 0   -1)<<3)+    0),
   .fwd   = ((( 0   -1)<<3)+    0),
+  .loop  = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
   .menu      = ((( 0   -1)<<3)+    0),

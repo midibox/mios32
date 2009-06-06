@@ -97,18 +97,18 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
   for(i=0; i<MIOS32_UART_NUM; ++i)
     MIOS32_UART_MIDI_RecordReset(i);
 
+  // enable running status optimisation by default for all ports
+  // clear timeout counters
+  rs_optimisation = ~0; // -> all-one
+  for(i=0; i<MIOS32_UART_NUM; ++i)
+    MIOS32_UART_MIDI_RS_Reset(i);
+
   // if any MIDI assignment:
 #if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1
   // initialize U(S)ART interface
   if( MIOS32_UART_Init(0) < 0 )
     return -1; // initialisation of U(S)ART Interface failed
 #endif
-
-  // enable running status optimisation by default for all ports
-  // clear timeout counters
-  rs_optimisation = ~0; // -> all-one
-  for(i=0; i<MIOS32_UART_NUM; ++i)
-    MIOS32_UART_MIDI_RS_Reset(i);
 
   return 0; // no error
 #endif

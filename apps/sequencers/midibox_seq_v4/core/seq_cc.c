@@ -75,7 +75,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
   // since CCs can be modified from other tasks at different priority we should do this operation atomic
   portENTER_CRITICAL();
 
-  if( cc < 0x40 ) {
+  if( cc < 0x30 ) {
     tcc->lay_const[cc] = value;
     if( tcc->event_mode != SEQ_EVENT_MODE_Drum )
       CC_LinkUpdate(track);
@@ -172,7 +172,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  if( cc < 0x40 ) {
+  if( cc < 0x30 ) {
     return tcc->lay_const[cc];
   }
 
