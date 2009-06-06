@@ -36,6 +36,15 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Fixes for WIN32 option (really no other solution?)
+/////////////////////////////////////////////////////////////////////////////
+
+#ifdef WIN32
+#define scanf scanf_s
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +124,7 @@ int get_number(char *prompt)
   int n=0, i;
   printf(prompt);
   while (n != 1) {
-    n = scanf_s("%d", &i);
+    n = scanf("%d", &i);
     fgets(line, STRING_MAX, stdin);
   }
 
@@ -143,8 +152,7 @@ static s32 MIDI_SYSEX_CmdFinished(void)
 static s32 MIDI_SYSEX_Cmd_DisAck(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u8 buffer[STRING_MAX];
-  static int ix;
-  ix = 0;
+  static int ix = 0;
 
   switch( cmd_state ) {
 
@@ -181,8 +189,9 @@ static s32 MIDI_SYSEX_Cmd_DisAck(mios32_midi_sysex_cmd_state_t cmd_state, u8 mid
 static s32 MIDI_SYSEX_Cmd_Ack(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u8 buffer[STRING_MAX];
-  static int ix=0;
+  static int ix = 0;
   int i;
+
   switch( cmd_state ) {
 
     case MIDI_SYSEX_CMD_STATE_BEGIN:
@@ -199,7 +208,7 @@ static s32 MIDI_SYSEX_Cmd_Ack(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_i
 
     default: // MIDI_SYSEX_CMD_STATE_END
       if( !ix ) {
-		printf("ERROR: received empty acknowledge string!\n");
+	printf("ERROR: received empty acknowledge string!\n");
       } else {
 
 	// waiting for query response
