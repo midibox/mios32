@@ -20,7 +20,9 @@
 #include <porttime.h>
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef WIN32
 #include <getopt.h>
+#endif
 #include <string.h>
 
 #include <mios32.h>
@@ -110,10 +112,10 @@ static volatile query_response[STRING_MAX];
 int get_number(char *prompt)
 {
   char line[STRING_MAX];
-  int n = 0, i;
+  int n=0, i;
   printf(prompt);
   while (n != 1) {
-    n = scanf("%d", &i);
+    n = scanf_s("%d", &i);
     fgets(line, STRING_MAX, stdin);
   }
 
@@ -141,7 +143,8 @@ static s32 MIDI_SYSEX_CmdFinished(void)
 static s32 MIDI_SYSEX_Cmd_DisAck(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u8 buffer[STRING_MAX];
-  static int ix = 0;
+  static int ix;
+  ix = 0;
 
   switch( cmd_state ) {
 
@@ -178,8 +181,8 @@ static s32 MIDI_SYSEX_Cmd_DisAck(mios32_midi_sysex_cmd_state_t cmd_state, u8 mid
 static s32 MIDI_SYSEX_Cmd_Ack(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   static u8 buffer[STRING_MAX];
-  static int ix = 0;
-
+  static int ix=0;
+  int i;
   switch( cmd_state ) {
 
     case MIDI_SYSEX_CMD_STATE_BEGIN:
@@ -189,16 +192,15 @@ static s32 MIDI_SYSEX_Cmd_Ack(mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_i
 
     case MIDI_SYSEX_CMD_STATE_CONT:
       if( ix < (STRING_MAX-1) ) {
-	buffer[ix++] = midi_in;
+		buffer[ix++] = midi_in;
         buffer[ix] = 0;
       }
       break;
 
     default: // MIDI_SYSEX_CMD_STATE_END
       if( !ix ) {
-	printf("ERROR: received empty acknowledge string!\n");
+		printf("ERROR: received empty acknowledge string!\n");
       } else {
-	int i;
 
 	// waiting for query response
 	if( timeout_ctr ) {
@@ -249,6 +251,9 @@ void receive_poll(PtTimestamp timestamp, void *userData)
   PmEvent event;
   int count;
   int in_port;
+  int i;
+  u8 midi_bytes[4];
+  u8 midi_in;
 
   // handle timeout counter
   if( timeout_ctr )
@@ -260,7 +265,6 @@ void receive_poll(PtTimestamp timestamp, void *userData)
       while( (count=Pm_Read(midi_in_ports[in_port], &event, 1)) ) {
     
 	if( count == 1 ) {
-	  u8 midi_bytes[4];
 
 	  midi_bytes[0] = (event.message >>  0) & 0xff;
 	  midi_bytes[1] = (event.message >>  8) & 0xff;
@@ -271,9 +275,8 @@ void receive_poll(PtTimestamp timestamp, void *userData)
 	  printf("[MIDI_IN] %02X %02X %02X %02X\n", midi_bytes[0], midi_bytes[1], midi_bytes[2], midi_bytes[3]);
 #endif
 
-	  int i;
 	  for(i=0; i<4; ++i) {
-	    u8 midi_in = midi_bytes[i];
+	    midi_in = midi_bytes[i];
 
 	    // ignore realtime messages (see MIDI spec - realtime messages can
 	    // always be injected into events/streams, and don't change the running status)
@@ -327,7 +330,9 @@ static void scan_handler(void)
 {
   s32 status;
   int port;
-
+  int query;
+  const PmDeviceInfo *info;
+  u8 *sysex_buffer_ptr;
   // reset SysEx state
   MIDI_SYSEX_CmdFinished();
 
@@ -337,7 +342,7 @@ static void scan_handler(void)
   Pt_Start(1, receive_poll, 0);
 
   for(port=0; port < Pm_CountDevices() && num_midi_in_ports < MIDI_IN_MAX; ++port) {
-    const PmDeviceInfo *info = Pm_GetDeviceInfo(port);
+    info = Pm_GetDeviceInfo(port);
     if( info->input ) {
       printf("MIDI IN '%s: %s' opened.\n", info->interf, info->name);
 
@@ -363,7 +368,7 @@ static void scan_handler(void)
   for(port=0; port<Pm_CountDevices(); ++port) {
     char msg[100]; // at least + 5 for header + 3 for command + F7
 
-    const PmDeviceInfo *info = Pm_GetDeviceInfo(port);
+    info = Pm_GetDeviceInfo(port);
     if( info->output ) {
       int i;
       for(i=0; i<80; ++i) { printf("-"); } printf("\n");
@@ -377,9 +382,8 @@ static void scan_handler(void)
 		    NULL, // (latency == 0 ? NULL : PMIDI_TIME_INFO), 
 		    0);   //  latency);
 
-      int query;
       for(query=1; query<=9; ++query) {
-	u8 *sysex_buffer_ptr = (u8 *)msg;
+	sysex_buffer_ptr = (u8 *)msg;
 	for(i=0; i<sizeof(midi_sysex_header); ++i)
 	  *sysex_buffer_ptr++ = midi_sysex_header[i];
 
@@ -439,10 +443,11 @@ int usage(char *program_name)
 int main(int argc, char* argv[])
 {
   int ch;
-  char *program_name = argv[0];
+  char *program_name;
+  program_name= argv[0];
 
   sysex_device_id = 0x00;
-
+#ifndef WIN32
   // options descriptor
   const struct option longopts[] = {
     { "device_id", required_argument, NULL, 'd' },
@@ -463,7 +468,7 @@ int main(int argc, char* argv[])
 
   argc -= optind;
   argv += optind;
-
+#endif
   // start scan
   scan_handler();
 

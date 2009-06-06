@@ -40,7 +40,7 @@ MIDIbox SEQ V4.0Alpha
 
 
 
-Currently only a makefile for MacOS is provided, but it shouldn't be so
+Currently only makefiles for MacOS/Windows are provided, but it shouldn't be so
 difficult to adapt it for other operating systems.
 
 Required Libraries:
@@ -50,5 +50,18 @@ Required Libraries:
 
 Some MIOS32 files are used as well (although this app doesn't run on a 
 microcontroller). They are taken from $MIOS32_PATH
+
+===============================================================================
+
+Compiling under Windows
+This is tested under Microsoft Visual C++ 9.0 Express Edition.
+
+First you must create portmidi.lib and porttime.lib. from $MIOS32_PATH/drivers/gnustep/portmidi
+directory open the portmidi (or portmidi-vc9) .sln file and build portmidi and porttime. 
+
+You will need to check that VSINSTALLDIR/VCINSTALLDIR are correct in make.bat. 
+It is a simple batch file which should set the rest of the environment. Then type
+
+make /f makefile.win 
 
 ===============================================================================

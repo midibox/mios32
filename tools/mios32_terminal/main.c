@@ -20,7 +20,11 @@
 #include <porttime.h>
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef WIN32 // Windows does not have getopt() functionality!
 #include <getopt.h>
+#else
+#include <getopt_long.h>
+#endif
 #include <string.h>
 
 #include <mios32.h>
@@ -103,10 +107,12 @@ static volatile PtTimestamp current_timestamp;
 int get_number(char *prompt)
 {
   char line[STRING_MAX];
-  int n = 0, i;
+  int n, i;
+  n=0;
   printf(prompt);
   while (n != 1) {
-    n = scanf("%d", &i);
+	// Modified to use scanf_s instead of scanf to remove warning in Windows
+    n = scanf_s("%d", &i);
     fgets(line, STRING_MAX, stdin);
   }
 
@@ -200,6 +206,7 @@ void receive_poll(PtTimestamp timestamp, void *userData)
 {
   PmEvent event;
   int count;
+  int i;
 
   while( (count=Pm_Read(midi_in, &event, 1)) ) {
     
@@ -216,9 +223,8 @@ void receive_poll(PtTimestamp timestamp, void *userData)
       printf("[MIDI_IN] %02X %02X %02X %02X\n", midi_bytes[0], midi_bytes[1], midi_bytes[2], midi_bytes[3]);
 #endif
 
-      int i;
       for(i=0; i<4; ++i) {
-	u8 midi_in = midi_bytes[i];
+		u8 midi_in = midi_bytes[i];
 
 	// ignore realtime messages (see MIDI spec - realtime messages can
 	// always be injected into events/streams, and don't change the running status)
@@ -268,7 +274,10 @@ void receive_poll(PtTimestamp timestamp, void *userData)
 static void terminal_handler(void)
 {
   s32 status;
-
+  int i;
+  u8 *sysex_buffer_ptr;
+  u8 *line_ptr;
+  
   // reset SysEx state
   MIDI_SYSEX_CmdFinished();
 
@@ -309,8 +318,7 @@ static void terminal_handler(void)
     char msg[STRING_MAX + 20]; // at least + 5 for header + 3 for command + F7
     fgets(line, STRING_MAX, stdin);
 
-    int i;
-    u8 *sysex_buffer_ptr = (u8 *)msg;
+    sysex_buffer_ptr = (u8 *)msg;
     for(i=0; i<sizeof(midi_sysex_header); ++i)
       *sysex_buffer_ptr++ = midi_sysex_header[i];
 
@@ -324,7 +332,7 @@ static void terminal_handler(void)
     *sysex_buffer_ptr++ = 0x00; // input string
 
     // search end of string and determine length
-    u8 *line_ptr = (u8 *)line;
+    line_ptr = (u8 *)line;
     for(i=0; i<STRING_MAX && (*line_ptr != 0); ++i)
       *sysex_buffer_ptr++ = (*line_ptr++) & 0x7f; // ensure that MIDI protocol won't be violated
 
@@ -352,22 +360,27 @@ int usage(char *program_name)
 int main(int argc, char* argv[])
 {
   int default_in;
-  int opt_in = -1;
+  int opt_in;
   int default_out;
-  int opt_out = -1;
-  int i = 0, n = 0;
+  int opt_out;
+  int i, n;
   int ch;
-  char *program_name = argv[0];
-
-  sysex_device_id = 0x00;
-
-  // options descriptor
+  char *program_name;
   const struct option longopts[] = {
     { "in",        required_argument, NULL, 'i' },
     { "out",       required_argument, NULL, 'o' },
     { "device_id", required_argument, NULL, 'd' },
     { NULL,    0,                 NULL,  0 }
   };
+  program_name = argv[0];
+  opt_in = -1;
+  opt_out = -1;
+  i=0;
+  n=0;
+  sysex_device_id = 0x00;
+#ifndef WIN32 // Remove command line processing getopt() as windows does not have it!
+  // options descriptor
+
 
   while( (ch=getopt_long(argc, argv, "io", longopts, NULL)) != -1 )
     switch( ch ) {
@@ -389,6 +402,7 @@ int main(int argc, char* argv[])
 
   argc -= optind;
   argv += optind;
+#endif
 
   // list device information
   default_in = Pm_GetDefaultInputDeviceID();
