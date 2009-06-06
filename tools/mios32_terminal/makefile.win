@@ -1,0 +1,17 @@
+LIBS = kernel32.lib advapi32.lib winmm.lib portmidi.lib porttime.lib
+
+MIOS32FLAGS = -I $(MIOS32_PATH)/include/mios32 -I . -I $(MIOS32_PATH)/drivers/gnustep/portmidi/pm_common -I $(MIOS32_PATH)/drivers/gnustep/portmidi/porttime -D MIOS32_FAMILY_EMULATION -D WIN32
+.SUFFIXES: .c
+
+.c.obj:
+		cl $(MIOS32FLAGS) -c -W3 -Ox  -EHsc /Tc $*.c 
+
+everything: mios32_terminal.exe 
+
+main_obj = main.obj
+
+mios32_terminal.exe: $(main_obj) 
+		link  -Out:$@ $(LIBS) $(main_obj)
+main.obj:       	main.c
+
+

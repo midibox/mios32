@@ -143,8 +143,10 @@ typedef union {
   };
 
 #ifndef __cplusplus
+#ifndef WIN32 
   // C++ doesn't allow to redefine names in unions
   // as a simple workaround, we only provide them for .c code
+  // VC doesn't like it in C or C++ mode!
   struct {
     unsigned cin:4;
     unsigned cable:4;
@@ -169,6 +171,7 @@ typedef union {
     unsigned program_change:8;
     unsigned dummy:8;
   };
+#endif
 #endif
 } mios32_midi_package_t;
 

@@ -18,23 +18,35 @@ MIOS32_MIDI_DebugCommandCallback_Init()
 
 
 The program can be started with:
-   mios32_scan [--device_id <sysex-device-id>]
+   mios32_terminal [--device_id <sysex-device-id>]
 
 E.g.:
-   mios32_scan
+   mios32_terminal
 or:
-   mios32_scan --device_id 1
+   mios32_terminal --device_id 1 (MacOS only)
 
 
-Currently only a makefile for MacOS is provided, but it shouldn't be so
+Currently only a makefile for MacOS/Windows is provided, but it shouldn't be so
 difficult to adapt it for other operating systems.
 
-Required Libraries:
+Required Libraries (MacOS):
    - MacOS Core Framework
    - libportmidi (-> see $MIOS32_PATH/drivers/gnustep/portmidi/pm_mac/README_MAC.txt)
 
-
 Some MIOS32 files are used as well (although this app doesn't run on a 
 microcontroller). They are taken from $MIOS32_PATH
+
+===============================================================================
+
+Compiling under Windows
+This is tested under Microsoft Visual C++ 9.0 Express Edition.
+
+First you must create portmidi.lib and porttime.lib. from $MIOS32_PATH/drivers/gnustep/portmidi
+directory open the portmidi (or portmidi-vc9) .sln file and build portmidi and porttime. 
+
+You will need to check that VSINSTALLDIR/VCINSTALLDIR are correct in make.bat. 
+It is a simple batch file which should set the rest of the environment. Then type
+
+make /f makefile.win 
 
 ===============================================================================
