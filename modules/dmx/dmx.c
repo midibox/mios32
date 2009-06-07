@@ -126,7 +126,8 @@ static void TASK_DMX(void *pvParameters)
 		    USART_ITConfig(DMX, USART_IT_TC, ENABLE); // enable TC interrupt - triggered when transmission of break/MAB is completed
 		    DMX->BRR=break_baudrate_brr;		// Set baudrate to 90.9K so send break/MAB
 		    dmx_state=DMX_BREAK;
-		    DMX->DR = 0x80;                           // start transmission (MSB used for MAB)
+		    //DMX->DR = 0x80;                           // start transmission (MSB used for MAB)
+		    DMX->DR = 0x00;                           // start transmission (stop bits provide MAB)
 		  }
 		}
   }
