@@ -24,6 +24,12 @@
 #include "dmx.h"
 #include <glcd_font.h>
 
+typedef struct {
+	int normal_access : 3;
+	int single_bit_bb : 1;
+} __attribute__((bitband)) my_struct;
+
+my_struct phil;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -87,7 +93,7 @@ void APP_Background(void)
 
 					
 				}
-			} else if ((f>11) && (f<24)){
+			} else if (f>=12){
 				if (faders[f]!=bankb[f-12]) {
 					bankb[f-12]=faders[f];
 					MIOS32_LCD_GCursorSet((f-12)*4, 32);
@@ -109,11 +115,13 @@ void APP_Background(void)
 			MIOS32_LCD_GCursorSet(13*4, 24);
 			MIOS32_LCD_PrintChar((u8)mastera>>4);
 			MIOS32_LCD_PrintChar((u8)masterb>>4);
-			MIOS32_MIDI_SendDebugMessage("Master Values: A=%d  B=%d\n",mastera,(u8)~masterb);
+			//MIOS32_MIDI_SendDebugMessage("Master Values: A=%d  B=%d\n",mastera,(u8)~masterb);
 			MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 			for (g=0;g<12;g++) {
 				int q=(((banka[g]*mastera)>>8)|((bankb[g]*(u8)~masterb)>>8));
 				DMX_SetChannel(g,(u8)q);
+				//if (g<4)
+				//	MIOS32_MIDI_SendDebugMessage("MASTERA=%d MASTERB=%d CHANNEL%d=%d\n",mastera,masterb,g,(u8)q);
 			}
 		}
 	}
