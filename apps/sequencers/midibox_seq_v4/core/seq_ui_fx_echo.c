@@ -44,8 +44,6 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0003; break;
     case ITEM_REPEATS: *gp_leds = 0x000c; break;

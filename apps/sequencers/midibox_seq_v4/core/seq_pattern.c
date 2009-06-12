@@ -268,6 +268,18 @@ s32 SEQ_PATTERN_Fix(u8 group, seq_pattern_t pattern)
     for(track_i=0; track_i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track_i, ++track) {
       // Usage example (disabled as it isn't required anymore)
       // seq_cc_trk[track].clkdiv.value = 15; // due to changed resultion
+
+#if 0
+      seq_cc_trk[track].lfo_waveform = 0;
+      seq_cc_trk[track].lfo_amplitude = 128 + 64;
+      seq_cc_trk[track].lfo_phase = 0;
+      seq_cc_trk[track].lfo_steps = 15;
+      seq_cc_trk[track].lfo_steps_rst = 15;
+      seq_cc_trk[track].lfo_enable_flags.ALL = 0;
+      seq_cc_trk[track].lfo_cc = 0;
+      seq_cc_trk[track].lfo_cc_offset = 64;
+      seq_cc_trk[track].lfo_cc_ppqn = 6; // 96 ppqn
+#endif
     }
 
     MIOS32_MIDI_SendDebugMessage("Saving bank #%d pattern %d\n", pattern.bank+1, pattern.pattern+1);

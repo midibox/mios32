@@ -27,6 +27,7 @@
 #include "seq_scale.h"
 #include "seq_groove.h"
 #include "seq_humanize.h"
+#include "seq_lfo.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
 #include "seq_par.h"
@@ -59,7 +60,7 @@
 static s32 SEQ_CORE_PlayOffEvents(void);
 static s32 SEQ_CORE_Tick(u32 bpm_tick);
 
-static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc);
+static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
@@ -162,6 +163,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset humanizer module
   SEQ_HUMANIZE_Init(0);
 
+  // reset LFO module
+  SEQ_LFO_Init(0);
+
   // reset song module
   SEQ_SONG_Init(0);
 
@@ -248,7 +252,7 @@ s32 SEQ_CORE_Handler(void)
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	seq_core_trk_t *t = &seq_core_trk[track];
 	seq_cc_trk_t *tcc = &seq_cc_trk[track];
-	SEQ_CORE_ResetTrkPos(t, tcc);
+	SEQ_CORE_ResetTrkPos(track, t, tcc);
 	SEQ_RECORD_Reset(track);
       }      
     }
@@ -342,7 +346,7 @@ s32 SEQ_CORE_Reset(void)
     u8 muted = t->state.MUTED; // save muted flag
     t->state.ALL = 0;
     t->state.MUTED = muted; // restore muted flag
-    SEQ_CORE_ResetTrkPos(t, tcc);
+    SEQ_CORE_ResetTrkPos(track, t, tcc);
     SEQ_RECORD_Reset(track);
   }
 
@@ -422,6 +426,16 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
 
+      // handle LFO effect
+      SEQ_LFO_HandleTrk(track, bpm_tick);
+
+      // send LFO CC (if enabled)
+      {
+	mios32_midi_package_t p;
+	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 )
+	  SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+      }
+
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
       if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL ) {
 	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
@@ -431,7 +445,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
       if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
-        SEQ_CORE_ResetTrkPos(t, tcc);
+        SEQ_CORE_ResetTrkPos(track, t, tcc);
   
       if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
 	// calculate step length
@@ -517,7 +531,11 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  }
 
 	  // calculate number of cycles to next step
+#if 0
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
+#else
+	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
+#endif
 
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
@@ -629,11 +647,17 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      // Note Event
 
 	      // groove it
+#if 0
 	      SEQ_GROOVE_Event(track, t->step, e);
+#else
+	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
+#endif
 
-	      // humanize it
-	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) )
+	      // humanize it and apply LFO
+	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		SEQ_HUMANIZE_Event(track, t->step, e);
+		SEQ_LFO_Event(track, e);
+	      }
 
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED )
@@ -798,7 +822,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 /////////////////////////////////////////////////////////////////////////////
 // Resets the step position variables of a track
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
+static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
 {
   // don't increment on first clock event
   t->state.FIRST_CLK = 1;
@@ -828,6 +852,9 @@ static s32 SEQ_CORE_ResetTrkPos(seq_core_trk_t *t, seq_cc_trk_t *tcc)
   t->step_saved = t->step;
 
   t->arp_pos = 0;
+
+  // reset LFO
+  SEQ_LFO_ResetTrk(track);
 
   return 0; // no error
 }

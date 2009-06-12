@@ -69,11 +69,17 @@
 #define SEQ_FILE_C_ERR_WRITE           -178 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_C_ERR_NO_FILE         -179 // no or invalid config file
 
+// used by seq_file_g.c
+#define SEQ_FILE_G_ERR_FORMAT          -192 // invalid config file format
+#define SEQ_FILE_G_ERR_READ            -193 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_G_ERR_WRITE           -194 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_G_ERR_NO_FILE         -195 // no or invalid config file
+
 // used by seq_file_hw.c
-#define SEQ_FILE_HW_ERR_FORMAT         -192 // invalid config file format
-#define SEQ_FILE_HW_ERR_READ           -193 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_HW_ERR_WRITE          -194 // error while writing file (exact error status cannot be determined anymore)
-#define SEQ_FILE_HW_ERR_NO_FILE        -195 // no or invalid config file
+#define SEQ_FILE_HW_ERR_FORMAT         -208 // invalid config file format
+#define SEQ_FILE_HW_ERR_READ           -209 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_HW_ERR_WRITE          -210 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_HW_ERR_NO_FILE        -211 // no or invalid config file
 
 
 /////////////////////////////////////////////////////////////////////////////

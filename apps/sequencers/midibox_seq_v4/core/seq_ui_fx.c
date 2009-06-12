@@ -31,7 +31,7 @@
 static const seq_ui_page_t shortcut_menu_pages[16] = {
   SEQ_UI_PAGE_FX_ECHO,     // GP1
   SEQ_UI_PAGE_FX_HUMANIZE, // GP2
-  SEQ_UI_PAGE_NONE,        // GP3
+  SEQ_UI_PAGE_FX_LFO,      // GP3
   SEQ_UI_PAGE_NONE,        // GP4
   SEQ_UI_PAGE_NONE,        // GP5
   SEQ_UI_PAGE_NONE,        // GP6
@@ -130,8 +130,8 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(20);
 
   SEQ_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintString("Echo Hum. ");
-  SEQ_LCD_PrintSpaces(30);
+  SEQ_LCD_PrintString("Echo Hum.  LFO ");
+  SEQ_LCD_PrintSpaces(25);
   SEQ_LCD_PrintString("Loop ");
   SEQ_LCD_PrintSpaces(35);
 

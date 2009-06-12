@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 #include <string.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_core.h"
@@ -31,6 +33,13 @@
 #define ITEM_LOOP_OFFSET       1
 #define ITEM_LOOP_STEPS        2
 #define ITEM_LOOP_ACTIVE       3
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 store_file_required;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -98,13 +107,25 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_LOOP_MODE:
-      return SEQ_UI_Var8_Inc(&seq_core_glb_loop_mode, 0, SEQ_CORE_NUM_LOOP_MODES-1, incrementer);
+      if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_mode, 0, SEQ_CORE_NUM_LOOP_MODES-1, incrementer) > 0 ) {
+	store_file_required;
+	return 1;
+      }
+      return 0;
 
     case ITEM_LOOP_OFFSET:
-      return SEQ_UI_Var8_Inc(&seq_core_glb_loop_offset, 0, 255, incrementer);
+      if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_offset, 0, 255, incrementer) > 0 ) {
+	store_file_required;
+	return 1;
+      }
+      return 0;
 
     case ITEM_LOOP_STEPS:
-      return SEQ_UI_Var8_Inc(&seq_core_glb_loop_steps, 0, 255, incrementer);
+      if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_steps, 0, 255, incrementer) ) {
+	store_file_required;
+	return 1;
+      }
+      return 0;
 
     case ITEM_LOOP_ACTIVE:
       // should be atomic
@@ -237,6 +258,27 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local exit function
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  s32 status = 0;
+
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    if( (status=SEQ_FILE_C_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    store_file_required = 0;
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_FX_LOOP_Init(u32 mode)
@@ -246,6 +288,9 @@ s32 SEQ_UI_FX_LOOP_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
+
+  store_file_required = 0;
 
   return 0; // no error
 }

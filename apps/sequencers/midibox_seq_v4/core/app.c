@@ -43,6 +43,7 @@
 #include "seq_file_b.h"
 #include "seq_file_m.h"
 #include "seq_file_s.h"
+#include "seq_file_g.h"
 #include "seq_file_c.h"
 #include "seq_file_hw.h"
 
@@ -441,9 +442,10 @@ void SEQ_TASK_Period1S(void)
 	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
 	char str2[21];
 	sprintf(str2, 
-		"M:%d  S:%d  C:%d HW:%d", 
+		"M:%d S:%d G:%d C:%d HW:%d", 
 		SEQ_FILE_M_NumMaps() ? 1 : 0, 
 		SEQ_FILE_S_NumSongs() ? 1 : 0, 
+		SEQ_FILE_G_Valid(),
 		SEQ_FILE_C_Valid(),
 		SEQ_FILE_HW_Valid());
 	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);

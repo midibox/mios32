@@ -264,6 +264,12 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_global_scale_ctrl = value;
 	  } else if( strcmp(parameter, "GlobalScaleRoot") == 0 ) {
 	    seq_core_global_scale_root_selection = value;
+	  } else if( strcmp(parameter, "LoopMode") == 0 ) {
+	    seq_core_glb_loop_mode = value;
+	  } else if( strcmp(parameter, "LoopOffset") == 0 ) {
+	    seq_core_glb_loop_offset = value-1;
+	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
+	    seq_core_glb_loop_steps = value-1;
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
 	    MIOS32_MIDI_DefaultPortSet(value);
 	  } else if( strcmp(parameter, "MIDI_IN_Channel") == 0 ) {
@@ -354,8 +360,6 @@ s32 SEQ_FILE_C_Read(void)
   return 0; // no error
 }
 
-#include <tasks.h>
-
 /////////////////////////////////////////////////////////////////////////////
 // writes the config file
 // returns < 0 on errors (error codes are documented in seq_file.h)
@@ -417,6 +421,15 @@ s32 SEQ_FILE_C_Write(void)
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "LoopMode %d\n", seq_core_glb_loop_mode);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "LoopOffset %d\n", (int)seq_core_glb_loop_offset+1);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "LoopSteps %d\n", (int)seq_core_glb_loop_steps+1);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());

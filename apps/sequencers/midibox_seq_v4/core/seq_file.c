@@ -30,6 +30,7 @@
 #include "seq_file_b.h"
 #include "seq_file_m.h"
 #include "seq_file_s.h"
+#include "seq_file_g.h"
 #include "seq_file_c.h"
 #include "seq_file_hw.h"
 
@@ -108,6 +109,7 @@ s32 SEQ_FILE_Init(u32 mode)
   // init:
   SEQ_FILE_HW_Init(0); // hardware config file access
   SEQ_FILE_C_Init(0); // config file access
+  SEQ_FILE_G_Init(0); // groove file access
   SEQ_FILE_B_Init(0); // pattern file access
   SEQ_FILE_M_Init(0); // mixer file access
   SEQ_FILE_S_Init(0); // song file access
@@ -155,6 +157,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     SEQ_FILE_B_LoadAllBanks();
     SEQ_FILE_M_LoadAllBanks();
     SEQ_FILE_S_LoadAllBanks();
+    SEQ_FILE_G_Load();
     SEQ_FILE_C_Load();
     SEQ_FILE_HW_Load();
 
@@ -173,6 +176,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     SEQ_FILE_B_UnloadAllBanks();
     SEQ_FILE_M_UnloadAllBanks();
     SEQ_FILE_S_UnloadAllBanks();
+    SEQ_FILE_G_Unload();
     SEQ_FILE_C_Unload();
     SEQ_FILE_HW_Unload();
 

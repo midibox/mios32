@@ -38,6 +38,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_fx.c \
 		../core/seq_ui_fx_echo.c \
 		../core/seq_ui_fx_humanize.c \
+		../core/seq_ui_fx_lfo.c \
 		../core/seq_ui_util.c \
 		../core/seq_ui_bpm.c \
 		../core/seq_ui_bpm_presets.c \
@@ -61,6 +62,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_groove.c \
 		../core/seq_morph.c \
 		../core/seq_humanize.c \
+		../core/seq_lfo.c \
 		../core/seq_chord.c \
 		../core/seq_pattern.c \
 		../core/seq_record.c \
@@ -68,6 +70,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_file_b.c \
 		../core/seq_file_m.c \
 		../core/seq_file_s.c \
+		../core/seq_file_g.c \
 		../core/seq_file_c.c \
 		../core/seq_file_hw.c \
 		../core/seq_layer.c \
