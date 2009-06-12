@@ -75,6 +75,15 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_ECHO_FB_NOTE,   24 }, // +0
   { SEQ_CC_ECHO_FB_GATELENGTH, 20 }, // 100%
   { SEQ_CC_ECHO_FB_TICKS,  20 }, // 100%
+  { SEQ_CC_LFO_WAVEFORM,   0x00 }, // off
+  { SEQ_CC_LFO_AMPLITUDE,  128 + 64 },
+  { SEQ_CC_LFO_PHASE,      0 },
+  { SEQ_CC_LFO_STEPS,      15 },
+  { SEQ_CC_LFO_STEPS_RST,  15 },
+  { SEQ_CC_LFO_ENABLE_FLAGS, 0 },
+  { SEQ_CC_LFO_CC,         0 },
+  { SEQ_CC_LFO_CC_OFFSET,  64 },
+  { SEQ_CC_LFO_CC_PPQN,    6 }, // 96 ppqn
   { 0xff,                  0xff } // end marker
 };
 

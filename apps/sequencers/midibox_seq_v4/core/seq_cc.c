@@ -149,6 +149,16 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_ECHO_FB_NOTE: tcc->echo_fb_note = value; break;
       case SEQ_CC_ECHO_FB_GATELENGTH: tcc->echo_fb_gatelength = value; break;
       case SEQ_CC_ECHO_FB_TICKS: tcc->echo_fb_ticks = value; break;
+
+      case SEQ_CC_LFO_WAVEFORM: tcc->lfo_waveform = value; break;
+      case SEQ_CC_LFO_AMPLITUDE: tcc->lfo_amplitude = value; break;
+      case SEQ_CC_LFO_PHASE: tcc->lfo_phase = value; break;
+      case SEQ_CC_LFO_STEPS: tcc->lfo_steps = value; break;
+      case SEQ_CC_LFO_STEPS_RST: tcc->lfo_steps_rst = value; break;
+      case SEQ_CC_LFO_ENABLE_FLAGS: tcc->lfo_enable_flags.ALL = value; break;
+      case SEQ_CC_LFO_CC: tcc->lfo_cc = value; break;
+      case SEQ_CC_LFO_CC_OFFSET: tcc->lfo_cc_offset = value; break;
+      case SEQ_CC_LFO_CC_PPQN: tcc->lfo_cc_ppqn = value; break;
   
       default:
 	portEXIT_CRITICAL();
@@ -228,6 +238,16 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ECHO_FB_NOTE: return tcc->echo_fb_note; break;
     case SEQ_CC_ECHO_FB_GATELENGTH: return tcc->echo_fb_gatelength; break;
     case SEQ_CC_ECHO_FB_TICKS: return tcc->echo_fb_ticks; break;
+
+    case SEQ_CC_LFO_WAVEFORM: return tcc->lfo_waveform;
+    case SEQ_CC_LFO_AMPLITUDE: return tcc->lfo_amplitude;
+    case SEQ_CC_LFO_PHASE: return tcc->lfo_phase;
+    case SEQ_CC_LFO_STEPS: return tcc->lfo_steps;
+    case SEQ_CC_LFO_STEPS_RST: return tcc->lfo_steps_rst;
+    case SEQ_CC_LFO_ENABLE_FLAGS: return tcc->lfo_enable_flags.ALL;
+    case SEQ_CC_LFO_CC: return tcc->lfo_cc;
+    case SEQ_CC_LFO_CC_OFFSET: return tcc->lfo_cc_offset;
+    case SEQ_CC_LFO_CC_PPQN: return tcc->lfo_cc_ppqn;
   }
 
   return -2; // invalid CC

@@ -16,6 +16,7 @@
 
 #include "seq_trg.h"
 #include "seq_layer.h"
+#include "seq_lfo.h"
 #include "seq_core.h"
 
 
@@ -77,7 +78,17 @@
 #define SEQ_CC_LAY_CONST_C15	0x2e
 #define SEQ_CC_LAY_CONST_C16	0x2f
 
-// reserved: 0x30..0x3f
+#define SEQ_CC_LFO_WAVEFORM        0x30
+#define SEQ_CC_LFO_AMPLITUDE       0x31
+#define SEQ_CC_LFO_PHASE           0x32
+#define SEQ_CC_LFO_STEPS           0x33
+#define SEQ_CC_LFO_STEPS_RST       0x34
+#define SEQ_CC_LFO_ENABLE_FLAGS    0x35
+#define SEQ_CC_LFO_CC              0x36
+#define SEQ_CC_LFO_CC_OFFSET       0x37
+#define SEQ_CC_LFO_CC_PPQN         0x38
+
+// reserved: 0x39..0x3f
 
 #define SEQ_CC_MODE		0x40
 #define SEQ_CC_MODE_FLAGS	0x41
@@ -160,10 +171,10 @@ typedef struct {
   u8       loop;              // loop point
   unsigned transpose_semi:4;  // semitons transpose
   unsigned transpose_oct:4;   // octave transpose
-  unsigned groove_style:4;    // groove style
   unsigned morph_mode:4;      // morph mode
   unsigned morph_dst_trk:4;   // morph destination track
   unsigned humanize_mode:4;   // humanize mode
+  u8       groove_style;      // groove style
   u8       groove_value;      // groove intensity
   u8       humanize_value;    // humanize intensity
   seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V
@@ -178,6 +189,16 @@ typedef struct {
   unsigned echo_fb_note:8;    // feedbacked note (-24..24 + random = 50 values)
   unsigned echo_fb_gatelength:8; // feedbacked gatelength 0%..200%, 5 step resolution (41 values)
   unsigned echo_fb_ticks:8;   // feedbacked ticks 0%..200%, 5 step resolution (41 values)
+
+  seq_lfo_waveform_t lfo_waveform; // off/Sine/Tri/Saw/Rec 5..95
+  u8       lfo_amplitude;     // -128..0..127
+  u8       lfo_phase;         // 0..255
+  u8       lfo_steps;         // 0..255
+  u8       lfo_steps_rst;     // 0..255
+  seq_lfo_enable_flags_t lfo_enable_flags;  // see structure
+  u8       lfo_cc;            // 0..127
+  u8       lfo_cc_offset;     // 0..127
+  u8       lfo_cc_ppqn;       // 3..384
 
   // temporary variables which will be updated on CC writes
   s8 link_par_layer_note;        // parameter layer which stores the first note value (-1 if not assigned)

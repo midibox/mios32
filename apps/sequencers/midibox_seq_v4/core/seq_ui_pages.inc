@@ -41,6 +41,7 @@ typedef enum {
   SEQ_UI_PAGE_TRKREC,
   SEQ_UI_PAGE_FX_ECHO,
   SEQ_UI_PAGE_FX_HUMANIZE,
+  SEQ_UI_PAGE_FX_LFO,
   SEQ_UI_PAGE_FX_LOOP,
   SEQ_UI_PAGE_UTIL,
   SEQ_UI_PAGE_BPM,
@@ -83,6 +84,7 @@ extern s32 SEQ_UI_TRKRND_Init(u32 mode);
 extern s32 SEQ_UI_TRKREC_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
 extern s32 SEQ_UI_FX_HUMANIZE_Init(u32 mode);
+extern s32 SEQ_UI_FX_LFO_Init(u32 mode);
 extern s32 SEQ_UI_FX_LOOP_Init(u32 mode);
 extern s32 SEQ_UI_UTIL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_Init(u32 mode);
@@ -130,6 +132,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Record            ", (void *)&SEQ_UI_TRKREC_Init },
   { "Track Fx: Echo    ", (void *)&SEQ_UI_FX_ECHO_Init },
   { "Track Fx: Humanize", (void *)&SEQ_UI_FX_HUMANIZE_Init },
+  { "Track Fx: LFO     ", (void *)&SEQ_UI_FX_LFO_Init },
   { "Global Fx: Loop   ", (void *)&SEQ_UI_FX_LOOP_Init },
   { "Utilities         ", (void *)&SEQ_UI_UTIL_Init },
   { "BPM Selection     ", (void *)&SEQ_UI_BPM_Init },

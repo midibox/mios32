@@ -522,6 +522,12 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
 
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Metronome", seq_core_state.METRONOME ? "    on" : "   off");
 
+#if 0
+  // metronome button can be used to trigger pattern file fixes
+  if( !depressed )
+    SEQ_PATTERN_FixAll();
+#endif
+
   return 0; // no error
 }
 

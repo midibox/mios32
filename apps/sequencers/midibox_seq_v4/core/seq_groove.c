@@ -18,22 +18,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include "seq_groove.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-typedef struct {
-  char name[13];
-  s8   add_step_delay[16];
-  s8   add_step_length[16];
-  s8   add_step_velocity[16];
-} seq_groove_entry_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,47 +35,55 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+// Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-static const seq_groove_entry_t seq_groove_table[] = {
+// preset grooves
+const seq_groove_entry_t seq_groove_presets[SEQ_GROOVE_NUM_PRESETS] = {
   { " -- off --  ", // dummy entry, changes here have no effect!
+    16, // Number of Steps
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "  Shuffle   ",
+    16, // Number of Steps
     { VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "Inv. Shuffle",
+    16, // Number of Steps
     { VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "  Shuffle2  ",
+    16, // Number of Steps
     {    0,   32,    0, VPOS,    0,   32,    0, VPOS,    0,   32,    0, VPOS,    0,   32,    0, VPOS }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,   20,    0,  -20,    0,   20,    0,  -20,    0,   20,    0,  -20,    0,   20,    0,  -20 }, // Velocity
   },
 
   { "  Shuffle3  ",
+    16, // Number of Steps
     {    0,   32,   16, VPOS,    0,   32,   16, VPOS,    0,   32,   16, VPOS,    0,   32,   16, VPOS }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,  -10,  -20,  -10,    0,  -10,  -20,  -10,    0,  -10,  -20,  -10,    0,  -10,  -20,  -10 }, // Velocity
   },
 
   { "  Shuffle4  ",
+    16, // Number of Steps
     {  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16 }, // Delay
     {    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG,    0, VNEG }, // Gatelength
     {    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS }, // Velocity
   },
 
   { "  Shuffle5  ",
+    16, // Number of Steps
     {  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16,  -16,   16 }, // Delay
     { VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG }, // Gatelength
     { VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS }, // Velocity
@@ -94,23 +91,27 @@ static const seq_groove_entry_t seq_groove_table[] = {
 };
 
 
+// custom groove templates are read from MBSEQ_G.V4 file which is located on SD Card
+seq_groove_entry_t seq_groove_templates[SEQ_GROOVE_NUM_TEMPLATES];
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_GROOVE_Init(u32 mode)
 {
-  // here we will read customized groove pattern later
+  u8 groove;
+
+  // initialise custom templates with dummy template
+  // will be loaded from SD Card in SEQ_FILE_G
+  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove) {
+    memcpy(&seq_groove_templates[groove], &seq_groove_presets[0], sizeof(seq_groove_entry_t));
+    sprintf(seq_groove_templates[groove].name, "Custom #%d   ", groove+1);
+    seq_groove_templates[groove].name[12] = 0; // terminator
+    seq_groove_templates[groove].num_steps = 2; // for fast success
+  }
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// returns number of available grooves
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_GROOVE_NumGet(void)
-{
-  return sizeof(seq_groove_table)/sizeof(seq_groove_entry_t);
 }
 
 
@@ -120,10 +121,13 @@ s32 SEQ_GROOVE_NumGet(void)
 /////////////////////////////////////////////////////////////////////////////
 char *SEQ_GROOVE_NameGet(u8 groove)
 {
-  if( groove >= SEQ_GROOVE_NumGet() )
+  if( groove >= (SEQ_GROOVE_NUM_PRESETS+SEQ_GROOVE_NUM_TEMPLATES)  )
     return "Invld Groove";
 
-  return seq_groove_table[groove].name;
+  if( groove >= SEQ_GROOVE_NUM_PRESETS )
+    return seq_groove_templates[groove-SEQ_GROOVE_NUM_PRESETS].name;
+
+  return seq_groove_presets[groove].name;
 }
 
 
@@ -136,14 +140,19 @@ s32 SEQ_GROOVE_DelayGet(u8 track, u8 step)
   u8 groove = tcc->groove_style;
 
   // check if within allowed range
-  if( !groove || groove >= SEQ_GROOVE_NumGet() )
+  if( !groove || groove >= (SEQ_GROOVE_NUM_PRESETS+SEQ_GROOVE_NUM_TEMPLATES) )
     return 0; // no groove
 
-  // 16 steps are supported
-  step %= 16;
+  seq_groove_entry_t *g;
+  if( groove >= SEQ_GROOVE_NUM_PRESETS )
+    g = (seq_groove_entry_t *)&seq_groove_templates[groove-SEQ_GROOVE_NUM_PRESETS];
+  else
+    g = (seq_groove_entry_t *)&seq_groove_presets[groove];
+
+  step %= g->num_steps;
 
   // get delay value
-  s8 delay = seq_groove_table[groove].add_step_delay[step];
+  s8 delay = g->add_step_delay[step];
 
   // insert positive/negative intensity
   if( delay == VPOS )
@@ -164,14 +173,19 @@ s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   u8 groove = tcc->groove_style;
 
   // check if within allowed range
-  if( !groove || groove >= SEQ_GROOVE_NumGet() )
+  if( !groove || groove >= (SEQ_GROOVE_NUM_PRESETS+SEQ_GROOVE_NUM_TEMPLATES) )
     return 0; // no groove
 
-  // 16 steps are supported
-  step %= 16;
+  seq_groove_entry_t *g;
+  if( groove >= SEQ_GROOVE_NUM_PRESETS )
+    g = (seq_groove_entry_t *)&seq_groove_templates[groove-SEQ_GROOVE_NUM_PRESETS];
+  else
+    g = (seq_groove_entry_t *)&seq_groove_presets[groove];
+
+  step %= g->num_steps;
 
   // get velocity modifier
-  s8 add_velocity = seq_groove_table[groove].add_step_velocity[step];
+  s8 add_velocity = g->add_step_velocity[step];
   // insert positive/negative intensity
   if( add_velocity == VPOS )
     add_velocity = tcc->groove_value;
@@ -189,7 +203,7 @@ s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
 
   // get gatelength modifier if len < 96 (glide not active)
   if( e->len < 96 ) {
-    s8 add_length = seq_groove_table[groove].add_step_length[step];
+    s8 add_length = g->add_step_length[step];
     // insert positive/negative intensity
     if( add_length == VPOS )
       add_length = tcc->groove_value;
