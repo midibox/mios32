@@ -38,7 +38,10 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_fx.c \
 		../core/seq_ui_fx_echo.c \
 		../core/seq_ui_fx_humanize.c \
+		../core/seq_ui_fx_limit.c \
 		../core/seq_ui_fx_lfo.c \
+		../core/seq_ui_fx_scale.c \
+		../core/seq_ui_manual.c \
 		../core/seq_ui_util.c \
 		../core/seq_ui_bpm.c \
 		../core/seq_ui_bpm_presets.c \

@@ -20,6 +20,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
+#include "seq_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,15 +55,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return -1;
     ui_selected_par_layer = encoder;
 
-#if DEFAULT_BEHAVIOUR_BUTTON_PAR_LAYER
-    // if toggle function active: jump back to previous menu
-    // this is especially useful for the emulated MBSEQ, where we can only click on a single button
-    // (trigger gets deactivated when clicking on GP button or moving encoder)
-    if( seq_ui_button_state.PAR_LAYER_SEL ) {
-      seq_ui_button_state.PAR_LAYER_SEL = 0;
-      SEQ_UI_PageSet(ui_parlayer_prev_page);
+    if( seq_hwcfg_button_beh.par_layer ) {
+      // if toggle function active: jump back to previous menu
+      // this is especially useful for the emulated MBSEQ, where we can only click on a single button
+      // (trigger gets deactivated when clicking on GP button or moving encoder)
+      if( seq_ui_button_state.PAR_LAYER_SEL ) {
+	seq_ui_button_state.PAR_LAYER_SEL = 0;
+	SEQ_UI_PageSet(ui_parlayer_prev_page);
+      }
     }
-#endif
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {

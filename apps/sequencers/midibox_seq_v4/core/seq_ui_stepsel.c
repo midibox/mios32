@@ -24,6 +24,7 @@
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_trg.h"
+#include "seq_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,15 +73,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     // select step within view
     ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
 
-#if DEFAULT_BEHAVIOUR_BUTTON_STEPVIEW
-    // if toggle function active: jump back to previous menu
-    // this is especially useful for the emulated MBSEQ, where we can only click on a single button
-    // (stepview gets deactivated when clicking on GP button)
-    if( seq_ui_button_state.STEPVIEW ) {
-      seq_ui_button_state.STEPVIEW = 0;
-      SEQ_UI_PageSet(ui_stepview_prev_page);
+    if( seq_hwcfg_button_beh.step_view ) {
+      // if toggle function active: jump back to previous menu
+      // this is especially useful for the emulated MBSEQ, where we can only click on a single button
+      // (stepview gets deactivated when clicking on GP button)
+      if( seq_ui_button_state.STEP_VIEW ) {
+	seq_ui_button_state.STEP_VIEW = 0;
+	SEQ_UI_PageSet(ui_stepview_prev_page);
+      }
     }
-#endif
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {

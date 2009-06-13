@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
+#include "seq_hwcfg.h"
 
 #include "seq_trg.h"
 #include "seq_cc.h"
@@ -68,15 +69,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       ui_selected_trg_layer = encoder;
     }
 
-#if DEFAULT_BEHAVIOUR_BUTTON_TRG_LAYER
-    // if toggle function active: jump back to previous menu
-    // this is especially useful for the emulated MBSEQ, where we can only click on a single button
-    // (trigger gets deactivated when clicking on GP button or moving encoder)
-    if( seq_ui_button_state.TRG_LAYER_SEL ) {
-      seq_ui_button_state.TRG_LAYER_SEL = 0;
-      SEQ_UI_PageSet(ui_trglayer_prev_page);
+    if( seq_hwcfg_button_beh.par_layer ) {
+      // if toggle function active: jump back to previous menu
+      // this is especially useful for the emulated MBSEQ, where we can only click on a single button
+      // (trigger gets deactivated when clicking on GP button or moving encoder)
+      if( seq_ui_button_state.TRG_LAYER_SEL ) {
+	seq_ui_button_state.TRG_LAYER_SEL = 0;
+	SEQ_UI_PageSet(ui_trglayer_prev_page);
+      }
     }
-#endif
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
@@ -163,8 +164,12 @@ static s32 LCD_Handler(u8 high_prio)
 
     u8 drum;
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
-    for(drum=0; drum<num_instruments; ++drum)
-      SEQ_LCD_PrintHBar((seq_layer_vu_meter[drum] >> 3) & 0xf);
+    for(drum=0; drum<num_instruments; ++drum) {
+      if( seq_core_trk[visible_track].layer_muted & (1 << drum) )
+	SEQ_LCD_PrintString("Mute ");
+      else
+	SEQ_LCD_PrintHBar((seq_layer_vu_meter[drum] >> 3) & 0xf);
+    }
 
     return 0; // no error
   }

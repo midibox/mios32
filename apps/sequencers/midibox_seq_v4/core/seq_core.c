@@ -63,6 +63,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick);
 static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
+static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
 static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
 
 
@@ -174,8 +175,8 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-    seq_core_trk_t *t = &seq_core_trk[track];
+  seq_core_trk_t *t = &seq_core_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t) {
 
     // if track name only contains spaces, the UI will print 
     // the track number instead of an empty message
@@ -249,9 +250,9 @@ s32 SEQ_CORE_Handler(void)
 
       seq_core_state.FIRST_CLK = 1;
       int track;
-      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-	seq_core_trk_t *t = &seq_core_trk[track];
-	seq_cc_trk_t *tcc = &seq_cc_trk[track];
+      seq_core_trk_t *t = &seq_core_trk[0];
+      seq_cc_trk_t *tcc = &seq_cc_trk[0];
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
 	SEQ_CORE_ResetTrkPos(track, t, tcc);
 	SEQ_RECORD_Reset(track);
       }      
@@ -320,8 +321,8 @@ static s32 SEQ_CORE_PlayOffEvents(void)
 
   // clear sustain/stretch flags
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-    seq_core_trk_t *t = &seq_core_trk[track];
+  seq_core_trk_t *t = &seq_core_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t) {
     t->state.SUSTAINED = 0;
     t->state.STRETCHED_GL = 0;
   }
@@ -339,10 +340,9 @@ s32 SEQ_CORE_Reset(void)
   seq_core_state.FIRST_CLK = 1;
 
   int track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-    seq_core_trk_t *t = &seq_core_trk[track];
-    seq_cc_trk_t *tcc = &seq_cc_trk[track];
-
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
     u8 muted = t->state.MUTED; // save muted flag
     t->state.ALL = 0;
     t->state.MUTED = muted; // restore muted flag
@@ -360,6 +360,9 @@ s32 SEQ_CORE_Reset(void)
   // cancel prefetch requests/counter
   bpm_tick_prefetch_req = 0;
   bpm_tick_prefetched_ctr = 0;
+
+  // cancel stop request
+  seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
 
   return 0; // no error
 }
@@ -444,7 +447,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
-      if( synch_to_measure_req && tcc->clkdiv.SYNCH_TO_MEASURE )
+      if( synch_to_measure_req && (tcc->clkdiv.SYNCH_TO_MEASURE || t->state.SYNC_MEASURE) )
         SEQ_CORE_ResetTrkPos(track, t, tcc);
   
       if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
@@ -653,10 +656,11 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
 #endif
 
-	      // humanize it and apply LFO
+	      // apply Pre-FX
 	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		SEQ_HUMANIZE_Event(track, t->step, e);
 		SEQ_LFO_Event(track, e);
+		SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
 	      }
 
 	      // sustained or stretched note: play off event of previous step
@@ -703,7 +707,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	    if( p->type != NoteOn ) {
 	      // e.g. CC or PitchBend
-	      SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
+	      if( loopback_port )
+		SEQ_MIDI_IN_Receive(tcc->midi_port, *p); // forward to MIDI IN handler immediately
+	      else
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      if( gen_sustained_events ) {
@@ -786,9 +793,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
 
-		  // apply Fx if "No Fx" trigger is not set
+		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		    // apply echo Fx if enabled
 		    if( tcc->echo_repeats && gatelength )
 		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
@@ -805,6 +811,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   
   // clear "first clock" flag if it was set before
   seq_core_state.FIRST_CLK = 0;
+
+  // if manual trigger function requested stop: stop sequencer at end of reference step
+  if( seq_core_state.MANUAL_TRIGGER_STOP_REQ && (bpm_tick % 96) == 95 )
+    SEQ_BPM_Stop();
 
   // in song mode:
   // increment song position shortly before we reset the reference step
@@ -824,6 +834,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
 {
+  // synch to measure done
+  t->state.SYNC_MEASURE = 0;
+
   // don't increment on first clock event
   t->state.FIRST_CLK = 1;
 
@@ -1122,6 +1135,46 @@ s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Limit Fx
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
+{
+  u8 lower = tcc->limit_lower;
+  u8 upper = tcc->limit_upper;
+
+  // check if any limit defined
+  if( !lower && !upper )
+    return 0; // no limit
+
+  // exit if no note event
+  mios32_midi_package_t *p = &e->midi_package;
+  if( p->type != NoteOn )
+    return 0; // no Note
+
+  // swap if lower value is greater than upper
+  if( lower > upper ) {
+    u8 tmp = upper;
+    upper=lower;
+    lower=tmp;
+  }
+
+  // apply limit
+  s32 note = p->note; // we need a signed value
+  if( tcc->limit_lower )
+    while( (note-12) < tcc->limit_lower )
+      note += 12;
+
+  if( tcc->limit_upper )
+    while( (note+12) > tcc->limit_upper )
+      note -= 12;
+
+  p->note = note;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Echo Fx
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength)
@@ -1197,6 +1250,58 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 
     SEQ_MIDI_OUT_Send(tcc->midi_port, p, event_type, bpm_tick + echo_offset, gatelength);
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Manually triggers a step of all selected tracks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_ManualTrigger(u8 step)
+{
+  MIOS32_IRQ_Disable();
+
+  u8 track;
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
+    if( SEQ_UI_IsSelectedTrack(track) ) {
+      // reset track position
+      SEQ_CORE_ResetTrkPos(track, t, tcc);
+
+      // change step
+      t->step = step;
+      t->step_saved = t->step;
+    }
+  }
+
+  // start sequencer if not running, but only for one step
+  if( !SEQ_BPM_IsRunning() ) {
+    SEQ_BPM_Cont();
+    seq_core_state.MANUAL_TRIGGER_STOP_REQ = 1;
+  }
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Manually requests synch to measure for all selected tracks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_ManualSynchToMeasure(void)
+{
+  MIOS32_IRQ_Disable();
+
+  u8 track;
+  seq_core_trk_t *t = &seq_core_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t)
+    if( SEQ_UI_IsSelectedTrack(track) )
+      t->state.SYNC_MEASURE = 1;
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

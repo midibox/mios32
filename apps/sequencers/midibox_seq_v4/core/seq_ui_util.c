@@ -401,7 +401,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   if( high_prio )
-    return 0; // there are no high-priority updates
+    return 0; // there are no high-priority update
 
   // layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333

@@ -121,14 +121,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  if( depressed ) return 0; // ignore when button depressed
-
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
+    if( depressed ) return 0; // ignore when button depressed
+
     // re-using encoder routine
     return Encoder_Handler(button, 0);
   }

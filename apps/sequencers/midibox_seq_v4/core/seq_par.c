@@ -51,8 +51,6 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Prob.", // 7
   "Delay", // 8
   "Roll ", // 9
-  "BaseN", // 10
-  "LoopB"  // 11
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -66,8 +64,6 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Probability (reversed: 100%)
   0,    // Delay
   0,    // Roll
-  0x3c, // Base Note
-  0x00  // Loopback
 };
 
 

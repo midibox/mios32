@@ -100,6 +100,7 @@ typedef struct {
 typedef struct {
   unsigned fast:1;
   unsigned all:1;
+  unsigned all_with_triggers:1;
   unsigned solo:1;
   unsigned metronome:1;
   unsigned loop:1;

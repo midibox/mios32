@@ -93,8 +93,10 @@
 #define SEQ_CC_MODE		0x40
 #define SEQ_CC_MODE_FLAGS	0x41
 #define SEQ_CC_MIDI_EVENT_MODE	0x42
-//#define SEQ_CC_MIDI_EVNT_CONST1	0x43 // obsolete
-//#define SEQ_CC_MIDI_EVNT_CONST2	0x44 // obsolete
+
+#define SEQ_CC_LIMIT_LOWER      0x43
+#define SEQ_CC_LIMIT_UPPER      0x44
+
 //#define SEQ_CC_MIDI_EVNT_CONST3	0x45 // obsolete
 #define SEQ_CC_MIDI_CHANNEL	0x46
 #define SEQ_CC_MIDI_PORT	0x47
@@ -199,6 +201,9 @@ typedef struct {
   u8       lfo_cc;            // 0..127
   u8       lfo_cc_offset;     // 0..127
   u8       lfo_cc_ppqn;       // 3..384
+
+  u8       limit_lower;       // for note value limits
+  u8       limit_upper;       // for note value limits
 
   // temporary variables which will be updated on CC writes
   s8 link_par_layer_note;        // parameter layer which stores the first note value (-1 if not assigned)
