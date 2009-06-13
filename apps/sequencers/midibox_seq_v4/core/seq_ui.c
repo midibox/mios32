@@ -67,6 +67,9 @@ u16 ui_hold_msg_ctr;
 
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
+seq_ui_page_t ui_stepview_prev_page;
+seq_ui_page_t ui_trglayer_prev_page;
+seq_ui_page_t ui_parlayer_prev_page;
 
 volatile u8 ui_cursor_flash;
 u16 ui_cursor_flash_ctr;
@@ -160,7 +163,6 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_PAR_Type_PitchBend:
       case SEQ_PAR_Type_Probability:
       case SEQ_PAR_Type_Delay:
-      case SEQ_PAR_Type_Loopback:
 	seq_ui_button_state.FAST_ENCODERS = 1;
 	break;
 
@@ -768,8 +770,9 @@ static s32 SEQ_UI_Button_All(s32 depressed)
 
 static s32 SEQ_UI_Button_StepView(s32 depressed)
 {
-  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
-
+  //  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // also used by seq_ui_stepsel
+  
   if( seq_hwcfg_button_beh.step_view ) {
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.STEP_VIEW ^= 1; // toggle STEP_VIEW pressed (will also be released once GP button has been pressed)
@@ -779,11 +782,11 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
   }
 
   if( seq_ui_button_state.STEP_VIEW ) {
-    prev_page = ui_page;
+    ui_stepview_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_STEPSEL);
   } else {
     if( ui_page == SEQ_UI_PAGE_STEPSEL )
-      SEQ_UI_PageSet(prev_page);
+      SEQ_UI_PageSet(ui_stepview_prev_page);
   }
 
   return 0; // no error
@@ -864,7 +867,8 @@ static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
 
 static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 {
-  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // also used by seq_ui_parsel.c
 
   if( seq_hwcfg_button_beh.par_layer ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -874,11 +878,11 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
   }
 
   if( seq_ui_button_state.PAR_LAYER_SEL ) {
-    prev_page = ui_page;
+    ui_parlayer_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_PARSEL);
   } else {
     if( ui_page == SEQ_UI_PAGE_PARSEL )
-      SEQ_UI_PageSet(prev_page);
+      SEQ_UI_PageSet(ui_parlayer_prev_page);
   }
 
   // set/clear encoder fast function if required
@@ -932,7 +936,8 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 
 static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
 {
-  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // also used by seq_ui_trgsel.c
 
   if( seq_hwcfg_button_beh.trg_layer ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -942,11 +947,11 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
   }
 
   if( seq_ui_button_state.TRG_LAYER_SEL ) {
-    prev_page = ui_page;
+    ui_trglayer_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_TRGSEL);
   } else {
     if( ui_page == SEQ_UI_PAGE_TRGSEL )
-      SEQ_UI_PageSet(prev_page);
+      SEQ_UI_PageSet(ui_trglayer_prev_page);
   }
 
   return 0; // no error

@@ -31,6 +31,8 @@
 
 extern s32 SEQ_MIDI_IN_Init(u32 mode);
 
+extern s32 SEQ_MIDI_IN_ResetNoteStacks(void);
+
 extern s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
 extern s32 SEQ_MIDI_IN_TransposerNoteGet(u8 hold);

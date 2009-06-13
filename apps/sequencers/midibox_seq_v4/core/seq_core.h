@@ -50,6 +50,7 @@ typedef union {
 
     unsigned FIRST_CLK:1;
     unsigned METRONOME:1;
+    unsigned MANUAL_TRIGGER_STOP_REQ:1;
     unsigned EXT_RESTART_REQ:1;
     unsigned LOOP:1;
   };
@@ -188,6 +189,9 @@ extern s32 SEQ_CORE_Reset(void);
 extern s32 SEQ_CORE_Handler(void);
 
 extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root);
+
+extern s32 SEQ_CORE_ManualTrigger(u8 step);
+extern s32 SEQ_CORE_ManualSynchToMeasure(void);
 
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 

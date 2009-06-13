@@ -24,6 +24,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,11 +131,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #endif
     ui_selected_step = button + ui_selected_step_view*16;
     // toggle trigger layer
-    // we've three cases:
+    // if seq_hwcfg_button_beh.all_with_triggers set, we've three cases:
     // a) ALL function active, but ALL button not pressed: invert complete trigger layer
     // b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
     // c) ALL function not active: toggle step
-    if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+    if( seq_hwcfg_button_beh.all_with_triggers && seq_ui_button_state.CHANGE_ALL_STEPS ) {
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u16 step = ui_selected_step;
@@ -295,6 +296,14 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintSpaces(15);
       } else {
 	SEQ_LCD_PrintString("RECORDING      ");
+      }
+    } break;
+
+    case SEQ_UI_EDIT_MODE_MANUAL: {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(15);
+      } else {
+	SEQ_LCD_PrintString("MANUAL TRIGGER ");
       }
     } break;
 

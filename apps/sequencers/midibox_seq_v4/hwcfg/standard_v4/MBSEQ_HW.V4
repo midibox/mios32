@@ -345,6 +345,14 @@ BUTTON_BEH_TEMPO_PRESET 0
 
 
 ##################################################
+# Special Behaviour of ALL button
+# 0: only all parameter layers are modified
+# 1: all trigger and parameter layers are modified
+##################################################
+BUTTON_BEH_ALL_WITH_TRIGGERS 0
+
+
+##################################################
 # Encoder Functions
 # SR = 0: encoder disabled
 # SR = 1..16: DIN assignment

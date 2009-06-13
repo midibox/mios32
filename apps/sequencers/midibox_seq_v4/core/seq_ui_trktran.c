@@ -144,34 +144,33 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.  Transpose: >Octave<  >Semitone<                                           
+  // Trk. Transpose: >Octave:+0<>Semitone:+0<                                           
   // GxTy  -7   -6   -5   -4   -3   -2   -1  >+0<  +1   +2   +3   +4   +5   +6   +7
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk.  Transpose: ");
+  SEQ_LCD_PrintString("Trk. Transpose: ");
 
   SEQ_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '>' : ' ');
   if( ui_selected_item == ITEM_OCTAVE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(9);
   } else {
-    SEQ_LCD_PrintString("Octave");
+    u8 value = SEQ_CC_Get(visible_track, SEQ_CC_TRANSPOSE_OCT);
+    SEQ_LCD_PrintFormattedString("Octave:%c%d", (value < 8) ? '+' : '-', (value < 8) ? value : (16-value));
   }
   SEQ_LCD_PrintChar(ui_selected_item == ITEM_OCTAVE ? '<' : ' ');
 
-  SEQ_LCD_PrintSpaces(2);
-
   SEQ_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '>' : ' ');
   if( ui_selected_item == ITEM_SEMITONE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(8);
+    SEQ_LCD_PrintSpaces(11);
   } else {
-    SEQ_LCD_PrintString("Semitone");
+    u8 value = SEQ_CC_Get(visible_track, SEQ_CC_TRANSPOSE_SEMI);
+    SEQ_LCD_PrintFormattedString("Semitone:%c%d", (value < 8) ? '+' : '-', (value < 8) ? value : (16-value));
   }
   SEQ_LCD_PrintChar(ui_selected_item == ITEM_SEMITONE ? '<' : ' ');
 
-  SEQ_LCD_PrintSpaces(3); // finish first half
   SEQ_LCD_PrintSpaces(40); // second half
 
 

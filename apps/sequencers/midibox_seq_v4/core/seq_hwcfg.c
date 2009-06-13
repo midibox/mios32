@@ -158,6 +158,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
 seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .fast = 1,
   .all = 1,
+  .all_with_triggers = 0,
   .solo = 1,
   .metronome = 1,
   .loop = 1,

@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Options page
+ * Limit Note Fx page
  *
  * ==========================================================================
  *
@@ -16,14 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include "tasks.h"
-
 #include "seq_lcd.h"
 #include "seq_ui.h"
-
-#include "seq_file_c.h"
-
-#include "seq_core.h"
 #include "seq_cc.h"
 
 
@@ -31,18 +25,10 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       4
-#define ITEM_SYNC_CHANGE   0
-#define ITEM_STEPS_MEASURE 1
-#define ITEM_FOLLOW_SONG   2
-#define ITEM_PASTE_CLR_ALL 3
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-static u8 store_file_required;
+#define NUM_OF_ITEMS       3
+#define ITEM_GXTY          0
+#define ITEM_LIMIT_LOWER   1
+#define ITEM_LIMIT_UPPER   2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,15 +40,13 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_SYNC_CHANGE:   *gp_leds = 0x0001; break;
-    case ITEM_STEPS_MEASURE: *gp_leds = 0x0006; break;
-    case ITEM_FOLLOW_SONG:   *gp_leds = 0x0018; break;
-    case ITEM_PASTE_CLR_ALL: *gp_leds = 0x00e0; break;
+    case ITEM_GXTY: *gp_leds = 0x0001; break;
+    case ITEM_LIMIT_LOWER: *gp_leds = 0x0002; break;
+    case ITEM_LIMIT_UPPER: *gp_leds = 0x0004; break;
   }
 
   return 0; // no error
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,31 +58,26 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
-      ui_selected_item = ITEM_SYNC_CHANGE;
+      ui_selected_item = ITEM_GXTY;
       break;
 
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_STEPS_MEASURE;
-      // special feature: this encoder increments *10
-      incrementer *= 10;
+      ui_selected_item = ITEM_LIMIT_LOWER;
       break;
+
     case SEQ_UI_ENCODER_GP3:
-      ui_selected_item = ITEM_STEPS_MEASURE;
+      ui_selected_item = ITEM_LIMIT_UPPER;
       break;
 
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_FOLLOW_SONG;
-      break;
-
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_PASTE_CLR_ALL;
-      break;
-
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
     case SEQ_UI_ENCODER_GP11:
@@ -112,36 +91,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_SYNC_CHANGE:
-      if( incrementer )
-	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
-      else
-	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
-      store_file_required = 1;
-      return 1;
-
-    case ITEM_STEPS_MEASURE:
-      if( SEQ_UI_Var8_Inc(&seq_core_steps_per_measure, 0, 255, incrementer) >= 0 ) {
-	store_file_required = 1;
-	return 1;
-      }
-      return 0;
-
-    case ITEM_FOLLOW_SONG:
-      if( incrementer )
-	seq_core_options.FOLLOW_SONG = incrementer > 0 ? 1 : 0;
-      else
-	seq_core_options.FOLLOW_SONG ^= 1;
-      store_file_required = 1;
-      return 1;
-
-    case ITEM_PASTE_CLR_ALL:
-      if( incrementer )
-	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
-      else
-	seq_core_options.PASTE_CLR_ALL ^= 1;
-      store_file_required = 1;
-      return 1;
+    case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
+    case ITEM_LIMIT_LOWER:   return SEQ_UI_CC_Inc(SEQ_CC_LIMIT_LOWER, 0, 127, incrementer);
+    case ITEM_LIMIT_UPPER:   return SEQ_UI_CC_Inc(SEQ_CC_LIMIT_UPPER, 0, 127, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -165,7 +117,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
-    // re-use encoder handler - only select UI item, don't increment, flags will be toggled
+    // re-use encoder handler - only select UI item, don't increment
     return Encoder_Handler((int)button, 0);
   }
 
@@ -173,23 +125,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
-      if( depressed ) return -1;
       if( ++ui_selected_item >= NUM_OF_ITEMS )
 	ui_selected_item = 0;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Left:
-      if( depressed ) return -1;
       if( ui_selected_item == 0 )
 	ui_selected_item = NUM_OF_ITEMS-1;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:
-      if( depressed ) return -1;
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
 
     case SEQ_UI_BUTTON_Down:
-      if( depressed ) return -1;
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
   }
 
@@ -210,90 +158,59 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // SyncPatChange  FollowSong  Paste/Clr Beh
-  //   off    16        off       Steps only 
+  // Trk. Lower/Upper Note Limit             
+  // GxTy  C-3  C-3
 
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("SyncPatChange  FollowSong  Paste/Clr Beh");
+  SEQ_LCD_PrintString("Trk. Lower/Upper Note Limit             ");
   SEQ_LCD_PrintSpaces(40);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
+
+  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+  }
   SEQ_LCD_PrintSpaces(2);
 
-  if( ui_selected_item == ITEM_SYNC_CHANGE && ui_cursor_flash ) {
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_LIMIT_LOWER && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
+    SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LIMIT_LOWER));
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_STEPS_MEASURE && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_LIMIT_UPPER && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d", (int)seq_core_steps_per_measure + 1);
-  }
-  SEQ_LCD_PrintSpaces(8);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_FOLLOW_SONG && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.FOLLOW_SONG ? "on " : "off");
-  }
-  SEQ_LCD_PrintSpaces(7);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(11);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Whole Track" : "Steps only ");
+    SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LIMIT_UPPER));
   }
 
+  SEQ_LCD_PrintSpaces(26+40);
+
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(40);
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local exit function
-/////////////////////////////////////////////////////////////////////////////
-static s32 EXIT_Handler(void)
-{
-  s32 status = 0;
-
-  if( store_file_required ) {
-    // write config file
-    MUTEX_SDCARD_TAKE;
-    if( (status=SEQ_FILE_C_Write()) < 0 )
-      SEQ_UI_SDCardErrMsg(2000, status);
-    MUTEX_SDCARD_GIVE;
-
-    store_file_required = 0;
-  }
-
-  return status;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_OPT_Init(u32 mode)
+s32 SEQ_UI_FX_LIMIT_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
-  SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

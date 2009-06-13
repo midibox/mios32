@@ -84,6 +84,8 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_LFO_CC,         0 },
   { SEQ_CC_LFO_CC_OFFSET,  64 },
   { SEQ_CC_LFO_CC_PPQN,    6 }, // 96 ppqn
+  { SEQ_CC_LIMIT_LOWER,    0 },
+  { SEQ_CC_LIMIT_UPPER,    0 },
   { 0xff,                  0xff } // end marker
 };
 

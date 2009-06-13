@@ -107,6 +107,23 @@ static u8 arp_unsorted_hold[4];
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_Init(u32 mode)
 {
+  SEQ_MIDI_IN_ResetNoteStacks();
+
+  // stored in global config:
+  seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
+  seq_midi_in_port = DEFAULT; // All ports
+  seq_midi_in_mclk_port = DEFAULT; // All ports
+  seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// resets the note stacks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_IN_ResetNoteStacks(void)
+{
   int i;
 
   for(i=0; i<NOTESTACK_NUM; ++i)
@@ -120,12 +137,6 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   arp_sorted_hold[2] = arp_unsorted_hold[2] = 0x43; // G-3
   arp_sorted_hold[3] = arp_unsorted_hold[3] = 0x48; // C-4
 
-  // stored in global config:
-  seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
-  seq_midi_in_port = DEFAULT; // All ports
-  seq_midi_in_mclk_port = DEFAULT; // All ports
-  seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
-
   return 0; // no error
 }
 
@@ -138,7 +149,12 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   s32 status = 0;
 
   // filter MIDI port (if 0: no filter, listen to all ports)
+#if 0
   if( seq_midi_in_port && port != seq_midi_in_port )
+#else
+  // Loopback port not filtered!
+  if( seq_midi_in_port && port != seq_midi_in_port && ((port & 0xf0) != 0xf0) )
+#endif
     return status;
 
   // if not loopback and MIDI channel matching: forward to record function in record page
