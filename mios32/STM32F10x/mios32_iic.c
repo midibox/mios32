@@ -77,7 +77,7 @@
 
 // temporary switch to test modifications on the event-handler
 #ifndef I2C_ENABLE_LATE_DATA_HANDLING
-#define I2C_ENABLE_LATE_DATA_HANDLING 0
+#define I2C_ENABLE_LATE_DATA_HANDLING 1
 #endif
 
 // taken from STM32 v2.0.3 library - define it here if an older library is used
@@ -411,6 +411,9 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
   // re-initialize peripheral
   MIOS32_IIC_InitPeripheral(iic_port);
 
+  // release semaphore (!)
+  iicx->iic_semaphore = 0;
+
   return (iicx->last_transfer_error=MIOS32_IIC_ERROR_TIMEOUT);
 }
 
@@ -591,9 +594,6 @@ static void EV_IRQHandler(iic_rec_t *iicx)
         // disable all interrupts
         I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       } 
-#if I2C_ENABLE_LATE_DATA_HANDLING == 0
-      break;
-#endif
       // no break if new handling is used - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
 
     case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
