@@ -593,8 +593,9 @@ static void EV_IRQHandler(iic_rec_t *iicx)
         iicx->transfer_state.BUSY = 0;
         // disable all interrupts
         I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+	break;
       } 
-      // no break if new handling is used - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
+      // no break here - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
 
     case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
     case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
