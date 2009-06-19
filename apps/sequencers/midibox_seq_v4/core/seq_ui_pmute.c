@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Mute page
+ * Port Mute Page
  *
  * ==========================================================================
  *
@@ -20,10 +20,9 @@
 
 #include "seq_lcd.h"
 #include "seq_ui.h"
-#include "seq_cc.h"
-#include "seq_layer.h"
 
-#include "seq_core.h"
+#include "seq_midi_router.h"
+#include "seq_midi_port.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,18 +37,19 @@ static u16 latched_mute;
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-  u8 track;
+  u8 port_num = SEQ_MIDI_PORT_OutNumGet();
+  if( port_num > 16 )
+    port_num = 16;
+
+  u8 port_ix;
 
   if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
     *gp_leds = latched_mute;
   } else {
-    if( seq_ui_button_state.MUTE_PRESSED ) {
-      track = SEQ_UI_VisibleTrackGet();
-      *gp_leds = seq_core_trk[track].layer_muted;
-    } else {
-      for(track=0; track<16; ++track)
-	if( seq_core_trk[track].state.MUTED )
-	  *gp_leds |= (1 << track);
+    for(port_ix=0; port_ix<port_num; ++port_ix) {
+      mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+      if( SEQ_MIDI_PORT_OutMuteGet(port) )
+	*gp_leds |= (1 << port_ix);
     }
   }
 
@@ -81,26 +81,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	latched_mute &= ~mask;
     } else {
       // select button not pressed: direct MUTED flag modification
-      // access to seq_core_trk[] must be atomic!
-      portENTER_CRITICAL();
+      u8 port_num = SEQ_MIDI_PORT_OutNumGet();
+      u8 port_ix = encoder;
 
-      if( seq_ui_button_state.MUTE_PRESSED ) {
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	u16 mask = 1 << encoder;
-	if( incrementer > 0 )
-	  seq_core_trk[visible_track].layer_muted |= mask;
-	else if( incrementer < 0 )
-	  seq_core_trk[visible_track].layer_muted &= ~mask;
-	else
-	  seq_core_trk[visible_track].layer_muted ^= mask;
-      } else {
-	if( incrementer )
-	  seq_core_trk[encoder].state.MUTED = incrementer >= 0;
-	else
-	  seq_core_trk[encoder].state.MUTED ^= 1;
-      }
+      if( encoder >= port_num )
+	return -1;
 
-      portEXIT_CRITICAL();
+      mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+
+      if( incrementer == 0 )
+	SEQ_MIDI_PORT_OutMuteSet(port, SEQ_MIDI_PORT_OutMuteGet(port) ? 0 : 1);
+      else
+	SEQ_MIDI_PORT_OutMuteSet(port, (incrementer > 0) ? 1 : 0);
     }
 
     return 1; // value changed
@@ -136,25 +128,21 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       portENTER_CRITICAL();
       if( depressed ) {
 	// select button released: take over latched mutes
-	if( seq_ui_button_state.MUTE_PRESSED ) {
-	  u8 visible_track = SEQ_UI_VisibleTrackGet();
-	  seq_core_trk[visible_track].layer_muted = latched_mute;
-	} else {
-	  u8 track;
-	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	    seq_core_trk[track].state.MUTED = (latched_mute & (1 << track)) ? 1 : 0;
+	u8 port_num = SEQ_MIDI_PORT_OutNumGet();
+	u8 port_ix;
+	for(port_ix=0; port_ix<port_num; ++port_ix) {
+	  mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  SEQ_MIDI_PORT_OutMuteSet(port, (latched_mute & (1 << port_ix)) ? 1 : 0);
 	}
       } else {
 	// select pressed: init latched mutes which will be taken over once SELECT button released
-	if( seq_ui_button_state.MUTE_PRESSED ) {
-	  u8 visible_track = SEQ_UI_VisibleTrackGet();
-	  latched_mute = seq_core_trk[visible_track].layer_muted;
-	} else {
-	  u8 track;
-	  latched_mute = 0;
-	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	    if( seq_core_trk[track].state.MUTED )
-	      latched_mute |= (1 << track);
+	latched_mute = 0;
+	u8 port_num = SEQ_MIDI_PORT_OutNumGet();
+	u8 port_ix;
+	for(port_ix=0; port_ix<port_num; ++port_ix) {
+	  mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  if( SEQ_MIDI_PORT_OutMuteGet(port) )
+	    latched_mute |= (1 << port_ix);
 	}
       }
 
@@ -176,79 +164,39 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  > 1<   2    3    4    5    6    7    8    9   10   11   12   13   14   15   16 
-  // ...horizontal VU meters...
+  // Def. USB1 USB2 USB3 USB4 OUT1 OUT2 OUT3 OUT4 IIC1 IIC2 IIC3 IIC4 AOUT Bus1 Bus2 
+  //   o    o    o    o    o    o    o    o    o    o    o    o    o    o    o    o  
 
-  if( high_prio ) {
-    ///////////////////////////////////////////////////////////////////////////
-    // frequently update VU meters
-    SEQ_LCD_CursorSet(0, 1);
+  ///////////////////////////////////////////////////////////////////////////
+  u8 port_num = SEQ_MIDI_PORT_OutNumGet();
+  if( port_num > 16 )
+    port_num = 16;
 
-    u8 track;
-    u16 mute_flags = 0;
+  u8 port_ix;
 
-    if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
-      mute_flags = latched_mute;
-    } else {
-      if( seq_ui_button_state.MUTE_PRESSED ) {
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	mute_flags = seq_core_trk[visible_track].layer_muted;
-      } else {
-	seq_core_trk_t *t = &seq_core_trk[0];
-	for(track=0; track<16; ++t, ++track)
-	  if( seq_core_trk[track].state.MUTED )
-	    mute_flags |= (1 << track);
-      }
-    }
+  for(port_ix=0; port_ix<port_num; ++port_ix) {
+    SEQ_LCD_CursorSet(5*port_ix, 0);
+    if( ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED )
+      SEQ_LCD_PrintSpaces(5);
+    else
+      SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(port_ix));
+    SEQ_LCD_PrintChar(' ');
 
-    if( seq_ui_button_state.MUTE_PRESSED ) {
-      u8 layer;
-      for(layer=0; layer<16; ++layer)
-	if( mute_flags & (1 << layer) )
-	  SEQ_LCD_PrintString("Mute ");
-	else
-	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
-    } else {
-      seq_core_trk_t *t = &seq_core_trk[0];
-      for(track=0; track<16; ++t, ++track)
-	if( mute_flags & (1 << track) )
-	  SEQ_LCD_PrintString("Mute ");
-	else
-	  SEQ_LCD_PrintHBar(t->vu_meter >> 3);
-    }
-  } else {
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_CursorSet(5*port_ix, 1);
+    SEQ_LCD_PrintSpaces(2);
+    if( seq_ui_button_state.SELECT_PRESSED )
+      SEQ_LCD_PrintChar((latched_mute & (1 << port_ix)) ? '*' : 'o');
+    else
+      SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutMuteGet(SEQ_MIDI_PORT_OutPortGet(port_ix)) ? '*' : 'o');
+    SEQ_LCD_PrintSpaces(2);
+  }
 
-    u8 track;
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-    u8 num_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? SEQ_TRG_NumInstrumentsGet(visible_track) : SEQ_PAR_NumLayersGet(visible_track);
-
-    for(track=0; track<16; ++track) {
-      if( ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED )
-	SEQ_LCD_PrintSpaces(5);
-      else {
-	if( seq_ui_button_state.MUTE_PRESSED ) {
-	  if( track >= num_layers )
-	    SEQ_LCD_PrintSpaces(5);
-	  else {
-	    if( event_mode == SEQ_EVENT_MODE_Drum )
-	      SEQ_LCD_PrintTrackDrum(visible_track, track, (char *)seq_core_trk[visible_track].name);
-	    else
-	      SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, track));
-	  }
-	} else {
-	  // print 'm' if one or more layers are muted
-	  SEQ_LCD_PrintChar(seq_core_trk[track].layer_muted ? 'm' : ' ');
-
-	  if( SEQ_UI_IsSelectedTrack(track) )
-	    SEQ_LCD_PrintFormattedString(">%2d<", track+1);
-	  else
-	    SEQ_LCD_PrintFormattedString(" %2d ", track+1);
-	}
-      }
-    }
+  if( port_num < 16 ) {
+    u8 blank_slots = port_num-port_ix;
+    SEQ_LCD_CursorSet(5*port_ix, 0);
+    SEQ_LCD_PrintSpaces(5*blank_slots);
+    SEQ_LCD_CursorSet(5*port_ix, 1);
+    SEQ_LCD_PrintSpaces(5*blank_slots);
   }
 
   return 0; // no error
@@ -258,16 +206,13 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MUTE_Init(u32 mode)
+s32 SEQ_UI_PMUTE_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
-
-  // we want to show horizontal VU meters
-  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_HBars);
 
   latched_mute = 0;
 

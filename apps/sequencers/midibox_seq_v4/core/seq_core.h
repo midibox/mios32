@@ -46,7 +46,7 @@ typedef union {
     unsigned ALL:16;
   };
   struct {
-    u8       ref_step:8;
+    u16      ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
 
     unsigned FIRST_CLK:1;
     unsigned METRONOME:1;
@@ -197,6 +197,8 @@ extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
 extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
 extern s32 SEQ_CORE_BPM_SweepHandler(void);
+
+extern s32 SEQ_CORE_Scrub(s32 incrementer);
 
 
 /////////////////////////////////////////////////////////////////////////////

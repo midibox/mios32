@@ -278,6 +278,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button_beh.track_sel = flag;
 	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_button_beh.tempo_preset = flag;
+	  } else if( strcmp(parameter, "ALL_WITH_TRIGGERS") == 0 ) {
+	    seq_hwcfg_button_beh.all_with_triggers = flag;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button behaviour function 'BUTTON_BEH_%s'!", parameter);

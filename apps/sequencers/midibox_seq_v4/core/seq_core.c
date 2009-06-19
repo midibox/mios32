@@ -548,7 +548,8 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         // mute function
         // track disabled
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
-	    t->state.MUTED || // Mute function
+	    t->state.MUTED || // Track Mute function
+	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off ) { // track disabled
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
@@ -1364,6 +1365,48 @@ s32 SEQ_CORE_BPM_SweepHandler(void)
       SEQ_BPM_Set(current_bpm + seq_core_bpm_sweep_inc);
     }
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Scrub function called from UI when SCRUB button pressed and Datawheel
+// is moved
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_Scrub(s32 incrementer)
+{
+  // simple but useful: increment/decrement the step of each track
+  // (in MBSEQ V3 we only generated some additional clocks, which had
+  // the disadvantage, that sequences couldn't be scrubbed back)
+
+  // this simplified method currently has following disadvantages:
+  // - clock dividers not taken into account (difficult, needs some code restructuring in SEQ_CORE_Tick())
+  // - ...and?
+  // advantage:
+  // - sequencer stays in sync with outgoing/incoming MIDI clock!
+  // - reverse scrubbing for some interesting effects while played live (MB-808 has a similar function: nudge)
+
+  u8 track;
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
+    SEQ_CORE_NextStep(t, tcc, 0, incrementer >= 0 ? 0 : 1);
+  }
+
+#if 0
+  // disabled so that we stay in Sync with MIDI clock!
+  // increment/decrement reference step
+  if( incrementer >= 0 ) {
+    if( ++seq_core_state.ref_step > seq_core_steps_per_measure )
+      seq_core_state.ref_step = 0;
+  } else {
+    if( seq_core_state.ref_step )
+      --seq_core_state.ref_step;
+    else
+      seq_core_state.ref_step = seq_core_steps_per_measure;
+  }
+#endif
 
   return 0; // no error
 }

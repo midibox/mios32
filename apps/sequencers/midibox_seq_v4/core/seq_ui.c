@@ -403,6 +403,13 @@ static s32 SEQ_UI_Button_Rew(s32 depressed)
 
   if( depressed ) return -1; // ignore when button depressed
 
+  if( SEQ_SONG_ActiveGet() ) {
+    portENTER_CRITICAL();
+    SEQ_SONG_Rew();
+    portEXIT_CRITICAL();
+  } else
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+
   return 0; // no error
 }
 
@@ -411,6 +418,13 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
   seq_ui_button_state.FWD = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
+
+  if( SEQ_SONG_ActiveGet() ) {
+    portENTER_CRITICAL();
+    SEQ_SONG_Fwd();
+    portEXIT_CRITICAL();
+  } else
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
 
   return 0; // no error
 }
@@ -1217,7 +1231,16 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   else if( incrementer < -3 )
     incrementer = -3;
 
-  if( !seq_ui_button_state.MENU_PRESSED && ui_encoder_callback != NULL ) {
+  if( seq_ui_button_state.SCRUB && encoder == 0 ) {
+    // if sequencer isn't already running, continue it (don't restart)
+    if( !SEQ_BPM_IsRunning() )
+      SEQ_BPM_Cont();
+    ui_seq_pause = 0; // clear pause mode
+    // Scrub sequence back or forth
+    portENTER_CRITICAL(); // should be atomic
+    SEQ_CORE_Scrub(incrementer);
+    portEXIT_CRITICAL();
+  } else if( !seq_ui_button_state.MENU_PRESSED && ui_encoder_callback != NULL ) {
     ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
     ui_cursor_flash_ctr = 0; // ensure that value is visible when it has been changed
   }

@@ -25,6 +25,7 @@
 #include "seq_chord.h"
 #include "seq_record.h"
 #include "seq_ui.h"
+#include "seq_morph.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,7 +66,7 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_GROOVE_VALUE,   0x00 },
   { SEQ_CC_GROOVE_STYLE,   0x00 },
   { SEQ_CC_MORPH_MODE,     0x00 },
-  { SEQ_CC_MORPH_DST_TRK,  0x00 },
+  { SEQ_CC_MORPH_DST,      0x00 },
   { SEQ_CC_HUMANIZE_VALUE, 0x00 },
   { SEQ_CC_HUMANIZE_MODE,  0x00 },
   { SEQ_CC_ECHO_REPEATS,   0x00 },
@@ -291,6 +292,10 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    e->len      = length;
 	    e->layer_tag = par_layer;
 	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && velocity && tcc->morph_mode )
+	      SEQ_MORPH_EventNote(track, step, e, instrument, par_layer, tcc->link_par_layer_velocity, tcc->link_par_layer_length);
 	  }
 
 	  if( handle_vu_meter && note && velocity )
@@ -300,6 +305,24 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
         case SEQ_PAR_Type_Chord: {
 	  u8 chord_value = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  int i;
+
+	  seq_layer_evnt_t e_proto;
+	  mios32_midi_package_t *p_proto = &e_proto.midi_package;
+	  p_proto->type     = NoteOn;
+	  p_proto->cable    = track;
+	  p_proto->event    = NoteOn;
+	  p_proto->chn      = tcc->midi_chn;
+	  p_proto->note     = chord_value; // we will determine the note value later
+	  p_proto->velocity = velocity;
+	  e_proto.len      = length;
+	  e_proto.layer_tag = par_layer;
+
+	  // morph chord value like a note (-> nice effect!)
+	  if( !insert_empty_notes && velocity && tcc->morph_mode ) {
+	    SEQ_MORPH_EventNote(track, step, &e_proto, instrument, par_layer, tcc->link_par_layer_velocity, tcc->link_par_layer_length);
+	    chord_value = e_proto.midi_package.note; // chord value has been morphed!
+	  }
+
 	  for(i=0; i<4; ++i) {
 	    if( num_events >= 16 )
 	      break;
@@ -313,15 +336,8 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      break;
 
 	    seq_layer_evnt_t *e = &layer_events[num_events];
-	    mios32_midi_package_t *p = &e->midi_package;
-	    p->type     = NoteOn;
-	    p->cable    = track;
-	    p->event    = NoteOn;
-	    p->chn      = tcc->midi_chn;
-	    p->note     = note;
-	    p->velocity = velocity;
-	    e->len      = length;
-	    e->layer_tag = par_layer;
+	    *e = e_proto;
+	    e->midi_package.note = note;
 	    ++num_events;
 	  }
 
@@ -345,6 +361,10 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    e->layer_tag = par_layer;
 	    ++num_events;
 
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventCC(track, step, e, instrument, par_layer);
+
 	    if( handle_vu_meter )
 	      seq_layer_vu_meter[par_layer] = p->value | 0x80;
 	  }
@@ -366,6 +386,10 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    e->len      = -1;
 	    e->layer_tag = par_layer;
 	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventPitchBend(track, step, e, instrument, par_layer);
 
 	    if( handle_vu_meter )
 	      seq_layer_vu_meter[par_layer] = p->evnt2 | 0x80;

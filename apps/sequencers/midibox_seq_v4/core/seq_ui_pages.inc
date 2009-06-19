@@ -26,6 +26,7 @@ typedef enum {
   SEQ_UI_PAGE_BPM_PRESETS,
   SEQ_UI_PAGE_EDIT,
   SEQ_UI_PAGE_MUTE,
+  SEQ_UI_PAGE_PMUTE,
   SEQ_UI_PAGE_PATTERN,
   SEQ_UI_PAGE_SONG,
   SEQ_UI_PAGE_TRKEVNT,
@@ -64,6 +65,7 @@ typedef enum {
 // Prototypes for all UI pages are burried here
 extern s32 SEQ_UI_TODO_Init(u32 mode);
 extern s32 SEQ_UI_MENU_Init(u32 mode);
+extern s32 SEQ_UI_PMUTE_Init(u32 mode);
 extern s32 SEQ_UI_FX_Init(u32 mode);
 extern s32 SEQ_UI_STEPSEL_Init(u32 mode);
 extern s32 SEQ_UI_TRGSEL_Init(u32 mode);
@@ -123,6 +125,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   // menu selection starts here
   { "Edit              ", (void *)&SEQ_UI_EDIT_Init },
   { "Mute Tracks       ", (void *)&SEQ_UI_MUTE_Init },
+  { "Mute Ports        ", (void *)&SEQ_UI_PMUTE_Init },
   { "Patterns          ", (void *)&SEQ_UI_PATTERN_Init },
   { "Song              ", (void *)&SEQ_UI_SONG_Init },
   { "Track Events      ", (void *)&SEQ_UI_TRKEVNT_Init },
