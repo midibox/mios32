@@ -31,7 +31,7 @@
 #define NUM_OF_ITEMS           4
 #define ITEM_GXTY              0
 #define ITEM_MORPH_MODE        1
-#define ITEM_MORPH_DST_TRK     2
+#define ITEM_MORPH_DST         2
 #define ITEM_MORPH_VALUE       3
 
 
@@ -51,7 +51,7 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds |= 0x0001; break;
     case ITEM_MORPH_MODE: *gp_leds |= 0x0002; break;
-    case ITEM_MORPH_DST_TRK: *gp_leds |= 0x0004; break;
+    case ITEM_MORPH_DST: *gp_leds |= 0x000c; break;
     case ITEM_MORPH_VALUE: *gp_leds |= 0x0080; break;
   }
 
@@ -78,10 +78,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP3:
-      ui_selected_item = ITEM_MORPH_DST_TRK;
+    case SEQ_UI_ENCODER_GP4:
+      ui_selected_item = ITEM_MORPH_DST;
       break;
 
-    case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
@@ -104,7 +104,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
     case ITEM_MORPH_MODE:    return SEQ_UI_CC_Inc(SEQ_CC_MORPH_MODE, 0, 1, incrementer);
-    case ITEM_MORPH_DST_TRK: return SEQ_UI_CC_Inc(SEQ_CC_MORPH_DST_TRK, 0, SEQ_CORE_NUM_TRACKS-1, incrementer);
+    case ITEM_MORPH_DST:     return SEQ_UI_CC_Inc(SEQ_CC_MORPH_DST, 0, 255, incrementer);
     case ITEM_MORPH_VALUE:   {
       u8 value = SEQ_MORPH_ValueGet();
       if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) > 0 ) {
@@ -142,10 +142,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       break;
 
     case SEQ_UI_BUTTON_GP3:
-      ui_selected_item = ITEM_MORPH_DST_TRK;
+    case SEQ_UI_BUTTON_GP4:
+      ui_selected_item = ITEM_MORPH_DST;
       break;
 
-    case SEQ_UI_BUTTON_GP4:
     case SEQ_UI_BUTTON_GP5:
     case SEQ_UI_BUTTON_GP6:
     case SEQ_UI_BUTTON_GP7:
@@ -204,8 +204,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Mode Dst.                     ValueMorphing controlled by CC#  1 at USB0:01
-  // G1T1  on  G1T2                      100    <######################          >
+  // Trk. Mode  Dst.Range               ValueMorphing controlled by CC#  1 at USB0#01
+  // G1T1  on    17..32                  100    <######################          >
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -213,7 +213,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintFormattedString("Trk. Mode Dst.                     ValueMorphing controlled by CC#%3d at ",
+  SEQ_LCD_PrintFormattedString("Trk. Mode  Dst.Range               ValueMorphing controlled by CC#%3d at ",
 			       1); // always ModWheel
 
   if( seq_midi_in_port )
@@ -221,10 +221,10 @@ static s32 LCD_Handler(u8 high_prio)
   else
     SEQ_LCD_PrintString(" All");
 
-  SEQ_LCD_PrintString(":");
+  SEQ_LCD_PrintChar('#');
 
   if( seq_midi_in_channel )
-    SEQ_LCD_PrintFormattedString("%2d", seq_midi_in_channel);
+    SEQ_LCD_PrintFormattedString("%02d", seq_midi_in_channel);
   else
     SEQ_LCD_PrintString("--");
 
@@ -245,18 +245,21 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(SEQ_CC_Get(visible_track, SEQ_CC_MORPH_MODE) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(1);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_MORPH_DST_TRK && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
+  if( ui_selected_item == ITEM_MORPH_DST && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(8);
   } else {
-    u8 trk = SEQ_CC_Get(visible_track, SEQ_CC_MORPH_DST_TRK);
-    u8 group = trk / SEQ_CORE_NUM_TRACKS_PER_GROUP;
-    u8 sel_trk = 1 << (trk % SEQ_CORE_NUM_TRACKS_PER_GROUP);
-    SEQ_LCD_PrintGxTy(group, sel_trk);
+    int dst_begin = SEQ_CC_Get(visible_track, SEQ_CC_MORPH_DST) + 1;
+    int dst_end = dst_begin + SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+    if( dst_end > 256 )
+      dst_end = 256;
+
+    SEQ_LCD_PrintFormattedString("%3d..%d  ", dst_begin, dst_end);
   }
-  SEQ_LCD_PrintSpaces(22);
+  SEQ_LCD_CursorSet(19, 1); // set back cursor
+  SEQ_LCD_PrintSpaces(15);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MORPH_VALUE && ui_cursor_flash ) {

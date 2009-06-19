@@ -74,7 +74,11 @@ static const seq_midi_port_entry_t out_ports[] = {
   { 0xf1,    "Bus2" },
   { 0xf2,    "Bus3" },
   { 0xf3,    "Bus4" }
+  // MEMO: SEQ_MIDI_PORT_OutMuteGet() has to be changed whenever ports are added/removed!
 };
+
+
+static u32 muted_out;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,6 +86,9 @@ static const seq_midi_port_entry_t out_ports[] = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_PORT_Init(u32 mode)
 {
+  // unmute all Out ports
+  muted_out = 0;
+
   return 0; // no error
 }
 
@@ -198,6 +205,63 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 	return MIOS32_MIDI_CheckAvailable(port);
   }
   return 0; // port not available
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if MIOS32 MIDI Out Port is muted
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port)
+{
+  u8 port_ix = 0;
+
+#if 0
+  if( port != DEFAULT )
+    port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+
+    if( !port_ix )
+      return 0; // port not supported... and not muted (therefore 0 instead of -1)
+  }
+#else
+  // faster version - execution time does matter, as this function is frequently called
+  // from SEQ_CORE_Tick()
+  switch( port & 0xf0 ) {
+    // has to be kept in sync with out_ports[]!
+    case DEFAULT: port_ix = 0; break;
+    case USB0:  port_ix = (port & 0x0f) + 1; break;
+    case UART0: port_ix = (port & 0x0f) + 5; break;
+    case IIC0:  port_ix = (port & 0x0f) + 9; break;
+    case 0x80:  port_ix = (port & 0x0f) + 13; break; // AOUT
+    case 0xf0:  port_ix = (port & 0x0f) + 14; break; // Bus
+  }
+#endif
+
+  return (muted_out & (1 << port_ix)) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Mutes/Unmutes a MIDI port
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute)
+{
+  u8 port_ix;
+
+  if( port == DEFAULT )
+    port_ix = 0;
+  else {
+    port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+
+    if( !port_ix )
+      return -1; // port not supported
+  }
+
+  if( mute )
+    muted_out |= (1 << port_ix);
+  else
+    muted_out &= ~(1 << port_ix);
+
+  return 0; // no error
 }
 
 

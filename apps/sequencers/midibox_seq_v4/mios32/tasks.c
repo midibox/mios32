@@ -195,6 +195,7 @@ void SEQ_TASK_PatternResume(void)
 static void TASK_MSD(void *pvParameters)
 {
   portTickType xLastExecutionTime;
+  u8 lun_available = 0;
 
   // Initialise the xLastExecutionTime variable on task entry
   xLastExecutionTime = xTaskGetTickCount();
@@ -211,10 +212,15 @@ static void TASK_MSD(void *pvParameters)
 	  // switch back to USB MIDI
 	  MIOS32_USB_Init(1);
 	  msd_state = DISABLED;
+	  MUTEX_SDCARD_GIVE;
 	  vTaskSuspend(NULL); // will be resumed from TASK_MSD_EnableSet()
+	  MUTEX_SDCARD_TAKE;
 	  break;
 
         case MSD_INIT:
+	  // LUN not mounted yet
+	  lun_available = 0;
+
 	  // enable MSD USB driver
 	  if( MSD_Init(0) >= 0 )
 	    msd_state = MSD_READY;
@@ -225,6 +231,12 @@ static void TASK_MSD(void *pvParameters)
         case MSD_READY:
 	  // service MSD USB driver
 	  MSD_Periodic_mS();
+
+	  // this mechanism shuts down the MSD driver if SD card has been unmounted by OS
+	  if( lun_available && !MSD_LUN_AvailableGet(0) )
+	    msd_state = MSD_SHUTDOWN;
+	  else if( !lun_available && MSD_LUN_AvailableGet(0) )
+	    lun_available = 1;
 	  break;
       }
 

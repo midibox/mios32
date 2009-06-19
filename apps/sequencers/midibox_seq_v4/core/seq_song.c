@@ -355,6 +355,75 @@ s32 SEQ_SONG_NextPos(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// fetches the previous pos entry of a song
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SONG_PrevPos(void)
+{
+  if( song_loop_ctr )
+    --song_loop_ctr;
+  else {
+    u8 reinit_loop_ctr = 1;
+
+    if( song_pos ) {
+      --song_pos;
+
+      seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[song_pos];
+      while( song_pos && // on certain actions we should go back one additional step
+	     (s->action == SEQ_SONG_ACTION_SelMixerMap ||
+	      s->action == SEQ_SONG_ACTION_Tempo ||
+	      s->action == SEQ_SONG_ACTION_Mutes ) ) {
+	--song_pos;
+	--s;
+      }
+    } else if( !song_loop_ctr )
+      reinit_loop_ctr = 0; // don't re-init loop counter if we reached the very first song step
+
+    SEQ_SONG_FetchPos();
+
+    if( reinit_loop_ctr )
+      song_loop_ctr = song_loop_ctr_max;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called by the UI to handle the "Fwd" button
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SONG_Fwd(void)
+{
+  u32 bpm_tick = SEQ_BPM_TickGet();
+  u32 ticks_per_measure = ((u32)seq_core_steps_per_measure+1) * (SEQ_BPM_PPQN_Get()/4);
+  u32 measure = bpm_tick / ticks_per_measure;
+  u32 next_bpm_tick = (measure+1) * ticks_per_measure;
+
+  SEQ_CORE_Reset();
+  SEQ_SONG_NextPos();
+  SEQ_BPM_TickSet(next_bpm_tick);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// called by the UI to handle the "Rew" button
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SONG_Rew(void)
+{
+  u32 bpm_tick = SEQ_BPM_TickGet();
+  u32 ticks_per_measure = ((u32)seq_core_steps_per_measure+1) * (SEQ_BPM_PPQN_Get()/4);
+  u32 measure = bpm_tick / ticks_per_measure;
+  u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_measure) : 0;
+
+  SEQ_CORE_Reset();
+  SEQ_SONG_PrevPos();
+  SEQ_BPM_TickSet(next_bpm_tick);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Loads a song
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_Load(u32 song)

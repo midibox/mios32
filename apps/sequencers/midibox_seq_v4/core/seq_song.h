@@ -109,7 +109,13 @@ extern s32 SEQ_SONG_LoopCtrMaxGet(void);
 
 extern s32 SEQ_SONG_Reset(void);
 extern s32 SEQ_SONG_FetchPos(void);
+
 extern s32 SEQ_SONG_NextPos(void);
+extern s32 SEQ_SONG_PrevPos(void);
+
+
+extern s32 SEQ_SONG_Fwd(void);
+extern s32 SEQ_SONG_Rew(void);
 
 extern s32 SEQ_SONG_Load(u32 song);
 extern s32 SEQ_SONG_Save(u32 song);

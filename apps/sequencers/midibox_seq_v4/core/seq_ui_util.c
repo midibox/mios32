@@ -346,9 +346,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP13: // select Port Mute page
       if( depressed ) return -1;
-      return -1; // TODO
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_PMUTE);
 
-    case SEQ_UI_BUTTON_GP14: // free
+    case SEQ_UI_BUTTON_GP14: // Disk Page
       if( depressed ) return -1;
       return SEQ_UI_PageSet(SEQ_UI_PAGE_DISK);
 

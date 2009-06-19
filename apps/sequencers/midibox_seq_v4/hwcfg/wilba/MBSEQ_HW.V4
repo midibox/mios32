@@ -217,10 +217,10 @@ LED_UP     0   0
 ##################################################
 
 #            SR  Pin
-BUTTON_DOWN   0   0
-BUTTON_UP     0   0
-BUTTON_LEFT  20   2
-BUTTON_RIGHT 20   3
+BUTTON_DOWN  20   2
+BUTTON_UP    20   3
+BUTTON_LEFT   0   0
+BUTTON_RIGHT  0   0
 
 #                SR  Pin
 BUTTON_SCRUB     20   4
@@ -231,7 +231,7 @@ BUTTON_STOP   19   5
 BUTTON_PAUSE  18   4
 BUTTON_PLAY   18   5
 BUTTON_REW    19   4
-BUTTON_FWD    17   5
+BUTTON_FWD    17   4
 BUTTON_LOOP    0   0
 
 #              SR  Pin
