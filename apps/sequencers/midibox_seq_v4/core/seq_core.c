@@ -589,7 +589,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	  u16 prev_bpm_tick_delay = t->bpm_tick_delay;
 	  u8 gen_on_events = 0; // new On Events will be generated
 	  u8 gen_sustained_events = 0; // new sustained On Events will be generated
-	  u8 gen_off_events = 0; // Off Events of previous step will be generated
+	  u8 gen_off_events = 0; // Off Events of previous step will be generated, the variable contains the remaining gatelength
 
           seq_layer_evnt_t *e = &layer_events[0];
           for(i=0; i<number_of_events; ++e, ++i) {
@@ -615,18 +615,11 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             if( p->type == NoteOn && !p->velocity ) {
 	      // stretched note, length < 96: queue off event
 	      if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) )
-		gen_off_events = 1;
+		gen_off_events = (t->step_length * e->len) / 96;
 	      continue;
 	    }
 
   
-            // force to scale
-            if( tcc->mode.FORCE_SCALE ) {
-	      u8 scale, root_selection, root;
-	      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-	      SEQ_SCALE_Note(p, scale, root);
-            }
-
             // glide trigger
             if( e->len > 0 ) {
 	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
@@ -657,10 +650,21 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
 #endif
 
-	      // apply Pre-FX
+	      // apply Pre-FX before force-to-scale
 	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		SEQ_HUMANIZE_Event(track, t->step, e);
 		SEQ_LFO_Event(track, e);
+	      }
+
+	      // force to scale
+	      if( tcc->mode.FORCE_SCALE ) {
+		u8 scale, root_selection, root;
+		SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+		SEQ_SCALE_Note(p, scale, root);
+	      }
+
+	      // apply Pre-FX after force-to-scale
+	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
 	      }
 
@@ -684,13 +688,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      }
             } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
 	      // stretched note, length < 96: queue off events
-	      gen_off_events = 1;
+	      gen_off_events = (t->step_length * e->len) / 96;
 	    }
 	  }
 
 	  // should Note Off events be played before new events are queued?
 	  if( gen_off_events ) {
-	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + prev_bpm_tick_delay);
+	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + prev_bpm_tick_delay + gen_off_events);
 	    t->state.SUSTAINED = 0;
 	    t->state.STRETCHED_GL = 0;
 	  }

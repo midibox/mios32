@@ -104,12 +104,8 @@ s32 SEQ_GROOVE_Init(u32 mode)
 
   // initialise custom templates with dummy template
   // will be loaded from SD Card in SEQ_FILE_G
-  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove) {
-    memcpy(&seq_groove_templates[groove], &seq_groove_presets[0], sizeof(seq_groove_entry_t));
-    sprintf(seq_groove_templates[groove].name, "Custom #%d   ", groove+1);
-    seq_groove_templates[groove].name[12] = 0; // terminator
-    seq_groove_templates[groove].num_steps = 2; // for fast success
-  }
+  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove)
+    SEQ_GROOVE_Clear(groove);
 
   return 0; // no error
 }
@@ -223,3 +219,21 @@ s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Clears a groove template
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_GROOVE_Clear(u8 groove)
+{
+  if( groove < SEQ_GROOVE_NUM_PRESETS )
+    return -1; // preset not editable
+
+  s32 groove_template = groove - SEQ_GROOVE_NUM_PRESETS; // negative if not a custom template
+
+  memcpy(&seq_groove_templates[groove_template], &seq_groove_presets[0], sizeof(seq_groove_entry_t));
+  sprintf(seq_groove_templates[groove_template].name, "Custom #%d   ", groove_template+1);
+  seq_groove_templates[groove_template].name[12] = 0; // terminator
+  seq_groove_templates[groove_template].num_steps = 2; // for fast success
+    
+  return 0; // no error
+}

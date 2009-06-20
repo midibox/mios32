@@ -48,6 +48,8 @@ extern char *SEQ_GROOVE_NameGet(u8 groove);
 extern s32 SEQ_GROOVE_DelayGet(u8 track, u8 step);
 extern s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e);
 
+extern s32 SEQ_GROOVE_Clear(u8 groove);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
