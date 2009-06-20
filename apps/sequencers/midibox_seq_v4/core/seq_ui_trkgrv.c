@@ -215,7 +215,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
 #else
-  if( button <= SEQ_UI_BUTTON_GP16 ) {
+  if( button <= SEQ_UI_BUTTON_GP15 ) {
 #endif
     // re-use encoder handler - only select UI item, don't increment
     return Encoder_Handler((int)button, 0);
@@ -223,6 +223,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   // remaining buttons:
   switch( button ) {
+    case SEQ_UI_BUTTON_GP16: {
+      if( SEQ_GROOVE_Clear(SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_STYLE)) < 0 )
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Preset", "not editable!");
+      else
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Groove", "cleared!");
+    } break;
+
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
       if( ++ui_selected_item >= NUM_OF_ITEMS )
@@ -260,7 +267,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps            
+  // Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps        Clr 
   // G1T1  Inv. Shuffle     15                 1    0    0    0  Preset not editable!
 
 
@@ -276,7 +283,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps            ");
+  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps        Clr ");
 
 
   ///////////////////////////////////////////////////////////////////////////
