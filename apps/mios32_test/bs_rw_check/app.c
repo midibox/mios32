@@ -184,12 +184,12 @@ void APP_Background(void){
 	  do{
 	    last_error_code = MIOS32_IIC_BS_CheckWriteFinished(bs);
             //MIOS32_MIDI_SendDebugMessage("poll");
-	    } while( last_error_code > 0 );
+	    } while( last_error_code == 1 || last_error_code == -2);
           //MIOS32_MIDI_SendDebugMessage("CheckWriteFinished end");
           MIOS32_DELAY_Wait_uS(5000);
-	  if(last_error_code < 0){
+	  if(last_error_code != 0){
 	    last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
-	    phase = BS_CHECK_PHASE_FINISHED; 
+	    phase = BS_CHECK_PHASE_FINISHED;
 	    }
 	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_BS ){
 	    block = 0;
@@ -298,7 +298,7 @@ static void TASK_Display(void *pvParameters){
 		err_on = "compare";
 		break;
 	      }
-	    MIOS32_LCD_PrintFormattedString("Err on %s: %d",err_on,last_error_code);
+	    MIOS32_LCD_PrintFormattedString("Err: %s %d",err_on,last_error_code);
 	    MIOS32_LCD_CursorSet(0,1);
 	    MIOS32_LCD_PrintFormattedString("BS %d  Block %d",bs,block);
 	    MIOS32_MIDI_SendDebugMessage("Error on %s, Error code %d, Bankstick %d, Block %d",
