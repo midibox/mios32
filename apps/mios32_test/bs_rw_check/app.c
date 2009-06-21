@@ -88,8 +88,10 @@ static s32 check_buffer(void);
 
 static void init_buffer(void){
   u8 i;
-  for (i=0;i<64;i++)
-    buffer[i] = (bs + block + i) % 256;
+  for (i=0;i<64;i++){
+    buffer[i] = ((bs*4 + block*2 + i) % 256);
+    //if (block==0) MIOS32_MIDI_SendDebugMessage("buffer[%d]=%d",i,buffer[i]);
+    }
   }
 
 static void clear_buffer(void){
@@ -99,11 +101,15 @@ static void clear_buffer(void){
   }
 
 static s32 check_buffer(void){
-  u8 i;
-  for (i=0;i<64;i++)
-    if(buffer[i] != (bs + block + i) % 256)
-      return 0;
-  return 1;
+  u8 i,err=0;
+  for (i=0;i<64;i++){
+    u8 value = (bs*4 + block*2 + i) % 256;
+    if(buffer[i] != value){
+      MIOS32_MIDI_SendDebugMessage("buffer[%d]=%d, should be %d",i,buffer[i],value);
+      err = 1; 
+      }
+    }
+  return err ? 0 : 1;
   }
 
 
