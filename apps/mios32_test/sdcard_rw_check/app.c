@@ -219,14 +219,14 @@ static s32 check_sector_rw(void){
   s32 resp;
   init_sdcard_buffer();
   subseq_check_errors++;
-  if(resp = MIOS32_SDCARD_SectorWrite(sector,sdcard_buffer)){
+  if(resp = MIOS32_SDCARD_SectorWrite(sector,(u8*)sdcard_buffer)){
     last_error = SDCARD_CHECK_ERROR_WRITE;
     last_error_code = resp;
     sdcard_try_connect();
     return 0;
     }
   clear_sdcard_buffer();
-  if(resp = MIOS32_SDCARD_SectorRead(sector,sdcard_buffer)){
+  if(resp = MIOS32_SDCARD_SectorRead(sector,(u8*)sdcard_buffer)){
     last_error = SDCARD_CHECK_ERROR_READ;
     last_error_code = resp;
     sdcard_try_connect();
@@ -317,7 +317,6 @@ static void TASK_Display(void *pvParameters){
 	    MIOS32_LCD_PrintFormattedString("0x%08X",last_sector_rw);
 	    MIOS32_MIDI_SendDebugMessage("Sectors 0x%08X - 0x%08X checked, %d bad sectors",
 	      first_sector_rw,last_sector_rw,bad_sector_count);
-	    MIOS32_MIDI_SendDebugMessage("Push any button or MIDI-key to re-start the check..");
 	    }
 	  else{
 	    switch(last_error){
@@ -331,8 +330,8 @@ static void TASK_Display(void *pvParameters){
 	    MIOS32_LCD_CursorSet(0,1);
 	    MIOS32_LCD_PrintFormattedString("Error code %d",last_error_code);
 	    MIOS32_MIDI_SendDebugMessage("Abort on %s, error code: %d",op_str,last_error_code);
-	    MIOS32_MIDI_SendDebugMessage("Push any button or MIDI-key to re-start the check..");
 	    }
+          MIOS32_MIDI_SendDebugMessage("Push any button or MIDI-key to re-start the check..");
           }
         break;
       }
