@@ -61,18 +61,17 @@
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
-// 0: init; 1: scan for banksticks; 2: write blocks; read / compare blocks; 3: success; 4: error
-volatile s8 phase;
+static volatile s8 phase;
 
-volatile u8 bs;
-volatile u16 block;
-volatile u8 time_read;
-volatile u8 time_write;
+static volatile u8 bs;
+static volatile u16 block;
+static volatile u8 time_read;
+static volatile u8 time_write;
 
-volatile u8 last_error;
-volatile s32 last_error_code;
+static volatile u8 last_error;
+static volatile s32 last_error_code;
 
-volatile u8 buffer[64];
+static volatile u8 buffer[64];
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -118,6 +117,7 @@ void APP_Init(void){
   MIOS32_MIDI_SendDebugMessage("Bankstick r/w check");
   // setup display task
   xTaskCreate(TASK_Display, (signed portCHAR *)"Display", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DISPLAY, NULL);
+  MIOS32_DELAY_Init(0);
   }
 
 
@@ -128,6 +128,7 @@ void APP_Background(void){
   u8 i;
   u32 size;
   while(1){
+    MIOS32_BOARD_LED_Set(0xffffffff,~ MIOS32_BOARD_LED_Get());
     switch(phase){
       case BS_CHECK_PHASE_INIT:
         MIOS32_MIDI_SendDebugMessage("Bankstick check init...");
@@ -147,12 +148,15 @@ void APP_Background(void){
 	    if ( (size = MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
 	      last_error = BS_CHECK_ERROR_AVAILABLE;
 	      last_error_code = i;
+              //MIOS32_MIDI_SendDebugMessage("Bankstick %d not available",i);
 	      phase = BS_CHECK_PHASE_FINISHED;
               break;
 	      }
 	    if(size < BS_CHECK_NUM_BLOCKS_PER_BS*64){
 	      last_error = BS_CHECK_ERROR_SIZE;
 	      last_error_code = i;
+              //MIOS32_MIDI_SendDebugMessage("Bankstick %d is too small (%d instead of %d)",
+              //  i,size,BS_CHECK_NUM_BLOCKS_PER_BS*64);
 	      phase = BS_CHECK_PHASE_FINISHED;
               break;
               }
@@ -169,9 +173,14 @@ void APP_Background(void){
 	  phase = BS_CHECK_PHASE_FINISHED;
           }
         else{
+          //MIOS32_DELAY_Wait_uS(5000);
+          //MIOS32_MIDI_SendDebugMessage("Poll CheckWriteFinished begin");
 	  do{
 	    last_error_code = MIOS32_IIC_BS_CheckWriteFinished(bs);
+            //MIOS32_MIDI_SendDebugMessage("poll");
 	    } while( last_error_code > 0 );
+          //MIOS32_MIDI_SendDebugMessage("CheckWriteFinished end");
+          MIOS32_DELAY_Wait_uS(5000);
 	  if(last_error_code < 0){
 	    last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
 	    phase = BS_CHECK_PHASE_FINISHED; 
@@ -265,7 +274,7 @@ static void TASK_Display(void *pvParameters){
 		err_on = "available";
 		break;
 	      case BS_CHECK_ERROR_SIZE:
-		err_on = "check size";
+		err_on = "checksize";
 		break;
 	      case BS_CHECK_ERROR_INIT:
 		err_on = "init";
@@ -283,7 +292,7 @@ static void TASK_Display(void *pvParameters){
 		err_on = "compare";
 		break;
 	      }
-	    MIOS32_LCD_PrintFormattedString("Error on %s (%d)",err_on,last_error_code);
+	    MIOS32_LCD_PrintFormattedString("Err on %s: %d",err_on,last_error_code);
 	    MIOS32_LCD_CursorSet(0,1);
 	    MIOS32_LCD_PrintFormattedString("BS %d  Block %d",bs,block);
 	    MIOS32_MIDI_SendDebugMessage("Error on %s, Error code %d, Bankstick %d, Block %d",
