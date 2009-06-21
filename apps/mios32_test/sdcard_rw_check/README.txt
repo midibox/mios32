@@ -26,6 +26,8 @@ Checks the connected SD-card (write / read & compare).
 
 IMPORTANT NOTE: RUNING THIS APPLICATION WILL DESTROY ALL DATA ON YOUR SD-CARD!!!
 
+To start the check, press any DIN-button or MIDI-key.
+
 The application first looks for the first sector that is writeable/readable. 
 Then it looks for the last sector readable/writeable. When these boundaries are 
 found, it performs a deep check of the R/W sector space, writing nonsense data 
@@ -65,7 +67,7 @@ will be shown:
 "0x00 BAD 0x00"
 "0x077BFF"
 
-If a DIN module is connected, you can re-trigger the check by switching pin 0.
+You can restart the check by pushing any DIN-button or MIDI-key.
 
 I tested this application with a 1GB SanDisk, and a 256MB Pretec card. 
 
