@@ -190,7 +190,8 @@ void APP_Background(void){
            //MIOS32_BOARD_LED_Set(0xffffffff,0);
           //MIOS32_DELAY_Wait_uS(5000);
 	  if(last_error_code < 0){
-	    last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
+	    MIOS32_MIDI_SendDebugMessage("IIC error %d",MIOS32_IIC_LastErrorGet(MIOS32_IIC_BS_PORT));
+            last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
 	    phase = BS_CHECK_PHASE_FINISHED;
 	    }
 	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_BS ){
