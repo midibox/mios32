@@ -119,6 +119,7 @@ static s32 check_buffer(void){
 void APP_Init(void){
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+  MIOS32_BOARD_LED_Set(0xffffffff,0);
   phase = BS_CHECK_PHASE_STARTWAIT;
   MIOS32_MIDI_SendDebugMessage("Bankstick r/w check");
   // setup display task
@@ -134,7 +135,6 @@ void APP_Background(void){
   u8 i;
   u32 size;
   while(1){
-    MIOS32_BOARD_LED_Set(0xffffffff,~ MIOS32_BOARD_LED_Get());
     switch(phase){
       case BS_CHECK_PHASE_INIT:
         MIOS32_MIDI_SendDebugMessage("Bankstick check init...");
@@ -183,11 +183,13 @@ void APP_Background(void){
           //MIOS32_MIDI_SendDebugMessage("Poll CheckWriteFinished begin");
 	  do{
 	    last_error_code = MIOS32_IIC_BS_CheckWriteFinished(bs);
-            //MIOS32_MIDI_SendDebugMessage("poll");
-	    } while( last_error_code == 1 || last_error_code == -2);
+            //MIOS32_MIDI_SendDebugMessage("p:%d",last_error_code);
+            //MIOS32_BOARD_LED_Set(0xffffffff,~ MIOS32_BOARD_LED_Get());
+	    } while( last_error_code > 0);
           //MIOS32_MIDI_SendDebugMessage("CheckWriteFinished end");
-          MIOS32_DELAY_Wait_uS(5000);
-	  if(last_error_code != 0){
+           //MIOS32_BOARD_LED_Set(0xffffffff,0);
+          //MIOS32_DELAY_Wait_uS(5000);
+	  if(last_error_code < 0){
 	    last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
 	    phase = BS_CHECK_PHASE_FINISHED;
 	    }
