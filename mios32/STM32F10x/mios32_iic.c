@@ -482,9 +482,6 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
   // start with ACK
   I2C_AcknowledgeConfig(iicx->base, ENABLE);
 
-  // enable I2V2 event, buffer and error interrupt
-  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
-
   // clear last error status
   iicx->last_transfer_error = 0;
 
@@ -493,6 +490,9 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
 
   // send start condition
   I2C_GenerateSTART(iicx->base, ENABLE);
+
+  // enable I2V2 event, buffer and error interrupt
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
 
   return 0; // no error
 }
