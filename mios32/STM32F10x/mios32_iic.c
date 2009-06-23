@@ -80,11 +80,6 @@
 #define I2C_ENABLE_LATE_DATA_HANDLING 1
 #endif
 
-// taken from STM32 v2.0.3 library - define it here if an older library is used
-#ifndef I2C_EVENT_MASTER_BYTE_TRANSMITTING
-#define I2C_EVENT_MASTER_BYTE_TRANSMITTING ((u32)0x00070080) /* TRA, BUSY, MSL, TXE flags */
-#endif
-
 #ifndef I2C_EVENT_MASTER_BYTE_RECEIVED_BTF
 #define I2C_EVENT_MASTER_BYTE_RECEIVED_BTF ((u32)0x00030044) /* BUSY, MSL, RXNE and BTF flags */
 #endif
@@ -346,6 +341,8 @@ s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
 //! \return 0 if no ongoing transfer
 //! \return 1 if ongoing transfer
 //! \return < 0 if error during transfer
+//! \note Note that the semaphore will be released automatically after an error
+//! (MIOS32_IIC_TransferBegin() has to be called again)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 {
@@ -354,19 +351,22 @@ s32 MIOS32_IIC_TransferCheck(u8 iic_port)
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
+  // ongoing transfer?
+  if( iicx->transfer_state.BUSY )
+    return 1;
+
   // error during transfer?
+  // (must be done *after* BUSY check to avoid race conditon!)
   if( iicx->transfer_error ) {
     // store error status for MIOS32_IIC_LastErrorGet() function
     iicx->last_transfer_error = iicx->transfer_error;
     // clear current error status
     iicx->transfer_error = 0;
+    // release semaphore for easier programming at user level
+    iicx->iic_semaphore = 0;
     // and exit
     return iicx->last_transfer_error;
   }
-
-  // ongoing transfer?
-  if( iicx->transfer_state.BUSY )
-    return 1;
 
   // no transfer
   return 0;
@@ -378,6 +378,8 @@ s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 //! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
 //! \return 0 if no ongoing transfer
 //! \return < 0 if error during transfer
+//! \note Note that the semaphore will be released automatically after an error
+//! (MIOS32_IIC_TransferBegin() has to be called again)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferWait(u8 iic_port)
 {
@@ -399,8 +401,11 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
     s32 check_state = MIOS32_IIC_TransferCheck(iic_port);
 
     // exit if transfer finished or error detected
-    if( check_state <= 0 )
+    if( check_state <= 0 ) {
+      if( check_state < 0 )
+	iicx->iic_semaphore = 0; // release semaphore for easier programming at user level
       return check_state;
+    }
   }
 
   // timeout error - something is stalling...
@@ -437,6 +442,8 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 //! \return < 0 on errors, if MIOS32_IIC_ERROR_PREV_OFFSET is added, the previous
 //!      transfer got an error (the previous task didn't use \ref MIOS32_IIC_TransferWait
 //!      to poll the transfer state)
+//! \note Note that the semaphore will be released automatically after an error
+//! (MIOS32_IIC_TransferBegin() has to be called again)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len)
 {
@@ -447,8 +454,10 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
   // wait until previous transfer finished
-  if( (error = MIOS32_IIC_TransferWait(iic_port)) ) // transmission error during previous transfer
+  if( (error = MIOS32_IIC_TransferWait(iic_port)) ) { // transmission error during previous transfer
+    iicx->iic_semaphore = 0; // release semaphore for easier programming at user level
     return error + MIOS32_IIC_ERROR_PREV_OFFSET;
+  }
 
   // disable interrupts
   I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
@@ -476,8 +485,10 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
     iicx->rx_buffer_ptr = NULL; // ensure that nothing will be received
     // option to skip stop-condition generation after successful write
     iicx->transfer_state.WRITE_WITHOUT_STOP = transfer == IIC_Write_WithoutStop ? 1 : 0;
-  } else
+  } else {
+    iicx->iic_semaphore = 0; // release semaphore for easier programming at user level
     return (iicx->last_transfer_error=MIOS32_IIC_ERROR_UNSUPPORTED_TRANSFER_TYPE);
+  }
 
   // start with ACK
   I2C_AcknowledgeConfig(iicx->base, ENABLE);
@@ -514,25 +525,15 @@ static void EV_IRQHandler(iic_rec_t *iicx)
 #endif
 
   switch( I2C_GetLastEvent(iicx->base) ) {
-    case I2C_EVENT_MASTER_MODE_SELECT:
+    case I2C_EVENT_MASTER_MODE_SELECT: // EV5
       // send IIC address
       I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
 			  (iicx->iic_address & 1)
 			      ? I2C_Direction_Receiver
-      : I2C_Direction_Transmitter);
-
-      // address sent, if no byte should be sent: request NAK now!
-      if( iicx->buffer_len == 0 ) {
-	// request NAK
-	I2C_AcknowledgeConfig(iicx->base, DISABLE);
-	// request stop condition, exept on write-without-stop transfer-type
-	if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
-          I2C_GenerateSTOP(iicx->base, ENABLE);
-	iicx->transfer_state.STOP_REQUESTED = 1;
-      }
+			      : I2C_Direction_Transmitter);
       break;
 
-    case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED:
+    case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED: // EV6
       // address sent, transfer first byte - check if we already have to request NAK/Stop
       if( iicx->buffer_len == 1 ) {
 	// request NAK
@@ -543,7 +544,7 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       }
       break;
       
-    case I2C_EVENT_MASTER_BYTE_RECEIVED:
+    case I2C_EVENT_MASTER_BYTE_RECEIVED: // EV7
 #if I2C_ENABLE_LATE_DATA_HANDLING == 1
     case I2C_EVENT_MASTER_BYTE_RECEIVED_BTF://BTF set, IRQ handler is late (BTF is cleared with I2C_ReceiveData() )
 #endif
@@ -587,7 +588,7 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       break;
 
 
-    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
+    case I2C_EVENT_MASTER_BYTE_TRANSMITTED: // EV8_2
       if( iicx->transfer_state.STOP_REQUESTED ) {
         // transfer finished
         iicx->transfer_state.BUSY = 0;
@@ -597,30 +598,37 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       } 
       // no break here - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
 
-    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
-    case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
+    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED: // EV6
+    case I2C_EVENT_MASTER_BYTE_TRANSMITTING: // EV8
       if( iicx->buffer_ix < iicx->buffer_len ) {
 	// checking tx_buffer_ptr for NULL is a failsafe measure.
 	I2C_SendData(iicx->base, (iicx->tx_buffer_ptr == NULL) ? 0 : iicx->tx_buffer_ptr[iicx->buffer_ix++]);
-      } else if( iicx->buffer_len == 0 ) {
-	// only relevant if no bytes should be sent (only address to check ACK response)
-	// transfer finished
-	iicx->transfer_state.BUSY = 0;
-	// disable all interrupts
-	I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
       } else {
 	// request stop condition, exept on write-without-stop transfer-type
 	if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
           I2C_GenerateSTOP(iicx->base, ENABLE);
-	// request unbusy
-	iicx->transfer_state.STOP_REQUESTED = 1;
 
-	// Disable the I2C_IT_BUF interrupt after sending the last buffer data 
-	// (last EV8) to not allow a new interrupt with TxE - only BTF will generate it
-	I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
+	if( iicx->buffer_len == 0 ) {
+	  // transfer finished
+	  iicx->transfer_state.BUSY = 0;
+	  // disable all interrupts
+	  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+	} else {
+	  // request unbusy
+	  iicx->transfer_state.STOP_REQUESTED = 1;
+
+	  // Disable the I2C_IT_BUF interrupt after sending the last buffer data 
+	  // (last EV8) to not allow a new interrupt with TxE - only BTF will generate it
+	  I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
+	}
       }
       break;
       
+#if 0
+    // TK: if address transmission is NAKed, we can get intermin events
+    //     they shouldn't terminate the transfer, otherwise the IIC peripheral can
+    //     get into an undefined state (e.g. NAK not detected on next transfer)
+    //     Therefore we just ignore them!
     default:
       // an unexpected event has triggered the interrupt
       // we have to ensure, that the handler won't be invoked endless, therefore:
@@ -633,6 +641,7 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       I2C_AcknowledgeConfig(iicx->base, DISABLE);
       b = I2C_ReceiveData(iicx->base);
       I2C_GenerateSTOP(iicx->base, ENABLE);
+#endif
   }
 }
 
