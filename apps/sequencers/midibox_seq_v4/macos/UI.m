@@ -360,10 +360,26 @@ void SRIO_ServiceFinish(void)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	NSLock *theLock = [[NSLock alloc] init];
-
+	
 	while (YES) {		
 		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		SEQ_TASK_Period1mS();
+		[theLock unlock];
+        [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
+    }
+	
+	[pool release];
+	[NSThread exit];
+}
+
+- (void)periodic1mSTask_LowPrio:(id)anObject
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSLock *theLock = [[NSLock alloc] init];
+	
+	while (YES) {		
+		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
+		SEQ_TASK_Period1mS_LowPrio();
 		[theLock unlock];
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
     }
@@ -457,6 +473,7 @@ s32 TASKS_Init(u32 mode)
 	// Detach the new threads
 	[NSThread detachNewThreadSelector:@selector(periodicMIDITask:) toTarget:_self withObject:nil];
 	[NSThread detachNewThreadSelector:@selector(periodic1mSTask:) toTarget:_self withObject:nil];
+	[NSThread detachNewThreadSelector:@selector(periodic1mSTask_LowPrio:) toTarget:_self withObject:nil];
 	[NSThread detachNewThreadSelector:@selector(periodic1STask:) toTarget:_self withObject:nil];
 
 	return 0; // no error

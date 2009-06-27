@@ -137,6 +137,13 @@ typedef enum {
 } seq_ui_msg_type_t;
 
 
+typedef enum {
+  SEQ_UI_REMOTE_MODE_AUTO,
+  SEQ_UI_REMOTE_MODE_SERVER,
+  SEQ_UI_REMOTE_MODE_CLIENT
+} seq_ui_remote_mode_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -244,5 +251,10 @@ extern u8 ui_edit_preset_num_category;
 extern u8 ui_edit_preset_num_label;
 
 extern u8 ui_seq_pause;
+
+extern seq_ui_remote_mode_t seq_ui_remote_mode;
+extern mios32_midi_port_t seq_ui_remote_port;
+extern u8 seq_ui_remote_id;
+extern u8 seq_ui_remote_client_active;
 
 #endif /* _SEQ_UI_H */

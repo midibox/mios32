@@ -88,6 +88,7 @@ extern s32 TASKS_Init(u32 mode);
 
 extern void SEQ_TASK_MIDI(void);
 extern void SEQ_TASK_Period1mS(void);
+extern void SEQ_TASK_Period1mS_LowPrio(void);
 extern void SEQ_TASK_Period1S(void);
 extern void SEQ_TASK_Pattern(void);
 

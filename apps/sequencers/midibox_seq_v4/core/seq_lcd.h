@@ -26,6 +26,7 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+// note: the order has to be kept in sync with MBSEQ V3 for MBSEQ Remote Mode!
 typedef enum {
   SEQ_LCD_CHARSET_None,
   SEQ_LCD_CHARSET_VBars,

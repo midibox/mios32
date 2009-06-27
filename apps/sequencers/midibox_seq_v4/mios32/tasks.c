@@ -57,11 +57,12 @@ typedef enum {
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_MIDI		( tskIDLE_PRIORITY + 4 )
-#define PRIORITY_TASK_PERIOD1MS		( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_PERIOD1S		( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_PATTERN           ( tskIDLE_PRIORITY + 1 )
-#define PRIORITY_TASK_MSD		( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_MIDI		 ( tskIDLE_PRIORITY + 4 )
+#define PRIORITY_TASK_PERIOD1MS		 ( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_PATTERN            ( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 1 )
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,7 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_MIDI(void *pvParameters);
 static void TASK_Period1mS(void *pvParameters);
+static void TASK_Period1mS_LowPrio(void *pvParameters);
 static void TASK_Period1S(void *pvParameters);
 static void TASK_Pattern(void *pvParameters);
 static void TASK_MSD(void *pvParameters);
@@ -93,11 +95,12 @@ s32 TASKS_Init(u32 mode)
   msd_state = DISABLED;
 
   // start tasks
-  xTaskCreate(TASK_MIDI,      (signed portCHAR *)"MIDI",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, NULL);
-  xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
-  xTaskCreate(TASK_Period1S,  (signed portCHAR *)"Period1S",  configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
-  xTaskCreate(TASK_Pattern,   (signed portCHAR *)"Pattern",   configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
-  xTaskCreate(TASK_MSD,       (signed portCHAR *)"MSD",       configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
+  xTaskCreate(TASK_MIDI,              (signed portCHAR *)"MIDI",         configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, NULL);
+  xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
+  xTaskCreate(TASK_Period1S,          (signed portCHAR *)"Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
+  xTaskCreate(TASK_Pattern,           (signed portCHAR *)"Pattern",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
+  xTaskCreate(TASK_MSD,               (signed portCHAR *)"MSD",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
 
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -145,6 +148,25 @@ static void TASK_Period1mS(void *pvParameters)
 
     // continue in application hook
     SEQ_TASK_Period1mS();
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS with low priority
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period1mS_LowPrio(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // continue in application hook
+    SEQ_TASK_Period1mS_LowPrio();
   }
 }
 

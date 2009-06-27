@@ -39,7 +39,7 @@
 #define MIOS32_MINIMAL_STACK_SIZE 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 18*1024
+#define MIOS32_HEAP_SIZE 19*1024
 
 
 // memory alloccation method:

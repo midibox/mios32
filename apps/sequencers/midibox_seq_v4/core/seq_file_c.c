@@ -29,6 +29,7 @@
 #include "seq_file_c.h"
 
 
+#include "seq_ui.h"
 #include "seq_bpm.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
@@ -320,14 +321,20 @@ s32 SEQ_FILE_C_Read(void)
 		n->dst_chn = values[4];
 	      }
 	    }
-	  } else if( strcmp(parameter, "METRONOME_Port") == 0 ) {
+	  } else if( strcmp(parameter, "MetronomePort") == 0 ) {
 	    seq_core_metronome_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "METRONOME_Channel") == 0 ) {
+	  } else if( strcmp(parameter, "MetronomeChannel") == 0 ) {
 	    seq_core_metronome_chn = value;
-	  } else if( strcmp(parameter, "METRONOME_NoteM") == 0 ) {
+	  } else if( strcmp(parameter, "MetronomeNoteM") == 0 ) {
 	    seq_core_metronome_note_m = value;
-	  } else if( strcmp(parameter, "METRONOME_NoteB") == 0 ) {
+	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
+	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
+	    seq_ui_remote_mode = (value > 2) ? 0 : value;
+	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
+	    seq_ui_remote_port = value;
+	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
+	    seq_ui_remote_id = (value > 128) ? 0 : value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown parameter: %s", line_buffer);
@@ -460,16 +467,25 @@ s32 SEQ_FILE_C_Write(void)
     status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
   }
 
-  sprintf(line_buffer, "METRONOME_Port %d\n", (u8)seq_core_metronome_port);
+  sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "METRONOME_Channel %d\n", (u8)seq_core_metronome_chn);
+  sprintf(line_buffer, "MetronomeChannel %d\n", (u8)seq_core_metronome_chn);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "METRONOME_NoteM %d\n", (u8)seq_core_metronome_note_m);
+  sprintf(line_buffer, "MetronomeNoteM %d\n", (u8)seq_core_metronome_note_m);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "METRONOME_NoteB %d\n", (u8)seq_core_metronome_note_b);
+  sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_ui_remote_mode);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "RemotePort %d\n", (u8)seq_ui_remote_port);
+  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+
+  sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   // close file

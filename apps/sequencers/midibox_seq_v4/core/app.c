@@ -38,6 +38,7 @@
 
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
+#include "seq_midi_sysex.h"
 
 #include "seq_file.h"
 #include "seq_file_b.h"
@@ -91,6 +92,7 @@ void APP_Init(void)
   // initialize MIDI handlers
   SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
+  SEQ_MIDI_SYSEX_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
 
@@ -134,12 +136,6 @@ void APP_Background(void)
 #if 0
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 #endif
-
-  // call LCD Handler
-  SEQ_UI_LCD_Handler();
-
-  // update LEDs
-  SEQ_UI_LED_Handler();
 }
 
 
@@ -158,6 +154,7 @@ void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
 {
+  SEQ_MIDI_SYSEX_Parser(port, sysex_byte);
 }
 
 
@@ -300,6 +297,18 @@ void SEQ_TASK_Period1mS(void)
   SEQ_CORE_BPM_SweepHandler();
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called each mS with lowest priority
+/////////////////////////////////////////////////////////////////////////////
+void SEQ_TASK_Period1mS_LowPrio(void)
+{
+  // call LCD Handler
+  SEQ_UI_LCD_Handler();
+
+  // update LEDs
+  SEQ_UI_LED_Handler();
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each second
@@ -541,8 +550,11 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 {  
-  // TODO: display this message on screen
-  MIOS32_MIDI_SendDebugMessage("[NOTIFY_MIDI_Timeout] Timeout on port 0x%02x\n", port);
+  // forward to SysEx parser
+  SEQ_MIDI_SYSEX_TimeOut(port);
+
+  // print message on screen
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI Protocol", "TIMEOUT !!!");
 
   return 0;
 }
