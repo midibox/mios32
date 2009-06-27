@@ -20,6 +20,7 @@
 		521A79100EEB66520016F43B /* seq_ui_edit.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790D0EEB66520016F43B /* seq_ui_edit.c */; };
 		521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790E0EEB66520016F43B /* seq_ui_todo.c */; };
 		521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790F0EEB66520016F43B /* seq_ui_trkdir.c */; };
+		5223419A0FF6B8DC0001D7E7 /* seq_midi_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */; };
 		522A0DB40E8FE5AB0084B1EE /* CLCDView.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB20E8FE5AB0084B1EE /* CLCDView.m */; };
 		522A0DB50E8FE5AB0084B1EE /* CLCDView_charset.inc in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */; };
 		522A0DB80E8FE5B90084B1EE /* UI.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB70E8FE5B90084B1EE /* UI.m */; };
@@ -186,6 +187,8 @@
 		521A790D0EEB66520016F43B /* seq_ui_edit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_edit.c; path = ../core/seq_ui_edit.c; sourceTree = SOURCE_ROOT; };
 		521A790E0EEB66520016F43B /* seq_ui_todo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_todo.c; path = ../core/seq_ui_todo.c; sourceTree = SOURCE_ROOT; };
 		521A790F0EEB66520016F43B /* seq_ui_trkdir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdir.c; path = ../core/seq_ui_trkdir.c; sourceTree = SOURCE_ROOT; };
+		522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_sysex.c; path = ../core/seq_midi_sysex.c; sourceTree = SOURCE_ROOT; };
+		522341990FF6B8DC0001D7E7 /* seq_midi_sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_sysex.h; path = ../core/seq_midi_sysex.h; sourceTree = SOURCE_ROOT; };
 		522A0DB10E8FE5AB0084B1EE /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CLCDView.h; sourceTree = "<group>"; };
 		522A0DB20E8FE5AB0084B1EE /* CLCDView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLCDView.m; sourceTree = "<group>"; };
 		522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = CLCDView_charset.inc; sourceTree = "<group>"; };
@@ -510,6 +513,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */,
+				522341990FF6B8DC0001D7E7 /* seq_midi_sysex.h */,
 				52AE260A0FEC252B004A0274 /* seq_ui_pmute.c */,
 				52AE26090FEC251A004A0274 /* seq_file_g.h */,
 				527178640FE3A47C00252875 /* seq_ui_manual.c */,
@@ -942,6 +947,7 @@
 				527178600FE398CE00252875 /* seq_ui_fx_scale.c in Sources */,
 				527178650FE3A47C00252875 /* seq_ui_manual.c in Sources */,
 				52AE260B0FEC252B004A0274 /* seq_ui_pmute.c in Sources */,
+				5223419A0FF6B8DC0001D7E7 /* seq_midi_sysex.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

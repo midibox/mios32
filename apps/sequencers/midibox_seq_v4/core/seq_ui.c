@@ -27,6 +27,7 @@
 #include <string.h>
 #include <blm_x.h>
 #include <seq_midi_out.h>
+#include <seq_midi_sysex.h>
 #include <seq_bpm.h>
 
 #include "tasks.h"
@@ -80,6 +81,11 @@ u8 ui_edit_preset_num_label;
 
 u8 ui_seq_pause;
 
+seq_ui_remote_mode_t seq_ui_remote_mode;
+mios32_midi_port_t seq_ui_remote_port;
+u8 seq_ui_remote_id;
+u8 seq_ui_remote_client_active;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -129,6 +135,12 @@ s32 SEQ_UI_Init(u32 mode)
 
   // visible GP pattern
   ui_gp_leds = 0x0000;
+
+  // default remote mode
+  seq_ui_remote_mode = SEQ_UI_REMOTE_MODE_AUTO;
+  seq_ui_remote_port = DEFAULT;
+  seq_ui_remote_id = 0x00;
+  seq_ui_remote_client_active = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -1051,6 +1063,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 {
   int i;
 
+  // send MIDI event in remote mode and exit
+  if( seq_ui_remote_client_active )
+    return SEQ_MIDI_SYSEX_REMOTE_Client_SendButton(pin, pin_value);
+
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
@@ -1174,6 +1190,14 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( pin == seq_hwcfg_button.transpose )
     return SEQ_UI_Button_Transpose(pin_value);
 
+  // always print debugging message
+#if 1
+  MIOS32_MIDI_SendDebugMessage("[SEQ_UI_Button_Handler] Button SR:%d, Pin:%d not mapped, it has been %s.\n", 
+			       (pin >> 3) + 1,
+			       pin & 7,
+			       pin_value ? "depressed" : "pressed");
+#endif
+
   return -1; // button not mapped
 }
 
@@ -1183,6 +1207,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 {
+  // send MIDI event in remote mode and exit
+  if( seq_ui_remote_client_active )
+    return SEQ_MIDI_SYSEX_REMOTE_Client_Send_BLM_Button(row, pin, pin_value);
+
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
@@ -1212,6 +1240,10 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 {
+  // send MIDI event in remote mode and exit
+  if( seq_ui_remote_client_active )
+    return SEQ_MIDI_SYSEX_REMOTE_Client_SendEncoder(encoder, incrementer);
+
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
@@ -1259,6 +1291,10 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Handler(void)
 {
+  // special handling in remote client mode
+  if( seq_ui_remote_client_active )
+    return SEQ_UI_LCD_Update();
+
   if( seq_ui_display_init_req ) {
     seq_ui_display_init_req = 0; // clear request
 
@@ -1327,6 +1363,12 @@ s32 SEQ_UI_LCD_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Update(void)
 {
+  // special handling in remote client mode
+  if( seq_ui_remote_client_active ) {
+    // transfer all changed characters to LCD
+    return SEQ_LCD_Update(0);
+  }
+
   // if UI message active: copy over the text
   if( ui_msg_ctr ) {
     const char *animation_l_ptr;
@@ -1401,6 +1443,10 @@ s32 SEQ_UI_LCD_Update(void)
 s32 SEQ_UI_LED_Handler(void)
 {
   int i;
+
+  // ignore in remote client mode
+  if( seq_ui_remote_client_active )
+    return 0; // no error
 
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
@@ -1529,6 +1575,10 @@ s32 SEQ_UI_LED_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler_Periodic()
 {
+  // ignore in remote client mode
+  if( seq_ui_remote_client_active )
+    return 0; // no error
+
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
@@ -1677,6 +1727,10 @@ s32 SEQ_UI_LED_Handler_Periodic()
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_MENU_Handler_Periodic()
 {
+  // ignore in remote client mode
+  if( seq_ui_remote_client_active )
+    return 0; // no error
+
   if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {
     ui_cursor_flash_ctr = 0;
     seq_ui_display_update_req = 1;
