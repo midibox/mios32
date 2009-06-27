@@ -57,7 +57,7 @@
 #define BS_CHECK_PHASE_FINISHED 16
 
 // calculation of a buffer byte in respect to current bankstick, buffer and byte(i)
-#define BS_CHECK_BUFFER_BYTE_VALUE ((bs + block + i) % 256)
+#define BS_CHECK_BUFFER_BYTE_VALUE ((run + bs + block + i) % 256)
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -67,6 +67,7 @@ static volatile s8 phase;
 
 static volatile u8 bs;
 static volatile u16 block;
+static volatile u32 run;
 static volatile u8 time_read;
 static volatile u8 time_write;
 
@@ -143,7 +144,6 @@ void APP_Background(void){
   while(1){
     switch(phase){
       case BS_CHECK_PHASE_INIT:
-        MIOS32_MIDI_SendDebugMessage("Bankstick check init...");
 	bs = 0;
 	block = 0;
 	last_error = 0;
@@ -151,24 +151,30 @@ void APP_Background(void){
 	time_read = 0xff;
 	time_write = 0xff;
         // initialize IIC..
-	if( (last_error_code = MIOS32_IIC_BS_Init(0)) != 0){
-	  last_error =  BS_CHECK_ERROR_INIT;
-	  phase = BS_CHECK_PHASE_FINISHED;
+        if(run == 0){
+	  MIOS32_MIDI_SendDebugMessage("Bankstick check init...");
+	  if( (last_error_code = MIOS32_IIC_BS_Init(0)) != 0){
+	    last_error =  BS_CHECK_ERROR_INIT;
+	    phase = BS_CHECK_PHASE_FINISHED;
+	    }
+	  else{
+	    for(i = 0;i < BS_CHECK_NUM_BS; i++){
+	      if ( (size = MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
+		report_iic_error();
+		last_error = BS_CHECK_ERROR_AVAILABLE;
+		last_error_code = i;
+		MIOS32_MIDI_SendDebugMessage("Bankstick %d not available",i);
+		phase = BS_CHECK_PHASE_FINISHED;
+		break;
+		}
+	      } 
+            }
           }
         else{
-	  for(i = 0;i < BS_CHECK_NUM_BS; i++){
-	    if ( (size = MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
-	      report_iic_error();
-              last_error = BS_CHECK_ERROR_AVAILABLE;
-	      last_error_code = i;
-              MIOS32_MIDI_SendDebugMessage("Bankstick %d not available",i);
-	      phase = BS_CHECK_PHASE_FINISHED;
-              break;
-	      }
-            } 
-          if(!last_error)
-            phase = BS_CHECK_PHASE_WRITE;
-          }
+          MIOS32_MIDI_SendDebugMessage("Start next check, run %d",run+1);
+          } 
+        if(!last_error)
+          phase = BS_CHECK_PHASE_WRITE;
         break;
       case BS_CHECK_PHASE_WRITE:
         // write blocks
@@ -216,8 +222,13 @@ void APP_Background(void){
             MIOS32_MIDI_SendDebugMessage("Reading / comparing bankstick %d finished",bs);
 	    block = 0;
 	    if( ++bs >= BS_CHECK_NUM_BS ){
-	      bs = 0;
-	      phase = BS_CHECK_PHASE_FINISHED;
+              MIOS32_MIDI_SendDebugMessage("Check run %d finished",run+1);
+              if(++run >= BS_CHECK_NUM_RUNS)
+                phase = BS_CHECK_PHASE_FINISHED;
+              else{
+                bs = 0;
+                phase = BS_CHECK_PHASE_START;
+                }
 	      }
 	    }
           }
@@ -268,9 +279,11 @@ static void TASK_Display(void *pvParameters){
       case BS_CHECK_PHASE_WRITE:
         MIOS32_LCD_Clear();
 	MIOS32_LCD_CursorSet(0,0);
-        MIOS32_LCD_PrintFormattedString("Write blocks 0x%04X",block);
+	MIOS32_LCD_PrintFormattedString("Write blocks 0x%04X",block);
+        MIOS32_LCD_CursorSet(0,1);
+        MIOS32_LCD_PrintFormattedString("Bankstick %d, Run %d",bs,run+1);
         if(msg_countdown <= 0){
-          MIOS32_MIDI_SendDebugMessage("Write blocks 0x%04X",block);
+          MIOS32_MIDI_SendDebugMessage("Write blocks 0x%04X (bankstick %d, run %d)",block,bs,run+1);
           msg_countdown = 0;// restart message countdown if it was disabled
           }
         break;
@@ -278,8 +291,10 @@ static void TASK_Display(void *pvParameters){
         MIOS32_LCD_Clear();
 	MIOS32_LCD_CursorSet(0,0);
         MIOS32_LCD_PrintFormattedString("Read blocks 0x%04X",block);
+        MIOS32_LCD_CursorSet(0,1);
+        MIOS32_LCD_PrintFormattedString("Bankstick %d, Run %d",bs,run+1);
         if(msg_countdown <= 0){
-          MIOS32_MIDI_SendDebugMessage("Read blocks 0x%04X",block);
+          MIOS32_MIDI_SendDebugMessage("Read blocks 0x%04X (bankstick %d, run %d)",block,bs,run+1);
           msg_countdown = 0;// restart message countdown if it was disabled
           }
         break;
@@ -318,8 +333,8 @@ static void TASK_Display(void *pvParameters){
 	  else{
 	    MIOS32_LCD_PrintFormattedString("Bankstick check");
 	    MIOS32_LCD_CursorSet(0,1);	 
-	    MIOS32_LCD_PrintFormattedString("success");
-	    MIOS32_MIDI_SendDebugMessage("Banstick check finished successfully!");            
+	    MIOS32_LCD_PrintFormattedString("success (%d runs)",BS_CHECK_NUM_RUNS);
+	    MIOS32_MIDI_SendDebugMessage("Banstick check finished successfully (%d runs)!",BS_CHECK_NUM_RUNS);            
 	    }
 	  MIOS32_MIDI_SendDebugMessage("Push any button or MIDI-key to re-start the check..");
           }
@@ -337,8 +352,10 @@ static void TASK_Display(void *pvParameters){
 //  This hook is called when a complete MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package){
-  if( midi_package.type == NoteOn && midi_package.velocity > 0 )
-    phase = BS_CHECK_PHASE_START;  
+  if( midi_package.type == NoteOn && midi_package.velocity > 0 ){
+    run = 0;
+    phase = BS_CHECK_PHASE_START;
+    }
   }
 
 
@@ -379,8 +396,10 @@ void APP_SRIO_ServiceFinish(void)
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
-  if(!pin_value)
+  if(!pin_value){
+    run = 0;
     phase = BS_CHECK_PHASE_START;
+    }
   }
 
 
