@@ -13,6 +13,6 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 M. Maechler"
 
 // enable banksticks
-#define MIOS32_IIC_BS_NUM 1
+#define MIOS32_IIC_BS_NUM 4
 
 #endif /* _MIOS32_CONFIG_H */
