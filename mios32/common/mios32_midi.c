@@ -103,6 +103,16 @@ typedef union {
   struct {
     unsigned CTR:3;
     unsigned CMD:1;
+    unsigned :1;
+    unsigned :1;
+    unsigned MY_SYSEX:1;
+  };
+
+  struct {
+    unsigned CTR:3;
+    unsigned CMD:1;
+    unsigned PING_BYTE_RECEIVED;
+    unsigned :1;
     unsigned MY_SYSEX:1;
   };
 } sysex_state_t;
@@ -1536,25 +1546,27 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Command 0F: Ping (just send back acknowledge)
+// Command 0F: Ping (just send back acknowledge if no additional byte has been received)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      // nothing to do
+      sysex_state.PING_BYTE_RECEIVED = 0;
       break;
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      // nothing to do
+      sysex_state.PING_BYTE_RECEIVED = 1;
       break;
 
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
       // TODO: send 0xf7 if merger enabled
 
-      // send acknowledge
-      MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
+      // send acknowledge if no additional byte has been received
+      // to avoid feedback loop if two cores are directly connected
+      if( !sysex_state.PING_BYTE_RECEIVED )
+	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
       break;
   }
