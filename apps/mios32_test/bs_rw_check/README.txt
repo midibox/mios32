@@ -51,8 +51,8 @@ Bankssticks have to be enabled in mios32_config.h:
 // enable banksticks. must be equal or more than BS_CHECK_NUM_BS (app.h)
 #define MIOS32_IIC_BS_NUM 1
 
-The size of the connected banksticks, and the number of banksticks the application
-should scan has to be configured in app.h:
+The size of the connected banksticks, the number of banksticks the application
+should scan, and the number of test-runs has to be configured in app.h:
 
 // define the number of banksticks you want to check (1 - 8)
 #define BS_CHECK_NUM_BS 1
@@ -62,6 +62,9 @@ should scan has to be configured in app.h:
 // 24LC256: 512
 #define BS_CHECK_NUM_BLOCKS_PER_BS 1024
 
+// define the number of test-runs you want the application to go through.
+// can be used to test IIC stability.
+#define BS_CHECK_NUM_RUNS 3
 
 
 ===============================================================================
