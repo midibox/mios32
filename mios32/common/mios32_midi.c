@@ -102,18 +102,15 @@ typedef union {
 
   struct {
     unsigned CTR:3;
-    unsigned CMD:1;
-    unsigned :1;
-    unsigned :1;
     unsigned MY_SYSEX:1;
+    unsigned CMD:1;
   };
 
   struct {
     unsigned CTR:3;
+    unsigned MY_SYSEX:1;
     unsigned CMD:1;
     unsigned PING_BYTE_RECEIVED;
-    unsigned :1;
-    unsigned MY_SYSEX:1;
   };
 } sysex_state_t;
 
