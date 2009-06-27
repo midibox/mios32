@@ -327,8 +327,8 @@ static void TASK_Display(void *pvParameters){
 	    MIOS32_LCD_PrintFormattedString("Err: %s %d",err_on,last_error_code);
 	    MIOS32_LCD_CursorSet(0,1);
 	    MIOS32_LCD_PrintFormattedString("BS %d  Block %d",bs,block);
-	    MIOS32_MIDI_SendDebugMessage("Error on %s, Error code %d, Bankstick %d, Block %d",
-              err_on,last_error_code,bs,block);            
+	    MIOS32_MIDI_SendDebugMessage("Error on %s, Error code %d, Bankstick %d, Block %d, Run %d",
+              err_on,last_error_code,bs,block,run);
 	    }
 	  else{
 	    MIOS32_LCD_PrintFormattedString("Bankstick check");
