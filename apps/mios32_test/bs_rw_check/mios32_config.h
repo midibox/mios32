@@ -12,7 +12,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "BS Check"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 M. Maechler"
 
-// enable banksticks
-#define MIOS32_IIC_BS_NUM 4
+// enable banksticks. must be equal or more than BS_CHECK_NUM_BS (app.h)
+#define MIOS32_IIC_BS_NUM 1
 
 #endif /* _MIOS32_CONFIG_H */
