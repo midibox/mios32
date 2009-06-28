@@ -1406,6 +1406,8 @@ static s32 MIOS32_MIDI_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_
     case 0x0d:
       MIOS32_MIDI_SYSEX_Cmd_Debug(port, cmd_state, midi_in);
       break;
+    case 0x0e: // ignore to avoid loopbacks
+      break;
     case 0x0f:
       MIOS32_MIDI_SYSEX_Cmd_Ping(port, cmd_state, midi_in);
       break;

@@ -138,7 +138,7 @@ typedef enum {
 
 
 typedef enum {
-  SEQ_UI_REMOTE_MODE_AUTO,
+  SEQ_UI_REMOTE_MODE_AUTO=0,
   SEQ_UI_REMOTE_MODE_SERVER,
   SEQ_UI_REMOTE_MODE_CLIENT
 } seq_ui_remote_mode_t;
@@ -155,6 +155,7 @@ extern s32 SEQ_UI_InitEncSpeed(u32 auto_config);
 extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
+extern s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();
 extern s32 SEQ_UI_LCD_Handler(void);
@@ -253,8 +254,12 @@ extern u8 ui_edit_preset_num_label;
 extern u8 ui_seq_pause;
 
 extern seq_ui_remote_mode_t seq_ui_remote_mode;
+extern seq_ui_remote_mode_t seq_ui_remote_active_mode;
 extern mios32_midi_port_t seq_ui_remote_port;
+extern mios32_midi_port_t seq_ui_remote_active_port;
 extern u8 seq_ui_remote_id;
-extern u8 seq_ui_remote_client_active;
+extern u16 seq_ui_remote_client_timeout_ctr;
+extern u8 seq_ui_remote_force_lcd_update;
+extern u8 seq_ui_remote_force_led_update;
 
 #endif /* _SEQ_UI_H */

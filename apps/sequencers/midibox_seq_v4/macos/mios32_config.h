@@ -49,6 +49,8 @@
 #define MIOS32_MIDI_DEFAULT_PORT UART0
 
 #define MIOS32_UART_NUM 4
+#define MIOS32_UART_RX_BUFFER_SIZE 4096
+#define MIOS32_UART_TX_BUFFER_SIZE 4096
 
 
 // memory alloccation method:

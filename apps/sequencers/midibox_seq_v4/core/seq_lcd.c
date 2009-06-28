@@ -36,7 +36,9 @@
 #include "tasks.h"
 
 #include "seq_lcd.h"
+#include "seq_ui.h"
 #include "seq_midi_port.h"
+#include "seq_midi_sysex.h"
 #include "seq_cc.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -188,15 +190,26 @@ s32 SEQ_LCD_Update(u8 force)
 {
   int next_x = -1;
   int next_y = -1;
+  int remote_first_x[LCD_MAX_LINES];
+  int remote_last_x[LCD_MAX_LINES];
+  int x, y;
+
+  for(y=0; y<2; ++y) {
+    remote_first_x[y] = -1;
+    remote_last_x[y] = -1;
+  }
 
   MUTEX_LCD_TAKE;
 
-  int x, y;
   u8 *ptr = (u8 *)lcd_buffer;
   for(y=0; y<LCD_MAX_LINES; ++y)
     for(x=0; x<LCD_MAX_COLUMNS; ++x) {
 
       if( force || !(*ptr & 0x80) ) {
+	if( remote_first_x[y] == -1 )
+	  remote_first_x[y] = x;
+	remote_last_x[y] = x;
+
 	if( x != next_x || y != next_y ) {
 	  // for 2 * 2x40 LCDs
 	  MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
@@ -215,6 +228,16 @@ s32 SEQ_LCD_Update(u8 force)
     }
 
   MUTEX_LCD_GIVE;
+
+  // forward display changes to remote client
+  if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER ) {
+    for(y=0; y<LCD_MAX_LINES; ++y)
+      if( remote_first_x[y] >= 0 )
+	SEQ_MIDI_SYSEX_REMOTE_Server_SendLCD(remote_first_x[y],
+					     y,
+					     (u8 *)&lcd_buffer[y][remote_first_x[y]],
+					     remote_last_x[y]-remote_first_x[y]+1);
+  }
 
   return 0; // no error
 }
@@ -258,6 +281,10 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
     }
 
     MUTEX_LCD_GIVE;
+
+    // forward charset change to remote client
+    if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER )
+      SEQ_MIDI_SYSEX_REMOTE_Server_SendCharset(charset);
   }
 
   return status; // no error
