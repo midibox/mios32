@@ -331,6 +331,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.loop = din_value;
 	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_button.metronome = din_value;
+	  } else if( strcmp(parameter, "RECORD") == 0 ) {
+	    seq_hwcfg_button.record = din_value;
 	  } else if( strcmp(parameter, "STOP") == 0 ) {
 	    seq_hwcfg_button.stop = din_value;
 	  } else if( strcmp(parameter, "PAUSE") == 0 ) {
@@ -489,6 +491,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.loop = dout_value;
 	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_led.metronome = dout_value;
+	  } else if( strcmp(parameter, "RECORD") == 0 ) {
+	    seq_hwcfg_led.record = dout_value;
 	  } else if( strcmp(parameter, "UTILITY") == 0 ) {
 	    seq_hwcfg_led.utility = dout_value;
 	  } else if( strcmp(parameter, "COPY") == 0 ) {

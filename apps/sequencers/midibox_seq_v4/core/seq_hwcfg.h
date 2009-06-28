@@ -46,6 +46,7 @@ typedef struct {
 
   u8 scrub;
   u8 metronome;
+  u8 record;
 
   u8 stop;
   u8 pause;
@@ -156,6 +157,8 @@ typedef struct {
   u8 copy;
   u8 paste;
   u8 clear;
+
+  u8 record;
 
   u8 step_view;
   u8 trg_layer_sel;
