@@ -146,6 +146,7 @@ void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
   SEQ_MIDI_ROUTER_Receive(port, midi_package);
   SEQ_MIDI_IN_Receive(port, midi_package);
+  SEQ_UI_REMOTE_MIDI_Receive(port, midi_package);
 }
 
 
@@ -308,6 +309,21 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 
   // update LEDs
   SEQ_UI_LED_Handler();
+
+  // if remote client active: timeout handling
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {
+    ++seq_ui_remote_client_timeout_ctr;
+
+    // request refresh from server each second
+    if( (seq_ui_remote_client_timeout_ctr % 1000) == 999 ) {
+      SEQ_MIDI_SYSEX_REMOTE_SendRefresh();
+    } else if( seq_ui_remote_client_timeout_ctr >= 5000 ) {
+      // no reply from server after 5 seconds: leave client mode
+      seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "No response from", "Remote Server!");
+    }
+  }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////

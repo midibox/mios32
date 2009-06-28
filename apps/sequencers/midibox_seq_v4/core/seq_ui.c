@@ -82,9 +82,13 @@ u8 ui_edit_preset_num_label;
 u8 ui_seq_pause;
 
 seq_ui_remote_mode_t seq_ui_remote_mode;
+seq_ui_remote_mode_t seq_ui_remote_active_mode;
 mios32_midi_port_t seq_ui_remote_port;
+mios32_midi_port_t seq_ui_remote_active_port;
 u8 seq_ui_remote_id;
-u8 seq_ui_remote_client_active;
+u16 seq_ui_remote_client_timeout_ctr;
+u8 seq_ui_remote_force_lcd_update;
+u8 seq_ui_remote_force_led_update;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -113,6 +117,11 @@ static seq_ui_msg_type_t ui_msg_type;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Init(u32 mode)
 {
+  int i;
+  // clear all LEDs
+  for(i=0; i<SEQ_LED_NUM_SR; ++i)
+    SEQ_LED_SRSet(i, 0x00);
+
   // init selection variables
   ui_selected_group = 0;
   ui_selected_tracks = (1 << 0);
@@ -138,9 +147,13 @@ s32 SEQ_UI_Init(u32 mode)
 
   // default remote mode
   seq_ui_remote_mode = SEQ_UI_REMOTE_MODE_AUTO;
+  seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
   seq_ui_remote_port = DEFAULT;
+  seq_ui_remote_active_port = DEFAULT;
   seq_ui_remote_id = 0x00;
-  seq_ui_remote_client_active = 0;
+  seq_ui_remote_client_timeout_ctr = 0;
+  seq_ui_remote_force_lcd_update = 0;
+  seq_ui_remote_force_led_update = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -1064,7 +1077,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   int i;
 
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendButton(pin, pin_value);
 
   // ignore so long hardware config hasn't been read
@@ -1208,7 +1221,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 {
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_Send_BLM_Button(row, pin, pin_value);
 
   // ignore so long hardware config hasn't been read
@@ -1241,7 +1254,7 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 {
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendEncoder(encoder, incrementer);
 
   // ignore so long hardware config hasn't been read
@@ -1286,13 +1299,61 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+  s32 status = 0;
+
+#if 1
+  // check for active remote mode
+  if( seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_SERVER )
+    return 0; // no error
+#endif
+
+  if( (seq_ui_remote_port == DEFAULT && seq_ui_remote_active_port != port) ||
+      (seq_ui_remote_port != DEFAULT && port != seq_ui_remote_port) )
+    return 0; // wrong port
+
+  // for easier parsing: convert Note Off -> Note On with velocity 0
+  if( midi_package.event == NoteOff ) {
+    midi_package.event = NoteOn;
+    midi_package.velocity = 0;
+  }
+
+  switch( midi_package.event ) {
+    case NoteOn: {
+      switch( midi_package.chn ) {
+        case Chn1:
+	  SEQ_UI_Button_Handler(midi_package.note + 0x00, midi_package.velocity ? 0 : 1);
+	  break;
+        case Chn2:
+	  SEQ_UI_Button_Handler(midi_package.note + 0x80, midi_package.velocity ? 0 : 1);
+	  break;
+        case Chn3:
+	  SEQ_UI_BLM_Button_Handler(midi_package.note >> 5, midi_package.note & 0x1f, midi_package.velocity ? 0 : 1);
+	  break;
+      }	
+    } break;
+
+    case CC: {
+      if( midi_package.cc_number >= 15 && midi_package.cc_number <= 31 )
+	SEQ_UI_Encoder_Handler(midi_package.cc_number-15, (int)midi_package.value - 0x40);
+    } break;
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Update LCD messages
 // Usually called from background task
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Handler(void)
 {
   // special handling in remote client mode
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_UI_LCD_Update();
 
   if( seq_ui_display_init_req ) {
@@ -1364,9 +1425,12 @@ s32 SEQ_UI_LCD_Handler(void)
 s32 SEQ_UI_LCD_Update(void)
 {
   // special handling in remote client mode
-  if( seq_ui_remote_client_active ) {
-    // transfer all changed characters to LCD
-    return SEQ_LCD_Update(0);
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {
+    MIOS32_IRQ_Disable();
+    u8 force = seq_ui_remote_force_lcd_update;
+    seq_ui_remote_force_lcd_update = 0;
+    MIOS32_IRQ_Enable();
+    return SEQ_LCD_Update(force);
   }
 
   // if UI message active: copy over the text
@@ -1442,10 +1506,12 @@ s32 SEQ_UI_LCD_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  static u8 remote_led_sr[SEQ_LED_NUM_SR];
+
   int i;
 
   // ignore in remote client mode
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   // ignore so long hardware config hasn't been read
@@ -1565,6 +1631,35 @@ s32 SEQ_UI_LED_Handler(void)
   for(i=0; i<NUM_BLM_LED_SRS; ++i)
     ui_blm_leds[i] = SEQ_TRG_Get8(visible_track0+(i>>1), visible_sr0+(i&1), ui_selected_trg_layer, ui_selected_instrument);
 
+
+  // send LED changes in remote server mode
+  if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER ) {
+    int first_sr = -1;
+    int last_sr = -1;
+    int sr;
+    for(sr=0; sr<SEQ_LED_NUM_SR; ++sr) {
+      u8 value = SEQ_LED_SRGet(sr);
+      if( value != remote_led_sr[sr] ) {
+	if( first_sr == -1 )
+	  first_sr = sr;
+	last_sr = sr;
+	remote_led_sr[sr] = value;
+      }
+    }
+
+    MIOS32_IRQ_Disable();
+    if( seq_ui_remote_force_led_update ) {
+      first_sr = 0;
+      last_sr = SEQ_LED_NUM_SR-1;
+    }
+    seq_ui_remote_force_led_update = 0;
+    MIOS32_IRQ_Enable();
+
+    if( first_sr >= 0 )
+      SEQ_MIDI_SYSEX_REMOTE_Server_SendLED(first_sr, (u8 *)&remote_led_sr[first_sr], last_sr-first_sr+1);
+  }
+
+
   return 0; // no error
 }
 
@@ -1576,7 +1671,7 @@ s32 SEQ_UI_LED_Handler(void)
 s32 SEQ_UI_LED_Handler_Periodic()
 {
   // ignore in remote client mode
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   // ignore so long hardware config hasn't been read
@@ -1728,7 +1823,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 s32 SEQ_UI_MENU_Handler_Periodic()
 {
   // ignore in remote client mode
-  if( seq_ui_remote_client_active )
+  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {

@@ -46,7 +46,7 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
     return MIOS32_DOUT_PinSet(pin, value);
 
   if( pin < 196 )
-    BLM_X_LEDSet(pin-128, 0, value);
+    return BLM_X_LEDSet(pin-128, 0, value);
 
   return -1; // pin not available
 }
@@ -62,7 +62,22 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
     return MIOS32_DOUT_SRSet(sr, value);
 
   if( sr < 24 )
-    BLM_X_LEDSRSet(sr-16, 0, value);
+    return BLM_X_LEDSRSet(sr-16, 0, value);
 
   return -1; // SR not available
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the value of a DOUT SR (8 LEDs), differs between LEDs directly connected to DOUT SR
+// (sr=0..15) and LEDS which are connected to a 8x8 matrix (sr=16..23)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LED_SRGet(u32 sr)
+{
+  if( sr < 16 )
+    return MIOS32_DOUT_SRGet(sr);
+
+  if( sr < 24 )
+    return BLM_X_LEDSRGet(sr-16, 0);
+
+  return 0; // SR not available... return 0
 }

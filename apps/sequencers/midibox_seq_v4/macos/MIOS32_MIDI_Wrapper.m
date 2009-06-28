@@ -17,9 +17,10 @@
 #define NUM_MIDI_OUT 4
 
 static u8 rx_buffer[NUM_MIDI_IN][MIOS32_UART_RX_BUFFER_SIZE];
-static volatile u8 rx_buffer_tail[NUM_MIDI_IN];
-static volatile u8 rx_buffer_head[NUM_MIDI_IN];
-static volatile u8 rx_buffer_size[NUM_MIDI_IN];
+static volatile u16 rx_buffer_tail[NUM_MIDI_IN];
+static volatile u16 rx_buffer_head[NUM_MIDI_IN];
+static volatile u16 rx_buffer_size[NUM_MIDI_IN];
+static NSLock *rx_lock[NUM_MIDI_IN];
 
 static NSObject *_self;
 
@@ -42,6 +43,7 @@ PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
 		[portName appendFormat:@"vMBSEQ IN%d", i+1];
 		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
 		[virtualMIDI_IN[i] addReceiver:self];
+		rx_lock[i] = [[NSLock alloc] init];
 	}
 
 	for(i=0; i<NUM_MIDI_OUT; ++i) {
@@ -72,7 +74,9 @@ s32 MIOS32_UART_Init(u32 mode)
   // clear buffer counters
   int i;
   for(i=0; i<NUM_MIDI_IN; ++i) {
-    rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
+	  [rx_lock[i] lock];
+	  rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
+	  [rx_lock[i] unlock];	  
   }
 
   // no running status optimisation
@@ -106,12 +110,12 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  MIOS32_IRQ_Disable();
+  [rx_lock[uart] lock];
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
   if( ++rx_buffer_tail[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_tail[uart] = 0;
   --rx_buffer_size[uart];
-  MIOS32_IRQ_Enable();
+  [rx_lock[uart] unlock];
 
   return b; // return received byte
 #endif
@@ -137,9 +141,9 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  MIOS32_IRQ_Disable();
+  [rx_lock[uart] lock];
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
-  MIOS32_IRQ_Enable();
+  [rx_lock[uart] unlock];
 
   return b; // return received byte
 #endif
@@ -167,12 +171,12 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 
   // copy received byte into receive buffer
   // this operation should be atomic!
-  MIOS32_IRQ_Disable();
+  [rx_lock[uart] lock];
   rx_buffer[uart][rx_buffer_head[uart]] = b;
   if( ++rx_buffer_head[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_head[uart] = 0;
   ++rx_buffer_size[uart];
-  MIOS32_IRQ_Enable();
+  [rx_lock[uart] unlock];
 
   return 0; // no error
 #endif

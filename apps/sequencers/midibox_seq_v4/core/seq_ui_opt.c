@@ -173,12 +173,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	switch( seq_ui_remote_mode ) {
 	  case SEQ_UI_REMOTE_MODE_AUTO:
   	  case SEQ_UI_REMOTE_MODE_SERVER:
-	    if( seq_ui_remote_client_active )
-	      SEQ_MIDI_SYSEX_REMOTE_Client_SendOnOffRequest(0);
-	    seq_ui_remote_client_active = 0;
+	    if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+	      SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_AUTO);
+	    seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_AUTO;
 	    break;
 	  case SEQ_UI_REMOTE_MODE_CLIENT:
-	    SEQ_MIDI_SYSEX_REMOTE_Client_SendOnOffRequest(1);
+	    SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_SERVER); // request server
 	    break;
 	}
 
@@ -212,8 +212,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  break;
         case SEQ_UI_REMOTE_MODE_AUTO:
         case SEQ_UI_REMOTE_MODE_CLIENT:
-	  SEQ_MIDI_SYSEX_REMOTE_Client_SendOnOffRequest(1);
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Remote Client", "connection requested!");
+	  SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_SERVER);
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Remote Server", "requested.");
 	  break;
       }
       return 1;
@@ -362,8 +362,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_REMOTE_REQUEST && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(12);
   } else {
-    // TODO: print status depending on server/client mode
-    SEQ_LCD_PrintFormattedString(" Connect:%s", seq_ui_remote_client_active ? "yes" : "no ");
+    SEQ_LCD_PrintFormattedString(" Connect:%s", (seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_AUTO) ? "yes" : "no ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
