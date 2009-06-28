@@ -75,21 +75,12 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// temporary switch to test modifications on the event-handler
-#ifndef I2C_ENABLE_LATE_DATA_HANDLING
-#define I2C_ENABLE_LATE_DATA_HANDLING 1
-#endif
-
-#ifndef I2C_EVENT_MASTER_BYTE_RECEIVED_BTF
-#define I2C_EVENT_MASTER_BYTE_RECEIVED_BTF ((u32)0x00030044) /* BUSY, MSL, RXNE and BTF flags */
-#endif
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-
+volatile u32 MIOS32_IIC_unexpected_event;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -102,7 +93,6 @@ typedef union {
   struct {
     unsigned BUSY:1;
     unsigned STOP_REQUESTED:1;
-    unsigned RX_OVERRUN:1;
     unsigned ABORT_IF_FIRST_BYTE_0:1;
     unsigned WRITE_WITHOUT_STOP:1;
   };
@@ -263,8 +253,6 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   iicx->transfer_state.ALL = 0;
   iicx->transfer_error = 0;
 
-  // enable I2C peripheral
-  I2C_Cmd(iicx->base, ENABLE);
 
   // configure I2C peripheral
   I2C_Init(iicx->base, &I2C_InitStructure);
@@ -503,6 +491,8 @@ s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address,
   I2C_GenerateSTART(iicx->base, ENABLE);
 
   // enable I2V2 event, buffer and error interrupt
+  // this must be done *after* GenerateStart, for the case last transfer was WRITE_WITHOUT_STOP.
+  // in this case, start was already generated at the end of the last communication!
   I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
 
   return 0; // no error
@@ -516,134 +506,133 @@ static void EV_IRQHandler(iic_rec_t *iicx)
 {
   u8 b;
 
-#if 0
-  // Receiver handling:
-  // enable this to test failsave handling, if the IRQ won't be executed early
-  // enough, so that DR won't be read before the previous ACK has been sent
-  volatile u32 delay;
-  for(delay=0; delay<1000; ++delay);
-#endif
+  // Read SR1 and SR2 at the beginning (if not done so, flags may get lost)
+  u32 event = I2C_GetLastEvent(iicx->base);
 
-  switch( I2C_GetLastEvent(iicx->base) ) {
-    case I2C_EVENT_MASTER_MODE_SELECT: // EV5
-      // send IIC address
-      I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
-			  (iicx->iic_address & 1)
-			      ? I2C_Direction_Receiver
-			      : I2C_Direction_Transmitter);
-      break;
-
-    case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED: // EV6
-      // address sent, transfer first byte - check if we already have to request NAK/Stop
-      if( iicx->buffer_len == 1 ) {
-	// request NAK
-	I2C_AcknowledgeConfig(iicx->base, DISABLE);
-	// request stop condition
-	I2C_GenerateSTOP(iicx->base, ENABLE);
-	iicx->transfer_state.STOP_REQUESTED = 1;
-      }
-      break;
-      
-    case I2C_EVENT_MASTER_BYTE_RECEIVED: // EV7
-#if I2C_ENABLE_LATE_DATA_HANDLING == 1
-    case I2C_EVENT_MASTER_BYTE_RECEIVED_BTF://BTF set, IRQ handler is late (BTF is cleared with I2C_ReceiveData() )
-#endif
-      // get received data
-      b = I2C_ReceiveData(iicx->base);
-
-      if( iicx->rx_buffer_ptr == NULL ) {
-	// failsave: really requested a receive transfer?
-	// ignore...
-      } else if( iicx->buffer_ix >= iicx->buffer_len ) {
-	// failsave: still place in buffer?
-	// stop transfer, notify error
-	iicx->transfer_state.RX_OVERRUN = 1;
-	// request NAK
-	I2C_AcknowledgeConfig(iicx->base, DISABLE);
-	// request stop condition
-	I2C_GenerateSTOP(iicx->base, ENABLE);
-	iicx->transfer_state.STOP_REQUESTED = 1;
-      } else {
-	iicx->rx_buffer_ptr[iicx->buffer_ix++] = b;
-	// request NAK and stop condition before receiving last data
-	if( (iicx->buffer_ix == iicx->buffer_len-1) || (iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 && iicx->buffer_ix == 1 && b == 0x00) ) {
-	  // request NAK
-	  I2C_AcknowledgeConfig(iicx->base, DISABLE);
-	  // request stop condition
-	  I2C_GenerateSTOP(iicx->base, ENABLE);
-	  iicx->transfer_state.STOP_REQUESTED = 1;
-	} else if( iicx->transfer_state.STOP_REQUESTED ) { // last byte received
-	  iicx->transfer_state.BUSY = 0;
-#if 0
-	  // disabled due to peripheral imperfections (sometimes an additional byte is received)
-	  // set error state to Rx Overrun if notified on previous byte
-	  if( iicx->transfer_state.RX_OVERRUN ) {
-            iicx->transfer_error = MIOS32_IIC_ERROR_RX_BUFFER_OVERRUN;
-          }
-#endif
-	  // disable all interrupts
-	  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-	}
-      }
-      break;
-
-
-    case I2C_EVENT_MASTER_BYTE_TRANSMITTED: // EV8_2
-      if( iicx->transfer_state.STOP_REQUESTED ) {
-        // transfer finished
-        iicx->transfer_state.BUSY = 0;
-        // disable all interrupts
-        I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-	break;
-      } 
-      // no break here - we continue with the code for I2C_EVENT_MASTER_BYTE_TRANSMITTING
-
-    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED: // EV6
-    case I2C_EVENT_MASTER_BYTE_TRANSMITTING: // EV8
-      if( iicx->buffer_ix < iicx->buffer_len ) {
-	// checking tx_buffer_ptr for NULL is a failsafe measure.
-	I2C_SendData(iicx->base, (iicx->tx_buffer_ptr == NULL) ? 0 : iicx->tx_buffer_ptr[iicx->buffer_ix++]);
-      } else {
-	// request stop condition, exept on write-without-stop transfer-type
-	if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
-          I2C_GenerateSTOP(iicx->base, ENABLE);
-
-	if( iicx->buffer_len == 0 ) {
-	  // transfer finished
-	  iicx->transfer_state.BUSY = 0;
-	  // disable all interrupts
-	  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-	} else {
-	  // request unbusy
-	  iicx->transfer_state.STOP_REQUESTED = 1;
-
-	  // Disable the I2C_IT_BUF interrupt after sending the last buffer data 
-	  // (last EV8) to not allow a new interrupt with TxE - only BTF will generate it
-	  I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
-	}
-      }
-      break;
-      
-#if 0
-    // TK: if address transmission is NAKed, we can get intermin events
-    //     they shouldn't terminate the transfer, otherwise the IIC peripheral can
-    //     get into an undefined state (e.g. NAK not detected on next transfer)
-    //     Therefore we just ignore them!
-    default:
-      // an unexpected event has triggered the interrupt
-      // we have to ensure, that the handler won't be invoked endless, therefore:
-      // disable interrupts
-      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-      // notify error
+  // SB set, cleared by reading SR1 (done by I2C_GetLastEvent) followed by writing DR register
+  if( event & I2C_FLAG_SB ){
+    // don't send address if stop was requested (WRITE_WITHOUT_STOP - mode, start condition was sent)
+    // we have to wait for the application to start the next transfer
+    if( iicx->transfer_state.STOP_REQUESTED ) {
+      // transfer finished
       iicx->transfer_state.BUSY = 0;
-      iicx->transfer_error = MIOS32_IIC_ERROR_UNEXPECTED_EVENT;
-      // do dummy read to send NAK + STOP condition
-      I2C_AcknowledgeConfig(iicx->base, DISABLE);
-      b = I2C_ReceiveData(iicx->base);
-      I2C_GenerateSTOP(iicx->base, ENABLE);
-#endif
+      // disable all interrupts
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      return;
+    } 
+    // send IIC address
+    I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
+      (iicx->iic_address & 1)
+	  ? I2C_Direction_Receiver
+	  : I2C_Direction_Transmitter);
+    return;
   }
-}
+
+  // ADDR set, TRA flag not set (indicates transmitter/receiver mode).
+  // ADDR will be cleared by a read of SR1 followed by a read of SR2 (done by I2C_GetLastEvent)
+  // If transmitter mode is selected (TRA set), we go on, TXE will be catched to send the first byte
+  if( (event & I2C_FLAG_ADDR) && !(event & I2C_FLAG_TRA) ){
+    // address sent (receiver mode), receiving first byte - check if we already have to request NAK/Stop
+    if( iicx->buffer_len == 1 ) {
+      // request NAK
+      I2C_AcknowledgeConfig(iicx->base, DISABLE);
+      // request stop condition
+      I2C_GenerateSTOP(iicx->base, ENABLE);
+      iicx->transfer_state.STOP_REQUESTED = 1;
+    }
+    return;
+  }
+
+  // RxNE set, will be cleared by reading/writing DR
+  // note: also BTF will be reset after a read of SR1 (TxE flag) followed by either read/write DR
+  // or a START or STOP condition generated
+  // failsave: really requested a receive transfer? If not, continue to check TXE flag, if not set,
+  // we'll end up in the unexpected event handler.
+  if( event & I2C_FLAG_RXNE && iicx->rx_buffer_ptr != NULL ){
+    // get received data
+    b = I2C_ReceiveData(iicx->base);
+
+    // failsave: still place in buffer?
+    if( iicx->buffer_ix < iicx->buffer_len )
+      iicx->rx_buffer_ptr[iicx->buffer_ix++] = b;
+
+    // last byte received, disable interrupts and return.
+    if( iicx->transfer_state.STOP_REQUESTED ) {
+      // transfer finished
+      iicx->transfer_state.BUSY = 0;
+      // disable all interrupts
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      return;
+    }
+ 
+    // request NAK and stop condition before receiving last data
+    if( (iicx->buffer_ix >= iicx->buffer_len-1) || (iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 && iicx->buffer_ix == 1 && b == 0x00) ) {
+      // request NAK
+      I2C_AcknowledgeConfig(iicx->base, DISABLE);
+      // request stop condition
+      I2C_GenerateSTOP(iicx->base, ENABLE);
+      iicx->transfer_state.STOP_REQUESTED = 1;
+    }
+    return;
+  }
+
+  // TxE set, will be cleared by writing DR, or after START or STOP was generated
+  // This handling also applies for BTF, as TXE will alway be set if BTF is.
+  // note: also BTF will be reset after a read of SR1 (TxE flag) followed by either read/write DR
+  // or a START or STOP condition generated
+  if( event & I2C_FLAG_TXE ){
+
+    // last byte already sent, disable interrupts and return.
+    if( iicx->transfer_state.STOP_REQUESTED ) {
+      // transfer finished
+      iicx->transfer_state.BUSY = 0;
+      // disable all interrupts
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      return;
+    }
+
+    if( iicx->buffer_ix < iicx->buffer_len ) {
+      // checking tx_buffer_ptr for NULL is a failsafe measure.
+      I2C_SendData(iicx->base, (iicx->tx_buffer_ptr == NULL) ? 0 : iicx->tx_buffer_ptr[iicx->buffer_ix++]);
+      return;
+    } 
+
+    // peripheral is transfering last byte, request stop condition /
+    // on write-without-stop transfer-type, request start condition instead
+    if( !iicx->transfer_state.WRITE_WITHOUT_STOP )
+      I2C_GenerateSTOP(iicx->base, ENABLE);
+    else
+      I2C_GenerateSTART(iicx->base, ENABLE);
+    iicx->transfer_state.STOP_REQUESTED = 1;
+
+    if( iicx->buffer_len == 0 ) {
+      // transfer finished
+      iicx->transfer_state.BUSY = 0;
+      // disable all interrupts
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+    } else {
+      // Disable the I2C_IT_BUF interrupt after sending the last buffer data 
+      // (last EV8) to not allow a new interrupt just with TxE - only BTF will generate it
+      // if this is not done, BUSY will be cleared before the transfer is finished
+      I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
+    }
+  return;
+  }
+
+  // this code is only reached if something got wrong, e.g. interrupt handler is called too late,
+  // the device reset itself. may also happen if a 400KHz device will be accessed with 1MHz IIC 
+  // clock speed (while testing, it was always event 0x00000000). we have to stop the transfer,
+  // else read/write of corrupt data may be the result.
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+  // notify error
+  MIOS32_IIC_unexpected_event = event;
+  iicx->transfer_error = MIOS32_IIC_ERROR_UNEXPECTED_EVENT;
+  iicx->transfer_state.BUSY = 0;
+  // do dummy read to send NAK + STOP condition
+  I2C_AcknowledgeConfig(iicx->base, DISABLE);
+  b = I2C_ReceiveData(iicx->base);
+  I2C_GenerateSTOP(iicx->base, ENABLE);
+  }
 
 
 
@@ -652,24 +641,27 @@ static void EV_IRQHandler(iic_rec_t *iicx)
 /////////////////////////////////////////////////////////////////////////////
 static void ER_IRQHandler(iic_rec_t *iicx)
 {
+  // Read SR1 and SR2 at the beginning (if not done so, flags may get lost)
+  u32 event = I2C_GetLastEvent(iicx->base);
+
   // note that only one error number is available
   // the order of these checks defines the priority
 
   // bus error (start/stop condition during read
   // unlikely, should only be relevant for slave mode?)
-  if( I2C_GetITStatus(iicx->base, I2C_IT_BERR) ) {
+  if( event & I2C_FLAG_BERR  ) {
     I2C_ClearITPendingBit(iicx->base, I2C_IT_BERR);
     iicx->transfer_error = MIOS32_IIC_ERROR_BUS;
   }
 
   // arbitration lost
-  if( I2C_GetITStatus(iicx->base, I2C_IT_ARLO) ) {
+  if( event & I2C_FLAG_ARLO ) {
     I2C_ClearITPendingBit(iicx->base, I2C_IT_ARLO);
     iicx->transfer_error = MIOS32_IIC_ERROR_ARBITRATION_LOST;
   }
 
   // no acknowledge received from slave (e.g. slave not connected)
-  if( I2C_GetITStatus(iicx->base, I2C_IT_AF) ) {
+  if( event & I2C_FLAG_AF ) {
     I2C_ClearITPendingBit(iicx->base, I2C_IT_AF);
     iicx->transfer_error = MIOS32_IIC_ERROR_SLAVE_NOT_CONNECTED;
     // send stop condition to release bus
