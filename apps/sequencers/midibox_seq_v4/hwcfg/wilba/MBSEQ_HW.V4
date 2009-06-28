@@ -187,6 +187,7 @@ LED_SELECT      0   0
 LED_MENU        0   0
 LED_SCRUB       0   0
 LED_METRONOME   0   0
+LED_RECORD      0   0
 LED_UTILITY     0   0
 LED_COPY        0   0
 LED_PASTE       0   0
@@ -225,6 +226,7 @@ BUTTON_RIGHT  0   0
 #                SR  Pin
 BUTTON_SCRUB     20   4
 BUTTON_METRONOME 20   5
+BUTTON_RECORD     0   0
 
 #             SR  Pin
 BUTTON_STOP   19   5

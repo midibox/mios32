@@ -572,6 +572,16 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Record(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  // change to utility page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_Utility(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
@@ -1139,6 +1149,9 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( pin == seq_hwcfg_button.metronome )
     return SEQ_UI_Button_Metronome(pin_value);
 
+  if( pin == seq_hwcfg_button.record )
+    return SEQ_UI_Button_Record(pin_value);
+
   if( pin == seq_hwcfg_button.stop )
     return SEQ_UI_Button_Stop(pin_value);
   if( pin == seq_hwcfg_button.pause )
@@ -1583,6 +1596,8 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
     SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
   }
+
+  SEQ_LED_PinSet(seq_hwcfg_led.record, ui_page == SEQ_UI_PAGE_TRKREC);
 
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
   SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
