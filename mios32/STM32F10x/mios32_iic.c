@@ -148,7 +148,7 @@ s32 MIOS32_IIC_Init(u32 mode)
   // configure IIC pins in open drain mode
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
@@ -509,39 +509,8 @@ static void EV_IRQHandler(iic_rec_t *iicx)
   // Read SR1 and SR2 at the beginning (if not done so, flags may get lost)
   u32 event = I2C_GetLastEvent(iicx->base);
 
-  // SB set, cleared by reading SR1 (done by I2C_GetLastEvent) followed by writing DR register
-  if( event & I2C_FLAG_SB ){
-    // don't send address if stop was requested (WRITE_WITHOUT_STOP - mode, start condition was sent)
-    // we have to wait for the application to start the next transfer
-    if( iicx->transfer_state.STOP_REQUESTED ) {
-      // transfer finished
-      iicx->transfer_state.BUSY = 0;
-      // disable all interrupts
-      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-      return;
-    } 
-    // send IIC address
-    I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
-      (iicx->iic_address & 1)
-	  ? I2C_Direction_Receiver
-	  : I2C_Direction_Transmitter);
-    return;
-  }
-
-  // ADDR set, TRA flag not set (indicates transmitter/receiver mode).
-  // ADDR will be cleared by a read of SR1 followed by a read of SR2 (done by I2C_GetLastEvent)
-  // If transmitter mode is selected (TRA set), we go on, TXE will be catched to send the first byte
-  if( (event & I2C_FLAG_ADDR) && !(event & I2C_FLAG_TRA) ){
-    // address sent (receiver mode), receiving first byte - check if we already have to request NAK/Stop
-    if( iicx->buffer_len == 1 ) {
-      // request NAK
-      I2C_AcknowledgeConfig(iicx->base, DISABLE);
-      // request stop condition
-      I2C_GenerateSTOP(iicx->base, ENABLE);
-      iicx->transfer_state.STOP_REQUESTED = 1;
-    }
-    return;
-  }
+  // The order of the handling blocks is chosen by test results @ 1MHZ
+  // don't change this order
 
   // RxNE set, will be cleared by reading/writing DR
   // note: also BTF will be reset after a read of SR1 (TxE flag) followed by either read/write DR
@@ -567,6 +536,21 @@ static void EV_IRQHandler(iic_rec_t *iicx)
  
     // request NAK and stop condition before receiving last data
     if( (iicx->buffer_ix >= iicx->buffer_len-1) || (iicx->transfer_state.ABORT_IF_FIRST_BYTE_0 && iicx->buffer_ix == 1 && b == 0x00) ) {
+      // request NAK
+      I2C_AcknowledgeConfig(iicx->base, DISABLE);
+      // request stop condition
+      I2C_GenerateSTOP(iicx->base, ENABLE);
+      iicx->transfer_state.STOP_REQUESTED = 1;
+    }
+    return;
+  }
+
+  // ADDR set, TRA flag not set (indicates transmitter/receiver mode).
+  // ADDR will be cleared by a read of SR1 followed by a read of SR2 (done by I2C_GetLastEvent)
+  // If transmitter mode is selected (TRA set), we go on, TXE will be catched to send the first byte
+  if( (event & I2C_FLAG_ADDR) && !(event & I2C_FLAG_TRA) ){
+    // address sent (receiver mode), receiving first byte - check if we already have to request NAK/Stop
+    if( iicx->buffer_len == 1 ) {
       // request NAK
       I2C_AcknowledgeConfig(iicx->base, DISABLE);
       // request stop condition
@@ -617,6 +601,25 @@ static void EV_IRQHandler(iic_rec_t *iicx)
       I2C_ITConfig(iicx->base, I2C_IT_BUF, DISABLE);
     }
   return;
+  }
+
+  // SB set, cleared by reading SR1 (done by I2C_GetLastEvent) followed by writing DR register
+  if( event & I2C_FLAG_SB ){
+    // don't send address if stop was requested (WRITE_WITHOUT_STOP - mode, start condition was sent)
+    // we have to wait for the application to start the next transfer
+    if( iicx->transfer_state.STOP_REQUESTED ) {
+      // transfer finished
+      iicx->transfer_state.BUSY = 0;
+      // disable all interrupts
+      I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+      return;
+    } 
+    // send IIC address
+    I2C_Send7bitAddress(iicx->base, iicx->iic_address, 
+      (iicx->iic_address & 1)
+	  ? I2C_Direction_Receiver
+	  : I2C_Direction_Transmitter);
+    return;
   }
 
   // this code is only reached if something got wrong, e.g. interrupt handler is called too late,
