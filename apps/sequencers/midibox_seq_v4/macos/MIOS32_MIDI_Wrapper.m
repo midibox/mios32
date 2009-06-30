@@ -13,14 +13,16 @@
 
 @implementation MIOS32_MIDI_Wrapper
 
-#define NUM_MIDI_IN 1
+#define NUM_MIDI_IN 4
 #define NUM_MIDI_OUT 4
 
 static u8 rx_buffer[NUM_MIDI_IN][MIOS32_UART_RX_BUFFER_SIZE];
 static volatile u16 rx_buffer_tail[NUM_MIDI_IN];
 static volatile u16 rx_buffer_head[NUM_MIDI_IN];
 static volatile u16 rx_buffer_size[NUM_MIDI_IN];
-static NSLock *rx_lock[NUM_MIDI_IN];
+
+static u8 tx_sysex_buffer[NUM_MIDI_OUT][MIOS32_UART_TX_BUFFER_SIZE];
+static u16 tx_sysex_buffer_ptr[NUM_MIDI_OUT];
 
 static NSObject *_self;
 
@@ -43,7 +45,6 @@ PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
 		[portName appendFormat:@"vMBSEQ IN%d", i+1];
 		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
 		[virtualMIDI_IN[i] addReceiver:self];
-		rx_lock[i] = [[NSLock alloc] init];
 	}
 
 	for(i=0; i<NUM_MIDI_OUT; ++i) {
@@ -74,13 +75,14 @@ s32 MIOS32_UART_Init(u32 mode)
   // clear buffer counters
   int i;
   for(i=0; i<NUM_MIDI_IN; ++i) {
-	  [rx_lock[i] lock];
+	  MIOS32_IRQ_Disable();
 	  rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
-	  [rx_lock[i] unlock];	  
+	  MIOS32_IRQ_Enable();
   }
 
   // no running status optimisation
   for(i=0; i<NUM_MIDI_OUT; ++i) {
+	  tx_sysex_buffer_ptr[i] = 0;
     MIOS32_UART_MIDI_RS_OptimisationSet(i, 0);
   }
 
@@ -110,12 +112,12 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  [rx_lock[uart] lock];
+  MIOS32_IRQ_Disable();
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
   if( ++rx_buffer_tail[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_tail[uart] = 0;
   --rx_buffer_size[uart];
-  [rx_lock[uart] unlock];
+  MIOS32_IRQ_Enable();
 
   return b; // return received byte
 #endif
@@ -141,9 +143,9 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
     return -2; // nothing new in buffer
 
   // get byte - this operation should be atomic!
-  [rx_lock[uart] lock];
+  MIOS32_IRQ_Disable();
   u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
-  [rx_lock[uart] unlock];
+  MIOS32_IRQ_Enable();
 
   return b; // return received byte
 #endif
@@ -171,12 +173,12 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 
   // copy received byte into receive buffer
   // this operation should be atomic!
-  [rx_lock[uart] lock];
+  MIOS32_IRQ_Disable();
   rx_buffer[uart][rx_buffer_head[uart]] = b;
   if( ++rx_buffer_head[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
     rx_buffer_head[uart] = 0;
   ++rx_buffer_size[uart];
-  [rx_lock[uart] unlock];
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 #endif
@@ -234,20 +236,66 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 #if MIOS32_UART_NUM == 0
   return -1; // no UART available
 #else
+  int i;
+	
   if( uart >= NUM_MIDI_OUT )
     return -1; // UART not available
 
-  	MIDIPacketList packetList;
-	MIDIPacket *packet = MIDIPacketListInit(&packetList);
+  MIOS32_IRQ_Disable(); // operation should be atomic
+	
+  // SysEx streams should be buffered to ensure atomic sends
+  if( buffer[0] == 0xf0 ) { // we know that F0 always located at beginning of buffer due to MIOS32 package format
+    tx_sysex_buffer_ptr[uart] = 0;
+	for(i=0; i<len; ++i)
+	  tx_sysex_buffer[uart][tx_sysex_buffer_ptr[uart]++] = buffer[i];
+	len = 0; // don't send buffer
+  } else if( tx_sysex_buffer_ptr[uart] && buffer[0] < 0xf8 ) {
+    u8 send_sysex = 0;
 
-	if( len ) {
+	if( (buffer[0] & 0x80) && buffer[0] != 0xf7 ) {
+	  send_sysex = 1; // SysEx hasn't been terminated with F7... however
+	  // send buffer, therefore don't zero len
+	} else {
+	  if( (tx_sysex_buffer_ptr[uart] + len) >= MIOS32_UART_TX_BUFFER_SIZE ) {
+	    // stream too long and cannot be sent completely - skip and don't return error state! (or should we split it into multiple sends?)
+		tx_sysex_buffer_ptr[uart] = 0;
+		len = 0; // don't send buffer
+	  } else {
+		for(i=0; i<len; ++i) {
+		  if( buffer[i] == 0xf7 )
+		    send_sysex = 1;
+		  tx_sysex_buffer[uart][tx_sysex_buffer_ptr[uart]++] = buffer[i];
+	    }
+		len = 0; // don't send buffer
+	  }
+	}
+	  
+    if( send_sysex ) {
+		MIDIPacketList packetList;
+		MIDIPacket *packet = MIDIPacketListInit(&packetList);
+		
 		packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet,
-			     0, // timestamp
-				 len, buffer);
+								   0, // timestamp
+								   tx_sysex_buffer_ptr[uart], (u8 *)&tx_sysex_buffer[uart]);
 		[virtualMIDI_OUT[uart] addSender:_self];
 		[virtualMIDI_OUT[uart] processMIDIPacketList:&packetList sender:_self];
 		[virtualMIDI_OUT[uart] removeSender:_self];		
 	}
+  }
+
+  MIDIPacketList packetList;
+  MIDIPacket *packet = MIDIPacketListInit(&packetList);
+
+  if( len ) {
+    packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet,
+							   0, // timestamp
+							   len, buffer);
+	[virtualMIDI_OUT[uart] addSender:_self];
+	[virtualMIDI_OUT[uart] processMIDIPacketList:&packetList sender:_self];
+	[virtualMIDI_OUT[uart] removeSender:_self];		
+  }
+
+  MIOS32_IRQ_Enable();
 	
 #if 0
   if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
@@ -310,35 +358,47 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
   return error;
 }
 
-- (void)handleMIDIMessage:(Byte*)message ofSize:(int)size
-{
-	int i;
 
-	for(i=0; i<size; ++i) {
-		if( MIOS32_MIDI_SendByteToRxCallback(UART0, message[i]) == 0 )
-			MIOS32_UART_RxBufferPut(0, message[i]); // TODO: multiple IN ports
-	}
-}
 
+/////////////////////////////////////////////////////////////////////////////
+// MIDI Event Receiver
+/////////////////////////////////////////////////////////////////////////////
 - (void)processMIDIPacketList:(const MIDIPacketList*)packets sender:(id)sender
 {
 	// from http://svn.notahat.com/simplesynth/trunk/AudioSystem.m
-    int						i, j;
+    int						i, j, k;
     const MIDIPacket*		packet;
     Byte					message[256];
     int						messageSize = 0;
-    
+    mios32_midi_port_t      port = DEFAULT;
+
+	for(i=0; i<NUM_MIDI_IN; ++i) {
+		if( sender == virtualMIDI_IN[i] ) {
+			port = UART0 + i;
+			break;
+		}
+	}
+
+	if( i == NUM_MIDI_IN ) {
+		DEBUG_MSG("[processMIDIPacketList] FATAL ERROR: unknown MIDI port!\n");
+		return;
+	}
+
     // Step through each packet
     packet = packets->packet;
     for (i = 0; i < packets->numPackets; i++) {
         for (j = 0; j < packet->length; j++) { 
 
-            if (packet->data[j] >= 0xF8) 
-                [self handleMIDIMessage:(Byte *)packet->data ofSize:1];
-			else {
+            if (packet->data[j] >= 0xF8) {
+				if( MIOS32_MIDI_SendByteToRxCallback(port, packet->data[j]) == 0 )
+					MIOS32_UART_RxBufferPut(port & 0x0f, packet->data[j]);
+			} else {
 				// Hand off the packet for processing when the next one starts
 				if ((packet->data[j] & 0x80) != 0 && (messageSize > 0 || packet->data[j] >= 0xf8) ) {
-					[self handleMIDIMessage:message ofSize:messageSize];
+					for(k=0; k<messageSize; ++k) {
+						if( MIOS32_MIDI_SendByteToRxCallback(port, message[k]) == 0 )
+							MIOS32_UART_RxBufferPut(port & 0x0f, message[k]);
+					}
 					messageSize = 0;
 				}
 				
@@ -349,8 +409,12 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
         packet = MIDIPacketNext (packet);
     }
     
-    if (messageSize > 0)
-        [self handleMIDIMessage:message ofSize:messageSize];
+    if (messageSize > 0) {
+		for(k=0; k<messageSize; ++k) {
+			if( MIOS32_MIDI_SendByteToRxCallback(port, message[k]) == 0 )
+				MIOS32_UART_RxBufferPut(port & 0x0f, message[k]);
+		}
+	}
 }
 
 @end

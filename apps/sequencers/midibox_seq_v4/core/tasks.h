@@ -19,11 +19,11 @@
 
 
 #ifndef MIOS32_FAMILY_EMULATION
-#include <FreeRTOS.h>
-#include <portmacro.h>
-#include <task.h>
-#include <queue.h>
-#include <semphr.h>
+# include <FreeRTOS.h>
+# include <portmacro.h>
+# include <task.h>
+# include <queue.h>
+# include <semphr.h>
 #endif
 
 
@@ -33,8 +33,10 @@
 
 // this mutex should be used by all tasks which are accessing the SD Card
 #ifdef MIOS32_FAMILY_EMULATION
-# define MUTEX_SDCARD_TAKE { }
-# define MUTEX_SDCARD_GIVE { }
+  extern void TASKS_SDCardSemaphoreTake(void);
+  extern void TASKS_SDCardSemaphoreGive(void);
+# define MUTEX_SDCARD_TAKE { TASKS_SDCardSemaphoreTake(); }
+# define MUTEX_SDCARD_GIVE { TASKS_SDCardSemaphoreGive(); }
 #else
   extern xSemaphoreHandle xSDCardSemaphore;
 # define MUTEX_SDCARD_TAKE { while( xSemaphoreTakeRecursive(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
@@ -44,8 +46,10 @@
 
 // MIDI IN handler
 #ifdef MIOS32_FAMILY_EMULATION
-# define MUTEX_MIDIIN_TAKE { }
-# define MUTEX_MIDIIN_GIVE { }
+  extern void TASKS_MIDIINSemaphoreTake(void);
+  extern void TASKS_MIDIINSemaphoreGive(void);
+# define MUTEX_MIDIIN_TAKE { TASKS_MIDIINSemaphoreTake(); }
+# define MUTEX_MIDIIN_GIVE { TASKS_MIDIINSemaphoreGive(); }
 #else
   extern xSemaphoreHandle xMIDIINSemaphore;
 # define MUTEX_MIDIIN_TAKE { while( xSemaphoreTakeRecursive(xMIDIINSemaphore, (portTickType)1) != pdTRUE ); }
@@ -55,8 +59,10 @@
 
 // MIDI OUT handler
 #ifdef MIOS32_FAMILY_EMULATION
-# define MUTEX_MIDIOUT_TAKE { }
-# define MUTEX_MIDIOUT_GIVE { }
+  extern void TASKS_MIDIOUTSemaphoreTake(void);
+  extern void TASKS_MIDIOUTSemaphoreGive(void);
+# define MUTEX_MIDIOUT_TAKE { TASKS_MIDIOUTSemaphoreTake(); }
+# define MUTEX_MIDIOUT_GIVE { TASKS_MIDIOUTSemaphoreGive(); }
 #else
   extern xSemaphoreHandle xMIDIOUTSemaphore;
 # define MUTEX_MIDIOUT_TAKE { while( xSemaphoreTakeRecursive(xMIDIOUTSemaphore, (portTickType)1) != pdTRUE ); }
@@ -66,8 +72,10 @@
 
 // LCD access
 #ifdef MIOS32_FAMILY_EMULATION
-# define MUTEX_LCD_TAKE { }
-# define MUTEX_LCD_GIVE { }
+  extern void TASKS_LCDSemaphoreTake(void);
+  extern void TASKS_LCDSemaphoreGive(void);
+# define MUTEX_LCD_TAKE { TASKS_LCDSemaphoreTake(); }
+# define MUTEX_LCD_GIVE { TASKS_LCDSemaphoreGive(); }
 #else
   extern xSemaphoreHandle xLCDSemaphore;
 # define MUTEX_LCD_TAKE { while( xSemaphoreTakeRecursive(xLCDSemaphore, (portTickType)1) != pdTRUE ); }

@@ -1316,8 +1316,6 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  s32 status = 0;
-
 #if 1
   // check for active remote mode
   if( seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_SERVER )
@@ -1355,7 +1353,7 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
     } break;
   }
 
-  return status;
+  return 1; // MIDI event has been taken for remote function -> don't forward to router/MIDI event parser
 }
 
 
