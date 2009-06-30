@@ -309,14 +309,11 @@ void SRIO_ServiceFinish(void)
 
 - (void)periodicSRIOTask:(NSTimer *)aTimer
 {
-	NSLock *theLock = [[NSLock alloc] init];
-
 	// notify application about SRIO scan start
-	[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 	APP_SRIO_ServicePrepare();
-	[theLock unlock];
 
 	// start next SRIO scan - IRQ notification to SRIO_ServiceFinish()
+	MIOS32_IRQ_Disable(); // since no IRQs with higher priority are emulated, we have to use a lock in the MIOS32 IRQ Wrapper
 	MIOS32_SRIO_ScanStart(SRIO_ServiceFinish);
 
 	// emulation: transfer new DOUT SR values to GUI LED elements
@@ -324,30 +321,25 @@ void SRIO_ServiceFinish(void)
 	for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr)
 		EMU_DOUT_SRSet(sr, mios32_srio_dout[MIOS32_SRIO_NUM_SR-sr-1]);
 
+	MIOS32_IRQ_Enable();
+
 #ifndef MIOS32_DONT_USE_DIN
 	// check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
-	[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 	MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
-	[theLock unlock];
 #endif
 }
 
 - (void)periodicMIDITask:(id)anObject
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSLock *theLock = [[NSLock alloc] init];
 
 	while (YES) {
 		// TODO: find better more FreeRTOS/MIOS32 compliant solution
 		// check for incoming MIDI messages and call hooks
-		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
-		[theLock unlock];
 
 		// -> forward to application
-		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		SEQ_TASK_MIDI();
-		[theLock unlock];
 	
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
     }
@@ -359,12 +351,9 @@ void SRIO_ServiceFinish(void)
 - (void)periodic1mSTask:(id)anObject
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSLock *theLock = [[NSLock alloc] init];
 	
 	while (YES) {		
-		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		SEQ_TASK_Period1mS();
-		[theLock unlock];
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
     }
 	
@@ -375,12 +364,9 @@ void SRIO_ServiceFinish(void)
 - (void)periodic1mSTask_LowPrio:(id)anObject
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSLock *theLock = [[NSLock alloc] init];
 	
 	while (YES) {		
-		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		SEQ_TASK_Period1mS_LowPrio();
-		[theLock unlock];
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
     }
 	
@@ -391,12 +377,9 @@ void SRIO_ServiceFinish(void)
 - (void)periodic1STask:(id)anObject
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSLock *theLock = [[NSLock alloc] init];
 
 	while (YES) {		
-		[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
 		SEQ_TASK_Period1S();
-		[theLock unlock];
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.000]];
     }
 	
@@ -423,14 +406,11 @@ static void TASK_Pattern(void *pvParameters)
 // use this function to resume the task
 void SEQ_TASK_PatternResume(void)
 {
-	NSLock *theLock = [[NSLock alloc] init];
 //    vTaskResume(xPatternHandle);
 
 	// MacOS: call task directly
 
-	[theLock lock]; // TMP solution so long there is no better way to emulate MIOS32_IRQ_Disable()
     SEQ_TASK_Pattern();
-	[theLock unlock];
 }
 
 

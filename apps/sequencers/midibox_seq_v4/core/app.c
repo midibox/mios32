@@ -144,9 +144,13 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 {
-  SEQ_MIDI_ROUTER_Receive(port, midi_package);
-  SEQ_MIDI_IN_Receive(port, midi_package);
-  SEQ_UI_REMOTE_MIDI_Receive(port, midi_package);
+  // returns > 0 if byte has been used for remote function
+  if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
+    // forward to router
+    SEQ_MIDI_ROUTER_Receive(port, midi_package);
+    // forward to transposer/arpeggiator/CC parser/etc...
+    SEQ_MIDI_IN_Receive(port, midi_package);
+  }
 }
 
 

@@ -160,14 +160,13 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 - (void)timerThread:(id)timerNumber
 {
 	int timer = [timerNumber intValue];
-	NSLock *theLock = [[NSLock alloc] init];
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	NSDate *now = [NSDate date];
 	while (YES) {
-		[theLock lock];
+		MIOS32_IRQ_Disable(); // normaly timer would run with higher priority than FreeRTOS tasks...
 		if( timer_callback[timer] != NULL )
 			timer_callback[timer]();
-		[theLock unlock];
+		MIOS32_IRQ_Enable();
 		
 		now = [now initWithTimeInterval:timer_period[timer] sinceDate:now];
         [NSThread sleepUntilDate:now];

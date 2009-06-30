@@ -282,7 +282,7 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 
 	    // set active mode (if this hasn't been done yet)
 	    if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_AUTO )
-	      seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER;
+	      seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_SERVER;
 
 	    break;
 
@@ -339,12 +339,16 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 		if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_AUTO || seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {
 		  sysex_state.REMOTE_CMD_VALID = 1;
 		  sysex_state.REMOTE_CMD_COMPLETE = 1;
-		  seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_CLIENT;
-		  seq_ui_remote_client_timeout_ctr = 0;
+
+		  if( seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_CLIENT ) {
+		    seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_CLIENT;
+		    SEQ_LCD_Clear();
+		    SEQ_LCD_CursorSet(0, 0);
+		    SEQ_LCD_PrintString("MBSEQ Remote Client activated.");
+		  }
+
 		  seq_ui_remote_active_port = port;
-		  SEQ_LCD_Clear();
-		  SEQ_LCD_CursorSet(0, 0);
-		  SEQ_LCD_PrintString("MBSEQ Remote Client activated.");
+		  seq_ui_remote_client_timeout_ctr = 0; // the only command which can cancel the timeout counter!
 		} else
 		  sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
 		break;
@@ -363,7 +367,6 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 	      sysex_state.REMOTE_LCD_Y = midi_in;
 	    } else {
 	      sysex_state.REMOTE_CMD_COMPLETE = 1;
-	      seq_ui_remote_client_timeout_ctr = 0; // client cancles timeout
 	      sysex_state.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
 	      if( sysex_state.REMOTE_LCD_X < 80 && sysex_state.REMOTE_LCD_Y < 2 ) {
 		SEQ_LCD_CursorSet(sysex_state.REMOTE_LCD_X, sysex_state.REMOTE_LCD_Y);
@@ -377,7 +380,6 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 	    if( sysex_state.REMOTE_CMD_COMPLETE )
 	      break;
 	    sysex_state.REMOTE_CMD_COMPLETE = 1;
-	    seq_ui_remote_client_timeout_ctr = 0; // client cancles timeout
 	    SEQ_LCD_InitSpecialChars(midi_in);
 	    break;
 
@@ -386,7 +388,6 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 	      sysex_state.REMOTE_LED_SR_CTR = midi_in;
 	    else {
 	      sysex_state.REMOTE_CMD_COMPLETE = 1;
-	      seq_ui_remote_client_timeout_ctr = 0; // client cancles timeout
 	      sysex_state.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
 	      if( sysex_state.REMOTE_LED_SR_CTR < (2*SEQ_LED_NUM_SR) ) {
 		u8 sr = sysex_state.REMOTE_LED_SR_CTR >> 1;
@@ -412,6 +413,11 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, SYSEX_REMOTE_CMD_INCOMPLETE);
       } else if( !sysex_state.REMOTE_NO_ACK )
 	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, sysex_state.REMOTE_CMD);
+
+      // Refresh has been received: send Client Mode request to clear timeout counter at the client side
+      if( sysex_state.REMOTE_CMD_VALID && sysex_state.REMOTE_CMD == sysex_state.REMOTE_CMD_COMPLETE && SYSEX_REMOTE_CMD_REFRESH ) {
+	SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_CLIENT);
+      }
   }
 
   return 0; // no error
