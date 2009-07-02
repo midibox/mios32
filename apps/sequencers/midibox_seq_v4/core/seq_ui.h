@@ -262,4 +262,6 @@ extern u16 seq_ui_remote_client_timeout_ctr;
 extern u8 seq_ui_remote_force_lcd_update;
 extern u8 seq_ui_remote_force_led_update;
 
+extern u8 seq_ui_backup_req;
+
 #endif /* _SEQ_UI_H */

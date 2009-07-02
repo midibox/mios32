@@ -21,13 +21,17 @@
 #include "seq_ui.h"
 #include "tasks.h"
 
+#include "seq_file.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           1
-#define ITEM_ENABLE            0
+#define NUM_OF_ITEMS           2
+#define ITEM_BACKUP            0
+#define ITEM_ENABLE_MSD        1
+#define ITEM_INFO              2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -39,7 +43,9 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_ENABLE: *gp_leds |= 0x0003; break;
+    case ITEM_BACKUP: *gp_leds |= 0x0003; break;
+    case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
+    case ITEM_INFO: *gp_leds |= 0x3000; break;
   }
 
   return 0; // no error
@@ -58,21 +64,30 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_ENABLE;
+      ui_selected_item = ITEM_BACKUP;
       break;
 
-    case SEQ_UI_ENCODER_GP3:
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
+      return -1; // not used (yet)
+
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = ITEM_ENABLE_MSD;
+      break;
+
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
+      return -1; // not used (yet)
+
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_INFO;
+      break;
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
       return -1; // not used (yet)
@@ -80,11 +95,31 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_ENABLE:
-      if( incrementer )
-	TASK_MSD_EnableSet((incrementer > 0) ? 1 : 0);
+    case ITEM_BACKUP: {
+      seq_ui_backup_req = 1; // backup handled by low-priority task in app.c
+      // messages print in seq_ui.c so long request is active
+      return 1;
+    };
+
+    case ITEM_ENABLE_MSD:
+      TASK_MSD_EnableSet((incrementer > 0) ? 1 : 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mass Storage via USB", (incrementer > 0) ? "enabled!" : "disabled!");
 
       return 1;
+
+    case ITEM_INFO: {
+      s32 status;
+
+      MUTEX_SDCARD_TAKE;
+      status = SEQ_FILE_PrintSDCardInfos();
+      MUTEX_SDCARD_GIVE;
+
+      if( status < 0 )
+	SEQ_UI_SDCardErrMsg(2000, status);
+      else
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Open MIOS Terminal", "to display Info!");
+      return 1;
+    }
   }
 
   return -1; // invalid or unsupported encoder
@@ -104,12 +139,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   // GP button selects preset
   if( button <= SEQ_UI_BUTTON_GP16 ) {
-    // GP1/2 toggles MSD enable/disable
-    if( button == SEQ_UI_BUTTON_GP1 || button == SEQ_UI_BUTTON_GP2 )
-      TASK_MSD_EnableSet(TASK_MSD_EnableGet() ^ 1);
+    s32 incrementer = 0;
+
+    // GP9/10 toggles MSD enable/disable
+    if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 )
+      incrementer = TASK_MSD_EnableGet() ? -1 : 1;
 
     // re-use encoder function
-    return Encoder_Handler(button, 0);
+    return Encoder_Handler(button, incrementer);
   }
 
   switch( button ) {
@@ -150,15 +187,17 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //   MSD USB 
-  //  disabled
+  //   Create                                  MSD USB           Send SD Info        
+  //   Backup                                 disabled           to Terminal         
 
-  //   MSD USB (UMRW)
-  //   enabled
+  //                                           MSD USB (UMRW)
+  //                                           enabled
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("  Create");
+  SEQ_LCD_PrintSpaces(32);
 
   SEQ_LCD_PrintString("  MSD USB ");
   if( TASK_MSD_EnableGet() == 1 ) {
@@ -168,25 +207,40 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintSpaces(6);
   }
-
-  SEQ_LCD_PrintSpaces(24 + 40);
+  SEQ_LCD_PrintString("    Send SD Info        ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
-
-  SEQ_LCD_PrintSpaces(1);
-  if( ui_selected_item == ITEM_ENABLE && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
+  } else {
+    SEQ_LCD_PrintString("  Backup");
+  }
+
+  SEQ_LCD_PrintSpaces(32);
+
+  ///////////////////////////////////////////////////////////////////////////
+
+  if( ui_selected_item == ITEM_ENABLE_MSD && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(14);
   } else {
     s32 status = TASK_MSD_EnableGet();
     switch( status ) {
-      case 0:  SEQ_LCD_PrintString("disabled     "); break;
-      case 1:  SEQ_LCD_PrintString(" enabled     "); break;
-      default: SEQ_LCD_PrintString("Not Emulated!"); break;
+      case 0:  SEQ_LCD_PrintString(" disabled     "); break;
+      case 1:  SEQ_LCD_PrintString("  enabled     "); break;
+      default: SEQ_LCD_PrintString(" Not Emulated!"); break;
     }
   }
+  SEQ_LCD_PrintSpaces(6);
 
-  SEQ_LCD_PrintSpaces(26 + 40);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_INFO && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(11);
+  } else {
+    SEQ_LCD_PrintString("to Terminal");
+  }
+  SEQ_LCD_PrintSpaces(9);
 
   return 0; // no error
 }

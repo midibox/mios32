@@ -487,6 +487,41 @@ void SEQ_TASK_Period1S(void)
     SEQ_UI_SDCardErrMsg(2000, status);
   }
 
+  // check for backup request
+  // this is running with low priority, so that LCD is updated in parallel!
+  if( seq_ui_backup_req ) {
+    // note: request should be cleared at the end of this process to avoid double-triggers!
+    status = SEQ_FILE_CreateBackup();
+      
+    if( status < 0 ) {
+      switch( status ) {
+        case SEQ_FILE_ERR_NO_BACKUP_DIR:
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create", "backup/ dirs!");
+	  break;
+
+        case SEQ_FILE_ERR_NO_BACKUP_SUBDIR:
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create", "backup/ subdirs!");
+	  break;
+
+        case SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS:
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create more", "backup/ subdirs!");
+	  break;
+
+        case SEQ_FILE_ERR_COPY:
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "COPY FAILED!", "ERROR :-(");
+	  break;
+
+        default:
+	  SEQ_UI_SDCardErrMsg(2000, status);
+      }
+    }
+    else
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Backup created", "successfully!");
+
+    // finally clear request
+    seq_ui_backup_req = 0;
+  }
+
   MUTEX_SDCARD_GIVE;
 
   // load content of SD card if requested ((re-)connection detected)

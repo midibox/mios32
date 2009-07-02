@@ -90,6 +90,8 @@ u16 seq_ui_remote_client_timeout_ctr;
 u8 seq_ui_remote_force_lcd_update;
 u8 seq_ui_remote_force_led_update;
 
+u8 seq_ui_backup_req;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -154,6 +156,9 @@ s32 SEQ_UI_Init(u32 mode)
   seq_ui_remote_client_timeout_ctr = 0;
   seq_ui_remote_force_lcd_update = 0;
   seq_ui_remote_force_led_update = 0;
+
+  // misc
+  seq_ui_backup_req = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -1094,6 +1099,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
+  // ignore during a backup is created
+  if( seq_ui_backup_req )
+    return -1;
+
   // ensure that selections are matching with track constraints
   SEQ_UI_CheckSelections();
 
@@ -1241,6 +1250,10 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
+  // ignore during a backup is created
+  if( seq_ui_backup_req )
+    return -1;
+
   if( row >= SEQ_CORE_NUM_TRACKS_PER_GROUP )
     return -1; // more than 4 tracks not supported (yet) - could be done in this function w/o much effort
 
@@ -1272,6 +1285,10 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
+  // ignore during a backup is created
+  if( seq_ui_backup_req )
     return -1;
 
   if( encoder > 16 )
@@ -1397,6 +1414,15 @@ s32 SEQ_UI_LCD_Handler(void)
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
     // TODO: print nice animation
+  } else if( seq_ui_backup_req ) {
+    SEQ_LCD_Clear();
+    SEQ_LCD_CursorSet(0, 0);
+    //                   <-------------------------------------->
+    //                   0123456789012345678901234567890123456789
+    SEQ_LCD_PrintString("Creating Backup of Files - be patient!!!");
+    SEQ_LCD_CursorSet(0, 1);
+    if( seq_file_backup_notification != NULL )
+      SEQ_LCD_PrintFormattedString("Creating '%s'", seq_file_backup_notification);
   } else if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
     SEQ_LCD_CursorSet(0, 0);
     //                   <-------------------------------------->

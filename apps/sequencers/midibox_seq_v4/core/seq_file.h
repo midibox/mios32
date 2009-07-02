@@ -22,18 +22,24 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // error codes
-#define SEQ_FILE_ERR_SD_CARD        -1 // failed to access SD card
-#define SEQ_FILE_ERR_NO_PARTITION   -2 // DFS_GetPtnStart failed to find partition
-#define SEQ_FILE_ERR_NO_VOLUME      -3 // DFS_GetVolInfo failed to find volume information
-#define SEQ_FILE_ERR_UNKNOWN_FS     -4 // unknown filesystem (only FAT12/16/32 supported)
-#define SEQ_FILE_ERR_OPEN_READ      -5 // DFS_OpenFile(..DFS_READ..) failed, e.g. file not found
-#define SEQ_FILE_ERR_READ           -6 // DFS_ReadFile failed
-#define SEQ_FILE_ERR_READCOUNT      -7 // less bytes read than expected
-#define SEQ_FILE_ERR_WRITE_MALLOC   -8 // SEQ_FILE_WriteOpen failed to allocate memory for write buffer
-#define SEQ_FILE_ERR_OPEN_WRITE     -9 // DFS_OpenFile(..DFS_WRITE..) failed
-#define SEQ_FILE_ERR_WRITE         -10 // DFS_WriteFile failed
-#define SEQ_FILE_ERR_WRITECOUNT    -11 // less bytes written than expected
-#define SEQ_FILE_ERR_SEEK          -12 // SEQ_FILE_Seek() failed
+#define SEQ_FILE_ERR_SD_CARD           -1 // failed to access SD card
+#define SEQ_FILE_ERR_NO_PARTITION      -2 // DFS_GetPtnStart failed to find partition
+#define SEQ_FILE_ERR_NO_VOLUME         -3 // DFS_GetVolInfo failed to find volume information
+#define SEQ_FILE_ERR_UNKNOWN_FS        -4 // unknown filesystem (only FAT12/16/32 supported)
+#define SEQ_FILE_ERR_OPEN_READ         -5 // DFS_OpenFile(..DFS_READ..) failed, e.g. file not found
+#define SEQ_FILE_ERR_READ              -6 // DFS_ReadFile failed
+#define SEQ_FILE_ERR_READCOUNT         -7 // less bytes read than expected
+#define SEQ_FILE_ERR_WRITE_MALLOC      -8 // SEQ_FILE_WriteOpen failed to allocate memory for write buffer
+#define SEQ_FILE_ERR_OPEN_WRITE        -9 // DFS_OpenFile(..DFS_WRITE..) failed
+#define SEQ_FILE_ERR_WRITE            -10 // DFS_WriteFile failed
+#define SEQ_FILE_ERR_WRITECOUNT       -11 // less bytes written than expected
+#define SEQ_FILE_ERR_SEEK             -12 // SEQ_FILE_Seek() failed
+#define SEQ_FILE_ERR_OPEN_DIR         -13 // DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found
+#define SEQ_FILE_ERR_NO_BACKUP_DIR    -14 // SEQ_FILE_CreateBackup() failed because of missing backup directory
+#define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -15 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
+#define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -16 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
+#define SEQ_FILE_ERR_COPY             -17 // SEQ_FILE_Copy() failed
+
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
@@ -107,6 +113,7 @@ extern s32 SEQ_FILE_ReadLine(PFILEINFO fileinfo, u8 *buffer, u32 max_len);
 extern s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte);
 extern s32 SEQ_FILE_ReadHWord(PFILEINFO fileinfo, u16 *hword);
 extern s32 SEQ_FILE_ReadWord(PFILEINFO fileinfo, u32 *word);
+extern s32 SEQ_FILE_ReadClose(PFILEINFO fileinfo);
 
 extern s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create);
 extern s32 SEQ_FILE_WriteBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
@@ -117,6 +124,11 @@ extern s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo);
 
 extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
 
+extern s32 SEQ_FILE_PrintSDCardInfos(void);
+
+extern s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer);
+extern s32 SEQ_FILE_CreateBackup(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
@@ -126,5 +138,6 @@ extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
 // can be used as additional debugging help if SEQ_FILE_*ERR returned by function
 extern u32 seq_file_dfs_errno;
 
+extern char *seq_file_backup_notification;
 
 #endif /* _SEQ_FILE_H */
