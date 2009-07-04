@@ -81,7 +81,7 @@ extern s32 MIOS32_IIC_Init(u32 mode);
 extern s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type);
 extern s32 MIOS32_IIC_TransferFinished(u8 iic_port);
 
-extern s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len);
+extern s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u16 len);
 extern s32 MIOS32_IIC_TransferCheck(u8 iic_port);
 extern s32 MIOS32_IIC_TransferWait(u8 iic_port);
 
