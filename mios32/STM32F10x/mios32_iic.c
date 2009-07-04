@@ -224,8 +224,10 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
       // set I2C clock bus clock params
+      // note that the STM32 driver handles value <= 100kHz differently! (duty cycle always 1:1)
+      // important: bus frequencies > 400kHz don't work stable
       I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC0_DUTYCYCLE;
-      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
+      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY;
 
       break;
 
@@ -238,8 +240,10 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
       
       // set I2C clock bus clock params
+      // note that the STM32 driver handles value <= 100kHz differently! (duty cycle always 1:1)
+      // important: bus frequencies > 400kHz don't work stable
       I2C_InitStructure.I2C_DutyCycle = MIOS32_IIC1_DUTYCYCLE;
-      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; // note that the STM32 driver handles value >400000 differently!
+      I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC1_BUS_FREQUENCY; 
 
       break;
 #endif
