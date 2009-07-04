@@ -40,17 +40,20 @@ volatile static s32 transfer_status;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the FRAM module (IIC & GPIO pins)
-// IN: -
+// IN: mode - currently only 0 supported
 // OUT: 0: success; -1 error (IIC initialization failed)
+//                  -2 mode not supported
 /////////////////////////////////////////////////////////////////////////////
-s32 FRAM_Init(void){
+s32 FRAM_Init(u8 mode){
+  if( mode > 0)
+    return -2;
   // initialize multiplex port
 #if FRAM_MULTIPLEX_ENABLE==1
   // prepare structure
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
   // configure pins
   GPIO_InitStructure.GPIO_Pin = FRAM_MULTIPLEX_PIN_MSB;
   GPIO_Init(FRAM_MULTIPLEX_PORT_MSB, &GPIO_InitStructure);
@@ -84,7 +87,7 @@ s32 FRAM_CheckAvailable(u8 device_addr){
 // OUT: 0 on success, < 0 on errors
 //      (see README for error codes)
 /////////////////////////////////////////////////////////////////////////////
-s32 FRAM_Read(u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len){
+s32 FRAM_Read(u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len){
   u32 res;
   if( FRAM_SemaphoreEnter(0) != 0 )
     return FRAM_ERROR_DEVICE_BLOCKED;
@@ -103,7 +106,7 @@ s32 FRAM_Read(u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len){
 // OUT: 0 on success, < 0 on errors
 //      (see README for error codes)
 /////////////////////////////////////////////////////////////////////////////
-s32 FRAM_Write(u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len){
+s32 FRAM_Write(u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len){
   u32 res;
   if( FRAM_SemaphoreEnter(0) != 0 )
     return FRAM_ERROR_DEVICE_BLOCKED;
@@ -175,7 +178,7 @@ void FRAM_SemaphoreLeave(void){
 //     returned, use FRAM_TransferWaitCheck()
 //     (see README for error codes)
 /////////////////////////////////////////////////////////////////////////////
-s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len){
+s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len){
   s32 res;
   u8 ext_buf[4];
   // wait for last transfer (blocking)
@@ -185,7 +188,7 @@ s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u
   GPIO_WriteBit(FRAM_MULTIPLEX_PORT_MSB, FRAM_MULTIPLEX_PIN_MSB, (device_addr & 0x10) ? Bit_SET : Bit_RESET);
   GPIO_WriteBit(FRAM_MULTIPLEX_PORT_LSB, FRAM_MULTIPLEX_PIN_LSB, (device_addr & 0x08) ? Bit_SET : Bit_RESET);
 #endif
-  device_addr = ( (device_addr << 1) & 0x0F ) | FRAM_SLAVEID_MASK;
+  device_addr = FRAM_SLAVEID_MASK + (device_addr << 1);
   // swap mem-address top big-endian, write to extension buffer
   ext_buf[1] = (u8)(mem_addr);
   ext_buf[0] = (u8)(mem_addr >> 8);
