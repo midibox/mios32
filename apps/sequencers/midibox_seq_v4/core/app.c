@@ -338,7 +338,7 @@ void SEQ_TASK_Period1S(void)
   u8 load_sd_content = 0;
 
   // don't check for SD Card if MSD enabled
-  if( TASK_MSD_EnableGet() )
+  if( TASK_MSD_EnableGet() > 0 )
     return;
 
   // check if SD Card connected

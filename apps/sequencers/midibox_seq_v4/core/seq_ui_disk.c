@@ -143,7 +143,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     // GP9/10 toggles MSD enable/disable
     if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 )
-      incrementer = TASK_MSD_EnableGet() ? -1 : 1;
+      incrementer = (TASK_MSD_EnableGet() > 0) ? -1 : 1;
 
     // re-use encoder function
     return Encoder_Handler(button, incrementer);

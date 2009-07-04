@@ -43,7 +43,7 @@
 
 // Note: verbose level 1 is default - it prints error messages
 // and useful info messages during backups
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -925,7 +925,7 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_Copy] %s doesn't exist!\n", src_file);
 #endif
-    status = SEQ_FILE_ERR_COPY;
+    status = SEQ_FILE_ERR_COPY_NO_FILE;
   } else {
     // delete destination file if it already exists - ignore errors
     DFS_UnlinkFile(&vi, dst_file, sector);
@@ -935,6 +935,7 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
       DEBUG_MSG("[SEQ_FILE_Copy] wasn't able to create %s - exit!\n", dst_file);
 #endif
       status = SEQ_FILE_ERR_COPY;
+      DFS_Close(&fi_src);
     }
   }
 
@@ -974,10 +975,10 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_Copy] Finished copy operation (%d bytes)!\n", num_bytes);
 #endif
-  }
 
-  DFS_Close(&fi_src);
-  DFS_Close(&fi_dst);
+    DFS_Close(&fi_src);
+    DFS_Close(&fi_dst);
+  }
 
   return status;
 }
@@ -1051,6 +1052,7 @@ s32 SEQ_FILE_CreateBackup(void)
 	  sprintf(filepath, "%s%s/%s", SEQ_FILE_BACKUP_PATH, file_name, name); \
 	  seq_file_backup_notification = filepath; \
 	  status = SEQ_FILE_Copy(name, filepath, write_buffer); \
+	  if( status == SEQ_FILE_ERR_COPY_NO_FILE ) status = 0; \
 	  ++seq_file_backup_file;				\
 	  seq_file_backup_percentage = (u8)(((u32)100 * (u32)seq_file_backup_file) / seq_file_backup_files); \
 	}

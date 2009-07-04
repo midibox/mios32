@@ -39,7 +39,7 @@
 #define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -15 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
 #define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -16 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
 #define SEQ_FILE_ERR_COPY             -17 // SEQ_FILE_Copy() failed
-
+#define SEQ_FILE_ERR_COPY_NO_FILE     -18 // source file doesn't exist
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
