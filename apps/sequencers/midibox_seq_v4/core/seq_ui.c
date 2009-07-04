@@ -1551,7 +1551,7 @@ s32 SEQ_UI_LCD_Update(void)
 
   // MSD USB notification at right corner if not in Disk page
   // to warn user that USB MIDI is disabled and seq performance is bad now!
-  if( TASK_MSD_EnableGet() && ui_page != SEQ_UI_PAGE_DISK ) {
+  if( (TASK_MSD_EnableGet() > 0) && ui_page != SEQ_UI_PAGE_DISK ) {
     SEQ_LCD_CursorSet(80-11, 0);
     if( ui_cursor_flash ) SEQ_LCD_PrintSpaces(13); else SEQ_LCD_PrintString(" [MSD USB] ");
     SEQ_LCD_CursorSet(80-11, 1);

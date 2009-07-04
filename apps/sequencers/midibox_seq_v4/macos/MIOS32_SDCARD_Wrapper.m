@@ -170,4 +170,31 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 }
 
 
+////////////////////////////////////////////////////////////////////////////
+//! Reads the CID informations from SD Card
+//! \param[in] *cid pointer to buffer which holds the CID informations
+//! \return 0 if the informations haven been successfully read
+//! \return -error if error occured during read operation
+//! \return -256 if timeout during command has been sent
+//! \return -257 if timeout while waiting for start token
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
+{
+	return -1; // not supported
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Reads the CSD informations from SD Card
+//! \param[in] *csd pointer to buffer which holds the CSD informations
+//! \return 0 if the informations haven been successfully read
+//! \return -error if error occured during read operation
+//! \return -256 if timeout during command has been sent
+//! \return -257 if timeout while waiting for start token
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
+{
+	return -1; // not supported
+}
+
 @end
