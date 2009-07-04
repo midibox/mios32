@@ -629,8 +629,7 @@ static void EV_IRQHandler(iic_rec_t *iicx)
   }
 
   // this code is only reached if something got wrong, e.g. interrupt handler is called too late,
-  // the device reset itself. may also happen if a 400KHz device will be accessed with 1MHz IIC 
-  // clock speed (while testing, it was always event 0x00000000). we have to stop the transfer,
+  // the device reset itself (while testing, it was always event 0x00000000). we have to stop the transfer,
   // else read/write of corrupt data may be the result.
   I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
   // notify error
