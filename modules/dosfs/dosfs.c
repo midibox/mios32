@@ -634,14 +634,27 @@ uint32_t DFS_GetNext(PVOLINFO volinfo, PDIRINFO dirinfo, PDIRENT dirent)
 
 	if (dirent->name[0] == 0) {		// no more files in this directory
 		// If this is a "find blank" then we can reuse this name.
-		if (dirinfo->flags & DFS_DI_BLANKENT)
+#if 0
+	        if (dirinfo->flags & DFS_DI_BLANKENT)
 			return DFS_OK;
+#else
+		// TK: DFS_GetFreeDirEnt() expects that currententry has been incremented by 1
+	        if (dirinfo->flags & DFS_DI_BLANKENT) {
+		  dirinfo->currententry++;
+		  return DFS_OK;
+		}
+#endif
 		else
 			return DFS_EOF;
 	}
 
 	if (dirent->name[0] == 0xe5)	// handle deleted file entries
 		dirent->name[0] = 0;
+#if 1
+	// TK: ensure that DFS_GetFreeDirEnt() doesn't return entries with long name
+	else if( dirinfo->flags & DFS_DI_BLANKENT )
+	  {} // do nothing..
+#endif
 	else if ((dirent->attr & ATTR_LONG_NAME) == ATTR_LONG_NAME)
 		dirent->name[0] = 0;
 	else if (dirent->name[0] == 0x05)	// handle kanji filenames beginning with 0xE5

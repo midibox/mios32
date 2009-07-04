@@ -41,3 +41,7 @@ TK 2009-02-12
 added dummy "DFS_Close" function
 It has no effect if writing to SD Card, it's only used by the DosFS wrapper 
 in emulation
+
+TK 2009-07-04
+fixed bug in DFS_GetNext() in conjunction with the DFS_GetFreeDirEnt() function
+New files where not added correctly to subdirectories
