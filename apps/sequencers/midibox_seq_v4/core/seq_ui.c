@@ -1405,24 +1405,43 @@ s32 SEQ_UI_LCD_Handler(void)
   // print boot screen so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() ) {
     SEQ_LCD_Clear();
+
     SEQ_LCD_CursorSet(0, 0);
     //                   <-------------------------------------->
     //                   0123456789012345678901234567890123456789
     SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
-    SEQ_LCD_CursorSet(40, 0);
-    SEQ_LCD_PrintString("Searching for SD Card...");
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
+      
+    SEQ_LCD_CursorSet(40, 0);
+    SEQ_LCD_PrintString("Searching for SD Card...");
     // TODO: print nice animation
   } else if( seq_ui_backup_req ) {
     SEQ_LCD_Clear();
     SEQ_LCD_CursorSet(0, 0);
     //                   <-------------------------------------->
     //                   0123456789012345678901234567890123456789
-    SEQ_LCD_PrintString("Creating Backup of Files - be patient!!!");
-    SEQ_LCD_CursorSet(0, 1);
-    if( seq_file_backup_notification != NULL )
+    SEQ_LCD_PrintString("Creating File Backup - be patient!!!");
+
+    if( seq_file_backup_notification != NULL ) {
+      int i;
+
+      SEQ_LCD_CursorSet(0, 1);
       SEQ_LCD_PrintFormattedString("Creating '%s'", seq_file_backup_notification);
+
+      SEQ_LCD_CursorSet(40+3, 0);
+      SEQ_LCD_PrintString("Total: [");
+      for(i=0; i<20; ++i)
+	SEQ_LCD_PrintChar((i>(seq_file_backup_percentage/5)) ? ' ' : '#');
+      SEQ_LCD_PrintFormattedString("] %3d%%", seq_file_backup_percentage);
+
+      SEQ_LCD_CursorSet(40+3, 1);
+      SEQ_LCD_PrintString("File:  [");
+      for(i=0; i<20; ++i)
+	SEQ_LCD_PrintChar((i>(seq_file_copy_percentage/5)) ? ' ' : '#');
+      SEQ_LCD_PrintFormattedString("] %3d%%", seq_file_copy_percentage);
+    }
+
   } else if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
     SEQ_LCD_CursorSet(0, 0);
     //                   <-------------------------------------->
@@ -1530,6 +1549,16 @@ s32 SEQ_UI_LCD_Update(void)
     }
   }
 
+  // MSD USB notification at right corner if not in Disk page
+  // to warn user that USB MIDI is disabled and seq performance is bad now!
+  if( TASK_MSD_EnableGet() && ui_page != SEQ_UI_PAGE_DISK ) {
+    SEQ_LCD_CursorSet(80-11, 0);
+    if( ui_cursor_flash ) SEQ_LCD_PrintSpaces(13); else SEQ_LCD_PrintString(" [MSD USB] ");
+    SEQ_LCD_CursorSet(80-11, 1);
+    char str[5];
+    TASK_MSD_FlagStrGet(str);
+    if( ui_cursor_flash ) SEQ_LCD_PrintSpaces(13); else SEQ_LCD_PrintFormattedString(" [ %s  ] ", str);
+  }
 
   // transfer all changed characters to LCD
   // SEQ_LCD_Update provides a MUTEX handling to allow updates from different tasks
