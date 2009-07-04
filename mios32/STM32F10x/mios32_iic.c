@@ -107,8 +107,8 @@ typedef struct {
   u8 iic_address;
   u8 *tx_buffer_ptr;
   u8 *rx_buffer_ptr;
-  volatile u8 buffer_len;
-  volatile u8 buffer_ix;
+  volatile u16 buffer_len;
+  volatile u16 buffer_ix;
 
   volatile transfer_state_t transfer_state;
   volatile s32 transfer_error;
@@ -379,7 +379,7 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 {
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   u32 repeat_ctr = MIOS32_IIC_TIMEOUT_VALUE;
-  u8 last_buffer_ix = iicx->buffer_ix;
+  u16 last_buffer_ix = iicx->buffer_ix;
 
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
@@ -439,7 +439,7 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 //! \note Note that the semaphore will be released automatically after an error
 //! (MIOS32_IIC_TransferBegin() has to be called again)
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u8 len)
+s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u16 len)
 {
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   s32 error;
