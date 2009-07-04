@@ -14,7 +14,7 @@ Required tools:
 
 Required hardware:
    o MBHP_CORE_STM32 or STM32 Primer
-   o 1 - 8 Banksticks
+   o 1 - 8 Banksticks / 1 - 16 FM24Cxxx devices
 
 Optional hardware:
    o LC Display
@@ -24,7 +24,7 @@ Optional hardware:
 
 IMPORTANT NOTE: RUNING THIS APPLICATION WILL DESTROY ALL DATA ON YOUR BANKSTICKS!!!
 
-The application writes 64 byte blocks to connected banksticks, the bytes of 
+The application writes data blocks to connected banksticks or FRAM devices, the bytes of 
 a block are calculated by following formula, where bs is the bankstick number, 
 block is the block number and i is the byte offset in the block:
 
@@ -48,23 +48,38 @@ All configuration values showed here are default values
 
 Bankssticks have to be enabled in mios32_config.h:
 
-// enable banksticks. must be equal or more than BS_CHECK_NUM_BS (app.h)
+// enable banksticks. must be equal or more than BS_CHECK_NUM_DEVICES (app.h)
+// will be ignored if BS_CHECK_USE_FRAM_LAYER is set
 #define MIOS32_IIC_BS_NUM 1
 
-The size of the connected banksticks, the number of banksticks the application
+The size of the connected devices, the number of devices the application
 should scan, and the number of test-runs has to be configured in app.h:
 
-// define the number of banksticks you want to check (1 - 8)
-#define BS_CHECK_NUM_BS 1
+// define the number of devices you want to check (1 - 8 for banksticks)
+#define BS_CHECK_NUM_DEVICES 1
 
-// define the number of 64-byte blocks per bankstick
-// 24LC512: 1014
+// data block size (max. 64 if BS_CHECK_USE_FRAM_LAYER==0)
+#define BS_CHECK_DATA_BLOCKSIZE 64
+
+// define the number of blocks per device
+// each block is 64 bytes (or BS_CHECK_FRAM_BLOCKSIZE if BS_CHECK_USE_FRAM_LAYER != 0)
+// 24LC512: 1024
 // 24LC256: 512
-#define BS_CHECK_NUM_BLOCKS_PER_BS 1024
+#define BS_CHECK_NUM_BLOCKS_PER_DEVICE 1024
 
 // define the number of test-runs you want the application to go through.
 // can be used to test IIC stability.
 #define BS_CHECK_NUM_RUNS 3
+
+
+Use the FRAM - module instead of the bankstick-layer:
+
+// instead of the bankstick layer, the FRAM-layer (module) can be used
+// ( FM24Cxxx devices). This enables to address up to 32 devices if
+// the multiplex-option of the FRAM module is used.
+#define BS_CHECK_USE_FRAM_LAYER 0
+
+
 
 
 ===============================================================================

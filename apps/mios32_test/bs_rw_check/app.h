@@ -18,17 +18,26 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// define the number of banksticks you want to check (1 - 8)
-#define BS_CHECK_NUM_BS 1
+// define the number of banksticks / FRAM devices you want to check (1 - 8)
+#define BS_CHECK_NUM_DEVICES 4
 
-// define the number of 64-byte blocks per bankstick
-// 24LC512: 1014
-// 24LC256: 512
-#define BS_CHECK_NUM_BLOCKS_PER_BS 1024
+// data block size (max. 64 if BS_CHECK_USE_FRAM_LAYER==0)
+#define BS_CHECK_DATA_BLOCKSIZE 64
+
+// define the number of blocks per device
+// 24LC512: 1024 (x64)
+// 24LC256: 512 (x64)
+#define BS_CHECK_NUM_BLOCKS_PER_DEVICE 1024
 
 // define the number of test-runs you want the application to go through.
 // can be used to test IIC stability.
-#define BS_CHECK_NUM_RUNS 3
+#define BS_CHECK_NUM_RUNS 1000
+
+// instead of the bankstick layer, the FRAM-layer (module) can be used
+// ( FM24Cxxx devices). This enables to address up to 32 devices if
+// the multiplex-option of the FRAM module is used.
+#define BS_CHECK_USE_FRAM_LAYER 0
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
