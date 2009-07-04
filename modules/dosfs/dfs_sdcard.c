@@ -14,10 +14,23 @@
 #include <sys/types.h>
 #include "dosfs.h"
 
+/////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+/////////////////////////////////////////////////////////////////////////////
+
+// Note: verbose level 1 is default - it prints error messages
+// and useful info messages during backups
+#define DEBUG_VERBOSE_LEVEL 1
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
 // for caching - this feature has to be explicitely enabled, as it isn't reentrant
 // and requires to use the same buffer pointer whenever reading a file.
-uint32_t last_sector;
-u8 caching_enabled   = 0;
+static uint32_t last_sector;
+static u8 caching_enabled   = 0;
 
 void DFS_CachingEnabledSet(uint8_t enable)
 {
@@ -77,16 +90,13 @@ uint32_t DFS_ReadSector(uint8_t unit, uint8_t *buffer, uint32_t sector, uint32_t
 
   last_sector = sector;
 
-  // forward to MIOS, reconnect to SD Card if required
+  // forward to MIOS
   s32 status;
   if( (status=MIOS32_SDCARD_SectorRead(sector, buffer)) < 0 ) {
-    // try re-connection
-    if( (status=MIOS32_SDCARD_PowerOn()) >= 0 ) {
-      status=MIOS32_SDCARD_SectorRead(sector, buffer);
-    }
-
-    if( status < 0 )
-      return 3; // cannot access SD Card
+#if DEBUG_VERBOSE_LEVEL >= 1
+    MIOS32_MIDI_SendDebugMessage("[DFS_ReadSector] Error during reading sector %u, status %d\n", sector, status);
+#endif
+    return 3; // cannot access SD Card
   }
 
   // success
@@ -107,20 +117,16 @@ uint32_t DFS_WriteSector(uint8_t unit, uint8_t *buffer, uint32_t sector, uint32_
   if( count != 1 )
     return 2;
 
-  // invalidate cache if same sector is written
-  if( last_sector == sector )
-    last_sector = 0xffffffff;
+  // invalidate cache
+  last_sector = 0xffffffff;
 
-  // forward to MIOS, reconnect to SD Card if required
+  // forward to MIOS
   s32 status;
   if( (status=MIOS32_SDCARD_SectorWrite(sector, buffer)) < 0 ) {
-    // try re-connection
-    if( (status=MIOS32_SDCARD_PowerOn()) >= 0 ) {
-      status=MIOS32_SDCARD_SectorWrite(sector, buffer);
-    }
-
-    if( status < 0 )
-      return 3; // cannot access SD Card
+#if DEBUG_VERBOSE_LEVEL >= 1
+    MIOS32_MIDI_SendDebugMessage("[DFS_WriteSector] Error during writing sector %u, status %d\n", sector, status);
+#endif
+    return 3; // cannot access SD Card
   }
 
   // success
