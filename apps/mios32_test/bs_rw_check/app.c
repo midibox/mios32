@@ -20,6 +20,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
+#include <fram.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -27,13 +28,24 @@
 
 #define PRIORITY_TASK_DISPLAY  ( tskIDLE_PRIORITY + 1 )
 
-#ifndef BS_CHECK_NUM_BS
-#define BS_CHECK_NUM_BS 5
+#ifndef BS_CHECK_NUM_DEVICES
+#define BS_CHECK_NUM_DEVICES 5
 #endif
 
-// each block is 64 bytes
-#ifndef BS_CHECK_NUM_BLOCKS_PER_BS
-#define BS_CHECK_NUM_BLOCKS_PER_BS 1024
+// data block size (max. 64 if BS_CHECK_USE_FRAM_LAYER==0)
+#ifndef BS_CHECK_DATA_BLOCKSIZE
+#define BS_CHECK_DATA_BLOCKSIZE 64
+#endif
+
+
+// data blocks per device
+#ifndef BS_CHECK_NUM_BLOCKS_PER_DEVICE
+#define BS_CHECK_NUM_BLOCKS_PER_DEVICE 1024
+#endif
+
+// fram layer usage
+#ifndef BS_CHECK_USE_FRAM_LAYER
+#define BS_CHECK_USE_FRAM_LAYER 0
 #endif
 
 // display messages
@@ -56,8 +68,15 @@
 #define BS_CHECK_PHASE_READ 5
 #define BS_CHECK_PHASE_FINISHED 16
 
+
+// limit blocksize for banksticks to 64 bytes
+#if (BS_CHECK_USE_FRAM_LAYER == 0 && BS_CHECK_DATA_BLOCKSIZE > 64)
+#define BS_CHECK_DATA_BLOCKSIZE 64
+#endif
+
+
 // calculation of a buffer byte in respect to current bankstick, buffer and byte(i)
-#define BS_CHECK_BUFFER_BYTE_VALUE ((run + bs + block + i) % 256)
+#define BS_CHECK_BUFFER_BYTE_VALUE ((run + bs + block+(block/3) + i) % 256)
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -74,7 +93,7 @@ static volatile u8 time_write;
 static volatile u8 last_error;
 static volatile s32 last_error_code;
 
-static volatile u8 buffer[64];
+static volatile u8 buffer[BS_CHECK_DATA_BLOCKSIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -95,7 +114,7 @@ static void report_iic_error(void);
 
 static void init_buffer(void){
   u8 i;
-  for (i=0;i<64;i++){
+  for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++){
     buffer[i] = BS_CHECK_BUFFER_BYTE_VALUE;
     //if (block==0) MIOS32_MIDI_SendDebugMessage("buffer[%d]=%d",i,buffer[i]);
     }
@@ -103,13 +122,13 @@ static void init_buffer(void){
 
 static void clear_buffer(void){
   u8 i;
-  for (i=0;i<64;i++)
+  for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++)
     buffer[i] = 0;
   }
 
 static s32 check_buffer(void){
   u8 i,err=0;
-  for (i=0;i<64;i++){
+  for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++){
     u8 value = BS_CHECK_BUFFER_BYTE_VALUE;
     if(buffer[i] != value){
       MIOS32_MIDI_SendDebugMessage("buffer[%d]=%d, should be %d",i,buffer[i],value);
@@ -131,7 +150,6 @@ void APP_Init(void){
   MIOS32_MIDI_SendDebugMessage("Bankstick r/w check");
   // setup display task
   xTaskCreate(TASK_Display, (signed portCHAR *)"Display", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DISPLAY, NULL);
-  MIOS32_DELAY_Init(0);
   }
 
 
@@ -153,13 +171,21 @@ void APP_Background(void){
         // initialize IIC..
         if(run == 0){
 	  MIOS32_MIDI_SendDebugMessage("Bankstick check init...");
+#if BS_CHECK_USE_FRAM_LAYER == 0
 	  if( (last_error_code = MIOS32_IIC_BS_Init(0)) != 0){
+#else
+	  if( (last_error_code = FRAM_Init(0)) != 0){ 
+#endif
 	    last_error =  BS_CHECK_ERROR_INIT;
 	    phase = BS_CHECK_PHASE_FINISHED;
 	    }
 	  else{
-	    for(i = 0;i < BS_CHECK_NUM_BS; i++){
+	    for(i = 0;i < BS_CHECK_NUM_DEVICES; i++){
+#if BS_CHECK_USE_FRAM_LAYER == 0
 	      if ( (size = MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
+#else
+	      if ( (size = FRAM_CheckAvailable(i)) == 0) {
+#endif
 		report_iic_error();
 		last_error = BS_CHECK_ERROR_AVAILABLE;
 		last_error_code = i;
@@ -181,7 +207,11 @@ void APP_Background(void){
         if(bs == 0 && block == 0)
           MIOS32_MIDI_SendDebugMessage("Start writing blocks...");
         init_buffer();
-        if( (last_error_code = MIOS32_IIC_BS_Write(bs,block*64,(char*)buffer,64)) != 0){
+#if BS_CHECK_USE_FRAM_LAYER == 0
+        if( (last_error_code = MIOS32_IIC_BS_Write(bs,block*BS_CHECK_DATA_BLOCKSIZE,(char*)buffer,BS_CHECK_DATA_BLOCKSIZE)) != 0){
+#else
+        if( (last_error_code = FRAM_Write(bs,block*BS_CHECK_DATA_BLOCKSIZE,(char*)buffer,BS_CHECK_DATA_BLOCKSIZE)) != 0){
+#endif
           report_iic_error();
           last_error =  BS_CHECK_ERROR_WRITE;
 	  phase = BS_CHECK_PHASE_FINISHED;
@@ -192,10 +222,10 @@ void APP_Background(void){
             last_error =  BS_CHECK_ERROR_CHECK_WRITE_FINISHED;
 	    phase = BS_CHECK_PHASE_FINISHED;
 	    }
-	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_BS ){
+	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_DEVICE ){
             MIOS32_MIDI_SendDebugMessage("Writing bankstick %d finished",bs);
 	    block = 0;
-	    if( ++bs >= BS_CHECK_NUM_BS ){
+	    if( ++bs >= BS_CHECK_NUM_DEVICES ){
 	      bs = 0;
 	      phase = BS_CHECK_PHASE_READ;
 	      }
@@ -207,7 +237,11 @@ void APP_Background(void){
         if(bs == 0 && block == 0)
           MIOS32_MIDI_SendDebugMessage("Start reading / comparing blocks...");
         clear_buffer();
-        if( (last_error_code = MIOS32_IIC_BS_Read(bs,block*64,(char*)buffer,64)) != 0){
+#if BS_CHECK_USE_FRAM_LAYER == 0
+        if( (last_error_code = MIOS32_IIC_BS_Read(bs,block*BS_CHECK_DATA_BLOCKSIZE,(char*)buffer,BS_CHECK_DATA_BLOCKSIZE)) != 0){
+#else
+        if( (last_error_code = FRAM_Read(bs,block*BS_CHECK_DATA_BLOCKSIZE,(char*)buffer,BS_CHECK_DATA_BLOCKSIZE)) != 0){
+#endif
           report_iic_error();
 	  last_error =  BS_CHECK_ERROR_READ;
 	  phase = BS_CHECK_PHASE_FINISHED;
@@ -218,10 +252,10 @@ void APP_Background(void){
 	    last_error_code = 0;// no further error specification
 	    phase = BS_CHECK_PHASE_FINISHED;	   
 	    }
-	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_BS ){
+	  else if( ++block >= BS_CHECK_NUM_BLOCKS_PER_DEVICE ){
             MIOS32_MIDI_SendDebugMessage("Reading / comparing bankstick %d finished",bs);
 	    block = 0;
-	    if( ++bs >= BS_CHECK_NUM_BS ){
+	    if( ++bs >= BS_CHECK_NUM_DEVICES ){
               MIOS32_MIDI_SendDebugMessage("Check run %d finished",run+1);
               if(++run >= BS_CHECK_NUM_RUNS)
                 phase = BS_CHECK_PHASE_FINISHED;
@@ -239,15 +273,23 @@ void APP_Background(void){
 
 
 static s32 wait_write_finished(void){
+#if BS_CHECK_USE_FRAM_LAYER == 0
   s32 err_code;
    do{
      err_code = MIOS32_IIC_BS_CheckWriteFinished(bs);
      } while( err_code > 0 );
   return err_code;
+#else
+  return 0;
+#endif
   }
 
 static void report_iic_error(void){
+#if BS_CHECK_USE_FRAM_LAYER == 0
   MIOS32_MIDI_SendDebugMessage("IIC error %d",MIOS32_IIC_LastErrorGet(MIOS32_IIC_BS_PORT));
+#else
+  MIOS32_MIDI_SendDebugMessage("IIC error %d",MIOS32_IIC_LastErrorGet(FRAM_IIC_PORT));
+#endif
   }
 
 
@@ -326,7 +368,7 @@ static void TASK_Display(void *pvParameters){
 	      }
 	    MIOS32_LCD_PrintFormattedString("Err: %s %d",err_on,last_error_code);
 	    MIOS32_LCD_CursorSet(0,1);
-	    MIOS32_LCD_PrintFormattedString("BS %d  Block %d",bs,block);
+	    MIOS32_LCD_PrintFormattedString("BS:%d B:0x%04x R:%d",bs,block,run);
 	    MIOS32_MIDI_SendDebugMessage("Error on %s, Error code %d, Bankstick %d, Block %d, Run %d",
               err_on,last_error_code,bs,block,run);
 	    }
