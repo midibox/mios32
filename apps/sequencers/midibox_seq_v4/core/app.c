@@ -337,6 +337,10 @@ void SEQ_TASK_Period1S(void)
 {
   u8 load_sd_content = 0;
 
+  // don't check for SD Card if MSD enabled
+  if( TASK_MSD_EnableGet() )
+    return;
+
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
 
@@ -367,7 +371,7 @@ void SEQ_TASK_Period1S(void)
 	  sprintf(str1, "Creating Bank #%d", bank+1);
 	  char str2[21];
 	  sprintf(str2, "DON'T POWER-OFF!");
-	  SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	  SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 
 	  // update LCD immediately (since background task not running)
 	  SEQ_UI_LCD_Update();
@@ -380,7 +384,7 @@ void SEQ_TASK_Period1S(void)
 	  u16 pattern;
 	  for(pattern=0; pattern<SEQ_FILE_B_NumPatterns(bank) && status >= 0; ++pattern) {
 	    sprintf(str1, "Writing Pattern %d:%c%d", bank+1, 'A'+(pattern>>3), (pattern%8)+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 	    SEQ_UI_LCD_Update();
 
 	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
@@ -405,7 +409,7 @@ void SEQ_TASK_Period1S(void)
 	sprintf(str1, "Creating Mixer Maps");
 	char str2[21];
 	sprintf(str2, "DON'T POWER-OFF!");
-	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 
 	// update LCD immediately (since background task not running)
 	SEQ_UI_LCD_Update();
@@ -415,7 +419,7 @@ void SEQ_TASK_Period1S(void)
 	  u16 map;
 	  for(map=0; map<SEQ_FILE_M_NumMaps() && status >= 0; ++map) {
 	    sprintf(str1, "Writing Map #%d", map+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 	    SEQ_UI_LCD_Update();
 
 	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
@@ -435,7 +439,7 @@ void SEQ_TASK_Period1S(void)
 	sprintf(str1, "Creating Songs");
 	char str2[21];
 	sprintf(str2, "DON'T POWER-OFF!");
-	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 
 	// update LCD immediately (since background task not running)
 	SEQ_UI_LCD_Update();
@@ -445,7 +449,7 @@ void SEQ_TASK_Period1S(void)
 	  u16 song;
 	  for(song=0; song<SEQ_FILE_S_NumSongs() && status >= 0; ++song) {
 	    sprintf(str1, "Writing Song #%d", song+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
 	    SEQ_UI_LCD_Update();
 
 	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
@@ -457,8 +461,7 @@ void SEQ_TASK_Period1S(void)
 	    status=SEQ_FILE_S_Open();
 	}
       }
-
-
+      
       // no need to check for existing config file (will be created once config data is stored)
 
       if( status < 0 ) {

@@ -62,7 +62,7 @@ typedef enum {
 #define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PATTERN            ( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 1 )
+#define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 3 )
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -127,6 +127,12 @@ static void TASK_MIDI(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
+
     // continue in application hook
     SEQ_TASK_MIDI();
   }
@@ -146,6 +152,12 @@ static void TASK_Period1mS(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
+
     // continue in application hook
     SEQ_TASK_Period1mS();
   }
@@ -157,13 +169,11 @@ static void TASK_Period1mS(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period1mS_LowPrio(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
   while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+    // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
+    // isn't required, and this task could be invoked too often if it was blocked
+    // for a long time
+    vTaskDelay(1 / portTICK_RATE_MS);
 
     // continue in application hook
     SEQ_TASK_Period1mS_LowPrio();
@@ -176,13 +186,11 @@ static void TASK_Period1mS_LowPrio(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period1S(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
   while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1000 / portTICK_RATE_MS);
+    // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
+    // isn't required, and this task could be invoked too often if it was blocked
+    // for a long time
+    vTaskDelay(1 / portTICK_RATE_MS);
 
     // continue in application hook
     SEQ_TASK_Period1S();
@@ -224,6 +232,12 @@ static void TASK_MSD(void *pvParameters)
 
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
 
     // MSD driver handling
     if( msd_state != DISABLED ) {

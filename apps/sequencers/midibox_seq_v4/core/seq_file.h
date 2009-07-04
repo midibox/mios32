@@ -140,4 +140,7 @@ extern u32 seq_file_dfs_errno;
 
 extern char *seq_file_backup_notification;
 
+extern u8 seq_file_copy_percentage;
+extern u8 seq_file_backup_percentage;
+
 #endif /* _SEQ_FILE_H */

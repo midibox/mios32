@@ -43,7 +43,7 @@
 
 // Note: verbose level 1 is default - it prints error messages
 // and useful info messages during backups
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,6 +73,10 @@ u32 seq_file_dfs_errno;
 // contains the backup directory during a backup
 // used by SEQ_UI to print a message on screen during a backup is created
 char *seq_file_backup_notification;
+
+// for percentage display
+u8 seq_file_copy_percentage;
+u8 seq_file_backup_percentage;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -117,6 +121,8 @@ s32 SEQ_FILE_Init(u32 mode)
   volume_free_bytes = 0;
 
   seq_file_backup_notification = NULL;
+  seq_file_copy_percentage = 0;
+  seq_file_backup_percentage = 0;
 
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
@@ -871,7 +877,7 @@ s32 SEQ_FILE_PrintSDCardInfos(void)
   }
 
   di.scratch = sector;
-  if( DFS_OpenDir(&vi, "", &di) ) {
+  if( DFS_OpenDir(&vi, "backup/7", &di) ) {
     DEBUG_MSG("ERROR: opening root directory - try mounting the partition again\n");
     return SEQ_FILE_ERR_OPEN_DIR;
   }
@@ -923,7 +929,7 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
   } else {
     // delete destination file if it already exists - ignore errors
     DFS_UnlinkFile(&vi, dst_file, sector);
-    
+
     if( seq_file_dfs_errno = DFS_OpenFile(&vi, dst_file, DFS_WRITE, sector, &fi_dst) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ_FILE_Copy] wasn't able to create %s - exit!\n", dst_file);
@@ -938,7 +944,11 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
 #endif
   } else {
     // copy operation
+#if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_Copy] Starting copy operation!\n");
+#endif
+
+    seq_file_copy_percentage = 0; // for percentage display
 
     u32 successcount;
     u32 successcount_wr;
@@ -950,21 +960,24 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
 #endif
 	successcount = 0;
 	status = SEQ_FILE_ERR_READ;
-      } else if( seq_file_dfs_errno = DFS_WriteFile(&fi_dst, sector, write_buffer, &successcount_wr, successcount) ) {
+      } else if( successcount && (seq_file_dfs_errno=DFS_WriteFile(&fi_dst, sector, write_buffer, &successcount_wr, successcount)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", fi_dst.pointer, seq_file_dfs_errno);
 #endif
-	successcount = 0;
 	status = SEQ_FILE_ERR_WRITE;
       } else {
 	num_bytes += successcount_wr;
+	seq_file_copy_percentage = (u8)((100 * num_bytes) / fi_src.filelen);
       }
-    } while( successcount > 0 );
+    } while( status == 0 && successcount > 0 );
 
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_Copy] Finished copy operation (%d bytes)!\n", num_bytes);
 #endif
   }
+
+  DFS_Close(&fi_src);
+  DFS_Close(&fi_dst);
 
   return status;
 }
@@ -1038,10 +1051,15 @@ s32 SEQ_FILE_CreateBackup(void)
 	  sprintf(filepath, "%s%s/%s", SEQ_FILE_BACKUP_PATH, file_name, name); \
 	  seq_file_backup_notification = filepath; \
 	  status = SEQ_FILE_Copy(name, filepath, write_buffer); \
+	  ++seq_file_backup_file;				\
+	  seq_file_backup_percentage = (u8)(((u32)100 * (u32)seq_file_backup_file) / seq_file_backup_files); \
 	}
 
 	// this approach saves some stack - we don't want to allocate more memory by using
 	// temporary variables to create src_file and dst_file from an array...
+	seq_file_backup_percentage = 0;
+	u8 seq_file_backup_files = 13; // for percentage display
+	u8 seq_file_backup_file = 0;
 	COPY_FILE_MACRO("MBSEQ_HW.V4");
 	COPY_FILE_MACRO("MBSEQ_B1.V4");
 	COPY_FILE_MACRO("MBSEQ_B2.V4");
@@ -1054,7 +1072,7 @@ s32 SEQ_FILE_CreateBackup(void)
 	COPY_FILE_MACRO("MBSEQ_G.V4");
 	COPY_FILE_MACRO("MBSEQ_M.V4");
 	COPY_FILE_MACRO("MBSEQ_S.V4");
-	COPY_FILE_MACRO("MBSEQ_C.V4");
+	COPY_FILE_MACRO("MBSEQ_C.V4"); // important: should be the last file to notify that backup is complete!
 
 	// stop printing the special message
 	seq_file_backup_notification = NULL;
