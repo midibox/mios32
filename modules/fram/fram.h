@@ -47,8 +47,8 @@
 #endif
 
 // errors
-#define FRAM_ERROR_TRANSFER_TYPE -128
-#define FRAM_ERROR_DEVICE_BLOCKED -127
+#define FRAM_ERROR_TRANSFER_TYPE -1
+#define FRAM_ERROR_DEVICE_BLOCKED -2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,15 +65,15 @@ typedef enum{
 /////////////////////////////////////////////////////////////////////////////
 
 // -- high level / blocking functions --
-extern s32 FRAM_Init(void);
+extern s32 FRAM_Init(u8 mode);
 extern s32 FRAM_CheckAvailable(u8 device_addr);
 
-extern s32 FRAM_Read(u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len);
-extern s32 FRAM_Write(u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len);
+extern s32 FRAM_Read(u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len);
+extern s32 FRAM_Write(u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len);
 
 
 // -- low level functions --
-extern s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u8 *buffer, u8 buffer_len);
+extern s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u8 *buffer, u16 buffer_len);
 extern s32 FRAM_TransferWaitCheck(u8 blocking);
 
 extern s32 FRAM_SemaphoreEnter(u8 blocking);
