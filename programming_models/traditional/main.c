@@ -183,6 +183,12 @@ static void TASK_MIDI_Hooks(void *pvParameters)
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
+
     // handle timeout/expire counters and USB packages
     MIOS32_MIDI_Periodic_mS();
 
@@ -205,6 +211,12 @@ static void TASK_Hooks(void *pvParameters)
 
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
 
 #if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
     // check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
