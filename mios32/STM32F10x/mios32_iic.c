@@ -32,6 +32,8 @@
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
+ *  IRQ handlers reworked by Matthias Mächler (juli 2009)
+ *
  * ==========================================================================
  */
 
