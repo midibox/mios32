@@ -23,12 +23,12 @@
 #define MIOS32_IIC_NUM 1
 #endif
 
-// sets the IIC bus frequency in kHz (400000 for common "fast speed" devices, 1000000 for high-speed devices)
+// sets the IIC bus frequency in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
 #ifndef MIOS32_IIC0_BUS_FREQUENCY
 #define MIOS32_IIC0_BUS_FREQUENCY 400000
 #endif
 
-// bus frequency for I2C1 device
+// bus frequency for I2C1 device in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
 #ifndef MIOS32_IIC1_BUS_FREQUENCY
 #define MIOS32_IIC1_BUS_FREQUENCY 400000
 #endif
