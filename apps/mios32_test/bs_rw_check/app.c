@@ -113,7 +113,7 @@ static void report_iic_error(void);
 /////////////////////////////////////////////////////////////////////////////
 
 static void init_buffer(void){
-  u8 i;
+  u16 i;
   for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++){
     buffer[i] = BS_CHECK_BUFFER_BYTE_VALUE;
     //if (block==0) MIOS32_MIDI_SendDebugMessage("buffer[%d]=%d",i,buffer[i]);
@@ -121,13 +121,14 @@ static void init_buffer(void){
   }
 
 static void clear_buffer(void){
-  u8 i;
+  u16 i;
   for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++)
     buffer[i] = 0;
   }
 
 static s32 check_buffer(void){
-  u8 i,err=0;
+  u8 err=0;
+  u16 i;
   for (i=0;i<BS_CHECK_DATA_BLOCKSIZE;i++){
     u8 value = BS_CHECK_BUFFER_BYTE_VALUE;
     if(buffer[i] != value){
@@ -158,7 +159,6 @@ void APP_Init(void){
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void){
   u8 i;
-  u32 size;
   while(1){
     switch(phase){
       case BS_CHECK_PHASE_INIT:
@@ -182,9 +182,9 @@ void APP_Background(void){
 	  else{
 	    for(i = 0;i < BS_CHECK_NUM_DEVICES; i++){
 #if BS_CHECK_USE_FRAM_LAYER == 0
-	      if ( (size = MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
+	      if ( (MIOS32_IIC_BS_CheckAvailable(i)) == 0) {
 #else
-	      if ( (size = FRAM_CheckAvailable(i)) == 0) {
+	      if ( (FRAM_CheckAvailable(i)) != 0) {
 #endif
 		report_iic_error();
 		last_error = BS_CHECK_ERROR_AVAILABLE;

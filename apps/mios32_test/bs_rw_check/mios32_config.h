@@ -14,7 +14,11 @@
 
 // enable banksticks. must be equal or more than BS_CHECK_NUM_DEVICES (app.h)
 // will be ignored if BS_CHECK_USE_FRAM_LAYER is set
+#define MIOS32_IIC_NUM 2
 #define MIOS32_IIC_BS_NUM 8
+
+#define FRAM_IIC_PORT 1
+
 
 
 #endif /* _MIOS32_CONFIG_H */
