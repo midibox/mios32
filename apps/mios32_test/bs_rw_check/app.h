@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // define the number of banksticks / FRAM devices you want to check (1 - 8)
-#define BS_CHECK_NUM_DEVICES 4
+#define BS_CHECK_NUM_DEVICES 1
 
 // data block size (max. 64 if BS_CHECK_USE_FRAM_LAYER==0)
 #define BS_CHECK_DATA_BLOCKSIZE 64
