@@ -188,9 +188,6 @@ s32 FRAM_Transfer(FRAM_transfer_t transfer_type, u8 device_addr, u16 mem_addr, u
   GPIO_WriteBit(FRAM_MULTIPLEX_PORT_MSB, FRAM_MULTIPLEX_PIN_MSB, (device_addr & 0x10) ? Bit_SET : Bit_RESET);
   GPIO_WriteBit(FRAM_MULTIPLEX_PORT_LSB, FRAM_MULTIPLEX_PIN_LSB, (device_addr & 0x08) ? Bit_SET : Bit_RESET);
 #endif
-  // delay for multiplexer setup
-  volatile u32 d;
-  for(d=0;d<1000;d++);
   // prepare address byte
   device_addr = FRAM_SLAVEID_MASK | ( (device_addr & 0x07 ) << 1 );
   // swap mem-address top big-endian, write to extension buffer
