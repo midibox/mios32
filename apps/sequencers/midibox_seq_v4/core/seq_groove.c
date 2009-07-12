@@ -105,7 +105,7 @@ s32 SEQ_GROOVE_Init(u32 mode)
   // initialise custom templates with dummy template
   // will be loaded from SD Card in SEQ_FILE_G
   for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove)
-    SEQ_GROOVE_Clear(groove);
+    SEQ_GROOVE_Clear(SEQ_GROOVE_NUM_PRESETS + groove);
 
   return 0; // no error
 }

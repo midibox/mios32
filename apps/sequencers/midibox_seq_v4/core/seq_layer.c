@@ -56,7 +56,7 @@ static const u8 seq_layer_preset_table_static[][2] = {
   { SEQ_CC_STEPS_JMPBCK,   0x00 },
   { SEQ_CC_STEPS_REPEAT,   0x00 },
   { SEQ_CC_STEPS_SKIP,     0x00 },
-  { SEQ_CC_STEPS_RS_INTERVAL,0x00 },
+  { SEQ_CC_STEPS_RS_INTERVAL,0x03 },
   { SEQ_CC_CLK_DIVIDER,    0x0f },
   { SEQ_CC_CLKDIV_FLAGS,   0x00 },
   { SEQ_CC_LENGTH,         0x0f },

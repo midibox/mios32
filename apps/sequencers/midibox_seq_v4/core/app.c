@@ -159,7 +159,17 @@ void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 /////////////////////////////////////////////////////////////////////////////
 void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
 {
-  SEQ_MIDI_SYSEX_Parser(port, sysex_byte);
+  if( sysex_byte >= 0xf8 ) {
+    // forward to router
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.type = 0x5; // Single-byte system common message
+    p.evnt0 = sysex_byte;
+    SEQ_MIDI_ROUTER_Receive(port, p);
+  } else {
+    // forward to SysEx parser
+    SEQ_MIDI_SYSEX_Parser(port, sysex_byte);
+  }
 }
 
 
@@ -340,6 +350,14 @@ void SEQ_TASK_Period1S(void)
   // don't check for SD Card if MSD enabled
   if( TASK_MSD_EnableGet() > 0 )
     return;
+
+  // poll for IIC modules so long HW config hasn't been locked (read from SD card)
+  // TODO: use proper mutex handling here
+#ifndef MIOS32_FAMILY_EMULATION
+  if( !SEQ_FILE_HW_ConfigLocked() ) {
+    MIOS32_IIC_MIDI_ScanInterfaces();
+  }
+#endif  
 
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
