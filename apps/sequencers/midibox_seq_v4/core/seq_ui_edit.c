@@ -31,7 +31,7 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate);
+static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,7 +81,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // first change the selected value
     if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
-      forced_value = ChangeSingleEncValue(visible_track, ui_selected_step, incrementer, forced_value, change_gate);
+      u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
+      u16 par_step = ui_selected_step;
+      u16 trg_step = ui_selected_step;
+
+      // mirrored layer in drum mode?
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+      if( event_mode == SEQ_EVENT_MODE_Drum && par_step >= num_steps )
+	par_step %= num_steps;
+
+      forced_value = ChangeSingleEncValue(visible_track, par_step, trg_step, incrementer, forced_value, change_gate);
       if( forced_value < 0 )
 	return 0; // no change
       value_changed |= 1;
@@ -89,14 +98,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // change value of all selected steps
     u8 track;
-    u16 step;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	u16 num_steps = SEQ_PAR_NumStepsGet(track);
-	for(step=0; step<num_steps; ++step) {
-	  change_gate = step == ui_selected_step;
+	u16 trg_step = (ui_selected_step & ~(num_steps-1));
+
+	u16 par_step;
+	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
+	  change_gate = trg_step == ui_selected_step;
 	  if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
-	    if( ChangeSingleEncValue(track, step, incrementer, forced_value, change_gate) >= 0 )
+	    if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate) >= 0 )
 	      value_changed |= 1;
 	  }
 	}
@@ -584,7 +595,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 // returns >= 0 if new value has been set (value change)
 // returns < 0 if no change
 /////////////////////////////////////////////////////////////////////////////
-static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_value, u8 change_gate)
+static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate)
 {
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -592,14 +603,15 @@ static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_
   // if note/chord/velocity parameter: only change gate if requested
   if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) &&
       !change_gate &&
-      !SEQ_TRG_GateGet(track, step, ui_selected_instrument) )
+      !SEQ_TRG_GateGet(track, trg_step, ui_selected_instrument) )
     return -1;
 
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  if( event_mode == SEQ_EVENT_MODE_Drum )
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
     ui_hold_msg_ctr = 1000; // show value for 1 second
+  }
 
-  s32 old_value = SEQ_PAR_Get(track, step, ui_selected_par_layer, ui_selected_instrument);
+  s32 old_value = SEQ_PAR_Get(track, par_step, ui_selected_par_layer, ui_selected_instrument);
   s32 new_value = (forced_value >= 0) ? forced_value : (old_value + incrementer);
   if( new_value < 0 )
     new_value = 0;
@@ -610,14 +622,14 @@ static s32 ChangeSingleEncValue(u8 track, u16 step, s32 incrementer, s32 forced_
   if( new_value == old_value )
     return -1;
 
-  SEQ_PAR_Set(track, step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
+  SEQ_PAR_Set(track, par_step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
 
   if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity ) {
     // (de)activate gate depending on value
     if( new_value )
-      SEQ_TRG_GateSet(track, step, ui_selected_instrument, 1);
+      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
     else
-      SEQ_TRG_GateSet(track, step, ui_selected_instrument, 0);
+      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 0);
   }
 
   return new_value;

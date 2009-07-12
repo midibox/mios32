@@ -43,7 +43,7 @@
 
 // Note: verbose level 1 is default - it prints error messages
 // and useful info messages during backups
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -877,7 +877,7 @@ s32 SEQ_FILE_PrintSDCardInfos(void)
   }
 
   di.scratch = sector;
-  if( DFS_OpenDir(&vi, "backup/7", &di) ) {
+  if( DFS_OpenDir(&vi, "", &di) ) {
     DEBUG_MSG("ERROR: opening root directory - try mounting the partition again\n");
     return SEQ_FILE_ERR_OPEN_DIR;
   }

@@ -1894,16 +1894,14 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
-  if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {
+  if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX )
     ui_cursor_flash_ctr = 0;
-    seq_ui_display_update_req = 1;
-  } else if( ui_cursor_flash_ctr == SEQ_UI_CURSOR_FLASH_CTR_LED_OFF ) {
-    seq_ui_display_update_req = 1;
-  }
   // important: flash flag has to be recalculated on each invocation of this
   // handler, since counter could also be reseted outside this function
+  u8 old_ui_cursor_flash = ui_cursor_flash;
   ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
-
+  if( old_ui_cursor_flash != ui_cursor_flash )
+    seq_ui_display_update_req = 1;
 
   // used in some pages for temporary messages
   if( ui_hold_msg_ctr ) {

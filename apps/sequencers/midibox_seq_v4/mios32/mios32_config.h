@@ -63,6 +63,19 @@
 #define MID_PLAYER_TEST 0
 
 
+// configure IIC_MIDI
+#define MIOS32_IIC_MIDI_NUM 4
+// all interfaces are "OUT only"
+#define MIOS32_IIC_MIDI0_ENABLED    1
+#define MIOS32_IIC_MIDI1_ENABLED    1
+#define MIOS32_IIC_MIDI2_ENABLED    1
+#define MIOS32_IIC_MIDI3_ENABLED    1
+#define MIOS32_IIC_MIDI4_ENABLED    1
+#define MIOS32_IIC_MIDI5_ENABLED    1
+#define MIOS32_IIC_MIDI6_ENABLED    1
+#define MIOS32_IIC_MIDI7_ENABLED    1
+
+
 // configure BLM driver
 #define BLM_DOUT_L1_SR	255 // dummy, will be changed in seq_file_hw.c
 #define BLM_DOUT_R1_SR	255 // dummy, will be changed in seq_file_hw.c
