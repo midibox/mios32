@@ -36,12 +36,13 @@
 
 // Interface and RI_N port configuration
 // _ENABLED:   0 = interface disabled
-//             1 = interface enabled
-//             2 = interface enabled, check RI_N pin instead of polling receive status
+//             1 = interface enabled, don't poll receive status (OUT only)
+//             2 = interface enabled, poll receive status
+//             3 = interface enabled, check RI_N pin instead of polling receive status
 // _RI_N_PORT: Port to which RI_N is connected
 // _RI_N_PIN:  pin to which RI_N is connected
 #ifndef MIOS32_IIC_MIDI0_ENABLED
-#define MIOS32_IIC_MIDI0_ENABLED    1
+#define MIOS32_IIC_MIDI0_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI0_RI_N_PORT
 #define MIOS32_IIC_MIDI0_RI_N_PORT  GPIOC
@@ -51,7 +52,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI1_ENABLED
-#define MIOS32_IIC_MIDI1_ENABLED    1
+#define MIOS32_IIC_MIDI1_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI1_RI_N_PORT
 #define MIOS32_IIC_MIDI1_RI_N_PORT  GPIOC
@@ -61,7 +62,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI2_ENABLED
-#define MIOS32_IIC_MIDI2_ENABLED    1
+#define MIOS32_IIC_MIDI2_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI2_RI_N_PORT
 #define MIOS32_IIC_MIDI2_RI_N_PORT  GPIOC
@@ -71,7 +72,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI3_ENABLED
-#define MIOS32_IIC_MIDI3_ENABLED    1
+#define MIOS32_IIC_MIDI3_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI3_RI_N_PORT
 #define MIOS32_IIC_MIDI3_RI_N_PORT  GPIOC
@@ -81,7 +82,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI4_ENABLED
-#define MIOS32_IIC_MIDI4_ENABLED    1
+#define MIOS32_IIC_MIDI4_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI4_RI_N_PORT
 #define MIOS32_IIC_MIDI4_RI_N_PORT  GPIOA
@@ -91,7 +92,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI5_ENABLED
-#define MIOS32_IIC_MIDI5_ENABLED    1
+#define MIOS32_IIC_MIDI5_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI5_RI_N_PORT
 #define MIOS32_IIC_MIDI5_RI_N_PORT  GPIOA
@@ -101,7 +102,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI6_ENABLED
-#define MIOS32_IIC_MIDI6_ENABLED    1
+#define MIOS32_IIC_MIDI6_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI6_RI_N_PORT
 #define MIOS32_IIC_MIDI6_RI_N_PORT  GPIOA
@@ -111,7 +112,7 @@
 #endif
 
 #ifndef MIOS32_IIC_MIDI7_ENABLED
-#define MIOS32_IIC_MIDI7_ENABLED    1
+#define MIOS32_IIC_MIDI7_ENABLED    2
 #endif
 #ifndef MIOS32_IIC_MIDI7_RI_N_PORT
 #define MIOS32_IIC_MIDI7_RI_N_PORT  GPIOA

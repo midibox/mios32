@@ -66,35 +66,35 @@ s32 MIOS32_IIC_MIDI_Init(u32 mode)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
 
-#if MIOS32_IIC_MIDI0_ENABLED == 2
+#if MIOS32_IIC_MIDI0_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI0_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI0_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI1_ENABLED == 2
+#if MIOS32_IIC_MIDI1_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI1_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI1_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI2_ENABLED == 2
+#if MIOS32_IIC_MIDI2_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI2_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI2_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI3_ENABLED == 2
+#if MIOS32_IIC_MIDI3_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI3_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI3_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI4_ENABLED == 2
+#if MIOS32_IIC_MIDI4_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI4_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI4_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI5_ENABLED == 2
+#if MIOS32_IIC_MIDI5_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI5_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI5_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI6_ENABLED == 2
+#if MIOS32_IIC_MIDI6_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI6_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI6_RI_N_PORT, &GPIO_InitStructure);
 #endif
-#if MIOS32_IIC_MIDI7_ENABLED == 2
+#if MIOS32_IIC_MIDI7_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI7_RI_N_PIN;
   GPIO_Init(MIOS32_IIC_MIDI7_RI_N_PORT, &GPIO_InitStructure);
 #endif
@@ -479,42 +479,58 @@ s32 MIOS32_IIC_MIDI_PackageReceive(u8 iic_port, mios32_midi_package_t *package)
 static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
 {
   switch( iic_port ) {
-#if MIOS32_IIC_MIDI0_ENABLED == 2
+#if MIOS32_IIC_MIDI0_ENABLED <= 1
+    case 0: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI0_ENABLED == 3
     case 0: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI0_RI_N_PORT, MIOS32_IIC_MIDI0_RI_N_PIN) ? 0 : 1;
 #else
     case 0: return 1;
 #endif
-#if MIOS32_IIC_MIDI1_ENABLED == 2
+#if MIOS32_IIC_MIDI1_ENABLED <= 1
+    case 1: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI1_ENABLED == 3
     case 1: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI1_RI_N_PORT, MIOS32_IIC_MIDI1_RI_N_PIN) ? 0 : 1;
 #else
     case 1: return 1;
 #endif
-#if MIOS32_IIC_MIDI2_ENABLED == 2
+#if MIOS32_IIC_MIDI2_ENABLED <= 1
+    case 2: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI2_ENABLED == 3
     case 2: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI2_RI_N_PORT, MIOS32_IIC_MIDI2_RI_N_PIN) ? 0 : 1;
 #else
     case 2: return 1;
 #endif
-#if MIOS32_IIC_MIDI3_ENABLED == 2
+#if MIOS32_IIC_MIDI3_ENABLED <= 1
+    case 3: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI3_ENABLED == 3
     case 3: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI3_RI_N_PORT, MIOS32_IIC_MIDI3_RI_N_PIN) ? 0 : 1;
 #else
     case 3: return 1;
 #endif
-#if MIOS32_IIC_MIDI4_ENABLED == 2
+#if MIOS32_IIC_MIDI4_ENABLED <= 1
+    case 4: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI4_ENABLED == 3
     case 4: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI4_RI_N_PORT, MIOS32_IIC_MIDI4_RI_N_PIN) ? 0 : 1;
 #else
     case 4: return 1;
 #endif
-#if MIOS32_IIC_MIDI5_ENABLED == 2
+#if MIOS32_IIC_MIDI5_ENABLED <= 1
+    case 5: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI5_ENABLED == 3
     case 5: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI5_RI_N_PORT, MIOS32_IIC_MIDI5_RI_N_PIN) ? 0 : 1;
 #else
     case 5: return 1;
 #endif
-#if MIOS32_IIC_MIDI6_ENABLED == 2
+#if MIOS32_IIC_MIDI6_ENABLED <= 1
+    case 6: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI6_ENABLED == 3
     case 6: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI6_RI_N_PORT, MIOS32_IIC_MIDI6_RI_N_PIN) ? 0 : 1;
 #else
     case 6: return 1;
 #endif
-#if MIOS32_IIC_MIDI7_ENABLED == 2
+#if MIOS32_IIC_MIDI7_ENABLED <= 1
+    case 7: return 0; // disabled or MIDI Out Only
+#elif MIOS32_IIC_MIDI7_ENABLED == 3
     case 7: return GPIO_ReadInputDataBit(MIOS32_IIC_MIDI7_RI_N_PORT, MIOS32_IIC_MIDI7_RI_N_PIN) ? 0 : 1;
 #else
     case 7: return 1;
