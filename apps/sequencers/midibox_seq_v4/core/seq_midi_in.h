@@ -45,7 +45,6 @@ extern s32 SEQ_MIDI_IN_ArpNoteGet(u8 hold, u8 sorted, u8 key_num);
 
 extern u8 seq_midi_in_channel;
 extern mios32_midi_port_t seq_midi_in_port;
-extern mios32_midi_port_t seq_midi_in_mclk_port;
 extern u8 seq_midi_in_ta_split_note;
 
 

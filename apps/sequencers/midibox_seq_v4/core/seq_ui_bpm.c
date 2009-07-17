@@ -34,14 +34,15 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       7
+#define NUM_OF_ITEMS       8
 #define ITEM_MODE          0
 #define ITEM_PRESET        1
 #define ITEM_BPM           2
 #define ITEM_RAMP          3
 #define ITEM_TRG_PPQN      4
-#define ITEM_MCLK_IN       5
-#define ITEM_MCLK_OUT      6
+#define ITEM_MCLK_PORT     5
+#define ITEM_MCLK_IN       6
+#define ITEM_MCLK_OUT      7
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,6 +50,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 store_file_required;
+static u8 selected_mclk_port = USB0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -67,7 +69,8 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_PRESET: *gp_leds |= 0x0002; break;
     case ITEM_BPM: *gp_leds |= 0x000c; break;
     case ITEM_RAMP: *gp_leds |= 0x0010; break;
-    case ITEM_MCLK_IN: *gp_leds |= 0x0300; break;
+    case ITEM_MCLK_PORT: *gp_leds |= 0x0100; break;
+    case ITEM_MCLK_IN: *gp_leds |= 0x0200; break;
     case ITEM_MCLK_OUT: *gp_leds |= 0x0400; break;
     case ITEM_TRG_PPQN: *gp_leds |= 0x1800; break;
   }
@@ -114,6 +117,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return -1; // not mapped to encoder
 
     case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = ITEM_MCLK_PORT;
+      break;
+
     case SEQ_UI_ENCODER_GP10:
       ui_selected_item = ITEM_MCLK_IN;
       break;
@@ -171,25 +177,40 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 0; // value hasn't been changed
     } break;
 
+    case ITEM_MCLK_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_ClkIxGet(selected_mclk_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_ClkNumGet()-1, incrementer) >= 0 ) {
+	selected_mclk_port = SEQ_MIDI_PORT_ClkPortGet(port_ix);
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
     case ITEM_MCLK_IN: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_in_mclk_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+      s32 status = SEQ_MIDI_ROUTER_MIDIClockInGet(selected_mclk_port);
+      if( status < 0 )
+	return 0; // no change
+      u8 enable = status;
+      if( SEQ_UI_Var8_Inc(&enable, 0, 1, incrementer) >= 0 ) {
+	SEQ_MIDI_ROUTER_MIDIClockInSet(selected_mclk_port, enable);
 	store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
     } break;
 
-    case ITEM_MCLK_OUT:
-      if( incrementer > 0 )
-	seq_midi_router_mclk_out = 0xff;
-      else if( incrementer < 0 )
-	seq_midi_router_mclk_out = 0;
-      else
-	seq_midi_router_mclk_out ^= 0xff;
-      store_file_required = 1;
-      return 1; // value changed
+    case ITEM_MCLK_OUT: {
+      s32 status = SEQ_MIDI_ROUTER_MIDIClockOutGet(selected_mclk_port);
+      if( status < 0 )
+	return 0; // no change
+      u8 enable = status;
+      if( SEQ_UI_Var8_Inc(&enable, 0, 1, incrementer) >= 0 ) {
+	SEQ_MIDI_ROUTER_MIDIClockOutSet(selected_mclk_port, enable);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
 
     case ITEM_TRG_PPQN: {
       if( SEQ_UI_Var16_Inc(&seq_core_bpm_trg_ppqn, 0, 383, incrementer) ) {
@@ -288,12 +309,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Mode Preset Tempo  Ramp    Fire  PresetMIDI Clk Ports  DIN PPQN    Ext.    Tap 
-  // Master   1   140.0   1s    Preset  Page  I:All  O:off      24      Restart Tempo
+  //  Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out   DIN PPQN   Ext.    Tap 
+  // Master   1   140.0   1s    Preset  Page USB1 I:on O:off   24      Restart Tempo
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  PresetMIDI Clk Ports  DIN PPQN    ");
+  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out     DIN PPQN  ");
   SEQ_LCD_PrintString(seq_core_state.EXT_RESTART_REQ ? "Ongoing" : " Ext.  ");
   SEQ_LCD_PrintString(" Tap ");
 
@@ -338,14 +359,28 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintString("    Preset  Page  ");
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("I:");
-  if( ui_selected_item == ITEM_MCLK_IN && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_MCLK_PORT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    if( seq_midi_in_mclk_port )
-      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_mclk_port)));
-    else
-      SEQ_LCD_PrintString("All ");
+    SEQ_LCD_PrintString(SEQ_MIDI_PORT_ClkNameGet(SEQ_MIDI_PORT_ClkIxGet(selected_mclk_port)));
+  }
+  SEQ_LCD_PrintSpaces(1);
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_PrintString("I:");
+  if( ui_selected_item == ITEM_MCLK_IN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    s32 status = SEQ_MIDI_ROUTER_MIDIClockInGet(selected_mclk_port);
+
+    if( !MIOS32_MIDI_CheckAvailable(selected_mclk_port) )
+      status = -1; // MIDI In port not available
+
+    switch( status ) {
+      case 0:  SEQ_LCD_PrintString("off"); break;
+      case 1:  SEQ_LCD_PrintString("on "); break;
+      default: SEQ_LCD_PrintString("---");
+    }
   }
   SEQ_LCD_PrintSpaces(1);
 
@@ -354,9 +389,18 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_MCLK_OUT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString(seq_midi_router_mclk_out ? "All" : "off");
+    s32 status = SEQ_MIDI_ROUTER_MIDIClockOutGet(selected_mclk_port);
+
+    if( !MIOS32_MIDI_CheckAvailable(selected_mclk_port) )
+      status = -1; // MIDI Out port not available
+
+    switch( status ) {
+      case 0:  SEQ_LCD_PrintString("off"); break;
+      case 1:  SEQ_LCD_PrintString("on "); break;
+      default: SEQ_LCD_PrintString("---");
+    }
   }
-  SEQ_LCD_PrintSpaces(5);
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_TRG_PPQN && ui_cursor_flash ) {
@@ -364,7 +408,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d", seq_core_bpm_trg_ppqn);
   }
-  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintSpaces(4);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintString("Restart Tempo");

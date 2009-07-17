@@ -277,8 +277,8 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_midi_in_channel = value;
 	  } else if( strcmp(parameter, "MIDI_IN_Port") == 0 ) {
 	    seq_midi_in_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "MIDI_IN_MClock_Port") == 0 ) {
-	    seq_midi_in_mclk_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_IN_MClock_Ports") == 0 ) {
+	    seq_midi_router_mclk_in = value;
 	  } else if( strcmp(parameter, "MIDI_IN_TA_Split") == 0 ) {
 	    if( value )
 	      seq_midi_in_ta_split_note |= 0x80;
@@ -286,8 +286,8 @@ s32 SEQ_FILE_C_Read(void)
 	      seq_midi_in_ta_split_note &= ~0x80;
 	  } else if( strcmp(parameter, "MIDI_IN_TA_SplitNote") == 0 ) {
 	    seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
-	  } else if( strcmp(parameter, "MIDI_OUT_MClock") == 0 ) {
-	    seq_midi_router_mclk_out = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_OUT_MClock_Ports") == 0 ) {
+	    seq_midi_router_mclk_out = value;
 	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
 	    int values[5];
 
@@ -448,7 +448,7 @@ s32 SEQ_FILE_C_Write(void)
   sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "MIDI_IN_MClock_Port %d\n", (u8)seq_midi_in_mclk_port);
+  sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_in);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);
@@ -457,7 +457,7 @@ s32 SEQ_FILE_C_Write(void)
   sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "MIDI_OUT_MClock %d\n", seq_midi_router_mclk_out);
+  sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   u8 node;
