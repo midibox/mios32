@@ -77,6 +77,22 @@ static const seq_midi_port_entry_t out_ports[] = {
   // MEMO: SEQ_MIDI_PORT_OutMuteGet() has to be changed whenever ports are added/removed!
 };
 
+static const seq_midi_port_entry_t clk_ports[] = {
+  // port ID  Name
+  { USB0,    "USB1" },
+  { USB1,    "USB2" },
+  { USB2,    "USB3" },
+  { USB3,    "USB4" },
+  { UART0,   "OUT1" },
+  { UART1,   "OUT2" },
+  { UART2,   "OUT3" },
+  { UART3,   "OUT4" },
+  { IIC0,    "IIC1" },
+  { IIC1,    "IIC2" },
+  { IIC2,    "IIC3" },
+  { IIC3,    "IIC4" },
+};
+
 
 static u32 muted_out;
 
@@ -106,6 +122,11 @@ s32 SEQ_MIDI_PORT_OutNumGet(void)
   return sizeof(out_ports)/sizeof(seq_midi_port_entry_t);
 }
 
+s32 SEQ_MIDI_PORT_ClkNumGet(void)
+{
+  return sizeof(clk_ports)/sizeof(seq_midi_port_entry_t);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns name of MIDI IN/OUT port in (4 characters + zero terminator)
@@ -125,6 +146,14 @@ char *SEQ_MIDI_PORT_OutNameGet(u8 port_ix)
     return "----";
   else
     return out_ports[port_ix].name;
+}
+
+char *SEQ_MIDI_PORT_ClkNameGet(u8 port_ix)
+{
+  if( port_ix >= sizeof(clk_ports)/sizeof(seq_midi_port_entry_t) )
+    return "----";
+  else
+    return clk_ports[port_ix].name;
 }
 
 
@@ -148,6 +177,14 @@ mios32_midi_port_t SEQ_MIDI_PORT_OutPortGet(u8 port_ix)
     return out_ports[port_ix].port;
 }
 
+mios32_midi_port_t SEQ_MIDI_PORT_ClkPortGet(u8 port_ix)
+{
+  if( port_ix >= sizeof(clk_ports)/sizeof(seq_midi_port_entry_t) )
+    return 0xff; // dummy interface
+  else
+    return clk_ports[port_ix].port;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns the MBSEQ MIDI Port Index of a MIOS32 MIDI IN/OUT port
@@ -167,6 +204,16 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
   u8 ix;
   for(ix=0; ix<sizeof(out_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
     if( out_ports[ix].port == port )
+      return ix;
+  }
+  return 0; // return first ix if not found
+}
+
+u8 SEQ_MIDI_PORT_ClkIxGet(mios32_midi_port_t port)
+{
+  u8 ix;
+  for(ix=0; ix<sizeof(clk_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+    if( clk_ports[ix].port == port )
       return ix;
   }
   return 0; // return first ix if not found
@@ -202,6 +249,18 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
       } else if ( port >= 0xf0 ) {
 	return 1; // Bus is always available
       } else
+	return MIOS32_MIDI_CheckAvailable(port);
+  }
+  return 0; // port not available
+}
+
+s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port)
+{
+  u8 ix;
+  for(ix=0; ix<sizeof(clk_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+    if( clk_ports[ix].port == port )
+      // only up to 64 ports (0x00..0x3f = USB, UART, IIC) supported
+      if( port < 0x40 )
 	return MIOS32_MIDI_CheckAvailable(port);
   }
   return 0; // port not available

@@ -160,12 +160,15 @@ void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
 void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
 {
   if( sysex_byte >= 0xf8 ) {
+    // disabled: MIDI Clock always sent from sequencer, even in slave mode
+#if 0
     // forward to router
     mios32_midi_package_t p;
     p.ALL = 0;
     p.type = 0x5; // Single-byte system common message
     p.evnt0 = sysex_byte;
     SEQ_MIDI_ROUTER_Receive(port, p);
+#endif
   } else {
     // forward to SysEx parser
     SEQ_MIDI_SYSEX_Parser(port, sysex_byte);
@@ -602,8 +605,8 @@ void SEQ_TASK_Pattern(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
-  // filter MIDI In port which controls the MIDI clock (0: all ports)
-  if( !seq_midi_in_mclk_port || port == seq_midi_in_mclk_port )
+  // filter MIDI In port which controls the MIDI clock
+  if( SEQ_MIDI_ROUTER_MIDIClockInGet(port) == 1 )
     SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering

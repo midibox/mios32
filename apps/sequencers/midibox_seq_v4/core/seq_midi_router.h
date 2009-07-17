@@ -45,7 +45,14 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_MIDI_ROUTER_Init(u32 mode);
-extern s32 SEQ_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
+
+extern s32 SEQ_MIDI_ROUTER_MIDIClockInGet(mios32_midi_port_t port);
+extern s32 SEQ_MIDI_ROUTER_MIDIClockInSet(mios32_midi_port_t port, u8 enable);
+
+extern s32 SEQ_MIDI_ROUTER_MIDIClockOutGet(mios32_midi_port_t port);
+extern s32 SEQ_MIDI_ROUTER_MIDIClockOutSet(mios32_midi_port_t port, u8 enable);
+
+extern s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,6 +60,8 @@ extern s32 SEQ_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 /////////////////////////////////////////////////////////////////////////////
 
 extern seq_midi_router_node_t seq_midi_router_node[SEQ_MIDI_ROUTER_NUM_NODES];
-extern u8 seq_midi_router_mclk_out;
+
+extern u32 seq_midi_router_mclk_in;
+extern u32 seq_midi_router_mclk_out;
 
 #endif /* _SEQ_MIDI_ROUTER_H */

@@ -222,18 +222,18 @@ s32 SEQ_CORE_Handler(void)
     // note: don't remove any request check - clocks won't be propagated
     // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
-      SEQ_ROUTER_SendMIDIClockEvent(0xfc, 0);
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
-      SEQ_ROUTER_SendMIDIClockEvent(0xfb, 0);
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
       // release pause mode
       ui_seq_pause = 0;
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
-      SEQ_ROUTER_SendMIDIClockEvent(0xfa, 0);
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_SONG_Reset();
       SEQ_CORE_Reset();
     }
@@ -384,7 +384,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
   // send MIDI clock on each 16th tick (since we are working at 384ppqn)
   if( (bpm_tick % 16) == 0 )
-    SEQ_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+    SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
   // send metronome tick on each beat if enabled
   if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 384) == 0 ) {
@@ -412,7 +412,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
     seq_core_state.EXT_RESTART_REQ = 0; // remove request
     seq_ui_display_update_req = 1; // request display update
-    SEQ_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
+    SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
   }
 
   // process all tracks
