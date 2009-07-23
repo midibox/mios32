@@ -61,19 +61,23 @@ typedef struct{
 
 
 typedef struct{
-  MINFS_fs_info_t fs_info;
-  uint8_t fs_os_id; // remember fs_id value (identifies the fs on OS level)
   uint8_t bp_size; // size of a block-pointer in bytes (1,2,4)
   uint16_t block_data_len; // block-length 
   uint32_t first_datablock; // block number where data blocks begin
-  uint8_t pec_size; // size in bytes of the pec-value
+  uint8_t pec_size; // size in bytes of the pec-value  
+ } MINFS_fs_calc_t;
+
+
+typedef struct{
+  MINFS_fs_info_t fs_info;
+  uint8_t fs_os_id; // remember fs_id value (identifies the fs on OS level)
+  MINFS_fs_calc_t calc; // values calculated once at fs-info-get / format
 } MINFS_fs_t;
 
 
 typedef struct{
   uint32_t size; // file size in bytes
 } MINFS_file_header_t;
-
 
 
 typedef struct{

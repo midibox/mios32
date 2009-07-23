@@ -136,13 +136,13 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
   // calculate fs-params
   CalcFSParams(p_fs);
   // now write the block-pointer map
-  uint32_t i, block_n = 0, block_ptr;
+  uint32_t i, block_ptr, block_n = 0;
   int32_t status;
   for(i = 0 ; i < p_fs->fs_info.num_blocks ; i++){
     // check if buffer is full
-    if( buf_i >= p_fs->block_data_len ){
+    if( buf_i >= p_fs->calc.block_data_len ){
       // write data
-      if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, p_fs->block_data_len, p_fs, 0) ) < 0 )
+      if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, p_fs->calc.block_data_len, p_fs, 0) ) < 0 )
         return status;
       if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, 0, p_fs, 0) ) < 0 )
         return status;
@@ -155,15 +155,21 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
       block_n++;
       buf_i = 0;
     }
-    // calculate block pointer
+    // calculate block pointer and write it to the buffer
     block_ptr = i ? i+1 : 0; // 0 is file-index-start, else free blocks chain
-    memcpy(buf + buf_i, &block_ptr + (4-p_fs->bp_size), p_fs->bp_size);
-    buf_i += p_fs->bp_size;
+    // copy data endian-independent
+    *(buf + buf_i++) = (uint8_t)(block_ptr);
+    if( p_fs->calc.bp_size > 1 )
+      *(buf + buf_i++) = (uint8_t)(block_ptr >> 8);
+    if( p_fs->calc.bp_size > 2 ){
+      *(buf + buf_i++) = (uint8_t)(block_ptr >> 16);
+      *(buf + buf_i++) = (uint8_t)(block_ptr >> 24);
+      }
   }
   // end-pad block with zero
-  memset(buf + buf_i, 0, p_fs->block_data_len - buf_i);
+  memset(buf + buf_i, 0, p_fs->calc.block_data_len - buf_i);
   // write data
-  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, p_fs->block_data_len, p_fs, 0) ) < 0 )
+  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, p_fs->calc.block_data_len, p_fs, 0) ) < 0 )
     return status;
   if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, block_n, 0, 0, p_fs, 0) ) < 0 )
     return status;
@@ -173,9 +179,9 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
       return MINFS_ERROR_NOBUFFER;
   } else buf = block_buf;
   *buf = (uint32_t) 0;
-  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->first_datablock, 0, 4, p_fs, 0) ) < 0 )
+  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->calc.first_datablock, 0, 4, p_fs, 0) ) < 0 )
     return status;
-  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->first_datablock, 0, 0, p_fs, 0) ) < 0 )
+  if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->calc.first_datablock, 0, 0, p_fs, 0) ) < 0 )
     return status;
   // finished
   return 0;
@@ -214,24 +220,24 @@ int32_t MINFS_FileExists(uint32_t file_id, uint8_t *block_buf){
 static void CalcFSParams(MINFS_fs_t *p_fs){
   // calculate block-pointer size
   if(p_fs->fs_info.num_blocks & 0xffff0000)
-    p_fs->bp_size = 4;
+    p_fs->calc.bp_size = 4;
   else if(p_fs->fs_info.num_blocks & 0xff00)
-    p_fs->bp_size = 2;
+    p_fs->calc.bp_size = 2;
   else
-    p_fs->bp_size = 1;
+    p_fs->calc.bp_size = 1;
   // calculate pec-size
   uint8_t pec_val;
   if(pec_val = p_fs->fs_info.flags & MINFS_FLAGMASK_PEC)
-    p_fs->pec_size = 1 << (pec_val-1);
+    p_fs->calc.pec_size = 1 << (pec_val-1);
   else
-    p_fs->pec_size = 0;
+    p_fs->calc.pec_size = 0;
   // calculate block_data_len
-  p_fs->block_data_len = (1 << p_fs->fs_info.block_size) - p_fs->pec_size;
+  p_fs->calc.block_data_len = (1 << p_fs->fs_info.block_size) - p_fs->calc.pec_size;
   // calculate first data-block
-  uint32_t fshead_size = sizeof(MINFS_fs_header_t) + p_fs->fs_info.num_blocks * p_fs->bp_size;
-  p_fs->first_datablock = fshead_size / p_fs->block_data_len;
-  if(fshead_size % p_fs->block_data_len)
-    p_fs->first_datablock++;
+  uint32_t fshead_size = sizeof(MINFS_fs_header_t) + p_fs->fs_info.num_blocks * p_fs->calc.bp_size;
+  p_fs->calc.first_datablock = fshead_size / p_fs->calc.block_data_len;
+  if(fshead_size % p_fs->calc.block_data_len)
+    p_fs->calc.first_datablock++;
 }
 
 static int32_t BlockSeek(MINFS_fs_t *p_fs, uint8_t *block_buffer, uint32_t start_block, uint32_t offset){
