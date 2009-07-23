@@ -20,7 +20,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // filesystem-type identification
-#define MINFS_FS_TYPE "MNFS"
+#define MINFS_FS_TYPE 0xAB0145CC
 
 // filesystem flags
 #define MINFS_FLAGS_NOPEC 0x00
@@ -38,7 +38,8 @@
 #define MINFS_SEEK_END 0xFFFFFFFF
 
 // errors
-#define MINFS_ERROR_NOBUFFER -1
+#define MINFS_ERROR_NO_BUFFER -1
+#define MINFS_ERROR_BAD_FSTYPE -2
 
 
 

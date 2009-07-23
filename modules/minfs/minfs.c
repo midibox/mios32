@@ -124,13 +124,13 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
   // get a write buffer
   if( !block_buf ){
     if( !(buf = MINFS_WriteBufGet(MINFS_BLOCK_TYPE_FSHEAD, 0, p_fs, 0)) )
-      return MINFS_ERROR_NOBUFFER;
+      return MINFS_ERROR_NO_BUFFER;
   } 
   else buf = block_buf;
   uint16_t buf_i = 0; // byte index in data buffer
   // put fs-header data to buffer
   MINFS_fs_header_t *p_fs_header = (MINFS_fs_header_t*)buf;
-  p_fs_header->fs_type = (uint32_t)MINFS_FS_TYPE[0];
+  p_fs_header->fs_type = MINFS_FS_TYPE;
   p_fs_header->fs_info = p_fs->fs_info;
   buf_i += sizeof(MINFS_fs_header_t);
   // calculate fs-params
@@ -149,7 +149,7 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
       // get a write buffer
       if( !block_buf ){
 	if( !(buf = MINFS_WriteBufGet(MINFS_BLOCK_TYPE_FSHEAD, 0, p_fs, 0)) )
-	  return MINFS_ERROR_NOBUFFER;
+	  return MINFS_ERROR_NO_BUFFER;
       } else buf = block_buf;
       // set block_n and buffer byte-index
       block_n++;
@@ -157,14 +157,13 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
     }
     // calculate block pointer and write it to the buffer
     block_ptr = i ? i+1 : 0; // 0 is file-index-start, else free blocks chain
-    // copy data endian-independent
-    *(buf + buf_i++) = (uint8_t)(block_ptr);
-    if( p_fs->calc.bp_size > 1 )
-      *(buf + buf_i++) = (uint8_t)(block_ptr >> 8);
-    if( p_fs->calc.bp_size > 2 ){
-      *(buf + buf_i++) = (uint8_t)(block_ptr >> 16);
-      *(buf + buf_i++) = (uint8_t)(block_ptr >> 24);
-      }
+    // copy endian-independent
+    if( p_fs->calc.bp_size > 2 )
+      *( (uint32_t*)(buf + buf_i) ) = block_ptr;
+    else if( p_fs->calc.bp_size > 1 )
+      *( (uint16_t*)(buf + buf_i) ) = (uint16_t)block_ptr;
+    else
+      *( (uint8_t*)(buf + buf_i) ) = (uint8_t)block_ptr;
   }
   // end-pad block with zero
   memset(buf + buf_i, 0, p_fs->calc.block_data_len - buf_i);
@@ -176,9 +175,9 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
   // get write buffer and write filesize 0 to file-index
   if( !block_buf ){
     if( !(buf = MINFS_WriteBufGet(MINFS_BLOCK_TYPE_FSHEAD, 0, p_fs, 0)) )
-      return MINFS_ERROR_NOBUFFER;
+      return MINFS_ERROR_NO_BUFFER;
   } else buf = block_buf;
-  *buf = (uint32_t) 0;
+  *( (uint32_t*)buf ) = 0;
   if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->calc.first_datablock, 0, 4, p_fs, 0) ) < 0 )
     return status;
   if( (status = Write(MINFS_BLOCK_TYPE_FSHEAD, buf, p_fs->calc.first_datablock, 0, 0, p_fs, 0) ) < 0 )
@@ -188,6 +187,22 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf){
 }
 
 int32_t MINFS_GetFSInfo(MINFS_fs_t *p_fs, uint8_t *block_buf){
+  // read fs header data
+  MINFS_Read(MINFS_BLOCK_TYPE_FSHEAD, &block_buf, 0, 0, 0, p_fs, 0);
+  MINFS_Read(MINFS_BLOCK_TYPE_FSHEAD, &block_buf, 0, 0, sizeof(MINFS_fs_header_t), p_fs, 0);
+  if( !block_buf )
+    return MINFS_ERROR_NO_BUFFER;
+  // map header struct
+  MINFS_fs_header_t *p_fs_header = (MINFS_fs_header_t*)block_buf;
+  // check file system type
+  if( p_fs_header->fs_type != MINFS_FS_TYPE )
+    return MINFS_ERROR_BAD_FSTYPE;
+  // copy fs-info to *p_fs struct
+  p_fs->fs_info = p_fs_header->fs_info;
+  // calculate fs-params
+  CalcFSParams(p_fs);
+  // success
+  return 0;
 }
 
 int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, uint8_t *block_buf){
