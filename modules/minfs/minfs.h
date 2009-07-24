@@ -30,17 +30,24 @@
 #define MINFS_FLAGMASK_PEC 0x03
 
 // block type flags
-#define MINFS_BLOCK_TYPE_FSHEAD 0x01
-#define MINFS_BLOCK_TYPE_FILEINDEX 0x02
-#define MINFS_BLOCK_TYPE_FILE 0x03
+#define MINFS_BLOCK_TYPE_FS 0x01
+#define MINFS_BLOCK_TYPE_FILE 0x02
 
 // used to seek until end of a chain/file
 #define MINFS_SEEK_END 0xFFFFFFFF
 
+// NULL block pointer
+#define MINFS_BLOCK_NULL 0xFFFFFFFF
+
 // errors
 #define MINFS_ERROR_NO_BUFFER -1
-#define MINFS_ERROR_BAD_FSTYPE -2
+#define MINFS_ERROR_FS_TYPE -2
+#define MINFS_ERROR_NUM_BLOCKS -3
+#define MINFS_ERROR_BLOCK_SIZE -4
 
+// return status
+#define MINFS_STATUS_EOC -128
+#define MINFS_STATUS_EOF -129
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -71,7 +78,7 @@ typedef struct{
 
 typedef struct{
   MINFS_fs_info_t fs_info;
-  uint8_t fs_os_id; // remember fs_id value (identifies the fs on OS level)
+  uint8_t fs_id; // remember fs_id value (identifies the fs on OS level)
   MINFS_fs_calc_t calc; // values calculated once at fs-info-get / format
 } MINFS_fs_t;
 
@@ -83,8 +90,7 @@ typedef struct{
 
 typedef struct{
   MINFS_fs_t *p_fs; // pointer to filesytem-structure
-  MINFS_file_header_t file_header; // file-info structure
-  uint32_t file_id; // file id (1 - x)
+  MINFS_file_header_t file_header; // file-header structure
   uint32_t data_ptr; // file-pointer, offset from beginning (exclusive pec/file-info data)
   uint32_t current_block; // current block number
   uint32_t current_block_offset; // data pointer offset in the current block
@@ -97,10 +103,10 @@ typedef struct{
 /////////////////////////////////////////////////////////////////////////////
 extern int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf);
 
-extern int32_t MINFS_GetFSInfo(MINFS_fs_t *p_fs, uint8_t *block_buf);
+extern int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, uint8_t *block_buf);
 extern int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, uint8_t *block_buf);
 
-extern int32_t MINFS_FileRead(MINFS_file_t *p_file, uint8_t *buffer, uint32_t len, uint8_t *block_buf);
+extern int32_t MINFS_FileRead(MINFS_file_t *p_file, uint8_t *buffer, uint32_t *len, uint8_t *block_buf);
 extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, uint8_t *buffer, uint32_t len, uint8_t *block_buf);
 extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, uint8_t *block_buf);
 extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, uint8_t *block_buf);
