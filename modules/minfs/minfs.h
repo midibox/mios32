@@ -120,8 +120,8 @@ typedef struct{
 /////////////////////////////////////////////////////////////////////////////
 // High level functions
 /////////////////////////////////////////////////////////////////////////////
-extern void MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf);
-extern void MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
 extern int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 

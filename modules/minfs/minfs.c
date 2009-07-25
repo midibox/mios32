@@ -102,11 +102,14 @@ static const uint32_t BECV = 1; // dummy variable to check endianess
 /////////////////////////////////////////////////////////////////////////////
 // Hook to OS to read data. If data_len is 0, this is an attempt to populate
 // the whole block, else just a portion of data can be read. 
-// Complete population of blocks may be ignored if MINFS_Write does not only
-// write whole blocks (flush), else population *must* be done, else random
-// data will be written once a block gets flushed. Portion-read must not be
-// ignored, instead just populate the whole block if you can't/don't want to
-// read data portion-wise.
+// Complete population of blocks may be ignored if:
+// 1. MINFS_Write does not only
+//    write whole blocks (flush), else population *must* be done, else random
+//    data will be written once a block gets flushed. 
+// 2. No PEC - enabled file-system should be used. If PEC is enabled, only
+//    whole blocks will be read (data_len == 0).
+// Portion-read must not be ignored, instead just populate the whole block if 
+// you can't/don't want to read data portion-wise.
 // Once a block-buffer is completly populated, the function should set 
 // p_block_buf->flags.populated (ommits further MINFS_Read-calls for this block).
 //
@@ -124,9 +127,11 @@ extern int32_t MINFS_Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint
 /////////////////////////////////////////////////////////////////////////////
 // Hook to OS to write data. If data_len is 0, this is an attempt to flush
 // the whole buffer, else just a portion of data may be written.
-// Either portion-write or flush may be implemented. If just flush is implemented,
+// Either portion-write or flush may be implemented. If just flush-write is implemented,
 // MINFS_Read *must* provide block population, else random data will be written 
 // once a block gets flushed.
+// If PEC enabled file-systems should be used, flush-write *must* be implemented,
+// as only whole blocks will be written (data_len == 0).
 // If data was written, the function should reset p_block_buf->flags.changed to
 // signal that there are no more unsaved changes in the block-buffer (ommits
 // further MINFS_Write-calls until changed will be set again).
@@ -188,7 +193,7 @@ static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
 
 static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len);
 static int32_t Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len);
-static uint32_t GetPECValue(uint8_t *p_buf, uint16_t data_len);
+static uint32_t GetPECValue(MINFS_fs_t *p_fs, uint8_t *p_buf, uint16_t data_len);
 
 /////////////////////////////////////////////////////////////////////////////
 // High level functions
@@ -198,23 +203,48 @@ static uint32_t GetPECValue(uint8_t *p_buf, uint16_t data_len);
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialized a MINFS_block_buf_t struct. The buffer pointer p_block_buf->p_buf
-// has to be set by the caller.
+// has to be set by the caller. Each MINFS_block_buf_t struct must be initialized
+// this way before first use (by Application / OS layer).
+// The function does not initialize the p_buf-pointer, it has to be set by the
+// caller to a valid buffer.
 // 
 // IN:  <p_block_buf> pointer to a MINFS_block_buf_t - struct.
+// OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
-void MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf){
+  // valid buffer pointer?
+  if( p_block_buf == NULL )
+    return MINFS_ERROR_NO_BUFFER;
+  // reset flags and block_n
   p_block_buf->flags.ALL = 0;
   p_block_buf->block_n = MINFS_BLOCK_NULL;
+  // success
+  return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Flushes a block-buffer if the changed-flag is set.
+// Flushes a block-buffer if the changed-flag is set. This has to be called
+// at the end of each MINFS-session for each used buffer that was changed
+// (changed-flag set). Only if the MINFS_Write - implementation does write
+// the single data poritions (not only whole blocks) consequently, flush can
+// be ommited as all data will be written immediately after it was changed.
 // NOTE: MINFS_Write has to reset the changed flag!
 // 
-// IN:  <p_block_buf> pointer to a MINFS_block_buf_t - struct.
+// IN:   <p_fs> Pointer to filesystem-info structure.
+//       <p_block_buf> pointer to a MINFS_block_buf_t - struct.
+// OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
-void MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
-  FlushBlockBuffer(p_fs, p_block_buf);
+int32_t MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
+  // valid buffer pointer?
+  if( p_block_buf == NULL )
+    return MINFS_ERROR_NO_BUFFER;
+  // valid block_n ?
+  if( p_block_buf->block_n >= p_fs->fs_info.num_blocks )
+    return MINFS_ERROR_BLOCK_N;
+  // valid buffer pointer?
+  if( p_block_buf == NULL )
+    return MINFS_ERROR_NO_BUFFER;
+  return FlushBlockBuffer(p_fs, p_block_buf);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -548,6 +578,18 @@ static int32_t GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf
   return 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Flushed a buffer (only if changed-flag is set).
+// The application / OS layer is responsible to call MINFS_FlushBlockBuffer
+// the last time, else each call to GetBlockBuffer will flush the passed
+// buffer if a new one should be used.
+// NOTE: MINFS_Write has to reset the changed flag!
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_buf> Pointer to a MINFS_block_buf_t pointer
+// OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
 static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
   // check if buffer has changed -> write whole buffer
   // NOTE: MINFS_Write has to reset the changed flag!
@@ -556,8 +598,23 @@ static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
     if( status = Write(p_fs, p_block_buf, 0, 0) )
       return status; // return error status
   }
+  return 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Attemp to write a data portion or to flush the buffer (data_len == 0).
+// FlushBlockBuffer is the only function that calls Write with data_len = 0,
+// because MINFS_Write may ignore flush attemps if it writes data portions
+// immediately. All other functions call Write for each data-portion to
+// write.
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_buf> Pointer to a MINFS_block_buf_t pointer
+//      <data_offset> First byte in block to write
+//      <data_len> Number of bytes to write. If 0, attemp to flush the whole buffer
+// OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
 static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
   // set the changed-flag
   // NOTE: MINFS_Write has to reset the changed flag!
@@ -567,17 +624,32 @@ static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t 
     if( data_len )
       return 0;
     // caculate and set PEC-value
-    uint32_t pec = GetPECValue(p_block_buf->p_buf, p_fs->calc.block_data_len);
+    uint32_t pec = GetPECValue(p_fs, p_block_buf->p_buf, p_fs->calc.block_data_len);
     TC_SET( (p_block_buf->p_buf + p_fs->calc.block_data_len), pec, p_fs->calc.pec_width );
   }
   // write buffer
   int32_t status;
-  if( status = statusMINFS_Write(p_fs, p_block_buf, data_offset, data_len) )
+  if( status = MINFS_Write(p_fs, p_block_buf, data_offset, data_len) )
     return status; // return error status
   // success
   return 0;
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Attemp to read a data portion or to populate the entire buffer (data_len == 0).
+// GetBlockBuffer is the only function that calls Read with data_len = 0,
+// because MINFS_Read may ignore population attemps if MINFS_Write writes data portions
+// immediately. All other functions call Read for each data-portion to
+// write.
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_buf> Pointer to a MINFS_block_buf_t pointer
+//      <data_offset> First byte in block to read
+//      <data_len> Number of bytes to read. If 0, attemp to populate the whole buffer
+// OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
 static int32_t Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
   // if the buffer is populated, nothing has to be read
   if( p_block_buf->flags.populated )
@@ -591,14 +663,22 @@ static int32_t Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t d
     return status; // return error status
   // check PEC value if PEC is enabled
   if( p_fs->fs_info.flags & MINFS_FLAGMASK_PEC ){
-    if ( GetPECValue(p_block_buf->p_buf, p_fs->calc.block_data_len + p_fs->calc.pec_width) )
+    if ( GetPECValue(p_fs, p_block_buf->p_buf, p_fs->calc.block_data_len + p_fs->calc.pec_width) )
       return MINFS_ERROR_PEC; // PEC value was not 0
   }
   // success
   return 0;
 }
 
-static uint32_t GetPECValue(uint8_t *p_buf, uint16_t data_len){
+/////////////////////////////////////////////////////////////////////////////
+// Calculates the PEC - value for the data in *p_buf (data_len bytes)
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <p_buf> Pointer to a data buffer
+//      <data_len> Number of bytes to build the PEC - value from
+// OUT: PEC - value
+/////////////////////////////////////////////////////////////////////////////
+static uint32_t GetPECValue(MINFS_fs_t *p_fs, uint8_t *p_buf, uint16_t data_len){
   // PEC value generation: the PEC of valid data incl. PEC must be zero.
   return 0;
 }
