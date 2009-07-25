@@ -11,6 +11,8 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
+
 
 #ifndef _MINFS_H
 #define _MINFS_H
@@ -29,25 +31,30 @@
 #define MINFS_FLAGS_PEC32 0x03
 #define MINFS_FLAGMASK_PEC 0x03
 
-// block type flags
-#define MINFS_BLOCK_TYPE_FS 0x01
-#define MINFS_BLOCK_TYPE_FILE 0x02
-
 // used to seek until end of a chain/file
 #define MINFS_SEEK_END 0xFFFFFFFF
 
 // NULL block pointer
 #define MINFS_BLOCK_NULL 0xFFFFFFFF
 
+// NULL file id
+#define MINFS_FILE_NULL 0xFFFFFFFF
+
+// EOC block pointer
+#define MINFS_BLOCK_EOC 0
+
 // errors
 #define MINFS_ERROR_NO_BUFFER -1
 #define MINFS_ERROR_FS_TYPE -2
 #define MINFS_ERROR_NUM_BLOCKS -3
 #define MINFS_ERROR_BLOCK_SIZE -4
+#define MINFS_ERROR_BLOCK_N -5
+#define MINFS_ERROR_PEC -6
 
 // return status
 #define MINFS_STATUS_EOC -128
 #define MINFS_STATUS_EOF -129
+#define MINFS_STATUS_FULL -130
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,7 +79,7 @@ typedef struct{
   uint8_t bp_size; // size of a block-pointer in bytes (1,2,4)
   uint16_t block_data_len; // block-length 
   uint32_t first_datablock; // block number where data blocks begin
-  uint8_t pec_size; // size in bytes of the pec-value  
+  uint8_t pec_width; // size in bytes of the pec-value  
  } MINFS_fs_calc_t;
 
 
@@ -97,23 +104,38 @@ typedef struct{
   uint32_t first_block; // first block of the file
 } MINFS_file_t;
 
+// structure to hold information about a block-buffer
+typedef struct{
+  uint8_t *p_buf; // pointer to the buffer
+  uint32_t block_n;
+  union{
+    struct{
+      unsigned populated:1;
+      unsigned changed:1;
+      };
+    uint8_t ALL;
+  } flags;
+} MINFS_block_buf_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // High level functions
 /////////////////////////////////////////////////////////////////////////////
-extern int32_t MINFS_Format(MINFS_fs_t *p_fs, uint8_t *block_buf);
+extern void MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf);
+extern void MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
-extern int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, uint8_t *block_buf);
-extern int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, uint8_t *block_buf);
+extern int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
-extern int32_t MINFS_FileRead(MINFS_file_t *p_file, uint8_t *buffer, uint32_t *len, uint8_t *block_buf);
-extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, uint8_t *buffer, uint32_t len, uint8_t *block_buf);
-extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, uint8_t *block_buf);
-extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, uint8_t *block_buf);
+extern int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t *p_block_buf);
 
-extern int32_t MINFS_Unlink(uint32_t file_id, uint8_t *block_buf);
-extern int32_t MINFS_Move(uint32_t src_file_id, uint32_t dst_file_id, uint8_t *block_buf);
-extern int32_t MINFS_FileExists(uint32_t file_id, uint8_t *block_buf);
+extern int32_t MINFS_FileRead(MINFS_file_t *p_file, uint8_t *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, uint8_t *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf);
+
+extern int32_t MINFS_Unlink(uint32_t file_id, MINFS_block_buf_t *block_buf);
+extern int32_t MINFS_Move(uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileExists(uint32_t file_id, MINFS_block_buf_t *p_block_buf);
 
 
 #endif /* _MINFS_H */

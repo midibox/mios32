@@ -32,11 +32,11 @@
 /////////////////////////////////////////////////////////////////////////////
 // MINFS OS Hook functions
 /////////////////////////////////////////////////////////////////////////////
-int32_t MINFS_Read(uint8_t block_type, uint8_t **buffer, uint32_t block_n, uint32_t data_offset, uint32_t data_len, MINFS_fs_t *p_fs, uint32_t file_id){
+int32_t MINFS_Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
 }
 
-int32_t MINFS_Write(uint8_t block_type, uint8_t *buffer, uint32_t block_n, uint32_t data_offset, uint32_t data_len, MINFS_fs_t *p_fs, uint32_t file_id){
+int32_t MINFS_Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
 }
 
-uint8_t* MINFS_WriteBufGet(uint8_t block_type, uint32_t block_n, MINFS_fs_t *p_fs, uint32_t file_id){
+int32_t MINFS_GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id){
 }
