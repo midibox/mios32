@@ -160,6 +160,16 @@ void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
   // It has the disadvantage, that some additional programming effort is required
   // to parse the stream and sort it into (USB compliant) packages
 
+  // Somebody could think, that it would be better if MIOS32 would call
+  // APP_NotifyReceivedEvent() directly on each incoming SysEx package, but
+  // this could quickly lead to unexpected effects at the application side,
+  // e.g. if the OS uses USB package type 0xf (single byte events) to send
+  // the beginning part of a SysEx stream, as observed with PortMIDI under MacOS!
+
+  // Accordingly, this cumbersome data flow should lead to the most robust
+  // results - in the hope, that this application will never find its way into
+  // the MIDI Interface Blacklist! -> http://www.midibox.org/dokuwiki/doku.php?id=midi_interface_blacklist
+
   // propagate realtime message immediately
   if( sysex_byte >= 0xf8 ) {
     mios32_midi_package_t p;
