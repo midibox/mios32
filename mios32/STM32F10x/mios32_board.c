@@ -315,11 +315,14 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
 	return -2; // invalid pin mode
     }
 
+    // set pin value to 0
+    // This should be done before IO mode configuration, because
+    // in input mode, this bit will control Pull Up/Down (configured
+    // by GPIO_Init)
+    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
+
     // init IO mode
     GPIO_Init(j5_pin[pin].port, &GPIO_InitStructure);
-
-    // set pin value to 0
-    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
   }
 
   return 0; // no error
