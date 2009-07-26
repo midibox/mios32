@@ -179,20 +179,25 @@ extern int32_t MINFS_GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_blo
 
 static int32_t CalcFSParams(MINFS_fs_t *p_fs);
 
+// File layer
+static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t block_n, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf);
+static int32_t FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t **pp_block_buf);
+static int32_t FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t **pp_block_buf);
+static int32_t FileExists(MINFS_file_t *p_file_0, MINFS_block_buf_t **pp_block_buf);
+static int32_t Unlink(MINFS_file_t *p_file_0, MINFS_block_buf_t **pp_block_buf);
+static int32_t Move(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t dst_file_id, MINFS_block_buf_t **pp_block_buf);
+
+// Block chain layer
 static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf);
-
 static int32_t BlockLink(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_target, MINFS_block_buf_t **pp_block_buf);
-
 static int32_t PopFreeBlocks(MINFS_fs_t *p_fs, uint32_t num_blocks, MINFS_block_buf_t **pp_block_buf);
 static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t start_block, MINFS_block_buf_t **pp_block_buf);
 
-static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf);
-
+// Buffer and RW layer
 static int32_t GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id, uint8_t populate);
-static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
-
 static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len);
 static int32_t Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len);
+static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 static uint32_t GetPECValue(MINFS_fs_t *p_fs, uint8_t *p_buf, uint16_t data_len);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -420,80 +425,23 @@ static int32_t CalcFSParams(MINFS_fs_t *p_fs){
   return 0;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Seeks in a data-block-chain starting with block_n
-// 
-// IN:  <p_fs> Pointer to a populated fs-structure
-//      <block_n> Block number, seek start
-//      <offset> How much elements to advance in the chain 
-//               (MINFS_SEEK_END finds last element != EOC)
-//       <block_buf> Pointer to a MINFS_block_buf_t pointer
-// OUT: block pointer on success (may be MINFS_BLOCK_EOC), else < 0 (MINFS_ERROR_XXXX)
-/////////////////////////////////////////////////////////////////////////////
-static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf){
-  // check if block_n is a data-block (failsafe)
-  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->fs_info.num_blocks )
-    return MINFS_ERROR_BLOCK_N;
-  // seek blocks
-  uint32_t block_chain_block_n, last_block_n;
-  uint16_t block_chain_entry_offset;
-  int32_t status;
-  while( offset > 0 ){
-    // calculate block and offset where the next block-pointer is stored
-    block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
-    block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
-    block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
-    // get buffer
-    if( status = GetBlockBuffer(p_fs, pp_block_buf, block_chain_block_n, 0, 0) )
-      return status; // return error status
-    // read fs header data
-    if( status = Read(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
-      return status;
-    // get block pointer
-    last_block_n = block_n;
-    LE_GET(block_n, (*pp_block_buf)->p_buf + block_chain_entry_offset, p_fs->calc.bp_size);
-    // check if EOC
-    if( block_n == MINFS_BLOCK_EOC ){
-      // if seek-end requested, return the last block number
-      if( offset = MINFS_SEEK_END )
-        return last_block_n;
-      // offset was not reached, return EOC
-      return MINFS_BLOCK_EOC;
-    }
-    // goto next element
-    offset--;
-  }
-  // reached the block-offset
-  return block_n;
+
+static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf){
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Links a block in the blocks-chain-map to a target block
-// 
-// IN:  <p_fs> Pointer to a populated fs-structure
-//      <block_n> Block number to link from
-//      <block_target> Block number to link to
-//      <block_buf> Pointer to a MINFS_block_buf_t pointer
-// OUT: 0, else < 0 (MINFS_ERROR_XXXX)
-/////////////////////////////////////////////////////////////////////////////
-static int32_t BlockLink(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_target, MINFS_block_buf_t **pp_block_buf){
-  // check if block_n is a data-block (failsafe)
-  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->fs_info.num_blocks )
-    return MINFS_ERROR_BLOCK_N;
-  // calculate block and offset where the next block-pointer is stored
-  uint16_t block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
-  uint32_t block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
-  block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
-  // get buffer
-  int32_t status;
-  if( status = GetBlockBuffer(p_fs, pp_block_buf, block_chain_block_n, 0, 1) )
-    return status; // return error status
-  // write the block-chain-entry
-  LE_SET( (*pp_block_buf + block_chain_entry_offset), block_target, p_fs->calc.bp_size);
-  if( status = Write(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
-    return status;
-  // success
-  return 0;
+static int32_t FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t **pp_block_buf){
+}
+
+static int32_t FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t **pp_block_buf){
+}
+
+static int32_t FileExists(MINFS_file_t *p_file_0, MINFS_block_buf_t **pp_block_buf){
+}
+
+static int32_t Unlink(MINFS_file_t *p_file_0, MINFS_block_buf_t **pp_block_buf){
+}
+
+static int32_t Move(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t dst_file_id, MINFS_block_buf_t **pp_block_buf){
 }
 
 
@@ -570,10 +518,83 @@ static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t start_block, MINFS_bloc
   return 0;
 }
 
-static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf){
-
-
+/////////////////////////////////////////////////////////////////////////////
+// Seeks in a data-block-chain starting with block_n
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_n> Block number, seek start
+//      <offset> How much elements to advance in the chain 
+//               (MINFS_SEEK_END finds last element != EOC)
+//       <block_buf> Pointer to a MINFS_block_buf_t pointer
+// OUT: block pointer on success (may be MINFS_BLOCK_EOC), else < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
+static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf){
+  // check if block_n is a data-block (failsafe)
+  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->fs_info.num_blocks )
+    return MINFS_ERROR_BLOCK_N;
+  // seek blocks
+  uint32_t block_chain_block_n, last_block_n;
+  uint16_t block_chain_entry_offset;
+  int32_t status;
+  while( offset > 0 ){
+    // calculate block and offset where the next block-pointer is stored
+    block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
+    block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
+    block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
+    // get buffer
+    if( status = GetBlockBuffer(p_fs, pp_block_buf, block_chain_block_n, 0, 0) )
+      return status; // return error status
+    // read fs header data
+    if( status = Read(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
+      return status;
+    // get block pointer
+    last_block_n = block_n;
+    LE_GET(block_n, (*pp_block_buf)->p_buf + block_chain_entry_offset, p_fs->calc.bp_size);
+    // check if EOC
+    if( block_n == MINFS_BLOCK_EOC ){
+      // if seek-end requested, return the last block number
+      if( offset = MINFS_SEEK_END )
+        return last_block_n;
+      // offset was not reached, return EOC
+      return MINFS_BLOCK_EOC;
+    }
+    // goto next element
+    offset--;
+  }
+  // reached the block-offset
+  return block_n;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Links a block in the blocks-chain-map to a target block
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_n> Block number to link from
+//      <block_target> Block number to link to
+//      <block_buf> Pointer to a MINFS_block_buf_t pointer
+// OUT: 0, else < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
+static int32_t BlockLink(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_target, MINFS_block_buf_t **pp_block_buf){
+  // check if block_n is a data-block (failsafe)
+  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->fs_info.num_blocks )
+    return MINFS_ERROR_BLOCK_N;
+  // calculate block and offset where the next block-pointer is stored
+  uint16_t block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
+  uint32_t block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
+  block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
+  // get buffer
+  int32_t status;
+  if( status = GetBlockBuffer(p_fs, pp_block_buf, block_chain_block_n, 0, 1) )
+    return status; // return error status
+  // write the block-chain-entry
+  LE_SET( (*pp_block_buf + block_chain_entry_offset), block_target, p_fs->calc.bp_size);
+  if( status = Write(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
+    return status;
+  // success
+  return 0;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns a buffer. Will be called before any call to Read or Write, at least
