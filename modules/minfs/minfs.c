@@ -100,12 +100,10 @@ static const uint32_t BECV = 1; // dummy variable to check endianess
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Hook to OS to read data. If data_len is 0, this is an attempt to populate
+// Hook to OS to read data. If data_len is 0, this is an request to populate
 // the whole block, else just a portion of data can be read. 
-// Complete population of blocks may be ignored if:
-// 1. MINFS_Write does not only
-//    write whole blocks (flush), else population *must* be done, else random
-//    data will be written once a block gets flushed. 
+// Complete population of blocks may be not implemented if:
+// 1. Portion-write in MINFS_Write is implemented (flush is not necessray).
 // 2. No PEC - enabled file-system should be used. If PEC is enabled, only
 //    whole blocks will be read (data_len == 0).
 // Portion-read must not be ignored, instead just populate the whole block if 
@@ -125,14 +123,16 @@ extern int32_t MINFS_Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Hook to OS to write data. If data_len is 0, this is an attempt to flush
+// Hook to OS to write data. If data_len is 0, this is an request to flush
 // the whole buffer, else just a portion of data may be written.
 // Either portion-write or flush may be implemented. If just flush-write is implemented,
-// MINFS_Read *must* provide block population, else random data will be written 
-// once a block gets flushed.
+// MINFS_Read *must* provide block population and set the populated-flag, else you
+// will get a MINFS_ERROR_FLUSH_BNP (buffer not populated) - error.
+//
 // If PEC enabled file-systems should be used, flush-write *must* be implemented,
-// as only whole blocks will be written (data_len == 0).
-// If data was written, the function should reset p_block_buf->flags.changed to
+// as only whole blocks will be written (data_len == 0). No data will be written
+// if PEC is enabled and flush-write is not implemented.
+// If data was written like requested, the function should reset p_block_buf->flags.changed to
 // signal that there are no more unsaved changes in the block-buffer (ommits
 // further MINFS_Write-calls until changed will be set again).
 //
@@ -184,9 +184,9 @@ static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MI
 static int32_t BlockLink(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_target, MINFS_block_buf_t **pp_block_buf);
 
 static int32_t PopFreeBlocks(MINFS_fs_t *p_fs, uint32_t num_blocks, MINFS_block_buf_t **pp_block_buf);
-static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t first_block, MINFS_block_buf_t **pp_block_buf);
+static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t start_block, MINFS_block_buf_t **pp_block_buf);
 
-static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t block_n, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf);
+static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf);
 
 static int32_t GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id, uint8_t populate);
 static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
@@ -425,22 +425,20 @@ static int32_t CalcFSParams(MINFS_fs_t *p_fs){
 // 
 // IN:  <p_fs> Pointer to a populated fs-structure
 //      <block_n> Block number, seek start
-//      <offset> How much elements to advance in the chain
+//      <offset> How much elements to advance in the chain 
+//               (MINFS_SEEK_END finds last element != EOC)
 //       <block_buf> Pointer to a MINFS_block_buf_t pointer
-// OUT: block pointer on success, else < 0 (MINFS_ERROR_XXXX or MINFS_STATUS_EOC)
+// OUT: block pointer on success (may be MINFS_BLOCK_EOC), else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf){
   // check if block_n is a data-block (failsafe)
   if( block_n < p_fs->calc.first_datablock || block_n > p_fs->fs_info.num_blocks )
     return MINFS_ERROR_BLOCK_N;
   // seek blocks
-  uint32_t block_chain_block_n;
+  uint32_t block_chain_block_n, last_block_n;
   uint16_t block_chain_entry_offset;
   int32_t status;
   while( offset > 0 ){
-    // check if EOC
-    if( block_n == MINFS_BLOCK_EOC )
-      return MINFS_STATUS_EOC;
     // calculate block and offset where the next block-pointer is stored
     block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
     block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
@@ -452,7 +450,16 @@ static int32_t BlockSeek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MI
     if( status = Read(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
       return status;
     // get block pointer
+    last_block_n = block_n;
     LE_GET(block_n, (*pp_block_buf)->p_buf + block_chain_entry_offset, p_fs->calc.bp_size);
+    // check if EOC
+    if( block_n == MINFS_BLOCK_EOC ){
+      // if seek-end requested, return the last block number
+      if( offset = MINFS_SEEK_END )
+        return last_block_n;
+      // offset was not reached, return EOC
+      return MINFS_BLOCK_EOC;
+    }
     // goto next element
     offset--;
   }
@@ -499,24 +506,30 @@ static int32_t BlockLink(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_targ
 // OUT: First block number, on error < 0 (MINFS_ERROR_XXXX or MINFS_STATUS_FULL)
 /////////////////////////////////////////////////////////////////////////////
 static int32_t PopFreeBlocks(MINFS_fs_t *p_fs, uint32_t num_blocks, MINFS_block_buf_t **pp_block_buf){
-  int32_t status, start_block, end_block, fbc_cont_block;
   if( num_blocks == 0 )
     return MINFS_BLOCK_EOC; // return EOC-pointer
-  // seek first block to pop off the fbc
+  // seek first block to pop off the fbc 
+  // p_fs->fs_info.num_blocks is the virtual start block of the fbc
+  int32_t start_block;
   if( (start_block = BlockSeek(p_fs, p_fs->fs_info.num_blocks, 1, pp_block_buf)) < 0 )
     return start_block; // return error status
+  else if(start_block == MINFS_BLOCK_EOC)
+    return MINFS_STATUS_FULL; // no more free blocks
   // seek last block to pop off the fbc
+  int32_t end_block;
   if( num_blocks > 1 ){
-    if( (end_block = BlockSeek(p_fs, start_block, num_blocks-1, pp_block_buf)) < 0 )
+    if( (end_block  = BlockSeek(p_fs, start_block, num_blocks-1, pp_block_buf)) < 0 )
       return end_block; // return error status
-    if( end_block == MINFS_STATUS_EOC )
-      return MINFS_STATUS_FULL; // can't fetch the requested number of free blocks
+    else if(end_block == MINFS_BLOCK_EOC)
+      return MINFS_STATUS_FULL; // can't get the requested number of free blocks
   } else end_block = start_block;
   // now get the block-number next in chain after the last block to pop off the fbc
+  int32_t fbc_cont_block;
   if( (fbc_cont_block = BlockSeek(p_fs, end_block, 1, pp_block_buf)) < 0 )
     return fbc_cont_block; // return error status
   // set the new block-chain-entries
   // set entry for last poped block to EOC
+  int32_t status;
   if( status = BlockLink(p_fs, end_block, MINFS_BLOCK_EOC, pp_block_buf) )
     return status;
   // continue free blocks chain at entry after the last popped block
@@ -525,10 +538,41 @@ static int32_t PopFreeBlocks(MINFS_fs_t *p_fs, uint32_t num_blocks, MINFS_block_
   return 0;  
 }
 
-static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t first_block, MINFS_block_buf_t **pp_block_buf){
+
+/////////////////////////////////////////////////////////////////////////////
+// Adds a block-chain (start_block -> EOC) to the free-blocks-chain
+// 
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <start_block> Start-block of the chain
+//      <block_buf> Pointer to a MINFS_block_buf_t pointer
+// OUT: First block number, on error < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
+static int32_t PushFreeBlocks(MINFS_fs_t *p_fs, uint32_t start_block, MINFS_block_buf_t **pp_block_buf){
+  // check if start_block is a data-block (failsafe)
+  if( start_block < p_fs->calc.first_datablock || start_block > p_fs->fs_info.num_blocks )
+    return MINFS_ERROR_BLOCK_N;
+  // find last block of the chain
+  uint32_t end_block;
+  if( (end_block = BlockSeek(p_fs, start_block, MINFS_SEEK_END, pp_block_buf)) < 0 )
+    return end_block; // return error status
+  // find the second element in the free-blocks chain
+  uint32_t fbc_cont_block;
+  if( (fbc_cont_block = BlockSeek(p_fs, p_fs->fs_info.num_blocks, 1, pp_block_buf)) < 0 )
+    return fbc_cont_block; // return error status
+  // link fbc first (virtual) block to start_block
+  int32_t status;
+  if( status = BlockLink(p_fs, p_fs->fs_info.num_blocks, start_block, pp_block_buf) )
+    return status;
+  // link end_block to the former second element of free-blocks
+  if( status = BlockLink(p_fs, end_block, fbc_cont_block, pp_block_buf) )
+    return status;
+  // success
+  return 0;
 }
 
-static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t block_n, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf){
+static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf){
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -545,9 +589,10 @@ static int32_t FileOpen(MINFS_fs_t *p_fs, uint32_t block_n, MINFS_file_t *p_file
 //                (file_id 0 is the file-index) else set to MINFS_FILE_NULL.
 // OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
+// TODO: Optimize this function 
 static int32_t GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id, uint8_t populate){
   int32_t status;
-  // buffer was already used?
+  // passed buffer was already used?
   if( *pp_block_buf != NULL && (*pp_block_buf)->block_n != MINFS_BLOCK_NULL ){
     // return if buffer is already valid (right block number, poplulated if this was requested)
     if( ( (*pp_block_buf)->block_n ) == block_n && ( populate ? (*pp_block_buf)->flags.populated : 1) )
@@ -580,10 +625,10 @@ static int32_t GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Flushed a buffer (only if changed-flag is set).
+// Flushes a buffer (only if changed-flag is set).
 // The application / OS layer is responsible to call MINFS_FlushBlockBuffer
-// the last time, else each call to GetBlockBuffer will flush the passed
-// buffer if a new one should be used.
+// the last time. Each call to GetBlockBuffer will flush the passed
+// buffer if a new one should be used (different block-number).
 // NOTE: MINFS_Write has to reset the changed flag!
 // 
 // IN:  <p_fs> Pointer to a populated fs-structure
@@ -594,6 +639,8 @@ static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
   // check if buffer has changed -> write whole buffer
   // NOTE: MINFS_Write has to reset the changed flag!
   if( p_block_buf->flags.changed ){
+    if( !p_block_buf->flags.populated )
+      return MINFS_ERROR_FLUSH_BNP; // buffer was not populated
     int32_t status;
     if( status = Write(p_fs, p_block_buf, 0, 0) )
       return status; // return error status
@@ -603,16 +650,18 @@ static int32_t FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Attemp to write a data portion or to flush the buffer (data_len == 0).
+// Request to write a data portion or to flush the buffer (data_len == 0).
 // FlushBlockBuffer is the only function that calls Write with data_len = 0,
-// because MINFS_Write may ignore flush attemps if it writes data portions
+// because MINFS_Write may ignore flush requests if it writes data portions
 // immediately. All other functions call Write for each data-portion to
 // write.
+// The changed-flag of the buffer will be set. MINFS_Write has to reset this
+// flag after each processed write request.
 // 
 // IN:  <p_fs> Pointer to a populated fs-structure
 //      <block_buf> Pointer to a MINFS_block_buf_t pointer
 //      <data_offset> First byte in block to write
-//      <data_len> Number of bytes to write. If 0, attemp to flush the whole buffer
+//      <data_len> Number of bytes to write. If 0, this is a request to flush the whole buffer
 // OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
@@ -638,29 +687,33 @@ static int32_t Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t 
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Attemp to read a data portion or to populate the entire buffer (data_len == 0).
+// Request to read a data portion or to populate the entire buffer (data_len == 0).
 // GetBlockBuffer is the only function that calls Read with data_len = 0,
-// because MINFS_Read may ignore population attemps if MINFS_Write writes data portions
-// immediately. All other functions call Read for each data-portion to
-// write.
+// because MINFS_Read may ignore population requests if MINFS_Write writes data portions
+// immediately, and PEC will not be used. All other functions call Read for each 
+// data-portion to read.
+// If the buffer is already populated, the function will return immediately.
 // 
 // IN:  <p_fs> Pointer to a populated fs-structure
 //      <block_buf> Pointer to a MINFS_block_buf_t pointer
 //      <data_offset> First byte in block to read
-//      <data_len> Number of bytes to read. If 0, attemp to populate the whole buffer
+//      <data_len> Number of bytes to read. If 0, this is a request to populate the whole buffer
 // OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 static int32_t Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t data_offset, uint16_t data_len){
   // if the buffer is populated, nothing has to be read
   if( p_block_buf->flags.populated )
     return 0;
-  // If PEC is enabled, only reads of a whole block are valid
+  // If PEC is enabled, only reads of a whole block are valid (populate)
   if( p_fs->fs_info.flags & MINFS_FLAGMASK_PEC )
     data_len = 0;
-  // NOTE: MINFS_Read has to set the populated - flag after a whole-block read!
+  // NOTE: MINFS_Read has to set the populated - flag after a whole-block was read!
   int32_t status;
   if( status = MINFS_Read(p_fs, p_block_buf, data_offset, data_len) )
     return status; // return error status
+  // if PEC is enabled, a populate-request must not be ignored
+  if( (p_fs->fs_info.flags & MINFS_FLAGMASK_PEC) && !p_block_buf->flags.populated )
+    return MINFS_ERROR_READ_BNP;
   // check PEC value if PEC is enabled
   if( p_fs->fs_info.flags & MINFS_FLAGMASK_PEC ){
     if ( GetPECValue(p_fs, p_block_buf->p_buf, p_fs->calc.block_data_len + p_fs->calc.pec_width) )

@@ -31,7 +31,7 @@
 #define MINFS_FLAGS_PEC32 0x03
 #define MINFS_FLAGMASK_PEC 0x03
 
-// used to seek until end of a chain/file
+// used to seek until end of a file / block-chain
 #define MINFS_SEEK_END 0xFFFFFFFF
 
 // NULL block pointer
@@ -50,6 +50,9 @@
 #define MINFS_ERROR_BLOCK_SIZE -4
 #define MINFS_ERROR_BLOCK_N -5
 #define MINFS_ERROR_PEC -6
+#define MINFS_ERROR_FLUSH_BNP -7
+#define MINFS_ERROR_READ_BNP -7
+
 
 // return status
 #define MINFS_STATUS_EOC -128
