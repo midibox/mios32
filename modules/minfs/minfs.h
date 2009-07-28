@@ -21,8 +21,11 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// filesystem-type identification
-#define MINFS_FS_TYPE 0xAB0145CC
+// filesystem-signature
+#define MINFS_FS_SIG "MIFS"
+
+// file signature
+#define MINFS_FILE_SIG "MIFL"
 
 // filesystem flags
 #define MINFS_FLAGS_NOPEC 0x00
@@ -45,19 +48,20 @@
 
 // errors
 #define MINFS_ERROR_NO_BUFFER -1
-#define MINFS_ERROR_FS_TYPE -2
+#define MINFS_ERROR_FS_SIG -2
 #define MINFS_ERROR_NUM_BLOCKS -3
 #define MINFS_ERROR_BLOCK_SIZE -4
 #define MINFS_ERROR_BLOCK_N -5
 #define MINFS_ERROR_PEC -6
 #define MINFS_ERROR_FLUSH_BNP -7
-#define MINFS_ERROR_READ_BNP -7
+#define MINFS_ERROR_READ_BNP -8
+#define MINFS_ERROR_FILE_SIG -9
+#define MINFS_ERROR_FILE_CHAIN -10
 
 
 // return status
-#define MINFS_STATUS_EOC -128
-#define MINFS_STATUS_EOF -129
-#define MINFS_STATUS_FULL -130
+#define MINFS_STATUS_EOF -128
+#define MINFS_STATUS_FULL -129
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,7 +78,7 @@ typedef struct{
 
 typedef struct{
   uint32_t fs_type;
-  MINFS_fs_info_t fs_info;
+  MINFS_fs_info_t info;
 } MINFS_fs_header_t;
 
 
@@ -87,20 +91,24 @@ typedef struct{
 
 
 typedef struct{
-  MINFS_fs_info_t fs_info;
+  MINFS_fs_info_t info;
   uint8_t fs_id; // remember fs_id value (identifies the fs on OS level)
   MINFS_fs_calc_t calc; // values calculated once at fs-info-get / format
 } MINFS_fs_t;
 
+typedef struct{
+  uint32_t size; // file size in bytes  
+} MINFS_file_info_t;
 
 typedef struct{
-  uint32_t size; // file size in bytes
+  uint32_t file_sig; // file-signature
+  MINFS_file_info_t info; // file size in bytes
 } MINFS_file_header_t;
 
 
 typedef struct{
   MINFS_fs_t *p_fs; // pointer to filesytem-structure
-  MINFS_file_header_t file_header; // file-header structure
+  MINFS_file_info_t info; // file-header structure
   uint32_t data_ptr; // file-pointer, offset from beginning (exclusive pec/file-info data)
   uint32_t current_block; // current block number
   uint32_t current_block_offset; // data pointer offset in the current block
