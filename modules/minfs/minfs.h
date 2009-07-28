@@ -109,15 +109,16 @@ typedef struct{
 typedef struct{
   MINFS_fs_t *p_fs; // pointer to filesytem-structure
   MINFS_file_info_t info; // file-header structure
+  uint32_t file_id; // file id
   uint32_t data_ptr; // file-pointer, offset from beginning (exclusive pec/file-info data)
   uint32_t current_block_n; // current block number
-  uint32_t current_block_offset; // data pointer offset in the current block
+  uint32_t data_ptr_block_offset; // data pointer offset in the current block
   uint32_t first_block_n; // first block of the file
 } MINFS_file_t;
 
 // structure to hold information about a block-buffer
 typedef struct{
-  uint8_t *p_buf; // pointer to the buffer
+  void *p_buf; // pointer to the buffer
   uint32_t block_n;
   union{
     struct{
@@ -139,8 +140,8 @@ extern int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t *p_block_buf);
 
-extern int32_t MINFS_FileRead(MINFS_file_t *p_file, uint8_t *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
-extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, uint8_t *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf);
 
