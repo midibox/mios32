@@ -40,7 +40,6 @@ are filtered.
 
 By jumpering J5B.A6 to ground, the beat number and tempo (BPM) is displayed
 on each beat when a MIDI clock is received.
-(NOT IMPLEMENTED YET)
 
 By jumpering J5B.A7 to ground, the MIDI time code (MTC) is displayed 
 in plain text format whenever all 8 MTC messages have been received.
@@ -76,8 +75,8 @@ you are able display MIDI Monitor output on the MIOS Terminal.
 
 ===============================================================================
 
-SysEx messages received on MIDI IN1 are not displayed by the MIDI monitor
-to avoid data corruption (the SysEx stream would interfere with monitor
-messages)
+SysEx messages received on MIDI IN1 or transmitted to MIDI OUT1 via USB
+are not displayed by the MIDI monitor to avoid data corruption (the SysEx 
+stream would interfere with monitor messages)
 
 ===============================================================================
