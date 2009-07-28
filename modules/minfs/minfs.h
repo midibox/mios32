@@ -110,9 +110,9 @@ typedef struct{
   MINFS_fs_t *p_fs; // pointer to filesytem-structure
   MINFS_file_info_t info; // file-header structure
   uint32_t data_ptr; // file-pointer, offset from beginning (exclusive pec/file-info data)
-  uint32_t current_block; // current block number
+  uint32_t current_block_n; // current block number
   uint32_t current_block_offset; // data pointer offset in the current block
-  uint32_t first_block; // first block of the file
+  uint32_t first_block_n; // first block of the file
 } MINFS_file_t;
 
 // structure to hold information about a block-buffer
