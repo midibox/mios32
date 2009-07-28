@@ -517,16 +517,16 @@ static int32_t File_SetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block
   // already right size?
   if( p_file->info.size == new_size )
     return 0;
-  // make smaller
   uint16_t current_size_block_offset = (p_file->info.size + sizeof(MINFS_file_header_t)) % p_file->p_fs->calc.block_data_len;
+  // shrink file ?
   if( new_size < p_file->info.size ){
-    // leave last block (truncate) ?
+    // truncate blocks ?
     if( (p_file->info.size - new_size) > current_size_block_offset ){
         
     }
-  // make bigger
+  // extend file ?
   }else{
-    // leave last block (extend) ?
+    // add blocks ?
     if( (new_size - p_file->info.size + current_size_block_offset) >  p_file->p_fs->calc.block_data_len ){
         
     }
@@ -708,7 +708,6 @@ static int32_t BlockChain_Link(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t bloc
 //                (file_id 0 is the file-index) else set to MINFS_FILE_NULL.
 // OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
-// TODO: Optimize this function 
 static int32_t BlockBuffer_Get(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id, uint8_t populate){
   int32_t status;
   // passed buffer was already used?
