@@ -142,9 +142,9 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
   }
 
   // forward to MIDI Monitor
-  // SysEx messages have to be filtered for UART0 to avoid data corruption
+  // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
-  u8 filter_sysex_message = port == UART0;
+  u8 filter_sysex_message = (port == USB0) || (port == UART0);
   MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
 }
 
