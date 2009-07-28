@@ -273,7 +273,7 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
   if( status = CalcFSParams(p_fs) )
     return status;
   // get buffer
-  if( status = BlockBuffer_Get(p_fs, &p_block_buf, 0, 0, 0) )
+  if( status = BlockBuffer_Get(p_fs, &p_block_buf, 0, MINFS_FILE_NULL, 0) )
     return status; // return error status
   uint16_t buf_i = 0; // byte offset in data buffer
   // put fs-header data to buffer
@@ -296,10 +296,10 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
       // increment block_buf_n, set offset to 0
       block_buf_n++;
       buf_i = 0;
-      // get a buffer for the next block
-      if( status = BlockBuffer_Get(p_fs, &p_block_buf, block_buf_n, 0, 0) )
+      // get a buffer for the next block ( if i > num_blocks, the block we get is for file 0 )
+      if( status = BlockBuffer_Get(p_fs, &p_block_buf, block_buf_n, (i > p_fs->info.num_blocks) ? 0 : MINFS_FILE_NULL, 0) )
 	return status; // return error status
-     // quit the loop here if we wrote the last block-map buffer
+      // quit the loop here if we wrote the last block-map buffer
       // the buffer we got last will be used for the file-index first block
       if( i > p_fs->info.num_blocks )
         break;
@@ -339,7 +339,7 @@ int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
   p_fs->info.block_size = 4; // minimal block size
   p_fs->info.flags = 0;
   // get buffer
-  if( status = BlockBuffer_Get(p_fs, &p_block_buf, 0, 0, 0) )
+  if( status = BlockBuffer_Get(p_fs, &p_block_buf, 0, MINFS_FILE_NULL, 0) )
     return status; // return error status
   // read fs header data
   if( status = BlockBuffer_Read(p_fs, p_block_buf, 0, sizeof(MINFS_fs_header_t) ) )
@@ -697,7 +697,7 @@ static int32_t BlockChain_Seek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offs
     block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
     block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
     // get buffer
-    if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_chain_block_n, 0, 0) )
+    if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_chain_block_n, MINFS_FILE_NULL, 0) )
       return status; // return error status
     // read fs header data
     if( status = BlockBuffer_Read(p_fs, *pp_block_buf, block_chain_entry_offset, p_fs->calc.bp_size) )
@@ -740,7 +740,7 @@ static int32_t BlockChain_Link(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t bloc
   block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
   // get buffer
   int32_t status;
-  if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_chain_block_n, 0, 1) )
+  if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_chain_block_n, MINFS_FILE_NULL, 1) )
     return status; // return error status
   // write the block-chain-entry
   LE_SET( (*pp_block_buf + block_chain_entry_offset), block_target, p_fs->calc.bp_size);
