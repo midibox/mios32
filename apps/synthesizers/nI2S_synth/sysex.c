@@ -74,7 +74,7 @@ void SYSEX_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for SysEx messages
 /////////////////////////////////////////////////////////////////////////////
-void SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
+s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 	if (midi_in == 0xF0) {
 		state = HEADER;
 		bufIndex = 0;
@@ -87,7 +87,7 @@ void SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 	}
 	
 	if (state == IDLE) // no new message started and we're not in a message
-		return;
+	  return 1; // don't forward package to APP_MIDI_NotifyPackage()
 	
 	if (state == HEADER) {
 		if (midi_in != sysex_header[bufIndex]) {
@@ -111,6 +111,9 @@ void SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 		sysex_buffer[bufIndex] = midi_in;
 		bufIndex++;
 	}
+
+  return 1; // don't forward package to APP_MIDI_NotifyPackage()
+
 }
 
 /////////////////////////////////////////////////////////////////////////////

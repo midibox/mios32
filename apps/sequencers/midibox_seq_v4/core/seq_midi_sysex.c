@@ -203,7 +203,7 @@ s32 SEQ_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
     }
   }
 
-  return 0; // no error
+  return 1; // don't forward package to APP_MIDI_NotifyPackage()
 }
 
 /////////////////////////////////////////////////////////////////////////////

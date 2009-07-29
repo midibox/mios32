@@ -42,7 +42,7 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 extern void SYSEX_Init(void);
-extern void SYSEX_Parser(u8 midi_in);
+extern s32  SYSEX_Parser(u8 midi_in);
 extern void SYSEX_SendAck(u8 ack_code, u8 ack_arg);
 extern void SYSEX_SendData(u8* array8, u8 length);
 extern void SYSEX_SendCommand(u8 type, bool doubleClick, bool tripleClick, bool longClick, u8 control, u8* arguments, u8 length);

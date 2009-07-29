@@ -173,14 +173,9 @@ s32 SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 /////////////////////////////////////////////////////////////////////////////
 s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
-  // ignore realtime messages (see MIDI spec - realtime messages can
-  // always be injected into events/streams, and don't change the running status)
-  if( midi_in >= 0xf8 )
-    return 0;
-
   // TODO: here we could send an error notification, that multiple devices are trying to access the device
   if( sysex_state.MY_SYSEX && port != sysex_port )
-    return -1;
+    return 1; // don't forward package to APP_MIDI_NotifyPackage()
 
   sysex_port = port;
 
@@ -217,7 +212,7 @@ s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
     }
   }
 
-  return sysex_state.MY_SYSEX ? 1 : 0; // no error - return 1 if new command is received
+  return 1; // don't forward package to APP_MIDI_NotifyPackage()
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -169,17 +169,11 @@ void SYSEX_GetCommand(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for SysEx messages
 /////////////////////////////////////////////////////////////////////////////
-void SYSEX_Parser(u8 midi_in)
+s32 SYSEX_Parser(u8 midi_in)
 {		
 #if DEBUG_VERBOSE_LEVEL >= 5 && DEBUG_VERBOSE_LEVEL < 9 
 	MIOS32_MIDI_SendDebugMessage("SYSEX_Parser: BEGIN");
 #endif
-	
-	// ignore realtime messages (see MIDI spec - realtime messages can 
-	// always be injected into events/streams, and don't change the running status)
-	if( midi_in >= 0xf8 )
-		return;
-	
 	// branch depending on state
 	if( !sysex_state.MY_SYSEX ) {
 		if( midi_in != ab_sysex_header[sysex_state.CTR] ) {
@@ -221,6 +215,8 @@ void SYSEX_Parser(u8 midi_in)
 #if DEBUG_VERBOSE_LEVEL >= 5 && DEBUG_VERBOSE_LEVEL < 9 
 	MIOS32_MIDI_SendDebugMessage("SYSEX_Parser: END");
 #endif	
+
+	return 1; // don't forward package to APP_MIDI_NotifyPackage()
 }
 
 

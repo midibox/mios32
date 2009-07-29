@@ -31,6 +31,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern void SYSEX_Init(void);
-extern void SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 
 #endif 

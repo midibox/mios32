@@ -976,6 +976,8 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	if( callback_package != NULL )
 	  callback_package(port, package);
       } else {
+	u8 filter_sysex = 0;
+
 	switch( package.type ) {
   	  case 0x0: // reserved, ignore
 	  case 0x1: // cable events, ignore
@@ -1023,12 +1025,14 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	    }
 
 	    if( sysex_callback_func != NULL ) {
-	      sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
+	      filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
 	      if( package.type != 0x0f ) {
-		sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
-		sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
+		filter_sysex |= sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
+		filter_sysex |= sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
 	      }
-	    } else if( callback_package != NULL )
+	    }
+
+	    if( callback_package != NULL && !filter_sysex )
 	      callback_package(port, package);
 
 	    break;
@@ -1050,29 +1054,29 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      current_byte = package.evnt0;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 	      if( sysex_callback_func != NULL )
-		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    if( num_bytes >= 2 ) {
 	      current_byte = package.evnt1;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 	      if( sysex_callback_func != NULL )
-		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    if( num_bytes >= 3 ) {
 	      current_byte = package.evnt2;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 	      if( sysex_callback_func != NULL )
-		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    // reset timeout protection if required
 	    if( current_byte == 0xf7 )
 	      sysex_timeout_ctr_flags.ALL = 0;
 
-	    // if SysEx callback not install: forwarded as package
-	    if( sysex_callback_func == NULL && callback_package != NULL )
+	    // forward as package if not filtered
+	    if( callback_package != NULL && !filter_sysex )
 	      callback_package(port, package);
 	    
 	  } break;
@@ -1374,11 +1378,15 @@ u8 MIOS32_MIDI_DeviceIDGet(void)
 //! \code
 //!    s32 callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
 //!    {
+//!       //
 //!       // .. parse stream
-//!       return 0; // no error
+//!       //
+//!     
+//!       return 1; // don't forward package to APP_MIDI_NotifyPackage()
 //!    }
 //! \endcode
-//! The return value of the callback function is currently ignored, it should be 0.
+//! If the function returns 0, SysEx bytes will be forwarded to APP_MIDI_NotifyPackage() as well.
+//! With return value != 0, APP_MIDI_NotifyPackage() won't get the already processed package.
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SysExCallback_Init(void *callback_sysex)
