@@ -1364,7 +1364,7 @@ u8 MIOS32_MIDI_DeviceIDGet(void)
 //! uses Package Type 4..7 to transmit a SysEx stream, PortMIDI under MacOS sends 
 //! a mix of 0xf (single byte) and 0x4 (continued 3-byte) packages instead.
 //! 
-//! By using the SysEx package, the type of package doesn't play a role anymore,
+//! By using the SysEx callback, the type of package doesn't play a role anymore,
 //! instead the application can parse a serial stream.
 //!
 //! MIOS32 ensures, that realtime events (0xf8..0xff) are still forwarded to
