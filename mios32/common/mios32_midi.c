@@ -136,6 +136,8 @@ static mios32_midi_port_t debug_port   = MIOS32_MIDI_DEBUG_PORT;
 
 static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
+static s32 (*sysex_callback_func)(mios32_midi_port_t port, u8 sysex_byte);
+static s32 (*package_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 (*timeout_callback_func)(mios32_midi_port_t port);
 static s32 (*debug_command_callback_func)(mios32_midi_port_t port, char c);
 
@@ -198,8 +200,9 @@ s32 MIOS32_MIDI_Init(u32 mode)
   // disable callback functions
   direct_rx_callback_func = NULL;
   direct_tx_callback_func = NULL;
-  debug_command_callback_func = NULL;
+  sysex_callback_func = NULL;
   timeout_callback_func = NULL;
+  debug_command_callback_func = NULL;
 
   // initialize interfaces
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
@@ -857,24 +860,26 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Checks for incoming MIDI messages, calls either the callback_event or
-//! callback_sysex function with following parameters:
+//! Checks for incoming MIDI messages amd calls callback_package function
+//! with following parameters:
 //! \code
-//!    callback_event(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-//!    callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
+//!    callback_package(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 //! \endcode
 //!
 //! Not for use in an application - this function is called by
-//! by a task in the programming model!
+//! by a task in the programming model, callback_package is APP_MIDI_NotifyPackage()
+//!
+//! SysEx streams can be optionally redirected to a separate callback function 
+//! which can be installed via MIOS32_MIDI_SysExCallback_Init()
+//!
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
+s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 {
   u8 port;
   mios32_midi_package_t package;
 
-  void (*callback_event)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_event;
-  void (*callback_sysex)(mios32_midi_port_t port, u8 sysex_byte) = _callback_sysex;
+  void (*callback_package)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_package;
 
   u8 intf = 0; // interface to be checked
   u8 total_packages_forwarded = 0; // number of forwards - stop after 10 forwards to yield some CPU time for other tasks
@@ -968,8 +973,8 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
       // branch depending on package type
       if( package.type >= 0x8 && package.type < 0xf ) {
-	if( callback_event != NULL )
-	  callback_event(port, package);
+	if( callback_package != NULL )
+	  callback_package(port, package);
       } else {
 	switch( package.type ) {
   	  case 0x0: // reserved, ignore
@@ -978,12 +983,19 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 
 	  case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc. 
 	  case 0x3: // Three-byte System Common messages like SPP, etc. 
-	    if( callback_event != NULL )
-	      callback_event(port, package); // -> forwarded as event
+	    if( callback_package != NULL )
+	      callback_package(port, package); // -> forwarded as event
 	    break;
 
 	  case 0x4: // SysEx starts or continues (3 bytes)
 	  case 0xf: // Single byte is interpreted as SysEx as well (I noticed that portmidi sometimes sends single bytes!)
+
+	    if( package.evnt0 >= 0xf8 ) { // relevant for package type 0xf
+	      if( callback_package != NULL )
+		callback_package(port, package); // -> realtime event is forwarded as event
+	      break;
+	    }
+
 	    if( package.evnt0 == 0xf0 ) {
 	      // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
 	      if( !sysex_timeout_ctr_flags.ALL ) {
@@ -1010,19 +1022,21 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
 	    }
 
-	    if( callback_sysex != NULL ) {
-	      callback_sysex(port, package.evnt0); // -> forwarded as SysEx
+	    if( sysex_callback_func != NULL ) {
+	      sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
 	      if( package.type != 0x0f ) {
-		callback_sysex(port, package.evnt1); // -> forwarded as SysEx
-		callback_sysex(port, package.evnt2); // -> forwarded as SysEx
+		sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
+		sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
 	      }
-	    }
+	    } else if( callback_package != NULL )
+	      callback_package(port, package);
+
 	    break;
 
 	  case 0x5:   // Single-byte System Common Message or SysEx ends with following single byte. 
 	    if( package.evnt0 >= 0xf8 ) {
-	      if( callback_event != NULL )
-		callback_event(port, package); // -> forwarded as event
+	      if( callback_package != NULL )
+		callback_package(port, package); // -> forwarded as event
 	      break;
 	    }
 	    // no >= 0xf8 event: continue!
@@ -1035,27 +1049,31 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_event, void *_callback_sysex)
 	    if( num_bytes >= 1 ) {
 	      current_byte = package.evnt0;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( callback_sysex != NULL )
-		callback_sysex(port, current_byte); // -> forwarded as SysEx
+	      if( sysex_callback_func != NULL )
+		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    if( num_bytes >= 2 ) {
 	      current_byte = package.evnt1;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( callback_sysex != NULL )
-		callback_sysex(port, current_byte); // -> forwarded as SysEx
+	      if( sysex_callback_func != NULL )
+		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    if( num_bytes >= 3 ) {
 	      current_byte = package.evnt2;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( callback_sysex != NULL )
-		callback_sysex(port, current_byte); // -> forwarded as SysEx
+	      if( sysex_callback_func != NULL )
+		sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	    }
 
 	    // reset timeout protection if required
 	    if( current_byte == 0xf7 )
 	      sysex_timeout_ctr_flags.ALL = 0;
+
+	    // if SysEx callback not install: forwarded as package
+	    if( sysex_callback_func == NULL && callback_package != NULL )
+	      callback_package(port, package);
 	    
 	  } break;
 	}	  
@@ -1147,7 +1165,9 @@ s32 MIOS32_MIDI_Periodic_mS(void)
 //! </UL>
 //! \param[in] *callback_tx pointer to callback function:<BR>
 //! \code
-//!    s32 callback_tx(mios32_midi_port_t port, mios32_midi_package_t package);
+//!    s32 callback_tx(mios32_midi_port_t port, mios32_midi_package_t package)
+//!    {
+//!    }
 //! \endcode
 //! The package will be forwarded to the physical interface if the function 
 //! returns 0.<BR>
@@ -1180,7 +1200,9 @@ s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx)
 //! callback function.<BR>
 //! \param[in] *callback_rx pointer to callback function:<BR>
 //! \code
-//!    s32 callback_rx(mios32_midi_port_t port, u8 midi_byte);
+//!    s32 callback_rx(mios32_midi_port_t port, u8 midi_byte)
+//!    {
+//!    }
 //! \endcode
 //! The byte will be forwarded into the MIDI Rx queue if the function returns 0.<BR>
 //! It will be filtered out if the callback returns != 0 (e.g. 1 for "filter", 
@@ -1324,6 +1346,47 @@ u8 MIOS32_MIDI_DeviceIDGet(void)
   return sysex_device_id;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs an optional SysEx callback which is called by 
+//! MIOS32_MIDI_Receive_Handler() instead of the default package callback
+//! function (normaly APP_MIDI_NotifyPackage()) to simplify the parsing
+//! of SysEx streams.
+//!
+//! Without this callback (or with MIOS32_MIDI_SysExCallback_Init(NULL)),
+//! SysEx messages are forwarded to APP_MIDI_NotifyPackage() in chunks of 
+//! 1, 2 or 3 bytes, tagged with midi_package.type == 0x4..0x7 or 0xf
+//! 
+//! In this case, the application has to take care for different transmission
+//! approaches which are under control of the package sender. E.g., while Windows
+//! uses Package Type 4..7 to transmit a SysEx stream, PortMIDI under MacOS sends 
+//! a mix of 0xf (single byte) and 0x4 (continued 3-byte) packages instead.
+//! 
+//! By using the SysEx package, the type of package doesn't play a role anymore,
+//! instead the application can parse a serial stream.
+//!
+//! MIOS32 ensures, that realtime events (0xf8..0xff) are still forwarded to
+//! APP_MIDI_NotifyPackage(), regardless if they are transmitted in a package
+//! type 0x5 or 0xf, so that the SysEx parser doesn't need to filter out such
+//! events, which could otherwise appear inside a SysEx stream.
+//! 
+//! \param[in] *callback_sysex pointer to callback function:<BR>
+//! \code
+//!    s32 callback_sysex(mios32_midi_port_t port, u8 sysex_byte)
+//!    {
+//!       // .. parse stream
+//!       return 0; // no error
+//!    }
+//! \endcode
+//! The return value of the callback function is currently ignored, it should be 0.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SysExCallback_Init(void *callback_sysex)
+{
+  sysex_callback_func = callback_sysex;
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for MIOS32 commands
@@ -1682,7 +1745,9 @@ s32 MIOS32_MIDI_DebugCommandCallback_Init(void *callback_debug_command)
 //!
 //! The callback function has been installed in an Init() function with:
 //! \code
-//!   MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
+//!   MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut)
+//!   {
+//!   }
 //! \endcode
 //! \param[in] callback_timeout the callback function (NULL disables the callback)
 //! \return < 0 on errors

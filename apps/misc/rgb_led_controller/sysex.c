@@ -57,6 +57,9 @@ void SYSEX_Init(void)
 	sysex_state.ALL = 0;
 	//set the struct pointer to the buffer
 	cmd_header = (ab_command_header_t*)data_buffer;
+
+	// install SysEx parser
+	MIOS32_MIDI_SysExCallback_Init(SYSEX_Parser);
 	
 #if DEBUG_VERBOSE_LEVEL >= 1
 	MIOS32_MIDI_SendDebugMessage("SYSEX_Init:FINISHED");

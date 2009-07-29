@@ -107,9 +107,9 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("Received MIDI Event: %02X %02X %02X\n", 
@@ -126,22 +126,6 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
   // note event over channel #1 sets a DOUT pin
   if( midi_package.chn == Chn1 && midi_package.event == NoteOn )
     MIOS32_DOUT_PinSet(midi_package.note, midi_package.velocity);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
-{
 }
 
 

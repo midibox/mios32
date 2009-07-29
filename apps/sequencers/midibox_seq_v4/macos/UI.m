@@ -336,7 +336,7 @@ void SRIO_ServiceFinish(void)
 	while (YES) {
 		// TODO: find better more FreeRTOS/MIOS32 compliant solution
 		// check for incoming MIDI messages and call hooks
-		MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
+		MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
 
 		// -> forward to application
 		SEQ_TASK_MIDI();

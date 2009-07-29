@@ -192,8 +192,8 @@ static void TASK_MIDI_Hooks(void *pvParameters)
     // handle timeout/expire counters and USB packages
     MIOS32_MIDI_Periodic_mS();
 
-    // check for incoming MIDI messages and call hooks
-    MIOS32_MIDI_Receive_Handler(APP_NotifyReceivedEvent, APP_NotifyReceivedSysEx);
+    // check for incoming MIDI packages and call hook
+    MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
   }
 }
 #endif
@@ -234,8 +234,8 @@ static void TASK_Hooks(void *pvParameters)
 #endif
 
 #if !defined(MIOS32_DONT_USE_COM)
-    // check for incoming COM messages and call hook
-    MIOS32_COM_Receive_Handler(APP_NotifyReceivedCOM);
+    // check for incoming COM messages
+    MIOS32_COM_Receive_Handler();
 #endif
   }
 }

@@ -130,9 +130,9 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ) {
 
@@ -247,22 +247,6 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     // print status screen
     print_msg = PRINT_MSG_STATUS;
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
-{
 }
 
 

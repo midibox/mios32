@@ -32,6 +32,8 @@
 static mios32_com_port_t default_port = MIOS32_COM_DEFAULT_PORT;
 static mios32_com_port_t debug_port = MIOS32_COM_DEBUG_PORT;
 
+static s32 (*receive_callback_func)(mios32_midi_port_t port, char c);
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes COM layer
@@ -45,6 +47,9 @@ s32 MIOS32_COM_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // disable callback by default
+  receive_callback_func = NULL;
 
   // set default/debug port as defined in mios32.h/mios32_config.h
   default_port = MIOS32_COM_DEFAULT_PORT;
@@ -306,19 +311,17 @@ s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Checks for incoming COM messages, calls the callback function with
-//! following parameters:
-//! \code
-//!    callback_event(mios32_com_port_t port, u8 byte)
-//! \endcode
-//! \param[in] _callback function which should be called on incoming messages
+//! Checks for incoming COM messages, calls the callback function which has
+//! been installed via MIOS32_COM_ReceiveCallback_Init()
+//! 
+//! Not for use in an application - this function is called by
+//! by a task in the programming model!
+//! 
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_Receive_Handler(void *_callback)
+s32 MIOS32_COM_Receive_Handler(void)
 {
   u8 port = DEFAULT;
-
-  void (*callback)(mios32_com_port_t port, u8 byte) = _callback;
 
   u8 intf = 0; // interface to be checked
   u8 total_bytes_forwarded = 0; // number of forwards - stop after 10 forwards to yield some CPU time for other tasks
@@ -330,22 +333,22 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
     // it would allow to add/remove interfaces dynamically
     // this would also allow to give certain ports a higher priority (to add them multiple times to the list)
     // it would also improve this spagetthi code ;)
-    s32 error = -1;
+    s32 status = -1;
     switch( intf++ ) {
 #if !defined(MIOS32_DONT_USE_USB) && defined(MIOS32_USE_USB_COM)
-      case 0: error = MIOS32_USB_COM_RxBufferGet(0); port = USB0; break;
+      case 0: status = MIOS32_USB_COM_RxBufferGet(0); port = USB0; break;
 #else
-      case 0: error = -1; break;
+      case 0: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART0_ASSIGNMENT == 2
-      case 1: error = MIOS32_UART_RxBufferGet(0); port = UART0; break;
+      case 1: status = MIOS32_UART_RxBufferGet(0); port = UART0; break;
 #else
-      case 1: error = -1; break;
+      case 1: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART1_ASSIGNMENT == 2
-      case 2: error = MIOS32_UART_RxBufferGet(1); port = UART1; break;
+      case 2: status = MIOS32_UART_RxBufferGet(1); port = UART1; break;
 #else
-      case 2: error = -1; break;
+      case 2: status = -1; break;
 #endif
       default:
 	// allow 64 forwards maximum to yield some CPU time for other tasks
@@ -355,23 +358,52 @@ s32 MIOS32_COM_Receive_Handler(void *_callback)
 	} else {
 	  again = 0; // no more interfaces to be processed
 	}
-	error = -1; // empty round - no message
+	status = -1; // empty round - no message
     }
 
     // message received?
-    if( error >= 0 ) {
+    if( status >= 0 ) {
       // notify that a package has been forwarded
       ++bytes_forwarded;
       ++total_bytes_forwarded;
 
       // call function
-      callback(port, (u8)error);
+      if( receive_callback_func != NULL )
+	receive_callback_func(port, (u8)status);
     }
   } while( again );
 
   return 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs the callback function which is executed on incoming characters
+//! from a COM interface.
+//!
+//! Example:
+//! \code
+//! s32 CONSOLE_Parse(mios32_com_port_t port, char c)
+//! {
+//!   // see $MIOS32_PATH/apps/examples/com_console/
+//!   
+//!   return 0; // no error
+//! }
+//! \endcode
+//!
+//! The callback function has been installed in an Init() function with:
+//! \code
+//!   MIOS32_COM_ReceiveCallback_Init(CONSOLE_Parse);
+//! \endcode
+//! \param[in] callback_debug_command the callback function (NULL disables the callback)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_COM_ReceiveCallback_Init(void *callback_receive)
+{
+  receive_callback_func = callback_receive;
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function allows to change the DEFAULT port.<BR>
