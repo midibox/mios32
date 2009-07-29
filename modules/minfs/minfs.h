@@ -17,6 +17,7 @@
 #ifndef _MINFS_H
 #define _MINFS_H
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +58,7 @@
 #define MINFS_ERROR_READ_BNP -8
 #define MINFS_ERROR_FILE_SIG -9
 #define MINFS_ERROR_FILE_CHAIN -10
+#define MINFS_ERROR_FILE_ID -11
 
 
 // return status
@@ -138,6 +140,7 @@ extern int32_t MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_blo
 extern int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
 extern int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
+
 extern int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t *p_block_buf);
 
 extern int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf);
@@ -145,6 +148,7 @@ extern int32_t MINFS_FileWrite(MINFS_file_t *p_file, void *p_buf, uint32_t len, 
 extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf);
 
+extern int32_t MINFS_Touch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_Unlink(uint32_t file_id, MINFS_block_buf_t *block_buf);
 extern int32_t MINFS_Move(uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileExists(uint32_t file_id, MINFS_block_buf_t *p_block_buf);
