@@ -41,6 +41,10 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 s32 CONSOLE_Init(u32 mode)
 {
+  // install the callback function which is called on incoming characters
+  // from COM port
+  MIOS32_COM_ReceiveCallback_Init(CONSOLE_Parse);
+
   // clear line buffer
   line_buffer[0] = 0;
   line_ix = 0;

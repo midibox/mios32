@@ -103,9 +103,9 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // if note event over MIDI channel #1 controls note of both oscillators
   if( midi_package.event == NoteOn && midi_package.chn == Chn1 && midi_package.velocity > 0 ) {
@@ -120,22 +120,6 @@ void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi
     for(chn=0; chn<2; ++chn)
       SYNTH_WaveformSet(chn, midi_package.value >> 5);
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
-{
 }
 
 

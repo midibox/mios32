@@ -390,30 +390,16 @@ static void TASK_Display(void *pvParameters){
     }
   }
 
+
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package){
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ){
     run = 0;
     phase = BS_CHECK_PHASE_START;
-    }
   }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
-{
 }
 
 

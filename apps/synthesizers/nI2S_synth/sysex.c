@@ -66,6 +66,9 @@ void SYSEX_Init(void)
 {
 	bufIndex = 0;
 	state = IDLE;
+
+	// install SysEx parser
+	MIOS32_MIDI_SysExCallback_Init(SYSEX_Parser);
 }
 
 /////////////////////////////////////////////////////////////////////////////

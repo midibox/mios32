@@ -147,6 +147,9 @@ s32 SEQ_MIDI_SYSEX_Init(u32 mode)
   sysex_state.ALL = 0;
   sysex_device_id = MIOS32_MIDI_DeviceIDGet(); // taken from MIOS32
 
+  // install SysEx callback
+  MIOS32_MIDI_SysExCallback_Init(SEQ_MIDI_SYSEX_Parser);
+
   return 0; // no error
 }
 

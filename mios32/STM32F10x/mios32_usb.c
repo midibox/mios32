@@ -845,7 +845,7 @@ s32 MIOS32_USB_Init(u32 mode)
 
 #ifdef MIOS32_USE_USB_COM
     pEpInt_IN[3]  = MIOS32_USB_COM_EP4_IN_Callback;  // IN  EP4
-    pEpInt_OUT[2] = MIOS32_USB_COM_EP3_OUT_Callback, // OUT EP3
+    pEpInt_OUT[2] = MIOS32_USB_COM_EP3_OUT_Callback; // OUT EP3
 #endif
   }
 

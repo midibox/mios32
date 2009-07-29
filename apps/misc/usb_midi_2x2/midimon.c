@@ -247,7 +247,11 @@ s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 
         case 0xfd: MSG("%s Inspecified Realtime Event (FD)\n", pre_str); break;
         case 0xfe: if( !JUMPER_FILTER_ACTIVE ) { MSG("%s Active Sense (FE)\n", pre_str); } break;
         case 0xff: MSG("%s Reset (FF)\n", pre_str); break;
-        default:   MSG("%s Invalid Single-Byte Event (%02X)\n", pre_str, package.evnt0); break;
+        default:
+	  if( package.type == 0xf )
+	    MSG("%s Single-Byte Package: %02X\n", pre_str, package.evnt0);
+	  else
+	    MSG("%s Invalid SysEx Single-Byte Event (%02X)\n", pre_str, package.evnt0);
       }
       msg_sent = 1;
       break;

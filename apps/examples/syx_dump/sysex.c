@@ -83,6 +83,9 @@ s32 SYSEX_Init(u32 mode)
   sysex_port = DEFAULT;
   sysex_state.ALL = 0;
 
+  // install SysEx parser
+  MIOS32_MIDI_SysExCallback_Init(SYSEX_Parser);
+
   return 0; // no error
 }
 

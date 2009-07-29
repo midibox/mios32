@@ -78,36 +78,9 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-{
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(mios32_midi_port_t port, u8 sysex_byte)
-{
-
-#if DEBUG_VERBOSE_LEVEL >= 5 && DEBUG_VERBOSE_LEVEL < 9
-	MIOS32_MIDI_SendDebugMessage("APP_NotifyReceivedSysEx:BEGIN", sysex_byte);
-	MIOS32_MIDI_SendDebugMessage("APP_NotifyReceivedSysEx:received sysex byte: %02x", sysex_byte);
-#endif
-
-	SYSEX_Parser(sysex_byte);
-
-#if DEBUG_VERBOSE_LEVEL >= 5 && DEBUG_VERBOSE_LEVEL < 9
-	MIOS32_MIDI_SendDebugMessage("APP_NotifyReceivedSysEx:FINISHED");
-#endif
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
 }
 

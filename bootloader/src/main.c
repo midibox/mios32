@@ -169,7 +169,7 @@ int main(void)
     // check for incoming MIDI messages - no hooks are used
     // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
     // directly by MIOS32 to enhance command set
-    MIOS32_MIDI_Receive_Handler(NULL, NULL);
+    MIOS32_MIDI_Receive_Handler(NULL);
 
   } while( MIOS32_STOPWATCH_ValueGet() < 20000 ||             // wait for 2 seconds
 	   BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation

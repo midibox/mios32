@@ -140,26 +140,11 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  This hook is called when a complete MIDI event has been received
+// This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedEvent(u8 port, mios32_midi_package_t midi_package)
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // returns > 0 if byte has been used for remote function
-  if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
-    // forward to router
-    SEQ_MIDI_ROUTER_Receive(port, midi_package);
-    // forward to transposer/arpeggiator/CC parser/etc...
-    SEQ_MIDI_IN_Receive(port, midi_package);
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a SysEx byte has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
-{
-  if( sysex_byte >= 0xf8 ) {
+  if( midi_package.evnt0 >= 0xf8 ) {
     // disabled: MIDI Clock always sent from sequencer, even in slave mode
 #if 0
     // forward to router
@@ -170,17 +155,14 @@ void APP_NotifyReceivedSysEx(u8 port, u8 sysex_byte)
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
-    // forward to SysEx parser
-    SEQ_MIDI_SYSEX_Parser(port, sysex_byte);
+    // returns > 0 if byte has been used for remote function
+    if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
+      // forward to router
+      SEQ_MIDI_ROUTER_Receive(port, midi_package);
+      // forward to transposer/arpeggiator/CC parser/etc...
+      SEQ_MIDI_IN_Receive(port, midi_package);
+    }
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a byte has been received via COM interface
-/////////////////////////////////////////////////////////////////////////////
-void APP_NotifyReceivedCOM(mios32_com_port_t port, u8 byte)
-{
 }
 
 
