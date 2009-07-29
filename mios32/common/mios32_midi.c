@@ -1353,12 +1353,10 @@ u8 MIOS32_MIDI_DeviceIDGet(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Installs an optional SysEx callback which is called by 
-//! MIOS32_MIDI_Receive_Handler() instead of the default package callback
-//! function (normaly APP_MIDI_NotifyPackage()) to simplify the parsing
-//! of SysEx streams.
+//! MIOS32_MIDI_Receive_Handler() to simplify the parsing of SysEx streams.
 //!
 //! Without this callback (or with MIOS32_MIDI_SysExCallback_Init(NULL)),
-//! SysEx messages are forwarded to APP_MIDI_NotifyPackage() in chunks of 
+//! SysEx messages are only forwarded to APP_MIDI_NotifyPackage() in chunks of 
 //! 1, 2 or 3 bytes, tagged with midi_package.type == 0x4..0x7 or 0xf
 //! 
 //! In this case, the application has to take care for different transmission
