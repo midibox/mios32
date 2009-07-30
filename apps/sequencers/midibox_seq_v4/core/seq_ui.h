@@ -41,7 +41,18 @@ typedef union {
     unsigned ALL:32;
   };
   struct {
+    unsigned PAGE_CHANGE_BUTTON_FLAGS:6;
+  };
+  struct {
+    // these button functions will change a page (special "radio button" handling required)
     unsigned MENU_PRESSED:1;
+    unsigned STEP_VIEW:1;
+    unsigned PAR_LAYER_SEL:1;
+    unsigned TRG_LAYER_SEL:1;
+    unsigned TRACK_SEL:1;
+    unsigned TEMPO_PRESET:1;
+
+    // remaining functions
     unsigned MENU_FIRST_PAGE_SELECTED:1;
     unsigned CHANGE_ALL_STEPS:1;
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
@@ -54,17 +65,12 @@ typedef union {
     unsigned FAST_ENCODERS:1;
     unsigned SOLO:1;
     unsigned SCRUB:1;
-    unsigned STEP_VIEW:1;
-    unsigned PAR_LAYER_SEL:1;
-    unsigned TRG_LAYER_SEL:1;
-    unsigned TRACK_SEL:1;
     unsigned REW:1;
     unsigned FWD:1;
     unsigned COPY:1;
     unsigned PASTE:1;
     unsigned CLEAR:1;
     unsigned TAP_TEMPO:1;
-    unsigned TEMPO_PRESET:1;
     unsigned UP:1;
     unsigned DOWN:1;
   };

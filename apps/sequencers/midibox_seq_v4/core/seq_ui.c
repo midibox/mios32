@@ -506,6 +506,8 @@ static s32 SEQ_UI_Button_TempoPreset(s32 depressed)
 
   if( seq_hwcfg_button_beh.tempo_preset ) {
     if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.TEMPO_PRESET ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.TEMPO_PRESET ^= 1; // toggle TEMPO_PRESET pressed (will also be released once GP button has been pressed)
   } else {
     // set mode
@@ -677,6 +679,8 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
     // toggle mode
     if( depressed ) return -1; // ignore when button depressed
     seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 0;
+    if( !seq_ui_button_state.MENU_PRESSED ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.MENU_PRESSED ^= 1; // toggle MENU pressed (will also be released once GP button has been pressed)
   } else {
     // set mode
@@ -829,6 +833,8 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
   
   if( seq_hwcfg_button_beh.step_view ) {
     if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.STEP_VIEW ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.STEP_VIEW ^= 1; // toggle STEP_VIEW pressed (will also be released once GP button has been pressed)
   } else {
     // set mode
@@ -852,6 +858,8 @@ static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 
   if( seq_hwcfg_button_beh.track_sel ) {
     if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.TRACK_SEL ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.TRACK_SEL ^= 1; // toggle TRACKSEL status (will also be released once GP button has been pressed)
   } else {
     seq_ui_button_state.TRACK_SEL = depressed ? 0 : 1;
@@ -926,6 +934,8 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 
   if( seq_hwcfg_button_beh.par_layer ) {
     if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.PAR_LAYER_SEL ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.PAR_LAYER_SEL ^= 1; // toggle PARSEL status (will also be released once GP button has been pressed)
   } else {
     seq_ui_button_state.PAR_LAYER_SEL = depressed ? 0 : 1;
@@ -995,6 +1005,8 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
 
   if( seq_hwcfg_button_beh.trg_layer ) {
     if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.TRG_LAYER_SEL ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
     seq_ui_button_state.TRG_LAYER_SEL ^= 1; // toggle TRGSEL status (will also be released once GP button has been pressed)
   } else {
     seq_ui_button_state.TRG_LAYER_SEL = depressed ? 0 : 1;
@@ -1593,13 +1605,13 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.track[1], (selected_tracks & (1 << 1)));
   SEQ_LED_PinSet(seq_hwcfg_led.track[2], (selected_tracks & (1 << 2)));
   SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
-  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, seq_ui_button_state.TRACK_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL);
   
   // parameter layer LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], (ui_selected_par_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, seq_ui_button_state.PAR_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL);
   
   // group LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_group == 0));
@@ -1611,7 +1623,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[1], (ui_selected_trg_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[2], (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
-  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, seq_ui_button_state.TRG_LAYER_SEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL);
   
   // remaining LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
@@ -1635,7 +1647,7 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_LED_PinSet(seq_hwcfg_led.loop, seq_core_state.LOOP);
   
-  SEQ_LED_PinSet(seq_hwcfg_led.step_view, seq_ui_button_state.STEP_VIEW);
+  SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL);
 
   SEQ_LED_PinSet(seq_hwcfg_led.exit, seq_ui_button_state.EXIT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
@@ -1658,7 +1670,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
 
   SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, seq_ui_button_state.TAP_TEMPO);
-  SEQ_LED_PinSet(seq_hwcfg_led.tempo_preset, seq_ui_button_state.TEMPO_PRESET);
+  SEQ_LED_PinSet(seq_hwcfg_led.tempo_preset, ui_page == SEQ_UI_PAGE_BPM_PRESETS);
   SEQ_LED_PinSet(seq_hwcfg_led.ext_restart, seq_core_state.EXT_RESTART_REQ);
 
   SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
