@@ -69,24 +69,24 @@ The basic structure of a MIDI package:
 
 List of 16 possible midi_package.types:
 
-Type	Size	Description
+Type  Size  Name     Description
 -------------------------------------------------------------------------------
-0x0	3	No package - all bytes are zero
-0x1	3	reserved
-0x2	2	two-byte system common messages like MTC, Song Select, etc.
-0x3	3	three-byte system common messages like SPP, etc.
-0x4	3	SysEx starts or continues
-0x5	1	Single-byte system common message or sysex sends with following single byte
-0x6	2	SysEx sends with following two bytes
-0x7	3	SysEx sends with following three bytes
-0x8	3	Note Off
-0x9	3	Note On
-0xa	3	Poly-Key Press
-0xb	3	Control Change
-0xc	2	Program Change
-0xd	2	Channel Preassure
-0xe	3	PitchBend Change
-0xf	1	Single Byte
+0x0	3  -		  reserved
+0x1	3  -		  reserved
+0x2	2  -		  two-byte system common messages like MTC, Song Select, etc.
+0x3	3  -		  three-byte system common messages like SPP, etc.
+0x4	3  -		  SysEx starts or continues
+0x5	1  -	          Single-byte system common message or sysex sends with following single byte
+0x6	2  -		  SysEx sends with following two bytes
+0x7	3  -	          SysEx sends with following three bytes
+0x8	3  NoteOff	  Note Off event
+0x9	3  NoteOn	  Note On event
+0xa	3  PolyPressure   Poly-Key Press event
+0xb	3  CC		  Control Change event
+0xc	2  ProgramChange  Program Change event
+0xd	2  Aftertouch	  Channel Preassure event
+0xe	3  PitchBend	  PitchBend Change event
+0xf	1  -		  Single Byte
 -------------------------------------------------------------------------------
 
 midi_package.cable are used by MIOS32_MIDI functions internally before
@@ -119,9 +119,10 @@ E.g.:
   };
 
 allows you to access Note/Velocity as:
+   midi_package.chn
    midi_package.note
    midi_package.velocity
-instead of midi_package.evnt1 and midi_package.evnt2
+instead of midi_package.evnt0, midi_package.evnt1 and midi_package.evnt2
 
 
 With this knowledge, you should be able to change the control of the Status
@@ -148,8 +149,15 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 }
 -------------------------------------------------------------------------------
 
-Hint: MIDI Notes can be send with the virtual keyboard of MIOS Studio, or
+Hint: MIDI Notes can be sent with the virtual keyboard of MIOS Studio, or
 alternatively by connecting a MIDI keyboard to MIDI IN1 or IN2 of your
 core module.
+
+
+Exercise
+--------
+
+Enhance the APP_MIDI_NotifyPackage() hook, so that the LED is only controlled
+by Note events received over MIDI Channel #4
 
 ===============================================================================

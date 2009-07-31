@@ -56,7 +56,8 @@ Following code of the example in app.c:
 			       midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
 -------------------------------------------------------------------------------
 
-will lead to following output in the MIOS terminal:
+will lead to following output in the MIOS terminal whenever a MIDI
+event is received (here: Note and CC events):
 
 -------------------------------------------------------------------------------
 00000000003621 ms | Port:10  Type:9  Evnt0:90  Evnt1:32  Evnt2:64
@@ -79,6 +80,7 @@ The format string contains %X/%02X conversion specifiers to translate
 arguments passed to the MIOS32_MIDI_SendDebugMessage() function
 into hexadecimal numbers, padded with zeroes.
 
+
 Exercise
 --------
 
@@ -97,6 +99,6 @@ and Event Type in plain text format, e.g.:
 00000000008702 ms | USB0  CC      (B0 07 52)
 -------------------------------------------------------------------------------
 
-How will program the most verbose MIDI monitor?
+Who will program the most verbose MIDI monitor?
 
 ===============================================================================
