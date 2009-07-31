@@ -17,7 +17,7 @@
 // macros for big-endian translation and typecasted copy
 /////////////////////////////////////////////////////////////////////////////
 
-static const uint32_t BECV = 1; // dummy variable to check endianess
+static const uint32_t BECV = 1; // dummy variable to check endianes
 
 // swaps the value's bytes if we are on a bigendian-system. the optimizer should 
 // remove the code when compiled for little-endian platforms (?)
@@ -94,8 +94,8 @@ static const uint32_t BECV = 1; // dummy variable to check endianess
 
 
 // modes
-#define RW_MODE_READ 0
-#define RW_MODE_WRITE 1
+#define MINFS_RW_MODE_READ 0
+#define MINFS_RW_MODE_WRITE 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -182,16 +182,18 @@ static int32_t CalcFSParams(MINFS_fs_t *p_fs);
 static uint32_t GetPECValue(MINFS_fs_t *p_fs, void *p_buf, uint16_t data_len);
 
 
-// Index-file functions
-static int32_t File_GetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf);
-static int32_t File_SetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t block_n, MINFS_block_buf_t **pp_block_buf);
+// File-index functions
+static int32_t File_GetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf);
+static int32_t File_SetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t block_n, MINFS_block_buf_t **pp_block_buf);
 static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf);
+static int32_t File_Touch(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf);
 
 // File functions
 static int32_t File_Open(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf);
 static int32_t File_Seek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t **pp_block_buf);
 static int32_t File_SetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t **pp_block_buf);
 static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len, uint8_t mode, MINFS_block_buf_t **pp_block_buf);
+static int32_t File_HeaderWrite(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t file_id, uint32_t file_size, MINFS_block_buf_t **pp_block_buf);
 
 // Block chain layer
 static int32_t BlockChain_Seek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf);
@@ -242,7 +244,7 @@ int32_t MINFS_InitBlockBuffer(MINFS_block_buf_t *p_block_buf){
 // NOTE: MINFS_Write has to reset the changed flag!
 // 
 // IN:   <p_fs> Pointer to filesystem-info structure.
-//       <p_block_buf> pointer to a MINFS_block_buf_t - struct.
+//       <p_block_buf> pointer to a  MINFS_block_buf_t - struct.
 // OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
@@ -267,8 +269,8 @@ int32_t MINFS_FlushBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf)
 // unused data sections will not be initialized with 0
 //
 // IN:  <p_fs> Pointer to a fs-structure. <fs_id> and <info> must be populated
-//      <block_buf> pointer to a block-sized buffer. If it is NULL, 
-//                  WriteBufGet must provide the buffer
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
 // OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
@@ -288,53 +290,53 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
   BE_SWAP_32(p_fs_header->info.num_blocks);
   BE_SWAP_16(p_fs_header->info.os_flags);
   buf_i += sizeof(MINFS_fs_header_t);
-  // now write the block-pointer map
+  // now write the block-chain-map
   // add a virtual block (start of free-blocks-chain)
-  uint32_t i, block_map_entry, block_buf_n = 0;
-  for(i = p_fs->calc.first_datablock ; 1 ; i++){
-    // check if current buffer is full or if we are finished with the block-map
-    if( buf_i >= p_fs->calc.block_data_len || i > p_fs->info.num_blocks ){
+  uint32_t i, block_map_entry, block_n = 0;
+  for(i = p_fs->calc.first_datablock_n ; i <= p_fs->info.num_blocks ; i++){
+    // check if current block-buffer is full
+    if( buf_i >= p_fs->calc.block_data_len ){
       // write data
       if( status = BlockBuffer_Write(p_fs, p_block_buf, 0, p_fs->calc.block_data_len) )
         return status;
-      // increment block_buf_n, set offset to 0
-      block_buf_n++;
+      // increment block_n, set offset to 0
+      block_n++;
       buf_i = 0;
-      // get a buffer for the next block ( if i > num_blocks, the block we get is for file 0 )
-      if( status = BlockBuffer_Get(p_fs, &p_block_buf, block_buf_n, (i > p_fs->info.num_blocks) ? 0 : MINFS_FILE_NULL, 0) )
+      // get a buffer for the next block
+      if( status = BlockBuffer_Get(p_fs, &p_block_buf, block_n, MINFS_FILE_NULL, 0) )
 	return status; // return error status
-      // quit the loop here if we wrote the last block-map buffer
-      // the buffer we got last will be used for the file-index first block
-      if( i > p_fs->info.num_blocks )
-        break;
     }
     // calculate block pointer and write it to the buffer. 0 is file-index-start, 
     // free blocks chain: p_fs->info.num_blocks, 1, 2, .., p_fs->info.num_blocks - 1
     if ( i > 0 && i < p_fs->info.num_blocks - 1 )
       block_map_entry = i + 1; // free blocks chain
     else if( i == p_fs->info.num_blocks ) // start of free blocks chain (virtual block)
-      block_map_entry = p_fs->calc.first_datablock; 
+      block_map_entry = p_fs->calc.first_datablock_n; 
     else
       block_map_entry = MINFS_BLOCK_EOC; // EOC
+    // convert to little-endian and copy to buffer
     BE_SWAP_32(block_map_entry);
-    // copy little-endian value
     *( (uint32_t*)(p_block_buf->p_buf + buf_i) ) = block_map_entry;
+    // increment buf_i pointer
     buf_i += p_fs->calc.bp_size;
   }
-  // write filesize 0 to file-index
-  *( (uint32_t*)p_block_buf->p_buf ) = 0;
-  if( status = BlockBuffer_Write(p_fs, p_block_buf, 0, 4) )
+  // write data (last block-chain buffer)
+  if( status = BlockBuffer_Write(p_fs, p_block_buf, 0, p_fs->calc.block_data_len) )
     return status;
-  // finished
+  // write filesize 0 to file-index
+  if( status = File_HeaderWrite(p_fs, p_fs->calc.first_datablock_n, 0, 0, &p_block_buf) )
+    return status; // return error status
+  // success
   return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Opens a file-system p_fs->fs_id and populates the *p_fs struct
+// Opens a file-system identified by <p_fs->fs_id> and populates the 
+// *p_fs struct
 //
 // IN:  <p_fs> Pointer to a fs-structure. <fs_id> must be set
-//      <block_buf> pointer to a block-sized buffer. If it is NULL, 
-//                  MINFS_Read must provide the buffer
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
 // OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
@@ -365,10 +367,58 @@ int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
   return 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Opens a file identified by <file_id>. If the file does not exist, it will
+// be created with size 0.
+// NOTE: A high file-id number will extend the file-index accordingly. The
+// file-index will *not* be truncated if you unlink the file! You are
+// responsible for the file-id management, use a range as small as possible.
+// You can use MINFS_GetFreeFileID(..) to find the lowest free file-id.
+//
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <file_id> File ID (1 - x)
+//      <p_file> Pointer to a MINFS_file_t struct (will be populated on success).
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, else < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, p_file, &p_block_buf) )
+    return status;
+  // Get file-pointer
+  if( (status = GetFilePointer(p_fs, file_id, &p_block_buf)) < 0 )
+    return status; // return error-status
+  // file does not exist, create it
+  if( status == MINFS_BLOCK_EOC ){
+    if( (status = File_Touch(p_file, file_id, &p_block_buf)) < 0 )
+      return status;
+  }
+  // now open the file (status contains first file block_n now)
+  if( status = File_Open(p_fs, status, file_id, p_file, &p_block_buf) )
+    return status;
+  // success
+  return 0;
 }
 
-int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf){
+/////////////////////////////////////////////////////////////////////////////
+// Reads data from the current position in the file and increments the 
+// file's data-pointer.
+//
+// IN:  <p_file> Pointer to a populated MINFS_file_t struct (see MINFS_FileOpen)
+//      <p_buf> Pointer to a buffer where the read data should be copied to
+//      <p_len> Pointer to a uint32_t containing the number of bytes to read
+//              On return, this value will be set to the bytes actually read.
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, MINFS_STATUS_EOF if end of file was reached, on error
+//      MINFS_ERROR_XXXX.
+/////////////////////////////////////////////////////////////////////////////
+int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  return File_ReadWrite(p_file, p_buf, p_len, MINFS_RW_MODE_READ, &p_block_buf);
 }
 
 int32_t MINFS_FileWrite(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf){
@@ -380,16 +430,19 @@ int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t *p_
 int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf){
 }
 
-int32_t MINFS_Touch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_FileTouch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf){
 }
 
-int32_t MINFS_Unlink(uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs,uint32_t file_id, MINFS_block_buf_t *p_block_buf){
 }
 
-int32_t MINFS_Move(uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_FileMove(MINFS_fs_t *p_fs,uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf){
 }
 
-int32_t MINFS_FileExists(uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_FileExists(MINFS_fs_t *p_fs,uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+}
+
+int32_t MINFS_FileGetFreeID(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -422,11 +475,11 @@ static int32_t CalcFSParams(MINFS_fs_t *p_fs){
   p_fs->calc.block_data_len = (1 << p_fs->info.block_size) - p_fs->calc.pec_width;
   // calculate first data-block
   uint32_t fshead_size = sizeof(MINFS_fs_header_t) + p_fs->info.num_blocks * p_fs->calc.bp_size;
-  p_fs->calc.first_datablock = fshead_size / p_fs->calc.block_data_len + (fshead_size % p_fs->calc.block_data_len ? 1 : 0);
+  p_fs->calc.first_datablock_n = fshead_size / p_fs->calc.block_data_len + (fshead_size % p_fs->calc.block_data_len ? 1 : 0);
   // check fs-info values
-  if( p_fs->info.num_blocks & 0xFFF00000 || p_fs->info.num_blocks < p_fs->calc.first_datablock + 1 )
+  if( p_fs->info.num_blocks > MINFS_MAX_NUMBLOCKS  || p_fs->info.num_blocks < p_fs->calc.first_datablock_n + 1 )
     return MINFS_ERROR_NUM_BLOCKS;
-  if( p_fs->info.block_size > 12 || p_fs->info.block_size < 4)
+  if( p_fs->info.block_size > MINFS_MAX_BLOCKSIZE_EXP || p_fs->info.block_size < MINFS_MIN_BLOCKSIZE_EXP)
     return MINFS_ERROR_BLOCK_SIZE;
   // validated
   return 0;
@@ -457,20 +510,20 @@ static uint32_t GetPECValue(MINFS_fs_t *p_fs, void *p_buf, uint16_t data_len){
 // OUT: Block number or MINFS_BLOCK_EOC (file does not exists)
 //      < 0 on error (MINFS_ERROR_XXXX)
 /////////////////////////////////////////////////////////////////////////////
-static int32_t File_GetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
+static int32_t File_GetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
   // check if file-id is in valid range
-  if(file_id < 1 || file_id > (0xFFFFFFFF / p_file_0->p_fs->calc.bp_size) )
+  if(file_id < 1 || file_id > MINFS_MAX_FILE_ID )
     return MINFS_ERROR_FILE_ID;
-  // calc offset and check index-file length
+  // calc offset and check file-index size
   uint32_t fp_offset;
   if( (fp_offset = (file_id - 1) * p_file_0->p_fs->calc.bp_size) >= p_file_0->info.size )
-    return MINFS_BLOCK_EOC;
+    return MINFS_BLOCK_EOC; // file-index is too small to contain a entry for file_id
   // now read value
   int32_t status, fp_block_n = 0;
   if( status = File_Seek(p_file_0, fp_offset, pp_block_buf) )
     return status; // return error status
   uint32_t len = p_file_0->p_fs->calc.bp_size;
-  if( status = File_ReadWrite(p_file_0, &fp_block_n, &len, RW_MODE_READ, pp_block_buf) )
+  if( status = File_ReadWrite(p_file_0, &fp_block_n, &len, MINFS_RW_MODE_READ, pp_block_buf) )
     return status; // return error status  
   // convert value from little-endian to platform's byte order
   BE_SWAP_32(fp_block_n);
@@ -490,13 +543,13 @@ static int32_t File_GetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, MI
 //      <pp_block_buf> Pointer to a Buffer-struct pointer
 // OUT: 0 on success, on error MINFS_ERROR_XXXX
 /////////////////////////////////////////////////////////////////////////////
-static int32_t File_SetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t block_n, MINFS_block_buf_t **pp_block_buf){
+static int32_t File_SetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, uint32_t block_n, MINFS_block_buf_t **pp_block_buf){
   // check if file-id is in valid range
-  if(file_id < 1 || file_id > (0xFFFFFFFF / p_file_0->p_fs->calc.bp_size) )
+  if(file_id < 1 || file_id > MINFS_MAX_FILE_ID )
     return MINFS_ERROR_FILE_ID;
   uint32_t fp_offset, len;
   int32_t status;
-  // calc offset and extend index-file if necessary
+  // calc offset and extend file-index if necessary
   if( (fp_offset = (file_id - 1) * p_file_0->p_fs->calc.bp_size) >= p_file_0->info.size ){
     // seek to current end
     if( (status = File_Seek(p_file_0, MINFS_SEEK_END, pp_block_buf)) != MINFS_STATUS_EOF )
@@ -508,7 +561,7 @@ static int32_t File_SetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, ui
       return status; // return error status
     // init added space with 0
     len = fp_offset - old_indexf_size;
-    if( status = File_ReadWrite(p_file_0, NULL, &len, RW_MODE_WRITE, pp_block_buf) )
+    if( status = File_ReadWrite(p_file_0, NULL, &len, MINFS_RW_MODE_WRITE, pp_block_buf) )
       return status; // return error status
   } else {
     // seek to pointer position
@@ -519,7 +572,7 @@ static int32_t File_SetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, ui
   BE_SWAP_32(block_n);
   // now write value
   len = p_file_0->p_fs->calc.bp_size;
-  if( status = File_ReadWrite(p_file_0, &block_n, &len, RW_MODE_WRITE, pp_block_buf) )
+  if( status = File_ReadWrite(p_file_0, &block_n, &len, MINFS_RW_MODE_WRITE, pp_block_buf) )
     return status; // return error status  
   return block_n;
 }
@@ -540,12 +593,12 @@ static int32_t File_SetBlockPointer(MINFS_file_t *p_file_0, uint32_t file_id, ui
 static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
   // get pointer to file
   uint32_t file_bp;
-  if( (file_bp = File_GetBlockPointer(p_file_0, file_id, pp_block_buf)) < 0)
+  if( (file_bp = File_GetFilePointer(p_file_0, file_id, pp_block_buf)) < 0)
     return file_bp; // return error status
   if( file_bp != MINFS_BLOCK_EOC ){
     // set file pointer to MINFS_BLOCK_EOC
     int32_t status;
-    if( status = File_SetBlockPointer(p_file_0, file_id, MINFS_BLOCK_EOC, pp_block_buf) )
+    if( status = File_SetFilePointer(p_file_0, file_id, MINFS_BLOCK_EOC, pp_block_buf) )
       return status; // return error status
     // push the file's former block chain to the free-blocks-chain
     if( status = BlockChain_PushFree(p_file_0->p_fs, file_bp, pp_block_buf) )
@@ -553,6 +606,36 @@ static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block
   }
   // success
   return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a non-existing file with size 0.
+// 
+// IN:  <p_file_0> Pointer to a populated MINFS_file_t struct, refering a file
+//                 containing the block-pointer.
+//      <file_id> The ID of the file to unlink (1 - x)
+//      <pp_block_buf> Pointer to a Buffer-struct pointer
+// OUT: First block_n of new file on success, on error MINFS_ERROR_XXXX. If file already exists,
+//      MINFS_ERROR_FILE_EXISTS will be returned.
+/////////////////////////////////////////////////////////////////////////////
+static int32_t File_Touch(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
+  int32_t status, block_n;
+  // check if file does exist
+  if( (status = File_GetFilePointer(p_file_0, file_id, pp_block_buf)) < 0 )
+    return status; // return error status
+  if( status == MINFS_BLOCK_EOC )
+    return MINFS_ERROR_FILE_EXISTS;
+  // file does not exists, pop a free block
+  if( (block_n = BlockChain_PopFree( p_file_0->p_fs, 1, pp_block_buf )) < 0 )
+    return block_n; // return error status
+  // set file pointer to the free block
+  if( status = File_SetFilePointer(p_file_0, file_id, block_n, pp_block_buf) )
+    return status; // return error status
+  // write file header
+  if( status = File_HeaderWrite(p_file_0->p_fs, block_n, file_id, 0, pp_block_buf) )
+    return status; // return error status
+  // success
+  return block_n;
 }
 
 
@@ -570,7 +653,7 @@ static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block
 /////////////////////////////////////////////////////////////////////////////
 static int32_t File_Open(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t **pp_block_buf){
   // check if block_n is a data-block
-  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->info.num_blocks )
+  if( block_n < p_fs->calc.first_datablock_n || block_n > p_fs->info.num_blocks )
     return MINFS_ERROR_BLOCK_N;
   // get a buffer
   int32_t status;
@@ -739,17 +822,10 @@ static int32_t File_SetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block
         return status; // return error status
     }
   }
-  // finally, set new size and write new size to file-header
+  // finally, update file-header with new size
   int32_t status;
-  // get the buffer
-  if( status = BlockBuffer_Get(p_file->p_fs, pp_block_buf, p_file->first_block_n, p_file->file_id, 1) )
+  if( status = File_HeaderWrite(p_file->p_fs, p_file->first_block_n, p_file->file_id, new_size, pp_block_buf) )
     return status; // return error status
-  // write file info to buffer
-  MINFS_file_header_t* p_file_header = (MINFS_file_header_t*)( (*pp_block_buf)->p_buf );
-  p_file_header->info.size = new_size;
-  uint16_t header_info_size_offset = (uint16_t)( (uint32_t)(&(p_file_header->info.size)) - (uint32_t)p_file_header );
-  if( status = BlockBuffer_Write(p_file->p_fs, *pp_block_buf, header_info_size_offset, sizeof(p_file_header->info.size) ) )
-    return status; // return error status  
   // update info struct
   p_file->info.size = new_size;
   // success
@@ -788,10 +864,10 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
     p_file->p_fs->calc.block_data_len - p_file->data_ptr_block_offset : remain ){
       // get buffer for current block
       if( status = BlockBuffer_Get(p_file->p_fs, pp_block_buf, p_file->current_block_n, 
-        p_file->file_id, (mode == RW_MODE_WRITE) ? 1 : 0) 
+        p_file->file_id, (mode == MINFS_RW_MODE_WRITE) ? 1 : 0) 
       )
 	return status; // return error status
-      if(mode == RW_MODE_WRITE){
+      if(mode == MINFS_RW_MODE_WRITE){
 	// copy data
 	if(p_buf == NULL) // fill with 0-bytes
           memset( (*pp_block_buf)->p_buf + p_file->data_ptr_block_offset, 0, delta );
@@ -800,7 +876,7 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
 	// write data
 	if( status = BlockBuffer_Write(p_file->p_fs, *pp_block_buf, p_file->data_ptr_block_offset, delta) )
 	  return status; // return error status
-      }else if(mode == RW_MODE_READ){
+      }else if(mode == MINFS_RW_MODE_READ){
         // read data
 	if( status = BlockBuffer_Read(p_file->p_fs, *pp_block_buf, p_file->data_ptr_block_offset, delta) )
 	  return status; // return error status
@@ -827,6 +903,31 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
   }
   // success ( return EOF or 0 )
   return ret_status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Writes file-header data to block_n.
+//
+// IN:  <p_fs> Pointer to a populated fs-structure
+//      <block_n> First block of file
+//      <file_id> File identification, passed to BlockBuffer_Get
+//      <pp_block_buf> Pointer to a Buffer-struct pointer
+// OUT: 0 on success, on error < 0 (MINFS_ERROR_XXXX)
+/////////////////////////////////////////////////////////////////////////////
+static int32_t File_HeaderWrite(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t file_id, uint32_t file_size, MINFS_block_buf_t **pp_block_buf){
+  int32_t status;
+  // get a buffer
+  if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_n, file_id, 0) )
+    return status; // return error status
+  // map file-header struct to buffer and set file-signature and size
+  MINFS_file_header_t *p_file_header = (MINFS_file_header_t*)( (*pp_block_buf)->p_buf );
+  memcpy(&(p_file_header->file_sig), MINFS_FILE_SIG, 4);
+  p_file_header->info.size = 0;
+  if( status = BlockBuffer_Write(p_fs, *pp_block_buf, 0, sizeof(MINFS_file_header_t)) );
+    return status;
+  // success
+  return 0;
 }
 
 
@@ -883,7 +984,7 @@ static int32_t BlockChain_PopFree(MINFS_fs_t *p_fs, uint32_t num_blocks, MINFS_b
 /////////////////////////////////////////////////////////////////////////////
 static int32_t BlockChain_PushFree(MINFS_fs_t *p_fs, uint32_t start_block, MINFS_block_buf_t **pp_block_buf){
   // check if start_block is a data-block
-  if( start_block < p_fs->calc.first_datablock || start_block > p_fs->info.num_blocks )
+  if( start_block < p_fs->calc.first_datablock_n || start_block > p_fs->info.num_blocks )
     return MINFS_ERROR_BLOCK_N;
   // find last block of the chain
   uint32_t end_block;
@@ -916,7 +1017,7 @@ static int32_t BlockChain_PushFree(MINFS_fs_t *p_fs, uint32_t start_block, MINFS
 /////////////////////////////////////////////////////////////////////////////
 static int32_t BlockChain_Seek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offset, MINFS_block_buf_t **pp_block_buf){
   // check if block_n is a data-block
-  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->info.num_blocks )
+  if( block_n < p_fs->calc.first_datablock_n || block_n > p_fs->info.num_blocks )
     return MINFS_ERROR_BLOCK_N;
   // seek blocks
   uint32_t block_chain_block_n, last_block_n;
@@ -924,7 +1025,7 @@ static int32_t BlockChain_Seek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offs
   int32_t status;
   while( offset > 0 ){
     // calculate block and offset where the next block-pointer is stored
-    block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
+    block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock_n); // chain-pointer offset from beginning of fs
     block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
     block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
     // get buffer
@@ -963,10 +1064,10 @@ static int32_t BlockChain_Seek(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t offs
 /////////////////////////////////////////////////////////////////////////////
 static int32_t BlockChain_Link(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t block_target, MINFS_block_buf_t **pp_block_buf){
   // check if block_n is a data-block
-  if( block_n < p_fs->calc.first_datablock || block_n > p_fs->info.num_blocks )
+  if( block_n < p_fs->calc.first_datablock_n || block_n > p_fs->info.num_blocks )
     return MINFS_ERROR_BLOCK_N;
   // calculate block and offset where the next block-pointer is stored
-  uint16_t block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock); // chain-pointer offset from beginning of fs
+  uint16_t block_chain_entry_offset = sizeof(MINFS_fs_header_t) + p_fs->calc.bp_size * (block_n - p_fs->calc.first_datablock_n); // chain-pointer offset from beginning of fs
   uint32_t block_chain_block_n = block_chain_entry_offset / p_fs->calc.block_data_len; // block where the chain pointer resides
   block_chain_entry_offset %= p_fs->calc.block_data_len; // chain-pointer offset from beginning of block
   // get buffer
