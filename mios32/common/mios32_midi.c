@@ -559,8 +559,8 @@ s32 MIOS32_MIDI_SendNoteOn(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 no
 s32 MIOS32_MIDI_SendPolyPressure(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 note, u8 val)
 { return MIOS32_MIDI_SendEvent(port, 0xa0 | chn, note, val); }
 
-s32 MIOS32_MIDI_SendCC(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 cc, u8 val)
-{ return MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc,   val); }
+s32 MIOS32_MIDI_SendCC(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 cc_number, u8 val)
+{ return MIOS32_MIDI_SendEvent(port, 0xb0 | chn, cc_number,   val); }
 
 s32 MIOS32_MIDI_SendProgramChange(mios32_midi_port_t port, mios32_midi_chn_t chn, u8 prg)
 { return MIOS32_MIDI_SendEvent(port, 0xc0 | chn, prg,  0x00); }
