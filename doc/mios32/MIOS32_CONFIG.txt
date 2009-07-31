@@ -270,7 +270,9 @@ into your local mios32_config.h file
 #define MIOS32_AIN_OVERSAMPLING_RATE  1
 
 // define the deadband (min. difference to report a change to the application hook)
-// 31 is enough for 7bit resolution at 12bit sampling resolution (1x oversampling)
+// typically set to (2^(12-desired_resolution)-1)
+// e.g. for a resolution of 7 bit, it's set to (2^(12-7)-1) = (2^5 - 1) = 31
+// So, 31 is enough for 7bit resolution at 12bit sampling resolution (1x oversampling)
 #define MIOS32_AIN_DEADBAND 31
 
 // muxed or unmuxed mode (0..3)?
