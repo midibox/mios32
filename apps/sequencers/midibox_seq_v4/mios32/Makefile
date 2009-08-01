@@ -139,6 +139,9 @@ include $(MIOS32_PATH)/modules/aout/aout.mk
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
+# Notestack functions
+include $(MIOS32_PATH)/modules/notestack/notestack.mk
+
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
 

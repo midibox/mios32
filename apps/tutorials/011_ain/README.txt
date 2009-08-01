@@ -26,7 +26,7 @@ Interface (MBHP_ETH) or similar serial devices.
 The provided resultion is 12bit
 
 Similar to DINs/DOUTs, analog inputs (AINs) are scanned by MIOS32 in background,
-and a DMA is used as well to safe CPU time.
+and a DMA is used as well to save CPU time.
 
 AIN inputs have to be explictely enabled (and configured) in the
 mios32_config.h file.

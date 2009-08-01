@@ -100,6 +100,7 @@
 		5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */ = {isa = PBXBuildFile; fileRef = 5278A3290F44B6FD00DF885C /* seq_file_c.c */; };
 		5282AE090F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */; };
 		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
+		528F03901024889E009439A6 /* notestack.c in Sources */ = {isa = PBXBuildFile; fileRef = 528F038E1024889E009439A6 /* notestack.c */; };
 		52988C2F0F1A84680046F70C /* seq_chord.c in Sources */ = {isa = PBXBuildFile; fileRef = 52988C2D0F1A84680046F70C /* seq_chord.c */; };
 		52A74F1A0E92701800D65394 /* SEQButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74F190E92701800D65394 /* SEQButton.m */; };
 		52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74FE80E92858600D65394 /* SEQEncoder.m */; };
@@ -306,6 +307,8 @@
 		5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_STOPWATCH_Wrapper.h; sourceTree = "<group>"; };
 		5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_STOPWATCH_Wrapper.m; sourceTree = "<group>"; };
 		5282AE180F18C4AF00901181 /* seq_ui_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_menu.c; path = ../core/seq_ui_menu.c; sourceTree = SOURCE_ROOT; };
+		528F038E1024889E009439A6 /* notestack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = notestack.c; path = ../../../../modules/notestack/notestack.c; sourceTree = SOURCE_ROOT; };
+		528F038F1024889E009439A6 /* notestack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = notestack.h; path = ../../../../modules/notestack/notestack.h; sourceTree = SOURCE_ROOT; };
 		52988C2D0F1A84680046F70C /* seq_chord.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_chord.c; path = ../core/seq_chord.c; sourceTree = SOURCE_ROOT; };
 		52988C2E0F1A84680046F70C /* seq_chord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_chord.h; path = ../core/seq_chord.h; sourceTree = SOURCE_ROOT; };
 		52A74F180E92701800D65394 /* SEQButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQButton.h; sourceTree = "<group>"; };
@@ -502,6 +505,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				528F038E1024889E009439A6 /* notestack.c */,
+				528F038F1024889E009439A6 /* notestack.h */,
 				522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */,
 				522341990FF6B8DC0001D7E7 /* seq_midi_sysex.h */,
 				52AE260A0FEC252B004A0274 /* seq_ui_pmute.c */,
@@ -948,6 +953,7 @@
 				52AE260B0FEC252B004A0274 /* seq_ui_pmute.c in Sources */,
 				5223419A0FF6B8DC0001D7E7 /* seq_midi_sysex.c in Sources */,
 				525250550FFA81CA006A6EAE /* Tasks.m in Sources */,
+				528F03901024889E009439A6 /* notestack.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1025,7 +1031,7 @@
 				);
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 			};
 			name = Debug;
 		};
@@ -1053,7 +1059,7 @@
 				);
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 			};
 			name = Release;
 		};
