@@ -4,8 +4,8 @@
 //! Generic Notestack Module
 //!
 //! Usage Examples:
-//!   $MIOS32_PATH/apps/tutorial/013_aout
-//!   $MIOS32_PATH/apps/tutorial/014_sequencer
+//!   $MIOS32_PATH/apps/tutorial/015_aout
+//!   $MIOS32_PATH/apps/tutorial/016_sequencer
 //!   $MIOS32_PATH/apps/sequencers/midibox_seq_v4/core/seq_midi_in.c
 //!
 //! \{
