@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MIOS32 Tutorial #016: Using AOUTs and a Notestack
+ * MIOS32 Tutorial #017: A simple Sequencer
  *
  * ==========================================================================
  *
@@ -16,10 +16,17 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include "app.h"
+
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#include <task.h>
 
 #include <notestack.h>
-#include <aout.h>
+#include <seq_bpm.h>
+#include <seq_midi_out.h>
+
+#include "seq.h"
+#include "app.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -30,11 +37,17 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+// Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-static notestack_t notestack;
-static notestack_item_t notestack_items[NOTESTACK_SIZE];
+#define PRIORITY_TASK_SEQ		( tskIDLE_PRIORITY + 3 ) // higher priority than MIDI receive task!
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_SEQ(void *pvParameters);
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -48,22 +61,17 @@ void APP_Init(void)
   // turn off gate LED
   MIOS32_BOARD_LED_Set(1, 0);
 
-  // initialize the Notestack
-  NOTESTACK_Init(&notestack, NOTESTACK_MODE_PUSH_TOP, &notestack_items[0], NOTESTACK_SIZE);
+  // initialize MIDI handler
+  SEQ_MIDI_OUT_Init(0);
 
-  // initialize AOUT module
-  AOUT_Init(0);
+  // initialize sequencer
+  SEQ_Init(0);
 
-  // configure interface
-  // see AOUT module documentation for available interfaces and options
-  aout_config_t config;
-  config = AOUT_ConfigGet();
-  config.if_type = AOUT_IF_MAX525;
-  config.if_option = 0;
-  config.num_channels = 8;
-  config.chn_inverted = 0;
-  AOUT_ConfigSet(config);
-  AOUT_IF_Init(0);
+  // install MIDI Rx callback function
+  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
+
+  // install sequencer task
+  xTaskCreate(TASK_SEQ, (signed portCHAR *)"SEQ", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SEQ, NULL);
 }
 
 
@@ -72,6 +80,8 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
+  // set LED depending on sequencer run state
+  MIOS32_BOARD_LED_Set(1, SEQ_BPM_IsRunning() ? 1 : 0);
 }
 
 
@@ -85,58 +95,10 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
       (midi_package.type == NoteOn || midi_package.type == NoteOff) ) {
 
     // branch depending on Note On/Off event
-    if( midi_package.event == NoteOn && midi_package.velocity > 0 ) {
-      // push note into note stack
-      NOTESTACK_Push(&notestack, midi_package.note, midi_package.velocity);
-    } else {
-      // remove note from note stack
-      NOTESTACK_Pop(&notestack, midi_package.note);
-    }
-
-
-    // still a note in stack?
-    if( notestack.len ) {
-      // take first note of stack
-      // we have to convert the 7bit value to a 16bit value
-      u16 note_cv = notestack_items[0].note << 9;
-      u16 velocity_cv = notestack_items[0].tag << 9;
-
-      // change voltages
-      AOUT_PinSet(0, note_cv);
-      AOUT_PinSet(1, velocity_cv);
-
-      // set board LED
-      MIOS32_BOARD_LED_Set(1, 1);
-
-      // set AOUT digital output (if available)
-      AOUT_DigitalPinSet(0, 1);
-    } else {
-      // turn off LED (can also be used as a gate output!)
-      MIOS32_BOARD_LED_Set(1, 0);
-
-      // clear AOUT digital output (if available)
-      AOUT_DigitalPinSet(0, 0);
-    }
-
-#if 1
-    // optional debug messages
-    NOTESTACK_SendDebugMessage(&notestack);
-#endif
-
-  // CC received?
-  } else if( midi_package.chn == Chn1 && midi_package.type == CC ) {
-
-    // we have to convert the 7bit value to a 16bit value
-    u16 cc_cv = midi_package.value << 9;
-
-    switch( midi_package.cc_number ) {
-      case 16: AOUT_PinSet(2, cc_cv); break;
-      case 17: AOUT_PinSet(3, cc_cv); break;
-      case 18: AOUT_PinSet(4, cc_cv); break;
-      case 19: AOUT_PinSet(5, cc_cv); break;
-      case 20: AOUT_PinSet(6, cc_cv); break;
-      case 21: AOUT_PinSet(7, cc_cv); break;
-    }
+    if( midi_package.event == NoteOn && midi_package.velocity > 0 )
+      SEQ_NotifyNoteOn(midi_package.note, midi_package.velocity);
+    else
+      SEQ_NotifyNoteOff(midi_package.note);
   }
 }
 
@@ -181,4 +143,39 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS to handle sequencer requests
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_SEQ(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // execute sequencer handler
+    SEQ_Handler();
+
+    // send timestamped MIDI events
+    SEQ_MIDI_OUT_Handler();
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectRxCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+{
+  // here we could filter a certain port
+  // The BPM generator will deliver inaccurate results if MIDI clock 
+  // is received from multiple ports
+  SEQ_BPM_NotifyMIDIRx(midi_byte);
+
+  return 0; // no error, no filtering
 }

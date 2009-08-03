@@ -18,8 +18,16 @@
 #include <mios32.h>
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
+#include <notestack.h>
 
 #include "seq.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#define NOTESTACK_SIZE 16
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,10 +51,10 @@ static s32 SEQ_Tick(u32 bpm_tick);
 // A-2: 0x3a
 // no note: 0x00
 u8 seq_steps_note[16] = {
-  0x41, 0x45, 0x3e, 0x00, // G-3  A-3  D-2  ---
-  0x45, 0x41, 0x3a, 0x3a, // A-3  G-3  A-2  A-2
-  0x3e, 0x3a, 0x45, 0x00, // D-2  A-2  A-3  ---
-  0x41, 0x3e, 0x41, 0x45  // G-3  D-2  G-2  A-3
+  0x3c, 0x48, 0x43, 0x00, // C-3  C-4  G-3  ---
+  0x3c, 0x48, 0x40, 0x43, // C-3  C-4  E-3  G-3
+  0x3c, 0x48, 0x43, 0x00, // C-3  C-4  G-3  ---
+  0x3c, 0x40, 0x48, 0x43  // C-3  E-3  C-4  G-3
 };
 
 // velocity values in hex 
@@ -78,12 +86,23 @@ static u8 seq_step_pos;
 // pause mode (will be controlled from user interface)
 static u8 seq_pause = 0;
 
+// transpose incrementer
+static s8 transpose; // should be signed!
+
+// notestack
+static notestack_t notestack;
+static notestack_item_t notestack_items[NOTESTACK_SIZE];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_Init(u32 mode)
 {
+  // initialize the Notestack
+  NOTESTACK_Init(&notestack, NOTESTACK_MODE_PUSH_TOP, &notestack_items[0], NOTESTACK_SIZE);
+  transpose = 0;
+
   // reset sequencer
   SEQ_Reset();
 
@@ -193,11 +212,19 @@ static s32 SEQ_Tick(u32 bpm_tick)
     }
 
     // get note/velocity/length from array
-    u8 note      = seq_steps_note[seq_step_pos];
-    u8 velocity  = seq_steps_velocity[seq_step_pos];
-    u8 length    = seq_steps_length[seq_step_pos];
+    int note      = seq_steps_note[seq_step_pos];
+    u8  velocity  = seq_steps_velocity[seq_step_pos];
+    u8  length    = seq_steps_length[seq_step_pos];
 
     // here you could modify the values, e.g. transposing or dynamic length variation
+
+    // simple transpose:
+    note += transpose;
+    while( note < 0 )
+      note += 12;
+    while( note > 128 )
+      note -= 12;
+      
 
     // put note into queue if all values are != 0
     if( note && velocity && length ) {
@@ -208,16 +235,55 @@ static s32 SEQ_Tick(u32 bpm_tick)
       midi_package.note     = note;
       midi_package.velocity = velocity;
 
-      // send to USB0 and UART0 simultaneously at bpm_tick with given length
-      SEQ_MIDI_OUT_Send(USB0, midi_package, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, length);
-      SEQ_MIDI_OUT_Send(UART0, midi_package, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, length);
-
-      // Note: I'm sending to USB0 and UART0 directly, since I don't know, 
-      // which interface you are using
-      // in a common application, it's better to direct MIDI events to the DEFAULT port.
-      // It can be selected in mios32_config.h, or via MIOS32_MIDI_DefaultSet()
+      SEQ_MIDI_OUT_Send(DEFAULT, midi_package, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, length);
     }
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Should be called whenever a Note event has been received.
+// We expect, that velocity is 0 on a Note Off event
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_NotifyNoteOn(u8 note, u8 velocity)
+{
+  if( velocity )
+    // push note into note stack
+    NOTESTACK_Push(&notestack, note, velocity);
+  else
+    // remove note from note stack
+    NOTESTACK_Pop(&notestack, note);
+
+  // At least one note played?
+  if( notestack.len > 0 ) {
+    // start sequencer if it isn't already running
+    if( !SEQ_BPM_IsRunning() )
+      SEQ_BPM_Start();
+
+    // set new transpose note
+    transpose = notestack_items[0].note - 0x3c; // C-3 is middle note
+  } else {
+    // no key is pressed anymore: stop sequencer
+    SEQ_BPM_Stop();
+  }
+
+
+#if 1
+  // optional debug messages
+  NOTESTACK_SendDebugMessage(&notestack);
+#endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Should be called whenever a Note Off event has been received.
+// forwards to SEQ_NotifyNoteOn with velocity 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_NotifyNoteOff(u8 note)
+{
+  return SEQ_NotifyNoteOn(note, 0);
 }
