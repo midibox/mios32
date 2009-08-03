@@ -207,7 +207,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	velocity = 0;
       else {
 	if( SEQ_TRG_Get(track, step, 0, drum) ) {
-	  if( num_p_layers == 2 )
+	  if( tcc->link_par_layer_velocity >= 0 )
 	    velocity = SEQ_PAR_VelocityGet(track, step, drum);
 	  else
 	    velocity = tcc->lay_const[1*16 + drum];
