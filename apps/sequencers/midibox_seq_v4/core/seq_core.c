@@ -596,7 +596,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             mios32_midi_package_t *p = &e->midi_package;
 
 	    // instrument layers only used for drum tracks
-	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
+	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? e->layer_tag : 0;
 
 	    // individual for each instrument in drum mode:
 	    // if probability < 100: play step with given probability
@@ -708,7 +708,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
             mios32_midi_package_t *p = &e->midi_package;
 
 	    // instrument layers only used for drum tracks
-	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? i : 0;
+	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? e->layer_tag : 0;
 
 	    if( p->type != NoteOn ) {
 	      // e.g. CC or PitchBend
