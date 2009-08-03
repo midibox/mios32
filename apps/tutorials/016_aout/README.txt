@@ -1,6 +1,6 @@
 $Id$
 
-MIOS32 Tutorial #015: Using AOUTs and a Notestack
+MIOS32 Tutorial #016: Using AOUTs and a Notestack
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -27,6 +27,8 @@ which are located under $MIOS32_PATH/modules
   o $MIOS32_PATH/modules/notestack: a note stack handler which stores
     received Notes in a stack, so that it is possible to recall the
     note number and velocity of still played notes when a key is released
+
+Modules are added to the project from the Makefile (-> see comments there)
 
 
 AOUT Driver

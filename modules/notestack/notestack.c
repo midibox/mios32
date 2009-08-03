@@ -4,8 +4,9 @@
 //! Generic Notestack Module
 //!
 //! Usage Examples:
-//!   $MIOS32_PATH/apps/tutorial/015_aout
-//!   $MIOS32_PATH/apps/tutorial/016_sequencer
+//!   $MIOS32_PATH/apps/tutorial/016_aout
+//!   $MIOS32_PATH/apps/tutorial/017_sequencer
+//!   $MIOS32_PATH/apps/tutorial/018_arpeggiator
 //!   $MIOS32_PATH/apps/sequencers/midibox_seq_v4/core/seq_midi_in.c
 //!
 //! \{
@@ -174,7 +175,7 @@ s32 NOTESTACK_Pop(notestack_t *n, u8 old_note)
 	  if( !n->note_items[j].depressed )
 	    any_note_pressed = 1;
 
-	return any_note_pressed ? 2 : 1;
+	return any_note_pressed ? 1 : 2;
       } else {
 	for(j=i; j < n->len-1; ++j)
 	  n->note_items[j] = n->note_items[j+1];
@@ -200,6 +201,8 @@ s32 NOTESTACK_Clear(notestack_t *n)
 {
   int i;
 
+  n->len = 0;
+
   for(i=0; i<n->size; ++i)
     n->note_items[i].ALL = 0;
 
@@ -215,7 +218,7 @@ s32 NOTESTACK_Clear(notestack_t *n)
 /////////////////////////////////////////////////////////////////////////////
 s32 NOTESTACK_SendDebugMessage(notestack_t *n)
 {
-  static const char note_name[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+  const char note_name[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
   int i;
 
   MIOS32_MIDI_SendDebugMessage("Notestack Content (len=%d, size=%d)\n", n->len, n->size);
