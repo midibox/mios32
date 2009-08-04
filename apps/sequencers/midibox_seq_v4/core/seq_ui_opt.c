@@ -175,7 +175,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   	  case SEQ_UI_REMOTE_MODE_SERVER:
 	    if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
 	      SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_AUTO);
-	    seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_AUTO;
+	    seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
 	    break;
 	  case SEQ_UI_REMOTE_MODE_CLIENT:
 	    SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_SERVER); // request server
@@ -339,7 +339,7 @@ static s32 LCD_Handler(u8 high_prio)
       "Server",
       "Client",
     };
-    SEQ_LCD_PrintString(mode_str[seq_ui_remote_mode]);
+    SEQ_LCD_PrintString((char *)mode_str[seq_ui_remote_mode]);
   }
   SEQ_LCD_PrintSpaces(1);
 

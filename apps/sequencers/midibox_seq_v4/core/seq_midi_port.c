@@ -137,7 +137,7 @@ char *SEQ_MIDI_PORT_InNameGet(u8 port_ix)
   if( port_ix >= sizeof(in_ports)/sizeof(seq_midi_port_entry_t) )
     return "----";
   else
-    return in_ports[port_ix].name;
+    return (char *)in_ports[port_ix].name;
 }
 
 char *SEQ_MIDI_PORT_OutNameGet(u8 port_ix)
@@ -145,7 +145,7 @@ char *SEQ_MIDI_PORT_OutNameGet(u8 port_ix)
   if( port_ix >= sizeof(out_ports)/sizeof(seq_midi_port_entry_t) )
     return "----";
   else
-    return out_ports[port_ix].name;
+    return (char *)out_ports[port_ix].name;
 }
 
 char *SEQ_MIDI_PORT_ClkNameGet(u8 port_ix)
@@ -153,7 +153,7 @@ char *SEQ_MIDI_PORT_ClkNameGet(u8 port_ix)
   if( port_ix >= sizeof(clk_ports)/sizeof(seq_midi_port_entry_t) )
     return "----";
   else
-    return clk_ports[port_ix].name;
+    return (char *)clk_ports[port_ix].name;
 }
 
 
@@ -227,11 +227,12 @@ s32 SEQ_MIDI_PORT_InCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
   for(ix=0; ix<sizeof(in_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
-    if( in_ports[ix].port == port )
+    if( in_ports[ix].port == port ) {
       if( port >= 0xf0 )
 	return 1; // Bus is always available
       else
 	return MIOS32_MIDI_CheckAvailable(port);
+    }
   }
   return 0; // port not available
 }
@@ -240,7 +241,7 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
   for(ix=0; ix<sizeof(out_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
-    if( out_ports[ix].port == port )
+    if( out_ports[ix].port == port ) {
       if( port == 0x80 ) {
 	// check if AOUT configured
 	aout_config_t config;
@@ -250,6 +251,7 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 	return 1; // Bus is always available
       } else
 	return MIOS32_MIDI_CheckAvailable(port);
+    }
   }
   return 0; // port not available
 }

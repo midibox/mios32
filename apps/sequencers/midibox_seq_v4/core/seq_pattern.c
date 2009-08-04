@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 
+#include <seq_bpm.h>
+
 #include "tasks.h"
 
 #include "seq_pattern.h"

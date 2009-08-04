@@ -23,6 +23,7 @@
 
 #include "seq_file_c.h"
 
+#include "seq_midi_port.h"
 #include "seq_core.h"
 
 

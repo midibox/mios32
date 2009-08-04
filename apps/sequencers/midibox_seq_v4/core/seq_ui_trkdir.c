@@ -74,8 +74,6 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;

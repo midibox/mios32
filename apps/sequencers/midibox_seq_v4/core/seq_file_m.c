@@ -176,7 +176,6 @@ s32 SEQ_FILE_M_Create(void)
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
   FILEINFO fi;
-  int i;
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
@@ -447,10 +446,8 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   u8 chn;
   for(chn=0; chn<num_chn; ++chn) {
     u8 par;
-    for(par=0; par<num_par; ++par) {
-      u8 value;
+    for(par=0; par<num_par; ++par)
       status |= SEQ_FILE_WriteByte((PFILEINFO)&info->file, SEQ_MIXER_Get(chn, par));
-    }
   }
 
   // fill remaining bytes with zero if required

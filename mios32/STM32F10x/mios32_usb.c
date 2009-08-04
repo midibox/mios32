@@ -737,7 +737,6 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static void MIOS32_USB_CB_Init(void);
 static void MIOS32_USB_CB_Reset(void);
 static void MIOS32_USB_CB_SetConfiguration(void);
 static void MIOS32_USB_CB_SetDeviceAddress (void);

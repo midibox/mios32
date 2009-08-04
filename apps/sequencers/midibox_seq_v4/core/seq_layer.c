@@ -196,7 +196,6 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
-    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
 
     u8 drum;
     for(drum=0; drum<num_instruments; ++drum) {
@@ -420,7 +419,6 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
-    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
 
     // all events but Notes are ignored (CC/PitchBend are working channel based, and not drum instr. based)
     if( layer_event.midi_package.event == NoteOn ) {
@@ -648,8 +646,6 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 
 
   // get constraints of trigger layers
-  int num_t_instruments = SEQ_TRG_NumInstrumentsGet(track);
-  int num_t_layers = SEQ_TRG_NumLayersGet(track);
   int num_t_steps  = SEQ_TRG_NumStepsGet(track);;
 
   // copy trigger layer values

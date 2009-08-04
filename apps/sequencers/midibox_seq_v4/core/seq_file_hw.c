@@ -156,6 +156,8 @@ s32 SEQ_FILE_HW_ConfigLocked(void)
 s32 SEQ_FILE_HW_LockConfig(void)
 {
   seq_file_hw_info.config_locked = 1;
+
+  return 0; // no error
 }
 
 
@@ -231,7 +233,7 @@ s32 SEQ_FILE_HW_Read(void)
       char *parameter;
       int hlp;
 
-      if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
+      if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// ignore comments

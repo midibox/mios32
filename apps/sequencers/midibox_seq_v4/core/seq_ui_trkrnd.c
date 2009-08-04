@@ -26,6 +26,7 @@
 #include "seq_trg.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+#include "seq_random.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -171,8 +172,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( button ) {
     case SEQ_UI_BUTTON_GP1: // GxTy
       if( depressed ) return 0; // ignore when button depressed
@@ -297,8 +296,6 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk.          Random Generator          LayA LayB LayC TrgA TrgB TrgC           
   // G1T1  Generate           Clr. Util Undo  64   --   --   All  --   --            
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintString("Trk.          Random Generator  ");
@@ -387,7 +384,7 @@ static s32 RandomGenerator(u8 req)
   SEQ_UI_UTIL_UndoUpdate(visible_track);
 
   for(i=0; i<6; ++i) {
-    if( req & (1 << i) )
+    if( req & (1 << i) ) {
 
       ///////////////////////////////////////////////////////////////////////
       // Parameter Layers
@@ -442,6 +439,7 @@ static s32 RandomGenerator(u8 req)
 	}
 
       }
+    }
   }
 
   return 0; // no error

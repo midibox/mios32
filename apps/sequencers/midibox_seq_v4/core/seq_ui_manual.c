@@ -20,6 +20,7 @@
 #include "seq_ui.h"
 
 #include "seq_core.h"
+#include "seq_trg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,9 +50,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   // ensure that original screen will be print immediately
   ui_hold_msg_ctr = 0;
-
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
 #if 0
   // leads to: comparison is always true due to limited range of data type

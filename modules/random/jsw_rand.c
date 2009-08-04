@@ -47,12 +47,12 @@ unsigned long jsw_rand ( void )
     next = 0;
 
     for ( i = 0; i < N - 1; i++ ) {
-      y = ( x[i] & U ) | x[i + 1] & L;
+      y = ( x[i] & U ) | (x[i + 1] & L);
       a = ( y & 0x1UL ) ? A : 0x0UL;
       x[i] = x[( i + M ) % N] ^ ( y >> 1 ) ^ a;
     }
 
-    y = ( x[N - 1] & U ) | x[0] & L;
+    y = ( x[N - 1] & U ) | (x[0] & L);
     a = ( y & 0x1UL ) ? A : 0x0UL;
     x[N - 1] = x[M - 1] ^ ( y >> 1 ) ^ a;
   }

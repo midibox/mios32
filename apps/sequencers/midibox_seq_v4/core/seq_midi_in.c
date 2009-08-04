@@ -25,6 +25,7 @@
 #include "seq_cc.h"
 #include "seq_morph.h"
 #include "seq_core.h"
+#include "seq_record.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

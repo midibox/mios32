@@ -277,7 +277,7 @@ static s32 LCD_Handler(u8 high_prio)
 	"Saw. "
       };
 
-      SEQ_LCD_PrintString(waveform_str[value]);
+      SEQ_LCD_PrintString((char *)waveform_str[value]);
     } else {
       SEQ_LCD_PrintFormattedString(" R%02d ", (value-4+1)*5);
     }

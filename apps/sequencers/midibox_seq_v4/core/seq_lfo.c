@@ -64,7 +64,6 @@ s32 SEQ_LFO_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LFO_ResetTrk(u8 track)
 {
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
   seq_lfo_t *lfo = &seq_lfo[track];
 
   lfo->step_ctr = 0;

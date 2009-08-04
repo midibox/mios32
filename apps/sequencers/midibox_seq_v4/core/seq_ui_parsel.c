@@ -20,6 +20,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
+#include "seq_par.h"
 #include "seq_hwcfg.h"
 
 
@@ -145,7 +146,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( i == ui_selected_par_layer && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
     else
-      SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, i));
+      SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
 
   SEQ_LCD_PrintSpaces(80 - (5*num_layers));
 

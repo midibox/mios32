@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <seq_bpm.h>
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_core.h"
@@ -931,6 +933,8 @@ static s32 EXIT_Handler(void)
 {
   // save song (function exits automatically if no position has been changed)
   SEQ_SONG_Save(SEQ_SONG_NumGet());
+
+  return 0; // no error
 }
 
 

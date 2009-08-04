@@ -34,9 +34,6 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // init LCD
-  MIOS32_LCD_Clear();
-
   // endless loop
   while( 1 ) {
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)

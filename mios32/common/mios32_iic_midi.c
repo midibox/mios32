@@ -536,6 +536,8 @@ static s32 MIOS32_IIC_MIDI_GetRI(u8 iic_port)
     case 7: return 1;
 #endif
   }
+
+  return 0;
 }
 #endif
 

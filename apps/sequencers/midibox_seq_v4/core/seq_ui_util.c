@@ -410,8 +410,6 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk.        Utility Functions                       Quick Menu Change           
   // G1T1 Copy Paste Clr Move Scrl Rand Undo Save Rec. Mix. Opt. PMte Disk Mute UnMte
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintString("Trk.        Utility Functions   ");
@@ -482,9 +480,6 @@ u8 SEQ_UI_UTIL_CopyPasteEndGet(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 COPY_Track(u8 track)
 {
-  int layer;
-  int step;
-
   // copy layers into buffer
   memcpy((u8 *)copypaste_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)copypaste_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
@@ -579,12 +574,9 @@ static s32 CLEAR_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 UNDO_Track(void)
 {
-  int layer;
-  int step;
-
   // exit if undo buffer not filled
   if( !undo_buffer_filled )
-    return;
+    return 0; // no error
 
   // copy layers from buffer
   memcpy((u8 *)&seq_par_layer_value[undo_track], (u8 *)undo_par_layer, SEQ_PAR_MAX_BYTES);
@@ -598,9 +590,6 @@ static s32 UNDO_Track(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 {
-  int layer;
-  int step;
-
   // store track in special variable, so that we restore to the right one later
   undo_track = track;
 

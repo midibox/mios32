@@ -18,11 +18,16 @@
 #include <mios32.h>
 #include "tasks.h"
 
+#include "seq_ui.h"
+#include "seq_lcd.h"
+
 #include "seq_song.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
 #include "seq_pattern.h"
 #include "seq_mixer.h"
+
+#include "seq_file_s.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

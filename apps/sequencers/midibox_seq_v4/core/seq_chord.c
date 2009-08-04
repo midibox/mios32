@@ -87,7 +87,7 @@ char *SEQ_CHORD_NameGet(u8 chord_ix)
   if( chord_ix >= SEQ_CHORD_NumGet() )
     return "------";
 
-  return seq_chord_table[chord_ix].name;
+  return (char *)seq_chord_table[chord_ix].name;
 }
 
 

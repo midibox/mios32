@@ -214,7 +214,7 @@ s32 BLM_PrepareCol(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_GetRow(void)
 {
-  u8 sr, sr_pin, sr_value;
+  u8 sr, sr_value;
   u8 side;
 
 #if BLM_DEBOUNCE_MODE == 1
@@ -312,7 +312,6 @@ s32 BLM_GetRow(void)
 s32 BLM_ButtonHandler(void *_notify_hook)
 {
   s32 sr;
-  s32 num_sr;
   s32 sr_pin;
   u8 changed;
   void (*notify_hook)(u32 pin, u32 value) = _notify_hook;

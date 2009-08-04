@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_ui.h"
+#include "seq_lcd.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
 

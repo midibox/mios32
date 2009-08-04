@@ -196,7 +196,7 @@ s32 SEQ_FILE_G_Read(void)
       char *brkt;
       char *parameter;
 
-      if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
+      if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
 
 	if( *parameter == '#' ) {
 	  // ignore comments

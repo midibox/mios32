@@ -109,6 +109,7 @@ s32 NOTESTACK_Push(notestack_t *n, u8 new_note, u8 tag)
     // add note to the beginning of the stack (FILO)
     // if sort flag set: search for insertion point
     int sort = n->mode == NOTESTACK_MODE_SORT || n->mode == NOTESTACK_MODE_SORT_HOLD;
+    i = 0;
     if( sort && n->len ) {
       for(i=0; i<n->len; ++i)
 	if( n->note_items[i].note > new_note ) {
