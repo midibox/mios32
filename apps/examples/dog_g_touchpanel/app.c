@@ -158,10 +158,6 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 AIN_ServicePrepare(void)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-
   // increment counter, skip on the first 9 invocations (= 9 mS setup time)
   if( ++setup_time_ctr < 10 )
     return 1; // skip scan (see documentation of MIOS32_AIN_ServicePrepareCallback_Init())
@@ -178,59 +174,43 @@ s32 AIN_ServicePrepare(void)
 
   // re-initialize AIN pins at J5A (Pin C0..C3)
   // Touchpanel connections:
-  // C0 (J5.A0) Right
-  // C1 (J5.A1) Top
-  // C2 (J5.A2) Left
-  // C3 (J5.A3) Bottom
+  // J5.A0: Right
+  // J5.A1: Top
+  // J5.A2: Left
+  // J5.A3: Bottom
 
   if( scan_x ) {
     // X Scan
 
-    // C2 (Left) = 0V
-    GPIO_ResetBits(GPIOC, GPIO_Pin_2);
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A2 (Left) = 0V
+    MIOS32_BOARD_J5_PinInit(2, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    MIOS32_BOARD_J5_PinSet(2, 0);
 
-    // C0 (Right) = 3.3V
-    GPIO_SetBits(GPIOC, GPIO_Pin_0);
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A0 (Right) = 3.3V
+    MIOS32_BOARD_J5_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    MIOS32_BOARD_J5_PinSet(0, 1);
 
-    // C1 (Top) used as ADC Input
-    GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_1;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A1 (Top) used as ADC Input
+    MIOS32_BOARD_J5_PinInit(1, MIOS32_BOARD_PIN_MODE_ANALOG);
 
-    // switch C3 (Bottom) to high impedance state
-    GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // switch A3 (Bottom) to high impedance state
+    MIOS32_BOARD_J5_PinInit(3, MIOS32_BOARD_PIN_MODE_ANALOG);
   } else {
     // Y Scan
 
-    // C1 (Top) = 0V
-    GPIO_ResetBits(GPIOC, GPIO_Pin_1);
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A1 (Top) = 0V
+    MIOS32_BOARD_J5_PinInit(1, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    MIOS32_BOARD_J5_PinSet(1, 0);
 
-    // C3 (Bottom) = 3.3V
-    GPIO_SetBits(GPIOC, GPIO_Pin_3);
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A3 (Bottom) = 3.3V
+    MIOS32_BOARD_J5_PinInit(3, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    MIOS32_BOARD_J5_PinSet(3, 1);
 
-    // C0 (Right) used as ADC Input
-    GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_0;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // A0 (Right) used as ADC Input
+    MIOS32_BOARD_J5_PinInit(0, MIOS32_BOARD_PIN_MODE_ANALOG);
 
-    // switch C2 (Left) to high impedance state
-    GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_2;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    // switch A2 (Left) to high impedance state
+    MIOS32_BOARD_J5_PinInit(2, MIOS32_BOARD_PIN_MODE_ANALOG);
   }
 
   return 1; // skip conversion

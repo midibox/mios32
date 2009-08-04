@@ -14,7 +14,6 @@ Required tools:
 
 Required hardware:
    o MBHP_CORE_STM32
-   o MBHP_AOUT, MBHP_AOUT_LC or MBHP_AOUT_NG module
 
 ===============================================================================
 
