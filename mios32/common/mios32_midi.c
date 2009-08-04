@@ -137,7 +137,6 @@ static mios32_midi_port_t debug_port   = MIOS32_MIDI_DEBUG_PORT;
 static s32 (*direct_rx_callback_func)(mios32_midi_port_t port, u8 midi_byte);
 static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 (*sysex_callback_func)(mios32_midi_port_t port, u8 sysex_byte);
-static s32 (*package_callback_func)(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 (*timeout_callback_func)(mios32_midi_port_t port);
 static s32 (*debug_command_callback_func)(mios32_midi_port_t port, char c);
 

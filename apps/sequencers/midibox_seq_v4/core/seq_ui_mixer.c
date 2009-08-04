@@ -376,7 +376,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  "Chorus      ",
 	  "ModWheel    ",
 	};
-	SEQ_LCD_PrintString(page_name[mixer_par]);
+	SEQ_LCD_PrintString((char *)page_name[mixer_par]);
       } else {
 	SEQ_LCD_PrintFormattedString("CC%d #%3d    ", 
 				     mixer_par-SEQ_MIXER_PAR_CC1+1, 

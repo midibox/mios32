@@ -21,6 +21,7 @@
 #include "seq_ui.h"
 
 #include "seq_pattern.h"
+#include "seq_label.h"
 #include "seq_file_b.h"
 
 

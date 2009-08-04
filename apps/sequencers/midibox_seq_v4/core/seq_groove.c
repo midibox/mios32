@@ -123,7 +123,7 @@ char *SEQ_GROOVE_NameGet(u8 groove)
   if( groove >= SEQ_GROOVE_NUM_PRESETS )
     return seq_groove_templates[groove-SEQ_GROOVE_NUM_PRESETS].name;
 
-  return seq_groove_presets[groove].name;
+  return (char *)seq_groove_presets[groove].name;
 }
 
 

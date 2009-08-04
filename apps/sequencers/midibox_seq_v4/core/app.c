@@ -33,11 +33,15 @@
 #include "seq_led.h"
 #include "seq_ui.h"
 #include "seq_pattern.h"
+#include "seq_mixer.h"
+#include "seq_song.h"
+#include "seq_label.h"
 
 #include "seq_midply.h"
 
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
+#include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
 
 #include "seq_file.h"
@@ -69,8 +73,6 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 

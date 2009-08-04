@@ -170,7 +170,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( !high_prio ) {
     SEQ_LCD_CursorSet(0, 0);
     for(i=0; i<16; ++i)
-      if( ((i*steps_per_item) % 16) || (((i*steps_per_item)/16) == ui_selected_step_view) && ui_cursor_flash )
+      if( ((i*steps_per_item) % 16) || ((((i*steps_per_item)/16) == ui_selected_step_view) && ui_cursor_flash) )
 	SEQ_LCD_PrintSpaces(5);
       else
 	SEQ_LCD_PrintFormattedString("%-3d  ", i*steps_per_item+1);

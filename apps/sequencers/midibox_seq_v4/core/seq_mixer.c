@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include "tasks.h"
 
+#include "seq_ui.h"
 #include "seq_mixer.h"
 #include "seq_file_m.h"
 

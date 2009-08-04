@@ -21,6 +21,7 @@
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_trg.h"
+#include "seq_random.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

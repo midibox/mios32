@@ -23,6 +23,8 @@
 #include "seq_ui.h"
 #include "seq_core.h"
 
+#include "seq_file_c.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -106,23 +108,26 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_LOOP_MODE:
-      if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_mode, 0, SEQ_CORE_NUM_LOOP_MODES-1, incrementer) > 0 ) {
-	store_file_required;
+    case ITEM_LOOP_MODE: {
+      u8 value = seq_core_glb_loop_mode;
+      if( SEQ_UI_Var8_Inc(&value, 0, SEQ_CORE_NUM_LOOP_MODES-1, incrementer) > 0 ) {
+	seq_core_glb_loop_mode = value;
+	store_file_required = 1;
 	return 1;
       }
       return 0;
+    } break;
 
     case ITEM_LOOP_OFFSET:
       if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_offset, 0, 255, incrementer) > 0 ) {
-	store_file_required;
+	store_file_required = 1;
 	return 1;
       }
       return 0;
 
     case ITEM_LOOP_STEPS:
       if( SEQ_UI_Var8_Inc(&seq_core_glb_loop_steps, 0, 255, incrementer) ) {
-	store_file_required;
+	store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -225,7 +230,7 @@ static s32 LCD_Handler(u8 high_prio)
       "Selected Track/Static   "
     };
 
-    SEQ_LCD_PrintString(loop_mode_str[seq_core_glb_loop_mode >= SEQ_CORE_NUM_LOOP_MODES ? 0 : seq_core_glb_loop_mode]);
+    SEQ_LCD_PrintString((char *)loop_mode_str[seq_core_glb_loop_mode >= SEQ_CORE_NUM_LOOP_MODES ? 0 : seq_core_glb_loop_mode]);
   }
   SEQ_LCD_PrintSpaces(2);
 

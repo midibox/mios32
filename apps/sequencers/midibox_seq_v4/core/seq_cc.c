@@ -43,8 +43,6 @@ static s32 CC_LinkUpdate(u8 track);
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CC_Init(u32 mode)
 {
-  int i;
-
   // initialize all CC parameters
   int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {

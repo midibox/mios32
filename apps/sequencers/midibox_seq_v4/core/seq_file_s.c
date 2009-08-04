@@ -174,7 +174,6 @@ s32 SEQ_FILE_S_Create(void)
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
   FILEINFO fi;
-  int i;
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_S.V4", SEQ_FILES_PATH);

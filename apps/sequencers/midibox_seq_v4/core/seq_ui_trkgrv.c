@@ -23,6 +23,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_groove.h"
+#include "seq_file_g.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

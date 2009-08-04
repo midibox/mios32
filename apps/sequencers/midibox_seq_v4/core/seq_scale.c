@@ -271,7 +271,7 @@ char *SEQ_SCALE_NameGet(u8 scale)
   if( scale >= SEQ_SCALE_NumGet() )
     return "Invalid Scale       ";
 
-  return seq_scale_table[scale].name;
+  return (char *)seq_scale_table[scale].name;
 }
 
 

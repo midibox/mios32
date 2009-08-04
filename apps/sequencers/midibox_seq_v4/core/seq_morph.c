@@ -20,6 +20,7 @@
 #include "seq_morph.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
+#include "seq_par.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,7 +83,6 @@ s32 SEQ_MORPH_EventNote(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s
     return 0; // no morphing
   // currently only a single mode is supported...
 
-  u16 step_range = tcc->length + 1;
   u16 morph_step = step + tcc->morph_dst;
   if( morph_step > 255 ) // aligned with display output in seq_ui_trkmorph.c
     morph_step = 255;
@@ -111,7 +111,6 @@ s32 SEQ_MORPH_EventCC(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 
     return 0; // no morphing
   // currently only a single mode is supported...
 
-  u16 step_range = tcc->length + 1;
   u16 morph_step = step + tcc->morph_dst;
   if( morph_step > 255 ) // aligned with display output in seq_ui_trkmorph.c
     morph_step = 255;
@@ -134,7 +133,6 @@ s32 SEQ_MORPH_EventPitchBend(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrume
     return 0; // no morphing
   // currently only a single mode is supported...
 
-  u16 step_range = tcc->length + 1;
   u16 morph_step = step + tcc->morph_dst;
   if( morph_step > 255 ) // aligned with display output in seq_ui_trkmorph.c
     morph_step = 255;

@@ -24,6 +24,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_chord.h"
 #include "seq_hwcfg.h"
 
 

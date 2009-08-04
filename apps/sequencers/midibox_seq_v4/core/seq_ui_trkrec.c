@@ -259,8 +259,6 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk. Record Mode  AStart  Step  TglGate 
   // G1T1 Live  Poly    on      16           
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate ");

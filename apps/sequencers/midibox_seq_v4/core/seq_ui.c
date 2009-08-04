@@ -25,6 +25,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <blm.h>
 #include <blm_x.h>
 #include <seq_midi_out.h>
 #include <seq_midi_sysex.h>
@@ -42,6 +43,7 @@
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_file.h"
+#include "seq_file_hw.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -294,7 +296,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 {
-  return ui_menu_pages[page].name;
+  return (char *)ui_menu_pages[page].name;
 }
 
 
@@ -1595,9 +1597,6 @@ s32 SEQ_UI_LED_Handler(void)
   // ignore so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
-
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   // track LEDs
   u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);

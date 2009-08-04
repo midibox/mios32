@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include "mid_parser.h"
 
@@ -130,8 +131,6 @@ s32 MID_PARSER_Read(void)
 
   // read chunks
   while( !mid_parser_eof_callback() ) {
-    int i;
-
     file_pos += mid_parser_read_callback(chunk_type, 4);
 
     if( mid_parser_eof_callback() )

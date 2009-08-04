@@ -354,8 +354,8 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
   switch( meta ) {
     case 0x00: // Sequence Number
       if( len == 2 ) {
-	u32 seq_number = (*buffer++ << 8) | *buffer;
 #if DEBUG_VERBOSE_LEVEL >= 1
+	u32 seq_number = (*buffer++ << 8) | *buffer;
 	DEBUG_MSG("[SEQ_MIDPLY:%d:%u] Meta - Sequence Number %u\n", track, tick, seq_number);
 #endif
       } else {
@@ -409,8 +409,8 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 
     case 0x20: // Channel Prefix
       if( len == 1 ) {
-	u32 prefix = *buffer;
 #if DEBUG_VERBOSE_LEVEL >= 1
+	u32 prefix = *buffer;
 	DEBUG_MSG("[SEQ_MIDPLY:%d:%u] Meta - Channel Prefix %u\n", track, tick, prefix);
 #endif
       } else {
