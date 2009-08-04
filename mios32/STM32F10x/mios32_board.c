@@ -266,7 +266,8 @@ u32 MIOS32_BOARD_LED_Get(void)
 //! \param[in] pin the pin number (0..11)
 //! \param[in] mode the pin mode
 //!   <UL>
-//!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched (e.g. if used as analog input)
+//!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched
+//!     <LI>MIOS32_BOARD_PIN_MODE_ANALOG: select analog input mode (default)
 //!     <LI>MIOS32_BOARD_PIN_MODE_INPUT: pin is used as input w/o pull device (floating)
 //!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PD: pin is used as input, internal pull down enabled
 //!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PU: pin is used as input, internal pull up enabled
@@ -296,6 +297,9 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
     GPIO_InitStructure.GPIO_Pin = j5_pin[pin].pin_mask;
 
     switch( mode ) {
+      case MIOS32_BOARD_PIN_MODE_ANALOG:
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	break;
       case MIOS32_BOARD_PIN_MODE_INPUT:
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	break;
