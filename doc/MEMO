@@ -563,6 +563,14 @@ Note: don't use the Run button - there is nothing to be started on your PC
 
 
 
+Unsorted
+~~~~~~~~
 
+For the case that you are trying a newer toolchain, which isn't listed above: take
+care that it uses "arm-none-eabi" instead of "arm-elf" as target, otherwise you won't
+be able to compile for Cortex-M3 anymore (e.g. "...ERROR: /Users/TK/Downloads/yagarto/install/lib/gcc/arm-elf/4.3.3/thumb2/libgcc.a(_arm_muldivdf3.o) uses VFP instructions, whereas project.elf does not"),
+and you will notice incompatible data structures in DOSFS and uIP (all structure members 
+aligned to 32bit instead of 8bit, which increases the RAM consumption and leads to wrong 
+read-outs)
 
-
+Yagarto: re-compiling the toolchain with arm-none-eabi helps (edit _env-only.sh)
