@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MIOS32 Tutorial #017: A simple Sequencer
+ * MIOS32 Tutorial #019: A MIDI Player plays from SD Card
  *
  * ==========================================================================
  *
@@ -21,7 +21,6 @@
 #include <portmacro.h>
 #include <task.h>
 
-#include <notestack.h>
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 
@@ -91,14 +90,49 @@ void APP_Background(void)
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // Note On received?
-  if( midi_package.chn == Chn1 && 
-      (midi_package.type == NoteOn || midi_package.type == NoteOff) ) {
+  if( midi_package.type == NoteOn &&
+      midi_package.chn == Chn1 &&
+      midi_package.velocity > 0 ) {
 
-    // branch depending on Note On/Off event
-    if( midi_package.event == NoteOn && midi_package.velocity > 0 )
-      SEQ_NotifyNoteOn(midi_package.note, midi_package.velocity);
-    else
-      SEQ_NotifyNoteOff(midi_package.note);
+    // determine base key number (0=C, 1=C#, 2=D, ...)
+    u8 base_key = midi_package.note % 12;
+
+    // branch depending on note
+    switch( base_key ) {
+      case 0: // "C" starts the sequencer
+	// if in auto mode and BPM generator is clocked in slave mode:
+	// change to master mode
+	SEQ_BPM_CheckAutoMaster();
+	// start sequencer
+	SEQ_BPM_Start();
+	break;
+
+      case 2: // "D" stops the sequencer. If pressed twice, the sequencer will be reset
+	if( SEQ_BPM_IsRunning() )
+	  SEQ_BPM_Stop();          // stop sequencer
+	else
+	  SEQ_Reset();             // reset sequencer
+	break;
+
+      case 4: // "E" pauses the sequencer
+	// if in auto mode and BPM generator is clocked in slave mode:
+	// change to master mode
+	SEQ_BPM_CheckAutoMaster();
+
+	// toggle pause mode
+	seq_pause ^= 1;
+
+	// execute stop/continue depending on new mode
+	if( seq_pause )
+	  SEQ_BPM_Stop();         // stop sequencer
+	else
+	  SEQ_BPM_Cont();         // continue sequencer
+	break;
+
+      case 5: // "F" switches to next file
+	SEQ_PlayFileReq(1);
+	break;
+    }
   }
 }
 
@@ -152,6 +186,11 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 static void TASK_SEQ(void *pvParameters)
 {
   portTickType xLastExecutionTime;
+  u8 sdcard_available = 0;
+  int sdcard_check_ctr = 0;
+
+  // initialize SD Card
+  MIOS32_SDCARD_Init(0);
 
   // Initialise the xLastExecutionTime variable on task entry
   xLastExecutionTime = xTaskGetTickCount();
@@ -164,6 +203,43 @@ static void TASK_SEQ(void *pvParameters)
 
     // send timestamped MIDI events
     SEQ_MIDI_OUT_Handler();
+
+    // each second: check if SD card (still) available
+    if( ++sdcard_check_ctr >= 1000 ) {
+      sdcard_check_ctr = 0;
+
+      // check if SD card is available
+      // High-speed access if SD card was previously available
+      u8 prev_sdcard_available = sdcard_available;
+      if( !sdcard_available )
+	sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
+
+      if( sdcard_available && !prev_sdcard_available ) {
+	MIOS32_BOARD_LED_Set(0x1, 0x1); // turn on LED	
+	MIOS32_MIDI_SendDebugMessage("SD Card has been connected!\n");
+
+	s32 status;
+	if( (status=MID_FILE_mount_fs()) < 0 ) {
+	  MIOS32_MIDI_SendDebugMessage("File system cannot be mounted, status: %d\n", status);
+	} else {
+	  // if in auto mode and BPM generator is clocked in slave mode:
+	  // change to master mode
+	  SEQ_BPM_CheckAutoMaster();
+	  // reset sequencer
+	  SEQ_Reset();
+	  // request to play the first file
+	  SEQ_PlayFileReq(0);
+	  // start sequencer
+	  SEQ_BPM_Start();
+	}
+      } else if( !sdcard_available && prev_sdcard_available ) {
+	MIOS32_BOARD_LED_Set(0x1, 0x0); // turn off LED
+	MIOS32_MIDI_SendDebugMessage("SD Card has been disconnected!\n");
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+      }
+    }
   }
 }
 
