@@ -430,19 +430,19 @@ s32 MIOS32_MF_Tick(u16 *ain_values, u16 *ain_deltas)
 	      dyn_deadband = 64;
 	    else
 	      dyn_deadband = mf->config.cfg.deadband;
-	    
+
 	    if( abs_mf_delta <= dyn_deadband ) {
-	      mf->direction = MF_Standby;
+	      mf->idle = 1;
 	      --mf->repeat_ctr;
-	    } else {
-	      // slow down motor via PWM if distance between current and target position < 0x180
-	      if( mf->config.cfg.pwm_period && abs_mf_delta < 0x180 ) {
-		if( ++mf->pwm_ctr > mf->config.cfg.pwm_period )
-		  mf->pwm_ctr = 0;
-		
-		if( mf->pwm_ctr > ((mf_delta > 0) ? mf->config.cfg.pwm_duty_cycle_up : mf->config.cfg.pwm_duty_cycle_up) ) {
-		  mf->idle = 1;
-		}
+	    }
+
+	    // slow down motor via PWM if distance between current and target position < 0x180
+	    if( mf->config.cfg.pwm_period && abs_mf_delta < 0x180 ) {
+	      if( ++mf->pwm_ctr > mf->config.cfg.pwm_period )
+		mf->pwm_ctr = 0;
+	      
+	      if( mf->pwm_ctr > ((mf_delta > 0) ? mf->config.cfg.pwm_duty_cycle_up : mf->config.cfg.pwm_duty_cycle_down) ) {
+		mf->idle = 1;
 	      }
 	    }
 	    
@@ -486,27 +486,27 @@ static void MIOS32_MF_UpdateSR(void)
 
     mf_state_t *mf_state_ptr = (mf_state_t *)&mf_state[i];
     if( mf_state_ptr->up )
-      buffer |= 0x01;
-    if( mf_state_ptr->down )
-      buffer |= 0x02;
-
-    mf_state_ptr++;
-    if( mf_state_ptr->up )
-      buffer |= 0x04;
-    if( mf_state_ptr->down )
-      buffer |= 0x08;
-
-    mf_state_ptr++;
-    if( mf_state_ptr->up )
-      buffer |= 0x10;
-    if( mf_state_ptr->down )
-      buffer |= 0x20;
-
-    mf_state_ptr++;
-    if( mf_state_ptr->up )
-      buffer |= 0x40;
-    if( mf_state_ptr->down )
       buffer |= 0x80;
+    if( mf_state_ptr->down )
+      buffer |= 0x40;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x20;
+    if( mf_state_ptr->down )
+      buffer |= 0x10;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x08;
+    if( mf_state_ptr->down )
+      buffer |= 0x04;
+
+    mf_state_ptr++;
+    if( mf_state_ptr->up )
+      buffer |= 0x02;
+    if( mf_state_ptr->down )
+      buffer |= 0x01;
 
     MIOS32_SPI_TransferByte(MIOS32_MF_SPI, buffer);
   }
