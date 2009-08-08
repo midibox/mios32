@@ -1,6 +1,8 @@
 /*
  * MINFS
  *
+ * Minimal Filesystem
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2009 Matthias Mächler (maechler@mm-computing.ch / thismaechler@gmx.ch)
@@ -389,10 +391,10 @@ int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file,
   if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, p_file, &p_block_buf) )
     return status;
   // Get file-pointer
-  if( (status = GetFilePointer(p_fs, file_id, &p_block_buf)) < 0 )
-    return status; // return error-status
-  // file does not exist, create it
-  if( status == MINFS_BLOCK_EOC ){
+  if( (status = GetFilePointer(p_fs, file_id, &p_block_buf)) < 0 ){
+    if( status != MINFS_ERROR_FILE_NOT_EXISTS )
+      return status; // return error-status
+    // file does not exist, create it
     if( (status = File_Touch(p_file, file_id, &p_block_buf)) < 0 )
       return status;
   }
@@ -407,7 +409,7 @@ int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file,
 // Reads data from the current position in the file and increments the 
 // file's data-pointer.
 //
-// IN:  <p_file> Pointer to a populated MINFS_file_t struct (see MINFS_FileOpen)
+// IN:  <p_file> Pointer to a populated MINFS_file_t struct (use MINFS_FileOpen)
 //      <p_buf> Pointer to a buffer where the read data should be copied to
 //      <p_len> Pointer to a uint32_t containing the number of bytes to read
 //              On return, this value will be set to the bytes actually read.
@@ -421,19 +423,103 @@ int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len, MINFS
   return File_ReadWrite(p_file, p_buf, p_len, MINFS_RW_MODE_READ, &p_block_buf);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Writes data to the current position in the file and increments the 
+// file's data-pointer. If the file is too small, it will be extended.
+//
+// IN:  <p_file> Pointer to a populated MINFS_file_t struct (use MINFS_FileOpen)
+//      <p_buf> Pointer to a buffer containing the data to write
+//      <len> Number of bytes to write.
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, MINFS_STATUS_FULL if the file could not be extended (no
+//      more free blocks), on error MINFS_ERROR_XXXX.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileWrite(MINFS_file_t *p_file, void *p_buf, uint32_t len, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  // extend file if it is to small
+  if( p_file->info.size < p_file->data_ptr + len ){
+    if( status = File_SetSize(p_file, p_file->data_ptr + len, &p_block_buf) )
+      return status; // return error status
+  }
+  // write data
+  return File_ReadWrite(p_file, p_buf, &len, MINFS_RW_MODE_WRITE, &p_block_buf);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Seeks to a position in a file.
+// 
+// IN:  <p_file> Pointer to a populated MINFS_file_t struct (use MINFS_FileOpen)
+//      <pos> Position in the file to seek to (bytes)
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX (-1 to -127)
+//      If the end of the file was reached, MINFS_STATUS_EOF will be returned.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_buf_t *p_block_buf){
+  return File_Seek(p_file, pos, &p_block_buf);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Extends or truncates a file. 
+// 
+// IN:  <p_file> Pointer to a populated MINFS_file_t struct (use MINFS_FileOpen)
+//      <new_size> New file-size in bytes.
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX (-1 to -127). If the file 
+//      could not be extended (no more free blocks), MINFS_STATUS_FULL will be 
+//      returned. In this case, the file-size will not be changed.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf){
+  return File_SetSize(p_file, new_size, &p_block_buf);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a non-existing file with size 0.
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <file_id> ID of file to create (1 - x)
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX. If file already exists,
+//      MINFS_ERROR_FILE_EXISTS will be returned.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileTouch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, &file_0, &p_block_buf) )
+    return status;
+  // Try to create file
+  if( (status = File_Touch(&file_0, file_id, &p_block_buf)) < 0 )
+    return status;
+  // success
+  return 0;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Unlinks a file
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <file_id> The ID of the file to unlink (1 - x)
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX. If file does not exist,
+//      MINFS_ERROR_FILE_NOT_EXISTS will be returned.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs,uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, &file_0, &p_block_buf) )
+    return status;
+  // Unlink file
+  return File_Unlink(&file_0, file_id, &p_block_buf);
 }
 
 int32_t MINFS_FileMove(MINFS_fs_t *p_fs,uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf){
@@ -507,8 +593,8 @@ static uint32_t GetPECValue(MINFS_fs_t *p_fs, void *p_buf, uint16_t data_len){
 //      <file_id> The ID of the file to set the poiner for.
 //      <block_n> The block number to point to (file's first block)
 //      <pp_block_buf> Pointer to a Buffer-struct pointer
-// OUT: Block number or MINFS_BLOCK_EOC (file does not exists)
-//      < 0 on error (MINFS_ERROR_XXXX)
+// OUT: Block number ( > 0) or < 0 on error (MINFS_ERROR_XXXX), if file does not
+//      exist, MINFS_ERROR_FILE_NOT_EXISTS will be returned
 /////////////////////////////////////////////////////////////////////////////
 static int32_t File_GetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
   // check if file-id is in valid range
@@ -517,17 +603,18 @@ static int32_t File_GetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, MIN
   // calc offset and check file-index size
   uint32_t fp_offset;
   if( (fp_offset = (file_id - 1) * p_file_0->p_fs->calc.bp_size) >= p_file_0->info.size )
-    return MINFS_BLOCK_EOC; // file-index is too small to contain a entry for file_id
+    return MINFS_ERROR_FILE_NOT_EXISTS; // file-index is too small to contain a entry for file_id
   // now read value
   int32_t status, fp_block_n = 0;
   if( status = File_Seek(p_file_0, fp_offset, pp_block_buf) )
     return status; // return error status
   uint32_t len = p_file_0->p_fs->calc.bp_size;
   if( status = File_ReadWrite(p_file_0, &fp_block_n, &len, MINFS_RW_MODE_READ, pp_block_buf) )
-    return status; // return error status  
+    return status; // return error status
   // convert value from little-endian to platform's byte order
   BE_SWAP_32(fp_block_n);
-  return fp_block_n;
+  // return block pointer or MINFS_ERROR_FILE_NOT_EXISTS
+  return (fp_block_n == MINFS_BLOCK_EOC) ? MINFS_ERROR_FILE_NOT_EXISTS : fp_block_n;
 }
 
 
@@ -587,23 +674,21 @@ static int32_t File_SetFilePointer(MINFS_file_t *p_file_0, uint32_t file_id, uin
 //                 containing the block-pointer.
 //      <file_id> The ID of the file to unlink (1 - x)
 //      <pp_block_buf> Pointer to a Buffer-struct pointer
-// OUT: 0 on success, on error MINFS_ERROR_XXXX. If file does not exist, also
-//      0 will be returned.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX. If file does not exist,
+//      MINFS_ERROR_FILE_NOT_EXISTS will be returned.
 /////////////////////////////////////////////////////////////////////////////
 static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
   // get pointer to file
   uint32_t file_bp;
   if( (file_bp = File_GetFilePointer(p_file_0, file_id, pp_block_buf)) < 0)
     return file_bp; // return error status
-  if( file_bp != MINFS_BLOCK_EOC ){
-    // set file pointer to MINFS_BLOCK_EOC
-    int32_t status;
-    if( status = File_SetFilePointer(p_file_0, file_id, MINFS_BLOCK_EOC, pp_block_buf) )
-      return status; // return error status
-    // push the file's former block chain to the free-blocks-chain
-    if( status = BlockChain_PushFree(p_file_0->p_fs, file_bp, pp_block_buf) )
-      return status;
-  }
+  // set file pointer to MINFS_BLOCK_EOC
+  int32_t status;
+  if( status = File_SetFilePointer(p_file_0, file_id, MINFS_BLOCK_EOC, pp_block_buf) )
+    return status; // return error status
+  // push the file's former block chain to the free-blocks-chain
+  if( status = BlockChain_PushFree(p_file_0->p_fs, file_bp, pp_block_buf) )
+    return status;
   // success
   return 0;
 }
@@ -621,10 +706,10 @@ static int32_t File_Unlink(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block
 static int32_t File_Touch(MINFS_file_t *p_file_0, uint32_t file_id, MINFS_block_buf_t **pp_block_buf){
   int32_t status, block_n;
   // check if file does exist
-  if( (status = File_GetFilePointer(p_file_0, file_id, pp_block_buf)) < 0 )
+  if( (status = File_GetFilePointer(p_file_0, file_id, pp_block_buf)) > 0 )
+    return MINFS_ERROR_FILE_EXISTS; // file already exists
+  if( status != MINFS_ERROR_FILE_NOT_EXISTS )
     return status; // return error status
-  if( status == MINFS_BLOCK_EOC )
-    return MINFS_ERROR_FILE_EXISTS;
   // file does not exists, pop a free block
   if( (block_n = BlockChain_PopFree( p_file_0->p_fs, 1, pp_block_buf )) < 0 )
     return block_n; // return error status
