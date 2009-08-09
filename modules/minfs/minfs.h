@@ -44,6 +44,9 @@
 // NULL file id
 #define MINFS_FILE_NULL 0xFFFFFFFF
 
+// File-index file-id
+#define MINFS_FILE_INDEX 0x00000000
+
 // EOC block pointer
 #define MINFS_BLOCK_EOC 0
 
@@ -61,6 +64,7 @@
 #define MINFS_ERROR_FILE_ID -11
 #define MINFS_ERROR_FILE_EXISTS -12
 #define MINFS_ERROR_FILE_NOT_EXISTS -13
+#define MINFS_ERROR_BAD_MODE -14
 
 
 // return status
@@ -72,6 +76,10 @@
 #define MINFS_MAX_BLOCKSIZE_EXP 12
 #define MINFS_MAX_NUMBLOCKS 0x000FFFFF
 #define MINFS_MAX_FILE_ID 0x000FFFFD
+
+// modes
+#define MINFS_MODE_FFID_NEXT 0
+#define MINFS_MODE_FFID_FIRST 0
 
 
 
@@ -159,10 +167,12 @@ extern int32_t MINFS_FileSeek(MINFS_file_t *p_file, uint32_t pos, MINFS_block_bu
 extern int32_t MINFS_FileSetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block_buf_t *p_block_buf);
 
 extern int32_t MINFS_FileTouch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf);
-extern int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *block_buf);
-extern int32_t MINFS_FileMove(MINFS_fs_t *p_fs, uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs, uint32_t file_id, uint8_t check_last_truncate, MINFS_block_buf_t *block_buf);
+extern int32_t MINFS_FileMove(MINFS_fs_t *p_fs, uint32_t src_file_id, uint32_t dst_file_id, uint8_t check_last_truncate, MINFS_block_buf_t *p_block_buf);
 extern int32_t MINFS_FileExists(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p_block_buf);
-extern int32_t MINFS_FileGetFreeID(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
+extern int32_t MINFS_FileGetFreeID(MINFS_fs_t *p_fs, uint8_t mode, MINFS_block_buf_t *p_block_buf);
+
+extern int32_t MINFS_FileIndexTruncate(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
 
 #endif /* _MINFS_H */
