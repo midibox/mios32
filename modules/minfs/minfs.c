@@ -15,9 +15,10 @@
 #include <string.h>
 #include "minfs.h"
 
-/////////////////////////////////////////////////////////////////////////////
-// macros for big-endian translation and typecasted copy
-/////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+//---------- macros for big-endian translation and typecasted copy -------------
+//------------------------------------------------------------------------------
+
 
 static const uint32_t BECV = 1; // dummy variable to check endianes
 
@@ -89,21 +90,18 @@ static const uint32_t BECV = 1; // dummy variable to check endianes
 }
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
+//------------------------------------------------------------------------------
+//------------------------------- Local definitions ----------------------------
+//------------------------------------------------------------------------------
 
 // modes
 #define MINFS_RW_MODE_READ 0
 #define MINFS_RW_MODE_WRITE 1
 
 
-/////////////////////////////////////////////////////////////////////////////
-// Function Hooks to caching and device layer
-/////////////////////////////////////////////////////////////////////////////
-
+//------------------------------------------------------------------------------
+//------------------- Function Hooks to caching and device layer ---------------
+//------------------------------------------------------------------------------
 
 /////////////////////////////////////////////////////////////////////////////
 // Hook to OS to read data. If data_len is 0, this is an request to populate
@@ -174,10 +172,9 @@ extern int32_t MINFS_Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uin
 extern int32_t MINFS_GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id);
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+//----------------------------- Local prototypes -------------------------------
+//------------------------------------------------------------------------------
 
 // helper functions
 static int32_t CalcFSParams(MINFS_fs_t *p_fs);
@@ -210,10 +207,9 @@ static int32_t BlockBuffer_Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
 static int32_t BlockBuffer_Flush(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf);
 
 
-/////////////////////////////////////////////////////////////////////////////
-// High level functions
-/////////////////////////////////////////////////////////////////////////////
-
+//------------------------------------------------------------------------------
+//--------------------------- High level functions -----------------------------
+//------------------------------------------------------------------------------
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -388,8 +384,8 @@ int32_t MINFS_FSOpen(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
 int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file, MINFS_block_buf_t *p_block_buf){
   int32_t status;
   // Open File-index
-  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, p_file, &p_block_buf) )
-    return status;
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, p_file, &p_block_buf) )
+    return status; // return error status
   // Get file-pointer
   if( (status = GetFilePointer(p_fs, file_id, &p_block_buf)) < 0 ){
     if( status != MINFS_ERROR_FILE_NOT_EXISTS )
@@ -400,7 +396,7 @@ int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file,
   }
   // now open the file (status contains first file block_n now)
   if( status = File_Open(p_fs, status, file_id, p_file, &p_block_buf) )
-    return status;
+    return status; // return error status
   // success
   return 0;
 }
@@ -419,7 +415,6 @@ int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file,
 //      MINFS_ERROR_XXXX.
 /////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileRead(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len, MINFS_block_buf_t *p_block_buf){
-  int32_t status;
   return File_ReadWrite(p_file, p_buf, p_len, MINFS_RW_MODE_READ, &p_block_buf);
 }
 
@@ -493,48 +488,192 @@ int32_t MINFS_FileTouch(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_block_buf_t *p
   int32_t status;
   MINFS_file_t file_0;
   // Open File-index
-  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, &file_0, &p_block_buf) )
-    return status;
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status; // return error status
   // Try to create file
   if( (status = File_Touch(&file_0, file_id, &p_block_buf)) < 0 )
-    return status;
+    return status; // return error status
   // success
   return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Unlinks a file
+// Unlinks a file. If check_last_truncate > 0 and <file_id> is the last 
+// entry in the file-index, the index will be truncated by one entry.
+// Alternatively, you may also use MINFS_FileIndexTruncate to truncate the 
+// index if there are unlinked files at the end of the file-index.
 // 
 // IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
 //      <file_id> The ID of the file to unlink (1 - x)
+//      <check_last_truncate> If > 0 and file_id is the last entry of the
+//                            file-index, the file-index will be truncated.
 //      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
 //                    MINFS_GetBlockBuffer(..) must provide a buffer.
 // OUT: 0 on success, on error MINFS_ERROR_XXXX. If file does not exist,
 //      MINFS_ERROR_FILE_NOT_EXISTS will be returned.
 /////////////////////////////////////////////////////////////////////////////
-int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs,uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+int32_t MINFS_FileUnlink(MINFS_fs_t *p_fs,uint32_t file_id, uint8_t check_last_truncate, MINFS_block_buf_t *p_block_buf){
   int32_t status;
   MINFS_file_t file_0;
   // Open File-index
-  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, 0, &file_0, &p_block_buf) )
-    return status;
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status; // return error status
   // Unlink file
-  return File_Unlink(&file_0, file_id, &p_block_buf);
+  if( status = File_Unlink(&file_0, file_id, &p_block_buf) )
+    return status; // return error status
+  // If this was the last entry of the file-index, truncate
+  if( check_last_truncate && (file_id == file_0.info.size / p_fs->calc.bp_size) ){
+    if( status = File_SetSize(&file_0, file_0.info.size - p_fs->calc.bp_size, &p_block_buf) )
+      return status; // return error status
+  }
+  // sucess
+  return 0;
 }
 
-int32_t MINFS_FileMove(MINFS_fs_t *p_fs,uint32_t src_file_id, uint32_t dst_file_id, MINFS_block_buf_t *p_block_buf){
+
+/////////////////////////////////////////////////////////////////////////////
+// Moves file <src_file_id> to <dst_file_id>. If check_last_truncate > 0 
+// and <src_file_id> is the last entry in the file-index, the index will be 
+// truncated by one entry. Alternatively, you may also use 
+// MINFS_FileIndexTruncate to truncate the index if there are unlinked files 
+// at the end of the file-index.
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <src_file_id> The ID of the file to move (1 - x)
+//      <dst_file_id> New ID of the file to move (1 - x)
+//      <check_last_truncate> If > 0 and src_file_id is the last entry of the
+//                            file-index, the file-index will be truncated.
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX. If destination file exists,
+//      MINFS_ERROR_FILE_EXISTS will be returned. If source file does not
+//      exist, MINFS_ERROR_FILE_NOT_EXISTS will be returned.
+/////////////////////////////////////////////////////////////////////////////
+int32_t MINFS_FileMove(MINFS_fs_t *p_fs,uint32_t src_file_id, uint32_t dst_file_id, uint8_t check_last_truncate, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status;
+  // Check if destination file exists
+  if( (status = File_GetFilePointer(&file_0, dst_file_id, &p_block_buf)) > 0 )
+    return MINFS_ERROR_FILE_EXISTS; // destination file exists
+  if( status != MINFS_ERROR_FILE_NOT_EXISTS )
+    return status; // return error status
+  // get source file first block pointer
+  if( (status = File_GetFilePointer(&file_0, src_file_id, &p_block_buf)) < 0 )
+    return status; // return error status
+  // set file-pointer of destination file
+  if( (status = File_SetFilePointer(&file_0, dst_file_id, status, &p_block_buf)) < 0 )
+    return status; // return error status
+  // set file pointer of source-file to MINFS_BLOCK_EOC
+  if( status = File_SetFilePointer(&file_0, src_file_id, MINFS_BLOCK_EOC, &p_block_buf) )
+    return status;
+  // If src_file_id was the last entry of the file-index, truncate
+  if( check_last_truncate && (src_file_id == file_0.info.size / p_fs->calc.bp_size) ){
+    if( status = File_SetSize(&file_0, file_0.info.size - p_fs->calc.bp_size, &p_block_buf) )
+      return status; // return error status
+  }
+  // sucess
+  return 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Checks if file <file_id> exists.
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <file_id> The ID of the file to check for existence (1 - x)
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX. If file does not exist,
+//      MINFS_ERROR_FILE_NOT_EXISTS will be returned.
+/////////////////////////////////////////////////////////////////////////////
 int32_t MINFS_FileExists(MINFS_fs_t *p_fs,uint32_t file_id, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status;
+  // Check if file exists
+  if( (status = File_GetFilePointer(&file_0, file_id, &p_block_buf)) < 0 )
+    return status; // return error status
+  // file does exist
+  return 0;
 }
 
-int32_t MINFS_FileGetFreeID(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns a free file-id.
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <mode> MINFS_MODE_FFID_NEXT: will return the next free file-id after
+//             the end of the file-index. This is fast, but does not check
+//             for free unlinked files.
+//             MINFS_MODE_FFID_FIRST: will walk the file-index and return the
+//             id of the first non-existing file. Using this file-id will not
+//             extend the size of the file-index if a file was unlinked before, 
+//             but can be slower than MINFS_MODE_FFID_NEXT, and the speed of
+//             the function is not predictable.
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: Free file-id on success (1-x), on error MINFS_ERROR_XXXX.
+/////////////////////////////////////////////////////////////////////////////
+int32_t MINFS_FileGetFreeID(MINFS_fs_t *p_fs, uint8_t mode, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status;
+  // Get free file-id after end of index
+  if( mode == MINFS_MODE_FFID_NEXT )
+    return file_0.info.size / p_fs->calc.bp_size + 1;
+  // Get first free file-id
+  if( mode == MINFS_MODE_FFID_FIRST ){
+    uint32_t file_id = 0;
+    do{
+      status = File_GetFilePointer(&file_0, ++file_id, &p_block_buf);
+    } while (status > 0);
+    // return free file-id or error-status
+    return ( status == MINFS_ERROR_FILE_NOT_EXISTS ) ? file_id : status;
+  }
+  // unsupported mode
+  return MINFS_ERROR_BAD_MODE;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Low level functions
-/////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////
+// Truncates the file-index if there are unlinked file-entries at the end of
+// the index.
+// 
+// IN:  <p_fs> Pointer to a populated MINFS_fs_t struct (see MINFS_FSOpen)
+//      <p_block_buf> pointer to a MINFS_block_buf_t - struct. If NULL, 
+//                    MINFS_GetBlockBuffer(..) must provide a buffer.
+// OUT: 0 on success, on error MINFS_ERROR_XXXX.
+/////////////////////////////////////////////////////////////////////////////
+int32_t MINFS_FileIndexTruncate(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
+  int32_t status;
+  MINFS_file_t file_0;
+  // Open File-index
+  if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, &file_0, &p_block_buf) )
+    return status;
+  // Walk file-index backwards to find the last existing file
+  uint32_t last_file_id = file_0.info.size / p_fs->calc.bp_size;
+  while( last_file_id ){
+    if( (status = File_GetFilePointer(&file_0, last_file_id, &p_block_buf)) > 0 )
+      break; // file exists
+    if( status != MINFS_ERROR_FILE_NOT_EXISTS )
+      return status; // return error status
+    last_file_id--;
+  }
+  // Truncate file-index
+  return File_SetSize(&file_0, p_fs->calc.bp_size * last_file_id, &p_block_buf);
+}
+
+
+//-----------------------------------------------------------------------------
+//--------------------------- Low level functions -----------------------------
+//-----------------------------------------------------------------------------
 
 
 /////////////////////////////////////////////////////////////////////////////
