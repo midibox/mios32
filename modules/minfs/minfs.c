@@ -20,7 +20,7 @@
 //------------------------------------------------------------------------------
 
 
-static const uint32_t BECV = 1; // dummy variable to check endianes
+static const uint32_t BECV = 1; // dummy value to check endianes
 
 // swaps the value's bytes if we are on a bigendian-system. the optimizer should 
 // remove the code when compiled for little-endian platforms (?)
