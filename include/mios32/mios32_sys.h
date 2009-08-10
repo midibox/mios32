@@ -32,6 +32,12 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+// *not* compatible to NTP timestamp format, the fraction has mS accuracy
+typedef struct {
+  u32 seconds;
+  u32 fraction_ms;
+} mios32_sys_time_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -45,6 +51,9 @@ extern u32 MIOS32_SYS_ChipIDGet(void);
 extern u32 MIOS32_SYS_FlashSizeGet(void);
 extern u32 MIOS32_SYS_RAMSizeGet(void);
 extern s32 MIOS32_SYS_SerialNumberGet(char *str);
+
+extern s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t);
+extern mios32_sys_time_t MIOS32_SYS_TimeGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

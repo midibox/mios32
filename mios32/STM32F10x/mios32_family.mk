@@ -18,6 +18,9 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_dma.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c \
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_rtc.c \
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_bkp.c \
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_pwr.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/misc.c \
 	$(DRIVER_LIB)/CMSIS/Core/CM3/core_cm3.c \
 	$(DRIVER_LIB)/CMSIS/Core/CM3/system_stm32f10x.c \
