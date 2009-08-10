@@ -40,6 +40,10 @@ extern u32 mios32_sys_isr_vector;
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
 
+#define EXT_CRYSTAL_FRQ 12000000  // used for MBHP_CORE_STM32, should we define this somewhere else or select via MIOS32_BOARD?
+#define RTC_PREDIVIDER  (EXT_CRYSTAL_FRQ/128)
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the System for MIOS32:<BR>
 //! <UL>
@@ -52,6 +56,7 @@ extern u32 mios32_sys_isr_vector;
 //!   <LI>configures the suspend flags in DBGMCU_CR as specified in 
 //!       MIOS32_SYS_STM32_DBGMCU_CR (can be overruled in mios32_config.h)
 //!       to simplify debugging via JTAG
+//!   <LI>enables the system realtime clock via MIOS32_SYS_Time_Init(0)
 //! </UL>
 //! \param[in] mode currently only mode 0 supported
 //! \return < 0 if initialisation failed
@@ -149,6 +154,10 @@ s32 MIOS32_SYS_Init(u32 mode)
   // configure debug control register DBGMCU_CR (we want to stop timers in CPU HALT mode)
   // flags can be overruled in mios32_config.h
   MEM32(0xe0042004) = MIOS32_SYS_STM32_DBGMCU_CR;
+
+  // initialize system clock
+  mios32_sys_time_t t = { .seconds=0, .fraction_ms=0 };
+  MIOS32_SYS_TimeSet(t);
 
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;
@@ -286,6 +295,126 @@ s32 MIOS32_SYS_SerialNumberGet(char *str)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes/Resets the System Real Time Clock, so that MIOS32_SYS_Time() can
+//! be used for microsecond accurate measurements.
+//!
+//! The time can be re-initialized the following way:
+//! \code
+//!   // set System Time to one hour and 30 minutes
+//!   mios32_sys_time_t t = { .seconds=1*3600 + 30*60, .fraction_ms=0 };
+//!   MIOS32_SYS_TimeSet(t);
+//! \endcode
+//!
+//! After system reset it will always start with 0. A battery backup option is
+//! not supported by MIOS32
+//!
+//! \param[in] t the time in seconds + fraction part (mS)<BR>
+//! Note that this format isn't completely compatible to the NTP timestamp format,
+//! as the fraction has only mS accuracy
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
+{
+  // taken from STM32 example "RTC/Calendar"
+  // adapted to clock RTC via HSE  oscillator
+
+  // Enable PWR and BKP clocks
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+
+  // Allow access to BKP Domain
+  PWR_BackupAccessCmd(ENABLE);
+
+  // Reset Backup Domain
+  BKP_DeInit();
+
+  // Select HSE (divided by 128) as RTC Clock Source
+  RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div128);
+
+  // Enable RTC Clock
+  RCC_RTCCLKCmd(ENABLE);
+
+  // Wait for RTC registers synchronization
+  RTC_WaitForSynchro();
+
+  // Wait until last write operation on RTC registers has finished
+  RTC_WaitForLastTask();
+
+  // Enable the RTC Second
+  RTC_ITConfig(RTC_IT_SEC, ENABLE);
+
+  // Wait until last write operation on RTC registers has finished
+  RTC_WaitForLastTask();
+
+  // Set RTC prescaler: set RTC period to 1sec
+  RTC_SetPrescaler(RTC_PREDIVIDER-1);
+
+  // Wait until last write operation on RTC registers has finished
+  RTC_WaitForLastTask();
+
+  // Change the current time
+  // (fraction not taken into account here)
+  RTC_SetCounter(t.seconds);
+
+  // Wait until last write operation on RTC registers has finished
+  RTC_WaitForLastTask();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the System Real Time (with mS accuracy)
+//!
+//! Following example code converts the returned time into hours, minutes,
+//! seconds and milliseconds:
+//! \code
+//!   mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+//!   int hours = t.seconds / 3600;
+//!   int minutes = (t.seconds % 3600) / 60;
+//!   int seconds = (t.seconds % 3600) % 60;
+//!   int milliseconds = t.fraction_ms;
+//! \endcode
+//! \return the system time in a mios32_sys_time_t structure
+/////////////////////////////////////////////////////////////////////////////
+mios32_sys_time_t MIOS32_SYS_TimeGet(void)
+{
+  u32 seconds, divider;
+  u32 last_seconds, last_divider;
+
+  // counter values are changing with a period of 1/(12 MHz / 128) = ca. 11 uS
+  // in order to ensure, that we are reading a consistent counter set, the
+  // accesses have to be repeated until we read two times the same values
+
+  // use direct register accesses instead ofto RTC_GetCounter()/RTC_GetDivider()
+  // to speed up routine
+
+  // note: we could have an issue here if routine is permanently interrupted,
+  // so that we never reach the same values...
+
+  // therefore interrupts are disabled
+  // Disadvantage: bad for interrupt latency...
+  // However, expected execution time is ca. 500 nS for two loops (best case),
+  // and 750 nS for three loops (worst case)
+
+  MIOS32_IRQ_Disable();
+  seconds = divider = 0;
+  do {
+    last_seconds = seconds;
+    last_divider = divider;
+    seconds = ((u32)RTC->CNTH << 16) | RTC->CNTL;
+    divider = ((u32)RTC->DIVH << 16) | RTC->DIVL;
+  } while( seconds != last_seconds && divider != last_divider );
+  MIOS32_IRQ_Enable();
+
+  mios32_sys_time_t t = {
+    .seconds = seconds,
+    .fraction_ms = (1000 * (RTC_PREDIVIDER-1-divider)) / RTC_PREDIVIDER
+  };
+
+  return t;
+}
 
 //! \}
 
