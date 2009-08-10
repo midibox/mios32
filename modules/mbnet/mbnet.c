@@ -732,22 +732,18 @@ s32 MBNET_Handler(void *_callback)
       	      case 0x05: // call APP_MPROC_DebugTrigger not implemented
 		MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		break;
-      	      case 0x06: // call APP_NotifyReceivedEvent
+      	      case 0x06: // call APP_MIDI_NotifyPackage
 		if( dlc != 3 ) {
 		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		} else {
 		  mios32_midi_package_t package;
-		  APP_NotifyReceivedEvent(0, package); // TODO: we could forward the port number as well
+		  APP_MIDI_NotifyPackage(0, package); // TODO: we could forward the port number as well
 		  MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
 		}
 		break;
 	      case 0x07: // call APP_NotifyReceivedSysEx
-		if( dlc != 1 ) {
-		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
-		} else {
-		  APP_NotifyReceivedSysEx(0, req_msg.bytes[0]); // TODO: we could forward the port number as well
-		  MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
-		}
+		// not for MIOS32
+		MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		break;
       	      case 0x08: // call APP_DIN_NotifyToggle
 		if( dlc != 2 ) {
