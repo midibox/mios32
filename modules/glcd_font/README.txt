@@ -49,4 +49,4 @@ include $(MIOS32_PATH)/modules/app_lcd/st7637/app_lcd.mk
 Integration Examples
 ~~~~~~~~~~~~~~~~~~~~
 
-  -> see $MIOS32_PATH/apps/proto/lcd_st7637
+  -> see $MIOS32_PATH/apps/tutorials/021_glcd
