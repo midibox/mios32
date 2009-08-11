@@ -73,28 +73,20 @@ Thereafter the LCD output is under control of the application.
 
 
 Most important LCD functions:
-   o MIOS32_LCD_DeviceSet(u8 device)
-     selects the LCD device. MBHP_CORE_STM32 is prepared for up to two LCDs
-     connected to J15A and J15B. The "dog_g" and "pcd8544" driver allows
-     to address up to 8 graphical LCDs
-     MIOS32_LCD_DeviceSet(0) will select the first LCD, it's addressed by
-     default so that this function is only relevant if multiple LCDs should
-     be addressed.
+  o MIOS32_LCD_Clear()
+    clears the display
 
-   o MIOS32_LCD_Clear()
-     clears the display
+  o MIOS32_LCD_CursorSet(u16 column, u16 line)
+    sets the cursor position (Column/Line == X/Y)
 
-   o MIOS32_LCD_CursorSet(u16 column, u16 line)
-     sets the cursor position (Column/Line == X/Y)
+  o MIOS32_LCD_PrintChar(char c)
+    prints a single character
 
-   o MIOS32_LCD_PrintChar(char c)
-     prints a single character
+  o MIOS32_LCD_PrintString(char *str)
+    prints a string
 
-   o MIOS32_LCD_PrintString(char *str)
-     prints a string
-
-   o MIOS32_LCD_PrintFormattedString(char *format,...)
-     prints a formatted string
+  o MIOS32_LCD_PrintFormattedString(char *format,...)
+    prints a formatted string
 
 
 MIOS32_LCD_PrintFormattedString() works similar to "printf", but doesn't
