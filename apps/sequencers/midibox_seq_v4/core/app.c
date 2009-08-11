@@ -59,7 +59,6 @@
 #define DEBUG_VERBOSE_LEVEL 0
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -138,6 +137,9 @@ void APP_Background(void)
 #if 0
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 #endif
+
+  // for idle time measurements
+  SEQ_UI_MENU_Idle();
 }
 
 

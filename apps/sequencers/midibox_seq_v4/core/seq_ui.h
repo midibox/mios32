@@ -205,6 +205,8 @@ extern s32 SEQ_UI_MENU_StopwatchInit(void);
 extern s32 SEQ_UI_MENU_StopwatchReset(void);
 extern s32 SEQ_UI_MENU_StopwatchCapture(void);
 
+extern s32 SEQ_UI_MENU_Idle(void);
+
 extern s32 SEQ_UI_UTIL_CopyButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);

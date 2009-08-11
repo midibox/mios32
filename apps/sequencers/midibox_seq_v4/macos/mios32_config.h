@@ -70,6 +70,11 @@
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
+
+// maximum idle counter value to be expected
+#define MAX_IDLE_CTR 100
+
+
 // configure BLM driver
 #define BLM_DOUT_L1_SR	255 // dummy, will be changed in seq_file_hw.c
 #define BLM_DOUT_R1_SR	255 // dummy, will be changed in seq_file_hw.c

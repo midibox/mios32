@@ -105,4 +105,55 @@ s32 MIOS32_SYS_SerialNumberGet(char *str)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes/Resets the System Real Time Clock, so that MIOS32_SYS_Time() can
+//! be used for microsecond accurate measurements.
+//!
+//! The time can be re-initialized the following way:
+//! \code
+//!   // set System Time to one hour and 30 minutes
+//!   mios32_sys_time_t t = { .seconds=1*3600 + 30*60, .fraction_ms=0 };
+//!   MIOS32_SYS_TimeSet(t);
+//! \endcode
+//!
+//! After system reset it will always start with 0. A battery backup option is
+//! not supported by MIOS32
+//!
+//! \param[in] t the time in seconds + fraction part (mS)<BR>
+//! Note that this format isn't completely compatible to the NTP timestamp format,
+//! as the fraction has only mS accuracy
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
+{
+  // not supported
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the System Real Time (with mS accuracy)
+//!
+//! Following example code converts the returned time into hours, minutes,
+//! seconds and milliseconds:
+//! \code
+//!   mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+//!   int hours = t.seconds / 3600;
+//!   int minutes = (t.seconds % 3600) / 60;
+//!   int seconds = (t.seconds % 3600) % 60;
+//!   int milliseconds = t.fraction_ms;
+//! \endcode
+//! \return the system time in a mios32_sys_time_t structure
+/////////////////////////////////////////////////////////////////////////////
+mios32_sys_time_t MIOS32_SYS_TimeGet(void)
+{
+  mios32_sys_time_t t = {
+    .seconds = (u32)time(NULL),
+    .fraction_ms = 0
+  };
+	
+  return t;
+}
+
+
 @end

@@ -42,6 +42,10 @@
 #define MIOS32_HEAP_SIZE 19*1024
 
 
+// maximum idle counter value to be expected
+#define MAX_IDLE_CTR 223000
+
+
 // memory alloccation method:
 // 0: internal static allocation with one byte for each flag
 // 1: internal static allocation with 8bit flags
