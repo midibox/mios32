@@ -28,8 +28,9 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u32 stopwatch_value;
-u32 stopwatch_value_max;
+static u32 stopwatch_value;
+static u32 stopwatch_value_max;
+static s32 cpu_load_in_percent;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -136,7 +137,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Stopwatch:          Select Menu Page:   MIDI Scheduler: Alloc xxx/xxx Drops: xxx
-  // xxxxx/xxxxx uS      xxxxxxxxxxxxxxxxxx<>SD Card: not available                  
+  // xxxxx/xxxxx uS      xxxxxxxxxxxxxxxxxx<>SD Card: not available     CPU Load: 52%
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -193,7 +194,10 @@ static s32 LCD_Handler(u8 high_prio)
     sprintf(status_str, "\"%11s\"", SEQ_FILE_VolumeLabel());
 #endif
   }
-  SEQ_LCD_PrintStringPadded(status_str, 31);
+  SEQ_LCD_PrintStringPadded(status_str, 18);
+
+  SEQ_LCD_PrintFormattedString("CPU Load: %02d%%", cpu_load_in_percent);
+
 
   return 0; // no error
 }
@@ -255,3 +259,34 @@ s32 SEQ_UI_MENU_StopwatchCapture(void)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Handles Idle Counter (frequently called from Background task)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MENU_Idle(void)
+{
+  static u32 idle_ctr = 0;
+  static u32 last_seconds = 0;
+
+  // determine the CPU load
+  ++idle_ctr;
+  mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+  if( t.seconds != last_seconds ) {
+    last_seconds = t.seconds;
+
+    // MAX_IDLE_CTR defined in mios32_config.h
+    // CPU Load is printed in main menu screen
+    cpu_load_in_percent = 100 - ((100 * idle_ctr) / MAX_IDLE_CTR);
+
+#if 0
+    DEBUG_MSG("Load: %d%% (Ctr: %d)\n", cpu_load_in_percent, idle_ctr);
+#endif
+    
+    idle_ctr = 0;
+  }
+
+  return 0; // no error
+}
+
+
