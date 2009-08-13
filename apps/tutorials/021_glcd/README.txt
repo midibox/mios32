@@ -33,7 +33,7 @@ See also http://www.ucapps.de/mbhp_lcd.html for schematics
 Before executing the Makefile, the LCD type has to be written into the MIOS32_LCD
 environment variable.
 Example:
-  export MIOS32_LCD=dog-g
+  export MIOS32_LCD=dog_g
 
 Note that MIOS32 settings can also be done in the ~/.bashrc_profile, so that
 they will be already available on each new terminal session.
