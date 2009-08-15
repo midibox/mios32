@@ -49,6 +49,9 @@ extern synth_waveform_t SYNTH_WaveformGet(u8 chn);
 extern s32 SYNTH_FrequencySet(u8 chn, float frq);
 extern float SYNTH_FrequencyGet(u8 chn);
 
+extern s32 SYNTH_VelocitySet(u8 chn, u8 velocity);
+extern s32 SYNTH_VelocityGet(u8 chn);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
