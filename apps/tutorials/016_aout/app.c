@@ -58,7 +58,7 @@ void APP_Init(void)
   // see AOUT module documentation for available interfaces and options
   aout_config_t config;
   config = AOUT_ConfigGet();
-  config.if_type = AOUT_IF_TLV5630;
+  config.if_type = AOUT_IF_MAX525;
   config.if_option = 0;
   config.num_channels = 8;
   config.chn_inverted = 0;
