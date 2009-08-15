@@ -121,6 +121,28 @@ CV voltages accordingly.
 -------------------------------------------------------------------------------
 
 
+IMPORTANT
+---------
+
+Before voltage changes are transfered to the external hardware, the 
+AOUT_PinSet function compares the new value with the current one.
+If equal, the register transfer will be omitted, otherwise it
+will be requested and performed once AOUT_Update() is called.
+
+This method has two advantages:
+  o if AOUT_PinSet doesn't notice value changes, the appr. AOUT channels
+     won't be updated to save CPU performance
+  o all CV pins will be updated at the same moment
+
+
+So, don't forget to execute:
+-------------------------------------------------------------------------------
+    AOUT_Update();
+-------------------------------------------------------------------------------
+
+either immediately after pin changes, or periodically from a timed task.
+
+
 Testing the application
 -----------------------
 

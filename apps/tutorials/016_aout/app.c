@@ -58,7 +58,7 @@ void APP_Init(void)
   // see AOUT module documentation for available interfaces and options
   aout_config_t config;
   config = AOUT_ConfigGet();
-  config.if_type = AOUT_IF_MAX525;
+  config.if_type = AOUT_IF_TLV5630;
   config.if_option = 0;
   config.num_channels = 8;
   config.chn_inverted = 0;
@@ -118,6 +118,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
       AOUT_DigitalPinSet(0, 0);
     }
 
+    // update AOUT channel(s)
+    AOUT_Update();
+
 #if 1
     // optional debug messages
     NOTESTACK_SendDebugMessage(&notestack);
@@ -137,6 +140,10 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
       case 20: AOUT_PinSet(6, cc_cv); break;
       case 21: AOUT_PinSet(7, cc_cv); break;
     }
+
+    // update AOUT channel(s)
+    // register upload will be omitted automatically if no channel value has changed
+    AOUT_Update();
   }
 }
 

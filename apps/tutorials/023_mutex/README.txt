@@ -30,7 +30,7 @@ Two independent tasks are writing to the LCD screen.
     task takes much longer than 1 mS (the bar is print 100 times) before
     the task yields.
   - TASK_LCD2(), which is running at higher priority to print the current
-    System time each millisecond.
+    System time each millisecond on the lower line.
 
 If accesses to the LCD wouldn't be protected with a Semaphore, following
 scenario could happen very quickly:
@@ -70,7 +70,6 @@ Set it to 1 when any task should write to the LCD, set back to 0
 when LCD output is finished. 
 All LCD output tasks have to check if the variable is 0 before setting
 it to take over the control.
-over the control.
 
 No bad idea, but this method won't work once tasks are running at
 different priorities.
@@ -134,8 +133,8 @@ Note that a recursive Mutex is used, which will allow nested calls.
 Although this isn't required here, I propose this as the prefered solution.
 Without such a Mutex, an application will hang up once a Mutex is taken
 two times (e.g. from a subroutine, called by another subroutine which both
-take the Mutex) - you don't need to consider such dangers with the recursive
-mechanism.
+take the Mutex at the beginning) - you don't need to consider such dangers 
+with the recursive mechanism.
 
 
 Whenever a routine wants to access the resource (the LCD), just write:
