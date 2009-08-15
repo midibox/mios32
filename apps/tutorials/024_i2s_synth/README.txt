@@ -1,14 +1,14 @@
 $Id$
 
-Demo application for I2S audio
+MIOS32 Tutorial #024: I2S Synthesizer
 ===============================================================================
-Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
 All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fdoc%2FMEMO
+  -> http://www.ucapps.de/mio32_c.html
 
 ===============================================================================
 
@@ -21,6 +21,10 @@ Optional:
    o a DINX1 module with 4 buttons to select waveforms for L/R channel
 
 ===============================================================================
+
+
+Tutorial text: TODO
+
 
 I2S chip is connected to J8 of the core module
 The system clock is available at J15B:E (not for STM32 Primer, as GLCD is 

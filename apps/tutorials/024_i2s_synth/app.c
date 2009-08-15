@@ -1,10 +1,10 @@
 // $Id$
 /*
- * Demo application for I2S audio
+ * MIOS32 Tutorial #024: I2S Synthesizer
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -22,12 +22,24 @@
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
+#include <notestack.h>
+
 #include "frqtab.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
+
+#define NOTESTACK_SIZE 16
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static notestack_t notestack;
+static notestack_item_t notestack_items[NOTESTACK_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,6 +56,9 @@ void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // initialize the Notestack
+  NOTESTACK_Init(&notestack, NOTESTACK_MODE_PUSH_TOP, &notestack_items[0], NOTESTACK_SIZE);
 
   // init Synth
   SYNTH_Init(0);
@@ -108,17 +123,57 @@ void APP_Background(void)
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // if note event over MIDI channel #1 controls note of both oscillators
-  if( midi_package.event == NoteOn && midi_package.chn == Chn1 && midi_package.velocity > 0 ) {
-    int chn;
-    for(chn=0; chn<2; ++chn)
-      SYNTH_FrequencySet(chn, frqtab[midi_package.note]);
-  }
+  // Note On received?
+  if( midi_package.chn == Chn1 && 
+      (midi_package.type == NoteOn || midi_package.type == NoteOff) ) {
+
+    // branch depending on Note On/Off event
+    if( midi_package.event == NoteOn && midi_package.velocity > 0 ) {
+      // push note into note stack
+      NOTESTACK_Push(&notestack, midi_package.note, midi_package.velocity);
+    } else {
+      // remove note from note stack
+      NOTESTACK_Pop(&notestack, midi_package.note);
+    }
+
+
+    // still a note in stack?
+    if( notestack.len ) {
+      // take first note of stack
+      u8 note = notestack_items[0].note;
+      u8 velocity = notestack_items[0].tag;
+
+      // set frequency for both oscillators
+      int chn;
+      for(chn=0; chn<2; ++chn) {
+	SYNTH_FrequencySet(chn, frqtab[note]);
+	SYNTH_VelocitySet(chn, velocity);
+      }
+
+      // set board LED
+      MIOS32_BOARD_LED_Set(1, 1);
+    } else {
+      // turn off LED (can also be used as a gate output!)
+      MIOS32_BOARD_LED_Set(1, 0);
+
+      // set velocity to 0 for all oscillators
+      int chn;
+      for(chn=0; chn<2; ++chn)
+	SYNTH_VelocitySet(chn, 0x00);
+    }
+
+#if 0
+    // optional debug messages
+    NOTESTACK_SendDebugMessage(&notestack);
+#endif
 
   // CC#1 over MIDI channel #1 controls waveform
-  if( midi_package.event == CC && midi_package.chn == Chn1 ) {
+  } else if( midi_package.event == CC && midi_package.chn == Chn1 ) {
     int chn;
     for(chn=0; chn<2; ++chn)
       SYNTH_WaveformSet(chn, midi_package.value >> 5);
+    // print selection
+    print_msg = PRINT_MSG_SELECTIONS;
   }
 }
 

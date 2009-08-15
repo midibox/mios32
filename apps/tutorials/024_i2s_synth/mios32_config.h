@@ -10,6 +10,10 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "Tutorial #024"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T.Klose"
+
 // I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
 #define MIOS32_SRIO_SPI 0
 
