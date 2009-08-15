@@ -96,7 +96,7 @@
 //!   <LI>AOUT_SPI_RC_PIN (default: 0)<BR>
 //!     Specifies the RC pin of the SPI port which should be used.<BR>
 //!     Allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
-//!   <LI>AOUT_SPI__OUTPUTS_OD (default: 1)<BR>
+//!   <LI>AOUT_SPI_OUTPUTS_OD (default: 1)<BR>
 //!     Specifies if output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 //! </UL>
 //!
