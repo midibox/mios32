@@ -39,7 +39,7 @@
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #ifndef AOUT_SPI_OUTPUTS_OD
-#define AOUT_SPI__OUTPUTS_OD 1
+#define AOUT_SPI_OUTPUTS_OD 1
 #endif
 
 
