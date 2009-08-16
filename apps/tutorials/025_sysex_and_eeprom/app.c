@@ -1,7 +1,6 @@
 // $Id$
 /*
- * Syx Dump Demonstration
- * See README.txt for details
+ * MIOS32 Tutorial #025: SysEx Parser and EEPROM Emulation
  *
  * ==========================================================================
  *
@@ -24,6 +23,8 @@
 
 #include <FreeRTOS.h>
 #include <portmacro.h>
+
+#include <eeprom.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -120,6 +121,12 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+#if 0
+  EEPROM_Init(0);
+  // optional for debugging: send EEPROM and flash content when a note is played
+  if( midi_package.type == NoteOn && midi_package.velocity > 0 )
+    EEPROM_SendDebugMessage(2);
+#endif
 }
 
 

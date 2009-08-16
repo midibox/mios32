@@ -1,6 +1,6 @@
 $Id$
 
-SysEx Dump Demonstration (and template)
+MIOS32 Tutorial #025: SysEx Parser and EEPROM Emulation
 ===============================================================================
 Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -8,21 +8,22 @@ All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fdoc%2FMEMO
+  -> http://www.ucapps.de/mio32_c.html
 
 ===============================================================================
 
 Required hardware:
    o MBHP_CORE_STM32 or STM32 Primer
-   o one or more 32k BankSticks (external IIC EEPROMs)
 
 Optional hardware:
    o LCD and DIN to "fire" a dump
+   o one or more 32k BankSticks (external IIC EEPROMs)
 
 ===============================================================================
 
-This application contains a SysEx parser for handling "patch dumps", which are
-stored into the internal, or an external EEPROM (BankStick).
+This tutorial application demonstrates a SysEx parser for handling "patch dumps", 
+which are stored into an external EEPROM (BankStick), or into an internal
+"emulated" EEPROM.
 
 In addition, it provides a function to dump out the EEPROM content in the same
 SysEx format, so that data can be easily stored/restored with an external SysEx
@@ -43,7 +44,7 @@ Description about the most important files:
 
    - app.c: the main program with all MIOS hooks and branches to SYSEX_*
      routines.
-     In additional, a small button/LCD interface is provided (Exec/Inc/Dec button)
+     In addition, a small button/LCD interface is provided (Exec/Inc/Dec button)
      which allows to send a SysEx dump of a selected patch manually.
 
    - sysex.c: SysEx parser and sender routine
@@ -54,8 +55,6 @@ Description about the most important files:
      from EEPROM. 
      The patch_structure[] array is usually replaced by the data structure(s)
      used in your application.
-
-   - preload.asm: preload data for the internal EEPROM ("default patch")
 
 ===============================================================================
 
@@ -227,13 +226,14 @@ EEPROM store operations (PATCH_Load/Store) can be changed as desired
 Warning
 ~~~~~~~
 
-EEPROM store operations are blocking operations. The PIC won't be able
-to receive additional MIDI data while programming is in progress. 
+EEPROM store operations are blocking operations. There is a danger
+for MIDI IN buffer overruns if additional MIDI data is received
+while programming is in progress. 
 
 There are two possibilities to overcome this limitation:
 
 a) ensure, that no additional MIDI data is sent during EEPROM programming
-is in progress. For 256 bytes it could take up to 500 mS (if programmed
+is in progress. For 256 bytes it could take up to 25 mS (if programmed
 into internal EEPROM) or ca. 200 mS (if programmed into BankStick)
 
 This is a common limitation also known from most synthesizers, therefore

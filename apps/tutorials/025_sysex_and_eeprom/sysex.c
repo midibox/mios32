@@ -358,7 +358,7 @@ s32 SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 			    PATCH_ReadByte((u8)(sysex_receive_ctr>>1)) & 0x0f | ((midi_in&0x0f) << 4));
 	  }
 #else
-   XXX unsupported SYSEX_FORMAT XXX
+# error "unsupported SYSEX_FORMAT"
 #endif
 
 	  // add to checksum
