@@ -36,28 +36,28 @@
 
 // _SIZE: 0 = BankStick disabled, 32768 or 65536 = BankStick enabled with given size in kilobyte
 #ifndef MIOS32_IIC_BS0_SIZE
-#define MIOS32_IIC_BS0_SIZE    32768
+#define MIOS32_IIC_BS0_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS1_SIZE
-#define MIOS32_IIC_BS1_SIZE    32768
+#define MIOS32_IIC_BS1_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS2_SIZE
-#define MIOS32_IIC_BS2_SIZE    32768
+#define MIOS32_IIC_BS2_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS3_SIZE
-#define MIOS32_IIC_BS3_SIZE    32768
+#define MIOS32_IIC_BS3_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS4_SIZE
-#define MIOS32_IIC_BS4_SIZE    32768
+#define MIOS32_IIC_BS4_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS5_SIZE
-#define MIOS32_IIC_BS5_SIZE    32768
+#define MIOS32_IIC_BS5_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS6_SIZE
-#define MIOS32_IIC_BS6_SIZE    32768
+#define MIOS32_IIC_BS6_SIZE    65536
 #endif
 #ifndef MIOS32_IIC_BS7_SIZE
-#define MIOS32_IIC_BS7_SIZE    32768
+#define MIOS32_IIC_BS7_SIZE    65536
 #endif
 
 

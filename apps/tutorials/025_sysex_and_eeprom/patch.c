@@ -18,6 +18,8 @@
 
 #include <mios32.h>
 
+#include <eeprom.h>
+
 #include "patch.h"
 
 
@@ -37,6 +39,9 @@ s32 PATCH_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  // init EEPROM emulation
+  EEPROM_Init(0);
 
   // load first patch
   PATCH_Load(0, 0); // bank, patch
@@ -71,20 +76,37 @@ s32 PATCH_WriteByte(u8 addr, u8 byte)
 /////////////////////////////////////////////////////////////////////////////
 s32 PATCH_Load(u8 bank, u8 patch)
 {
+  s32 status;
+  int i;
+
 #if PATCH_USE_BANKSTICK
   // determine offset depending on patch number
   u16 offset = patch << 8;
-  s32 error;
-  int i;
 
   // use 64byte page load functions for faster access
   // TODO: proper error and retry handling
   for(i=0; i<4; ++i)
-    if( error = MIOS32_IIC_BS_Read(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
-      return error;
+    if( status = MIOS32_IIC_BS_Read(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
+      return status;
     }
 #else
-# error "only BankStick supported!"
+  // EEPROM Emulation
+  if( bank > 0 )
+    return -1; // only bank 0 supported
+
+  if( patch > 0 )
+    return -1; // only a single patch is supported
+
+  status = 0;
+  for(i=0; i<128; i+=2) {
+    s32 value = EEPROM_Read(i/2);
+
+    if( value < 0 )
+      value = 0; // valid not programmed yet
+    
+    patch_structure[i+0] = (value >> 0) & 0xff;
+    patch_structure[i+1] = (value >> 8) & 0xff;
+  }
 #endif
 
   return 0; // no error
@@ -97,32 +119,40 @@ s32 PATCH_Load(u8 bank, u8 patch)
 /////////////////////////////////////////////////////////////////////////////
 s32 PATCH_Store(u8 bank, u8 patch)
 {
+  s32 status;
+  int i;
+
 #if PATCH_USE_BANKSTICK
   // determine offset depending on patch number
   u16 offset = patch << 8;
-  s32 error;
-  int i;
 
   // use 64byte page write functions for faster access
   // TODO: proper error and retry handling
   for(i=0; i<4; ++i) {
-    if( error = MIOS32_IIC_BS_Write(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
-      return error;
+    if( status = MIOS32_IIC_BS_Write(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
+      return status;
     }
-    while( error = MIOS32_IIC_BS_CheckWriteFinished(bank) ) {
+    while( status = MIOS32_IIC_BS_CheckWriteFinished(bank) ) {
       // for IIC debugging
-      if( error < 0 ) { // returns <0 on error, returns 1 if write operation in progress (ok)
-	return error;
+      if( status < 0 ) { // returns <0 on error, returns 1 if write operation in progress (ok)
+	return status;
       }
     }
-#if 1
-    // TODO: check why a delay is required after NAK polling!
-    volatile u32 delay;
-    for(delay=0; delay<100; ++delay);
-#endif
   }
 #else
-# error "only BankStick supported!"
+  // EEPROM Emulation
+  if( bank > 0 )
+    return -1; // only bank 0 supported
+
+  if( patch > 0 )
+    return -1; // only a single patch is supported
+
+  for(i=0; i<128; i+=2) {
+    u16 hword = patch_structure[i+0] | (patch_structure[i+1] << 8);
+
+    if( (status=EEPROM_Write(i/2, hword)) < 0 )
+      return status; // error
+  }
 #endif
 
   return 0; // no error

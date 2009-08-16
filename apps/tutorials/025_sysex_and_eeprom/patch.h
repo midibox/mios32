@@ -22,9 +22,8 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// 0: use EEPROM, 1: use BankStick as patch storage
-// TK: no EEPROM available for STM32!!! - don't touch this value
-#define PATCH_USE_BANKSTICK   1
+// 0: use internal EEPROM emulation, 1: use BankStick as patch storage
+#define PATCH_USE_BANKSTICK   0
 
 
 /////////////////////////////////////////////////////////////////////////////
