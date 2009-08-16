@@ -1,6 +1,5 @@
 // $Id$
 /**
-  * \defgroup EEPROM
   ******************************************************************************
   * @file    EEPROM_Emulation/src/eeprom.c 
   * @author  originally MCD Application Team, adapted to MIOS32 API by Thorsten Klose
@@ -19,40 +18,7 @@
   *   - flash access locked/unlocked whenever required
   *   - if value already exist in EEPROM, it won't be programmed again
   *   - added EEPROM_SendDebugMessage()
-  *   - added the usage infos below:
-  *
-  * Usage:
-  * <UL>
-  *   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
-  *   Pages will be formatted if this hasn't been done before.
-  *   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
-  *       Returns <0 if address hasn't been programmed yet (it's up to the
-  *       application, how to handle this, e.g. value could be zeroed)
-  *   <LI>EEPROM_Write(u16 address, u16 value): programs the 16bit value
-  * </UL>
-  *
-  * Configuration: optionally EEPROM_EMULATED_SIZE can be overruled in mios32_config.h
-  * to change the number of virtual addresses.
-  *
-  * By default, 128 addresses are available:<BR>
-  * \code
-  * #define EEPROM_EMULATED_SIZE 128  // -> 128 half words = 256 bytes
-  * \endcode
-  *
-  * Note: each address allocates 4 bytes in flash. The emulation can handle with
-  * two pages (STM32F103RB: 2*1k, STM32F103RE: 2*2k), and the number of addresses
-  * shouldn't exceed (page size - 4).
-  *
-  * Accordingly, the maximum EEPROM_EMULATED_SIZE for STM32F103RB is 255, and for
-  * STM32F103RE 511.<BR>
-  * Than lower the specified size, than faster EEPROM_Write() will work, especially
-  * once pages have to be switched.
-  *
-  * Example application:<BR>
-  *   $MIOS32_PATH/apps/tutorials/025_sysex_and_eeprom (see patch.c)
-  *
-  * Additional informations to EEPROM emulation approach:<BR>
-  *   http://www.st.com/stonline/products/literature/an/13718.pdf
+  *   - added the usage infos below
   *
   ******************************************************************************
   * @copy
@@ -66,9 +32,43 @@
   *
   * <h2><center>&copy; COPYRIGHT 2009 STMicroelectronics</center></h2>
   */ 
-/** @addtogroup EEPROM
-  * @{
-  */ 
+
+//! \defgroup EEPROM
+//!
+//! Usage:
+//! <UL>
+//!   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
+//!   Pages will be formatted if this hasn't been done before.
+//!   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
+//!       Returns <0 if address hasn't been programmed yet (it's up to the
+//!       application, how to handle this, e.g. value could be zeroed)
+//!   <LI>EEPROM_Write(u16 address, u16 value): programs the 16bit value
+//! </UL>
+//!
+//! Configuration: optionally EEPROM_EMULATED_SIZE can be overruled in mios32_config.h
+//! to change the number of virtual addresses.
+//!
+//! By default, 128 addresses are available:<BR>
+//! \code
+//! #define EEPROM_EMULATED_SIZE 128  // -> 128 half words = 256 bytes
+//! \endcode
+//!
+//! Note: each address allocates 4 bytes in flash. The emulation can handle with
+//! two pages (STM32F103RB: 2*1k, STM32F103RE: 2*2k), and the number of addresses
+//! shouldn't exceed (page size - 4).
+//!
+//! Accordingly, the maximum EEPROM_EMULATED_SIZE for STM32F103RB is 255, and for
+//! STM32F103RE 511.<BR>
+//! Than lower the specified size, than faster EEPROM_Write() will work, especially
+//! once pages have to be switched.
+//!
+//! Example application:<BR>
+//!   $MIOS32_PATH/apps/tutorials/025_sysex_and_eeprom (see patch.c)
+//!
+//! Additional informations to EEPROM emulation approach:<BR>
+//!   http://www.st.com/stonline/products/literature/an/13718.pdf
+//!
+//! \{
 
 /* Includes ------------------------------------------------------------------*/
 #include <mios32.h>

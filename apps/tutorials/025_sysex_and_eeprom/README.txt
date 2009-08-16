@@ -23,7 +23,7 @@ Optional hardware:
 
 This tutorial application demonstrates a SysEx parser for handling "patch dumps", 
 which are stored into an external EEPROM (BankStick), or into an internal
-"emulated" EEPROM.
+"emulated" EEPROM (see also http://www.midibox.org/mios32/manual/group___e_e_p_r_o_m.html )
 
 In addition, it provides a function to dump out the EEPROM content in the same
 SysEx format, so that data can be easily stored/restored with an external SysEx
