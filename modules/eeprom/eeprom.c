@@ -37,7 +37,7 @@
 //!
 //! Usage:
 //! <UL>
-//!   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
+//!   <LI>EEPROM_Init(u32 mode) should be called after startup to check for valid flash pages.
 //!   Pages will be formatted if this hasn't been done before.
 //!   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
 //!       Returns <0 if address hasn't been programmed yet (it's up to the
