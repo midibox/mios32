@@ -54,7 +54,24 @@ static const seq_chord_entry_t seq_chord_table[] = {
   {  0,  7, 12, 16, "Maj.10" },
   {  0,  7, 12, 19, "Maj.12" },
   {  0,  5,  7, -1, "Sus.4 " },
-  {  0,  4,  8, -1, "Maj.+ " }
+  {  0,  4,  8, -1, "Maj.+ " },
+
+  {  0,  3,  7, -1, "Min.I " },
+  {  3,  7, 12, -1, "Min.II" },
+  {  7, 12, 15, -1, "MinIII" },
+  {  0, -1, -1, -1, "Root  " },
+  {  3, -1, -1, -1, "3rdMin" },
+  {  7, -1, -1, -1, "5th   " },
+  {  0,  3, -1, -1, "R.+3rd" },
+  {  0,  7, -1, -1, "R.+5th" },
+  {  0,  3,  7,  9, "Min.6 " },
+  {  0,  3,  7, 11, "Min.7 " },
+  {  0,  3,  7, 12, "Min.8 " },
+  {  0,  3,  7, 14, "Min.9 " },
+  {  0,  7, 12, 16, "Min.10" },
+  {  0,  7, 12, 18, "Min.12" },
+  {  0,  3,  6,  9, "Co7   " },
+  {  0,  3,  8, -1, "Min.+ " }
 };
 
 
@@ -105,8 +122,8 @@ s32 SEQ_CHORD_NoteGet(u8 key_num, u8 chord)
   if( key_num >= 4 )
     return -2; // key number too high
 
-  u8 chord_ix = chord & 0xf;
-  s32 oct_transpose = (chord >> 4) - 4;
+  u8 chord_ix = chord & 0x1f;
+  s32 oct_transpose = (chord >> 5) - 2;
 
   s32 note = (s32)seq_chord_table[chord_ix].keys[key_num];
   if( note < 0 )

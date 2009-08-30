@@ -364,8 +364,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);
       } else if( layer_type == SEQ_PAR_Type_Chord ) {
 	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
-	u8 chord_ix = par_value & 0x0f;
-	u8 chord_oct = par_value >> 4;
+	u8 chord_ix = par_value & 0x1f;
+	u8 chord_oct = par_value >> 5;
 	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
 	SEQ_LCD_PrintFormattedString("/%d", chord_oct);
       } else {
@@ -513,9 +513,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 		par_value = SEQ_PAR_ChordGet(visible_track, visible_step, ui_selected_instrument);
 	      else
 		par_value = SEQ_PAR_Get(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument);
-	      u8 chord_ix = par_value & 0x0f;
-	      u8 chord_oct = par_value >> 4;
-	      SEQ_LCD_PrintFormattedString("%X/%d", chord_ix, chord_oct);
+	      u8 chord_ix = par_value & 0x1f;
+	      u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
+	      u8 chord_oct = par_value >> 5;
+	      SEQ_LCD_PrintFormattedString("%c/%d", chord_char, chord_oct);
 	      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
 	    } else {
 	      SEQ_LCD_PrintString("----");
