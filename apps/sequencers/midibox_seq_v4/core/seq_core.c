@@ -187,8 +187,12 @@ s32 SEQ_CORE_Init(u32 mode)
     // -> see SEQ_LCD_PrintTrackName()
     int i;
     for(i=0; i<80; ++i)
-      seq_core_trk[track].name[i] = ' ';
-    seq_core_trk[track].name[80] = 0;
+      t->name[i] = ' ';
+    t->name[80] = 0;
+
+    // clear glide note storage
+    for(i=0; i<4; ++i)
+      t->glide_notes[i] = 0;
   }
 
   // reset sequencer
@@ -325,8 +329,12 @@ static s32 SEQ_CORE_PlayOffEvents(void)
   u8 track;
   seq_core_trk_t *t = &seq_core_trk[0];
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t) {
+    int i;
+
     t->state.SUSTAINED = 0;
     t->state.STRETCHED_GL = 0;
+    for(i=0; i<4; ++i)
+      t->glide_notes[i] = 0;
   }
 
   return 0; // no error
@@ -443,8 +451,14 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
       if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL ) {
-	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	int i;
+
+	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
+	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0);
+	// clear state flag and note storage
 	t->state.SUSTAINED = 0;
+	for(i=0; i<4; ++i)
+	  t->glide_notes[i] = 0;
       }
 
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
@@ -555,9 +569,18 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off ) { // track disabled
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
-	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	    int i;
+
+	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0);
+	    else // Glide
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+
+	    // clear state flags and note storage
 	    t->state.STRETCHED_GL = 0;
 	    t->state.SUSTAINED = 0;
+	    for(i=0; i<4; ++i)
+	      t->glide_notes[i] = 0;
 	  }
 
 	  continue;
@@ -578,6 +601,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	    continue;
 	}
 
+	// store last glide notes before they will be cleared
+	u32 last_glide_notes[4];
+	memcpy(last_glide_notes, t->glide_notes, 4*4);
 
         // fetch MIDI events which should be played
         seq_layer_evnt_t layer_events[16];
@@ -674,9 +700,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      if( t->state.SUSTAINED )
 		gen_off_events = 1;
 
-	      if( tcc->mode.SUSTAIN || e->len >= 96 ) {
+	      if( tcc->mode.SUSTAIN || e->len >= 96 )
 		gen_sustained_events = 1;
-	      } else {
+	      else {
 		// generate common On event with given length
 		gen_on_events = 1;
 
@@ -688,7 +714,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		    p->velocity = 0x7f;
 		}
 	      }
-            } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
+	    } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
 	      // stretched note, length < 96: queue off events
 	      gen_off_events = (t->step_length * e->len) / 96;
 	    }
@@ -696,9 +722,18 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	  // should Note Off events be played before new events are queued?
 	  if( gen_off_events ) {
-	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick + prev_bpm_tick_delay + gen_off_events);
+	    int i;
+
+	    u32 rescheduled_tick = bpm_tick + prev_bpm_tick_delay + gen_off_events;
+	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
+	      rescheduled_tick -= 1;
+	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, rescheduled_tick);
+
+	    // clear state flag and note storage
 	    t->state.SUSTAINED = 0;
 	    t->state.STRETCHED_GL = 0;
+	    for(i=0; i<4; ++i)
+	      t->glide_notes[i] = 0;
 	  }
 
 
@@ -720,17 +755,29 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
+	      // sustained/glided note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
 	      if( gen_sustained_events ) {
-		// sustained note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
-		t->vu_meter = p->velocity; // for visualisation in mute menu
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, bpm_tick + t->bpm_tick_delay, 0);
+		u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
+
+		// glide: if same note already played, play the new one a tick later for 
+		// proper handling of "fingered portamento" function on some synths
+		if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
+		  scheduled_tick += 1;
+
+		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
 		p->velocity = 0;
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
+		// for visualisation in mute menu
+		t->vu_meter = p->velocity;
+
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
-		if( !tcc->mode.SUSTAIN )
+		if( !tcc->mode.SUSTAIN ) {
 		  t->state.STRETCHED_GL = 1;
+		  // store glide note number in 128 bit array for later checks
+		  t->glide_notes[p->note / 32] |= (1 << (p->note % 32));
+		}
 	      } else if( gen_on_events ) {
 		// for visualisation in mute menu
 		t->vu_meter = p->velocity;
