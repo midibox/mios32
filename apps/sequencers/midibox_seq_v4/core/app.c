@@ -110,6 +110,7 @@ void APP_Init(void)
 
   // init user interface
   SEQ_LABEL_Init(0);
+  SEQ_CC_LABELS_Init(0);
   SEQ_LED_Init(0);
   SEQ_UI_Init(0);
 
@@ -554,6 +555,9 @@ void SEQ_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_MIDI(void)
 {
+  static u8 last_gates = 0;
+  static u8 last_start_stop = 0;
+
   MUTEX_MIDIOUT_TAKE;
 
   // execute sequencer handler
@@ -566,12 +570,37 @@ void SEQ_TASK_MIDI(void)
   // send timestamped MIDI events
   SEQ_MIDI_OUT_Handler();
 
+  // Start/Stop at J5C.A9
+  u8 start_stop = SEQ_BPM_IsRunning();
+  if( start_stop != last_start_stop ) {
+    last_start_stop = start_stop;
+    MIOS32_BOARD_J5_PinSet(9, start_stop);
+  }
+
+  // DIN Sync Pulse at J5C.A8
+  if( seq_core_din_sync_pulse_ctr > 1 ) {
+    MIOS32_BOARD_J5_PinSet(8, 1);
+    --seq_core_din_sync_pulse_ctr;
+  } else if( seq_core_din_sync_pulse_ctr == 1 ) {
+    MIOS32_BOARD_J5_PinSet(8, 0);
+    seq_core_din_sync_pulse_ctr = 0;
+  }
+
   // update AOUTs
   AOUT_Update();
 
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
-  MIOS32_BOARD_J5_Set(AOUT_DigitalPinsGet());
+  u8 gates = AOUT_DigitalPinsGet();
+  if( gates != last_gates ) {
+    int i;
+
+    last_gates = gates;
+    for(i=0; i<8; ++i) {
+      MIOS32_BOARD_J5_PinSet(i, gates & 1);
+      gates >>= 1;
+    }
+  }
 
   MUTEX_MIDIOUT_GIVE;
 }
@@ -604,9 +633,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  SEQ_MIDI_PORT_NotifyMIDITx(port, package);
-
-  return 0; // no error, no filtering
+  return SEQ_MIDI_PORT_NotifyMIDITx(port, package);
 }
 
 

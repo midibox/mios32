@@ -24,6 +24,7 @@
 #include "seq_layer.h"
 #include "seq_midi_port.h"
 #include "seq_label.h"
+#include "seq_cc_labels.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -570,7 +571,7 @@ static s32 LCD_Handler(u8 high_prio)
   // G1T1 Note  256   4     8  IIC2  12  Name  D    Prob                         INIT
 
   // Trk. Type Steps/ParL/TrgL Port Chn. EditLayer  controls                         
-  // G1T1 Note  256   4     8  IIC2  12  Name  D    CC #001 ModWheel             INIT
+  // G1T1 Note  256   4     8  IIC2  12  Name  D    CC #001 (ModWheel)           INIT
 
   // Track Type "Note", Chord" and "CC":
   // Note: Parameter Layer A/B/C statically assigned to Note Number/Velocity/Length
@@ -830,9 +831,10 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(19);
     } else {
       switch( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) ) {
-        case SEQ_PAR_Type_CC:
-	  SEQ_LCD_PrintFormattedString("%03d ModWheel       ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer));
-	  break;
+        case SEQ_PAR_Type_CC: {
+	  u8 cc = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+	  SEQ_LCD_PrintFormattedString("%03d (%s)     ", cc, SEQ_CC_LABELS_Get(cc));
+	} break;
         default:
 	  SEQ_LCD_PrintSpaces(19);
       }

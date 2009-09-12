@@ -39,7 +39,7 @@
 #define ITEM_PRESET        1
 #define ITEM_BPM           2
 #define ITEM_RAMP          3
-#define ITEM_TRG_PPQN      4
+#define ITEM_SYNC_PPQN     4
 #define ITEM_MCLK_PORT     5
 #define ITEM_MCLK_IN       6
 #define ITEM_MCLK_OUT      7
@@ -51,6 +51,10 @@
 
 static u8 store_file_required;
 static u8 selected_mclk_port = USB0;
+
+const u16 din_sync_div_presets[] =
+  // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn
+  { 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1 };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,7 +76,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_MCLK_PORT: *gp_leds |= 0x0100; break;
     case ITEM_MCLK_IN: *gp_leds |= 0x0200; break;
     case ITEM_MCLK_OUT: *gp_leds |= 0x0400; break;
-    case ITEM_TRG_PPQN: *gp_leds |= 0x1800; break;
+    case ITEM_SYNC_PPQN: *gp_leds |= 0x1800; break;
   }
 
   return 0; // no error
@@ -130,7 +134,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_TRG_PPQN;
+      ui_selected_item = ITEM_SYNC_PPQN;
       break;
 
     case SEQ_UI_ENCODER_GP14:
@@ -212,8 +216,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // no change
     } break;
 
-    case ITEM_TRG_PPQN: {
-      if( SEQ_UI_Var16_Inc(&seq_core_bpm_trg_ppqn, 0, 383, incrementer) ) {
+    case ITEM_SYNC_PPQN: {
+      int i;
+      u8 din_sync_div_ix = 0;
+
+      for(i=0; i<sizeof(din_sync_div_presets)/sizeof(u16); ++i)
+	if( seq_core_bpm_din_sync_div == din_sync_div_presets[i] ) {
+	  din_sync_div_ix = i;
+	  break;
+	}
+
+      if( SEQ_UI_Var8_Inc(&din_sync_div_ix, 0, (sizeof(din_sync_div_presets)/sizeof(u16))-1, incrementer) ) {
+	seq_core_bpm_din_sync_div = din_sync_div_presets[din_sync_div_ix];
 	store_file_required = 1;
 	return 1; // value has been changed
       } else
@@ -403,10 +417,10 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_TRG_PPQN && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_SYNC_PPQN && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d", seq_core_bpm_trg_ppqn);
+    SEQ_LCD_PrintFormattedString("%3d", 384 / seq_core_bpm_din_sync_div);
   }
   SEQ_LCD_PrintSpaces(4);
 

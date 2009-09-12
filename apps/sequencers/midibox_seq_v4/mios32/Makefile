@@ -62,6 +62,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_midi_router.c \
 		../core/seq_midply.c \
 		../core/seq_cc.c  \
+		../core/seq_cc_labels.c  \
 		../core/seq_core.c \
 		../core/seq_scale.c \
 		../core/seq_groove.c \
