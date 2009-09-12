@@ -22,6 +22,7 @@
 #include "seq_hwcfg.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -329,9 +330,16 @@ s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute)
 /////////////////////////////////////////////////////////////////////////////
 // Called by MIDI Tx Notificaton hook if a MIDI event should be sent
 // Allows to provide additional MIDI ports
+// If 1 is returned, package will be filtered!
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  // DIN Sync Event (0xf9 sent over port 0xff)
+  if( port == 0xff && package.evnt0 == 0xf9 ) {
+    seq_core_din_sync_pulse_ctr = 2; // to generate a 1 mS pulse (+1 for 1->0 transition)
+    return 1; // filter package
+  }
+
   // TODO: Add also Bus handlers here
 
   if( port == 0x80 ) { // AOUT port
@@ -416,7 +424,9 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
       MIOS32_BOARD_J5_PinSet(gate_pin, 1);
 #endif
     }
+
+    return 1; // filter package
   }
 
-  return 0; // no error
+  return 0; // don't filter package
 }

@@ -253,8 +253,8 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_bpm_preset_num = value;
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	    SEQ_BPM_ModeSet(value);
-	  } else if( strcmp(parameter, "BPM_TrgPPQN") == 0 ) {
-	    seq_core_bpm_trg_ppqn = value;
+	  } else if( strcmp(parameter, "BPM_DINSyncDiv") == 0 ) {
+	    seq_core_bpm_din_sync_div = value;
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
 	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
@@ -412,7 +412,7 @@ s32 SEQ_FILE_C_Write(void)
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
-  sprintf(line_buffer, "BPM_TrgPPQN %d\n", seq_core_bpm_trg_ppqn);
+  sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
   status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
 
   sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);

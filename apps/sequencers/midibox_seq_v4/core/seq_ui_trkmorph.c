@@ -258,7 +258,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("%3d..%d  ", dst_begin, dst_end);
   }
   SEQ_LCD_CursorSet(19, 1); // set back cursor
-  SEQ_LCD_PrintSpaces(15);
+  SEQ_LCD_PrintSpaces(17);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MORPH_VALUE && ui_cursor_flash ) {
