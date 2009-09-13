@@ -1,0 +1,73 @@
+$Id$
+
+Wishlist for future features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-> see bottom of this document
+
+
+MIDIboxSEQ V4.0beta1
+~~~~~~~~~~~~~~~~~~~~
+
+Initial public release.
+Short list of changes:
+  o uses the new MBHP_CORE_STM32 module (ARM Cortex M3 based derivative)
+  o firmware completely rewritten in C - it can be optionally emulated 
+    under MacOS
+  o patterns/songs/grooves/configs/etc. now stored on SD Card in a FAT32 
+    filesystem
+  o USB MIDI natively supported, MIDI events are sent more than 100 times 
+    faster to a DAW/virtual synth
+  o two "common" MIDI IN and MIDI OUT ports, up to 8 additional MIDI OUT 
+    ports can be added with MBHP_IIC_MIDI modules
+  o track length increased to 256 steps
+  o track memory can be partitioned, e.g. 64 steps and 16 parameter layers, 
+    or 256 steps and 4 parameter layers. Each track provides 8 trigger layers
+  o resolution increased to 384ppqn (16 times faster than common MIDI clock)
+  o new MIDI event scheduler concept priorises and sorts queued MIDI events
+  o new parameter layer options like "Pitch Wheel", "Roll" and "Probability"
+  o special drum mode for easier editing of percusive patterns
+  o additional chords (now: 32 in Major/Minor scale)
+  o new track progression parameters like "Interval/Repeat/Skip"
+  o groove templates can now be customized and stored on SD Card
+  o Echo Fx with variable number of repeats, damp, tempo change, note 
+    incrementer (can be forced to scale!)
+  o LFO Fx with different waveforms, synchronized to track clock, step based 
+    selection of period and reset, assignable to Note/Velocity/Length
+    + separate CC with definable ppqn resolution
+  o value range Limiter Fx
+  o Loop Fx (also nice for editing)
+  o overworked realtime record function with better quantisation
+  o hardware configuration file now read from SD Card. No need to recompile 
+    the firmware on changes.
+
+
+Wishlist for future features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  o MIDI File import and export
+  o SysEx librarian, recording and dumping function for external Synths or 
+    other MIDI gear
+  o support for MBHP_ETH module for sending OSC packets without the need 
+    for a computer based proxy server
+  o finish the remote access function, which allows to control multiple
+    instances of MBSEQ (either running on MBHP_CORE_STM32 module or in
+    simulation) from a single CS (partly working, can be enabled in the
+    OPT menu, but not very user friendly yet)
+  o implement BPM LED digit display (as known from V3)
+  o implement Tap Tempo function (as known from V3)
+  o allow to switch between different sections of a track (A/B/C/D function
+    like known from MB808)
+  o selection pattern for ALL and Copy/Paste function, e.g. to change/copy
+    only note 1, 5, 9, 13...
+    SELECT button in Edit page should be used for this purpose
+  o ALL button should work in mute screen
+  o "Preloading steps" as proposed by Gridracer:
+     Layer A is already active-> I press it again-> LED goes off or starts 
+     blinking. I change the note numbers of the steps without setting them, 
+     (audience hears nothing) -> I push Layer A again->  LED is On again. 
+     Now I can set the new steps which will now play the intended
+     notes right from the beginning.
+  o SysEx dump for patterns/songs
+  o special function for song page which copies the current pattern/mute set
+    into the selected song position
