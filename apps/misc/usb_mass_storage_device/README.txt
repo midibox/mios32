@@ -8,7 +8,7 @@ All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fdoc%2FMEMO
+  -> http://www.ucapps.de/mio32_c.html
 
 ===============================================================================
 
