@@ -34,7 +34,8 @@ typedef enum {
   DETENTED1=0xaa,
   DETENTED2=0x22,
   DETENTED3=0x88,
-  DETENTED4=0xa5
+  DETENTED4=0xa5,
+  DETENTED5=0x5a
 } mios32_enc_type_t;
 
 typedef enum {
