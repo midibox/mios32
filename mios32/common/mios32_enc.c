@@ -190,142 +190,79 @@ s32 MIOS32_ENC_UpdateStates(void)
       //              DEC: 7
       // DETENTED3    INC: 4
       //              DEC: 8
-      switch( enc_state_ptr->state ) {
-        case 0x0: goto MIOS32_ENC_Do_Nothing;	// 0
-	case 0x1: goto MIOS32_ENC_Do_Dec_ND;	// 1  -  only if NON_DETENTED
-	case 0x2: goto MIOS32_ENC_Do_Inc_ND;	// 2  -  only if NON_DETENTED
-	case 0x3: goto MIOS32_ENC_Do_Nothing;	// 3
-	case 0x4: goto MIOS32_ENC_Do_Inc_D13;	// 4  -  only if NON_DETENTED, DETENTED1 or DETENTED3
-	case 0x5: goto MIOS32_ENC_Do_Nothing;	// 5
-	case 0x6: goto MIOS32_ENC_Do_Nothing;	// 6
-	case 0x7: goto MIOS32_ENC_Do_Dec_D12;	// 7  -  only if NON_DETENTED, DETENTED1 or DETENTED2
-	case 0x8: goto MIOS32_ENC_Do_Dec_D13;	// 8  -  only if NON_DETENTED, DETENTED1 or DETENTED3
-	case 0x9: goto MIOS32_ENC_Do_Nothing;	// 9
-	case 0xa: goto MIOS32_ENC_Do_Nothing;	// A
-	case 0xb: goto MIOS32_ENC_Do_Inc_D12;	// B  -  only if NON_DETENTED, DETENTED1 or DETENTED2
-	case 0xc: goto MIOS32_ENC_Do_Nothing;	// C
-	case 0xd: goto MIOS32_ENC_Do_Inc_ND;	// D  -  only if NON_DETENTED
-	case 0xe: goto MIOS32_ENC_Do_Dec_ND;	// E  -  only if NON_DETENTED
-	case 0xf: goto MIOS32_ENC_Do_Nothing;	// F
-        default:  goto MIOS32_ENC_Do_Nothing;
+      if( (enc_state_ptr->state == 0x01 && (enc_type & (1 << 4))) ||
+	  (enc_state_ptr->state == 0x07 && (enc_type & (1 << 5))) ||
+	  (enc_state_ptr->state == 0x0e && (enc_type & (1 << 6))) ||
+	  (enc_state_ptr->state == 0x08 && (enc_type & (1 << 7))) ) {
+	// DEC
+
+	// plausibility check: when accelerator > 0xe0, exit if last event was a INC
+	if( enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0 ) {
+	  // memorize DEC
+	  enc_state_ptr->decinc = 1;
+
+	  // branch depending on speed mode
+	  switch( enc_config_ptr->cfg.speed ) {
+	    case FAST:
+	      if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+		acc = 1;
+	      enc_state_ptr->incrementer -= acc;
+	      break;
+
+	    case SLOW:
+	      predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
+	      // increment on 4bit underrun
+	      if( predivider < 0 )
+		--enc_state_ptr->incrementer;
+	      enc_state_ptr->predivider = predivider;
+	      break;
+
+	    default: // NORMAL
+	      --enc_state_ptr->incrementer;
+	      break;
+	  }
+
+
+	  // set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
+	  enc_state_ptr->accelerator = 0xff;
+	}
+
+      } else if( (enc_state_ptr->state == 0x02 && (enc_type & (1 << 0))) ||
+		 (enc_state_ptr->state == 0x0b && (enc_type & (1 << 1))) ||
+		 (enc_state_ptr->state == 0x0d && (enc_type & (1 << 2))) ||
+		 (enc_state_ptr->state == 0x04 && (enc_type & (1 << 3))) ) {
+	// INC
+	// plausibility check: when accelerator > 0xe0, exit if last event was a DEC
+	if( !enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0 ) {
+	  // memorize INC
+	  enc_state_ptr->decinc = 0;
+
+	  // branch depending on speed mode
+	  switch( enc_config_ptr->cfg.speed ) {
+	    case FAST:
+	      if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+		acc = 1;
+	      enc_state_ptr->incrementer += acc;
+	      break;
+
+	    case SLOW:
+	      predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
+	      // increment on 4bit overrun
+	      if( predivider >= 16 )
+		++enc_state_ptr->incrementer;
+	      enc_state_ptr->predivider = predivider;
+	      break;
+
+	    default: // NORMAL
+	      ++enc_state_ptr->incrementer;
+	      break;
+	  }
+
+	  // set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
+	  enc_state_ptr->accelerator = 0xff;
+	}
       }
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Dec_ND:
-      // only if NON_DETENTED
-      if( enc_type == NON_DETENTED )
-	goto MIOS32_ENC_Do_Dec;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Inc_ND:
-      // only if NON_DETENTED
-      if( enc_type == NON_DETENTED )
-	goto MIOS32_ENC_Do_Inc;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Dec_D12:
-      // only if NON_DETENTED, DETENTED1 or DETENTED2
-      if( enc_type != DETENTED3 )
-	goto MIOS32_ENC_Do_Dec;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Inc_D12:
-      // only if NON_DETENTED, DETENTED1 or DETENTED2
-      if( enc_type != DETENTED3 )
-	goto MIOS32_ENC_Do_Inc;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Dec_D13:
-      // only if NON_DETENTED, DETENTED1 or DETENTED3
-      if( enc_type != DETENTED2 )
-	goto MIOS32_ENC_Do_Dec;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Inc_D13:
-      // only if NON_DETENTED, DETENTED1 or DETENTED3
-      if( enc_type != DETENTED2 )
-	goto MIOS32_ENC_Do_Inc;
-      goto MIOS32_ENC_Do_Nothing;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Inc:
-      // plausibility check: when accelerator > 0xe0, exit if last event was a DEC
-      if( enc_state_ptr->decinc && enc_state_ptr->accelerator > 0xe0 )
-	goto MIOS32_ENC_Do_Nothing;
-
-      // memorize INC
-      enc_state_ptr->decinc = 0;
-
-      // branch depending on speed mode
-      switch( enc_config_ptr->cfg.speed ) {
-        case FAST:
-	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
-	    acc = 1;
-          enc_state_ptr->incrementer += acc;
-	  break;
-
-        case SLOW:
-	  predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
-	  // increment on 4bit overrun
-	  if( predivider >= 16 )
-	    ++enc_state_ptr->incrementer;
-	  enc_state_ptr->predivider = predivider;
-	  break;
-
-        default: // NORMAL
-          ++enc_state_ptr->incrementer;
-	  break;
-      }
-
-      goto MIOS32_ENC_Next;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Dec:
-      // plausibility check: when accelerator > 0xe0, exit if last event was a INC
-      if( !enc_state_ptr->decinc && enc_state_ptr->accelerator > 0xe0 )
-	goto MIOS32_ENC_Do_Nothing;
-
-      // memorize DEC
-      enc_state_ptr->decinc = 1;
-
-      // branch depending on speed mode
-      switch( enc_config_ptr->cfg.speed ) {
-        case FAST:
-	  if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
-	    acc = 1;
-          enc_state_ptr->incrementer -= acc;
-	  break;
-
-        case SLOW:
-	  predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
-	  // increment on 4bit underrun
-	  if( predivider < 0 )
-	    --enc_state_ptr->incrementer;
-	  enc_state_ptr->predivider = predivider;
-	  break;
-
-        default: // NORMAL
-          --enc_state_ptr->incrementer;
-	  break;
-      }
-
-      goto MIOS32_ENC_Next;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Next:
-      // set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
-      enc_state_ptr->accelerator = 0xff;
-
-      //////////////////////////////////////////////////////////////////////////
-MIOS32_ENC_Do_Nothing:
-      if( 0 ); // dummy to prevent "error: label at end of compound statement"
     }
-
   }
 
   return 0; // no error

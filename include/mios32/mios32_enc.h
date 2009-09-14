@@ -29,11 +29,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-  DISABLED,
-  NON_DETENTED,
-  DETENTED1,
-  DETENTED2,
-  DETENTED3
+  DISABLED=0x00,
+  NON_DETENTED=0xff,
+  DETENTED1=0xaa,
+  DETENTED2=0x22,
+  DETENTED3=0x88,
+  DETENTED4=0xa5
 } mios32_enc_type_t;
 
 typedef enum {
@@ -47,7 +48,7 @@ typedef union {
     unsigned ALL:32;
   } all;
   struct {
-    mios32_enc_type_t   type:3;
+    mios32_enc_type_t   type:8;
     mios32_enc_speed_t  speed:2;
     unsigned            speed_par:3;
     unsigned            sr:4;
