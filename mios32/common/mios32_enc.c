@@ -181,15 +181,21 @@ s32 MIOS32_ENC_UpdateStates(void)
       // State Machine (own Design from 1999)
       // changed 2000-1-5: special "analyse" state which corrects the ENC direction
       // if encoder is rotated to fast - I should patent it ;-)
+      // changed 2009-09-14: new ENC_MODE-format, using Bits of ENC_MODE_xx to
+      // indicate edges, which trigger Do_Inc / Do_Dec
 
-      // NON_DETENTED INC: 2, B, D, 4
-      //              DEC: 1, 7, E, 8
-      // DETENTED1    INC: B, 4
-      //              DEC: 7, 8
-      // DETENTED2    INC: B
-      //              DEC: 7
-      // DETENTED3    INC: 4
-      //              DEC: 8
+      // if Bit N of ENC_MODE is set, according ENC_STAT triggers Do_Inc / Do_Dec
+      //
+      // Bit N     7   6   5   4  
+      // ENC_STAT  8   E   7   1
+      // DEC      <-  <-  <-  <-  
+      // Pin A ____|-------|_______
+      // Pin B ________|-------|___
+      // INC       ->  ->  ->  ->  
+      // ENC_STAT  2   B   D   4
+      // Bit N     0   1   2   3 
+      // This method is based on ideas from Avogra
+
       if( (enc_state_ptr->state == 0x01 && (enc_type & (1 << 4))) ||
 	  (enc_state_ptr->state == 0x07 && (enc_type & (1 << 5))) ||
 	  (enc_state_ptr->state == 0x0e && (enc_type & (1 << 6))) ||
