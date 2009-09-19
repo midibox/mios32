@@ -223,7 +223,7 @@ typedef union {
 		u8 				all[512];
 	};
 	struct {
-		char			name[32];
+		char			name[33];
 		lfo_t 			lfos[2];
 		envelope_t 		envelopes[2];
 		oscillator_t 	oscillators[2];
