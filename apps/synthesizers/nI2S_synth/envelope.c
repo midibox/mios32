@@ -24,7 +24,7 @@ void ENV_tick(void) {
 	u8 e;
 
 	for (e=0; e<2; e++) {
-		envelope_t *env = &envelopes[e];
+		envelope_t *env = &p.envelopes[e];
 		u16 oacc = env->accumulator;
 		
 		if (!env->gate) {
@@ -89,8 +89,8 @@ void ENV_tick(void) {
 	}
 	
 	// invert envelopes?
-	envelopes[0].out = engineFlags.invertEnv1 ? (65535) - envelopes[0].out : envelopes[0].out;
-	envelopes[1].out = engineFlags.invertEnv2 ? (65535) - envelopes[1].out : envelopes[1].out;
+	p.envelopes[0].out = p.engineFlags.invertEnv1 ? (65535) - p.envelopes[0].out : p.envelopes[0].out;
+	p.envelopes[1].out = p.engineFlags.invertEnv2 ? (65535) - p.envelopes[1].out : p.envelopes[1].out;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ void ENV_tick(void) {
 void ENV_setAttack(u8 env, u16 v) {
 	float dv = 65535;
 
-	envelopes[env].stages.attack = v; 
+	p.envelopes[env].stages.attack = v; 
 
 	if (v) {
 		dv = v;
@@ -108,7 +108,7 @@ void ENV_setAttack(u8 env, u16 v) {
 		dv -= 99;
 	}
 
-	envelopes[env].attackAccumValue = (u16) dv;
+	p.envelopes[env].attackAccumValue = (u16) dv;
 	#ifdef ENV_VERBOSE 
 	MIOS32_MIDI_SendDebugMessage("env %d: attack accum: %d", env, (u16) dv);
 	#endif
@@ -120,7 +120,7 @@ void ENV_setAttack(u8 env, u16 v) {
 void ENV_setDecay(u8 env, u16 v) {
 	float dv = 65535;
 
-	envelopes[env].stages.attack = v; 
+	p.envelopes[env].stages.attack = v; 
 
 	if (v) {
 		dv = v;
@@ -129,8 +129,8 @@ void ENV_setDecay(u8 env, u16 v) {
 		dv -= 99;
 	}
 		
-	envelopes[env].decayAccumValue = (u16) dv;
-	envelopes[env].stages.decay = v; 
+	p.envelopes[env].decayAccumValue = (u16) dv;
+	p.envelopes[env].stages.decay = v; 
 
 	#ifdef ENV_VERBOSE 
 	MIOS32_MIDI_SendDebugMessage("env %d: decay accum: %d", env, (u16) dv);
@@ -141,7 +141,7 @@ void ENV_setDecay(u8 env, u16 v) {
 // Sets the envelope's sustain level
 /////////////////////////////////////////////////////////////////////////////
 void ENV_setSustain(u8 env, u16 v) {
-	envelopes[env].stages.sustain = v;
+	p.envelopes[env].stages.sustain = v;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -155,8 +155,8 @@ void ENV_setRelease(u8 env, u16 v) {
 
 	dv /= v;
 		
-	envelopes[env].releaseAccumValue = dv;
-	envelopes[env].stages.release = v; 
+	p.envelopes[env].releaseAccumValue = dv;
+	p.envelopes[env].stages.release = v; 
 
 	#ifdef ENV_VERBOSE 
 	MIOS32_MIDI_SendDebugMessage("env %d: release accum: %d", env, (u16) dv);

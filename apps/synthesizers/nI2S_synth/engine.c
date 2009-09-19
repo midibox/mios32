@@ -11,7 +11,7 @@
  *  All other rights reserved.                                              *
  *                                                                          *
  ****************************************************************************/
-
+	
 /////////////////////////////////////////////////////////////////////////////
 // Include files
 /////////////////////////////////////////////////////////////////////////////
@@ -21,6 +21,7 @@
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
+#include "defs.h"
 #include "engine.h"
 #include "lfo.h"
 #include "filter.h"
@@ -36,29 +37,23 @@ static note_t noteStack[NOTESTACK_SIZE];		// last played notes
 static u8 noteStackIndex;						// index of last note
 static s8 noteStackLen;							// number of notes playing
 
-static trigger_col_t    trigger_matrix[TR_COLS];// trigger matrix
-	   voice_t			voice;					// voice struct
-static oscillator_t		oscillators[OSC_COUNT];	// the oscillators
-	   lfo_t			lfos[2];				// the LFOs
-	   envelope_t		envelopes[2];			// the envelopes
-	   filter_t			filter;					// the filter
-       engineflags_t	engineFlags;			// flag set for the engine
-       engineflags2_t	engineFlags2;			// flag set for the engine (internals)
-
 // routing sources per target
-	   routing_t		routing[ROUTING_TARGETS];
-
 	   u16 envelopeTime;	// divider for the 48kHz sample clock that clocks the env
        u16 lfoTime;			// divider for the 48kHz sample clock that clocks the lfof
 
 static u16 dead = 1;   	    // debug variable for sample calc overlap / timing
 
 static u16 delayIndex;		// write index of delayBuffer
+static u16 chorusIndex;		// write index of chorusBuffer
+static u16 chorusAccum;		// chorus "lfo" accumulator
+
 	   u16 tempValues[2];	// temporary values for whatever 
 
 	   u8 engine;			// selects the sound engine
 static u8 downsampled;	    // counter for downsampling
 static u8 delaysampled;	    // counter for downsampling of delay
+
+patch_t   p;				// the actual patch
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -71,10 +66,10 @@ void ENGINE_ReloadSampleBuffer(u32 state);
 /////////////////////////////////////////////////////////////////////////////
 u16 ENGINE_getModulator(u8 src) {
 	switch (src) {
-		case S_LFO1: 			return lfos[0].out;
-		case S_LFO2: 			return lfos[1].out;
-		case S_ENVELOPE1:		return envelopes[0].out;
-		case S_ENVELOPE2:		return envelopes[1].out;
+		case S_LFO1: 			return p.lfos[0].out;
+		case S_LFO2: 			return p.lfos[1].out;
+		case S_ENVELOPE1:		return p.envelopes[0].out;
+		case S_ENVELOPE2:		return p.envelopes[1].out;
 	}
 }
 
@@ -82,47 +77,49 @@ u16 ENGINE_getModulator(u8 src) {
 // a trigger point has been reached, take appropriate action
 /////////////////////////////////////////////////////////////////////////////
 u16 ENGINE_trigger(u8 trigger) {
-	if (trigger_matrix[trigger].lfo1_reset) { 
-		lfos[0].accumulator = 0;	// reset lfo accumulator
+	if (p.trigger_matrix[trigger].lfo1_reset) { 
+		p.lfos[0].accumulator = 0;	// reset lfo accumulator
 		
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> LFO 1 Reset", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].lfo2_reset) { 
-		lfos[1].accumulator = 0;	// reset lfo accumulator
+	if (p.trigger_matrix[trigger].lfo2_reset) { 
+		p.lfos[1].accumulator = 0;	// reset lfo accumulator
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> LFO 2 Reset", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env1_attack) { 
-		envelopes[0].accumulator = 0;		 // reset attack accumulator
-		envelopes[0].gate = 1;		 		 // open gate
-		envelopes[0].envelopeStage = ATTACK; // reset to ATTACK
+	if (p.trigger_matrix[trigger].env1_attack) { 
+		p.envelopes[0].accumulator = 0;		 // reset attack accumulator
+		p.envelopes[0].gate = 1;		 		 // open gate
+		p.envelopes[0].envelopeStage = ATTACK; // reset to ATTACK
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 1 Attack", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env1_decay)	{ 
+	if (p.trigger_matrix[trigger].env1_decay)	{ 
 		// accum doesn't need to be reset, as the decay just lowers the volume
 		// from wherever
-		envelopes[0].envelopeStage = DECAY;	
+		// edit: on second thought, it does... release still doesn't though
+		p.envelopes[0].accumulator = 65535;
+		p.envelopes[0].envelopeStage = DECAY;	
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 1 Decay", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env1_sustain) { 
+	if (p.trigger_matrix[trigger].env1_sustain) { 
 		// set sustain level to accum and change stage
-		envelopes[0].accumulator = envelopes[0].stages.sustain;
-		envelopes[0].envelopeStage = SUSTAIN;
-		
+		p.envelopes[0].accumulator = p.envelopes[0].stages.sustain;
+		p.envelopes[0].envelopeStage = SUSTAIN;
+
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 1 Sustain", trigger);
 		#endif		
@@ -131,40 +128,42 @@ u16 ENGINE_trigger(u8 trigger) {
 		ENGINE_trigger(TRIGGER_ENV1_SUSTAIN);
 	}
 
-	if (trigger_matrix[trigger].env1_release) { 
+	if (p.trigger_matrix[trigger].env1_release) { 
 		// accum doesn't need to be reset, as the release just lowers the volume
 		// from wherever
-		envelopes[0].envelopeStage = RELEASE;
+		p.envelopes[0].envelopeStage = RELEASE;
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 1 Release", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env2_attack) { 
-		envelopes[1].accumulator = 0;		 // reset attack accumulator
-		envelopes[1].gate = 1;		 		 // open gate
-		envelopes[1].envelopeStage = ATTACK; // reset to ATTACK
+	if (p.trigger_matrix[trigger].env2_attack) { 
+		p.envelopes[1].accumulator = 0;		 // reset attack accumulator
+		p.envelopes[1].gate = 1;		 		 // open gate
+		p.envelopes[1].envelopeStage = ATTACK; // reset to ATTACK
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 2 Attack", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env2_decay)	{ 
+	if (p.trigger_matrix[trigger].env2_decay)	{ 
 		// accum doesn't need to be reset, as the decay just lowers the volume
 		// from wherever
-		envelopes[1].envelopeStage = DECAY;	
+		// edit: on second thought, it does... release still doesn't though
+		p.envelopes[1].accumulator = 65535;
+		p.envelopes[1].envelopeStage = DECAY;	
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 2 Decay", trigger);
 		#endif		
 	}
 
-	if (trigger_matrix[trigger].env2_sustain) { 
+	if (p.trigger_matrix[trigger].env2_sustain) { 
 		// set sustain level to accum and change statge
-		envelopes[1].accumulator = envelopes[1].stages.sustain;
-		envelopes[1].envelopeStage = SUSTAIN;
+		p.envelopes[1].accumulator = p.envelopes[1].stages.sustain;
+		p.envelopes[1].envelopeStage = SUSTAIN;
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 2 Sustain", trigger);
@@ -173,10 +172,10 @@ u16 ENGINE_trigger(u8 trigger) {
 		ENGINE_trigger(TRIGGER_ENV2_SUSTAIN);
 	}
 
-	if (trigger_matrix[trigger].env2_release) { 
+	if (p.trigger_matrix[trigger].env2_release) { 
 		// accum doesn't need to be reset, as the release just lowers the volume
 		// from wherever
-		envelopes[1].envelopeStage = RELEASE;
+		p.envelopes[1].envelopeStage = RELEASE;
 
 		#ifdef TRIGGER_VERBOSE
 		MIOS32_MIDI_SendDebugMessage("trigger: %d -> Env 2 Release", trigger);
@@ -231,7 +230,10 @@ u16 ENGINE_modulateU(u16 input, u16 modulator, u16 depth) {
 /////////////////////////////////////////////////////////////////////////////
 void ENGINE_init(void) {
 	u8 n;
-	
+
+	for (n=0; n<32; n++)
+		p.name[n] = 'A' + n % 26;
+
 	noteStackLen = 0;
 	for (n=0; n<NOTESTACK_SIZE; n++) {
 		noteStack[n].note = 0;
@@ -239,29 +241,31 @@ void ENGINE_init(void) {
 	
 	engine = ENGINE_SYNTH;
 	
-	oscillators[0].pulsewidth = 16384;
-	oscillators[1].pulsewidth = 16384;
+	p.oscillators[0].pulsewidth = 16384;
+	p.oscillators[1].pulsewidth = 16384;
 	
-	oscillators[0].transpose = 0;
-	oscillators[1].transpose = -12;
+	p.oscillators[0].transpose = 0;
+	p.oscillators[1].transpose = -12;
 	
-	oscillators[0].volume = 65535;
-	oscillators[1].volume = 65535;
+	p.oscillators[0].volume = 65535;
+	p.oscillators[1].volume = 65535;
 
-	oscillators[0].pitchbend.upRange = 2;
-	oscillators[0].pitchbend.downRange = 12;
+	p.oscillators[0].pitchbend.upRange = 2;
+	p.oscillators[0].pitchbend.downRange = 12;
 
-	oscillators[1].pitchbend.upRange = 2;
-	oscillators[1].pitchbend.downRange = 24;
+	p.oscillators[1].pitchbend.upRange = 2;
+	p.oscillators[1].pitchbend.downRange = 24;
 
 	ENGINE_setOscWaveform(0, 0x08);
 	ENGINE_setOscWaveform(0, 0x10);
 
-	voice.masterVolume = 65535;
+	p.voice.masterVolume = 65535;
+	p.voice.delayDownsample = 0;
+	delaysampled = 0;
 
-	filter.filterType = FILTER_RES_LP;
-	filter.cutoff = 65535;
-	filter.resonance = 0;
+	p.filter.filterType = FILTER_RES_LP;
+	p.filter.cutoff = 65535;
+	p.filter.resonance = 0;
 
 	ENV_setAttack(0, 0);
 	ENV_setDecay(0, 0);
@@ -273,24 +277,24 @@ void ENGINE_init(void) {
 	ENV_setSustain(1, 50000);
 	ENV_setRelease(1, 32767);
 
-	routing[T_CUTOFF].source = S_NONE;
-	routing[T_MASTER_VOLUME].source = S_NONE;
-	routing[T_OSC1_PITCH].source = S_NONE;
-	routing[T_OSC2_PITCH].source = S_NONE;
+	p.routing[T_CUTOFF].source = S_NONE;
+	p.routing[T_MASTER_VOLUME].source = S_NONE;
+	p.routing[T_OSC1_PITCH].source = S_NONE;
+	p.routing[T_OSC2_PITCH].source = S_NONE;
 
-	routing[T_CUTOFF].depth = 0;
-	routing[T_MASTER_VOLUME].depth = 0;
-	routing[T_OSC1_PITCH].depth = 0;
-	routing[T_OSC2_PITCH].depth = 0;
+	p.routing[T_CUTOFF].depth = 0;
+	p.routing[T_MASTER_VOLUME].depth = 0;
+	p.routing[T_OSC1_PITCH].depth = 0;
+	p.routing[T_OSC2_PITCH].depth = 0;
 	
-	engineFlags.reattackOnSteal = 0;
-	engineFlags.interpolate = 1;
-	engineFlags.syncOsc2 = 0;
-	engineFlags.dcf = 0;
+	p.engineFlags.reattackOnSteal = 0;
+	p.engineFlags.interpolate = 1;
+	p.engineFlags.syncOsc2 = 0;
+	p.engineFlags.dcf = 0;
 	
-	oscillators[0].portaMode = PORTA_NONE;
-	oscillators[1].portaMode = PORTA_NONE;
-	
+	p.oscillators[0].portaMode = PORTA_NONE;
+	p.oscillators[1].portaMode = PORTA_NONE;
+
 	#ifdef ENGINE_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("Done booting.");
     // debug: initialize the stopwatch for 100 uS resolution
@@ -338,7 +342,7 @@ void ENGINE_noteOff(u8 note) {
 					if (noteStack[p].note > 0) {
 						// switch to that note
 						noteStackIndex = (p-1) & (NOTESTACK_SIZE - 1);
-						ENGINE_noteOn(noteStack[p].note, noteStack[p].velocity, 1);
+						ENGINE_noteOn(noteStack[p].note, noteStack[p].velocity, STEAL);
 						
 						// kthxbye
 						return;
@@ -365,58 +369,78 @@ void ENGINE_noteOff(u8 note) {
 void ENGINE_noteOn(u8 note, u8 vel, u8 steal)
 {
 	u16 pA1, pA2;
-	pA1 = oscillators[0].portaStart;
-	pA2 = oscillators[1].portaStart;
+	pA1 = p.oscillators[0].portaStart;
+	pA2 = p.oscillators[1].portaStart;
 
 	u8 reattack;
 	
+	#ifdef ENGINE_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("ENGINE_noteOn(%d, %d, %d)", note, vel, steal);
+	#endif
+
+	#ifdef TRIGGER_VERBOSE
+	if (note || vel) {
+		MIOS32_MIDI_SendDebugMessage("ENGINE_noteOn(): real note call");
+	} else {
+		MIOS32_MIDI_SendDebugMessage("ENGINE_noteOn(): transpose call");
+	} 
+	#endif
+
 	// fixme: split into two depending on channel
-	
-	oscillators[0].accumNote = note;
-	oscillators[1].accumNote = note;
 
-	oscillators[0].velocity = vel;
-	oscillators[1].velocity = vel;
+	// is this not just a transpose rushing through?
+	if (note || vel) {
+		// it's a real note, set the stuff
+		p.oscillators[0].accumNote = note;
+		p.oscillators[1].accumNote = note;
 
-	oscillators[0].accumValue = accumValueByNote[note + oscillators[0].transpose];
-	oscillators[1].accumValue = accumValueByNote[note + oscillators[1].transpose];
-
-	noteStackIndex = (noteStackIndex + 1) & (NOTESTACK_SIZE - 1);
-	noteStack[noteStackIndex].note = note;
-	noteStack[noteStackIndex].velocity = vel;
-
-	// fixme: reset envelope if desired should be from trigger / same for porta
-	if ((noteStackLen == 0) || engineFlags.reattackOnSteal) {
-		// trigger matrix NOTE_ON
-		#ifdef TRIGGER_VERBOSE
-		MIOS32_MIDI_SendDebugMessage("ENGINE_noteOn(): triggering NOTE ON");
-		#endif
-
-		ENGINE_trigger(TRIGGER_NOTEON); 
+		p.oscillators[0].velocity = vel;
+		p.oscillators[1].velocity = vel;
 	}
 
-	if (!steal)
-		noteStackLen++;
+	p.oscillators[0].accumValue = accumValueByNote[p.oscillators[0].accumNote + p.oscillators[0].transpose];
+	p.oscillators[1].accumValue = accumValueByNote[p.oscillators[1].accumNote + p.oscillators[1].transpose];
 
+	// is this not just a transpose rushing through?
+	if (note || vel) {
+		// it's a real note, set the stuff
+		noteStackIndex = (noteStackIndex + 1) & (NOTESTACK_SIZE - 1);
+		noteStack[noteStackIndex].note = note;
+		noteStack[noteStackIndex].velocity = vel;
+
+		// fixme: reset envelope if desired should be from trigger / same for porta
+		if ((noteStackLen == 0) || p.engineFlags.reattackOnSteal) {
+			// trigger matrix NOTE_ON
+			#ifdef TRIGGER_VERBOSE
+			MIOS32_MIDI_SendDebugMessage("ENGINE_noteOn(): triggering NOTE ON");
+			#endif
+
+			ENGINE_trigger(TRIGGER_NOTEON); 
+		}
+
+		if (!steal)
+			noteStackLen++;
+	}
+	
 	#ifdef ENGINE_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("noteStackLen = %d", noteStackLen);
 	#endif
 
-	ENGINE_setPitchbend(0, oscillators[0].pitchbend.value);
-	ENGINE_setPitchbend(1, oscillators[1].pitchbend.value);
+	ENGINE_setPitchbend(0, p.oscillators[0].pitchbend.value);
+	ENGINE_setPitchbend(1, p.oscillators[1].pitchbend.value);
 
 	reattack = (noteStackLen > 1) || steal;
 	
-	if ((oscillators[0].portaMode) && reattack) {
-		oscillators[0].portaStart = pA1;
+	if ((p.oscillators[0].portaMode) && reattack) {
+		p.oscillators[0].portaStart = pA1;
 	} else {
-		oscillators[0].portaStart = oscillators[0].pitchedAccumValue;
+		p.oscillators[0].portaStart = p.oscillators[0].pitchedAccumValue;
 	}
 	
-	if ((oscillators[1].portaMode) && reattack) {
-		oscillators[1].portaStart = pA2;
+	if ((p.oscillators[1].portaMode) && reattack) {
+		p.oscillators[1].portaStart = pA2;
 	} else {
-		oscillators[1].portaStart = oscillators[1].pitchedAccumValue;
+		p.oscillators[1].portaStart = p.oscillators[1].pitchedAccumValue;
 	}
 }
 
@@ -460,7 +484,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		
 		/* OSCILLATOR ACCUMULATORS *******************************************/
 		// calculate oscillator accumulators individually
-		o = &oscillators[0];
+		o = &p.oscillators[0];
 		utout2 = o->accumulator;
 		ac = o->pitchedAccumValue;
 
@@ -480,10 +504,10 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 			}
 		}
 
-		if (routing[T_OSC1_PITCH].source) {
+		if (p.routing[T_OSC1_PITCH].source) {
 			// there's a source assigned
-			ac = ENGINE_modulateU(ac, ENGINE_getModulator(routing[T_OSC1_PITCH].source), routing[T_OSC1_PITCH].depth);
-			// ac += (ENGINE_getModulator(routing[T_OSC1_PITCH].source) >> 3);
+			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.routing[T_OSC1_PITCH].source), p.routing[T_OSC1_PITCH].depth);
+			// ac += (ENGINE_getModulator(p.routing[T_OSC1_PITCH].source) >> 3);
 			// ac >>= 1;
 			// fixme: blend it in!
 		} 
@@ -494,9 +518,9 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		o->subAccumulator += ac;
 		
 		// oscillator 2
-		o = &oscillators[1];
+		o = &p.oscillators[1];
 		
-		if ((engineFlags.syncOsc2) && (oscillators[0].accumulator < utout2)) 
+		if ((p.engineFlags.syncOsc2) && (p.oscillators[0].accumulator < utout2)) 
 			o->accumulator = 0;
 		else {
 			// T_OSC2_PITCH is right here
@@ -518,9 +542,9 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 				}
 			}
 			
-			if (routing[T_OSC2_PITCH].source) {
+			if (p.routing[T_OSC2_PITCH].source) {
 				// there's a source assigned
-				utout2 = ENGINE_modulateU(utout2, ENGINE_getModulator(routing[T_OSC2_PITCH].source), routing[T_OSC2_PITCH].depth);
+				utout2 = ENGINE_modulateU(utout2, ENGINE_getModulator(p.routing[T_OSC2_PITCH].source), p.routing[T_OSC2_PITCH].depth);
 				// fixme: blend it in!
 			} 
 
@@ -532,16 +556,16 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 	
 		// downsampling ***********************************************************
 		// T_SAMPLERATE is right here
-		utout = voice.downsample;
-		if (routing[T_SAMPLERATE].source) {
+		utout = p.voice.downsample;
+		if (p.routing[T_SAMPLERATE].source) {
 			// there's a source assigned
-			utout = ENGINE_modulateU(utout, ENGINE_getModulator(routing[T_SAMPLERATE].source), routing[T_SAMPLERATE].depth);
+			utout = ENGINE_modulateU(utout, ENGINE_getModulator(p.routing[T_SAMPLERATE].source), p.routing[T_SAMPLERATE].depth);
 			if (downsampled > utout)
 				downsampled = utout;
 		}
 		
 		if (utout != downsampled) {
-			out = voice.lastSample;
+			out = p.voice.lastSample;
 			*buffer++ = out << 16 | out;
 			downsampled++;
 			continue;
@@ -554,7 +578,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		for (osc=0; osc<OSC_COUNT; osc++) {
 			u16 acc;
 			s32 acc32;
-			o = &oscillators[osc];
+			o = &p.oscillators[osc];
 
 			/***********************************************************
 			 * calculate sub oscillator                                *
@@ -610,7 +634,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 			acc32 += (o->subSample * o->subOscVolume) / 65536;
 			acc32 /= 2;
 
-			// fixme vel curve
+			// fixme: vel curve
 			// acc = (o->velocity > 0x40) ? o->velocity : 0x40; 
 			// set velocity
 			acc32 *= o->velocity;
@@ -623,27 +647,34 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 			o->sample = acc32;
 		} // individual oscillators
 
-		// merge the two oscialltors into one stream
-		tout = oscillators[0].sample;
-		tout *= oscillators[0].volume;
+		// merge the two oscillators into one stream
+		tout = p.oscillators[0].sample;
+		tout *= p.oscillators[0].volume;
 		tout /= 32768;
 
-		tout2 = oscillators[1].sample;
-		tout2 *= oscillators[1].volume;
+		tout2 = p.oscillators[1].sample;
+		tout2 *= p.oscillators[1].volume;
 		tout2 /= 32768;
 		
-		tout += tout2;
-		tout /= 4;
+		if (p.engineFlags.ringmod) {
+			tout /= 2;
+			tout2 /= 2;
+			tout *= tout2;
+			tout /= 65536;
+		} else {
+			tout += tout2;
+			tout /= 4;
+		}
 
 /* PHASE DISTORTION FUN
-		tout = oscillators[0].sample;
-		tout *= oscillators[0].volume;
+		tout = p.oscillators[0].sample;
+		tout *= p.oscillators[0].volume;
 		tout /= 32768;
 
-		tout2 = oscillators[1].sample;
-		tout2 *= oscillators[0].accumValue;
+		tout2 = p.oscillators[1].sample;
+		tout2 *= p.oscillators[0].accumValue;
 		tout2 /= 65536;
-		tout2 *= oscillators[1].volume;
+		tout2 *= p.oscillators[1].volume;
 		tout2 /= 32768;
 
 		tout += tout2;
@@ -654,7 +685,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		tout = ENGINE_postProcess(tout);
 		
 		// save last sample
-		voice.lastSample = tout;
+		p.voice.lastSample = tout;
 		
 		// write sample to output buffer 
 		out = tout;
@@ -663,13 +694,13 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 	}
 	
 	// debug: measure time for 8 samples
-	#ifdef ENGINE_VERBOSE
+	#ifdef ENGINE_VERBOSE_MAX
 	if (!dead) {
 		// send execution time via MIDI interface
 		u32 delay = MIOS32_STOPWATCH_ValueGet();
 		delay *= 1000;
 		delay /= 333;
-		MIOS32_MIDI_SendDebugMessage("%d.%d%%", delay/10, delay % 10);	
+		MIOS32_MIDI_SendDebugMessage("d.%d%%", delay/10, delay % 10);	
 
 		// reset timer to measure every 6000th iteration (1Hz)
 		dead = 6000;
@@ -690,29 +721,31 @@ void ENGINE_setOscWaveform(u8 osc, u16 flags) {
 	}
 	
 	// fixme setting both in parallel
-	oscillators[osc].waveforms.all = flags;
-	oscillators[osc].waveformCount = n;
+	p.oscillators[osc].waveforms.all = flags;
+	p.oscillators[osc].waveformCount = n;
 }
 
 void ENGINE_setOscVolume(u8 osc, u16 vol) {
 	if (osc > 1) return;
 	
-	oscillators[osc].volume = vol;
+	p.oscillators[osc].volume = vol;
 }
 
 void ENGINE_setOscFinetune(u8 osc, s8 ft) {
-	oscillators[osc].finetune = (ft < 0) ? -(ft * ft) / 128 : (ft * ft) / 128;
+	p.oscillators[osc].finetune = (ft < 0) ? -(ft * ft) / 128 : (ft * ft) / 128;
 }
 
 
 void ENGINE_setOscTranspose(u8 osc, s8 trans) {
-	oscillators[osc].transpose = trans;
+	p.oscillators[osc].transpose = trans;
 
 	// update accum values
-	oscillators[osc].accumValue = accumValueByNote[noteStack[noteStackIndex].note + oscillators[osc].transpose];
+	p.oscillators[osc].accumValue = accumValueByNote[noteStack[noteStackIndex].note + p.oscillators[osc].transpose];
 
 	// ENGINE_setPitchbend(2, 0);
-	ENGINE_noteOn(oscillators[osc].accumNote, oscillators[osc].velocity, 0);
+	// if there's a note playing only reset the pitch, do not affect the noteStack
+	if (noteStackLen)
+		ENGINE_noteOn(0, 0, STEAL);
 }
 
 void ENGINE_setPitchbend(u8 osc, s16 pb) {
@@ -722,7 +755,7 @@ void ENGINE_setPitchbend(u8 osc, s16 pb) {
 		osc = 0;
 	}
 	
-	oscillator_t *o = &oscillators[osc];
+	oscillator_t *o = &p.oscillators[osc];
 	
 	// save pb value
 	o->pitchbend.value = pb;
@@ -763,20 +796,24 @@ void ENGINE_setPitchbend(u8 osc, s16 pb) {
 }
 
 void ENGINE_setMasterVolume(u16 vol) {
-	voice.masterVolume = vol;
+	p.voice.masterVolume = vol;
 }
 
-void ENGINE_setEngineFlags(u8 f) {
-	engineFlags.all = f;
+void ENGINE_setEngineFlags(u16 f) {
+	p.engineFlags.all = f;
+	
+	#ifdef ENGINE_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("engineFlags: %d / %d", p.engineFlags.all, f);
+	#endif
 }
 
 void ENGINE_setOscPW(u8 osc, u16 pw) {
 	// fixme: "both" mode
-	oscillators[osc].pulsewidth = pw;
+	p.oscillators[osc].pulsewidth = pw;
 }
 
 void ENGINE_setRouteDepth(u8 trgt, u16 d) {
-	routing[trgt].depth = d;
+	p.routing[trgt].depth = d;
 }
 
 void ENGINE_setRoute(u8 trgt, u8 src) {
@@ -786,7 +823,7 @@ void ENGINE_setRoute(u8 trgt, u8 src) {
 	// abort on invalid source
 	if (src >= ROUTING_SOURCES) return;
 
-	routing[trgt].source = src;
+	p.routing[trgt].source = src;
 
 	#ifdef ENGINE_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("target[%d].source = %d;", trgt, src);
@@ -794,119 +831,134 @@ void ENGINE_setRoute(u8 trgt, u8 src) {
 }
 
 void ENGINE_setOverdrive(u16 od) {
-	voice.overdrive = od;
+	p.voice.overdrive = od;
 }
 
 void ENGINE_setXOR(u16 xor) {
-	voice.xor = xor;
+	p.voice.xor = xor;
 }
 
 void ENGINE_setPitchbendUpRange(u8 osc, u8 pb) {
-	oscillators[osc].pitchbend.upRange = pb;
-	ENGINE_setPitchbend(0, oscillators[osc].pitchbend.value);
+	p.oscillators[osc].pitchbend.upRange = pb;
+	ENGINE_setPitchbend(0, p.oscillators[osc].pitchbend.value);
 }
 
 void ENGINE_setPitchbendDownRange(u8 osc, u8 pb) {
-	oscillators[osc].pitchbend.downRange = pb;
-	ENGINE_setPitchbend(0, oscillators[osc].pitchbend.value);
+	p.oscillators[osc].pitchbend.downRange = pb;
+	ENGINE_setPitchbend(0, p.oscillators[osc].pitchbend.value);
 }
 
 void ENGINE_setPortamentoRate(u8 osc, u16 portamento) {
 	if (portamento < 65000)
-		oscillators[osc].portaRate = portamento;
+		p.oscillators[osc].portaRate = portamento;
 	else
-		oscillators[osc].portaRate = 65000;
+		p.oscillators[osc].portaRate = 65000;
 }
 
 void ENGINE_setPortamentoMode(u8 osc, u8 mode) {
-	oscillators[osc].portaMode = mode;
+	p.oscillators[osc].portaMode = mode;
 }
 
 void ENGINE_setBitcrush(u8 resolution) {
 	if (resolution < 15) 
-		voice.bitcrush = resolution;
+		p.voice.bitcrush = resolution;
 }
 
 void ENGINE_setDelayTime(u16 time) {
 	if (time < 16381)
-		voice.delayTime = time;
+		p.voice.delayTime = time;
 }
 
 void ENGINE_setDelayFeedback(u16 feedback) {
-	voice.delayFeedback = feedback;
+	p.voice.delayFeedback = feedback;
+}
+
+void ENGINE_setChorusTime(u16 time) {
+	u16 d;
+	
+	d = time >> 8;
+	d *= d;
+	d >>= 6;
+	d += 1;
+	
+	p.voice.chorusTime = d;
+}
+
+void ENGINE_setChorusFeedback(u16 feedback) {
+	p.voice.chorusFeedback = feedback;
 }
 
 void ENGINE_setTriggerColumn(u8 row, u16 value) {
 	if (row < TR_ROWS)
-		trigger_matrix[row].all = value;
+		p.trigger_matrix[row].all = value;
 		
 	#ifdef TRIGGER_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("trigger: column %d = %x", row, value);
 	
 	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].lfo1_reset, 
-		trigger_matrix[1].lfo1_reset, 
-		trigger_matrix[2].lfo1_reset, 
-		trigger_matrix[3].lfo1_reset);
+		p.trigger_matrix[0].lfo1_reset, 
+		p.trigger_matrix[1].lfo1_reset, 
+		p.trigger_matrix[2].lfo1_reset, 
+		p.trigger_matrix[3].lfo1_reset);
 
 	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].lfo2_reset, 
-		trigger_matrix[1].lfo2_reset, 
-		trigger_matrix[2].lfo2_reset, 
-		trigger_matrix[3].lfo2_reset);
+		p.trigger_matrix[0].lfo2_reset, 
+		p.trigger_matrix[1].lfo2_reset, 
+		p.trigger_matrix[2].lfo2_reset, 
+		p.trigger_matrix[3].lfo2_reset);
 	
 	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env1_attack, 
-		trigger_matrix[1].env1_attack, 
-		trigger_matrix[2].env1_attack, 
-		trigger_matrix[3].env1_attack);
+		p.trigger_matrix[0].env1_attack, 
+		p.trigger_matrix[1].env1_attack, 
+		p.trigger_matrix[2].env1_attack, 
+		p.trigger_matrix[3].env1_attack);
 	
 	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env1_decay, 
-		trigger_matrix[1].env1_decay, 
-		trigger_matrix[2].env1_decay, 
-		trigger_matrix[3].env1_decay);
+		p.trigger_matrix[0].env1_decay, 
+		p.trigger_matrix[1].env1_decay, 
+		p.trigger_matrix[2].env1_decay, 
+		p.trigger_matrix[3].env1_decay);
 
 	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env1_sustain, 
-		trigger_matrix[1].env1_sustain, 
-		trigger_matrix[2].env1_sustain, 
-		trigger_matrix[3].env1_sustain);
+		p.trigger_matrix[0].env1_sustain, 
+		p.trigger_matrix[1].env1_sustain, 
+		p.trigger_matrix[2].env1_sustain, 
+		p.trigger_matrix[3].env1_sustain);
+
+	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
+		p.trigger_matrix[0].env1_release, 
+		p.trigger_matrix[1].env1_release, 
+		p.trigger_matrix[2].env1_release, 
+		p.trigger_matrix[3].env1_release);
+	
+	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
+		p.trigger_matrix[0].env2_attack, 
+		p.trigger_matrix[1].env2_attack, 
+		p.trigger_matrix[2].env2_attack, 
+		p.trigger_matrix[3].env2_attack);
+	
+	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
+		p.trigger_matrix[0].env2_decay, 
+		p.trigger_matrix[1].env2_decay, 
+		p.trigger_matrix[2].env2_decay, 
+		p.trigger_matrix[3].env2_decay);
+
+	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
+		p.trigger_matrix[0].env2_sustain, 
+		p.trigger_matrix[1].env2_sustain, 
+		p.trigger_matrix[2].env2_sustain, 
+		p.trigger_matrix[3].env2_sustain);
 
 		MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env1_release, 
-		trigger_matrix[1].env1_release, 
-		trigger_matrix[2].env1_release, 
-		trigger_matrix[3].env1_release);
-	
-	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env2_attack, 
-		trigger_matrix[1].env2_attack, 
-		trigger_matrix[2].env2_attack, 
-		trigger_matrix[3].env2_attack);
-	
-	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env2_decay, 
-		trigger_matrix[1].env2_decay, 
-		trigger_matrix[2].env2_decay, 
-		trigger_matrix[3].env2_decay);
-
-	MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env2_sustain, 
-		trigger_matrix[1].env2_sustain, 
-		trigger_matrix[2].env2_sustain, 
-		trigger_matrix[3].env2_sustain);
-
-		MIOS32_MIDI_SendDebugMessage("%d %d %d %d", 
-		trigger_matrix[0].env2_release, 
-		trigger_matrix[1].env2_release, 
-		trigger_matrix[2].env2_release, 
-		trigger_matrix[3].env2_release);
+		p.trigger_matrix[0].env2_release, 
+		p.trigger_matrix[1].env2_release, 
+		p.trigger_matrix[2].env2_release, 
+		p.trigger_matrix[3].env2_release);
 	#endif
 }
 
 void ENGINE_setSubOscVolume(u8 osc, u16 vol) {
-	oscillators[osc].subOscVolume = vol;
+	p.oscillators[osc].subOscVolume = vol;
 }
 
 void ENGINE_setEngine(u8 e) {
@@ -947,17 +999,16 @@ s16 ENGINE_postProcess(s16 sample) {
 	s32 tout2;
 	s32 tout = sample;
 
-	if (engineFlags.overdrive) {
-		s32 od = tout;
+	if (p.engineFlags.overdrive) {
 		u16 d;
-		u32 drive = voice.overdrive;
+		u32 drive = p.voice.overdrive;
 
 		// T_OVERDRIVE is right here
-		if (routing[T_OVERDRIVE].source) {
+		if (p.routing[T_OVERDRIVE].source) {
 			// there's a source assigned
 			drive = ENGINE_modulateU(
-						ENGINE_getModulator(routing[T_OVERDRIVE].source), 
-						routing[T_OVERDRIVE].depth, drive);
+						ENGINE_getModulator(p.routing[T_OVERDRIVE].source), 
+						p.routing[T_OVERDRIVE].depth, drive);
 		}
 		
 		drive *= drive;
@@ -967,34 +1018,36 @@ s16 ENGINE_postProcess(s16 sample) {
 		if (drive < 2048)	
 			drive = 2048;
 
-		od *= drive;
-		od /= 2048;
+		tout *= drive;
+		tout /= 2048;
 
-		if (od < -32768) od = -32768;
-		if (od > 32767)  od = 32767;
+		// clip
+		if (tout < -32768)
+			tout = -32768;
+		else
+		if (tout > 32767)
+			tout = 32767;
+	} // drive
 
-		tout = od;
-	}
-
-	if (engineFlags.dcf) {
+	if (p.engineFlags.dcf && p.filter.filterType) {
 		// routing target T_CUTOFF is right here
-		if (routing[T_CUTOFF].source) {
+		if (p.routing[T_CUTOFF].source) {
 			// there's a source assigned
 			// fixme: there's oddness
-			tout2 = ENGINE_modulateU(filter.cutoff, ENGINE_getModulator(routing[T_CUTOFF].source), routing[T_CUTOFF].depth);
+			uval = ENGINE_modulateU(p.filter.cutoff, ENGINE_getModulator(p.routing[T_CUTOFF].source), p.routing[T_CUTOFF].depth);
 		} else {
 			// not an assigned target, use manual control only
-			tout2 = filter.cutoff;
+			uval = p.filter.cutoff;
 		}
 		
-		// fixme: filters still operate on 0..65535
-		tout = FILTER_filter(tout, tout2);
-	}
+		// fixme: filters still operates on 0..65535, working on it ;)
+		tout = FILTER_filter(tout, uval);
+	} // filter
 
 	// routing target T_MASTER_VOLUME is right here
-	if (routing[T_MASTER_VOLUME].source) {
+	if (p.routing[T_MASTER_VOLUME].source) {
 		// there's a source assigned
-		uval = ENGINE_getModulator(routing[T_MASTER_VOLUME].source) * routing[T_MASTER_VOLUME].depth;
+		uval = ENGINE_getModulator(p.routing[T_MASTER_VOLUME].source) * p.routing[T_MASTER_VOLUME].depth;
 		uval /= 65536;
 		tout *= uval;
 		tout /= 65536;
@@ -1003,45 +1056,71 @@ s16 ENGINE_postProcess(s16 sample) {
 		// nothing to see here move along
 	}
 
-	// bitcrush
-	tout >>= voice.bitcrush;
-	tout <<= voice.bitcrush;		
+	// fixme: bitcrush
+	tout >>= p.voice.bitcrush;
+	tout <<= p.voice.bitcrush;		
 	
 	// XOR
-	tout ^= voice.xor;
+	tout ^= p.voice.xor;
+
+	// add chorus
+	if (p.engineFlags.chorus) {
+		// optimize-me: math?
+		// accumulate time shift
+		chorusAccum += p.voice.chorusTime;
+		// get sinewave
+		uval = sineTable512[chorusAccum >> 7];
+		// "log" 
+		uval *= sqrtTable[p.voice.chorusFeedback >> 7];
+		uval = sqrtTable[uval >> 23];
+		// get into desired timing range
+		uval /= 432;
+		// offset with base time
+		uval += 193;
+		tout2 = chorusBuffer[(chorusIndex - uval) & 0x1FFF];
+		tout += tout2;
+		tout /= 2;
+ 
+		// save to chorus buffer
+		chorusBuffer[chorusIndex & 0x1FFF] = tout;
+		chorusIndex++;
+	}
 
 	// add delay
-	tout2 = delayBuffer[(delayIndex - voice.delayTime) & 0x3FFF];
-	tout2 *= voice.delayFeedback;
-	tout2 /= 65536;
-	tout += tout2;
-	tout >>= 1;
+	if (p.engineFlags.delay) {
+		tout2 = delayBuffer[(delayIndex - p.voice.delayTime) & 0x3FFF];
+		tout2 *= p.voice.delayFeedback;
+		tout2 /= 65536;
+		tout += tout2;
+		tout /= 2; // fixme: this shouldn't be delay/2 but /(1+(delayFeeback/65536))
 
-	// save to delay buffer
-	if (delaysampled == 0) {
-		delayBuffer[delayIndex & 0x3FFF] = tout;
-		delayIndex++;
-		delaysampled = voice.delayDownsample;
-	} else
-		delaysampled--;
+		// save to delay buffer
+		if (delaysampled) {
+			delaysampled--;
+		} else {
+			delayBuffer[delayIndex & 0x3FFF] = tout;
+			delayIndex++;
+			delaysampled = p.voice.delayDownsample;
+		}		
+	}
 
 	// median with last sample
-	if (engineFlags.interpolate)
-		tout = (tout + voice.lastSample) / 2;
+	if (p.engineFlags.interpolate)
+		tout = (tout + p.voice.lastSample) / 2;
 		
 	// set volume
-	tout *= voice.masterVolume; 
+	tout *= p.voice.masterVolume; 
 	tout /= 65536;
 
 	return tout;
 }
 
 void ENGINE_setDownsampling(u8 rate) {
-	voice.downsample = rate;
+	p.voice.downsample = rate;
 }
 
 void ENGINE_setDelayDownsample(u8 downsample) {
-	voice.delayDownsample = downsample;
+	p.voice.delayDownsample = downsample;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1051,15 +1130,15 @@ void ENGINE_setDelayDownsample(u8 downsample) {
 void ENGINE_setTempValue(u8 index, u16 value) {
 	tempValues[index] = value;
 	#ifdef ENGINE_VERBOSE
-	MIOS32_MIDI_SendDebugMessage("%d %d", tempValues[0], tempValues[1]);
+	MIOS32_MIDI_SendDebugMessage("Temp values: %d %d", tempValues[0], tempValues[1]);
 	#endif
 }
 
 void tempMute(void) {
-	voice.masterVolume = 0;
+	p.voice.masterVolume = 0;
 }
 
 void tempSetPulsewidth(u16 c) {
-	oscillators[0].pulsewidth = c * 512;
-	oscillators[1].pulsewidth = c * 512;
+	p.oscillators[0].pulsewidth = c * 512;
+	p.oscillators[1].pulsewidth = c * 512;
 }

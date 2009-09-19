@@ -34,10 +34,10 @@ static u32 fb;
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-u16 FILTER_resonantLP(u16 in, u16 cutoff);
-u16 FILTER_simpleLP(u16 in, u16 cutoff);
-u16 FILTER_moogLP(u16 in, u16 resonance, u16 cutoff);
-s16 FILTER_svf(s16 in, u8 mode);
+s16 FILTER_resonantLP(s16 in, u16 cutoff);
+s16 FILTER_simpleLP(s16 in, u16 cutoff);
+s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff);
+s16 FILTER_svf(s16 in, u16 cutoff, u8 mode);
 
 void FILTER_resonantLP_Init();
 void FILTER_svf_Init();
@@ -49,17 +49,17 @@ void FILTER_resonantLP_Init() {
 	u16 c;
 	u16 a;
 
-	c = (filter.cutoff == 0) ? 1 : filter.cutoff;
+	c = (p.filter.cutoff == 0) ? 1 : p.filter.cutoff;
 	
 	// fb = q + q/(1.0 - f);
-	a = filter.resonance;
+	a = p.filter.resonance;
 	// b = (32768 - cutoff >> 1);
 	a /= c;
-	fb = filter.resonance + a;
+	fb = p.filter.resonance + a;
 }
 
 void FILTER_initFilter() {
-	switch (filter.filterType) {
+	switch (p.filter.filterType) {
 		case (FILTER_MOOG_LP):
 			FILTER_resonantLP_Init();
 			break;
@@ -74,20 +74,20 @@ void FILTER_initFilter() {
 /////////////////////////////////////////////////////////////////////////////
 // returns the filtered input depending on selected filter type
 /////////////////////////////////////////////////////////////////////////////
-u16 FILTER_filter(u16 in, u16 cutoff) {
-	switch (filter.filterType) {
+s16 FILTER_filter(s16 in, u16 cutoff) {
+	switch (p.filter.filterType) {
 		case FILTER_LP:
-			return (s16) FILTER_simpleLP(in + 32768, cutoff) - 32768;
+			return FILTER_simpleLP(in, cutoff);
 		case FILTER_RES_LP:
 			return (s16) FILTER_resonantLP(in + 32768, cutoff) - 32768;
 		case FILTER_MOOG_LP:
-			return FILTER_moogLP(in, filter.resonance, cutoff);
+			return FILTER_moogLP(in, p.filter.resonance, cutoff);
 		case FILTER_SVF_LOWPASS:
-			return FILTER_svf(in, FILTER_SVF_LOWPASS);
+			return FILTER_svf(in, cutoff, FILTER_SVF_LOWPASS);
 		case FILTER_SVF_BANDPASS:
-			return FILTER_svf(in, FILTER_SVF_BANDPASS);
+			return FILTER_svf(in, cutoff, FILTER_SVF_BANDPASS);
 		case FILTER_SVF_HIGHPASS:
-			return FILTER_svf(in, FILTER_SVF_HIGHPASS);
+			return FILTER_svf(in, cutoff, FILTER_SVF_HIGHPASS);
 		default: 
 			return in;
 	}
@@ -96,7 +96,7 @@ u16 FILTER_filter(u16 in, u16 cutoff) {
 /////////////////////////////////////////////////////////////////////////////
 // simple resonant low pass filter
 /////////////////////////////////////////////////////////////////////////////
-u16 FILTER_resonantLP(u16 in, u16 cutoff) {
+s16 FILTER_resonantLP(s16 in, u16 cutoff) {
 	s32 d, e, f;
 
 	cutoff = (cutoff == 0) ? 1 : cutoff;
@@ -128,22 +128,23 @@ u16 FILTER_resonantLP(u16 in, u16 cutoff) {
 /////////////////////////////////////////////////////////////////////////////
 // basic low pass filter
 /////////////////////////////////////////////////////////////////////////////
-u16 FILTER_simpleLP(u16 in, u16 cutoff) {
+s16 FILTER_simpleLP(s16 in, u16 cutoff) {
+	u16 i = in + 32768;
 	u16 c = 65535 - cutoff;
 	
-	if (buf0 < in) {
-		buf0 = in - buf0;
+	if (buf0 < i) {
+		buf0 = i - buf0;
 		buf0 *= c;
 		buf0 >>= 16;
-		buf0 = in - buf0;
+		buf0 = i - buf0;
 	} else {
-		buf0 = buf0 - in;
+		buf0 = buf0 - i;
 		buf0 *= c;
 		buf0 >>= 16;
-		buf0 = in + buf0;
+		buf0 = i + buf0;
 	}
 	
-	return buf0;
+	return (s16) (buf0 - 32768);
 }
 
 s32		stg2in = 0; // Input value for the second stage 
@@ -179,7 +180,7 @@ static const u16 tanh_table[256] = {
 /////////////////////////////////////////////////////////////////////////////
 // antti's moog low pass filter
 /////////////////////////////////////////////////////////////////////////////
-u16 FILTER_moogLP(u16 in, u16 resonance, u16 cutoff)
+s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 {
 	#define RES_SCALE 32767
 	#define CUT_SCALE 65535
@@ -404,7 +405,7 @@ u16 FILTER_moogLP(u16 in, u16 resonance, u16 cutoff)
 // sets the filter's cutoff
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setCutoff(u16 c) {
-	filter.cutoff = c;
+	p.filter.cutoff = c;
 	
 	FILTER_initFilter();
 }
@@ -413,7 +414,7 @@ void FILTER_setCutoff(u16 c) {
 // sets the filter's resonance
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setResonance(u16 r) {
-	filter.resonance = r;
+	p.filter.resonance = r;
 	
 	FILTER_resonantLP_Init();
 }
@@ -423,7 +424,7 @@ void FILTER_setResonance(u16 r) {
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setFilter(u8 f) {
 	if (f < FILTER_TYPES)
-		filter.filterType = f;
+		p.filter.filterType = f;
 
 	FILTER_initFilter();
 	
@@ -432,16 +433,19 @@ void FILTER_setFilter(u8 f) {
 
 
 s32 lp1, hp1, bp1, f; 
-u16 svf_cutoff;
+u16 svf_cutoff, svf_cut_bak;
 u8 svf_mode;
 
 /////////////////////////////////////////////////////////////////////////////
-// svf filter (stripped down version of the SM svf3)
+// svf filter (stripped down version of the S|M svf3)
 /////////////////////////////////////////////////////////////////////////////
-s16 FILTER_svf(s16 input, u8 mode) {
+s16 FILTER_svf(s16 input, u16 cutoff, u8 mode) {
 	s32 bandpass, lowpass, highpass;
 	s32 in;
 
+	svf_cutoff = (cutoff > 2047) ? cutoff : 2048;
+	f  = svf_cutoff / 4;
+	
 	in = input;
 
 	lp1 += (f * bp1) / 65535; 
@@ -469,7 +473,8 @@ s16 FILTER_svf(s16 input, u8 mode) {
 	highpass /= 3; 
 	bandpass /= 3; 
 
-	switch (filter.filterType) {
+    // optimize-here: to save a few cycles we could split this into 3 svf functions.
+	switch (p.filter.filterType) {
 		case FILTER_SVF_LOWPASS:  return lowpass; 
 		case FILTER_SVF_BANDPASS: return bandpass; 
 		case FILTER_SVF_HIGHPASS: return highpass;
@@ -477,15 +482,11 @@ s16 FILTER_svf(s16 input, u8 mode) {
 }
 
 void FILTER_svf_Init() {
-	u32 x, x2, x3, x5, x7; 
+	// the math is way to complex (teehee) to be done everytime so we'll just
+	// guesstimate it
 
-	// cutoff = max(cut, 0.0004); 
-	// cutoff = min(cutoff, 1.0);
-
-	svf_cutoff = (filter.cutoff > 2047) ? filter.cutoff : 2048;
-
-	f  = svf_cutoff / 4;
-	/*
+	/* this is what should be done:
+	// u32 x, x2, x3, x5, x7; 
 	// x = cutoff * 0.52..
 	x  = bandpass_cutoff / 4;
 	x2 = (x * x)   >> 16;		
@@ -499,4 +500,8 @@ void FILTER_svf_Init() {
 	f += (x5 / 60);
 	f -= (x7 / 2520);
 	*/
+
+	// this looks simpler, doesn't it ;)
+	svf_cutoff = (p.filter.cutoff > 2047) ? p.filter.cutoff : 2048;
+	f  = svf_cutoff / 4;
 }
