@@ -62,8 +62,7 @@ u8 state;
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the SysEx handler
 /////////////////////////////////////////////////////////////////////////////
-void SYSEX_Init(void)
-{
+void SYSEX_Init(void) {
 	bufIndex = 0;
 	state = IDLE;
 
@@ -147,7 +146,10 @@ void SYSEX_CmdFinished(u8 bufLen) {
 		// direct parameter write
 		u16 address = syxToU16(&sysex_buffer[1]);
 		u16 value = syxToU16(&sysex_buffer[4]);
-		// MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
+
+			#ifdef ENGINE_VERBOSE
+			MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
+			#endif
 
 		// toggle addresses for drums
 		if (address >= 0x8000) {
@@ -180,6 +182,11 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			case 0x052: // delay downsample
 				ENGINE_setDelayDownsample(value); break;
 				
+			case 0x053: // chorus time
+				ENGINE_setChorusTime(value); break;
+			case 0x054: // chorus feedback/depth
+				ENGINE_setChorusFeedback(value); break;
+
 			case 0x100: // Envelope 1: Attack
 				ENV_setAttack(0, value); break;
 			case 0x101: // Envelope 1: Decay

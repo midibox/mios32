@@ -18,6 +18,9 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+#define 	TR_ROWS					9
+#define 	TR_COLS					11
+
 // waveform structure ********************************************************
 typedef union {
 	struct {
@@ -132,10 +135,15 @@ typedef struct {
 	u8 bitcrush; 			// bitcrush amount
 	u8 downsample;			// downsampling
 	u16 xor; 				// XOR value
+	u16 mask; 				// bitmask
 	
 	u16 delayTime;			// delay time 0..16382
 	u16 delayFeedback;      // delay feedback
 	u8 delayDownsample;		// downsampling for delay
+
+	u16 chorusTime;			// chorus time 0..8190
+	u16 chorusFeedback;     // chorus feedback
+
 	s16 lastSample;			// last sample
 } voice_t;
 
@@ -168,9 +176,9 @@ typedef union {
 		unsigned invertEnv1:1;
 		unsigned invertEnv2:1;
 		unsigned dcf:1;
-		unsigned empty7:1;
-		unsigned empty8:1;
-		unsigned empty9:1;
+		unsigned ringmod:1;
+		unsigned delay:1;
+		unsigned chorus:1;
 		unsigned emptyA:1;
 		unsigned emptyB:1;
 		unsigned emptyC:1;
@@ -209,5 +217,24 @@ typedef union {
 		unsigned :7;
 	};
 } trigger_col_t;
+
+typedef union {
+	struct {
+		u8 				all[512];
+	};
+	struct {
+		char			name[32];
+		lfo_t 			lfos[2];
+		envelope_t 		envelopes[2];
+		oscillator_t 	oscillators[2];
+		engineflags_t 	engineFlags;
+		engineflags2_t 	engineFlags2;
+		filter_t 		filter;
+		voice_t			voice;
+		trigger_col_t   trigger_matrix[TR_COLS];
+		u8				engine;
+		routing_t		routing[ROUTING_TARGETS];
+	};
+} patch_t;
 
 #endif

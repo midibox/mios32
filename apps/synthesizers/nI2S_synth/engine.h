@@ -32,7 +32,7 @@
 
 void ENGINE_init(void);
 void ENGINE_setEngine(u8 e);
-void ENGINE_setEngineFlags(u8 f);
+void ENGINE_setEngineFlags(u16 f);
 void ENGINE_setPitchbend(u8 osc, s16 pb);
 void ENGINE_setMasterVolume(u16 vol);
 void ENGINE_setPitchbendUpRange(u8 osc, u8 pb);
@@ -86,18 +86,12 @@ extern void tempMute(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern lfo_t 		lfos[2];					// LFOs
-extern envelope_t	envelopes[2];				// Envelopes
-
-extern engineflags_t	engineFlags;			// flag set for the engine
-extern engineflags2_t	engineFlags2;			// flag set for the engine (internals)
-extern filter_t			filter;					// the filter
 extern u32 				sample_buffer[SAMPLE_BUFFER_SIZE]; 	// sample buffer
 extern u8 				engine;					// selects the sound engine
-extern voice_t			voice;					// voice struct	   
 extern u16			 	envelopeTime;			// divider for the 48kHz sample clock that clocks the env
 extern u16 				lfoTime;				// divider for the 48kHz sample clock that clocks the lfof
 extern u16 				tempValues[2];			// temporary values for whatever 
-extern routing_t		routing[ROUTING_TARGETS];
+
+extern patch_t 			p;						// the patch, fixme: redundant (well not this but all the rest)
 
 #endif

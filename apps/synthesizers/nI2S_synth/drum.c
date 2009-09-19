@@ -12,9 +12,6 @@
  *                                                                          *
  ****************************************************************************/
 
-// todo:
-// velocity
- 
 #include <mios32.h>
 #include "drum.h"
 #include "engine.h"
@@ -290,16 +287,16 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 
 		// downsampling ***********************************************************
 		// T_SAMPLERATE is right here
-		ac = voice.downsample;
-		if (routing[T_SAMPLERATE].source) {
+		ac = p.voice.downsample;
+		if (p.routing[T_SAMPLERATE].source) {
 			// there's a source assigned
-			ac = ENGINE_modulateU(ac, ENGINE_getModulator(routing[T_SAMPLERATE].source), routing[T_SAMPLERATE].depth);
+			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.routing[T_SAMPLERATE].source), p.routing[T_SAMPLERATE].depth);
 			if (downsampled > ac)
 				downsampled = ac;
 		}
 		
 		if (ac != downsampled) {
-			out = voice.lastSample;
+			out = p.voice.lastSample;
 			*buffer++ = out << 16 | out;
 			downsampled++;
 			continue;
@@ -316,7 +313,7 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 		
 		out = output;
 
-		voice.lastSample = out;
+		p.voice.lastSample = out;
 	
 		*buffer++ = out << 16 | out;
 	}

@@ -17,7 +17,9 @@
 #define ENV_VERBOSE 
 #define TRIGGER_VERBOSE 
 #define ENGINE_VERBOSE 
+// #define ENGINE_VERBOSE_MAX
 #define DRUM_VERBOSE 
+#define APP_VERBOSE 
 
 // at 48kHz sample frequency and two channels, the sample buffer has to be 
 // refilled at a rate of 48Khz / SAMPLE_BUFFER_SIZE
@@ -29,6 +31,9 @@
 
 #define ENGINE_SYNTH				0
 #define ENGINE_DRUM					1
+
+#define	NO_STEAL					0
+#define STEAL						1
 
 #define PB_UP 						0
 #define PB_DOWN 					1
@@ -77,9 +82,6 @@
 #define     FILTER_SVF_LOWPASS      4
 #define     FILTER_SVF_BANDPASS	    5		
 #define     FILTER_SVF_HIGHPASS		6	
-
-#define 	TR_ROWS					9
-#define 	TR_COLS					11
 
 #define		TRIGGER_NOTEON			0
 #define		TRIGGER_NOTEOFF			1

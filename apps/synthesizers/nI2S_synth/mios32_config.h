@@ -16,6 +16,12 @@
 // I2S support has to be enabled explicitely
 #define MIOS32_USE_I2S
 
+// enable one IIC_MIDI interface (for IIC collision testing)
+#define MIOS32_IIC_MIDI_NUM 1
+
+// enable all BankSticks
+#define MIOS32_IIC_BS_NUM 8
+
 // enable MCLK pin (not for STM32 primer)
 //#ifdef MIOS32_BOARD_STM32_PRIMER
 //# define MIOS32_I2S_MCLK_ENABLE  0

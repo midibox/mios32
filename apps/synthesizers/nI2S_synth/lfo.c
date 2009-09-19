@@ -34,22 +34,22 @@ void LFO_setFreq(u8 lfo, u16 frq) {
 	d >>= 6;
 	d += 1;
 	
-	lfos[lfo].accumValue = d;
-	lfos[lfo].frequency = frq;
+	p.lfos[lfo].accumValue = d;
+	p.lfos[lfo].frequency = frq;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the pulsewidth for the pulse waveform
 /////////////////////////////////////////////////////////////////////////////
 void LFO_setPW(u8 lfo, u16 pw) {
-	lfos[lfo].pulsewidth = pw;
+	p.lfos[lfo].pulsewidth = pw;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the depth of the LFO
 /////////////////////////////////////////////////////////////////////////////
 void LFO_setDepth(u8 lfo, u16 d) {
-	lfos[lfo].depth = d;
+	p.lfos[lfo].depth = d;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ void LFO_setDepth(u8 lfo, u16 d) {
 void LFO_setWaveform(u8 lfo, u8 wav) {
 	u8 c, n = 0;
 
-	lfos[lfo].waveforms.all = wav;
+	p.lfos[lfo].waveforms.all = wav;
 	
 	// count number of set bits == number of waveforms
 	for (c=0; c<8; c++) {
@@ -66,7 +66,7 @@ void LFO_setWaveform(u8 lfo, u8 wav) {
 			n++;
 	}
 	
-	lfos[lfo].waveformCount = n;
+	p.lfos[lfo].waveformCount = n;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ void LFO_tick(void) {
 	u16 acc;
 	
 	for (lfo=0; lfo<2; lfo++) {
-		lfo_t *l = &lfos[lfo];
+		lfo_t *l = &p.lfos[lfo];
 		
 		if (!l->waveformCount) continue;
 		
