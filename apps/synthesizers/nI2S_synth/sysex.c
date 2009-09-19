@@ -56,8 +56,8 @@ const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4D };
 
 // TODO: use malloc function instead of a global array to save RAM
 u8 sysex_buffer[1024];
-u8 bufIndex; 
-u8 state;
+u16 bufIndex; 
+u16 state;
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the SysEx handler
@@ -142,14 +142,34 @@ void SYSEX_CmdFinished(u8 bufLen) {
 		return;
 	}
 	
+	if ((command == WRITE_PARAM) && (bufLen == 68)) {
+		// patch name
+		u8 n;
+		char name[33];
+
+		if (syxToU16(&sysex_buffer[1]) != 0x0003) return;
+		
+		for (n=2; n<bufLen/2; n++) {
+			name[n-2] = sysex_buffer[n*2] * 64 + sysex_buffer[n*2+1];
+
+			if (name[n-2] == 0)
+				name[n-2] = ' ';
+		}
+
+		#ifdef APP_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("Patch name: %s", &name[0]);
+		#endif
+
+		APP_setPatchName(&name[0]);
+	} else
 	if ((command == WRITE_PARAM) && (bufLen == 7)) {
 		// direct parameter write
 		u16 address = syxToU16(&sysex_buffer[1]);
 		u16 value = syxToU16(&sysex_buffer[4]);
 
-			#ifdef ENGINE_VERBOSE
-			MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
-			#endif
+		#ifdef ENGINE_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
+		#endif
 
 		// toggle addresses for drums
 		if (address >= 0x8000) {
@@ -356,7 +376,13 @@ void SYSEX_CmdFinished(u8 bufLen) {
 				DRUM_setSineDrum_TriggerNote(index, value); break;
 			
 			default:
+				#ifdef APP_VERBOSE
 				MIOS32_MIDI_SendDebugMessage("Unknown address: %d", address);
+				#endif
 		}	
+	} else {
+		#ifdef APP_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("Unknown buffer length (%d)", bufLen);
+		#endif
 	}
 }

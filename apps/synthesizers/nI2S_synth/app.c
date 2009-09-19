@@ -37,8 +37,8 @@
  * v0.0.0 - 2009/04/09 - initial release                                    *
  *                                                                          *
  * v0.0.1 - 2009/04/13 - "Bashful"                                          *
- *   > general:
- * 		 - various bugfixes (thanks TK)                                         *
+ *   > general:                                                             *
+ * 		 - various bugfixes (thanks TK)                                     *
  *   > lead engine:                                                         *
  *       - transpose works instantly now                                    *
  *   > drum engine:                                                         *
@@ -52,11 +52,13 @@
  * v0.0.2 - 2009/09/17 - "Cheerful"                                         *
  *   > general:                                                             *
  *       - some performance fixes                                           *
+ *       - patch names can be set via sysex now (address 0x03, 32 chars)    *
  *       - added rudimetary patch saving/restoring (bankstick only atm)     *
  *         CC 0x40 saves to bs 0 patch 0, CC 0x45 restores the patch from   *
  *         the same location                                                *
  *       - terminal output can be turned off by #defines in "defs.h"        *
- *         (verbose mode is heavy on the performance, esp. over real midi)  *        *
+ *         (verbose mode is heavy on the performance, esp. over real midi)  *        
+ *       - program change support added                                     *
  *   > lead engine:                                                         *
  *       - setting transpose while notes are held doesn't kill the          *
  *         notestack anymore                                                *
@@ -71,16 +73,16 @@
  *                                                                          *
  ****************************************************************************
  *                                                                          *
- * TODO (not in any particular order)                                       *
+ * TODO/KNOWN BUGS (not in any particular order)                            *
  *   - lots                                                                 *
- *   - come up with a cool name. it needs to be food.                       *
- *   - add a CS/menu structure                                              *
- *   - patch storage (damn it's annoying to always start from scratch) =)   *
- *   - no note down -> transpose hangup                                     *
- *   - fix filters (cutoff on SVF, output levels, constants)                *
- *   - add new filter type "external" with aout support                     *
  *   - fix "fixme"s                                                         *
  *   - optimize "optimize-here"s                                            *
+ *   - come up with a name. it needs to be food. got an idea? lemme know!   *
+ *   - add a CS/menu structure                                              *
+ *   - no note down -> transpose hangup (noticeable when no source is set   *
+ *     for volume)                                                          *
+ *   - fix filters (cutoff on SVF, output levels, constants)                *
+ *   - add new filter type "external" with aout support                     *
  *   - copy waveblender from temp files back in                             *
  *   - new mod targets/sources / reversed mod route                         *
  *   - change routing to matrix                                             *
@@ -92,8 +94,9 @@
  *   - changeable fx chain order                                            *
  *   - move calculations out of the main loop                               *
  *   - aftertouch/modulation as mod source                                  *
- *   - receive sysex for patch name                                         *
- *   - program change                                                       *
+ *   - ignore non working trigger combinations (lfo cycle->lfo reset, ...)  *
+ *   - options for SD card/bankstick (do I really want to keep bankstick    *
+ *     support?                                                             *
  *                                                                          *
  ****************************************************************************/
 
@@ -114,7 +117,26 @@
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
-u32 bankstick;
+	   u32 bankstick;
+	   u16 bank;			// is there even a need for banks with SD?
+static u16 patch_number;	// patch number
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sets the patch name
+/////////////////////////////////////////////////////////////////////////////
+void APP_setPatchName(char* patchname) {
+	u8 n;
+
+	for (n=0; n<32; n++)
+		p.name[n] = patchname[n];
+
+	// redundant but sooo much easier
+	p.name[32] = 0;
+
+	#ifdef APP_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("APP_setPatchName(): '%s'", &p.name[0]);
+	#endif
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This function stores the patch in use to the bankstick
@@ -133,7 +155,8 @@ void APP_storePatch(u16 patchnumber) {
 		#endif
 		return;
 	}
-	
+
+	// potential fixme: evil evil waiting... seems to work fine though
 	res += MIOS32_IIC_BS_Write(0, address, &p.all[0], 64);
 	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
 	res += MIOS32_IIC_BS_Write(0, address + 64, &p.all[64], 64);
@@ -163,6 +186,7 @@ void APP_storePatch(u16 patchnumber) {
 // This function loads a patch from the bankstick
 /////////////////////////////////////////////////////////////////////////////
 void APP_loadPatch(u16 patchnumber) {
+	// fixme: is that patch number even valid?
 	s32 res = 0;
 	u16 block;
 	u16 address = sizeof(patch_t) * patchnumber;
@@ -177,6 +201,10 @@ void APP_loadPatch(u16 patchnumber) {
 		return;
 	}
 
+	#ifdef APP_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Loading patch %d from address %d", patchnumber, address);
+	#endif
+
 	res += MIOS32_IIC_BS_Read(0, address, &p.all[0], 64);
 	res += MIOS32_IIC_BS_Read(0, address + 64, &p.all[64], 64);
 	res += MIOS32_IIC_BS_Read(0, address + 128, &p.all[128], 64);
@@ -186,6 +214,9 @@ void APP_loadPatch(u16 patchnumber) {
 	res += MIOS32_IIC_BS_Read(0, address + 384, &p.all[384], 64);
 	res += MIOS32_IIC_BS_Read(0, address + 448, &p.all[448], 64);
 
+	// store active patch number
+	patch_number = patchnumber;
+	
 	#ifdef APP_VERBOSE
 	if (res == 0)
 		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Patch '%s' successfully loaded.", p.name);
@@ -205,7 +236,7 @@ void APP_Init(void)
 	MIOS32_IIC_BS_Init(0);
 	
 	s32 bs, bs2;
-	// check for bankstick 0
+	// temp: check for bankstick 0
 	MIOS32_IIC_BS_ScanBankSticks();
 	bankstick = MIOS32_IIC_BS_CheckAvailable(0);
 	#ifdef APP_VERBOSE
@@ -218,6 +249,9 @@ void APP_Init(void)
 
    // init sysex handler
 	SYSEX_Init();
+
+    // load the default patch
+	APP_loadPatch(0);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -265,6 +299,11 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 			return;
 		}
 	}
+
+	// program change
+	if (midi_package.evnt0 == 0xC0)
+		APP_loadPatch(midi_package.evnt1);
+	else
   
 	// fixme: CC handler (incomplete, mainly a dummy to be fixed later)
 	if (midi_package.evnt0 == 0xB0) {
