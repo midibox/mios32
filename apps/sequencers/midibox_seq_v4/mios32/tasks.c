@@ -190,7 +190,7 @@ static void TASK_Period1S(void *pvParameters)
     // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
     // isn't required, and this task could be invoked too often if it was blocked
     // for a long time
-    vTaskDelay(1 / portTICK_RATE_MS);
+    vTaskDelay(1000 / portTICK_RATE_MS);
 
     // continue in application hook
     SEQ_TASK_Period1S();

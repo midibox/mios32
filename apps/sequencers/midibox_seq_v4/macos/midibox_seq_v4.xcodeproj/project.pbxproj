@@ -134,6 +134,8 @@
 		52D682320EE1E7AF0050D856 /* seq_ui.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D682290EE1E7AF0050D856 /* seq_ui.c */; };
 		52D763E50EF089AE00680FEB /* seq_layer.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D763E30EF089AE00680FEB /* seq_layer.c */; };
 		52D763E60EF089AE00680FEB /* seq_ui_trkevnt.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D763E40EF089AE00680FEB /* seq_ui_trkevnt.c */; };
+		52D84F9D1072A28F00697CCC /* seq_lcd_logo.c in Sources */ = {isa = PBXBuildFile; fileRef = 52D84F9A1072A28F00697CCC /* seq_lcd_logo.c */; };
+		52D84F9E1072A28F00697CCC /* seq_lcd_logo.inc in Sources */ = {isa = PBXBuildFile; fileRef = 52D84F9C1072A28F00697CCC /* seq_lcd_logo.inc */; };
 		52DA1B2D0EFB000E00E889A5 /* seq_bpm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B290EFB000E00E889A5 /* seq_bpm.c */; };
 		52DA1B2E0EFB000E00E889A5 /* seq_midi_out.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B2B0EFB000E00E889A5 /* seq_midi_out.c */; };
 		52DA1B310EFB002900E889A5 /* mid_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B2F0EFB002900E889A5 /* mid_parser.c */; };
@@ -363,6 +365,9 @@
 		52D6823F0EE1E8A70050D856 /* mios32_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mios32_config.h; sourceTree = "<group>"; };
 		52D763E30EF089AE00680FEB /* seq_layer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_layer.c; path = ../core/seq_layer.c; sourceTree = SOURCE_ROOT; };
 		52D763E40EF089AE00680FEB /* seq_ui_trkevnt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkevnt.c; path = ../core/seq_ui_trkevnt.c; sourceTree = SOURCE_ROOT; };
+		52D84F9A1072A28F00697CCC /* seq_lcd_logo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd_logo.c; path = ../core/seq_lcd_logo.c; sourceTree = SOURCE_ROOT; };
+		52D84F9B1072A28F00697CCC /* seq_lcd_logo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lcd_logo.h; path = ../core/seq_lcd_logo.h; sourceTree = SOURCE_ROOT; };
+		52D84F9C1072A28F00697CCC /* seq_lcd_logo.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; name = seq_lcd_logo.inc; path = ../core/seq_lcd_logo.inc; sourceTree = SOURCE_ROOT; };
 		52DA1B290EFB000E00E889A5 /* seq_bpm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_bpm.c; path = ../../../../modules/sequencer/seq_bpm.c; sourceTree = SOURCE_ROOT; };
 		52DA1B2A0EFB000E00E889A5 /* seq_bpm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_bpm.h; path = ../../../../modules/sequencer/seq_bpm.h; sourceTree = SOURCE_ROOT; };
 		52DA1B2B0EFB000E00E889A5 /* seq_midi_out.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_out.c; path = ../../../../modules/sequencer/seq_midi_out.c; sourceTree = SOURCE_ROOT; };
@@ -508,6 +513,9 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52D84F9A1072A28F00697CCC /* seq_lcd_logo.c */,
+				52D84F9B1072A28F00697CCC /* seq_lcd_logo.h */,
+				52D84F9C1072A28F00697CCC /* seq_lcd_logo.inc */,
 				52CFD821105C355100513D1B /* seq_cc_labels.c */,
 				52CFD822105C355100513D1B /* seq_cc_labels.h */,
 				528F038E1024889E009439A6 /* notestack.c */,
@@ -960,6 +968,8 @@
 				525250550FFA81CA006A6EAE /* Tasks.m in Sources */,
 				528F03901024889E009439A6 /* notestack.c in Sources */,
 				52CFD823105C355100513D1B /* seq_cc_labels.c in Sources */,
+				52D84F9D1072A28F00697CCC /* seq_lcd_logo.c in Sources */,
+				52D84F9E1072A28F00697CCC /* seq_lcd_logo.inc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

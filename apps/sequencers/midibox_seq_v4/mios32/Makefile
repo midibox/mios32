@@ -87,6 +87,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_song.c \
 		../core/seq_label.c \
 		../core/seq_lcd.c \
+		../core/seq_lcd_logo.c \
 		../core/seq_ui_fx_loop.c \
 		../core/seq_led.c
 
