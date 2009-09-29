@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta2
+~~~~~~~~~~~~~~~~~~~~
+
+  o a nice graphical logo is now print during startup
+  o lower CPU load if no SD Card connected
+
+
 MIDIboxSEQ V4.0beta1
 ~~~~~~~~~~~~~~~~~~~~
 

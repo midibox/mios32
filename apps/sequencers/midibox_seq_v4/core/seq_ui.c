@@ -2,11 +2,6 @@
 /*
  * User Interface Routines
  *
- * TODO: allow to loop the selected view while editing a track
- * TODO: add loop fx page for setting loop point interactively
- * TODO: scroll function should use this loop point
- * TODO: utility page in drum mode: allow to handle only selected instrument
- *
  * ==========================================================================
  *
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
@@ -33,6 +28,8 @@
 
 #include "tasks.h"
 #include "seq_ui.h"
+#include "seq_lcd.h"
+#include "seq_lcd_logo.h"
 #include "seq_hwcfg.h"
 #include "seq_lcd.h"
 #include "seq_led.h"
@@ -1394,6 +1391,9 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LCD_Handler(void)
 {
+  static u8 boot_animation_wait_ctr = 0;
+  static u8 boot_animation_lcd_pos = 0;
+
   // special handling in remote client mode
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_UI_LCD_Update();
@@ -1418,18 +1418,22 @@ s32 SEQ_UI_LCD_Handler(void)
 
   // print boot screen so long hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() ) {
-    SEQ_LCD_Clear();
+    if( boot_animation_lcd_pos < (40-3) ) {
+      if( ++boot_animation_wait_ctr >= 75 ) {
+	boot_animation_wait_ctr = 0;
 
-    SEQ_LCD_CursorSet(0, 0);
-    //                   <-------------------------------------->
-    //                   0123456789012345678901234567890123456789
-    SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
-    SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
-      
-    SEQ_LCD_CursorSet(40, 0);
-    SEQ_LCD_PrintString("Searching for SD Card...");
-    // TODO: print nice animation
+	if( boot_animation_lcd_pos == 0 ) {
+	  SEQ_LCD_Clear();
+	  SEQ_LCD_CursorSet(0, 0);
+	  SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1 " " MIOS32_LCD_BOOT_MSG_LINE2);
+	  SEQ_LCD_CursorSet(0, 1);
+	  SEQ_LCD_PrintString("Searching for SD Card...");
+	}
+	
+	// logo is print on second LCD
+	SEQ_LCD_LOGO_Print(boot_animation_lcd_pos++);
+      }
+    }
   } else if( seq_ui_backup_req ) {
     SEQ_LCD_Clear();
     SEQ_LCD_CursorSet(0, 0);

@@ -335,6 +335,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
+  static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
   // don't check for SD Card if MSD enabled
@@ -348,6 +349,12 @@ void SEQ_TASK_Period1S(void)
     MIOS32_IIC_MIDI_ScanInterfaces();
   }
 #endif  
+
+  // boot phase of 2 seconds finished?
+  if( wait_boot_ctr ) {
+    --wait_boot_ctr;
+    return;
+  }
 
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
