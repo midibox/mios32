@@ -29,6 +29,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 show_step_selection_page;
+static u16 selected_steps = 0xffff; // will only be initialized once after startup
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -42,9 +50,12 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
-  *gp_leds =
-    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
-    (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
+  if( show_step_selection_page )
+    *gp_leds = selected_steps;
+  else
+    *gp_leds =
+      (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
+      (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
 
   return 0; // no error
 }
@@ -65,6 +76,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 || encoder == SEQ_UI_ENCODER_Datawheel ) {
 #endif
+    if( show_step_selection_page ) {
+      if( incrementer > 0 )
+	selected_steps |= (1 << encoder);
+      else
+	selected_steps &= ~(1 << encoder);
+      return 1; // value changed
+    }
+
     ui_selected_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
     u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -106,10 +125,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	u16 par_step;
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
-	  change_gate = trg_step == ui_selected_step;
-	  if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
-	    if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate) >= 0 )
-	      value_changed |= 1;
+	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || par_step == ui_selected_step || (selected_steps & (1 << (par_step % 16))) ) {
+	    change_gate = trg_step == ui_selected_step;
+	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	      if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate) >= 0 )
+		value_changed |= 1;
+	    }
 	  }
 	}
       }
@@ -131,8 +152,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  if( depressed ) return 0; // ignore when button depressed
-
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
 #if 0
@@ -141,6 +160,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
+    if( depressed ) return 0; // ignore when button depressed
+
+    if( show_step_selection_page ) {
+      selected_steps ^= (1 << button);
+      return 1; // value changed
+    }
+
     ui_selected_step = button + ui_selected_step_view*16;
     // toggle trigger layer
     // if seq_hwcfg_button_beh.all_with_triggers set, we've three cases:
@@ -190,7 +216,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   } else {
     switch( button ) {
       case SEQ_UI_BUTTON_Select:
+	show_step_selection_page = depressed ? 0 : 1;
+	return 1; // value always changed
+
       case SEQ_UI_BUTTON_Right: {
+	if( depressed ) return 0; // ignore when button depressed
+
 	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
 	if( next_step >= (SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1) )
 	  next_step = 0;
@@ -200,15 +231,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       } break;
 
       case SEQ_UI_BUTTON_Left:
+	if( depressed ) return 0; // ignore when button depressed
+
 	if( ui_selected_step == 0 )
 	  ui_selected_step = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1; // value always changed
 
       case SEQ_UI_BUTTON_Up:
+	if( depressed ) return 0; // ignore when button depressed
 	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
 
       case SEQ_UI_BUTTON_Down:
+	if( depressed ) return 0; // ignore when button depressed
 	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
     }
   }
@@ -239,6 +274,22 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // G1T1 xxxxxxxxxxxxxxx  PA:Vel.   TA:Gate Step  1   G#1_ Vel:127_Len: 75%    xxxxx
   // ....
+
+  // layout step selection:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  //        Select the steps which should be  controlled by the ALL function:        
+  //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
+
+  if( show_step_selection_page ) {
+    int step;
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("       Select the steps which should be  controlled by the ALL function:        ");
+    SEQ_LCD_CursorSet(0, 1);
+    for(step=0; step<16; ++step)
+      SEQ_LCD_PrintFormattedString("  %c  ", (selected_steps & (1 << step)) ? '*' : 'o');
+    return 0; // no error
+  }
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -584,6 +635,8 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  show_step_selection_page = 0;
 
   return 0; // no error
 }

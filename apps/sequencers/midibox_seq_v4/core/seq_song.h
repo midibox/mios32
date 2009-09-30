@@ -100,6 +100,7 @@ extern s32 SEQ_SONG_ActiveSet(u8 active);
 
 extern seq_song_step_t SEQ_SONG_StepEntryGet(u32 step);
 extern s32 SEQ_SONG_StepEntrySet(u32 step, seq_song_step_t step_entry);
+extern s32 SEQ_SONG_StepEntryClear(u32 step);
 
 extern s32 SEQ_SONG_PosGet(void);
 extern s32 SEQ_SONG_PosSet(u32 pos);

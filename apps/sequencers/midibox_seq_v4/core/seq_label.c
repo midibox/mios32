@@ -56,6 +56,26 @@ static const char preset_labels[][16] = {
 };
 
 
+static const char preset_drum[][6] = {
+  " BD  ",
+  " SD  ",
+  " LT  ",
+  " MT  ",
+  " HT  ",
+  " CP  ",
+  " MA  ",
+  " RS  ",
+  " CB  ",
+  " CY  ",
+  " OH  ",
+  " CH  ",
+  "Smp1 ",
+  "Smp2 ",
+  "Smp3 ",
+  "Smp4 "
+};
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -114,3 +134,26 @@ s32 SEQ_LABEL_CopyPresetCategory(u8 num, char *dst)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns number of drum presets
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LABEL_NumPresetsDrum(void)
+{
+  return sizeof(preset_drum) / 6;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function copies a preset drum label (5 chars) into the given array
+// Could be loaded from SD-Card later
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst)
+{
+  if( num < SEQ_LABEL_NumPresetsDrum() ) {
+    memcpy(dst, (char *)&preset_drum[num], 5);
+  } else {
+    memcpy(dst, ".....", 5);
+  }
+
+  return 0; // no error
+}

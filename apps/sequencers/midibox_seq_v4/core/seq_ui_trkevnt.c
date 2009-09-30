@@ -315,25 +315,51 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( edit_label_mode ) {
     switch( ui_selected_item ) {
     case ITEM_EDIT_CHAR:
-      return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_edit_name_cursor], 32, 127, incrementer);
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_selected_instrument*5 + (ui_edit_name_cursor % 5)], 32, 127, incrementer);
+      } else {
+	return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_edit_name_cursor], 32, 127, incrementer);
+      }
 
     case ITEM_EDIT_CURSOR:
-      return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 20-1, incrementer);
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 5-1, incrementer);
+      } else {
+	return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 20-1, incrementer);
+      }
 
     case ITEM_EDIT_INS: {
-      u8 field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
       int i;
-      for(i=field_end; i>ui_edit_name_cursor; --i) {
+      int field_start, field_end;
+
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	field_start = 5*ui_selected_instrument + (ui_edit_name_cursor % 5);
+	field_end = 5*ui_selected_instrument + 4;
+      } else {
+	field_start = ui_edit_name_cursor;
+	field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
+      }
+
+      for(i=field_end; i>field_start; --i) {
 	seq_core_trk[visible_track].name[i] = seq_core_trk[visible_track].name[i-1];
       }
-      seq_core_trk[visible_track].name[ui_edit_name_cursor] = ' ';
+      seq_core_trk[visible_track].name[field_start] = ' ';
       return 1;
     } break;
 
     case ITEM_EDIT_CLR: {
-      u8 field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
       int i;
-      for(i=ui_edit_name_cursor; i<field_end; ++i) {
+      int field_start, field_end;
+
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	field_start = 5*ui_selected_instrument + (ui_edit_name_cursor % 5);
+	field_end = 5*ui_selected_instrument + 4;
+      } else {
+	field_start = ui_edit_name_cursor;
+	field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
+      }
+
+      for(i=field_start; i<field_end; ++i) {
 	seq_core_trk[visible_track].name[i] = seq_core_trk[visible_track].name[i+1];
       }
       seq_core_trk[visible_track].name[field_end] = ' ';
@@ -344,13 +370,23 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( ui_edit_name_cursor >= 5 ) // set cursor to category field if required (more intuitive usage)
 	ui_edit_name_cursor = 0;
 
-      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
-	SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&seq_core_trk[visible_track].name[0]);
-	return 1;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_drum, 0, SEQ_LABEL_NumPresetsDrum()-1, incrementer) ) {
+	  SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument]);
+	  return 1;
+	}
+      } else {
+	if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
+	  SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&seq_core_trk[visible_track].name[0]);
+	  return 1;
+	}
       }
       return 0;
 
     case ITEM_EDIT_PRESET_LABEL:
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	return 0; // no function in drum mode
+
       if( ui_edit_name_cursor < 5 ) // set cursor to category field if required (more intuitive usage)
 	ui_edit_name_cursor = 5;
 
@@ -634,6 +670,13 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk. Type Steps/ParL/TrgL Port Chn. EditCategory: xxxxx   Label: xxxxxxxxxxxxxxx
   // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr    Preset Cat./Label
 
+  // "Edit Drum Name" layout:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  // Trk. Type Steps/ParL/TrgL Port Chn. EditDrum Label: xxxxx                        
+  // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr    Preset Label     
+
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // if track has changed, switch layer config:
@@ -659,16 +702,31 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   if( edit_label_mode ) {
-    SEQ_LCD_PrintString("Category: ");
-    SEQ_LCD_PrintTrackCategory(visible_track, seq_core_trk[visible_track].name);
-    SEQ_LCD_PrintString("   Label: ");
-    SEQ_LCD_PrintTrackLabel(visible_track, seq_core_trk[visible_track].name);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintString("Drum Label: ");
+      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, seq_core_trk[visible_track].name);
+      SEQ_LCD_PrintSpaces(23);
 
-    // insert flashing cursor
-    if( ui_cursor_flash ) {
-      SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 10 : 20) + ui_edit_name_cursor, 0);
-      SEQ_LCD_PrintChar('*');
+      // insert flashing cursor
+      if( ui_cursor_flash ) {
+	if( ui_edit_name_cursor >= 5 ) // correct cursor position if it is outside the 5 char label space
+	  ui_edit_name_cursor = 0;
+	SEQ_LCD_CursorSet(52 + ui_edit_name_cursor, 0);
+	SEQ_LCD_PrintChar('*');
+      }
+    } else {
+      SEQ_LCD_PrintString("Category: ");
+      SEQ_LCD_PrintTrackCategory(visible_track, seq_core_trk[visible_track].name);
+      SEQ_LCD_PrintString("   Label: ");
+      SEQ_LCD_PrintTrackLabel(visible_track, seq_core_trk[visible_track].name);
+
+      // insert flashing cursor
+      if( ui_cursor_flash ) {
+	SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 10 : 20) + ui_edit_name_cursor, 0);
+	SEQ_LCD_PrintChar('*');
+      }
     }
+
   } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
     SEQ_LCD_PrintString("    Please initialize the track         ");
   } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -745,7 +803,10 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( edit_label_mode ) {
-    SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Cat./Label");
+    if( event_mode == SEQ_EVENT_MODE_Drum )
+      SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Label     ");
+    else
+      SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Cat./Label");
 
   ///////////////////////////////////////////////////////////////////////////
   } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
@@ -899,7 +960,10 @@ static s32 CopyPreset(u8 track, u8 config)
 
   // BEGIN TMP
   if( lc->event_mode == SEQ_EVENT_MODE_Drum ) {
-    memcpy((char *)seq_core_trk[track].name, " BD   SD   LT   MT   HT   CP   MA   RS   CB   CY   OH   CH  Smp1 Smp2 Smp3 Smp4 ", 80);
+    int i;
+
+    for(i=0; i<16; ++i)
+      SEQ_LABEL_CopyPresetDrum(i, (char *)&seq_core_trk[track].name[5*i]);
   } else {
     memset((char *)seq_core_trk[track].name, ' ', 80);
   }

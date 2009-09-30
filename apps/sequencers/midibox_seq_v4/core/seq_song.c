@@ -72,19 +72,8 @@ s32 SEQ_SONG_Init(u32 mode)
 
   // initialise song steps
   int step;
-  seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[0];
-  for(step=0; step<SEQ_SONG_NUM_STEPS; ++step, ++s) {
-    s->action = SEQ_SONG_ACTION_Stop;
-    s->action_value = 0;
-    s->pattern_g1 = 0x80;
-    s->bank_g1 = 0;
-    s->pattern_g2 = 0x80;
-    s->bank_g2 = 1;
-    s->pattern_g3 = 0x80;
-    s->bank_g3 = 2;
-    s->pattern_g4 = 0x80;
-    s->bank_g4 = 3;
-  }
+  for(step=0; step<SEQ_SONG_NUM_STEPS; ++step)
+    SEQ_SONG_StepEntryClear(step);
 
   // don't store these empty entries
   something_has_been_changed = 0;
@@ -143,7 +132,7 @@ s32 SEQ_SONG_ActiveSet(u8 active)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Get/Set step entry of a song
+// Get/Set/Clear step entry of a song
 /////////////////////////////////////////////////////////////////////////////
 seq_song_step_t SEQ_SONG_StepEntryGet(u32 step)
 {
@@ -156,6 +145,29 @@ s32 SEQ_SONG_StepEntrySet(u32 step, seq_song_step_t step_entry)
     return -1; // invalid step number
 
   seq_song_steps[step] = step_entry;
+
+  // for auto-save operation
+  something_has_been_changed = 1;
+
+  return 0; // no error
+}
+
+s32 SEQ_SONG_StepEntryClear(u32 step)
+{
+  if( step >= SEQ_SONG_NUM_STEPS )
+    return -1; // invalid step number
+
+  seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[step];
+  s->action = SEQ_SONG_ACTION_Stop;
+  s->action_value = 0;
+  s->pattern_g1 = 0x80;
+  s->bank_g1 = 0;
+  s->pattern_g2 = 0x80;
+  s->bank_g2 = 1;
+  s->pattern_g3 = 0x80;
+  s->bank_g3 = 2;
+  s->pattern_g4 = 0x80;
+  s->bank_g4 = 3;
 
   // for auto-save operation
   something_has_been_changed = 1;

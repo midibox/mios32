@@ -68,6 +68,12 @@ static u8 undo_map;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 Button_Handler(seq_ui_button_t button, s32 depressed);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -100,7 +106,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
     if( show_mixer_util_page ) {
-      // only used to select map
       if( SEQ_FILE_M_NumMaps() && (encoder == SEQ_UI_ENCODER_GP1) ) {
 	u8 mixer_map = SEQ_MIXER_NumGet();
         if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
@@ -108,7 +113,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 1; // value changed
 	}
 	return 0; // no change
+      } else if( encoder >= SEQ_UI_ENCODER_GP2 && encoder <= SEQ_UI_ENCODER_GP16 ) {
+	// -> forward to button function
+	return Button_Handler((seq_ui_button_t)encoder, 1);
       }
+
       return -1;
     }
 
