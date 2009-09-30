@@ -9,6 +9,16 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta2
 ~~~~~~~~~~~~~~~~~~~~
 
+  o Song page got a copy/pase/clear/insert/delete function for song steps.
+    Press the SELECT button to select the utility function
+  o Copy/Paste/Clear button can be used in song page as well
+  o Song/Phrase mode not switched via SONG button anymore (this handling
+    is an artifact from MBSEQ V2/V3)
+    Instead, the mode can be changed with GP encoder #8 or #9
+  o a 16 step selection pattern for the ALL function is now available
+    (only selected steps will be touched by the ALL function).
+    It can be changed by pressing the SELECT button in EDIT page.
+  o the 16 instrument labels of a drum track can be edited now
   o a nice graphical logo is now print during startup
   o lower CPU load if no SD Card connected
 
@@ -65,9 +75,6 @@ Wishlist for future features
   o implement Tap Tempo function (as known from V3)
   o allow to switch between different sections of a track (A/B/C/D function
     like known from MB808)
-  o selection pattern for ALL and Copy/Paste function, e.g. to change/copy
-    only note 1, 5, 9, 13...
-    SELECT button in Edit page should be used for this purpose
   o ALL button should work in mute screen
   o "Preloading steps" as proposed by Gridracer:
      Layer A is already active-> I press it again-> LED goes off or starts 
@@ -76,5 +83,4 @@ Wishlist for future features
      Now I can set the new steps which will now play the intended
      notes right from the beginning.
   o SysEx dump for patterns/songs
-  o special function for song page which copies the current pattern/mute set
-    into the selected song position
+  o implementation of a new 16x16 BLM (cascadable to even more buttons/LEDs)

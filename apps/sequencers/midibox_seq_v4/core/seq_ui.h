@@ -218,6 +218,12 @@ extern s32 SEQ_UI_MIXER_Clear(void);
 extern s32 SEQ_UI_MIXER_Undo(u8 mixer_map);
 extern s32 SEQ_UI_MIXER_UndoUpdate(void);
 
+extern s32 SEQ_UI_SONG_Copy(void);
+extern s32 SEQ_UI_SONG_Paste(void);
+extern s32 SEQ_UI_SONG_Clear(void);
+extern s32 SEQ_UI_SONG_Insert(void);
+extern s32 SEQ_UI_SONG_Delete(void);
+
 extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 
 extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
@@ -259,6 +265,7 @@ extern volatile u8 ui_cursor_flash;
 extern u8 ui_edit_name_cursor;
 extern u8 ui_edit_preset_num_category;
 extern u8 ui_edit_preset_num_label;
+extern u8 ui_edit_preset_num_drum;
 
 extern u8 ui_seq_pause;
 

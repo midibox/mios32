@@ -36,6 +36,9 @@ extern s32 SEQ_LABEL_CopyPreset(u8 num, char *dst);
 extern s32 SEQ_LABEL_NumPresetsCategory(void);
 extern s32 SEQ_LABEL_CopyPresetCategory(u8 num, char *dst);
 
+extern s32 SEQ_LABEL_NumPresetsDrum(void);
+extern s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst);
+
 
 
 /////////////////////////////////////////////////////////////////////////////

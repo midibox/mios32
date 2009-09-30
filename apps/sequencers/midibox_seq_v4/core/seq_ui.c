@@ -77,6 +77,7 @@ u16 ui_cursor_flash_ctr;
 u8 ui_edit_name_cursor;
 u8 ui_edit_preset_num_category;
 u8 ui_edit_preset_num_label;
+u8 ui_edit_preset_num_drum;
 
 u8 ui_seq_pause;
 
@@ -607,6 +608,12 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Copy();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "copied");
+    return 1;
+  } else if( ui_page == SEQ_UI_PAGE_SONG ) {
+    if( depressed ) return -1;
+    SEQ_UI_SONG_Copy();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "copied");
     return 1;
   } else {
     if( !depressed ) {
@@ -636,6 +643,12 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Paste();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "pasted");
+    return 1;
+  } else if( ui_page == SEQ_UI_PAGE_SONG ) {
+    if( depressed ) return -1;
+    SEQ_UI_SONG_Paste();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "pasted");
     return 1;
   } else {
     if( !depressed ) {
@@ -663,12 +676,19 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Clear();
-
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
-
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
+    return 1;
+  } else if( ui_page == SEQ_UI_PAGE_SONG ) {
+    if( depressed ) return -1;
+    SEQ_UI_SONG_Clear();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
     return 1;
   } else {
-    return SEQ_UI_UTIL_ClearButton(depressed);
+    if( depressed ) return -1;
+    SEQ_UI_UTIL_ClearButton(0); // button pressed
+    SEQ_UI_UTIL_ClearButton(1); // button depressed
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+    return 1;
   }
 }
 
@@ -768,11 +788,6 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
   seq_ui_button_state.SONG_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
-
-  // toggle active mode if already in song page
-  if( ui_page == SEQ_UI_PAGE_SONG ) {
-    SEQ_SONG_ActiveSet(SEQ_SONG_ActiveGet() ? 0 : 1);
-  }
 
   SEQ_UI_PageSet(SEQ_UI_PAGE_SONG);
 
