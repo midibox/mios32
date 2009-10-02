@@ -375,10 +375,10 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			case 0x800F: // sine drum: trigger note
 				DRUM_setSineDrum_TriggerNote(index, value); break;
 			
+#ifdef APP_VERBOSE
 			default:
-				#ifdef APP_VERBOSE
 				MIOS32_MIDI_SendDebugMessage("Unknown address: %d", address);
-				#endif
+#endif
 		}	
 	} else {
 		#ifdef APP_VERBOSE
