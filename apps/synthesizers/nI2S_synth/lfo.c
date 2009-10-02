@@ -18,10 +18,10 @@
 
 #include <mios32.h>
 
+#include "defs.h"
 #include "types.h"
 #include "engine.h"
 #include "lfo.h"
-#include "defs.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the LFOs rate
