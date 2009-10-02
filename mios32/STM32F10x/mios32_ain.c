@@ -35,6 +35,17 @@
 //!
 //! It's possible to define an oversampling rate, which leads to an accumulation 
 //! of conversion results to increase the resolution and to improve the accuracy.
+//!
+//! A special idle mechanism has been integrated which avoids sporadical
+//! jittering values of AIN pins which could happen due to EMI issues.<BR>
+//! MIOS32_AIN_IDLE_CTR defines the number of conversion after which the
+//! pin goes into idle state if no conversion exceeded the MIOS32_AIN_DEADBAND.
+//! In idle state, MIOS32_AIN_DEADBAND_IDLE will be used instead, which is greater
+//! (accordingly the pin will be less sensitive). The pin will use the original
+//! MIOS32_AIN_DEADBAND again once MIOS32_AIN_DEADBAND_IDLE has been exceeded.<BR>
+//! This feature can be disabled by setting MIOS32_AIN_DEADBAND_IDLE to 0
+//! in your mios32_config.h file.
+//!
 //! \{
 /* ==========================================================================
  *
@@ -95,6 +106,10 @@ static u8  mux_ctr;
 
 static u16 ain_pin_values[NUM_AIN_PINS];
 static u32 ain_pin_changed[NUM_CHANGE_WORDS];
+
+#if MIOS32_AIN_DEADBAND_IDLE
+static u16 ain_pin_idle_ctr[NUM_AIN_PINS];
+#endif
 
 #endif
 
@@ -167,6 +182,9 @@ s32 MIOS32_AIN_Init(u32 mode)
   }
   for(i=0; i<NUM_AIN_PINS; ++i) {
     ain_pin_values[i] = 0;
+#if MIOS32_AIN_DEADBAND_IDLE
+    ain_pin_idle_ctr[i] = 0;
+#endif
   }
   for(i=0; i<NUM_CHANGE_WORDS; ++i) {
     ain_pin_changed[i] = 0;
@@ -472,20 +490,41 @@ void DMA1_Channel1_IRQHandler(void)
 #endif
     dst_ptr = (u16 *)&ain_pin_values[pin_offset];
 
+#if MIOS32_AIN_DEADBAND_IDLE
+    u16 *idle_ctr_ptr = (u16 *)&ain_pin_idle_ctr[pin_offset];
+#endif
+
     for(i=0; i<num_channels; ++i) {
+#if MIOS32_AIN_DEADBAND_IDLE
+      u16 deadband = *idle_ctr_ptr ? (MIOS32_AIN_DEADBAND) : (MIOS32_AIN_DEADBAND_IDLE);
+#else
+      u16 deadband = MIOS32_AIN_DEADBAND;
+#endif
+
       // takeover new value if difference to old value is outside the deadband
 #if MIOS32_MF_NUM && !defined(MIOS32_DONT_USE_MF)
-      if( (*ain_deltas_ptr++ = abs(*src_ptr - *dst_ptr)) > MIOS32_AIN_DEADBAND ) {
+      if( (*ain_deltas_ptr++ = abs(*src_ptr - *dst_ptr)) > deadband ) {
 #else
-      if( abs(*src_ptr - *dst_ptr) > MIOS32_AIN_DEADBAND ) {
+      if( abs(*src_ptr - *dst_ptr) > deadband ) {
 #endif
 	*dst_ptr = *src_ptr;
 	ain_pin_changed[word_offset] |= (1 << bit_offset);
+#if MIOS32_AIN_DEADBAND_IDLE
+	*idle_ctr_ptr = MIOS32_AIN_IDLE_CTR;
+#endif
+      } else {
+#if MIOS32_AIN_DEADBAND_IDLE
+	if( *idle_ctr_ptr )
+	  *idle_ctr_ptr -= 1;
+#endif
       }
 
       // switch to next results
       ++dst_ptr;
       ++src_ptr;
+#if MIOS32_AIN_DEADBAND_IDLE
+      ++idle_ctr_ptr;
+#endif
 
       // switch to next bit/word offset for "changed" flags
       if( ++bit_offset >= 32 ) {

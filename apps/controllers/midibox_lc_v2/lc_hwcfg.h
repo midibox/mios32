@@ -52,7 +52,7 @@
 
 // debounce counter (see the function description of MIOS_SRIO_DebounceSet)
 // Use 0 for high-quality buttons, use higher values for low-quality buttons
-#define SRIO_DEBOUNCE_CTR	0
+#define SRIO_DEBOUNCE_CTR	20
 
 // motordriver settings
 #if MBSEQ_HARDWARE_OPTION

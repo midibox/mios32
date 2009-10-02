@@ -50,6 +50,24 @@
 #endif
 
 
+// define the deadband which is used when an AIN pin is in "idle" state
+// this helps to avoid sporadical jittering values
+// Set this value to 0 to disable the feature (it's enabled by default)
+#ifndef MIOS32_AIN_DEADBAND_IDLE
+#define MIOS32_AIN_DEADBAND_IDLE 127
+#endif
+
+// define after how many conversions the AIN pin should go into "idle" state
+// - "idle" state is left once MIOS32_AIN_DEADBAND_IDLE is exceeded.
+// - "idle" state is entered once MIOS32_AIN_DEADBAND hasn't been exceeded for 
+//   MIOS32_AIN_IDLE_CTR conversions
+// 3000 conversions are done in ca. 3 seconds (depends on number of pins!)
+// allowed range: 1..65535
+#ifndef MIOS32_AIN_IDLE_CTR
+#define MIOS32_AIN_IDLE_CTR 3000
+#endif
+
+
 // muxed or unmuxed mode (0..3)?
 // 0 == unmuxed mode
 // 1 == 1 mux control line -> *2 channels
