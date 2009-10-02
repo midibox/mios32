@@ -44,7 +44,8 @@
 // define the deadband (min. difference to report a change to the application hook)
 // typically set to (2^(12-desired_resolution)-1)
 // e.g. for a resolution of 7 bit, it's set to (2^(12-7)-1) = (2^5 - 1) = 31
-#define MIOS32_AIN_DEADBAND 31
+//#define MIOS32_AIN_DEADBAND 31
+#define MIOS32_AIN_DEADBAND 15
 
 // number of motorfaders (0-16)
 #define MIOS32_MF_NUM 8
