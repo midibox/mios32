@@ -14,20 +14,55 @@
 #ifndef _DEFS_H
 #define _DEFS_H
 
-#define ENV_VERBOSE 
-#define TRIGGER_VERBOSE 
-#define ENGINE_VERBOSE 
+// Compiler switches for the debug console
+
+// #define ENV_VERBOSE 
+// #define TRIGGER_VERBOSE 
+// #define ENGINE_VERBOSE 
 // #define ENGINE_VERBOSE_MAX
-#define DRUM_VERBOSE 
-#define APP_VERBOSE 
+// #define DRUM_VERBOSE 
+// #define SYSEX_VERBOSE 
+// #define APP_VERBOSE 
+// #define ROUTING_VERBOSE
+// #define FILTER_VERBOSE
+
+// new routing matrix
+#define	ROUTE_SOURCES 16
+#define	ROUTE_TARGETS 16
+
+// routing signal sources
+#define	RS_OUT			0  // output value of this row
+#define	RS_LFO1_OUT		1
+#define	RS_LFO2_OUT		2
+#define	RS_LFO3_OUT		3  // dummy
+#define	RS_ENV1_OUT		4
+#define	RS_ENV2_OUT		5
+#define	RS_ENV3_OUT		6  // dummy
+#define	RS_OSC1_OUT		7
+#define	RS_OSC2_OUT		8
+#define	RS_OSC3_OUT		9  // dummy
+#define	RS_AFTERTOUCH 	10
+#define	RS_MODWHEEL		11
+#define	RS_CONSTANT		12
+
+// routing signal target 
+#define	RT_FILTER_CUTOFF	0
+#define	RT_FILTER_RESONANCE 1
+#define	RT_VOLUME           2
+#define	RT_OSC1_VOLUME      3
+#define	RT_OSC2_VOLUME      4
+#define	RT_OSC3_VOLUME      5 // dummy
+#define	RT_OSC1_PITCH       6
+#define	RT_OSC2_PITCH       7
+#define	RT_OSC3_PITCH       8
 
 // at 48kHz sample frequency and two channels, the sample buffer has to be 
 // refilled at a rate of 48Khz / SAMPLE_BUFFER_SIZE
 #define SAMPLE_BUFFER_SIZE 32  
 #define CHANNELS 2
 
-#define ENVELOPE_RESOLUTION 		100 // divider for the envelope clock (48KHz/X)
-#define LFO_RESOLUTION 				10  // divider for the envelope clock (48KHz/X)
+#define ENVELOPE_RESOLUTION 		100 // divider for the envelope clock (48kHz/X)
+#define LFO_RESOLUTION 				10  // divider for the lfo clock (48kHz/X)
 
 #define ENGINE_SYNTH				0
 #define ENGINE_DRUM					1

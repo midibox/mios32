@@ -36,7 +36,7 @@
  *                                                                          *
  * v0.0.0 - 2009/04/09 - initial release                                    *
  *                                                                          *
- * v0.0.1 - 2009/04/13 - "Bashful"                                          *
+ * v0.0.1 - 2009/04/13 - "Agent Cheesecake"                                 *
  *   > general:                                                             *
  * 		 - various bugfixes (thanks TK)                                     *
  *   > lead engine:                                                         *
@@ -49,7 +49,7 @@
  *   > editor:                                                              *
  *       - mixup with volume/overdrive/mix knobs in the drum editor fixed   *
  *                                                                          *
- * v0.0.2 - 2009/09/17 - "Cheerful"                                         *
+ * v0.0.2 - 2009/09/17 - "Beta Ray Bill"                                    *
  *   > general:                                                             *
  *       - some performance fixes                                           *
  *       - patch names can be set via sysex now (address 0x03, 32 chars)    *
@@ -71,32 +71,67 @@
  *       - added switch to dis-/enable delay                                *
  *       - added chorus                                                     *
  *                                                                          *
+ * v0.0.3 - 2009/09/20 - "Cloud 9"                                          *
+ *   > general:                                                             *
+ *       - enhanced patch management (multi bankstick, default patch, ...)  *
+ *       - sysex dumps of the current patch can be requested via CC #70     *
+ *   > lead engine:                                                         *
+ *       - pitch bend is back (still some issues with the linearity)        *
+ *                                                                          *
+ * v0.0.4 - 2009/10/01 - "Demogoblin"                                       *
+ *   > general:                                                             *
+ *       - cleaned up the VERBOSE switches a bit more and added new ones    *
+ *         for more detailed and specific feedback                          *
+ *   > lead engine:                                                         *
+ *       - fixed bitcrush. it now crushes bits =)                           *
+ *       - added setters on patch load (bitcrush so far, others may follow) *
+ *       - started implementing the new routing matrix                      *
+ *       - lfo depth offset before multiply (auto fixed via matrix)         *
+ *       - fix mod behaviour (offset vs. amount) (auto fixed via matrix)    *
+ *       - removed LFO depth (can be handled via the routing matrix)        *
+ *       - added a selectable depth source for each routing target          *
+ *                                                                          *
  ****************************************************************************
  *                                                                          *
  * TODO/KNOWN BUGS (not in any particular order)                            *
  *   - lots                                                                 *
  *   - fix "fixme"s                                                         *
  *   - optimize "optimize-here"s                                            *
+ *   - kill invert flag for envelopes (comes free with the matrix)          *
  *   - come up with a name. it needs to be food. got an idea? lemme know!   *
  *   - add a CS/menu structure                                              *
  *   - no note down -> transpose hangup (noticeable when no source is set   *
  *     for volume)                                                          *
- *   - fix filters (cutoff on SVF, output levels, constants)                *
+ *   - fix filters (moog constants and levels)                              *
  *   - add new filter type "external" with aout support                     *
- *   - copy waveblender from temp files back in                             *
- *   - new mod targets/sources / reversed mod route                         *
- *   - change routing to matrix                                             *
- *   - lfo depth offset before multiply                                     *
- *   - fix mod behaviour (offset vs. amount)                                *
- *   - fix pitch bend (where has it gone, oh noes)                          *
- *   - drum engine oddness (if I get really bored)                          *
- *   - drum engine: velocity ( --"-- )                                      *
+ *   - copy waveblender from temp files back in (?)                         *
+ *   - change the rest of the routing to matrix as well                     *
  *   - changeable fx chain order                                            *
  *   - move calculations out of the main loop                               *
- *   - aftertouch/modulation as mod source                                  *
+ *   - aftertouch/modulation/velocity and user-definable CCs as mod source  *
  *   - ignore non working trigger combinations (lfo cycle->lfo reset, ...)  *
+ *   - pitch bend: blending shouldn't be linear...                          *
  *   - options for SD card/bankstick (do I really want to keep bankstick    *
- *     support?                                                             *
+ *     support? yes, i do. one internal bankstick should do for settings    *
+ *     and some (63) patches (it's actually going to be a lot less, since   *
+ *     the routing matrix takes pu quite a bit of space :-))                *
+ *   - find out why this list keeps getting longer instead of shorter :-/   *
+ * 																		    *
+ *   - drum engine oddness (if I get really bored)                          *
+ *   - drum engine: velocity ( --"-- )                                      *
+ *                                                                          *
+ ****************************************************************************
+ *                                                                          *
+ * NOTES TO SELF                                                            *
+ * - routing matrix                                                         *
+ *   --------------                                                         *
+ *   sources                                                                *
+ *     lfo1-3*, env1-3*, osc1-3* pitch, constant, mod wheel, aftertouch,    *
+ *     user-definable CCs                                                   *
+ *   targets                                                                *
+ *     cutoff, resonance, ext.cutoff, ext.resonance, osc1-3* pitch,         *
+ *     osc1-3.volume*, master volume, osc1-3 suboct,                        *
+ *     od, bitcrush, downsample                                             *
  *                                                                          *
  ****************************************************************************/
 
@@ -115,11 +150,18 @@
 #include "envelope.h"
 
 /////////////////////////////////////////////////////////////////////////////
+// Version/app info 
+/////////////////////////////////////////////////////////////////////////////
+
+static const char APP_NAME[] = "nI2S Toy Synth";
+static const char VERSION_STRING[] = "v0.0.3";
+
+/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
-	   u32 bankstick;
-	   u16 bank;			// is there even a need for banks with SD?
+	   u16 bank;			// is there even a need for banks with SD? (yes)
 static u16 patch_number;	// patch number
+static config_t config;		// the configuration
 
 /////////////////////////////////////////////////////////////////////////////
 // This function sets the patch name
@@ -128,121 +170,283 @@ void APP_setPatchName(char* patchname) {
 	u8 n;
 
 	for (n=0; n<32; n++)
-		p.name[n] = patchname[n];
+		p.d.name[n] = patchname[n];
 
 	// redundant but sooo much easier
-	p.name[32] = 0;
+	p.d.name[32] = 0;
 
 	#ifdef APP_VERBOSE
-	MIOS32_MIDI_SendDebugMessage("APP_setPatchName(): '%s'", &p.name[0]);
+	MIOS32_MIDI_SendDebugMessage("APP_setPatchName(): %a", &p.d.name[0]);
 	#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This debug funtion sends a patch dump to the console   
+/////////////////////////////////////////////////////////////////////////////
+void APP_dumpPatch() {
+	MIOS32_MIDI_SendDebugHexDump(&p.all[0], 512);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // This function stores the patch in use to the bankstick
 /////////////////////////////////////////////////////////////////////////////
-void APP_storePatch(u16 patchnumber) {
+void APP_storePatch(u8 bankstick, u16 patchnumber) {
+	// fixme: is this patch number even valid?
 	u8 block;
+	u16 bs;
 	s32 res = 0;
 	u16 address = patchnumber * sizeof(patch_t);
 	
 	MIOS32_IIC_BS_ScanBankSticks();
-	bankstick = MIOS32_IIC_BS_CheckAvailable(0);
+	bs = MIOS32_IIC_BS_CheckAvailable(bankstick);
 
-	if (!bankstick) {
+	if (!bs) {
 		#ifdef APP_VERBOSE
-		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): No bankstick found to store to.");
+		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): No bankstick in slot %d.", bankstick);
 		#endif
 		return;
 	}
 
 	// potential fixme: evil evil waiting... seems to work fine though
-	res += MIOS32_IIC_BS_Write(0, address, &p.all[0], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 64, &p.all[64], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 128, &p.all[128], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 192, &p.all[192], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 256, &p.all[256], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 320, &p.all[320], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 384, &p.all[384], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
-	res += MIOS32_IIC_BS_Write(0, address + 448, &p.all[448], 64);
-	do {} while (MIOS32_IIC_BS_CheckWriteFinished(0) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address, &p.all[0], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 64, &p.all[64], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 128, &p.all[128], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 192, &p.all[192], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 256, &p.all[256], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 320, &p.all[320], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 384, &p.all[384], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, address + 448, &p.all[448], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+
+	if (res == 0)
+		patch_number = patchnumber;
 
 	#ifdef APP_VERBOSE
 	if (res == 0)
-		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): Patch successfully stored.");
+		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): Patch successfully stored at location %d.", patchnumber);
 	else
-		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): Cannot store patch '%s' at address %d [%d]", p.name, patchnumber, res);
+		MIOS32_MIDI_SendDebugMessage("APP_storePatch(): Cannot store patch '%s' at address %d [%d]", p.d.name, patchnumber, res);
 	#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function stores the config to the specified bankstick
+/////////////////////////////////////////////////////////////////////////////
+void APP_storeConfig(u8 bankstick) {
+	s32 res = 0;
+	u16 bs;
+
+	MIOS32_IIC_BS_ScanBankSticks();
+	bs = MIOS32_IIC_BS_CheckAvailable(bankstick);
+
+	if (!bs) {
+		#ifdef APP_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("APP_storeConfig(): No bankstick in slot %d.", bankstick);
+		#endif
+		return;
+	}
+
+	config.header = 0x6E493253;
+
+	// potential fixme: evil evil waiting... seems to work fine though
+	res += MIOS32_IIC_BS_Write(bankstick, 0, &config.all[0], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 64, &config.all[64], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 128, &config.all[128], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 192, &config.all[192], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 256, &config.all[256], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 320, &config.all[320], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 384, &config.all[384], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+	res += MIOS32_IIC_BS_Write(bankstick, 448, &config.all[448], 64);
+	do {} while (MIOS32_IIC_BS_CheckWriteFinished(bankstick) != 0);
+
+	#ifdef APP_VERBOSE
+	if (res == 0)
+		MIOS32_MIDI_SendDebugMessage("APP_storeConfig(): Config successfully stored at bankstick %d", bankstick);
+	else
+		MIOS32_MIDI_SendDebugMessage("APP_storeConfig(): Cannot store config on bankstick %d [%d]", bankstick, res);
+	#endif
+}
+/////////////////////////////////////////////////////////////////////////////
+// This prepares the bankstick for use with the synth    
+/////////////////////////////////////////////////////////////////////////////
+void APP_formatBankstick(u8 bankstick, u16 size) {
+	u8 n;
+	
+	APP_storeConfig(bankstick);
+
+	for (n=1; n<64; n++) {
+		APP_storePatch(bankstick, n);
+	}
+
+	#ifdef APP_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("  [OK] Bankstick %d successfully formatted.", bankstick);
+	#endif		
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // This function loads a patch from the bankstick
 /////////////////////////////////////////////////////////////////////////////
-void APP_loadPatch(u16 patchnumber) {
+void APP_loadPatch(u8 bankstick, u16 patchnumber) {
 	// fixme: is that patch number even valid?
 	s32 res = 0;
 	u16 block;
 	u16 address = sizeof(patch_t) * patchnumber;
+
+	if (patchnumber == 0) {
+		// load default patch
+		for (block=0; block<512; block++) {
+			p.all[block] = default_patch.all[block];
+		}
+
+		#ifdef APP_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Loaded default patch.");
+		#endif
+
+		return;
+	}
 	
 	MIOS32_IIC_BS_ScanBankSticks();
-	bankstick = MIOS32_IIC_BS_CheckAvailable(0);
+	block = MIOS32_IIC_BS_CheckAvailable(bankstick);
 
-	if (!bankstick) {
+	if (!block) {
 		#ifdef APP_VERBOSE
-		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): No bankstick found to store to.");
+		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): No bankstick in slot %d found to load from.", block);
 		#endif
 		return;
 	}
 
 	#ifdef APP_VERBOSE
-	MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Loading patch %d from address %d", patchnumber, address);
+	MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Loading patch %d from address %d on bankstick %d", patchnumber, address, bankstick);
 	#endif
 
-	res += MIOS32_IIC_BS_Read(0, address, &p.all[0], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 64, &p.all[64], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 128, &p.all[128], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 192, &p.all[192], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 256, &p.all[256], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 320, &p.all[320], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 384, &p.all[384], 64);
-	res += MIOS32_IIC_BS_Read(0, address + 448, &p.all[448], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address, &p.all[0], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 64, &p.all[64], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 128, &p.all[128], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 192, &p.all[192], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 256, &p.all[256], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 320, &p.all[320], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 384, &p.all[384], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, address + 448, &p.all[448], 64);
 
 	// store active patch number
 	patch_number = patchnumber;
+
+	// setup patch specific values
+	ENGINE_setBitcrush(p.d.voice.bitcrush);
 	
 	#ifdef APP_VERBOSE
 	if (res == 0)
-		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Patch '%s' successfully loaded.", p.name);
+		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Patch '%s' successfully loaded from bankstick %d.", p.d.name, bankstick);
 	else
-		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Cannot load patch %d [%d]", patchnumber, res);
+		MIOS32_MIDI_SendDebugMessage("APP_loadPatch(): Cannot load patch %d [%d] from bankstick %d", patchnumber, res, bankstick);
 	#endif
 
 	// fixme: engine might need to be switched
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// This function checks if a bankstick has been formatted yet
+/////////////////////////////////////////////////////////////////////////////
+u8 APP_checkBankstickIntegrity(u8 bankstick, u16 size) {
+	// fixme: is that patch number even valid?
+	s32 res = 0;
+	u16 block;
+
+	#ifdef APP_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("  [OK] checking...");
+	#endif
+
+	res += MIOS32_IIC_BS_Read(bankstick, 0, &config.all[0], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 64, &config.all[64], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 128, &config.all[128], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 192, &config.all[192], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 256, &config.all[256], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 320, &config.all[320], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 384, &config.all[384], 64);
+	res += MIOS32_IIC_BS_Read(bankstick, 448, &config.all[448], 64);
+
+	#ifdef APP_VERBOSE
+	if (res)
+		MIOS32_MIDI_SendDebugMessage("  [ER] bankstick %d is not available", p.d.name);
+	#endif
+
+	if (config.header == 0x6E493253 /* == 'nI2S' */) 
+		return 0;
+	else
+		return 1;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-	MIOS32_IIC_BS_Init(0);
-	
 	s32 bs, bs2;
-	// temp: check for bankstick 0
-	MIOS32_IIC_BS_ScanBankSticks();
-	bankstick = MIOS32_IIC_BS_CheckAvailable(0);
+	u16 n;
+
 	#ifdef APP_VERBOSE
-	MIOS32_MIDI_SendDebugMessage("Bankstick scan result = %d", bankstick);
-	MIOS32_MIDI_SendDebugMessage("sizeof(patch_t) = %d", sizeof(patch_t));
+	MIOS32_MIDI_SendDebugMessage("------------------------------------------------------------");
+	MIOS32_MIDI_SendDebugMessage("Booting %s %s", APP_NAME, VERSION_STRING);
+	MIOS32_MIDI_SendDebugMessage("------------------------------------------------------------");
 	#endif
+
+	// temp
+	config.header = 0x6E493253; // nI2S
+	for (n=0; n<512; n++) {
+		p.all[n] = default_patch.all[n];
+	}
+
+	// initialize bankstick module
+	MIOS32_IIC_BS_Init(0);
+
+	bank = 0;
+	patch_number = 1;
+	
+	// temp: check for banksticks (fixme: and SD card)
+	MIOS32_IIC_BS_ScanBankSticks();
+
+	// check all banksticks
+	#ifdef APP_VERBOSE
+	MIOS32_MIDI_SendDebugMessage("Checking banksticks");
+	#endif
+	for (n=0; n<8; n++) {
+		bs = MIOS32_IIC_BS_CheckAvailable(n);
+
+		#ifdef APP_VERBOSE
+		if (bs)
+			MIOS32_MIDI_SendDebugMessage("  Bankstick #%d size is %d", n, bs);
+		else
+			MIOS32_MIDI_SendDebugMessage("  Bankstick #%d not available", n, bs);
+		#endif
+
+		if (bs) {
+			if (APP_checkBankstickIntegrity(n, bs)) {
+				#ifdef APP_VERBOSE
+				MIOS32_MIDI_SendDebugMessage("  [CL] Formatting bankstick %d", n);
+				#endif
+				APP_formatBankstick(n, bs);
+
+			} else {
+				#ifdef APP_VERBOSE
+				MIOS32_MIDI_SendDebugMessage("  [OK] Bankstick %d", n);
+				#endif
+			}
+		}
+	}
 
 	// init sound engine
 	ENGINE_init();
@@ -251,7 +455,10 @@ void APP_Init(void)
 	SYSEX_Init();
 
     // load the default patch
-	APP_loadPatch(0);
+	APP_loadPatch(0, 0);
+
+	// temp, fixme, deleteme:
+	ENGINE_setBitcrush(0);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -264,7 +471,7 @@ void APP_Background(void){
 	// ...
 	// and even more!
 	// ..
-	// done!
+	// done! 
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -302,20 +509,30 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 
 	// program change
 	if (midi_package.evnt0 == 0xC0)
-		APP_loadPatch(midi_package.evnt1);
+		APP_loadPatch(bank, midi_package.evnt1);
 	else
   
 	// fixme: CC handler (incomplete, mainly a dummy to be fixed later)
 	if (midi_package.evnt0 == 0xB0) {
 		switch (midi_package.evnt1) {
+			case 0x01: // mod wheel
+				ENGINE_setModWheel(midi_package.evnt2 * 0x1FF); 
+				break;
+			/******************************************************************/
+
 			// temp LOAD patch, fixme: depend on engine
 			case 0x40: 
-				APP_loadPatch(0);
+				APP_loadPatch(bank, patch_number);
 				break;
 
 			// temp STORE patch
 			case 0x45: 
-				APP_storePatch(0);
+				APP_storePatch(bank, patch_number);
+				break;
+
+			// temp send patch dump
+			case 0x7C: 
+				APP_dumpPatch();
 				break;
 
 			// engine flags

@@ -49,20 +49,21 @@ void FILTER_resonantLP_Init() {
 	u16 c;
 	u16 a;
 
-	c = (p.filter.cutoff == 0) ? 1 : p.filter.cutoff;
+	c = (p.d.filter.cutoff == 0) ? 1 : p.d.filter.cutoff;
 	
 	// fb = q + q/(1.0 - f);
-	a = p.filter.resonance;
+	a = p.d.filter.resonance;
 	// b = (32768 - cutoff >> 1);
 	a /= c;
-	fb = p.filter.resonance + a;
+	fb = p.d.filter.resonance + a;
 }
 
 void FILTER_initFilter() {
-	switch (p.filter.filterType) {
-		case (FILTER_MOOG_LP):
+	switch (p.d.filter.filterType) {
+		case (FILTER_RES_LP):
 			FILTER_resonantLP_Init();
 			break;
+		case FILTER_MOOG_LP:
 		case FILTER_SVF_LOWPASS:
 		case FILTER_SVF_BANDPASS:
 		case FILTER_SVF_HIGHPASS:
@@ -75,13 +76,13 @@ void FILTER_initFilter() {
 // returns the filtered input depending on selected filter type
 /////////////////////////////////////////////////////////////////////////////
 s16 FILTER_filter(s16 in, u16 cutoff) {
-	switch (p.filter.filterType) {
+	switch (p.d.filter.filterType) {
 		case FILTER_LP:
 			return FILTER_simpleLP(in, cutoff);
 		case FILTER_RES_LP:
 			return (s16) FILTER_resonantLP(in + 32768, cutoff) - 32768;
 		case FILTER_MOOG_LP:
-			return FILTER_moogLP(in, p.filter.resonance, cutoff);
+			return FILTER_moogLP(in, p.d.filter.resonance, cutoff);
 		case FILTER_SVF_LOWPASS:
 			return FILTER_svf(in, cutoff, FILTER_SVF_LOWPASS);
 		case FILTER_SVF_BANDPASS:
@@ -178,12 +179,13 @@ static const u16 tanh_table[256] = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// antti's moog low pass filter
+// antti's moog low pass filter as translated by moogah
 /////////////////////////////////////////////////////////////////////////////
 s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 {
-	#define RES_SCALE 32767
-	#define CUT_SCALE 65535
+	// numbers derived through voodoo
+	#define RES_SCALE 8192
+	#define CUT_SCALE 65536
 	cutoff /= 3;
 	
 	s16 tan; // index for tanh lookup
@@ -272,7 +274,7 @@ s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 	
 	// wr = tanh(wr);
 	tan = (wr > 0) ? wr : -wr;		// mirror negative values for lookup
-	tan >>= 8;						// shift to 8 bits
+	tan /= 256;						// shift to 8 bits / divide by 265
 	tanSign = (wr > 0) ? 1 : -1; 	// mirror for neagtive values
 	wr = tanh_table[tan];			// look up
 	wr *= tanSign;	
@@ -311,7 +313,7 @@ s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 	
 	// wr = tanh(wr);
 	tan = (wr > 0) ? wr : -wr; 		// ...
-	tan >>= 8;
+	tan /= 256;
 	tanSign = (wr > 0) ? 1 : -1; 	// mirror for neagtive values
 	wr = tanh_table[tan];
 	wr *= tanSign;
@@ -347,7 +349,7 @@ s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 	
 	// wr = tanh(wr);
 	tan = (wr > 0) ? wr : -wr; 		// ...
-	tan >>= 8;
+	tan /= 256;
 	tanSign = (wr > 0) ? 1 : -1; 	// mirror for neagtive values
 	wr = tanh_table[tan];	
 	wr *= tanSign;
@@ -375,8 +377,8 @@ s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 	
 	// wr = wr - tanh(stg4out);
 	tan = (stg4out > 0) ? stg4out : -stg4out; 		// ...
-	tan >>= 8;
-	tanSign = (stg4out > 0) ? 1 : -1; 	// mirror for neagtive values
+	tan /= 256;
+	tanSign = (stg4out > 0) ? 1 : -1; 	// mirror for negative values
 	wr -= tanSign * tanh_table[tan];		
 
 	
@@ -405,7 +407,7 @@ s16 FILTER_moogLP(s16 in, u16 resonance, u16 cutoff)
 // sets the filter's cutoff
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setCutoff(u16 c) {
-	p.filter.cutoff = c;
+	p.d.filter.cutoff = c;
 	
 	FILTER_initFilter();
 }
@@ -414,7 +416,7 @@ void FILTER_setCutoff(u16 c) {
 // sets the filter's resonance
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setResonance(u16 r) {
-	p.filter.resonance = r;
+	p.d.filter.resonance = r;
 	
 	FILTER_resonantLP_Init();
 }
@@ -424,11 +426,13 @@ void FILTER_setResonance(u16 r) {
 /////////////////////////////////////////////////////////////////////////////
 void FILTER_setFilter(u8 f) {
 	if (f < FILTER_TYPES)
-		p.filter.filterType = f;
+		p.d.filter.filterType = f;
 
 	FILTER_initFilter();
 	
+	#ifdef FILTER_VERBOSE
 	MIOS32_MIDI_SendDebugMessage("filter type: %d", f);
+	#endif
 }
 
 
@@ -474,7 +478,7 @@ s16 FILTER_svf(s16 input, u16 cutoff, u8 mode) {
 	bandpass /= 3; 
 
     // optimize-here: to save a few cycles we could split this into 3 svf functions.
-	switch (p.filter.filterType) {
+	switch (p.d.filter.filterType) {
 		case FILTER_SVF_LOWPASS:  return lowpass; 
 		case FILTER_SVF_BANDPASS: return bandpass; 
 		case FILTER_SVF_HIGHPASS: return highpass;
@@ -502,6 +506,6 @@ void FILTER_svf_Init() {
 	*/
 
 	// this looks simpler, doesn't it ;)
-	svf_cutoff = (p.filter.cutoff > 2047) ? p.filter.cutoff : 2048;
+	svf_cutoff = (p.d.filter.cutoff > 2047) ? p.d.filter.cutoff : 2048;
 	f  = svf_cutoff / 4;
 }
