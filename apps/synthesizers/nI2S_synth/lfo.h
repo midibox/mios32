@@ -20,7 +20,6 @@
 
 void LFO_setFreq(u8 lfo, u16 frq);
 void LFO_setPW(u8 lfo, u16 pw);
-void LFO_setDepth(u8 lfo, u16 d);
 void LFO_setWaveform(u8 lfo, u8 wav);
 void LFO_tick(void);
 

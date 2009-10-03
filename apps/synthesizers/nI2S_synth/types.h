@@ -104,7 +104,7 @@ typedef struct lfo {
 	u16 pink_noise;
 	
 	u16 pulsewidth;
-	u16 depth;
+	u16 depth;				// fixme: bad relic, needs to be removed
 	u16 out;
 } lfo_t;
 
@@ -125,7 +125,7 @@ typedef struct {
 	u16 decayAccumValue;
 	u16 releaseAccumValue;
 
-	unsigned gate:1;
+	u8 gate:1;
 } envelope_t;
 
 // voice *********************************************************************
@@ -173,8 +173,8 @@ typedef union {
 		unsigned interpolate:1;
 		unsigned syncOsc2:1;
 		unsigned overdrive:1;
-		unsigned invertEnv1:1;
-		unsigned invertEnv2:1;
+//		unsigned invertEnv1:1;  fixme: completely remove if working
+//		unsigned invertEnv2:1;
 		unsigned dcf:1;
 		unsigned ringmod:1;
 		unsigned delay:1;
@@ -218,10 +218,12 @@ typedef union {
 	};
 } trigger_col_t;
 
+typedef struct {
+
+} patch_inner_t;
+
 typedef union {
-	struct {
-		u8 				all[512];
-	};
+	u8 					all[512];
 	struct {
 		char			name[33];
 		lfo_t 			lfos[2];
@@ -234,7 +236,25 @@ typedef union {
 		trigger_col_t   trigger_matrix[TR_COLS];
 		u8				engine;
 		routing_t		routing[ROUTING_TARGETS];
-	};
+	} d;
 } patch_t;
+
+typedef union {
+	struct {
+		u8 				all[512];
+	};
+	struct {
+		u32				header;
+	};
+} config_t;
+
+// new routing matrix //////////////////////////////////////////////////////////
+
+// routing element
+typedef struct {
+	s16 offset;			// offset (comes after depth)
+	s16 depth; 			// depth  (before offset)
+	s16 out; 			// output = (in * depth / 65536) + offset;
+} routing_element_t;
 
 #endif

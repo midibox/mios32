@@ -67,6 +67,8 @@ void ENGINE_setRouteDepth(u8 trgt, u16 d);
 void ENGINE_setPortamentoRate(u8 osc, u16 portamento);
 void ENGINE_setPortamentoMode(u8 osc, u8 mode);
 
+void ENGINE_setModWheel(u16 mod);
+
 void ENGINE_setBitcrush(u8 resolution);
 
 void ENGINE_setTriggerColumn(u8 row, u16 value);
@@ -91,6 +93,13 @@ extern u8 				engine;					// selects the sound engine
 extern u16			 	envelopeTime;			// divider for the 48kHz sample clock that clocks the env
 extern u16 				lfoTime;				// divider for the 48kHz sample clock that clocks the lfof
 extern u16 				tempValues[2];			// temporary values for whatever 
+
+extern u16				routing_source_values[ROUTE_SOURCES];
+extern u16				routing_depth_source[ROUTE_SOURCES];
+extern routing_element_t matrix[ROUTE_SOURCES+1][ROUTE_TARGETS];
+extern u8 				route_update_req[ROUTE_SOURCES+1];
+
+extern patch_t			default_patch;			// the default patch
 
 extern patch_t 			p;						// the patch, fixme: redundant (well not this but all the rest)
 

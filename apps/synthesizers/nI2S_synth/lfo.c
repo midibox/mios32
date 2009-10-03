@@ -34,22 +34,15 @@ void LFO_setFreq(u8 lfo, u16 frq) {
 	d >>= 6;
 	d += 1;
 	
-	p.lfos[lfo].accumValue = d;
-	p.lfos[lfo].frequency = frq;
+	p.d.lfos[lfo].accumValue = d;
+	p.d.lfos[lfo].frequency = frq;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the pulsewidth for the pulse waveform
 /////////////////////////////////////////////////////////////////////////////
 void LFO_setPW(u8 lfo, u16 pw) {
-	p.lfos[lfo].pulsewidth = pw;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// sets the depth of the LFO
-/////////////////////////////////////////////////////////////////////////////
-void LFO_setDepth(u8 lfo, u16 d) {
-	p.lfos[lfo].depth = d;
+	p.d.lfos[lfo].pulsewidth = pw;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,7 +51,7 @@ void LFO_setDepth(u8 lfo, u16 d) {
 void LFO_setWaveform(u8 lfo, u8 wav) {
 	u8 c, n = 0;
 
-	p.lfos[lfo].waveforms.all = wav;
+	p.d.lfos[lfo].waveforms.all = wav;
 	
 	// count number of set bits == number of waveforms
 	for (c=0; c<8; c++) {
@@ -66,7 +59,7 @@ void LFO_setWaveform(u8 lfo, u8 wav) {
 			n++;
 	}
 	
-	p.lfos[lfo].waveformCount = n;
+	p.d.lfos[lfo].waveformCount = n;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -78,7 +71,7 @@ void LFO_tick(void) {
 	u16 acc;
 	
 	for (lfo=0; lfo<2; lfo++) {
-		lfo_t *l = &p.lfos[lfo];
+		lfo_t *l = &p.d.lfos[lfo];
 		
 		if (!l->waveformCount) continue;
 		
@@ -131,9 +124,17 @@ void LFO_tick(void) {
 												
 		if (l->waveformCount == 0)
 			// no waveforms... mute
-			acc32 = 32768; // dc offset == no output		
-		
-		// limit depth
-		l->out = ENGINE_scale(acc32, l->depth);
+			acc32 = 32768; // dc offset == no output
+
+		// fixme: add cool clip mode to the regular add-and-div
+		l->out = acc32;
 	}
+
+	// request routing updates
+	route_update_req[RS_LFO1_OUT] = 1;
+	route_update_req[RS_LFO2_OUT] = 1;
+	route_update_req[RS_LFO3_OUT] = 1;
+
+	routing_source_values[RS_LFO1_OUT] = p.d.lfos[0].out;
+	routing_source_values[RS_LFO2_OUT] = p.d.lfos[1].out;
 }

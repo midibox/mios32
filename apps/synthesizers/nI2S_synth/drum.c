@@ -287,16 +287,16 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 
 		// downsampling ***********************************************************
 		// T_SAMPLERATE is right here
-		ac = p.voice.downsample;
-		if (p.routing[T_SAMPLERATE].source) {
+		ac = p.d.voice.downsample;
+		if (p.d.routing[T_SAMPLERATE].source) {
 			// there's a source assigned
-			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.routing[T_SAMPLERATE].source), p.routing[T_SAMPLERATE].depth);
+			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.d.routing[T_SAMPLERATE].source), p.d.routing[T_SAMPLERATE].depth);
 			if (downsampled > ac)
 				downsampled = ac;
 		}
 		
 		if (ac != downsampled) {
-			out = p.voice.lastSample;
+			out = p.d.voice.lastSample;
 			*buffer++ = out << 16 | out;
 			downsampled++;
 			continue;
@@ -313,7 +313,7 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 		
 		out = output;
 
-		p.voice.lastSample = out;
+		p.d.voice.lastSample = out;
 	
 		*buffer++ = out << 16 | out;
 	}

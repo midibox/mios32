@@ -18,11 +18,10 @@
 
 #include <mios32.h>
 
-#include "app.h"
 #include "defs.h"
+#include "app.h"
 #include "engine.h"
 #include "sysex.h"
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Internal Prototypes
@@ -55,7 +54,7 @@ const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4D };
 /////////////////////////////////////////////////////////////////////////////
 
 // TODO: use malloc function instead of a global array to save RAM
-u8 sysex_buffer[1024];
+u8 sysex_buffer[2048];
 u16 bufIndex; 
 u16 state;
 
@@ -77,11 +76,15 @@ s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 	if (midi_in == 0xF0) {
 		state = HEADER;
 		bufIndex = 0;
-		// MIOS32_MIDI_SendDebugMessage("F0");
+		#ifdef SYSEX_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("F0");
+		#endif
 		} else
 	if ((midi_in == 0xF7) && (state == DATA)) {
 		state = IDLE;
-		// MIOS32_MIDI_SendDebugMessage("F7");
+		#ifdef SYSEX_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("F7");
+		#endif
 		SYSEX_CmdFinished(bufIndex);
 	}
 	
@@ -92,7 +95,9 @@ s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 		if (midi_in != sysex_header[bufIndex]) {
 			// not our header... ignore and quit.
 			state = IDLE;
-			// MIOS32_MIDI_SendDebugMessage("wrong header. got %d != %d", midi_in, sysex_header[bufIndex]);
+			#ifdef SYSEX_VERBOSE
+			MIOS32_MIDI_SendDebugMessage("wrong header. got %d != %d", midi_in, sysex_header[bufIndex]);
+			#endif
 		}
 
 		bufIndex++;
@@ -101,12 +106,16 @@ s32 SYSEX_Parser(mios32_midi_port_t port, u8 midi_in) {
 		if (bufIndex == 5) {
 			state = DATA;
 			bufIndex = 0;
-			// MIOS32_MIDI_SendDebugMessage("header done");
+			#ifdef SYSEX_VERBOSE
+			MIOS32_MIDI_SendDebugMessage("header done");
+			#endif
 		}
 	} else
 	if ((state == DATA) && (midi_in < 0x80)) {
 		// received valid data
-		// MIOS32_MIDI_SendDebugMessage("data");
+		#ifdef SYSEX_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("data");
+		#endif
 		sysex_buffer[bufIndex] = midi_in;
 		bufIndex++;
 	}
@@ -166,9 +175,10 @@ void SYSEX_CmdFinished(u8 bufLen) {
 		// direct parameter write
 		u16 address = syxToU16(&sysex_buffer[1]);
 		u16 value = syxToU16(&sysex_buffer[4]);
-
-		#ifdef ENGINE_VERBOSE
-		MIOS32_MIDI_SendDebugMessage("a:%d d:%d", address, value);
+		s16 svalue = value - 32768;
+		
+		#ifdef SYSEX_VERBOSE
+		MIOS32_MIDI_SendDebugMessage("Received: a:%d d:%d", address, value);
 		#endif
 
 		// toggle addresses for drums
@@ -176,6 +186,35 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			index = (address >> 8) & 0x0F;
 			address &= 0xF0FF;
 			MIOS32_MIDI_SendDebugMessage("i:%d a:%d", index, address);
+		}
+
+		// new routing matrix - depth + offset
+		if ((address >= 0x1000) && (address < 0x1800))  {
+			if (address < 0x1200) {
+				matrix[1 + (address - 0x1000) / 32][(address - 0x1000) & 31].offset = svalue;
+				route_update_req[1 + (address - 0x1000) / 32] = 1;
+				#ifdef SYSEX_VERBOSE
+				MIOS32_MIDI_SendDebugMessage("Offset at row %d, column %d is %d\n", 1 + (address - 0x1000) / 32, (address - 0x1000) & 31, svalue);
+				#endif
+			} else {
+				matrix[1 + (address - 0x1400) / 32][(address - 0x1400) & 31].depth = svalue;
+				route_update_req[1 + (address - 0x1400) / 32] = 1;
+				#ifdef SYSEX_VERBOSE
+				MIOS32_MIDI_SendDebugMessage("Depth at row %d, column %d is %d\n", 1 + (address - 0x1400) / 32,(address - 0x1400) & 31, svalue);
+				#endif
+			}
+
+			return;
+		}
+
+		// new routing matrix - depth selection
+		if ((address >= 0x1800) && (address < 0x2000))  {
+			routing_depth_source[address - 0x1800] = value;
+			#ifdef SYSEX_VERBOSE 
+			MIOS32_MIDI_SendDebugMessage("Route depth for column %d is %d\n", address - 0x1800, value);
+			#endif
+
+			return;
 		}
 		
 		switch (address) {
@@ -189,7 +228,7 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			case 0x040: // overdrive
 				ENGINE_setOverdrive(value); break;
 			case 0x041: // bitcrush
-				ENGINE_setBitcrush(value); break;
+				ENGINE_setBitcrush((u8) value); break;
 			case 0x042: // XOR 
 				ENGINE_setXOR(value); break;
 			case 0x043: // Downsample
@@ -280,8 +319,6 @@ void SYSEX_CmdFinished(u8 bufLen) {
 				LFO_setFreq(0, value); break;
 			case 0x602: // LFO 1: Pulsewidth
 				LFO_setPW(0, value); break;
-			case 0x603: // LFO 1: Depth
-				LFO_setDepth(0, value); break;
 			
 			case 0x700: // LFO 2: Waveform flags
 				LFO_setWaveform(1, value); break;
@@ -289,10 +326,9 @@ void SYSEX_CmdFinished(u8 bufLen) {
 				LFO_setFreq(1, value); break;
 			case 0x702: // LFO 2: Pulsewidth
 				LFO_setPW(1, value); break;
-			case 0x703: // LFO 2: Depth
-				LFO_setDepth(1, value); break;
-			
-			// ROUTING ///////////////////////////////////////////////////////
+
+			// old ROUTING /////////////////////////////////////////////////////
+			/*
 			case 0x1000: // Routing Target 0: Cutoff
 				ENGINE_setRoute(T_CUTOFF, value); break;
 			case 0x1001: // Routing Target 0: Cutoff depth
@@ -322,7 +358,8 @@ void SYSEX_CmdFinished(u8 bufLen) {
 				ENGINE_setRoute(T_SAMPLERATE, value); break;
 			case 0x100B: // Routing Target 5: Samplerate depth
 				ENGINE_setRouteDepth(T_SAMPLERATE, value); break;
-
+			*/
+			
 			case 0x2000: // Trigger matrix: Note On
 				ENGINE_setTriggerColumn(TRIGGER_NOTEON, value); break;
 			case 0x2001: // Trigger matrix: Note Off
@@ -375,14 +412,15 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			case 0x800F: // sine drum: trigger note
 				DRUM_setSineDrum_TriggerNote(index, value); break;
 			
-#ifdef APP_VERBOSE
+			#ifdef SYSEX_VERBOSE
 			default:
 				MIOS32_MIDI_SendDebugMessage("Unknown address: %d", address);
-#endif
+			#endif
 		}	
-	} else {
-		#ifdef APP_VERBOSE
-		MIOS32_MIDI_SendDebugMessage("Unknown buffer length (%d)", bufLen);
-		#endif
 	}
+	#ifdef SYSEX_VERBOSE
+	else {
+		MIOS32_MIDI_SendDebugMessage("Unknown buffer length (%d)", bufLen);
+	}
+	#endif
 }

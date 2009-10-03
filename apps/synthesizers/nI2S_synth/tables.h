@@ -129,7 +129,11 @@ static const u16 sqrtTable[512] = {
 	
 };
 
-static s16 chorusBuffer[8192];
+const static u16 bcpatterns[15] = {
+	0xFFFF, 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80, 0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000
+};
+	
+static s16 chorusBuffer[4096];
 static s16 delayBuffer[16384];
 
 #endif
