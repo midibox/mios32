@@ -38,7 +38,7 @@
 //!
 //! A special idle mechanism has been integrated which avoids sporadical
 //! jittering values of AIN pins which could happen due to EMI issues.<BR>
-//! MIOS32_AIN_IDLE_CTR defines the number of conversion after which the
+//! MIOS32_AIN_IDLE_CTR defines the number of conversions after which the
 //! pin goes into idle state if no conversion exceeded the MIOS32_AIN_DEADBAND.
 //! In idle state, MIOS32_AIN_DEADBAND_IDLE will be used instead, which is greater
 //! (accordingly the pin will be less sensitive). The pin will use the original

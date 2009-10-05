@@ -347,8 +347,8 @@ BUTTON_BEH_TEMPO_PRESET 0
 
 ##################################################
 # Special Behaviour of ALL button
-# 0: only all parameter layers are modified
-# 1: all trigger and parameter layers are modified
+# 0: only parameter layers are modified by ALL function
+# 1: trigger and parameter layers are modified by ALL function
 ##################################################
 BUTTON_BEH_ALL_WITH_TRIGGERS 0
 

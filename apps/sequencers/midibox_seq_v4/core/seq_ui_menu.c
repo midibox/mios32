@@ -84,12 +84,37 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   switch( button ) {
     case SEQ_UI_BUTTON_GP1: // clears stopwatch value
     case SEQ_UI_BUTTON_GP2:
-    case SEQ_UI_BUTTON_GP3:
-      if( stopwatch_value_max ) {
-	stopwatch_value_max = 0;
-	return 1;
-      }
-      return -1;
+    case SEQ_UI_BUTTON_GP3: {
+      stopwatch_value_max = 0;
+
+#ifndef MIOS32_FAMILY_EMULATION
+#if 0
+      // TODO
+      char buffer[400];
+      vTaskGetRunTimeStats(buffer);
+
+      // print buffer line by line (since MIOS32_MIDI_SendDebugMessage() will only allow 100 chars maximum)
+      char *buffer_start = buffer;
+      char *buffer_end = buffer;
+      u8 end_of_string;
+      do {
+	// scan for end of line
+	while( *buffer_end != '\n' && *buffer_end != 0 ) ++buffer_end;
+	// end of string reached?
+	end_of_string = *buffer_end == 0;
+	// terminate line
+	*buffer_end = 0;
+	// print line
+	MIOS32_MIDI_SendDebugMessage(buffer_start);
+	// continue with next line
+	buffer_start = ++buffer_end;
+	// until 0 was read
+      } while( !end_of_string );
+#endif
+#endif
+
+      return 1;
+    } break;
       
     case SEQ_UI_BUTTON_GP12: // clears max counter
     case SEQ_UI_BUTTON_GP13:
