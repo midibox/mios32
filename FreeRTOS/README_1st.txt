@@ -1,7 +1,7 @@
 
-This is a downstripped copy of FreeRTOS V5.2.0
+This is a downstripped copy of FreeRTOS V5.4.2
 
-It only contains the required sources for building on STM32 or STR9 target
+It only contains the required sources for building on STM32, STR9 or Posix target
 
 The complete version can be downloaded from:
-http://sourceforge.net/project/showfiles.php?group_id=111543&package_id=120544
+http://sourceforge.net/projects/freertos/files/FreeRTOS/V5.4.2/FreeRTOSV5.4.2.zip/download
