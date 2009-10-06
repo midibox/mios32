@@ -290,7 +290,8 @@ void DRUM_ReloadSampleBuffer(u32 state) {
 		ac = p.d.voice.downsample;
 		if (p.d.routing[T_SAMPLERATE].source) {
 			// there's a source assigned
-			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.d.routing[T_SAMPLERATE].source), p.d.routing[T_SAMPLERATE].depth);
+//			ac = ENGINE_modulateU(ac, ENGINE_getModulator(p.d.routing[T_SAMPLERATE].source), p.d.routing[T_SAMPLERATE].depth);
+// fixme
 			if (downsampled > ac)
 				downsampled = ac;
 		}

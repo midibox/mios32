@@ -31,44 +31,39 @@
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
+u16 route_ins[ROUTE_INS]; 					// in-/outputs to mod path (in = 
+su16 route_outs[ROUTE_OUTS]; 				// from lfo, ... / out = values to
+											// be read where a mod target is needed
+route_t routes[ROUTES];						// the modulation paths
+u32 sample_buffer[SAMPLE_BUFFER_SIZE]; 		// sample buffer Tx
+static note_t noteStack[NOTESTACK_SIZE];	// last played notes
+static u8 noteStackIndex;					// index of last note
+static s8 noteStackLen;						// number of notes playing
 
-       u32 sample_buffer[SAMPLE_BUFFER_SIZE]; 	// sample buffer Tx
+	   u16 envelopeTime;					// divider for the 48kHz sample clock that clocks the env
+       u16 lfoTime;							// divider for the 48kHz sample clock that clocks the lfof
 
-static note_t noteStack[NOTESTACK_SIZE];		// last played notes
-static u8 noteStackIndex;						// index of last note
-static s8 noteStackLen;							// number of notes playing
+static u16 dead = 1;   	    				// debug variable for sample calc overlap / timing
 
-// routing sources per target
-	   u16 envelopeTime;	// divider for the 48kHz sample clock that clocks the env
-       u16 lfoTime;			// divider for the 48kHz sample clock that clocks the lfof
+static u16 delayIndex;						// write index of delayBuffer
+static u16 chorusIndex;						// write index of chorusBuffer
+static u16 chorusAccum;						// chorus "lfo" accumulator
 
-static u16 dead = 1;   	    // debug variable for sample calc overlap / timing
+	   u16 tempValues[2];					// temporary values for whatever 
 
-static u16 delayIndex;		// write index of delayBuffer
-static u16 chorusIndex;		// write index of chorusBuffer
-static u16 chorusAccum;		// chorus "lfo" accumulator
+	   u8 engine;							// selects the sound engine
+static u8 downsampled;	 				   	// counter for downsampling
+static u8 delaysampled;					    // counter for downsampling of delay
 
-	   u16 tempValues[2];	// temporary values for whatever 
+static u16 bcpattern;						// the bitcrush pattern
 
-	   u8 engine;			// selects the sound engine
-static u8 downsampled;	    // counter for downsampling
-static u8 delaysampled;	    // counter for downsampling of delay
+	   u8 	  route_update_req[ROUTE_INS];
+	   char   routing_signed[ROUTE_SOURCES] = {0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // signs for correct routing behaviour when scaling
+	   u8*    routing_signed_ptr = &routing_signed[0];
 
-static u16 bcpattern;		// the bitcrush pattern
+patch_t p;									// the actual patch
 
-// new routing matrix //////////////////////////////////////////////////////////
-
-// the following needs to be in the patch later on
-routing_element_t matrix[ROUTE_SOURCES+1][ROUTE_TARGETS];
-
-u8 route_update_req[ROUTE_SOURCES+1];
-u16	routing_source_values[ROUTE_SOURCES];
-u16	routing_depth_source[ROUTE_TARGETS];
-
-u8 routing_signed[16] = {0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // signs for correct routing behaviour when scaling
-
-patch_t p;				// the actual patch
-
+// kinda outdated but still working
 patch_t default_patch = {
 	.all = {
 		0x44,0x65,0x66,0x61,0x75,0x6C,0x74,0x20,0x50,0x61,0x74,0x63,0x68,0x20,0x28,0x6E,
@@ -112,15 +107,68 @@ patch_t default_patch = {
 
 void ENGINE_ReloadSampleBuffer(u32 state);
 
-/////////////////////////////////////////////////////////////////////////////
-// returns the modulation source value for a given ID
-/////////////////////////////////////////////////////////////////////////////
-u16 ENGINE_getModulator(u8 src) {
-	switch (src) {
-		case S_LFO1: 			return p.d.lfos[0].out;
-		case S_LFO2: 			return p.d.lfos[1].out;
-		case S_ENVELOPE1:		return p.d.envelopes[0].out;
-		case S_ENVELOPE2:		return p.d.envelopes[1].out;
+void ENGINE_updateModPaths() {
+	u32 r, s;
+	s32 in; 
+
+	// reset all outputs (prolly temp)
+	for (r=0; r<ROUTE_OUTS; r++)
+		route_outs[r].u16 = 65535; // full blast
+ 
+	// update each route
+	// optimize-here: can I not calc some pwease ;)
+	for (r=0; r<ROUTES; r++) {
+		route_t* route = &routes[r];				// get the current route
+
+		if (route->outputid)						// this route has a set output (outputid != RT_NIL)
+		for (s=0; s<ROUTE_INPUTS_PER_PATH; s++) {	// iterate over all inputs
+			if (route->inputid[s]) {				// inputid != RS_NIL
+				// real mod source
+					if ((u8)* (routing_signed_ptr+route->inputid[s])) {
+					// ^-- if (routing_signed[s]) {
+						// routing a signed value (lfo, ...)
+						in = route_ins[route->inputid[s]];
+						in -= 32768;
+						in *= route->depth[s];
+						in /= 32768;
+					} else {
+						// routing an unsigned value (env, ...)
+						in = route_ins[route->inputid[s]];
+						in *= route->depth[s];
+						in /= 32768;
+
+						in = (route->depth[s] < 0) ? in + 32768 : in - 32768;
+						in *= 2;
+					}
+				
+				in += route->offset[s];
+
+				if (in > 32767) in = 32767;
+				if (in < -32768) in = -32768;
+
+				route->output[s] = in;				// write value to internal buffer
+			} else {
+				// source is RS_NIL
+				route->output[s] = 0;
+			}
+		}
+	}
+
+	// all cells have been recalced. sum 'em up
+	for (r=0; r<ROUTES; r++) {						// iterate over each route
+		route_t* route = &routes[r];				// get the route
+		in = 0;										// clear the sum
+
+		for (s=0; s<4; s++) {						// iterate over precalced values
+			in += route->output[s];					// sum em up
+		}
+
+		if (in > 32767) in = 32767;					// clip the value
+		if (in < -32768) in = -32768;				// -"-
+
+		// fixme: bring in the depth source
+
+		route_outs[route->outputid].s16 = in;			// write value to route_outs
 	}
 }
 
@@ -281,13 +329,28 @@ u16 ENGINE_modulateU(u16 input, u16 modulator, u16 depth) {
 /////////////////////////////////////////////////////////////////////////////
 void ENGINE_init(void) {
 	u8 n, i;
+	
+	// mp: new² mod paths, init all outputs to 32767 (should prolly be 0 for some)
+	for (n=0; n<ROUTE_INS; n++)
+		route_ins[n] = 32767;
 
-	// empty routing matrix
-	for (n=0; n<ROUTE_SOURCES+1; n++)
-	for (i=0; i<ROUTE_TARGETS; i++) {
-		matrix[n][i].depth = 0;
-		matrix[n][i].offset = 0;
+	for (n=0; n<ROUTE_OUTS; n++)
+		route_outs[n].u16 = 65535;
+
+	for (n=0; n<ROUTES; n++) {
+		for (i=0; i<ROUTE_INPUTS_PER_PATH; i++)
+			routes[n].inputid[i] = RS_NIL;
+		routes[n].outputid = RT_NIL;
 	}
+
+	// temp: assign mod path 1: lfo 1 out to osc 1 pitch
+	routes[0].inputid[0] = RS_LFO1_OUT;
+	routes[0].inputid[1] = RS_LFO2_OUT;
+	routes[0].depth[0] = 32767;
+	routes[0].offset[0] = 0;
+	routes[0].depth[1] = 32767;
+	routes[0].offset[1] = 0;
+	routes[0].outputid = RT_OSC1_PITCH;
 
 	for (n=0; n<32; n++)
 		p.d.name[n] = 'A' + n % 26;
@@ -304,7 +367,7 @@ void ENGINE_init(void) {
     MIOS32_STOPWATCH_Init(1);
 	#endif
 
-	routing_source_values[RS_CONSTANT] = 32767;
+	route_ins[RS_CONSTANT] = 32768;
 
 	// start I2S DMA transfers
 	MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &ENGINE_ReloadSampleBuffer);
@@ -469,6 +532,7 @@ void ENGINE_noteOn(u8 note, u8 vel, u8 steal)
 /////////////////////////////////////////////////////////////////////////////
 // Checks and updates the routing matrix output values
 /////////////////////////////////////////////////////////////////////////////
+/*
 #ifdef ROUTING_VERBOSE
 u32 _cells_sum = 0;
 u32 _sources_sum = 0;
@@ -477,83 +541,104 @@ u16 _cells_max = 0;
 u16 _sources_max = 0;
 u16 _cells = 0;
 u16 _sources = 0;
+u16 _none = 0;
+u16 _counter = 0;
+u16 _howoften[ROUTE_SOURCES];
 #endif
 
 void ENGINE_updateRoutingOutputs() {
-	u8 s, t, c;
+	u32 s, t;
 	s32	sum;
 	s32 a;
-
+	u8 sources = 0;
+	routing_element_t* re;
+	
 	#ifdef ROUTING_VERBOSE
 	_upd_counter++;
 
 	_cells = 0;
 	_sources = 0;
 	#endif
-	
+
 	// iterate over all sources...
 	for (s=1; s<ROUTE_SOURCES; s++)
 		// ...that have changed
 		if (route_update_req[s]) {
+			sources++;
+			
 			#ifdef ROUTING_VERBOSE
+			_howoften[s]++;
 			_sources++;
 			#endif
-			
+
 			// this source has changed. recalc all values in this row
 			for (t=0; t<ROUTE_TARGETS; t++) {
+				re = &matrix[s][t];
 				// recalc
-				if (matrix[s][t].depth) {
+				if (re->depth) {
 					#ifdef ROUTING_VERBOSE
 					_cells++;
 					#endif
 
-					if (routing_signed[s]) {
+					if ((u8)* (routing_signed_ptr+s)) {
+//					^-- if (routing_signed[s]) {
 						// routing a signed value (lfo, ...)
 						a = routing_source_values[s];
 						a -= 32768;
-						a *= matrix[s][t].depth;
+						a *= re->depth;
 						a /= 32768;
 					} else {
 						// routing an unsigned value (env, ...)
-						a = (routing_source_values[s] * matrix[s][t].depth);
+						a = routing_source_values[s];
+						a *= re->depth;
 						a /= 32768;
 
-						a = (matrix[s][t].depth < 0) ? a + 32768 : a - 32768;
+						a = (re->depth < 0) ? a + 32768 : a - 32768;
 						a *= 2;
 					}
 
-					a += matrix[s][t].offset;
- 
-					if (a >  32767) a =  32767;
-					if (a < -32768) a = -32768;
-		
-					matrix[s][t].out = a;
+					a += re->offset;
+
+					// clip output
+					if (a > 32767) a = 32767;
+					if (a < -32768)	a = -32768;
+
+					re->out = a;
 				} else {
 					// depth = 0, no effect
-					matrix[s][t].out = 32767;
+					re->out = 0;
 				}
 			}
 		}
 
+	#ifdef ROUTING_VERBOSE
+	if (_sources == 0)
+	  _none++;
+	#endif
+
 	// optimize-here: can't I NOT calc some of those?
 	// all relevant values are update, recalc sums
+	if (sources)
 	for (t=0; t<ROUTE_TARGETS; t++) {
 		sum = 0;
+		u16 rds = routing_depth_source[t];
 		
-		for (s=1; s<ROUTE_SOURCES; s++)
-//			if (route_update_req[s])
-			if (matrix[s][t].depth && (routing_depth_source[t] != s)) {
-				sum += matrix[s][t].out;
-			}  
+		for (s=1; s<ROUTE_SOURCES; s++) {
+			re = &matrix[s][t];
+			if (rds != s) {
+				sum += re->out;
+			}
+		} 
 
-		// fixme: optional stacking (sum, clip) or median (sum / count)
-		// sum /= c; prevent clipping
-		if (sum >  32767) sum =  32767;
+		// fixme: optional stacking (sum, clip) or median (sum / count)?
+
+		// prevent clipping
+		if (sum > 32767) sum =  32767;
 		if (sum < -32768) sum = -32768; 
 
 		// routing depth
-		if (routing_depth_source[t]) {
-			sum *= (32768 + matrix[routing_depth_source[t]][t].out);
+		if (rds) {
+			sum *= (32768 + matrix[rds][t].out);
 			sum /= 65536;
 		}
 
@@ -564,29 +649,32 @@ void ENGINE_updateRoutingOutputs() {
 	for (s=1; s<ROUTE_SOURCES; s++)
 		route_update_req[s] = 0;
 
-
 	#ifdef ROUTING_VERBOSE
 	if (_sources > _sources_max) _sources_max = _sources;
 	if (_cells > _cells_max) _cells_max = _cells;
 
 	_cells_sum += _cells;
 	_sources_sum += _sources;
-
-	if (_upd_counter == 4096) {
+ 
+	if (_upd_counter == 4095) {
 		MIOS32_MIDI_SendDebugMessage("ENGINE_updateRoutingOutputs(): source max: %d, cell max: %d, source_avg: %d, cell_avg: %d", _sources_max, _cells_max, (_sources_sum / _upd_counter), (_cells_sum / _upd_counter));
+		MIOS32_MIDI_SendDebugMessage("  Out of %d iterations %d did nothing.", _upd_counter, _none);
+		_none = 0;
 		_cells_sum = 0;
 		_sources_sum = 0;
 		_cells_max = 0;
 		_sources_max = 0;
 		
-		_upd_counter = 0; 
+		_upd_counter = 0;
 
-		// matrix[RS_OUT][RT_VOLUME].out = 32767;
-		MIOS32_MIDI_SendDebugMessage("matrix[RS_OUT][RT_FILTER_CUTOFF].out = %d", matrix[RS_OUT][RT_FILTER_CUTOFF].out);
-		// MIOS32_MIDI_SendDebugMessage("source for lfo1 = %d", routing_source_values[RS_LFO1_OUT]);
+		MIOS32_MIDI_SendDebugMessage("%d %d %d %d %d %d %d %d %d %d ", _howoften[1], _howoften[2], _howoften[3], _howoften[4], _howoften[5], _howoften[6], _howoften[7], _howoften[8], _howoften[9], _howoften[10]);
+		for (s=1; s<ROUTE_SOURCES; s++) {
+			_howoften[s] = 0;
+		}
 	}
 	#endif
 }
+*/
 
 /////////////////////////////////////////////////////////////////////////////
 // Fills the buffer with nicey sample sounds ;D
@@ -608,7 +696,9 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 	#endif 
 
 	// check for routing update requests
-	ENGINE_updateRoutingOutputs();
+	// ENGINE_updateRoutingOutputs();
+	// new one again
+	ENGINE_updateModPaths();
 
 	// generate new samples to output
 	for(i=0; i<SAMPLE_BUFFER_SIZE/CHANNELS; ++i) {
@@ -618,7 +708,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		// tick the envelopes
 		envelopeTime++;
 		
-		if (envelopeTime >= ENVELOPE_RESOLUTION) {
+		if (envelopeTime > ENVELOPE_RESOLUTION) {
 			envelopeTime = 0;
 			ENV_tick();
 		}
@@ -626,7 +716,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		// tick the lfos
 		lfoTime++;
 		
-		if (lfoTime >= LFO_RESOLUTION) {
+		if (lfoTime > LFO_RESOLUTION) {
 			lfoTime = 0;
 			LFO_tick();
 		}
@@ -643,7 +733,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 			ac = o->portaStart + (o->accumValue - o->pitchedAccumValue);
 			o->portaTick += o->portaRate;
 			
-			if (o->portaTick >= 0xFFFFF) {
+			if (o->portaTick > 0xFFFFE) {
 				o->portaTick = 0;
 				
 				// porta time up
@@ -664,13 +754,11 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		} 
 */
 		// pitch mod
-		tout = matrix[RS_OUT][RT_OSC1_PITCH].out;
+		tout = route_outs[RT_OSC1_PITCH].s16;
 		tout *= ac;
-		tout /= 32768;
+		tout >>= 15;
 		ac += tout;
 
-// 1200
-		
 		ac += o->finetune;
 		o->accumulator += ac;
 		ac >>= 1;
@@ -691,7 +779,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 				utout2 = o->portaStart  + (o->accumValue - o->pitchedAccumValue);
 				o->portaTick += o->portaRate;
 				
-				if (o->portaTick >= 0xFFFFF) {
+				if (o->portaTick >= 0xFFFF) {
 					o->portaTick = 0;
 					
 					// porta time up
@@ -703,7 +791,7 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 			}
 			
 			// pitch mod 2
-			tout = matrix[RS_OUT][RT_OSC2_PITCH].out;
+			tout = route_outs[RT_OSC2_PITCH].s16;
 			tout *= utout2;
 			tout /= 32768;
 			utout2 += tout;
@@ -718,12 +806,11 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		// downsampling ***********************************************************
 		// T_SAMPLERATE is right here
 		utout = p.d.voice.downsample;
-		if (p.d.routing[T_SAMPLERATE].source) {
-			// there's a source assigned
-			utout = ENGINE_modulateU(utout, ENGINE_getModulator(p.d.routing[T_SAMPLERATE].source), p.d.routing[T_SAMPLERATE].depth);
-			if (downsampled > utout)
-				downsampled = utout;
-		}
+		utout *= route_outs[RT_DOWNSAMPLE].u16;
+		utout /= 65536;
+		utout >>= 15;
+		if (downsampled > utout)
+			downsampled = utout;
 		
 		if (utout != downsampled) {
 			out = p.d.voice.lastSample;
@@ -809,22 +896,24 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		} // individual oscillators
 
 		// merge the two oscillators into one stream
-		tout = p.d.oscillators[0].sample;
-		tout *= p.d.oscillators[0].volume;
-		tout /= 32768;
+		o = &p.d.oscillators[0];
+		tout = o->sample;
+		tout *= o->volume;
+		tout >>= 14;
 
-		tout2 = p.d.oscillators[1].sample;
-		tout2 *= p.d.oscillators[1].volume;
-		tout2 /= 32768;
+		o = &p.d.oscillators[1];
+		tout2 = o->sample;
+		tout2 *= o->volume;
+		tout2 >>= 14;
 		
 		if (p.d.engineFlags.ringmod) {
-			tout /= 2;
-			tout2 /= 2;
+			tout /= 4;
+			tout2 /= 4;
 			tout *= tout2;
 			tout /= 65536;
 		} else {
 			tout += tout2;
-			tout /= 4;
+			tout /= 8;
 		}
 
 /* PHASE DISTORTION FUN
@@ -850,11 +939,11 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		
 		// write sample to output buffer 
 		out = tout;
-
+ 
 		*buffer++ = out << 16 | out;
 	}
 
-	// debug: measure time for 8 samples
+	// debug: stop measuring time here
 	#ifdef ENGINE_VERBOSE_MAX
 	if (!dead) {
 		// send execution time via MIDI interface
@@ -863,10 +952,10 @@ void ENGINE_ReloadSampleBuffer(u32 state) {
 		delay /= 333;
 		MIOS32_MIDI_SendDebugMessage("%d.%d%%", delay/10, delay % 10);	
 
-		// reset timer to measure every 6000th iteration (1Hz)
-		dead = 6000;
+		// reset timer to measure every 12000th iteration (0.5Hz)
+		dead = 12000;
 	}
-	#endif
+	#endif	  
 }
 
 // sets the waveform flags for an oscillator
@@ -1175,15 +1264,9 @@ s16 ENGINE_postProcess(s16 sample) {
 	if (p.d.engineFlags.overdrive) {
 		u16 d;
 		u32 drive = p.d.voice.overdrive;
+		drive *= route_outs[RT_OVERDRIVE].u16;  
+		drive /= 65536;										
 
-		// T_OVERDRIVE is right here
-		if (p.d.routing[T_OVERDRIVE].source) {
-			// there's a source assigned
-			drive = ENGINE_modulateU(
-						ENGINE_getModulator(p.d.routing[T_OVERDRIVE].source), 
-						p.d.routing[T_OVERDRIVE].depth, drive);
-		}
-		
 		drive *= drive;
 		drive /= 65536;
 		
@@ -1204,16 +1287,16 @@ s16 ENGINE_postProcess(s16 sample) {
 
 	// filter
 	if (p.d.engineFlags.dcf && p.d.filter.filterType) {
-		uval = p.d.filter.cutoff; 								// u16
-		uval *= (32768+matrix[RS_OUT][RT_FILTER_CUTOFF].out);   // * u16
-		uval /= 65536;											// / u16
+		uval = p.d.filter.cutoff; 					
+		uval *= route_outs[RT_FILTER_CUTOFF].u16; 
+		uval /= 65536;								
 		
 		tout = FILTER_filter(tout, uval);
 	} // filter
 
 	// master volume
 	uval = p.d.voice.masterVolume;
-	uval *= (32768+matrix[RS_OUT][RT_VOLUME].out);  
+	uval *= route_outs[RT_VOLUME].u16;  
 	uval /= 65536;									
 	tout *= uval;
 	tout /= 65536;
@@ -1298,7 +1381,7 @@ void ENGINE_setDelayDownsample(u8 downsample) {
 }
 
 void ENGINE_setModWheel(u16 mod) {
-	routing_source_values[RS_MODWHEEL] = mod;
+	route_ins[RS_MODWHEEL] = mod;
 	route_update_req[RS_MODWHEEL] = 1;
 }
 

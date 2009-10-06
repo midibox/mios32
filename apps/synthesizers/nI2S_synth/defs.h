@@ -19,18 +19,25 @@
 // #define ENV_VERBOSE 
 // #define TRIGGER_VERBOSE 
 // #define ENGINE_VERBOSE 
-// #define ENGINE_VERBOSE_MAX
+ #define ENGINE_VERBOSE_MAX
 // #define DRUM_VERBOSE 
 // #define SYSEX_VERBOSE 
 // #define APP_VERBOSE 
-// #define ROUTING_VERBOSE
+ #define ROUTING_VERBOSE
 // #define FILTER_VERBOSE
 
+// new new routing matrix
+#define ROUTES 16							// number of available routing paths
+#define ROUTE_INS 32						// number of inputs/routing sources
+#define ROUTE_OUTS 32				       	// number of outputs/routing targets
+#define ROUTE_INPUTS_PER_PATH 4				// number of inputs for each path
+
 // new routing matrix
-#define	ROUTE_SOURCES 16
-#define	ROUTE_TARGETS 16
+#define	ROUTE_SOURCES 20
+#define	ROUTE_TARGETS 20
 
 // routing signal sources
+#define	RS_NIL  		0  // output value of this row
 #define	RS_OUT			0  // output value of this row
 #define	RS_LFO1_OUT		1
 #define	RS_LFO2_OUT		2
@@ -46,23 +53,33 @@
 #define	RS_CONSTANT		12
 
 // routing signal target 
-#define	RT_FILTER_CUTOFF	0
-#define	RT_FILTER_RESONANCE 1
-#define	RT_VOLUME           2
-#define	RT_OSC1_VOLUME      3
-#define	RT_OSC2_VOLUME      4
-#define	RT_OSC3_VOLUME      5 // dummy
-#define	RT_OSC1_PITCH       6
-#define	RT_OSC2_PITCH       7
-#define	RT_OSC3_PITCH       8
+#define	RT_NIL              0
+#define	RT_FILTER_CUTOFF	1
+#define	RT_FILTER_RESONANCE 2
+#define	RT_VOLUME           3
+#define	RT_OSC1_VOLUME      4
+#define	RT_OSC2_VOLUME      5
+#define	RT_OSC3_VOLUME      6 // dummy
+#define	RT_OSC1_PITCH       7
+#define	RT_OSC2_PITCH       8
+#define	RT_OSC3_PITCH       9 // dummy
+#define	RT_EG1_ATTACK   	10
+#define	RT_EG2_ATTACK       11
+#define	RT_EG3_ATTACK       12 // dummy
+#define	RT_EG1_DECAY        13
+#define	RT_EG2_DECAY        14
+#define	RT_EG3_DECAY        15 // dummy
+#define	RT_OVERDRIVE        16
+#define	RT_BITCRUSH         17
+#define	RT_DOWNSAMPLE       18
 
 // at 48kHz sample frequency and two channels, the sample buffer has to be 
 // refilled at a rate of 48Khz / SAMPLE_BUFFER_SIZE
 #define SAMPLE_BUFFER_SIZE 32  
 #define CHANNELS 2
 
-#define ENVELOPE_RESOLUTION 		100 // divider for the envelope clock (48kHz/X)
-#define LFO_RESOLUTION 				10  // divider for the lfo clock (48kHz/X)
+#define ENVELOPE_RESOLUTION 		100 // divider for the envelope clock (48kHz/(X+1))
+#define LFO_RESOLUTION 				100  // divider for the lfo clock (48kHz/(X+1))
 
 #define ENGINE_SYNTH				0
 #define ENGINE_DRUM					1

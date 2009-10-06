@@ -173,13 +173,13 @@ typedef union {
 		unsigned interpolate:1;
 		unsigned syncOsc2:1;
 		unsigned overdrive:1;
-//		unsigned invertEnv1:1;  fixme: completely remove if working
-//		unsigned invertEnv2:1;
+		unsigned empty0:1;  // !
+		unsigned empty1:1;  // !
 		unsigned dcf:1;
 		unsigned ringmod:1;
 		unsigned delay:1;
 		unsigned chorus:1;
-		unsigned emptyA:1;
+		unsigned emptyA:1;  // !
 		unsigned emptyB:1;
 		unsigned emptyC:1;
 		unsigned emptyD:1;
@@ -256,5 +256,22 @@ typedef struct {
 	s16 depth; 			// depth  (before offset)
 	s16 out; 			// output = (in * depth / 65536) + offset;
 } routing_element_t;
+
+typedef union {
+	s16 s16;
+	u16 u16;
+} su16;
+
+// modulation path type
+typedef struct {
+	s16  depth[ROUTE_INPUTS_PER_PATH];   	// output = ((input * depth) / 65536) + offset
+	s16  offset[ROUTE_INPUTS_PER_PATH];  	// -"-
+	s16  output[ROUTE_INPUTS_PER_PATH];  	// -"-
+	s16  rdepth;
+	s16  roffset;
+	u8   inputid[ROUTE_INPUTS_PER_PATH];	// id of input (index for route_ins)
+	u8   rdsourceid;
+	u8   outputid;							// signal output index
+} route_t;
 
 #endif

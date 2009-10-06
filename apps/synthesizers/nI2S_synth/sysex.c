@@ -19,8 +19,8 @@
 #include <mios32.h>
 
 #include "defs.h"
-#include "app.h"
 #include "engine.h"
+#include "app.h"
 #include "sysex.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -188,25 +188,53 @@ void SYSEX_CmdFinished(u8 bufLen) {
 			MIOS32_MIDI_SendDebugMessage("i:%d a:%d", index, address);
 		}
 
+		// modpaths
+		if ((address >= 0x1000) && (address < 0x2000)) {
+			u8 index = (address - 0x1000) / 0x100;
+			u8 subaddr = address & 0xFF;
+
+			// fixme: some range checking might be nice ;)
+			
+			if (subaddr < 16) 		routes[index].inputid[subaddr] = value; else
+			if (subaddr < 32) 		routes[index].offset[subaddr - 16] = value - 32768; else
+			if (subaddr < 48) 		routes[index].depth[subaddr - 32] = value - 32768; else
+			if (subaddr == 0x30) 	routes[index].roffset = value - 32768; else
+			if (subaddr == 0x31) 	routes[index].rdepth = value - 32768; else
+			if (subaddr == 0x40) 	routes[index].outputid = value; else
+			if (subaddr == 0x41) 	routes[index].rdsourceid = value;
+
+			#ifdef ROUTING_VERBOSE
+			if (subaddr < 16) 		MIOS32_MIDI_SendDebugMessage("routes[%d].inputid[%d] = %d", index, subaddr, value); else
+			if (subaddr < 32) 		MIOS32_MIDI_SendDebugMessage("routes[%d].offset[%d] = %d", index, subaddr, value-32768); else
+			if (subaddr < 48) 		MIOS32_MIDI_SendDebugMessage("routes[%d].depth[%d] = %d", index, subaddr, value-32768); else
+			if (subaddr == 0x30) 	MIOS32_MIDI_SendDebugMessage("routes[%d].roffset = %d", index, value - 32768); else
+			if (subaddr == 0x31) 	MIOS32_MIDI_SendDebugMessage("routes[%d].rdepth = %d", index, value - 32768);else
+			if (subaddr == 0x40) 	MIOS32_MIDI_SendDebugMessage("routes[%d].outputid = %d", index, value); else
+			if (subaddr == 0x41) 	MIOS32_MIDI_SendDebugMessage("routes[%d].rdsourceid = %d", index, value);
+			#endif
+
+			return;
+		}
+		
+/*
 		// new routing matrix - depth + offset
 		if ((address >= 0x1000) && (address < 0x1800))  {
 			if (address < 0x1200) {
 				matrix[1 + (address - 0x1000) / 32][(address - 0x1000) & 31].offset = svalue;
 				route_update_req[1 + (address - 0x1000) / 32] = 1;
-				#ifdef SYSEX_VERBOSE
+				#ifdef ROUTING_VERBOSE
 				MIOS32_MIDI_SendDebugMessage("Offset at row %d, column %d is %d\n", 1 + (address - 0x1000) / 32, (address - 0x1000) & 31, svalue);
 				#endif
 			} else {
 				matrix[1 + (address - 0x1400) / 32][(address - 0x1400) & 31].depth = svalue;
 				route_update_req[1 + (address - 0x1400) / 32] = 1;
-				#ifdef SYSEX_VERBOSE
+				#ifdef ROUTING_VERBOSE
 				MIOS32_MIDI_SendDebugMessage("Depth at row %d, column %d is %d\n", 1 + (address - 0x1400) / 32,(address - 0x1400) & 31, svalue);
 				#endif
 			}
 
 			return;
 		}
-
 		// new routing matrix - depth selection
 		if ((address >= 0x1800) && (address < 0x2000))  {
 			routing_depth_source[address - 0x1800] = value;
@@ -216,6 +244,7 @@ void SYSEX_CmdFinished(u8 bufLen) {
 
 			return;
 		}
+*/
 		
 		switch (address) {
 			case 0x000: // Mastervolume

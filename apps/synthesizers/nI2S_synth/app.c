@@ -90,6 +90,10 @@
  *       - fix mod behaviour (offset vs. amount) (auto fixed via matrix)    *
  *       - removed LFO depth (can be handled via the routing matrix)        *
  *       - added a selectable depth source for each routing target          *
+ *       - added a selectable depth source for each routing target          *
+ *       - killed invert flag for envelopes (comes free with the matrix)    *
+ *       - matrix turned list :-)                                           *
+ *       - added mod wheel as mod source                                    *
  *                                                                          *
  ****************************************************************************
  *                                                                          *
@@ -97,7 +101,6 @@
  *   - lots                                                                 *
  *   - fix "fixme"s                                                         *
  *   - optimize "optimize-here"s                                            *
- *   - kill invert flag for envelopes (comes free with the matrix)          *
  *   - come up with a name. it needs to be food. got an idea? lemme know!   *
  *   - add a CS/menu structure                                              *
  *   - no note down -> transpose hangup (noticeable when no source is set   *
@@ -108,7 +111,7 @@
  *   - change the rest of the routing to matrix as well                     *
  *   - changeable fx chain order                                            *
  *   - move calculations out of the main loop                               *
- *   - aftertouch/modulation/velocity and user-definable CCs as mod source  *
+ *   - user-definable CCs, pitchbend and aftertouch implementation (source) *
  *   - ignore non working trigger combinations (lfo cycle->lfo reset, ...)  *
  *   - pitch bend: blending shouldn't be linear...                          *
  *   - options for SD card/bankstick (do I really want to keep bankstick    *
@@ -123,7 +126,7 @@
  ****************************************************************************
  *                                                                          *
  * NOTES TO SELF                                                            *
- * - routing matrix                                                         *
+ * - routing paths                                                          *
  *   --------------                                                         *
  *   sources                                                                *
  *     lfo1-3*, env1-3*, osc1-3* pitch, constant, mod wheel, aftertouch,    *
@@ -131,7 +134,7 @@
  *   targets                                                                *
  *     cutoff, resonance, ext.cutoff, ext.resonance, osc1-3* pitch,         *
  *     osc1-3.volume*, master volume, osc1-3 suboct,                        *
- *     od, bitcrush, downsample                                             *
+ *     od, bitcrush, downsample, osc1-3* pw                                 *
  *                                                                          *
  ****************************************************************************/
 
