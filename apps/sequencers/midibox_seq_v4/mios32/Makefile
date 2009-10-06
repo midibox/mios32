@@ -156,5 +156,8 @@ include $(MIOS32_PATH)/modules/random/random.mk
 # USB Mass Storage Device Driver
 include $(MIOS32_PATH)/modules/msd/msd.mk
 
+# For performance measurings
+include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
+
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
