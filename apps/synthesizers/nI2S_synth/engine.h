@@ -94,12 +94,16 @@ extern u16			 	envelopeTime;			// divider for the 48kHz sample clock that clocks
 extern u16 				lfoTime;				// divider for the 48kHz sample clock that clocks the lfof
 extern u16 				tempValues[2];			// temporary values for whatever 
 
-extern u16				routing_source_values[ROUTE_SOURCES];
-extern u16				routing_depth_source[ROUTE_SOURCES];
-extern routing_element_t matrix[ROUTE_SOURCES+1][ROUTE_TARGETS];
-extern u8 				route_update_req[ROUTE_SOURCES+1];
+// extern u32				routing_source_values[ROUTE_SOURCES];
+// extern u32				routing_depth_source[ROUTE_SOURCES];
+// extern routing_element_t matrix[ROUTE_SOURCES+1][ROUTE_TARGETS];
+extern u8 				route_update_req[ROUTE_INS];
 
-extern patch_t			default_patch;			// the default patch
+extern route_t routes[ROUTES];					// the modulation paths
+extern u16 route_ins[ROUTE_INS]; 	
+extern su16 route_outs[ROUTE_OUTS];
+
+extern patch_t default_patch;					// the default patch
 
 extern patch_t 			p;						// the patch, fixme: redundant (well not this but all the rest)
 

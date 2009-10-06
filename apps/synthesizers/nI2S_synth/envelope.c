@@ -32,7 +32,11 @@ void ENV_tick(void) {
 		} else
 		// ATTACK --------------------------------------------------------
 		if (env->envelopeStage == ATTACK) {
-			if ((env->accumulator += env->attackAccumValue) < oacc) {
+			out = env->attackAccumValue;
+			out *= route_outs[RT_EG1_ATTACK+e].u16;
+			out /= 65536;
+
+			if ((env->accumulator += out) < oacc) {
 				out = 65535;
 				env->accumulator = 65535;
 				env->envelopeStage = DECAY;
@@ -46,9 +50,12 @@ void ENV_tick(void) {
 		} else
 		// DECAY ---------------------------------------------------------
 		if (env->envelopeStage == DECAY) {
-			env->accumulator -= env->decayAccumValue;
+			out = env->decayAccumValue;
+			out *= route_outs[RT_EG1_DECAY+e].u16;
+			out /= 65536;
+			env->accumulator -= out;
 			
-			if ((env->accumulator <= env->stages.sustain) ||
+			if ((env->accumulator < env->stages.sustain+1) ||
 				(env->accumulator > oacc)) {
 				out = env->stages.sustain;
 				env->accumulator = env->stages.sustain;				
@@ -93,8 +100,8 @@ void ENV_tick(void) {
 	route_update_req[RS_ENV2_OUT] = 1;
 	route_update_req[RS_ENV3_OUT] = 1;
 
-	routing_source_values[RS_ENV1_OUT] = p.d.envelopes[0].out;
-	routing_source_values[RS_ENV2_OUT] = p.d.envelopes[1].out;	
+	route_ins[RS_ENV1_OUT] = p.d.envelopes[0].out;
+	route_ins[RS_ENV2_OUT] = p.d.envelopes[1].out;	
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -21,17 +21,17 @@
 #include "defs.h"
 #include "types.h"
 #include "engine.h"
-#include "lfo.h"
+#include "lfo.h" 
 
 /////////////////////////////////////////////////////////////////////////////
 // sets the LFOs rate
 /////////////////////////////////////////////////////////////////////////////
 void LFO_setFreq(u8 lfo, u16 frq) {
 	u16 d;
-	
+	 
 	d = frq >> 8;
 	d *= d;
-	d >>= 6;
+	d >>= 4;
 	d += 1;
 	
 	p.d.lfos[lfo].accumValue = d;
@@ -135,6 +135,9 @@ void LFO_tick(void) {
 	route_update_req[RS_LFO2_OUT] = 1;
 	route_update_req[RS_LFO3_OUT] = 1;
 
-	routing_source_values[RS_LFO1_OUT] = p.d.lfos[0].out;
-	routing_source_values[RS_LFO2_OUT] = p.d.lfos[1].out;
+	// routing_source_values[RS_LFO1_OUT] = p.d.lfos[0].out;
+	// routing_source_values[RS_LFO2_OUT] = p.d.lfos[1].out;
+
+	route_ins[RS_LFO1_OUT] = p.d.lfos[0].out;
+	route_ins[RS_LFO2_OUT] = p.d.lfos[1].out;
 }
