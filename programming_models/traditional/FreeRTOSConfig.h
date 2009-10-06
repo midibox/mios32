@@ -44,8 +44,11 @@
 #define configQUEUE_REGISTRY_SIZE           10
 
 // see http://www.freertos.org/index.html?http://www.freertos.org/rtos-run-time-stats.html
-// the appr. utility functions for MIOS32 applications are located under
+// and http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
+//
+// The appr. utility functions for MIOS32 applications are located under
 //   $MIOS32_PATH/modules/freertos_utils
+// 
 #ifndef configGENERATE_RUN_TIME_STATS
 #define configGENERATE_RUN_TIME_STATS       0
 #endif
