@@ -44,9 +44,11 @@
 #define configQUEUE_REGISTRY_SIZE           10
 
 // see http://www.freertos.org/index.html?http://www.freertos.org/rtos-run-time-stats.html
+// the appr. utility functions for MIOS32 applications are located under
+//   $MIOS32_PATH/modules/freertos_utils
+#ifndef configGENERATE_RUN_TIME_STATS
 #define configGENERATE_RUN_TIME_STATS       0
-//#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS TODO
-//#define portGET_RUN_TIME_COUNTER_VALUE      TODO
+#endif
 
 // vApplicationMallocFailedHook located in main.c (debug message will be sent to debug terminal and LCD)
 #define configUSE_MALLOC_FAILED_HOOK        1

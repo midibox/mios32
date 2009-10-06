@@ -43,6 +43,13 @@
 #define MIOS32_HEAP_SIZE 19*1024
 
 
+// optional performance measuring
+// see documentation under $MIOS32_PATH/modules/freertos_utils/freertos_utils.c
+#define configGENERATE_RUN_TIME_STATS           0
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
+#define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+
+
 // maximum idle counter value to be expected
 #define MAX_IDLE_CTR 223000
 
