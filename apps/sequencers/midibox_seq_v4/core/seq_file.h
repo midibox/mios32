@@ -126,8 +126,12 @@ extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
 
 extern s32 SEQ_FILE_PrintSDCardInfos(void);
 
+extern s32 SEQ_FILE_FormattingRequired(void);
+extern s32 SEQ_FILE_Format(void);
+
 extern s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer);
 extern s32 SEQ_FILE_CreateBackup(void);
+
 
 
 /////////////////////////////////////////////////////////////////////////////

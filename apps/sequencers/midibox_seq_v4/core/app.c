@@ -375,134 +375,42 @@ void SEQ_TASK_Period1S(void)
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
       SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
-      s32 status = 0;
-
-      // create non-existing banks if required
+      char str1[21];
+      sprintf(str1, "Banks: ........");
       u8 bank;
       for(bank=0; bank<8; ++bank)
-	if( !SEQ_FILE_B_NumPatterns(bank) ) {
-	  // print SD Card message
-	  char str1[21];
-	  sprintf(str1, "Creating Bank #%d", bank+1);
-	  char str2[21];
-	  sprintf(str2, "DON'T POWER-OFF!");
-	  SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
+	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
+      char str2[21];
+      sprintf(str2, 
+	      "M:%d S:%d G:%d C:%d HW:%d", 
+	      SEQ_FILE_M_NumMaps() ? 1 : 0, 
+	      SEQ_FILE_S_NumSongs() ? 1 : 0, 
+	      SEQ_FILE_G_Valid(),
+	      SEQ_FILE_C_Valid(),
+	      SEQ_FILE_HW_Valid());
+      SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
 
-	  // update LCD immediately (since background task not running)
-	  SEQ_UI_LCD_Update();
-
-	  // create bank
-	  if( (status=SEQ_FILE_B_Create(bank)) < 0 )
-	    break;
-
-	  // fill patterns with useful data
-	  u16 pattern;
-	  for(pattern=0; pattern<SEQ_FILE_B_NumPatterns(bank) && status >= 0; ++pattern) {
-	    sprintf(str1, "Writing Pattern %d:%c%d", bank+1, 'A'+(pattern>>3), (pattern%8)+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
-	    SEQ_UI_LCD_Update();
-
-	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
-	    u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
-	    status=SEQ_FILE_B_PatternWrite(bank, pattern, group);
-	    portEXIT_CRITICAL();
-	  }
-
-	  if( status < 0 )
-	    break;
-
-	  // open bank
-	  if( (status=SEQ_FILE_B_Open(bank)) < 0 )
-	    break;
-	}
-
-
-      // create non-existing mixer maps if required
-      if( status >= 0 && !SEQ_FILE_M_NumMaps() ) {
-	// print SD Card message
-	char str1[21];
-	sprintf(str1, "Creating Mixer Maps");
-	char str2[21];
-	sprintf(str2, "DON'T POWER-OFF!");
-	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
-
-	// update LCD immediately (since background task not running)
-	SEQ_UI_LCD_Update();
-
-	// create maps
-	if( (status=SEQ_FILE_M_Create()) >= 0 ) {
-	  u16 map;
-	  for(map=0; map<SEQ_FILE_M_NumMaps() && status >= 0; ++map) {
-	    sprintf(str1, "Writing Map #%d", map+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
-	    SEQ_UI_LCD_Update();
-
-	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
-	    status = SEQ_FILE_M_MapWrite(map);
-	    portEXIT_CRITICAL();
-	  }
-
-	  if( status >= 0 )
-	    status=SEQ_FILE_M_Open();
-	}
-      }
-
-      // create non-existing song slots if required
-      if( status >= 0 && !SEQ_FILE_S_NumSongs() ) {
-	// print SD Card message
-	char str1[21];
-	sprintf(str1, "Creating Songs");
-	char str2[21];
-	sprintf(str2, "DON'T POWER-OFF!");
-	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
-
-	// update LCD immediately (since background task not running)
-	SEQ_UI_LCD_Update();
-
-	// create songs
-	if( (status=SEQ_FILE_S_Create()) >= 0 ) {
-	  u16 song;
-	  for(song=0; song<SEQ_FILE_S_NumSongs() && status >= 0; ++song) {
-	    sprintf(str1, "Writing Song #%d", song+1);
-	    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 30000, str1, str2);
-	    SEQ_UI_LCD_Update();
-
-	    portENTER_CRITICAL(); // we especially have to take care, that no other task re-configures pattern memory
-	    status = SEQ_FILE_S_SongWrite(song);
-	    portEXIT_CRITICAL();
-	  }
-
-	  if( status >= 0 )
-	    status=SEQ_FILE_S_Open();
-	}
-      }
-      
-      // no need to check for existing config file (will be created once config data is stored)
-
-      if( status < 0 ) {
-	SEQ_UI_SDCardErrMsg(2000, status);
-      } else {
-	char str1[21];
-	sprintf(str1, "Banks: ........");
-	u8 bank;
-	for(bank=0; bank<8; ++bank)
-	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
-	char str2[21];
-	sprintf(str2, 
-		"M:%d S:%d G:%d C:%d HW:%d", 
-		SEQ_FILE_M_NumMaps() ? 1 : 0, 
-		SEQ_FILE_S_NumSongs() ? 1 : 0, 
-		SEQ_FILE_G_Valid(),
-		SEQ_FILE_C_Valid(),
-		SEQ_FILE_HW_Valid());
-	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
-
-	// request to load content of SD card
-	load_sd_content = 1;
-      }
+      // request to load content of SD card
+      load_sd_content = 1;
     }
   } else if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
+  }
+
+  // check for format request
+  // this is running with low priority, so that LCD is updated in parallel!
+  if( seq_ui_format_req ) {
+    // note: request should be cleared at the end of this process to avoid double-triggers!
+    if( (status = SEQ_FILE_Format()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    else
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files formatted", "successfully!");
+
+    // request to load content of SD card
+    load_sd_content = 1;
+
+    // finally clear request
+    seq_ui_format_req = 0;
   }
 
   // check for backup request
@@ -543,7 +451,7 @@ void SEQ_TASK_Period1S(void)
   MUTEX_SDCARD_GIVE;
 
   // load content of SD card if requested ((re-)connection detected)
-  if( load_sd_content ) {
+  if( load_sd_content && !SEQ_FILE_FormattingRequired() ) {
     // TODO: should we load the patterns when SD Card has been detected?
     // disadvantage: currently edited patterns are destroyed - this could be fatal during a live session if there is a bad contact!
 

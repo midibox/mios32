@@ -19,6 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
+#include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_core.h"
 
@@ -46,6 +47,9 @@ static seq_pattern_t selected_pattern[SEQ_CORE_NUM_GROUPS];
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no LED action so long files not available
+
   seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + ui_selected_group) && ui_cursor_flash) 
     ? seq_pattern[ui_selected_group] : selected_pattern[ui_selected_group];
 
@@ -64,6 +68,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no encoder action so long files not available
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
     case SEQ_UI_ENCODER_GP2:
@@ -146,6 +153,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no button action so long files not available
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP8 ) {
@@ -217,6 +227,24 @@ static s32 LCD_Handler(u8 high_prio)
   // <--------------------------------------><-------------------------------------->
   // G1: Breakbeats 2     G2: Lovely Arps 5  G3: My fav.Bassline  G4: Transposer Emaj 
   // >>> Drums 1:B2 ____      Synth 2:A5 ____    Bass  3:B1 ____      Ctrl 4:C1 ____                                         
+
+
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  //      No patterns available so long Fileson SD Card haven't been created!        
+  //                             Please go toUTILITY->DISK Page!                     
+
+  if( SEQ_FILE_FormattingRequired() ) {
+    if( high_prio )
+      return 0;
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("     No patterns available so long Fileson SD Card haven't been created!        ");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString("                            Please go toUTILITY->DISK Page!                     ");
+    return 0;
+  }
 
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////

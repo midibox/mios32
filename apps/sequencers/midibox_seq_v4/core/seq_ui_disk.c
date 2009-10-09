@@ -28,10 +28,17 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           2
+#define NUM_OF_ITEMS           3
 #define ITEM_BACKUP            0
 #define ITEM_ENABLE_MSD        1
 #define ITEM_INFO              2
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static void BackupReq(void);
+static void FormatReq(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,7 +50,12 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_BACKUP: *gp_leds |= 0x0003; break;
+    case ITEM_BACKUP:
+      if( SEQ_FILE_FormattingRequired() )
+	*gp_leds |= 0x00ff;
+      else
+	*gp_leds |= 0x0003;
+      break;
     case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
     case ITEM_INFO: *gp_leds |= 0x3000; break;
   }
@@ -72,7 +84,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      return -1; // not used (yet)
+      if( SEQ_FILE_FormattingRequired() )
+	ui_selected_item = ITEM_BACKUP;
+      else
+	return -1; // not used (yet)
+      break;
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
@@ -96,8 +112,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_BACKUP: {
-      seq_ui_backup_req = 1; // backup handled by low-priority task in app.c
-      // messages print in seq_ui.c so long request is active
+      if( SEQ_FILE_FormattingRequired() )
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Use GP Button", "to start FORMAT!");
+      else
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Use GP Button", "to start Backup!");
       return 1;
     };
 
@@ -135,11 +153,31 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  if( depressed ) return 0; // ignore when button depressed
-
   // GP button selects preset
   if( button <= SEQ_UI_BUTTON_GP16 ) {
     s32 incrementer = 0;
+
+    // GP1-8 to start formatting
+    if( SEQ_FILE_FormattingRequired() ) {
+      if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP8 ) {
+	if( depressed )
+	  SEQ_UI_UnInstallDelayedActionCallback(FormatReq);
+	else
+	  SEQ_UI_InstallDelayedActionCallback(FormatReq, 5000, "to FORMAT Files!");
+	return 1;
+      }
+    } else {
+      // GP1/2 start backup
+      if( button == SEQ_UI_BUTTON_GP1 || button == SEQ_UI_BUTTON_GP2 ) {
+	if( depressed )
+	  SEQ_UI_UnInstallDelayedActionCallback(BackupReq);
+	else
+	  SEQ_UI_InstallDelayedActionCallback(BackupReq, 2000, "to start Backup");
+	return 1;
+      }
+    }
+
+    if( depressed ) return 0; // ignore when button depressed
 
     // GP9/10 toggles MSD enable/disable
     if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 )
@@ -148,6 +186,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     // re-use encoder function
     return Encoder_Handler(button, incrementer);
   }
+
+  if( depressed ) return 0; // ignore when button depressed
 
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
@@ -187,17 +227,33 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
+  // ---------------> FORMAT <---------------  MSD USB           Send SD Info        
+  // ---------------> FILES! <--------------- disabled           to Terminal         
+
   //   Create                                  MSD USB           Send SD Info        
   //   Backup                                 disabled           to Terminal         
 
   //                                           MSD USB (UMRW)
   //                                           enabled
 
-
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("  Create");
-  SEQ_LCD_PrintSpaces(32);
+  if( SEQ_FILE_FormattingRequired() ) {
+    SEQ_LCD_PrintString("---------------> ");
+    if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(6);
+    } else {
+      SEQ_LCD_PrintString("FORMAT");
+    }
+    SEQ_LCD_PrintString(" <---------------");
+  } else {
+    if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(8);
+    } else {
+      SEQ_LCD_PrintString("  Create");
+    }
+    SEQ_LCD_PrintSpaces(32);
+  }
 
   SEQ_LCD_PrintString("  MSD USB ");
   if( TASK_MSD_EnableGet() == 1 ) {
@@ -211,13 +267,22 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
-  if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(8);
+  if( SEQ_FILE_FormattingRequired() ) {
+    SEQ_LCD_PrintString("---------------> ");
+    if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(6);
+    } else {
+      SEQ_LCD_PrintString("FILES!");
+    }
+    SEQ_LCD_PrintString(" <---------------");
   } else {
-    SEQ_LCD_PrintString("  Backup");
+    if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(8);
+    } else {
+      SEQ_LCD_PrintString("  Backup");
+    }
+    SEQ_LCD_PrintSpaces(32);
   }
-
-  SEQ_LCD_PrintSpaces(32);
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -258,4 +323,25 @@ s32 SEQ_UI_DISK_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function for Backup Request
+/////////////////////////////////////////////////////////////////////////////
+static void BackupReq(void)
+{
+  // backup handled by low-priority task in app.c
+  // messages print in seq_ui.c so long request is active
+  seq_ui_backup_req = 1;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// help function for Format Request
+/////////////////////////////////////////////////////////////////////////////
+void FormatReq(void)
+{
+  // formatting handled by low-priority task in app.c
+  // messages print in seq_ui.c so long request is active
+  seq_ui_format_req = 1;
 }

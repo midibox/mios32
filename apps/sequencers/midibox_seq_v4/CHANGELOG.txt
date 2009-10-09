@@ -6,20 +6,51 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta3
+~~~~~~~~~~~~~~~~~~~~
+
+  o if global loop mode enabled, a "*LOOPED*" message will flash at the 
+    right corner of the EDIT and STEPVIEW screen.
+
+  o following handling has been added to realize a "smooth startup" for
+    people who are in the progress of building their MBSEQ. The core is already
+    running, they connect a SD Card but don't have LCDs (so that messages
+    cannot be read):
+      - if a SD Card without Banks/Songs/Mixer Maps is connected, the appr.
+        files won't be created automatically anymore.
+      - messages are print on the PATTERN/SONG and MIXER page to inform
+        that files have to be created from the UTILITY->DISK menu
+      - in the DISK->UTILITY menu you will find a special option at the left
+        side which allows to start the formatting process (in fact, the SD
+        Card won't be formatted, but some files will be created)
+      - there is now a nice progress bar which informs about the state
+        so long formatting is in progress
+
+  o CLEAR button has to be pressed for 2 seconds before action is triggered
+
+  o fixed BLM inversion mask configuration
+
+
 MIDIboxSEQ V4.0beta2
 ~~~~~~~~~~~~~~~~~~~~
 
   o Song page got a copy/pase/clear/insert/delete function for song steps.
     Press the SELECT button to select the utility function
+
   o Copy/Paste/Clear button can be used in song page as well
+
   o Song/Phrase mode not switched via SONG button anymore (this handling
     is an artifact from MBSEQ V2/V3)
     Instead, the mode can be changed with GP encoder #8 or #9
+
   o a 16 step selection pattern for the ALL function is now available
     (only selected steps will be touched by the ALL function).
     It can be changed by pressing the SELECT button in EDIT page.
+
   o the 16 instrument labels of a drum track can be edited now
+
   o a nice graphical logo is now print during startup
+
   o lower CPU load if no SD Card connected
 
 

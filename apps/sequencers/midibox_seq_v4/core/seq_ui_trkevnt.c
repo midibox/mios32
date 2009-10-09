@@ -811,7 +811,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
     SEQ_LCD_PrintString(" ---------------------------------> ");
-    if( ui_cursor_flash ) {
+    if( (ui_cursor_flash_overrun_ctr & 1) ) {
       SEQ_LCD_PrintSpaces(4);
     } else {
       SEQ_LCD_PrintString("INIT");

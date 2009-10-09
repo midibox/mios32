@@ -72,6 +72,7 @@ seq_ui_page_t ui_trglayer_prev_page;
 seq_ui_page_t ui_parlayer_prev_page;
 
 volatile u8 ui_cursor_flash;
+volatile u8 ui_cursor_flash_overrun_ctr;
 u16 ui_cursor_flash_ctr;
 
 u8 ui_edit_name_cursor;
@@ -91,6 +92,7 @@ u8 seq_ui_remote_force_lcd_update;
 u8 seq_ui_remote_force_led_update;
 
 u8 seq_ui_backup_req;
+u8 seq_ui_format_req;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -102,6 +104,7 @@ static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
 static s32 (*ui_led_callback)(u16 *gp_leds);
 static s32 (*ui_lcd_callback)(u8 high_prio);
 static s32 (*ui_exit_callback)(void);
+static s32 (*ui_delayed_action_callback)(void);
 
 static u16 ui_gp_leds;
 
@@ -113,6 +116,7 @@ static char ui_msg[2][UI_MSG_MAX_CHAR];
 static u16 ui_msg_ctr;
 static seq_ui_msg_type_t ui_msg_type;
 
+static u16 ui_delayed_action_ctr;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -136,8 +140,9 @@ s32 SEQ_UI_Init(u32 mode)
 
   ui_hold_msg_ctr = 0;
   ui_msg_ctr = 0;
+  ui_delayed_action_ctr = 0;
 
-  ui_cursor_flash_ctr = 0;
+  ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
   ui_cursor_flash = 0;
 
   seq_ui_button_state.ALL = 0;
@@ -159,6 +164,7 @@ s32 SEQ_UI_Init(u32 mode)
 
   // misc
   seq_ui_backup_req = 0;
+  seq_ui_format_req = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -248,6 +254,24 @@ s32 SEQ_UI_InstallExitCallback(void *callback)
 }
 
 
+s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 ctr, char *msg)
+{
+  ui_delayed_action_callback = callback;
+  ui_delayed_action_ctr = ctr;
+
+  SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, ctr+1, "", msg);
+
+  return 0; // no error
+}
+
+s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback)
+{
+  if( ui_delayed_action_callback == callback )
+    ui_delayed_action_callback = 0;
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Change the menu page
 /////////////////////////////////////////////////////////////////////////////
@@ -267,6 +291,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_led_callback = NULL;
     ui_lcd_callback = NULL;
     ui_exit_callback = NULL;
+    ui_delayed_action_callback = NULL;
     portEXIT_CRITICAL();
 
     if( seq_hwcfg_button_beh.menu )
@@ -311,9 +336,10 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
     SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
   } else {
     // forward to menu page
-    if( ui_button_callback != NULL )
+    if( ui_button_callback != NULL ) {
       ui_button_callback(gp, depressed);
-    ui_cursor_flash_ctr = 0;
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+    }
   }
 
   return 0; // no error
@@ -322,9 +348,10 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 static s32 SEQ_UI_Button_Left(s32 depressed)
 {
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Left, depressed);
-  ui_cursor_flash_ctr = 0;
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   return 0; // no error
 }
@@ -332,9 +359,10 @@ static s32 SEQ_UI_Button_Left(s32 depressed)
 static s32 SEQ_UI_Button_Right(s32 depressed)
 {
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Right, depressed);
-  ui_cursor_flash_ctr = 0;
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   return 0; // no error
 }
@@ -344,9 +372,10 @@ static s32 SEQ_UI_Button_Down(s32 depressed)
   seq_ui_button_state.DOWN = depressed ? 0 : 1;
 
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Down, depressed);
-  ui_cursor_flash_ctr = 0;
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   return 0; // no error
 }
@@ -356,9 +385,10 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
   seq_ui_button_state.UP = depressed ? 0 : 1;
 
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Up, depressed);
-  ui_cursor_flash_ctr = 0;
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   return 0; // no error
 }
@@ -669,25 +699,50 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
   }
 }
 
+
+// callback function for delayed Clear Mixer function
+static void SEQ_UI_Button_Clear_Mixer(void)
+{
+  SEQ_UI_MIXER_Clear();
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
+}
+
+// callback function for delayed Clear SongPos function
+static void SEQ_UI_Button_Clear_SongPos(void)
+{
+  SEQ_UI_SONG_Clear();
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
+}
+
+// callback function for clear track
+static void SEQ_UI_Button_Clear_Track(void)
+{
+  SEQ_UI_UTIL_ClearButton(0); // button pressed
+  SEQ_UI_UTIL_ClearButton(1); // button depressed
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+}
+
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
-    if( depressed ) return -1;
-    SEQ_UI_MIXER_Clear();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
+    if( depressed )
+      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer);
+    else
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, 2000, "to clear Mixer Map");
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
-    if( depressed ) return -1;
-    SEQ_UI_SONG_Clear();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
+    if( depressed )
+      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos);
+    else
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, 2000, "to clear SongPos");
     return 1;
   } else {
-    if( depressed ) return -1;
-    SEQ_UI_UTIL_ClearButton(0); // button pressed
-    SEQ_UI_UTIL_ClearButton(1); // button depressed
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+    if( depressed )
+      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Track);
+    else
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, 2000, "to clear Track");
     return 1;
   }
 }
@@ -715,10 +770,11 @@ static s32 SEQ_UI_Button_Select(s32 depressed)
   // forward to menu page
   if( !seq_ui_button_state.MENU_PRESSED ) {
     seq_ui_button_state.SELECT_PRESSED = depressed ? 0 : 1;
-    if( ui_button_callback != NULL )
+    if( ui_button_callback != NULL ) {
       ui_button_callback(SEQ_UI_BUTTON_Select, depressed);
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+    }
   }
-  ui_cursor_flash_ctr = 0;
 
   return 0; // no error
 }
@@ -732,9 +788,10 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   seq_ui_button_state.EXIT_PRESSED = depressed ? 0 : 1;
 
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL )
+  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
-  ui_cursor_flash_ctr = 0;
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   // release all button states
   seq_ui_button_state.ALL = 0;
@@ -1125,8 +1182,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
-  // ignore during a backup is created
-  if( seq_ui_backup_req )
+  // ignore during a backup or format is created
+  if( seq_ui_backup_req || seq_ui_format_req )
     return -1;
 
   // ensure that selections are matching with track constraints
@@ -1276,8 +1333,8 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
-  // ignore during a backup is created
-  if( seq_ui_backup_req )
+  // ignore during a backup or format is created
+  if( seq_ui_backup_req || seq_ui_format_req )
     return -1;
 
   if( row >= SEQ_CORE_NUM_TRACKS_PER_GROUP )
@@ -1313,8 +1370,8 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
-  // ignore during a backup is created
-  if( seq_ui_backup_req )
+  // ignore during a backup or format is created
+  if( seq_ui_backup_req || seq_ui_format_req )
     return -1;
 
   if( encoder > 16 )
@@ -1343,7 +1400,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     portEXIT_CRITICAL();
   } else if( !seq_ui_button_state.MENU_PRESSED && ui_encoder_callback != NULL ) {
     ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
-    ui_cursor_flash_ctr = 0; // ensure that value is visible when it has been changed
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
   }
 
   // request display update
@@ -1449,12 +1506,17 @@ s32 SEQ_UI_LCD_Handler(void)
 	SEQ_LCD_LOGO_Print(boot_animation_lcd_pos++);
       }
     }
-  } else if( seq_ui_backup_req ) {
+  } else if( seq_ui_backup_req || seq_ui_format_req ) {
     SEQ_LCD_Clear();
     SEQ_LCD_CursorSet(0, 0);
-    //                   <-------------------------------------->
-    //                   0123456789012345678901234567890123456789
-    SEQ_LCD_PrintString("Creating File Backup - be patient!!!");
+    //                     <-------------------------------------->
+    //                     0123456789012345678901234567890123456789
+    if( seq_ui_backup_req )
+      SEQ_LCD_PrintString("Creating File Backup - be patient!!!");
+    else if( seq_ui_format_req )
+      SEQ_LCD_PrintString("Formatting Files - be patient!!!");
+    else
+      SEQ_LCD_PrintString("Don't know what I'm doing! :-/");
 
     if( seq_file_backup_notification != NULL ) {
       int i;
@@ -1528,6 +1590,7 @@ s32 SEQ_UI_LCD_Update(void)
     const char *animation_r_ptr;
     u8 msg_x = 0;
     u8 right_aligned = 0;
+    u8 disable_message = 0;
 
     switch( ui_msg_type ) {
       case SEQ_UI_MSG_SDCARD: {
@@ -1539,6 +1602,27 @@ s32 SEQ_UI_LCD_Update(void)
 	animation_r_ptr = animation_r;
 	msg_x = 0; // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
 	right_aligned = 0;
+      } break;
+
+      case SEQ_UI_MSG_DELAYED_ACTION: {
+	//                             00112233
+	const char animation_l[2*4] = "   )))) ";
+	//                             00112233
+	const char animation_r[2*4] = "  ( (( (";
+	animation_l_ptr = animation_l;
+	animation_r_ptr = animation_r;
+	msg_x = 39;
+	right_aligned = 1;
+
+	if( ui_delayed_action_callback == NULL ) {
+	  disable_message = 1; // button has been depressed before delay
+	} else {
+	  int seconds = (ui_delayed_action_ctr / 1000) + 1;
+	  if( seconds == 1 )
+	    sprintf(ui_msg[0], "Hold for 1 second ");
+	  else
+	    sprintf(ui_msg[0], "Hold for %d seconds", seconds);
+	}
       } break;
 
       default: {
@@ -1553,32 +1637,35 @@ s32 SEQ_UI_LCD_Update(void)
       } break;
 
     }
-    int anum = (ui_msg_ctr % 1000) / 250;
 
-    int len[2];
-    len[0] = strlen((char *)ui_msg[0]);
-    len[1] = strlen((char *)ui_msg[1]);
-    int len_max = len[0];
-    if( len[1] > len_max )
-      len_max = len[1];
+    if( !disable_message ) {
+      int anum = (ui_msg_ctr % 1000) / 250;
 
-    if( right_aligned )
-      msg_x -= (9 + len_max);
+      int len[2];
+      len[0] = strlen((char *)ui_msg[0]);
+      len[1] = strlen((char *)ui_msg[1]);
+      int len_max = len[0];
+      if( len[1] > len_max )
+	len_max = len[1];
 
-    int line;
-    for(line=0; line<2; ++line) {
-      SEQ_LCD_CursorSet(msg_x, line);
+      if( right_aligned )
+	msg_x -= (9 + len_max);
 
-      // ensure that both lines are padded with same number of spaces
-      int end_pos = len[line];
-      while( end_pos < len_max )
-	ui_msg[line][end_pos++] = ' ';
-      ui_msg[line][end_pos] = 0;
+      int line;
+      for(line=0; line<2; ++line) {
+	SEQ_LCD_CursorSet(msg_x, line);
 
-      SEQ_LCD_PrintFormattedString(" %c%c| %s |%c%c ",
-				   *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
-				   (char *)ui_msg[line], 
-				   *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+	// ensure that both lines are padded with same number of spaces
+	int end_pos = len[line];
+	while( end_pos < len_max )
+	  ui_msg[line][end_pos++] = ' ';
+	ui_msg[line][end_pos] = 0;
+
+	SEQ_LCD_PrintFormattedString(" %c%c| %s |%c%c ",
+				     *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				     (char *)ui_msg[line], 
+				     *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+      }
     }
   }
 
@@ -1924,8 +2011,12 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
-  if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX )
+  if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {
     ui_cursor_flash_ctr = 0;
+    ++ui_cursor_flash_overrun_ctr;
+    seq_ui_display_update_req = 1;
+  }
+
   // important: flash flag has to be recalculated on each invocation of this
   // handler, since counter could also be reseted outside this function
   u8 old_ui_cursor_flash = ui_cursor_flash;
@@ -1968,6 +2059,16 @@ s32 SEQ_UI_MENU_Handler_Periodic()
     }
 
     portEXIT_CRITICAL();
+  }
+
+  // delayed action will be triggered once counter reached 0
+  if( !ui_delayed_action_callback )
+    ui_delayed_action_ctr = 0;
+  else if( ui_delayed_action_ctr ) {
+    if( --ui_delayed_action_ctr == 0 ) {
+      ui_delayed_action_callback();
+      ui_delayed_action_callback = NULL;
+    }
   }
 
   return 0;

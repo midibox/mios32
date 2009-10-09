@@ -170,7 +170,7 @@ s32 BLM_PrepareCol(void)
   dout_value |= (dout_value << 4);
 
   // finally apply inversion mask (required when sink drivers are connected to the cathode lines)
-  dout_value ^= BLM_CATHODES_INV_MASK;
+  dout_value ^= blm_config.cathodes_inv_mask;
 
   // output on CATHODES* registers
   if( blm_config.dout_cathodes_sr1 )

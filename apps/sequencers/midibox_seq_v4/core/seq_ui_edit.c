@@ -432,12 +432,17 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   SEQ_LCD_PrintString(" Len:");
   SEQ_LCD_PrintGatelength(layer_event.len);
-  SEQ_LCD_PrintSpaces(4);
 
-  if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+  // print flashing *LOOPED* at right corner if loop mode activated to remind that steps will be played differntly
+  if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_state.LOOP ) {
+    SEQ_LCD_PrintString(" *LOOPED*");
   } else {
-    SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
+    SEQ_LCD_PrintSpaces(4);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+    } else {
+      SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////

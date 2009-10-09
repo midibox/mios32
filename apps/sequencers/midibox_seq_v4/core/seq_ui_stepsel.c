@@ -175,14 +175,20 @@ static s32 LCD_Handler(u8 high_prio)
       else
 	SEQ_LCD_PrintFormattedString("%-3d  ", i*steps_per_item+1);
 
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      // print drum name at the rightmost side
-      SEQ_LCD_CursorSet(75, 0);
-      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+    // print flashing *LOOPED* at right corner if loop mode activated to remind that steps will be played differntly
+    if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_state.LOOP ) {
+      SEQ_LCD_CursorSet(71, 0);
+      SEQ_LCD_PrintString(" *LOOPED*");
     } else {
-      // print trigger layer and name at the rightmost side
-      SEQ_LCD_CursorSet(73, 0);
-      SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	// print drum name at the rightmost side
+	SEQ_LCD_CursorSet(75, 0);
+	SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+      } else {
+	// print trigger layer and name at the rightmost side
+	SEQ_LCD_CursorSet(73, 0);
+	SEQ_LCD_PrintFormattedString("%c:%s", 'A' + ui_selected_trg_layer, SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+      }
     }
   }
 
