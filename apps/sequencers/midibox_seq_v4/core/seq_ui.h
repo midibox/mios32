@@ -139,7 +139,8 @@ typedef enum {
 
 typedef enum {
   SEQ_UI_MSG_USER,
-  SEQ_UI_MSG_SDCARD
+  SEQ_UI_MSG_SDCARD,
+  SEQ_UI_MSG_DELAYED_ACTION
 } seq_ui_msg_type_t;
 
 
@@ -176,6 +177,8 @@ extern s32 SEQ_UI_InstallEncoderCallback(void *callback);
 extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 extern s32 SEQ_UI_InstallExitCallback(void *callback);
+extern s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 ctr, char *msg);
+extern s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback);
 
 extern s32 SEQ_UI_LCD_Update(void);
 
@@ -261,6 +264,7 @@ extern seq_ui_page_t ui_trglayer_prev_page;
 extern seq_ui_page_t ui_parlayer_prev_page;
 
 extern volatile u8 ui_cursor_flash;
+extern volatile u8 ui_cursor_flash_overrun_ctr;
 
 extern u8 ui_edit_name_cursor;
 extern u8 ui_edit_preset_num_category;
@@ -279,5 +283,6 @@ extern u8 seq_ui_remote_force_lcd_update;
 extern u8 seq_ui_remote_force_led_update;
 
 extern u8 seq_ui_backup_req;
+extern u8 seq_ui_format_req;
 
 #endif /* _SEQ_UI_H */

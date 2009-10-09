@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "seq_ui.h"
+#include "seq_core.h"
 
 #include "seq_file.h"
 
@@ -896,6 +897,115 @@ s32 SEQ_FILE_PrintSDCardInfos(void)
   DEBUG_MSG("--------------------\n");
 
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if it is required to format any file
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_FormattingRequired(void)
+{
+  u8 bank;
+  for(bank=0; bank<8; ++bank)
+    if( !SEQ_FILE_B_NumPatterns(bank) )
+      return 1;
+
+  if( !SEQ_FILE_M_NumMaps() )
+    return 1;
+
+  if( !SEQ_FILE_S_NumSongs() )
+    return 1;
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function formats Bank/Mixer/Song files
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_Format(void)
+{
+  s32 status = 0;
+  u8 num_operations = 8 + 1 + 1;
+  char filename_buffer[20];
+  seq_file_backup_notification = filename_buffer;
+
+  seq_file_copy_percentage = 0; // for percentage display
+
+  // create non-existing banks if required
+  u8 bank;
+  for(bank=0; bank<8; ++bank) {
+    seq_file_backup_percentage = (u8)(((u32)100 * (u32)bank) / num_operations);
+
+    if( !SEQ_FILE_B_NumPatterns(bank) ) {
+      // create bank
+      sprintf(seq_file_backup_notification, "MBSEQ_B%d.V4", bank+1);
+
+      if( (status=SEQ_FILE_B_Create(bank)) < 0 )
+	return status;
+
+      // fill patterns with useful data
+      int pattern;
+      int num_patterns = SEQ_FILE_B_NumPatterns(bank);
+      for(pattern=0; pattern<num_patterns; ++pattern) {
+	seq_file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
+	u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
+
+	if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group)) < 0 )
+	  return status;
+      }
+
+      // open bank
+      if( (status=SEQ_FILE_B_Open(bank)) < 0 )
+	return status;
+    }
+  }
+
+
+  // create non-existing mixer maps if required
+  if( !SEQ_FILE_M_NumMaps() ) {
+    seq_file_backup_percentage = (u8)(((u32)100 * (u32)8) / num_operations);
+
+    // create maps
+    sprintf(seq_file_backup_notification, "MBSEQ_M.V4");
+
+    if( (status=SEQ_FILE_M_Create()) >= 0 ) {
+      int map;
+      int num_maps = SEQ_FILE_M_NumMaps();
+      for(map=0; map<num_maps; ++map) {
+	seq_file_copy_percentage = (u8)(((u32)100 * (u32)map) / num_maps); // for percentage display
+	if( (status = SEQ_FILE_M_MapWrite(map)) < 0 )
+	  return status;
+      }
+
+      if( (status=SEQ_FILE_M_Open()) < 0 )
+	return status;
+    }
+  }
+
+  // create non-existing song slots if required
+  if( !SEQ_FILE_S_NumSongs() ) {
+    seq_file_backup_percentage = (u8)(((u32)100 * (u32)9) / num_operations);
+
+    sprintf(seq_file_backup_notification, "MBSEQ_S.V4");
+
+    // create songs
+    if( (status=SEQ_FILE_S_Create()) >= 0 ) {
+      int song;
+      int num_songs = SEQ_FILE_S_NumSongs();
+      for(song=0; song<num_songs; ++song) {
+	seq_file_copy_percentage = (u8)(((u32)100 * (u32)song) / num_songs); // for percentage display
+	if( (status = SEQ_FILE_S_SongWrite(song)) )
+	  return status;
+      }
+
+      if( (status=SEQ_FILE_S_Open()) < 0 )
+	return status;
+    }
+  }
+      
+  // no need to check for existing config file (will be created once config data is stored)
+  return status;
 }
 
 

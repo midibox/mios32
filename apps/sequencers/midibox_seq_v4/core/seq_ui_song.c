@@ -24,6 +24,7 @@
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_pattern.h"
+#include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
 
@@ -91,6 +92,9 @@ static s32 CheckChangePattern(u8 group, u8 bank, u8 pattern);
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no LED action so long files not available
+
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
@@ -188,6 +192,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no encoder action so long files not available
+
   seq_song_step_t s = SEQ_SONG_StepEntryGet(edit_pos);
 
   switch( encoder ) {
@@ -471,6 +478,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no button action so long files not available
+
   // special mapping of GP buttons depending on ui_selected_item
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -762,6 +772,23 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  //         No songs available so long Fileson SD Card haven't been created!        
+  //                             Please go toUTILITY->DISK Page!                     
+
+  if( SEQ_FILE_FormattingRequired() ) {
+    if( high_prio )
+      return 0;
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("        No songs available so long Fileson SD Card haven't been created!        ");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString("                            Please go toUTILITY->DISK Page!                     ");
+    return 0;
+  }
+
   if( show_song_util_page ) {
     // layout:
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333

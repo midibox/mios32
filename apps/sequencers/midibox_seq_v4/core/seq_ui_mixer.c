@@ -78,6 +78,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed);
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no LED action so long files not available
+
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
@@ -99,6 +102,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no encoder action so long files not available
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( (encoder >= SEQ_UI_ENCODER_GP1 && encoder <= SEQ_UI_ENCODER_GP16) ) {
@@ -212,6 +218,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
+  if( SEQ_FILE_FormattingRequired() )
+    return 0; // no button action so long files not available
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
@@ -335,6 +344,20 @@ static s32 LCD_Handler(u8 high_prio)
 {
   if( high_prio )
     return 0; // there are no high-priority updates
+
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  //    No Mixer Maps available so long Fileson SD Card haven't been created!        
+  //                             Please go toUTILITY->DISK Page!                     
+
+  if( SEQ_FILE_FormattingRequired() ) {
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("   No Mixer Maps available so long Fileson SD Card haven't been created!        ");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString("                            Please go toUTILITY->DISK Page!                     ");
+    return 0;
+  }
 
   if( show_mixer_util_page ) {
     // layout:
