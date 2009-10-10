@@ -19,10 +19,12 @@
 #include <string.h>
 #include "tasks.h"
 
+#include "seq_ui.h"
 #include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_layer.h"
+#include "seq_morph.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -170,6 +172,29 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
   portEXIT_CRITICAL();
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Set CCs via MIDI (different mapping, especially used by Loopback Feature)
+// see also doc/mbseqv4_cc_implementation.txt
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value)
+{
+  if( cc == 0x01 ) { // ModWheel -> Morph Value
+    // update screen immediately if in morph page
+    if( ui_page == SEQ_UI_PAGE_TRKMORPH )
+      seq_ui_display_update_req = 1;
+    // forward morph value
+    return SEQ_MORPH_ValueSet(value);
+  } else if( cc == 0x03 ) {
+    seq_core_global_scale = value;
+    return 1;
+  } else if( cc >= 0x10 && cc <= 0x5f ) {
+    return SEQ_CC_Set(track, cc+0x20, value); // 0x10..0x5f -> 0x30..0x7f
+  }
+
+  return -1; // CC not mapped
 }
 
 

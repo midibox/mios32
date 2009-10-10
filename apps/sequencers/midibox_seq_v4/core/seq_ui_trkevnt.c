@@ -893,8 +893,9 @@ static s32 LCD_Handler(u8 high_prio)
     } else {
       switch( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) ) {
         case SEQ_PAR_Type_CC: {
-	  u8 cc = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
-	  SEQ_LCD_PrintFormattedString("%03d (%s)     ", cc, SEQ_CC_LABELS_Get(cc));
+	  mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+	  u8 cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+	  SEQ_LCD_PrintFormattedString("%03d (%s)     ", cc_number, SEQ_CC_LABELS_Get(port, cc_number));
 	} break;
         default:
 	  SEQ_LCD_PrintSpaces(19);

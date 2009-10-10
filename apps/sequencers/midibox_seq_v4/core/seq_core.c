@@ -457,8 +457,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       // send LFO CC (if enabled)
       {
 	mios32_midi_package_t p;
-	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 )
-	  SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
+	  if( loopback_port )
+	    SEQ_MIDI_IN_Receive(tcc->midi_port, p); // forward to MIDI IN handler immediately
+	  else
+	    SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+	}
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength

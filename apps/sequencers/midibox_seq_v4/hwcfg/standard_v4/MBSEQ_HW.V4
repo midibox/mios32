@@ -5,6 +5,22 @@
 
 
 ##################################################
+# MIDI Remote Keyboard Function
+##################################################
+
+# The note number which activates the remote function
+# 96 = C-7 (by some MIDI monitors displayed as C-6)
+# 0 disables the remote keyboard function
+MIDI_REMOTE_KEY 96
+
+# The CC number which activates the remote function
+# (e.g. to control it with a footswitch)
+# Allowed numbers: 1-127 for CC#1..CC#127
+# 0 disables the function (default)
+MIDI_REMOTE_CC 0
+
+
+##################################################
 # Shift Register Setup
 ##################################################
 

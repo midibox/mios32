@@ -172,6 +172,154 @@ static const char cc_labels[128][9] = {
 
 
 
+static const char loopback_labels[128][9] = {
+  // 0x00..0x0f
+  "00: ----",
+  "MorphCC ",
+  "02: ----",
+  "GlbScale",
+  "04: ----",
+  "05: ----",
+  "06: ----",
+  "07: ----",
+  "08: ----",
+  "09: ----",
+  "0A: ----",
+  "0B: ----",
+  "0C: ----",
+  "0D: ----",
+  "0E: ----",
+  "0F: ----",
+  
+  // 0x10..0x1f
+  "LFO Wave",
+  "LFO Amp.",
+  "LFO Phs.",
+  "LFO Stps",
+  "LFO SRst",
+  "LFOFlags",
+  "LFO CC  ",
+  "LFOCCOff",
+  "LFOCCPPQ",
+  "19: ----",
+  "1A: ----",
+  "1B: ----",
+  "1C: ----",
+  "1D: ----",
+  "1E: ----",
+  "1F: ----",
+  
+  // 0x20..0x2f
+  "TrkMode ",
+  "TrkFlags",
+  "EvntMode",
+  "LimitLow",
+  "LimitUpp",
+  "25: ----",
+  "MIDI Chn",
+  "MIDIPort",
+  "Directn.",
+  "S.Replay",
+  "S.Fwd.  ",
+  "S.JmpBck",
+  "ClockDiv",
+  "TrkLen. ",
+  "LoopStep",
+  "ClkDivFl",
+  
+  // 0x30..0x3f
+  "Trn.Semi",
+  "Trn.Oct.",
+  "Groove I",
+  "Groove S",
+  "MorphMod",
+  "MorphDst",
+  "Human.Vl",
+  "Human.Mo",
+  "ParAsgDA",
+  "ParAsgDB",
+  "3A: ----",
+  "3B: ----",
+  "S.Repeat",
+  "S.Skip  ",
+  "S.Interv",
+  "3F: ----",
+
+  // 0x40..0x4f
+  "Asg.Gate",
+  "Asg.Acc ",
+  "Asg.Roll",
+  "Asg.Glde",
+  "Asg.Skip",
+  "Asg.R.G.",
+  "Asg.R.V.",
+  "Asg.NoFx",
+  "48: ----",
+  "49: ----",
+  "4A: ----",
+  "4B: ----",
+  "4C: ----",
+  "4D: ----",
+  "4E: ----",
+  "4F: ----",
+  
+  // 0x50..0x5f
+  "EchoRep.",
+  "EchoDel.",
+  "EchoVel.",
+  "EchoFB.V",
+  "EchoFB.N",
+  "EchoFB.G",
+  "EchoFB.T",
+  "57: ----",
+  "58: ----",
+  "59: ----",
+  "5A: ----",
+  "5B: ----",
+  "5C: ----",
+  "5D: ----",
+  "5E: ----",
+  "5F: ----",
+
+  // 0x60..0x6f
+  "60: ----",
+  "61: ----",
+  "62: ----",
+  "63: ----",
+  "64: ----",
+  "65: ----",
+  "66: ----",
+  "67: ----",
+  "68: ----",
+  "69: ----",
+  "6A: ----",
+  "6B: ----",
+  "6C: ----",
+  "6D: ----",
+  "6E: ----",
+  "6F: ----",
+  
+  // 0x70..0x7f
+  "70: ----",
+  "71: ----",
+  "72: ----",
+  "73: ----",
+  "74: ----",
+  "75: ----",
+  "76: ----",
+  "77: ----",
+  "78: ----",
+  "79: ----",
+  "7A: ----",
+  "7B: ----",
+  "7C: ----",
+  "7D: ----",
+  "7E: ----",
+  "7F: ----",
+};
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
@@ -186,10 +334,12 @@ s32 SEQ_CC_LABELS_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Returns CC label
 /////////////////////////////////////////////////////////////////////////////
-const char *SEQ_CC_LABELS_Get(u8 cc)
+const char *SEQ_CC_LABELS_Get(mios32_midi_port_t port, u8 cc)
 {
+  u8 loopback = port == 0xf0;
+
   if( cc >= 128 )
     cc = 0; // just to avoid buffer overruns if invalid CC number selected
 
-  return cc_labels[cc];
+  return loopback ? loopback_labels[cc] : cc_labels[cc];
 }

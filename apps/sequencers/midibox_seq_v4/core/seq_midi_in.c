@@ -23,9 +23,12 @@
 #include "seq_ui.h"
 #include "seq_midi_in.h"
 #include "seq_cc.h"
+#include "seq_pattern.h"
 #include "seq_morph.h"
 #include "seq_core.h"
 #include "seq_record.h"
+#include "seq_hwcfg.h"
+#include "seq_file_b.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -89,6 +92,10 @@ static u8 transposer_hold_note;
 static notestack_item_t arp_sorted_hold[4];
 static notestack_item_t arp_unsorted_hold[4];
 
+// for MIDI remote keyboard function
+static u8 remote_active;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
@@ -100,6 +107,8 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_port = DEFAULT; // All ports
   seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
+
+  remote_active = 0;
 
   return 0; // no error
 }
@@ -148,18 +157,19 @@ s32 SEQ_MIDI_IN_ResetNoteStacks(void)
 s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   s32 status = 0;
+  u8 loopback_port = port == 0xf0;
 
   // filter MIDI port (if 0: no filter, listen to all ports)
 #if 0
   if( seq_midi_in_port && port != seq_midi_in_port )
 #else
   // Loopback port not filtered!
-  if( seq_midi_in_port && port != seq_midi_in_port && ((port & 0xf0) != 0xf0) )
+  if( seq_midi_in_port && port != seq_midi_in_port && !loopback_port )
 #endif
     return status;
 
-  // if not loopback and MIDI channel matching: forward to record function in record page
-  if( ui_page == SEQ_UI_PAGE_TRKREC && !((port & 0xf0) == 0xf0) && midi_package.chn == (seq_midi_in_channel-1) )
+  // if not loopback, no remote and MIDI channel matching: forward to record function in record page
+  if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC && midi_package.chn == (seq_midi_in_channel-1) )
     return SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
 
   // Access to MIDI IN functions controlled by Mutex, since this function is access
@@ -167,30 +177,48 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // SEQ_CORE_* for loopbacks)
 
   // Note Events: ignore channel if loopback
-  if( ((port & 0xf0) == 0xf0) || midi_package.chn == (seq_midi_in_channel-1) ) {
+  if( loopback_port || midi_package.chn == (seq_midi_in_channel-1) ) {
     switch( midi_package.event ) {
 
       case NoteOff: 
-	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
-	MUTEX_MIDIIN_GIVE;
+	if( !loopback_port && remote_active ) {
+	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    remote_active = 0;
+	    status = 1;
+	  } else
+	    status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
+	} else {
+	  MUTEX_MIDIIN_TAKE;
+	  status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
+	  MUTEX_MIDIIN_GIVE;
+	}
 	break;
 
       case NoteOn:
-	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
-	MUTEX_MIDIIN_GIVE;
+	if( !loopback_port && remote_active )
+	  status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
+	else {
+	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    remote_active = 1;
+	    status = 1;
+	  } else {
+	    MUTEX_MIDIIN_TAKE;
+	    status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
+	    MUTEX_MIDIIN_GIVE;
+	  }
+	}
 	break;
 
       case CC:
 	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
+	if( loopback_port )
+	  status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
+	else
+	  status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
 	MUTEX_MIDIIN_GIVE;
 	break;
     }
   }
-
-  // TODO CC Events: channel won't be ignored on loopback
 
   return status;
 }
@@ -287,13 +315,63 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
 {
+  static nrpn_lsb = 0;
+  static nrpn_msb = 0;
+
+  // MIDI Remote Function?
+  if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == cc ) {
+    remote_active = value >= 0x40;
+    return 1;
+  }
+
+  // Remaining functions
   switch( cc ) {
     case 0x01: // ModWheel -> Morph Value
-      // update screen immediately if in morph page
-      if( ui_page == SEQ_UI_PAGE_TRKMORPH )
-	seq_ui_display_update_req = 1;
-      // forward morph value
-      return SEQ_MORPH_ValueSet(value);
+    case 0x03: // Global Scale
+      return SEQ_CC_MIDI_Set(0, cc, value);
+
+    case 0x70: // Pattern Group #1
+    case 0x71: // Pattern Group #2
+    case 0x72: // Pattern Group #3
+    case 0x73: { // Pattern Group #4
+      u8 group = cc-0x70;
+      seq_pattern_t pattern = seq_pattern[group];
+      if( value < SEQ_FILE_B_NumPatterns(pattern.bank) ) {
+	pattern.pattern = value;
+	pattern.DISABLED = 0;
+	pattern.SYNCHED = 0;
+	SEQ_PATTERN_Change(group, pattern);
+      }
+      return 1;
+    } break;
+      
+    case 0x74: // Bank Group #1
+    case 0x75: // Bank Group #2
+    case 0x76: // Bank Group #3
+    case 0x77: { // Bank Group #4
+      u8 group = cc-0x74;
+      seq_pattern_t pattern = seq_pattern[group];
+      if( value < SEQ_FILE_B_NUM_BANKS ) {
+	pattern.bank = value;
+	pattern.DISABLED = 0;
+	pattern.SYNCHED = 0;
+	SEQ_PATTERN_Change(group, pattern);
+      }
+      return 1;
+    } break;
+      
+    case 0x62: // NRPN LSB (selects parameter)
+      nrpn_lsb = value;
+      return 1;
+
+    case 0x63: // NRPN MSB (selects track)
+      nrpn_msb = value;
+      return 1;
+
+    case 0x06: // NRPN Value LSB (sets parameter)
+      if( nrpn_msb < SEQ_CORE_NUM_TRACKS)
+	return SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
+      break;
   }
 
   return 0; // no error

@@ -19,6 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
+#include "seq_cc_labels.h"
 #include "seq_lfo.h"
 
 
@@ -166,6 +167,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_ENABLE_NOTE:
     case ITEM_ENABLE_VELOCITY:
     case ITEM_ENABLE_LENGTH:
+
     case ITEM_ENABLE_CC: {
       u8 flag = ui_selected_item - ITEM_ENABLE_ONE_SHOT;
       u8 mask = 1 << flag;
@@ -177,7 +179,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       else
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, 0);
     } break;
-    case ITEM_CC:            return SEQ_UI_CC_Inc(SEQ_CC_LFO_CC, 0, 127, incrementer);
+
+    case ITEM_CC: {
+      s32 status = SEQ_UI_CC_Inc(SEQ_CC_LFO_CC, 0, 127, incrementer);
+      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+      u8 loopback = port == 0xf0;
+      u8 cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, loopback ? "Loopback CC" : "Controller:", (char *)SEQ_CC_LABELS_Get(port, cc_number));
+      return status;
+    } break;
+
     case ITEM_CC_OFFSET:     return SEQ_UI_CC_Inc(SEQ_CC_LFO_CC_OFFSET, 0, 127, incrementer);
     case ITEM_CC_PPQN:       return SEQ_UI_CC_Inc(SEQ_CC_LFO_CC_PPQN, 0, 8, incrementer);
   }
@@ -374,7 +385,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(5);
   } else {
     u8 value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC_PPQN);
-    int ppqn = 384;
+    int ppqn = 1;
     if( value )
       ppqn = 3 << (value-1);
 
