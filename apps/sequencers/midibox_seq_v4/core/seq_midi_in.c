@@ -183,7 +183,13 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
       case NoteOff: 
 	if( !loopback_port && remote_active ) {
 	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    int i;
+
 	    remote_active = 0;
+	    // send "button depressed" state to all remote functions
+	    for(i=0; i<128; ++i)
+	      SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
+
 	    status = 1;
 	  } else
 	    status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed

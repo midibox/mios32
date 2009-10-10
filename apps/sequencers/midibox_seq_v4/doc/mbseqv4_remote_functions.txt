@@ -5,7 +5,8 @@ Remote Functions of MIDIbox SEQ V4
 ==================================
 
 By default the remote function is activated with key C-7 (hex 0x60)
-at MIDI channel #1
+at MIDI channel #1 (some MIDI monitors call this key C-8!), or
+alternatively with a CC controller defined in your MBSEQ_HW.V4 file.
 
 Following additional keys are assigned to the MIDIbox SEQ buttons:
 
@@ -42,7 +43,7 @@ Following additional keys are assigned to the MIDIbox SEQ buttons:
  D-4 | 0x3e | GP Button #16
  D#4 | 0x3f | Group #2
  E-4 | 0x40 | -
- F-4 | 0x41 | Step View 1-16/17-32
+ F-4 | 0x41 | Step View
  F#4 | 0x42 | Group #3
  G-4 | 0x43 | -
  G#4 | 0x44 | Group #4
@@ -58,23 +59,23 @@ Following additional keys are assigned to the MIDIbox SEQ buttons:
  F-5 | 0x4d | Song
  F#5 | 0x4e | Fast
  G-5 | 0x4f | Metronome
- G#5 | 0x50 | Scrub
- A-5 | 0x51 | F3
- A#5 | 0x52 | F4
+ G#5 | 0x50 | Ext.Restart
+ A-5 | 0x51 | ParLayer Selection
+ A#5 | 0x52 | Track Selection
  B-5 | 0x53 | Stop
      |      |
  C-6 | 0x54 | Play
  C#6 | 0x55 | Pause
  D-6 | 0x56 | Rew
  D#6 | 0x57 | Fwd
- E-6 | 0x58 | F1
- F-6 | 0x59 | F2
+ E-6 | 0x58 | Utility
+ F-6 | 0x59 | Tempo Presets
  F#6 | 0x5a | -
  G-6 | 0x5b | Menu
  G#6 | 0x5c | Select
  A-6 | 0x5d | Exit
- A#6 | 0x5e | Left
- B-6 | 0x5f | Right
+ A#6 | 0x5e | Down
+ B-6 | 0x5f | Up
      |      |
  C-7 | 0x60 | MIDI Remote Key
 

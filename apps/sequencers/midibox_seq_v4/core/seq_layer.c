@@ -261,6 +261,24 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	seq_layer_vu_meter[par_layer] = length | 0x80;
     }
 
+    if( handle_vu_meter ) { // only for VU meters
+      if( (par_layer=tcc->link_par_layer_probability) ) { // Probability
+	u8 rnd_probability = SEQ_PAR_ProbabilityGet(track, step, instrument);
+	seq_layer_vu_meter[par_layer] = rnd_probability | 0x80;
+      }
+
+      if( (par_layer=tcc->link_par_layer_delay) ) { // Delay
+	u8 delay = SEQ_PAR_StepDelayGet(track, step, instrument);
+	seq_layer_vu_meter[par_layer] = delay | 0x80;
+      }
+
+      if( (par_layer=tcc->link_par_layer_roll) ) { // Roll mode
+	u8 roll_mode = SEQ_PAR_RollModeGet(track, step, instrument);
+	if( roll_mode )
+	  seq_layer_vu_meter[par_layer] = 0x7f;
+      }
+    }
+
     // go through all layers to generate events
     u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
     u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
@@ -593,8 +611,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	  // Parameter Layer Assignments
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, SEQ_PAR_Type_CC);
 
-	  for(i=0; i<16; ++i)
-	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
+	  for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
         } break;
 
         case SEQ_EVENT_MODE_Drum: {
@@ -629,8 +647,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
       case SEQ_EVENT_MODE_Note:
       case SEQ_EVENT_MODE_Chord:
       case SEQ_EVENT_MODE_CC: {
-	for(i=0; i<16; ++i)
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
+	for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
         } break;
 
       case SEQ_EVENT_MODE_Drum: {
