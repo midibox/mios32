@@ -805,7 +805,7 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
 
 static s32 SEQ_UI_Button_Edit(s32 depressed)
 {
-  seq_ui_button_state.EXIT_PRESSED = depressed ? 0 : 1;
+  seq_ui_button_state.EDIT_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
 
@@ -1458,6 +1458,18 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 
 
 /////////////////////////////////////////////////////////////////////////////
+// MIDI Remote Keyboard Function (called from SEQ_MIDI_IN)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 note, u8 depressed)
+{
+#if 1
+  MIOS32_MIDI_SendDebugMessage("SEQ_UI_REMOTE_MIDI_Keyboard(%d, %d)\n", note, depressed);
+#endif
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Update LCD messages
 // Usually called from background task
 /////////////////////////////////////////////////////////////////////////////
@@ -1623,6 +1635,17 @@ s32 SEQ_UI_LCD_Update(void)
 	  else
 	    sprintf(ui_msg[0], "Hold for %d seconds", seconds);
 	}
+      } break;
+
+      case SEQ_UI_MSG_USER_R: {
+	//                             00112233
+	const char animation_l[2*4] = "   **** ";
+	//                             00112233
+	const char animation_r[2*4] = "  * ** *";
+	animation_l_ptr = animation_l;
+	animation_r_ptr = animation_r;
+	msg_x = 40; // right display
+	right_aligned = 0;
       } break;
 
       default: {

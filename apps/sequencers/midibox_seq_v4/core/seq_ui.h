@@ -139,6 +139,7 @@ typedef enum {
 
 typedef enum {
   SEQ_UI_MSG_USER,
+  SEQ_UI_MSG_USER_R,
   SEQ_UI_MSG_SDCARD,
   SEQ_UI_MSG_DELAYED_ACTION
 } seq_ui_msg_type_t;
@@ -163,6 +164,8 @@ extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 note, u8 depressed);
+
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();
 extern s32 SEQ_UI_LCD_Handler(void);

@@ -766,6 +766,30 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// misc
 	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "MIDI_REMOTE_KEY") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 key = get_dec(word);
+	  if( key < 0 || key >= 128 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid remote key '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_midi_remote.key = key;
+
+	} else if( strcmp(parameter, "MIDI_REMOTE_CC") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 cc = get_dec(word);
+	  if( cc < 0 || cc >= 128 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid remote CC '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_midi_remote.cc = cc;
+
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 aout_type = get_dec(word);

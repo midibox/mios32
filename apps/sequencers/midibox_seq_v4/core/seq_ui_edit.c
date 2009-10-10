@@ -21,6 +21,7 @@
 
 #include "seq_core.h"
 #include "seq_cc.h"
+#include "seq_cc_labels.h"
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -402,14 +403,21 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
 
-  SEQ_LCD_PrintFormattedString("Step%3d   ", ui_selected_step+1);
+  SEQ_LCD_PrintFormattedString("Step%3d ", ui_selected_step+1);
 
   if( layer_event.midi_package.event == CC ) {
-    SEQ_LCD_PrintFormattedString("CC#%3d %3d ",
-				    layer_event.midi_package.cc_number,
-				    layer_event.midi_package.value);
+    mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+    u8 loopback = port == 0xf0;
+
+    if( loopback )
+      SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
+    else
+      SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+    SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
+    SEQ_LCD_PrintSpaces(2);
+
     if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
       if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	SEQ_LCD_PrintArp(layer_event.midi_package.note);

@@ -325,6 +325,12 @@ seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
 };
 
 
+seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
+  .key = 96, // C-7, on some MIDI monitors displayed as C-6
+  .cc = 0, // disabled
+};
+
+
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms;
 
