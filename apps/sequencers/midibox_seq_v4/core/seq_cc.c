@@ -191,7 +191,21 @@ s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value)
     seq_core_global_scale = value;
     return 1;
   } else if( cc >= 0x10 && cc <= 0x5f ) {
-    return SEQ_CC_Set(track, cc+0x20, value); // 0x10..0x5f -> 0x30..0x7f
+    u8 mapped_cc = cc+0x20;
+
+    switch( mapped_cc ) {
+      case SEQ_CC_LFO_AMPLITUDE:
+	value *= 2; // 7bit -> 8bit
+	break;
+      case SEQ_CC_MIDI_PORT:
+	if( value >= 0x70 )
+	  value = 0xf0 | (value & 0x0f); // map to Bus
+	else if( value >= 0x60 )
+	  value = 0x80 | (value & 0x0f); // map to AOUT
+	break;
+    }
+
+    return SEQ_CC_Set(track, mapped_cc, value); // 0x10..0x5f -> 0x30..0x7f
   }
 
   return -1; // CC not mapped

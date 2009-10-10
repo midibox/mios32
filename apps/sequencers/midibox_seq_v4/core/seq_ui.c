@@ -1165,6 +1165,18 @@ static s32 SEQ_UI_Button_Transpose(s32 depressed)
 }
 
 
+// only used by keyboard remote function
+static s32 SEQ_UI_Button_ToggleGate(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 gate = SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) ? 0 : 1;
+  SEQ_TRG_GateSet(visible_track, ui_selected_step, ui_selected_instrument, gate);
+
+  return 0; // no error
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1460,11 +1472,139 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 /////////////////////////////////////////////////////////////////////////////
 // MIDI Remote Keyboard Function (called from SEQ_MIDI_IN)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 note, u8 depressed)
+s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
 {
-#if 1
-  MIOS32_MIDI_SendDebugMessage("SEQ_UI_REMOTE_MIDI_Keyboard(%d, %d)\n", note, depressed);
+#if 0
+  MIOS32_MIDI_SendDebugMessage("SEQ_UI_REMOTE_MIDI_Keyboard(%d, %d)\n", key, depressed);
 #endif
+
+  switch( key ) {
+    case 0x24: // C-2
+      return SEQ_UI_Button_GP(depressed, 0);
+    case 0x25: // C#2
+      return SEQ_UI_Button_Track(depressed, 0);
+    case 0x26: // D-2
+      return SEQ_UI_Button_GP(depressed, 1);
+    case 0x27: // D#2
+      return SEQ_UI_Button_Track(depressed, 1);
+    case 0x28: // E-2
+      return SEQ_UI_Button_GP(depressed, 2);
+    case 0x29: // F-2
+      return SEQ_UI_Button_GP(depressed, 3);
+    case 0x2a: // F#2
+      return SEQ_UI_Button_Track(depressed, 2);
+    case 0x2b: // G-2
+      return SEQ_UI_Button_GP(depressed, 4);
+    case 0x2c: // G#2
+      return SEQ_UI_Button_Track(depressed, 3);
+    case 0x2d: // A-2
+      return SEQ_UI_Button_GP(depressed, 5);
+    case 0x2e: // A#2
+      return SEQ_UI_Button_ParLayer(depressed, 0);
+    case 0x2f: // B-2
+      return SEQ_UI_Button_GP(depressed, 6);
+
+    case 0x30: // C-3
+      return SEQ_UI_Button_GP(depressed, 7);
+    case 0x31: // C#3
+      return SEQ_UI_Button_ParLayer(depressed, 1);
+    case 0x32: // D-3
+      return SEQ_UI_Button_GP(depressed, 8);
+    case 0x33: // D#3
+      return SEQ_UI_Button_ParLayer(depressed, 2);
+    case 0x34: // E-3
+      return SEQ_UI_Button_GP(depressed, 9);
+    case 0x35: // F-3
+      return SEQ_UI_Button_GP(depressed, 10);
+    case 0x36: // F#3
+      return SEQ_UI_Button_TrgLayer(depressed, 0);
+    case 0x37: // G-3
+      return SEQ_UI_Button_GP(depressed, 11);
+    case 0x38: // G#3
+      return SEQ_UI_Button_TrgLayer(depressed, 1);
+    case 0x39: // A-3
+      return SEQ_UI_Button_GP(depressed, 12);
+    case 0x3a: // A#3
+      return SEQ_UI_Button_TrgLayer(depressed, 2);
+    case 0x3b: // B-3
+      return SEQ_UI_Button_GP(depressed, 13);
+  
+    case 0x3c: // C-4
+      return SEQ_UI_Button_GP(depressed, 14);
+    case 0x3d: // C#4
+      return SEQ_UI_Button_Group(depressed, 0);
+    case 0x3e: // D-4
+      return SEQ_UI_Button_GP(depressed, 15);
+    case 0x3f: // D#4
+      return SEQ_UI_Button_Group(depressed, 1);
+    case 0x40: // E-4
+      return 0; // ignore
+    case 0x41: // F-4
+      return SEQ_UI_Button_StepView(depressed);
+    case 0x42: // F#4
+      return SEQ_UI_Button_Group(depressed, 1);
+    case 0x43: // G-4
+      return 0; // ignore
+    case 0x44: // G#4
+      return SEQ_UI_Button_Group(depressed, 2);
+    case 0x45: // A-4
+      return SEQ_UI_Button_Left(depressed);
+    case 0x46: // A#4
+      return SEQ_UI_Button_ToggleGate(depressed);
+    case 0x47: // B-4
+      return SEQ_UI_Button_Right(depressed);
+  
+    case 0x48: // C-5
+      return SEQ_UI_Button_Edit(depressed);
+    case 0x49: // C#5
+      return SEQ_UI_Button_Solo(depressed);
+    case 0x4a: // D-5
+      return SEQ_UI_Button_Mute(depressed);
+    case 0x4b: // D#5
+      return SEQ_UI_Button_All(depressed);
+    case 0x4c: // E-5
+      return SEQ_UI_Button_Pattern(depressed);
+    case 0x4d: // F-5
+      return SEQ_UI_Button_Song(depressed);
+    case 0x4e: // F#5
+      return SEQ_UI_Button_Fast(depressed);
+    case 0x4f: // G-5
+      return SEQ_UI_Button_Metronome(depressed);
+    case 0x50: // G#5
+      return SEQ_UI_Button_ExtRestart(depressed);
+    case 0x51: // A-5
+      return SEQ_UI_Button_ParLayerSel(depressed);
+    case 0x52: // A#5
+      return SEQ_UI_Button_TrackSel(depressed);
+    case 0x53: // B-5
+      return SEQ_UI_Button_Stop(depressed);
+  
+    case 0x54: // C-6
+      return SEQ_UI_Button_Play(depressed);
+    case 0x55: // C#6
+      return SEQ_UI_Button_Pause(depressed);
+    case 0x56: // D-6
+      return SEQ_UI_Button_Rew(depressed);
+    case 0x57: // D#6
+      return SEQ_UI_Button_Fwd(depressed);
+    case 0x58: // E-6
+      return SEQ_UI_Button_Utility(depressed);
+    case 0x59: // F-6
+      return SEQ_UI_Button_TempoPreset(depressed);
+    case 0x5a: // F#6
+      return 0; // ignore
+    case 0x5b: // G-6
+      return SEQ_UI_Button_Menu(depressed);
+    case 0x5c: // G#6
+      return SEQ_UI_Button_Select(depressed);
+    case 0x5d: // A-6
+      return SEQ_UI_Button_Exit(depressed);
+    case 0x5e: // A#6
+      return SEQ_UI_Button_Down(depressed);
+    case 0x5f: // B-6
+      return SEQ_UI_Button_Up(depressed);
+  }
+
   return 0; // no error
 }
 

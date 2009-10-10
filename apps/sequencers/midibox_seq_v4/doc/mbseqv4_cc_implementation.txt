@@ -42,101 +42,98 @@ NRPN LSB|   Range   | Default | Description
   ...   |           |         | 
 0x0f/ 15|           |         | 
 --------+-----------+---------+------------------------------------------------
-0x10/ 16| 0x00-0x16 |    0x00 | LFO Waveform
-        |           |         |    0x00: off
-        |           |         |    0x01: Sine
-        |           |         |    0x02: Triangle
-        |           |         |    0x03: Sawtooth
-        |           |         |    0x04: Rectangle 05
-        |           |         |    0x05: Rectangle 10
+0x10/ 16|   0 - 22  |       0 | LFO Waveform
+        |           |         |    0: off
+        |           |         |    1: Sine
+        |           |         |    2: Triangle
+        |           |         |    3: Sawtooth
+        |           |         |    4: Rectangle 05
+        |           |         |    5: Rectangle 10
         |           |         |    ...
-        |           |         |    0x16: Rectangle 95
+        |           |         |    22: Rectangle 95
 --------+-----------+---------+------------------------------------------------
-0x11/ 17| 0x00-0x7f |    0x40 | LFO Amplitude
+0x11/ 17|   0 - 127 |      64 | LFO Amplitude
         |           |         |    0x00..0x3f: negative range
         |           |         |    0x40: no amplitude
         |           |         |    0x41..0x7f: positive range
         |           |         | Note: range is 0x00..0xff if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x12/ 18| 0x00-0x63 |    0x00 | LFO Phase:
-        |           |         |    0x00: 0%
-        |           |         |    0x01: 1%
-        |           |         |    0x02: 2%
+0x12/ 18|   0 - 99  |       0 | LFO Phase:
+        |           |         |    0: 0%
+        |           |         |    1: 1%
+        |           |         |    2: 2%
         |           |         |    ...
-        |           |         |    0x63: 99%
+        |           |         |    99: 99%
 --------+-----------+---------+------------------------------------------------
-0x13/ 19| 0x00-0x7f |    0x0f | LFO Interval in Steps:
-        |           |         |    0x00: 1 Step
-        |           |         |    0x01: 2 Steps
-        |           |         |    0x02: 3 Steps
+0x13/ 19|   0 - 127 |      15 | LFO Interval in Steps:
+        |           |         |    0: 1 Step
+        |           |         |    1: 2 Steps
+        |           |         |    2: 3 Steps
         |           |         |    ...
-        |           |         |    0x7f: 128 Steps
-        |           |         | Note: range is 0x00..0xff if edited from CS
+        |           |         |    127: 128 Steps
+        |           |         | Note: range is 1..256 steps if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x14/ 20| 0x00-0x7f |    0x0f | LFO Interval Reset:
-        |           |         |    0x00: after 1 Step
-        |           |         |    0x01: after 2 Steps
-        |           |         |    0x02: after 3 Steps
+0x14/ 20|   0 - 127 |      15 | LFO Interval Reset:
+        |           |         |    0: after 1 Step
+        |           |         |    1: after 2 Steps
+        |           |         |    2: after 3 Steps
         |           |         |    ...
-        |           |         |    0x7f: after 128 Steps
-        |           |         | Note: range is 0x00..0xff if edited from CS
+        |           |         |    127: after 128 Steps
+        |           |         | Note: range is 1..256 steps if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x15/ 21| 0x00-0x1f |    0x00 | LFO Flags:
+0x15/ 21|   0 - 31  |       0 | LFO Flags:
         |           |         |    bit 0: Oneshot Mode on/off
         |           |         |    bit 1: Note Assignment on/off
         |           |         |    bit 2: Velocity Assignment on/off
         |           |         |    bit 3: Length Assignment on/off
         |           |         |    bit 4: CC Assignment on/off
 --------+-----------+---------+------------------------------------------------
-0x16/ 22| 0x00-0x7f |    0x00 | LFO Extra CC Number
+0x16/ 22|   0 - 127 |       0 | LFO Extra CC Number
 --------+-----------+---------+------------------------------------------------
-0x17/ 23| 0x00-0x7f |    0x40 | LFO Extra CC Offset
-        |           |         |    0x00..0x3f: negative offset
-        |           |         |    0x40: no offset
-        |           |         |    0x41..0x7f: positive offset
+0x17/ 23|   0 - 127 |      64 | LFO Extra CC Offset (0..127)
 --------+-----------+---------+------------------------------------------------
-0x18/ 24| 0x00-0x08 |    0x06 | LFO Extra CC PPQN
-        |           |         |    0x00: 1 PPQN
-        |           |         |    0x01: 3 PPQN
-        |           |         |    0x02: 6 PPQN
-        |           |         |    0x03: 12 PPQN
-        |           |         |    0x04: 24 PPQN
-        |           |         |    0x05: 48 PPQN
-        |           |         |    0x06: 96 PPQN
-        |           |         |    0x07: 192 PPQN
-        |           |         |    0x08: 384 PPQN
+0x18/ 24|   0 - 8   |       6 | LFO Extra CC PPQN
+        |           |         |    0: 1 PPQN
+        |           |         |    1: 3 PPQN
+        |           |         |    2: 6 PPQN
+        |           |         |    3: 12 PPQN
+        |           |         |    4: 24 PPQN
+        |           |         |    5: 48 PPQN
+        |           |         |    6: 96 PPQN
+        |           |         |    7: 192 PPQN
+        |           |         |    8: 384 PPQN
 --------+-----------+---------+------------------------------------------------
 0x19/ 25| -         |    -    | reserved
   ...   |           |         | 
 0x1f/ 31|           |         | 
 --------+-----------+---------+------------------------------------------------
-0x20/ 32| 0x00-0x03 |    0x01 | Track Mode
-        |           |         |    0x00: off
-        |           |         |    0x01: Normal
-        |           |         |    0x02: Transpose
-        |           |         |    0x03: Arpeggiator
+0x20/ 32|   0 - 3   |       1 | Track Mode
+        |           |         |    0: off
+        |           |         |    1: Normal
+        |           |         |    2: Transpose
+        |           |         |    3: Arpeggiator
 --------+-----------+---------+------------------------------------------------
-0x21/ 33| 0x00-0x0f |    0x02 | Track Mode Flags
+0x21/ 33|   0 - 15  |       2 | Track Mode Flags
         |           |         |    bit 0: Unsorted Arp Stack on/off
         |           |         |    bit 1: Hold on/off
         |           |         |    bit 2: Restart on/off
         |           |         |    bit 3: Force Scale on/off
         |           |         |    bit 4: Sustain on/off
 --------+-----------+---------+------------------------------------------------
-0x22/ 34| 0x00-0x03 |    0x00 | Track Event Mode
-        |           |         |    0x00: Note
-        |           |         |    0x01: Chord
-        |           |         |    0x02: CC
-        |           |         |    0x03: Drum
+0x22/ 34|   0 - 3   |       0 | Track Event Mode
+        |           |         |    0: Note
+        |           |         |    1: Chord
+        |           |         |    2: CC
+        |           |         |    3: Drum
 --------+-----------+---------+------------------------------------------------
-0x23/ 35| 0x00-0x7f |    0x00 | Limit Fx: Lower Note Number (0=off)
-0x24/ 36| 0x00-0x7f |    0x00 | Limit Fx: Upper Note Number (0=off)
+0x23/ 35|   0 - 127 |       0 | Limit Fx: Lower Note Number (0=off)
+0x24/ 36|   0 - 127 |       0 | Limit Fx: Upper Note Number (0=off)
 --------+-----------+---------+------------------------------------------------
 0x25/ 37| -         |    -    | reserved
 --------+-----------+---------+------------------------------------------------
-0x26/ 38| 0x00-0x0f |    0x00 | MIDI Channel of Track
+0x26/ 38|   0 - 15  |       0 | MIDI Channel of Track
 --------+-----------+---------+------------------------------------------------
-0x27/ 39| 0x00-0x7f |    0x00 | MIDI Port of Track
+0x27/ 39|   0 - 127 |       0 | MIDI Port of Track
         |           |         |    0x00: Default
         |           |         |    0x01: USB1
         |           |         |    0x02: USB2
@@ -156,189 +153,189 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    0x72: Bus3
         |           |         |    0x73: Bus4
 --------+-----------+---------+------------------------------------------------
-0x28/ 40| 0x00-0x06 |    0x00 | Track Direction
-        |           |         |    0x00: Forward 
-        |           |         |    0x01: Backward
-        |           |         |    0x02: Ping Pong
-        |           |         |    0x03: Pendulum
-        |           |         |    0x04: Random Direction
-        |           |         |    0x05: Random Step
-        |           |         |    0x06: Random Direction and Step
+0x28/ 40|   0 - 6   |       0 | Track Direction
+        |           |         |    0: Forward 
+        |           |         |    1: Backward
+        |           |         |    2: Ping Pong
+        |           |         |    3: Pendulum
+        |           |         |    4: Random Direction
+        |           |         |    5: Random Step
+        |           |         |    6: Random Direction and Step
 --------+-----------+---------+------------------------------------------------
-0x29/ 41| 0x00-0x0f |    0x00 | Steps Replay: (0..15 = x1..x16)
-0x2a/ 42| 0x00-0x0f |    0x00 | Steps Forward (0..15 = 1..16 steps)
-0x2b/ 43| 0x00-0x0f |    0x00 | Steps Jump Back (0..15 = 1..16 steps)
+0x29/ 41|   0 - 15  |       0 | Steps Replay: (0..15 = x1..x16)
+0x2a/ 42|   0 - 15  |       0 | Steps Forward (0..15 = 1..16 steps)
+0x2b/ 43|   0 - 15  |       0 | Steps Jump Back (0..15 = 1..16 steps)
 --------+-----------+---------+------------------------------------------------
-0x2c/ 44| 0x00-0x3f |    0x0f | Clock Divider (in 384ppqn steps)
+0x2c/ 44|   0 - 127 |      15 | Clock Divider (in 384ppqn steps)
 --------+-----------+---------+------------------------------------------------
-0x2d/ 45| 0x00-0x7f |    0x0f | Track Length (0..127 = 1..127 steps)
+0x2d/ 45|   0 - 127 |      15 | Track Length (0..127 = 1..127 steps)
         |           |         | Range is 0x00..0xff = 1..256 steps if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x2e/ 46| 0x00-0x1f |    0x00 | Loop Point (0..127 = step 1..128)
+0x2e/ 46|   0 - 31  |       0 | Loop Point (0..127 = step 1..128)
         |           |         | Range is 0x00..0xff = 1..256 steps if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x2f/ 47| 0x00-0x03 |    0x00 | Clock Divider Flags:
+0x2f/ 47|   0 - 3   |       0 | Clock Divider Flags:
         |           |         |   Bit 0: Synch to Measure
         |           |         |   Bit 1: Triplets
 --------+-----------+---------+------------------------------------------------
-0x30/ 48| 0x00-0x0f |    0x00 | Transpose Semitones
-        |           |         |    0x8: -8 semitones
-        |           |         |    0x9: -7 semitones
-        |           |         |    0xa: -6 semitones
-        |           |         |    0xb: -5 semitones
-        |           |         |    0xc: -4 semitones
-        |           |         |    0xd: -3 semitones
-        |           |         |    0xe: -2 semitones
-        |           |         |    0xf: -1 semitones
-        |           |         |    0x0: no transpose
-        |           |         |    0x1: +1 semitones
-        |           |         |    0x2: +2 semitones
-        |           |         |    0x3: +3 semitones
-        |           |         |    0x4: +4 semitones
-        |           |         |    0x5: +5 semitones
-        |           |         |    0x6: +6 semitones
-        |           |         |    0x7: +7 semitones
+0x30/ 48|   0 - 15  |       0 | Transpose Semitones
+        |           |         |     8: -8 semitones
+        |           |         |     9: -7 semitones
+        |           |         |    10: -6 semitones
+        |           |         |    11: -5 semitones
+        |           |         |    12: -4 semitones
+        |           |         |    13: -3 semitones
+        |           |         |    14: -2 semitones
+        |           |         |    15: -1 semitones
+        |           |         |     0: no transpose
+        |           |         |     1: +1 semitones
+        |           |         |     2: +2 semitones
+        |           |         |     3: +3 semitones
+        |           |         |     4: +4 semitones
+        |           |         |     5: +5 semitones
+        |           |         |     6: +6 semitones
+        |           |         |     7: +7 semitones
 --------+-----------+---------+------------------------------------------------
-0x31/ 49| 0x00-0x0f |    0x00 | Octave Transpose
-        |           |         |    0x8: no transpose, full range pot control
-        |           |         |    0x9: -7 Octaves
-        |           |         |    0xa: -6 Octaves
-        |           |         |    0xb: -5 Octaves
-        |           |         |    0xc: -4 Octaves
-        |           |         |    0xd: -3 Octaves
-        |           |         |    0xe: -2 Octaves
-        |           |         |    0xf: -1 Octave
-        |           |         |    0x0: +0 Octaves
-        |           |         |    0x1: +1 Octave
-        |           |         |    0x2: +2 Octaves
-        |           |         |    0x3: +3 Octaves
-        |           |         |    0x4: +4 Octaves
-        |           |         |    0x5: +5 Octaves
-        |           |         |    0x6: +6 Octaves
-        |           |         |    0x7: +7 Octaves
+0x31/ 49|   0 - 15  |       0 | Octave Transpose
+        |           |         |     8: no transpose, full range pot control
+        |           |         |     9: -7 Octaves
+        |           |         |    10: -6 Octaves
+        |           |         |    11: -5 Octaves
+        |           |         |    12: -4 Octaves
+        |           |         |    13: -3 Octaves
+        |           |         |    14: -2 Octaves
+        |           |         |    15: -1 Octave
+        |           |         |     0: +0 Octaves
+        |           |         |     1: +1 Octave
+        |           |         |     2: +2 Octaves
+        |           |         |     3: +3 Octaves
+        |           |         |     4: +4 Octaves
+        |           |         |     5: +5 Octaves
+        |           |         |     6: +6 Octaves
+        |           |         |     7: +7 Octaves
 --------+-----------+---------+------------------------------------------------
-0x32/ 50| 0x00-0x06 |    0x00 | Groove Style
-        |           |         |    0x00: off
-        |           |         |    0x01: Shuffle
-        |           |         |    0x02: Inv. Shuffle
-        |           |         |    0x03: Shuffle2
-        |           |         |    0x04: Shuffle3
-        |           |         |    0x05: Shuffle4
-        |           |         |    0x06: Shuffle5
-        |           |         |    0x07..0x16: Custom Grooves 1-16
+0x32/ 50|   0 - 21  |       0 | Groove Style
+        |           |         |    0: off
+        |           |         |    1: Shuffle
+        |           |         |    2: Inv. Shuffle
+        |           |         |    3: Shuffle2
+        |           |         |    4: Shuffle3
+        |           |         |    5: Shuffle4
+        |           |         |    6: Shuffle5
+        |           |         |    7..21: Custom Grooves 1-16
 --------+-----------+---------+------------------------------------------------
-0x33/ 51| 0x00-0x0f |    0x00 | Groove Intensity
+0x33/ 51|   0 - 15  |       0 | Groove Intensity
 --------+-----------+---------+------------------------------------------------
-0x34/ 52| 0x00-0x00 |    0x00 | Morph Mode
-        |           |         |    0x00: off
-        |           |         |    0x01: on
+0x34/ 52|   0 - 1   |       0 | Morph Mode
+        |           |         |    0: off
+        |           |         |    1: on
 --------+-----------+---------+------------------------------------------------
-0x35/ 53| 0x00-0x0f |    0x00 | Morph Destination Range
-        |           |         | 0x00..0x7f select offset step 1..128
-        |           |         | Range is 0x00..0xff = 1..256 steps if edited from CS
+0x35/ 53|   0 - 128 |       0 | Morph Destination Range
+        |           |         | 0..127 select offset step 1..128
+        |           |         | Range is 1..256 steps if edited from CS
 --------+-----------+---------+------------------------------------------------
-0x36/ 54| 0x00-0x0f |    0x00 | Humanize Mode: Random Intensity
+0x36/ 54|   0 - 127 |       0 | Humanize Mode: Random Intensity
 --------+-----------+---------+------------------------------------------------
-0x37/ 55| 0x00-0x07 |    0x00 | Humanize Mode: Assignments
+0x37/ 55|   0 - 7   |       0 | Humanize Mode: Assignments
         |           |         |    bit 0: Note
         |           |         |    bit 1: Vel./CC Value
         |           |         |    bit 2: Length
 --------+-----------+---------+------------------------------------------------
-0x38/ 56| 0x00-0x09 |    0x00 | Assignment for Drum Parameter Layer A
-        |           |         |    0x00: None
-        |           |         |    0x01: Note
-        |           |         |    0x02: Chord
-        |           |         |    0x03: Velocity
-        |           |         |    0x04: Length
-        |           |         |    0x05: CC
-        |           |         |    0x06: PitchBend
-        |           |         |    0x07: Probability
-        |           |         |    0x08: Delay
-        |           |         |    0x09: Roll
-0x39/ 57| 0x00-0x09 |    0x00 | Assignment for Drum Parameter Layer B
+0x38/ 56|   0 - 9   |       0 | Assignment for Drum Parameter Layer A
+        |           |         |    0: None
+        |           |         |    1: Note
+        |           |         |    2: Chord
+        |           |         |    3: Velocity
+        |           |         |    4: Length
+        |           |         |    5: CC
+        |           |         |    6: PitchBend
+        |           |         |    7: Probability
+        |           |         |    8: Delay
+        |           |         |    9: Roll
+0x39/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer B
 --------+-----------+---------+------------------------------------------------
 0x3a/ 58| -         |    -    | reserved
 0x3b/ 59| -         |    -    | reserved
 --------+-----------+---------+------------------------------------------------
-0x3c/ 60| 0x00-0x0f |    0x00 | Steps Repeat (0..16)
-0x3d/ 61| 0x00-0x0f |    0x00 | Steps Skip (0..16)
-0x3e/ 62| 0x00-0x3f |    0x00 | Steps Interval (0..63 = 1..64 steps)
+0x3c/ 60|   0 - 15  |       0 | Steps Repeat (0..16)
+0x3d/ 61|   0 - 15  |       0 | Steps Skip (0..16)
+0x3e/ 62|   0 - 63  |       0 | Steps Interval (0..63 = 1..64 steps)
 --------+-----------+---------+------------------------------------------------
 0x3f/ 64| -         |    -    | reserved
 --------+-----------+---------+------------------------------------------------
-0x40/ 65| 0x00-0x07 |    0x01 | Trigger Layer Assignment for Gate
-0x41/ 66| 0x00-0x07 |    0x01 | Trigger Layer Assignment for Skip
-0x42/ 67| 0x00-0x07 |    0x02 | Trigger Layer Assignment for Accent
-0x43/ 68| 0x00-0x07 |    0x03 | Trigger Layer Assignment for Glide
-0x44/ 69| 0x00-0x07 |    0x04 | Trigger Layer Assignment for Roll
-0x45/ 70| 0x00-0x07 |    0x05 | Trigger Layer Assignment for Random Gate
-0x46/ 71| 0x00-0x07 |    0x06 | Trigger Layer Assignment for Random Value
-0x47/ 72| 0x00-0x07 |    0x07 | Trigger Layer Assignment for No Fx
+0x40/ 65|   0 - 8   |       1 | Trigger Layer Assignment for Gate
+0x41/ 66|   0 - 8   |       2 | Trigger Layer Assignment for Skip
+0x42/ 67|   0 - 8   |       3 | Trigger Layer Assignment for Accent
+0x43/ 68|   0 - 8   |       4 | Trigger Layer Assignment for Glide
+0x44/ 69|   0 - 8   |       5 | Trigger Layer Assignment for Roll
+0x45/ 70|   0 - 8   |       6 | Trigger Layer Assignment for Random Gate
+0x46/ 71|   0 - 8   |       7 | Trigger Layer Assignment for Random Value
+0x47/ 72|   0 - 8   |       8 | Trigger Layer Assignment for No Fx
 --------+-----------+---------+------------------------------------------------
 0x48/ 73| -         |    -    | reserved
   ...   |           |         | 
 0x4f/ 79|           |         | 
 --------+-----------+---------+------------------------------------------------
-0x50/ 80| 0x00-0x0f |    0x00 | Echo Repeats (0..15)
+0x50/ 80|   0 - 15  |       0 | Echo Repeats (0..15)
 --------+-----------+---------+------------------------------------------------
-0x51/ 81| 0x00-0x0f |    0x00 | Echo Delay:
-        |           |         |    0x00: 64T
-        |           |         |    0x01: 64
-        |           |         |    0x02: 32T
-        |           |         |    0x03: 32
-        |           |         |    0x04: 16T
-        |           |         |    0x05: 16
-        |           |         |    0x06:  8T
-        |           |         |    0x07:  8
-        |           |         |    0x08:  4T
-        |           |         |    0x09:  4
-        |           |         |    0x0a:  2T
-        |           |         |    0x0b:  2
-        |           |         |    0x0c:  1T
-        |           |         |    0x0d:  1
-        |           |         |    0x0e:  Rnd1
-        |           |         |    0x0f:  Rnd2
+0x51/ 81|   0 - 15  |       0 | Echo Delay:
+        |           |         |     0: 64T
+        |           |         |     1: 64
+        |           |         |     2: 32T
+        |           |         |     3: 32
+        |           |         |     4: 16T
+        |           |         |     5: 16
+        |           |         |     6:  8T
+        |           |         |     7:  8
+        |           |         |     8:  4T
+        |           |         |     9:  4
+        |           |         |    10:  2T
+        |           |         |    11:  2
+        |           |         |    12:  1T
+        |           |         |    13:  1
+        |           |         |    14:  Rnd1
+        |           |         |    15:  Rnd2
 --------+-----------+---------+------------------------------------------------
-0x52/ 82| 0x00-0x28 |    0x0f | Initial Velocity Level:
-        |           |         |    0x00:   0%
-        |           |         |    0x01:   5%
-        |           |         |    0x02:  10%
+0x52/ 82|   0 - 40  |      15 | Initial Velocity Level:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
         |           |         |    ...
-        |           |         |    0x14:  100%
+        |           |         |    20:  100%
         |           |         |    ...
-        |           |         |    0x28:  200%
+        |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x52/ 83| 0x00-0x24 |    0x0f | Feedback Velocity Level:
-        |           |         |    0x00:   0%
-        |           |         |    0x01:   5%
-        |           |         |    0x02:  10%
+0x52/ 83|   0 - 40  |      15 | Feedback Velocity Level:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
         |           |         |    ...
-        |           |         |    0x0a:  100%
+        |           |         |    20:  100%
         |           |         |    ...
-        |           |         |    0x24:  200%
+        |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x53/ 84| 0x00-0x7f |    0x40 | Feedback Note Value:
-        |           |         |    0x00..0x3f: decrements (-64..-1)
-        |           |         |    0x40: no increment
-        |           |         |    0x41..0x7f: increments (+1..+63)
+0x53/ 84|   0 - 127 |      64 | Feedback Note Value:
+        |           |         |    0..63: decrements (-64..-1)
+        |           |         |    64: no increment
+        |           |         |    65..127: increments (+1..+63)
 --------+-----------+---------+------------------------------------------------
-0x54/ 85| 0x00-0x24 |    0x0a | Feedback Gatelength:
-        |           |         |    0x00:   0%
-        |           |         |    0x01:   5%
-        |           |         |    0x02:  10%
+0x54/ 85|   0 - 40  |      15 | Feedback Gatelength:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
         |           |         |    ...
-        |           |         |    0x0a:  100%
+        |           |         |    20:  100%
         |           |         |    ...
-        |           |         |    0x24:  200%
+        |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x55/ 86| 0x00-0x24 |    0x0a | Feedback Ticks (Delay):
-        |           |         |    0x00:   0%
-        |           |         |    0x01:   5%
-        |           |         |    0x02:  10%
+0x55/ 86|   0 - 40  |      15 | Feedback Ticks (Delay):
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
         |           |         |    ...
-        |           |         |    0x0a:  100%
+        |           |         |    20:  100%
         |           |         |    ...
-        |           |         |    0x24:  200%
+        |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
 0x56/ 84| -         |    -    | reserved
   ...   |           |         | 

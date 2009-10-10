@@ -9,13 +9,15 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta4
 ~~~~~~~~~~~~~~~~~~~~
 
-  o MBSEQ Parameters are controllable via NRPN messages from external MIDI devices now
+  o MBSEQ Parameters are controllable via NRPN messages from external MIDI devices now.
+    See also doc/mbseqv4_cc_implementation.txt
 
   o these parameters can also be controlled via Internal Loopback (Bus1 Port).
 
   o Loopbacked CC Parameters are print in text format when edited
 
   o implemented MIDI Remote Keyboard function (note: MBSEQ_HW.V4 has been updated)
+    See also doc/mbseqv4_remote_functions.txt
 
   o fixed various minor bugs
 
