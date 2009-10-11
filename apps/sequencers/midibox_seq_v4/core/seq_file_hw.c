@@ -521,6 +521,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.down = dout_value;
 	  } else if( strcmp(parameter, "UP") == 0 ) {
 	    seq_hwcfg_led.up = dout_value;
+	  } else if( strcmp(parameter, "MORPH") == 0 ) {
+	    seq_hwcfg_led.morph = dout_value;
+	  } else if( strcmp(parameter, "MIXER") == 0 ) {
+	    seq_hwcfg_led.mixer = dout_value;
+	  } else if( strcmp(parameter, "TRANSPOSE") == 0 ) {
+	    seq_hwcfg_led.transpose = dout_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED function 'LED_%s'!", parameter);

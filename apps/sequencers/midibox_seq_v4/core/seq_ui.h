@@ -57,7 +57,6 @@ typedef union {
     unsigned CHANGE_ALL_STEPS:1;
     unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
     unsigned SELECT_PRESSED:1;
-    unsigned EXIT_PRESSED:1;
     unsigned EDIT_PRESSED:1;
     unsigned MUTE_PRESSED:1;
     unsigned PATTERN_PRESSED:1;

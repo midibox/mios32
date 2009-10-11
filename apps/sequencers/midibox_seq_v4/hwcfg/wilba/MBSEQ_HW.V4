@@ -224,6 +224,10 @@ LED_EXT_RESTART     0   0
 LED_DOWN   0   0
 LED_UP     0   0
 
+#             SR  Pin
+LED_MORPH      0   0
+LED_MIXER      0   0
+LED_TRANSPOSE  0   0
 
 
 ##################################################

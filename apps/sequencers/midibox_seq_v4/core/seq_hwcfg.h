@@ -171,6 +171,10 @@ typedef struct {
 
   u8 down;
   u8 up;
+
+  u8 morph;
+  u8 mixer;
+  u8 transpose;
 } seq_hwcfg_led_t;
 
 

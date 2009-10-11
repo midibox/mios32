@@ -301,6 +301,11 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .down = ((( 0   -1)<<3)+    0),
   .up   = ((( 0   -1)<<3)+    0),
+
+  //         SR    ignore    Pin
+  .morph =     ((( 0   -1)<<3)+    0),
+  .mixer =     ((( 0   -1)<<3)+    0),
+  .transpose = ((( 0   -1)<<3)+    0),
 #endif
 };
 
