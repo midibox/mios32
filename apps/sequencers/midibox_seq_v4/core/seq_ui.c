@@ -785,8 +785,6 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
 
   u8 prev_ui_page = ui_page;
 
-  seq_ui_button_state.EXIT_PRESSED = depressed ? 0 : 1;
-
   // forward to menu page
   if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
     ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
@@ -1901,6 +1899,9 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
   else
     SEQ_LED_PinSet(seq_hwcfg_led.song, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
+  SEQ_LED_PinSet(seq_hwcfg_led.morph, ui_page == SEQ_UI_PAGE_TRKMORPH);
+  SEQ_LED_PinSet(seq_hwcfg_led.mixer, ui_page == SEQ_UI_PAGE_MIXER);
+  SEQ_LED_PinSet(seq_hwcfg_led.transpose, ui_page == SEQ_UI_PAGE_TRKTRAN);
   
   SEQ_LED_PinSet(seq_hwcfg_led.solo, seq_ui_button_state.SOLO);
   SEQ_LED_PinSet(seq_hwcfg_led.fast, seq_ui_button_state.FAST_ENCODERS);
@@ -1917,7 +1918,7 @@ s32 SEQ_UI_LED_Handler(void)
   
   SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL);
 
-  SEQ_LED_PinSet(seq_hwcfg_led.exit, seq_ui_button_state.EXIT_PRESSED);
+  SEQ_LED_PinSet(seq_hwcfg_led.exit, ui_page == SEQ_UI_PAGE_MENU);
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
 
