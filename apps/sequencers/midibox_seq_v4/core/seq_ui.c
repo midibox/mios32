@@ -95,7 +95,7 @@ u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
-char ui_global_dir_list[8][9];
+char ui_global_dir_list[80];
 
 
 /////////////////////////////////////////////////////////////////////////////

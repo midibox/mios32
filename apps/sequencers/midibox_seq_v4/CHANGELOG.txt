@@ -6,6 +6,14 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta5
+~~~~~~~~~~~~~~~~~~~~
+
+  o overworked menu page selection (now uses new list browser)
+
+  o fixed various minor bugs
+
+
 MIDIboxSEQ V4.0beta4
 ~~~~~~~~~~~~~~~~~~~~
 
