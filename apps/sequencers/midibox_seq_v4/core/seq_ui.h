@@ -198,6 +198,8 @@ extern s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);
 
+extern s32 SEQ_UI_SelectListItem(s32 incrementer, u8 num_items, u8 max_items_on_screen, u8 *selected_item_on_screen, u8 *view_offset);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes for functions implemented in seq_ui_*.c
@@ -286,5 +288,7 @@ extern u8 seq_ui_remote_force_led_update;
 
 extern u8 seq_ui_backup_req;
 extern u8 seq_ui_format_req;
+
+extern char ui_global_dir_list[8][9];
 
 #endif /* _SEQ_UI_H */

@@ -147,8 +147,6 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //            SR   ignore    Pin
   .loop    = ((( 0   -1)<<3)+    0),
 
-  // button functions w/o LED support (mostly requested by users who don't use LEDs for these buttons anyhow)
-
   //              SR   ignore    Pin
   .morph     = ((( 0   -1)<<3)+    0),
   .mixer     = ((( 0   -1)<<3)+    0),
@@ -269,6 +267,11 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .down = (((14   -1)<<3)+    6),
   .up   = (((14   -1)<<3)+    7),
+
+  //         SR    ignore    Pin
+  .morph =     ((( 0   -1)<<3)+    0),
+  .mixer =     ((( 0   -1)<<3)+    0),
+  .transpose = ((( 0   -1)<<3)+    0),
 #else
   //          SR    ignore    Pin
   .play  = ((( 0   -1)<<3)+    0),

@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Metronome configuration page
+ * Disk Utility page
  *
  * ==========================================================================
  *

@@ -57,6 +57,17 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static const u8 charset_menu[64] = {
+  0x01, 0x03, 0x07, 0x03, 0x01, 0x00, 0x00, 0x00, // left-arrow
+  0x00, 0x00, 0x00, 0x10, 0x18, 0x1c, 0x18, 0x10, // right-arrow
+  0x01, 0x03, 0x07, 0x13, 0x19, 0x1c, 0x18, 0x10, // left/right arrow
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // spare
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // spare
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // spare
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // spare
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // spare
+};
+
 static const u8 charset_vbars[64] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x1e,
@@ -255,11 +266,13 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
     current_charset = charset;
 
     MUTEX_LCD_TAKE;
-
     int dev;
     for(dev=0; dev<2; ++dev) {
       MIOS32_LCD_DeviceSet(dev);
       switch( charset ) {
+        case SEQ_LCD_CHARSET_Menu:
+	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_menu);
+	  break;
         case SEQ_LCD_CHARSET_VBars:
 	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_vbars);
 	  break;
@@ -727,6 +740,50 @@ s32 SEQ_LCD_PrintStepView(u8 step_view)
 {
 
   SEQ_LCD_PrintFormattedString("S%2d-%2d", (step_view*16)+1, (step_view+1)*16);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to print a list (e.g. directory)
+// Each item has 9 characters maximum (no termination required if 9 chars)
+// Prints item_width * num_items + (num_items-1) characters
+// (last space is left out so that arrows can be displayed at the end of list)
+// *list: pointer to list array
+// item_width: maximum width of item (defines also the string length!)
+// max_items_on_screen: how many items are displayed on screen?
+//
+// All items are framed with space to the left/right
+// The leftmost item gets '<', the rightmost item '>' if requested
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 max_items_on_screen)
+{
+  int item;
+
+  for(item=0; item<max_items_on_screen; ++item) {
+    char *list_item = (char *)&list[item*item_width];
+    int len, pos;
+
+    for(len=0; len<item_width; ++len)
+      if( list_item[len] == 0 )
+	break;
+
+    int centered_offset = ((item_width+1)-len)/2;
+
+    if( centered_offset )
+      SEQ_LCD_PrintSpaces(centered_offset);
+
+    for(pos=0; pos<len; ++pos)
+      SEQ_LCD_PrintChar(list_item[pos]);
+
+    centered_offset = item_width-centered_offset-len;
+    if( centered_offset > 0 )
+      SEQ_LCD_PrintSpaces(centered_offset);
+
+    if( item < (max_items_on_screen-1) )
+      SEQ_LCD_PrintChar(' ');
+  }
 
   return 0; // no error
 }

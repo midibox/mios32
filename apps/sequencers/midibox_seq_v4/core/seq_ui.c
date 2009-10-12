@@ -94,6 +94,9 @@ u8 seq_ui_remote_force_led_update;
 u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 
+// to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
+char ui_global_dir_list[8][9];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -2507,4 +2510,71 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
   char str[21];
   sprintf(str, "E%3d (DOSFS: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
   return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to browse through a list (e.g. directory)
+// incrementer: forwarded from encoder handler
+// num_items: number of items in list
+// max_items_on_screen: how many items are displayed on screen?
+// *selected_item_on_screen: selected item on screen
+// *view_offset: pointer to view offset variable
+//
+// Returns 1 if list has to be updated due to new offset
+// Returns 0 if no update required
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_SelectListItem(s32 incrementer, u8 num_items, u8 max_items_on_screen, u8 *selected_item_on_screen, u8 *view_offset)
+{
+  u8 prev_view_offset = *view_offset;
+  int prev_cursor = *view_offset + *selected_item_on_screen;
+  int new_cursor = prev_cursor + incrementer;
+
+  if( incrementer > 0 ) {
+    if( new_cursor >= num_items ) {
+#if 0
+      // with overrun
+      *selected_item_on_screen = 0;
+      *view_offset = 0;
+#else
+      // no overrun
+      if( num_items > max_items_on_screen ) {
+	*view_offset = num_items - max_items_on_screen;
+	*selected_item_on_screen = max_items_on_screen - 1;
+      } else {
+	*view_offset = 0;
+	*selected_item_on_screen = num_items - 1;
+      }
+#endif
+    } else if( (new_cursor - *view_offset) >= max_items_on_screen ) {
+      *selected_item_on_screen = max_items_on_screen - 1;
+      *view_offset = new_cursor - *selected_item_on_screen;
+    } else {
+      *selected_item_on_screen = new_cursor - *view_offset;
+    }
+  } else if( incrementer < 0 ) {
+    if( new_cursor < 0 ) {
+#if 0
+      // with overrun
+      *selected_item_on_screen = max_items_on_screen - 1;
+      if( *selected_item_on_screen >= (num_items-1) ) {
+	*selected_item_on_screen = num_items - 1;
+	*view_offset = 0;
+      } else {
+	*view_offset = num_items - max_items_on_screen - 1;
+      }
+#else
+      // without overrun
+      *selected_item_on_screen = 0;
+      *view_offset = 0;
+#endif
+    } else if( new_cursor < *view_offset ) {
+      *selected_item_on_screen = 0;
+      *view_offset = new_cursor;
+    } else {
+      *selected_item_on_screen = new_cursor - *view_offset;
+    }
+  }
+
+  return prev_view_offset != *view_offset;
 }

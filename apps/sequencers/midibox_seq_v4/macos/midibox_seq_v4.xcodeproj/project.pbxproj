@@ -142,6 +142,7 @@
 		52DA1B3A0EFB006400E889A5 /* mb_midifile_demo.inc in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */; };
 		52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B360EFB006400E889A5 /* seq_midply.c */; };
 		52DB337C0FE28DFC00A9322B /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DB337B0FE28DFC00A9322B /* seq_file_g.c */; };
+		52DD80771083AF7300B8667F /* seq_ui_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DD80761083AF7300B8667F /* seq_ui_sysex.c */; };
 		52ECBDCC0F76DD1F00576C54 /* seq_file_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDC70F76DD1F00576C54 /* seq_file_s.c */; };
 		52ECBDCD0F76DD1F00576C54 /* seq_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDC90F76DD1F00576C54 /* seq_song.c */; };
 		52ECBDCE0F76DD1F00576C54 /* seq_ui_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 52ECBDCB0F76DD1F00576C54 /* seq_ui_song.c */; };
@@ -382,6 +383,7 @@
 		52DA1B380EFB006400E889A5 /* seq_pattern.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_pattern.h; path = ../core/seq_pattern.h; sourceTree = SOURCE_ROOT; };
 		52DA1B390EFB006400E889A5 /* tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tasks.h; path = ../core/tasks.h; sourceTree = SOURCE_ROOT; };
 		52DB337B0FE28DFC00A9322B /* seq_file_g.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_g.c; path = ../core/seq_file_g.c; sourceTree = SOURCE_ROOT; };
+		52DD80761083AF7300B8667F /* seq_ui_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_sysex.c; path = ../core/seq_ui_sysex.c; sourceTree = SOURCE_ROOT; };
 		52ECBDC70F76DD1F00576C54 /* seq_file_s.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_s.c; path = ../core/seq_file_s.c; sourceTree = SOURCE_ROOT; };
 		52ECBDC80F76DD1F00576C54 /* seq_file_s.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_s.h; path = ../core/seq_file_s.h; sourceTree = SOURCE_ROOT; };
 		52ECBDC90F76DD1F00576C54 /* seq_song.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_song.c; path = ../core/seq_song.c; sourceTree = SOURCE_ROOT; };
@@ -513,6 +515,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52DD80761083AF7300B8667F /* seq_ui_sysex.c */,
 				52D84F9A1072A28F00697CCC /* seq_lcd_logo.c */,
 				52D84F9B1072A28F00697CCC /* seq_lcd_logo.h */,
 				52D84F9C1072A28F00697CCC /* seq_lcd_logo.inc */,
@@ -970,6 +973,7 @@
 				52CFD823105C355100513D1B /* seq_cc_labels.c in Sources */,
 				52D84F9D1072A28F00697CCC /* seq_lcd_logo.c in Sources */,
 				52D84F9E1072A28F00697CCC /* seq_lcd_logo.inc in Sources */,
+				52DD80771083AF7300B8667F /* seq_ui_sysex.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
