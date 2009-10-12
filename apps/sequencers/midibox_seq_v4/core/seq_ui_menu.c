@@ -166,8 +166,13 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(20);
 
   SEQ_LCD_PrintString(SEQ_UI_PageNameGet(ui_selected_page));
-  SEQ_LCD_PrintChar((ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE) ? ' ' : '<');
-  SEQ_LCD_PrintChar((ui_selected_page < (SEQ_UI_PAGES-1)) ? '>' : ' ');
+  SEQ_LCD_PrintChar(' ');
+  if( ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE )
+    SEQ_LCD_PrintChar(0x01); // right arrow
+  else if( ui_selected_page == (SEQ_UI_PAGES-1) )
+    SEQ_LCD_PrintChar(0x00); // left arrow
+  else
+    SEQ_LCD_PrintChar(0x02); // left/right arrow
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -217,6 +222,9 @@ s32 SEQ_UI_MENU_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+
+  // load charset (if this hasn't been done yet)
+  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
 
   return 0; // no error
 }

@@ -29,6 +29,7 @@
 // note: the order has to be kept in sync with MBSEQ V3 for MBSEQ Remote Mode!
 typedef enum {
   SEQ_LCD_CHARSET_None,
+  SEQ_LCD_CHARSET_Menu,
   SEQ_LCD_CHARSET_VBars,
   SEQ_LCD_CHARSET_HBars,
   SEQ_LCD_CHARSET_DrumSymbolsBig,
@@ -73,6 +74,7 @@ extern s32 SEQ_LCD_PrintMIDIInPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintMIDIOutPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintStepView(u8 step_view);
 
+extern s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 max_items_on_screen);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
