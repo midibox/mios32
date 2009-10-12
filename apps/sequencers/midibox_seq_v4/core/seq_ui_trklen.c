@@ -29,14 +29,14 @@
 #define ITEM_GXTY          0
 #define ITEM_LENGTH        1
 #define ITEM_LOOP          2
-#define ITEM_LENGTH_2      3
-#define ITEM_LENGTH_4      4
-#define ITEM_LENGTH_6      5
-#define ITEM_LENGTH_8      6
-#define ITEM_LENGTH_12     7
-#define ITEM_LENGTH_16     8
-#define ITEM_LENGTH_24     9
-#define ITEM_LENGTH_32     10
+#define ITEM_LENGTH_4      3
+#define ITEM_LENGTH_8      4
+#define ITEM_LENGTH_16     5
+#define ITEM_LENGTH_24     6
+#define ITEM_LENGTH_32     7
+#define ITEM_LENGTH_64     8
+#define ITEM_LENGTH_128    9
+#define ITEM_LENGTH_256    10
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +93,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
@@ -123,15 +126,24 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP16:
       {
 	int quicksel = encoder - 8;
-	ui_selected_item = ITEM_LENGTH_2 + quicksel;
-	SEQ_UI_CC_Set(SEQ_CC_LENGTH, quicksel_length[quicksel]);
+	ui_selected_item = ITEM_LENGTH_4 + quicksel;
+	int len = quicksel_length[quicksel];
+
+	if( (len+1) > num_steps ) {
+	  len = num_steps-1;
+
+	  char buffer[20];
+	  sprintf(buffer, "for %d steps", num_steps);
+
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Track only prepared", buffer);
+	}
+
+	SEQ_UI_CC_Set(SEQ_CC_LENGTH, len);
 	return 1; // value has been changed
       }
   }
 
   // for GP encoders and Datawheel
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
     case ITEM_LENGTH:        return SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, num_steps-1, incrementer);
@@ -246,7 +258,11 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_CursorSet(7, 1);
     u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
     u16 len = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1;
-    SEQ_LCD_PrintFormattedString("%d/%d", len, num_steps);
+
+    if( len > num_steps )
+      SEQ_LCD_PrintFormattedString("!!!/%d", num_steps);
+    else
+      SEQ_LCD_PrintFormattedString("%d/%d", len, num_steps);
   }
   // to allow variable string lengths...
   SEQ_LCD_CursorSet(15, 1);
@@ -255,7 +271,13 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_LOOP && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1);
+    u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+    u16 loop = SEQ_CC_Get(visible_track, SEQ_CC_LOOP)+1;
+
+    if( loop > num_steps )
+      SEQ_LCD_PrintString("!!! ");
+    else
+      SEQ_LCD_PrintFormattedString("%3d ", loop);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -270,7 +292,10 @@ static s32 LCD_Handler(u8 high_prio)
     if( quicksel_item == i && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
-      SEQ_LCD_PrintString((char *)quicksel_str[i]);
+      if( ((int)quicksel_length[i]+1) > SEQ_TRG_NumStepsGet(visible_track) )
+	SEQ_LCD_PrintString(" --- ");
+      else
+	SEQ_LCD_PrintString((char *)quicksel_str[i]);
     }
   }
 
