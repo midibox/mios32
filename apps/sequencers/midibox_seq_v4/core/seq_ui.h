@@ -289,6 +289,6 @@ extern u8 seq_ui_remote_force_led_update;
 extern u8 seq_ui_backup_req;
 extern u8 seq_ui_format_req;
 
-extern char ui_global_dir_list[8][9];
+extern char ui_global_dir_list[80];
 
 #endif /* _SEQ_UI_H */

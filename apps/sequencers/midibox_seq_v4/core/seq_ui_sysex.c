@@ -115,7 +115,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     char buffer[20];
     int i;
     for(i=0; i<9; ++i)
-      buffer[i] = ui_global_dir_list[ui_selected_item][i];
+      buffer[i] = ui_global_dir_list[8*ui_selected_item + i];
     buffer[i] = 0;
 
     SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Selected:", buffer);
@@ -218,14 +218,14 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
 
 #if TEST_LIST
   for(item=0; item<8 && item<dev_num_items; ++item) {
-    char *list_item = (char *)&ui_global_dir_list[item];
+    char *list_item = (char *)&ui_global_dir_list[9*item];
     sprintf(list_item, "test%d", item + dev_view_offset);
   }
 #else
 #endif
 
   while( item < 8 ) {
-    ui_global_dir_list[item][0] = 0;
+    ui_global_dir_list[9*item] = 0;
     ++item;
   }
 
