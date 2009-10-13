@@ -44,6 +44,8 @@ typedef enum {
 
 extern s32 SEQ_LAYER_Init(u32 mode);
 
+extern const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode);
+
 extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event);
 
 extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes);

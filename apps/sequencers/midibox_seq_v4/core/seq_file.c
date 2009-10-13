@@ -85,7 +85,6 @@ u8 seq_file_backup_percentage;
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_FILE_MountFS(void);
-static s32 SEQ_FILE_UpdateFreeBytes(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -298,7 +297,6 @@ static s32 SEQ_FILE_MountFS(void)
     return SEQ_FILE_ERR_UNKNOWN_FS;
   else {
     volume_available = 1;
-    SEQ_FILE_UpdateFreeBytes();
   }
   return 0; // no error
 }
@@ -307,15 +305,14 @@ static s32 SEQ_FILE_MountFS(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function updates the number of free bytes by scanning the FAT for
 // unused clusters.
-// should be called whenever a new file has been created!
+// should be called before SEQ_FILE_Volume* bytes are read
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_FILE_UpdateFreeBytes(void)
+s32 SEQ_FILE_UpdateFreeBytes(void)
 {
   volume_free_bytes = 0xffffffff;
 
-  // Disabled: takes too long! (e.g. my SD card has ca. 2000 clusters, 
+  // takes very long! (e.g. my SD card has ca. 2000 clusters, 
   // it takes ca. 3 seconds to determine free clusters)
-#if 0
   // exit if volume not available
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -338,7 +335,6 @@ static s32 SEQ_FILE_UpdateFreeBytes(void)
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE] Finished UpdateFreeBytes: %u\n", volume_free_bytes);
-#endif
 #endif
 
   return 0; // no error
@@ -733,9 +729,6 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 
   // enable cache again
   DFS_CachingEnabledSet(1);
-
-  // update number of free bytes
-  SEQ_FILE_UpdateFreeBytes();
 
   return status;
 }

@@ -41,7 +41,7 @@ static u16 selected_steps = 0xffff; // will only be initialized once after start
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate);
+static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( event_mode == SEQ_EVENT_MODE_Drum && par_step >= num_steps )
 	par_step %= num_steps;
 
-      forced_value = ChangeSingleEncValue(visible_track, par_step, trg_step, incrementer, forced_value, change_gate);
+      forced_value = ChangeSingleEncValue(visible_track, par_step, trg_step, incrementer, forced_value, change_gate, 0);
       if( forced_value < 0 )
 	return 0; // no change
       value_changed |= 1;
@@ -128,8 +128,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
 	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || par_step == ui_selected_step || (selected_steps & (1 << (par_step % 16))) ) {
 	    change_gate = trg_step == ui_selected_step;
+	    u8 dont_change_gate = par_step != ui_selected_step;
 	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
-	      if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate) >= 0 )
+	      if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate, dont_change_gate) >= 0 )
 		value_changed |= 1;
 	    }
 	  }
@@ -663,7 +664,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 // returns >= 0 if new value has been set (value change)
 // returns < 0 if no change
 /////////////////////////////////////////////////////////////////////////////
-static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate)
+  static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate)
 {
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -692,7 +693,8 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
 
   SEQ_PAR_Set(track, par_step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
 
-  if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity ) {
+  if( !dont_change_gate &&
+      (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) ) {
     // (de)activate gate depending on value
     if( new_value )
       SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);

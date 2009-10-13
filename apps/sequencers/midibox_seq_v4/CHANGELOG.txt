@@ -11,6 +11,18 @@ MIDIboxSEQ V4.0beta5
 
   o overworked menu page selection (now uses new list browser)
 
+  o added new info page "About this MIDIbox" (at the end of menu list) to
+    simplify support.
+    A lot of additional informations are sent to the MIOS Terminal when 
+    an item (displayed at left page) is selected with a GP or the SELECT
+    button. Use the datawheel or a GP encoder to browse through the list.
+
+    MIOS Terminal is part of MIOS Studio, a command line tool for MacOS 
+    available as well.
+
+  o Length 128/256 quick selection won't be displayed anymore if track
+    partition doesn't allow this number of steps
+
   o fixed various minor bugs
 
 
@@ -139,3 +151,6 @@ Wishlist for future features
      notes right from the beginning.
   o SysEx dump for patterns/songs
   o implementation of a new 16x16 BLM (cascadable to even more buttons/LEDs)
+  o now where infos are sent to MIOS terminal, we could also provide a
+    console input to control MBSEQ from a terminal (this would even allow
+    to create sequences from a computer)

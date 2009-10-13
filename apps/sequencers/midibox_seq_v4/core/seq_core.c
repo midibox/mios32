@@ -52,6 +52,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
+// value is visible in INFO->System page (-> press exit button, go to last item)
 #define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
@@ -207,7 +208,7 @@ s32 SEQ_CORE_Init(u32 mode)
   SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], 0.0);
 
 #if STOPWATCH_PERFORMANCE_MEASURING
-  SEQ_UI_MENU_StopwatchInit();
+  SEQ_UI_INFO_StopwatchInit();
 #endif
 
   return 0; // no error
@@ -281,7 +282,7 @@ s32 SEQ_CORE_Handler(void)
 	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 2
-	SEQ_UI_MENU_StopwatchReset();
+	SEQ_UI_INFO_StopwatchReset();
 #endif
 	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
 	  SEQ_CORE_Tick(forwarded_bpm_tick);
@@ -293,7 +294,7 @@ s32 SEQ_CORE_Handler(void)
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 2
-	SEQ_UI_MENU_StopwatchCapture();
+	SEQ_UI_INFO_StopwatchCapture();
 #endif
       } else {
 	// realtime generation of events
@@ -301,14 +302,14 @@ s32 SEQ_CORE_Handler(void)
 	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	SEQ_UI_MENU_StopwatchReset();
+	SEQ_UI_INFO_StopwatchReset();
 #endif
 	SEQ_CORE_Tick(bpm_tick);
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	SEQ_UI_MENU_StopwatchCapture();
+	SEQ_UI_INFO_StopwatchCapture();
 #endif
       }
     }
@@ -1241,6 +1242,39 @@ static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
   p->note = note;
 
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Name of Delay mode (we should outsource the echo function to seq_echo.c later)
+/////////////////////////////////////////////////////////////////////////////
+const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
+{
+  const char delay_str[16+1][5] = {
+    " 64T",
+    " 64 ",
+    " 32T",
+    " 32 ",
+    " 16T",
+    " 16 ",
+    "  8T",
+    "  8 ",
+    "  4T",
+    "  4 ",
+    "  2T",
+    "  2 ",
+    "  1T",
+    "  1 ",
+    "Rnd1",
+    "Rnd2",
+    "????",
+  };
+
+  if( delay_mode < 16 )
+    return delay_str[delay_mode];
+
+  return delay_str[16];
 }
 
 
