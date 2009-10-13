@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta6
+~~~~~~~~~~~~~~~~~~~~
+
+  o "About this MIDIbox": separated SD Card Info
+
+
 MIDIboxSEQ V4.0beta5
 ~~~~~~~~~~~~~~~~~~~~
 

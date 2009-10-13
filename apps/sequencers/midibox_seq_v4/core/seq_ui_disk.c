@@ -28,10 +28,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           3
+#define NUM_OF_ITEMS           2
 #define ITEM_BACKUP            0
 #define ITEM_ENABLE_MSD        1
-#define ITEM_INFO              2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,7 +56,6 @@ static s32 LED_Handler(u16 *gp_leds)
 	*gp_leds |= 0x0003;
       break;
     case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
-    case ITEM_INFO: *gp_leds |= 0x3000; break;
   }
 
   return 0; // no error
@@ -101,9 +99,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_INFO;
-      break;
-
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
       return -1; // not used (yet)
@@ -124,20 +119,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mass Storage via USB", (incrementer > 0) ? "enabled!" : "disabled!");
 
       return 1;
-
-    case ITEM_INFO: {
-      s32 status;
-
-      MUTEX_SDCARD_TAKE;
-      status = SEQ_FILE_PrintSDCardInfos();
-      MUTEX_SDCARD_GIVE;
-
-      if( status < 0 )
-	SEQ_UI_SDCardErrMsg(2000, status);
-      else
-	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Open MIOS Terminal", "to display Info!");
-      return 1;
-    }
   }
 
   return -1; // invalid or unsupported encoder
@@ -227,11 +208,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // ---------------> FORMAT <---------------  MSD USB           Send SD Info        
-  // ---------------> FILES! <--------------- disabled           to Terminal         
+  // ---------------> FORMAT <---------------  MSD USB
+  // ---------------> FILES! <--------------- disabled
 
-  //   Create                                  MSD USB           Send SD Info        
-  //   Backup                                 disabled           to Terminal         
+  //   Create                                  MSD USB
+  //   Backup                                 disabled
 
   //                                           MSD USB (UMRW)
   //                                           enabled
@@ -263,7 +244,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintSpaces(6);
   }
-  SEQ_LCD_PrintString("    Send SD Info        ");
+  SEQ_LCD_PrintString("                        ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -296,16 +277,7 @@ static s32 LCD_Handler(u8 high_prio)
       default: SEQ_LCD_PrintString(" Not Emulated!"); break;
     }
   }
-  SEQ_LCD_PrintSpaces(6);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_INFO && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(11);
-  } else {
-    SEQ_LCD_PrintString("to Terminal");
-  }
-  SEQ_LCD_PrintSpaces(9);
+  SEQ_LCD_PrintSpaces(6+11+9);
 
   return 0; // no error
 }
