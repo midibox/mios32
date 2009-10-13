@@ -37,6 +37,7 @@ extern s32 SEQ_FILE_C_Valid(void);
 
 extern s32 SEQ_FILE_C_Read(void);
 extern s32 SEQ_FILE_C_Write(void);
+extern s32 SEQ_FILE_C_Debug(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

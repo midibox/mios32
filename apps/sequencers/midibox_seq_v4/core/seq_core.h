@@ -191,6 +191,8 @@ extern s32 SEQ_CORE_Handler(void);
 
 extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root);
 
+extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
+
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(void);
 

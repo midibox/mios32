@@ -140,7 +140,7 @@ void APP_Background(void)
 #endif
 
   // for idle time measurements
-  SEQ_UI_MENU_Idle();
+  SEQ_UI_INFO_Idle();
 }
 
 

@@ -367,14 +367,121 @@ s32 SEQ_FILE_C_Read(void)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
-// writes the config file
+// help function to write data into file or send to debug terminal
+// returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
+{
+  s32 status = 0;
+  char line_buffer[128];
+
+#define FLUSH_BUFFER if( fileinfo == NULL ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer(fileinfo, (u8 *)line_buffer, strlen(line_buffer)); }
+
+  // write config values
+  u8 bpm_preset;
+  for(bpm_preset=0; bpm_preset<SEQ_CORE_NUM_BPM_PRESETS; ++bpm_preset) {
+    sprintf(line_buffer, "BPMx10_P %d %d %d\n", 
+	    bpm_preset,
+	    (int)(seq_core_bpm_preset_tempo[bpm_preset]*10),
+	    (int)(seq_core_bpm_preset_ramp[bpm_preset]*10));
+    FLUSH_BUFFER;
+  }
+
+  sprintf(line_buffer, "BPM_Preset %d\n", seq_core_bpm_preset_num);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "StepsPerMeasure %d\n", seq_core_steps_per_measure);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "GlobalScale %d\n", seq_core_global_scale);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "GlobalScaleCtrl %d\n", seq_core_global_scale_ctrl);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LoopMode %d\n", seq_core_glb_loop_mode);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LoopOffset %d\n", (int)seq_core_glb_loop_offset+1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LoopSteps %d\n", (int)seq_core_glb_loop_steps+1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_Channel %d\n", seq_midi_in_channel);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_in);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
+  FLUSH_BUFFER;
+
+  u8 node;
+  seq_midi_router_node_t *n = &seq_midi_router_node[0];
+  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+    sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
+    FLUSH_BUFFER;
+  }
+
+  sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MetronomeChannel %d\n", (u8)seq_core_metronome_chn);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MetronomeNoteM %d\n", (u8)seq_core_metronome_note_m);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_ui_remote_mode);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RemotePort %d\n", (u8)seq_ui_remote_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
+  FLUSH_BUFFER;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// writes data into config file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_C_Write(void)
 {
   seq_file_c_info_t *info = &seq_file_c_info;
-
   FILEINFO fi;
 
   char filepath[MAX_PATH];
@@ -394,99 +501,8 @@ s32 SEQ_FILE_C_Write(void)
     return status;
   }
 
-  char line_buffer[128];
-
-  // write config values
-  u8 bpm_preset;
-  for(bpm_preset=0; bpm_preset<SEQ_CORE_NUM_BPM_PRESETS; ++bpm_preset) {
-    sprintf(line_buffer, "BPMx10_P %d %d %d\n", 
-	    bpm_preset,
-	    (int)(seq_core_bpm_preset_tempo[bpm_preset]*10),
-	    (int)(seq_core_bpm_preset_ramp[bpm_preset]*10));
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-  }
-
-  sprintf(line_buffer, "BPM_Preset %d\n", seq_core_bpm_preset_num);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "StepsPerMeasure %d\n", seq_core_steps_per_measure);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "GlobalScale %d\n", seq_core_global_scale);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "GlobalScaleCtrl %d\n", seq_core_global_scale_ctrl);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "LoopMode %d\n", seq_core_glb_loop_mode);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "LoopOffset %d\n", (int)seq_core_glb_loop_offset+1);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "LoopSteps %d\n", (int)seq_core_glb_loop_steps+1);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_IN_Channel %d\n", seq_midi_in_channel);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_in);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  u8 node;
-  seq_midi_router_node_t *n = &seq_midi_router_node[0];
-  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-    sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-  }
-
-  sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MetronomeChannel %d\n", (u8)seq_core_metronome_chn);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MetronomeNoteM %d\n", (u8)seq_core_metronome_note_m);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_ui_remote_mode);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "RemotePort %d\n", (u8)seq_ui_remote_port);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-  sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
+  // write file
+  status |= SEQ_FILE_C_Write_Hlp(&fi);
 
   // close file
   status |= SEQ_FILE_WriteClose(&fi);
@@ -501,4 +517,15 @@ s32 SEQ_FILE_C_Write(void)
 #endif
 
   return (status < 0) ? SEQ_FILE_C_ERR_WRITE : 0;
+
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// sends config data to debug terminal
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_C_Debug(void)
+{
+  return SEQ_FILE_C_Write_Hlp(NULL); // send to debug terminal
+}
+

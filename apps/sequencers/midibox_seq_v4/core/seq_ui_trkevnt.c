@@ -752,8 +752,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_EVENT_MODE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(21);
   } else {
-    const char event_mode_str[4][6] = { "Note ", "Chord", " CC  ", "Drum " };
-    SEQ_LCD_PrintString((char *)event_mode_str[event_mode]);
+    SEQ_LCD_PrintString((char *)SEQ_LAYER_GetEvntModeName(event_mode));
 
     layer_config_t *lc = (layer_config_t *)&layer_config[selected_layer_config];
     if( event_mode == SEQ_EVENT_MODE_Drum ) {

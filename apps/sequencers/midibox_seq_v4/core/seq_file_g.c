@@ -274,13 +274,57 @@ s32 SEQ_FILE_G_Read(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// writes the config file
+// help function to write data into file or send to debug terminal
+// returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_FILE_G_Write_Hlp(PFILEINFO fileinfo)
+{
+  s32 status = 0;
+  char line_buffer[200];
+
+#define FLUSH_BUFFER if( fileinfo == NULL ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer(fileinfo, (u8 *)line_buffer, strlen(line_buffer)); }
+
+  // write groove templates
+  u8 groove;
+  seq_groove_entry_t *g = &seq_groove_templates[0];
+  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove, ++g) {
+    u8 step;
+
+    sprintf(line_buffer, "NumSteps %d %d\n", groove, g->num_steps);
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "Delay %2d     ", groove);
+    for(step=0; step<16; ++step) {
+      sprintf((char *)(line_buffer+strlen(line_buffer)), " %4d", g->add_step_delay[step]);
+    }
+    sprintf((char *)(line_buffer+strlen(line_buffer)), "\n");
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "\nLength %2d    ", groove);
+    for(step=0; step<16; ++step) {
+      sprintf((char *)(line_buffer+strlen(line_buffer)), " %4d", g->add_step_length[step]);
+    }
+    sprintf((char *)(line_buffer+strlen(line_buffer)), "\n");
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "\nVelocity %2d  ", groove);
+    for(step=0; step<16; ++step) {
+      sprintf((char *)(line_buffer+strlen(line_buffer)), " %4d", g->add_step_velocity[step]);
+    }
+    sprintf((char *)(line_buffer+strlen(line_buffer)), "\n");
+    FLUSH_BUFFER;
+  }
+
+return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// writes the groove file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_G_Write(void)
 {
   seq_file_g_info_t *info = &seq_file_g_info;
-
   FILEINFO fi;
 
   char filepath[MAX_PATH];
@@ -300,44 +344,11 @@ s32 SEQ_FILE_G_Write(void)
     return status;
   }
 
-  char line_buffer[128];
-
-  // write groove templates
-  u8 groove;
-  seq_groove_entry_t *g = &seq_groove_templates[0];
-  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove, ++g) {
-    u8 step;
-
-    sprintf(line_buffer, "NumSteps %d %d\n", groove, g->num_steps);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-
-    sprintf(line_buffer, "Delay %2d     ", groove);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    for(step=0; step<16; ++step) {
-      sprintf(line_buffer, " %4d", g->add_step_delay[step]);
-      status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    }
-
-    sprintf(line_buffer, "\nLength %2d    ", groove);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    for(step=0; step<16; ++step) {
-      sprintf(line_buffer, " %4d", g->add_step_length[step]);
-      status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    }
-
-    sprintf(line_buffer, "\nVelocity %2d  ", groove);
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    for(step=0; step<16; ++step) {
-      sprintf(line_buffer, " %4d", g->add_step_velocity[step]);
-      status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-    }
-    sprintf(line_buffer, "\n\n");
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)line_buffer, strlen(line_buffer));
-  }
+  // write file
+  status |= SEQ_FILE_G_Write_Hlp(&fi);
 
   // close file
   status |= SEQ_FILE_WriteClose(&fi);
-
 
   // check if file is valid
   if( status >= 0 )
@@ -348,4 +359,13 @@ s32 SEQ_FILE_G_Write(void)
 #endif
 
   return (status < 0) ? SEQ_FILE_G_ERR_WRITE : 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// sends groove data to debug terminal
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_G_Debug(void)
+{
+  return SEQ_FILE_G_Write_Hlp(NULL); // send to debug terminal
 }

@@ -29,6 +29,7 @@ typedef enum {
   SEQ_UI_PAGE_PMUTE,
   SEQ_UI_PAGE_PATTERN,
   SEQ_UI_PAGE_SONG,
+  SEQ_UI_PAGE_MIXER,
   SEQ_UI_PAGE_TRKEVNT,
   SEQ_UI_PAGE_TRKMODE,
   SEQ_UI_PAGE_TRKDIR,
@@ -55,12 +56,13 @@ typedef enum {
   SEQ_UI_PAGE_MIDI,
   SEQ_UI_PAGE_SYSEX,
   SEQ_UI_PAGE_DISK,
-  SEQ_UI_PAGE_MIXER
+  SEQ_UI_PAGE_INFO,
 } seq_ui_page_t;
 
 	
-#define SEQ_UI_PAGES (SEQ_UI_PAGE_MIXER + 1)
+#define SEQ_UI_PAGES (SEQ_UI_PAGE_INFO + 1)
 #define SEQ_UI_FIRST_MENU_SELECTION_PAGE SEQ_UI_PAGE_EDIT
+#define SEQ_UI_NUM_MENU_PAGES (SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE)
 
 
 // Prototypes for all UI pages are burried here
@@ -77,6 +79,7 @@ extern s32 SEQ_UI_EDIT_Init(u32 mode);
 extern s32 SEQ_UI_MUTE_Init(u32 mode);
 extern s32 SEQ_UI_PATTERN_Init(u32 mode);
 extern s32 SEQ_UI_SONG_Init(u32 mode);
+extern s32 SEQ_UI_MIXER_Init(u32 mode);
 extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
 extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
@@ -103,7 +106,7 @@ extern s32 SEQ_UI_METRONOME_Init(u32 mode);
 extern s32 SEQ_UI_MIDI_Init(u32 mode);
 extern s32 SEQ_UI_SYSEX_Init(u32 mode);
 extern s32 SEQ_UI_DISK_Init(u32 mode);
-extern s32 SEQ_UI_MIXER_Init(u32 mode);
+extern s32 SEQ_UI_INFO_Init(u32 mode);
 
 
 typedef struct {
@@ -130,6 +133,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Mute Ports        ", (void *)&SEQ_UI_PMUTE_Init },
   { "Patterns          ", (void *)&SEQ_UI_PATTERN_Init },
   { "Song              ", (void *)&SEQ_UI_SONG_Init },
+  { "Mixer             ", (void *)&SEQ_UI_MIXER_Init },
   { "Track Events      ", (void *)&SEQ_UI_TRKEVNT_Init },
   { "Track Mode        ", (void *)&SEQ_UI_TRKMODE_Init },
   { "Track Direction   ", (void *)&SEQ_UI_TRKDIR_Init },
@@ -156,7 +160,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "MIDI Configuration", (void *)&SEQ_UI_MIDI_Init },
   { "SysEx             ", (void *)&SEQ_UI_SYSEX_Init },
   { "Disk (SD Card)    ", (void *)&SEQ_UI_DISK_Init },
-  { "Mixer             ", (void *)&SEQ_UI_MIXER_Init }
+  { "About this MIDIbox", (void *)&SEQ_UI_INFO_Init },
 };
 
 // following pages are directly accessible with the GP buttons when MENU button is pressed

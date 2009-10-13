@@ -217,25 +217,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_DELAY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    const char delay_str[16][5] = {
-      " 64T",
-      " 64 ",
-      " 32T",
-      " 32 ",
-      " 16T",
-      " 16 ",
-      "  8T",
-      "  8 ",
-      "  4T",
-      "  4 ",
-      "  2T",
-      "  2 ",
-      "  1T",
-      "  1 ",
-      "Rnd1",
-      "Rnd2"
-    };
-    SEQ_LCD_PrintString((char *)delay_str[SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY)]);
+    SEQ_LCD_PrintString((char *)SEQ_CORE_Echo_GetDelayModeName(SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY)));
   }
   SEQ_LCD_PrintSpaces(6);
 

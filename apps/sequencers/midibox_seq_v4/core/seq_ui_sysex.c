@@ -39,6 +39,7 @@
 #define ITEM_DEV7              6
 #define ITEM_DEV8              7
 
+#define LIST_ENTRY_WIDTH 9
 
 // for debugging list display
 #define TEST_LIST 1
@@ -84,7 +85,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   // any encoder changes the dir view
-  if( SEQ_UI_SelectListItem(incrementer, dev_num_items, 8, &ui_selected_item, &dev_view_offset) )
+  if( SEQ_UI_SelectListItem(incrementer, dev_num_items, NUM_OF_ITEMS, &ui_selected_item, &dev_view_offset) )
     SEQ_UI_SYSEX_UpdateDirList();
 
   return -1; // invalid or unsupported encoder
@@ -114,8 +115,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     char buffer[20];
     int i;
-    for(i=0; i<9; ++i)
-      buffer[i] = ui_global_dir_list[8*ui_selected_item + i];
+    for(i=0; i<LIST_ENTRY_WIDTH; ++i)
+      buffer[i] = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
     buffer[i] = 0;
 
     SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Selected:", buffer);
@@ -167,7 +168,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintList((char *)ui_global_dir_list, 9, 8);
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_OF_ITEMS);
 
   if( dev_view_offset == 0 && ui_selected_item == 0 )
     SEQ_LCD_PrintChar(0x01); // right arrow
@@ -217,15 +218,15 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
   int item;
 
 #if TEST_LIST
-  for(item=0; item<8 && item<dev_num_items; ++item) {
-    char *list_item = (char *)&ui_global_dir_list[9*item];
+  for(item=0; item<NUM_OF_ITEMS && item<dev_num_items; ++item) {
+    char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];
     sprintf(list_item, "test%d", item + dev_view_offset);
   }
 #else
 #endif
 
-  while( item < 8 ) {
-    ui_global_dir_list[9*item] = 0;
+  while( item < NUM_OF_ITEMS ) {
+    ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }
 

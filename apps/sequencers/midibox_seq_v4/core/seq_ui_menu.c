@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include <seq_midi_out.h>
 #include "tasks.h"
 
@@ -25,17 +26,24 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#define NUM_OF_ITEMS           4
+#define ITEM_LIST1             0
+#define ITEM_LIST2             1
+#define ITEM_LIST3             2
+#define ITEM_LIST4             3
+
+#define LIST_ENTRY_WIDTH 19
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 stopwatch_value;
-static u32 stopwatch_value_max;
-static s32 cpu_load_in_percent;
-
 static u8 menu_view_offset = 0; // only changed once after startup or if menu page outside view
 static u8 menu_selected_item = 0; // dito
-
-static u8 debug_screen = 0; // TODO: move to special menu page
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -50,9 +58,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void);
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-  if( !debug_screen ) {
-    *gp_leds = (15 << (4*menu_selected_item));
-  }
+  *gp_leds = (15 << (4*menu_selected_item));
 
   return 0; // no error
 }
@@ -67,11 +73,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  if( !debug_screen ) {
-    // any encoder changes the menu view
-    if( SEQ_UI_SelectListItem(incrementer, SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE, 4, &menu_selected_item, &menu_view_offset) )
-      SEQ_UI_MENU_UpdatePageList();
-  }
+  // any encoder changes the menu view
+  if( SEQ_UI_SelectListItem(incrementer, SEQ_UI_NUM_MENU_PAGES, NUM_OF_ITEMS, &menu_selected_item, &menu_view_offset) )
+    SEQ_UI_MENU_UpdatePageList();
 
   return -1; // invalid or unsupported encoder
 }
@@ -88,80 +92,26 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
-  if( !debug_screen ) {
-#if 0
-    // leads to: comparison is always true due to limited range of data type
-    if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
-#else
-    if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
-#endif
+  if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
+    if( button != SEQ_UI_BUTTON_Select )
+      menu_selected_item = button / 4;
 
-      if( button != SEQ_UI_BUTTON_Select )
-	  menu_selected_item = button / 4;
+    SEQ_UI_PageSet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + menu_view_offset + menu_selected_item);
+    return 1;
+  }
 
+  switch( button ) {
+    case SEQ_UI_BUTTON_Right:
+    case SEQ_UI_BUTTON_Up:
+      return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
+
+    case SEQ_UI_BUTTON_Left:
+    case SEQ_UI_BUTTON_Down:
+      return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+
+    case SEQ_UI_BUTTON_Exit:
       SEQ_UI_PageSet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + menu_view_offset + menu_selected_item);
       return 1;
-    }
-
-    switch( button ) {
-      case SEQ_UI_BUTTON_Right:
-      case SEQ_UI_BUTTON_Up:
-        return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
-
-      case SEQ_UI_BUTTON_Left:
-      case SEQ_UI_BUTTON_Down:
-        return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
-
-      case SEQ_UI_BUTTON_Exit:
-	SEQ_UI_PageSet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + menu_view_offset + menu_selected_item);
-	return 1;
-    }
-
-    return -1; // invalid or unsupported button
-  } else {
-    switch( button ) {
-      case SEQ_UI_BUTTON_GP1: // clears stopwatch value
-      case SEQ_UI_BUTTON_GP2:
-      case SEQ_UI_BUTTON_GP3: {
-        stopwatch_value_max = 0;
-
-#ifndef MIOS32_FAMILY_EMULATION
-        // send Run Time Stats to MIOS terminal
-        FREERTOS_UTILS_RunTimeStats();
-#endif
-
-        return 1;
-      } break;
-      
-      case SEQ_UI_BUTTON_GP5:
-      case SEQ_UI_BUTTON_GP6:
-      case SEQ_UI_BUTTON_GP7:
-      case SEQ_UI_BUTTON_GP8:
-	return 1; // TODO
-
-      case SEQ_UI_BUTTON_GP12: // clears max counter
-      case SEQ_UI_BUTTON_GP13:
-      case SEQ_UI_BUTTON_GP14:
-        seq_midi_out_max_allocated = 0;
-        return 1;
-
-      case SEQ_UI_BUTTON_GP15: // clears drop counter
-      case SEQ_UI_BUTTON_GP16:
-        seq_midi_out_dropouts = 0;
-        return 1;
-
-      case SEQ_UI_BUTTON_Right:
-      case SEQ_UI_BUTTON_Up:
-        return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
-
-      case SEQ_UI_BUTTON_Left:
-      case SEQ_UI_BUTTON_Down:
-        return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
-
-      case SEQ_UI_BUTTON_Exit:
-        SEQ_UI_PageSet(ui_selected_page);
-        return 1;
-    }
   }
 
   return -1; // invalid or unsupported button
@@ -174,105 +124,37 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
-  if( high_prio )
-    return 0; // there are no high-priority updates
-
-  if( !debug_screen ) {
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintSpaces(11);
-    SEQ_LCD_PrintString("Menu Page Browser");
-    SEQ_LCD_PrintSpaces(12);
-
-    SEQ_LCD_CursorSet(40, 0);
-    SEQ_LCD_PrintSpaces(8);
-    SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
-    SEQ_LCD_PrintSpaces(9);
-
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 1);
-
-    SEQ_LCD_PrintList((char *)ui_global_dir_list, 19, 4);
-
-    if( menu_view_offset == 0 && menu_selected_item == 0 )
-      SEQ_LCD_PrintChar(0x01); // right arrow
-    else if( (menu_view_offset+menu_selected_item+1) >= (SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE) )
-      SEQ_LCD_PrintChar(0x00); // left arrow
-    else
-      SEQ_LCD_PrintChar(0x02); // left/right arrow
-
-  } else {
-    // layout:
-    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-    // <--------------------------------------><-------------------------------------->
-    // Stopwatch:          Select Menu Page:   MIDI Scheduler: Alloc xxx/xxx Drops: xxx
-    // xxxxx/xxxxx uS      xxxxxxxxxxxxxxxxxx<>SD Card: not available     CPU Load: 52%
-  
-  
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 0);
-  
-    if( stopwatch_value_max ) {
-      SEQ_LCD_PrintString("Stopwatch:");
-      SEQ_LCD_PrintSpaces(10);
-    } else
-      SEQ_LCD_PrintSpaces(20);
-  
-    SEQ_LCD_PrintString("Select Menu Page:   ");
-  
-    SEQ_LCD_CursorSet(0, 1);
-    if( stopwatch_value_max == 0xffffffff ) {
-      SEQ_LCD_PrintFormattedString("Overrun!", stopwatch_value, stopwatch_value_max);
-      SEQ_LCD_PrintSpaces(12);
-    } else if( stopwatch_value_max ) {
-      SEQ_LCD_PrintFormattedString("%5d/%5d uS", stopwatch_value, stopwatch_value_max);
-      SEQ_LCD_PrintSpaces(6);
-    } else
-      SEQ_LCD_PrintSpaces(20);
-  
-    SEQ_LCD_PrintString(SEQ_UI_PageNameGet(ui_selected_page));
-    SEQ_LCD_PrintChar(' ');
-    if( ui_selected_page == SEQ_UI_FIRST_MENU_SELECTION_PAGE )
-      SEQ_LCD_PrintChar(0x01); // right arrow
-    else if( ui_selected_page == (SEQ_UI_PAGES-1) )
-      SEQ_LCD_PrintChar(0x00); // left arrow
-    else
-      SEQ_LCD_PrintChar(0x02); // left/right arrow
-  
-  
-    ///////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(40, 0);
-    if( seq_midi_out_allocated > 1000 || seq_midi_out_max_allocated > 1000 || seq_midi_out_dropouts > 1000 ) {
-      SEQ_LCD_PrintFormattedString("MIDI Scheduler: Alloc %4d/%4d Dr: %4d",
-        seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
-    } else {
-      SEQ_LCD_PrintFormattedString("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
-        seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
-    }
-  
-    SEQ_LCD_CursorSet(40, 1);
-    SEQ_LCD_PrintFormattedString("SD Card: ");
-    char status_str[128];
-    if( !SEQ_FILE_SDCardAvailable() ) {
-      sprintf(status_str, "not connected");
-    } else if( !SEQ_FILE_VolumeAvailable() ) {
-      sprintf(status_str, "Invalid FAT  ");
-    } else {
-#if 0
-      // disabled: determing the number of free bytes takes too long!
-      sprintf(status_str, "%d/%d MB", 
-  	    SEQ_FILE_VolumeBytesFree()/1000000,
-  	    SEQ_FILE_VolumeBytesTotal()/1000000);
-#else
-      // print volume label instead
-      sprintf(status_str, "\"%11s\"", SEQ_FILE_VolumeLabel());
-#endif
-    }
-    SEQ_LCD_PrintStringPadded(status_str, 18);
-  
-    SEQ_LCD_PrintFormattedString("CPU Load: %02d%%", cpu_load_in_percent);
+  if( high_prio ) {
+    SEQ_LCD_CursorSet(32, 0);
+    mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+    int hours = (t.seconds / 3600) % 24;
+    int minutes = (t.seconds % 3600) / 60;
+    int seconds = (t.seconds % 3600) % 60;
+    SEQ_LCD_PrintFormattedString("%02d:%02d:%02d", hours, minutes, seconds);
+    return 0;
   }
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_CursorSet(0, 0);
+  SEQ_LCD_PrintString("Menu Page Browser:");
+  SEQ_LCD_PrintSpaces(16);
+
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintSpaces(8);
+  SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+  SEQ_LCD_PrintSpaces(9);
+
+  ///////////////////////////////////////////////////////////////////////////
+  SEQ_LCD_CursorSet(0, 1);
+
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_OF_ITEMS);
+
+  if( menu_view_offset == 0 && menu_selected_item == 0 )
+    SEQ_LCD_PrintChar(0x01); // right arrow
+  else if( (menu_view_offset+menu_selected_item+1) >= SEQ_UI_NUM_MENU_PAGES )
+    SEQ_LCD_PrintChar(0x00); // left arrow
+  else
+    SEQ_LCD_PrintChar(0x02); // left/right arrow
 
   return 0; // no error
 }
@@ -309,87 +191,16 @@ s32 SEQ_UI_MENU_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Optional stopwatch for measuring performance
-// Will be displayed on menu page once stopwatch_max > 0
-// Value can be reseted by pressing GP button below the max number
-// Usage example: see seq_core.c
-// Only one task should control the stopwatch!
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MENU_StopwatchInit(void)
-{
-  stopwatch_value = 0;
-  stopwatch_value_max = 0;
-  MIOS32_STOPWATCH_Init(1); // 1 uS resolution
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Resets stopwatch
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MENU_StopwatchReset(void)
-{
-  return MIOS32_STOPWATCH_Reset();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Captures value of stopwatch and displays on screen
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MENU_StopwatchCapture(void)
-{
-  u32 value = MIOS32_STOPWATCH_ValueGet();
-  portENTER_CRITICAL();
-  stopwatch_value = value;
-  if( value > stopwatch_value_max )
-    stopwatch_value_max = value;
-  portEXIT_CRITICAL();
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Handles Idle Counter (frequently called from Background task)
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_MENU_Idle(void)
-{
-  static u32 idle_ctr = 0;
-  static u32 last_seconds = 0;
-
-  // determine the CPU load
-  ++idle_ctr;
-  mios32_sys_time_t t = MIOS32_SYS_TimeGet();
-  if( t.seconds != last_seconds ) {
-    last_seconds = t.seconds;
-
-    // MAX_IDLE_CTR defined in mios32_config.h
-    // CPU Load is printed in main menu screen
-    cpu_load_in_percent = 100 - ((100 * idle_ctr) / MAX_IDLE_CTR);
-
-#if 0
-    DEBUG_MSG("Load: %d%% (Ctr: %d)\n", cpu_load_in_percent, idle_ctr);
-#endif
-    
-    idle_ctr = 0;
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Updates list based on selected menu page
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_MENU_UpdatePageList(void)
 {
   int item;
 
-  for(item=0; item<4 && item<(SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE); ++item) {
+  for(item=0; item<NUM_OF_ITEMS && item<SEQ_UI_NUM_MENU_PAGES; ++item) {
     int i;
 
-    char *list_item = (char *)&ui_global_dir_list[19*item];
+    char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];
     strcpy(list_item, SEQ_UI_PageNameGet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + item + menu_view_offset));
     for(i=strlen(list_item)-1; i>=0; --i)
       if( list_item[i] == ' ' )
@@ -398,8 +209,8 @@ static s32 SEQ_UI_MENU_UpdatePageList(void)
 	break;
   }
 
-  while( item < 4 ) {
-    ui_global_dir_list[19*item] = 0;
+  while( item < NUM_OF_ITEMS ) {
+    ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }
 
