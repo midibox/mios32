@@ -54,7 +54,7 @@
 #define ITEM_LIST4             3
 
 
-#define NUM_LIST_ITEMS 9
+#define NUM_LIST_ITEMS 10
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_TRACKS       2
@@ -64,6 +64,7 @@
 #define LIST_ITEM_MIXER_MAP    6
 #define LIST_ITEM_SONG         7
 #define LIST_ITEM_GROOVES      8
+#define LIST_ITEM_SD_CARD      9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,7 +82,8 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
   "TrgLayers"
   "Mixer Map"
   "Song     "
-  "Grooves  ";
+  "Grooves  "
+  "SD Card  ";
 
 static u8 list_view_offset = 0; // only changed once after startup
 
@@ -195,63 +197,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  DEBUG_MSG("Stopwatch: no result yet\n");
 	} else {
 	  DEBUG_MSG("Stopwatch: %d/%d uS\n", stopwatch_value, stopwatch_value_max);
-	}
-
-	if( !SEQ_FILE_SDCardAvailable() ) {
-	  sprintf(str_buffer, "not connected");
-	} else if( !SEQ_FILE_VolumeAvailable() ) {
-	  sprintf(str_buffer, "Invalid FAT  ");
-	} else {
-	  DEBUG_MSG("Deriving SD Card informations - please wait!\n");
-	  MUTEX_MIDIOUT_GIVE;
-	  MUTEX_SDCARD_TAKE;
-	  SEQ_FILE_UpdateFreeBytes();
-	  MUTEX_SDCARD_GIVE;
-	  MUTEX_MIDIOUT_TAKE;
-
-	  sprintf(str_buffer, "'%s': %u of %u MB free", 
-		  SEQ_FILE_VolumeLabel(),
-		  (unsigned int)(SEQ_FILE_VolumeBytesFree()/1000000),
-		  (unsigned int)(SEQ_FILE_VolumeBytesTotal()/1000000));
-	}
-	DEBUG_MSG("SD Card: %s\n", str_buffer);
-
-	{
-	  u8 bank;
-	  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
-	    int num_patterns = SEQ_FILE_B_NumPatterns(bank);
-	    if( num_patterns )
-	      DEBUG_MSG("File MBSEQ_B%d.V4: valid (%d patterns)\n", bank+1, num_patterns);
-	    else
-	      DEBUG_MSG("File MBSEQ_B%d.V4: doesn't exist\n", bank+1, num_patterns);
-	  }
-
-	  int num_maps = SEQ_FILE_M_NumMaps();
-	  if( num_maps )
-	    DEBUG_MSG("File MBSEQ_M.V4: valid (%d mixer maps)\n", num_maps);
-	  else
-	    DEBUG_MSG("File MBSEQ_M.V4: doesn't exist\n");
-
-	  int num_songs = SEQ_FILE_S_NumSongs();
-	  if( num_songs )
-	    DEBUG_MSG("File MBSEQ_S.V4: valid (%d songs)\n", num_songs);
-	  else
-	    DEBUG_MSG("File MBSEQ_S.V4: doesn't exist\n");
-
-	  if( SEQ_FILE_G_Valid() )
-	    DEBUG_MSG("File MBSEQ_G.V4: valid\n");
-	  else
-	    DEBUG_MSG("File MBSEQ_G.V4: doesn't exist\n");
-
-	  if( SEQ_FILE_C_Valid() )
-	    DEBUG_MSG("File MBSEQ_C.V4: valid\n");
-	  else
-	    DEBUG_MSG("File MBSEQ_C.V4: doesn't exist\n");
-
-	  if( SEQ_FILE_HW_Valid() )
-	    DEBUG_MSG("File MBSEQ_HW.V4: valid\n");
-	  else
-	    DEBUG_MSG("File MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
 	}
 
 #if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
@@ -375,12 +320,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	DEBUG_MSG("Direction Mode: %d (%s)\n", tcc->dir_mode, str_buffer);
 
 	DEBUG_MSG("Steps Forward: %d (%d Steps)\n", tcc->steps_forward, (int)tcc->steps_forward + 1);
-	DEBUG_MSG("Steps Jump Back: %d (%d Steps)\n", tcc->steps_jump_back, (int)tcc->steps_jump_back + 1);
+	DEBUG_MSG("Steps Jump Back: %d (%d Steps)\n", tcc->steps_jump_back, tcc->steps_jump_back);
 	DEBUG_MSG("Steps Replay: %d\n", tcc->steps_replay);
-	DEBUG_MSG("Steps Repeat: %d (%d times)\n", tcc->steps_repeat, (int)tcc->steps_repeat + 1);
-	DEBUG_MSG("Steps Skip: %d (%d Steps)\n", tcc->steps_skip, (int)tcc->steps_skip + 1);
+	DEBUG_MSG("Steps Repeat: %d (%d times)\n", tcc->steps_repeat, tcc->steps_repeat);
+	DEBUG_MSG("Steps Skip: %d (%d Steps)\n", tcc->steps_skip, tcc->steps_skip);
 	DEBUG_MSG("Steps Repeat/Skip Interval: %d (%d Steps)\n", tcc->steps_rs_interval, (int)tcc->steps_rs_interval + 1);
-	DEBUG_MSG("Clockdivider: %d (%d Ticks)\n", tcc->clkdiv.value, (int)tcc->clkdiv.value + 1);
+	DEBUG_MSG("Clockdivider: %d (%d/384 ppqn)\n", tcc->clkdiv.value, (int)tcc->clkdiv.value + 1);
 	DEBUG_MSG("Triplets: %s\n", tcc->clkdiv.TRIPLETS ? "yes" : "no");
 	DEBUG_MSG("Synch-To-Measure: %s\n", tcc->clkdiv.SYNCH_TO_MEASURE? "yes" : "no");
 	DEBUG_MSG("Length: %d (%d Steps)\n", tcc->length, (int)tcc->length + 1);
@@ -533,7 +478,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	DEBUG_MSG("Mixer Map #%3d\n", map+1);
 	DEBUG_MSG("==============\n");
 
-	DEBUG_MSG("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
 	DEBUG_MSG("|Num|Port|Chn|Prg|Vol|Pan|Rev|Cho|Mod|CC1|CC2|CC3|CC4|C1A|C2A|C3A|C4A|\n");
 	DEBUG_MSG("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
 
@@ -567,7 +511,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	DEBUG_MSG("done.\n");
 	MUTEX_MIDIOUT_GIVE;
-	MUTEX_MIDIOUT_GIVE;
       } break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
@@ -581,6 +524,90 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	DEBUG_MSG("done.\n");
 	MUTEX_MIDIOUT_GIVE;
       } break;
+
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      case LIST_ITEM_SD_CARD: {
+	MUTEX_MIDIOUT_TAKE;
+
+	DEBUG_MSG("\n");
+	DEBUG_MSG("SD Card Informations\n");
+	DEBUG_MSG("====================\n");
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+
+	MUTEX_SDCARD_TAKE;
+	SEQ_FILE_PrintSDCardInfos();
+	MUTEX_SDCARD_GIVE;
+
+
+	DEBUG_MSG("\n");
+	DEBUG_MSG("Checking SD Card at application layer\n");
+	DEBUG_MSG("=====================================\n");
+
+	if( !SEQ_FILE_SDCardAvailable() ) {
+	  sprintf(str_buffer, "not connected");
+	} else if( !SEQ_FILE_VolumeAvailable() ) {
+	  sprintf(str_buffer, "Invalid FAT");
+	} else {
+	  DEBUG_MSG("Deriving SD Card informations - please wait!\n");
+	  MUTEX_MIDIOUT_GIVE;
+	  MUTEX_SDCARD_TAKE;
+	  SEQ_FILE_UpdateFreeBytes();
+	  MUTEX_SDCARD_GIVE;
+	  MUTEX_MIDIOUT_TAKE;
+
+	  sprintf(str_buffer, "'%s': %u of %u MB free", 
+		  SEQ_FILE_VolumeLabel(),
+		  (unsigned int)(SEQ_FILE_VolumeBytesFree()/1000000),
+		  (unsigned int)(SEQ_FILE_VolumeBytesTotal()/1000000));
+	}
+	DEBUG_MSG("SD Card: %s\n", str_buffer);
+#endif
+
+	{
+	  u8 bank;
+	  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
+	    int num_patterns = SEQ_FILE_B_NumPatterns(bank);
+	    if( num_patterns )
+	      DEBUG_MSG("File MBSEQ_B%d.V4: valid (%d patterns)\n", bank+1, num_patterns);
+	    else
+	      DEBUG_MSG("File MBSEQ_B%d.V4: doesn't exist\n", bank+1, num_patterns);
+	  }
+
+	  int num_maps = SEQ_FILE_M_NumMaps();
+	  if( num_maps )
+	    DEBUG_MSG("File MBSEQ_M.V4: valid (%d mixer maps)\n", num_maps);
+	  else
+	    DEBUG_MSG("File MBSEQ_M.V4: doesn't exist\n");
+
+	  int num_songs = SEQ_FILE_S_NumSongs();
+	  if( num_songs )
+	    DEBUG_MSG("File MBSEQ_S.V4: valid (%d songs)\n", num_songs);
+	  else
+	    DEBUG_MSG("File MBSEQ_S.V4: doesn't exist\n");
+
+	  if( SEQ_FILE_G_Valid() )
+	    DEBUG_MSG("File MBSEQ_G.V4: valid\n");
+	  else
+	    DEBUG_MSG("File MBSEQ_G.V4: doesn't exist\n");
+
+	  if( SEQ_FILE_C_Valid() )
+	    DEBUG_MSG("File MBSEQ_C.V4: valid\n");
+	  else
+	    DEBUG_MSG("File MBSEQ_C.V4: doesn't exist\n");
+
+	  if( SEQ_FILE_HW_Valid() )
+	    DEBUG_MSG("File MBSEQ_HW.V4: valid\n");
+	  else
+	    DEBUG_MSG("File MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
+	}
+
+	DEBUG_MSG("done.\n");
+	MUTEX_MIDIOUT_GIVE;
+      } break;
+
+
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       default:
