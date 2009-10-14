@@ -40,6 +40,9 @@
 #define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -16 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
 #define SEQ_FILE_ERR_COPY             -17 // SEQ_FILE_Copy() failed
 #define SEQ_FILE_ERR_COPY_NO_FILE     -18 // source file doesn't exist
+#define SEQ_FILE_ERR_NO_SYSEX_DIR     -19 // SEQ_FILE_GetSysExDirs() failed because of missing SysEx directory
+#define SEQ_FILE_ERR_NO_SYSEX_DEV_DIR -20 // SEQ_FILE_GetSysExDumps() failed because of missing SysEx Device directory
+#define SEQ_FILE_ERR_SYSEX_READ       -21 // error while reading .syx file
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
@@ -133,6 +136,9 @@ extern s32 SEQ_FILE_Format(void);
 extern s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer);
 extern s32 SEQ_FILE_CreateBackup(void);
 
+extern s32 SEQ_FILE_GetSysExDirs(char *dir_list, u8 num_of_items, u8 dir_offset);
+extern s32 SEQ_FILE_GetSysExDumps(char *dir_list, u8 num_of_items, u8 dir_offset, char *dir_name);
+extern s32 SEQ_FILE_SendSyxDump(mios32_midi_port_t port, char *dir_name, char *syx_file);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -258,6 +258,8 @@ s32 SEQ_FILE_G_Read(void)
 
   } while( status >= 1 );
 
+  // close file
+  status |= SEQ_FILE_ReadClose(&fi);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

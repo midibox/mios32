@@ -138,7 +138,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( SEQ_UI_SelectListItem(incrementer, NUM_LIST_ITEMS, NUM_OF_ITEMS, &ui_selected_item, &list_view_offset) )
     SEQ_UI_INFO_UpdateList();
 
-  return -1; // invalid or unsupported encoder
+  return 1;
 }
 
 
@@ -404,11 +404,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	DEBUG_MSG("Note Limit Lower: %d\n", tcc->limit_lower);
 	DEBUG_MSG("Note Limit Upper: %d\n", tcc->limit_upper);
 
-	DEBUG_MSG("Constant Array A (MIDI Notes for Drum Tracks):\n");
+	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Notes for Drum Instruments:\n" : "Parameter Layer Assignments:\n");
 	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[0*16], 16);
-	DEBUG_MSG("Constant Array B (MIDI Velocity for Drum Tracks):\n");
+	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Velocity:\n" : "CC Assignments:\n");
 	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[1*16], 16);
-	DEBUG_MSG("Constant Array C (MIDI Accent Velocity for Drum Tracks):\n");
+	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Accent Velocity:\n" : "Constant Array C:\n");
 	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[2*16], 16);
 
 	DEBUG_MSG("done.\n");
@@ -485,8 +485,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  sprintf(str_buffer, "|%3d|%s|", i, SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(SEQ_MIXER_Get(i, SEQ_MIXER_PAR_PORT))));
 
 	  int par;
-	  for(par=1; par<16; ++par)
-	    sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", SEQ_MIXER_Get(i, par));
+	  for(par=1; par<16; ++par) {
+	    u8 value = SEQ_MIXER_Get(i, par);
+	    if( value )
+	      sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", value-1);
+	    else
+	      sprintf((char *)(str_buffer + strlen(str_buffer)), " - |");
+	  }
 	  DEBUG_MSG("%s\n", str_buffer);
 	}
 
@@ -659,7 +664,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // About this MIDIbox:             00:00:00MIDIbox SEQ V4.0Beta5      CPU Load: 40%
+  // About this MIDIbox:             00:00:00Stopwatch:   100/  300 uS  CPU Load: 40%
   //   System   Globals    Tracks  TrackInfo>MIDI Scheduler: Alloc   0/  0 Drops:   0
 
 
@@ -675,22 +680,20 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_OF_ITEMS);
-
-  if( list_view_offset == 0 && ui_selected_item == 0 )
-    SEQ_LCD_PrintChar(0x01); // right arrow
-  else if( (list_view_offset+ui_selected_item+1) >= NUM_LIST_ITEMS )
-    SEQ_LCD_PrintChar(0x00); // left arrow
-  else
-    SEQ_LCD_PrintChar(0x02); // left/right arrow
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_LIST_ITEMS, NUM_OF_ITEMS, ui_selected_item, list_view_offset);
 
   ///////////////////////////////////////////////////////////////////////////
   switch( ui_selected_item + list_view_offset ) {
     case LIST_ITEM_SYSTEM:
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
-      SEQ_LCD_PrintSpaces(10);
-      SEQ_LCD_CursorSet(40 + 27, 0);
+      if( stopwatch_value_max == 0xffffffff ) {
+	SEQ_LCD_PrintFormattedString("Stopwatch: Overrun!     ");
+      } else if( !stopwatch_value_max ) {
+	SEQ_LCD_PrintFormattedString("Stopwatch: no result yet");
+      } else {
+	SEQ_LCD_PrintFormattedString("Stopwatch: %4d/%4d uS ", stopwatch_value, stopwatch_value_max);
+      }
+      SEQ_LCD_PrintSpaces(3);
       SEQ_LCD_PrintFormattedString("CPU Load: %02d%%", cpu_load_in_percent);
 
       SEQ_LCD_CursorSet(40, 1);

@@ -754,10 +754,10 @@ s32 SEQ_LCD_PrintStepView(u8 step_view)
 // item_width: maximum width of item (defines also the string length!)
 // max_items_on_screen: how many items are displayed on screen?
 //
-// All items are framed with space to the left/right
-// The leftmost item gets '<', the rightmost item '>' if requested
+// A space is added at the end of each item. The last item gets
+// a page scroll marker (< or > or <>)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 max_items_on_screen)
+s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 num_items, u8 max_items_on_screen, u8 selected_item_on_screen, u8 view_offset)
 {
   int item;
 
@@ -769,20 +769,32 @@ s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 max_items_on_screen)
       if( list_item[len] == 0 )
 	break;
 
-    int centered_offset = ((item_width+1)-len)/2;
+    if( item == selected_item_on_screen && ui_cursor_flash )
+      SEQ_LCD_PrintSpaces(item_width);
+    else {
+      int centered_offset = ((item_width+1)-len)/2;
 
-    if( centered_offset )
-      SEQ_LCD_PrintSpaces(centered_offset);
+      if( centered_offset )
+	SEQ_LCD_PrintSpaces(centered_offset);
 
-    for(pos=0; pos<len; ++pos)
-      SEQ_LCD_PrintChar(list_item[pos]);
+      for(pos=0; pos<len; ++pos)
+	SEQ_LCD_PrintChar(list_item[pos]);
 
-    centered_offset = item_width-centered_offset-len;
-    if( centered_offset > 0 )
-      SEQ_LCD_PrintSpaces(centered_offset);
+      centered_offset = item_width-centered_offset-len;
+      if( centered_offset > 0 )
+	SEQ_LCD_PrintSpaces(centered_offset);
+    }
 
     if( item < (max_items_on_screen-1) )
       SEQ_LCD_PrintChar(' ');
+    else {
+      if( view_offset == 0 && selected_item_on_screen == 0 )
+	SEQ_LCD_PrintChar(0x01); // right arrow
+      else if( (view_offset+selected_item_on_screen+1) >= num_items )
+	SEQ_LCD_PrintChar(0x00); // left arrow
+      else
+	SEQ_LCD_PrintChar(0x02); // left/right arrow
+    }
   }
 
   return 0; // no error

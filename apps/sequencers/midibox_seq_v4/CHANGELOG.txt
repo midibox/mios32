@@ -9,7 +9,32 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta6
 ~~~~~~~~~~~~~~~~~~~~
 
+  o now it's possible to send SysEx dumps stored on SD Card to MIDI devices.
+
+    Preparation: create a directory called "sysex" on your SD Card, thereafter
+    create subdirectories for each MIDI Device you want to use.
+
+    For example:
+      sysex/MBSID
+      sysex/MBFM
+      sysex/MicroQ
+
+    Now copy .syx files into these directories which should be sent to the
+    devices later.
+
+    Thats all! On your MIDIbox SEQ, change to the MENU->SYSEX menu, the
+    devices will be displayed on screen. Select a device to browse through
+    the file list. Select a file to send the dump.
+
+    Note: currently .syx files are only sent to the Default port (selected in
+    MIDI page). A "store .syx dump" function is planned for later releases.
+
+  o Menu page shows the current sequencer position in measure.step.microstep
+    format
+
   o "About this MIDIbox": separated SD Card Info
+
+  o fixed various minor bugs
 
 
 MIDIboxSEQ V4.0beta5

@@ -74,7 +74,7 @@ extern s32 SEQ_LCD_PrintMIDIInPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintMIDIOutPort(mios32_midi_port_t port);
 extern s32 SEQ_LCD_PrintStepView(u8 step_view);
 
-extern s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 max_items_on_screen);
+extern s32 SEQ_LCD_PrintList(char *list, u8 item_width, u8 num_items, u8 max_items_on_screen, u8 selected_item_on_screen, u8 view_offset);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
