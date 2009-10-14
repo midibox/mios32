@@ -58,6 +58,9 @@ static s32 SEQ_UI_MENU_UpdatePageList(void);
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
+  if( ui_cursor_flash ) // if flashing flag active: no LED flag set
+    return 0;
+
   *gp_leds = (15 << (4*menu_selected_item));
 
   return 0; // no error
@@ -77,7 +80,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( SEQ_UI_SelectListItem(incrementer, SEQ_UI_NUM_MENU_PAGES, NUM_OF_ITEMS, &menu_selected_item, &menu_view_offset) )
     SEQ_UI_MENU_UpdatePageList();
 
-  return -1; // invalid or unsupported encoder
+  return 1;
 }
 
 
@@ -125,12 +128,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 static s32 LCD_Handler(u8 high_prio)
 {
   if( high_prio ) {
-    SEQ_LCD_CursorSet(32, 0);
-    mios32_sys_time_t t = MIOS32_SYS_TimeGet();
-    int hours = (t.seconds / 3600) % 24;
-    int minutes = (t.seconds % 3600) / 60;
-    int seconds = (t.seconds % 3600) % 60;
-    SEQ_LCD_PrintFormattedString("%02d:%02d:%02d", hours, minutes, seconds);
+    ///////////////////////////////////////////////////////////////////////////
+    // Print Sequencer Position
+    SEQ_LCD_CursorSet(24, 0);
+
+    u32 tick = SEQ_BPM_TickGet();
+    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+    u32 ticks_per_measure = ticks_per_step * seq_core_steps_per_measure;
+    u32 measure = (tick / ticks_per_measure) + 1;
+    u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
+    u32 microstep = tick % ticks_per_step;
+    SEQ_LCD_PrintFormattedString("%8u.%3d.%3d", measure, step, microstep);
     return 0;
   }
 
@@ -147,14 +155,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_OF_ITEMS);
-
-  if( menu_view_offset == 0 && menu_selected_item == 0 )
-    SEQ_LCD_PrintChar(0x01); // right arrow
-  else if( (menu_view_offset+menu_selected_item+1) >= SEQ_UI_NUM_MENU_PAGES )
-    SEQ_LCD_PrintChar(0x00); // left arrow
-  else
-    SEQ_LCD_PrintChar(0x02); // left/right arrow
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, SEQ_UI_NUM_MENU_PAGES, NUM_OF_ITEMS, menu_selected_item, menu_view_offset);
 
   return 0; // no error
 }
@@ -197,7 +198,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void)
 {
   int item;
 
-  for(item=0; item<NUM_OF_ITEMS && item<SEQ_UI_NUM_MENU_PAGES; ++item) {
+  for(item=0; item<NUM_OF_ITEMS && (item+menu_view_offset)<SEQ_UI_NUM_MENU_PAGES; ++item) {
     int i;
 
     char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];

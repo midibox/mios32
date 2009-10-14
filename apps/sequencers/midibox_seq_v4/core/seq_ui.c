@@ -2084,7 +2084,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
     for(track_ix=0; track_ix<(NUM_BLM_LED_SRS/2); ++track_ix) {
       u16 pos_marker_mask = 0x0000;
       if( sequencer_running ) {
-	u8 track = ui_selected_group + track_ix;
+	u8 track = 4*ui_selected_group + track_ix;
 	u8 played_step = seq_core_trk[track].step;
 	if( (played_step >> 4) == ui_selected_step_view )
 	  pos_marker_mask = 1 << (played_step & 0xf);

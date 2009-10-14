@@ -55,8 +55,12 @@
 // recommented: "backup/"
 // backup subdirs (backup/1, backup/2, backup/3, ..." have to be manually
 // created, since DosFS doesn't support the creation of new dirs
-
 #define SEQ_FILE_BACKUP_PATH "backup/"
+
+
+// in which subdirectory of the SD card are SysEx dumps located?
+#define SEQ_FILE_SYSEX_PATH "sysex/"
+
 
 
 // allows to enable malloc instead of static allocation of write buffer
@@ -1217,3 +1221,177 @@ s32 SEQ_FILE_CreateBackup(void)
 #endif
   return SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function searches for directories under sysex/ and copies the names
+// into a list (used by seq_ui_sysex.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_GetSysExDirs(char *dir_list, u8 num_of_items, u8 dir_offset)
+{
+  s32 status = 0;
+  DIRINFO di;
+  DIRENT de;
+  FILEINFO fi;
+
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_GetSysExDirs] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  di.scratch = sector;
+  if( DFS_OpenDir(&vi, SEQ_FILE_SYSEX_PATH, &di) ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_GetSysExDirs] ERROR: opening %s directory - please create it!\n", SEQ_FILE_BACKUP_PATH);
+#endif
+    status = SEQ_FILE_ERR_NO_SYSEX_DIR;
+  }
+
+  int num_dirs = 0;
+  while( status == 0 && !DFS_GetNext(&vi, &di, &de) ) {
+    if( de.name[0] && de.name[0] != '.' && (de.attr & ATTR_DIRECTORY) && !(de.attr & ATTR_HIDDEN) ) {
+      ++num_dirs;
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+      u8 file_name[13];
+      DFS_DirToCanonical(file_name, de.name);
+      DEBUG_MSG("--> %s\n", file_name);
+#endif
+
+      if( num_dirs >= dir_offset && num_dirs <= (dir_offset+num_of_items) ) {
+	int item_pos = 9 * (num_dirs-1-dir_offset);
+	memcpy((char *)&dir_list[item_pos], (char *)&de.name[0], 8);
+	dir_list[item_pos+8] = ' ';
+      }
+    }
+  }
+
+  return (status < 0) ? status : num_dirs;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function searches for .syx files under sysex/<dir_name> and copies 
+// the names into a list (used by seq_ui_sysex.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_GetSysExDumps(char *dir_list, u8 num_of_items, u8 dir_offset, char *dir_name)
+{
+  s32 status = 0;
+  DIRINFO di;
+  DIRENT de;
+  FILEINFO fi;
+
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_GetSysExDumps] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  di.scratch = sector;
+  char path[25];
+  sprintf(path, "%s%s/", SEQ_FILE_SYSEX_PATH, dir_name);
+  if( DFS_OpenDir(&vi, path, &di) ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_GetSysExDumps] ERROR: opening %s directory - please create it!\n", path);
+#endif
+    status = SEQ_FILE_ERR_NO_SYSEX_DEV_DIR;
+  }
+
+  int num_files = 0;
+  while( status == 0 && !DFS_GetNext(&vi, &di, &de) ) {
+    if( de.name[0] && de.name[0] != '.' && 
+	(de.name[8] == 'S' || de.name[8] == 's') &&
+	(de.name[9] == 'Y' || de.name[9] == 'y') &&
+	(de.name[10] == 'X' || de.name[10] == 'x') &&
+	!(de.attr & ATTR_DIRECTORY) && !(de.attr & ATTR_HIDDEN) ) {
+      ++num_files;
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+      u8 file_name[13];
+      DFS_DirToCanonical(file_name, de.name);
+      DEBUG_MSG("--> %s\n", file_name);
+#endif
+
+      if( num_files >= dir_offset && num_files <= (dir_offset+num_of_items) ) {
+	int item_pos = 9 * (num_files-1-dir_offset);
+	memcpy((char *)&dir_list[item_pos], (char *)&de.name[0], 8);
+	dir_list[item_pos+8] = ' ';
+      }
+    }
+  }
+
+  return (status < 0) ? status : num_files;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a .syx file from sysex/<dir_name>
+// (currently only used by seq_ui_sysex.c, API might change in future)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_SendSyxDump(mios32_midi_port_t port, char *dir_name, char *syx_file)
+{
+  s32 status = 0;
+  FILEINFO fi;
+
+  char filepath[MAX_PATH];
+  sprintf(filepath, "%s%s/%s.syx", SEQ_FILE_SYSEX_PATH, dir_name, syx_file);
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ_FILE_SendSyxDump] Open config file '%s'\n", filepath);
+#endif
+
+  if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_SendSyxDump] failed to open file, status: %d\n", status);
+#endif
+    return status;
+  }
+
+  // change to file header
+  if( (status=SEQ_FILE_Seek(&fi, 0)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_SendSyxDump] failed to change offset in file, status: %d\n", status);
+#endif
+    return SEQ_FILE_ERR_SYSEX_READ;
+  }
+
+  // stream SysEx to MIDI port
+  u32 successcount;
+  u32 num_bytes = 0;
+  u8 buffer[10];
+  do {
+    if( seq_file_dfs_errno = DFS_ReadFile(&fi, sector, write_buffer, &successcount, SECTOR_SIZE) ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", fi_src.pointer, seq_file_dfs_errno);
+#endif
+      successcount = 0;
+      status = SEQ_FILE_ERR_SYSEX_READ;
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      MIOS32_MIDI_SendDebugHexDump(write_buffer, successcount);
+#endif
+      MIOS32_MIDI_SendSysEx(port, write_buffer, successcount);
+      num_bytes += successcount;
+    }
+  } while( status == 0 && successcount > 0 );
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ_FILE_SendSyxDump] sent %d bytes!\n", num_bytes);
+#endif
+
+  // close file
+  status |= SEQ_FILE_ReadClose(&fi);
+
+  if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_SendSyxDump] ERROR while reading file, status: %d\n", status);
+#endif
+    return SEQ_FILE_ERR_SYSEX_READ;
+  }
+
+  return num_bytes;
+}
+
