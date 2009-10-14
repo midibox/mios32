@@ -485,13 +485,21 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  sprintf(str_buffer, "|%3d|%s|", i, SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(SEQ_MIXER_Get(i, SEQ_MIXER_PAR_PORT))));
 
 	  int par;
-	  for(par=1; par<16; ++par) {
+
+	  for(par=1; par<2; ++par)
+	    sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", SEQ_MIXER_Get(i, par)+1);
+
+	  for(par=2; par<12; ++par) {
 	    u8 value = SEQ_MIXER_Get(i, par);
 	    if( value )
 	      sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", value-1);
 	    else
 	      sprintf((char *)(str_buffer + strlen(str_buffer)), " - |");
 	  }
+
+	  for(par=12; par<16; ++par)
+	    sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", SEQ_MIXER_Get(i, par));
+
 	  DEBUG_MSG("%s\n", str_buffer);
 	}
 
