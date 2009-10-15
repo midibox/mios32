@@ -211,6 +211,8 @@ extern s32 SEQ_CORE_Scrub(s32 incrementer);
 extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
 
+extern u8 seq_core_step_update_req;
+
 extern u8 seq_core_global_scale;
 extern u8 seq_core_global_scale_ctrl;
 extern u8 seq_core_global_scale_root_selection;

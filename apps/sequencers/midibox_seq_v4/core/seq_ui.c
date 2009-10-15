@@ -2051,9 +2051,16 @@ s32 SEQ_UI_LED_Handler_Periodic()
       pos_marker_mask = 1 << (played_step & 0xf);
   }
 
+#if 0
   // exit of pattern hasn't changed
   if( prev_ui_gp_leds == ui_gp_leds && prev_pos_marker_mask == pos_marker_mask )
     return 0;
+#else
+  if( !seq_core_step_update_req )
+    return 0;
+  seq_core_step_update_req = 0;
+#endif
+
   prev_ui_gp_leds = ui_gp_leds;
   prev_pos_marker_mask = pos_marker_mask;
 
