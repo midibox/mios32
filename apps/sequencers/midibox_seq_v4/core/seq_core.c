@@ -77,6 +77,8 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
 
+u8 seq_core_step_update_req;
+
 u8 seq_core_global_scale;
 u8 seq_core_global_scale_ctrl;
 u8 seq_core_global_scale_root;
@@ -147,6 +149,8 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_glb_loop_mode = SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW;
   seq_core_glb_loop_offset = 0;
   seq_core_glb_loop_steps = 16-1;
+
+  seq_core_step_update_req = 0;
 
   // set initial seed of random generator
   SEQ_RANDOM_Gen(0xdeadbabe);
@@ -562,7 +566,6 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 	      if( new_step > tcc->length )
 		new_step = step_offset;
 	      t->step = new_step;
-
 	    }
 	  }
 
@@ -575,6 +578,9 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
 
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
+
+	  // inform UI about a new step (UI will clear this variable)
+	  seq_core_step_update_req = 1;
         }
 
         // solo function: don't play MIDI event if track not selected
