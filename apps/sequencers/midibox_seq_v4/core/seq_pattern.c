@@ -38,7 +38,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -136,14 +136,18 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
     seq_pattern_req[group] = pattern;
     portEXIT_CRITICAL();
 
-    // pregenerate bpm ticks
-    // (won't be generated again if there is already an ongoing request)
-    MUTEX_MIDIOUT_TAKE;
-    if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
-      // resume low-prio pattern handler
-      SEQ_TASK_PatternResume();
+    if( seq_core_options.SYNCHED_PATTERN_CHANGE && !SEQ_SONG_ActiveGet() ) {
+      // done in SEQ_CORE_Tick() when last step reached
+    } else {
+      // pregenerate bpm ticks
+      // (won't be generated again if there is already an ongoing request)
+      MUTEX_MIDIOUT_TAKE;
+      if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
+	// resume low-prio pattern handler
+	SEQ_TASK_PatternResume();
+      }
+      MUTEX_MIDIOUT_GIVE;
     }
-    MUTEX_MIDIOUT_GIVE;
   }
 
   return 0; // no error
@@ -220,8 +224,7 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   SEQ_UI_INFO_StopwatchReset();
 #endif
 
-  if( (status=SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group)) < 0 )
-    SEQ_UI_SDCardErrMsg(2000, status);
+  status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group);
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   SEQ_UI_INFO_StopwatchCapture();

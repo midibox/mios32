@@ -179,7 +179,7 @@ extern s32 SEQ_UI_InstallEncoderCallback(void *callback);
 extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 extern s32 SEQ_UI_InstallExitCallback(void *callback);
-extern s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 ctr, char *msg);
+extern s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
 extern s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback);
 
 extern s32 SEQ_UI_LCD_Update(void);
@@ -199,6 +199,10 @@ extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);
 
 extern s32 SEQ_UI_SelectListItem(s32 incrementer, u8 num_items, u8 max_items_on_screen, u8 *selected_item_on_screen, u8 *view_offset);
+
+extern s32 SEQ_UI_KeyPad_Init(void);
+extern s32 SEQ_UI_KeyPad_Handler(seq_ui_encoder_t encoder, s32 incrementer, char *edit_str, u8 len);
+extern s32 SEQ_UI_KeyPad_LCD_Msg(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -229,6 +233,7 @@ extern s32 SEQ_UI_SONG_Paste(void);
 extern s32 SEQ_UI_SONG_Clear(void);
 extern s32 SEQ_UI_SONG_Insert(void);
 extern s32 SEQ_UI_SONG_Delete(void);
+extern s32 SEQ_UI_SONG_EditPosSet(u8 new_edit_pos);
 
 extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 

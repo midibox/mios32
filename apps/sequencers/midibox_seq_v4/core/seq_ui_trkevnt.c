@@ -57,15 +57,6 @@
 #define ITEM_DRUM_VEL_A     10
 
 
-#define NUM_OF_ITEMS_EDIT_MODE 11
-#define ITEM_EDIT_CHAR     5
-#define ITEM_EDIT_CURSOR   6
-#define ITEM_EDIT_INS      7
-#define ITEM_EDIT_CLR      8
-#define ITEM_EDIT_PRESET_CATEG  9
-#define ITEM_EDIT_PRESET_LABEL  10
-
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -97,6 +88,8 @@ static u8 edit_label_mode;
 
 static u8 selected_layer_config;
 static u8 selected_layer_config_track;
+
+static u8 edit_cc_number;
 
 static const layer_config_t layer_config[] = {
   //      mode           par_layers  par_steps  trg_layers  trg_steps  instruments
@@ -132,19 +125,7 @@ static s32 LED_Handler(u16 *gp_leds)
   }
 
   if( edit_label_mode ) {
-    switch( ui_selected_item ) {
-      case ITEM_GXTY: *gp_leds = 0x0001; break;
-      case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
-      case ITEM_MIDI_PORT: *gp_leds = 0x0020; break;
-      case ITEM_MIDI_CHANNEL: *gp_leds = 0x0040; break;
-      case ITEM_EDIT_NAME: *gp_leds = 0x0080; break;
-      case ITEM_EDIT_CHAR:     *gp_leds = 0x0100; break;
-      case ITEM_EDIT_CURSOR:   *gp_leds = 0x0200; break;
-      case ITEM_EDIT_INS:      *gp_leds = 0x0400; break;
-      case ITEM_EDIT_CLR:      *gp_leds = 0x0800; break;
-      case ITEM_EDIT_PRESET_CATEG:  *gp_leds = 0x4000; break;
-      case ITEM_EDIT_PRESET_LABEL:  *gp_leds = 0x8000; break;
-    }
+    *gp_leds = 0;
   } else if( layer_config[selected_layer_config].event_mode == SEQ_EVENT_MODE_Drum ) {
     switch( ui_selected_item ) {
       case ITEM_GXTY: *gp_leds = 0x0001; break;
@@ -172,10 +153,6 @@ static s32 LED_Handler(u16 *gp_leds)
     }
   }
 
-  // always flash "edit track" LED if name is edited
-  if( edit_label_mode )
-    *gp_leds |= 0x0080;
-
   return 0; // no error
 }
 
@@ -192,66 +169,123 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   u8 event_mode = layer_config[selected_layer_config].event_mode;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
+  if( edit_label_mode && encoder <= SEQ_UI_ENCODER_GP16 ) {
+    switch( encoder ) {
+      case SEQ_UI_ENCODER_GP15: { // select preset
+	int pos;
+
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_drum, 0, SEQ_LABEL_NumPresetsDrum()-1, incrementer) ) {
+	    SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument]);
+	    for(pos=4, ui_edit_name_cursor=pos; pos>=0; --pos)
+	      if( seq_core_trk[visible_track].name[5*ui_selected_instrument + pos] == ' ' )
+		ui_edit_name_cursor = pos;
+	      else
+		break;
+	    return 1;
+	  }
+	  return 0;
+	} else {
+	  if( ui_edit_name_cursor < 5 ) { // select category preset
+	    if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
+	      SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&seq_core_trk[visible_track].name[0]);
+	      for(pos=4, ui_edit_name_cursor=pos; pos>=0; --pos)
+		if( seq_core_trk[visible_track].name[pos] == ' ' )
+		  ui_edit_name_cursor = pos;
+		else
+		  break;
+	      return 1;
+	    }
+	    return 0;
+	  } else { // select label preset
+	    if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, SEQ_LABEL_NumPresets()-1, incrementer) ) {
+	      SEQ_LABEL_CopyPreset(ui_edit_preset_num_label, (char *)&seq_core_trk[visible_track].name[5]);
+	      for(pos=19, ui_edit_name_cursor=pos; pos>=5; --pos)
+		if( seq_core_trk[visible_track].name[pos] == ' ' )
+		  ui_edit_name_cursor = pos;
+		else
+		  break;
+	      return 1;
+	    }
+	    return 0;
+	  }
+	}
+      } break;
+
+      case SEQ_UI_ENCODER_GP16: { // exit keypad editor
+	// exit keypad editor
+	edit_label_mode = 0;
+	return 1;
+      } break;
+    }
+
+    if( event_mode == SEQ_EVENT_MODE_Drum )
+      return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&seq_core_trk[visible_track].name[ui_selected_instrument*5], 5);
+    else
+      return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&seq_core_trk[visible_track].name, 20);
+  }
+
   if( encoder >= SEQ_UI_ENCODER_GP9 && encoder <= SEQ_UI_ENCODER_GP16 ) {
-    if( edit_label_mode ) {
+    if( selected_layer_config != GetLayerConfig(visible_track) ) {
+      // ENC function disabled so long pattern hasn't been initialized
+      return -1;
+    }
+
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9:
-	  ui_selected_item = ITEM_EDIT_CHAR;
+	  ui_selected_item = ITEM_LAYER_A_SELECT;
 	  break;
 
         case SEQ_UI_ENCODER_GP10:
-	  ui_selected_item = ITEM_EDIT_CURSOR;
+	  ui_selected_item = ITEM_LAYER_B_SELECT;
 	  break;
 
         case SEQ_UI_ENCODER_GP11:
-	  ui_selected_item = ITEM_EDIT_INS;
+	  ui_selected_item = ITEM_DRUM_SELECT;
 	  break;
 
         case SEQ_UI_ENCODER_GP12:
-	  ui_selected_item = ITEM_EDIT_CLR;
+	  ui_selected_item = ITEM_DRUM_NOTE;
 	  break;
 
         case SEQ_UI_ENCODER_GP13:
+	  ui_selected_item = ITEM_DRUM_VEL_N;
+	  break;
+
         case SEQ_UI_ENCODER_GP14:
-	  return -1; // not mapped
+	  ui_selected_item = ITEM_DRUM_VEL_A;
+	  break;
 
         case SEQ_UI_ENCODER_GP15:
-	  ui_selected_item = ITEM_EDIT_PRESET_CATEG;
-	  break;
-
         case SEQ_UI_ENCODER_GP16:
-	  ui_selected_item = ITEM_EDIT_PRESET_LABEL;
-	  break;
+	  return -1; // not mapped to encoder
       }
     } else {
-      if( selected_layer_config != GetLayerConfig(visible_track) ) {
-	// no ENC function available
-	return -1;
-      }
-
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_A_SELECT : ITEM_LAYER_SELECT;
+	  ui_selected_item = ITEM_LAYER_SELECT;
 	  break;
 
         case SEQ_UI_ENCODER_GP10:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_B_SELECT : ITEM_LAYER_CONTROL;
+	  ui_selected_item = ITEM_LAYER_CONTROL;
 	  break;
 
         case SEQ_UI_ENCODER_GP11:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_SELECT : ITEM_LAYER_PAR;
-	  break;
-
         case SEQ_UI_ENCODER_GP12:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_NOTE : ITEM_LAYER_PAR;
-	  break;
-
         case SEQ_UI_ENCODER_GP13:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_N : ITEM_LAYER_PAR;
-	  break;
-
         case SEQ_UI_ENCODER_GP14:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_A : ITEM_LAYER_PAR;
+	  // CC number selection now has to be confirmed with GP button
+	  if( ui_selected_item != ITEM_LAYER_PAR ) {
+	    edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+	    ui_selected_item = ITEM_LAYER_PAR;
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
+	  } else if( incrementer == 0 ) {
+	    if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
+	      SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
+	      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+	    }
+	  }
 	  break;
 
         case SEQ_UI_ENCODER_GP15:
@@ -290,7 +324,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
+    case ITEM_GXTY: return SEQ_UI_GxTyInc(incrementer);
     case ITEM_EVENT_MODE: {
       u8 max_layer_config = (sizeof(layer_config)/sizeof(layer_config_t)) - 1;
       return SEQ_UI_Var8_Inc(&selected_layer_config, 0, max_layer_config, incrementer);
@@ -307,97 +341,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // value not changed
     } break;
 
-    case ITEM_MIDI_CHANNEL:  return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
+    case ITEM_MIDI_CHANNEL: return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
 
-    case ITEM_EDIT_NAME: return SEQ_UI_Var8_Inc(&edit_label_mode, 0, 1, incrementer);
+    case ITEM_EDIT_NAME:
+      // switch to keypad editor
+      ui_selected_item = ITEM_EDIT_NAME;
+      edit_label_mode = 1;
+      SEQ_UI_KeyPad_Init();
+      return 1;
   }
 
-  if( edit_label_mode ) {
-    switch( ui_selected_item ) {
-    case ITEM_EDIT_CHAR:
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_selected_instrument*5 + (ui_edit_name_cursor % 5)], 32, 127, incrementer);
-      } else {
-	return SEQ_UI_Var8_Inc((u8 *)&seq_core_trk[visible_track].name[ui_edit_name_cursor], 32, 127, incrementer);
-      }
-
-    case ITEM_EDIT_CURSOR:
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 5-1, incrementer);
-      } else {
-	return SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, 20-1, incrementer);
-      }
-
-    case ITEM_EDIT_INS: {
-      int i;
-      int field_start, field_end;
-
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	field_start = 5*ui_selected_instrument + (ui_edit_name_cursor % 5);
-	field_end = 5*ui_selected_instrument + 4;
-      } else {
-	field_start = ui_edit_name_cursor;
-	field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
-      }
-
-      for(i=field_end; i>field_start; --i) {
-	seq_core_trk[visible_track].name[i] = seq_core_trk[visible_track].name[i-1];
-      }
-      seq_core_trk[visible_track].name[field_start] = ' ';
-      return 1;
-    } break;
-
-    case ITEM_EDIT_CLR: {
-      int i;
-      int field_start, field_end;
-
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	field_start = 5*ui_selected_instrument + (ui_edit_name_cursor % 5);
-	field_end = 5*ui_selected_instrument + 4;
-      } else {
-	field_start = ui_edit_name_cursor;
-	field_end = (ui_edit_name_cursor < 5) ? 4 : 19;
-      }
-
-      for(i=field_start; i<field_end; ++i) {
-	seq_core_trk[visible_track].name[i] = seq_core_trk[visible_track].name[i+1];
-      }
-      seq_core_trk[visible_track].name[field_end] = ' ';
-      return 1;
-    } break;
-
-    case ITEM_EDIT_PRESET_CATEG:
-      if( ui_edit_name_cursor >= 5 ) // set cursor to category field if required (more intuitive usage)
-	ui_edit_name_cursor = 0;
-
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_drum, 0, SEQ_LABEL_NumPresetsDrum()-1, incrementer) ) {
-	  SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument]);
-	  return 1;
-	}
-      } else {
-	if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
-	  SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&seq_core_trk[visible_track].name[0]);
-	  return 1;
-	}
-      }
-      return 0;
-
-    case ITEM_EDIT_PRESET_LABEL:
-      if( event_mode == SEQ_EVENT_MODE_Drum )
-	return 0; // no function in drum mode
-
-      if( ui_edit_name_cursor < 5 ) // set cursor to category field if required (more intuitive usage)
-	ui_edit_name_cursor = 5;
-
-      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, SEQ_LABEL_NumPresets()-1, incrementer) ) {
-	SEQ_LABEL_CopyPreset(ui_edit_preset_num_label, (char *)&seq_core_trk[visible_track].name[5]);
-	return 1;
-      }
-      return 0;
-
-    }
-  } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
     switch( ui_selected_item ) {
       case ITEM_DRUM_SELECT: {
         u8 num_drums = layer_config[selected_layer_config].instruments;
@@ -424,7 +378,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   } else {
     switch( ui_selected_item ) {
       case ITEM_LAYER_SELECT:  return SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, 15, incrementer);
-      case ITEM_LAYER_PAR:     return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, 0, 127, incrementer);
+      case ITEM_LAYER_PAR:
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, 0, 127, incrementer);
+	} else {
+	  // CC number selection now has to be confirmed with GP button
+	  return SEQ_UI_Var8_Inc(&edit_cc_number, 0, 127, incrementer);
+	}
+
       case ITEM_LAYER_CONTROL: {
 	// TODO: has to be done for all selected tracks
 	if( SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
@@ -451,111 +412,28 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = layer_config[selected_layer_config].event_mode;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
-  if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 ) {
+  if( button == SEQ_UI_BUTTON_GP16 ) {
     if( edit_label_mode ) {
-      switch( button ) {
-        case SEQ_UI_BUTTON_GP9:
-	  ui_selected_item = ITEM_EDIT_CHAR;
-	  break;
-
-        case SEQ_UI_BUTTON_GP10:
-	  ui_selected_item = ITEM_EDIT_CURSOR;
-	  break;
-
-        case SEQ_UI_BUTTON_GP11:
-	  return Encoder_Handler(SEQ_UI_ENCODER_GP11, 1);
-
-        case SEQ_UI_BUTTON_GP12:
-	  return Encoder_Handler(SEQ_UI_ENCODER_GP12, 1);
-
-        case SEQ_UI_BUTTON_GP13:
-        case SEQ_UI_BUTTON_GP14:
-	  return -1; // not mapped
-
-        case SEQ_UI_BUTTON_GP15:
-	  ui_selected_item = ITEM_EDIT_PRESET_CATEG;
-	  break;
-
-        case SEQ_UI_BUTTON_GP16:
-	  ui_selected_item = ITEM_EDIT_PRESET_LABEL;
-	  break;
-      }
+      // exit keypad editor
+      edit_label_mode = 0;
     } else {
-      if( selected_layer_config != GetLayerConfig(visible_track) ) {
-	// uninitialized track: only GP16 available
-	if( button != SEQ_UI_BUTTON_GP16 )
-	  return -1;
-      }
-
-      switch( button ) {
-        case SEQ_UI_BUTTON_GP9:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_A_SELECT : ITEM_LAYER_SELECT;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP10:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_LAYER_B_SELECT : ITEM_LAYER_CONTROL;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP11:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_SELECT : ITEM_LAYER_CONTROL;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP12:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_NOTE : ITEM_LAYER_CONTROL;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP13:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_N : ITEM_LAYER_CONTROL;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP14:
-	  ui_selected_item = (event_mode == SEQ_EVENT_MODE_Drum) ? ITEM_DRUM_VEL_A : ITEM_LAYER_CONTROL;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP15:
-	  return -1; // not mapped
-
-        case SEQ_UI_BUTTON_GP16:
-	  // ui_selected_item = ITEM_PRESET;
-	  // TODO: copy preset for all selected tracks!
-	  CopyPreset(visible_track, selected_layer_config);
-	  return 1; // value has been changed
-      }
+      // TODO: copy preset for all selected tracks!
+      CopyPreset(visible_track, selected_layer_config);
     }
+    return 1; // value has been changed
   }
 
+  if( button <= SEQ_UI_BUTTON_GP15 )
+    return Encoder_Handler((seq_ui_encoder_t)button, 0);
+
   switch( button ) {
-    case SEQ_UI_BUTTON_GP1:
-      ui_selected_item = ITEM_GXTY;
-      return 1;
-
-    case SEQ_UI_BUTTON_GP2:
-    case SEQ_UI_BUTTON_GP3:
-    case SEQ_UI_BUTTON_GP4:
-    case SEQ_UI_BUTTON_GP5:
-      ui_selected_item = ITEM_EVENT_MODE;
-      return 1;
-
-    case SEQ_UI_BUTTON_GP6:
-      ui_selected_item = ITEM_MIDI_PORT;
-      return 1;
-
-    case SEQ_UI_BUTTON_GP7:
-      ui_selected_item = ITEM_MIDI_CHANNEL;
-      return 1;
-
-    case SEQ_UI_BUTTON_GP8:
-      // toggle "edit name" mode
-      return Encoder_Handler((seq_ui_encoder_t)button, edit_label_mode ? -1 : 1);
-
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
       if( edit_label_mode ) {
-	if( ++ui_selected_item >= NUM_OF_ITEMS_EDIT_MODE )
-	  ui_selected_item = 0;
+	// ignore
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	if( ++ui_selected_item >= NUM_OF_ITEMS_DRUM )
 	  ui_selected_item = 0;
@@ -568,8 +446,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_Left:
       if( edit_label_mode ) {
-	if( ui_selected_item == 0 )
-	  ui_selected_item = NUM_OF_ITEMS_EDIT_MODE-1;
+	// ignore
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	if( ui_selected_item == 0 )
 	  ui_selected_item = NUM_OF_ITEMS_DRUM-1;
@@ -667,15 +544,15 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type Steps/ParL/TrgL Port Chn. EditCategory: xxxxx   Label: xxxxxxxxxxxxxxx
-  // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr    Preset Cat./Label
+  // Please enter Track Category for G1T1    <xxxxx-xxxxxxxxxxxxxxx>                 
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9  0-?  Char <>  Del Ins Preset DONE
 
   // "Edit Drum Name" layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type Steps/ParL/TrgL Port Chn. EditDrum Label: xxxxx                        
-  // G1T1 Note  256   4     8  IIC2  12  NameChar  Cur  Ins  Clr    Preset Label     
+  // Please enter Drum Label for G1T1- 1:C-1 <xxxxx>                                 
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 0-?"  Char <>  Del Ins Preset DONE
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -687,6 +564,64 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 event_mode = layer_config[selected_layer_config].event_mode;
 
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( edit_label_mode ) {
+    int i;
+
+    SEQ_LCD_CursorSet(0, 0);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintString("Please enter Drum Label for ");
+      SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+      SEQ_LCD_PrintFormattedString("-%2d:", ui_selected_instrument + 1);
+      SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
+      SEQ_LCD_PrintSpaces(1);
+
+      SEQ_LCD_PrintChar('<');
+      for(i=0; i<5; ++i)
+	SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[5*ui_selected_instrument + i]);
+      SEQ_LCD_PrintChar('>');
+      SEQ_LCD_PrintSpaces(33);
+
+      // insert flashing cursor
+      if( ui_cursor_flash ) {
+	if( ui_edit_name_cursor >= 5 ) // correct cursor position if it is outside the 5 char label space
+	  ui_edit_name_cursor = 0;
+	SEQ_LCD_CursorSet(41 + ui_edit_name_cursor, 0);
+	SEQ_LCD_PrintChar('*');
+      }
+    } else {
+      if( ui_edit_name_cursor < 5 ) {
+	SEQ_LCD_PrintString("Please enter Track Category for ");
+	SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintString("Please enter Track Label for ");
+	SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+	SEQ_LCD_PrintSpaces(7);
+      }
+      SEQ_LCD_PrintChar('<');
+      for(i=0; i<5; ++i)
+	SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[i]);
+      SEQ_LCD_PrintChar('-');
+      for(i=5; i<20; ++i)
+	SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[i]);
+      SEQ_LCD_PrintChar('>');
+      SEQ_LCD_PrintSpaces(17);
+    }
+
+
+    // insert flashing cursor
+    if( ui_cursor_flash ) {
+      SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 1 : 2) + ui_edit_name_cursor, 0);
+      SEQ_LCD_PrintChar('*');
+    }
+
+    SEQ_UI_KeyPad_LCD_Msg();
+    SEQ_LCD_PrintString("Preset DONE");
+
+    return 0;
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -701,33 +636,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("Edit");
   }
 
-  if( edit_label_mode ) {
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      SEQ_LCD_PrintString("Drum Label: ");
-      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, seq_core_trk[visible_track].name);
-      SEQ_LCD_PrintSpaces(23);
-
-      // insert flashing cursor
-      if( ui_cursor_flash ) {
-	if( ui_edit_name_cursor >= 5 ) // correct cursor position if it is outside the 5 char label space
-	  ui_edit_name_cursor = 0;
-	SEQ_LCD_CursorSet(52 + ui_edit_name_cursor, 0);
-	SEQ_LCD_PrintChar('*');
-      }
-    } else {
-      SEQ_LCD_PrintString("Category: ");
-      SEQ_LCD_PrintTrackCategory(visible_track, seq_core_trk[visible_track].name);
-      SEQ_LCD_PrintString("   Label: ");
-      SEQ_LCD_PrintTrackLabel(visible_track, seq_core_trk[visible_track].name);
-
-      // insert flashing cursor
-      if( ui_cursor_flash ) {
-	SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 10 : 20) + ui_edit_name_cursor, 0);
-	SEQ_LCD_PrintChar('*');
-      }
-    }
-
-  } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
+  if( selected_layer_config != GetLayerConfig(visible_track) ) {
     SEQ_LCD_PrintString("    Please initialize the track         ");
   } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
     SEQ_LCD_PrintString("LayA ");
@@ -801,14 +710,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( edit_label_mode ) {
-    if( event_mode == SEQ_EVENT_MODE_Drum )
-      SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Label     ");
-    else
-      SEQ_LCD_PrintString("Char  Cur  Ins  Clr    Preset Cat./Label");
-
-  ///////////////////////////////////////////////////////////////////////////
-  } else if( selected_layer_config != GetLayerConfig(visible_track) ) {
+  if( selected_layer_config != GetLayerConfig(visible_track) ) {
     SEQ_LCD_PrintString(" ---------------------------------> ");
     if( (ui_cursor_flash_overrun_ctr & 1) ) {
       SEQ_LCD_PrintSpaces(4);
@@ -893,8 +795,12 @@ static s32 LCD_Handler(u8 high_prio)
       switch( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) ) {
         case SEQ_PAR_Type_CC: {
 	  mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-	  u8 cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
-	  SEQ_LCD_PrintFormattedString("%03d (%s)     ", cc_number, SEQ_CC_LABELS_Get(port, cc_number));
+	  u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+	  u8 edit_value = ui_selected_item == ITEM_LAYER_PAR ? edit_cc_number : current_value;
+	  SEQ_LCD_PrintFormattedString("%03d%c(%s)     ", 
+				       edit_value,
+				       (current_value != edit_value) ? '!' : ' ',
+				       SEQ_CC_LABELS_Get(port, edit_value));
 	} break;
         default:
 	  SEQ_LCD_PrintSpaces(19);

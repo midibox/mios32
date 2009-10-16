@@ -36,8 +36,8 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void BackupReq(void);
-static void FormatReq(void);
+static void BackupReq(u32 dummy);
+static void FormatReq(u32 dummy);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -143,8 +143,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP8 ) {
 	if( depressed )
 	  SEQ_UI_UnInstallDelayedActionCallback(FormatReq);
-	else
-	  SEQ_UI_InstallDelayedActionCallback(FormatReq, 5000, "to FORMAT Files!");
+	else {
+	  SEQ_UI_InstallDelayedActionCallback(FormatReq, 5000, 0);
+	  SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 5001, "", "to FORMAT Files!");
+	}
 	return 1;
       }
     } else {
@@ -152,8 +154,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( button == SEQ_UI_BUTTON_GP1 || button == SEQ_UI_BUTTON_GP2 ) {
 	if( depressed )
 	  SEQ_UI_UnInstallDelayedActionCallback(BackupReq);
-	else
-	  SEQ_UI_InstallDelayedActionCallback(BackupReq, 2000, "to start Backup");
+	else {
+	  SEQ_UI_InstallDelayedActionCallback(BackupReq, 2000, 0);
+	  SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to start Backup");
+	}
 	return 1;
       }
     }
@@ -301,7 +305,7 @@ s32 SEQ_UI_DISK_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // help function for Backup Request
 /////////////////////////////////////////////////////////////////////////////
-static void BackupReq(void)
+static void BackupReq(u32 dummy)
 {
   // backup handled by low-priority task in app.c
   // messages print in seq_ui.c so long request is active
@@ -311,7 +315,7 @@ static void BackupReq(void)
 /////////////////////////////////////////////////////////////////////////////
 // help function for Format Request
 /////////////////////////////////////////////////////////////////////////////
-void FormatReq(void)
+void FormatReq(u32 dummy)
 {
   // formatting handled by low-priority task in app.c
   // messages print in seq_ui.c so long request is active
