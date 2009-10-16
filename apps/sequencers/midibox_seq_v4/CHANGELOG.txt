@@ -6,6 +6,33 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta7
+~~~~~~~~~~~~~~~~~~~~
+
+  o a new label editor allows to enter track and pattern names so fast and easy
+    like typing a SMS on a mobile phone. Use the first 10 GP buttons or encoders
+    to cycle the characters (like on a telephone keypad), and the remaining
+    buttons/encoders to select a character directly, move the cursor, delete/insert
+    characters, selecting a preset (with the encoder) and to exit the editor.
+
+  o implemented synchronous pattern change after x steps (x=1..256)
+    This function has to be enabled in the UTIL->OPT page.
+    The same number of steps is used for the Synch-to-Measure function.
+
+  o implemented Follow Song mode. It has to be enabled in UTIL->OPT menu.
+
+  o a warning message will be print if Synch-to-Measure is enabled, and a 
+    track length greater than steps per measure is selected.
+
+  o CC number selected in Track Event and LFO Configuration page now has to be
+    confirmed with GP button below the appr. item.
+    A warning message will pop up to notify about this unusual data entry method.
+    In addition, the value will be marked with '!' so long it doesn't match with
+    currently active value.
+
+  o fixed various minor bugs
+
+
 MIDIboxSEQ V4.0beta6
 ~~~~~~~~~~~~~~~~~~~~
 

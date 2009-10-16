@@ -136,9 +136,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  sprintf(buffer, "for %d steps", num_steps);
 
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Track only prepared", buffer);
+	} else if( seq_cc_trk[visible_track].clkdiv.SYNCH_TO_MEASURE && ((int)len > (int)seq_core_steps_per_measure) ) {
+	  char buffer[20];
+	  sprintf(buffer, "active for %d steps", (int)seq_core_steps_per_measure+1);
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Synch-to-Measure is", buffer);
 	}
 
 	SEQ_UI_CC_Set(SEQ_CC_LENGTH, len);
+
 	return 1; // value has been changed
       }
   }
@@ -146,7 +151,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_LENGTH:        return SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, num_steps-1, incrementer);
+    case ITEM_LENGTH: {
+      if( SEQ_UI_CC_Inc(SEQ_CC_LENGTH, 0, num_steps-1, incrementer) >= 1 ) {
+	if( seq_cc_trk[visible_track].clkdiv.SYNCH_TO_MEASURE && 
+	    (int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH) > (int)seq_core_steps_per_measure ) {
+	  char buffer[20];
+	  sprintf(buffer, "active for %d steps", (int)seq_core_steps_per_measure+1);
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Synch-to-Measure is", buffer);
+	}
+	return 1;
+      }
+      return 0;
+    }
     case ITEM_LOOP:          return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, num_steps-1, incrementer);
   }
 

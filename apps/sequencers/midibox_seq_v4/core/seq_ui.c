@@ -107,7 +107,8 @@ static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
 static s32 (*ui_led_callback)(u16 *gp_leds);
 static s32 (*ui_lcd_callback)(u8 high_prio);
 static s32 (*ui_exit_callback)(void);
-static s32 (*ui_delayed_action_callback)(void);
+static s32 (*ui_delayed_action_callback)(u32 parameter);
+static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
@@ -120,6 +121,8 @@ static u16 ui_msg_ctr;
 static seq_ui_msg_type_t ui_msg_type;
 
 static u16 ui_delayed_action_ctr;
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -257,20 +260,26 @@ s32 SEQ_UI_InstallExitCallback(void *callback)
 }
 
 
-s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 ctr, char *msg)
+s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter)
 {
+  // must be atomic
+  MIOS32_IRQ_Disable();
+  ui_delayed_action_parameter = parameter;
   ui_delayed_action_callback = callback;
-  ui_delayed_action_ctr = ctr;
-
-  SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, ctr+1, "", msg);
+  ui_delayed_action_ctr = delay_mS;
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
 
 s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback)
 {
+  // must be atomic
+  MIOS32_IRQ_Disable();
   if( ui_delayed_action_callback == callback )
     ui_delayed_action_callback = 0;
+  MIOS32_IRQ_Enable();
+
   return 0; // no error
 }
 
@@ -704,21 +713,21 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 
 
 // callback function for delayed Clear Mixer function
-static void SEQ_UI_Button_Clear_Mixer(void)
+static void SEQ_UI_Button_Clear_Mixer(u32 dummy)
 {
   SEQ_UI_MIXER_Clear();
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
 }
 
 // callback function for delayed Clear SongPos function
-static void SEQ_UI_Button_Clear_SongPos(void)
+static void SEQ_UI_Button_Clear_SongPos(u32 dummy)
 {
   SEQ_UI_SONG_Clear();
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
 }
 
 // callback function for clear track
-static void SEQ_UI_Button_Clear_Track(void)
+static void SEQ_UI_Button_Clear_Track(u32 dummy)
 {
   SEQ_UI_UTIL_ClearButton(0); // button pressed
   SEQ_UI_UTIL_ClearButton(1); // button depressed
@@ -732,20 +741,26 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer);
-    else
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, 2000, "to clear Mixer Map");
+    else {
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, 2000, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Mixer Map");
+    }
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos);
-    else
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, 2000, "to clear SongPos");
+    else {
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, 2000, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear SongPos");
+    }
     return 1;
   } else {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Track);
-    else
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, 2000, "to clear Track");
+    else {
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, 2000, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Track");
+    }
     return 1;
   }
 }
@@ -2030,9 +2045,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
-  // GP LEDs are only updated when ui_gp_leds or pos_marker_mask has changed
+  // GP LEDs are updated when ui_gp_leds has changed
   static u16 prev_ui_gp_leds = 0x0000;
-  static u16 prev_pos_marker_mask = 0x0000;
 
   // beat LED: tmp. for demo w/o real sequencer
   u8 sequencer_running = SEQ_BPM_IsRunning();
@@ -2051,18 +2065,22 @@ s32 SEQ_UI_LED_Handler_Periodic()
       pos_marker_mask = 1 << (played_step & 0xf);
   }
 
-#if 0
-  // exit of pattern hasn't changed
-  if( prev_ui_gp_leds == ui_gp_leds && prev_pos_marker_mask == pos_marker_mask )
-    return 0;
-#else
-  if( !seq_core_step_update_req )
-    return 0;
-  seq_core_step_update_req = 0;
-#endif
 
-  prev_ui_gp_leds = ui_gp_leds;
-  prev_pos_marker_mask = pos_marker_mask;
+  // don't continue if no new step has been generated and GP LEDs haven't changed
+  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds )
+    return 0;
+  seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
+  prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern
+
+  // follow step position if enabled
+  if( seq_core_options.FOLLOW_SONG ) {
+    u8 trk_step = seq_core_trk[visible_track].step;
+    if( (trk_step & 0xf0) != (16*ui_selected_step_view) ) {
+      ui_selected_step_view = trk_step / 16;
+      ui_selected_step = (ui_selected_step % 16) + 16*ui_selected_step_view;
+      seq_ui_display_update_req = 1;
+    }
+  }
 
   // transfer to GP LEDs
   if( seq_hwcfg_led.gp_dout_l_sr ) {
@@ -2240,8 +2258,14 @@ s32 SEQ_UI_MENU_Handler_Periodic()
     ui_delayed_action_ctr = 0;
   else if( ui_delayed_action_ctr ) {
     if( --ui_delayed_action_ctr == 0 ) {
-      ui_delayed_action_callback();
+      // must be atomic
+      MIOS32_IRQ_Disable();
+      s32 (*_ui_delayed_action_callback)(u32 parameter);
+      _ui_delayed_action_callback = ui_delayed_action_callback;
+      u32 parameter = ui_delayed_action_parameter;
       ui_delayed_action_callback = NULL;
+      MIOS32_IRQ_Enable();
+      _ui_delayed_action_callback(parameter); // note: it's allowed that the delayed action generates a new delayed action
     }
   }
 
@@ -2585,3 +2609,184 @@ s32 SEQ_UI_SelectListItem(s32 incrementer, u8 num_items, u8 max_items_on_screen,
 
   return prev_view_offset != *view_offset;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help functions for the "keypad" editor to edit names
+/////////////////////////////////////////////////////////////////////////////
+
+static const char ui_keypad_charsets_upper[10][6] = {
+  ".,!1~",
+  "ABC2~",
+  "DEF3~",
+  "GHI4~",
+  "JKL5~",
+  "MNO6~",
+  "PQRS7",
+  "TUV8~",
+  "WXYZ9",
+  " 0-?~",
+};
+
+
+static const char ui_keypad_charsets_lower[10][6] = {
+  ".,!1~",
+  "abc2~",
+  "def3~",
+  "ghi4~",
+  "jkl5~",
+  "mno6~",
+  "pqrs7",
+  "tuv8~",
+  "wxyz9",
+  " 0-?~",
+};
+
+static u8 ui_keypad_select_charset_lower;
+
+s32 SEQ_UI_KeyPad_Init(void)
+{
+  ui_keypad_select_charset_lower = 0;
+  ui_edit_name_cursor = 0;
+}
+
+// called by delayed action (after 0.75 second) to increment cursor after keypad entry
+static s32 SEQ_UI_KeyPad_IncCursor(u32 len)
+{
+  if( ++ui_edit_name_cursor >= len )
+    ui_edit_name_cursor = len - 1;
+
+  ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+}
+
+// handles the 16 GP buttons/encoders
+s32 SEQ_UI_KeyPad_Handler(seq_ui_encoder_t encoder, s32 incrementer, char *edit_str, u8 len)
+{
+  char *edit_char = (char *)&edit_str[ui_edit_name_cursor];
+
+  if( encoder <= SEQ_UI_ENCODER_GP10 ) {
+    char *charset = ui_keypad_select_charset_lower
+      ? (char *)&ui_keypad_charsets_lower[encoder]
+      : (char *)&ui_keypad_charsets_upper[encoder];
+
+    int pos;
+    if( incrementer >= 0 ) {
+      for(pos=0; pos<5; ++pos) {
+	if( *edit_char == charset[pos] ) {
+	  ++pos;
+	  break;
+	}
+      }
+
+      if( charset[pos] == '~' || charset[pos] == 0 )
+	pos = 0;
+    } else {
+      for(pos=4; pos>=0; --pos) {
+	if( *edit_char == charset[pos] ) {
+	  --pos;
+	  break;
+	}
+      }
+
+      if( pos == 0 )
+	pos = 4;
+      if( charset[pos] == '~' )
+	pos = 3;
+    }
+
+    // set new char
+    *edit_char = charset[pos];
+
+    if( *edit_char != ' ' )
+      ui_keypad_select_charset_lower = 1;
+
+    // a delayed action increments the cursor
+    SEQ_UI_InstallDelayedActionCallback(SEQ_UI_KeyPad_IncCursor, 750, len);
+
+    return 1;
+  }
+
+  SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_KeyPad_IncCursor);
+
+  switch( encoder ) {
+    case SEQ_UI_ENCODER_GP11: // change character directly with encoder or toggle upper/lower chars with button
+      if( !incrementer ) {
+	ui_keypad_select_charset_lower ^= 1;
+	return 1;
+      }
+      return SEQ_UI_Var8_Inc((u8 *)&edit_str[ui_edit_name_cursor], 32, 127, incrementer);
+
+    case SEQ_UI_ENCODER_GP12: // move cursor
+      if( !incrementer )
+	incrementer = 1;
+
+      if( SEQ_UI_Var8_Inc(&ui_edit_name_cursor, 0, len-1, incrementer) >= 1 ) {
+	edit_char = (char *)&edit_str[ui_edit_name_cursor];
+	if( *edit_char == ' ' || (*edit_char >= 'A' && *edit_char <= 'Z') )
+	  ui_keypad_select_charset_lower = 0;
+	else
+	  ui_keypad_select_charset_lower = 1;
+      }
+      return 0;
+
+    case SEQ_UI_ENCODER_GP13: { // delete previous char
+      if( ui_edit_name_cursor > 0 )
+	--ui_edit_name_cursor;
+
+      int i;
+      int field_start = ui_edit_name_cursor;
+      int field_end = len - 1;
+
+      for(i=field_start; i<field_end; ++i)
+	edit_str[i] = edit_str[i+1];
+      edit_str[field_end] = ' ';
+
+      if( ui_edit_name_cursor == 0 )
+	ui_keypad_select_charset_lower = 0;
+
+      return 1;
+    } break;
+
+    case SEQ_UI_ENCODER_GP14: { // insert char
+      int i;
+      int field_start = ui_edit_name_cursor;
+      int field_end = len - 1;
+
+      for(i=field_end; i>field_start; --i)
+	edit_str[i] = edit_str[i-1];
+      edit_str[field_start] = ' ';
+      return 1;
+    } break;
+  }
+
+  return -1; // unsupported encoder function
+}
+
+
+// to print lower line of keypad editor (only 69 chars, the remaining 11 chars have to be print from caller)
+s32 SEQ_UI_KeyPad_LCD_Msg(void)
+{
+  int i;
+
+  SEQ_LCD_CursorSet(0, 1);
+  for(i=0; i<10; ++i) {
+    char *charset = ui_keypad_select_charset_lower
+      ? (char *)&ui_keypad_charsets_lower[i]
+      : (char *)&ui_keypad_charsets_upper[i];
+
+    if( i == 7 || i == 9 ) // if previous item had 5 chars
+      SEQ_LCD_PrintChar(' ');
+    else if( i == 8 ) // change to right LCD
+      SEQ_LCD_CursorSet(40, 1);
+
+    int pos;
+    for(pos=0; pos<5; ++pos) {
+      SEQ_LCD_PrintChar(charset[pos] == '~' ? ' ' : charset[pos]);
+    }
+  }
+
+  SEQ_LCD_PrintString(" Char <>  Del Ins ");
+  
+  return 0; // no error
+}
+

@@ -53,7 +53,7 @@
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 1
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -893,13 +893,13 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
   if( seq_core_state.MANUAL_TRIGGER_STOP_REQ && (bpm_tick % 96) == 95 )
     SEQ_BPM_Stop();
 
-  // in song mode:
-  // increment song position shortly before we reset the reference step
-  // TODO: implement prefetching until end of step!
-  if( SEQ_SONG_ActiveGet() &&
-      seq_core_state.ref_step == seq_core_steps_per_measure &&
-      (bpm_tick % 96) == 0 ) {
-    SEQ_SONG_NextPos();
+  // reference step reached measure
+  if( seq_core_state.ref_step == seq_core_steps_per_measure && (bpm_tick % 96) == 20 ) {
+    if( SEQ_SONG_ActiveGet() ) {
+      SEQ_SONG_NextPos();
+    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+      SEQ_PATTERN_Handler();
+    }
   }
 
   return 0; // no error

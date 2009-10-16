@@ -364,7 +364,15 @@ s32 SEQ_SONG_NextPos(void)
     ++song_loop_ctr;
   else {
     ++song_pos;
-    return SEQ_SONG_FetchPos();
+
+    SEQ_SONG_FetchPos();
+
+    // correct the song position if follow song mode is active
+    if( seq_core_options.FOLLOW_SONG && SEQ_SONG_ActiveGet() )
+      SEQ_UI_SONG_EditPosSet(song_pos);
+
+    // update display immediately
+    seq_ui_display_update_req = 1;
   }
 
   return 0; // no error

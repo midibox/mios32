@@ -45,6 +45,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+static u8 edit_cc_number;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -143,7 +150,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return -1; // not mapped
 
     case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_CC;
+      // CC number selection now has to be confirmed with GP button
+      if( ui_selected_item != ITEM_CC ) {
+	edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
+	ui_selected_item = ITEM_CC;
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
+      } else if( incrementer == 0 ) {
+	if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC) ) {
+	  SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC, edit_cc_number);
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+	}
+      }
       break;
 
     case SEQ_UI_ENCODER_GP15:
@@ -181,11 +198,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_CC: {
-      s32 status = SEQ_UI_CC_Inc(SEQ_CC_LFO_CC, 0, 127, incrementer);
+      // CC number selection now has to be confirmed with GP button
+      s32 status = SEQ_UI_Var8_Inc(&edit_cc_number, 0, 127, incrementer);
       mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
       u8 loopback = port == 0xf0;
-      u8 cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
-      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, loopback ? "Loopback CC" : "Controller:", (char *)SEQ_CC_LABELS_Get(port, cc_number));
+      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, loopback ? "Loopback CC" : "Controller:", (char *)SEQ_CC_LABELS_Get(port, edit_cc_number));
       return status;
     } break;
 
@@ -365,12 +382,14 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_CC && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
-    u8 value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
+    u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
+    u8 edit_value = (ui_selected_item == ITEM_CC) ? edit_cc_number : current_value;
 
-    if( value )
-      SEQ_LCD_PrintFormattedString(" %03d ", value);
+    if( edit_value )
+      SEQ_LCD_PrintFormattedString(" %03d", edit_value);
     else
-      SEQ_LCD_PrintString(" --- ");
+      SEQ_LCD_PrintString(" ---");
+    SEQ_LCD_PrintChar((current_value != edit_value) ? '!' : ' ');
   }
 
   ///////////////////////////////////////////////////////////////////////////
