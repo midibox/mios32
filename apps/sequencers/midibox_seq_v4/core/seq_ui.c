@@ -2625,7 +2625,7 @@ static const char ui_keypad_charsets_upper[10][6] = {
   "PQRS7",
   "TUV8~",
   "WXYZ9",
-  " 0-?~",
+  "0 -?~",
 };
 
 
@@ -2639,7 +2639,7 @@ static const char ui_keypad_charsets_lower[10][6] = {
   "pqrs7",
   "tuv8~",
   "wxyz9",
-  " 0-?~",
+  "0 -?~",
 };
 
 static u8 ui_keypad_select_charset_lower;
@@ -2655,6 +2655,8 @@ static s32 SEQ_UI_KeyPad_IncCursor(u32 len)
 {
   if( ++ui_edit_name_cursor >= len )
     ui_edit_name_cursor = len - 1;
+
+  ui_keypad_select_charset_lower = 1;
 
   ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
 }
@@ -2696,9 +2698,6 @@ s32 SEQ_UI_KeyPad_Handler(seq_ui_encoder_t encoder, s32 incrementer, char *edit_
 
     // set new char
     *edit_char = charset[pos];
-
-    if( *edit_char != ' ' )
-      ui_keypad_select_charset_lower = 1;
 
     // a delayed action increments the cursor
     SEQ_UI_InstallDelayedActionCallback(SEQ_UI_KeyPad_IncCursor, 750, len);
