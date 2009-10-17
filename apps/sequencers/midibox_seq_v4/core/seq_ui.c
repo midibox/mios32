@@ -411,17 +411,10 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
 
   // if sequencer running: stop it
   // if sequencer already stopped: reset song position
-#if MID_PLAYER_TEST
-  if( SEQ_BPM_IsRunning() )
-    SEQ_BPM_Stop();
-  else
-    SEQ_MIDPLY_Reset();
-#else
   if( SEQ_BPM_IsRunning() )
     SEQ_BPM_Stop();
   else
     SEQ_CORE_Reset();
-#endif
 
   return 0; // no error
 }
@@ -2056,6 +2049,15 @@ s32 SEQ_UI_LED_Handler_Periodic()
   u16 pos_marker_mask = 0x0000;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 played_step = seq_core_trk[visible_track].step;
+
+  if( SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive ) {
+    u32 tick = SEQ_BPM_TickGet();
+    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+    u32 ticks_per_measure = ticks_per_step * 16;
+    u32 step = ((tick % ticks_per_measure) / ticks_per_step);
+    played_step = step;
+  }
+
   if( seq_ui_button_state.STEP_VIEW ) {
     // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
     if( sequencer_running )

@@ -103,11 +103,6 @@ void APP_Init(void)
   // init sequencer core
   SEQ_CORE_Init(0);
 
-#if MID_PLAYER_TEST
-  // init MIDI file player
-  SEQ_MIDPLY_Init(0);
-#endif
-
   // init user interface
   SEQ_LABEL_Init(0);
   SEQ_CC_LABELS_Init(0);
@@ -476,11 +471,7 @@ void SEQ_TASK_MIDI(void)
   MUTEX_MIDIOUT_TAKE;
 
   // execute sequencer handler
-#if MID_PLAYER_TEST
-  SEQ_MIDPLY_Handler();
-#else
   SEQ_CORE_Handler();
-#endif
 
   // send timestamped MIDI events
   SEQ_MIDI_OUT_Handler();

@@ -19,11 +19,16 @@
 
 #include <string.h>
 
+#include "tasks.h"
+
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 #include <mid_parser.h>
+#include <dosfs.h>
 
 #include "seq_midply.h"
+#include "seq_core.h"
+#include "seq_file.h"
 #include "seq_ui.h"
 
 
@@ -41,13 +46,10 @@
 #define PREFETCH_TIME_MS 50 // mS
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-
-static s32 SEQ_MIDPLY_PlayOffEvents(void);
-static s32 SEQ_MIDPLY_SongPos(u16 new_song_pos);
-static s32 SEQ_MIDPLY_Tick(u32 bpm_tick);
 
 static u32 SEQ_MIDPLY_read(void *buffer, u32 len);
 static s32 SEQ_MIDPLY_eof(void);
@@ -61,6 +63,11 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static seq_midply_mode_t seq_midply_mode;
+static u8 seq_midply_loop_mode;
+
+static mios32_midi_port_t seq_midply_port;
+
 static u32 midifile_pos;
 static u32 midifile_len;
 
@@ -73,8 +80,12 @@ static u32 next_prefetch;
 // already prefetched ticks
 static u32 prefetch_offset;
 
+// filename
+#define MIDIFILE_PATH_LEN_MAX 20
+static u8 midifile_path[MIDIFILE_PATH_LEN_MAX];
 
-#include "mb_midifile_demo.inc"
+// DOS FS variables
+static FILEINFO midifile_fi;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,6 +93,12 @@ static u32 prefetch_offset;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_Init(u32 mode)
 {
+  // init default mode and port
+  seq_midply_mode = SEQ_MIDPLY_MODE_Off;
+  seq_midply_loop_mode = 1;
+  seq_midply_port = DEFAULT;
+  midifile_path[0] = 0;
+
   // init MIDI parser module
   MID_PARSER_Init(0);
 
@@ -89,64 +106,125 @@ s32 SEQ_MIDPLY_Init(u32 mode)
   MID_PARSER_InstallFileCallbacks(&SEQ_MIDPLY_read, &SEQ_MIDPLY_eof, &SEQ_MIDPLY_seek);
   MID_PARSER_InstallEventCallbacks(&SEQ_MIDPLY_PlayEvent, &SEQ_MIDPLY_PlayMeta);
 
-  // read midifile
-  midifile_pos = 0;
-  midifile_len = MID_FILE_LEN;
-  MID_PARSER_Read();
+  return 0; // no error
+}
 
-  // reset sequencer
-  SEQ_MIDPLY_Reset();
 
-  // init BPM generator
-  SEQ_BPM_Init(0);
+/////////////////////////////////////////////////////////////////////////////
+// get/set MIDI play mode
+/////////////////////////////////////////////////////////////////////////////
+seq_midply_mode_t SEQ_MIDPLY_ModeGet(void)
+{
+  return seq_midply_mode;
+}
+
+s32 SEQ_MIDPLY_ModeSet(seq_midply_mode_t mode)
+{
+  if( mode >= SEQ_MIDPLY_MODE_Off && mode <= SEQ_MIDPLY_MODE_Parallel ) {
+    MUTEX_MIDIOUT_TAKE;
+
+    // before switching to new mode, finish current mode properly
+    switch( seq_midply_mode ) {
+      case SEQ_MIDPLY_MODE_Exclusive:
+      case SEQ_MIDPLY_MODE_Parallel:
+	if( mode == SEQ_MIDPLY_MODE_Off ) {
+	  SEQ_MIDPLY_PlayOffEvents();
+	}
+    }
+
+    seq_midply_mode = mode;
+    MUTEX_MIDIOUT_GIVE;
+  }  else {
+    return -1; // invalid mode
+  }
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// this sequencer handler is called periodically to check for new requests
-// from BPM generator
+// get/set MIDI play loop mode
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_Handler(void)
+s32 SEQ_MIDPLY_LoopModeGet(void)
 {
-  // handle requests
+  return seq_midply_loop_mode;
+}
 
-  u8 num_loops = 0;
-  u8 again = 0;
-  do {
-    ++num_loops;
-
-    // note: don't remove any request check - clocks won't be propagated
-    // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
-    if( SEQ_BPM_ChkReqStop() ) {
-      SEQ_MIDPLY_PlayOffEvents();
-    }
-
-    if( SEQ_BPM_ChkReqCont() ) {
-      // release pause mode
-      ui_seq_pause = 0;
-    }
-
-    if( SEQ_BPM_ChkReqStart() ) {
-      SEQ_MIDPLY_Reset();
-      SEQ_MIDPLY_SongPos(0);
-    }
-
-    u16 new_song_pos;
-    if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
-      SEQ_MIDPLY_SongPos(new_song_pos);
-    }
-
-    u32 bpm_tick;
-    if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
-      again = 1; // check all requests again after execution of this part
-
-      SEQ_MIDPLY_Tick(bpm_tick);
-    }
-  } while( again && num_loops < 10 );
+s32 SEQ_MIDPLY_LoopModeSet(u8 loop_mode)
+{
+  seq_midply_loop_mode = loop_mode;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// get/set MIDI port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t SEQ_MIDPLY_PortGet(void)
+{
+  return seq_midply_port;
+}
+
+s32 SEQ_MIDPLY_PortSet(mios32_midi_port_t port)
+{
+  seq_midply_port = port;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// play new MIDI file
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDPLY_PlayFile(char *path)
+{
+  s32 status;
+
+  // play off events if required
+  SEQ_MIDPLY_PlayOffEvents();
+
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_ReadOpen(&midifile_fi, path);
+  MUTEX_SDCARD_GIVE;
+
+  if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_MIDPLY_PlayFile] failed to open file, status: %d\n", status);
+#endif
+    midifile_path[0] = 0; // disable file
+    return status;
+  }
+
+  // got it
+  midifile_pos = 0;
+  midifile_len = midifile_fi.filelen;
+
+  strncpy(midifile_path, path, MIDIFILE_PATH_LEN_MAX);
+  midifile_path[MIDIFILE_PATH_LEN_MAX-1] = 0;
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[SEQ_MIDPLY_PlayFile] opened '%s' of length %u\n", path, midifile_len);
+#endif
+
+  // read midifile
+  MID_PARSER_Read();
+
+  // reset sequencer
+  MUTEX_MIDIOUT_TAKE;
+  SEQ_MIDPLY_Reset();
+  MUTEX_MIDIOUT_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// return path of played file
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_MIDPLY_PathGet(void)
+{
+  return midifile_path;
 }
 
 
@@ -154,8 +232,12 @@ s32 SEQ_MIDPLY_Handler(void)
 // This function plays all "off" events
 // Should be called on sequencer reset/restart/pause to avoid hanging notes
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDPLY_PlayOffEvents(void)
+s32 SEQ_MIDPLY_PlayOffEvents(void)
 {
+  // Player disabled?
+  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off )
+    return 0;
+
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
@@ -170,9 +252,9 @@ static s32 SEQ_MIDPLY_PlayOffEvents(void)
   for(chn=0; chn<16; ++chn) {
     midi_package.chn = chn;
     midi_package.evnt1 = 123; // All Notes Off
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    MIOS32_MIDI_SendPackage(seq_midply_port, midi_package);
     midi_package.evnt1 = 121; // Controller Reset
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    MIOS32_MIDI_SendPackage(seq_midply_port, midi_package);
   }
 
   return 0; // no error
@@ -183,6 +265,10 @@ static s32 SEQ_MIDPLY_PlayOffEvents(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_Reset(void)
 {
+  // Player disabled?
+  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+    return 0;
+
   // since timebase has been changed, ensure that Off-Events are played 
   // (otherwise they will be played much later...)
   SEQ_MIDPLY_PlayOffEvents();
@@ -197,11 +283,14 @@ s32 SEQ_MIDPLY_Reset(void)
   MID_PARSER_RestartSong();
 
   // set initial BPM (according to MIDI file spec)
+#if 0
+  // done in SEQ_CORE
   SEQ_BPM_PPQN_Set(384); // not specified
   SEQ_BPM_Set(120.0);
 
   // reset BPM tick
   SEQ_BPM_TickSet(0);
+#endif
 
   return 0; // no error
 }
@@ -210,8 +299,12 @@ s32 SEQ_MIDPLY_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 // Sets new song position (new_song_pos resolution: 16th notes)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
+s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
 {
+  // Player disabled?
+  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+    return 0;
+
   u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
 
   // set new tick value
@@ -249,8 +342,12 @@ static s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
 /////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
+s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 {
+  // Player disabled?
+  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+    return 0;
+
   if( bpm_tick >= next_prefetch ) {
     // get number of prefetch ticks depending on current BPM
     u32 prefetch_ticks = SEQ_BPM_TicksFor_mS(PREFETCH_TIME_MS);
@@ -275,7 +372,8 @@ static s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SEQ] End of song reached after %u ticks - restart!\n", bpm_tick);
 #endif
-      SEQ_MIDPLY_SongPos(0);
+      if( seq_midply_loop_mode )
+	SEQ_MIDPLY_SongPos(0);
     } else {
       prefetch_offset += prefetch_ticks;
     }
@@ -295,9 +393,16 @@ static s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_MIDPLY_read(void *buffer, u32 len)
 {
-  memcpy(buffer, &mid_file[midifile_pos], len);
-  midifile_pos += len;
-  return len;
+  s32 status;
+
+  if( !midifile_path[0] )
+    return SEQ_FILE_ERR_NO_FILE;
+
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_ReadBuffer(&midifile_fi, buffer, len);
+  MUTEX_SDCARD_GIVE;
+
+  return (status >= 0) ? len : 0;
 }
 
 
@@ -319,9 +424,21 @@ static s32 SEQ_MIDPLY_eof(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDPLY_seek(u32 pos)
 {
-  midifile_pos = pos;
-  if( midifile_pos >= midifile_len )
+  s32 status;
+
+  if( !midifile_path[0] )
     return -1; // end of file reached
+
+  midifile_pos = pos;
+
+  MUTEX_SDCARD_TAKE;
+
+  if( midifile_pos >= midifile_len )
+    status = -1; // end of file reached
+  else
+    status = SEQ_FILE_Seek(&midifile_fi, pos);    
+
+  MUTEX_SDCARD_GIVE;
 
   return 0;
 }
@@ -338,11 +455,21 @@ static s32 SEQ_MIDPLY_PlayEvent(u8 track, mios32_midi_package_t midi_package, u3
   if( ffwd_silent_mode )
     return 0;
 
+  
+  if( seq_midply_mode == SEQ_MIDPLY_MODE_Exclusive )
+    seq_core_step_update_req = 1; // requested UI update
+
   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
   if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) )
     event_type = SEQ_MIDI_OUT_OffEvent;
 
-  return SEQ_MIDI_OUT_Send(DEFAULT, midi_package, event_type, tick, 0);
+  // use tag of track #16 - unfortunately more than 16 tags are not supported
+  midi_package.cable = 15; 
+
+  // derive tick based on 384 ppqn
+  u32 tick_384ppqn = (384 * tick) / MIDI_PARSER_PPQN_Get();
+
+  return SEQ_MIDI_OUT_Send(seq_midply_port, midi_package, event_type, tick, 0);
 }
 
 
@@ -430,6 +557,8 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
       if( len == 3 ) {
 	u32 tempo_us = (*buffer++ << 16) | (*buffer++ << 8) | *buffer;
 	float bpm = 60.0 * (1E6 / (float)tempo_us);
+#if 0
+	// tempo handled by SEQ_CORE !
 	SEQ_BPM_PPQN_Set(MIDI_PARSER_PPQN_Get());
 
 	// set tempo immediately on first tick
@@ -441,6 +570,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	  tempo_package.ALL = (u32)bpm;
 	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick, 0);
 	}
+#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SEQ_MIDPLY:%d:%u] Meta - Tempo to %u uS -> %u BPM\n", track, tick, tempo_us, (u32)bpm);

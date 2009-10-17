@@ -35,6 +35,7 @@
 #define ITEM_LIST3             2
 #define ITEM_LIST4             3
 
+#define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
 #define LIST_ENTRY_WIDTH 19
 
 
@@ -77,7 +78,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   // any encoder changes the menu view
-  if( SEQ_UI_SelectListItem(incrementer, SEQ_UI_NUM_MENU_PAGES, NUM_OF_ITEMS, &menu_selected_item, &menu_view_offset) )
+  if( SEQ_UI_SelectListItem(incrementer, SEQ_UI_NUM_MENU_PAGES, NUM_LIST_DISPLAYED_ITEMS, &menu_selected_item, &menu_view_offset) )
     SEQ_UI_MENU_UpdatePageList();
 
   return 1;
@@ -134,7 +135,7 @@ static s32 LCD_Handler(u8 high_prio)
 
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-    u32 ticks_per_measure = ticks_per_step * seq_core_steps_per_measure;
+    u32 ticks_per_measure = ticks_per_step * (seq_core_steps_per_measure+1);
     u32 measure = (tick / ticks_per_measure) + 1;
     u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
     u32 microstep = tick % ticks_per_step;
@@ -155,7 +156,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, SEQ_UI_NUM_MENU_PAGES, NUM_OF_ITEMS, menu_selected_item, menu_view_offset);
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, SEQ_UI_NUM_MENU_PAGES, NUM_LIST_DISPLAYED_ITEMS, menu_selected_item, menu_view_offset);
 
   return 0; // no error
 }
@@ -198,7 +199,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void)
 {
   int item;
 
-  for(item=0; item<NUM_OF_ITEMS && (item+menu_view_offset)<SEQ_UI_NUM_MENU_PAGES; ++item) {
+  for(item=0; item<NUM_LIST_DISPLAYED_ITEMS && (item+menu_view_offset)<SEQ_UI_NUM_MENU_PAGES; ++item) {
     int i;
 
     char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];
@@ -210,7 +211,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void)
 	break;
   }
 
-  while( item < NUM_OF_ITEMS ) {
+  while( item < NUM_LIST_DISPLAYED_ITEMS ) {
     ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }

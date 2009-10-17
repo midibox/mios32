@@ -51,7 +51,7 @@ char *DFS_DirToCanonical(char *dest, char *src)
   while( pos < 8 && src[pos] != ' ' )
     *dest++ = src[pos++];
 
-  if( src[8] != ' ' && src[9] != ' ' && src[10] != ' ' ) {
+  if( src[8] != ' ' ) {
     *dest++ = '.';
   
     pos = 8;

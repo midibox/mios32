@@ -14,7 +14,7 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Beta7 "
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Beta8 "
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T. Klose"
 
 // USB settings
@@ -71,8 +71,6 @@
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
-
-#define MID_PLAYER_TEST 0
 
 
 // configure IIC_MIDI

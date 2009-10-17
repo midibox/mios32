@@ -6,6 +6,24 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta8
+~~~~~~~~~~~~~~~~~~~~
+
+  o now your MIDIbox SEQ can play MIDI files, either exclusively or in parallel to
+    the 16 sequencer tracks.
+
+    MIDI files have to be copied into the /midi directory of your SD Card.
+
+    To select a MIDI file, go to the UTIL->DISK->PLAY page, and select
+    the desired modes (Exclusive/Parallel and Loop on/off)
+
+  o MIDI file import and export prepared in UI, but not implemented yet!
+
+  o MIDI port used to send a SysEx dump now selectable in file list browser
+
+  o fixed various minor bugs
+
+
 MIDIboxSEQ V4.0beta7
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -42,9 +60,9 @@ MIDIboxSEQ V4.0beta6
     create subdirectories for each MIDI Device you want to use.
 
     For example:
-      sysex/MBSID
-      sysex/MBFM
-      sysex/MicroQ
+      /sysex/MBSID
+      /sysex/MBFM
+      /sysex/MicroQ
 
     Now copy .syx files into these directories which should be sent to the
     devices later.

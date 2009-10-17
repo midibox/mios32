@@ -19,8 +19,6 @@
 #define DEBUG_MSG UI_printf
 
 
-#define MID_PLAYER_TEST 0
-
 // not supported by MacOS emulation:
 //#define MIOS32_DONT_USE_SYS
 #define MIOS32_DONT_USE_IRQ

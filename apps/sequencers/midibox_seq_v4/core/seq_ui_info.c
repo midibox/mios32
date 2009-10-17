@@ -54,7 +54,8 @@
 #define ITEM_LIST4             3
 
 
-#define NUM_LIST_ITEMS 10
+#define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
+#define NUM_LIST_ITEMS         10
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_TRACKS       2
@@ -135,7 +136,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
 
   // any other encoder changes the list view
-  if( SEQ_UI_SelectListItem(incrementer, NUM_LIST_ITEMS, NUM_OF_ITEMS, &ui_selected_item, &list_view_offset) )
+  if( SEQ_UI_SelectListItem(incrementer, NUM_LIST_ITEMS, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &list_view_offset) )
     SEQ_UI_INFO_UpdateList();
 
   return 1;
@@ -688,7 +689,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_LIST_ITEMS, NUM_OF_ITEMS, ui_selected_item, list_view_offset);
+  SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, NUM_LIST_ITEMS, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, list_view_offset);
 
   ///////////////////////////////////////////////////////////////////////////
   switch( ui_selected_item + list_view_offset ) {
@@ -750,7 +751,7 @@ static s32 SEQ_UI_INFO_UpdateList(void)
 {
   int item;
 
-  for(item=0; item<NUM_OF_ITEMS && item<NUM_LIST_ITEMS; ++item) {
+  for(item=0; item<NUM_LIST_DISPLAYED_ITEMS && item<NUM_LIST_ITEMS; ++item) {
     int i;
 
     char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];
@@ -763,7 +764,7 @@ static s32 SEQ_UI_INFO_UpdateList(void)
 	break;
   }
 
-  while( item < NUM_OF_ITEMS ) {
+  while( item < NUM_LIST_DISPLAYED_ITEMS ) {
     ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }
