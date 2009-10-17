@@ -58,11 +58,6 @@
 #define SEQ_FILE_BACKUP_PATH "backup/"
 
 
-// in which subdirectory of the SD card are SysEx dumps located?
-#define SEQ_FILE_SYSEX_PATH "sysex/"
-
-
-
 // allows to enable malloc instead of static allocation of write buffer
 #define SEQ_FILE_WRITE_BUFFER_MALLOC 0
 
@@ -1224,10 +1219,10 @@ s32 SEQ_FILE_CreateBackup(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function searches for directories under sysex/ and copies the names
-// into a list (used by seq_ui_sysex.c)
+// This function searches for directories under given path and copies the names
+// into a list (e.g. used by seq_ui_sysex.c)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_GetSysExDirs(char *dir_list, u8 num_of_items, u8 dir_offset)
+s32 SEQ_FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset)
 {
   s32 status = 0;
   DIRINFO di;
@@ -1236,17 +1231,17 @@ s32 SEQ_FILE_GetSysExDirs(char *dir_list, u8 num_of_items, u8 dir_offset)
 
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_GetSysExDirs] ERROR: volume doesn't exist!\n");
+    DEBUG_MSG("[SEQ_FILE_GetDirs] ERROR: volume doesn't exist!\n");
 #endif
     return SEQ_FILE_ERR_NO_VOLUME;
   }
 
   di.scratch = sector;
-  if( DFS_OpenDir(&vi, SEQ_FILE_SYSEX_PATH, &di) ) {
+  if( DFS_OpenDir(&vi, path, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_GetSysExDirs] ERROR: opening %s directory - please create it!\n", SEQ_FILE_BACKUP_PATH);
+    DEBUG_MSG("[SEQ_FILE_GetDirs] ERROR: opening %s directory - please create it!\n", path);
 #endif
-    status = SEQ_FILE_ERR_NO_SYSEX_DIR;
+    status = SEQ_FILE_ERR_NO_DIR;
   }
 
   int num_dirs = 0;
@@ -1273,10 +1268,10 @@ s32 SEQ_FILE_GetSysExDirs(char *dir_list, u8 num_of_items, u8 dir_offset)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function searches for .syx files under sysex/<dir_name> and copies 
-// the names into a list (used by seq_ui_sysex.c)
+// This function searches for files under given path and copies the names
+// into a list (e.g. used by seq_ui_sysex.c)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_GetSysExDumps(char *dir_list, u8 num_of_items, u8 dir_offset, char *dir_name)
+s32 SEQ_FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items, u8 dir_offset)
 {
   s32 status = 0;
   DIRINFO di;
@@ -1285,28 +1280,24 @@ s32 SEQ_FILE_GetSysExDumps(char *dir_list, u8 num_of_items, u8 dir_offset, char 
 
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_GetSysExDumps] ERROR: volume doesn't exist!\n");
+    DEBUG_MSG("[SEQ_FILE_GetFiles] ERROR: volume doesn't exist!\n");
 #endif
     return SEQ_FILE_ERR_NO_VOLUME;
   }
 
   di.scratch = sector;
-  char path[25];
-  sprintf(path, "%s%s/", SEQ_FILE_SYSEX_PATH, dir_name);
   if( DFS_OpenDir(&vi, path, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_GetSysExDumps] ERROR: opening %s directory - please create it!\n", path);
+    DEBUG_MSG("[SEQ_FILE_GetFiles] ERROR: opening %s directory - please create it!\n", path);
 #endif
-    status = SEQ_FILE_ERR_NO_SYSEX_DEV_DIR;
+    status = SEQ_FILE_ERR_NO_DIR;
   }
 
   int num_files = 0;
   while( status == 0 && !DFS_GetNext(&vi, &di, &de) ) {
-    if( de.name[0] && de.name[0] != '.' && 
-	(de.name[8] == 'S' || de.name[8] == 's') &&
-	(de.name[9] == 'Y' || de.name[9] == 'y') &&
-	(de.name[10] == 'X' || de.name[10] == 'x') &&
-	!(de.attr & ATTR_DIRECTORY) && !(de.attr & ATTR_HIDDEN) ) {
+    if( de.name[0] && de.name[0] != '.' &&
+	!(de.attr & ATTR_DIRECTORY) && !(de.attr & ATTR_HIDDEN) &&
+	strncasecmp((char *)&de.name[8], ext_filter, 3) == 0 ) {
       ++num_files;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -1331,19 +1322,16 @@ s32 SEQ_FILE_GetSysExDumps(char *dir_list, u8 num_of_items, u8 dir_offset, char 
 // This function sends a .syx file from sysex/<dir_name>
 // (currently only used by seq_ui_sysex.c, API might change in future)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_SendSyxDump(mios32_midi_port_t port, char *dir_name, char *syx_file)
+s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
 {
   s32 status = 0;
   FILEINFO fi;
 
-  char filepath[MAX_PATH];
-  sprintf(filepath, "%s%s/%s.syx", SEQ_FILE_SYSEX_PATH, dir_name, syx_file);
-
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE_SendSyxDump] Open config file '%s'\n", filepath);
+  DEBUG_MSG("[SEQ_FILE_SendSyxDump] Open file '%s'\n", path);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
+  if( (status=SEQ_FILE_ReadOpen(&fi, path)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_SendSyxDump] failed to open file, status: %d\n", status);
 #endif

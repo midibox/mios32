@@ -38,6 +38,7 @@
 #include "seq_song.h"
 #include "seq_random.h"
 #include "seq_record.h"
+#include "seq_midply.h"
 #include "seq_ui.h"
 
 
@@ -53,7 +54,7 @@
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -182,6 +183,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset record module
   SEQ_RECORD_Init(0);
 
+  // init MIDI file player
+  SEQ_MIDPLY_Init(0);
+
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
   seq_core_trk_t *t = &seq_core_trk[0];
@@ -237,6 +241,7 @@ s32 SEQ_CORE_Handler(void)
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
+      SEQ_MIDPLY_PlayOffEvents();
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -269,11 +274,14 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_CORE_ResetTrkPos(track, t, tcc);
 	SEQ_RECORD_Reset(track);
       }      
+
+      SEQ_MIDPLY_SongPos(new_song_pos);
     }
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
+      seq_midply_mode_t midply_mode = SEQ_MIDPLY_ModeGet(); 
 
       if( bpm_tick_prefetched_ctr ) {
 	// ticks already generated due to prefetching - wait until we catch up
@@ -289,7 +297,9 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_UI_INFO_StopwatchReset();
 #endif
 	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
-	  SEQ_CORE_Tick(forwarded_bpm_tick);
+	  if( midply_mode != SEQ_MIDPLY_MODE_Exclusive )
+	    SEQ_CORE_Tick(forwarded_bpm_tick);
+	  SEQ_MIDPLY_Tick(forwarded_bpm_tick);
 	  ++forwarded_bpm_tick;
 	  ++bpm_tick_prefetched_ctr;
 	}
@@ -308,7 +318,9 @@ s32 SEQ_CORE_Handler(void)
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
 	SEQ_UI_INFO_StopwatchReset();
 #endif
-	SEQ_CORE_Tick(bpm_tick);
+	if( midply_mode != SEQ_MIDPLY_MODE_Exclusive )
+	  SEQ_CORE_Tick(bpm_tick);
+	SEQ_MIDPLY_Tick(bpm_tick);
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
@@ -380,6 +392,9 @@ s32 SEQ_CORE_Reset(void)
 
   // cancel stop request
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
+
+  // reset MIDI player
+  SEQ_MIDPLY_Reset();
 
   return 0; // no error
 }

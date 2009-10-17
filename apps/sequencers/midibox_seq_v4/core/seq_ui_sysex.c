@@ -39,6 +39,7 @@
 #define ITEM_DEV7              6
 #define ITEM_DEV8              7
 
+#define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
 #define LIST_ENTRY_WIDTH 9
 
 // for debugging list display
@@ -50,15 +51,15 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 dev_num_items; // contains SEQ_FILE error status if < 0
-static u8 dev_view_offset = 0; // only changed once after startup
-static char dev_name[12]; // directory name of device (first char is 0 if no device selected)
+static s32 dir_num_items; // contains SEQ_FILE error status if < 0
+static u8 dir_view_offset = 0; // only changed once after startup
+static mios32_midi_port_t sysex_port = DEFAULT; // only changed once after startup
+static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 SEQ_UI_SYSEX_ReadDir(void);
 static s32 SEQ_UI_SYSEX_UpdateDirList(void);
 
 
@@ -86,12 +87,36 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   // any encoder changes the dir view
-  if( !dev_name[0] ) {
-    if( SEQ_UI_SelectListItem(incrementer, dev_num_items, NUM_OF_ITEMS, &ui_selected_item, &dev_view_offset) )
+  if( !dir_name[0] ) {
+    if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
       SEQ_UI_SYSEX_UpdateDirList();
   } else {
-    if( SEQ_UI_SelectListItem(incrementer, dev_num_items, NUM_OF_ITEMS-1, &ui_selected_item, &dev_view_offset) )
-      SEQ_UI_SYSEX_UpdateDirList();
+    switch( encoder ) {
+      case SEQ_UI_ENCODER_GP15: {
+	// select MIDI port
+	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(sysex_port);
+	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	  sysex_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP16:
+	// EXIT only via button
+	if( incrementer == 0 ) {
+	  // Exit
+	  dir_name[0] = 0;
+	  ui_selected_item = 0;
+	  dir_view_offset = 0;
+	  SEQ_UI_SYSEX_UpdateDirList();
+	}
+	return 1;
+
+      default:
+	if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-1, &ui_selected_item, &dir_view_offset) )
+	  SEQ_UI_SYSEX_UpdateDirList();
+    }
   }
 
   return 1;
@@ -109,12 +134,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed, -1 ensures that message still print
 
-#if 0
-  // leads to: comparison is always true due to limited range of data type
-  if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
-#else
   if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
-#endif
 
     if( button != SEQ_UI_BUTTON_Select )
       ui_selected_item = button / 2;
@@ -128,38 +148,45 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Selected:", buffer);
 #else
-    if( dev_name[0] == 0 && dev_num_items >= 0 ) {
+    if( dir_name[0] == 0 && dir_num_items >= 0 ) {
       // Select MIDI Device
-      memcpy((char *)dev_name, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-      dev_name[8] = 0;
+      memcpy((char *)dir_name, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
+      dir_name[8] = 0;
       ui_selected_item = 0;
-      dev_view_offset = 0;
+      dir_view_offset = 0;
       SEQ_UI_SYSEX_UpdateDirList();
     } else {
-      if( ui_selected_item == (NUM_OF_ITEMS-1) ) {
-	// Exit...
-	dev_name[0] = 0;
-	ui_selected_item = 0;
-	dev_view_offset = 0;
-	SEQ_UI_SYSEX_UpdateDirList();
-      } else if( dev_num_items >= 1 && (ui_selected_item+dev_view_offset) < dev_num_items ) {
-	// Send SysEx Dump
-	char syx_file[20];
-	memcpy((char *)syx_file, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-	memcpy((char *)syx_file+8, ".syx", 5);
-	SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, "Sending:", syx_file);
-	MUTEX_SDCARD_TAKE;
-	MUTEX_MIDIOUT_TAKE;
-	s32 status = SEQ_FILE_SendSyxDump(DEFAULT, dev_name, syx_file); // TODO: MIDI port selection (via config file or GP encoder?)
-	MUTEX_MIDIOUT_GIVE;
-	MUTEX_SDCARD_GIVE;
-	if( status < 0 )
-	  SEQ_UI_SDCardErrMsg(2000, status);
-	else {
-	  char buffer[20];
-	  sprintf(buffer, "Sent %d bytes", status);
-	  SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, buffer, syx_file);
-	}
+      switch( button ) {
+        case SEQ_UI_BUTTON_GP15:
+	  // increment MIDI port
+	  return Encoder_Handler(button, 1);
+
+        case SEQ_UI_BUTTON_GP16:
+	  // EXIT
+	  return Encoder_Handler(button, 0);
+
+        default:
+          if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
+	    // Send SysEx Dump
+	    char syx_file[20];
+	    memcpy((char *)syx_file, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
+	    memcpy((char *)syx_file+8, ".syx", 5);
+	    char path[40];
+	    sprintf(path, "sysex/%s/%s", dir_name, syx_file);
+	    SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, "Sending:", syx_file);
+	    MUTEX_SDCARD_TAKE;
+	    MUTEX_MIDIOUT_TAKE;
+	    s32 status = SEQ_FILE_SendSyxDump(path, sysex_port);
+	    MUTEX_MIDIOUT_GIVE;
+	    MUTEX_SDCARD_GIVE;
+	    if( status < 0 )
+	      SEQ_UI_SDCardErrMsg(2000, status);
+	    else {
+	      char buffer[20];
+	      sprintf(buffer, "Sent %d bytes", status);
+	      SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, buffer, syx_file);
+	    }
+	  }
       }
     }
 #endif
@@ -208,27 +235,27 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(80);
 
   SEQ_LCD_CursorSet(0, 0);
-  if( dev_num_items < 0 ) {
-    if( dev_num_items == SEQ_FILE_ERR_NO_SYSEX_DIR )
-      SEQ_LCD_PrintString("sysex/ directory not found on SD Card!");
-    else if( dev_name[0] != 0 && dev_num_items == SEQ_FILE_ERR_NO_SYSEX_DEV_DIR )
-      SEQ_LCD_PrintFormattedString("sysex/%s directory not found on SD Card!", dev_name);
+  if( dir_num_items < 0 ) {
+    if( dir_name[0] != 0 && dir_num_items == SEQ_FILE_ERR_NO_DIR )
+      SEQ_LCD_PrintFormattedString("/sysex/%s directory not found on SD Card!", dir_name);
+    else if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+      SEQ_LCD_PrintString("/sysex directory not found on SD Card!");
     else
-      SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dev_num_items);
-  } else if( dev_num_items == 0 ) {
-    if( dev_name[0] != 0 )
-      SEQ_LCD_PrintFormattedString("No .syx files found under sysex/%s!", dev_name);
+      SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
+  } else if( dir_num_items == 0 ) {
+    if( dir_name[0] != 0 )
+      SEQ_LCD_PrintFormattedString("No .syx files found under /sysex/%s!", dir_name);
     else
-      SEQ_LCD_PrintString("No subdirectories found in sysex/ directory on SD Card!");
+      SEQ_LCD_PrintString("No subdirectories found in /sysex directory on SD Card!");
   } else {
-    if( dev_name[0] != 0 ) {
+    if( dir_name[0] != 0 ) {
       SEQ_LCD_PrintString("Select .syx file with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintFormattedString("%d files found under /sysex/%s", dev_num_items, dev_name);
+      SEQ_LCD_PrintFormattedString("%d files found under /sysex/%s", dir_num_items, dir_name);
     } else {
       SEQ_LCD_PrintString("Select MIDI Device with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintFormattedString("%d Devices found under /sysex", dev_num_items);
+      SEQ_LCD_PrintFormattedString("%d Devices found under /sysex", dir_num_items);
     }
   }
 
@@ -236,11 +263,13 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  if( !dev_name[0] ) {
-    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dev_num_items, NUM_OF_ITEMS, ui_selected_item, dev_view_offset);
+  if( !dir_name[0] ) {
+    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
   } else {
-    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dev_num_items, NUM_OF_ITEMS-1, ui_selected_item, dev_view_offset);
-    SEQ_LCD_PrintString("      EXIT");
+    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-1, ui_selected_item, dir_view_offset);
+    SEQ_LCD_PrintChar(' ');
+    SEQ_LCD_PrintString((char *)SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(sysex_port)));
+    SEQ_LCD_PrintString(" EXIT");
   }
 
   return 0; // no error
@@ -261,51 +290,47 @@ s32 SEQ_UI_SYSEX_Init(u32 mode)
   // load charset (if this hasn't been done yet)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
 
-  dev_name[0] = 0;
+  dir_name[0] = 0;
 
-  SEQ_UI_SYSEX_ReadDir();
-  SEQ_UI_SYSEX_UpdateDirList();
-
-  return 0; // no error
-}
-
-
-static s32 SEQ_UI_SYSEX_ReadDir(void)
-{
 #if TEST_LIST
-  dev_num_items = 32;
+  dir_num_items = 32;
 #else
+  SEQ_UI_SYSEX_UpdateDirList();
 #endif
 
   return 0; // no error
 }
+
 
 static s32 SEQ_UI_SYSEX_UpdateDirList(void)
 {
   int item;
 
 #if TEST_LIST
-  for(item=0; item<NUM_OF_ITEMS && item<dev_num_items; ++item) {
+  for(item=0; item<NUM_LIST_DISPLAYED_ITEMS && item<dir_num_items; ++item) {
     char *list_item = (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*item];
-    sprintf(list_item, "test%d", item + dev_view_offset);
+    sprintf(list_item, "test%d", item + dir_view_offset);
   }
 #else
   MUTEX_SDCARD_TAKE;
-  if( !dev_name[0] )
-    dev_num_items = SEQ_FILE_GetSysExDirs((char *)&ui_global_dir_list[0], NUM_OF_ITEMS, dev_view_offset);
-  else
-    dev_num_items = SEQ_FILE_GetSysExDumps((char *)&ui_global_dir_list[0], NUM_OF_ITEMS-1, dev_view_offset, dev_name);
+  if( !dir_name[0] ) {
+    dir_num_items = SEQ_FILE_GetDirs("sysex/", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  } else {
+    char path[25];
+    sprintf(path, "sysex/%s/", dir_name);
+    dir_num_items = SEQ_FILE_GetFiles(path, "syx", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
+  }
   MUTEX_SDCARD_GIVE;
 
-  if( dev_num_items < 0 )
+  if( dir_num_items < 0 )
     item = 0;
-  else if( dev_num_items < NUM_OF_ITEMS )
-    item = dev_num_items;
+  else if( dir_num_items < NUM_LIST_DISPLAYED_ITEMS )
+    item = dir_num_items;
   else
-    item = NUM_OF_ITEMS;
+    item = NUM_LIST_DISPLAYED_ITEMS;
 #endif
 
-  while( item < NUM_OF_ITEMS ) {
+  while( item < NUM_LIST_DISPLAYED_ITEMS ) {
     ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }
