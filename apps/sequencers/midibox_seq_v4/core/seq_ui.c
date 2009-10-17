@@ -2041,9 +2041,16 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // GP LEDs are updated when ui_gp_leds has changed
   static u16 prev_ui_gp_leds = 0x0000;
 
-  // beat LED: tmp. for demo w/o real sequencer
+  // beat LED
   u8 sequencer_running = SEQ_BPM_IsRunning();
   SEQ_LED_PinSet(seq_hwcfg_led.beat, sequencer_running && ((seq_core_state.ref_step & 3) == 0));
+
+
+  // don't continue if no new step has been generated and GP LEDs haven't changed
+  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds )
+    return 0;
+  seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
+  prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern
 
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
@@ -2067,12 +2074,6 @@ s32 SEQ_UI_LED_Handler_Periodic()
       pos_marker_mask = 1 << (played_step & 0xf);
   }
 
-
-  // don't continue if no new step has been generated and GP LEDs haven't changed
-  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds )
-    return 0;
-  seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
-  prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern
 
   // follow step position if enabled
   if( seq_core_options.FOLLOW_SONG ) {
