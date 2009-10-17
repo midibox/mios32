@@ -139,7 +139,6 @@
 		52DA1B2D0EFB000E00E889A5 /* seq_bpm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B290EFB000E00E889A5 /* seq_bpm.c */; };
 		52DA1B2E0EFB000E00E889A5 /* seq_midi_out.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B2B0EFB000E00E889A5 /* seq_midi_out.c */; };
 		52DA1B310EFB002900E889A5 /* mid_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B2F0EFB002900E889A5 /* mid_parser.c */; };
-		52DA1B3A0EFB006400E889A5 /* mb_midifile_demo.inc in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */; };
 		52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DA1B360EFB006400E889A5 /* seq_midply.c */; };
 		52DB337C0FE28DFC00A9322B /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DB337B0FE28DFC00A9322B /* seq_file_g.c */; };
 		52DD80771083AF7300B8667F /* seq_ui_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 52DD80761083AF7300B8667F /* seq_ui_sysex.c */; };
@@ -376,7 +375,6 @@
 		52DA1B2C0EFB000E00E889A5 /* seq_midi_out.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_out.h; path = ../../../../modules/sequencer/seq_midi_out.h; sourceTree = SOURCE_ROOT; };
 		52DA1B2F0EFB002900E889A5 /* mid_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mid_parser.c; path = ../../../../modules/midifile/mid_parser.c; sourceTree = SOURCE_ROOT; };
 		52DA1B300EFB002900E889A5 /* mid_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mid_parser.h; path = ../../../../modules/midifile/mid_parser.h; sourceTree = SOURCE_ROOT; };
-		52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; name = mb_midifile_demo.inc; path = ../core/mb_midifile_demo.inc; sourceTree = SOURCE_ROOT; };
 		52DA1B340EFB006400E889A5 /* seq_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_layer.h; path = ../core/seq_layer.h; sourceTree = SOURCE_ROOT; };
 		52DA1B350EFB006400E889A5 /* seq_midi_in.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_in.h; path = ../core/seq_midi_in.h; sourceTree = SOURCE_ROOT; };
 		52DA1B360EFB006400E889A5 /* seq_midply.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midply.c; path = ../core/seq_midply.c; sourceTree = SOURCE_ROOT; };
@@ -608,7 +606,6 @@
 				52CC0E520F0EC93F0073F107 /* seq_ui_bpm.c */,
 				52C4BC570F0EB3600063D223 /* seq_ui_fx.c */,
 				52C4BC580F0EB3600063D223 /* seq_ui_fx_echo.c */,
-				52DA1B330EFB006400E889A5 /* mb_midifile_demo.inc */,
 				52DA1B340EFB006400E889A5 /* seq_layer.h */,
 				52DA1B350EFB006400E889A5 /* seq_midi_in.h */,
 				52DA1B360EFB006400E889A5 /* seq_midply.c */,
@@ -908,7 +905,6 @@
 				52DA1B2D0EFB000E00E889A5 /* seq_bpm.c in Sources */,
 				52DA1B2E0EFB000E00E889A5 /* seq_midi_out.c in Sources */,
 				52DA1B310EFB002900E889A5 /* mid_parser.c in Sources */,
-				52DA1B3A0EFB006400E889A5 /* mb_midifile_demo.inc in Sources */,
 				52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */,
 				5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */,
 				52C4BC590F0EB3600063D223 /* seq_ui_fx.c in Sources */,

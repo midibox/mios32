@@ -209,6 +209,9 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset sequencer
   SEQ_CORE_Reset();
 
+  // reset MIDI player
+  SEQ_MIDPLY_Reset();
+
   // init BPM generator
   SEQ_BPM_Init(0);
 
@@ -254,26 +257,15 @@ s32 SEQ_CORE_Handler(void)
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_SONG_Reset();
       SEQ_CORE_Reset();
+      SEQ_MIDPLY_Reset();
     }
 
     u16 new_song_pos;
     if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
-      SEQ_CORE_PlayOffEvents();
-      // cancel prefetch requests/counter
-      bpm_tick_prefetch_req = 0;
-      bpm_tick_prefetched_ctr = 0;
-
+      SEQ_CORE_Reset();
       SEQ_SONG_Reset();
-      // TODO: set new song position
 
-      seq_core_state.FIRST_CLK = 1;
-      int track;
-      seq_core_trk_t *t = &seq_core_trk[0];
-      seq_cc_trk_t *tcc = &seq_cc_trk[0];
-      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
-	SEQ_CORE_ResetTrkPos(track, t, tcc);
-	SEQ_RECORD_Reset(track);
-      }      
+      // TODO: set new song position
 
       SEQ_MIDPLY_SongPos(new_song_pos);
     }
@@ -392,9 +384,6 @@ s32 SEQ_CORE_Reset(void)
 
   // cancel stop request
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
-
-  // reset MIDI player
-  SEQ_MIDPLY_Reset();
 
   return 0; // no error
 }
