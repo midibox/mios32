@@ -221,9 +221,9 @@ s32 SEQ_MIDPLY_PlayFile(char *path)
     loop_range = 0;
     loop_offset = 0;
     SEQ_MIDPLY_Reset();
-
-    MUTEX_MIDIOUT_GIVE;
   }
+
+  MUTEX_MIDIOUT_GIVE;
 
   return status;
 }
@@ -494,7 +494,7 @@ static s32 SEQ_MIDPLY_seek(u32 pos)
 
   MUTEX_SDCARD_GIVE;
 
-  return 0;
+  return status;
 }
 
 

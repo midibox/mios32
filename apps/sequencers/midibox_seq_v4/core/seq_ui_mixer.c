@@ -21,6 +21,7 @@
 
 #include "seq_mixer.h"
 #include "seq_file_m.h"
+#include "seq_midi_port.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -132,7 +133,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     u8 min, max;
     switch( mixer_par ) {
       case SEQ_MIXER_PAR_PORT:
-	min=0x00; max=0x3f; // TODO: port mapping
+	min=0x00; max=SEQ_MIDI_PORT_OutNumGet()-1;
 	break;
       case SEQ_MIXER_PAR_CHANNEL:
 	min=0x00; max=0x0f;
@@ -165,8 +166,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     // first change the selected value
     if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
       u8 value = SEQ_MIXER_Get(ui_selected_item, mixer_par);
+      if( mixer_par == SEQ_MIXER_PAR_PORT )
+	value = SEQ_MIDI_PORT_OutIxGet(value);
       if( SEQ_UI_Var8_Inc(&value, min, max, incrementer) ) {
 	forced_value = (s32)value;
+	if( mixer_par == SEQ_MIXER_PAR_PORT )
+	  forced_value = SEQ_MIDI_PORT_OutPortGet(forced_value);
 	value_changed |= 1;
       }
       else
@@ -182,7 +187,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  SEQ_MIXER_Send(chn, mixer_par);
 	} else {
 	  u8 value = SEQ_MIXER_Get(chn, mixer_par);
+	  if( mixer_par == SEQ_MIXER_PAR_PORT )
+	    value = SEQ_MIDI_PORT_OutIxGet(value);
 	  if( SEQ_UI_Var8_Inc(&value, min, max, incrementer) ) {
+	    if( mixer_par == SEQ_MIXER_PAR_PORT )
+	      value = SEQ_MIDI_PORT_OutPortGet(value);
 	    SEQ_MIXER_Set(chn, mixer_par, value);
 	    SEQ_MIXER_Send(chn, mixer_par);
 	    value_changed |= 1;

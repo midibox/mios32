@@ -78,6 +78,7 @@ typedef struct {
 
 static s32 GetLayerConfig(u8 track);
 static s32 CopyPreset(u8 track, u8 config);
+static void InitReq(u32 dummy);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -420,8 +421,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       // exit keypad editor
       edit_label_mode = 0;
     } else {
-      // TODO: copy preset for all selected tracks!
-      CopyPreset(visible_track, selected_layer_config);
+      SEQ_UI_InstallDelayedActionCallback(InitReq, 2000, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 2001, "", "to initialize Track!");
     }
     return 1; // value has been changed
   }
@@ -908,3 +909,15 @@ static s32 GetLayerConfig(u8 track)
   return 0; // not found, return index to first config
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// help function for Init button function
+/////////////////////////////////////////////////////////////////////////////
+static void InitReq(u32 dummy)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // TODO: copy preset for all selected tracks!
+  CopyPreset(visible_track, selected_layer_config);
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Track has been", "initialized!");
+}
