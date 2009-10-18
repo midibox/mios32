@@ -6,6 +6,15 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta9
+~~~~~~~~~~~~~~~~~~~~
+
+  o Track Event page: to trigger the Init function, GP16 has to be pressed for
+    2 seconds (a message will be displayed to inform about this)
+
+  o fixed various minor bugs
+
+
 MIDIboxSEQ V4.0beta8
 ~~~~~~~~~~~~~~~~~~~~
 

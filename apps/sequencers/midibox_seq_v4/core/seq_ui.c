@@ -1765,15 +1765,21 @@ s32 SEQ_UI_LCD_Update(void)
 	right_aligned = 0;
       } break;
 
-      case SEQ_UI_MSG_DELAYED_ACTION: {
+      case SEQ_UI_MSG_DELAYED_ACTION:
+      case SEQ_UI_MSG_DELAYED_ACTION_R: {
 	//                             00112233
 	const char animation_l[2*4] = "   )))) ";
 	//                             00112233
 	const char animation_r[2*4] = "  ( (( (";
 	animation_l_ptr = animation_l;
 	animation_r_ptr = animation_r;
-	msg_x = 39;
-	right_aligned = 1;
+	if( ui_msg_type == SEQ_UI_MSG_DELAYED_ACTION_R ) {
+	  msg_x = 40; // right LCD
+	  right_aligned = 0;
+	} else {
+	  msg_x = 39; // left LCD
+	  right_aligned = 1;
+	}
 
 	if( ui_delayed_action_callback == NULL ) {
 	  disable_message = 1; // button has been depressed before delay
