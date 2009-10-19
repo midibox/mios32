@@ -9,6 +9,9 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta9
 ~~~~~~~~~~~~~~~~~~~~
 
+  o If a sequence is already running, the MIDI file player doesn't cause a restart
+    anymore. Instead in automatically synchs to the next 16 step based measure.
+
   o Track Event page: to trigger the Init function, GP16 has to be pressed for
     2 seconds (a message will be displayed to inform about this)
 

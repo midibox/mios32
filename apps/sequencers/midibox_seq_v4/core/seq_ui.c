@@ -2063,14 +2063,6 @@ s32 SEQ_UI_LED_Handler_Periodic()
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 played_step = seq_core_trk[visible_track].step;
 
-  if( SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive ) {
-    u32 tick = SEQ_BPM_TickGet();
-    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-    u32 ticks_per_measure = ticks_per_step * 16;
-    u32 step = ((tick % ticks_per_measure) / ticks_per_step);
-    played_step = step;
-  }
-
   if( seq_ui_button_state.STEP_VIEW ) {
     // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
     if( sequencer_running )

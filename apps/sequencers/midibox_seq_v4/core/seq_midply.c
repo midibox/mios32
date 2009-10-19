@@ -64,6 +64,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 /////////////////////////////////////////////////////////////////////////////
 
 static seq_midply_mode_t seq_midply_mode;
+static u8 seq_midply_run_mode;
 static u8 seq_midply_loop_mode;
 
 static mios32_midi_port_t seq_midply_port;
@@ -85,6 +86,14 @@ static u8 loop_req;
 static u32 loop_range;
 static u32 loop_offset;
 
+// for synched start
+static u32 synched_start_tick;
+
+// to track Note On events:
+// each note of all 16 channels has a dedicated array of note flags (packed in 32bit format)
+#define UNPLAYED_NOTE_OFF_CHN_NUM 16 // for all 16 MIDI channels assigned to seq_midply_port
+static u32 unplayed_note_off[UNPLAYED_NOTE_OFF_CHN_NUM][128/32];
+
 // filename
 #define MIDIFILE_PATH_LEN_MAX 20
 static u8 midifile_path[MIDIFILE_PATH_LEN_MAX];
@@ -99,7 +108,8 @@ static FILEINFO midifile_fi;
 s32 SEQ_MIDPLY_Init(u32 mode)
 {
   // init default mode and port
-  seq_midply_mode = SEQ_MIDPLY_MODE_Off;
+  seq_midply_mode = SEQ_MIDPLY_MODE_Parallel;
+  seq_midply_run_mode = 0;
   seq_midply_loop_mode = 1;
   seq_midply_port = DEFAULT;
   midifile_path[0] = 0;
@@ -110,6 +120,12 @@ s32 SEQ_MIDPLY_Init(u32 mode)
   // install callback functions
   MID_PARSER_InstallFileCallbacks(&SEQ_MIDPLY_read, &SEQ_MIDPLY_eof, &SEQ_MIDPLY_seek);
   MID_PARSER_InstallEventCallbacks(&SEQ_MIDPLY_PlayEvent, &SEQ_MIDPLY_PlayMeta);
+
+  // no unplayed note off events
+  int chn, i;
+  for(chn=0; chn<UNPLAYED_NOTE_OFF_CHN_NUM; ++chn)
+    for(i=0; i<(128/32); ++i)
+      unplayed_note_off[chn][i] = 0;
 
   return 0; // no error
 }
@@ -125,23 +141,60 @@ seq_midply_mode_t SEQ_MIDPLY_ModeGet(void)
 
 s32 SEQ_MIDPLY_ModeSet(seq_midply_mode_t mode)
 {
-  if( mode >= SEQ_MIDPLY_MODE_Off && mode <= SEQ_MIDPLY_MODE_Parallel ) {
-    MUTEX_MIDIOUT_TAKE;
-
-    // before switching to new mode, finish current mode properly
-    switch( seq_midply_mode ) {
-      case SEQ_MIDPLY_MODE_Exclusive:
-      case SEQ_MIDPLY_MODE_Parallel:
-	if( mode == SEQ_MIDPLY_MODE_Off ) {
-	  SEQ_MIDPLY_PlayOffEvents();
-	}
-    }
-
+  if( mode >= SEQ_MIDPLY_MODE_Exclusive && mode <= SEQ_MIDPLY_MODE_Parallel ) {
     seq_midply_mode = mode;
-    MUTEX_MIDIOUT_GIVE;
   }  else {
     return -1; // invalid mode
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// get/set runmode (on=Play, off=Stop)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDPLY_RunModeGet(void)
+{
+  return seq_midply_run_mode;
+}
+
+s32 SEQ_MIDPLY_RunModeSet(u8 on, u8 synched_start)
+{
+  // exit if no song loaded
+  if( !midifile_path[0] )
+    return -1;
+
+  MUTEX_MIDIOUT_TAKE;
+
+  // by default no synched start
+  synched_start_tick = 0;
+
+  // flush events if run mode turned off or sequencer already running
+  if( !on || seq_midply_run_mode )
+    SEQ_MIDPLY_PlayOffEvents();
+
+  seq_midply_run_mode = on;
+
+  if( seq_midply_run_mode ) {
+    // reset sequencer
+    loop_range = 0;
+    loop_offset = 0;
+    SEQ_MIDPLY_Reset();
+
+    if( synched_start ) {
+      // calculate start tick based on steps per measure
+      u32 tick = SEQ_BPM_TickGet();
+      u32 ticks_per_step = 384 / 4;
+      // u32 ticks_per_measure = ticks_per_step * ((int)seq_core_steps_per_measure+1);
+      u32 ticks_per_measure = ticks_per_step * 16; // using seq_core_steps_per_measure could be too confusing if e.g. value is set to 256 steps!
+      u32 measure = (tick / ticks_per_measure);
+
+      synched_start_tick = (MIDI_PARSER_PPQN_Get() * (ticks_per_measure * (measure + 1))) / 384;
+    }
+  }
+
+  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -180,6 +233,15 @@ s32 SEQ_MIDPLY_PortSet(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// get Start Tick if synched start (returns 0 if no synched start requested)
+/////////////////////////////////////////////////////////////////////////////
+u32 SEQ_MIDPLY_SynchTickGet(void)
+{
+  return synched_start_tick;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // play new MIDI file
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_PlayFile(char *path)
@@ -188,9 +250,6 @@ s32 SEQ_MIDPLY_PlayFile(char *path)
 
   // ensure exclusive access to parser (this routine could be interrupted by sequencer handler)
   MUTEX_MIDIOUT_TAKE;
-
-  // play off events if required
-  SEQ_MIDPLY_PlayOffEvents();
 
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_ReadOpen(&midifile_fi, path);
@@ -244,18 +303,31 @@ char *SEQ_MIDPLY_PathGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_PlayOffEvents(void)
 {
-  // Player disabled?
-  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off )
-    return 0;
+  int chn, i, bit;
+  mios32_midi_package_t midi_package;
 
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
-  // send Note Off to all channels
-  // TODO: howto handle different ports?
-  // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
-  int chn;
-  mios32_midi_package_t midi_package;
+  // send Note Off based on note tracker flags
+  // no unplayed note off events
+  for(chn=0; chn<UNPLAYED_NOTE_OFF_CHN_NUM; ++chn)
+    for(i=0; i<(128/32); ++i)
+      if( unplayed_note_off[chn][i] ) {
+	for(bit=0; bit<32; ++bit)
+	  if( unplayed_note_off[chn][i] & (1 << bit) ) {
+	    midi_package.type = NoteOn;
+	    midi_package.event = NoteOn;
+	    midi_package.chn = chn;
+	    midi_package.note = i*32 + bit;
+	    midi_package.velocity = 0;
+	    MIOS32_MIDI_SendPackage(seq_midply_port, midi_package);
+	  }
+	unplayed_note_off[chn][i] = 0;
+      }
+
+  // send Controller Reset to all channels
+  // + send Note Off CC (if CC Damper Pedal has been sent!)
   midi_package.type = CC;
   midi_package.event = CC;
   midi_package.evnt2 = 0;
@@ -275,8 +347,8 @@ s32 SEQ_MIDPLY_PlayOffEvents(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_Reset(void)
 {
-  // Player disabled?
-  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+  // Player running?
+  if( !seq_midply_run_mode || !midifile_path[0] )
     return 0;
 
   // since timebase has been changed, ensure that Off-Events are played 
@@ -290,6 +362,7 @@ s32 SEQ_MIDPLY_Reset(void)
   prefetch_offset = 0;
   loop_req = 0;
   loop_offset = 0;
+  synched_start_tick = 0;
 
   // restart song
   MID_PARSER_RestartSong();
@@ -311,11 +384,18 @@ s32 SEQ_MIDPLY_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 // Sets new song position (new_song_pos resolution: 16th notes)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
+s32 SEQ_MIDPLY_SongPos(u16 new_song_pos, u8 from_midi)
 {
-  // Player disabled?
-  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+  // Player running?
+  if( !seq_midply_run_mode || !midifile_path[0] )
     return 0;
+
+  // if position has been changed via MIDI command: reset loop and synched start offsets
+  if( from_midi ) {
+    loop_range = 0;
+    loop_offset = 0;
+    synched_start_tick = 0;
+  }
 
   // calculate tick based on MIDI file ppqn
   u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
@@ -351,13 +431,13 @@ s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
   if( new_song_pos > 1 ) {
     // (silently) fast forward to requested position
     ffwd_silent_mode = 1;
-    MID_PARSER_FetchEvents(0, new_tick-1);
+    MID_PARSER_FetchEvents(0, new_tick - 1);
     ffwd_silent_mode = 0;
   }
 
   // when do we expect the next prefetch:
-  next_prefetch = new_tick + loop_offset;
-  prefetch_offset = new_tick + loop_offset;
+  next_prefetch = new_tick;
+  prefetch_offset = new_tick;
 
   return 0; // no error
 }
@@ -368,50 +448,60 @@ s32 SEQ_MIDPLY_SongPos(u16 new_song_pos)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 {
-  // Player disabled?
-  if( seq_midply_mode == SEQ_MIDPLY_MODE_Off || !midifile_path[0] )
+  // Player running?
+  if( !seq_midply_run_mode || !midifile_path[0] )
     return 0;
-
-  // request UI update if in exclusive mode (normaly done by SEQ_CORE)
-  if( seq_midply_mode == SEQ_MIDPLY_MODE_Exclusive && (bpm_tick % (384/4)) == 0 )
-    seq_core_step_update_req = 1;
 
   // calculate tick based on MIDI file ppqn
   u32 ppqn = MIDI_PARSER_PPQN_Get();
   bpm_tick = (ppqn * bpm_tick) / 384;
 
-  if( bpm_tick >= next_prefetch ) {
+  // synched start
+  if( synched_start_tick ) {
+    if( bpm_tick < synched_start_tick )
+      return 0;
+    loop_offset = synched_start_tick;
+    next_prefetch = 0; // ASAP
+    prefetch_offset = 0;
+    synched_start_tick = 0;
+  }
+
+  u32 midi_file_tick = bpm_tick - loop_offset;
+  if( loop_range )
+    midi_file_tick %= loop_range;
+
+  if( midi_file_tick >= next_prefetch ) {
     // get number of prefetch ticks depending on current BPM
     u32 prefetch_ticks = SEQ_BPM_TicksFor_mS(PREFETCH_TIME_MS);
 
-    if( bpm_tick >= prefetch_offset ) {
+    if( midi_file_tick >= prefetch_offset ) {
       // buffer underrun - fetch more!
-      prefetch_ticks += (bpm_tick - prefetch_offset);
-      next_prefetch = bpm_tick; // ASAP
-    } else if( (prefetch_offset - bpm_tick) < prefetch_ticks ) {
+      prefetch_ticks += (midi_file_tick - prefetch_offset);
+      next_prefetch = midi_file_tick; // ASAP
+    } else if( (prefetch_offset - midi_file_tick) < prefetch_ticks ) {
       // close to a buffer underrun - fetch more!
       prefetch_ticks *= 2;
-      next_prefetch = bpm_tick; // ASAP
+      next_prefetch = midi_file_tick; // ASAP
     } else {
       next_prefetch += prefetch_ticks;
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ] Prefetch started at tick %u (prefetching %u..%u)\n", bpm_tick, prefetch_offset, prefetch_offset+prefetch_ticks-1);
+    DEBUG_MSG("[SEQ] Prefetch started at tick %u (prefetching %u..%u)\n", midi_file_tick, prefetch_offset, prefetch_offset+prefetch_ticks-1);
 #endif
 
-    u32 looped_prefetch_offset = loop_range ? (prefetch_offset % loop_range) : prefetch_offset;
-    if( MID_PARSER_FetchEvents(looped_prefetch_offset, prefetch_ticks) == 0 ) {
+    if( MID_PARSER_FetchEvents(prefetch_offset, prefetch_ticks) == 0 ) {
       if( !seq_midply_loop_mode ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[SEQ] End of song reached after %u ticks - stopped playback.\n", bpm_tick);
+	DEBUG_MSG("[SEQ] End of song reached after %u ticks - stopped playback.\n", midi_file_tick);
 #endif
 	loop_range = 0;
 	loop_offset = 0;
 	loop_req = 0;
+	synched_start_tick = 0;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[SEQ] End of song reached after %u ticks - restart request!\n", bpm_tick);
+	DEBUG_MSG("[SEQ] End of song reached after %u ticks - restart request!\n", midi_file_tick);
 #endif
 	loop_req = 1;
       }
@@ -427,11 +517,11 @@ s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
   if( loop_req && ((bpm_tick % (4*ppqn)) == 0) ) {
     loop_req = 0;
     if( !loop_range )
-      loop_range = bpm_tick;
-    loop_offset = bpm_tick;
-    SEQ_MIDPLY_SongPos(0);
+      loop_range = midi_file_tick;
+    loop_offset += loop_range;
+    SEQ_MIDPLY_SongPos(0, 0);
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ] Song restarted at tick %u, loop range: %u\n", bpm_tick, loop_range);
+    DEBUG_MSG("[SEQ] Song restarted at tick %u, loop range: %u\n", midi_file_tick, loop_range);
 #endif
   }
 
@@ -521,8 +611,15 @@ static s32 SEQ_MIDPLY_PlayEvent(u8 track, mios32_midi_package_t midi_package, u3
     return 0;
   
   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
-  if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) )
+  if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) ) {
     event_type = SEQ_MIDI_OUT_OffEvent;
+    unplayed_note_off[midi_package.chn][midi_package.note / 32] &= ~(1 << (midi_package.note % 32));
+  } else if( midi_package.event == NoteOn && midi_package.velocity > 0 )
+    unplayed_note_off[midi_package.chn][midi_package.note / 32] |= (1 << (midi_package.note % 32));
+  else if( midi_package.event == CC )
+    event_type = SEQ_MIDI_OUT_CCEvent;
+
+  // Note On tracker (to play Note Off if sequencer is stopped)
 
   // use tag of track #16 - unfortunately more than 16 tags are not supported
   midi_package.cable = 15; 

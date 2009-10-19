@@ -267,14 +267,12 @@ s32 SEQ_CORE_Handler(void)
 
       // TODO: set new song position
 
-      SEQ_MIDPLY_SongPos(new_song_pos);
+      SEQ_MIDPLY_SongPos(new_song_pos, 1);
     }
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
-      seq_midply_mode_t midply_mode = SEQ_MIDPLY_ModeGet(); 
-
       if( bpm_tick_prefetched_ctr ) {
 	// ticks already generated due to prefetching - wait until we catch up
 	--bpm_tick_prefetched_ctr;
@@ -289,8 +287,7 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_UI_INFO_StopwatchReset();
 #endif
 	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
-	  if( midply_mode != SEQ_MIDPLY_MODE_Exclusive )
-	    SEQ_CORE_Tick(forwarded_bpm_tick);
+	  SEQ_CORE_Tick(forwarded_bpm_tick);
 	  SEQ_MIDPLY_Tick(forwarded_bpm_tick);
 	  ++forwarded_bpm_tick;
 	  ++bpm_tick_prefetched_ctr;
@@ -310,8 +307,7 @@ s32 SEQ_CORE_Handler(void)
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
 	SEQ_UI_INFO_StopwatchReset();
 #endif
-	if( midply_mode != SEQ_MIDPLY_MODE_Exclusive )
-	  SEQ_CORE_Tick(bpm_tick);
+	SEQ_CORE_Tick(bpm_tick);
 	SEQ_MIDPLY_Tick(bpm_tick);
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
@@ -394,6 +390,9 @@ s32 SEQ_CORE_Reset(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Tick(u32 bpm_tick)
 {
+  // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
+  seq_midply_mode_t midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
+
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
@@ -590,10 +589,12 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
         // solo function: don't play MIDI event if track not selected
         // mute function
         // track disabled
+	// MIDI player in exclusive mode
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
 	    t->state.MUTED || // Track Mute function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
-	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off ) { // track disabled
+	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
+	    midply_solo ) { // MIDI player in exclusive mode
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
 	    int i;
