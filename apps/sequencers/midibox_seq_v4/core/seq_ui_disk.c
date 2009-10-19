@@ -120,19 +120,29 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( mf_dialog ) {
     case MF_DIALOG_PLAY:
       switch( encoder ) {
-        case SEQ_UI_ENCODER_GP9:
-        case SEQ_UI_ENCODER_GP10: {
-	  // select off/exclusive/parallel
-	  u8 value = SEQ_MIDPLY_ModeGet();;
-	  if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
-	    SEQ_MIDPLY_ModeSet(value);
+        case SEQ_UI_ENCODER_GP9: {
+	  // select Play/Stop
+	  u8 value = SEQ_MIDPLY_RunModeGet();;
+	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
+	    SEQ_MIDPLY_RunModeSet(value, 1);
+	    if( value ) {
+	      MUTEX_MIDIOUT_TAKE;
+	      if( !SEQ_BPM_IsRunning() ) {
+		// and start sequencer
+		SEQ_BPM_CheckAutoMaster();
+		SEQ_BPM_Start();
+	      }
+	      MUTEX_MIDIOUT_GIVE;
+
+	      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Playing:", SEQ_MIDPLY_PathGet());
+
+	    }
 	    return 1;
 	  }
 	  return 0;
 	} break;
 
-
-        case SEQ_UI_ENCODER_GP11: {
+        case SEQ_UI_ENCODER_GP10: {
 	  // enable/disable loop mode
 	  u8 value = SEQ_MIDPLY_LoopModeGet();
 	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) >= 0 ) {
@@ -142,7 +152,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 0; // no change
 	} break;
 
+        case SEQ_UI_ENCODER_GP11:
         case SEQ_UI_ENCODER_GP12: {
+	  // select exclusive/parallel
+	  u8 value = SEQ_MIDPLY_ModeGet();;
+	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
+	    SEQ_MIDPLY_ModeSet(value);
+	    return 1;
+	  }
+	  return 0;
+	} break;
+
+
+        case SEQ_UI_ENCODER_GP13: {
 	  // select MIDI port
 	  u8 port_ix = SEQ_MIDI_PORT_OutIxGet(SEQ_MIDPLY_PortGet());
 	  if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
@@ -152,7 +174,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 0; // no change
 	} break;
 
-        case SEQ_UI_ENCODER_GP13:
         case SEQ_UI_ENCODER_GP14:
         case SEQ_UI_ENCODER_GP15:
 	  return -1; // not mapped (yet)
@@ -284,31 +305,31 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	switch( button ) {
 	  case SEQ_UI_BUTTON_GP9:
-	  case SEQ_UI_BUTTON_GP10: {
-	    // cycle off/exclusive/parallel
+	    // cycle run mode
+	    return Encoder_Handler(button, SEQ_MIDPLY_RunModeGet() ? -1 : 1);
+	    
+          case SEQ_UI_BUTTON_GP10:
+	    // cycle loop mode
+	    return Encoder_Handler(button, SEQ_MIDPLY_LoopModeGet() ? -1 : 1);
+
+	  case SEQ_UI_BUTTON_GP11:
+	  case SEQ_UI_BUTTON_GP12: {
+	    // cycle exclusive/parallel
 	    switch( SEQ_MIDPLY_ModeGet() ) {
-	      case SEQ_MIDPLY_MODE_Off:
-		SEQ_MIDPLY_ModeSet(SEQ_MIDPLY_MODE_Exclusive);
-		break;
 	      case SEQ_MIDPLY_MODE_Exclusive:
 		SEQ_MIDPLY_ModeSet(SEQ_MIDPLY_MODE_Parallel);
 		break;
-	      case SEQ_MIDPLY_MODE_Parallel:
-		SEQ_MIDPLY_ModeSet(SEQ_MIDPLY_MODE_Off);
+	      default:
+		SEQ_MIDPLY_ModeSet(SEQ_MIDPLY_MODE_Exclusive);
 		break;
 	    }
 	    return 1;
 	  } break;
 
-          case SEQ_UI_BUTTON_GP11:
-	    // cycle loop mode
-	    return Encoder_Handler(button, SEQ_MIDPLY_LoopModeGet() ? -1 : 1);
-
-          case SEQ_UI_BUTTON_GP12:
+          case SEQ_UI_BUTTON_GP13:
 	    // increment MIDI port
 	    return Encoder_Handler(button, 1);
 
-          case SEQ_UI_BUTTON_GP13:
           case SEQ_UI_BUTTON_GP14:
           case SEQ_UI_BUTTON_GP15:
           case SEQ_UI_BUTTON_GP16:
@@ -326,19 +347,30 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      char path[40];
 	      sprintf(path, "midi/%s", mid_file);
 
-	      // turn on MIDI play mode if not enabled yet
-	      if( SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Off )
-		SEQ_MIDPLY_ModeSet(SEQ_MIDPLY_MODE_Exclusive);
-
 	      MUTEX_MIDIOUT_TAKE;
-	      // always restart sequencer
-	      SEQ_BPM_CheckAutoMaster();
-	      SEQ_BPM_Start();
+	      s32 status;
 
-	      s32 status = SEQ_MIDPLY_PlayFile(path);
+	      // load file
+	      status = SEQ_MIDPLY_PlayFile(path);
+
+	      // turn on MIDI play run mode if file is valid
+	      if( status >= 0 ) {
+		u8 sequencer_running = SEQ_BPM_IsRunning();
+
+		SEQ_MIDPLY_RunModeSet(1, sequencer_running);
+
+		if( !sequencer_running ) {
+		  // and start sequencer
+		  SEQ_BPM_CheckAutoMaster();
+		  SEQ_BPM_Start();
+		}
+	      } else {
+		SEQ_MIDPLY_RunModeSet(0, 0);
+	      }
+
 	      MUTEX_MIDIOUT_GIVE;
 	      if( status >= 0 )
-		SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Playing:", mid_file);
+		SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Playing:", SEQ_MIDPLY_PathGet());
 	      else
 		SEQ_UI_SDCardErrMsg(2000, status);
 	    }
@@ -445,8 +477,8 @@ static s32 LCD_Handler(u8 high_prio)
   //                                           enabled           Play  Import  Export
 
 
-  // Select MIDI File (10 files found)       Playmode   Loop Port
-  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx exclusive  on   Def.                EXIT
+  // Select MIDI File (10 files found)       Start Loop Playmode  Port
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Play   on  exclusive Def.           EXIT
 
 
   switch( mf_dialog ) {
@@ -469,13 +501,28 @@ static s32 LCD_Handler(u8 high_prio)
 
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("Playmode   Loop Port");
-      SEQ_LCD_PrintSpaces(40-10);
+      if( SEQ_MIDPLY_RunModeGet() ) {
+	SEQ_LCD_PrintSpaces(6);
+      } else {
+	SEQ_LCD_PrintString("Start ");
+      }
+
+      SEQ_LCD_PrintString("Loop Playmode  Port");
+      SEQ_LCD_PrintSpaces(40-25);
 
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
 
       SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
+
+      if( SEQ_MIDPLY_RunModeGet() ) {
+	SEQ_LCD_PrintString("STOP  ");
+      } else {
+	SEQ_LCD_PrintString("Play  ");
+      }
+
+      SEQ_LCD_PrintFormattedString(" %s  ", SEQ_MIDPLY_LoopModeGet() ? " on": "off");
+
 
       switch( SEQ_MIDPLY_ModeGet() ) {
         case SEQ_MIDPLY_MODE_Exclusive:
@@ -485,15 +532,13 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintString("parallel ");
 	  break;
         default:
-	  SEQ_LCD_PrintString("disabled ");
+	  SEQ_LCD_PrintString("???????? ");
 	  break;
       }
 
-      SEQ_LCD_PrintFormattedString("  %s  ", SEQ_MIDPLY_LoopModeGet() ? " on": "off");
-
       SEQ_LCD_PrintString((char *)SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(SEQ_MIDPLY_PortGet())));
 
-      SEQ_LCD_PrintSpaces(16);
+      SEQ_LCD_PrintSpaces(11);
       SEQ_LCD_PrintString("EXIT");
       break;
 
