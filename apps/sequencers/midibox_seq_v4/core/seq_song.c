@@ -419,9 +419,9 @@ s32 SEQ_SONG_PrevPos(void)
 s32 SEQ_SONG_Fwd(void)
 {
   u32 bpm_tick = SEQ_BPM_TickGet();
-  u32 ticks_per_measure = ((u32)seq_core_steps_per_measure+1) * (SEQ_BPM_PPQN_Get()/4);
-  u32 measure = bpm_tick / ticks_per_measure;
-  u32 next_bpm_tick = (measure+1) * ticks_per_measure;
+  u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
+  u32 measure = bpm_tick / ticks_per_pattern;
+  u32 next_bpm_tick = (measure+1) * ticks_per_pattern;
 
   SEQ_CORE_Reset();
   SEQ_SONG_NextPos();
@@ -436,9 +436,9 @@ s32 SEQ_SONG_Fwd(void)
 s32 SEQ_SONG_Rew(void)
 {
   u32 bpm_tick = SEQ_BPM_TickGet();
-  u32 ticks_per_measure = ((u32)seq_core_steps_per_measure+1) * (SEQ_BPM_PPQN_Get()/4);
-  u32 measure = bpm_tick / ticks_per_measure;
-  u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_measure) : 0;
+  u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
+  u32 measure = bpm_tick / ticks_per_pattern;
+  u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_pattern) : 0;
 
   SEQ_CORE_Reset();
   SEQ_SONG_PrevPos();

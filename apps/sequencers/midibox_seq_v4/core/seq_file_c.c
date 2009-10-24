@@ -263,6 +263,8 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_options.PASTE_CLR_ALL = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
 	    seq_core_steps_per_measure = value;
+	  } else if( strcmp(parameter, "StepsPerPattern") == 0 ) {
+	    seq_core_steps_per_pattern = value;
 	  } else if( strcmp(parameter, "GlobalScale") == 0 ) {
 	    seq_core_global_scale = value;
 	  } else if( strcmp(parameter, "GlobalScaleCtrl") == 0 ) {
@@ -414,6 +416,9 @@ static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "StepsPerMeasure %d\n", seq_core_steps_per_measure);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "StepsPerPattern %d\n", seq_core_steps_per_pattern);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "GlobalScale %d\n", seq_core_global_scale);

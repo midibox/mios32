@@ -210,8 +210,9 @@ extern s32 SEQ_UI_KeyPad_LCD_Msg(void);
 // Prototypes for functions implemented in seq_ui_*.c
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode);
 extern s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds);
+extern s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode);
 
 extern s32 SEQ_UI_INFO_Idle(void);
 extern s32 SEQ_UI_INFO_StopwatchInit(void);

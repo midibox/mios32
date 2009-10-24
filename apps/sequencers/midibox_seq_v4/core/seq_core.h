@@ -210,6 +210,7 @@ extern s32 SEQ_CORE_Scrub(s32 incrementer);
 
 extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
+extern u8 seq_core_steps_per_pattern;
 
 extern u8 seq_core_step_update_req;
 

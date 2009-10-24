@@ -1374,7 +1374,12 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
   seq_ui_display_update_req = 1;
 
   // emulate general purpose button
-  return SEQ_UI_Button_GP(pin_value, pin);
+  if( seq_hwcfg_blm.buttons_no_ui ) {
+    s32 status = SEQ_UI_EDIT_Button_Handler(pin_value, pin);
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+    return status;
+  } else
+    return SEQ_UI_Button_GP(pin_value, pin);
 }
 
 
@@ -2053,7 +2058,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
 
   // don't continue if no new step has been generated and GP LEDs haven't changed
-  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds )
+  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds && sequencer_running ) // sequencer running check: workaround - so long sequencer not running, we won't get an step update request!
     return 0;
   seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
   prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern

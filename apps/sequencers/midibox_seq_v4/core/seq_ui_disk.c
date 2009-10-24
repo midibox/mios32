@@ -23,19 +23,34 @@
 #include "tasks.h"
 
 #include "seq_file.h"
+#include "seq_file_b.h"
 #include "seq_midply.h"
+#include "seq_midexp.h"
+#include "seq_midimp.h"
+
+#include "seq_core.h"
+#include "seq_pattern.h"
+#include "seq_song.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           2
+#define NUM_OF_ITEMS           5
 #define ITEM_BACKUP            0
 #define ITEM_ENABLE_MSD        1
 #define ITEM_MF_PLAY           2
 #define ITEM_MF_IMPORT         3
 #define ITEM_MF_EXPORT         4
+
+#define EXPORT_NUM_OF_ITEMS    6
+#define EXPORT_ITEM_MODE       0
+#define EXPORT_ITEM_VAL        1
+#define EXPORT_ITEM_BANK       2
+#define EXPORT_ITEM_PATTERN    3
+#define EXPORT_ITEM_MEASURES   4
+#define EXPORT_ITEM_STEPS_P_M  5
 
 
 // MIDI File dialog screens
@@ -85,8 +100,30 @@ static s32 LED_Handler(u16 *gp_leds)
       break;
 
     case MF_DIALOG_IMPORT:
-    case MF_DIALOG_EXPORT:
       // no LED functions yet
+      break;
+
+    case MF_DIALOG_EXPORT:
+      switch( ui_selected_item ) {
+        case EXPORT_ITEM_MODE:
+	  *gp_leds |= 0x0001;
+	  break;
+        case EXPORT_ITEM_VAL:
+	  *gp_leds |= 0x0002;
+	  break;
+        case EXPORT_ITEM_BANK:
+	  *gp_leds |= 0x0004;
+	  break;
+        case EXPORT_ITEM_PATTERN:
+	  *gp_leds |= 0x0008;
+	  break;
+        case EXPORT_ITEM_MEASURES:
+	  *gp_leds |= 0x0030;
+	  break;
+        case EXPORT_ITEM_STEPS_P_M:
+	  *gp_leds |= 0x00c0;
+	  break;
+      }
       break;
 
     default:
@@ -118,6 +155,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   switch( mf_dialog ) {
+    ///////////////////////////////////////////////////////////////////////////
     case MF_DIALOG_PLAY:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9: {
@@ -180,8 +218,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
         case SEQ_UI_ENCODER_GP16:
 	  // EXIT only via button
-	  if( incrementer == 0 )
+	  if( incrementer == 0 ) {
+	    ui_selected_item = 0;
 	    mf_dialog = MF_DIALOG_NONE;
+	  }
 	  return 1;
 
         default:
@@ -190,11 +230,158 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       break;
 
+
+    ///////////////////////////////////////////////////////////////////////////
     case MF_DIALOG_IMPORT:
-    case MF_DIALOG_EXPORT:
       // no encoder functions yet
       break;
 
+
+    ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT: {
+      seq_midexp_mode_t midexp_mode = SEQ_MIDEXP_ModeGet();
+
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP1:
+          ui_selected_item = EXPORT_ITEM_MODE;
+          break;
+
+        case SEQ_UI_ENCODER_GP2:
+          ui_selected_item = EXPORT_ITEM_VAL;
+          break;
+    
+        case SEQ_UI_ENCODER_GP3:
+          ui_selected_item = EXPORT_ITEM_BANK;
+          break;
+    
+        case SEQ_UI_ENCODER_GP4:
+          ui_selected_item = EXPORT_ITEM_PATTERN;
+          break;
+    
+        case SEQ_UI_ENCODER_GP5:
+        case SEQ_UI_ENCODER_GP6:
+          ui_selected_item = EXPORT_ITEM_MEASURES;
+          break;
+    
+        case SEQ_UI_ENCODER_GP7:
+        case SEQ_UI_ENCODER_GP8:
+          ui_selected_item = EXPORT_ITEM_STEPS_P_M;
+          break;
+    
+        case SEQ_UI_ENCODER_GP9:
+        case SEQ_UI_ENCODER_GP10:
+	  // CONTINUE only via button
+	  if( incrementer == 0 ) {
+	    ui_selected_item = 0;
+	    mf_dialog = MF_DIALOG_NONE;
+	  }
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP11:
+        case SEQ_UI_ENCODER_GP12:
+        case SEQ_UI_ENCODER_GP13:
+        case SEQ_UI_ENCODER_GP14:
+        case SEQ_UI_ENCODER_GP15:
+	  return -1; // not mapped
+
+        case SEQ_UI_ENCODER_GP16:
+	  // EXIT only via button
+	  if( incrementer == 0 ) {
+	    ui_selected_item = 0;
+	    mf_dialog = MF_DIALOG_NONE;
+	  }
+	  return 1;
+      }
+    
+      // for GP encoders and Datawheel
+      switch( ui_selected_item ) {
+        case EXPORT_ITEM_MODE: {
+	  u8 value = (u8)SEQ_MIDEXP_ModeGet();
+	  if( SEQ_UI_Var8_Inc(&value, 0, 3, incrementer) >= 0 ) {
+	    SEQ_MIDEXP_ModeSet(value);
+	    return 1; // value changed
+	  }
+	  return 0; // no change
+        }
+
+        case EXPORT_ITEM_VAL: {
+	  switch( midexp_mode ) {
+	    case SEQ_MIDEXP_MODE_Track: {
+	      return SEQ_UI_GxTyInc(incrementer);
+	    }
+	    case SEQ_MIDEXP_MODE_Group: {
+	      if( SEQ_UI_Var8_Inc(&ui_selected_group, 0, SEQ_CORE_NUM_GROUPS-1, incrementer) >= 0 ) {
+		return 1; // value changed
+	      }
+	      return 0; // no change
+	    }
+	    case SEQ_MIDEXP_MODE_AllGroups: {
+	      return 0; // not relevant
+	    }
+	    case SEQ_MIDEXP_MODE_Song: {
+	      u8 value = (u8)SEQ_SONG_NumGet();
+	      if( SEQ_UI_Var8_Inc(&value, 0, SEQ_SONG_NUM-1, incrementer) >= 0 ) {
+		SEQ_SONG_Load(value);
+		return 1; // value changed
+	      }
+	      return 0; // no change
+	    }
+	  }
+        }
+    
+        case EXPORT_ITEM_BANK:
+        case EXPORT_ITEM_PATTERN: {
+	  if( midexp_mode != SEQ_MIDEXP_MODE_Group )
+	    return -1; // not mapped
+
+	  // change bank/pattern number
+	  seq_pattern_t *pattern = &seq_pattern[ui_selected_group];
+	  if( ui_selected_item == EXPORT_ITEM_PATTERN ) {
+	    u8 tmp = pattern->pattern;
+	    u8 max_patterns = SEQ_FILE_B_NumPatterns(pattern->bank);
+	    // TODO: print error message if bank not valid (max_patterns = 0)
+	    if( !max_patterns || !SEQ_UI_Var8_Inc(&tmp, 0, max_patterns-1, incrementer) ) {
+	      return 0; // no change
+	    }
+	    pattern->pattern = tmp;
+	  } else {
+	    u8 tmp = pattern->bank;
+	    if( !SEQ_UI_Var8_Inc(&tmp, 0, SEQ_FILE_B_NUM_BANKS-1, incrementer) ) {
+	      return 0; // no change
+	    }
+	    pattern->bank = tmp;
+	  }
+
+	  // always switch unsynched
+	  pattern->SYNCHED = 0;
+	  SEQ_PATTERN_Change(ui_selected_group, *pattern);
+	  return 1;
+        }
+    
+        case EXPORT_ITEM_MEASURES: {
+	  u16 value = (u16)SEQ_MIDEXP_ExportMeasuresGet();
+	  if( SEQ_UI_Var16_Inc(&value, 0, 9999, incrementer) >= 0 ) {
+	    SEQ_MIDEXP_ExportMeasuresSet(value);
+	    return 1; // value changed
+	  }
+	  return 0; // no change
+        }
+    
+        case EXPORT_ITEM_STEPS_P_M: {
+	  u8 value = (u8)SEQ_MIDEXP_ExportStepsPerMeasureGet();
+	  if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) >= 0 ) {
+	    SEQ_MIDEXP_ExportStepsPerMeasureSet(value);
+	    return 1; // value changed
+	  }
+	  return 0; // no change
+        }
+      }
+
+      return -1; // invalid or unsupported encoder
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP1:
@@ -202,15 +389,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
           ui_selected_item = ITEM_BACKUP;
           break;
     
+        case SEQ_UI_ENCODER_GP3:
         case SEQ_UI_ENCODER_GP4:
         case SEQ_UI_ENCODER_GP5:
         case SEQ_UI_ENCODER_GP6:
         case SEQ_UI_ENCODER_GP7:
         case SEQ_UI_ENCODER_GP8:
           if( SEQ_FILE_FormattingRequired() )
-    	ui_selected_item = ITEM_BACKUP;
+	    ui_selected_item = ITEM_BACKUP;
           else
-    	return -1; // not used (yet)
+	    return -1; // not used (yet)
           break;
     
         case SEQ_UI_ENCODER_GP9:
@@ -255,16 +443,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     
         case ITEM_MF_PLAY:
           // switch to MIDI File Play Dialog screen
-          mf_dialog = MF_DIALOG_PLAY;
 	  ui_selected_item = 0;
+          mf_dialog = MF_DIALOG_PLAY;
           SEQ_UI_DISK_UpdateDirList();
           return 1;
     
         case ITEM_MF_IMPORT:
 #if 0
           // switch to MIDI File Import Dialog screen
-          mf_dialog = MF_DIALOG_IMPORT;
 	  ui_selected_item = 0;
+          mf_dialog = MF_DIALOG_IMPORT;
           SEQ_UI_DISK_UpdateDirList();
 #else
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Not implemented", "yet!");
@@ -272,11 +460,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
           return 1;
     
         case ITEM_MF_EXPORT:
-#if 0
+#if 1
           // switch to MIDI File Export Dialog screen
-          mf_dialog = MF_DIALOG_EXPORT;
 	  ui_selected_item = 0;
-          SEQ_UI_DISK_UpdateDirList();
+          mf_dialog = MF_DIALOG_EXPORT;
 #else
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Not implemented", "yet!");
 #endif
@@ -298,6 +485,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   switch( mf_dialog ) {
+    ///////////////////////////////////////////////////////////////////////////
     case MF_DIALOG_PLAY:
       if( depressed ) return 0; // ignore when button depressed
     
@@ -351,7 +539,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      s32 status;
 
 	      // load file
-	      status = SEQ_MIDPLY_PlayFile(path);
+	      status = SEQ_MIDPLY_ReadFile(path);
 
 	      // turn on MIDI play run mode if file is valid
 	      if( status >= 0 ) {
@@ -378,13 +566,47 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       }
       return 1;
 
+
+    ///////////////////////////////////////////////////////////////////////////
     case MF_DIALOG_IMPORT:
-    case MF_DIALOG_EXPORT:
       if( depressed ) return 0; // ignore when button depressed
     
       // no button functions yet
       break;
 
+
+    ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT:
+      if( depressed ) return 0; // ignore when button depressed
+    
+      if( button <= SEQ_UI_BUTTON_GP16 )
+	return Encoder_Handler(button, 0); // re-use encoder handler
+
+      switch( button ) {
+        case SEQ_UI_BUTTON_Select:
+        case SEQ_UI_BUTTON_Right:
+          if( ++ui_selected_item >= EXPORT_NUM_OF_ITEMS )
+	    ui_selected_item = 0;
+    
+          return 1; // value always changed
+    
+        case SEQ_UI_BUTTON_Left:
+          if( ui_selected_item == 0 )
+	    ui_selected_item = EXPORT_NUM_OF_ITEMS-1;
+    
+          return 1; // value always changed
+    
+        case SEQ_UI_BUTTON_Up:
+          return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
+    
+        case SEQ_UI_BUTTON_Down:
+          return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+      }
+
+      return -1; // invalid or unsupported button
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       if( button <= SEQ_UI_BUTTON_GP16 ) {
         s32 incrementer = 0;
@@ -477,8 +699,23 @@ static s32 LCD_Handler(u8 high_prio)
   //                                           enabled           Play  Import  Export
 
 
+  // MIDI Files Play dialog:
   // Select MIDI File (10 files found)       Start Loop Playmode  Port
   //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Play   on  exclusive Def.           EXIT
+
+
+  // MIDI Files Export dialog:
+  // Export Track          Measures StepsPerM                                        
+  // Track  G1T1                1       16   Continue                            EXIT
+
+  // Export Group Pattern  Measures StepsPerM                                        
+  // Group   G1    1:A1         1       16   Continue                            EXIT
+
+  // Export                Measures StepsPerM                                        
+  // All Groups                 1       16   Continue                            EXIT
+
+  // Export Song           Measures                                                  
+  // Song     1                 1            Continue                            EXIT
 
 
   switch( mf_dialog ) {
@@ -541,6 +778,146 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(11);
       SEQ_LCD_PrintString("EXIT");
       break;
+
+    case MF_DIALOG_EXPORT: {
+      seq_midexp_mode_t midexp_mode = SEQ_MIDEXP_ModeGet();
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 0);
+      SEQ_LCD_PrintString("Export ");
+
+      switch( midexp_mode ) {
+        case SEQ_MIDEXP_MODE_Track:
+	  SEQ_LCD_PrintString("Track");
+	  SEQ_LCD_PrintSpaces(10);
+	  break;
+        case SEQ_MIDEXP_MODE_Group:
+	  SEQ_LCD_PrintString("Group Pattern");
+	  SEQ_LCD_PrintSpaces(2);
+	  break;
+        case SEQ_MIDEXP_MODE_AllGroups:
+	  SEQ_LCD_PrintSpaces(15);
+	  break;
+        case SEQ_MIDEXP_MODE_Song:
+	  SEQ_LCD_PrintString("Song");
+	  SEQ_LCD_PrintSpaces(11);
+	  break;
+        default:
+	  SEQ_LCD_PrintSpaces(15);
+      }
+
+      SEQ_LCD_PrintString("Measures ");
+      if( midexp_mode == SEQ_MIDEXP_MODE_Song )
+	SEQ_LCD_PrintSpaces(9);
+      else
+	SEQ_LCD_PrintString("StepsPerM");
+
+      SEQ_LCD_PrintSpaces(40);
+
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 1);
+      switch( midexp_mode ) {
+        case SEQ_MIDEXP_MODE_Track: {
+	  u8 track = SEQ_UI_VisibleTrackGet();
+
+	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(7);
+	  } else {
+	    SEQ_LCD_PrintString("Track  ");
+	  }
+
+	  if( ui_selected_item == EXPORT_ITEM_VAL && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(4);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("G%dT%d",
+					 (track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
+					 (track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
+	  }
+	  SEQ_LCD_PrintSpaces(11);
+	} break;
+        case SEQ_MIDEXP_MODE_Group: {
+	  u8 group = SEQ_UI_VisibleTrackGet() / SEQ_CORE_NUM_TRACKS_PER_GROUP;
+
+	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(8);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("Group   ");
+	  }
+
+	  if( ui_selected_item == EXPORT_ITEM_VAL && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(6);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("G%d    ", (int)group+1);
+	  }
+
+	  if( ui_selected_item == EXPORT_ITEM_BANK && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(1);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("%d", (int)seq_pattern[group].bank+1);
+	  }
+
+	  SEQ_LCD_PrintChar(':');
+
+	  if( ui_selected_item == EXPORT_ITEM_PATTERN && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(2);
+	  } else {
+	    SEQ_LCD_PrintPattern(seq_pattern[group]);
+	  }
+
+	  SEQ_LCD_PrintSpaces(4);
+	} break;
+        case SEQ_MIDEXP_MODE_AllGroups:
+	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(10);
+	  } else {
+	    SEQ_LCD_PrintString("All Groups");
+	  }
+
+	  SEQ_LCD_PrintSpaces(12);
+	  break;
+        case SEQ_MIDEXP_MODE_Song: {
+	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(7);
+	  } else {
+	  SEQ_LCD_PrintString("Song   ");
+	  }
+
+	  if( ui_selected_item == EXPORT_ITEM_VAL && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(3);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("%3d", SEQ_SONG_NumGet()+1);
+	  }
+
+	  SEQ_LCD_PrintSpaces(12);
+	} break;
+        default:
+	  SEQ_LCD_PrintSpaces(22);
+      }
+
+      if( ui_selected_item == EXPORT_ITEM_MEASURES && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(6);
+      } else {
+	SEQ_LCD_PrintFormattedString("  %4d", (int)SEQ_MIDEXP_ExportMeasuresGet()+1);
+      }
+      SEQ_LCD_PrintSpaces(6);
+
+      if( midexp_mode == SEQ_MIDEXP_MODE_Song )
+	SEQ_LCD_PrintSpaces(6);
+      else {
+	if( ui_selected_item == EXPORT_ITEM_STEPS_P_M && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(3);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%3d", (int)SEQ_MIDEXP_ExportStepsPerMeasureGet()+1);
+	}
+	SEQ_LCD_PrintSpaces(3);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_PrintString("Continue");
+      SEQ_LCD_PrintSpaces(28);
+      SEQ_LCD_PrintString("EXIT");
+    } break;
 
     default:
       ///////////////////////////////////////////////////////////////////////////
