@@ -39,6 +39,8 @@
 #include "seq_random.h"
 #include "seq_record.h"
 #include "seq_midply.h"
+#include "seq_midexp.h"
+#include "seq_midimp.h"
 #include "seq_ui.h"
 
 
@@ -77,6 +79,7 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 
 seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
+u8 seq_core_steps_per_pattern;
 
 u8 seq_core_step_update_req;
 
@@ -126,6 +129,7 @@ s32 SEQ_CORE_Init(u32 mode)
 
   seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16-1;
+  seq_core_steps_per_pattern = 16-1;
   seq_core_global_scale = 0;
   seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
@@ -183,8 +187,10 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset record module
   SEQ_RECORD_Init(0);
 
-  // init MIDI file player
+  // init MIDI file player/exporter/importer
   SEQ_MIDPLY_Init(0);
+  SEQ_MIDEXP_Init(0);
+  SEQ_MIDIMP_Init(0);
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -899,7 +905,7 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
     SEQ_BPM_Stop();
 
   // reference step reached measure
-  if( seq_core_state.ref_step == seq_core_steps_per_measure && (bpm_tick % 96) == 20 ) {
+  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
     if( SEQ_SONG_ActiveGet() ) {
       SEQ_SONG_NextPos();
     } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {

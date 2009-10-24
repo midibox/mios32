@@ -6,6 +6,22 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta10
+~~~~~~~~~~~~~~~~~~~~~
+
+  o separated "pattern length" from "measure length" parameter in UTIL->OPT menu.
+    Pattern length is used for synchronized pattern changes, and measure
+    length for the Synch-to-Measure function.
+
+    The left encoder below the item allows to select 16 step wise, the right
+    encoder and datawheel stepwise.
+
+  o Paste/Clr behaviour option in UTIL->OPT menu implemented now
+
+  o HWCFG file option "BUTTONS_NO_UI" implemented now
+
+
+
 MIDIboxSEQ V4.0beta9
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -47,7 +63,6 @@ MIDIboxSEQ V4.0beta7
 
   o implemented synchronous pattern change after x steps (x=1..256)
     This function has to be enabled in the UTIL->OPT page.
-    The same number of steps is used for the Synch-to-Measure function.
 
   o implemented Follow Song mode. It has to be enabled in UTIL->OPT menu.
 

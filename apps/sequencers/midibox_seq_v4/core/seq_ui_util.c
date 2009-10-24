@@ -67,11 +67,23 @@ static u8 copypaste_end;
 static u8 copypaste_buffer_filled = 0;
 static u8 copypaste_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 copypaste_trg_layer[SEQ_TRG_MAX_BYTES];
+static u8 copypaste_cc[128];
+static u8 copypaste_par_layers;
+static u16 copypaste_par_steps;
+static u8 copypaste_trg_layers;
+static u16 copypaste_trg_steps;
+static u8 copypaste_num_instruments;
 
 static u8 undo_buffer_filled = 0;
 static u8 undo_track;
 static u8 undo_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 undo_trg_layer[SEQ_TRG_MAX_BYTES];
+static u8 undo_cc[128];
+static u8 undo_par_layers;
+static u16 undo_par_steps;
+static u8 undo_trg_layers;
+static u16 undo_trg_steps;
+static u8 undo_num_instruments;
 
 static s8 move_enc;
 static u8 move_par_layer[2][16];
@@ -480,9 +492,20 @@ u8 SEQ_UI_UTIL_CopyPasteEndGet(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 COPY_Track(u8 track)
 {
+  int i;
+
   // copy layers into buffer
   memcpy((u8 *)copypaste_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)copypaste_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
+
+  for(i=0; i<128; ++i)
+    copypaste_cc[i] = SEQ_CC_Get(track, i);
+
+  copypaste_par_layers = SEQ_PAR_NumLayersGet(track);
+  copypaste_par_steps = SEQ_PAR_NumStepsGet(track);
+  copypaste_trg_layers = SEQ_TRG_NumLayersGet(track);
+  copypaste_trg_steps = SEQ_TRG_NumStepsGet(track);
+  copypaste_num_instruments = SEQ_PAR_NumInstrumentsGet(track);
 
   // notify that copy&paste buffer is filled
   copypaste_buffer_filled = 1;
@@ -502,6 +525,33 @@ static s32 PASTE_Track(u8 track)
   // branch to clear function if copy&paste buffer not filled
   if( !copypaste_buffer_filled )
     return CLEAR_Track(track);
+
+  seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+
+  // take over mode
+  SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
+  SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
+  SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
+
+  // copy CCs
+  if( seq_core_options.PASTE_CLR_ALL ) {
+    int i;
+
+    for(i=0; i<128; ++i) {
+      if( i != SEQ_CC_MIDI_CHANNEL && i != SEQ_CC_MIDI_PORT )
+	SEQ_CC_Set(track, i, copypaste_cc[i]);
+    }
+  } else {
+    int i;
+    seq_event_mode_t event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+
+    if( (prev_event_mode == SEQ_EVENT_MODE_Drum && event_mode != SEQ_EVENT_MODE_Drum) ||
+	(prev_event_mode != SEQ_EVENT_MODE_Drum && event_mode == SEQ_EVENT_MODE_Drum) ) {
+      // we have to copy the 48 lower CCs to avoid garbage output
+      for(i=0; i<48; ++i)
+	SEQ_CC_Set(track, i, copypaste_cc[i]);
+    }
+  }
 
   // determine begin/end boundary
   int step_begin = copypaste_begin;
@@ -545,10 +595,6 @@ static s32 PASTE_Track(u8 track)
     }
   }
 
-  if( seq_core_options.PASTE_CLR_ALL ) {
-    // TODO: copy track configuration
-  }
-
   return 0; // no error
 }
 
@@ -578,9 +624,22 @@ static s32 UNDO_Track(void)
   if( !undo_buffer_filled )
     return 0; // no error
 
+  SEQ_CC_Set(undo_track, SEQ_CC_MIDI_EVENT_MODE, undo_cc[SEQ_CC_MIDI_EVENT_MODE]);
+  SEQ_PAR_TrackInit(undo_track, undo_par_steps, undo_par_layers, undo_num_instruments);
+  SEQ_TRG_TrackInit(undo_track, undo_trg_steps, undo_trg_layers, undo_num_instruments);
+
   // copy layers from buffer
   memcpy((u8 *)&seq_par_layer_value[undo_track], (u8 *)undo_par_layer, SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)&seq_trg_layer_value[undo_track], (u8 *)undo_trg_layer, SEQ_TRG_MAX_BYTES);
+
+  if( seq_core_options.PASTE_CLR_ALL ) {
+    int i;
+
+    for(i=0; i<128; ++i) {
+      if( i != SEQ_CC_MIDI_CHANNEL && i != SEQ_CC_MIDI_PORT )
+	SEQ_CC_Set(undo_track, i, undo_cc[i]);
+    }
+  }
 
   return 0; // no error
 }
@@ -590,12 +649,23 @@ static s32 UNDO_Track(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 {
+  int i;
+
   // store track in special variable, so that we restore to the right one later
   undo_track = track;
 
   // copy layers into buffer
   memcpy((u8 *)undo_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)undo_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
+
+  for(i=0; i<128; ++i)
+    undo_cc[i] = SEQ_CC_Get(track, i);
+
+  undo_par_layers = SEQ_PAR_NumLayersGet(track);
+  undo_par_steps = SEQ_PAR_NumStepsGet(track);
+  undo_trg_layers = SEQ_TRG_NumLayersGet(track);
+  undo_trg_steps = SEQ_TRG_NumStepsGet(track);
+  undo_num_instruments = SEQ_PAR_NumInstrumentsGet(track);
 
   // notify that undo buffer is filled
   undo_buffer_filled = 1;

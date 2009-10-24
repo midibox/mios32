@@ -76,6 +76,11 @@ u32 seq_midi_out_dropouts;
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 (*callback_midi_send_package)(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+static s32 (*callback_bpm_is_running)(void);
+static u32 (*callback_bpm_tick_get)(void);
+static s32 (*callback_bpm_set)(float bpm);
+
 static seq_midi_out_queue_item_t *midi_queue;
 
 
@@ -113,6 +118,12 @@ static u32 alloc_pos;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OUT_Init(u32 mode)
 {
+  // install default callback functions (selected with NULL)
+  SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(NULL);
+  SEQ_MIDI_OUT_Callback_BPM_IsRunning_Set(NULL);
+  SEQ_MIDI_OUT_Callback_BPM_TickGet_Set(NULL);
+  SEQ_MIDI_OUT_Callback_BPM_Set_Set(NULL);
+
   // don't re-initialize queue to ensure that memory can be delocated properly
   // when this function is called multiple times
   // we assume, that gcc will always fill the memory range with zero on application start
@@ -130,6 +141,124 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Allows to change the function which is called whenever a MIDI package
+//! should be sent.
+//!
+//! This becomes useful if the MIDI output should be filtered, converted
+//! or rendered into a MIDI file.
+//!
+//! \param[in] *_callback_midi_send_package pointer to callback function:<BR>
+//! \code
+//!   s32 callback_midi_send_package(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+//!   {
+//!     // ...
+//!     // do something with port and midi_package
+//!     // ...
+//!
+//!     return 0; // no error
+//!   }
+//! \endcode
+//! If set to NULL, the default function MIOS32_MIDI_SendPackage function will
+//! be used. This allows you to restore the default setup properly.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(void *_callback_midi_send_package)
+{
+  callback_midi_send_package = (_callback_midi_send_package == NULL)
+    ? MIOS32_MIDI_SendPackage
+    : _callback_midi_send_package;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Allows to change the function which is called to check if the BPM generator
+//! is running.
+//!
+//! Together with the other callback functions, this becomes useful if the MIDI
+//! output should be rendered into a MIDI file (in this case, the function
+//! should return 1, so that SEQ_MIDI_OUT_Handler handler will generate MIDI output)
+//!
+//! \param[in] *_callback_bpm_is_running pointer to callback function:<BR>
+//! \code
+//!   s32 callback_bpm_is_running(void)
+//!   {
+//!     return 1; // always running
+//!   }
+//! \endcode
+//! If set to NULL, the default function SEQ_BPM_IsRunning function will
+//! be used. This allows you to restore the default setup properly.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_Callback_BPM_IsRunning_Set(void *_callback_bpm_is_running)
+{
+  callback_bpm_is_running = (_callback_bpm_is_running == NULL)
+    ? SEQ_BPM_IsRunning
+    : _callback_bpm_is_running;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Allows to change the function which is called to retrieve the current
+//! BPM tick.
+//!
+//! Together with the other callback functions, this becomes useful if the MIDI
+//! output should be rendered into a MIDI file (in this case, the function
+//! should return a number which is incremented after each rendering step).
+//!
+//! \param[in] *_callback_bpm_tick_get pointer to callback function:<BR>
+//! \code
+//!   u32 callback_bpm_tick_get(void)
+//!   {
+//!     return my_bpm_tick; // this variable will be incremented after each rendering step
+//!   }
+//! \endcode
+//! If set to NULL, the default function SEQ_BPM_TickGet function will
+//! be used. This allows you to restore the default setup properly.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_Callback_BPM_TickGet_Set(void *_callback_bpm_tick_get)
+{
+  callback_bpm_tick_get = (_callback_bpm_tick_get == NULL)
+    ? SEQ_BPM_TickGet
+    : _callback_bpm_tick_get;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Allows to change the function which is called to change the song tempo.
+//!
+//! Together with the other callback functions, this becomes useful if the MIDI
+//! output should be rendered into a MIDI file (in this case, the function
+//! should add the appr. meta event into the MIDI file).
+//!
+//! \param[in] *_callback_bpm_set pointer to callback function:<BR>
+//! \code
+//!   u32 callback_bpm_set(float bpm)
+//!   {
+//!     // ...
+//!     // do something with bpm value
+//!     // ...
+//!
+//!     return 0; // no error
+//!   }
+//! \endcode
+//! If set to NULL, the default function SEQ_BPM_Set function will
+//! be used. This allows you to restore the default setup properly.
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_Callback_BPM_Set_Set(void *_callback_bpm_set)
+{
+  callback_bpm_set = (_callback_bpm_set == NULL)
+    ? SEQ_BPM_Set
+    : _callback_bpm_set;
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function schedules a MIDI event, which will be sent over a given
@@ -363,7 +492,7 @@ s32 SEQ_MIDI_OUT_FlushQueue(void)
   while( (item=midi_queue) != NULL ) {
     if( item->event_type == SEQ_MIDI_OUT_OffEvent || item->event_type == SEQ_MIDI_OUT_OnOffEvent ) {
       item->package.velocity = 0; // ensure that velocity is 0
-      MIOS32_MIDI_SendPackage(item->port, item->package);
+      callback_midi_send_package(item->port, item->package);
     }
 
     midi_queue = item->next;
@@ -419,7 +548,7 @@ s32 SEQ_MIDI_OUT_FreeHeap(void)
 s32 SEQ_MIDI_OUT_Handler(void)
 {
   // exit if BPM generator not running
-  if( !SEQ_BPM_IsRunning() )
+  if( !callback_bpm_is_running() )
     return 0;
 
   // search in queue for items which have to be played now (or have been missed earlier)
@@ -427,7 +556,7 @@ s32 SEQ_MIDI_OUT_Handler(void)
   // has been found which has to be played later than now
 
   seq_midi_out_queue_item_t *item;
-  while( (item=midi_queue) != NULL && item->timestamp <= SEQ_BPM_TickGet() ) {
+  while( (item=midi_queue) != NULL && item->timestamp <= callback_bpm_tick_get() ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 #if DEBUG_VERBOSE_LEVEL == 1
     if( item->event_type != SEQ_MIDI_OUT_ClkEvent )
@@ -437,9 +566,9 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
     // if tempo event: change BPM stored in midi_package.ALL
     if( item->event_type == SEQ_MIDI_OUT_TempoEvent ) {
-      SEQ_BPM_Set(item->package.ALL);
+      callback_bpm_set(item->package.ALL);
     } else {
-      MIOS32_MIDI_SendPackage(item->port, item->package);
+      callback_midi_send_package(item->port, item->package);
     }
 
     // schedule Off event if requested

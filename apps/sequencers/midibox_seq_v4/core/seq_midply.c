@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MIDI file player
+ * MIDI File Player
  *
  * ==========================================================================
  *
@@ -242,9 +242,9 @@ u32 SEQ_MIDPLY_SynchTickGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// play new MIDI file
+// reads new MIDI file
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDPLY_PlayFile(char *path)
+s32 SEQ_MIDPLY_ReadFile(char *path)
 {
   s32 status;
 
@@ -257,7 +257,7 @@ s32 SEQ_MIDPLY_PlayFile(char *path)
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_MIDPLY_PlayFile] failed to open file, status: %d\n", status);
+    DEBUG_MSG("[SEQ_MIDPLY_ReadFile] failed to open file, status: %d\n", status);
 #endif
     midifile_path[0] = 0; // disable file
   } else {
@@ -270,7 +270,7 @@ s32 SEQ_MIDPLY_PlayFile(char *path)
     midifile_path[MIDIFILE_PATH_LEN_MAX-1] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_MIDPLY_PlayFile] opened '%s' of length %u\n", path, midifile_len);
+    DEBUG_MSG("[SEQ_MIDPLY_ReadFile] opened '%s' of length %u\n", path, midifile_len);
 #endif
 
     // read midifile

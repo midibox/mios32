@@ -63,6 +63,11 @@ typedef enum {
 
 extern s32 SEQ_MIDI_OUT_Init(u32 mode);
 
+extern s32 SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(void *_callback_midi_send_package);
+extern s32 SEQ_MIDI_OUT_Callback_BPM_IsRunning_Set(void *_callback_bpm_is_running);
+extern s32 SEQ_MIDI_OUT_Callback_BPM_TickGet_Set(void *_callback_bpm_tick_get);
+extern s32 SEQ_MIDI_OUT_Callback_BPM_Set_Set(void *_callback_bpm_set);
+
 extern s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len);
 extern s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 timestamp);
 extern s32 SEQ_MIDI_OUT_FlushQueue(void);
