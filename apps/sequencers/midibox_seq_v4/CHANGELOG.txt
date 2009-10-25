@@ -9,6 +9,12 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta10
 ~~~~~~~~~~~~~~~~~~~~~
 
+  o a simple MIDI In/Out monitor page has been added.
+    The page can be entered via MENU+MIDI -> MIDIMON (GP 16 button).
+
+    MIDI Clock and Active Sense events are filtered by default. The
+    filter option can be changed by pressing SELECT in the MIDI Monitor page.
+
   o separated "pattern length" from "measure length" parameter in UTIL->OPT menu.
     Pattern length is used for synchronized pattern changes, and measure
     length for the Synch-to-Measure function.

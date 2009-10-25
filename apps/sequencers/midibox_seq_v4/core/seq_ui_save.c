@@ -86,7 +86,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
 
-  if( edit_label_mode && encoder <= SEQ_UI_ENCODER_GP16 ) {
+  if( edit_label_mode ) {
     switch( encoder ) {
       case SEQ_UI_ENCODER_GP15: { // select preset
 	int pos;
@@ -117,6 +117,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       } break;
 
       case SEQ_UI_ENCODER_GP16: { // store pattern and exit keypad editor
+	// SAVE only via button
+	if( incrementer != 0 )
+	  return 0;
+
 	s32 status;
 	if( (status=SEQ_PATTERN_Save(ui_selected_group, save_pattern[ui_selected_group])) < 0 ) {
 	  SEQ_UI_SDCardErrMsg(2000, status);
@@ -319,10 +323,10 @@ static s32 LCD_Handler(u8 high_prio)
   //                                         
 
   // Please enter Pattern Category for 1:A1  <xxxxx-xxxxxxxxxxxxxxx>                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 0-?"  Char <>  Del Ins Preset SAVE
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset SAVE
 
   // Please enter Pattern Label for 1:A1     <xxxxx-xxxxxxxxxxxxxxx>                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 0-?"  Char <>  Del Ins Preset SAVE
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset SAVE
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -462,7 +466,7 @@ s32 SEQ_UI_SAVE_Init(u32 mode)
   edit_label_mode = 0;
 
   // initialize label editor
-  ui_edit_name_cursor = 0;
+  SEQ_UI_KeyPad_Init();
   ui_edit_preset_num_category = 0;
   ui_edit_preset_num_label = 0;
 

@@ -45,6 +45,10 @@ extern s32 SEQ_MIDEXP_ExportMeasuresSet(u16 measures);
 extern s32 SEQ_MIDEXP_ExportStepsPerMeasureGet(void);
 extern s32 SEQ_MIDEXP_ExportStepsPerMeasureSet(u8 steps_per_measure);
 
+extern s32 SEQ_MIDEXP_ExportTrackGet(void);
+
+extern s32 SEQ_MIDEXP_GenerateFile(char *path);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

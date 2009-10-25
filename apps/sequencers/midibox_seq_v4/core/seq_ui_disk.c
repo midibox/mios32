@@ -40,9 +40,9 @@
 #define NUM_OF_ITEMS           5
 #define ITEM_BACKUP            0
 #define ITEM_ENABLE_MSD        1
-#define ITEM_MF_PLAY           2
-#define ITEM_MF_IMPORT         3
-#define ITEM_MF_EXPORT         4
+#define ITEM_MF_IMPORT         2
+#define ITEM_MF_EXPORT         3
+#define ITEM_MF_PLAY           4
 
 #define EXPORT_NUM_OF_ITEMS    6
 #define EXPORT_ITEM_MODE       0
@@ -58,6 +58,8 @@
 #define MF_DIALOG_PLAY          1
 #define MF_DIALOG_IMPORT        2
 #define MF_DIALOG_EXPORT        3
+#define MF_DIALOG_EXPORT_FNAME  4
+#define MF_DIALOG_EXPORT_FEXISTS 5
 
 
 #define NUM_LIST_DISPLAYED_ITEMS 4
@@ -71,8 +73,9 @@
 static void BackupReq(u32 dummy);
 static void FormatReq(u32 dummy);
 
-
 static s32 SEQ_UI_DISK_UpdateDirList(void);
+
+static s32 DoExport(u8 force_overwrite);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +96,13 @@ static s32 LED_Handler(u16 *gp_leds)
 {
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
+
+  // ongoing export?
+  int export_track = SEQ_MIDEXP_ExportTrackGet();
+  if( export_track >= 0 ) {
+    *gp_leds = (1 << (export_track+1))-1;
+    return 0; // no error
+  }
 
   switch( mf_dialog ) {
     case MF_DIALOG_PLAY:
@@ -126,6 +136,11 @@ static s32 LED_Handler(u16 *gp_leds)
       }
       break;
 
+    case MF_DIALOG_EXPORT_FNAME:
+    case MF_DIALOG_EXPORT_FEXISTS:
+      // no LED functions
+      break;
+
     default:
       switch( ui_selected_item ) {
         case ITEM_BACKUP:
@@ -135,9 +150,9 @@ static s32 LED_Handler(u16 *gp_leds)
 	    *gp_leds |= 0x0003;
 	  break;
         case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
-        case ITEM_MF_PLAY: *gp_leds |= 0x2000; break;
-        case ITEM_MF_IMPORT: *gp_leds |= 0x6000; break;
-        case ITEM_MF_EXPORT: *gp_leds |= 0x8000; break;
+        case ITEM_MF_IMPORT: *gp_leds |= 0x1000; break;
+        case ITEM_MF_EXPORT: *gp_leds |= 0x6000; break;
+        case ITEM_MF_PLAY: *gp_leds |= 0x8000; break;
       }
   }
 
@@ -272,8 +287,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case SEQ_UI_ENCODER_GP10:
 	  // CONTINUE only via button
 	  if( incrementer == 0 ) {
+	    int i;
+
+	    // initialize keypad editor
+	    SEQ_UI_KeyPad_Init();
+	    for(i=0; i<8; ++i)
+	      dir_name[i] = ' ';
+
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    mf_dialog = MF_DIALOG_EXPORT_FNAME;
 	  }
 	  return 1;
 
@@ -382,6 +404,86 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
     ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_FNAME: {
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP15: {
+	  int i;
+
+	  // SAVE only via button
+	  if( incrementer != 0 )
+	    return 0;
+
+	  if( DoExport(0) == 0 ) { // don't force overwrite
+	    // exit keypad editor
+	    ui_selected_item = 0;
+	    mf_dialog = MF_DIALOG_NONE;
+	  }
+
+	  return 1;
+	} break;
+
+        case SEQ_UI_ENCODER_GP16: {
+	  // EXIT only via button
+	  if( incrementer != 0 )
+	    return 0;
+
+	  // exit keypad editor
+	  ui_selected_item = 0;
+	  mf_dialog = MF_DIALOG_NONE;
+	  return 1;
+	} break;
+      }
+
+      return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&dir_name[0], 8);
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_FEXISTS: {
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP11: {
+	  // YES only via button
+	  if( incrementer != 0 )
+	    return 0;
+
+	  // YES: overwrite file
+	  if( DoExport(1) == 0 ) { // force overwrite
+	    // exit keypad editor
+	    ui_selected_item = 0;
+	    mf_dialog = MF_DIALOG_NONE;
+	  }
+	  return 1;
+	} break;
+
+        case SEQ_UI_ENCODER_GP12: {
+	  // NO only via button
+	  if( incrementer != 0 )
+	    return 0;
+
+	  // NO: don't overwrite file - back to filename entry
+
+	  ui_selected_item = 0;
+	  mf_dialog = MF_DIALOG_EXPORT_FNAME;
+	  return 1;
+	} break;
+
+        case SEQ_UI_ENCODER_GP16: {
+	  // EXIT only via button
+	  if( incrementer != 0 )
+	    return 0;
+
+	  // exit keypad editor
+	  ui_selected_item = 0;
+	  mf_dialog = MF_DIALOG_NONE;
+	  return 1;
+	} break;
+      }
+
+      return -1; // not mapped
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP1:
@@ -411,16 +513,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
           return -1; // not used (yet)
     
         case SEQ_UI_ENCODER_GP13:
-          ui_selected_item = ITEM_MF_PLAY;
+          ui_selected_item = ITEM_MF_IMPORT;
           break;
     
         case SEQ_UI_ENCODER_GP14:
         case SEQ_UI_ENCODER_GP15:
-          ui_selected_item = ITEM_MF_IMPORT;
+          ui_selected_item = ITEM_MF_EXPORT;
           break;
     
         case SEQ_UI_ENCODER_GP16:
-          ui_selected_item = ITEM_MF_EXPORT;
+          ui_selected_item = ITEM_MF_PLAY;
           break;
     
       }
@@ -441,13 +543,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     
           return 1;
     
-        case ITEM_MF_PLAY:
-          // switch to MIDI File Play Dialog screen
-	  ui_selected_item = 0;
-          mf_dialog = MF_DIALOG_PLAY;
-          SEQ_UI_DISK_UpdateDirList();
-          return 1;
-    
         case ITEM_MF_IMPORT:
 #if 0
           // switch to MIDI File Import Dialog screen
@@ -460,14 +555,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
           return 1;
     
         case ITEM_MF_EXPORT:
-#if 1
           // switch to MIDI File Export Dialog screen
 	  ui_selected_item = 0;
           mf_dialog = MF_DIALOG_EXPORT;
-#else
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Not implemented", "yet!");
-#endif
           return 1;
+
+        case ITEM_MF_PLAY:
+          // switch to MIDI File Play Dialog screen
+	  ui_selected_item = 0;
+          mf_dialog = MF_DIALOG_PLAY;
+          SEQ_UI_DISK_UpdateDirList();
+          return 1;    
       }
   }
 
@@ -607,6 +705,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 
     ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_FNAME:
+    case MF_DIALOG_EXPORT_FEXISTS: {
+      if( depressed ) return 0; // ignore when button depressed
+
+      return Encoder_Handler((seq_ui_encoder_t)button, 0);
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       if( button <= SEQ_UI_BUTTON_GP16 ) {
         s32 incrementer = 0;
@@ -628,8 +735,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    if( depressed )
 	      SEQ_UI_UnInstallDelayedActionCallback(BackupReq);
 	    else {
-	      SEQ_UI_InstallDelayedActionCallback(BackupReq, 2000, 0);
-	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to start Backup");
+	      SEQ_UI_InstallDelayedActionCallback(BackupReq, 5000, 0);
+	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 5001, "", "to start Backup");
 	    }
 	    return 1;
           }
@@ -693,10 +800,10 @@ static s32 LCD_Handler(u8 high_prio)
   //   Backup                                 disabled
 
   //   Create                                  MSD USB                MIDI Files    
-  //   Backup                                 disabled           Play  Import  Export
+  //   Backup                                 disabled           Import  Export  Play
 
   //                                           MSD USB (UMRW)         MIDI Files    
-  //                                           enabled           Play  Import  Export
+  //                                           enabled           Import  Export  Play
 
 
   // MIDI Files Play dialog:
@@ -716,6 +823,14 @@ static s32 LCD_Handler(u8 high_prio)
 
   // Export Song           Measures                                                  
   // Song     1                 1            Continue                            EXIT
+
+  // Continue:
+  // Please enter Filename:                  /midi/<xxxxxxxx>.mid                    
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins   SAVE EXIT
+
+  // File exists
+  //                                         File '/midi/xxx.mid' already exists                                             
+  //                                         Overwrite? YES  NO                  EXIT
 
 
   switch( mf_dialog ) {
@@ -919,6 +1034,47 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString("EXIT");
     } break;
 
+
+    case MF_DIALOG_EXPORT_FNAME: {
+      int i;
+
+      SEQ_LCD_CursorSet(0, 0);
+      SEQ_LCD_PrintString("Please enter Filename:");
+      SEQ_LCD_PrintSpaces(18);
+
+      SEQ_LCD_PrintString("/midi/<");
+      for(i=0; i<8; ++i)
+	SEQ_LCD_PrintChar(dir_name[i]);
+      SEQ_LCD_PrintString(">.mid");
+      SEQ_LCD_PrintSpaces(20);
+
+      // insert flashing cursor
+      if( ui_cursor_flash ) {
+	SEQ_LCD_CursorSet(47 + ui_edit_name_cursor, 0);
+	SEQ_LCD_PrintChar('*');
+      }
+
+      SEQ_UI_KeyPad_LCD_Msg();
+      SEQ_LCD_PrintString("  SAVE EXIT");
+    } break;
+
+
+    case MF_DIALOG_EXPORT_FEXISTS: {
+      SEQ_LCD_CursorSet(0, 0);
+      SEQ_LCD_PrintSpaces(40);
+
+      SEQ_LCD_PrintFormattedString("File '/midi/%s.mid' already exists!");
+      SEQ_LCD_PrintSpaces(10);
+
+      SEQ_LCD_CursorSet(0, 1);
+      SEQ_LCD_PrintSpaces(40);
+
+      SEQ_LCD_PrintString("Overwrite? YES  NO");
+      SEQ_LCD_PrintSpaces(18);
+      SEQ_LCD_PrintString("EXIT");
+    } break;
+
+
     default:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
@@ -982,7 +1138,7 @@ static s32 LCD_Handler(u8 high_prio)
       }
       SEQ_LCD_PrintSpaces(6);
     
-      SEQ_LCD_PrintString("Play  Import  Export");
+      SEQ_LCD_PrintString("Import  Export  Play");
   }
 
   return 0; // no error
@@ -1052,6 +1208,90 @@ static s32 SEQ_UI_DISK_UpdateDirList(void)
     ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
     ++item;
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to start MIDI file export
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoExport(u8 force_overwrite)
+{
+  s32 status;
+  int i;
+  char path[20];
+
+  u8 filename_valid = 1;
+  for(i=0; i<8; ++i)
+    if( dir_name[i] == '.' || dir_name[i] == '?' || dir_name[i] == ',' || dir_name[i] == '!' )
+      filename_valid = 0;
+
+  if( !filename_valid ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Filename not valid!", "(remove . ? , !)");
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -1;
+  }
+
+  if( dir_name[0] == ' ') {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Please enter", "Filename!");
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -2;
+  }
+
+  strcpy(path, "midi/");
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_DirExists(path);
+  MUTEX_SDCARD_GIVE;
+
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -3;
+  }
+
+  if( status == 0 ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/midi directory", "doesn't exist!");
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -4;
+  }
+
+  dir_name[8] = 0;
+  sprintf(path, "midi/%s.mid", dir_name);
+
+  MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_FileExists(path);
+  MUTEX_SDCARD_GIVE;
+	    
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -5;
+  }
+
+
+  if( !force_overwrite && status == 1) {
+    // file exists - ask if it should be overwritten
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FEXISTS;
+    return 1;
+  }
+
+  if( (status=SEQ_MIDEXP_GenerateFile(path)) < 0 ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Error during Export!", "see MIOS Terminal!");
+    ui_selected_item = 0;
+    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+    return -6;
+  }
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Export", "successfull!");
 
   return 0; // no error
 }

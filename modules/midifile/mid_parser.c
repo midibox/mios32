@@ -47,7 +47,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 static u32 MID_PARSER_ReadWord(u8 len);
-static long long MID_PARSER_ReadVarLen(u32 *pos);
+static u32 MID_PARSER_ReadVarLen(u32 *pos);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -414,9 +414,9 @@ static u32 MID_PARSER_ReadWord(u8 len)
 // Help function: reads a variable-length number from the .mid file
 // based on code example in MIDI file spec
 /////////////////////////////////////////////////////////////////////////////
-static long long MID_PARSER_ReadVarLen(u32 *pos)
+static u32 MID_PARSER_ReadVarLen(u32 *pos)
 {
-  long long value;
+  u32 value;
   u8 c;
 
   *pos += mid_parser_read_callback(&c, 1);

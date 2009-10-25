@@ -163,6 +163,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
       SEQ_MIDI_IN_Receive(port, midi_package);
     }
   }
+
+  // forward to port handler (used for MIDI monitor function)
+  SEQ_MIDI_PORT_NotifyMIDIRx(port, midi_package);
 }
 
 
@@ -308,6 +311,9 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 
   // update LEDs
   SEQ_UI_LED_Handler();
+
+  // MIDI In/Out monitor
+  SEQ_MIDI_PORT_Period1mS();
 
   // if remote client active: timeout handling
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {

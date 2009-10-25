@@ -24,6 +24,16 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+  struct {
+    unsigned MIDI_CLOCK:1;
+    unsigned ACTIVE_SENSE:1;
+  };
+} seq_midi_port_mon_filter_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -54,7 +64,16 @@ extern s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute);
 
+extern mios32_midi_package_t SEQ_MIDI_PORT_OutPackageGet(mios32_midi_port_t port);
+extern mios32_midi_package_t SEQ_MIDI_PORT_InPackageGet(mios32_midi_port_t port);
+
+extern s32 SEQ_MIDI_PORT_MonFilterSet(seq_midi_port_mon_filter_t filter);
+extern seq_midi_port_mon_filter_t SEQ_MIDI_PORT_MonFilterGet(void);
+
+extern s32 SEQ_MIDI_PORT_Period1mS(void);
+
 extern s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package);
+extern s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_package_t package);
 
 
 /////////////////////////////////////////////////////////////////////////////

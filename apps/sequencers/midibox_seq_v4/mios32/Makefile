@@ -52,6 +52,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_sysex.c \
 		../core/seq_ui_disk.c \
 		../core/seq_ui_metronome.c \
+		../core/seq_ui_midimon.c \
 		../core/seq_ui_mixer.c \
 		../core/seq_ui_info.c \
 		../core/seq_ui_stepsel.c \

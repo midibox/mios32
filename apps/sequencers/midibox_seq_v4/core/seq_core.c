@@ -63,9 +63,6 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 SEQ_CORE_PlayOffEvents(void);
-static s32 SEQ_CORE_Tick(u32 bpm_tick);
-
 static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse);
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
@@ -293,7 +290,7 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_UI_INFO_StopwatchReset();
 #endif
 	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
-	  SEQ_CORE_Tick(forwarded_bpm_tick);
+	  SEQ_CORE_Tick(forwarded_bpm_tick, -1);
 	  SEQ_MIDPLY_Tick(forwarded_bpm_tick);
 	  ++forwarded_bpm_tick;
 	  ++bpm_tick_prefetched_ctr;
@@ -313,7 +310,7 @@ s32 SEQ_CORE_Handler(void)
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
 	SEQ_UI_INFO_StopwatchReset();
 #endif
-	SEQ_CORE_Tick(bpm_tick);
+	SEQ_CORE_Tick(bpm_tick, -1);
 	SEQ_MIDPLY_Tick(bpm_tick);
 #if LED_PERFORMANCE_MEASURING == 1
 	MIOS32_BOARD_LED_Set(0xffffffff, 0);
@@ -333,7 +330,7 @@ s32 SEQ_CORE_Handler(void)
 // This function plays all "off" events
 // Should be called on sequencer reset/restart/pause to avoid hanging notes
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_PlayOffEvents(void)
+s32 SEQ_CORE_PlayOffEvents(void)
 {
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
@@ -393,8 +390,11 @@ s32 SEQ_CORE_Reset(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
+// if "single_track" is -1, all tracks will be played
+// if "single_track" is between 0 and 15, only the given track + all loopback
+//   tracks will be played (for MIDI file export)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Tick(u32 bpm_tick)
+s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
 {
   // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
   seq_midply_mode_t midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
@@ -463,6 +463,10 @@ static s32 SEQ_CORE_Tick(u32 bpm_tick)
       // round 0: loopback port Bus1, round 1: remaining ports
       u8 loopback_port = tcc->midi_port == 0xf0;
       if( (!round && !loopback_port) || (round && loopback_port) )
+	continue;
+
+      // for MIDI file export: (single_track != -1): only given track + all loopback tracks will be played
+      if( round && single_track != -1 && single_track != track )
 	continue;
 
       // handle LFO effect
