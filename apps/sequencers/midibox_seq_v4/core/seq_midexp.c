@@ -367,16 +367,9 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 	status = -3; // file re-open error
 	goto error;
       }
-
-      // SEQ_FILE_WriteBuffer() doesn't allow to start a write operation non-aligned to sector size of 512 bytes
-      // therefore we have to write directly into the file without caching mechanism
-      u8 word_buffer[4];
-      word_buffer[0] = (export_trk_size >> 24) & 0xff;
-      word_buffer[1] = (export_trk_size >> 16) & 0xff;
-      word_buffer[2] = (export_trk_size >>  8) & 0xff;
-      word_buffer[3] = (export_trk_size >>  0) & 0xff;
-      status |= SEQ_FILE_WriteBufferDirect(&export_fi, track_header_filepos + 4, word_buffer, 4);
-      // WriteBufferDirect will close the file
+      status |= SEQ_FILE_Seek(&export_fi, track_header_filepos + 4);
+      status |= SEQ_MIDEXP_WriteWord(&export_fi, export_trk_size, 4);
+      status |= SEQ_FILE_WriteClose(&export_fi);
     }
   }
 
