@@ -733,46 +733,6 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 }
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Writes directly into file at a given position w/o using the cache
-// closes the file thereafter.
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_WriteBufferDirect(PFILEINFO fileinfo, u32 offset, u8 *buffer, u32 len)
-{
-  // change file position
-  DFS_Seek(fileinfo, offset, sector);
-
-  // exit if no success
-  if( fileinfo->pointer != offset ) {
-    return SEQ_FILE_ERR_SEEK;
-  }
-
-  // disable cache
-  DFS_CachingEnabledSet(0);
-
-  // write sector
-  u32 successcount;
-  if( seq_file_dfs_errno = DFS_WriteFile(fileinfo, sector, buffer, &successcount, len) ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-    DEBUG_MSG("[SEQ_FILE] Failed to write direct sector at position 0x%08x, status: %u\n", offset, seq_file_dfs_errno);
-#endif
-    return SEQ_FILE_ERR_WRITE;
-  }
-
-  write_filepos = -1; // ensure that next writes will be skipped under any circumstances
-
-  // close file
-  DFS_Close(fileinfo);
-
-  // enable cache again
-  DFS_CachingEnabledSet(1);
-
-  return 0; // no error
-
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Changes to a new file position
 // returns < 0 on errors (error codes are documented in seq_file.h)
