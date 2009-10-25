@@ -174,6 +174,33 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 port_ix;
 
+  if( high_prio ) {
+    for(port_ix=0; port_ix<port_num; ++port_ix) {
+      SEQ_LCD_CursorSet(5*port_ix, 1);
+
+      mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+      mios32_midi_package_t package = SEQ_MIDI_PORT_OutPackageGet(port);
+      if( package.type ) {
+	SEQ_LCD_PrintEvent(package, 5);
+      } else {
+	u8 muted;
+	if( seq_ui_button_state.SELECT_PRESSED )
+	  muted = latched_mute & (1 << port_ix);
+	else
+	  muted = SEQ_MIDI_PORT_OutMuteGet(port);
+	
+	if( muted )
+	  SEQ_LCD_PrintString("Mute ");
+	else
+	  SEQ_LCD_PrintString(" --- ");
+      }
+    }
+
+    return 0;
+  }
+
+
+
   for(port_ix=0; port_ix<port_num; ++port_ix) {
     SEQ_LCD_CursorSet(5*port_ix, 0);
     if( ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED )
@@ -181,14 +208,6 @@ static s32 LCD_Handler(u8 high_prio)
     else
       SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(port_ix));
     SEQ_LCD_PrintChar(' ');
-
-    SEQ_LCD_CursorSet(5*port_ix, 1);
-    SEQ_LCD_PrintSpaces(2);
-    if( seq_ui_button_state.SELECT_PRESSED )
-      SEQ_LCD_PrintChar((latched_mute & (1 << port_ix)) ? '*' : 'o');
-    else
-      SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutMuteGet(SEQ_MIDI_PORT_OutPortGet(port_ix)) ? '*' : 'o');
-    SEQ_LCD_PrintSpaces(2);
   }
 
   if( port_num < 16 ) {

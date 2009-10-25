@@ -135,9 +135,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP14:
+      return -1; // not used (yet)
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      return -1; // not used (yet)
+	// enter midi monitor page
+	SEQ_UI_PageSet(SEQ_UI_PAGE_MIDIMON);
+	return 1;
   }
 
   // for GP encoders and Datawheel
@@ -293,15 +297,15 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn                
-  //    USB0   Def. #16     off       C-3     #1  Def. All  Def. # 1
+  //  Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn          MIDI  
+  //    USB0   Def. #16     off       C-3     #1  Def. All  Def. # 1          Monitor
 
 
   seq_midi_router_node_t *n = &seq_midi_router_node[selected_router_node];
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn                ");
+  SEQ_LCD_PrintString(" Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn          MIDI  ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -412,7 +416,9 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("#%2d", n->dst_chn);
     }
   }
-  SEQ_LCD_PrintSpaces(17);
+  SEQ_LCD_PrintSpaces(10);
+
+  SEQ_LCD_PrintString("Monitor");
 
 
   return 0; // no error

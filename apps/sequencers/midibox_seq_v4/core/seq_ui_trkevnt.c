@@ -214,6 +214,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       } break;
 
       case SEQ_UI_ENCODER_GP16: { // exit keypad editor
+	// EXIT only via button
+	if( incrementer != 0 )
+	  return 0;
+
 	// exit keypad editor
 	edit_label_mode = 0;
 	return 1;
@@ -546,14 +550,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Please enter Track Category for G1T1    <xxxxx-xxxxxxxxxxxxxxx>                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 0 -?  Char <>  Del Ins Preset DONE
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset DONE
 
   // "Edit Drum Name" layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Please enter Drum Label for G1T1- 1:C-1 <xxxxx>                                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 0 -?  Char <>  Del Ins Preset DONE
+  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset DONE
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 

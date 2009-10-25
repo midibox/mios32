@@ -548,6 +548,50 @@ s32 SEQ_LCD_PrintRollMode(u8 roll_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints event type of MIDI package with given number of chars
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)
+{
+  // currently only 5 chars supported...
+  if( package.type == 0xf || package.evnt0 >= 0xf8 ) {
+    switch( package.evnt0 ) {
+      case 0xf8: SEQ_LCD_PrintString(" CLK "); break;
+      case 0xfa: SEQ_LCD_PrintString("START"); break;
+      case 0xfb: SEQ_LCD_PrintString("CONT."); break;
+      case 0xfc: SEQ_LCD_PrintString("STOP "); break;
+      default:
+	SEQ_LCD_PrintFormattedString(" %02X  ", package.evnt0);
+    }
+  } else if( package.type < 8 ) {
+    SEQ_LCD_PrintString("SysEx");
+  } else {
+    switch( package.event ) {
+      case NoteOff:
+      case NoteOn:
+      case PolyPressure:
+      case CC:
+      case ProgramChange:
+      case Aftertouch:
+      case PitchBend:
+	// could be enhanced later
+        SEQ_LCD_PrintFormattedString("%02X%02X ", package.evnt0, package.evnt1);
+	break;
+
+      default:
+	// print first two bytes for unsupported events
+        SEQ_LCD_PrintFormattedString("%02X%02X ", package.evnt0, package.evnt1);
+    }
+  }
+
+  // TODO: enhanced messages
+  if( num_chars > 5 )
+    SEQ_LCD_PrintSpaces(num_chars-5);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints selected group/track (4 characters)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintGxTy(u8 group, u16 selected_tracks)

@@ -733,6 +733,46 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Writes directly into file at a given position w/o using the cache
+// closes the file thereafter.
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_WriteBufferDirect(PFILEINFO fileinfo, u32 offset, u8 *buffer, u32 len)
+{
+  // change file position
+  DFS_Seek(fileinfo, offset, sector);
+
+  // exit if no success
+  if( fileinfo->pointer != offset ) {
+    return SEQ_FILE_ERR_SEEK;
+  }
+
+  // disable cache
+  DFS_CachingEnabledSet(0);
+
+  // write sector
+  u32 successcount;
+  if( seq_file_dfs_errno = DFS_WriteFile(fileinfo, sector, buffer, &successcount, len) ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
+    DEBUG_MSG("[SEQ_FILE] Failed to write direct sector at position 0x%08x, status: %u\n", offset, seq_file_dfs_errno);
+#endif
+    return SEQ_FILE_ERR_WRITE;
+  }
+
+  write_filepos = -1; // ensure that next writes will be skipped under any circumstances
+
+  // close file
+  DFS_Close(fileinfo);
+
+  // enable cache again
+  DFS_CachingEnabledSet(1);
+
+  return 0; // no error
+
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Changes to a new file position
 // returns < 0 on errors (error codes are documented in seq_file.h)
@@ -742,6 +782,57 @@ s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset)
   DFS_Seek(fileinfo, offset, sector);
 
   return (fileinfo->pointer == offset) ? 0 : SEQ_FILE_ERR_SEEK;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if file exists, 0 if it doesn't exist, < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_FileExists(char *filepath)
+{
+  FILEINFO fi;
+
+  s32 status = SEQ_FILE_ReadOpen(&fi, filepath);
+
+  if( status == 0 )
+    SEQ_FILE_ReadClose(&fi);
+
+  if( !status )
+    return 1; // File exists
+  else if( status == SEQ_FILE_ERR_OPEN_READ )
+    return 0; // File doesn't exist
+  else
+    return status; // SD Card error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if directory exists, 0 if it doesn't exist, < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_DirExists(char *path)
+{
+  DIRINFO di;
+  DIRENT de;
+
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_DirExists] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  di.scratch = sector;
+  if( seq_file_dfs_errno = DFS_OpenDir(&vi, path, &di) ) {
+    return 0; // Directory doesn't exist
+  }
+
+  // DFS_OpenDir may return 0 even it doesn't exist
+  // therefore we check if at least one dir entry exists (the ".." (upper) directory)
+  if( seq_file_dfs_errno = DFS_GetNext(&vi, &di, &de) ) {
+    return 0; // Directory doesn't exist
+  }
+
+  return 1; // directory exists
 }
 
 

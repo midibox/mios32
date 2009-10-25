@@ -125,8 +125,12 @@ extern s32 SEQ_FILE_WriteByte(PFILEINFO fileinfo, u8 byte);
 extern s32 SEQ_FILE_WriteHWord(PFILEINFO fileinfo, u16 hword);
 extern s32 SEQ_FILE_WriteWord(PFILEINFO fileinfo, u32 word);
 extern s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo);
+extern s32 SEQ_FILE_WriteBufferDirect(PFILEINFO fileinfo, u32 offset, u8 *buffer, u32 len);
 
 extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
+
+extern s32 SEQ_FILE_FileExists(char *filepath);
+extern s32 SEQ_FILE_DirExists(char *path);
 
 extern s32 SEQ_FILE_PrintSDCardInfos(void);
 

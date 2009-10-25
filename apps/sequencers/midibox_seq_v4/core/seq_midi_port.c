@@ -39,7 +39,9 @@ typedef struct {
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static const seq_midi_port_entry_t in_ports[] = {
+// has to be kept in synch with SEQ_MIDI_PORT_InIxGet() !!!
+#define NUM_IN_PORTS 13
+static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
   { USB0,    "USB1" },
@@ -48,14 +50,17 @@ static const seq_midi_port_entry_t in_ports[] = {
   { USB3,    "USB4" },
   { UART0,   "IN1 " },
   { UART1,   "IN2 " },
-  { IIC0,    "IIC1" },
+  { UART2,   "IN3 " },
+  { UART3,   "IN4 " },
   { 0xf0,    "Bus1" },
   { 0xf1,    "Bus2" },
   { 0xf2,    "Bus3" },
   { 0xf3,    "Bus4" }
 };
 
-static const seq_midi_port_entry_t out_ports[] = {
+// has to be kept in synch with SEQ_MIDI_PORT_OutIxGet() !!!
+#define NUM_OUT_PORTS 18
+static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
   { USB0,    "USB1" },
@@ -78,7 +83,8 @@ static const seq_midi_port_entry_t out_ports[] = {
   // MEMO: SEQ_MIDI_PORT_OutMuteGet() has to be changed whenever ports are added/removed!
 };
 
-static const seq_midi_port_entry_t clk_ports[] = {
+#define NUM_CLK_PORTS 12
+static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   // port ID  Name
   { USB0,    "USB1" },
   { USB1,    "USB2" },
@@ -95,16 +101,42 @@ static const seq_midi_port_entry_t clk_ports[] = {
 };
 
 
+// MIDI Out mute function
 static u32 muted_out;
 
+// for MIDI In/Out monitor
+static u8 midi_out_ctr[NUM_OUT_PORTS];
+static mios32_midi_package_t midi_out_package[NUM_OUT_PORTS];
+
+static u8 midi_in_ctr[NUM_IN_PORTS];
+static mios32_midi_package_t midi_in_package[NUM_IN_PORTS];
+
+static seq_midi_port_mon_filter_t seq_midi_port_mon_filter;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_PORT_Init(u32 mode)
 {
+  int i;
+
   // unmute all Out ports
   muted_out = 0;
+
+  // init MIDI In/Out monitor variables
+  for(i=0; i<NUM_OUT_PORTS; ++i) {
+    midi_out_ctr[i] = 0;
+    midi_out_package[i].ALL = 0;
+  }
+
+  for(i=0; i<NUM_IN_PORTS; ++i) {
+    midi_in_ctr[i] = 0;
+    midi_in_package[i].ALL = 0;
+  }
+
+  seq_midi_port_mon_filter.ALL = 0;
+  seq_midi_port_mon_filter.MIDI_CLOCK = 1;
+  seq_midi_port_mon_filter.ACTIVE_SENSE = 1;
 
   return 0; // no error
 }
@@ -115,17 +147,17 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_PORT_InNumGet(void)
 {
-  return sizeof(in_ports)/sizeof(seq_midi_port_entry_t);
+  return NUM_IN_PORTS;
 }
 
 s32 SEQ_MIDI_PORT_OutNumGet(void)
 {
-  return sizeof(out_ports)/sizeof(seq_midi_port_entry_t);
+  return NUM_OUT_PORTS;
 }
 
 s32 SEQ_MIDI_PORT_ClkNumGet(void)
 {
-  return sizeof(clk_ports)/sizeof(seq_midi_port_entry_t);
+  return NUM_CLK_PORTS;
 }
 
 
@@ -135,7 +167,7 @@ s32 SEQ_MIDI_PORT_ClkNumGet(void)
 /////////////////////////////////////////////////////////////////////////////
 char *SEQ_MIDI_PORT_InNameGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(in_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_IN_PORTS )
     return "----";
   else
     return (char *)in_ports[port_ix].name;
@@ -143,7 +175,7 @@ char *SEQ_MIDI_PORT_InNameGet(u8 port_ix)
 
 char *SEQ_MIDI_PORT_OutNameGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(out_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_OUT_PORTS )
     return "----";
   else
     return (char *)out_ports[port_ix].name;
@@ -151,7 +183,7 @@ char *SEQ_MIDI_PORT_OutNameGet(u8 port_ix)
 
 char *SEQ_MIDI_PORT_ClkNameGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(clk_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_CLK_PORTS )
     return "----";
   else
     return (char *)clk_ports[port_ix].name;
@@ -164,7 +196,7 @@ char *SEQ_MIDI_PORT_ClkNameGet(u8 port_ix)
 /////////////////////////////////////////////////////////////////////////////
 mios32_midi_port_t SEQ_MIDI_PORT_InPortGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(in_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_IN_PORTS )
     return 0xff; // dummy interface
   else
     return in_ports[port_ix].port;
@@ -172,7 +204,7 @@ mios32_midi_port_t SEQ_MIDI_PORT_InPortGet(u8 port_ix)
 
 mios32_midi_port_t SEQ_MIDI_PORT_OutPortGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(out_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_OUT_PORTS )
     return 0xff; // dummy interface
   else
     return out_ports[port_ix].port;
@@ -180,7 +212,7 @@ mios32_midi_port_t SEQ_MIDI_PORT_OutPortGet(u8 port_ix)
 
 mios32_midi_port_t SEQ_MIDI_PORT_ClkPortGet(u8 port_ix)
 {
-  if( port_ix >= sizeof(clk_ports)/sizeof(seq_midi_port_entry_t) )
+  if( port_ix >= NUM_CLK_PORTS )
     return 0xff; // dummy interface
   else
     return clk_ports[port_ix].port;
@@ -192,28 +224,60 @@ mios32_midi_port_t SEQ_MIDI_PORT_ClkPortGet(u8 port_ix)
 /////////////////////////////////////////////////////////////////////////////
 u8 SEQ_MIDI_PORT_InIxGet(mios32_midi_port_t port)
 {
+#if 0
   u8 ix;
-  for(ix=0; ix<sizeof(in_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_IN_PORTS; ++ix) {
     if( in_ports[ix].port == port )
       return ix;
   }
+#else
+  // faster version - execution time does matter for some features!
+  if( (port & 0x0f) >= 4 )
+    return 0; // only 1..4, filter number 5..16
+
+  switch( port & 0xf0 ) {
+    // has to be kept in sync with in_ports[]!
+    case DEFAULT: return 0;
+    case USB0:  return (port & 0x0f) + 1;
+    case UART0: return (port & 0x0f) + 5;
+    case 0xf0:  return (port & 0x0f) + 9; // Bus
+  }
+#endif
+
   return 0; // return first ix if not found
 }
 
 u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
 {
+#if 0
   u8 ix;
-  for(ix=0; ix<sizeof(out_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_OUT_PORTS; ++ix) {
     if( out_ports[ix].port == port )
       return ix;
   }
+#else
+  // faster version - execution time does matter for some features!
+  if( (port & 0x0f) >= 4 )
+    return 0; // only 1..4, filter number 5..16
+
+  switch( port & 0xf0 ) {
+    // has to be kept in sync with out_ports[]!
+    case DEFAULT: return 0;
+    case USB0:  return (port & 0x0f) + 1;
+    case UART0: return (port & 0x0f) + 5;
+    case IIC0:  return (port & 0x0f) + 9;
+    case 0x80:  return (port & 0x0f) + 13; // AOUT
+    case 0xf0:  return (port & 0x0f) + 14; // Bus
+  }
+#endif
+
   return 0; // return first ix if not found
 }
 
 u8 SEQ_MIDI_PORT_ClkIxGet(mios32_midi_port_t port)
 {
   u8 ix;
-  for(ix=0; ix<sizeof(clk_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_CLK_PORTS; ++ix) {
     if( clk_ports[ix].port == port )
       return ix;
   }
@@ -227,7 +291,7 @@ u8 SEQ_MIDI_PORT_ClkIxGet(mios32_midi_port_t port)
 s32 SEQ_MIDI_PORT_InCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
-  for(ix=0; ix<sizeof(in_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_IN_PORTS; ++ix) {
     if( in_ports[ix].port == port ) {
       if( port >= 0xf0 )
 	return 1; // Bus is always available
@@ -241,7 +305,7 @@ s32 SEQ_MIDI_PORT_InCheckAvailable(mios32_midi_port_t port)
 s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
-  for(ix=0; ix<sizeof(out_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_OUT_PORTS; ++ix) {
     if( out_ports[ix].port == port ) {
       if( port == 0x80 ) {
 	// check if AOUT configured
@@ -260,7 +324,7 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
 s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
-  for(ix=0; ix<sizeof(clk_ports)/sizeof(seq_midi_port_entry_t); ++ix) {
+  for(ix=0; ix<NUM_CLK_PORTS; ++ix) {
     if( clk_ports[ix].port == port )
       // only up to 64 ports (0x00..0x3f = USB, UART, IIC) supported
       if( port < 0x40 )
@@ -277,26 +341,12 @@ s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port)
 {
   u8 port_ix = 0;
 
-#if 0
-  if( port != DEFAULT )
+  if( port != DEFAULT ) {
     port_ix = SEQ_MIDI_PORT_OutIxGet(port);
 
     if( !port_ix )
       return 0; // port not supported... and not muted (therefore 0 instead of -1)
   }
-#else
-  // faster version - execution time does matter, as this function is frequently called
-  // from SEQ_CORE_Tick()
-  switch( port & 0xf0 ) {
-    // has to be kept in sync with out_ports[]!
-    case DEFAULT: port_ix = 0; break;
-    case USB0:  port_ix = (port & 0x0f) + 1; break;
-    case UART0: port_ix = (port & 0x0f) + 5; break;
-    case IIC0:  port_ix = (port & 0x0f) + 9; break;
-    case 0x80:  port_ix = (port & 0x0f) + 13; break; // AOUT
-    case 0xf0:  port_ix = (port & 0x0f) + 14; break; // Bus
-  }
-#endif
 
   return (muted_out & (1 << port_ix)) ? 1 : 0;
 }
@@ -328,12 +378,122 @@ s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns the last sent MIDI package of given output port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_package_t SEQ_MIDI_PORT_OutPackageGet(mios32_midi_port_t port)
+{
+  u8 port_ix = 0;
+  mios32_midi_package_t empty;
+  empty.ALL = 0;
+
+  if( port != DEFAULT ) {
+    port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+
+    if( !port_ix )
+      return empty; // port not supported...
+  }
+
+  if( !midi_out_ctr[port_ix] )
+    return empty; // package expired
+
+  return midi_out_package[port_ix];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the last received MIDI package of given input port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_package_t SEQ_MIDI_PORT_InPackageGet(mios32_midi_port_t port)
+{
+  u8 port_ix = 0;
+  mios32_midi_package_t empty;
+  empty.ALL = 0;
+
+  if( port != DEFAULT ) {
+    port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+
+    if( !port_ix )
+      return empty; // port not supported...
+  }
+
+  if( !midi_in_ctr[port_ix] )
+    return empty; // package expired
+
+  return midi_in_package[port_ix];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Get/Set MIDI monitor filter option
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_MonFilterSet(seq_midi_port_mon_filter_t filter)
+{
+  seq_midi_port_mon_filter = filter;
+  return 0; // no error
+}
+
+seq_midi_port_mon_filter_t SEQ_MIDI_PORT_MonFilterGet(void)
+{
+  return seq_midi_port_mon_filter;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Handles the MIDI In/Out counters
+// Should be called periodically each mS
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_Period1mS(void)
+{
+  int i;
+  static u8 predivider = 0;
+
+  // counters are handled each 10 mS
+  if( ++predivider >= 10 ) {
+    predivider = 0;
+
+    for(i=0; i<NUM_OUT_PORTS; ++i)
+      if( midi_out_ctr[i] )
+	--midi_out_ctr[i];
+
+    for(i=0; i<NUM_IN_PORTS; ++i)
+      if( midi_in_ctr[i] )
+	--midi_in_ctr[i];
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Called by MIDI Tx Notificaton hook if a MIDI event should be sent
 // Allows to provide additional MIDI ports
 // If 1 is returned, package will be filtered!
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  // MIDI Out monitor function
+  u8 mon_filtered = 0;
+  if( seq_midi_port_mon_filter.MIDI_CLOCK && package.evnt0 == 0xf8 )
+    mon_filtered = 1;
+  else if( seq_midi_port_mon_filter.ACTIVE_SENSE && package.evnt0 == 0xfe )
+    mon_filtered = 1;
+
+  if( !mon_filtered ) {
+    int port_ix = -1;
+    if( port != DEFAULT ) {
+      port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+
+      if( !port_ix )
+	port_ix = -1; // port not mapped
+    }
+
+    if( port_ix >= 0 ) {
+      midi_out_package[port_ix] = package;
+      midi_out_ctr[port_ix] = 20; // 2 seconds lifetime
+    }
+  }
+
+
   // DIN Sync Event (0xf9 sent over port 0xff)
   if( port == 0xff && package.evnt0 == 0xf9 ) {
     seq_core_din_sync_pulse_ctr = 2; // to generate a 1 mS pulse (+1 for 1->0 transition)
@@ -429,4 +589,35 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
   }
 
   return 0; // don't filter package
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called by MIDI Rx Notificaton hook in app.c if a MIDI event is received
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // MIDI In monitor function
+  u8 mon_filtered = 0;
+  if( seq_midi_port_mon_filter.MIDI_CLOCK && package.evnt0 == 0xf8 )
+    mon_filtered = 1;
+  else if( seq_midi_port_mon_filter.ACTIVE_SENSE && package.evnt0 == 0xfe )
+    mon_filtered = 1;
+
+  if( !mon_filtered ) {
+    int port_ix = -1;
+    if( port != DEFAULT ) {
+      port_ix = SEQ_MIDI_PORT_InIxGet(port);
+
+      if( !port_ix )
+	port_ix = -1; // port not mapped
+    }
+
+    if( port_ix >= 0 ) {
+      midi_in_package[port_ix] = package;
+      midi_in_ctr[port_ix] = 20; // 2 seconds lifetime
+    }
+  }
+
+  return 0; // no error
 }

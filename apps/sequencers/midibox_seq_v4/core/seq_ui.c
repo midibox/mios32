@@ -413,8 +413,11 @@ static s32 SEQ_UI_Button_Stop(s32 depressed)
   // if sequencer already stopped: reset song position
   if( SEQ_BPM_IsRunning() )
     SEQ_BPM_Stop();
-  else
+  else {
+    SEQ_SONG_Reset();
     SEQ_CORE_Reset();
+    SEQ_MIDPLY_Reset();
+  }
 
   return 0; // no error
 }
@@ -2631,7 +2634,7 @@ static const char ui_keypad_charsets_upper[10][6] = {
   "PQRS7",
   "TUV8~",
   "WXYZ9",
-  "0 -?~",
+  "-_ 0~",
 };
 
 
@@ -2645,7 +2648,7 @@ static const char ui_keypad_charsets_lower[10][6] = {
   "pqrs7",
   "tuv8~",
   "wxyz9",
-  "0 -?~",
+  "-_ 0~",
 };
 
 static u8 ui_keypad_select_charset_lower;

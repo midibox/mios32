@@ -104,6 +104,7 @@
 		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
 		528F03901024889E009439A6 /* notestack.c in Sources */ = {isa = PBXBuildFile; fileRef = 528F038E1024889E009439A6 /* notestack.c */; };
 		52988C2F0F1A84680046F70C /* seq_chord.c in Sources */ = {isa = PBXBuildFile; fileRef = 52988C2D0F1A84680046F70C /* seq_chord.c */; };
+		5299E3EE1094879C0037F37A /* seq_ui_midimon.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299E3ED1094879C0037F37A /* seq_ui_midimon.c */; };
 		52A74F1A0E92701800D65394 /* SEQButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74F190E92701800D65394 /* SEQButton.m */; };
 		52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 52A74FE80E92858600D65394 /* SEQEncoder.m */; };
 		52AE260B0FEC252B004A0274 /* seq_ui_pmute.c in Sources */ = {isa = PBXBuildFile; fileRef = 52AE260A0FEC252B004A0274 /* seq_ui_pmute.c */; };
@@ -321,6 +322,7 @@
 		528F038F1024889E009439A6 /* notestack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = notestack.h; path = ../../../../modules/notestack/notestack.h; sourceTree = SOURCE_ROOT; };
 		52988C2D0F1A84680046F70C /* seq_chord.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_chord.c; path = ../core/seq_chord.c; sourceTree = SOURCE_ROOT; };
 		52988C2E0F1A84680046F70C /* seq_chord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_chord.h; path = ../core/seq_chord.h; sourceTree = SOURCE_ROOT; };
+		5299E3ED1094879C0037F37A /* seq_ui_midimon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_midimon.c; path = ../core/seq_ui_midimon.c; sourceTree = SOURCE_ROOT; };
 		52A74F180E92701800D65394 /* SEQButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQButton.h; sourceTree = "<group>"; };
 		52A74F190E92701800D65394 /* SEQButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SEQButton.m; sourceTree = "<group>"; };
 		52A74FE70E92858600D65394 /* SEQEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SEQEncoder.h; sourceTree = "<group>"; };
@@ -521,6 +523,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5299E3ED1094879C0037F37A /* seq_ui_midimon.c */,
 				522C2BB610936BA700EC1349 /* seq_midexp.c */,
 				522C2BB710936BA700EC1349 /* seq_midexp.h */,
 				522C2BB310936B9700EC1349 /* seq_midimp.c */,
@@ -986,6 +989,7 @@
 				52DEED701084CA1F004116B8 /* seq_ui_info.c in Sources */,
 				522C2BB510936B9700EC1349 /* seq_midimp.c in Sources */,
 				522C2BB810936BA700EC1349 /* seq_midexp.c in Sources */,
+				5299E3EE1094879C0037F37A /* seq_ui_midimon.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
