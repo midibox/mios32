@@ -25,6 +25,8 @@
 #include <dosfs.h>
 #include <string.h>
 
+#include "tasks.h"
+
 #include "seq_ui.h"
 #include "seq_core.h"
 

@@ -97,13 +97,6 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  // ongoing export?
-  int export_track = SEQ_MIDEXP_ExportTrackGet();
-  if( export_track >= 0 ) {
-    *gp_leds = (1 << (export_track+1))-1;
-    return 0; // no error
-  }
-
   switch( mf_dialog ) {
     case MF_DIALOG_PLAY:
       *gp_leds = (3 << (2*ui_selected_item));
@@ -328,8 +321,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
         case EXPORT_ITEM_VAL: {
 	  switch( midexp_mode ) {
-	    case SEQ_MIDEXP_MODE_Track: {
-	      return SEQ_UI_GxTyInc(incrementer);
+	    case SEQ_MIDEXP_MODE_AllGroups: {
+	      return 0; // not relevant
 	    }
 	    case SEQ_MIDEXP_MODE_Group: {
 	      if( SEQ_UI_Var8_Inc(&ui_selected_group, 0, SEQ_CORE_NUM_GROUPS-1, incrementer) >= 0 ) {
@@ -337,8 +330,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      }
 	      return 0; // no change
 	    }
-	    case SEQ_MIDEXP_MODE_AllGroups: {
-	      return 0; // not relevant
+	    case SEQ_MIDEXP_MODE_Track: {
+	      return SEQ_UI_GxTyInc(incrementer);
 	    }
 	    case SEQ_MIDEXP_MODE_Song: {
 	      u8 value = (u8)SEQ_SONG_NumGet();
@@ -812,14 +805,14 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   // MIDI Files Export dialog:
-  // Export Track          Measures StepsPerM                                        
-  // Track  G1T1                1       16   Continue                            EXIT
+  // Export                Measures StepsPerM                                        
+  // All Groups                 1       16   Continue                            EXIT
 
   // Export Group Pattern  Measures StepsPerM                                        
   // Group   G1    1:A1         1       16   Continue                            EXIT
 
-  // Export                Measures StepsPerM                                        
-  // All Groups                 1       16   Continue                            EXIT
+  // Export Track          Measures StepsPerM                                        
+  // Track  G1T1                1       16   Continue                            EXIT
 
   // Export Song           Measures                                                  
   // Song     1                 1            Continue                            EXIT
@@ -873,18 +866,18 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintString("Play  ");
       }
 
-      SEQ_LCD_PrintFormattedString(" %s  ", SEQ_MIDPLY_LoopModeGet() ? " on": "off");
+      SEQ_LCD_PrintFormattedString("%s  ", SEQ_MIDPLY_LoopModeGet() ? " on": "off");
 
 
       switch( SEQ_MIDPLY_ModeGet() ) {
         case SEQ_MIDPLY_MODE_Exclusive:
-	  SEQ_LCD_PrintString("exclusive");
+	  SEQ_LCD_PrintString("exclusive ");
 	  break;
         case SEQ_MIDPLY_MODE_Parallel:
-	  SEQ_LCD_PrintString("parallel ");
+	  SEQ_LCD_PrintString("parallel  ");
 	  break;
         default:
-	  SEQ_LCD_PrintString("???????? ");
+	  SEQ_LCD_PrintString("????????  ");
 	  break;
       }
 
@@ -902,16 +895,16 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString("Export ");
 
       switch( midexp_mode ) {
-        case SEQ_MIDEXP_MODE_Track:
-	  SEQ_LCD_PrintString("Track");
-	  SEQ_LCD_PrintSpaces(10);
+        case SEQ_MIDEXP_MODE_AllGroups:
+	  SEQ_LCD_PrintSpaces(15);
 	  break;
         case SEQ_MIDEXP_MODE_Group:
 	  SEQ_LCD_PrintString("Group Pattern");
 	  SEQ_LCD_PrintSpaces(2);
 	  break;
-        case SEQ_MIDEXP_MODE_AllGroups:
-	  SEQ_LCD_PrintSpaces(15);
+        case SEQ_MIDEXP_MODE_Track:
+	  SEQ_LCD_PrintString("Track");
+	  SEQ_LCD_PrintSpaces(10);
 	  break;
         case SEQ_MIDEXP_MODE_Song:
 	  SEQ_LCD_PrintString("Song");
@@ -933,24 +926,15 @@ static s32 LCD_Handler(u8 high_prio)
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
       switch( midexp_mode ) {
-        case SEQ_MIDEXP_MODE_Track: {
-	  u8 track = SEQ_UI_VisibleTrackGet();
-
+        case SEQ_MIDEXP_MODE_AllGroups:
 	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
-	    SEQ_LCD_PrintSpaces(7);
+	    SEQ_LCD_PrintSpaces(10);
 	  } else {
-	    SEQ_LCD_PrintString("Track  ");
+	    SEQ_LCD_PrintString("All Groups");
 	  }
 
-	  if( ui_selected_item == EXPORT_ITEM_VAL && ui_cursor_flash ) {
-	    SEQ_LCD_PrintSpaces(4);
-	  } else {
-	    SEQ_LCD_PrintFormattedString("G%dT%d",
-					 (track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
-					 (track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
-	  }
-	  SEQ_LCD_PrintSpaces(11);
-	} break;
+	  SEQ_LCD_PrintSpaces(12);
+	  break;
         case SEQ_MIDEXP_MODE_Group: {
 	  u8 group = SEQ_UI_VisibleTrackGet() / SEQ_CORE_NUM_TRACKS_PER_GROUP;
 
@@ -982,15 +966,24 @@ static s32 LCD_Handler(u8 high_prio)
 
 	  SEQ_LCD_PrintSpaces(4);
 	} break;
-        case SEQ_MIDEXP_MODE_AllGroups:
+        case SEQ_MIDEXP_MODE_Track: {
+	  u8 track = SEQ_UI_VisibleTrackGet();
+
 	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
-	    SEQ_LCD_PrintSpaces(10);
+	    SEQ_LCD_PrintSpaces(7);
 	  } else {
-	    SEQ_LCD_PrintString("All Groups");
+	    SEQ_LCD_PrintString("Track  ");
 	  }
 
-	  SEQ_LCD_PrintSpaces(12);
-	  break;
+	  if( ui_selected_item == EXPORT_ITEM_VAL && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(4);
+	  } else {
+	    SEQ_LCD_PrintFormattedString("G%dT%d",
+					 (track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
+					 (track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
+	  }
+	  SEQ_LCD_PrintSpaces(11);
+	} break;
         case SEQ_MIDEXP_MODE_Song: {
 	  if( ui_selected_item == EXPORT_ITEM_MODE && ui_cursor_flash ) {
 	    SEQ_LCD_PrintSpaces(7);
@@ -1063,7 +1056,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
 
-      SEQ_LCD_PrintFormattedString("File '/midi/%s.mid' already exists!");
+      SEQ_LCD_PrintFormattedString("File '/midi/%s.mid' already exists!", dir_name);
       SEQ_LCD_PrintSpaces(10);
 
       SEQ_LCD_CursorSet(0, 1);
@@ -1283,6 +1276,9 @@ static s32 DoExport(u8 force_overwrite)
     mf_dialog = MF_DIALOG_EXPORT_FEXISTS;
     return 1;
   }
+
+  SEQ_LCD_Clear(); // remove artifacts
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Exporting", path);
 
   if( (status=SEQ_MIDEXP_GenerateFile(path)) < 0 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Error during Export!", "see MIOS Terminal!");

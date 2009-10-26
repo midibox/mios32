@@ -50,6 +50,8 @@ extern s32 SEQ_MIDPLY_PortSet(mios32_midi_port_t port);
 extern u32 SEQ_MIDPLY_SynchTickGet(void);
 
 extern s32 SEQ_MIDPLY_ReadFile(char *path);
+extern s32 SEQ_MIDPLY_DisableFile(void);
+
 extern char *SEQ_MIDPLY_PathGet(void);
 
 extern s32 SEQ_MIDPLY_Reset(void);

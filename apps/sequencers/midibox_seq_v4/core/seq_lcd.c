@@ -227,6 +227,7 @@ s32 SEQ_LCD_Update(u8 force)
 	  MIOS32_LCD_CursorSet(x%40, y);
 	}
 	MIOS32_LCD_PrintChar(*ptr & 0x7f);
+
 	*ptr |= 0x80;
 	next_y = y;
 	next_x = x+1;

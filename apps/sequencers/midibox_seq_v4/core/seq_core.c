@@ -390,11 +390,11 @@ s32 SEQ_CORE_Reset(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // performs a single ppqn tick
-// if "single_track" is -1, all tracks will be played
-// if "single_track" is between 0 and 15, only the given track + all loopback
+// if "export_track" is -1, all tracks will be played
+// if "export_track" is between 0 and 15, only the given track + all loopback
 //   tracks will be played (for MIDI file export)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
+s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 {
   // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
   seq_midply_mode_t midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
@@ -408,48 +408,52 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
     synch_to_measure_req = 1;
   }
 
-  // send MIDI clock on each 16th tick (since we are working at 384ppqn)
-  if( (bpm_tick % 16) == 0 )
-    SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+  // if no export:
+  if( export_track == -1 ) {
+    // send MIDI clock on each 16th tick (since we are working at 384ppqn)
+    if( (bpm_tick % 16) == 0 )
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
-  // trigger DIN Sync clock with a special event (0xf9 normaly used for "MIDI tick")
-  // SEQ_MIDI_PORT_NotifyMIDITx filters it before it will be forwarded to physical ports
-  if( (bpm_tick % seq_core_bpm_din_sync_div) == 0 ) {
-    mios32_midi_package_t p;
-    p.ALL = 0;
-    p.type = 0x5; // Single-byte system common message
-    p.evnt0 = 0xf9;
-    SEQ_MIDI_OUT_Send(0xff, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
-  }
-
-  // send metronome tick on each beat if enabled
-  if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 384) == 0 ) {
-    mios32_midi_package_t p;
-
-    p.type     = NoteOn;
-    p.cable    = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
-    p.event    = NoteOn;
-    p.chn      = seq_core_metronome_chn-1;
-    p.note     = seq_core_metronome_note_b;
-    p.velocity = 96;
-    u16 len = 20; // ca. 25% of a 16th
-
-    if( synch_to_measure_req ) {
-      if( seq_core_metronome_note_m )
-	p.note = seq_core_metronome_note_m; // if this note isn't defined, use B note instead
-      p.velocity = 127;
+    // trigger DIN Sync clock with a special event (0xf9 normaly used for "MIDI tick")
+    // SEQ_MIDI_PORT_NotifyMIDITx filters it before it will be forwarded to physical ports
+    if( (bpm_tick % seq_core_bpm_din_sync_div) == 0 ) {
+      mios32_midi_package_t p;
+      p.ALL = 0;
+      p.type = 0x5; // Single-byte system common message
+      p.evnt0 = 0xf9;
+      SEQ_MIDI_OUT_Send(0xff, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
     }
 
-    if( p.note )
-      SEQ_MIDI_OUT_Send(seq_core_metronome_port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
+    // send metronome tick on each beat if enabled
+    if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 384) == 0 ) {
+      mios32_midi_package_t p;
+
+      p.type     = NoteOn;
+      p.cable    = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
+      p.event    = NoteOn;
+      p.chn      = seq_core_metronome_chn-1;
+      p.note     = seq_core_metronome_note_b;
+      p.velocity = 96;
+      u16 len = 20; // ca. 25% of a 16th
+
+      if( synch_to_measure_req ) {
+	if( seq_core_metronome_note_m )
+	  p.note = seq_core_metronome_note_m; // if this note isn't defined, use B note instead
+	p.velocity = 127;
+      }
+
+      if( p.note )
+	SEQ_MIDI_OUT_Send(seq_core_metronome_port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
+    }
+
+    // send FA if external restart has been requested
+    if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
+      seq_core_state.EXT_RESTART_REQ = 0; // remove request
+      seq_ui_display_update_req = 1; // request display update
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
+    }
   }
 
-  // send FA if external restart has been requested
-  if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
-    seq_core_state.EXT_RESTART_REQ = 0; // remove request
-    seq_ui_display_update_req = 1; // request display update
-    SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
-  }
 
   // process all tracks
   // first the loopback port Bus1, thereafter parameters sent to common MIDI ports
@@ -465,8 +469,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
 
-      // for MIDI file export: (single_track != -1): only given track + all loopback tracks will be played
-      if( round && single_track != -1 && single_track != track )
+      // for MIDI file export: (export_track != -1): only given track + all loopback tracks will be played
+      if( round && export_track != -1 && export_track != track )
 	continue;
 
       // handle LFO effect
@@ -802,12 +806,12 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
 		if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
 		  scheduled_tick += 1;
 
+		// for visualisation in mute menu
+		t->vu_meter = p->velocity;
+
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
 		p->velocity = 0;
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
-
-		// for visualisation in mute menu
-		t->vu_meter = p->velocity;
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
@@ -900,7 +904,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 single_track)
       }
     }
   }
-  
+
   // clear "first clock" flag if it was set before
   seq_core_state.FIRST_CLK = 0;
 
