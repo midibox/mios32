@@ -58,7 +58,7 @@ static s8 export_track;
 s32 SEQ_MIDEXP_Init(u32 mode)
 {
   // init default settings
-  seq_midexp_mode = SEQ_MIDEXP_MODE_Track;
+  seq_midexp_mode = SEQ_MIDEXP_MODE_AllGroups;
   export_measures = 0; // 1 measure
   export_steps_per_measure = 15; // 16 steps
 
@@ -79,7 +79,7 @@ seq_midexp_mode_t SEQ_MIDEXP_ModeGet(void)
 
 s32 SEQ_MIDEXP_ModeSet(seq_midexp_mode_t mode)
 {
-  if( mode >= SEQ_MIDEXP_MODE_Track && mode <= SEQ_MIDEXP_MODE_Song ) {
+  if( mode >= SEQ_MIDEXP_MODE_AllGroups && mode <= SEQ_MIDEXP_MODE_Song ) {
     seq_midexp_mode = mode;
   }  else {
     return -1; // invalid mode
@@ -106,15 +106,6 @@ s32 SEQ_MIDEXP_ExportStepsPerMeasureSet(u8 steps_per_measure)
 {
   export_steps_per_measure = steps_per_measure;
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// allows to request exported track while export running
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDEXP_ExportTrackGet(void)
-{
-  return export_track;
 }
 
 
@@ -249,6 +240,24 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   u32 ticks_per_measure = ((int)export_steps_per_measure + 1) * (ppqn/4);
   u32 number_ticks = ((int)export_measures + 1) * ticks_per_measure;
 
+  u8 first_track, last_track;
+
+  switch( seq_midexp_mode ) {
+    case SEQ_MIDEXP_MODE_Track:
+      first_track = SEQ_UI_VisibleTrackGet();
+      last_track = first_track;
+      break;
+
+    case SEQ_MIDEXP_MODE_Group:
+      first_track = ui_selected_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+      last_track = ((ui_selected_group+1) * SEQ_CORE_NUM_TRACKS_PER_GROUP) - 1;
+      break;
+
+    default:
+      first_track = 0;
+      last_track = SEQ_CORE_NUM_TRACKS-1;
+  }
+
   // request control over SD Card and MIDI Out
   MUTEX_SDCARD_TAKE;
   MUTEX_MIDIOUT_TAKE;
@@ -276,7 +285,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   status |= SEQ_FILE_WriteBuffer(&export_fi, "MThd", 4);
   status |= SEQ_MIDEXP_WriteWord(&export_fi, header_size, 4);
   status |= SEQ_MIDEXP_WriteWord(&export_fi, 1, 2); // MIDI File Format
-  status |= SEQ_MIDEXP_WriteWord(&export_fi, SEQ_CORE_NUM_TRACKS, 2); // Number of Tracks
+  status |= SEQ_MIDEXP_WriteWord(&export_fi, last_track-first_track+1, 2); // Number of Tracks
   status |= SEQ_MIDEXP_WriteWord(&export_fi, ppqn, 2); // PPQN
   status |= SEQ_FILE_WriteClose(&export_fi);
 
@@ -293,16 +302,35 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   SEQ_SONG_Reset();
   SEQ_CORE_Reset();
   SEQ_MIDPLY_Reset();
+  SEQ_MIDPLY_DisableFile(); // ensure that MIDI file won't be played in parallel... just disable it
 
   // play off events
   SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
   SEQ_CORE_PlayOffEvents();
   SEQ_MIDPLY_PlayOffEvents();
 
+  // select song mode if required
+  SEQ_SONG_ActiveSet(seq_midexp_mode == SEQ_MIDEXP_MODE_Song);
+
   // generate events track by track
-  u8 first_track = 0;
-  u8 last_track = SEQ_CORE_NUM_TRACKS-1;
   for(export_track=first_track; export_track<=last_track; ++export_track) {
+
+    // print message on screen
+    u8 str_buffer[21];
+    sprintf(str_buffer, "Exporting G%dT%d to",
+	    (export_track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
+	    (export_track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
+
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, str_buffer, path);
+
+#ifndef MIOS32_FAMILY_EMULATION
+    // workaround: give UI some time to update screen!
+    // background: buttons have higher priority than LCD output, especially with MUTEX_MIDI_OUT the priority
+    // will be even higher, so that the LCD update task is starving.
+    // waiting for some mS ensures that the other tasks are serviced.
+    vTaskDelay(100 / portTICK_RATE_MS);
+#endif
+
     // reset sequencer
     SEQ_SONG_Reset();
     SEQ_CORE_Reset();

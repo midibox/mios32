@@ -9,20 +9,23 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta10
 ~~~~~~~~~~~~~~~~~~~~~
 
+  o Tracks/Patterns/Songs can now be exported to a MIDI file.
+    The appr. menu function is available under UTILITY->DISK->Export
+
   o a simple MIDI In/Out monitor page has been added.
-    The page can be entered via MENU+MIDI -> MIDIMON (GP 16 button).
+    The page can be entered via MENU+MIDI->MIDI Monitor (GP 16 button).
 
     MIDI Clock and Active Sense events are filtered by default. The
     filter option can be changed by pressing SELECT in the MIDI Monitor page.
 
-  o separated "pattern length" from "measure length" parameter in UTIL->OPT menu.
+  o separated "pattern length" from "measure length" parameter in UTILITY->OPT menu.
     Pattern length is used for synchronized pattern changes, and measure
     length for the Synch-to-Measure function.
 
     The left encoder below the item allows to select 16 step wise, the right
     encoder and datawheel stepwise.
 
-  o Paste/Clr behaviour option in UTIL->OPT menu implemented now
+  o Paste/Clr behaviour option in UTILITY->OPT menu implemented now
 
   o HWCFG file option "BUTTONS_NO_UI" implemented now
 
@@ -48,7 +51,7 @@ MIDIboxSEQ V4.0beta8
 
     MIDI files have to be copied into the /midi directory of your SD Card.
 
-    To select a MIDI file, go to the UTIL->DISK->PLAY page, and select
+    To select a MIDI file, go to the UTILITY->DISK->PLAY page, and select
     the desired modes (Exclusive/Parallel and Loop on/off)
 
   o MIDI file import and export prepared in UI, but not implemented yet!
@@ -68,9 +71,9 @@ MIDIboxSEQ V4.0beta7
     characters, selecting a preset (with the encoder) and to exit the editor.
 
   o implemented synchronous pattern change after x steps (x=1..256)
-    This function has to be enabled in the UTIL->OPT page.
+    This function has to be enabled in the UTILITY->OPT page.
 
-  o implemented Follow Song mode. It has to be enabled in UTIL->OPT menu.
+  o implemented Follow Song mode. It has to be enabled in UTILITY->OPT menu.
 
   o a warning message will be print if Synch-to-Measure is enabled, and a 
     track length greater than steps per measure is selected.

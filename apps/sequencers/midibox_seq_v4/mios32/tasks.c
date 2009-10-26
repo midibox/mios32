@@ -224,20 +224,14 @@ void SEQ_TASK_PatternResume(void)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_MSD(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
   u8 lun_available = 0;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
   while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+    // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
+    // isn't required, and this task could be invoked too often if it was blocked
+    // for a long time
+    vTaskDelay(1 / portTICK_RATE_MS);
 
-    // skip delay gap if we had to wait for more than 5 ticks to avoid 
-    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
-    portTickType xCurrentTickCount = xTaskGetTickCount();
-    if( xLastExecutionTime < (xCurrentTickCount-5) )
-      xLastExecutionTime = xCurrentTickCount;
 
     // MSD driver handling
     if( msd_state != DISABLED ) {

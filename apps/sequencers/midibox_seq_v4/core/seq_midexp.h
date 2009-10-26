@@ -20,9 +20,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
+  SEQ_MIDEXP_MODE_AllGroups,
   SEQ_MIDEXP_MODE_Track,
   SEQ_MIDEXP_MODE_Group,
-  SEQ_MIDEXP_MODE_AllGroups,
   SEQ_MIDEXP_MODE_Song
 } seq_midexp_mode_t;
 
@@ -44,8 +44,6 @@ extern s32 SEQ_MIDEXP_ExportMeasuresGet(void);
 extern s32 SEQ_MIDEXP_ExportMeasuresSet(u16 measures);
 extern s32 SEQ_MIDEXP_ExportStepsPerMeasureGet(void);
 extern s32 SEQ_MIDEXP_ExportStepsPerMeasureSet(u8 steps_per_measure);
-
-extern s32 SEQ_MIDEXP_ExportTrackGet(void);
 
 extern s32 SEQ_MIDEXP_GenerateFile(char *path);
 

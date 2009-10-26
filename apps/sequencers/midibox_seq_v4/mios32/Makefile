@@ -120,8 +120,7 @@ DEBUG     =	-g
 #DEBUG     =	-g -Wall -Wno-format -Wno-switch
 OPTIMIZE  =	-Os
 
-#                                    temporary select mapping for wilba's frontpanel here
-CFLAGS =	$(DEBUG) $(OPTIMIZE) -DSRIO_MAPPING=1
+CFLAGS =	$(DEBUG) $(OPTIMIZE)
 
 
 ################################################################################

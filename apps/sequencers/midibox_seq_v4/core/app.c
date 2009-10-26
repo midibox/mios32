@@ -286,6 +286,10 @@ void SEQ_TASK_Period1mS(void)
   // for menu handling (e.g. flashing cursor, doubleclick counter, etc...)
   SEQ_UI_MENU_Handler_Periodic();
 
+  // update BPM
+  SEQ_CORE_BPM_SweepHandler();
+
+  // Button handlers
   if( seq_hwcfg_blm.enabled ) {
     // check for BLM pin changes, call button handler of sequencer on each toggled pin
     BLM_ButtonHandler(APP_BLM_NotifyToggle);
@@ -295,9 +299,6 @@ void SEQ_TASK_Period1mS(void)
     // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
     BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
   }
-
-  // update BPM
-  SEQ_CORE_BPM_SweepHandler();
 }
 
 
