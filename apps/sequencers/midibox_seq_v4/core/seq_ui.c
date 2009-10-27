@@ -2310,7 +2310,7 @@ s32 SEQ_UI_CheckSelections(void)
     ui_selected_step_view = 0;
     ui_selected_step %= 16;
   }
-  
+
   if( ui_selected_step < (16*ui_selected_step_view) || 
       ui_selected_step >= (16*(ui_selected_step_view+1)) )
     ui_selected_step_view = ui_selected_step / 16;

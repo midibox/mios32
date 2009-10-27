@@ -275,48 +275,65 @@ s32 SEQ_CORE_Handler(void)
 
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
-      again = 1; // check all requests again after execution of this part
+      // check all requests again after execution of this part
+      again = 1;
+
       if( bpm_tick_prefetched_ctr ) {
 	// ticks already generated due to prefetching - wait until we catch up
 	--bpm_tick_prefetched_ctr;
-      } else if( bpm_tick_prefetch_req ) {
-	// forwarding the sequencer has been requested (e.g. before pattern change)
-	u32 forwarded_bpm_tick = bpm_tick;
-
-#if LED_PERFORMANCE_MEASURING == 2
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);
-#endif
-#if STOPWATCH_PERFORMANCE_MEASURING == 2
-	SEQ_UI_INFO_StopwatchReset();
-#endif
-	while( bpm_tick_prefetch_req > forwarded_bpm_tick ) {
-	  SEQ_CORE_Tick(forwarded_bpm_tick, -1);
-	  SEQ_MIDPLY_Tick(forwarded_bpm_tick);
-	  ++forwarded_bpm_tick;
-	  ++bpm_tick_prefetched_ctr;
-	}
-	bpm_tick_prefetch_req = 0;
-#if LED_PERFORMANCE_MEASURING == 2
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);
-#endif
-#if STOPWATCH_PERFORMANCE_MEASURING == 2
-	SEQ_UI_INFO_StopwatchCapture();
-#endif
       } else {
-	// realtime generation of events
+	// it's possible to forward the sequencer on pattern changes
+	// in this case bpm_tick_prefetch_req is > bpm_tick
+	// in all other cases, we only generate a single tick (realtime play)
+
+	u32 bpm_tick_target = bpm_tick;
+	u8 is_prefetch = 0;
+	if( bpm_tick_prefetch_req > bpm_tick ) {
+	  is_prefetch = 1;
+	  bpm_tick_target = bpm_tick_prefetch_req;
+	  bpm_tick_prefetched_ctr = bpm_tick_target - bpm_tick;
+#if 0
+	  DEBUG_MSG("[SEQ_CORE:%u] bpm_tick:%u  bpm_tick_target:%u  bpm_tick_prefetched_ctr:%u\n",
+		    SEQ_BPM_TickGet(), bpm_tick, bpm_tick_target, bpm_tick_prefetched_ctr);
+#endif
+	}
+
+	// invalidate request before a new one will be generated (e.g. via SEQ_SONG_NextPos())
+	bpm_tick_prefetch_req = 0;
+
+	for(; bpm_tick<=bpm_tick_target; ++bpm_tick) {
 #if LED_PERFORMANCE_MEASURING == 1
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);
+	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	SEQ_UI_INFO_StopwatchReset();
+	  SEQ_UI_INFO_StopwatchReset();
 #endif
-	SEQ_CORE_Tick(bpm_tick, -1);
-	SEQ_MIDPLY_Tick(bpm_tick);
+
+	  // generate MIDI events
+	  SEQ_CORE_Tick(bpm_tick, -1);
+	  SEQ_MIDPLY_Tick(bpm_tick);
+
 #if LED_PERFORMANCE_MEASURING == 1
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	SEQ_UI_INFO_StopwatchCapture();
+	  SEQ_UI_INFO_StopwatchCapture();
+#endif
+
+	  // load new pattern/song step if reference step reached measure
+	  // (this code is outside SEQ_CORE_Tick() to save stack space!)
+	  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
+	    if( SEQ_SONG_ActiveGet() ) {
+	      SEQ_SONG_NextPos();
+	    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+	      SEQ_PATTERN_Handler();
+	    }
+	  }
+	}
+
+#if 0
+	if( is_prefetch )
+	  DEBUG_MSG("[SEQ_CORE:%u] prefetching finished, saved %d ticks\n", SEQ_BPM_TickGet(), bpm_tick_target-SEQ_BPM_TickGet());
 #endif
       }
     }
@@ -911,15 +928,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
   // if manual trigger function requested stop: stop sequencer at end of reference step
   if( seq_core_state.MANUAL_TRIGGER_STOP_REQ && (bpm_tick % 96) == 95 )
     SEQ_BPM_Stop();
-
-  // reference step reached measure
-  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
-    if( SEQ_SONG_ActiveGet() ) {
-      SEQ_SONG_NextPos();
-    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
-      SEQ_PATTERN_Handler();
-    }
-  }
 
   return 0; // no error
 }

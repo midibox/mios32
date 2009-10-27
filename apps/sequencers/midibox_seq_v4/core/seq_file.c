@@ -712,10 +712,10 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
     } else {
       if( successcount != len ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
-	DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos-SECTOR_SIZE, successcount);
+		DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos-SECTOR_SIZE, successcount);
 #endif
 	
-	status = -2; // not all bytes written
+		status = -2; // not all bytes written
       }
     }
   }

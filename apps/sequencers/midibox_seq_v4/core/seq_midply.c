@@ -339,6 +339,10 @@ s32 SEQ_MIDPLY_PlayOffEvents(void)
 	unplayed_note_off[chn][i] = 0;
       }
 
+  // don't continue if no song loaded
+  if( !midifile_path[0] )
+    return 0;
+
   // send Controller Reset to all channels
   // + send Note Off CC (if CC Damper Pedal has been sent!)
   midi_package.type = CC;

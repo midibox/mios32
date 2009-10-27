@@ -38,7 +38,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 1
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -143,8 +143,8 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
       // (won't be generated again if there is already an ongoing request)
       MUTEX_MIDIOUT_TAKE;
       if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
-	// resume low-prio pattern handler
-	SEQ_TASK_PatternResume();
+		// resume low-prio pattern handler
+		SEQ_TASK_PatternResume();
       }
       MUTEX_MIDIOUT_GIVE;
     }
