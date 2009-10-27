@@ -379,7 +379,19 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 
     // start export of selected track
     for(export_tick=0; export_tick < number_ticks; ++export_tick) {
+      // propagate tick
       SEQ_CORE_Tick(export_tick, export_track);
+
+      // load new songpos/pattern if reference step reached measure
+      if( seq_core_state.ref_step == seq_core_steps_per_pattern && (export_tick % 96) == 20 ) {
+	if( SEQ_SONG_ActiveGet() ) {
+	  SEQ_SONG_NextPos();
+	} else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+	  SEQ_PATTERN_Handler();
+	}
+      }
+
+      // forward MIDI events to Hook_MIDI_SendPackage()
       SEQ_MIDI_OUT_Handler();
     }
 

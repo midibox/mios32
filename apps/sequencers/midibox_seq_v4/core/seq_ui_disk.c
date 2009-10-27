@@ -60,6 +60,7 @@
 #define MF_DIALOG_EXPORT        3
 #define MF_DIALOG_EXPORT_FNAME  4
 #define MF_DIALOG_EXPORT_FEXISTS 5
+#define MF_DIALOG_EXPORT_PROGRESS 6
 
 
 #define NUM_LIST_DISPLAYED_ITEMS 4
@@ -72,6 +73,7 @@
 /////////////////////////////////////////////////////////////////////////////
 static void BackupReq(u32 dummy);
 static void FormatReq(u32 dummy);
+static void MSD_EnableReq(u32 enable);
 
 static s32 SEQ_UI_DISK_UpdateDirList(void);
 
@@ -131,6 +133,7 @@ static s32 LED_Handler(u16 *gp_leds)
 
     case MF_DIALOG_EXPORT_FNAME:
     case MF_DIALOG_EXPORT_FEXISTS:
+    case MF_DIALOG_EXPORT_PROGRESS:
       // no LED functions
       break;
 
@@ -477,6 +480,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
     ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_PROGRESS:
+      // no encoder functions!
+      return -1;
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP1:
@@ -531,9 +540,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         };
     
         case ITEM_ENABLE_MSD:
-          TASK_MSD_EnableSet((incrementer > 0) ? 1 : 0);
-          SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mass Storage via USB", (incrementer > 0) ? "enabled!" : "disabled!");
-    
+          SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Please use", "GP Button!");
           return 1;
     
         case ITEM_MF_IMPORT:
@@ -707,6 +714,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 
     ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_PROGRESS:
+      // no button functions!
+      return -1;
+
+
+    ///////////////////////////////////////////////////////////////////////////
     default:
       if( button <= SEQ_UI_BUTTON_GP16 ) {
         s32 incrementer = 0;
@@ -735,14 +748,28 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
           }
         }
     
-        if( depressed ) return 0; // ignore when button depressed
-    
         // GP9/10 toggles MSD enable/disable
-        if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 )
-          incrementer = (TASK_MSD_EnableGet() > 0) ? -1 : 1;
-    
-        // re-use encoder function
-        return Encoder_Handler(button, incrementer);
+        if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 ) {
+	  u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
+	  if( depressed )
+	    SEQ_UI_UnInstallDelayedActionCallback(MSD_EnableReq);
+	  else {
+	    if( !do_enable ) {
+	      // wait a bit longer... normaly it would be better to print a warning that "unmounting via OS" is better
+	      SEQ_UI_InstallDelayedActionCallback(MSD_EnableReq, 5000, do_enable);
+	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 5001, "", "to disable MSD USB!");
+	    } else {
+	      SEQ_UI_InstallDelayedActionCallback(MSD_EnableReq, 2000, do_enable);
+	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 2001, "", "to enable MSD USB!");
+	    }
+	  }
+	  return 1;
+	}
+
+	if( depressed ) return 0; // ignore when button depressed
+
+	// re-use encoder function
+	return Encoder_Handler(button, incrementer);
       }
     
       if( depressed ) return 0; // ignore when button depressed
@@ -1068,6 +1095,13 @@ static s32 LCD_Handler(u8 high_prio)
     } break;
 
 
+    ///////////////////////////////////////////////////////////////////////////
+    case MF_DIALOG_EXPORT_PROGRESS:
+      SEQ_LCD_Clear(); // remove artifacts
+      // (message print by SEQ_MIDEXP_GenerateFile())
+      return 0;
+
+
     default:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
@@ -1161,6 +1195,16 @@ s32 SEQ_UI_DISK_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function for MSD enable/disable
+/////////////////////////////////////////////////////////////////////////////
+static void MSD_EnableReq(u32 enable)
+{
+  TASK_MSD_EnableSet(enable);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Mass Storage via USB", enable ? "enabled!" : "disabled!");
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function for Backup button function
 /////////////////////////////////////////////////////////////////////////////
 static void BackupReq(u32 dummy)
@@ -1217,6 +1261,10 @@ static s32 DoExport(u8 force_overwrite)
   int i;
   char path[20];
 
+  // if an error is detected, we jump back to FNAME page
+  ui_selected_item = 0;
+  mf_dialog = MF_DIALOG_EXPORT_FNAME;
+
   u8 filename_valid = 1;
   for(i=0; i<8; ++i)
     if( dir_name[i] == '.' || dir_name[i] == '?' || dir_name[i] == ',' || dir_name[i] == '!' )
@@ -1224,15 +1272,11 @@ static s32 DoExport(u8 force_overwrite)
 
   if( !filename_valid ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Filename not valid!", "(remove . ? , !)");
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -1;
   }
 
   if( dir_name[0] == ' ') {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Please enter", "Filename!");
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -2;
   }
 
@@ -1243,15 +1287,11 @@ static s32 DoExport(u8 force_overwrite)
 
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -3;
   }
 
   if( status == 0 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/midi directory", "doesn't exist!");
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -4;
   }
 
@@ -1264,26 +1304,22 @@ static s32 DoExport(u8 force_overwrite)
 	    
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -5;
   }
 
 
   if( !force_overwrite && status == 1) {
-    // file exists - ask if it should be overwritten
-    ui_selected_item = 0;
+    // file exists - ask if it should be overwritten in a special dialog page
     mf_dialog = MF_DIALOG_EXPORT_FEXISTS;
     return 1;
   }
 
-  SEQ_LCD_Clear(); // remove artifacts
+  // select empty dialog page --- messages are print by SEQ_MIDEXP_GenerateFile()
+  mf_dialog = MF_DIALOG_EXPORT_PROGRESS;
   SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Exporting", path);
 
   if( (status=SEQ_MIDEXP_GenerateFile(path)) < 0 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Error during Export!", "see MIOS Terminal!");
-    ui_selected_item = 0;
-    mf_dialog = MF_DIALOG_EXPORT_FNAME;
     return -6;
   }
 

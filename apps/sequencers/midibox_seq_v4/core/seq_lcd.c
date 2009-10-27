@@ -228,7 +228,10 @@ s32 SEQ_LCD_Update(u8 force)
 	}
 	MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
+	MIOS32_IRQ_Disable(); // must be atomic
 	*ptr |= 0x80;
+	MIOS32_IRQ_Enable();
+
 	next_y = y;
 	next_x = x+1;
 
