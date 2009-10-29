@@ -1378,11 +1378,12 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 
   // emulate general purpose button
   if( seq_hwcfg_blm.buttons_no_ui ) {
-    s32 status = SEQ_UI_EDIT_Button_Handler(pin_value, pin);
+    s32 status = SEQ_UI_EDIT_Button_Handler(pin, pin_value);
     ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
     return status;
-  } else
-    return SEQ_UI_Button_GP(pin_value, pin);
+  }
+
+  return SEQ_UI_Button_GP(pin_value, pin); // no error, pin_value and pin are swapped for this function due to consistency reasons
 }
 
 
