@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta11
+~~~~~~~~~~~~~~~~~~~~~
+
+  o paste function now only changes track partitioning if the track mode of
+    target track is different. Other settings (number of parameter/trigger
+    layers, number of parameter/trigger steps, number of instruments) won't
+    be changed if track mode is equal.
+
+  o bugfix for BLM_BUTTONS_NO_UI option
+
+
 MIDIboxSEQ V4.0beta10
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,7 +38,7 @@ MIDIboxSEQ V4.0beta10
 
   o Paste/Clr behaviour option in UTILITY->OPT menu implemented now
 
-  o HWCFG file option "BUTTONS_NO_UI" implemented now
+  o HWCFG file option "BLM_BUTTONS_NO_UI" implemented now
 
 
 

@@ -528,10 +528,12 @@ static s32 PASTE_Track(u8 track)
 
   seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
 
-  // take over mode
-  SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
-  SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
-  SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
+  // take over mode - but only if it has been changed so that new partitioning is required!
+  if( SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE) != copypaste_cc[SEQ_CC_MIDI_EVENT_MODE] ) {
+    SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
+    SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
+    SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
+  }
 
   // copy CCs
   if( seq_core_options.PASTE_CLR_ALL ) {
