@@ -6,23 +6,17 @@ Current Evaluation Boards
    o STM32 Primer
      -> http://www.st.com/mcu/contentid-105-110-STM3210B_PRIMER.html
      ca. 40 EUR
-     TM32F103B in 64-pin LQFP package with 128 Kbytes flash program 
+     STM32F103RB in 64-pin LQFP package with 128 Kbytes flash program 
      memory and 20 Kbytes SRAM and embedded communication peripherals 
      for USB, CAN, USART, SPI, I2C and LIN
 
-   o STR9 comStick
-     *** !!! CURRENTLY NOT SUPPORTED BY MIOS32 !!! ***
-     -> http://www.hitex.com/str9-comstick/con-str9-comstick.html
-     ca. 50 EUR
-     STR912 microcontroller
-       - ARM966E RISC core up to 96 MHz
-       - 512 + 32 k FLASH and 96 k RAM
-       - 10/100 Ethernet MAC
-       - USB full speed device, CAN and UART
+   o MBHP_CORE_STM32 module
+     -> http://www.uCApps.de/mbhp_core_stm32.html
+     ca. 30 EUR
+     STM32F103RE in 64-pin LQFP package with 512 Kbytes flash program 
+     memory and 64 Kbytes SRAM and embedded communication peripherals 
+     for USB, CAN, USART, SPI, I2C and LIN
 
-
-   o upcoming MBHP_CORE_STM32 module
-     ca. 25 EUR
 
 
 Downloading Repository
@@ -91,9 +85,6 @@ can be downloaded from: http://developer.berlios.de/project/showfiles.php?group_
 Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
 working on it.
 
-STR9 comStick: install WinARM
--> http://www.siwawi.arubi.uni-kl.de/avr_projects/arm_projects/#winarm
-
 
 MacOS
 =====
@@ -105,11 +96,9 @@ Excellent guide can be found under
 -> http://www.paintyourdragon.com/uc/osxstm32/index.html
 Note, that the installation of FatFryer is not required, as CircleOS
 is not used. 
-For the MIOS32 platform, a Bootloader for MacOS/Linux is not available
-yet, therefore the upload of a .hex file has do be done from a Windows
-PC with the cortex_pgm tool, which comes with the Ride7 IDE
-Command:
-   cortex_pgm.exe TSTM32F103RBT6 E B PRTOSDemo.hex S
+
+Installing MIOS32 Bootloader:
+see http://www.ucapps.de/mios_bootstrap.html
 
 
 MBHP_CORE_STM32
@@ -120,34 +109,8 @@ Excellent guide to install gcc for Cortex M3 can be found under
 Note, that the installation of FatFryer is not required, as CircleOS
 is not used. 
 
-Download of .bin file: install OpenOCD
-Download a known good version:
-http://developer.berlios.de/project/showfiles.php?group_id=4148
-and build it if a precompiled binary isn't available for your OS
-
-Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
-working on it.
-
-OpenOCD usage: see "Quickstart" below, translate DOS commands to
-Unix commands
-
-
-STR9 comStick
--------------
-
-*** !!! CURRENTLY NOT SUPPORTED BY MIOS32 !!! ***
-
-Precompiled binaries for arm-elf-gcc, which are based on WinARM, are
-available here:
--> http://www.mikrocontroller.net/articles/ARM_GCC_toolchain_for_Linux_and_Mac_OS_X
-
-Expert knowledge is required to recompile newer gcc sources due to various
-issues with MacOS gcc installation, see also:
--> http://gmplib.org/macos.html
-
-.bin file (memory image format like .hex) can be downloaded with openOCD:
-http://openocd.berlios.de/web/
-(scripts located under $MIOS32_PATH/etc/openocd)
+Installing MIOS32 Bootloader:
+see http://www.ucapps.de/mios_bootstrap.html
 
 
 Linux
@@ -160,8 +123,6 @@ gcc sources can be downloaded from:
 -> http://www.paintyourdragon.com/uc/osxstm32/index.html
 and simply recompiled for your Linux installation
 
-Download of .hex files: same issue as for MacOS
-
 NOTE for Ubuntu users: you may have to install:
 -buil-essential
 -texinfo
@@ -173,6 +134,9 @@ and
     CFLAGS="$CFLAGS -I/usr/include"
 to be sure that the C compiler is looking for headers in the right place.
 
+Installing MIOS32 Bootloader:
+see http://www.ucapps.de/mios_bootstrap.html
+
 
 MBHP_CORE_STM32
 ---------------
@@ -181,34 +145,8 @@ gcc sources can be downloaded from:
 -> http://www.paintyourdragon.com/uc/osxstm32/index.html
 and simply recompiled for your Linux installation
 
-Download of .bin file: install OpenOCD
-Download a known good version:
-http://developer.berlios.de/project/showfiles.php?group_id=4148
-and build it if a precompiled binary isn't available for your OS
-
-Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
-working on it.
-
-OpenOCD usage: see "Quickstart" below, translate DOS commands to
-Unix commands
-
-
-STR9 comStick
--------------
-
-*** !!! CURRENTLY NOT SUPPORTED BY MIOS32 !!! ***
-
-Precompiled binaries for arm-elf-gcc, which are based on WinARM, are
-available here:
--> http://www.mikrocontroller.net/articles/ARM_GCC_toolchain_for_Linux_and_Mac_OS_X
-
-But is should also be possible to install a newer version.
-Guide:
--> http://elua.berlios.de/tut_gcc_arm.html
-
-.bin file (memory image format like .hex) can be downloaded with openOCD:
-http://openocd.berlios.de/web/
-(scripts located under $MIOS32_PATH/etc/openocd)
+Installing MIOS32 Bootloader:
+see http://www.ucapps.de/mios_bootstrap.html
 
 
 
@@ -285,18 +223,6 @@ Sidenote: If you use a different arm-gcc installation (later, once properly
 integrated into gcc), you have to adapt your MIOS32_GCC_PREFIX setting, e.g.
 from "arm-none-eabi" to the common "arm-elf"
 
-
-In addition we need OpenOCD to upload code.
-Download: http://developer.berlios.de/project/showfiles.php?group_id=4148
-
-Newer versions than v0.1.0 might fail (or not) for STM32 - they are continuosly
-working on it.
-
-
-Last but not least you need a JTAG programmer for ARM processors (search on
-Ebay, or see http://shop.embedded-projects.net/product_info.php?info=p75_OpenOCD-USB-Adapter.html
-
-
 a) set your environment variables to:
      set MIOS32_PATH=D:\mios32\trunk
      set MIOS32_BIN_PATH=D:\mios32\trunk\bin
@@ -319,121 +245,8 @@ c) build the project with
    (-s will lead to a less verbose output)
 
 
-d) ensure that the JTAG interface is connected to your PC and MBHP_CORE_STM32 module
-
-
-e) open a new DOS shell, **go into the directory where you built the code**,
-   and start the OpenOCD server with:
-      openocd-ftd2xx -f %MIOS32_PATH%\etc\openocd\interface\in-circuit-openocd-dos.cfg -f %MIOS32_PATH%\etc\openocd\target\STM32F10x.cfg 
-   You can left this DOS window open while rebuilding your application - it can run
-   permanently to talk with your STM32
-
-   If you are using a different JTAG interface, create a new .cfg file for it and
-   adapt the USB search string (thereafter commit your new file to the repository,
-   so that others can use it as well!)
-
-f) open a third DOS shell, and type "telnet localhost 4444"
-   This will connect you with the server
-   "help" gives you a list of available commands
-
-   My favourites:
-      script <filename>      # to execute a batch file
-      reset run              # to reset the chip
-      halt                   # to stop CPU execution
-      resume                 # to continue CPU execution
-      reg                    # to get CPU registers, e.g. the program counter (only works in halt mode)
-      mdw                    # to display memory regions, e.g. flash, SRAM and peripheral registers
-
-g) inside the telnet session, type 
-      script D:\mios32\trunk\etc\openocd\scripts\STM32F10x_upload.script
-   to download and execute the project.bin file of the directory location from
-   where you started the OpenOCD server (and not the telnet session!)
-
-h) note that "telnet" also allows to connect you to a remote computer.
-   Means: you are able to debug a MBHP_CORE_STM32 module via intra- or internet!
-
-
-i) not tested yet (as not useful for myself) but possible:
-   OpenOCD has a gdb interface which allows you to debug code from a IDE like
-   Eclipse (all operating systems) or XCode (MacOS)
-
-
-
-COM Console
-~~~~~~~~~~~
-
-Windows
--------
-
-Either USB MIDI, or USB COM can be used, but not both the same time due
-to driver limitations.
-If COM is activated, and Windows ask you for a driver, use the 
-   $MIOS32_PATH/etc/inf/mios32_com.inf
-file.
-
-An .inf file is not required for USB MIDI.
-
-
-MacOS
------
-
-USB MIDI and COM can be used in parallel.
-COM terminal: most simple connection via "screen" command, you can execute it from
-the Terminal.app
-
-Usage: search for the "modem" device:
-   ls /dev/tty.*
-
-You will get something like:
-/dev/tty.Bluetooth-Modem		/dev/tty.Nokia6230i-NokiaPCSuite-1
-/dev/tty.Bluetooth-PDA-Sync		/dev/tty.usbmodem1a243
-/dev/tty.Nokia6230i-Dial-upnetwo-2
-
-/dev/tty.usbmodem1a243 is the right one.
-
-Now execute the serial terminal with:
-   screen /dev/tty.usbmodem1a243
-
-
-Alternatively (if you prefer GUIs), you could use ZTerm:
-   http://homepage.mac.com/dalverson/zterm/
-
-
-Linux
------
-
-USB MIDI and COM can be used in parallel.
-COM terminal: most simple connection via "screen" command, you can execute it from
-a common terminal
-
-Usage: search for the ACM device:
-   ls /dev/ttyACM*
-
-If no other USB ACM device (like a modem) is connected, the MIOS32 core
-usually allocates ACM0
-
-Now execute the serial terminal with:
-   screen /dev/ttyACM0
-
-
-
-MacOS: using second port of FT2232 based JTAG adapter as COM port
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- install FTDI driver: http://www.ftdichip.com/FTDrivers.htm
-- disable "Port A", so that it is accessible for openocd (and not used as COM device)
-  http://meander.roofof.net/2008/07/openocd-and-ft2232s-default-vidpid.html
-
-
-Since the adapter comes with no EEPROM, FT2232D uses default VID/PID (0x0403/0x6010). If FTDIUSBSerialDriver (aka VCP) is installed on your machine, you will need to comment out or remove FT2232C_A section of driver's Info.plist file located at
-  /System/Library/Extensions/FTDIUSBSerialDriver.kext/Contents/
-
-This would prevent the FTDI VCP driver from conflicts with OpenOCD on attempt to use the port A of FT2232D on the adapter board. You also might want to reload the FTDI VCP driver after modification with following commands:
-
-$sudo kextunload  /System/Library/Extensions/FTDIUSBSerialDriver.kext
-kextunload: unload kext /System/Library/Extensions/FTDIUSBSerialDriver.kext succeeded
-$sudo kextload -c /System/Library/Extensions/FTDIUSBSerialDriver.kext
-kextload: /System/Library/Extensions/FTDIUSBSerialDriver.kext loaded successfully
+d) upload the resulting project.hex file as described under
+   http://www.ucapps.de/mios_bootstrap.html
 
 
 

@@ -26,7 +26,8 @@ export MIOS32_SHELL
 # select GCC tools
 # can be optionally overruled via environment variable
 # e.g. for Cortex M3 support provided by CodeSourcery, use MIOS32_GCC_PREFIX=arm-none-eabi
-MIOS32_GCC_PREFIX ?= arm-elf
+# The usage of arm-elf isn't recommented due to compatibility issues!!!
+MIOS32_GCC_PREFIX ?= arm-none-eabi
 
 CC      = $(MIOS32_GCC_PREFIX)-gcc
 OBJCOPY = $(MIOS32_GCC_PREFIX)-objcopy
