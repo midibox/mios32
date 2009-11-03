@@ -1,5 +1,17 @@
 $Id$
 
+
+Existing Wiki Pages for Toolchain installation:
+
+Windows: http://www.midibox.org/dokuwiki/doku.php?id=windows_mios32_toolchain_core 
+MacOS: http://www.midibox.org/dokuwiki/doku.php?id=installing_gnu_on_osx
+
+
+Some additional (random) notes collected during the early evaluation phase.
+These informations should go into the Wiki sooner or later.
+
+
+
 Current Evaluation Boards
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
