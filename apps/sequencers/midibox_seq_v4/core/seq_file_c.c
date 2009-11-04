@@ -187,7 +187,7 @@ s32 SEQ_FILE_C_Read(void)
   }
 
   // read config values
-  char line_buffer[80];
+  char line_buffer[128];
   do {
     status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 128);
 
@@ -343,7 +343,7 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_ui_remote_id = (value > 128) ? 0 : value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown parameter: %s", line_buffer);
+	    DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
 #endif
 	  }
 	}

@@ -90,6 +90,14 @@
 #define SEQ_FILE_HW_ERR_WRITE          -210 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_HW_ERR_NO_FILE        -211 // no or invalid config file
 
+// used by seq_file_c.c
+#define SEQ_FILE_T_ERR_FORMAT          -224 // invalid file format
+#define SEQ_FILE_T_ERR_READ            -225 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_T_ERR_WRITE           -226 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_T_ERR_NO_FILE         -227 // no or invalid file
+#define SEQ_FILE_T_ERR_TRACK           -228 // invalid track number
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
