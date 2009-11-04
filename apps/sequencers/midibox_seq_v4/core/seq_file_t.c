@@ -216,14 +216,7 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
   sprintf(line_buffer, "TrgSteps %d\n", SEQ_TRG_NumStepsGet(track));
   FLUSH_BUFFER;  
 
-  switch( tcc->mode.playmode ) {
-    case SEQ_CORE_TRKMODE_Off: sprintf(str_buffer, "off"); break;
-    case SEQ_CORE_TRKMODE_Normal: sprintf(str_buffer, "Normal"); break;
-    case SEQ_CORE_TRKMODE_Transpose: sprintf(str_buffer, "Transpose"); break;
-    case SEQ_CORE_TRKMODE_Arpeggiator: sprintf(str_buffer, "Arpeggiator"); break;
-    default: sprintf(str_buffer, "unknown"); break;
-  }
-  sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->mode.playmode, str_buffer);
+  sprintf(line_buffer, "EventMode %d (%s)\n", tcc->event_mode, SEQ_LAYER_GetEvntModeName(tcc->event_mode));
   FLUSH_BUFFER;
 
 
@@ -249,7 +242,14 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 	  tcc->mode.SUSTAIN ? "on" : "off");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "EventMode %d (%s)\n", tcc->event_mode, SEQ_LAYER_GetEvntModeName(tcc->event_mode));
+  switch( tcc->mode.playmode ) {
+    case SEQ_CORE_TRKMODE_Off: sprintf(str_buffer, "off"); break;
+    case SEQ_CORE_TRKMODE_Normal: sprintf(str_buffer, "Normal"); break;
+    case SEQ_CORE_TRKMODE_Transpose: sprintf(str_buffer, "Transpose"); break;
+    case SEQ_CORE_TRKMODE_Arpeggiator: sprintf(str_buffer, "Arpeggiator"); break;
+    default: sprintf(str_buffer, "unknown"); break;
+  }
+  sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->mode.playmode, str_buffer);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_Port 0x%02x (%s%c)\n",
