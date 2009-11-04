@@ -233,15 +233,6 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
   sprintf(line_buffer, "Name '%s'\n", seq_core_trk[track].name);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "TrackModeFlags %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s)\n", 
-	  tcc->mode.flags,
-	  tcc->mode.UNSORTED ? "on" : "off",
-	  tcc->mode.HOLD ? "on" : "off",
-	  tcc->mode.RESTART ? "on" : "off",
-	  tcc->mode.FORCE_SCALE ? "on" : "off",
-	  tcc->mode.SUSTAIN ? "on" : "off");
-  FLUSH_BUFFER;
-
   switch( tcc->mode.playmode ) {
     case SEQ_CORE_TRKMODE_Off: sprintf(str_buffer, "off"); break;
     case SEQ_CORE_TRKMODE_Normal: sprintf(str_buffer, "Normal"); break;
@@ -250,6 +241,15 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
     default: sprintf(str_buffer, "unknown"); break;
   }
   sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->mode.playmode, str_buffer);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TrackModeFlags %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s)\n", 
+	  tcc->mode.flags,
+	  tcc->mode.UNSORTED ? "on" : "off",
+	  tcc->mode.HOLD ? "on" : "off",
+	  tcc->mode.RESTART ? "on" : "off",
+	  tcc->mode.FORCE_SCALE ? "on" : "off",
+	  tcc->mode.SUSTAIN ? "on" : "off");
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_Port 0x%02x (%s%c)\n",
@@ -295,10 +295,10 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
   sprintf(line_buffer, "Clockdivider %d (%d/384 ppqn)\n", tcc->clkdiv.value, (int)tcc->clkdiv.value + 1);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "Triplets %s\n", tcc->clkdiv.TRIPLETS ? "yes" : "no");
+  sprintf(line_buffer, "Triplets %d (%s)\n", tcc->clkdiv.TRIPLETS, tcc->clkdiv.TRIPLETS ? "yes" : "no");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "SynchToMeasure %s\n", tcc->clkdiv.SYNCH_TO_MEASURE? "yes" : "no");
+  sprintf(line_buffer, "SynchToMeasure %d (%s)\n", tcc->clkdiv.SYNCH_TO_MEASURE, tcc->clkdiv.SYNCH_TO_MEASURE ? "yes" : "no");
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "Length %d (%d Steps)\n", tcc->length, (int)tcc->length + 1);
