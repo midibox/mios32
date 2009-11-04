@@ -218,7 +218,7 @@ s32 SEQ_FILE_HW_Read(void)
   }
 
   // read config values
-  char line_buffer[80];
+  char line_buffer[128];
   do {
     status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 80);
 

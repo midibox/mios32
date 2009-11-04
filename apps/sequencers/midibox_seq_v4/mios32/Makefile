@@ -83,6 +83,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_file_s.c \
 		../core/seq_file_g.c \
 		../core/seq_file_c.c \
+		../core/seq_file_t.c \
 		../core/seq_file_hw.c \
 		../core/seq_layer.c \
 		../core/seq_random.c \

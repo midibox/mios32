@@ -37,6 +37,7 @@
 #include "seq_file_s.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_t.h"
 #include "seq_file_hw.h"
 
 
@@ -141,6 +142,7 @@ s32 SEQ_FILE_Init(u32 mode)
   SEQ_FILE_B_Init(0); // pattern file access
   SEQ_FILE_M_Init(0); // mixer file access
   SEQ_FILE_S_Init(0); // song file access
+  SEQ_FILE_T_Init(0); // track preset file access
 
 
   return 0; // no error

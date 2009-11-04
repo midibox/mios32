@@ -55,17 +55,15 @@
 
 
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         10
+#define NUM_LIST_ITEMS         8
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_TRACKS       2
 #define LIST_ITEM_TRACK_INFO   3
-#define LIST_ITEM_PAR_LAYERS   4
-#define LIST_ITEM_TRG_LAYERS   5
-#define LIST_ITEM_MIXER_MAP    6
-#define LIST_ITEM_SONG         7
-#define LIST_ITEM_GROOVES      8
-#define LIST_ITEM_SD_CARD      9
+#define LIST_ITEM_MIXER_MAP    4
+#define LIST_ITEM_SONG         5
+#define LIST_ITEM_GROOVES      6
+#define LIST_ITEM_SD_CARD      7
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -79,8 +77,6 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
   "Globals  "
   "Tracks   "
   "TrackInfo"
-  "ParLayers"
-  "TrgLayers"
   "Mixer Map"
   "Song     "
   "Grooves  "
@@ -152,8 +148,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  char str_buffer[128];
-
   if( depressed ) return 0; // ignore when button depressed
 
   if( button <= SEQ_UI_BUTTON_GP8 || button == SEQ_UI_BUTTON_Select ) {
@@ -166,6 +160,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_SYSTEM: {
+	char str_buffer[128];
+
 	MUTEX_MIDIOUT_TAKE;
 
 	DEBUG_MSG("\n");
@@ -225,6 +221,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_TRACKS: {
+	char str_buffer[128];
+
 	MUTEX_MIDIOUT_TAKE;
 	DEBUG_MSG("\n");
 	DEBUG_MSG("Track Overview:\n");
@@ -277,200 +275,22 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       case LIST_ITEM_TRACK_INFO: {
 	MUTEX_MIDIOUT_TAKE;
 	u8 track = SEQ_UI_VisibleTrackGet();
-	seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
 	DEBUG_MSG("\n");
 	DEBUG_MSG("Track Parameters of G%dT%d", (track/4)+1, (track%4)+1);
 	DEBUG_MSG("========================\n");
 
-	DEBUG_MSG("Name: '%s'\n", seq_core_trk[track].name);
-
-	switch( tcc->mode.playmode ) {
-	  case SEQ_CORE_TRKMODE_Off: sprintf(str_buffer, "off"); break;
-	  case SEQ_CORE_TRKMODE_Normal: sprintf(str_buffer, "Normal"); break;
-	  case SEQ_CORE_TRKMODE_Transpose: sprintf(str_buffer, "Transpose"); break;
-	  case SEQ_CORE_TRKMODE_Arpeggiator: sprintf(str_buffer, "Arpeggiator"); break;
-	  default: sprintf(str_buffer, "unknown"); break;
-	}
-	DEBUG_MSG("Track Mode: %d (%s)\n", tcc->mode.playmode, str_buffer);
-	DEBUG_MSG("Track Mode Flags: %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s)\n", 
-		  tcc->mode.flags,
-		  tcc->mode.UNSORTED ? "on" : "off",
-		  tcc->mode.HOLD ? "on" : "off",
-		  tcc->mode.RESTART ? "on" : "off",
-		  tcc->mode.FORCE_SCALE ? "on" : "off",
-		  tcc->mode.SUSTAIN ? "on" : "off");
-
-	DEBUG_MSG("Event Mode: %d (%s)\n", tcc->event_mode, SEQ_LAYER_GetEvntModeName(tcc->event_mode));
-	DEBUG_MSG("MIDI Port: 0x%02x (%s%c)\n",
-		  tcc->midi_port,
-		  SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(tcc->midi_port)),
-		  SEQ_MIDI_PORT_OutCheckAvailable(tcc->midi_port) ? ' ' : '*');
-	DEBUG_MSG("MIDI Channel: %d (#%d)\n", tcc->midi_chn, (int)tcc->midi_chn + 1);
-
-	switch( tcc->dir_mode ) {
-  	  case SEQ_CORE_TRKDIR_Forward: sprintf(str_buffer, "Forward"); break;
-  	  case SEQ_CORE_TRKDIR_Backward: sprintf(str_buffer, "Backward"); break;
-	  case SEQ_CORE_TRKDIR_PingPong: sprintf(str_buffer, "Ping Pong"); break;
-	  case SEQ_CORE_TRKDIR_Pendulum: sprintf(str_buffer, "Pendulum"); break;
-	  case SEQ_CORE_TRKDIR_Random_Dir: sprintf(str_buffer, "Random Dir"); break;
-	  case SEQ_CORE_TRKDIR_Random_Step: sprintf(str_buffer, "Random Step"); break;
-	  case SEQ_CORE_TRKDIR_Random_D_S: sprintf(str_buffer, "Random Dir/Step"); break;
-	  default: sprintf(str_buffer, "unknown"); break;
-	}
-	DEBUG_MSG("Direction Mode: %d (%s)\n", tcc->dir_mode, str_buffer);
-
-	DEBUG_MSG("Steps Forward: %d (%d Steps)\n", tcc->steps_forward, (int)tcc->steps_forward + 1);
-	DEBUG_MSG("Steps Jump Back: %d (%d Steps)\n", tcc->steps_jump_back, tcc->steps_jump_back);
-	DEBUG_MSG("Steps Replay: %d\n", tcc->steps_replay);
-	DEBUG_MSG("Steps Repeat: %d (%d times)\n", tcc->steps_repeat, tcc->steps_repeat);
-	DEBUG_MSG("Steps Skip: %d (%d Steps)\n", tcc->steps_skip, tcc->steps_skip);
-	DEBUG_MSG("Steps Repeat/Skip Interval: %d (%d Steps)\n", tcc->steps_rs_interval, (int)tcc->steps_rs_interval + 1);
-	DEBUG_MSG("Clockdivider: %d (%d/384 ppqn)\n", tcc->clkdiv.value, (int)tcc->clkdiv.value + 1);
-	DEBUG_MSG("Triplets: %s\n", tcc->clkdiv.TRIPLETS ? "yes" : "no");
-	DEBUG_MSG("Synch-To-Measure: %s\n", tcc->clkdiv.SYNCH_TO_MEASURE? "yes" : "no");
-	DEBUG_MSG("Length: %d (%d Steps)\n", tcc->length, (int)tcc->length + 1);
-	DEBUG_MSG("Loop: %d (Step %d)\n", tcc->loop, (int)tcc->loop + 1);
-	DEBUG_MSG("Transpose Semitones: %d (%c%d)\n", tcc->transpose_semi, (tcc->transpose_semi < 8) ? '+' : '-', (tcc->transpose_semi < 8) ? tcc->transpose_semi : (16-tcc->transpose_semi));
-	DEBUG_MSG("Transpose Octaves: %d (%c%d)\n", tcc->transpose_oct, (tcc->transpose_oct < 8) ? '+' : '-', (tcc->transpose_oct < 8) ? tcc->transpose_oct : (16-tcc->transpose_oct));
-
-	DEBUG_MSG("Morph Mode: %d (%s)\n", tcc->morph_mode, tcc->morph_mode ? "on" : "off");
-	int dst_begin = tcc->morph_dst + 1;
-	int dst_end = dst_begin + tcc->length;
-	if( dst_end > 256 )
-	  dst_end = 256;
-	DEBUG_MSG("Morph Destination Range: %d (%d..%d)\n", tcc->morph_dst, dst_begin, dst_end);
-
-	DEBUG_MSG("Humanize Mode: %d (Note: %s, Velocity: %s, Length: %s)\n", 
-		  tcc->humanize_mode,
-		  (tcc->humanize_mode & (1 << 0)) ? "on" : "off",
-		  (tcc->humanize_mode & (1 << 1)) ? "on" : "off",
-		  (tcc->humanize_mode & (1 << 2)) ? "on" : "off");
-	DEBUG_MSG("Humanize Intensity: %d\n", tcc->humanize_value);
-
-	DEBUG_MSG("Groove Style: %d\n", tcc->groove_style);
-	DEBUG_MSG("Groove Intensity: %d\n", tcc->groove_value);
-
-	const char trg_asg_str[16] = "-ABCDEFGH???????";
-	DEBUG_MSG("Trigger Assignment Gate: %d (%c)\n", tcc->trg_assignments.gate, trg_asg_str[tcc->trg_assignments.gate]);
-	DEBUG_MSG("Trigger Assignment Accent: %d (%c)\n", tcc->trg_assignments.accent, trg_asg_str[tcc->trg_assignments.accent]);
-	DEBUG_MSG("Trigger Assignment Roll: %d (%c)\n", tcc->trg_assignments.roll, trg_asg_str[tcc->trg_assignments.roll]);
-	DEBUG_MSG("Trigger Assignment Glide: %d (%c)\n", tcc->trg_assignments.glide, trg_asg_str[tcc->trg_assignments.glide]);
-	DEBUG_MSG("Trigger Assignment Skip: %d (%c)\n", tcc->trg_assignments.skip, trg_asg_str[tcc->trg_assignments.skip]);
-	DEBUG_MSG("Trigger Assignment Random Gate: %d (%c)\n", tcc->trg_assignments.random_gate, trg_asg_str[tcc->trg_assignments.random_gate]);
-	DEBUG_MSG("Trigger Assignment Random Value: %d (%c)\n", tcc->trg_assignments.random_value, trg_asg_str[tcc->trg_assignments.random_value]);
-	DEBUG_MSG("Trigger Assignment No Fx: %d (%c)\n", tcc->trg_assignments.no_fx, trg_asg_str[tcc->trg_assignments.no_fx]);
-
-	DEBUG_MSG("Drum Parameter Assignment A: %d (%s)\n", tcc->par_assignment_drum[0], SEQ_PAR_TypeStr(tcc->par_assignment_drum[0]));
-	DEBUG_MSG("Drum Parameter Assignment B: %d (%s)\n", tcc->par_assignment_drum[1], SEQ_PAR_TypeStr(tcc->par_assignment_drum[1]));
-
-	DEBUG_MSG("Echo Repeats: %d\n", tcc->echo_repeats);
-	DEBUG_MSG("Echo Delay: %d (%s)\n", tcc->echo_delay, SEQ_CORE_Echo_GetDelayModeName(tcc->echo_delay));
-	DEBUG_MSG("Echo Velocity: %d\n", tcc->echo_velocity);
-	DEBUG_MSG("Echo Feedback Velocity: %d (%d%%)\n", tcc->echo_fb_velocity, (int)tcc->echo_fb_velocity * 5);
-	DEBUG_MSG("Echo Feedback Note: %d (%c%d)\n", tcc->echo_fb_note, 
-		  (tcc->echo_fb_note < 24) ? '-' : '+', 
-		  (tcc->echo_fb_note < 24) ? (24-tcc->echo_fb_note) : (tcc->echo_fb_note - 24));
-	DEBUG_MSG("Echo Feedback Gatelength: %d (%d%%)\n", tcc->echo_fb_gatelength, (int)tcc->echo_fb_gatelength * 5);
-	DEBUG_MSG("Echo Feedback Ticks: %d (%d%%)\n", tcc->echo_fb_ticks, (int)tcc->echo_fb_ticks * 5);
-
-	if( tcc->lfo_waveform <= 3 ) {
-	  const char waveform_str[4][6] = {
-	    " off ",
-	    "Sine ",
-	    "Tri. ",
-	    "Saw. "
-	  };
-	  
-	  DEBUG_MSG("LFO Waveform: %d (%s)\n", tcc->lfo_waveform, (char *)waveform_str[tcc->lfo_waveform]);
-	} else {
-	  DEBUG_MSG("LFO Waveform: %d (R%02d)\n", tcc->lfo_waveform, (tcc->lfo_waveform-4+1)*5);
-	}
-
-	DEBUG_MSG("LFO Amplitude: %d (%d)\n", tcc->lfo_amplitude, (int)tcc->lfo_amplitude - 128);
-	DEBUG_MSG("LFO Phase: %d (%d%%)\n", tcc->lfo_phase, tcc->lfo_phase);
-	DEBUG_MSG("LFO Interval: %d (%d Steps)\n", tcc->lfo_steps, (int)tcc->lfo_steps + 1);
-	DEBUG_MSG("LFO Reset Interval: %d (%d Steps)\n", tcc->lfo_steps_rst, tcc->lfo_steps_rst + 1);
-	DEBUG_MSG("LFO Flags: %d (Oneshot: %s, Note: %s, Velocity: %s, Length: %s, CC: %s)\n", 
-		  tcc->lfo_enable_flags.ALL,
-		  tcc->lfo_enable_flags.ONE_SHOT ? "on" : "off",
-		  tcc->lfo_enable_flags.NOTE ? "on" : "off",
-		  tcc->lfo_enable_flags.VELOCITY ? "on" : "off",
-		  tcc->lfo_enable_flags.LENGTH ? "on" : "off",
-		  tcc->lfo_enable_flags.CC ? "on" : "off");
-	DEBUG_MSG("LFO Extra CC: %d\n", tcc->lfo_cc);
-	DEBUG_MSG("LFO Extra CC Offset: %d\n", tcc->lfo_cc_offset);
-	DEBUG_MSG("LFO Extra CC PPQN: %d\n", tcc->lfo_cc_ppqn ? (3 << (tcc->lfo_cc_ppqn-1)) : 1);
-
-	DEBUG_MSG("Note Limit Lower: %d\n", tcc->limit_lower);
-	DEBUG_MSG("Note Limit Upper: %d\n", tcc->limit_upper);
-
-	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Notes for Drum Instruments:\n" : "Parameter Layer Assignments:\n");
-	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[0*16], 16);
-	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Velocity:\n" : "CC Assignments:\n");
-	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[1*16], 16);
-	DEBUG_MSG((tcc->event_mode == SEQ_EVENT_MODE_Drum) ? "MIDI Accent Velocity:\n" : "Constant Array C:\n");
-	MIOS32_MIDI_SendDebugHexDump((u8 *)&tcc->lay_const[2*16], 16);
+	SEQ_FILE_T_Debug(track);
 
 	DEBUG_MSG("done.\n");
 	MUTEX_MIDIOUT_GIVE;
       } break;
 
-
-      //////////////////////////////////////////////////////////////////////////////////////////////
-      case LIST_ITEM_PAR_LAYERS: {
-	MUTEX_MIDIOUT_TAKE;
-	u8 track = SEQ_UI_VisibleTrackGet();
-	u16 num_instruments = SEQ_PAR_NumInstrumentsGet(track);
-	u16 num_par_layers = SEQ_PAR_NumLayersGet(track);
-	u16 num_par_steps = SEQ_PAR_NumStepsGet(track);
-
-	DEBUG_MSG("\n");
-	DEBUG_MSG("Parameter Layers of G%dT%d", (track/4)+1, (track%4)+1);
-	DEBUG_MSG("========================\n");
-
-	int instrument;
-	int par_layer;
-	for(instrument=0; instrument<num_instruments; ++instrument) {
-	  for(par_layer=0; par_layer<num_par_layers; ++par_layer) {
-	    DEBUG_MSG("Instrument %d Layer %c\n", instrument+1, 'A'+par_layer);
-	    u16 step_ix = (instrument * num_par_layers * num_par_steps) + (par_layer * num_par_steps);
-	    MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_par_layer_value[track][step_ix], num_par_steps);
-	  }
-	}
-
-	DEBUG_MSG("done.\n");
-	MUTEX_MIDIOUT_GIVE;
-      } break;
-
-      //////////////////////////////////////////////////////////////////////////////////////////////
-      case LIST_ITEM_TRG_LAYERS: {
-	MUTEX_MIDIOUT_TAKE;
-	u8 track = SEQ_UI_VisibleTrackGet();
-	u16 num_instruments = SEQ_TRG_NumInstrumentsGet(track);
-	u16 num_trg_layers = SEQ_TRG_NumLayersGet(track);
-	u16 num_trg_steps = SEQ_TRG_NumStepsGet(track);
-
-	DEBUG_MSG("\n");
-	DEBUG_MSG("Trigger Layers of G%dT%d", (track/4)+1, (track%4)+1);
-	DEBUG_MSG("======================\n");
-
-	int instrument;
-	int trg_layer;
-	for(instrument=0; instrument<num_instruments; ++instrument) {
-	  for(trg_layer=0; trg_layer<num_trg_layers; ++trg_layer) {
-	    DEBUG_MSG("Instrument %d Layer %c\n", instrument+1, 'A'+trg_layer);
-	    u16 step_ix = (instrument * num_trg_layers * (num_trg_steps/8)) + (trg_layer * (num_trg_steps/8));
-	    MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_trg_layer_value[track][step_ix], num_trg_steps / 8);
-	  }
-	}
-
-	DEBUG_MSG("done.\n");
-	MUTEX_MIDIOUT_GIVE;
-      } break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_MIXER_MAP: {
+	char str_buffer[128];
+
 	MUTEX_MIDIOUT_TAKE;
 	u8 map = SEQ_MIXER_NumGet();
 	int i;
@@ -542,6 +362,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_SD_CARD: {
+	char str_buffer[128];
+
 	MUTEX_MIDIOUT_TAKE;
 
 	DEBUG_MSG("\n");

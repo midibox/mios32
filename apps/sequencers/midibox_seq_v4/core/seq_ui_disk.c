@@ -18,9 +18,10 @@
 #include <mios32.h>
 #include <string.h>
 
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
-#include "tasks.h"
 
 #include "seq_file.h"
 #include "seq_file_b.h"
@@ -816,10 +817,7 @@ static s32 LCD_Handler(u8 high_prio)
   // ---------------> FORMAT <---------------  MSD USB
   // ---------------> FILES! <--------------- disabled
 
-  //   Create                                  MSD USB
-  //   Backup                                 disabled
-
-  //   Create                                  MSD USB                MIDI Files    
+  //   Create                                  MSD USB                MIDI Files     
   //   Backup                                 disabled           Import  Export  Play
 
   //                                           MSD USB (UMRW)         MIDI Files    
@@ -827,7 +825,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   // MIDI Files Play dialog:
-  // Select MIDI File (10 files found)       Start Loop Playmode  Port
+  // Select MIDI File (10 files found)       Start Loop Playmode  Port               
   //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Play   on  exclusive Def.           EXIT
 
 
@@ -849,7 +847,7 @@ static s32 LCD_Handler(u8 high_prio)
   // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins   SAVE EXIT
 
   // File exists
-  //                                         File '/midi/xxx.mid' already exists                                             
+  //                                         File '/midi/xxx.mid' already exists     
   //                                         Overwrite? YES  NO                  EXIT
 
 
@@ -1187,7 +1185,6 @@ s32 SEQ_UI_DISK_Init(u32 mode)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
 
   dir_name[0] = 0;
-
   mf_dialog = 0;
 
   return 0; // no error
