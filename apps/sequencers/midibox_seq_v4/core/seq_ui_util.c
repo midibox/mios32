@@ -531,6 +531,7 @@ static s32 PASTE_Track(u8 track)
   // take over mode - but only if it has been changed so that new partitioning is required!
   if( SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE) != copypaste_cc[SEQ_CC_MIDI_EVENT_MODE] ) {
     SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
+    SEQ_CC_LinkUpdate(track);
     SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
     SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
   }
@@ -627,6 +628,7 @@ static s32 UNDO_Track(void)
     return 0; // no error
 
   SEQ_CC_Set(undo_track, SEQ_CC_MIDI_EVENT_MODE, undo_cc[SEQ_CC_MIDI_EVENT_MODE]);
+  SEQ_CC_LinkUpdate(undo_track);
   SEQ_PAR_TrackInit(undo_track, undo_par_steps, undo_par_layers, undo_num_instruments);
   SEQ_TRG_TrackInit(undo_track, undo_trg_steps, undo_trg_layers, undo_num_instruments);
 

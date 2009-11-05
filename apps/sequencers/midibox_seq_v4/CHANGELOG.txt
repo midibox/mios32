@@ -6,6 +6,26 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta12
+~~~~~~~~~~~~~~~~~~~~~
+
+  o Tracks can now be stored into/loaded from preset files on SD Card.
+    This features opens some new possibilities:
+    - you can store your favourite track configurations, melody lines, 
+      drum loops, etc. in separate files to recall them later
+    - you can prepare drum maps for different instruments
+    - you can prepare CC setups for different instruments
+    - you can share the files (which are stored in the preset/ directory)
+      with other users
+    - you can view and edit the files with a common text editor.
+
+    The preset functions are available in the MENU->EVENT page
+
+    You've to create a "presets" directory in the root directory of 
+    your SD Card before using this feature (the DOSFS driver used 
+    by MBSEQ doesn't support "mkdir")
+
+
 MIDIboxSEQ V4.0beta11
 ~~~~~~~~~~~~~~~~~~~~~
 
