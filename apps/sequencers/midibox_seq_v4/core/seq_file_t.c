@@ -91,6 +91,8 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   if( track > SEQ_CORE_NUM_TRACKS )
     return SEQ_FILE_T_ERR_TRACK;
 
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_T] Open track preset file '%s'\n", filepath);
 #endif
@@ -109,6 +111,14 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 #endif
     return SEQ_FILE_T_ERR_READ;
   }
+
+  // layer constraints
+  s32 par_instruments = -1;
+  s32 par_layers = -1;
+  s32 par_steps = -1;
+  s32 trg_instruments = -1;
+  s32 trg_layers = -1;
+  s32 trg_steps = -1;
 
   // read track definitions
   char line_buffer[128];
@@ -130,15 +140,256 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	if( *parameter == '#' ) {
 	  // ignore comments
 	} else {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 value = get_dec(word);
+	  char *word;
+	  s32 value = 0;
+
+	  if( strcmp(parameter, "Name") == 0 ) {
+	    // parsing for string...
+	    word = brkt;
+	  } else {
+	    word = strtok_r(NULL, separators, &brkt);
+	    value = get_dec(word);
+	  }
 
 	  if( value < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_T] ERROR invalid value for parameter '%s'\n", parameter);
 #endif
-	  } else if( strcmp(parameter, "FollowSong") == 0 ) {
-	    seq_core_options.FOLLOW_SONG = value;
+	  } else if( strcmp(parameter, "Par") == 0 ||
+		     strcmp(parameter, "Trg") == 0 ) {
+	    int par_layer = parameter[0] == 'P';
+	    int addr_offset = value;
+
+	    if( par_layer && addr_offset >= SEQ_PAR_MAX_BYTES ||
+		!par_layer && addr_offset >= SEQ_TRG_MAX_BYTES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR %s: invalid address offset %03x!\n", parameter, addr_offset);
+#endif
+	    }
+
+	    int values[16];
+	    int i;
+	    for(i=0; i<16; ++i) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      values[i] = get_dec(word);
+	      if( values[i] < 0 ) {
+		break;
+	      }
+	    }
+
+	    if( i != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR %s %03x: missing parameter %d\n", addr_offset, parameter, i);
+#endif
+	    } else {
+	      if( flags.STEPS ) {
+		if( par_layer ) {
+		  for(i=0; i<16; ++i)
+		    seq_par_layer_value[track][addr_offset + i] = values[i];
+		} else {
+		  for(i=0; i<16; ++i)
+		    seq_trg_layer_value[track][addr_offset + i] = values[i];
+		}
+	      }
+	    }
+	  } else if( strcmp(parameter, "ParInstruments") == 0 ) {
+	    par_instruments = value;
+	  } else if( strcmp(parameter, "ParLayers") == 0 ) {
+	    par_layers = value;
+	  } else if( strcmp(parameter, "ParSteps") == 0 ) {
+	    par_steps = value;
+	  } else if( strcmp(parameter, "TrgInstruments") == 0 ) {
+	    trg_instruments = value;
+	  } else if( strcmp(parameter, "TrgLayers") == 0 ) {
+	    trg_layers = value;
+	  } else if( strcmp(parameter, "TrgSteps") == 0 ) {
+	    trg_steps = value;
+	  } else if( strcmp(parameter, "EventMode") == 0 ) {
+	      if( flags.STEPS ||
+		  flags.CFG && tcc->event_mode != value ) {
+		if( par_instruments < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing ParInstruments!\n");
+#endif
+		} else if( par_layers < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing ParLayers!\n");
+#endif
+		} else if( par_steps < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing ParSteps!\n");
+#endif
+		} else if( trg_instruments < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing TrgInstruments!\n");
+#endif
+		} else if( trg_layers < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing TrgLayers!\n");
+#endif
+		} else if( trg_steps < 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_T] ERROR: missing TrgSteps!\n");
+#endif
+		} else {
+		  // set event mode
+		  tcc->event_mode = value;
+		  // re-partitioning track (this will clear all steps!)
+		  SEQ_PAR_TrackInit(track, par_steps, par_layers, par_instruments);
+		  SEQ_TRG_TrackInit(track, trg_steps, trg_layers, trg_instruments);
+
+		  // update CC links
+		  SEQ_CC_LinkUpdate(track);
+		}
+	      }
+	  } else if( strcmp(parameter, "Name") == 0 ) {
+	    if( word[0] != '\'' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in Name parameter: expecting ' at begin of string!\n");
+#endif
+	    } else if( strlen(word) < 82 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in Name parameter: expecting 80 characters!\n");
+#endif
+	    } else if( word[81] != '\'' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in Name parameter: expecting ' at end of string!\n");
+#endif
+	    } else {
+	      if( flags.NAME )
+		memcpy(seq_core_trk[track].name, word+1, 80);
+	    }
+	  } else if( strcmp(parameter, "TrackMode") == 0 ) {
+	    if( flags.CFG ) tcc->mode.playmode = value;
+	  } else if( strcmp(parameter, "TrackModeFlags") == 0 ) {
+	    if( flags.CFG ) tcc->mode.flags = value;
+	  } else if( strcmp(parameter, "MIDI_Port") == 0 ) {
+	    if( flags.CHN ) tcc->midi_port = value;
+	  } else if( strcmp(parameter, "MIDI_Channel") == 0 ) {
+	    if( flags.CHN ) tcc->midi_chn = value;
+	  } else if( strcmp(parameter, "DirectionMode") == 0 ) {
+	    if( flags.CFG ) tcc->dir_mode = value;
+	  } else if( strcmp(parameter, "StepsForward") == 0 ) {
+	    if( flags.CFG ) tcc->steps_forward = value;
+	  } else if( strcmp(parameter, "StepsJumpBack") == 0 ) {
+	    if( flags.CFG ) tcc->steps_jump_back = value;
+	  } else if( strcmp(parameter, "StepsReplay") == 0 ) {
+	    if( flags.CFG ) tcc->steps_replay = value;
+	  } else if( strcmp(parameter, "StepsRepeat") == 0 ) {
+	    if( flags.CFG ) tcc->steps_repeat = value;
+	  } else if( strcmp(parameter, "StepsSkip") == 0 ) {
+	    if( flags.CFG ) tcc->steps_skip = value;
+	  } else if( strcmp(parameter, "StepsRepeatSkipInterval") == 0 ) {
+	    if( flags.CFG ) tcc->steps_rs_interval = value;
+	  } else if( strcmp(parameter, "Clockdivider") == 0 ) {
+	    if( flags.CFG ) tcc->clkdiv.value = value;
+	  } else if( strcmp(parameter, "Triplets") == 0 ) {
+	    if( flags.CFG ) tcc->clkdiv.TRIPLETS = value;
+	  } else if( strcmp(parameter, "SynchToMeasure") == 0 ) {
+	    if( flags.CFG ) tcc->clkdiv.SYNCH_TO_MEASURE = value;
+	  } else if( strcmp(parameter, "Length") == 0 ) {
+	    if( flags.CFG ) tcc->length = value;
+	  } else if( strcmp(parameter, "Loop") == 0 ) {
+	    if( flags.CFG ) tcc->loop = value;
+	  } else if( strcmp(parameter, "TransposeSemitones") == 0 ) {
+	    if( flags.CFG ) tcc->transpose_semi = value;
+	  } else if( strcmp(parameter, "TransposeOctaves") == 0 ) {
+	    if( flags.CFG ) tcc->transpose_oct = value;
+	  } else if( strcmp(parameter, "MorphMode") == 0 ) {
+	    if( flags.CFG ) tcc->morph_mode = value;
+	  } else if( strcmp(parameter, "MorphDestinationRange") == 0 ) {
+	    if( flags.CFG ) tcc->morph_dst = value;
+	  } else if( strcmp(parameter, "HumanizeMode") == 0 ) {
+	    if( flags.CFG ) tcc->humanize_mode = value;
+	  } else if( strcmp(parameter, "HumanizeIntensity") == 0 ) {
+	    if( flags.CFG ) tcc->humanize_value = value;
+	  } else if( strcmp(parameter, "GrooveStyle") == 0 ) {
+	    if( flags.CFG ) tcc->groove_style = value;
+	  } else if( strcmp(parameter, "GrooveIntensity") == 0 ) {
+	    if( flags.CFG ) tcc->groove_value = value;
+	  } else if( strcmp(parameter, "TriggerAsngGate") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.gate = value;
+	  } else if( strcmp(parameter, "TriggerAsngAccent") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.accent = value;
+	  } else if( strcmp(parameter, "TriggerAsngRoll") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.roll = value;
+	  } else if( strcmp(parameter, "TriggerAsngGlide") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.glide = value;
+	  } else if( strcmp(parameter, "TriggerAsgnSkip") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.skip = value;
+	  } else if( strcmp(parameter, "TriggerAsgnRandomGate") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.random_gate = value;
+	  } else if( strcmp(parameter, "TriggerAsgnRandomValue") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.random_value = value;
+	  } else if( strcmp(parameter, "TriggerAsgnNoFx") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.no_fx = value;
+	  } else if( strcmp(parameter, "DrumParAsgnA") == 0 ) {
+	    if( flags.CFG ) tcc->par_assignment_drum[0] = value;
+	  } else if( strcmp(parameter, "DrumParAsgnB") == 0 ) {
+	    if( flags.CFG ) tcc->par_assignment_drum[1] = value;
+	  } else if( strcmp(parameter, "EchoRepeats") == 0 ) {
+	    if( flags.CFG ) tcc->echo_repeats = value;
+	  } else if( strcmp(parameter, "EchoDelay") == 0 ) {
+	    if( flags.CFG ) tcc->echo_delay = value;
+	  } else if( strcmp(parameter, "EchoVelocity") == 0 ) {
+	    if( flags.CFG ) tcc->echo_velocity = value;
+	  } else if( strcmp(parameter, "EchoFeedbackVelocity") == 0 ) {
+	    if( flags.CFG ) tcc->echo_fb_velocity = value;
+	  } else if( strcmp(parameter, "EchoFeedbackNote") == 0 ) {
+	    if( flags.CFG ) tcc->echo_fb_note = value;
+	  } else if( strcmp(parameter, "EchoFeedbackGatelength") == 0 ) {
+	    if( flags.CFG ) tcc->echo_fb_gatelength = value;
+	  } else if( strcmp(parameter, "EchoFeedbackTicks") == 0 ) {
+	    if( flags.CFG ) tcc->echo_fb_ticks = value;
+	  } else if( strcmp(parameter, "LFO_Waveform") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_waveform = value;
+	  } else if( strcmp(parameter, "LFO_Amplitude") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_amplitude = value;
+	  } else if( strcmp(parameter, "LFO_Phase") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_phase = value;
+	  } else if( strcmp(parameter, "LFO_Interval") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_steps = value;
+	  } else if( strcmp(parameter, "LFO_Reset_Interval") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_steps_rst = value;
+	  } else if( strcmp(parameter, "LFO_Flags") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_enable_flags.ALL = value;
+	  } else if( strcmp(parameter, "LFO_ExtraCC") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_cc = value;
+	  } else if( strcmp(parameter, "LFO_ExtraCC_Offset") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_cc_offset = value;
+	  } else if( strcmp(parameter, "LFO_ExtraCC_PPQN") == 0 ) {
+	    if( flags.CFG ) tcc->lfo_cc_ppqn = value;
+	  } else if( strcmp(parameter, "NoteLimitLower") == 0 ) {
+	    if( flags.CFG ) tcc->limit_lower = value;
+	  } else if( strcmp(parameter, "NoteLimitUpper") == 0 ) {
+	    if( flags.CFG ) tcc->limit_upper = value;
+	  } else if( strcmp(parameter, "ConstArrayA") == 0 ||
+		     strcmp(parameter, "ConstArrayB") == 0 ||
+		     strcmp(parameter, "ConstArrayC") == 0 ) {
+
+	    int cc_offset = 16 * (parameter[10] - 'A');
+	    int values[16];
+
+	    values[0] = value;
+	    int i;
+	    for(i=1; i<16; ++i) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      values[i] = get_dec(word);
+	      if( values[i] < 0 ) {
+		break;
+	      }
+	    }
+
+	    if( i != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR %s: missing parameter %d\n", parameter, i);
+#endif
+	    } else {
+	      if( flags.MAPS ) {
+		for(i=0; i<16; ++i)
+		  tcc->lay_const[cc_offset + i] = values[i];
+	      }
+	    }
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_T] ERROR: unknown parameter: %s", line_buffer);
@@ -156,6 +407,9 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 
   // close file
   status |= SEQ_FILE_ReadClose(&fi);
+
+  // update CC links (again)
+  SEQ_CC_LinkUpdate(track);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -230,6 +484,8 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 
 
   // write track definitions
+  sprintf(line_buffer, "#     |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |\n");
+  FLUSH_BUFFER;
   sprintf(line_buffer, "Name '%s'\n", seq_core_trk[track].name);
   FLUSH_BUFFER;
 
@@ -330,6 +586,8 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 	  (tcc->humanize_mode & (1 << 0)) ? "on" : "off",
 	  (tcc->humanize_mode & (1 << 1)) ? "on" : "off",
 	  (tcc->humanize_mode & (1 << 2)) ? "on" : "off");
+  FLUSH_BUFFER;
+
   sprintf(line_buffer, "HumanizeIntensity %d\n", tcc->humanize_value);
   FLUSH_BUFFER;
 
@@ -438,7 +696,7 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
   sprintf(line_buffer, "LFO_ExtraCC_Offset %d\n", tcc->lfo_cc_offset);
   FLUSH_BUFFER;
 	  
-  sprintf(line_buffer, "LFO_ExtraCC_PPQN %d\n", tcc->lfo_cc_ppqn ? (3 << (tcc->lfo_cc_ppqn-1)) : 1);
+  sprintf(line_buffer, "LFO_ExtraCC_PPQN %d (%d ppqn)\n", tcc->lfo_cc_ppqn, tcc->lfo_cc_ppqn ? (3 << (tcc->lfo_cc_ppqn-1)) : 1);
   FLUSH_BUFFER;
 	  
 

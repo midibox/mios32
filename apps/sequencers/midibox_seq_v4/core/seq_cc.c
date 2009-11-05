@@ -34,13 +34,6 @@ seq_cc_trk_t seq_cc_trk[SEQ_CORE_NUM_TRACKS];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-static s32 CC_LinkUpdate(u8 track);
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CC_Init(u32 mode)
@@ -78,7 +71,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
   if( cc < 0x30 ) {
     tcc->lay_const[cc] = value;
     if( tcc->event_mode != SEQ_EVENT_MODE_Drum )
-      CC_LinkUpdate(track);
+      SEQ_CC_LinkUpdate(track);
   } else {
     switch( cc ) {
       case SEQ_CC_MODE: tcc->mode.playmode = value; break;
@@ -86,7 +79,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
   
       case SEQ_CC_MIDI_EVENT_MODE: 
 	tcc->event_mode = value; 
-	CC_LinkUpdate(track);
+	SEQ_CC_LinkUpdate(track);
 	break;
 
       case SEQ_CC_MIDI_CHANNEL: tcc->midi_chn = value; break;
@@ -130,11 +123,11 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 
       case SEQ_CC_PAR_ASG_DRUM_LAYER_A:
 	tcc->par_assignment_drum[0] = value;
-	CC_LinkUpdate(track);
+	SEQ_CC_LinkUpdate(track);
 	break;
       case SEQ_CC_PAR_ASG_DRUM_LAYER_B:
 	tcc->par_assignment_drum[1] = value;
-	CC_LinkUpdate(track);
+	SEQ_CC_LinkUpdate(track);
 	break;
 
       case SEQ_CC_STEPS_REPEAT: tcc->steps_repeat = value; break;
@@ -299,15 +292,19 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called whenever the event mode or par layer assignments have been changed
+// Should be called whenever the event mode or par layer assignments have
+// been changed
 /////////////////////////////////////////////////////////////////////////////
-static s32 CC_LinkUpdate(u8 track)
+s32 SEQ_CC_LinkUpdate(u8 track)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   u8 *par_asg = (tcc->event_mode == SEQ_EVENT_MODE_Drum)
     ? (u8 *)&seq_cc_trk[track].par_assignment_drum[0]
     : (u8 *)&seq_cc_trk[track].lay_const[0*16];
+
+  // since CCs can be modified from other tasks at different priority we should do this operation atomic
+  portENTER_CRITICAL();
 
   tcc->link_par_layer_note = -1;
   tcc->link_par_layer_chord = -1;
@@ -333,6 +330,8 @@ static s32 CC_LinkUpdate(u8 track)
       }
     }
   }
+
+  portEXIT_CRITICAL();
 
   return 0; // no error
 }

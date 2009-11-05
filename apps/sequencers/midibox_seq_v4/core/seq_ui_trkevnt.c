@@ -1548,7 +1548,11 @@ static s32 DoExport(u8 force_overwrite)
 
   SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Exporting", path);
 
-  if( (status=SEQ_FILE_T_Write(path, SEQ_UI_VisibleTrackGet())) < 0 ) {
+  MUTEX_SDCARD_TAKE;
+  status=SEQ_FILE_T_Write(path, SEQ_UI_VisibleTrackGet());
+  MUTEX_SDCARD_GIVE;
+
+  if( status < 0 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Error during Export!", "see MIOS Terminal!");
     return -6;
   }
@@ -1572,9 +1576,23 @@ static s32 DoImport(void)
 
   sprintf(path, "presets/%s.V4T", dir_name);
 
+  // mute track to avoid random effects while loading the file
+  MIOS32_IRQ_Disable(); // this operation should be atomic!
+  u8 muted = seq_core_trk[visible_track].state.MUTED;
+  if( !muted )
+    seq_core_trk[visible_track].state.MUTED = 1;
+  MIOS32_IRQ_Enable();
+
+  // read file
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_T_Read(path, visible_track, import_flags);
   MUTEX_SDCARD_GIVE;
+
+  // unmute track if it wasn't muted before
+  MIOS32_IRQ_Disable(); // this operation should be atomic!
+  if( !muted )
+    seq_core_trk[visible_track].state.MUTED = 0;
+  MIOS32_IRQ_Enable();
 
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
