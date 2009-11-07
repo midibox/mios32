@@ -211,8 +211,7 @@ static void TASK_SEQ(void *pvParameters)
       // check if SD card is available
       // High-speed access if SD card was previously available
       u8 prev_sdcard_available = sdcard_available;
-      if( !sdcard_available )
-	sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
+      sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
 
       if( sdcard_available && !prev_sdcard_available ) {
 	MIOS32_BOARD_LED_Set(0x1, 0x1); // turn on LED	
