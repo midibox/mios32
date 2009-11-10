@@ -267,7 +267,7 @@ static s32 SEQ_PlayFile(u32 next)
   SEQ_PlayOffEvents();
 
   u8 *next_file;
-  if( (next_file = MID_FILE_FindNext(next ? MID_FILE_NameGet() : NULL)) != NULL ||
+  if( (next_file = MID_FILE_FindNext(next ? MID_FILE_UI_NameGet() : NULL)) != NULL ||
       (next_file = MID_FILE_FindNext(NULL)) != NULL ) { // if next file not found, try first file
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ] next file found '%s'\n", next_file);
