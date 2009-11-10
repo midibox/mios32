@@ -54,7 +54,7 @@
 // the file position and length
 static u32 midifile_pos;
 static u32 midifile_len;
-static u8  midifile_name[13];
+static u8  ui_midifile_name[13];
 
 // DOS FS variables
 static u8 sector[SECTOR_SIZE];
@@ -70,7 +70,7 @@ static FILEINFO fi;
 s32 MID_FILE_Init(u32 mode)
 {
   // initial midifile name and size
-  strcpy(midifile_name, "waiting...");
+  strcpy(ui_midifile_name, "waiting...");
   midifile_len = 0;
 
   return 0; // no error
@@ -78,11 +78,12 @@ s32 MID_FILE_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the filename of the .mid file
+// Returns the filename of the .mid file for the user interface
+// Contains an error message if file wasn't loaded correctly
 /////////////////////////////////////////////////////////////////////////////
-char *MID_FILE_NameGet(void)
+char *MID_FILE_UI_NameGet(void)
 {
-  return midifile_name;
+  return ui_midifile_name;
 }
 
 
@@ -180,7 +181,7 @@ char *MID_FILE_FindNext(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MID_FILE] mounting failed with status: %d\n", error);
 #endif
-      strcpy(midifile_name, "no SD-Card");
+      strcpy(ui_midifile_name, "no SD-Card");
       return NULL; // directory not found
     }
 
@@ -188,7 +189,7 @@ char *MID_FILE_FindNext(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MID_FILE] Error opening directory again - giving up!\n");
 #endif
-      strcpy(midifile_name, "no direct.");
+      strcpy(ui_midifile_name, "no direct.");
       return NULL; // directory not found
     }
   }
@@ -204,19 +205,19 @@ char *MID_FILE_FindNext(char *filename)
 
   while( !DFS_GetNext(&vi, &di, &de) ) {
     if( de.name[0] ) {
-      DFS_DirToCanonical(midifile_name, de.name);
+      DFS_DirToCanonical(ui_midifile_name, de.name);
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[MID_FILE] file: '%s'\n", midifile_name);
+      DEBUG_MSG("[MID_FILE] file: '%s'\n", ui_midifile_name);
 #endif
       if( strncasecmp(&de.name[8], "mid", 3) == 0 ) {
 	if( take_next ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	  DEBUG_MSG("[MID_FILE] return it as next file\n");
 #endif
-	  return midifile_name;
+	  return ui_midifile_name;
 	} else if( strncasecmp(&de.name[0], (char *)search_file, 8) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  DEBUG_MSG("[MID_FILE] found file: '%s', searching for next\n", midifile_name);
+	  DEBUG_MSG("[MID_FILE] found file: '%s', searching for next\n", ui_midifile_name);
 #endif
 	  take_next = 1;
 	}
@@ -224,7 +225,7 @@ char *MID_FILE_FindNext(char *filename)
     }
   }
 
-  midifile_name[0] = 0;
+  ui_midifile_name[0] = 0;
   return NULL; // file not found
 }
 
@@ -242,7 +243,7 @@ s32 MID_FILE_open(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MID_FILE] error opening file '%s'!\n", filepath);
 #endif
-    strcpy(midifile_name, "file error");
+    strcpy(ui_midifile_name, "file error");
     midifile_len = 0;
     return -1;
   }
