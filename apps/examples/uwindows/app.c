@@ -22,6 +22,7 @@
 static UW_Window	HelloIcon;
 static UW_Window	HelloForm;
 static UW_Window	HelloBtn,HelloLabel;
+static UW_Window	HelloFader[12],HelloPot[8];
 static const char IconCaption[]="Welcome to MB UWindows";
 static char LabelCaption[] = "Hello UWindows!";
 static char BtnCaption[]= "Show/Hide";
@@ -81,22 +82,29 @@ void APP_Background(void)
 	/* SetThe Click Handler routine for the form to hide the form	*/
 	UW_SetOnClick(&HelloForm, HelloExit);
 
-	/* Add Label to Hello Form		*/
-	UW_Add(&HelloLabel,UW_LABEL, &HelloForm, NULL);
+	int f;
+	for (f=0;f<12;f++) {
+		UW_Add(&HelloFader[f],UW_FADER, &HelloForm, NULL);
+		UW_SetPosition(&HelloFader[f], (f*10)+20,30);
+		UW_SetValue(&HelloFader[f],128);
+	}
+	for (f=0;f<8;f++) {
+		UW_Add(&HelloPot[f],UW_POT, &HelloForm, NULL);
+		UW_SetPosition(&HelloPot[f], (f*19)+13,75);
+		UW_SetValue(&HelloPot[f],45);
+	}
 	/* Set Form	caption */
-	UW_SetCaption(&HelloLabel, LabelCaption, 15);
-	UW_SetPosition(&HelloLabel, 5, 56);
-	UW_SetSize(&HelloLabel, 115, 20);
 	
 	/* Add Btn to Hello Form			*/
-	UW_Add(&HelloBtn,UW_BUTTON, &HelloForm, NULL);
+	//UW_Add(&HelloBtn,UW_BUTTON, &HelloForm, NULL);
 	/* Set Button	caption */
-	UW_SetCaption(&HelloBtn, BtnCaption, 9);
-	UW_SetPosition(&HelloBtn, 24, 20);
-	UW_SetSize(&HelloBtn, 80, 30);
+	//UW_SetCaption(&HelloBtn, BtnCaption, 9);
+	//UW_SetPosition(&HelloBtn, 24, 20);
+	//UW_SetSize(&HelloBtn, 80, 30);
 	/* Set the Click Handler routine for the button to Toggle Lable visibility	*/
-	UW_SetOnClick(&HelloBtn,HelloBtnClick);
+	//UW_SetOnClick(&HelloBtn,HelloBtnClick);
 	// endless loop
+	//UW_DrawCircle(50, 50, 50, BLACK);
   while( 1 ) {
 	UW_Run();
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)

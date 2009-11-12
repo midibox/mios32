@@ -12,13 +12,15 @@
 /************************************************************************************/
 typedef enum UW_Type
 {
-	UW_FORM		= 0,
+	UW_FORM			= 0,
 	UW_BUTTON 		= 1,
 	UW_LABEL		= 2,
-    	UW_EDIT        	= 3,
-    	UW_CHECKBOX	= 4,
-    	UW_ICON		= 5,
-    	UW_LISTBOX		= 6
+    UW_EDIT        	= 3,
+    UW_CHECKBOX		= 4,
+    UW_ICON			= 5,
+    UW_LISTBOX		= 6,
+	UW_FADER		= 100,
+	UW_POT			= 101
 } UW_Type;
 
 typedef	struct 
@@ -89,6 +91,12 @@ typedef struct
 #define	DEFAULT_LIST_HEIGHT		16
 #define	DEFAULT_ICON_LENGTH		32
 #define	DEFAULT_ICON_HEIGHT		32
+
+// MIDIbox additions
+#define	DEFAULT_FADER_LENGTH	4
+#define	DEFAULT_FADER_HEIGHT	32
+#define	DEFAULT_POT_LENGTH		8
+#define	DEFAULT_POT_HEIGHT		8
 
 
 /************************************************************************************/
@@ -206,6 +214,8 @@ do													\
 	Refresh					= 1;						\
 } while(0)
 
+
+
 extern UW_Window		UWindows;
 extern UW_Window	*	pUW_Infocus;
 extern bool			Refresh;
@@ -217,6 +227,9 @@ void 		UW_ListBoxRemoveItem(UW_Window * ListBox, UW_Window * Item);
 UW_Window * UW_ListBoxGetActiveItem(UW_Window * ListBox);
 UW_Window * UW_ListBoxGetItem(UW_Window * ListBox,u32 index);
 s32 		UW_ListBoxGetIndex(UW_Window * ListBox,UW_Window * Item);
+
+static void 	UW_DrawCircle(s32 xpos, s32 ypos, s32 r, u16 color);
+static void 	UW_DrawLine(s32 x1, s32 y1, s32 x2, s32 y2,u16 color);
 
 #ifdef	MALLOC
 void 		ialloc();
