@@ -1756,32 +1756,32 @@ s32 SEQ_UI_LCD_Update(void)
 
   // if UI message active: copy over the text
   if( ui_msg_ctr ) {
-    const char *animation_l_ptr;
-    const char *animation_r_ptr;
+    char *animation_l_ptr;
+    char *animation_r_ptr;
     u8 msg_x = 0;
     u8 right_aligned = 0;
     u8 disable_message = 0;
 
     switch( ui_msg_type ) {
       case SEQ_UI_MSG_SDCARD: {
-	//                             00112233
-	const char animation_l[2*4] = "   >>>> ";
-	//                             00112233
-	const char animation_r[2*4] = "  < << <";
-	animation_l_ptr = animation_l;
-	animation_r_ptr = animation_r;
+	//                               00112233
+	const char animation_l[2*4+1] = "   >>>> ";
+	//                               00112233
+	const char animation_r[2*4+1] = "  < << <";
+	animation_l_ptr = (char *)animation_l;
+	animation_r_ptr = (char *)animation_r;
 	msg_x = 0; // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
 	right_aligned = 0;
       } break;
 
       case SEQ_UI_MSG_DELAYED_ACTION:
       case SEQ_UI_MSG_DELAYED_ACTION_R: {
-	//                             00112233
-	const char animation_l[2*4] = "   )))) ";
-	//                             00112233
-	const char animation_r[2*4] = "  ( (( (";
-	animation_l_ptr = animation_l;
-	animation_r_ptr = animation_r;
+	//                               00112233
+	const char animation_l[2*4+1] = "   )))) ";
+	//                               00112233
+	const char animation_r[2*4+1] = "  ( (( (";
+	animation_l_ptr = (char *)animation_l;
+	animation_r_ptr = (char *)animation_r;
 	if( ui_msg_type == SEQ_UI_MSG_DELAYED_ACTION_R ) {
 	  msg_x = 40; // right LCD
 	  right_aligned = 0;
@@ -1802,23 +1802,23 @@ s32 SEQ_UI_LCD_Update(void)
       } break;
 
       case SEQ_UI_MSG_USER_R: {
-	//                             00112233
-	const char animation_l[2*4] = "   **** ";
-	//                             00112233
-	const char animation_r[2*4] = "  * ** *";
-	animation_l_ptr = animation_l;
-	animation_r_ptr = animation_r;
+	//                               00112233
+	const char animation_l[2*4+1] = "   **** ";
+	//                               00112233
+	const char animation_r[2*4+1] = "  * ** *";
+	animation_l_ptr = (char *)animation_l;
+	animation_r_ptr = (char *)animation_r;
 	msg_x = 40; // right display
 	right_aligned = 0;
       } break;
 
       default: {
-	//                             00112233
-	const char animation_l[2*4] = "   **** ";
-	//                             00112233
-	const char animation_r[2*4] = "  * ** *";
-	animation_l_ptr = animation_l;
-	animation_r_ptr = animation_r;
+	//                               00112233
+	const char animation_l[2*4+1] = "   **** ";
+	//                               00112233
+	const char animation_r[2*4+1] = "  * ** *";
+	animation_l_ptr = (char *)animation_l;
+	animation_r_ptr = (char *)animation_r;
 	msg_x = 39;
 	right_aligned = 1;
       } break;

@@ -141,10 +141,12 @@ s32 SEQ_LAYER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // This function returns a string to the event mode name (5 chars)
 /////////////////////////////////////////////////////////////////////////////
+// Note: newer gcc versions don't allow to return a "const" parameter, therefore
+// this array is declared outside the SEQ_LAYER_GetEvntModeName() function
+static const char event_mode_str[4+1][6] = { "Note ", "Chord", " CC  ", "Drum ", "?????" };
+
 const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode)
 {
-  const char event_mode_str[4+1][6] = { "Note ", "Chord", " CC  ", "Drum ", "?????" };
-
   if( event_mode < 4 )
     return event_mode_str[event_mode];
   else
