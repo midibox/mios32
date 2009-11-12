@@ -1282,9 +1282,9 @@ static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
 /////////////////////////////////////////////////////////////////////////////
 // Name of Delay mode (we should outsource the echo function to seq_echo.c later)
 /////////////////////////////////////////////////////////////////////////////
-const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
-{
-  const char delay_str[16+1][5] = {
+// Note: newer gcc versions don't allow to return a "const" parameter, therefore
+// this array is declared outside the SEQ_CORE_Echo_GetDelayModeName() function
+static const char delay_str[16+1][5] = {
     " 64T",
     " 64 ",
     " 32T",
@@ -1304,6 +1304,8 @@ const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
     "????",
   };
 
+const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
+{
   if( delay_mode < 16 )
     return delay_str[delay_mode];
 
