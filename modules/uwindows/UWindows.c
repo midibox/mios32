@@ -281,7 +281,16 @@ static const u8 UW_Icon[4*32]	= 	{ /* Will be set to any NULL Icon	*/
 	0xFF,0xFF,0x9F,0x00,
 	0xFF,0xFF,0xFF,0x00
 	};
-                 
+            
+
+void swap(u32 *a, u32 *b)
+{
+	u32 c;
+	c=*a;
+	*a=*b;
+	*b=c;
+}
+			
 
 #ifdef	SHOW_CURSOR
 /*!
@@ -370,7 +379,16 @@ void UW_Add(UW_Window * pWindow, UW_Type Type, UW_Window * pParent, void * Extra
 				pWindow->ExtraProperties	= ExtraProperties;
 			else
 				pWindow->ExtraProperties	= (void *)UW_Icon;
-			break;			
+			break;	
+		case (UW_FADER):
+			length	= DEFAULT_FADER_LENGTH;
+			height	= DEFAULT_FADER_HEIGHT;
+			break;
+		case (UW_POT):
+			length	= DEFAULT_POT_LENGTH;
+			height	= DEFAULT_POT_HEIGHT;
+			break;
+		
 	}
 	pWindow->type			= Type;	
 	pWindow->Absx			= 0;
@@ -497,11 +515,9 @@ static void UW_DrawImage(void)
 
 	APP_LCD_GCursorSet(0, 0);
 	
-
-	
-	for (y=103;y>=0;y=y-4) {
-		for (x=0;x<160;x++) {
-			index = (x * 26) + (y >> 2);
+	for (y=MAX_Y-1;y>=0;y=y-4) { // This is to convert the origin to top left from bottom left.
+		for (x=0;x<MAX_X;x++) {
+			index = (x * (MAX_Y>>2)) + (y >> 2);
 			APP_LCD_Data(~UWImage[index]);
 		}
 	}
@@ -588,6 +604,109 @@ static void UW_FillTriangle(s32 x,s32 y,s32 length,s32 direction,u16 color)
 }
 
 /*!
+ * \brief Draw a Circle to Image
+ *
+ * This function will Draw a blank circle in memory
+ * 
+ * \param[in] xpos : X position of centre of circle
+ * \param[in] ypos : Y position of centre of circle
+ * \param[in] r : Radius of circle
+ * \param[in] color : color assigned by user
+ * \return none 
+ */
+static void UW_DrawCircle(s32 xpos, s32 ypos, s32 r, u16 color)
+{
+	int x=0,y=r;
+	while (x <= y)
+    {
+        // We make use of 8 axes of symmetry in a circle.
+        // This way we have fewer points to calculate on its circumference.
+        UW_SetPixel(xpos + x, ypos + y, color);
+        UW_SetPixel(xpos - x, ypos + y, color);
+        UW_SetPixel(xpos + x, ypos - y, color);
+        UW_SetPixel(xpos - x, ypos - y, color);
+        UW_SetPixel(xpos + y, ypos + x, color);
+        UW_SetPixel(xpos - y, ypos + x, color);
+        UW_SetPixel(xpos + y, ypos - x, color);
+        UW_SetPixel(xpos - y, ypos - x, color);
+
+        // This is the most important part of the function.
+        // We go to the right in all cases (x++).
+        // We need to decide whether to go down (y--).
+        // This depends on which point is
+        // closest to the path of the circle.
+        // Good old Pythagoras will tell us what to do.
+        x++;
+        if (abs (x*x + y*y - r*r) > abs (x*x + (y-1)*(y-1) - r*r))
+			y--;
+    }
+
+}
+
+
+
+static void UW_DrawLine(s32 x1, s32 y1, s32 x2, s32 y2,u16 color)
+{
+	u8 x, y;
+	signed int a, c;
+	signed int b;
+		
+	// Calculate the coefficients.
+	a = y1-y2;
+	b = x1*y2-y1*x2;
+	c = x1-x2;
+
+
+	// Horizontal Line
+	if (c==0) {
+		if (y1>y2) swap(&y1, &y2);
+		for(y=y1; y<=y2; y++)
+		{
+			UW_SetPixel(x1, y,color);
+		}
+		return;
+	}
+
+	// Vertical Line
+	if (a==0) {
+		if (x1>x2) swap(&x1, &x2);
+		for(x=x1; x<=x2; x++) 
+		{
+			UW_SetPixel(x, y1,color);
+		}
+		return;
+	}
+	
+	// line y=(ax+b)/c
+	if (abs(c) >= abs(a)) {// Delta x > Delta y
+		if (x1>x2) {
+			swap(&x1, &x2);
+			swap(&y1, &y2);	
+		}
+		for(x=x1; x<=x2; x++){
+			y = (a*x+b)/c;
+			UW_SetPixel(x, y,color);
+		}	
+	}
+	// line x = (y*c-b)/a
+	else {	// Delta y > Delta x
+		if (y1>y2) {
+			swap(&x1, &x2);
+			swap(&y1, &y2);				
+		}
+		for(y=y1; y<=y2; y++){
+			x = (y*c-b)/a;
+			UW_SetPixel(x, y,color);
+		}	
+	}
+}
+
+
+
+
+
+
+/*!
  * \brief Draw a rectangle to Image
  *
  * This function will Draw a blank rectangle in memory
@@ -595,7 +714,7 @@ static void UW_FillTriangle(s32 x,s32 y,s32 length,s32 direction,u16 color)
  * \param[in] x : X start of Rectangle
  * \param[in] y : Y start of Rectangle
  * \param[in] length : length of Rectangle
- * \param[in] hieght : height of Rectangle 
+ * \param[in] height : height of Rectangle 
  * \param[in] color : color assigned by user
  * \return none 
  */
@@ -988,6 +1107,16 @@ static void UW_DrawItem(UW_Window * pstrItem)
 	else if (pstrItem->type == UW_LISTBOX)
 	{
 		UW_DrawListBox(pstrItem);
+	}		
+	else if (pstrItem->type == UW_FADER)
+	{
+			UW_DrawRect(pstrItem->Absx,pstrItem->Absy,pstrItem->length,pstrItem->height,BLACK);    		        
+			UW_FillRect(pstrItem->Absx+1,pstrItem->Absy+1,pstrItem->length-2,((pstrItem->height-2)*pstrItem->value)/256,BLUE);		
+	}		
+	else if (pstrItem->type == UW_POT)
+	{
+			UW_DrawCircle(pstrItem->Absx,pstrItem->Absy,pstrItem->length,BLACK); 
+			UW_DrawLine(pstrItem->Absx,pstrItem->Absy, pstrItem->Absx+(pstrItem->length>>1), pstrItem->Absy+(pstrItem->length>>1),BLACK);
 	}		
 	
 	list_for_each(pos, &pstrItem->items)
