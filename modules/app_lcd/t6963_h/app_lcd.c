@@ -27,14 +27,6 @@
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-// 0: J15 pins are configured in Push Pull Mode (3.3V)
-// 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
-#define APP_LCD_OUTPUT_MODE  1
-
-
-// Memo: RD_N pin connected to J15:E
-//       WR_N pin connected to J15:RW
-//       CD pin connected to J15:RS
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -122,9 +114,8 @@ s32 APP_LCD_Data(u8 data)
   MIOS32_BOARD_J15_RS_Set(0); // CD connected to RS
 
   // strobe WR_N
-  u32 delay_ctr;
-  for(delay_ctr=0; delay_ctr<2; ++delay_ctr) MIOS32_BOARD_J15_RW_Set(0);
-  for(delay_ctr=0; delay_ctr<2; ++delay_ctr) MIOS32_BOARD_J15_RW_Set(0);
+  MIOS32_BOARD_J15_RW_Set(0);
+  MIOS32_BOARD_J15_RW_Set(1);
 
   return 0; // no error
 }
@@ -147,8 +138,8 @@ s32 APP_LCD_Cmd(u8 cmd)
 
   // strobe WR_N
   u32 delay_ctr;
-  for(delay_ctr=0; delay_ctr<2; ++delay_ctr) MIOS32_BOARD_J15_RW_Set(0);
-  for(delay_ctr=0; delay_ctr<75; ++delay_ctr) MIOS32_BOARD_J15_RW_Set(0);
+  MIOS32_BOARD_J15_RW_Set(0);
+  for(delay_ctr=0; delay_ctr<40; ++delay_ctr) MIOS32_BOARD_J15_RW_Set(1);
 
   return 0; // no error
 }
@@ -215,65 +206,6 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Prints a single character
-// IN: character in <c>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_PrintChar(char c)
-{
-  int x, y, line;
-
-  // font not initialized yet!
-  if( mios32_lcd_font == NULL )
-    return -1;
-
-  u8 y_lines = (mios32_lcd_font_height>>3);
-
-  // transfer character to screen buffer
-  for(line=0; line<y_lines; ++line) {
-
-    // calculate pointer to character line
-    u8 *font_ptr = mios32_lcd_font + line * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
-
-    for(x=0; x<mios32_lcd_font_width; ++x) {
-      u8 x_pos = mios32_lcd_x + x;
-      u8 y_pos = mios32_lcd_y + 8*line;
-      u8 b = *font_ptr++;
-
-      for(y=0; y<8; ++y) {
-	u8 mask = 1 << ((7-x_pos)&7);
-	if( b & (1 << y)  )
-	  screen_buffer[y_pos+y][x_pos>>3] |= mask;
-	else
-	  screen_buffer[y_pos+y][x_pos>>3] &= ~mask;
-      }
-    }
-  }
-
-  // now transfer updated screen buffer contents to GLCD
-  for(y=0; y<mios32_lcd_font_height; ++y) {
-    // set address pointer
-    u16 addr = (mios32_lcd_x >> 3) + 32*(mios32_lcd_y + y);
-    APP_LCD_Data(addr & 0xff);
-    APP_LCD_Data(addr >> 8);
-    APP_LCD_Cmd(0x24);
-
-    for(x=0; x<(mios32_lcd_font_width+7); x+=8) { // +7: depending on character position we mostly have to write one byte more
-      // write and increment
-      APP_LCD_Data(screen_buffer[mios32_lcd_y+y][(mios32_lcd_x+x)>>3]);
-      APP_LCD_Cmd(0xc0);
-    }
-  }
-
-  // increment cursor
-  mios32_lcd_column += 1;
-  mios32_lcd_x += mios32_lcd_font_width;
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initializes a single special character
 // IN: character number (0-7) in <num>, pattern in <table[8]>
 // OUT: returns < 0 on errors
@@ -289,10 +221,10 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 // Sets the background colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_BColourSet(u32 rgb)
 {
   return -1; // n.a.
 }
@@ -301,10 +233,87 @@ s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 // Sets the foreground colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_FColourSet(u32 rgb)
 {
   return -1; // n.a.
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets a pixel in the bitmap
+// IN: bitmap, x/y position and colour value (value range depends on APP_LCD_COLOUR_DEPTH)
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+{
+  if( x >= bitmap.width || y >= bitmap.height )
+    return -1; // pixel is outside bitmap
+
+  u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+  u8 mask = 1 << (y % 8);
+
+  *pixel &= ~mask;
+  if( colour )
+    *pixel |= mask;
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transfers a Bitmap within given boundaries to the LCD
+// IN: bitmap
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+{
+  int line, x, y;
+  int y_lines = (bitmap.height >> 3);
+
+  // transfer character to screen buffer
+  for(line=0; line<y_lines; ++line) {
+
+    // calculate pointer to bitmap line
+    u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
+
+    // TODO: we could provide a special mode w/o screenbuffer which would work fine
+    // so long no MIOS fonts are print
+    for(x=0; x<bitmap.width; ++x) {
+      u8 x_pos = mios32_lcd_x + x;
+      u8 y_pos = mios32_lcd_y + 8*line;
+      u8 b = *memory_ptr++;
+
+      for(y=0; y<8; ++y) {
+	u8 mask = 1 << ((7-x_pos)&7);
+	if( b & (1 << y)  )
+	  screen_buffer[y_pos+y][x_pos>>3] |= mask;
+	else
+	  screen_buffer[y_pos+y][x_pos>>3] &= ~mask;
+      }
+    }
+
+    // now transfer updated screen buffer contents to GLCD
+    for(y=0; y<bitmap.height; ++y) {
+      // set address pointer
+      u16 addr = (mios32_lcd_x >> 3) + 32*(mios32_lcd_y + y);
+      APP_LCD_Data(addr & 0xff);
+      APP_LCD_Data(addr >> 8);
+      APP_LCD_Cmd(0x24);
+
+      for(x=0; x<(bitmap.width+7); x+=8) { // +7: depending on character position we mostly have to write one byte more
+	// write and increment
+	APP_LCD_Data(screen_buffer[mios32_lcd_y+y][(mios32_lcd_x+x)>>3]);
+	APP_LCD_Cmd(0xc0);
+      }
+    }
+  }
+
+  mios32_lcd_x += bitmap.width;
+
+  return 0; // no error
 }

@@ -39,13 +39,31 @@
 #endif
 
 
+// fixed format, don't change!
+#define MIOS32_LCD_FONT_WIDTH_IX    0
+#define MIOS32_LCD_FONT_HEIGHT_IX   1
+#define MIOS32_LCD_FONT_X0_IX       2
+#define MIOS32_LCD_FONT_OFFSET_IX   3
+#define MIOS32_LCD_FONT_BITMAP_IX   4
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-#define MIOS32_LCD_TYPE_CLCD  0
-#define MIOS32_LCD_TYPE_GLCD  1
+typedef enum {
+  MIOS32_LCD_TYPE_CLCD = 0,
+  MIOS32_LCD_TYPE_GLCD
+} mios32_lcd_type_t;
+
+
+typedef struct {
+  u8  *memory;
+  u16 width;
+  u16 height;
+  u16 line_offset;
+  u8  colour_depth;
+} mios32_lcd_bitmap_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,8 +91,12 @@ extern s32 MIOS32_LCD_Cmd(u8 cmd);
 extern s32 MIOS32_LCD_Clear(void);
 extern s32 MIOS32_LCD_PrintChar(char c);
 extern s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8]);
-extern s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b);
-extern s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b);
+extern s32 MIOS32_LCD_BColourSet(u32 rgb);
+extern s32 MIOS32_LCD_FColourSet(u32 rgb);
+
+extern mios32_lcd_bitmap_t MIOS32_LCD_BitmapInit(u8 *memory, u16 width, u16 height, u16 line_offset, u8 colour_depth);
+extern s32 MIOS32_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour);
+extern s32 MIOS32_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,20 +104,16 @@ extern s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b);
 /////////////////////////////////////////////////////////////////////////////
 
 // should only be directly accessed by APP_LCD driver
-extern s16 mios32_lcd_type;
+extern mios32_lcd_type_t mios32_lcd_type;
 extern u8  mios32_lcd_device;
-extern s16 mios32_lcd_column;
-extern s16 mios32_lcd_line;
+extern u16 mios32_lcd_column;
+extern u16 mios32_lcd_line;
 
 extern u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 
-extern s16 mios32_lcd_x;
-extern s16 mios32_lcd_y;
+extern u16 mios32_lcd_x;
+extern u16 mios32_lcd_y;
 
 extern u8 *mios32_lcd_font;
-extern u8 mios32_lcd_font_width;
-extern u8 mios32_lcd_font_height;
-extern u8 mios32_lcd_font_x0;
-extern u8 mios32_lcd_font_offset;
 
 #endif /* _MIOS32_LCD_H */

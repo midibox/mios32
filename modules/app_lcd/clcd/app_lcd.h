@@ -19,6 +19,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
+// only used by GLCDs
+// Use dummy values here - define a bitmap as it would be displayed with special chars
+// TODO: we could print a 8*5x8 bitmap like done in apps/sequencers/midibox_seq_v4/core/seq_lcd_logo.c
+#define APP_LCD_NUM_X 1
+#define APP_LCD_WIDTH (4*5)
+#define APP_LCD_NUM_Y 1
+#define APP_LCD_HEIGHT (2*8)
+#define APP_LCD_COLOUR_DEPTH 1
+#define APP_LCD_BITMAP_SIZE ((APP_LCD_NUM_X*APP_LCD_WIDTH * APP_LCD_NUM_Y*APP_LCD_HEIGHT * APP_LCD_COLOUR_DEPTH) / 8)
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -36,10 +46,11 @@ extern s32 APP_LCD_Cmd(u8 cmd);
 extern s32 APP_LCD_Clear(void);
 extern s32 APP_LCD_CursorSet(u16 column, u16 line);
 extern s32 APP_LCD_GCursorSet(u16 x, u16 y);
-extern s32 APP_LCD_PrintChar(char c);
 extern s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8]);
-extern s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b);
-extern s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b);
+extern s32 APP_LCD_BColourSet(u32 rgb);
+extern s32 APP_LCD_FColourSet(u32 rgb);
+extern s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour);
+extern s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
 
 /////////////////////////////////////////////////////////////////////////////

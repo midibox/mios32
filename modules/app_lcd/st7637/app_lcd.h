@@ -18,6 +18,25 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// supported values: 1, 2, 8
+// can be overruled in mios32_config.h
+// NOTE:
+// Resulting memory consumption of a single bitmap:
+// APP_LCD_COLOUR_DEPTH 1 -> 2048 bytes
+// APP_LCD_COLOUR_DEPTH 2 -> 4096 bytes
+// APP_LCD_COLOUR_DEPTH 8 -> 16384 bytes
+// Customizable Colour mapping for depth != 1 and != 8 not available yet!
+#ifndef APP_LCD_COLOUR_DEPTH
+#define APP_LCD_COLOUR_DEPTH 2
+#endif
+
+
+// don't change these values for this GLCD type
+#define APP_LCD_NUM_X 1
+#define APP_LCD_WIDTH 128
+#define APP_LCD_NUM_Y 1
+#define APP_LCD_HEIGHT 128
+#define APP_LCD_BITMAP_SIZE ((APP_LCD_NUM_X*APP_LCD_WIDTH * APP_LCD_NUM_Y*APP_LCD_HEIGHT * APP_LCD_COLOUR_DEPTH) / 8)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -36,10 +55,11 @@ extern s32 APP_LCD_Cmd(u8 cmd);
 extern s32 APP_LCD_Clear(void);
 extern s32 APP_LCD_CursorSet(u16 column, u16 line);
 extern s32 APP_LCD_GCursorSet(u16 x, u16 y);
-extern s32 APP_LCD_PrintChar(char c);
 extern s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8]);
-extern s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b);
-extern s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b);
+extern s32 APP_LCD_BColourSet(u32 rgb);
+extern s32 APP_LCD_FColourSet(u32 rgb);
+extern s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour);
+extern s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
 
 /////////////////////////////////////////////////////////////////////////////
