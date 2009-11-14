@@ -114,6 +114,4 @@ extern u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 extern u16 mios32_lcd_x;
 extern u16 mios32_lcd_y;
 
-extern u8 *mios32_lcd_font;
-
 #endif /* _MIOS32_LCD_H */
