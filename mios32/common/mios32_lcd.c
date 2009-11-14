@@ -42,7 +42,12 @@ u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 u16 mios32_lcd_x;
 u16 mios32_lcd_y;
 
-u8 *mios32_lcd_font = NULL;
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+mios32_lcd_bitmap_t font_bitmap;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,6 +65,9 @@ s32 MIOS32_LCD_Init(u32 mode)
 
   // initial LCD type (can be set to a different type in APP_LCD_Init()
   mios32_lcd_type = MIOS32_LCD_TYPE_CLCD;
+
+  // disable font bitmap
+  font_bitmap.width = 0;
 
   // set initial cursor map for character LCDs
   u8 cursor_map[] = {0x00, 0x40, 0x14, 0x54}; // offset line 0/1/2/3
@@ -121,9 +129,9 @@ s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
   // set graphical cursor depending on font width
   u8 font_width = 6;
   u8 font_height = 8;
-  if( mios32_lcd_font != NULL ) {
-    font_width = mios32_lcd_font[0];
-    font_height = mios32_lcd_font[1];
+  if( font_bitmap.width ) {
+    font_width = font_bitmap.width;
+    font_height = font_bitmap.height;
   }
 
   mios32_lcd_x = column * font_width;
@@ -264,7 +272,11 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_FontInit(u8 *font)
 {
-  mios32_lcd_font = font;
+  font_bitmap.memory = (u8 *)&font[MIOS32_LCD_FONT_BITMAP_IX] + (size_t)font[MIOS32_LCD_FONT_X0_IX];
+  font_bitmap.width = font[MIOS32_LCD_FONT_WIDTH_IX];
+  font_bitmap.height = font[MIOS32_LCD_FONT_HEIGHT_IX];
+  font_bitmap.line_offset = font[MIOS32_LCD_FONT_OFFSET_IX];
+  font_bitmap.colour_depth = 1;
 
   return 0; // no error
 }
@@ -315,20 +327,11 @@ s32 MIOS32_LCD_PrintChar(char c)
   s32 status;
 
   if( mios32_lcd_type == MIOS32_LCD_TYPE_GLCD ) {
-    // font not initialized yet!
-    if( mios32_lcd_font == NULL )
-      return -1;
+    if( !font_bitmap.width )
+      return -1;    // font not initialized yet!
 
-    // get width/height/offset from font header
-    mios32_lcd_bitmap_t bitmap;
-    bitmap.memory = (u8 *)&mios32_lcd_font[MIOS32_LCD_FONT_BITMAP_IX] + 
-      (size_t)mios32_lcd_font[MIOS32_LCD_FONT_X0_IX] +
-      (mios32_lcd_font[MIOS32_LCD_FONT_HEIGHT_IX]>>3) * mios32_lcd_font[MIOS32_LCD_FONT_OFFSET_IX] * (size_t)c;
-    bitmap.width = mios32_lcd_font[MIOS32_LCD_FONT_WIDTH_IX];
-    bitmap.height = mios32_lcd_font[MIOS32_LCD_FONT_HEIGHT_IX];
-    bitmap.line_offset = mios32_lcd_font[MIOS32_LCD_FONT_OFFSET_IX];
-    bitmap.colour_depth = 1;
-
+    mios32_lcd_bitmap_t bitmap = font_bitmap;
+    bitmap.memory += (bitmap.height>>3) * bitmap.line_offset * (size_t)c;
     status = APP_LCD_BitmapPrint(bitmap);
   } else {
     status = APP_LCD_Data(c);
