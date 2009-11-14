@@ -11,4 +11,11 @@
 #define _MIOS32_CONFIG_H
 
 
+// supported: 1..3 (see comments in app_lcd.c of pcd8544 driver)
+#define APP_LCD_NUM_X 3
+
+// supported: 1..3 (see comments in app_lcd.c of pcd8544 driver)
+#define APP_LCD_NUM_Y 3
+
+
 #endif /* _MIOS32_CONFIG_H */

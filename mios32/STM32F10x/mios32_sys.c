@@ -189,8 +189,8 @@ s32 MIOS32_SYS_Reset(void)
 #ifndef MIOS32_DONT_USE_LCD
   // TODO: here we should select the normal font - but only if available!
   // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
-  MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
+  MIOS32_LCD_BColourSet(0xffffff);
+  MIOS32_LCD_FColourSet(0x000000);
 
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_Clear();

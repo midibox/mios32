@@ -32,21 +32,17 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-s16 mios32_lcd_type;
+mios32_lcd_type_t mios32_lcd_type;
 u8  mios32_lcd_device = 0; // (not done in MIOS32_Init to allow the initialisation of multiple LCDs)
-s16 mios32_lcd_column;
-s16 mios32_lcd_line;
+u16 mios32_lcd_column;
+u16 mios32_lcd_line;
 
 u8  mios32_lcd_cursor_map[MIOS32_LCD_MAX_MAP_LINES];
 
-s16 mios32_lcd_x;
-s16 mios32_lcd_y;
+u16 mios32_lcd_x;
+u16 mios32_lcd_y;
 
 u8 *mios32_lcd_font = NULL;
-u8 mios32_lcd_font_width;
-u8 mios32_lcd_font_height;
-u8 mios32_lcd_font_x0;
-u8 mios32_lcd_font_offset;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -123,8 +119,15 @@ s32 MIOS32_LCD_CursorSet(u16 column, u16 line)
   mios32_lcd_line = line;
 
   // set graphical cursor depending on font width
-  mios32_lcd_x = column * mios32_lcd_font_width;
-  mios32_lcd_y = line * mios32_lcd_font_height;
+  u8 font_width = 6;
+  u8 font_height = 8;
+  if( mios32_lcd_font != NULL ) {
+    font_width = mios32_lcd_font[0];
+    font_height = mios32_lcd_font[1];
+  }
+
+  mios32_lcd_x = column * font_width;
+  mios32_lcd_y = line * font_height;
 
   // forward new cursor position to app driver
   return APP_LCD_CursorSet(column, line);
@@ -261,14 +264,7 @@ s32 MIOS32_LCD_SpecialCharsInit(u8 table[64])
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_FontInit(u8 *font)
 {
-  // get width/height/offset from font header
-  mios32_lcd_font_width = font[0];
-  mios32_lcd_font_height = font[1];
-  mios32_lcd_font_x0 = font[2];
-  mios32_lcd_font_offset = font[3];
-
-  // set pointer to characters
-  mios32_lcd_font = font+4;
+  mios32_lcd_font = font;
 
   return 0; // no error
 }
@@ -316,8 +312,34 @@ s32 MIOS32_LCD_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_LCD_PrintChar(char c)
 {
-  // -> forward to app_lcd
-  return APP_LCD_PrintChar(c);
+  s32 status;
+
+  if( mios32_lcd_type == MIOS32_LCD_TYPE_GLCD ) {
+    // font not initialized yet!
+    if( mios32_lcd_font == NULL )
+      return -1;
+
+    // get width/height/offset from font header
+    mios32_lcd_bitmap_t bitmap;
+    bitmap.memory = (u8 *)&mios32_lcd_font[MIOS32_LCD_FONT_BITMAP_IX] + 
+      (size_t)mios32_lcd_font[MIOS32_LCD_FONT_X0_IX] +
+      (mios32_lcd_font[MIOS32_LCD_FONT_HEIGHT_IX]>>3) * mios32_lcd_font[MIOS32_LCD_FONT_OFFSET_IX] * (size_t)c;
+    bitmap.width = mios32_lcd_font[MIOS32_LCD_FONT_WIDTH_IX];
+    bitmap.height = mios32_lcd_font[MIOS32_LCD_FONT_HEIGHT_IX];
+    bitmap.line_offset = mios32_lcd_font[MIOS32_LCD_FONT_OFFSET_IX];
+    bitmap.colour_depth = 1;
+
+    status = APP_LCD_BitmapPrint(bitmap);
+  } else {
+    status = APP_LCD_Data(c);
+  }
+
+  if( status >= 0 ) {
+    // increment cursor
+    ++mios32_lcd_column;
+  }
+
+  return status;
 }
 
 
@@ -337,31 +359,113 @@ s32 MIOS32_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the background colour<BR>
 //! Only relevant for colour GLCDs
-//! \param[in] r (red) value
-//! \param[in] g (green) value
-//! \param[in] b (blue) value
+//! \param[in] rgb red/green/blue value, each colour with 8bit resolution:
+//! \code
+//!    u32 colour = (r << 16) | (g << 8) | (b << 0);
+//! \endcode
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 MIOS32_LCD_BColourSet(u32 rgb)
 {
   // -> forward to app_lcd
-  return APP_LCD_BColourSet(r, g, b);
+  return APP_LCD_BColourSet(rgb);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the foreground colour<BR>
 //! Only relevant for colour GLCDs
-//! \param[in] r (red) value
-//! \param[in] g (green) value
-//! \param[in] b (blue) value
+//! \param[in] rgb red/green/blue value, each colour with 8bit resolution:
+//! \code
+//!    u32 colour = (r << 16) | (g << 8) | (b << 0);
+//! \endcode
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 MIOS32_LCD_FColourSet(u32 rgb)
 {
   // -> forward to app_lcd
-  return APP_LCD_FColourSet(r, g, b);
+  return APP_LCD_FColourSet(rgb);
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Only supported for graphical LCDs: initializes a bitmap type and clears
+//! it with the background colour.
+//!
+//! Example:
+//! \code
+//!   // global array (!)
+//!   u8 bitmap_array[APP_LCD_BITMAP_SIZE];
+//!
+//!   // Initialisation:
+//!   mios32_lcd_bitmap_t bitmap = MIOS32_LCD_BitmapClear(bitmap_array, 
+//!   						    APP_LCD_NUM_X*APP_LCD_WIDTH,
+//!   						    APP_LCD_NUM_Y*APP_LCD_HEIGHT,
+//!   						    APP_LCD_NUM_X*APP_LCD_WIDTH.
+//!                                                 APP_LCD_COLOUR_DEPTH);
+//! \endcode
+//!
+//! \param[in] memory pointer to the bitmap array
+//! \param[in] width width of the bitmap (usually APP_LCD_NUM_X*APP_LCD_WIDTH)
+//! \param[in] height height of the bitmap (usually APP_LCD_NUM_Y*APP_LCD_HEIGHT)
+//! \param[in] line_offset byte offset between each line (usually same value as width)
+//! \param[in] colour_depth how many bits are allocated by each pixel (usually APP_LCD_COLOUR_DEPTH)
+//! \return a configured bitmap as mios32_lcd_bitmap_t
+/////////////////////////////////////////////////////////////////////////////
+mios32_lcd_bitmap_t MIOS32_LCD_BitmapInit(u8 *memory, u16 width, u16 height, u16 line_offset, u8 colour_depth)
+{
+  mios32_lcd_bitmap_t bitmap;
+
+  bitmap.memory = memory;
+  bitmap.width = width;
+  bitmap.height = height;
+  bitmap.line_offset = line_offset;
+  bitmap.colour_depth = colour_depth;
+
+  return bitmap;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Inserts a pixel at the given x/y position into the bitmap with the given colour.
+//!
+//! Example:
+//! \code
+//! \endcode
+//!
+//! \param[in] bitmap the bitmap where the pixel should be inserted
+//! \param[in] x the X position of the pixel
+//! \param[in] y the Y position of the pixel
+//! \param[in] colour the colour of the pixel (value range depends on APP_LCD_COLOUR_DEPTH, mono GLCDs should use 0 or 1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+{
+  // -> forward to app_lcd
+  return APP_LCD_BitmapPixelSet(bitmap, x, y, colour);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Only supported for graphical LCDs: transfers a bitmap to the LCD 
+//! at the current graphical cursor position.
+//!
+//! Example:
+//! \code
+//!   MIOS32_LCD_CursorSet(0, 0);
+//!   MIOS32_LCD_BitmapPrint(bitmap);
+//! \endcode
+//!
+//! \param[in] bitmap the bitmap which should be print
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+{
+  // -> forward to app_lcd
+  return APP_LCD_BitmapPrint(bitmap);
+}
+
 
 //! \}
 

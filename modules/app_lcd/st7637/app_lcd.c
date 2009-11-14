@@ -104,8 +104,8 @@ s32 APP_LCD_Init(u32 mode)
 
   // set initial font and colours
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  MIOS32_LCD_BColourSet(0xff, 0xff, 0xff);
-  MIOS32_LCD_FColourSet(0x00, 0x00, 0x00);
+  MIOS32_LCD_BColourSet(0xffffff);
+  MIOS32_LCD_FColourSet(0x000000);
 
   // control lines
   PIN_BL(1);
@@ -307,13 +307,13 @@ s32 APP_LCD_Clear(void)
   // clear whole 128x128 screen with background colour
 
   // ST7637 specific function to set view
-  APP_LCD_SetRect_For_Cmd(0, 0, 128, 128);
+  APP_LCD_SetRect_For_Cmd(0, 0, APP_LCD_WIDTH, APP_LCD_HEIGHT);
 
   // Send command to write data on the LCD screen.
   APP_LCD_Cmd(ST7637_RAMWR);
 
-  for(x=0; x<128; ++x) {
-    for(y=0; y<127; ++y) {
+  for(x=0; x<APP_LCD_WIDTH; ++x) {
+    for(y=0; y<APP_LCD_HEIGHT; ++y) {
       APP_LCD_Data(lcd_bcolour & 0xff);
       APP_LCD_Data(lcd_bcolour >> 8);
     }
@@ -353,56 +353,6 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Prints a single character
-// IN: character in <c>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_PrintChar(char c)
-{
-  int x, y, line;
-
-  // font not initialized yet!
-  if( mios32_lcd_font == NULL )
-    return -1;
-
-  u8 y_lines = (mios32_lcd_font_height>>3);
-
-  for(line=0; line<y_lines; ++line) {
-
-    // calculate pointer to character line
-    u8 *font_ptr = mios32_lcd_font + line * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
-
-    // ST7637 specific function to set view
-    APP_LCD_SetRect_For_Cmd(mios32_lcd_x, 128-mios32_lcd_y-8*(line+1), mios32_lcd_font_width, 8);
-
-    // Send command to write data on the LCD screen.
-    APP_LCD_Cmd(ST7637_RAMWR);
-
-    // transfer character
-    for(x=0; x<mios32_lcd_font_width; ++x) {
-      u8 b = *font_ptr++;
-      for(y=0; y<8; ++y) {
-	if( b & 0x80 ) {
-	  APP_LCD_Data(lcd_fcolour & 0xff);
-	  APP_LCD_Data(lcd_fcolour >> 8);
-	} else {
-	  APP_LCD_Data(lcd_bcolour & 0xff);
-	  APP_LCD_Data(lcd_bcolour >> 8);
-	}
-	b <<= 1;
-      }
-    }
-  }
-
-  // increment cursor
-  mios32_lcd_column += 1;
-  mios32_lcd_x += mios32_lcd_font_width;
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Initializes a single special character
 // IN: character number (0-7) in <num>, pattern in <table[8]>
 // OUT: returns < 0 on errors
@@ -418,26 +368,147 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 // Sets the background colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_BColourSet(u32 rgb)
 {
-  // coding: G2G1G0B4 B3B2B1B0 R4R3R2R1 R0G5G4G3
+  // we assume that the compiler will optimize this nicely
+  u8 r = (rgb >> 16);
+  u8 g = (rgb >> 8);
+  u8 b = (rgb >> 0);
   lcd_bcolour = ((g&0x07)<<13) | ((g&0x38)>>3) | ((b&0x1f)<<8) | ((r&0x1f)<<3);
+  return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets the foreground colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_FColourSet(u32 rgb)
 {
-  // coding: G2G1G0B4 B3B2B1B0 R4R3R2R1 R0G5G4G3
+  // we assume that the compiler will optimize this nicely
+  u8 r = (rgb >> 16);
+  u8 g = (rgb >> 8);
+  u8 b = (rgb >> 0);
   lcd_fcolour = ((g&0x07)<<13) | ((g&0x38)>>3) | ((b&0x1f)<<8) | ((r&0x1f)<<3);
+  return 0; // no error
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets a pixel in the bitmap
+// IN: bitmap, x/y position and colour value (value range depends on APP_LCD_COLOUR_DEPTH)
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+{
+  if( x >= bitmap.width || y >= bitmap.height )
+    return -1; // pixel is outside bitmap
+
+  switch( bitmap.colour_depth ) {
+    case 2: { // depth 2
+      u8 *pixel = (u8 *)&bitmap.memory[2*(bitmap.width*(y / 8) + x) + ((y&4)?0:1)];
+      u8 pos = 2*(y % 4);
+
+      *pixel &= ~(3 << pos);
+      *pixel |= (colour&0x3) << pos;
+    } break;
+
+    default: { // depth 1 or others
+      u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+      u8 mask = 1 << (y % 8);
+
+      *pixel &= ~mask;
+      if( colour )
+	*pixel |= mask;
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transfers a Bitmap within given boundaries to the LCD
+// IN: bitmap
+// supported colour depths: 1, 2, 4, 8
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+{
+  int line;
+  int y_lines = (bitmap.height >> 3);
+  int x, y;
+
+
+  for(line=0; line<y_lines; ++line) {
+    // ST7637 specific function to set view
+    APP_LCD_SetRect_For_Cmd(mios32_lcd_x, APP_LCD_HEIGHT-mios32_lcd_y-8*(line+1), bitmap.width, 8);
+
+    // Send command to write data on the LCD screen.
+    APP_LCD_Cmd(ST7637_RAMWR);
+
+    // transfer bitmap
+    switch( bitmap.colour_depth ) {
+      case 2: { // depth 2
+	// calculate pointer to bitmap line
+	u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset * bitmap.colour_depth;
+
+	// TODO: make this customizable
+	u32 colour_map[4] = { 0x000000, 0x888888, 0xcccccc, 0xffffff };
+
+	for(x=0; x<bitmap.width; ++x) {
+	  u8 b = *memory_ptr++;
+	  for(y=0; y<8; ++y) {
+	    if( y == 4 ) // switch to second byte
+	      b = *memory_ptr++;
+	    else if( y != 0 )
+	      b <<= 2;
+
+	    u32 rgb = colour_map[b >> 6];
+	    // we assume that the compiler will optimize this nicely
+	    u8 r = (rgb >> 16);
+	    u8 g = (rgb >> 8);
+	    u8 b = (rgb >> 0);
+	    u16 lcd_colour = ((g&0x07)<<13) | ((g&0x38)>>3) | ((b&0x1f)<<8) | ((r&0x1f)<<3);
+
+	    APP_LCD_Data(lcd_colour & 0xff);
+	    APP_LCD_Data(lcd_colour >> 8);
+	  }
+	}
+      } break;
+
+      default: { // depth 1 or others
+	// calculate pointer to bitmap line
+	u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
+
+	for(x=0; x<bitmap.width; ++x) {
+	  u8 b = *memory_ptr++;
+	  for(y=0; y<8; ++y) {
+	    if( b & 0x80 ) {
+	      APP_LCD_Data(lcd_fcolour & 0xff);
+	      APP_LCD_Data(lcd_fcolour >> 8);
+	    } else {
+	      APP_LCD_Data(lcd_bcolour & 0xff);
+	      APP_LCD_Data(lcd_bcolour >> 8);
+	    }
+	    b <<= 1;
+	  }
+	}
+      }
+    }
+  }
+
+  // fix graphical cursor
+  mios32_lcd_x += bitmap.width;
+
+  return 0; // no error
 }
 
 

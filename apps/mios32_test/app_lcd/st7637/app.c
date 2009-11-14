@@ -37,8 +37,8 @@ void APP_Background(void)
 {
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  MIOS32_LCD_BColourSet(0x00, 0x00, 0x00);
-  MIOS32_LCD_FColourSet(0xff, 0xff, 0xff);
+  MIOS32_LCD_BColourSet(0x000000);
+  MIOS32_LCD_FColourSet(0xffffff);
 
   // clear LCD
   MIOS32_LCD_Clear();
@@ -101,7 +101,7 @@ void APP_Background(void)
     }
 
     // set new colour
-    MIOS32_LCD_FColourSet(mios_r, mios_g, mios_b);
+    MIOS32_LCD_FColourSet((mios_r << 16) | (mios_g << 8) | mios_b);
 
     // print "MIOS32"
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
@@ -109,7 +109,9 @@ void APP_Background(void)
     MIOS32_LCD_PrintString("MIOS32");
 
     // icons with different colour
-    MIOS32_LCD_FColourSet(dir ? mios_r : ~mios_r, ~mios_g, dir ? mios_b : ~mios_b);
+    MIOS32_LCD_FColourSet(((dir?mios_r:~mios_r) << 16) | 
+			  (~mios_g << 8) | 
+			  (dir?mios_b:~mios_b));
 
     // print turning Knob icons at all edges
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); // memo: 12 icons, icon size: 28x24

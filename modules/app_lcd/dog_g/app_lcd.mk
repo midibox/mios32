@@ -2,7 +2,7 @@
 # defines additional rules for application specific LCD driver
 
 # enhance include path
-C_INCLUDE +=	-I $(MIOS32_PATH)/modules/app_lcd/ks0108
+C_INCLUDE +=	-I $(MIOS32_PATH)/modules/app_lcd/dog_g
 
 # add modules to thumb sources
 THUMB_SOURCE += \

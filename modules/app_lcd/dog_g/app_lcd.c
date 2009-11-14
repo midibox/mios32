@@ -146,7 +146,7 @@ s32 APP_LCD_Data(u8 data)
     line = 1;
 
   u8 row = 0;
-  if( mios32_lcd_x >= 1*128 )
+  if( mios32_lcd_x >= 1*APP_LCD_WIDTH )
     row = 1;
 
   u8 cs = 2*line + row;
@@ -164,7 +164,7 @@ s32 APP_LCD_Data(u8 data)
   // increment graphical cursor
   ++mios32_lcd_x;
   // if end of display segment reached: set X position of all segments to 0
-  if( (mios32_lcd_x % 128) == 0 ) {
+  if( (mios32_lcd_x % APP_LCD_WIDTH) == 0 ) {
     APP_LCD_Cmd(0x10); // Set upper nibble to 0
     return APP_LCD_Cmd(0x00); // Set lower nibble to 0
   }
@@ -205,14 +205,14 @@ s32 APP_LCD_Clear(void)
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 
   // send data
-  for(y=0; y<8; ++y) {
+  for(y=0; y<(APP_LCD_HEIGHT/8); ++y) {
     error |= MIOS32_LCD_CursorSet(0, y);
 
     // select all LCDs
     MIOS32_BOARD_J15_DataSet(0x00);
     MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
-    for(x=0; x<128; ++x)
+    for(x=0; x<APP_LCD_WIDTH; ++x)
       MIOS32_BOARD_J15_SerDataShift(0x00);
   }
 
@@ -262,58 +262,13 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
   s32 error = 0;
   
   // set X position
-  error |= APP_LCD_Cmd(0x10 | (((x % 128) >> 4) & 0x0f));   // First send MSB nibble
-  error |= APP_LCD_Cmd(0x00 | ((x % 128) & 0x0f)); // Then send LSB nibble
+  error |= APP_LCD_Cmd(0x10 | (((x % APP_LCD_WIDTH) >> 4) & 0x0f));   // First send MSB nibble
+  error |= APP_LCD_Cmd(0x00 | ((x % APP_LCD_WIDTH) & 0x0f)); // Then send LSB nibble
 
   // set Y position
-  error |= APP_LCD_Cmd(0xb0 | ((y>>3) % 8));
+  error |= APP_LCD_Cmd(0xb0 | ((y>>3) % (APP_LCD_HEIGHT/8)));
 
   return error;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Prints a single character
-// IN: character in <c>
-// OUT: returns < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_PrintChar(char c)
-{
-  int x, y, line;
-
-  // font not initialized yet!
-  if( mios32_lcd_font == NULL )
-    return -1;
-
-  u8 y_lines = (mios32_lcd_font_height>>3);
-
-  for(line=0; line<y_lines; ++line) {
-
-    // calculate pointer to character line
-    u8 *font_ptr = mios32_lcd_font + line * mios32_lcd_font_offset + y_lines * mios32_lcd_font_offset * (size_t)c + (size_t)mios32_lcd_font_x0;
-
-    // set graphical cursor after second line has reached
-    if( line > 0 ) {
-      mios32_lcd_x -= mios32_lcd_font_width;
-      mios32_lcd_y += 8;
-      APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-    }
-
-    // transfer character
-    for(x=0; x<mios32_lcd_font_width; ++x)
-      APP_LCD_Data(*font_ptr++);
-  }
-
-  // fix graphical cursor if more than one line has been print
-  if( y_lines >= 1 ) {
-    mios32_lcd_y = mios32_lcd_y - (mios32_lcd_font_height-8);
-    APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-  }
-
-  // increment cursor
-  mios32_lcd_column += 1;
-
-  return 0; // no error
 }
 
 
@@ -333,10 +288,10 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 // Sets the background colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_BColourSet(u32 rgb)
 {
   return -1; // n.a.
 }
@@ -345,10 +300,71 @@ s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 // Sets the foreground colour
 // Only relevant for colour GLCDs
-// IN: r/g/b values
+// IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_FColourSet(u32 rgb)
 {
   return -1; // n.a.
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets a pixel in the bitmap
+// IN: bitmap, x/y position and colour value (value range depends on APP_LCD_COLOUR_DEPTH)
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+{
+  if( x >= bitmap.width || y >= bitmap.height )
+    return -1; // pixel is outside bitmap
+
+  u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+  u8 mask = 1 << (y % 8);
+
+  *pixel &= ~mask;
+  if( colour )
+    *pixel |= mask;
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transfers a Bitmap within given boundaries to the LCD
+// IN: bitmap
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+{
+  int line;
+  int y_lines = (bitmap.height >> 3);
+
+  for(line=0; line<y_lines; ++line) {
+
+    // calculate pointer to bitmap line
+    u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
+
+    // set graphical cursor after second line has reached
+    if( line > 0 ) {
+      mios32_lcd_x -= bitmap.width;
+      mios32_lcd_y += 8;
+      APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+    }
+
+    // transfer character
+    int x;
+    for(x=0; x<bitmap.width; ++x)
+      APP_LCD_Data(*memory_ptr++);
+  }
+
+  // fix graphical cursor if more than one line has been print
+  if( y_lines >= 1 ) {
+    mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
+    APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+  }
+
+  return 0; // no error
 }

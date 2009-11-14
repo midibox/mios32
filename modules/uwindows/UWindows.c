@@ -6,18 +6,30 @@
  *
  * Main Micro Windows File with all object Drawing and APIs
  */
-#include "mios32.h"
+#include <mios32.h>
+#include <app_lcd.h>
+
 #include "UWindows.h"
 #include "UW_CharSet.h"
 
-#define MAX_X	160
-#define MAX_Y	104
+#ifdef _MIOS32_CONFIG_H
+#define MAX_X	(APP_LCD_NUM_X*APP_LCD_WIDTH)
+#define MAX_Y	(APP_LCD_NUM_Y*APP_LCD_HEIGHT)
+#else
+#define MAX_X	128
+#define MAX_Y	64
+#endif
 const char ExitLabel[] = "SHUT DOWN";
 bool			Refresh;
 bool			bExit;
 UW_Window		UWindows;
 UW_Window		ExitBtn;
+#ifdef _MIOS32_CONFIG_H
+u8			UWImage[APP_LCD_BITMAP_SIZE];
+mios32_lcd_bitmap_t     UWBitmap;
+#else
 u8				UWImage [4 * 1040];
+#endif
 u16 			Colors[4]={BLACK,BLUE,GRAY,WHITE};
 UW_Window	*	pUW_Infocus;
 u8			CursorXPos,CursorYPos;
@@ -445,33 +457,21 @@ static u8 UW_ReduceColor(u16 color)
  */
 static void UW_SetPixel(s32 x, s32 y, u8 color)
 {
+#ifdef _MIOS32_CONFIG_H
+  switch( UWBitmap.colour_depth ) {
+    case 2:
+      MIOS32_LCD_BitmapPixelSet(UWBitmap, x, APP_LCD_HEIGHT-y-1, color);
+      break;
+
+    default: // 1 and others
+      MIOS32_LCD_BitmapPixelSet(UWBitmap, x, APP_LCD_HEIGHT-y-1, (color >= 2) ? 0 : 1);
+      break;
+  }
+#else
 	s32 index;
 	u8	AndMask,ValMask;
 	if ( ((x < MAX_X) && (x >= 0))&& ((y<MAX_Y) && (y >=0)))
 	{
-#ifdef _MIOS32_CONFIG_H
-		index = ((x * 26) + (y >> 2));
-		switch (y%4)
-		{
-			case 3:
-				AndMask	= 0xFC;
-				ValMask	= (color&0x3);
-				break;
-			case 2:
-				AndMask	= 0xF3;
-				ValMask	= (color&0x3)<<2;
-				break;
-			case 1:
-				AndMask	= 0xCF;
-				ValMask	= (color&0x3)<<4;
-				break;
-			case 0:
-				AndMask	= 0x3F;
-				ValMask	= (color&0x3)<<6;
-				break;
-				
-		}
-#else
 		index = (y * 40) + (x >> 2);
 		switch (x%4)
 		{
@@ -493,10 +493,10 @@ static void UW_SetPixel(s32 x, s32 y, u8 color)
 				break;
 				
 		}
-#endif
 		UWImage[index] &= AndMask;
 		UWImage[index] |= ValMask;
 	}
+#endif
 }
 
 /*!
@@ -508,23 +508,11 @@ static void UW_SetPixel(s32 x, s32 y, u8 color)
  */
 static void UW_DrawImage(void)
 {
-	u32	index=0;
 #ifdef _MIOS32_CONFIG_H
-	int x,y;
-	//APP_LCD_Cmd(0x8d);
-
-	APP_LCD_GCursorSet(0, 0);
-	
-	for (y=MAX_Y-1;y>=0;y=y-4) { // This is to convert the origin to top left from bottom left.
-		for (x=0;x<MAX_X;x++) {
-			index = (x * (MAX_Y>>2)) + (y >> 2);
-			APP_LCD_Data(~UWImage[index]);
-		}
-	}
-	
-		
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_BitmapPrint(UWBitmap);
 #else
-
+	u32	index=0;
 	for (index=0; index<(4096); index++)
 	{
 		u8 x,y;
@@ -1406,6 +1394,13 @@ void ExitUWindows(void)
  */
 void UW_Init(void)
 {
+#ifdef _MIOS32_CONFIG_H
+  UWBitmap = MIOS32_LCD_BitmapInit((u8 *)UWImage, 
+				   APP_LCD_NUM_X*APP_LCD_WIDTH,
+				   APP_LCD_NUM_Y*APP_LCD_HEIGHT,
+				   APP_LCD_NUM_X*APP_LCD_WIDTH,
+				   APP_LCD_COLOUR_DEPTH);
+#endif
 	UWindows.type		= UW_FORM;	
 	UWindows.Absx		= 0;
 	UWindows.Absy		= 0;
