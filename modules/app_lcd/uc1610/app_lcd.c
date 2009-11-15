@@ -315,7 +315,7 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 
   switch( bitmap.colour_depth ) {
     case 2: { // depth 2
-      u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 4) + x];
+      u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 4) + x];
       u8 pos = 2*(y % 4);
 
       *pixel &= ~(3 << pos);
@@ -323,7 +323,7 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
     } break;
 
     default: { // depth 1 or others
-      u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+      u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
       u8 mask = 1 << (y % 8);
 
       *pixel &= ~mask;
@@ -344,8 +344,9 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 {
+  int stored_mios32_lcd_y = mios32_lcd_y;
   int line;
-  int y_lines = (bitmap.height >> 3) * 2; // we need two write accesses per 8bit line
+  int y_lines = (bitmap.height >> 2); // we need two write accesses per 8bit line
 
   for(line=0; line<y_lines; ++line) {
 
@@ -397,9 +398,9 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
     }
   }
 
-  // fix graphical cursor if more than one 8bit line has been print
-  if( y_lines >= 2 ) {
-    mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
+  // fix graphical cursor if Y position has changed
+  if( y_lines > 1 ) {
+    mios32_lcd_y = stored_mios32_lcd_y;
     APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
   }
 
