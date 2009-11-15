@@ -413,7 +413,7 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 
   switch( bitmap.colour_depth ) {
     case 2: { // depth 2
-      u8 *pixel = (u8 *)&bitmap.memory[2*(bitmap.width*(y / 8) + x) + ((y&4)?0:1)];
+      u8 *pixel = (u8 *)&bitmap.memory[2*(bitmap.line_offset*(y / 8) + x) + ((y&4)?0:1)];
       u8 pos = 2*(y % 4);
 
       *pixel &= ~(3 << pos);
@@ -421,7 +421,7 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
     } break;
 
     default: { // depth 1 or others
-      u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+      u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
       u8 mask = 1 << (y % 8);
 
       *pixel &= ~mask;
