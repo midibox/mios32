@@ -136,15 +136,15 @@ s32 APP_LCD_Data(u8 data)
   // select LCD depending on current cursor position
   // THIS PART COULD BE CHANGED TO ARRANGE THE 8 DISPLAYS ON ANOTHER WAY
   u8 line = 0;
-  if( mios32_lcd_y >= 2*6*8 )
+  if( mios32_lcd_y >= 2*APP_LCD_HEIGHT )
     line = 2;
-  else if( mios32_lcd_y >= 1*6*8 )
+  else if( mios32_lcd_y >= 1*APP_LCD_HEIGHT )
     line = 1;
 
   u8 row = 0;
-  if( mios32_lcd_x >= 2*84 )
+  if( mios32_lcd_x >= 2*APP_LCD_WIDTH )
     row = 2;
-  else if( mios32_lcd_x >= 1*84 )
+  else if( mios32_lcd_x >= 1*APP_LCD_WIDTH )
     row = 1;
 
   u8 cs = 3*line + row;
@@ -162,7 +162,7 @@ s32 APP_LCD_Data(u8 data)
   // increment graphical cursor
   ++mios32_lcd_x;
   // if end of display segment reached: set X position of all segments to 0
-  if( (mios32_lcd_x % 84) == 0 )
+  if( (mios32_lcd_x % APP_LCD_WIDTH) == 0 )
     return APP_LCD_Cmd(0x80); // set X=0
 
   return 0; // no error

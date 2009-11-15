@@ -128,15 +128,15 @@ s32 APP_LCD_Data(u8 data)
   // select LCD depending on current cursor position
   // THIS PART COULD BE CHANGED TO ARRANGE THE 8 DISPLAYS ON ANOTHER WAY
   u8 line = 0;
-  if( mios32_lcd_y >= 3*26*4 )
+  if( mios32_lcd_y >= 3*APP_LCD_HEIGHT )
     line = 3;
-  else if( mios32_lcd_y >= 2*26*4 )
+  else if( mios32_lcd_y >= 2*APP_LCD_HEIGHT )
     line = 2;
-  else if( mios32_lcd_y >= 1*26*4 )
+  else if( mios32_lcd_y >= 1*APP_LCD_HEIGHT )
     line = 1;
 
   u8 row = 0;
-  if( mios32_lcd_x >= 1*160 )
+  if( mios32_lcd_x >= 1*APP_LCD_WIDTH )
     row = 1;
 
   u8 cs = 2*line + row;
@@ -152,11 +152,14 @@ s32 APP_LCD_Data(u8 data)
   MIOS32_BOARD_J15_SerDataShift(data);
   //MIOS32_DELAY_Wait_uS(40); // exact 10 uS delay
 
+  // increment graphical cursor
+  ++mios32_lcd_x;
+
   // if end of display segment reached: set X position of all segments to 0
- // if( (mios32_lcd_x % 160) == 0 ) {
-  //  APP_LCD_Cmd(0x00); // Set lower nibble to 0
-  //  return APP_LCD_Cmd(0x10); // Set upper nibble to 0
-  //}
+  if( (mios32_lcd_x % APP_LCD_WIDTH) == 0 ) {
+    APP_LCD_Cmd(0x00); // Set lower nibble to 0
+    return APP_LCD_Cmd(0x10); // Set upper nibble to 0
+  }
 
   return 0; // no error
 }
