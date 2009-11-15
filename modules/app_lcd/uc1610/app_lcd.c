@@ -357,18 +357,21 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
       APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
     }
 
-    // calculate pointer to bitmap line
-    u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
-
     // transfer bitmap
     switch( bitmap.colour_depth ) {
       case 2: { // depth 2
+	// calculate pointer to bitmap line
+	u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
+
 	int x;
 	for(x=0; x<bitmap.width; ++x)
 	  APP_LCD_Data(*memory_ptr++);
       } break;
 
       default: { // depth 1 or others
+	// calculate pointer to bitmap line
+	u8 *memory_ptr = bitmap.memory + (line / 2) * bitmap.line_offset;
+
 	if( line & 1 ) {
 	  int x;
 	  for(x=0; x<bitmap.width; ++x) {
