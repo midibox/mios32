@@ -138,11 +138,11 @@ s32 APP_LCD_Data(u8 data)
   // select LCD depending on current cursor position
   // THIS PART COULD BE CHANGED TO ARRANGE THE 8 DISPLAYS ON ANOTHER WAY
   u8 line = 0;
-  if( mios32_lcd_y >= 3*8*8 )
+  if( mios32_lcd_y >= 3*APP_LCD_HEIGHT )
     line = 3;
-  else if( mios32_lcd_y >= 2*8*8 )
+  else if( mios32_lcd_y >= 2*APP_LCD_HEIGHT )
     line = 2;
-  else if( mios32_lcd_y >= 1*8*8 )
+  else if( mios32_lcd_y >= 1*APP_LCD_HEIGHT )
     line = 1;
 
   u8 row = 0;
