@@ -315,7 +315,7 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
   if( x >= bitmap.width || y >= bitmap.height )
     return -1; // pixel is outside bitmap
 
-  u8 *pixel = (u8 *)&bitmap.memory[bitmap.width*(y / 8) + x];
+  u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
   u8 mask = 1 << (y % 8);
 
   *pixel &= ~mask;
