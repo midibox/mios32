@@ -155,12 +155,16 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
-    // returns > 0 if byte has been used for remote function
-    if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
-      // forward to router
-      SEQ_MIDI_ROUTER_Receive(port, midi_package);
-      // forward to transposer/arpeggiator/CC parser/etc...
-      SEQ_MIDI_IN_Receive(port, midi_package);
+    if( port == seq_hwcfg_blm_scalar.port_in ) {
+      SEQ_UI_BLM_SCALAR_MIDI_Receive(port, midi_package);
+    } else {
+      // returns > 0 if byte has been used for remote function
+      if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
+	// forward to router
+	SEQ_MIDI_ROUTER_Receive(port, midi_package);
+	// forward to transposer/arpeggiator/CC parser/etc...
+	SEQ_MIDI_IN_Receive(port, midi_package);
+      }
     }
   }
 

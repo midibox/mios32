@@ -79,6 +79,24 @@ BLM_DIN_L_SR  11
 BLM_DIN_R_SR  12
 
 
+##################################################
+# Optional MBHP_BLM_SCALAR module
+##################################################
+
+# MIDI IN port to which MBHP_BLM_SCALAR is connected
+# (0x00: disabled, 0x10..0x13: USB1..USB4, 0x20..0x22: MIDI1..MIDI3 - other values possible, but not recommented) 
+BLM_SCALAR_PORT_IN  0x00
+
+# MIDI OUT port to which MBHP_BLM_SCALAR is connected
+# (0x00: disabled, 0x10..0x13: USB1..USB4, 0x20..0x22: MIDI1..MIDI3 - other values possible, but not recommented) 
+BLM_SCALAR_PORT_OUT 0x00
+
+# Number of tracks that should be displayed by a MBHP_BLM_SCALAR (1..16)
+BLM_SCALAR_NUM_TRACKS 16
+
+# Number of colours per LED (1 for single colour, 2 for duo-colour LEDs)
+BLM_SCALAR_NUM_COLOURS 2
+
 
 ##################################################
 # Additional 8x8 BLM as used for Wilba's Frontpannel
@@ -144,6 +162,9 @@ DOUT_1MS_TRIGGER 0
 #
 # NEVER USE THIS TOGETHER WITH ANALOG POTS - IT WILL CAUSE A SHORT CIRCUIT!
 J5_ENABLED 1
+
+# pulsewidth of DIN sync clock (1..250 mS)
+DIN_SYNC_CLK_PULSEWIDTH 1
 
 
 ##################################################

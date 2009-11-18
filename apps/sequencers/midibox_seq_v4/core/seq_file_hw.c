@@ -33,6 +33,8 @@
 
 #include "seq_hwcfg.h"
 
+#include "seq_ui.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -717,6 +719,31 @@ s32 SEQ_FILE_HW_Read(void)
 	    blm_config_t config = BLM_ConfigGet();
 	    config.din_r_sr = value;
 	    BLM_ConfigSet(config);
+
+
+	  } else if( strcmp(parameter, "SCALAR_PORT_IN") == 0 ) {
+	    seq_hwcfg_blm_scalar.port_in = value;
+	  } else if( strcmp(parameter, "SCALAR_PORT_OUT") == 0 ) {
+	    seq_hwcfg_blm_scalar.port_out = value;
+	    seq_ui_blm_scalar_force_update = 1;
+	  } else if( strcmp(parameter, "SCALAR_NUM_TRACKS") == 0 ) {
+	    if( value < 1 || value > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BLM_%s definition: allowed number of tracks 1..16 (got %d)!", parameter, value);
+#endif
+	      continue;
+	    }
+	    seq_hwcfg_blm_scalar.num_tracks = value;
+	    seq_ui_blm_scalar_force_update = 1;
+	  } else if( strcmp(parameter, "SCALAR_NUM_COLOURS") == 0 ) {
+	    if( value < 1 || value > 2 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BLM_%s definition: allowed number of colours 1 or 2 (got %d)!", parameter, value);
+#endif
+	      continue;
+	    }
+	    seq_hwcfg_blm_scalar.num_colours = value;
+	    seq_ui_blm_scalar_force_update = 1;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM_* name '%s'!", parameter);
@@ -848,6 +875,18 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  for(i=0; i<12; ++i)
 	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
+
+	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 pulsewidth = get_dec(word);
+	  if( pulsewidth < 1 || pulsewidth > 250 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: expecting pulsewidth of 1..250!", parameter);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_din_sync_clk_pulsewidth = pulsewidth;
 
 	} else if( strcmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 
