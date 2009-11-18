@@ -97,6 +97,8 @@ u8 seq_ui_format_req;
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
+u8 seq_ui_blm_scalar_force_update;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -112,8 +114,9 @@ static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
-#define NUM_BLM_LED_SRS (2*4)
-static u8 ui_blm_leds[NUM_BLM_LED_SRS];
+static u8 ui_blm_leds[2*SEQ_CORE_NUM_TRACKS];
+static u8 ui_blm_sent_leds_green[2*SEQ_CORE_NUM_TRACKS];
+static u8 ui_blm_sent_leds_red[2*SEQ_CORE_NUM_TRACKS];
 
 #define UI_MSG_MAX_CHAR 21
 static char ui_msg[2][UI_MSG_MAX_CHAR];
@@ -171,6 +174,8 @@ s32 SEQ_UI_Init(u32 mode)
   // misc
   seq_ui_backup_req = 0;
   seq_ui_format_req = 0;
+
+  seq_ui_blm_scalar_force_update = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -1040,38 +1045,58 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 
 static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 {
+  static layer_c_pressed = 0;
+
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
 
-  if( num_p_layers <= 3 ) {
-    // 3 layers: direct selection with LayerA/B/C button
+  // holding Layer C button allows to increment/decrement layer with A/B button
+  if( par_layer == 2 )
+    layer_c_pressed = !depressed;
+
+  if( layer_c_pressed && par_layer == 0 ) {
     if( depressed ) return -1; // ignore when button depressed
-    if( par_layer >= num_p_layers ) {
-      char str1[21];
-      sprintf(str1, "Parameter Layer %c", 'A'+par_layer);
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
-    } else {
-      seq_ui_button_state.PAR_LAYER_SEL = 0;
-      ui_selected_par_layer = par_layer;
-    }
-  } else if( num_p_layers <= 4 ) {
-    // 4 layers: LayerC Button toggles between C and D
+    // increment layer
+    if( ++ui_selected_par_layer >= num_p_layers )
+      ui_selected_par_layer = 0;
+  } else if( layer_c_pressed && par_layer == 1 ) {
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.PAR_LAYER_SEL = 0;
-    if( par_layer == 2 )
-      ui_selected_par_layer = (ui_selected_par_layer == 2) ? 3 : 2;
+    // decrement layer
+    if( ui_selected_par_layer == 0 )
+      ui_selected_par_layer = num_p_layers - 1;
     else
-      ui_selected_par_layer = par_layer;
+      --ui_selected_par_layer;
   } else {
-    // >4 layers: LayerA/B button selects directly, Layer C button enters layer selection page
-    if( par_layer <= 1 ) {
+    if( num_p_layers <= 3 ) {
+      // 3 layers: direct selection with LayerA/B/C button
+      if( depressed ) return -1; // ignore when button depressed
+      if( par_layer >= num_p_layers ) {
+	char str1[21];
+	sprintf(str1, "Parameter Layer %c", 'A'+par_layer);
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
+      } else {
+	seq_ui_button_state.PAR_LAYER_SEL = 0;
+	ui_selected_par_layer = par_layer;
+      }
+    } else if( num_p_layers <= 4 ) {
+      // 4 layers: LayerC Button toggles between C and D
       if( depressed ) return -1; // ignore when button depressed
       seq_ui_button_state.PAR_LAYER_SEL = 0;
-      ui_selected_par_layer = par_layer;
+      if( par_layer == 2 )
+	ui_selected_par_layer = (ui_selected_par_layer == 2) ? 3 : 2;
+      else
+	ui_selected_par_layer = par_layer;
     } else {
-      return SEQ_UI_Button_ParLayerSel(depressed);
+      // >4 layers: LayerA/B button selects directly, Layer C button enters layer selection page
+      if( par_layer <= 1 ) {
+	if( depressed ) return -1; // ignore when button depressed
+	seq_ui_button_state.PAR_LAYER_SEL = 0;
+	ui_selected_par_layer = par_layer;
+      } else {
+	return SEQ_UI_Button_ParLayerSel(depressed);
+      }
     }
   }
 
@@ -1108,40 +1133,60 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
 
 static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 {
+  static layer_c_pressed = 0;
+
   if( trg_layer >= 3 ) return -2; // max. 3 trglayer buttons
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
 
-  if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 3 ) {
-    // 3 layers: direct selection with LayerA/B/C button
+  // holding Layer C button allows to increment/decrement layer with A/B button
+  if( trg_layer == 2 )
+    layer_c_pressed = !depressed;
+
+  if( layer_c_pressed && trg_layer == 0 ) {
     if( depressed ) return -1; // ignore when button depressed
-    if( trg_layer >= num_t_layers ) {
-      char str1[21];
-      sprintf(str1, "Trigger Layer %c", 'A'+trg_layer);
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
-    } else {
-      seq_ui_button_state.TRG_LAYER_SEL = 0;
-      ui_selected_trg_layer = trg_layer;
-    }
-  } else if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 4 ) {
-    // 4 layers: LayerC Button toggles between C and D
+    // increment layer
+    if( ++ui_selected_trg_layer >= num_t_layers )
+      ui_selected_trg_layer = 0;
+  } else if( layer_c_pressed && trg_layer == 1 ) {
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.TRG_LAYER_SEL = 0;
-    if( trg_layer == 2 )
-      ui_selected_trg_layer = (ui_selected_trg_layer == 2) ? 3 : 2;
+    // decrement layer
+    if( ui_selected_trg_layer == 0 )
+      ui_selected_trg_layer = num_t_layers - 1;
     else
-      ui_selected_trg_layer = trg_layer;
+      --ui_selected_trg_layer;
   } else {
-    // >4 layers or drum mode: LayerA/B button selects directly, Layer C button enters trigger selection page
-    // also used for drum tracks
-    if( trg_layer <= 1 ) {
+    if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 3 ) {
+      // 3 layers: direct selection with LayerA/B/C button
+      if( depressed ) return -1; // ignore when button depressed
+      if( trg_layer >= num_t_layers ) {
+	char str1[21];
+	sprintf(str1, "Trigger Layer %c", 'A'+trg_layer);
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
+      } else {
+	seq_ui_button_state.TRG_LAYER_SEL = 0;
+	ui_selected_trg_layer = trg_layer;
+      }
+    } else if( event_mode != SEQ_EVENT_MODE_Drum && num_t_layers <= 4 ) {
+      // 4 layers: LayerC Button toggles between C and D
       if( depressed ) return -1; // ignore when button depressed
       seq_ui_button_state.TRG_LAYER_SEL = 0;
-      ui_selected_trg_layer = trg_layer;
+      if( trg_layer == 2 )
+	ui_selected_trg_layer = (ui_selected_trg_layer == 2) ? 3 : 2;
+      else
+	ui_selected_trg_layer = trg_layer;
     } else {
-      return SEQ_UI_Button_TrgLayerSel(depressed);
+      // >4 layers or drum mode: LayerA/B button selects directly, Layer C button enters trigger selection page
+      // also used for drum tracks
+      if( trg_layer <= 1 ) {
+	if( depressed ) return -1; // ignore when button depressed
+	seq_ui_button_state.TRG_LAYER_SEL = 0;
+	ui_selected_trg_layer = trg_layer;
+      } else {
+	return SEQ_UI_Button_TrgLayerSel(depressed);
+      }
     }
   }
 
@@ -1484,6 +1529,52 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
   }
 
   return 1; // MIDI event has been taken for remote function -> don't forward to router/MIDI event parser
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c) if port
+// matches with seq_hwcfg_blm_scalar.port_in
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+  // for easier parsing: convert Note Off -> Note On with velocity 0
+  if( midi_package.event == NoteOff ) {
+    midi_package.event = NoteOn;
+    midi_package.velocity = 0;
+  }
+
+  if( midi_package.event == NoteOn &&
+      midi_package.note >= 0x3c &&
+      midi_package.note <= 0x4b ) {
+
+    u8 gp_button = midi_package.note - 0x3c;
+
+    if( seq_hwcfg_blm_scalar.num_tracks <= 4 ) {
+      if( midi_package.chn >= 4 )
+	return 0; // invalid channel
+    } else if( seq_hwcfg_blm_scalar.num_tracks <= 8 ) {
+      if( midi_package.chn >= 8 )
+	return 0; // invalid channel
+      ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
+    } else {
+      ui_selected_group = (midi_package.chn / 4);
+    }
+    ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
+
+    // ensure that selections are matching with track constraints
+    SEQ_UI_CheckSelections();
+
+    // request display update
+    seq_ui_display_update_req = 1;
+
+    SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+
+    return 1; // MIDI event has been taken
+  }
+
+  return 0; // MIDI event has not been taken
 }
 
 
@@ -2000,11 +2091,74 @@ s32 SEQ_UI_LED_Handler(void)
 
 
   // BLM LEDs
-  u8 visible_track0 = 4*ui_selected_group;
   u8 visible_sr0  = 2*ui_selected_step_view;
 
-  for(i=0; i<NUM_BLM_LED_SRS; ++i)
-    ui_blm_leds[i] = SEQ_TRG_Get8(visible_track0+(i>>1), visible_sr0+(i&1), ui_selected_trg_layer, ui_selected_instrument);
+  for(i=0; i<2*SEQ_CORE_NUM_TRACKS; ++i)
+    ui_blm_leds[i] = SEQ_TRG_Get8(i >> 1, visible_sr0+(i&1), ui_selected_trg_layer, ui_selected_instrument);
+
+
+  // send LED changes to BLM_SCALAR
+  if( seq_hwcfg_blm_scalar.port_out ) {
+    u8 sequencer_running = SEQ_BPM_IsRunning();
+
+    for(i=0; i<2*seq_hwcfg_blm_scalar.num_tracks; ++i) {
+      u8 led_row = i >> 1;
+      u8 track;
+      if( seq_hwcfg_blm_scalar.num_tracks <= 4 )
+	track = 4*ui_selected_group + led_row;
+      else if( seq_hwcfg_blm_scalar.num_tracks <= 8 )
+	track = 8*(ui_selected_group>>1) + led_row;
+      else
+	track = i >> 1;
+
+      u8 green_pattern = ui_blm_leds[2*track + (i&1)];
+      u8 red_pattern = 0x00;
+
+      if( sequencer_running ) {
+	u8 played_step = seq_core_trk[track].step;
+	if( (played_step >> 4) == ui_selected_step_view ) {
+	  if( !(i&1) ) {
+	    if( played_step < 8 )
+	      red_pattern = 1 << played_step;
+	  } else {
+	    if( played_step >= 8 )
+	      red_pattern = 1 << (played_step-8);
+	  }
+	}
+
+	if( seq_hwcfg_blm_scalar.num_colours >= 2 )
+	  green_pattern &= ~red_pattern;
+	else
+	  green_pattern ^= red_pattern;
+      }
+
+      if( seq_ui_blm_scalar_force_update || green_pattern != ui_blm_sent_leds_green[i] ) {
+	MUTEX_MIDIOUT_TAKE;
+	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
+	MIOS32_MIDI_SendCC(seq_hwcfg_blm_scalar.port_out, // port
+			   led_row, // Channel (== LED Row)
+			   (2*(i&1)) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
+			   green_pattern & 0x7f); // remaining 7 LEDs
+
+	MUTEX_MIDIOUT_GIVE;
+	ui_blm_sent_leds_green[i] = green_pattern;
+      }
+
+      if( seq_ui_blm_scalar_force_update || seq_hwcfg_blm_scalar.num_colours >= 2 && red_pattern != ui_blm_sent_leds_red[i] ) {
+	MUTEX_MIDIOUT_TAKE;
+	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
+	MIOS32_MIDI_SendCC(seq_hwcfg_blm_scalar.port_out, // port
+			   led_row, // Channel (== LED Row)
+			   (2*(i&1)) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
+			   red_pattern & 0x7f); // remaining 7 LEDs
+
+	MUTEX_MIDIOUT_GIVE;
+	ui_blm_sent_leds_red[i] = red_pattern;
+      }
+    }
+
+    seq_ui_blm_scalar_force_update = 0;
+  }
 
 
   // send LED changes in remote server mode
@@ -2067,6 +2221,12 @@ s32 SEQ_UI_LED_Handler_Periodic()
   seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
   prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern
 
+  // determine LED patterns for all tracks
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+  }
+
+
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -2116,18 +2276,18 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_hwcfg_blm.enabled ) {
     // Red LEDs (position marker)
     int track_ix;
-    for(track_ix=0; track_ix<(NUM_BLM_LED_SRS/2); ++track_ix) {
+    for(track_ix=0; track_ix<4; ++track_ix) {
+      u8 track = 4*ui_selected_group + track_ix;
       u16 pos_marker_mask = 0x0000;
       if( sequencer_running ) {
-	u8 track = 4*ui_selected_group + track_ix;
 	u8 played_step = seq_core_trk[track].step;
 	if( (played_step >> 4) == ui_selected_step_view )
 	  pos_marker_mask = 1 << (played_step & 0xf);
       }
 
       // Prepare Green LEDs (triggers)
-      u8 green_l = ui_blm_leds[2*track_ix+0];
-      u8 green_r = ui_blm_leds[2*track_ix+1];
+      u8 green_l = ui_blm_leds[2*track+0];
+      u8 green_r = ui_blm_leds[2*track+1];
 
       // Red LEDs (position marker)
       if( seq_hwcfg_blm.dout_duocolour ) {

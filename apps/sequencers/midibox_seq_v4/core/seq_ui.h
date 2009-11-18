@@ -164,6 +164,7 @@ extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value);
 extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed);
 
 extern s32 SEQ_UI_LED_Handler(void);
@@ -294,6 +295,8 @@ extern u8 seq_ui_remote_force_led_update;
 
 extern u8 seq_ui_backup_req;
 extern u8 seq_ui_format_req;
+
+extern u8 seq_ui_blm_scalar_force_update;
 
 extern char ui_global_dir_list[80];
 

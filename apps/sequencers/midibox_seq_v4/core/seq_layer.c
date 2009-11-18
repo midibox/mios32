@@ -264,6 +264,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
       velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, par_layer, instrument) : 0;
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = velocity | 0x80;
+    } else {
+      if( !SEQ_TRG_GateGet(track, step, instrument) )
+	velocity = 0;
     }
 
     u8 length = 71; // default length

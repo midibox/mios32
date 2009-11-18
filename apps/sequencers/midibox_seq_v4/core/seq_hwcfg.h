@@ -198,6 +198,12 @@ typedef struct {
   u8 dout_gp_mapping;
 } seq_hwcfg_blm8x8_t;
 
+typedef struct {
+  mios32_midi_port_t port_out;
+  mios32_midi_port_t port_in;
+  u8 num_tracks;
+  u8 num_colours;
+} seq_hwcfg_blm_scalar_t;
 
 typedef struct {
   u8 key;
@@ -222,8 +228,10 @@ extern seq_hwcfg_blm_t seq_hwcfg_blm;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
+extern seq_hwcfg_blm_scalar_t seq_hwcfg_blm_scalar;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 extern u8 seq_hwcfg_dout_gate_1ms;
+extern u8 seq_hwcfg_din_sync_clk_pulsewidth;
 
 #endif /* _SEQ_HWCFG_H */

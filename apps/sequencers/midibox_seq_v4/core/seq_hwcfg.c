@@ -338,9 +338,17 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .cc = 0, // disabled
 };
 
+seq_hwcfg_blm_scalar_t seq_hwcfg_blm_scalar = {
+  .port_out = 0,
+  .port_in = 0,
+  .num_tracks = 16,
+  .num_colours = 2,
+};
+
 
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
-u8 seq_hwcfg_dout_gate_1ms;
+u8 seq_hwcfg_dout_gate_1ms = 0;
+u8 seq_hwcfg_din_sync_clk_pulsewidth = 1; // mS
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -383,7 +391,6 @@ s32 SEQ_HWCFG_Init(u32 mode)
   // disable gate SRs
   for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i)
     seq_hwcfg_dout_gate_sr[i] = 0;
-  seq_hwcfg_dout_gate_1ms = 0;
 
   return 0; // no error
 }
