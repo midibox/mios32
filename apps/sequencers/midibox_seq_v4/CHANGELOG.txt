@@ -9,13 +9,14 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta14
 ~~~~~~~~~~~~~~~~~~~~~
 
-  o prepared support for MBHP_BLM_SCALAR (new settings in MBSEQ_HW.V4)
+  o prepared support for MBHP_BLM_SCALAR.
+    The MIDI port can be configured in Options menu (Utility->Opt.)
 
 
 MIDIboxSEQ V4.0beta13
 ~~~~~~~~~~~~~~~~~~~~~
 
-  o pulsewidth of DIN Sync clock pulsewidth now definable in MBSEQ_HW.V4 file
+  o pulsewidth of DIN Sync clock now definable in MBSEQ_HW.V4 file
     (DIN_SYNC_CLK_PULSEWIDTH parameter)
 
   o Parameter/Trigger Layer selection can now be quickly incremented/decremented

@@ -33,6 +33,7 @@
 #include "seq_bpm.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
+#include "seq_midi_blm.h"
 #include "seq_core.h"
 
 
@@ -341,6 +342,10 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_ui_remote_port = value;
 	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
 	    seq_ui_remote_id = (value > 128) ? 0 : value;
+
+	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
+	    seq_midi_blm_port = value;
+
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
@@ -486,6 +491,9 @@ static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_midi_blm_port);
   FLUSH_BUFFER;
 
   return status;

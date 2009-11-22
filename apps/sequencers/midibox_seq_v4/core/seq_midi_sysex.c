@@ -22,6 +22,7 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midi_sysex.h"
+#include "seq_midi_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,7 +85,7 @@ typedef union {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
-    unsigned PING_BYTE_RECEIVED;
+    unsigned PING_BYTE_RECEIVED:1;
   };
 
   struct {
@@ -160,6 +161,9 @@ s32 SEQ_MIDI_SYSEX_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
+  // forward event to MIDI_BLM as well
+  SEQ_MIDI_BLM_SYSEX_Parser(port, midi_in);
+
   // ignore realtime messages (see MIDI spec - realtime messages can
   // always be injected into events/streams, and don't change the running status)
   if( midi_in >= 0xf8 )
