@@ -63,6 +63,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_midi_in.c \
 		../core/seq_midi_sysex.c \
 		../core/seq_midi_router.c \
+		../core/seq_midi_blm.c \
 		../core/seq_midply.c \
 		../core/seq_midexp.c \
 		../core/seq_midimp.c \

@@ -338,13 +338,6 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .cc = 0, // disabled
 };
 
-seq_hwcfg_blm_scalar_t seq_hwcfg_blm_scalar = {
-  .port_out = 0,
-  .port_in = 0,
-  .num_tracks = 16,
-  .num_colours = 2,
-};
-
 
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;

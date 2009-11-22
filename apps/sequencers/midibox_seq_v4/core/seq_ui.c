@@ -23,7 +23,6 @@
 #include <blm.h>
 #include <blm_x.h>
 #include <seq_midi_out.h>
-#include <seq_midi_sysex.h>
 #include <seq_bpm.h>
 
 #include "tasks.h"
@@ -39,6 +38,8 @@
 #include "seq_par.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+#include "seq_midi_sysex.h"
+#include "seq_midi_blm.h"
 #include "seq_file.h"
 #include "seq_file_hw.h"
 
@@ -97,8 +98,6 @@ u8 seq_ui_format_req;
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
-u8 seq_ui_blm_scalar_force_update;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -114,9 +113,10 @@ static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
-static u8 ui_blm_leds[2*SEQ_CORE_NUM_TRACKS];
-static u8 ui_blm_sent_leds_green[2*SEQ_CORE_NUM_TRACKS];
-static u8 ui_blm_sent_leds_red[2*SEQ_CORE_NUM_TRACKS];
+#define NUM_BLM_LED_ARRAYS 16
+static u8 ui_blm_leds[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
+static u8 ui_blm_sent_leds_green[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
+static u8 ui_blm_sent_leds_red[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
 
 #define UI_MSG_MAX_CHAR 21
 static char ui_msg[2][UI_MSG_MAX_CHAR];
@@ -174,8 +174,6 @@ s32 SEQ_UI_Init(u32 mode)
   // misc
   seq_ui_backup_req = 0;
   seq_ui_format_req = 0;
-
-  seq_ui_blm_scalar_force_update = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -1534,7 +1532,7 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 
 /////////////////////////////////////////////////////////////////////////////
 // Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c) if port
-// matches with seq_hwcfg_blm_scalar.port_in
+// matches with seq_midi_blm_port
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -1544,16 +1542,25 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
     midi_package.velocity = 0;
   }
 
-  if( midi_package.event == NoteOn &&
-      midi_package.note >= 0x3c &&
-      midi_package.note <= 0x4b ) {
+  if( midi_package.event == NoteOn && midi_package.note < seq_midi_blm_num_steps ) {
 
-    u8 gp_button = midi_package.note - 0x3c;
+    u8 gp_button = midi_package.note % 16;
+    if( seq_midi_blm_num_steps <= 16 ) {
+      // don't change view
+    } else if( seq_midi_blm_num_steps <= 32 ) {
+      ui_selected_step_view = (ui_selected_step_view & 0xfe) + ((midi_package.note/16) & 0x01);
+    } else if( seq_midi_blm_num_steps <= 64 ) {
+      ui_selected_step_view = (ui_selected_step_view & 0xfc) + ((midi_package.note/16) & 0x03);
+    } else if( seq_midi_blm_num_steps <= 128 ) {
+      ui_selected_step_view = (ui_selected_step_view & 0xf8) + ((midi_package.note/16) & 0x07);
+    } else {
+      ui_selected_step_view = (midi_package.note>>8) & 0x0f;
+    }
 
-    if( seq_hwcfg_blm_scalar.num_tracks <= 4 ) {
+    if( seq_midi_blm_num_tracks <= 4 ) {
       if( midi_package.chn >= 4 )
 	return 0; // invalid channel
-    } else if( seq_hwcfg_blm_scalar.num_tracks <= 8 ) {
+    } else if( seq_midi_blm_num_tracks <= 8 ) {
       if( midi_package.chn >= 8 )
 	return 0; // invalid channel
       ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
@@ -1561,9 +1568,6 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
       ui_selected_group = (midi_package.chn / 4);
     }
     ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
-
-    // ensure that selections are matching with track constraints
-    SEQ_UI_CheckSelections();
 
     // request display update
     seq_ui_display_update_req = 1;
@@ -2091,73 +2095,89 @@ s32 SEQ_UI_LED_Handler(void)
 
 
   // BLM LEDs
-  u8 visible_sr0  = 2*ui_selected_step_view;
+  // MEMO: issue with using seq_midi_blm_num_steps: if somebody would ever use a directly
+  // connected BLM together with a MIDI accessed BLM_SCALAR, and if he would use a BLM_SCALAR
+  // with smaller size (very unlikely), this update wouldn't be complete!
+  u8 visible_sr0;
+  if( seq_midi_blm_num_steps <= 16 ) {
+    visible_sr0  = 2*ui_selected_step_view;
+  } else if( seq_midi_blm_num_steps <= 32 ) {
+    visible_sr0  = 4*(ui_selected_step_view >> 1);
+  } else if( seq_midi_blm_num_steps <= 64 ) {
+    visible_sr0  = 8*(ui_selected_step_view >> 2);
+  } else if( seq_midi_blm_num_steps <= 128 ) {
+    visible_sr0  = 16*(ui_selected_step_view >> 3);
+  } else {
+    visible_sr0 = 0;
+  }
 
-  for(i=0; i<2*SEQ_CORE_NUM_TRACKS; ++i)
-    ui_blm_leds[i] = SEQ_TRG_Get8(i >> 1, visible_sr0+(i&1), ui_selected_trg_layer, ui_selected_instrument);
+  u8 num_blm_led_arrays = seq_midi_blm_num_steps/8;
+  if( num_blm_led_arrays > NUM_BLM_LED_ARRAYS )
+    num_blm_led_arrays = NUM_BLM_LED_ARRAYS;
+  for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i) {
+    int array;
+    for(array=0; array<num_blm_led_arrays; ++array)
+      ui_blm_leds[i*NUM_BLM_LED_ARRAYS+array] = SEQ_TRG_Get8(i, visible_sr0+array, ui_selected_trg_layer, ui_selected_instrument);
+  }
 
 
   // send LED changes to BLM_SCALAR
-  if( seq_hwcfg_blm_scalar.port_out ) {
+  if( seq_midi_blm_port ) {
     u8 sequencer_running = SEQ_BPM_IsRunning();
+    MIOS32_IRQ_Disable();
+    u8 force_update = seq_midi_blm_force_update;
+    seq_midi_blm_force_update = 0;
+    MIOS32_IRQ_Enable();
 
-    for(i=0; i<2*seq_hwcfg_blm_scalar.num_tracks; ++i) {
-      u8 led_row = i >> 1;
-      u8 track;
-      if( seq_hwcfg_blm_scalar.num_tracks <= 4 )
-	track = 4*ui_selected_group + led_row;
-      else if( seq_hwcfg_blm_scalar.num_tracks <= 8 )
-	track = 8*(ui_selected_group>>1) + led_row;
-      else
-	track = i >> 1;
 
-      u8 green_pattern = ui_blm_leds[2*track + (i&1)];
-      u8 red_pattern = 0x00;
+    for(i=0; i<seq_midi_blm_num_tracks; ++i) {
+      int array;
+      for(array=0; array<num_blm_led_arrays; ++array) {
+	u8 led_row = i;
+	u8 track;
+	if( seq_midi_blm_num_tracks <= 4 )
+	  track = 4*ui_selected_group + led_row;
+	else if( seq_midi_blm_num_tracks <= 8 )
+	  track = 8*(ui_selected_group>>1) + led_row;
+	else
+	  track = i;
 
-      if( sequencer_running ) {
-	u8 played_step = seq_core_trk[track].step;
-	if( (played_step >> 4) == ui_selected_step_view ) {
-	  if( !(i&1) ) {
-	    if( played_step < 8 )
-	      red_pattern = 1 << played_step;
-	  } else {
-	    if( played_step >= 8 )
-	      red_pattern = 1 << (played_step-8);
-	  }
+	u8 blm_ix = track*NUM_BLM_LED_ARRAYS + array;
+	u8 blm_sent_ix = i*NUM_BLM_LED_ARRAYS + array;
+	u8 green_pattern = ui_blm_leds[blm_ix];
+	u8 red_pattern = 0x00;
+
+	if( sequencer_running ) {
+	  u8 played_step = seq_core_trk[track].step;
+	  if( (played_step >> 3) == (visible_sr0+array) )
+	    red_pattern = 1 << (played_step % 8);
 	}
 
-	if( seq_hwcfg_blm_scalar.num_colours >= 2 )
-	  green_pattern &= ~red_pattern;
-	else
-	  green_pattern ^= red_pattern;
-      }
+	if( force_update || green_pattern != ui_blm_sent_leds_green[blm_sent_ix] ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
+	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
+			     led_row, // Channel (== LED Row)
+			     (2*array) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
+			     green_pattern & 0x7f); // remaining 7 LEDs
 
-      if( seq_ui_blm_scalar_force_update || green_pattern != ui_blm_sent_leds_green[i] ) {
-	MUTEX_MIDIOUT_TAKE;
-	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
-	MIOS32_MIDI_SendCC(seq_hwcfg_blm_scalar.port_out, // port
-			   led_row, // Channel (== LED Row)
-			   (2*(i&1)) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
-			   green_pattern & 0x7f); // remaining 7 LEDs
+	  MUTEX_MIDIOUT_GIVE;
+	  ui_blm_sent_leds_green[blm_sent_ix] = green_pattern;
+	}
 
-	MUTEX_MIDIOUT_GIVE;
-	ui_blm_sent_leds_green[i] = green_pattern;
-      }
+	if( force_update || red_pattern != ui_blm_sent_leds_red[blm_sent_ix] ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
+	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
+			     led_row, // Channel (== LED Row)
+			     (2*array) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
+			     red_pattern & 0x7f); // remaining 7 LEDs
 
-      if( seq_ui_blm_scalar_force_update || seq_hwcfg_blm_scalar.num_colours >= 2 && red_pattern != ui_blm_sent_leds_red[i] ) {
-	MUTEX_MIDIOUT_TAKE;
-	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
-	MIOS32_MIDI_SendCC(seq_hwcfg_blm_scalar.port_out, // port
-			   led_row, // Channel (== LED Row)
-			   (2*(i&1)) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
-			   red_pattern & 0x7f); // remaining 7 LEDs
-
-	MUTEX_MIDIOUT_GIVE;
-	ui_blm_sent_leds_red[i] = red_pattern;
+	  MUTEX_MIDIOUT_GIVE;
+	  ui_blm_sent_leds_red[blm_sent_ix] = red_pattern;
+	}
       }
     }
-
-    seq_ui_blm_scalar_force_update = 0;
   }
 
 
@@ -2286,8 +2306,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       }
 
       // Prepare Green LEDs (triggers)
-      u8 green_l = ui_blm_leds[2*track+0];
-      u8 green_r = ui_blm_leds[2*track+1];
+      u8 green_l = ui_blm_leds[track*NUM_BLM_LED_ARRAYS + 0];
+      u8 green_r = ui_blm_leds[track*NUM_BLM_LED_ARRAYS + 1];
 
       // Red LEDs (position marker)
       if( seq_hwcfg_blm.dout_duocolour ) {
