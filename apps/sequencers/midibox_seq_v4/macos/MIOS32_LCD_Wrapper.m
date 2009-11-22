@@ -176,7 +176,7 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 // IN: r/g/b values
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_BColourSet(u32 rgb)
 {
   return -1; // n.a.
 }
@@ -188,9 +188,32 @@ s32 APP_LCD_BColourSet(u8 r, u8 g, u8 b)
 // IN: r/g/b values
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_FColourSet(u8 r, u8 g, u8 b)
+s32 APP_LCD_FColourSet(u32 rgb)
 {
   return -1; // n.a.
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets a pixel in the bitmap
+// IN: bitmap, x/y position and colour value (value range depends on APP_LCD_COLOUR_DEPTH)
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+{
+	return -1; // n.a.
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transfers a Bitmap within given boundaries to the LCD
+// IN: bitmap
+// OUT: returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+{
+	return -1; // n.a.
+}
+
 
 @end
