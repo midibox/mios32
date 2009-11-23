@@ -65,10 +65,7 @@ blm_scalar_emulationAppDelegate *delegate;
 	NSLog(@"BLM got event from button %d %d: %d\n", column, row, depressed);
 #endif
 
-	NSInteger chn = row;
-	NSInteger key = column;
-	NSInteger velocity = depressed ? 0x00 : 0x7f;
-	[delegate sendNoteEvent:chn:key:velocity];
+	[delegate sendNoteEvent_Chn:row key:column velocity:(depressed ? 0x00 : 0x7f)];	
 }
 
 

@@ -12,6 +12,8 @@ MIDIboxSEQ V4.0beta14
   o prepared support for MBHP_BLM_SCALAR.
     The MIDI port can be configured in Options menu (Utility->Opt.)
 
+  o various minor bugfixes
+
 
 MIDIboxSEQ V4.0beta13
 ~~~~~~~~~~~~~~~~~~~~~

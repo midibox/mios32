@@ -24,6 +24,12 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef enum {
+  SEQ_MIDI_BLM_MODE_TRIGGERS,
+  SEQ_MIDI_BLM_MODE_TRACKS,
+  SEQ_MIDI_BLM_MODE_PATTERNS,
+} seq_midi_blm_mode_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -41,6 +47,7 @@ extern s32 SEQ_MIDI_BLM_SYSEX_SendRequest(u8 req);
 /////////////////////////////////////////////////////////////////////////////
 
 extern mios32_midi_port_t seq_midi_blm_port;
+extern seq_midi_blm_mode_t seq_midi_blm_mode;
 extern u8 seq_midi_blm_num_steps;
 extern u8 seq_midi_blm_num_tracks;
 extern u8 seq_midi_blm_num_colours;

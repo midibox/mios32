@@ -50,6 +50,19 @@ NSInteger BLM_Config;
 	 name:@"PYMIDISetupChanged" object:nil
 	 ];
 	
+	// configure Buttons
+	[buttonTriggers setDelegate:self];
+	[buttonTriggers setButtonChn:0];
+	[buttonTriggers setButtonCC:0x40];
+
+	[buttonTracks setDelegate:self];
+	[buttonTracks setButtonChn:0];
+	[buttonTracks setButtonCC:0x41];
+
+	[buttonPatterns setDelegate:self];
+	[buttonPatterns setButtonChn:0];
+	[buttonPatterns setButtonCC:0x42];
+	
     // We must delay opening the drawer until the window is visible
     [preferencesDrawer performSelector:@selector(open) withObject:nil afterDelay:0];
 }
@@ -108,11 +121,19 @@ NSInteger BLM_Config;
 
 	NSRect mainWindowFrame = [mainWindow frame];
 	NSRect BLMFrame = [BLMInst frame];
+	
+	// center BLM
 	mainWindowFrame.size = BLMFrame.size;
-	mainWindowFrame.size.width = (BLMFrame.size.width < 450) ? 450 : (BLMFrame.size.width + 20);
+	mainWindowFrame.size.width = (BLMFrame.size.width < 350) ? 350 : (BLMFrame.size.width + 20);
 	mainWindowFrame.size.height = BLMFrame.size.height + 60;
 	BLMFrame.origin.x = (mainWindowFrame.size.width-BLMFrame.size.width) / 2;
 	BLMFrame.origin.y = (mainWindowFrame.size.height-BLMFrame.size.height-20) / 2;
+
+	// add offset for control buttons at left side
+	BLMFrame.origin.x += 100;
+	// increase window width
+	mainWindowFrame.size.width += 100;
+	
 	[BLMInst setFrame:BLMFrame];
 	[mainWindow setFrame:mainWindowFrame display:YES];
 #if 0
@@ -267,7 +288,7 @@ NSInteger BLM_Config;
 /////////////////////////////////////////////////////////////////////////////
 // MIDI Event Senders
 /////////////////////////////////////////////////////////////////////////////
-- (void)sendNoteEvent:(NSInteger)chn:(NSInteger)key:(NSInteger)velocity
+- (void)sendNoteEvent_Chn:(NSInteger)chn key:(NSInteger)key velocity:(NSInteger)velocity
 {
 #if DEBUG_MESSAGES
 	NSLog(@"sendNoteEvent %02x %02x %02x\n", 0x90 | chn, key, velocity);
@@ -276,6 +297,28 @@ NSInteger BLM_Config;
 	event[0] = (unsigned char)(0x90 | chn);
 	event[1] = (unsigned char)key;
 	event[2] = (unsigned char)velocity;
+	
+	MIDIPacketList packetList;
+	MIDIPacket *packet = MIDIPacketListInit(&packetList);
+	
+	packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet,
+							   0, // timestamp
+							   3, event);
+	[currentMIDI_OUT addSender:self];
+	[currentMIDI_OUT processMIDIPacketList:&packetList sender:self];
+	[currentMIDI_OUT removeSender:self];
+}
+
+
+- (void)sendCCEvent_Chn:(NSInteger)chn cc:(NSInteger)cc value:(NSInteger)value;
+{
+#if DEBUG_MESSAGES
+	NSLog(@"sendCCEvent %02x %02x %02x\n", 0xb0 | chn, cc, value);
+#endif
+	Byte event[3];
+	event[0] = (unsigned char)(0xb0 | chn);
+	event[1] = (unsigned char)cc;
+	event[2] = (unsigned char)value;
 	
 	MIDIPacketList packetList;
 	MIDIPacket *packet = MIDIPacketListInit(&packetList);
@@ -357,6 +400,16 @@ NSInteger BLM_Config;
 	Byte evnt1 = message[1];
 	Byte evnt2 = message[2];
 	
+	int LED_State;
+	if( evnt2 == 0 )
+		LED_State = 0;
+	else if( evnt2 < 0x40 )
+		LED_State = 1;
+	else if( evnt2 < 0x60 )
+		LED_State = 2;
+	else
+		LED_State = 3;
+
 	switch( event_type ) {
 		case 0x8: // Note Off
 			evnt2 = 0; // handle like Note On with velocity 0
@@ -364,20 +417,10 @@ NSInteger BLM_Config;
 #if DEBUG_MESSAGES
 			NSLog(@"Received Note Chn %d %02x %02x\n", chn+1, evnt1, evnt2);
 #endif
-			if( evnt1 < [BLMInst numberOfRows] ) {
+			if( evnt1 < [BLMInst numberOfColumns] ) {
 				int row = chn;
 				int column = evnt1;
-				
-				int state;
-				if( evnt2 == 0 )
-					state = 0;
-				else if( evnt2 < 0x40 )
-					state = 1;
-				else if( evnt2 < 0x60 )
-					state = 2;
-				else
-					state = 3;
-				[BLMInst setLED_State:column:row:state];
+				[BLMInst setLED_State:column:row:LED_State];
 			}
 			break;
 
@@ -385,35 +428,51 @@ NSInteger BLM_Config;
 #if DEBUG_MESSAGES
 			NSLog(@"Received CC Chn %d %02x %02x\n", chn+1, evnt1, evnt2);
 #endif
-			int pattern = evnt2 | ((evnt1&1)<<7);
-			int row = chn;
-			int column_offset = 0;
-			int state_mask = 0;
+			switch( evnt1 ) {
+				case 0x40:
+					[buttonTriggers setLED_State:LED_State];
+					break;
+					
+				case 0x41:
+					[buttonTracks setLED_State:LED_State];
+					break;
+					
+				case 0x42:
+					[buttonPatterns setLED_State:LED_State];
+					break;
+					
+				default: {
+					int pattern = evnt2 | ((evnt1&1)<<7);
+					int row = chn;
+					int column_offset = 0;
+					int state_mask = 0;
 			
-			if( (evnt1 & 0xf0) == 0x10 ) { // green LEDs
-				state_mask = (1 << 0);
-				column_offset = 8*((evnt1%16)/2);
-			} else if( (evnt1 & 0xf0) == 0x20 ) { // red LEDs
-				state_mask = (1 << 1);
-				column_offset = 8*((evnt1%16)/2);
-			}
+					if( (evnt1 & 0xf0) == 0x10 ) { // green LEDs
+						state_mask = (1 << 0);
+						column_offset = 8*((evnt1%16)/2);
+					} else if( (evnt1 & 0xf0) == 0x20 ) { // red LEDs
+						state_mask = (1 << 1);
+						column_offset = 8*((evnt1%16)/2);
+					}
 
-			// change the colour of 8 LEDs if the appr. CC has been received
-			if( state_mask > 0 ) {
-				int column;
-				for(column=0; column<8; ++column) {
-					int led_mask = (pattern & (1 << column)) ? state_mask : 0;
-					int _column = column+column_offset;
-					int state = [BLMInst LED_State:_column:row];
-					int new_state = (state & ~state_mask) | led_mask;
-					[BLMInst setLED_State:_column:row:new_state];
+					// change the colour of 8 LEDs if the appr. CC has been received
+					if( state_mask > 0 ) {
+						int column;
+						for(column=0; column<8; ++column) {
+							int led_mask = (pattern & (1 << column)) ? state_mask : 0;
+							int _column = column+column_offset;
+							int state = [BLMInst LED_State:_column:row];
+							int new_state = (state & ~state_mask) | led_mask;
+							[BLMInst setLED_State:_column:row:new_state];
+						}
+					}
 				}
 			}
 		} break;
 
 		case 0xf: {
 			// in the hope that SysEx messages will always be sent in a single packet...
-			if( size >= 7 &&
+			if( size >= 8 &&
 			   message[0] == 0xf0 &&
 			   message[1] == 0x00 &&
 			   message[2] == 0x00 &&
@@ -421,8 +480,10 @@ NSInteger BLM_Config;
 			   message[4] == 0x4e && // MBHP_BLM_SCALAR
 			   message[5] == 0x00  // Device ID
 			   ) {
-				NSLog(@"Received Request! %d\n", message[6]);
-				if( message[6] == 0x00 ) {
+#if DEBUG_MESSAGES
+				NSLog(@"Received Command: %02x\n", message[6]);
+#endif
+				if( message[6] == 0x00 && message[7] == 0x00 ) {
 					// no error checking... just send layout (the hardware version will check better)
 					[self sendBLMLayout];
 				}

@@ -70,6 +70,7 @@ extern s32 SEQ_PATTERN_FixAll(void);
 /////////////////////////////////////////////////////////////////////////////
 
 extern seq_pattern_t seq_pattern[SEQ_CORE_NUM_GROUPS];
+extern seq_pattern_t seq_pattern_req[SEQ_CORE_NUM_GROUPS];
 extern char seq_pattern_name[SEQ_CORE_NUM_GROUPS][21];
 
 #endif /* _SEQ_PATTERN_H */
