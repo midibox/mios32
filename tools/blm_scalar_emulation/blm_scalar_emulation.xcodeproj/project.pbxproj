@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		256AC3DA0F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 256AC3D90F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m */; };
+		5218343310BB1F710094AD7E /* ControlButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 5218343210BB1F710094AD7E /* ControlButton.m */; };
 		52529BB410B6069000914779 /* BLM_ButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 52529BB310B6069000914779 /* BLM_ButtonCell.m */; };
 		5284003B10B73626006FC1D9 /* Bugs.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000810B73626006FC1D9 /* Bugs.html */; };
 		5284003C10B73626006FC1D9 /* archiving.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000A10B73626006FC1D9 /* archiving.html */; };
@@ -96,6 +97,8 @@
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		5218343110BB1F710094AD7E /* ControlButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ControlButton.h; sourceTree = "<group>"; };
+		5218343210BB1F710094AD7E /* ControlButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ControlButton.m; sourceTree = "<group>"; };
 		52529BB210B6069000914779 /* BLM_ButtonCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLM_ButtonCell.h; sourceTree = "<group>"; };
 		52529BB310B6069000914779 /* BLM_ButtonCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLM_ButtonCell.m; sourceTree = "<group>"; };
 		5284000810B73626006FC1D9 /* Bugs.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = Bugs.html; sourceTree = "<group>"; };
@@ -172,6 +175,8 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				5218343110BB1F710094AD7E /* ControlButton.h */,
+				5218343210BB1F710094AD7E /* ControlButton.m */,
 				5284FECC10B72DD2006FC1D9 /* BLM.h */,
 				5284FECD10B72DD2006FC1D9 /* BLM.m */,
 				52529BB210B6069000914779 /* BLM_ButtonCell.h */,
@@ -431,6 +436,7 @@
 				5284005D10B73626006FC1D9 /* PYMIDIVirtualDestination.m in Sources */,
 				5284005E10B73626006FC1D9 /* PYMIDIVirtualEndpoint.m in Sources */,
 				5284005F10B73626006FC1D9 /* PYMIDIVirtualSource.m in Sources */,
+				5218343310BB1F710094AD7E /* ControlButton.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,7 +506,7 @@
 				HEADER_SEARCH_PATHS = ../../drivers/MacOS;
 				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
-				SDKROOT = macosx10.4;
+				SDKROOT = macosx10.5;
 			};
 			name = Debug;
 		};
@@ -516,7 +522,7 @@
 				HEADER_SEARCH_PATHS = ../../drivers/MacOS;
 				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
-				SDKROOT = macosx10.4;
+				SDKROOT = macosx10.5;
 			};
 			name = Release;
 		};

@@ -10,6 +10,7 @@
 #import <Cocoa/Cocoa.h>
 #import <PYMIDI/PYMIDI.h>
 #import "BLM.h"
+#import "ControlButton.h"
 
 // Will only work with SDK 10.6
 //@interface blm_scalar_emulationAppDelegate : NSObject <NSApplicationDelegate> {
@@ -17,6 +18,10 @@
     NSWindow *mainWindow;
 	
 	IBOutlet BLM *BLMInst;
+
+	IBOutlet ControlButton* buttonTriggers;
+	IBOutlet ControlButton* buttonTracks;
+	IBOutlet ControlButton* buttonPatterns;
 
 	IBOutlet NSDrawer* preferencesDrawer;
 	IBOutlet NSPopUpButton* midiInputPopup;
@@ -42,7 +47,8 @@
 - (IBAction)midiOutputChanged:(id)sender;
 - (void)midiSetupChanged:(NSNotification*)notification;
 	
-- (void)sendNoteEvent:(NSInteger)chn:(NSInteger)key:(NSInteger)velocity;
+- (void)sendNoteEvent_Chn:(NSInteger)chn key:(NSInteger)key velocity:(NSInteger)velocity;
+- (void)sendCCEvent_Chn:(NSInteger)chn cc:(NSInteger)cc value:(NSInteger)value;
 - (void)sendBLMLayout;
 
 - (void)setUpMIDI;

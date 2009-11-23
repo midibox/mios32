@@ -91,6 +91,7 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 mios32_midi_port_t seq_midi_blm_port;
+seq_midi_blm_mode_t seq_midi_blm_mode;
 u8 seq_midi_blm_num_steps;
 u8 seq_midi_blm_num_tracks;
 u8 seq_midi_blm_num_colours;
@@ -125,6 +126,7 @@ static u8 sysex_cmd;
 s32 SEQ_MIDI_BLM_Init(u32 mode)
 {
   seq_midi_blm_port = 0; // disabled
+  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRACKS;
   seq_midi_blm_num_steps = 16;
   seq_midi_blm_num_tracks = 16;
   seq_midi_blm_num_colours = 2;
@@ -146,14 +148,14 @@ s32 SEQ_MIDI_BLM_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   if( !seq_midi_blm_port )
     return -1; // MIDI In not configured
 
+  // check for MIDI port
+  if( port != seq_midi_blm_port )
+    return -2;
+
   // ignore realtime messages (see MIDI spec - realtime messages can
   // always be injected into events/streams, and don't change the running status)
   if( midi_in >= 0xf8 )
     return 0;
-
-  // check for MIDI port
-  if( sysex_state.MY_SYSEX && port != seq_midi_blm_port )
-    return -1;
 
   // branch depending on state
   if( !sysex_state.MY_SYSEX ) {

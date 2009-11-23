@@ -256,6 +256,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_blm_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	MUTEX_MIDIOUT_TAKE;
+	SEQ_MIDI_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
+	MUTEX_MIDIOUT_GIVE;
 	store_file_required = 1;
 	return 1; // value changed
       }

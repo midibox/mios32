@@ -49,14 +49,14 @@ const seq_groove_entry_t seq_groove_presets[SEQ_GROOVE_NUM_PRESETS] = {
 
   { "  Shuffle   ",
     16, // Number of Steps
-    { VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS }, // Delay
+    {    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
 
   { "Inv. Shuffle",
     16, // Number of Steps
-    { VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG, VPOS, VNEG }, // Delay
+    { VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0, VPOS,    0 }, // Delay
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
     {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
   },
