@@ -1408,7 +1408,7 @@ s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
   do {
     if( seq_file_dfs_errno = DFS_ReadFile(&fi, sector, write_buffer, &successcount, SECTOR_SIZE) ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", fi_src.pointer, seq_file_dfs_errno);
+      DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", fi.pointer, seq_file_dfs_errno);
 #endif
       successcount = 0;
       status = SEQ_FILE_ERR_SYSEX_READ;

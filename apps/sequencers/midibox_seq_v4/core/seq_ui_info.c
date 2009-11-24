@@ -372,6 +372,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 
+	// this yield ensures, that Debug Messages are sent before we continue the execution
+	// Since MIOS Studio displays the time at which the messages arrived, this allows
+	// us to measure the delay of following operations
+	taskYIELD();
+
 	MUTEX_SDCARD_TAKE;
 	SEQ_FILE_PrintSDCardInfos();
 	MUTEX_SDCARD_GIVE;
@@ -380,6 +385,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	DEBUG_MSG("\n");
 	DEBUG_MSG("Checking SD Card at application layer\n");
 	DEBUG_MSG("=====================================\n");
+
+	taskYIELD();
 
 	if( !SEQ_FILE_SDCardAvailable() ) {
 	  sprintf(str_buffer, "not connected");
@@ -399,6 +406,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 		  (unsigned int)(SEQ_FILE_VolumeBytesTotal()/1000000));
 	}
 	DEBUG_MSG("SD Card: %s\n", str_buffer);
+
+	taskYIELD();
 #endif
 
 	{
