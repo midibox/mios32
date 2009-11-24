@@ -696,12 +696,12 @@ s32 SEQ_FILE_WriteWord(PFILEINFO fileinfo, u32 word)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
 {
-  u32 status = 0;
+  s32 status = 0;
   u32 successcount;
 
   // don't write if filepos < 0 -> this indicates that an error has happened during previous write operation
   if( write_filepos < 0 ) {
-    status = 3; // skipped due to previous error
+    status = SEQ_FILE_ERR_WRITECLOSE; // skipped due to previous error
   } else {
     u32 len = (write_filepos % SECTOR_SIZE);
 
@@ -710,14 +710,14 @@ s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo)
       DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", write_filepos-SECTOR_SIZE, seq_file_dfs_errno);
 #endif
 
-      status = -1; // write error
+      status = SEQ_FILE_ERR_WRITE; // write error
     } else {
       if( successcount != len ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
 		DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos-SECTOR_SIZE, successcount);
 #endif
 	
-		status = -2; // not all bytes written
+	status = SEQ_FILE_ERR_WRITECOUNT; // not all bytes written
       }
     }
   }
@@ -1276,13 +1276,13 @@ s32 SEQ_FILE_CreateBackup(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function searches for directories under given path and copies the names
 // into a list (e.g. used by seq_ui_sysex.c)
+// !!TEMPORARY VERSION!! will be combined with SEQ_FILE_GetFiles later
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset)
 {
   s32 status = 0;
   DIRINFO di;
   DIRENT de;
-  FILEINFO fi;
 
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -1325,13 +1325,13 @@ s32 SEQ_FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset)
 /////////////////////////////////////////////////////////////////////////////
 // This function searches for files under given path and copies the names
 // into a list (e.g. used by seq_ui_sysex.c)
+// !!TEMPORARY VERSION!! will be combined with SEQ_FILE_GetDirs later
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items, u8 dir_offset)
 {
   s32 status = 0;
   DIRINFO di;
   DIRENT de;
-  FILEINFO fi;
 
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
