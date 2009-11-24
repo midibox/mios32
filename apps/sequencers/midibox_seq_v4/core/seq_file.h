@@ -33,16 +33,17 @@
 #define SEQ_FILE_ERR_OPEN_WRITE        -9 // DFS_OpenFile(..DFS_WRITE..) failed
 #define SEQ_FILE_ERR_WRITE            -10 // DFS_WriteFile failed
 #define SEQ_FILE_ERR_WRITECOUNT       -11 // less bytes written than expected
-#define SEQ_FILE_ERR_SEEK             -12 // SEQ_FILE_Seek() failed
-#define SEQ_FILE_ERR_OPEN_DIR         -13 // DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found
-#define SEQ_FILE_ERR_NO_BACKUP_DIR    -14 // SEQ_FILE_CreateBackup() failed because of missing backup directory
-#define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -15 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
-#define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -16 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
-#define SEQ_FILE_ERR_COPY             -17 // SEQ_FILE_Copy() failed
-#define SEQ_FILE_ERR_COPY_NO_FILE     -18 // source file doesn't exist
-#define SEQ_FILE_ERR_NO_DIR           -19 // SEQ_FILE_GetDirs() or SEQ_FILE_GetFiles() failed because of missing directory
-#define SEQ_FILE_ERR_NO_FILE          -20 // SEQ_FILE_GetFiles() failed because of missing directory
-#define SEQ_FILE_ERR_SYSEX_READ       -21 // error while reading .syx file
+#define SEQ_FILE_ERR_WRITECLOSE       -12 // DFS_WriteClose aborted due to previous error
+#define SEQ_FILE_ERR_SEEK             -13 // SEQ_FILE_Seek() failed
+#define SEQ_FILE_ERR_OPEN_DIR         -14 // DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found
+#define SEQ_FILE_ERR_NO_BACKUP_DIR    -15 // SEQ_FILE_CreateBackup() failed because of missing backup directory
+#define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -16 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
+#define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -17 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
+#define SEQ_FILE_ERR_COPY             -18 // SEQ_FILE_Copy() failed
+#define SEQ_FILE_ERR_COPY_NO_FILE     -19 // source file doesn't exist
+#define SEQ_FILE_ERR_NO_DIR           -20 // SEQ_FILE_GetDirs() or SEQ_FILE_GetFiles() failed because of missing directory
+#define SEQ_FILE_ERR_NO_FILE          -21 // SEQ_FILE_GetFiles() failed because of missing directory
+#define SEQ_FILE_ERR_SYSEX_READ       -22 // error while reading .syx file
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
