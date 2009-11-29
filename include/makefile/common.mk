@@ -124,12 +124,12 @@ $(ARM_AS_OBJS) : %.o : %.s
 
 # clean temporary files
 clean:
-	rm -f *.lss *.sym *.map *.elf
+	rm -f *.lss $(PROJECT).sym $(PROJECT).map $(PROJECT).elf
 	rm -f $(THUMB_OBJS) $(THUMB_AS_OBJS) $(THUMB_AS_LST) $(ARM_OBJS) $(ARM_AS_OBJS)  $(ARM_AS_LST)
 
 # clean temporary files + project image
 cleanall: clean
-	rm -f *.hex *.bin
+	rm -f $(PROJECT).hex $(PROJECT).bin
 
 
 # for use with graphviz and egypt
