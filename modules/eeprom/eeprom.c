@@ -137,6 +137,9 @@ s32 EEPROM_Init(u32 mode)
   int16_t x = -1;
   uint16_t  FlashStatus;
 
+  if( mode > 0 )
+    return -1; // currently only mode 0 supported
+
   /* Unlock the Flash Program Erase controller */
   FLASH_Unlock();
 
@@ -156,7 +159,7 @@ s32 EEPROM_Init(u32 mode)
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-          return -1; // FlashStatus;
+          return -2; // FlashStatus;
         }
       }
       else if (PageStatus1 == RECEIVE_DATA) /* Page0 erased, Page1 receive */
@@ -166,14 +169,14 @@ s32 EEPROM_Init(u32 mode)
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-          return -1; // FlashStatus;
+          return -2; // FlashStatus;
         }
         /* Mark Page1 as valid */
         FlashStatus = FLASH_ProgramHalfWord(PAGE1_BASE_ADDRESS, VALID_PAGE);
         /* If program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-          return -1; // FlashStatus;
+          return -2; // FlashStatus;
         }
       }
       else /* First EEPROM access (Page0&1 are erased) or invalid state -> format EEPROM */
@@ -183,7 +186,7 @@ s32 EEPROM_Init(u32 mode)
         /* If erase/program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-          return -1; // FlashStatus;
+          return -2; // FlashStatus;
         }
       }
       break;
@@ -210,7 +213,7 @@ s32 EEPROM_Init(u32 mode)
               /* If program operation was failed, a Flash error code is returned */
               if (EepromStatus != FLASH_COMPLETE)
               {
-		return -1; // FlashStatus;
+		return -2; // FlashStatus;
               }
             }
           }
@@ -220,14 +223,14 @@ s32 EEPROM_Init(u32 mode)
         /* If program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
         /* Erase Page1 */
         FlashStatus = FLASH_ErasePage(PAGE1_BASE_ADDRESS);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       else if (PageStatus1 == ERASED) /* Page0 receive, Page1 erased */
@@ -237,14 +240,14 @@ s32 EEPROM_Init(u32 mode)
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
         /* Mark Page0 as valid */
         FlashStatus = FLASH_ProgramHalfWord(PAGE0_BASE_ADDRESS, VALID_PAGE);
         /* If program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       else /* Invalid state -> format eeprom */
@@ -254,7 +257,7 @@ s32 EEPROM_Init(u32 mode)
         /* If erase/program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       break;
@@ -267,7 +270,7 @@ s32 EEPROM_Init(u32 mode)
         /* If erase/program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       else if (PageStatus1 == ERASED) /* Page0 valid, Page1 erased */
@@ -277,7 +280,7 @@ s32 EEPROM_Init(u32 mode)
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       else /* Page0 valid, Page1 receive */
@@ -301,7 +304,7 @@ s32 EEPROM_Init(u32 mode)
               /* If program operation was failed, a Flash error code is returned */
               if (EepromStatus != FLASH_COMPLETE)
               {
-		return -1; // FlashStatus;
+		return -2; // FlashStatus;
               }
             }
           }
@@ -311,14 +314,14 @@ s32 EEPROM_Init(u32 mode)
         /* If program operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
         /* Erase Page0 */
         FlashStatus = FLASH_ErasePage(PAGE0_BASE_ADDRESS);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
-	  return -1; // FlashStatus;
+	  return -2; // FlashStatus;
         }
       }
       break;
@@ -329,7 +332,7 @@ s32 EEPROM_Init(u32 mode)
       /* If erase/program operation was failed, a Flash error code is returned */
       if (FlashStatus != FLASH_COMPLETE)
       {
-	return -1; // FlashStatus;
+	return -2; // FlashStatus;
       }
       break;
   }
