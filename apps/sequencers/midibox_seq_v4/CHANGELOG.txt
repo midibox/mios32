@@ -6,6 +6,15 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta15
+~~~~~~~~~~~~~~~~~~~~~
+
+  o implemented CC#123 (All Notes Off) - it empties the note stacks if
+    value 0 is received. Values > 0 will be ignored
+
+  o experimental patch changer via MIDI keyboard
+
+
 MIDIboxSEQ V4.0beta14
 ~~~~~~~~~~~~~~~~~~~~~
 
