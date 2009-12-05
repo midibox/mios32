@@ -29,6 +29,12 @@ CC Implementation of MIDIbox SEQ V4
    o CC#6 (0x06 - NRPN Value, LSB)
      Sets a Sequencer Parameter depending on the preselected track and parameter number
 
+   o CC#123 (0x7b - All Notes Off)
+     if 0 is received, all transposer/arpeggiator/patch changer notes will be
+     reset, and notestacks will be emptied
+     Values > 0 will be ignored
+
+
 Example for changing the Octave Transpose value of Track 3 to -1 Octave:
    B0 62 31 63 02 06 0F
 

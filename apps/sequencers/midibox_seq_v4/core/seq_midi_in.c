@@ -46,12 +46,18 @@
 #define SEQ_MIDI_IN_NOTESTACK_SIZE 10
 #endif
 
+#define SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE 4
+
 
 // number of notestacks and assignments
-#define NOTESTACK_NUM             3
+#define NOTESTACK_NUM             7
 #define NOTESTACK_TRANSPOSER      0
 #define NOTESTACK_ARP_SORTED      1
 #define NOTESTACK_ARP_UNSORTED    2
+#define NOTESTACK_PATCH_CHANGER_G1 3
+#define NOTESTACK_PATCH_CHANGER_G2 4
+#define NOTESTACK_PATCH_CHANGER_G3 5
+#define NOTESTACK_PATCH_CHANGER_G4 6
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -59,6 +65,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity);
+static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity);
 static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 
 
@@ -135,6 +142,26 @@ s32 SEQ_MIDI_IN_ResetNoteStacks(void)
 		 NOTESTACK_MODE_PUSH_TOP,
 		 &notestack_items[NOTESTACK_ARP_UNSORTED][0],
 		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G1],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &notestack_items[NOTESTACK_PATCH_CHANGER_G1][0],
+		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G2],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &notestack_items[NOTESTACK_PATCH_CHANGER_G2][0],
+		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G3],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &notestack_items[NOTESTACK_PATCH_CHANGER_G3][0],
+		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G4],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &notestack_items[NOTESTACK_PATCH_CHANGER_G4][0],
+		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
 
   // initial hold notes
   transposer_hold_note = 0x3c; // C-3
@@ -221,6 +248,25 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	  status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
 	else
 	  status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
+	MUTEX_MIDIIN_GIVE;
+	break;
+    }
+  }
+
+
+  // Patch Changer (currently assigned to MIDI channel + 1
+  if( !loopback_port && midi_package.chn == (seq_midi_in_channel) ) {
+    switch( midi_package.event ) {
+
+      case NoteOff: 
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, 0x00);
+	MUTEX_MIDIIN_GIVE;
+	break;
+
+      case NoteOn:
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, midi_package.velocity);
 	MUTEX_MIDIIN_GIVE;
 	break;
     }
@@ -316,6 +362,69 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// For Patch Changes (assigned to different MIDI channel)
+// If velocity == 0, Note Off event has been received, otherwise Note On event
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
+{
+  notestack_t *n;
+  int group;
+
+  int octave = note / 12;
+
+  switch( octave ) {
+    case 4:
+      group = 0;
+      n = &notestack[NOTESTACK_PATCH_CHANGER_G1];
+      break;
+    case 5:
+      group = 1;
+      n = &notestack[NOTESTACK_PATCH_CHANGER_G2];
+      break;
+    case 6:
+      group = 2;
+      n = &notestack[NOTESTACK_PATCH_CHANGER_G3];
+      break;
+    case 7:
+      group = 3;
+      n = &notestack[NOTESTACK_PATCH_CHANGER_G4];
+      break;
+    default:
+      return -1; // not assigned
+  }
+
+  int patch = -1;
+  if( velocity ) { // Note On
+    NOTESTACK_Push(n, note, velocity);
+    patch = n->note_items[0].note % 12;
+  } else { // Note Off
+    if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
+      patch = n->note_items[0].note % 12;
+    }
+  }
+
+  // switch to new patch if required
+  if( patch >= 0 && patch < 8 ) {
+    seq_pattern_t pattern = seq_pattern[group];
+    if( pattern.num != patch ) {
+      pattern.num = patch;
+      pattern.DISABLED = 0;
+      pattern.SYNCHED = 0;
+      SEQ_PATTERN_Change(group, pattern);
+    }
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("NOTESTACK_PATCH_CHANGER_G%d:\n", group+1);
+  NOTESTACK_SendDebugMessage(n);
+#endif
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // CC has been received over selected port and channel
 /////////////////////////////////////////////////////////////////////////////
@@ -377,6 +486,11 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
     case 0x06: // NRPN Value LSB (sets parameter)
       if( nrpn_msb < SEQ_CORE_NUM_TRACKS)
 	return SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
+      break;
+
+    case 0x7b: // all notes off (transposer, arpeggiator, patch changer)
+      if( value == 0 )
+	SEQ_MIDI_IN_ResetNoteStacks();
       break;
   }
 
