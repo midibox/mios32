@@ -8,6 +8,9 @@
 //! like MIDIbox CV (CV control via MIDI), MIDIbox SEQ (CV control from a 
 //! sequencer) and MIDIbox SID/FM (CV control from a synthesizer)
 //! 
+//! The two "internal DAC" channels of the STM32F103RE are supported as well
+//! (AOUT_IF_INTDAC)
+//! 
 //! Up to 32 analog outputs are supported (*)
 //! An interface to control digital pins is available as well (**)
 //! 
@@ -65,6 +68,10 @@
 //!      CV: one TLV5630 (MBHP_AOUT_NG module) with 8 channels at
 //!      12bit resolution<BR>
 //!      Digital: none</LI>
+//!  <LI>4 (AOUT_IF_INTDAC):<BR>
+//!      CV: two channels available at pin RA4 (J16:RC1) and RA5 (J16:SC) at
+//!      12bit resolution<BR>
+//!      Digital: none</LI>
 //! </UL>
 //!
 //! Example for a complete module configuration:
@@ -94,9 +101,11 @@
 //!   <LI>AOUT_SPI (default: 2)<BR>
 //!     allowed values: 0 (J16), 1 (J8/9) and 2 (J19)
 //!   <LI>AOUT_SPI_RC_PIN (default: 0)<BR>
+//!     Only relevant for AOUT modules, not for AOUT_IF_INTDAC:<BR>
 //!     Specifies the RC pin of the SPI port which should be used.<BR>
 //!     Allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
 //!   <LI>AOUT_SPI_OUTPUTS_OD (default: 1)<BR>
+//!     Only relevant for AOUT modules, not for AOUT_IF_INTDAC:<BR>
 //!     Specifies if output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 //! </UL>
 //!
@@ -115,8 +124,6 @@
 //! are configured in open-drain mode for 3.3V->5V level shifting.
 //!
 //! An usage example can be found under $MIOS32_PATH/apps/examples/aout
-//!
-//! \todo Add AOUT driver for integrated 2-channel DAC of STM32F103RE
 //!
 //! \{
 /* ==========================================================================
@@ -185,19 +192,6 @@ s32 AOUT_Init(u32 mode)
   // set all digital outputs to 0
   aout_dig_value = 0;
 
-  // init SPI
-#if AOUT_SPI_OUTPUTS_OD
-  // pins in open drain mode (to pull-up the outputs to 5V)
-  status |= MIOS32_SPI_IO_Init(AOUT_SPI, MIOS32_SPI_PIN_DRIVER_STRONG_OD);
-#else
-  // pins in push-poll mode (3.3V output voltage)
-  status |= MIOS32_SPI_IO_Init(AOUT_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
-#endif
-
-  // init SPI port for fast frequency access
-  status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
-
-
   // init hardware
   // (not required, since no interface is selected by default!)
   // AOUT_IF_Init(mode);
@@ -235,6 +229,25 @@ s32 AOUT_IF_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // init SPI for all interfaces beside of NONE and INTDAC
+  if( aout_config.if_type != AOUT_IF_NONE && aout_config.if_type != AOUT_IF_INTDAC ) {
+    // ensure that internal DAC pins disabled
+    int chn;
+    for(chn=0; chn<2; ++chn)
+      MIOS32_BOARD_DAC_PinInit(chn, 0);
+
+#if AOUT_SPI_OUTPUTS_OD
+    // pins in open drain mode (to pull-up the outputs to 5V)
+    status |= MIOS32_SPI_IO_Init(AOUT_SPI, MIOS32_SPI_PIN_DRIVER_STRONG_OD);
+#else
+    // pins in push-poll mode (3.3V output voltage)
+    status |= MIOS32_SPI_IO_Init(AOUT_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
+#endif
+
+    // init SPI port for fast frequency access
+    status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
+  }
 
   switch( aout_config.if_type ) {
     case AOUT_IF_NONE:
@@ -280,6 +293,15 @@ s32 AOUT_IF_Init(u32 mode)
       status |= MIOS32_SPI_TransferByte(AOUT_SPI, 0x9 << 4);
       status |= MIOS32_SPI_TransferByte(AOUT_SPI, ctrl1);
       status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    } break;
+
+    case AOUT_IF_INTDAC: {
+      // one device and up to 2 channels
+      aout_num_devices = 1;
+
+      int chn;
+      for(chn=0; chn<aout_config.num_channels; ++chn)
+	MIOS32_BOARD_DAC_PinInit(chn, 1);
     } break;
 
     default:
@@ -586,6 +608,17 @@ s32 AOUT_Update(void)
 	}
       } break;
 
+      case AOUT_IF_INTDAC: {
+	// we have two channels
+	int chn;
+	for(chn=0; chn<2; ++chn) {
+
+	  // set new value if requested
+	  if( req & (1 << chn) )
+	    MIOS32_BOARD_DAC_PinSet(chn, aout_value[chn]);
+	}
+      } break;
+
       default:
         return -3; // invalid interface selected
     }
@@ -628,6 +661,7 @@ s32 AOUT_Update(void)
 
       case AOUT_IF_74HC595:
       case AOUT_IF_TLV5630:
+      case AOUT_IF_INTDAC:
 	// no digital outputs supported
 	break;
 

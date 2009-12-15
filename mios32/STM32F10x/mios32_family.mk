@@ -12,6 +12,7 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_flash.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_adc.c \
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_dac.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_i2c.c \

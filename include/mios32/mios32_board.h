@@ -59,6 +59,9 @@ extern s32 MIOS32_BOARD_J15_RW_Set(u8 rw);
 extern s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e);
 extern s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out);
 
+extern s32 MIOS32_BOARD_DAC_PinInit(u8 chn, u8 enable);
+extern s32 MIOS32_BOARD_DAC_PinSet(u8 chn, u16 value);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
