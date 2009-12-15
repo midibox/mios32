@@ -14,6 +14,9 @@ Required tools:
 
 Required hardware:
    o MBHP_CORE_STM32
+     (DAC voltages are output at pin RA4 (J16:RC1) and RA5 (J16:SC)
+
+Optional hardware:
    o MBHP_AOUT, MBHP_AOUT_LC or MBHP_AOUT_NG module
 
 ===============================================================================
@@ -21,8 +24,8 @@ Required hardware:
 This tutorial lesson is the first one which gets use of module drivers,
 which are located under $MIOS32_PATH/modules
 
-  o $MIOS32_PATH/modules/aout: allows to control CV voltages of an MBHP_AOUT, 
-    MBHP_AOUT_LC or MBHP_AOUT_NG module
+  o $MIOS32_PATH/modules/aout: allows to control CV voltages of the internal
+    DAC channels, an MBHP_AOUT, MBHP_AOUT_LC or MBHP_AOUT_NG module
 
   o $MIOS32_PATH/modules/notestack: a note stack handler which stores
     received Notes in a stack, so that it is possible to recall the
@@ -44,9 +47,9 @@ The AOUT module is initialized in APP_Init():
   // see AOUT module documentation for available interfaces and options
   aout_config_t config;
   config = AOUT_ConfigGet();
-  config.if_type = AOUT_IF_MAX525;
+  config.if_type = AOUT_IF_INTDAC;
   config.if_option = 0;
-  config.num_channels = 8;
+  config.num_channels = 8; // INTDAC: only 2 channels supported, 8 channels pre-configured for your own comfort
   config.chn_inverted = 0;
   AOUT_ConfigSet(config);
   AOUT_IF_Init(0);
@@ -57,9 +60,13 @@ is required. Change config.if_type to one of the following values:
   - AOUT_IF_MAX525
   - AOUT_IF_74HC595
   - AOUT_IF_TLV5630
+  - AOUT_IF_INTDAC
 
 
-The Module is connected to J19 of the MBHP_CORE_STM32 module:
+AOUT_IF_INTDAC will output analog values (0..3.3V) at pin RA4 (J16:RC1 and
+J16:SC)
+
+Common AOUT modules are connected to J19 of the MBHP_CORE_STM32 module:
    J19:Vs -> AOUT Vs
    J19:Vd -> AOUT Vd
    J19:SO -> AOUT SI

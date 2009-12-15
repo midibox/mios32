@@ -749,6 +749,111 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
 #endif
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function enables or disables one of the two DAC channels provided by 
+//! STM32F103RE (and not by STM32F103RB).
+//!
+//! <UL>
+//!  <LI>the first channel (chn == 0) is output at pin RA4 (J16:RC1 of the MBHP_CORE_STM32 module)
+//!  <LI>the second channel (chn == 1) is output at pin RA5 (J16:SC of the MBHP_CORE_STM32 module)
+//! </UL>
+//! 
+//! \param[in] chn channel number (0 or 1)
+//! \param[in] enable 0: channel disabled, 1: channel enabled.
+//! \return < 0 if DAC channel not supported (e.g. STM32F103RB)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_DAC_PinInit(u8 chn, u8 enable)
+{
+#if defined(MIOS32_PROCESSOR_STM32F103RB)
+  return -1; // generally not supported. Try DAC access for all other processors
+#else
+  if( chn >= 2 )
+    return -1; // channel not supported
+
+  if( enable ) {
+    // enable DAC clock
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_DAC, ENABLE);
+
+    // Once the DAC channel is enabled, the corresponding GPIO pin is automatically 
+    // connected to the DAC converter. In order to avoid parasitic consumption, 
+    // the GPIO pin should be configured in analog
+    GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+
+    // init DAC
+    DAC_InitTypeDef            DAC_InitStructure;
+    DAC_InitStructure.DAC_Trigger = DAC_Trigger_Software;
+    DAC_InitStructure.DAC_OutputBuffer = DAC_OutputBuffer_Enable;
+
+    switch( chn ) {
+      case 0:
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	DAC_Init(DAC_Channel_1, &DAC_InitStructure);
+	DAC_Cmd(DAC_Channel_1, ENABLE);
+	break;
+
+      case 1:
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_5;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	DAC_Init(DAC_Channel_2, &DAC_InitStructure);
+	DAC_Cmd(DAC_Channel_2, ENABLE);
+	break;
+
+      default:
+	return -2; // unexpected (chn already checked above)
+    }
+    
+  } else {
+    // disable DAC channel
+    switch( chn ) {
+      case 0: DAC_Cmd(DAC_Channel_1, DISABLE); break;
+      case 1: DAC_Cmd(DAC_Channel_2, DISABLE); break;
+      default:
+	return -2; // unexpected (chn already checked above)
+    }
+  }
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets an output channel to a given 16-bit value.
+//!
+//! Note that actually the DAC will work at 12-bit resolution. The lowest
+//! 4 bits are ignored (reserved for future STM chips).
+//! \param[in] chn channel number (0 or 1)
+//! \param[in] value the 16-bit value (0..65535). Lowest 4 bits are ignored.
+//! \return < 0 if DAC channel not supported (e.g. STM32F103RB)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_DAC_PinSet(u8 chn, u16 value)
+{
+#if defined(MIOS32_PROCESSOR_STM32F103RB)
+  return -1; // generally not supported. Try DAC access for all other processors
+#else
+  switch( chn ) {
+    case 0:
+      DAC_SetChannel1Data(DAC_Align_12b_L, value);
+      DAC_SoftwareTriggerCmd(DAC_Channel_1, ENABLE);
+      break;
+
+    case 1:
+      DAC_SetChannel2Data(DAC_Align_12b_L, value);
+      DAC_SoftwareTriggerCmd(DAC_Channel_2, ENABLE);
+      break;
+
+    default:
+      return -1; // channel not supported
+  }
+
+  return 0; // no error
+#endif
+}
+
 //! \}
 
 #endif /* MIOS32_DONT_USE_BOARD */

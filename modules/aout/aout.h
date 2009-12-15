@@ -51,7 +51,8 @@ typedef enum {
   AOUT_IF_NONE = 0,
   AOUT_IF_MAX525,
   AOUT_IF_74HC595,
-  AOUT_IF_TLV5630
+  AOUT_IF_TLV5630,
+  AOUT_IF_INTDAC
 } aout_if_t;
 
 
