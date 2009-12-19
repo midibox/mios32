@@ -23,13 +23,18 @@
 #include <sid.h>
 
 #include "app.h"
+#include "sid_midi.h"
 #include "sid_sysex.h"
+#include "sid_asid.h"
+#include "sid_patch.h"
+#include "sid_se.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+// should be at least 1 for sending error messages
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,8 +70,13 @@ void APP_Init(void)
   MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
 
   // init MIDI parsers
+  SID_MIDI_Init(0);
   SID_SYSEX_Init(0);
+  SID_ASID_Init(0);
 
+  // init sound engine
+  SID_PATCH_Init(0);
+  SID_SE_Init(0);
 
 #if 0
 
@@ -105,6 +115,8 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  // forward to MIDI parser
+  SID_MIDI_Receive(port, midi_package);
 }
 
 
@@ -130,7 +142,7 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 }
@@ -143,7 +155,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
 #endif
 }
@@ -164,7 +176,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 void SEQ_TASK_SID(void)
 {
   // update SID registers if not in ASID mode
-  if( SID_SYSEX_ASID_ModeGet() == SID_SYSEX_ASID_MODE_OFF )
+  if( SID_ASID_ModeGet() == SID_ASID_MODE_OFF )
     SID_Update(0);
 }
 
@@ -237,6 +249,7 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 {
   SID_SYSEX_TimeOut(port);
+  SID_ASID_TimeOut(port);
 
   return 0;
 }

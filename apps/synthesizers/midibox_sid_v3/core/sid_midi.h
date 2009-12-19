@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SysEx routines
+ * Header file for MBSID MIDI Parser
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_SYSEX_H
-#define _SID_SYSEX_H
+#ifndef _SID_MIDI_H
+#define _SID_MIDI_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -29,16 +29,13 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_SYSEX_Init(u32 mode);
+extern s32 SID_MIDI_Init(u32 mode);
 
-extern s32 SID_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
-extern s32 SID_SYSEX_TimeOut(mios32_midi_port_t port);
-
-extern s32 SID_SYSEX_SendDump(mios32_midi_port_t port, u8 type, u8 bank, u8 patch);
+extern s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_SYSEX_H */
+#endif /* _SID_MIDI_H */

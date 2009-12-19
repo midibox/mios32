@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SysEx routines
+ * Header file for ASID routines
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_SYSEX_H
-#define _SID_SYSEX_H
+#ifndef _SID_ASID_H
+#define _SID_ASID_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -24,21 +24,28 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+// ASID Mode
+typedef enum {
+  SID_ASID_MODE_OFF,
+  SID_ASID_MODE_ON
+} sid_asid_mode_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_SYSEX_Init(u32 mode);
+extern s32 SID_ASID_Init(u32 mode);
 
-extern s32 SID_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
-extern s32 SID_SYSEX_TimeOut(mios32_midi_port_t port);
+extern s32 SID_ASID_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 SID_ASID_TimeOut(mios32_midi_port_t port);
 
-extern s32 SID_SYSEX_SendDump(mios32_midi_port_t port, u8 type, u8 bank, u8 patch);
+extern sid_asid_mode_t SID_ASID_ModeGet(void);
+extern s32 SID_ASID_ModeSet(sid_asid_mode_t mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_SYSEX_H */
+#endif /* _SID_ASID_H */
