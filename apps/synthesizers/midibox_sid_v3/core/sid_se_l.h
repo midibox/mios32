@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for SysEx routines
+ * Header file for MBSID Lead Engine
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_SYSEX_H
-#define _SID_SYSEX_H
+#ifndef _SID_SE_L_H
+#define _SID_SE_L_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -24,21 +24,27 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  struct {
+    u8 ALL;
+  };
+  struct {
+    unsigned LEGATO:1; // mono/legato
+    unsigned WTO:1; // Wavetable Only
+    unsigned SUSKEY:1;
+  };
+} sid_se_l_flags_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_SYSEX_Init(u32 mode);
-
-extern s32 SID_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
-extern s32 SID_SYSEX_TimeOut(mios32_midi_port_t port);
-
-extern s32 SID_SYSEX_SendDump(mios32_midi_port_t port, u8 type, u8 bank, u8 patch);
+extern s32 SID_SE_L_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_SYSEX_H */
+#endif /* _SID_SE_L_H */
