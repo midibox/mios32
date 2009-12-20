@@ -369,7 +369,7 @@ static s32 SID_SYSEX_Cmd_PatchWrite(mios32_midi_port_t port, sysex_cmd_state_t c
 	    sysex_buffer[buffer_ix] = midi_in & 0x0f;
 	  } else {
 	    sysex_state.LNIBBLE_RECV = 0;
-	    sysex_buffer[buffer_ix] = (midi_in & 0x0f) << 4;
+	    sysex_buffer[buffer_ix] |= (midi_in & 0x0f) << 4;
 	    ++buffer_ix;
 	  }
 	}
@@ -390,6 +390,7 @@ static s32 SID_SYSEX_Cmd_PatchWrite(mios32_midi_port_t port, sysex_cmd_state_t c
   	  case 0x08: // RAM Write
 	    // TODO: tmp. copy routine
 	    memcpy((u8 *)&sid_patch[0].ALL[0], (u8 *)sysex_buffer, 512);
+	    memcpy((u8 *)&sid_patch_shadow[0].ALL[0], (u8 *)sysex_buffer, 512);
 	    // notify that bytes have been written
 	    SID_SYSEX_SendAck(port, SYSEX_ACK, sysex_received_checksum);
 	    break;
@@ -412,11 +413,13 @@ static s32 SID_SYSEX_Cmd_ParWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd
 {
   static u16 addr = 0;
   static u8 data = 0;
+  static u8 write_status = 0;
 
   switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
       sysex_state.TYPE_RECEIVED = 0;
+      write_status = 0;
       break;
 
     case SYSEX_CMD_STATE_CONT:
@@ -431,41 +434,39 @@ static s32 SID_SYSEX_Cmd_ParWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd
 	addr |= (midi_in & 0x7f);
       } else if( !sysex_state.DL_RECEIVED ) {
 	sysex_state.DL_RECEIVED = 1;
+	sysex_state.DH_RECEIVED = 0; // for the case that DH_RECEIVED switched back to DL_RECEIVED
 	data = midi_in & 0x0f;
       } else if( !sysex_state.DH_RECEIVED ) {
 	sysex_state.DH_RECEIVED = 1;
 	data |= (midi_in & 0x0f) << 4;
-      }
-      break;
-
-    default: // SYSEX_CMD_STATE_END
-      if( !sysex_state.DH_RECEIVED ) {
-	// incomplete command
-	SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
-      } else {
 	switch( sysex_patch_type ) {
 	  case 0x00: // write parameter data for WOPT(0..3)
 	  case 0x01:
 	  case 0x02:
 	  case 0x03:
-	    if( SID_SYSEX_WritePatchPar(sysex_sid_selection, sysex_patch_type, addr, data) < 0 ) {
-	      SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_PAR_NOT_AVAILABLE);
-	    } else {
-	      SID_SYSEX_SendAck(port, SYSEX_ACK, 0x00);
-	    }
+	    write_status |= SID_SYSEX_WritePatchPar(sysex_sid_selection, sysex_patch_type, addr, data);
 	    break;
 
 	  case 0x70: // Ensemble Write
-	    if( SID_SYSEX_WriteEnsPar(sysex_sid_selection, addr, data) < 0 ) {
-	      SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_PAR_NOT_AVAILABLE);
-	    } else {
-	      SID_SYSEX_SendAck(port, SYSEX_ACK, 0x00);
-	    }
-	    break;
+	    write_status |= SID_SYSEX_WriteEnsPar(sysex_sid_selection, addr, data);
 
 	  default:
-	    SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_PAR_NOT_AVAILABLE);
+	    write_status |= -1;
 	}
+
+	// clear DL_RECEIVED. This allows to send additional bytes to the next address
+	sysex_state.DL_RECEIVED = 0;
+	++addr;
+      }
+      break;
+
+    default: // SYSEX_CMD_STATE_END
+      if( !sysex_state.DH_RECEIVED ) {
+	SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
+      } else if( write_status < 0 ) {
+	SID_SYSEX_SendAck(port, SYSEX_DISACK, SID_DISACK_PAR_NOT_AVAILABLE);
+      } else {
+	SID_SYSEX_SendAck(port, SYSEX_ACK, 0x00);
       }
       break;
   }

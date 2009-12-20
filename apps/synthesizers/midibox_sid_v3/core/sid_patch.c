@@ -88,7 +88,7 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
 {
   switch( engine ) {
     case SID_SE_LEAD:
-      if( sizeof(sid_patch_t) < sizeof(sid_patch_preset_lead) ) {
+      if( sizeof(sid_patch_t) != sizeof(sid_patch_preset_lead) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SID_PATCH_Preset:ERROR] lead patch size mismatch (%d/%d)\n", sizeof(sid_patch_t), sizeof(sid_patch_preset_lead));
 #endif
@@ -117,7 +117,7 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
       break;
 
     case SID_SE_BASSLINE:
-      if( sizeof(sid_patch_t) < sizeof(sid_patch_preset_bassline) ) {
+      if( sizeof(sid_patch_t) != sizeof(sid_patch_preset_bassline) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SID_PATCH_Preset:ERROR] bassline patch size mismatch (%d/%d)\n", sizeof(sid_patch_t), sizeof(sid_patch_preset_bassline));
 #endif
@@ -127,7 +127,7 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
       break;
 
     case SID_SE_DRUM:
-      if( sizeof(sid_patch_t) < sizeof(sid_patch_preset_drum) ) {
+      if( sizeof(sid_patch_t) != sizeof(sid_patch_preset_drum) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SID_PATCH_Preset:ERROR] drum patch size mismatch (%d/%d)\n", sizeof(sid_patch_t), sizeof(sid_patch_preset_drum));
 #endif
@@ -137,7 +137,7 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
       break;
 
     case SID_SE_MULTI:
-      if( sizeof(sid_patch_t) < sizeof(sid_patch_preset_multi) ) {
+      if( sizeof(sid_patch_t) != sizeof(sid_patch_preset_multi) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SID_PATCH_Preset:ERROR] multi patch size mismatch (%d/%d)\n", sizeof(sid_patch_t), sizeof(sid_patch_preset_multi));
 #endif

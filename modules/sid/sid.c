@@ -47,6 +47,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 sid_regs_t sid_regs[SID_NUM];
+u8 sid_gate_update_done[SID_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -134,6 +135,7 @@ s32 SID_Init(u32 mode)
 
   // clear all SID registers
   for(sid=0; sid<SID_NUM; ++sid)
+    sid_gate_update_done[sid] = 0x00;
     for(reg=0; reg<SID_REGS_NUM; ++reg) {
       sid_regs[sid].ALL[reg] = 0;
       sid_regs_shadow[sid].ALL[reg] = 0;
@@ -204,6 +206,7 @@ s32 SID_Update(u32 mode)
       SID_SerWrite(0x02, reg, data, 0); // CS lines, address, data, reset
       sid_regs_shadow[1].ALL[reg] = data;
     }
+    sid_gate_update_done[i] = 0xff;
   }
 
   // TODO: here we should enable the SID SE update interrupt - once available

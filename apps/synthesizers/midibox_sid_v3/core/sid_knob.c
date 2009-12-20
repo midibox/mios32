@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#include "sid_patch.h"
+#include "sid_se.h"
 #include "sid_knob.h"
 
 
@@ -26,13 +28,6 @@
 // should be at least 1 for sending error messages
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 1
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global Variables
-/////////////////////////////////////////////////////////////////////////////
-
-sid_knob_t sid_knob[SID_NUM][SID_KNOB_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,25 +56,34 @@ sid_knob_t sid_knob[SID_NUM][SID_KNOB_NUM];
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_KNOB_Init(u32 mode)
 {
-  int sid, i;
-
-  for(sid=0; sid<SID_NUM; ++i)
-    for(i=0; i<SID_KNOB_NUM; ++i)
-      SID_KNOB_KnobInit((sid_knob_t *)&sid_knob[sid][i]);
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialises a Knob
+// Sets a knob value
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_KNOB_KnobInit(sid_knob_t *knob)
+s32 SID_KNOB_SetValue(u8 sid, sid_knob_num_t knob_num, u8 value)
 {
-  // clear complete structure
-  memset(knob, 0, sizeof(sid_knob_t));
+  // store new value into patch
+  sid_knob_t *knob = (sid_knob_t *)&sid_patch[sid].knob[knob_num];
+  knob->value = value;
 
-  knob->max = 0xff;
+  // copy it also into shadow buffer
+  sid_knob_t *knob_shadow = (sid_knob_t *)&sid_patch_shadow[sid].knob[knob_num];
+  knob_shadow->value = value;
+
+  // TODO: copy as signed value into modulation source array
+
+  // TODO: forward to parameter handler
+
+  // TMP solution for pitchbender
+  if( knob_num == SID_KNOB_PITCHBENDER ) {
+    sid_se_voice_t *v = &sid_se_voice[sid][0];
+    int voice;
+    for(voice=0; voice<SID_SE_NUM_VOICES; ++voice, ++v)
+      v->pitchbender = value;
+  }
 
   return 0; // no error
 }

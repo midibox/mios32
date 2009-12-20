@@ -22,12 +22,12 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SID_SE_NUM_VOICES      (3*SID_NUM) // SID_NUN is defined in sid.h
+#define SID_SE_NUM_VOICES      6
 #define SID_SE_NUM_MIDI_VOICES (SID_SE_NUM_VOICES)
+#define SID_SE_NUM_FILTERS     2
 #define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES)
 #define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES)
 #define SID_SE_NUM_WT          (SID_SE_NUM_VOICES)
-#define SID_SE_NUM_SEQ         (SID_NUM)
 
 #define SID_SE_NOTESTACK_SIZE 10
 
@@ -63,9 +63,7 @@ typedef enum sid_se_engine_t {
 } sid_se_engine_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned sid_type:2; // 0=no SID restriction, 1=6581, 2=6582/8580, 3=SwinSID
     unsigned reserved:1;
@@ -75,9 +73,7 @@ typedef union {
 } sid_se_hw_flags_t;
 
 typedef union {
-  struct {
-    u16 ALL;
-  };
+  u16 ALL;
   struct {
     unsigned ABW:1; // ADSR Bug Workaround
   };
@@ -86,12 +82,40 @@ typedef union {
 
 
 ////////////////////////////////////////
+// MIDI Voices
+////////////////////////////////////////
+typedef union {
+  u8 ALL;
+  struct {
+    unsigned ARP_ACTIVE:1;
+    unsigned ARP_UP:1;
+    unsigned SYNC_ARP:1;
+    unsigned HOLD_SAVED:1;
+  };
+} sid_se_arp_state_t;
+
+typedef struct sid_se_midi_voice_t {
+  u8 midi_channel;
+  u8 split_lower;
+  u8 split_upper;
+  u8 transpose;
+  u8 pitchbender;
+  u8 last_voice;
+  sid_se_arp_state_t arp_state;
+  u8 arp_div_ctr;
+  u8 arp_gl_ctr;
+  u8 arp_note_ctr;
+  u8 wt_stack[4];
+  notestack_t notestack;
+  notestack_item_t notestack_items[SID_SE_NOTESTACK_SIZE];
+} sid_se_midi_voice_t;
+
+
+////////////////////////////////////////
 // Voice
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u16 ALL;
-  };
+  u16 ALL;
   struct {
     unsigned VOICE_ACTIVE:1;
     unsigned VOICE_DISABLED:1;
@@ -107,32 +131,26 @@ typedef union {
 } sid_se_voice_state_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned PORTA_MODE:2; // portamento (0), constant time glide (1), glissando (2)
-    unsigned GAE:1; // gate always enabled
+    unsigned GSA:1; // gate always enabled
   };
 } sid_se_voice_flags_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned WAVEFORM:4;
     unsigned VOICE_OFF:1;
     unsigned SYNC:1;
-    unsigned RING:1;
+    unsigned RINGMOD:1;
     unsigned RESERVED:1;
   };
 } sid_se_voice_waveform_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned DECAY:4;
     unsigned ATTACK:4;
@@ -140,9 +158,7 @@ typedef union {
 } sid_se_voice_ad_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned SUSTAIN:4;
     unsigned RELEASE:4;
@@ -150,9 +166,7 @@ typedef union {
 } sid_se_voice_sr_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned ENABLE:1;
     unsigned DIR:2; // up/down/U&D/D&U
@@ -165,9 +179,7 @@ typedef union {
 } sid_se_voice_arp_mode_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned DIV:6;
     unsigned EASY_CHORD:1;
@@ -176,9 +188,7 @@ typedef union {
 } sid_se_voice_arp_speed_div_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned GATELENGTH:5;
     unsigned OCTAVE_RANGE:3;
@@ -186,9 +196,7 @@ typedef union {
 } sid_se_voice_arp_gl_rng_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned WAVEFORM_SECOND:4;
     unsigned ENABLE_SECOND:1;
@@ -217,53 +225,30 @@ typedef struct sid_se_voice_patch_t {
 } sid_se_voice_patch_t;
 
 typedef struct sid_se_voice_t {
+  u8     sid;   // number of assigned SID engine
+  u8     phys_sid; // number of assigned physical SID (chip)
+  u8     voice; // number of assigned voice
+  u8     phys_voice; // number of assigned physical SID voice
+  sid_voice_t *phys_sid_voice; // reference to SID register
+  sid_se_voice_patch_t *voice_patch; // reference to Voice part of a patch
+  sid_se_midi_voice_t *midi_voice; // reference to MIDI Voice structure
+  notestack_t *notestack; // reference to note stack in MIDI voice
+
   sid_se_voice_state_t state;
   u8     assigned_mv;
   u8     note;
   u8     arp_note;
   u8     played_note;
-  u8     transp_note;
-  u8     old_transp_note;
-  u16    pitchbender;
-  u16    old_target_frq;
+  u8     transposed_note;
+  u8     old_transposed_note;
+  u8     pitchbender;
+  u16    prev_target_frq;
   u16    linear_frq;
-  u16    porta_freq;
-  u16    porta_ctr;
+  u16    prev_linear_frq;
+  u16    portamento_ctr;
   u16    set_delay_ctr;
   u16    clr_delay_ctr;
 } sid_se_voice_t;
-
-
-////////////////////////////////////////
-// MIDI Voices
-////////////////////////////////////////
-typedef union {
-  struct {
-    u8 ALL;
-  };
-  struct {
-    unsigned ARP_ACTIVE:1;
-    unsigned ARP_UP:1;
-    unsigned SYNC_ARP:1;
-    unsigned HOLD_SAVED:1;
-  };
-} sid_se_arp_state_t;
-
-typedef struct sid_se_midi_voice_t {
-  u8 channel;
-  u8 split_lower;
-  u8 split_upper;
-  u8 split_transpose;
-  u16 pitchbender;
-  u8 last_voice;
-  sid_se_arp_state_t arp_state;
-  u8 arp_div_ctr;
-  u8 arp_gl_ctr;
-  u8 arp_note_ctr;
-  u8 wt_stack[4];
-  notestack_t notestack;
-  notestack_item_t notestack_items[SID_SE_NOTESTACK_SIZE];
-} sid_se_midi_voice_t;
 
 
 ////////////////////////////////////////
@@ -279,14 +264,21 @@ typedef struct sid_se_filter_patch_t {
 } sid_se_filter_patch_t;
 
 
+typedef struct sid_se_filter_t {
+  u8     sid;   // number of assigned SID engine
+  u8     phys_sid; // number of assigned physical SID (chip)
+  u8     filter; // number of assigned filter
+
+  sid_regs_t *phys_sid_regs; // reference to SID registers
+  sid_se_filter_patch_t *filter_patch; // reference to filter part of a patch
+} sid_se_filter_t;
+
 
 ////////////////////////////////////////
 // LFO
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned ENABLE:1;
     unsigned RESERVED1:1;
@@ -314,9 +306,7 @@ typedef struct sid_se_lfo_t {
 // Envelope
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned LOOP_BEGIN:3;
     unsigned RESERVED1:1;
@@ -366,9 +356,7 @@ typedef struct sid_se_env_t {
 // Wavetable
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned CLKDIV:6;
     unsigned CHANNEL_TARGET_SIDL:1;
@@ -394,9 +382,7 @@ typedef struct sid_se_wt_t {
 // Modulation Pathes
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned OP:4;
     unsigned RESERVED:2;
@@ -406,9 +392,7 @@ typedef union {
 } sid_se_mod_op_t;
 
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned PITCH_1:1;
     unsigned PITCH_2:1;
@@ -435,9 +419,7 @@ typedef struct sid_se_mod_patch_t {
 // Trigger Matrix
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL[3];
-  };
+  u8 ALL[3];
   struct {
     unsigned O1L:1; // OSC1 Left
     unsigned O2L:1; // OSC2 Left
@@ -471,9 +453,7 @@ typedef union {
 // Sequencer (Bassline/Drum Mode)
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL;
-  };
+  u8 ALL;
   struct {
     unsigned ENABLED:1;
     unsigned RUNNING:1;
@@ -488,6 +468,16 @@ typedef struct sid_se_seq_t {
 } sid_se_seq_t;
 
 
+////////////////////////////////////////
+// General SID Engine variables
+////////////////////////////////////////
+
+typedef struct sid_se_vars_t {
+  sid_se_trg_t triggers;
+} sid_se_vars_t;
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -495,23 +485,34 @@ typedef struct sid_se_seq_t {
 
 extern s32 SID_SE_Init(u32 mode);
 
-extern s32 SID_SE_VoiceInit(sid_se_voice_t *voice);
+extern s32 SID_SE_VarsInit(sid_se_vars_t *vars);
+extern s32 SID_SE_VoiceInit(sid_se_voice_t *v, u8 sid, u8 voice);
+extern s32 SID_SE_FilterInit(sid_se_filter_t *f, u8 sid, u8 filter);
 extern s32 SID_SE_MIDIVoiceInit(sid_se_midi_voice_t *midi_voice);
 extern s32 SID_SE_LFOInit(sid_se_lfo_t *lfo);
 extern s32 SID_SE_ENVInit(sid_se_env_t *env);
 extern s32 SID_SE_WTInit(sid_se_wt_t *wt);
 extern s32 SID_SE_SEQInit(sid_se_seq_t *seq);
 
+extern s32 SID_SE_Update(void);
+
+extern s32 SID_SE_Gate(sid_se_voice_t *v);
+extern s32 SID_SE_Pitch(sid_se_voice_t *v);
+extern s32 SID_SE_PW(sid_se_voice_t *v);
+extern s32 SID_SE_FilterAndVolume(sid_se_filter_t *f);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern sid_se_voice_t sid_se_voice[SID_SE_NUM_VOICES];
-extern sid_se_midi_voice_t sid_se_midi_voice[SID_SE_NUM_MIDI_VOICES];
-extern sid_se_lfo_t sid_se_lfo[SID_SE_NUM_LFO];
-extern sid_se_env_t sid_se_env[SID_SE_NUM_ENV];
-extern sid_se_wt_t sid_se_wt[SID_SE_NUM_WT];
-extern sid_se_seq_t sid_se_seq[SID_SE_NUM_SEQ];
+extern sid_se_vars_t sid_se_vars[SID_NUM];
+extern sid_se_voice_t sid_se_voice[SID_NUM][SID_SE_NUM_VOICES];
+extern sid_se_filter_t sid_se_filter[SID_NUM][SID_SE_NUM_FILTERS];
+extern sid_se_midi_voice_t sid_se_midi_voice[SID_NUM][SID_SE_NUM_MIDI_VOICES];
+extern sid_se_lfo_t sid_se_lfo[SID_NUM][SID_SE_NUM_LFO];
+extern sid_se_env_t sid_se_env[SID_NUM][SID_SE_NUM_ENV];
+extern sid_se_wt_t sid_se_wt[SID_NUM][SID_SE_NUM_WT];
+extern sid_se_seq_t sid_se_seq[SID_NUM];
 
 #endif /* _SID_SE_H */
