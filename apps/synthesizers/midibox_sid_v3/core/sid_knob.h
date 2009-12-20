@@ -23,14 +23,16 @@
 
 #define SID_KNOB_NUM 8
 
-#define SID_KNOB_IX_1  0
-#define SID_KNOB_IX_2  1
-#define SID_KNOB_IX_3  2
-#define SID_KNOB_IX_4  3
-#define SID_KNOB_IX_5  4
-#define SID_KNOB_IX_V  5
-#define SID_KNOB_IX_P  6
-#define SID_KNOB_IX_A  7
+typedef enum {
+  SID_KNOB_1 = 0,
+  SID_KNOB_2,
+  SID_KNOB_3,
+  SID_KNOB_4,
+  SID_KNOB_5,
+  SID_KNOB_VELOCITY,
+  SID_KNOB_PITCHBENDER,
+  SID_KNOB_AFTERTOUCH
+} sid_knob_num_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -51,13 +53,11 @@ typedef struct sid_knob_t {
 
 extern s32 SID_KNOB_Init(u32 mode);
 
-extern s32 SID_KNOB_KnobInit(sid_knob_t *knob);
+extern s32 SID_KNOB_SetValue(u8 sid, sid_knob_num_t knob_num, u8 value);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
-
-extern sid_knob_t sid_knob[SID_NUM][SID_KNOB_NUM];
 
 #endif /* _SID_KNOB_H */

@@ -17,6 +17,7 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
 		../core/sid_midi.c \
+		../core/sid_midi_l.c \
 		../core/sid_sysex.c \
 		../core/sid_asid.c \
 		../core/sid_patch.c \

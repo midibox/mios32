@@ -85,6 +85,15 @@ typedef union {
     u8 frq_h;
     u8 pw_l;
     u8 pw_h;
+    u8 waveform_reg;
+    u8 ad;
+    u8 sr;
+  };
+  struct {
+    u8 frq_l; // don't use u16 to avoid little/big endian issues
+    u8 frq_h;
+    u8 pw_l;
+    u8 pw_h;
 
     unsigned gate:1;
     unsigned sync:1;
@@ -153,6 +162,7 @@ extern s32 SID_Update(u32 mode);
 /////////////////////////////////////////////////////////////////////////////
 
 extern sid_regs_t sid_regs[SID_NUM];
+extern u8 sid_gate_update_done[SID_NUM];
 
 
 #endif /* _SID_H */

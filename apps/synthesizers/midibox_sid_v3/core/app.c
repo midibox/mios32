@@ -46,6 +46,13 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+static u32 stopwatch_value;
+static u32 stopwatch_value_max;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
@@ -69,6 +76,9 @@ void APP_Init(void)
   // install timeout callback function
   MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
 
+  // init Stopwatch
+  APP_StopwatchInit();
+
   // init MIDI parsers
   SID_MIDI_Init(0);
   SID_SYSEX_Init(0);
@@ -77,24 +87,6 @@ void APP_Init(void)
   // init sound engine
   SID_PATCH_Init(0);
   SID_SE_Init(0);
-
-#if 0
-
-  // set initial SID values
-  int sid;
-  for(sid=0; sid<SID_NUM; ++sid) {
-    sid_regs[sid].volume = 15;
-
-    sid_regs[sid].v1.frq_l = (16777 & 0xff); // Fout = Fn * Fclk/16777216
-    sid_regs[sid].v1.frq_h = (16777 >> 8);
-    sid_regs[sid].v1.waveform = 1;
-    sid_regs[sid].v1.attack = 0;
-    sid_regs[sid].v1.decay = 0;
-    sid_regs[sid].v1.sustain = 15;
-    sid_regs[sid].v1.release = 0;
-  }
-#endif
-
 }
 
 
@@ -201,6 +193,16 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
+  // output and reset current stopwatch max value
+  MUTEX_MIDIOUT_TAKE;
+  MIOS32_IRQ_Disable();
+  u32 value = stopwatch_value_max;
+  stopwatch_value_max = 0;
+  MIOS32_IRQ_Enable();
+  if( value )
+    DEBUG_MSG("%d uS\n", value);
+  MUTEX_MIDIOUT_GIVE;
+
   static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
@@ -252,4 +254,32 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
   SID_ASID_TimeOut(port);
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// For performance Measurements
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_StopwatchInit(void)
+{
+  stopwatch_value = 0;
+  stopwatch_value_max = 0;
+  return MIOS32_STOPWATCH_Init(1); // 1 uS resolution
+}
+
+s32 APP_StopwatchReset(void)
+{
+  return MIOS32_STOPWATCH_Reset();
+}
+
+s32 APP_StopwatchCapture(void)
+{
+  u32 value = MIOS32_STOPWATCH_ValueGet();
+  MIOS32_IRQ_Disable();
+  stopwatch_value = value;
+  if( value > stopwatch_value_max )
+    stopwatch_value_max = value;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
 }

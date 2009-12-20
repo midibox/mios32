@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MBSID Lead Engine
+ * Header file for MBSID MIDI Parser
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_SE_L_H
-#define _SID_SE_L_H
+#ifndef _SID_MIDI_L_H
+#define _SID_MIDI_L_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -24,27 +24,19 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  u8 ALL;
-  struct {
-    unsigned LEGATO:1; // mono/legato
-    unsigned WTO:1; // Wavetable Only
-    unsigned SUSKEY:1;
-  };
-} sid_se_l_flags_t;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_SE_L_Init(u32 mode);
+extern s32 SID_MIDI_L_Init(u32 mode);
 
-extern s32 SID_SE_L_Update(u8 sid);
+extern s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_MIDI_L_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_SE_L_H */
+#endif /* _SID_MIDI_L_H */

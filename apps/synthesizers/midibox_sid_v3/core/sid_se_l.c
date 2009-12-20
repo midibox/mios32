@@ -21,6 +21,7 @@
 
 #include "sid_se.h"
 #include "sid_se_l.h"
+#include "sid_patch.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,6 +46,8 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 SID_SE_L_NoteRestart(sid_se_voice_t *v);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -56,5 +59,85 @@
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_L_Init(u32 mode)
 {
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sound Engine Update Cycle
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_SE_L_Update(u8 sid)
+{
+  int voice;
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+  sid_patch_t *p = &sid_patch[sid];
+  sid_se_l_flags_t l_flags = (sid_se_l_flags_t)p->L.flags;
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Syncs via Trigger Matrix
+  ///////////////////////////////////////////////////////////////////////////
+  sid_se_trg_t *trg = &sid_se_vars[sid].triggers;
+  if( trg->ALL[0] ) {
+    if( trg->O1L ) SID_SE_L_NoteRestart(&sid_se_voice[sid][0]);
+    if( trg->O2L ) SID_SE_L_NoteRestart(&sid_se_voice[sid][1]);
+    if( trg->O3L ) SID_SE_L_NoteRestart(&sid_se_voice[sid][2]);
+    if( trg->O1R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][3]);
+    if( trg->O2R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][4]);
+    if( trg->O3R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][5]);
+    trg->ALL[0] = 0;
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Voices
+  ///////////////////////////////////////////////////////////////////////////
+  sid_se_voice_t *v = &sid_se_voice[sid][0];
+  for(voice=0; voice<6; ++voice, ++v) {
+    if( SID_SE_Gate(v) > 0 )
+      SID_SE_Pitch(v);
+    SID_SE_PW(v);
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Filters and Volume
+  ///////////////////////////////////////////////////////////////////////////
+  sid_se_filter_t *f = &sid_se_filter[sid][0];
+  SID_SE_FilterAndVolume(f++);
+  SID_SE_FilterAndVolume(f);
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Tmp: copy register values directly into SID registers
+  ///////////////////////////////////////////////////////////////////////////
+  v = &sid_se_voice[sid][0];
+  for(voice=0; voice<6; ++voice, ++v) {
+    sid_se_voice_waveform_t waveform = (sid_se_voice_waveform_t)v->voice_patch->waveform;
+    v->phys_sid_voice->waveform = waveform.WAVEFORM;
+    v->phys_sid_voice->sync = waveform.SYNC;
+    v->phys_sid_voice->ringmod = waveform.RINGMOD;
+    v->phys_sid_voice->ad = v->voice_patch->ad;
+    v->phys_sid_voice->sr = v->voice_patch->sr;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help Functions
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 SID_SE_L_NoteRestart(sid_se_voice_t *v)
+{
+  // request gate if voice is active (and request clear for proper ADSR handling)
+  v->state.GATE_CLR_REQ = 1;
+  if( v->state.VOICE_ACTIVE )
+    v->state.GATE_SET_REQ = 1;
+
+  // TODO: delay
+  // TODO: ABW
+
   return 0; // no error
 }

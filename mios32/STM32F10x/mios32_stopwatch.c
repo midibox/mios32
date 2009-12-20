@@ -30,8 +30,8 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define STOPWATCH_TIMER_BASE                 TIM4
-#define STOPWATCH_TIMER_RCC   RCC_APB1Periph_TIM4
+#define STOPWATCH_TIMER_BASE                 TIM6
+#define STOPWATCH_TIMER_RCC   RCC_APB1Periph_TIM6
 
 
 /////////////////////////////////////////////////////////////////////////////
