@@ -184,14 +184,9 @@ static s32 SID_MIDI_L_NoteOn(sid_se_voice_t *v, u8 note, sid_se_l_flags_t l_flag
 
     // trigger matrix
     if( !l_flags.LEGATO || v->notestack->len == 1 ) {
-      sid_se_vars_t *vars = &sid_se_vars[v->sid];
-      u8 *triggers = (u8 *)&sid_patch[v->sid].L.trg_matrix[SID_SE_TRG_NOn][0];
-      // WTO mode: only trigger WT reset/step sync
-      if( !l_flags.WTO ) {
-	vars->triggers.ALL[0] |= triggers[0] & (0xc0 | (1 << v->voice)); // only current voice can trigger NoteOn
-	vars->triggers.ALL[1] |= triggers[1];
-      }
-      vars->triggers.ALL[2] |= triggers[2];
+      v->trg_dst[0] |= v->trg_mask_note_on[0] & (0xc0 | (1 << v->voice)); // only current voice can trigger NoteOn
+      v->trg_dst[1] |= v->trg_mask_note_on[1];
+      v->trg_dst[2] |= v->trg_mask_note_on[2];
     }
   }
 
@@ -215,11 +210,9 @@ static s32 SID_MIDI_L_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, si
   SID_MIDI_L_GateOff(v);
 
   // trigger matrix
-  sid_se_vars_t *vars = &sid_se_vars[v->sid];
-  u8 *triggers = (u8 *)&sid_patch[v->sid].L.trg_matrix[SID_SE_TRG_NOff][0];
-  vars->triggers.ALL[0] |= triggers[0] & 0xc0; // gates handled separately in SID_MIDI_L_GateOff
-  vars->triggers.ALL[1] |= triggers[1];
-  vars->triggers.ALL[2] |= triggers[2];
+  v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately in SID_MIDI_L_GateOff
+  v->trg_dst[1] |= v->trg_mask_note_off[1];
+  v->trg_dst[2] |= v->trg_mask_note_off[2];
 
   return 0; // no error, NO note on!
 }
@@ -254,7 +247,7 @@ static s32 SID_MIDI_L_GateOff(sid_se_voice_t *v)
       v->state.GATE_CLR_REQ = 1;
 
     // remove gate set request
-    sid_se_vars[v->sid].triggers.ALL[0] &= ~(1 << v->voice);
+    v->trg_dst[0] &= ~(1 << v->voice);
   }
 
   return 0; // no error

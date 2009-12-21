@@ -41,6 +41,8 @@
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
+u8 sid_se_speed_factor;
+
 sid_se_vars_t sid_se_vars[SID_NUM];
 sid_se_voice_t sid_se_voice[SID_NUM][SID_SE_NUM_VOICES];
 sid_se_filter_t sid_se_filter[SID_NUM][SID_SE_NUM_FILTERS];
@@ -51,26 +53,15 @@ sid_se_wt_t sid_se_wt[SID_NUM][SID_SE_NUM_WT];
 sid_se_seq_t sid_se_seq[SID_NUM];
 
 
+#include "sid_se_frq_table.inc"
+#include "sid_se_env_table.inc"
+#include "sid_se_lfo_table.inc"
+#include "sid_se_sin_table.inc"
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
-
-static const u16 frq_table[128] = {
-  0x0028,0x002b,0x002d,0x0030,0x0033,0x0036,0x0039,0x003d,0x0040,0x0044,0x0048,0x004c,
-  0x0051,0x0056,0x005b,0x0060,0x0066,0x006c,0x0073,0x007a,0x0081,
-
-  0x0089,0x0091,0x0099,0x00a3,0x00ac,0x00b7,0x00c1,0x00cd,0x00d9,0x00e6,0x00f4,0x0102, // c-2
-  0x0112,0x0122,0x0133,0x0146,0x0159,0x016e,0x0183,0x019b,0x01b3,0x01cd,0x01e8,0x0205, // c-1
-  0x0224,0x0245,0x0267,0x028c,0x02b3,0x02da,0x0307,0x0336,0x0366,0x039a,0x03d1,0x040b, // c-0
-  0x0449,0x048a,0x04cf,0x0518,0x0566,0x05b8,0x060f,0x066c,0x06cd,0x0735,0x07a3,0x0817, // C-1
-  0x0892,0x0915,0x099f,0x0A31,0x0Acd,0x0B71,0x0C1f,0x0Cd8,0x0D9b,0x0E6a,0x0F46,0x102e, // C-2
-  0x1125,0x122a,0x133e,0x1463,0x159a,0x16e3,0x183f,0x19b0,0x1B37,0x1Cd5,0x1E8c,0x205d, // C-3
-  0x224a,0x2454,0x267d,0x28c7,0x2B34,0x2Dc6,0x307e,0x3361,0x366f,0x39ab,0x3D19,0x40bc, // C-4
-  0x4495,0x48a8,0x4Cfc,0x518f,0x5668,0x5B8c,0x60fe,0x66c2,0x6Cde,0x7357,0x7A34,0x8177, // C-5
-  0x892a,0x9153,0x99f6,0xA31e,0xACd1,0xB718,0xC1fc,0xCD85,0xD9bc,0xE6af,0xF467         // C-6
-};
-
-#include "sid_se_env_table.inc"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -96,6 +87,9 @@ s32 SID_SE_Init(u32 mode)
   int i, sid;
   s32 status = 0;
 
+  // currently the sound engine runs two times faster than MBSID V2 (will be changed in future)
+  sid_se_speed_factor = 2;
+
   for(sid=0; sid<SID_NUM; ++sid) {
     SID_SE_VarsInit((sid_se_vars_t *)&sid_se_vars[sid]);
 
@@ -109,13 +103,13 @@ s32 SID_SE_Init(u32 mode)
       SID_SE_MIDIVoiceInit((sid_se_midi_voice_t *)&sid_se_midi_voice[sid][i]);
 
     for(i=0; i<SID_SE_NUM_LFO; ++i)
-      SID_SE_LFOInit((sid_se_lfo_t *)&sid_se_lfo[sid][i]);
+      SID_SE_LFOInit((sid_se_lfo_t *)&sid_se_lfo[sid][i], sid, i);
 
     for(i=0; i<SID_SE_NUM_ENV; ++i)
-      SID_SE_ENVInit((sid_se_env_t *)&sid_se_env[sid][i]);
+      SID_SE_ENVInit((sid_se_env_t *)&sid_se_env[sid][i], sid, i);
 
     for(i=0; i<SID_SE_NUM_WT; ++i)
-      SID_SE_WTInit((sid_se_wt_t *)&sid_se_wt[sid][i]);
+      SID_SE_WTInit((sid_se_wt_t *)&sid_se_wt[sid][i], sid, i);
 
     SID_SE_SEQInit((sid_se_seq_t *)&sid_se_seq[sid]);
   }
@@ -124,10 +118,8 @@ s32 SID_SE_Init(u32 mode)
   status |= SID_SE_L_Init(mode);
 
   // start timer
-  // initialize timer for 1000 uS (= 1 mS) period
-
-  // TODO: increase update cycle once performance has been evaluated
-  MIOS32_TIMER_Init(2, 1000, SID_SE_Update, MIOS32_IRQ_PRIO_MID);
+  // TODO: increase sid_se_speed_factor once performance has been evaluated
+  MIOS32_TIMER_Init(2, 2000 / sid_se_speed_factor, SID_SE_Update, MIOS32_IRQ_PRIO_MID);
 
   return status;
 }
@@ -160,6 +152,11 @@ s32 SID_SE_VoiceInit(sid_se_voice_t *v, u8 sid, u8 voice)
   v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].L.voice[voice];
   v->midi_voice = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][voice];
   v->notestack = (notestack_t *)&v->midi_voice->notestack;
+  v->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + voice];
+  v->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + voice];
+  v->trg_mask_note_on = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOn][0];
+  v->trg_mask_note_off = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOff][0];
+  v->trg_dst = (u8 *)&sid_se_vars[sid];
 
   v->pitchbender = 0x80;
 
@@ -179,6 +176,7 @@ s32 SID_SE_FilterInit(sid_se_filter_t *f, u8 sid, u8 filter)
   f->filter = filter; // cross-reference to assigned filter
   f->phys_sid_regs = (sid_regs_t *)&sid_regs[f->phys_sid];
   f->filter_patch = (sid_se_filter_patch_t *)&sid_patch[sid].L.filter[filter];
+  f->mod_dst_filter = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_FIL1 + filter];
 
   return 0; // no error
 }
@@ -207,30 +205,54 @@ s32 SID_SE_MIDIVoiceInit(sid_se_midi_voice_t *midi_voice)
 /////////////////////////////////////////////////////////////////////////////
 // Initialises a LFO
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_SE_LFOInit(sid_se_lfo_t *lfo)
+s32 SID_SE_LFOInit(sid_se_lfo_t *l, u8 sid, u8 lfo)
 {
-  // just clear complete structure
-  memset(lfo, 0, sizeof(sid_se_lfo_t));
+  // clear complete structure
+  memset(l, 0, sizeof(sid_se_lfo_t));
+
+  l->sid = sid; // cross-reference to assigned SID
+  l->lfo = lfo; // cross-reference to LFO number
+  l->lfo_patch = (sid_se_lfo_patch_t *)&sid_patch[sid].L.lfo[lfo];
+  l->mod_src_lfo = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_LFO1 + lfo];
+  l->mod_dst_lfo_depth = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LD1 + lfo];
+  l->mod_dst_lfo_rate = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LR1 + lfo];
+  l->trg_mask_lfo_period = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo][0];
+  l->trg_dst = (u8 *)&sid_se_vars[sid];
+
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialises an Envelope
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_SE_ENVInit(sid_se_env_t *env)
+s32 SID_SE_ENVInit(sid_se_env_t *e, u8 sid, u8 env)
 {
   // just clear complete structure
-  memset(env, 0, sizeof(sid_se_env_t));
+  memset(e, 0, sizeof(sid_se_env_t));
+
+  e->sid = sid; // cross-reference to assigned SID
+  e->env = env; // cross-reference to ENV number
+  e->env_patch = (sid_se_env_patch_t *)&sid_patch[sid].L.env[env];
+  e->mod_src_env = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_ENV1 + env];
+  e->trg_mask_env_sustain = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_E1S + env][0];
+  e->trg_dst = (u8 *)&sid_se_vars[sid];
+
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialises a Wavetable
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_SE_WTInit(sid_se_wt_t *wt)
+s32 SID_SE_WTInit(sid_se_wt_t *w, u8 sid, u8 wt)
 {
   // just clear complete structure
-  memset(wt, 0, sizeof(sid_se_wt_t));
+  memset(w, 0, sizeof(sid_se_wt_t));
+
+  w->sid = sid; // cross-reference to assigned SID
+  w->wt = wt; // cross-reference to WT number
+  w->wt_patch = (sid_se_wt_patch_t *)&sid_patch[sid].L.wt[wt];
+  w->mod_dst_wt = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_WT1 + wt];
+
   return 0; // no error
 }
 
@@ -258,7 +280,7 @@ s32 SID_SE_Update(void)
   u8 sid = 0;
   sid_se_engine_t engine = sid_patch[sid].engine;
 
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
+#if STOPWATCH_PERFORMANCE_MEASURING >= 1
   APP_StopwatchReset();
 #endif
 
@@ -267,6 +289,13 @@ s32 SID_SE_Update(void)
   }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
+  APP_StopwatchCapture();
+#endif
+
+  // update SID registers
+  SID_Update(0);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 2
   APP_StopwatchCapture();
 #endif
 
@@ -418,13 +447,9 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
     }
   }
 
-  // TODO: pitch modulation
-
-  // saturate
-  if( target_frq < 0 )
-    target_frq = 0;
-  else if( target_frq > 0xffff )
-    target_frq = 0xffff;
+  // pitch modulation
+  target_frq += *v->mod_dst_pitch;
+  if( target_frq < 0 ) target_frq = 0; else if( target_frq > 0xffff ) target_frq = 0xffff;
 
   // portamento
   // whenever target frequency has been changed, update portamento frequency
@@ -446,7 +471,7 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
 
     // get portamento multiplier from envelope table
     // this one is used for "constant time glide" and "normal portamento"
-    int porta_multiplier = sid_se_env_table[portamento];
+    int porta_multiplier = sid_se_env_table[portamento] / sid_se_speed_factor;
 
     if( voice_flags.PORTA_MODE == 1 ) { // constant glide time
       // increment counter
@@ -505,8 +530,8 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
     if( frq_ix > 126 )
       frq_ix = 126;
     // interpolate between two frequency steps (frq_a and frq_b)
-    int frq_a = frq_table[frq_ix];
-    int frq_b = frq_table[frq_ix+1];
+    int frq_a = sid_se_frq_table[frq_ix];
+    int frq_b = sid_se_frq_table[frq_ix+1];
 
     // use bitfield [8:0] of 16bit linear frequency for scaling between two semitones
     int frq_semi = (frq_b-frq_a) * (linear_frq & 0x1ff);
@@ -522,9 +547,12 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
 
 s32 SID_SE_PW(sid_se_voice_t *v)
 {
+  // convert pulsewidth to 12bit signed value
   int pulsewidth = ((v->voice_patch->pulsewidth_h & 0x0f) << 8) | v->voice_patch->pulsewidth_l;
 
-  // TODO: modulation
+  // PW modulation
+  pulsewidth += *v->mod_dst_pw / 16;
+  if( pulsewidth > 0xfff ) pulsewidth = 0xfff; else if( pulsewidth < 0 ) pulsewidth = 0;
 
   // transfer to SID registers
   v->phys_sid_voice->pw_l = pulsewidth & 0xff;
@@ -538,7 +566,9 @@ s32 SID_SE_FilterAndVolume(sid_se_filter_t *f)
 {
   int cutoff = ((f->filter_patch->cutoff_h & 0x0f) << 8) | f->filter_patch->cutoff_l;
 
-  // TODO: modulation
+  // cutoff modulation
+  cutoff += *f->mod_dst_filter / 16;
+  if( cutoff > 0xfff ) cutoff = 0xfff; else if( cutoff < 0 ) cutoff = 0;
 
   // TODO: calibration
 
