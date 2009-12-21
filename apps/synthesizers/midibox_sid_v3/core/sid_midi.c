@@ -72,6 +72,17 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
       break;
 
     case CC:
+      // knob values are available for all engines
+      if( midi_package.chn == sid_se_midi_voice[sid][0].midi_channel ) {
+	switch( midi_package.cc_number ) {
+	  case  1: SID_KNOB_SetValue(sid, SID_KNOB_1, midi_package.value << 1); break;
+	  case 16: SID_KNOB_SetValue(sid, SID_KNOB_2, midi_package.value << 1); break;
+	  case 17: SID_KNOB_SetValue(sid, SID_KNOB_3, midi_package.value << 1); break;
+	  case 18: SID_KNOB_SetValue(sid, SID_KNOB_4, midi_package.value << 1); break;
+	  case 19: SID_KNOB_SetValue(sid, SID_KNOB_5, midi_package.value << 1); break;
+	}
+      }
+
       switch( engine ) {
         case SID_SE_LEAD:      return SID_MIDI_L_Receive_CC(sid, midi_package);
         case SID_SE_BASSLINE:  return -2; // TODO

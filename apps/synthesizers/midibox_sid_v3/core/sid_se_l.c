@@ -16,9 +16,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include <sid.h>
 
+#include "sid_random.h"
 #include "sid_se.h"
 #include "sid_se_l.h"
 #include "sid_patch.h"
@@ -47,6 +49,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SID_SE_L_NoteRestart(sid_se_voice_t *v);
+static s32 SID_SE_L_LFO_Restart(sid_se_lfo_t *l);
+static s32 SID_SE_L_ENV_Restart(sid_se_env_t *e);
+static s32 SID_SE_L_ENV_Release(sid_se_env_t *e);
+
+static s32 SID_SE_L_CalcModulation(u8 sid);
+static s32 SID_SE_L_LFO(sid_se_lfo_t *l);
+static s32 SID_SE_L_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun);
+static s32 SID_SE_L_ENV(sid_se_env_t *e);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,10 +78,36 @@ s32 SID_SE_L_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_L_Update(u8 sid)
 {
-  int voice;
-  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
-  sid_patch_t *p = &sid_patch[sid];
-  sid_se_l_flags_t l_flags = (sid_se_l_flags_t)p->L.flags;
+  int i;
+
+  ///////////////////////////////////////////////////////////////////////////
+  // LFOs
+  ///////////////////////////////////////////////////////////////////////////
+
+  sid_se_lfo_t *l = &sid_se_lfo[sid][0];
+  for(i=0; i<SID_SE_NUM_LFO; ++i, ++l)
+    SID_SE_L_LFO(l);
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // ENVs
+  ///////////////////////////////////////////////////////////////////////////
+
+  sid_se_env_t *e = &sid_se_env[sid][0];
+  for(i=0; i<SID_SE_NUM_ENV; ++i, ++e)
+    SID_SE_L_ENV(e);
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Modulation Matrix
+  ///////////////////////////////////////////////////////////////////////////
+
+  // since this isn't done anywhere else:
+  // convert linear frequency of voice1 to 15bit signed value (only positive direction)
+  sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_KEY] = sid_se_voice[sid][0].linear_frq >> 1;
+
+  // do calculations
+  SID_SE_L_CalcModulation(sid);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -85,7 +121,25 @@ s32 SID_SE_L_Update(u8 sid)
     if( trg->O1R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][3]);
     if( trg->O2R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][4]);
     if( trg->O3R ) SID_SE_L_NoteRestart(&sid_se_voice[sid][5]);
+    if( trg->E1A ) SID_SE_L_ENV_Restart(&sid_se_env[sid][0]);
+    if( trg->E2A ) SID_SE_L_ENV_Restart(&sid_se_env[sid][1]);
     trg->ALL[0] = 0;
+  }
+
+  if( trg->ALL[1] ) {
+    if( trg->E1R ) SID_SE_L_ENV_Release(&sid_se_env[sid][0]);
+    if( trg->E2R ) SID_SE_L_ENV_Release(&sid_se_env[sid][1]);
+    if( trg->L1  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][0]);
+    if( trg->L2  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][1]);
+    if( trg->L3  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][2]);
+    if( trg->L4  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][3]);
+    if( trg->L5  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][4]);
+    if( trg->L6  ) SID_SE_L_LFO_Restart(&sid_se_lfo[sid][5]);
+    trg->ALL[1] = 0;
+  }
+
+  if( trg->ALL[2] ) {
+    trg->ALL[1] = 0;
   }
 
 
@@ -93,7 +147,7 @@ s32 SID_SE_L_Update(u8 sid)
   // Voices
   ///////////////////////////////////////////////////////////////////////////
   sid_se_voice_t *v = &sid_se_voice[sid][0];
-  for(voice=0; voice<6; ++voice, ++v) {
+  for(i=0; i<SID_SE_NUM_VOICES; ++i, ++v) {
     if( SID_SE_Gate(v) > 0 )
       SID_SE_Pitch(v);
     SID_SE_PW(v);
@@ -112,7 +166,7 @@ s32 SID_SE_L_Update(u8 sid)
   // Tmp: copy register values directly into SID registers
   ///////////////////////////////////////////////////////////////////////////
   v = &sid_se_voice[sid][0];
-  for(voice=0; voice<6; ++voice, ++v) {
+  for(i=0; i<6; ++i, ++v) {
     sid_se_voice_waveform_t waveform = (sid_se_voice_waveform_t)v->voice_patch->waveform;
     v->phys_sid_voice->waveform = waveform.WAVEFORM;
     v->phys_sid_voice->sync = waveform.SYNC;
@@ -126,7 +180,7 @@ s32 SID_SE_L_Update(u8 sid)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Help Functions
+// Restart Functions (used by Trigger matrix for synching)
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SID_SE_L_NoteRestart(sid_se_voice_t *v)
@@ -138,6 +192,505 @@ static s32 SID_SE_L_NoteRestart(sid_se_voice_t *v)
 
   // TODO: delay
   // TODO: ABW
+
+  return 0; // no error
+}
+
+
+static s32 SID_SE_L_LFO_Restart(sid_se_lfo_t *l)
+{
+  // reset counter (take phase into account)
+  l->ctr = l->lfo_patch->phase << 8;
+
+  // clear overrun flag (for oneshot mode)
+  sid_se_vars[l->sid].lfo_overrun &= ~(1 << l->lfo);
+
+  // check if LFO should be delayed - set delay counter to 0x0001 in this case
+  l->delay_ctr = l->lfo_patch->delay ? 1 : 0;
+
+  // re-calculate waveform
+  return SID_SE_L_LFO_GenWave(l, 0);
+}
+
+
+static s32 SID_SE_L_ENV_Restart(sid_se_env_t *e)
+{
+  // start at attack phase
+  e->state.ALL = 0;
+  e->state.ATTACK1 = 1;
+
+  // check if ENV should be delayed - set delay counter to 0x0001 in this case
+  e->delay_ctr = e->env_patch->delay ? 1 : 0;
+
+  return 0; // no error
+}
+
+
+static s32 SID_SE_L_ENV_Release(sid_se_env_t *e)
+{
+  // set release phase
+  e->state.RELEASE1 = 1;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Calculate Modulation Path
+/////////////////////////////////////////////////////////////////////////////
+static s32 SID_SE_L_CalcModulation(u8 sid)
+{
+  int i;
+
+  s16 *mod_src_array = sid_se_vars[sid].mod_src;
+  s32 *mod_dst_array = sid_se_vars[sid].mod_dst;
+
+  // clear all destinations
+  memset(mod_dst_array, 0, sizeof(s32)*SID_SE_NUM_MOD_DST);
+
+  // calculate modulation pathes
+  sid_se_mod_patch_t *mp = (sid_se_mod_patch_t *)&sid_patch[sid].L.mod[0];
+  for(i=0; i<8; ++i, ++mp) {
+    if( mp->depth != 0 ) {
+
+      // first source
+      s32 mod_src1_value;
+      if( !mp->src1 ) {
+	mod_src1_value = 0;
+      } else {
+	if( mp->src1 & (1 << 7) ) {
+	  // constant range 0x00..0x7f -> +0x0000..0x38f0
+	  mod_src1_value = (mp->src1 & 0x7f) << 7;
+	} else {
+	  // modulation range +/- 0x3fff
+	  mod_src1_value = mod_src_array[mp->src1-1] / 2;
+	}
+      }
+
+      // second source
+      s32 mod_src2_value;
+      if( !mp->src2 ) {
+	mod_src2_value = 0;
+      } else {
+	if( mp->src2 & (1 << 7) ) {
+	  // constant range 0x00..0x7f -> +0x0000..0x38f0
+	  mod_src2_value = (mp->src2 & 0x7f) << 7;
+	} else {
+	  // modulation range +/- 0x3fff
+	  mod_src2_value = mod_src_array[mp->src2-1] / 2;
+	}
+      }
+
+      // apply operator
+      s32 mod_result;
+      switch( mp->op & 0x0f ) {
+        case 0: // disabled
+	  mod_result = 0;
+	  break;
+
+        case 1: // SRC1 only
+	  mod_result = mod_src1_value;
+	  break;
+
+        case 2: // SRC2 only
+	  mod_result = mod_src2_value;
+	  break;
+
+        case 3: // SRC1+SRC2
+	  mod_result = mod_src1_value + mod_src2_value;
+	  break;
+
+        case 4: // SRC1-SRC2
+	  mod_result = mod_src1_value - mod_src2_value;
+	  break;
+
+        case 5: // SRC1*SRC2
+	  mod_result = mod_src1_value * mod_src2_value;
+	  break;
+
+        case 6: // XOR
+	  mod_result = mod_src1_value ^ mod_src2_value;
+	  break;
+
+        case 7: // OR
+	  mod_result = mod_src1_value | mod_src2_value;
+	  break;
+
+        case 8: // AND
+	  mod_result = mod_src1_value & mod_src2_value;
+	  break;
+
+        case 9: // Min
+	  mod_result = (mod_src1_value < mod_src2_value) ? mod_src1_value : mod_src2_value;
+	  break;
+
+        case 10: // Max
+	  mod_result = (mod_src1_value > mod_src2_value) ? mod_src1_value : mod_src2_value;
+	  break;
+
+        case 11: // SRC1 < SRC2
+	  mod_result = (mod_src1_value < mod_src2_value) ? 0x7fff : 0x0000;
+	  break;
+
+        case 12: // SRC1 > SRC2
+	  mod_result = (mod_src1_value > mod_src2_value) ? 0x7fff : 0x0000;
+	  break;
+
+        case 13: { // SRC1 == SRC2 (with tolarance of +/- 64
+	  s32 diff = mod_src1_value - mod_src2_value;
+	  mod_result = (diff > -64 && diff < 64) ? 0x7fff : 0x0000;
+	} break;
+
+        case 14: { // S&H - SRC1 will be sampled whenever SRC2 changes from a negative to a positive value
+	  // check for SRC2 transition
+	  u8 transition = 0;
+	  if( mod_src2_value < 0 ) {
+	    sid_se_vars[sid].mod_transition &= ~(1 << i);
+	  } else {
+	    // check if value was negative before
+	    if( !(sid_se_vars[sid].mod_transition & (1 << i)) ) {
+	      transition = 1;
+	      sid_se_vars[sid].mod_transition |= (1 << i);
+	    }
+	  }
+
+	  if( transition )
+	    mod_result = mod_src1_value;
+	} break;
+
+        default:
+	  mod_result = 0;
+      }
+
+      // store in modulator source array for feedbacks
+      // use value w/o depth, this has two advantages:
+      // - maximum resolution when forwarding the data value
+      // - original MOD value can be taken for sample&hold feature
+      // bit it also has disadvantage:
+      // - the user could think it is a bug when depth doesn't affect the feedback MOD value...
+      s16 saturated_mod_result = mod_result;
+      if( mod_result < -0x8000 ) saturated_mod_result = -0x8000; else if( mod_result > 0x7fff ) saturated_mod_result = 0x7fff;
+      mod_src_array[SID_SE_MOD_SRC_MOD1 + i] = saturated_mod_result;
+
+      // forward to destinations
+      if( mod_result ) {
+	s32 scaled_mod_result = ((s32)mp->depth-128) * mod_result / 128; // (+/- 0x7fff * +/- 0x7f) / 128
+      
+	// invert result if requested
+	s32 mod_dst1 = (mp->op & (1 << 6)) ? -scaled_mod_result : scaled_mod_result;
+	s32 mod_dst2 = (mp->op & (1 << 7)) ? -scaled_mod_result : scaled_mod_result;
+
+	// add result to modulation target array
+	u8 x_target1 = mp->x_target[0];
+	if( x_target1 && x_target1 <= SID_SE_NUM_MOD_DST )
+	  mod_dst_array[x_target1 - 1] += mod_dst1;
+	
+	u8 x_target2 = mp->x_target[1];
+	if( x_target2 && x_target2 <= SID_SE_NUM_MOD_DST )
+	  mod_dst_array[x_target2 - 1] += mod_dst2;
+
+	// add to additional SIDL/R targets
+	u8 direct_target_l = mp->direct_target[0];
+	if( direct_target_l ) {
+	  if( direct_target_l & (1 << 0) ) mod_dst_array[SID_SE_MOD_DST_PITCH1] += mod_dst1;
+	  if( direct_target_l & (1 << 1) ) mod_dst_array[SID_SE_MOD_DST_PITCH2] += mod_dst1;
+	  if( direct_target_l & (1 << 2) ) mod_dst_array[SID_SE_MOD_DST_PITCH3] += mod_dst1;
+	  if( direct_target_l & (1 << 3) ) mod_dst_array[SID_SE_MOD_DST_PW1] += mod_dst1;
+	  if( direct_target_l & (1 << 4) ) mod_dst_array[SID_SE_MOD_DST_PW2] += mod_dst1;
+	  if( direct_target_l & (1 << 5) ) mod_dst_array[SID_SE_MOD_DST_PW3] += mod_dst1;
+	  if( direct_target_l & (1 << 6) ) mod_dst_array[SID_SE_MOD_DST_FIL1] += mod_dst1;
+	  if( direct_target_l & (1 << 7) ) mod_dst_array[SID_SE_MOD_DST_VOL1] += mod_dst1;
+	}
+
+	u8 direct_target_r = mp->direct_target[1];
+	if( direct_target_r ) {
+	  if( direct_target_r & (1 << 0) ) mod_dst_array[SID_SE_MOD_DST_PITCH4] += mod_dst2;
+	  if( direct_target_r & (1 << 1) ) mod_dst_array[SID_SE_MOD_DST_PITCH5] += mod_dst2;
+	  if( direct_target_r & (1 << 2) ) mod_dst_array[SID_SE_MOD_DST_PITCH6] += mod_dst2;
+	  if( direct_target_r & (1 << 3) ) mod_dst_array[SID_SE_MOD_DST_PW4] += mod_dst2;
+	  if( direct_target_r & (1 << 4) ) mod_dst_array[SID_SE_MOD_DST_PW5] += mod_dst2;
+	  if( direct_target_r & (1 << 5) ) mod_dst_array[SID_SE_MOD_DST_PW6] += mod_dst2;
+	  if( direct_target_r & (1 << 6) ) mod_dst_array[SID_SE_MOD_DST_FIL2] += mod_dst2;
+	  if( direct_target_r & (1 << 7) ) mod_dst_array[SID_SE_MOD_DST_VOL2] += mod_dst2;
+	}
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// LFO
+/////////////////////////////////////////////////////////////////////////////
+static s32 SID_SE_L_LFO(sid_se_lfo_t *l)
+{
+  sid_se_lfo_mode_t lfo_mode = (sid_se_lfo_mode_t)l->lfo_patch->mode;
+
+  // set wave register to initial value and skip LFO if not enabled
+  if( !lfo_mode.ENABLE ) {
+    *l->mod_src_lfo = 0;
+  } else {
+    if( l->delay_ctr ) {
+      int new_delay_ctr = l->delay_ctr + (sid_se_env_table[l->lfo_patch->delay] / sid_se_speed_factor);
+      if( new_delay_ctr > 0xffff )
+	l->delay_ctr = 0; // delay passed
+      else
+	l->delay_ctr = new_delay_ctr; // delay not passed
+    }
+
+    if( !l->delay_ctr ) { // delay passed?
+      u8 lfo_overrun = 0;
+      u8 lfo_stalled = 0;
+
+      // in oneshot mode: check if overrun already occured
+      if( lfo_mode.ONESHOT ) {
+	if( sid_se_vars[l->sid].lfo_overrun & (1 << l->lfo) ) {
+	  // set counter to maximum value and skip sweep
+	  l->ctr = 0xffff;
+	  lfo_stalled = 1;
+	}
+      }
+
+      if( !lfo_stalled ) {
+	// if clock sync enabled: only increment on each 16th clock event
+	// TODO
+
+	// increment 16bit counter by given rate
+	// the rate can be modulated
+	s32 lfo_rate = l->lfo_patch->rate + (*l->mod_dst_lfo_rate / 256);
+	if( lfo_rate > 255 ) lfo_rate = 255; else if( lfo_rate < 0 ) lfo_rate = 0;
+
+	// if LFO synched via clock, replace 245-255 by MIDI clock optimized incrementers
+	u16 inc;
+	if( lfo_mode.CLKSYNC && lfo_rate >= 245 )
+	  inc = (sid_se_lfo_table_mclk[lfo_rate-245] / sid_se_speed_factor);
+	else
+	  inc = (sid_se_lfo_table[lfo_rate] / sid_se_speed_factor);
+
+	// add to counter and check for overrun
+	s32 new_ctr = l->ctr + inc;
+	if( new_ctr > 0xffff ) {
+	  lfo_overrun = 1;
+
+	  if( lfo_mode.ONESHOT )
+	    new_ctr = 0xffff; // stop at end position
+
+	  // propagate overrun to trigger matrix
+	  l->trg_dst[0] |= l->trg_mask_lfo_period[0];
+	  l->trg_dst[1] |= l->trg_mask_lfo_period[1];
+	  l->trg_dst[2] |= l->trg_mask_lfo_period[2];
+
+	  // required for oneshot mode
+	  sid_se_vars[l->sid].lfo_overrun |= (1 << l->lfo);
+	}
+	l->ctr = (u16)new_ctr;
+      }
+
+      SID_SE_L_LFO_GenWave(l, lfo_overrun);
+    }
+  }
+
+  return 0; // no error
+}
+
+
+static s32 SID_SE_L_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun)
+{
+  sid_se_lfo_mode_t lfo_mode = (sid_se_lfo_mode_t)l->lfo_patch->mode;
+
+  // map counter to waveform
+  u8 lfo_waveform_skipped = 0;
+  s16 wave;
+  switch( lfo_mode.WAVEFORM ) {
+    case 0: { // Sine
+      // sine table contains a quarter of a sine
+      // we have to negate/mirror it depending on the mapped counter value
+      u8 ptr = l->ctr >> 7;
+      if( l->ctr & (1 << 14) )
+	ptr ^= 0x7f;
+      ptr &= 0x7f;
+      wave = sid_se_sin_table[ptr];
+      if( l->ctr & (1 << 15) )
+	wave = -wave;
+    } break;  
+
+    case 1: { // Triangle
+      // similar to sine, but linear waveform
+      wave = (l->ctr & 0x3fff) << 1;
+      if( l->ctr & (1 << 14) )
+	wave = 0x7fff - wave;
+      if( l->ctr & (1 << 15) )
+	wave = -wave;
+    } break;  
+
+    case 2: { // Saw
+      wave = l->ctr - 0x8000;
+    } break;  
+
+    case 3: { // Pulse
+      wave = (l->ctr < 0x8000) ? 0x7fff : -0x8000;
+    } break;  
+
+    case 4: { // Random
+      // only on LFO overrun
+      if( lfo_overrun )
+	wave = SID_RANDOM_Gen_Range(0x0000, 0xffff);
+      else
+	lfo_waveform_skipped = 1;
+    } break;  
+
+    case 5: { // Positive Sine
+      // sine table contains a quarter of a sine
+      // we have to negate/mirror it depending on the mapped counter value
+      u8 ptr = l->ctr >> 8;
+      if( l->ctr & (1 << 15) )
+	ptr ^= 0x7f;
+      ptr &= 0x7f;
+      wave = sid_se_sin_table[ptr];
+    } break;  
+
+    case 6: { // Positive Triangle
+      // similar to sine, but linear waveform
+      wave = (l->ctr & 0x7fff) << 1;
+      if( l->ctr & (1 << 15) )
+	wave = 0x7fff - wave;
+    } break;  
+
+    case 7: { // Positive Saw
+      wave = l->ctr >> 1;
+    } break;  
+
+    case 8: { // Positive Pulse
+      wave = (l->ctr < 0x8000) ? 0x7fff : 0;
+    } break;  
+
+    default: // take saw as default
+      wave = l->ctr - 0x8000;
+  }
+
+  if( !lfo_waveform_skipped ) {
+    // scale to LFO depth
+    // the depth can be modulated
+    s32 lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
+    if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
+    
+    // final LFO value
+    *l->mod_src_lfo = (wave * lfo_depth) / 256;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// ENV
+/////////////////////////////////////////////////////////////////////////////
+static s32 SID_SE_L_ENV(sid_se_env_t *e)
+{
+  // TODO: if clock sync enabled: only increment on clock events
+
+  s32 new_ctr = 0;
+  if( e->state.RELEASE2 ) {
+    if( e->ctr ) {
+      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
+      if( new_ctr < 0 )
+	new_ctr = 0;
+    }
+  } else if( e->state.RELEASE1 ) {
+    u16 rellvl = e->env_patch->rellvl << 8;
+
+    // positive or negative direction?
+    if( rellvl > e->ctr ) {
+      new_ctr = e->ctr + (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
+      if( new_ctr >= rellvl ) {
+	if( new_ctr >= 0xffff )
+	  new_ctr = 0xffff;
+	e->state.RELEASE2 = 1;
+      }
+    } else {
+      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
+      if( new_ctr <= rellvl ) {
+	if( new_ctr < 0 )
+	  new_ctr = 0;
+	e->state.RELEASE2 = 1;
+      }
+    }
+  } else if( !e->state.ATTACK1 ) {
+    // do nothing
+    return 0; // no error
+  } else if( e->state.SUSTAIN ) {
+    // always update sustain level
+    new_ctr = e->env_patch->sustain << 8;
+  } else if( e->state.DECAY2 ) {
+    u16 suslvl = e->env_patch->sustain << 8;
+
+    // positive or negative direction?
+    if( suslvl > e->ctr ) {
+      new_ctr = e->ctr + (sid_se_env_table[e->env_patch->decay2] / sid_se_speed_factor);
+      if( new_ctr >= suslvl ) {
+	if( new_ctr >= 0xffff )
+	  new_ctr = 0xffff;
+	e->state.SUSTAIN = 1;
+      }
+    } else {
+      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->decay2] / sid_se_speed_factor);
+      if( new_ctr <= suslvl ) {
+	if( new_ctr < 0 )
+	  new_ctr = 0;
+	e->state.SUSTAIN = 1;
+      }
+    }
+
+    if( e->state.SUSTAIN ) {
+      // propagate sustain phase to trigger matrix
+      e->trg_dst[0] |= e->trg_mask_env_sustain[0];
+      e->trg_dst[1] |= e->trg_mask_env_sustain[1];
+      e->trg_dst[2] |= e->trg_mask_env_sustain[2];
+    }
+  } else if( e->state.DECAY1 ) {
+    u16 declvl = e->env_patch->declvl << 8;
+    new_ctr = e->ctr - (sid_se_env_table[e->env_patch->decay1] / sid_se_speed_factor);
+    if( new_ctr <= declvl ) {
+      if( new_ctr < 0 )
+	  new_ctr = 0;
+      e->state.DECAY2 = 1; // TODO: Set Phase depending on e->mode
+    }
+  } else if( e->state.ATTACK2 ) {
+    new_ctr = e->ctr + (sid_se_env_table[e->env_patch->attack2] / sid_se_speed_factor);
+    if( new_ctr >= 0xffff ) {
+      new_ctr = 0xffff;
+      e->state.DECAY1 = 1; // TODO: Set Phase depending on e->mode
+    }
+  } else { // e->state.ATTACK1
+    if( e->delay_ctr ) {
+      int new_delay_ctr = e->delay_ctr + (sid_se_env_table[e->env_patch->delay] / sid_se_speed_factor);
+      if( new_delay_ctr > 0xffff )
+	e->delay_ctr = 0; // delay passed
+      else {
+	e->delay_ctr = new_delay_ctr; // delay not passed
+	return 0; // no error
+      }
+    }
+
+    u16 attlvl = e->env_patch->attlvl << 8;
+    new_ctr = e->ctr + (sid_se_env_table[e->env_patch->attack1] / sid_se_speed_factor);
+    if( new_ctr >= attlvl ) {
+      if( new_ctr >= 0xffff )
+	new_ctr = 0xffff;
+      e->state.ATTACK2 = 1; // TODO: Set Phase depending on e->mode
+    }
+  }
+
+  // take over new counter value
+  e->ctr = new_ctr;
+
+  // scale to ENV depth
+  s32 env_depth = (s32)e->env_patch->depth - 0x80;
+    
+  // final ENV value (range +/- 0x7fff)
+  *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
 
   return 0; // no error
 }

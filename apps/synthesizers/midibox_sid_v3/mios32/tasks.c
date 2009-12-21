@@ -57,7 +57,6 @@ typedef enum {
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define PRIORITY_TASK_SID		 ( tskIDLE_PRIORITY + 4 )
 #define PRIORITY_TASK_PERIOD1MS		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
@@ -67,7 +66,6 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_SID(void *pvParameters);
 static void TASK_Period1mS(void *pvParameters);
 static void TASK_Period1mS_LowPrio(void *pvParameters);
 static void TASK_Period1S(void *pvParameters);
@@ -91,7 +89,6 @@ s32 TASKS_Init(u32 mode)
   msd_state = DISABLED;
 
   // start tasks
-  xTaskCreate(TASK_SID,               (signed portCHAR *)"SID",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SID, NULL);
   xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
   xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
   xTaskCreate(TASK_Period1S,          (signed portCHAR *)"Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
@@ -105,32 +102,6 @@ s32 TASKS_Init(u32 mode)
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS as well
-// it handles SID accesses
-/////////////////////////////////////////////////////////////////////////////
-static void TASK_SID(void *pvParameters)
-{
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
-    // skip delay gap if we had to wait for more than 5 ticks to avoid 
-    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
-    portTickType xCurrentTickCount = xTaskGetTickCount();
-    if( xLastExecutionTime < (xCurrentTickCount-5) )
-      xLastExecutionTime = xCurrentTickCount;
-
-    // continue in application hook
-    SEQ_TASK_SID();
-  }
 }
 
 

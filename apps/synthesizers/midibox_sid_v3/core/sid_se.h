@@ -49,6 +49,84 @@
 #define SID_SE_TRG_MST  13 // MIDI Clock Start
 
 
+// Modulation source assignments
+#define SID_SE_MOD_SRC_ENV1      0
+#define SID_SE_MOD_SRC_ENV2      1
+#define SID_SE_MOD_SRC_LFO1      2
+#define SID_SE_MOD_SRC_LFO2      3
+#define SID_SE_MOD_SRC_LFO3      4
+#define SID_SE_MOD_SRC_LFO4      5
+#define SID_SE_MOD_SRC_LFO5      6
+#define SID_SE_MOD_SRC_LFO6      7
+#define SID_SE_MOD_SRC_MOD1      8
+#define SID_SE_MOD_SRC_MOD2      9
+#define SID_SE_MOD_SRC_MOD3     10
+#define SID_SE_MOD_SRC_MOD4     11
+#define SID_SE_MOD_SRC_MOD5     12
+#define SID_SE_MOD_SRC_MOD6     13
+#define SID_SE_MOD_SRC_MOD7     14
+#define SID_SE_MOD_SRC_MOD8     15
+#define SID_SE_MOD_SRC_MDW      16
+#define SID_SE_MOD_SRC_KEY      17
+#define SID_SE_MOD_SRC_KNOB1    18
+#define SID_SE_MOD_SRC_KNOB2    19
+#define SID_SE_MOD_SRC_KNOB3    20
+#define SID_SE_MOD_SRC_KNOB4    21
+#define SID_SE_MOD_SRC_KNOB5    22
+#define SID_SE_MOD_SRC_VEL      23
+#define SID_SE_MOD_SRC_PBN      24
+#define SID_SE_MOD_SRC_ATH      25
+#define SID_SE_MOD_SRC_WT1      26
+#define SID_SE_MOD_SRC_WT2      27
+#define SID_SE_MOD_SRC_WT3      28
+#define SID_SE_MOD_SRC_WT4      29
+
+#define SID_SE_NUM_MOD_SRC      30
+
+
+// Modulation destination assignments
+#define SID_SE_MOD_DST_PITCH1    0
+#define SID_SE_MOD_DST_PITCH2    1
+#define SID_SE_MOD_DST_PITCH3    2
+#define SID_SE_MOD_DST_PITCH4    3
+#define SID_SE_MOD_DST_PITCH5    4
+#define SID_SE_MOD_DST_PITCH6    5
+#define SID_SE_MOD_DST_PW1       6
+#define SID_SE_MOD_DST_PW2       7
+#define SID_SE_MOD_DST_PW3       8
+#define SID_SE_MOD_DST_PW4       9
+#define SID_SE_MOD_DST_PW5      10
+#define SID_SE_MOD_DST_PW6      11
+#define SID_SE_MOD_DST_FIL1     12
+#define SID_SE_MOD_DST_FIL2     13
+#define SID_SE_MOD_DST_VOL1     14
+#define SID_SE_MOD_DST_VOL2     15
+#define SID_SE_MOD_DST_LD1      16
+#define SID_SE_MOD_DST_LD2      17
+#define SID_SE_MOD_DST_LD3      18
+#define SID_SE_MOD_DST_LD4      19
+#define SID_SE_MOD_DST_LD5      20
+#define SID_SE_MOD_DST_LD6      21
+#define SID_SE_MOD_DST_LR1      22
+#define SID_SE_MOD_DST_LR2      23
+#define SID_SE_MOD_DST_LR3      24
+#define SID_SE_MOD_DST_LR4      25
+#define SID_SE_MOD_DST_LR5      26
+#define SID_SE_MOD_DST_LR6      27
+#define SID_SE_MOD_DST_EXT1     28
+#define SID_SE_MOD_DST_EXT2     29
+#define SID_SE_MOD_DST_EXT3     30
+#define SID_SE_MOD_DST_EXT4     31
+#define SID_SE_MOD_DST_EXT5     32
+#define SID_SE_MOD_DST_EXT6     33
+#define SID_SE_MOD_DST_EXT7     34
+#define SID_SE_MOD_DST_EXT8     35
+#define SID_SE_MOD_DST_WT1      36
+#define SID_SE_MOD_DST_WT2      37
+#define SID_SE_MOD_DST_WT3      38
+#define SID_SE_MOD_DST_WT4      39
+
+#define SID_SE_NUM_MOD_DST      40
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -233,6 +311,11 @@ typedef struct sid_se_voice_t {
   sid_se_voice_patch_t *voice_patch; // reference to Voice part of a patch
   sid_se_midi_voice_t *midi_voice; // reference to MIDI Voice structure
   notestack_t *notestack; // reference to note stack in MIDI voice
+  s32    *mod_dst_pitch; // reference to SID_SE_MOD_DST_PITCHx
+  s32    *mod_dst_pw; // reference to SID_SE_MOD_DST_PWx
+  u8     *trg_mask_note_on;
+  u8     *trg_mask_note_off;
+  u8     *trg_dst;
 
   sid_se_voice_state_t state;
   u8     assigned_mv;
@@ -268,6 +351,7 @@ typedef struct sid_se_filter_t {
   u8     sid;   // number of assigned SID engine
   u8     phys_sid; // number of assigned physical SID (chip)
   u8     filter; // number of assigned filter
+  s32    *mod_dst_filter; // reference to SID_SE_MOD_DST_FILTERx
 
   sid_regs_t *phys_sid_regs; // reference to SID registers
   sid_se_filter_patch_t *filter_patch; // reference to filter part of a patch
@@ -290,13 +374,22 @@ typedef union {
 
 typedef struct sid_se_lfo_patch_t {
   u8 mode; // sid_se_lfo_mode_t
-  s8 depth;
+  u8 depth;
   u8 rate;
   u8 delay;
   u8 phase;
 } sid_se_lfo_patch_t;
 
 typedef struct sid_se_lfo_t {
+  u8     sid; // number of assigned SID engine
+  u8     lfo; // number of assigned LFO
+  sid_se_lfo_patch_t *lfo_patch; // cross-reference to LFO patch
+  s16    *mod_src_lfo; // reference to SID_SE_MOD_SRC_LFOx
+  s32    *mod_dst_lfo_depth; // reference to SID_SE_MOD_DST_LDx
+  s32    *mod_dst_lfo_rate; // reference to SID_SE_MOD_DST_LRx
+  u8     *trg_mask_lfo_period;
+  u8     *trg_dst;
+
   u16 ctr;
   u16 delay_ctr;
 } sid_se_lfo_t;
@@ -315,20 +408,23 @@ typedef union {
   };
 } sid_se_env_mode_t;
 
-typedef enum sid_se_env_state_t {
-  SID_SE_ENV_STATE_ATTACK1,
-  SID_SE_ENV_STATE_ATTACK2,
-  SID_SE_ENV_STATE_DECAY1,
-  SID_SE_ENV_STATE_DECAY2,
-  SID_SE_ENV_STATE_SUSTAIN,
-  SID_SE_ENV_STATE_RELEASE1,
-  SID_SE_ENV_STATE_RELEASE2
+typedef union {
+  u8 ALL;
+  struct {
+    unsigned ATTACK1:1;
+    unsigned ATTACK2:1;
+    unsigned DECAY1:1;
+    unsigned DECAY2:1;
+    unsigned SUSTAIN:1;
+    unsigned RELEASE1:1;
+    unsigned RELEASE2:1;
+  };
 } sid_se_env_state_t;
 
 
 typedef struct sid_se_env_patch_t {
   u8 mode; // sid_se_env_mode_t
-  s8 depth;
+  u8 depth;
   u8 delay;
   u8 attack1;
   u8 attlvl;
@@ -340,12 +436,19 @@ typedef struct sid_se_env_patch_t {
   u8 release1;
   u8 rellvl;
   u8 release2;
-  s8 att_curve;
-  s8 dec_curve;
-  s8 rel_curve;
+  u8 att_curve;
+  u8 dec_curve;
+  u8 rel_curve;
 } sid_se_env_patch_t;
 
 typedef struct sid_se_env_t {
+  u8     sid; // number of assigned SID engine
+  u8     env; // number of assigned envelope
+  sid_se_env_patch_t *env_patch; // cross-reference to ENV patch
+  s16    *mod_src_env; // reference to SID_SE_MOD_SRC_ENVx
+  u8     *trg_mask_env_sustain;
+  u8     *trg_dst;
+
   sid_se_env_state_t state;
   u16 ctr;
   u16 delay_ctr;
@@ -373,6 +476,11 @@ typedef struct {
 } sid_se_wt_patch_t;
 
 typedef struct sid_se_wt_t {
+  u8     sid; // number of assigned SID engine
+  u8     wt; // number of assigned WT
+  sid_se_wt_patch_t *wt_patch; // cross-reference to WT patch
+  s32    *mod_dst_wt; // reference to SID_SE_MOD_DST_WTx
+
   u8 pos;
   u8 div_ctr;
 } sid_se_wt_t;
@@ -386,8 +494,8 @@ typedef union {
   struct {
     unsigned OP:4;
     unsigned RESERVED:2;
-    unsigned INVERT_TARGET_2;
     unsigned INVERT_TARGET_1;
+    unsigned INVERT_TARGET_2;
   };
 } sid_se_mod_op_t;
 
@@ -409,7 +517,7 @@ typedef struct sid_se_mod_patch_t {
   u8 src1;
   u8 src2;
   u8 op; // sid_se_mod_op_t
-  s8 depth;
+  u8 depth;
   u8 direct_target[2]; // L/R, sid_se_mod_direct_targets_t
   u8 x_target[2];
 } sid_se_mod_patch_t;
@@ -474,6 +582,10 @@ typedef struct sid_se_seq_t {
 
 typedef struct sid_se_vars_t {
   sid_se_trg_t triggers;
+  s16 mod_src[SID_SE_NUM_MOD_SRC];
+  s32 mod_dst[SID_SE_NUM_MOD_DST];
+  u8 mod_transition;
+  u8 lfo_overrun;
 } sid_se_vars_t;
 
 
@@ -489,9 +601,9 @@ extern s32 SID_SE_VarsInit(sid_se_vars_t *vars);
 extern s32 SID_SE_VoiceInit(sid_se_voice_t *v, u8 sid, u8 voice);
 extern s32 SID_SE_FilterInit(sid_se_filter_t *f, u8 sid, u8 filter);
 extern s32 SID_SE_MIDIVoiceInit(sid_se_midi_voice_t *midi_voice);
-extern s32 SID_SE_LFOInit(sid_se_lfo_t *lfo);
-extern s32 SID_SE_ENVInit(sid_se_env_t *env);
-extern s32 SID_SE_WTInit(sid_se_wt_t *wt);
+extern s32 SID_SE_LFOInit(sid_se_lfo_t *l, u8 sid, u8 lfo);
+extern s32 SID_SE_ENVInit(sid_se_env_t *e, u8 sid, u8 env);
+extern s32 SID_SE_WTInit(sid_se_wt_t *w, u8 sid, u8 wt);
 extern s32 SID_SE_SEQInit(sid_se_seq_t *seq);
 
 extern s32 SID_SE_Update(void);
@@ -506,6 +618,8 @@ extern s32 SID_SE_FilterAndVolume(sid_se_filter_t *f);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 sid_se_speed_factor;
+
 extern sid_se_vars_t sid_se_vars[SID_NUM];
 extern sid_se_voice_t sid_se_voice[SID_NUM][SID_SE_NUM_VOICES];
 extern sid_se_filter_t sid_se_filter[SID_NUM][SID_SE_NUM_FILTERS];
@@ -514,5 +628,11 @@ extern sid_se_lfo_t sid_se_lfo[SID_NUM][SID_SE_NUM_LFO];
 extern sid_se_env_t sid_se_env[SID_NUM][SID_SE_NUM_ENV];
 extern sid_se_wt_t sid_se_wt[SID_NUM][SID_SE_NUM_WT];
 extern sid_se_seq_t sid_se_seq[SID_NUM];
+
+extern const u16 sid_se_frq_table[128];
+extern const u16 sid_se_env_table[256];
+extern const u16 sid_se_lfo_table[256];
+extern const u16 sid_se_lfo_table_mclk[11];
+extern const u16 sid_se_sin_table[128];
 
 #endif /* _SID_SE_H */

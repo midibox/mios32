@@ -12,7 +12,7 @@
  * ==========================================================================
  */
 
-static const u16 sid_se_env_table[256] = {
+const u16 sid_se_env_table[256] = {
   0xffff, // delay=0.0020
   0xf983, // delay=0.0021
   0xe7e1, // delay=0.0022
