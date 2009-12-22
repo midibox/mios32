@@ -23,6 +23,7 @@
 #include <sid.h>
 
 #include "app.h"
+#include "sid_random.h"
 #include "sid_midi.h"
 #include "sid_sysex.h"
 #include "sid_asid.h"
@@ -50,6 +51,7 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 static u32 stopwatch_value;
 static u32 stopwatch_value_max;
+static u32 stopwatch_value_accumulated;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,6 +70,9 @@ void APP_Init(void)
 
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);
+
+  // initial seed
+  SID_RANDOM_Gen(0xdeadbabe);
 
   // install MIDI Rx/Tx callback functions
   MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
@@ -174,6 +179,15 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1mS_LowPrio(void)
 {
+#if 0
+  static s32 old_value = 0;
+  MUTEX_MIDIOUT_TAKE;
+  if( (sid_se_vars[0].mod_src[SID_SE_MOD_SRC_MOD4] / 256) != old_value ) {
+    old_value = sid_se_vars[0].mod_src[SID_SE_MOD_SRC_MOD4] / 256;
+    DEBUG_MSG("%d\n", sid_se_vars[0].mod_src[SID_SE_MOD_SRC_MOD4]);
+  }
+  MUTEX_MIDIOUT_GIVE;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,11 +198,13 @@ void SEQ_TASK_Period1S(void)
   // output and reset current stopwatch max value
   MUTEX_MIDIOUT_TAKE;
   MIOS32_IRQ_Disable();
-  u32 value = stopwatch_value_max;
+  u32 max_value = stopwatch_value_max;
   stopwatch_value_max = 0;
+  u32 acc_value = stopwatch_value_accumulated;
+  stopwatch_value_accumulated = 0;
   MIOS32_IRQ_Enable();
-  if( value )
-    DEBUG_MSG("%d uS\n", value);
+  if( acc_value || max_value )
+    DEBUG_MSG("%d uS (max: %d uS)\n", acc_value / (1000000 / (2000/sid_se_speed_factor)), max_value);
   MUTEX_MIDIOUT_GIVE;
 
   static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
@@ -252,6 +268,7 @@ s32 APP_StopwatchInit(void)
 {
   stopwatch_value = 0;
   stopwatch_value_max = 0;
+  stopwatch_value_accumulated = 0;
   return MIOS32_STOPWATCH_Init(1); // 1 uS resolution
 }
 
@@ -267,6 +284,7 @@ s32 APP_StopwatchCapture(void)
   stopwatch_value = value;
   if( value > stopwatch_value_max )
     stopwatch_value_max = value;
+  stopwatch_value_accumulated += value;
   MIOS32_IRQ_Enable();
 
   return 0; // no error
