@@ -57,6 +57,7 @@ static s32 SID_SE_L_CalcModulation(u8 sid);
 static s32 SID_SE_L_LFO(sid_se_lfo_t *l);
 static s32 SID_SE_L_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun);
 static s32 SID_SE_L_ENV(sid_se_env_t *e);
+static s32 SID_SE_L_EnvStep(u16 *ctr, u16 target, u8 rate);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -85,7 +86,7 @@ s32 SID_SE_L_Update(u8 sid)
   ///////////////////////////////////////////////////////////////////////////
 
   sid_se_lfo_t *l = &sid_se_lfo[sid][0];
-  for(i=0; i<SID_SE_NUM_LFO; ++i, ++l)
+  for(i=0; i<SID_SE_NUM_VOICES; ++i, ++l)
     SID_SE_L_LFO(l);
 
 
@@ -94,7 +95,7 @@ s32 SID_SE_L_Update(u8 sid)
   ///////////////////////////////////////////////////////////////////////////
 
   sid_se_env_t *e = &sid_se_env[sid][0];
-  for(i=0; i<SID_SE_NUM_ENV; ++i, ++e)
+  for(i=0; i<2; ++i, ++e)
     SID_SE_L_ENV(e);
 
 
@@ -139,7 +140,7 @@ s32 SID_SE_L_Update(u8 sid)
   }
 
   if( trg->ALL[2] ) {
-    trg->ALL[1] = 0;
+    trg->ALL[2] = 0;
   }
 
 
@@ -216,8 +217,7 @@ static s32 SID_SE_L_LFO_Restart(sid_se_lfo_t *l)
 static s32 SID_SE_L_ENV_Restart(sid_se_env_t *e)
 {
   // start at attack phase
-  e->state.ALL = 0;
-  e->state.ATTACK1 = 1;
+  e->state = SID_SE_ENV_STATE_ATTACK1;
 
   // check if ENV should be delayed - set delay counter to 0x0001 in this case
   e->delay_ctr = e->env_patch->delay ? 1 : 0;
@@ -229,7 +229,7 @@ static s32 SID_SE_L_ENV_Restart(sid_se_env_t *e)
 static s32 SID_SE_L_ENV_Release(sid_se_env_t *e)
 {
   // set release phase
-  e->state.RELEASE1 = 1;
+  e->state = SID_SE_ENV_STATE_RELEASE1;
 
   return 0; // no error
 }
@@ -246,7 +246,9 @@ static s32 SID_SE_L_CalcModulation(u8 sid)
   s32 *mod_dst_array = sid_se_vars[sid].mod_dst;
 
   // clear all destinations
-  memset(mod_dst_array, 0, sizeof(s32)*SID_SE_NUM_MOD_DST);
+  s32 *mod_dst_array_clr = mod_dst_array;
+  for(i=0; i<SID_SE_NUM_MOD_DST; ++i)
+    *mod_dst_array_clr++ = 0; // faster than memset()! (ca. 20 uS) - seems that memset only copies byte-wise
 
   // calculate modulation pathes
   sid_se_mod_patch_t *mp = (sid_se_mod_patch_t *)&sid_patch[sid].L.mod[0];
@@ -282,7 +284,7 @@ static s32 SID_SE_L_CalcModulation(u8 sid)
       }
 
       // apply operator
-      s32 mod_result;
+      s16 mod_result;
       switch( mp->op & 0x0f ) {
         case 0: // disabled
 	  mod_result = 0;
@@ -304,8 +306,8 @@ static s32 SID_SE_L_CalcModulation(u8 sid)
 	  mod_result = mod_src1_value - mod_src2_value;
 	  break;
 
-        case 5: // SRC1*SRC2
-	  mod_result = mod_src1_value * mod_src2_value;
+        case 5: // SRC1*SRC2 / 8192 (to avoid overrun)
+	  mod_result = (mod_src1_value * mod_src2_value) / 8192;
 	  break;
 
         case 6: // XOR
@@ -343,19 +345,16 @@ static s32 SID_SE_L_CalcModulation(u8 sid)
 
         case 14: { // S&H - SRC1 will be sampled whenever SRC2 changes from a negative to a positive value
 	  // check for SRC2 transition
-	  u8 transition = 0;
-	  if( mod_src2_value < 0 ) {
+	  u8 old_mod_transition = sid_se_vars[sid].mod_transition;
+	  if( mod_src2_value < 0 )
 	    sid_se_vars[sid].mod_transition &= ~(1 << i);
-	  } else {
-	    // check if value was negative before
-	    if( !(sid_se_vars[sid].mod_transition & (1 << i)) ) {
-	      transition = 1;
-	      sid_se_vars[sid].mod_transition |= (1 << i);
-	    }
-	  }
+	  else
+	    sid_se_vars[sid].mod_transition |= (1 << i);
 
-	  if( transition )
-	    mod_result = mod_src1_value;
+	  if( sid_se_vars[sid].mod_transition != old_mod_transition && mod_src2_value >= 0 ) // only on positive transition
+	    mod_result = mod_src1_value; // sample: take new mod value
+	  else
+	    mod_result = mod_src_array[SID_SE_MOD_SRC_MOD1 + i]; // hold: take old mod value
 	} break;
 
         default:
@@ -368,9 +367,7 @@ static s32 SID_SE_L_CalcModulation(u8 sid)
       // - original MOD value can be taken for sample&hold feature
       // bit it also has disadvantage:
       // - the user could think it is a bug when depth doesn't affect the feedback MOD value...
-      s16 saturated_mod_result = mod_result;
-      if( mod_result < -0x8000 ) saturated_mod_result = -0x8000; else if( mod_result > 0x7fff ) saturated_mod_result = 0x7fff;
-      mod_src_array[SID_SE_MOD_SRC_MOD1 + i] = saturated_mod_result;
+      mod_src_array[SID_SE_MOD_SRC_MOD1 + i] = mod_result;
 
       // forward to destinations
       if( mod_result ) {
@@ -465,9 +462,9 @@ static s32 SID_SE_L_LFO(sid_se_lfo_t *l)
 	// if LFO synched via clock, replace 245-255 by MIDI clock optimized incrementers
 	u16 inc;
 	if( lfo_mode.CLKSYNC && lfo_rate >= 245 )
-	  inc = (sid_se_lfo_table_mclk[lfo_rate-245] / sid_se_speed_factor);
+	  inc = sid_se_lfo_table_mclk[lfo_rate-245] / sid_se_speed_factor;
 	else
-	  inc = (sid_se_lfo_table[lfo_rate] / sid_se_speed_factor);
+	  inc = sid_se_lfo_table[lfo_rate] / sid_se_speed_factor;
 
 	// add to counter and check for overrun
 	s32 new_ctr = l->ctr + inc;
@@ -591,100 +588,61 @@ static s32 SID_SE_L_ENV(sid_se_env_t *e)
 {
   // TODO: if clock sync enabled: only increment on clock events
 
-  s32 new_ctr = 0;
-  if( e->state.RELEASE2 ) {
-    if( e->ctr ) {
-      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
-      if( new_ctr < 0 )
-	new_ctr = 0;
-    }
-  } else if( e->state.RELEASE1 ) {
-    u16 rellvl = e->env_patch->rellvl << 8;
+  switch( e->state ) {
+    case SID_SE_ENV_STATE_ATTACK1:
+      if( e->delay_ctr ) {
+	int new_delay_ctr = e->delay_ctr + (sid_se_env_table[e->env_patch->delay] / sid_se_speed_factor);
+	if( new_delay_ctr > 0xffff )
+	  e->delay_ctr = 0; // delay passed
+	else {
+	  e->delay_ctr = new_delay_ctr; // delay not passed
+	  return 0; // no error
+	}
+      }
 
-    // positive or negative direction?
-    if( rellvl > e->ctr ) {
-      new_ctr = e->ctr + (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
-      if( new_ctr >= rellvl ) {
-	if( new_ctr >= 0xffff )
-	  new_ctr = 0xffff;
-	e->state.RELEASE2 = 1;
-      }
-    } else {
-      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->release1] / sid_se_speed_factor);
-      if( new_ctr <= rellvl ) {
-	if( new_ctr < 0 )
-	  new_ctr = 0;
-	e->state.RELEASE2 = 1;
-      }
-    }
-  } else if( !e->state.ATTACK1 ) {
-    // do nothing
-    return 0; // no error
-  } else if( e->state.SUSTAIN ) {
-    // always update sustain level
-    new_ctr = e->env_patch->sustain << 8;
-  } else if( e->state.DECAY2 ) {
-    u16 suslvl = e->env_patch->sustain << 8;
+      if( SID_SE_L_EnvStep(&e->ctr, e->env_patch->attlvl << 8, e->env_patch->attack1) )
+	e->state = SID_SE_ENV_STATE_ATTACK2; // TODO: Set Phase depending on e->mode
+      break;
 
-    // positive or negative direction?
-    if( suslvl > e->ctr ) {
-      new_ctr = e->ctr + (sid_se_env_table[e->env_patch->decay2] / sid_se_speed_factor);
-      if( new_ctr >= suslvl ) {
-	if( new_ctr >= 0xffff )
-	  new_ctr = 0xffff;
-	e->state.SUSTAIN = 1;
-      }
-    } else {
-      new_ctr = e->ctr - (sid_se_env_table[e->env_patch->decay2] / sid_se_speed_factor);
-      if( new_ctr <= suslvl ) {
-	if( new_ctr < 0 )
-	  new_ctr = 0;
-	e->state.SUSTAIN = 1;
-      }
-    }
+    case SID_SE_ENV_STATE_ATTACK2:
+      if( SID_SE_L_EnvStep(&e->ctr, 0xffff, e->env_patch->attack2) )
+	e->state = SID_SE_ENV_STATE_DECAY1; // TODO: Set Phase depending on e->mode
+      break;
 
-    if( e->state.SUSTAIN ) {
-      // propagate sustain phase to trigger matrix
-      e->trg_dst[0] |= e->trg_mask_env_sustain[0];
-      e->trg_dst[1] |= e->trg_mask_env_sustain[1];
-      e->trg_dst[2] |= e->trg_mask_env_sustain[2];
-    }
-  } else if( e->state.DECAY1 ) {
-    u16 declvl = e->env_patch->declvl << 8;
-    new_ctr = e->ctr - (sid_se_env_table[e->env_patch->decay1] / sid_se_speed_factor);
-    if( new_ctr <= declvl ) {
-      if( new_ctr < 0 )
-	  new_ctr = 0;
-      e->state.DECAY2 = 1; // TODO: Set Phase depending on e->mode
-    }
-  } else if( e->state.ATTACK2 ) {
-    new_ctr = e->ctr + (sid_se_env_table[e->env_patch->attack2] / sid_se_speed_factor);
-    if( new_ctr >= 0xffff ) {
-      new_ctr = 0xffff;
-      e->state.DECAY1 = 1; // TODO: Set Phase depending on e->mode
-    }
-  } else { // e->state.ATTACK1
-    if( e->delay_ctr ) {
-      int new_delay_ctr = e->delay_ctr + (sid_se_env_table[e->env_patch->delay] / sid_se_speed_factor);
-      if( new_delay_ctr > 0xffff )
-	e->delay_ctr = 0; // delay passed
-      else {
-	e->delay_ctr = new_delay_ctr; // delay not passed
-	return 0; // no error
-      }
-    }
+    case SID_SE_ENV_STATE_DECAY1:
+      if( SID_SE_L_EnvStep(&e->ctr, e->env_patch->declvl << 8, e->env_patch->decay1) )
+	e->state = SID_SE_ENV_STATE_DECAY2; // TODO: Set Phase depending on e->mode
+      break;
 
-    u16 attlvl = e->env_patch->attlvl << 8;
-    new_ctr = e->ctr + (sid_se_env_table[e->env_patch->attack1] / sid_se_speed_factor);
-    if( new_ctr >= attlvl ) {
-      if( new_ctr >= 0xffff )
-	new_ctr = 0xffff;
-      e->state.ATTACK2 = 1; // TODO: Set Phase depending on e->mode
-    }
+    case SID_SE_ENV_STATE_DECAY2:
+      if( SID_SE_L_EnvStep(&e->ctr, e->env_patch->sustain << 8, e->env_patch->decay2) ) {
+	e->state = SID_SE_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on e->mode
+
+	// propagate sustain phase to trigger matrix
+	e->trg_dst[0] |= e->trg_mask_env_sustain[0];
+	e->trg_dst[1] |= e->trg_mask_env_sustain[1];
+	e->trg_dst[2] |= e->trg_mask_env_sustain[2];
+      }
+      break;
+
+    case SID_SE_ENV_STATE_SUSTAIN:
+      // always update sustain level
+      e->ctr = e->env_patch->sustain << 8;
+      break;
+
+    case SID_SE_ENV_STATE_RELEASE1:
+      if( SID_SE_L_EnvStep(&e->ctr, e->env_patch->rellvl << 8, e->env_patch->release1) )
+	e->state = SID_SE_ENV_STATE_RELEASE2; // TODO: Set Phase depending on e->mode
+      break;
+
+    case SID_SE_ENV_STATE_RELEASE2:
+      if( e->ctr )
+	SID_SE_L_EnvStep(&e->ctr, 0x0000, e->env_patch->release2);
+      break;
+
+    default: // like SID_SE_ENV_STATE_IDLE
+      return 0; // nothing to do...
   }
-
-  // take over new counter value
-  e->ctr = new_ctr;
 
   // scale to ENV depth
   s32 env_depth = (s32)e->env_patch->depth - 0x80;
@@ -693,4 +651,32 @@ static s32 SID_SE_L_ENV(sid_se_env_t *e)
   *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
 
   return 0; // no error
+}
+
+
+static s32 SID_SE_L_EnvStep(u16 *ctr, u16 target, u8 rate)
+{
+  // positive or negative direction?
+  if( target > *ctr ) {
+    s32 new_ctr = *ctr + (sid_se_env_table[rate] / sid_se_speed_factor);
+    if( new_ctr >= target ) {
+      if( new_ctr >= 0xffff )
+	new_ctr = 0xffff;
+      *ctr = new_ctr;
+      return 1; // next state
+    }
+    *ctr = new_ctr;
+    return 0; // stay in state
+  }
+
+  s32 new_ctr = *ctr - (sid_se_env_table[rate] / sid_se_speed_factor);
+  if( new_ctr <= target ) {
+    if( new_ctr < 0 )
+      new_ctr = 0;
+    *ctr = new_ctr;
+    return 1; // next state
+  }
+  *ctr = new_ctr;
+
+  return 0; // stay in state
 }

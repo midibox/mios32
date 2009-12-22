@@ -23,11 +23,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define SID_SE_NUM_VOICES      6
-#define SID_SE_NUM_MIDI_VOICES (SID_SE_NUM_VOICES)
-#define SID_SE_NUM_FILTERS     2
-#define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES)
-#define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES)
-#define SID_SE_NUM_WT          (SID_SE_NUM_VOICES)
+#define SID_SE_NUM_MIDI_VOICES (SID_SE_NUM_VOICES) // must be at least SID_SE_NUM_VOICES for multi engine
+#define SID_SE_NUM_FILTERS     2 // must be at least 2 for all engines
+#define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES) // must be at least SID_SE_NUM_VOICES for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
+#define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES) // must be at least 2 for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
+#define SID_SE_NUM_WT          (SID_SE_NUM_VOICES) // must be at least 4 for lead engine, and SID_SE_NUM_VOICES for multi engine
 
 #define SID_SE_NOTESTACK_SIZE 10
 
@@ -408,17 +408,15 @@ typedef union {
   };
 } sid_se_env_mode_t;
 
-typedef union {
-  u8 ALL;
-  struct {
-    unsigned ATTACK1:1;
-    unsigned ATTACK2:1;
-    unsigned DECAY1:1;
-    unsigned DECAY2:1;
-    unsigned SUSTAIN:1;
-    unsigned RELEASE1:1;
-    unsigned RELEASE2:1;
-  };
+typedef enum {
+  SID_SE_ENV_STATE_IDLE = 0,
+  SID_SE_ENV_STATE_ATTACK1,
+  SID_SE_ENV_STATE_ATTACK2,
+  SID_SE_ENV_STATE_DECAY1,
+  SID_SE_ENV_STATE_DECAY2,
+  SID_SE_ENV_STATE_SUSTAIN,
+  SID_SE_ENV_STATE_RELEASE1,
+  SID_SE_ENV_STATE_RELEASE2
 } sid_se_env_state_t;
 
 
