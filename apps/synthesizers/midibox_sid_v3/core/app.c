@@ -73,7 +73,6 @@ void APP_Init(void)
 
   // initial seed
   SID_RANDOM_Gen(0xdeadbabe);
-
   // install MIDI Rx/Tx callback functions
   MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
   MIOS32_MIDI_DirectTxCallback_Init(NOTIFY_MIDI_Tx);

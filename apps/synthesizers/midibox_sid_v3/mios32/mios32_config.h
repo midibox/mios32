@@ -53,4 +53,37 @@
 // maximum idle counter value to be expected
 #define MAX_IDLE_CTR 223000
 
+
+// to enable SID emulation
+#define SIDEMU_ENABLED
+#define SIDEMU_EXTERNAL_DAC
+#define SIDEMU_INTERNAL_DAC
+
+#ifdef SIDEMU_ENABLED
+#define SIDPHYS_DISABLED
+#define MIOS32_DONT_USE_SRIO
+#define MIOS32_DONT_USE_ENC
+#define MIOS32_DONT_USE_AIN
+#define MIOS32_DONT_USE_COM
+
+#define MIOS32_I2S_AUDIO_FREQ 25000
+
+#ifdef SIDEMU_EXTERNAL_DAC
+  // I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
+# define MIOS32_SRIO_SPI 0
+
+  // I2S support has to be enabled explicitely
+# define MIOS32_USE_I2S
+
+// enable MCLK pin (not for STM32 primer)
+#ifdef MIOS32_BOARD_STM32_PRIMER
+# define MIOS32_I2S_MCLK_ENABLE  0
+#else
+# define MIOS32_I2S_MCLK_ENABLE  1
+#endif
+
+#endif
+
+#endif
+
 #endif /* _MIOS32_CONFIG_H */

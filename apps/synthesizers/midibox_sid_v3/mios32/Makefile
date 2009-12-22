@@ -48,7 +48,7 @@ PROJECT   = 	project
 
 DEBUG     =	-g
 #DEBUG     =	-g -Wall -Wno-format -Wno-switch
-OPTIMIZE  =	-Os
+OPTIMIZE  =	-O3
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)
 

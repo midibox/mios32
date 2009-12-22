@@ -21,6 +21,7 @@
 #include <portmacro.h>
 
 #include "sid.h"
+#include "sidemu.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -48,13 +49,22 @@
 
 sid_regs_t sid_regs[SID_NUM];
 u8 sid_gate_update_done[SID_NUM];
-
+u8 sicherheitsabstand[256]; // for Nils
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-sid_regs_t sid_regs_shadow[SID_NUM]; // to determine register changes
+static sid_regs_t sid_regs_shadow[SID_NUM]; // to determine register changes
+
+static const u8 update_order[SID_REGS_NUM] = { 
+   0,  1,  2,  3,  5,  6, // voice 1 w/o osc control register
+   7,  8,  9, 10, 12, 13, // voice 2 w/o osc control register
+  14, 15, 16, 17, 19, 20, // voice 3 w/o osc control register
+   4, 11, 18,             // voice 1/2/3 control registers
+  21, 22, 23, 24,         // remaining SID registers
+  25, 26, 27, 28, 29, 30, 31 // SwinSID registers
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -77,6 +87,11 @@ s32 SID_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+#ifdef SIDEMU_ENABLED
+  SYNTH_Init(0);
+#endif
+
+#ifndef SIDPHYS_DISABLED
   // GPIO initialisation
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -131,7 +146,7 @@ s32 SID_Init(u32 mode)
 
   TIM_ARRPreloadConfig(TIM4, ENABLE);
   TIM_Cmd(TIM4, ENABLE);
-
+#endif
 
   // clear all SID registers
   for(sid=0; sid<SID_NUM; ++sid)
@@ -158,14 +173,6 @@ s32 SID_Init(u32 mode)
 s32 SID_Update(u32 mode)
 {
   int sid, reg, i;
-  u8 update_order[SID_REGS_NUM] = { 
-     0,  1,  2,  3,  5,  6, // voice 1 w/o osc control register
-     7,  8,  9, 10, 12, 13, // voice 2 w/o osc control register
-    14, 15, 16, 17, 19, 20, // voice 3 w/o osc control register
-     4, 11, 18,             // voice 1/2/3 control registers
-    21, 22, 23, 24,         // remaining SID registers
-    25, 26, 27, 28, 29, 30, 31 // SwinSID registers
-  };
 
   // trigger reset?
   if( mode == 2 )
@@ -227,10 +234,17 @@ s32 SID_Update(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
 {
+#ifdef SIDEMU_ENABLED
+  // currently only single SID available
+  if( (cs & 1) && addr <= 24 )
+    SIDEMU_setRegister(addr, data);
+#endif
+
   // low-active reset is connected to "A6" of the first SR
   if( !reset )
     addr |= (1 << 5);
 
+#ifndef SIDPHYS_DISABLED
   // shift data
   PIN_SER(data & 0x01); // D0
   PIN_SCLK_0; // setup delay
@@ -314,5 +328,6 @@ static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
   PIN_CSN0_1;
   PIN_CSN1_1;
   MIOS32_IRQ_Enable();
+#endif
 }
 
