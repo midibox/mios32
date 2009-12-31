@@ -60,7 +60,10 @@ extern s32 NOTESTACK_Init(notestack_t *n, notestack_mode_t mode, notestack_item_
 
 extern s32 NOTESTACK_Push(notestack_t *n, u8 new_note, u8 tag);
 extern s32 NOTESTACK_Pop(notestack_t *n, u8 old_note);
+extern s32 NOTESTACK_CountActiveNotes(notestack_t *n);
+extern s32 NOTESTACK_RemoveNonActiveNotes(notestack_t *n);
 extern s32 NOTESTACK_Clear(notestack_t *n);
+
 
 extern s32 NOTESTACK_SendDebugMessage(notestack_t *n);
 

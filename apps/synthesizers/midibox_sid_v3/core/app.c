@@ -168,7 +168,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS
 /////////////////////////////////////////////////////////////////////////////
-void SEQ_TASK_Period1mS(void)
+void SID_TASK_Period1mS(void)
 {
 }
 
@@ -176,7 +176,7 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 // This task is called each mS with lowest priority
 /////////////////////////////////////////////////////////////////////////////
-void SEQ_TASK_Period1mS_LowPrio(void)
+void SID_TASK_Period1mS_LowPrio(void)
 {
 #if 0
   static s32 old_value = 0;
@@ -192,7 +192,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each second
 /////////////////////////////////////////////////////////////////////////////
-void SEQ_TASK_Period1S(void)
+void SID_TASK_Period1S(void)
 {
   // output and reset current stopwatch max value
   MUTEX_MIDIOUT_TAKE;
@@ -235,6 +235,12 @@ void SEQ_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
+  // TODO: better port filtering!
+  if( port < USB1 || port >= UART0 ) {
+    if( midi_byte >= 0xf8 )
+      SID_SE_IncomingRealTimeEvent(midi_byte);
+  }
+
   return 0; // no error, no filtering
 }
 

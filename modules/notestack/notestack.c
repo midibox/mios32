@@ -194,6 +194,49 @@ s32 NOTESTACK_Pop(notestack_t *n, u8 old_note)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Counts all active notes in notestack
+//! \param[in] *n pointer to notestack structure
+//! \return < 0 on errors
+//! \return 0 if no active note
+//! \return > 0 if active notes have been found
+/////////////////////////////////////////////////////////////////////////////
+s32 NOTESTACK_CountActiveNotes(notestack_t *n)
+{
+  int i;
+  int count = 0;
+
+  for(i=0; i<n->len; ++i)
+    if( !n->note_items[i].depressed )
+      ++count;
+
+  return count;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Removes all non-active notes from notestack
+//! \param[in] *n pointer to notestack structure
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 NOTESTACK_RemoveNonActiveNotes(notestack_t *n)
+{
+  int i, j;
+
+  for(i=0; i < n->len; ++i) {
+    if( n->note_items[i].depressed ) {
+      for(j=i; j < n->len-1; ++j)
+	n->note_items[j] = n->note_items[j+1];
+      --n->len;
+      n->note_items[n->len].ALL = 0x00;
+      --i; // note at index "i" has been removed, ensure that next note will be checked
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Clears the note stack
 //! \param[in] *n pointer to notestack structure
 //! \return < 0 on errors
