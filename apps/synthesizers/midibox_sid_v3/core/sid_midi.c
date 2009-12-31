@@ -73,7 +73,7 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
 
     case CC:
       // knob values are available for all engines
-      if( midi_package.chn == sid_se_midi_voice[sid][0].midi_channel ) {
+      if( midi_package.chn == sid_se_voice[sid][0].midi_channel ) {
 	switch( midi_package.cc_number ) {
 	  case  1: SID_KNOB_SetValue(sid, SID_KNOB_1, midi_package.value << 1); break;
 	  case 16: SID_KNOB_SetValue(sid, SID_KNOB_2, midi_package.value << 1); break;
@@ -110,13 +110,64 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
 /////////////////////////////////////////////////////////////////////////////
 // Help Functions
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_MIDI_PushWT(sid_se_midi_voice_t *mv, u8 note)
+s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note)
 {
+  int i;
+  for(i=0; i<4; ++i) {
+    u8 stack_note = v->wt_stack[i] & 0x7f;
+    u8 push_stack = 0;
+
+    if( !stack_note ) { // last entry?
+      push_stack = 1;
+    } else {
+      // ignore if note is already in stack
+      if( stack_note == note )
+	return 0; // no error
+      // push into stack if note >= current note
+      if( stack_note >= note )
+	push_stack = 1;
+    }
+
+    if( push_stack ) {
+      if( i != 3 ) { // max note: no shift required
+	int j;
+
+	for(j=3; j>i; --j)
+	  v->wt_stack[j] = v->wt_stack[j-1];
+      }
+
+      // insert note
+      v->wt_stack[i] = note;
+
+      return 0; // no error
+    }
+  }
+
   return 0; // no error
 }
 
-s32 SID_MIDI_PopWT(sid_se_midi_voice_t *mv, u8 note)
+s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note)
 {
-  return 0; // no error
+  int i;
+
+  // search for note entry with the same number, erase it and push the entries behind
+  for(i=0; i<4; ++i) {
+    u8 stack_note = v->wt_stack[i] & 0x7f;
+
+    if( note == stack_note ) {
+      int j;
+
+      // push the entries behind the found entry
+      if( i != 3 ) {
+	for(j=i; j<3; ++j)
+	  v->wt_stack[j] = v->wt_stack[j+1];
+      }
+
+      // clear last entry
+      v->wt_stack[3] = 0;
+    }
+  }
+
+  return -1; // note not found
 }
 

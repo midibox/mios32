@@ -443,12 +443,17 @@ static s32 SID_SYSEX_Cmd_ParWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd
 	  case 0x00: // write parameter data for WOPT(0..3)
 	  case 0x01:
 	  case 0x02:
-	  case 0x03:
-	    write_status |= SID_SYSEX_WritePatchPar(sysex_sid_selection, sysex_patch_type, addr, data);
-	    break;
+	  case 0x03: {
+	    u8 wopt = sysex_patch_type & 3; // unnecessary masking, variable only used for documentation reasons
+	    MIOS32_IRQ_Disable(); // ensure atomic change of all selected addresses
+	    write_status |= SID_SYSEX_WritePatchPar(sysex_sid_selection, wopt, addr, data);
+	    MIOS32_IRQ_Enable();
+	  } break;
 
 	  case 0x70: // Ensemble Write
+	    MIOS32_IRQ_Disable(); // ensure atomic change of all selected addresses
 	    write_status |= SID_SYSEX_WriteEnsPar(sysex_sid_selection, addr, data);
+	    MIOS32_IRQ_Enable();
 
 	  default:
 	    write_status |= -1;
@@ -619,22 +624,136 @@ s32 SID_SYSEX_TimeOut(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SID_SYSEX_WritePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data)
 {
+  s32 status = 0;
+
   if( addr >= 512 )
     return -1;
 
-  if( wopt == 0x00 ) {
-    // TODO: multi patch support
+  if( wopt == 0 ) {
+    // write directly into patch with wopt==0
     sid_patch[0].ALL[addr] = data;
+    sid_patch_shadow[0].ALL[addr] = data;
+    // TODO: transfer to multiple SIDs depending on sid_selection
     return 0; // no error
+    // important: we *must* return here to avoid endless recursion!
   }
 
-  // TODO: support for different WOPTs:
   // WOPT == 1: SID L/R write
   // WOPT == 2: Voice123/456 Flag
   // WOPT == 3: Combined Left/Right and Voice123/456 Flag
-  sid_patch[0].ALL[addr] = data;
 
-  return 0; // no error
+  // check address ranges
+  if( (wopt == 1 || wopt == 3) && addr >= 0x040 && addr <= 0x04f ) {
+    // External Values: share EXT1/2, EXT3/4, EXT5/6, EXT7/8
+    addr &= ~(1 << 1);
+    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0, data);
+    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 2, data);
+    return status;
+  }
+
+  if( (wopt == 1 || wopt == 3) && addr >= 0x054 && addr <= 0x05f ) {
+    // Filter: share FIL1/2
+    addr = ((addr - 0x54) % 6) + 0x54;
+    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0, data);
+    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 6, data);
+    return status;
+  }
+
+  // Engine dependend ranges
+  sid_se_engine_t engine = sid_patch_shadow[0].engine;
+  switch( engine ) {
+    case SID_SE_LEAD:
+      if( addr >= 0x60 && addr <= 0xbf ) {
+	// Voice Parameters
+	if( wopt == 1 ) { // SIDL/R
+	  addr = ((addr - 0x60) % 0x30) + 0x60;
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x00, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x30, data);
+	  return status;
+	} else if( wopt == 2 ) { // Voice 123/456
+	  if( addr >= 0x90 )
+	    addr = ((addr - 0x90) % 0x30) + 0x90;
+	  else
+	    addr = ((addr - 0x60) % 0x30) + 0x60;
+
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 1*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 2*0x10, data);
+	  return status;
+	} else if( wopt == 3 ) { // Combined Left/Right and Voice123/456 Flag
+	  addr = ((addr - 0x60) % 0x10) + 0x60;
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 1*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 2*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 3*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 4*0x10, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 5*0x10, data);
+	  return status;
+	}
+      } else if( addr >= 0x100 && addr <= 0x13f ) {
+	if( wopt == 1 || wopt == 3 ) {
+	  u16 mod_base_addr = addr & ~0x7;
+	  u16 mod_offset = addr & 0x7;
+	  if( mod_offset >= 0x4 && mod_offset <= 0x5 ) {
+	    // Modulation Target Assignments
+	    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, mod_base_addr + 0x4, data);
+	    status |= SID_SYSEX_WritePatchPar(sid_selection, 0, mod_base_addr + 0x5, data);
+	    return status;
+	  }
+	}
+      }
+      break;
+
+    case SID_SE_BASSLINE:
+      if( addr >= 0x60 && addr <= 0xff ) {
+	// Voice Parameters
+	if( wopt == 1 ) { // SIDL/R
+	  addr = ((addr - 0x60) % 0x50) + 0x60;
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x00, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x50, data);
+	  return status;
+	}
+      }
+      break;
+
+    case SID_SE_DRUM:
+      // no support for additional ranges
+      break;
+
+    case SID_SE_MULTI:
+      if( addr >= 0x060 && addr <= 0x17f ) {
+	if( wopt == 1 ) { // SIDL/R
+	  // Voice Parameters
+	  addr = ((addr - 0x060) % 0x090) + 0x060;
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x00, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0x90, data);
+	  return status;
+	} else if( wopt == 2 ) { // Voice 123/456
+	  if( addr >= 0x0f0 )
+	    addr = ((addr - 0x0f0) % 0x090) + 0x0f0;
+	  else
+	    addr = ((addr - 0x060) % 0x090) + 0x060;
+
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 1*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 2*0x30, data);
+	  return status;
+	} else if( wopt == 3 ) { // Combined Left/Right and Voice123/456 Flag
+	  addr = ((addr - 0x060) % 0x030) + 0x060;
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 0*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 1*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 2*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 3*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 4*0x30, data);
+	  status |= SID_SYSEX_WritePatchPar(sid_selection, 0, addr + 5*0x30, data);
+	  return status;
+	}
+      }
+      break;
+  }
+
+  // no WOPT support -> write single value
+ return SID_SYSEX_WritePatchPar(sid_selection, 0, addr, data);
 }
 
 

@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MBSID MIDI Parser
+ * Header file for MBSID Parameter Handlers
  *
  * ==========================================================================
  *
@@ -11,13 +11,12 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_H
-#define _SID_MIDI_H
+#ifndef _SID_PAR_H
+#define _SID_PAR_H
 
-#include "sid_se.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// Global definitions
+// Global Defines
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -25,21 +24,20 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_Init(u32 mode);
+extern s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins);
+extern s32 SID_PAR_Set16(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins);
+extern s32 SID_PAR_SetNRPN(u8 sid, u8 addr_lsb, u8 addr_msb, u8 data_lsb, u8 data_msb, u8 sidlr, u8 ins);
+extern s32 SID_PAR_SetWT(u8 sid, u8 par, u8 wt_value, u8 sidlr, u8 ins);
 
-extern s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-
-extern s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note);
-extern s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note);
+extern u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_MIDI_H */
+#endif /* _SID_PAR_H */

@@ -21,6 +21,7 @@
 #include "sid_patch.h"
 #include "sid_se.h"
 #include "sid_knob.h"
+#include "sid_par.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -78,7 +79,7 @@ s32 SID_KNOB_SetValue(u8 sid, sid_knob_num_t knob_num, u8 value)
 
   // get scaled value between min/max boundaries
   s32 factor = ((knob->max > knob->min) ? (knob->max - knob->min) : (knob->min - knob->max)) + 1;
-  s32 scaled_value = knob->min + (value * factor)/256;
+  s32 scaled_value16 = knob->min + (value * factor); // 16bit
 
   // copy as signed value into modulation source array
   sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_KNOB1 + knob_num] = (value << 8) - 0x8000;
@@ -87,15 +88,45 @@ s32 SID_KNOB_SetValue(u8 sid, sid_knob_num_t knob_num, u8 value)
     // copy knob1 to MDW source
     // in distance to KNOB1, this one goes only into positive direction
     sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_MDW] = value << 7;
-  } else if( knob_num == SID_KNOB_PITCHBENDER ) {
-    // TMP solution for pitchbender
-    sid_se_voice_t *v = &sid_se_voice[sid][0];
-    int voice;
-    for(voice=0; voice<SID_SE_NUM_VOICES; ++voice, ++v)
-      v->pitchbender = value;
   }
 
-  // TODO: forward to parameter handler
+  // determine sidl/r and instrument selection depending on engine
+  u8 sidlr;
+  u8 ins;
+  sid_se_engine_t engine = sid_patch[sid].engine;
+  switch( engine ) {
+    case SID_SE_LEAD:
+      sidlr = 3; // always modify both SIDs
+      ins = 0; // instrument n/a
+      break;
+
+    case SID_SE_BASSLINE:
+      sidlr = 3; // always modify both SIDs
+      ins = 3; // TODO: for "current" use this selection! - value has to be taken from CS later
+      break;
+
+    case SID_SE_DRUM:
+      sidlr = 3; // always modify both SIDs
+      ins = 0; // TODO: for "current" use this selection! - value has to be taken from CS later
+      break;
+
+    case SID_SE_MULTI:
+      sidlr = 3; // always modify both SIDs
+      ins = 0; // TODO: for "current" use this selection! - value has to be taken from CS later
+      break;
+
+    default:
+      // unsupported engine, use default values
+      sidlr = 3;
+      ins = 0;
+  }
+
+  // forward to parameter handler
+  // interrupts should be disabled to ensure atomic access
+  MIOS32_IRQ_Disable();
+  SID_PAR_Set16(sid, knob->assign1, scaled_value16, sidlr, ins);
+  SID_PAR_Set16(sid, knob->assign2, scaled_value16, sidlr, ins);
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

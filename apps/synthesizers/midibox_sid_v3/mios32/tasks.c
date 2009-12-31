@@ -85,7 +85,7 @@ static xTaskHandle xMSDHandle;
 /////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode)
 {
-  // disable MSD by default (has to be enabled in SEQ_UI_FILE menu)
+  // disable MSD by default (has to be enabled in SID_UI_FILE menu)
   msd_state = DISABLED;
 
   // start tasks
@@ -125,7 +125,7 @@ static void TASK_Period1mS(void *pvParameters)
       xLastExecutionTime = xCurrentTickCount;
 
     // continue in application hook
-    SEQ_TASK_Period1mS();
+    SID_TASK_Period1mS();
   }
 }
 
@@ -142,7 +142,7 @@ static void TASK_Period1mS_LowPrio(void *pvParameters)
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // continue in application hook
-    SEQ_TASK_Period1mS_LowPrio();
+    SID_TASK_Period1mS_LowPrio();
   }
 }
 
@@ -159,7 +159,7 @@ static void TASK_Period1S(void *pvParameters)
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     // continue in application hook
-    SEQ_TASK_Period1S();
+    SID_TASK_Period1S();
   }
 }
 

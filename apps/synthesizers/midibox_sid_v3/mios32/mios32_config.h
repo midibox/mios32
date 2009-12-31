@@ -55,7 +55,7 @@
 
 
 // to enable SID emulation
-#define SIDEMU_ENABLED
+//#define SIDEMU_ENABLED
 #define SIDEMU_EXTERNAL_DAC
 #define SIDEMU_INTERNAL_DAC
 
