@@ -17,9 +17,6 @@
 
 #include <mios32.h>
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
 #include "sid.h"
 #include "sidemu.h"
 
@@ -36,20 +33,13 @@
 #define PIN_SCLK_0  { SID_SCLK_PORT->BRR  = SID_SCLK_PIN; }
 #define PIN_SCLK_1  { SID_SCLK_PORT->BSRR = SID_SCLK_PIN; }
 
-#define PIN_CSN0_0  { SID_CSN0_PORT->BRR  = SID_CSN0_PIN; }
-#define PIN_CSN0_1  { SID_CSN0_PORT->BSRR = SID_CSN0_PIN; }
-#define PIN_CSN1_0  { SID_CSN1_PORT->BRR  = SID_CSN1_PIN; }
-#define PIN_CSN1_1  { SID_CSN1_PORT->BSRR = SID_CSN1_PIN; }
-
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
 sid_regs_t sid_regs[SID_NUM];
-u8 sid_gate_update_done[SID_NUM];
-u8 sicherheitsabstand[256]; // for Nils
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -67,11 +57,43 @@ static const u8 update_order[SID_REGS_NUM] = {
 };
 
 
+
+typedef struct {
+  GPIO_TypeDef *port;
+  u16 pin_mask;
+} sid_cs_pin_t;
+
+static const sid_cs_pin_t sid_cs_pin[SID_NUM] = {
+  { SID_CSN0_PORT, SID_CSN0_PIN },
+#if SID_NUM >= 2
+  { SID_CSN1_PORT, SID_CSN1_PIN },
+#endif
+#if SID_NUM >= 3
+  { SID_CSN2_PORT, SID_CSN2_PIN },
+#endif
+#if SID_NUM >= 4
+  { SID_CSN3_PORT, SID_CSN3_PIN },
+#endif
+#if SID_NUM >= 5
+  { SID_CSN4_PORT, SID_CSN4_PIN },
+#endif
+#if SID_NUM >= 6
+  { SID_CSN5_PORT, SID_CSN5_PIN },
+#endif
+#if SID_NUM >= 7
+  { SID_CSN6_PORT, SID_CSN6_PIN },
+#endif
+#if SID_NUM >= 8
+  { SID_CSN7_PORT, SID_CSN7_PIN },
+#endif
+};
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset);
+static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u8 cs, u8 addr, u8 data, u8 reset);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -100,8 +122,8 @@ s32 SID_Init(u32 mode)
   PIN_SCLK_1;
   PIN_RCLK_1;
   PIN_SER(1);
-  PIN_CSN0_1;
-  PIN_CSN1_1;
+  for(sid=0; sid<SID_NUM; ++sid)
+    sid_cs_pin[sid].port->BSRR = sid_cs_pin[sid].pin_mask;
 
   // configure push-pull pins
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -117,6 +139,18 @@ s32 SID_Init(u32 mode)
   GPIO_Init(SID_CSN0_PORT, &GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Pin = SID_CSN1_PIN;
   GPIO_Init(SID_CSN1_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN2_PIN;
+  GPIO_Init(SID_CSN2_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN3_PIN;
+  GPIO_Init(SID_CSN3_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN4_PIN;
+  GPIO_Init(SID_CSN4_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN5_PIN;
+  GPIO_Init(SID_CSN5_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN6_PIN;
+  GPIO_Init(SID_CSN6_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = SID_CSN7_PIN;
+  GPIO_Init(SID_CSN7_PORT, &GPIO_InitStructure);
 
   // CLK pin outputs 1 MHz clock via Timer4 Channel 2
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
@@ -137,10 +171,11 @@ s32 SID_Init(u32 mode)
   TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
 
   // PWM1 Mode configuration: Channel2
+  // Note: whenever PWM channel is changed, the synchronisation code in SID_UpdateReg has to be updated as well!
   TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
   TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
   TIM_OCInitStructure.TIM_Pulse = 72 / 2; // 1:1 duty cycle @ 72 MHz (TODO: determine frequency via RCC_GetClocksFreq)
-  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High; // not Low! This ensures, that TIM_FLAG_CC2 is set on *rising* edge
   TIM_OC2Init(TIM4, &TIM_OCInitStructure);
   TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
@@ -150,7 +185,6 @@ s32 SID_Init(u32 mode)
 
   // clear all SID registers
   for(sid=0; sid<SID_NUM; ++sid)
-    sid_gate_update_done[sid] = 0x00;
     for(reg=0; reg<SID_REGS_NUM; ++reg) {
       sid_regs[sid].ALL[reg] = 0;
       sid_regs_shadow[sid].ALL[reg] = 0;
@@ -175,8 +209,12 @@ s32 SID_Update(u32 mode)
   int sid, reg, i;
 
   // trigger reset?
-  if( mode == 2 )
-    SID_SerWrite(0xff, 0x00, 0x00, 1); // CS lines, address, data, reset
+  if( mode == 2 ) {
+    // (cs pins don't need to be set during reset, but the SID_UpdateReg() routine requires the pointers)
+    sid_cs_pin_t *cs_pin0 = (sid_cs_pin_t *)&sid_cs_pin[0];
+    sid_cs_pin_t *cs_pin1 = (sid_cs_pin_t *)&sid_cs_pin[1];
+    SID_UpdateReg(cs_pin0, cs_pin1, 0xff, 0x00, 0x00, 1); // CS lines, address, data, reset
+  }
 
   // if register update should be forced, just inverse all shadow register values
   if( mode >= 1 ) { // (also for reset mode)
@@ -185,39 +223,50 @@ s32 SID_Update(u32 mode)
 	sid_regs_shadow[sid].ALL[reg] = ~sid_regs[sid].ALL[reg];
   }
 
-  // TODO: here we should disable the SID SE update interrupt - once available
-
   // this loop should run so fast as possible, 
   // we consider to update two SIDs at once if values are identical
-  // currently only optimized for 2 SIDs!
-  for(i=0; i<SID_REGS_NUM; ++i) {
-    u8 data;
+  for(sid=0; sid<SID_NUM; sid+=2) {
+    u8 *update_order_ptr = (u8 *)&update_order[0];
+    u8 *sidl = (u8 *)&sid_regs[sid+0].ALL[0];
+    u8 *sidl_shadow = (u8 *)&sid_regs_shadow[sid+0].ALL[0];
+    u8 *sidr = (u8 *)&sid_regs[sid+1].ALL[0];
+    u8 *sidr_shadow = (u8 *)&sid_regs_shadow[sid+1].ALL[0];
+    u8 cs_both = (3 << (2*sid));
+    u8 cs_l_only = (1 << (2*sid));
+    u8 cs_r_only = (2 << (2*sid));
+    sid_cs_pin_t *cs_pin0 = (sid_cs_pin_t *)&sid_cs_pin[2*sid+0];
+    sid_cs_pin_t *cs_pin1 = (sid_cs_pin_t *)&sid_cs_pin[2*sid+1];
 
-    reg = update_order[i];
+    for(i=0; i<SID_REGS_NUM; ++i, update_order_ptr++) {
+      u8 data;
 
-    // check if we have to update the first SID
-    if( (data=sid_regs[0].ALL[reg]) != sid_regs_shadow[0].ALL[reg] ) {
-      // check if the value of the second SID is identical
-      if( data == sid_regs[1].ALL[reg] ) {
-	SID_SerWrite(0x03, reg, data, 0); // CS lines, address, data, reset
-        sid_regs_shadow[0].ALL[reg] = data;
-        sid_regs_shadow[1].ALL[reg] = data;
-      } else {
-	SID_SerWrite(0x01, reg, data, 0); // CS lines, address, data, reset
-        sid_regs_shadow[0].ALL[reg] = data;
+      reg = *update_order_ptr;
+
+      // check if update of left/right channel SID are required
+      // partly duplicated code ensures best performance in all cases!
+      if( (data=sidl[reg]) != sidl_shadow[reg] ) {
+	// check if the value of the second SID is identical
+	if( data == sidr[reg] ) {
+	  SID_UpdateReg(cs_pin0, cs_pin1, cs_both, reg, data, 0); // CS lines, address, data, reset
+	  sidl_shadow[reg] = data;
+	  sidr_shadow[reg] = data;
+	} else {
+	  SID_UpdateReg(cs_pin0, NULL, cs_l_only, reg, data, 0); // CS lines, address, data, reset
+	  sidl_shadow[reg] = data;
+
+	  if( (data=sidr[reg]) != sidr_shadow[reg] ) {
+	    // individual update for second SID required
+	    SID_UpdateReg(cs_pin1, NULL, cs_r_only, reg, data, 0); // CS lines, address, data, reset
+	    sidr_shadow[reg] = data;
+	  }
+	}
+      } else if( (data=sidr[reg]) != sidr_shadow[reg] ) {
+	// individual update for second SID required
+	SID_UpdateReg(cs_pin1, NULL, cs_r_only, reg, data, 0); // CS lines, address, data, reset
+	sidr_shadow[reg] = data;
       }
     }
-
-    // update for second SID required?
-    if( (data=sid_regs[1].ALL[reg]) != sid_regs_shadow[1].ALL[reg] ) {
-      SID_SerWrite(0x02, reg, data, 0); // CS lines, address, data, reset
-      sid_regs_shadow[1].ALL[reg] = data;
-    }
-    sid_gate_update_done[i] = 0xff;
   }
-
-  // TODO: here we should enable the SID SE update interrupt - once available
-
 
   return 0; // no error
 }
@@ -232,8 +281,10 @@ s32 SID_Update(u32 mode)
 //     reset pin in <reset> (inversion done internally)
 // OUT: -
 /////////////////////////////////////////////////////////////////////////////
-static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
+static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u8 cs, u8 addr, u8 data, u8 reset)
 {
+  //  SID_Wrapper_Write(cs, addr, data, reset);
+
 #ifdef SIDEMU_ENABLED
   // currently only single SID available
   if( (cs & 1) && addr <= 24 )
@@ -309,24 +360,29 @@ static void SID_SerWrite(u8 cs, u8 addr, u8 data, u8 reset)
   MIOS32_IRQ_Disable();
 
   // synchronize with rising edge of SID clock
-  while(  (SID_CLK_PORT->IDR & SID_CLK_PIN) ); // wait for 0
-  while( !(SID_CLK_PORT->IDR & SID_CLK_PIN) ); // wait for 1
+  TIM4->SR &= ~TIM_FLAG_CC2;
+  while( !(TIM4->SR & TIM_FLAG_CC2) );
 
   // set CS lines
-  if( cs & 0x01 ) PIN_CSN0_0;
-  if( cs & 0x02 ) PIN_CSN1_0;
+  cs_pin0->port->BRR = cs_pin0->pin_mask;
+  if( cs_pin1 ) // Note: only second pin is optional! A second if() check could lead to an additional unwanted delay of 1 SID cycle!!!
+    cs_pin1->port->BRR = cs_pin1->pin_mask;
 
   // at scope we can see, that we've reached the falling clock edge here
 
-  // wait for 1.2 S (> one SID clock cycle)
-  volatile u32 delay_ctr;
-  for(delay_ctr=0; delay_ctr<4; ++delay_ctr); // measured with scope
-  // TODO: delay could change with different gcc versions - check for better approach
-  // Note that we shouldn't generate bus accesses while waiting, since they could be delayed by DMA transfers
+  // CS/data has to be stable during *falling* edge of SID clock
+  // Write data hold time is 350 nS (according to datasheet)
+
+  // synchronize with next rising edge of SID clock
+  TIM4->SR &= ~TIM_FLAG_CC2;
+  while( !(TIM4->SR & TIM_FLAG_CC2) );
 
   // release CS lines
-  PIN_CSN0_1;
-  PIN_CSN1_1;
+  cs_pin0->port->BSRR = cs_pin0->pin_mask;
+  if( cs_pin1 ) // Note: only second pin is optional! A second if() check can lead to an additional unwanted delay of 1 SID cycle!!!
+    cs_pin1->port->BSRR = cs_pin1->pin_mask;
+
+  // enable interrupts again
   MIOS32_IRQ_Enable();
 #endif
 }

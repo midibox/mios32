@@ -205,6 +205,7 @@ typedef union {
     unsigned GATE_ACTIVE:1;
     unsigned GATE_SET_REQ:1;
     unsigned GATE_CLR_REQ:1;
+    unsigned OSC_SYNC_IN_PROGRESS:1;
     unsigned PORTA_ACTIVE:1;
     unsigned PORTA_INITIALIZED:1; // portamento omitted when first key played 
     unsigned ACCENT:1;
@@ -628,24 +629,30 @@ typedef struct sid_se_vars_t {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SID_SE_Init(u32 mode);
-
-extern s32 SID_SE_VarsInit(sid_se_vars_t *vars, u8 sid);
-extern s32 SID_SE_ClkInit(sid_se_clk_t *clk);
-extern s32 SID_SE_VoiceInit(sid_se_voice_t *v, u8 sid, u8 voice);
-extern s32 SID_SE_FilterInit(sid_se_filter_t *f, u8 sid, u8 filter);
-extern s32 SID_SE_LFOInit(sid_se_lfo_t *l, u8 sid, u8 lfo);
-extern s32 SID_SE_ENVInit(sid_se_env_t *e, u8 sid, u8 env);
-extern s32 SID_SE_WTInit(sid_se_wt_t *w, u8 sid, u8 wt);
-extern s32 SID_SE_SEQInit(sid_se_seq_t *seq);
+extern s32 SID_SE_InitStructs(u8 sid);
 
 extern s32 SID_SE_Update(void);
 
 extern s32 SID_SE_IncomingRealTimeEvent(u8 event);
 extern s32 SID_SE_Clk(sid_se_clk_t *clk);
+
 extern s32 SID_SE_Gate(sid_se_voice_t *v);
+extern s32 SID_SE_NoteRestart(sid_se_voice_t *v);
+
 extern s32 SID_SE_Pitch(sid_se_voice_t *v);
 extern s32 SID_SE_PW(sid_se_voice_t *v);
 extern s32 SID_SE_FilterAndVolume(sid_se_filter_t *f);
+
+extern s32 SID_SE_LFO(sid_se_lfo_t *l);
+extern s32 SID_SE_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun);
+extern s32 SID_SE_LFO_Restart(sid_se_lfo_t *l);
+
+extern s32 SID_SE_ENV(sid_se_env_t *e);
+extern s32 SID_SE_ENV_Step(u16 *ctr, u16 target, u8 rate, u8 curve);
+extern s32 SID_SE_ENV_Restart(sid_se_env_t *e);
+extern s32 SID_SE_ENV_Release(sid_se_env_t *e);
+
+extern s32 SID_SE_WT(sid_se_wt_t *w);
 
 
 /////////////////////////////////////////////////////////////////////////////

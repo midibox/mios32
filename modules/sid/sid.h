@@ -71,6 +71,48 @@
 #define SID_CSN1_PIN          GPIO_Pin_0  // J5A:A0 (tmp.)
 #endif
 
+#ifndef SID_CSN2_PORT
+#define SID_CSN2_PORT         GPIOC
+#endif
+#ifndef SID_CSN2_PIN
+#define SID_CSN2_PIN          GPIO_Pin_1  // J5A:A1 (tmp.)
+#endif
+
+#ifndef SID_CSN3_PORT
+#define SID_CSN3_PORT         GPIOC
+#endif
+#ifndef SID_CSN3_PIN
+#define SID_CSN3_PIN          GPIO_Pin_2  // J5A:A2 (tmp.)
+#endif
+
+#ifndef SID_CSN4_PORT
+#define SID_CSN4_PORT         GPIOC
+#endif
+#ifndef SID_CSN4_PIN
+#define SID_CSN4_PIN          GPIO_Pin_3  // J5A:A3 (tmp.)
+#endif
+
+#ifndef SID_CSN5_PORT
+#define SID_CSN5_PORT         GPIOA
+#endif
+#ifndef SID_CSN5_PIN
+#define SID_CSN5_PIN          GPIO_Pin_0  // J5B:A4 (tmp.)
+#endif
+
+#ifndef SID_CSN6_PORT
+#define SID_CSN6_PORT         GPIOA
+#endif
+#ifndef SID_CSN6_PIN
+#define SID_CSN6_PIN          GPIO_Pin_1  // J5B:A5 (tmp.)
+#endif
+
+#ifndef SID_CSN7_PORT
+#define SID_CSN7_PORT         GPIOA
+#endif
+#ifndef SID_CSN7_PIN
+#define SID_CSN7_PIN          GPIO_Pin_2  // J5B:A6 (tmp.)
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -162,7 +204,6 @@ extern s32 SID_Update(u32 mode);
 /////////////////////////////////////////////////////////////////////////////
 
 extern sid_regs_t sid_regs[SID_NUM];
-extern u8 sid_gate_update_done[SID_NUM];
 
 
 #endif /* _SID_H */
