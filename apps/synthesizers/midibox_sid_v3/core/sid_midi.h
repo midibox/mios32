@@ -36,6 +36,8 @@ extern s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 
 extern s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note);
 extern s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note);
+extern s32 SID_MIDI_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity);
+extern s32 SID_MIDI_ArpNoteOff(sid_se_voice_t *v, u8 note);
 
 
 /////////////////////////////////////////////////////////////////////////////

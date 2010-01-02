@@ -38,8 +38,6 @@ typedef union {
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_SE_L_Init(u32 mode);
-
 extern s32 SID_SE_L_Update(u8 sid);
 
 

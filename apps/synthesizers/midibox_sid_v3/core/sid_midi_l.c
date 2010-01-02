@@ -43,8 +43,6 @@
 /////////////////////////////////////////////////////////////////////////////
 static s32 SID_MIDI_L_NoteOn(sid_se_voice_t *v, u8 note, sid_se_l_flags_t l_flags);
 static s32 SID_MIDI_L_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_l_flags_t l_flags);
-static s32 SID_MIDI_L_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity);
-static s32 SID_MIDI_L_ArpNoteOff(sid_se_voice_t *v, u8 note);
 static s32 SID_MIDI_L_GateOn(sid_se_voice_t *v);
 static s32 SID_MIDI_L_GateOff(sid_se_voice_t *v);
 
@@ -105,7 +103,7 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 	SID_MIDI_L_NoteOn(v, midi_package.note, l_flags);
       } else {
 	// call Arp Note On Handler
-	SID_MIDI_L_ArpNoteOn(v, midi_package.note, midi_package.velocity);
+	SID_MIDI_ArpNoteOn(v, midi_package.note, midi_package.velocity);
       }
     }
   } else { // Note Off
@@ -136,7 +134,7 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 	}
       } else {
 	// call Arp Note Off Handler
-	SID_MIDI_L_ArpNoteOff(v, midi_package.note);
+	SID_MIDI_ArpNoteOff(v, midi_package.note);
       }
     }
   }
@@ -223,81 +221,6 @@ static s32 SID_MIDI_L_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, si
   v->trg_dst[2] |= v->trg_mask_note_off[2];
 
   return 0; // no error, NO note on!
-}
-
-static s32 SID_MIDI_L_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity)
-{
-  sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
-  sid_se_voice_arp_speed_div_t arp_speed_div = (sid_se_voice_arp_speed_div_t)v->voice_patch->arp_speed_div;
-
-  // store current notestack mode
-  notestack_mode_t saved_mode = v->notestack.mode;
-
-  if( arp_speed_div.EASY_CHORD && !arp_mode.HOLD ) {
-    // easy chord entry:
-    // even when HOLD mode not active, a note off doesn't remove notes in stack
-    // the notes of released keys will be removed from stack once a *new* note is played
-    NOTESTACK_RemoveNonActiveNotes(&v->notestack);
-  }
-
-  // if no note is played anymore, clear stack again (so that new notes can be added in HOLD mode)
-  if( NOTESTACK_CountActiveNotes(&v->notestack) == 0 ) {
-    // clear stack
-    NOTESTACK_Clear(&v->notestack);
-    // synchronize the arpeggiator
-    v->arp_state.SYNC_ARP = 1;
-  }
-
-  // push note into stack - select mode depending on sort/hold mode
-  if( arp_mode.HOLD )
-    v->notestack.mode = arp_mode.SORTED ? NOTESTACK_MODE_SORT_HOLD : NOTESTACK_MODE_PUSH_TOP_HOLD;
-  else
-    v->notestack.mode = arp_mode.SORTED ? NOTESTACK_MODE_SORT : NOTESTACK_MODE_PUSH_TOP;
-  NOTESTACK_Push(&v->notestack, note, velocity);
-
-  // activate note
-  v->state.VOICE_ACTIVE = 1;
-
-  // remember note
-  v->played_note = note;
-
-  // restore notestack mode
-  v->notestack.mode = saved_mode;
-
-  return 0; // no error
-}
-
-static s32 SID_MIDI_L_ArpNoteOff(sid_se_voice_t *v, u8 note)
-{
-  sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
-  sid_se_voice_arp_speed_div_t arp_speed_div = (sid_se_voice_arp_speed_div_t)v->voice_patch->arp_speed_div;
-
-  // store current notestack mode
-  notestack_mode_t saved_mode = v->notestack.mode;
-
-  if( arp_speed_div.EASY_CHORD && !arp_mode.HOLD ) {
-    // select mode depending on arp flags
-    // always pop note in hold mode
-    v->notestack.mode = arp_mode.SORTED ? NOTESTACK_MODE_SORT_HOLD : NOTESTACK_MODE_PUSH_TOP_HOLD;
-  } else {
-    // select mode depending on arp flags
-    if( arp_mode.HOLD )
-      v->notestack.mode = arp_mode.SORTED ? NOTESTACK_MODE_SORT_HOLD : NOTESTACK_MODE_PUSH_TOP_HOLD;
-    else
-      v->notestack.mode = arp_mode.SORTED ? NOTESTACK_MODE_SORT : NOTESTACK_MODE_PUSH_TOP;
-  }
-
-  // remove note from stack
-  NOTESTACK_Pop(&v->notestack, note);
-
-  // release voice if no note in queue anymore
-  if( NOTESTACK_CountActiveNotes(&v->notestack) == 0 )
-    v->state.VOICE_ACTIVE = 0;
-
-  // restore notestack mode
-  v->notestack.mode = saved_mode;
-
-  return 0; // no error
 }
 
 static s32 SID_MIDI_L_GateOn(sid_se_voice_t *v)
