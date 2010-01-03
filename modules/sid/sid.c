@@ -135,22 +135,37 @@ s32 SID_Init(u32 mode)
   GPIO_Init(SID_RCLK_PORT, &GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Pin = SID_SER_PIN;
   GPIO_Init(SID_SER_PORT, &GPIO_InitStructure);
+
   GPIO_InitStructure.GPIO_Pin = SID_CSN0_PIN;
   GPIO_Init(SID_CSN0_PORT, &GPIO_InitStructure);
+#if SID_NUM >= 2
   GPIO_InitStructure.GPIO_Pin = SID_CSN1_PIN;
   GPIO_Init(SID_CSN1_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 3
   GPIO_InitStructure.GPIO_Pin = SID_CSN2_PIN;
   GPIO_Init(SID_CSN2_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 4
   GPIO_InitStructure.GPIO_Pin = SID_CSN3_PIN;
   GPIO_Init(SID_CSN3_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 5
   GPIO_InitStructure.GPIO_Pin = SID_CSN4_PIN;
   GPIO_Init(SID_CSN4_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 6
   GPIO_InitStructure.GPIO_Pin = SID_CSN5_PIN;
   GPIO_Init(SID_CSN5_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 7
   GPIO_InitStructure.GPIO_Pin = SID_CSN6_PIN;
   GPIO_Init(SID_CSN6_PORT, &GPIO_InitStructure);
+#endif
+#if SID_NUM >= 8
   GPIO_InitStructure.GPIO_Pin = SID_CSN7_PIN;
   GPIO_Init(SID_CSN7_PORT, &GPIO_InitStructure);
+#endif
 
   // CLK pin outputs 1 MHz clock via Timer4 Channel 2
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
