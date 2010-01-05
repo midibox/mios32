@@ -29,8 +29,6 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_L_Init(u32 mode);
-
 extern s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
 extern s32 SID_MIDI_L_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
 

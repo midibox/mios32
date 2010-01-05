@@ -104,7 +104,7 @@ s32 SID_SE_L_Update(u8 sid)
 
   sid_se_env_t *e = &sid_se_env[sid][0];
   for(i=0; i<2; ++i, ++e)
-    SID_SE_ENV(e);
+    SID_SE_ENV_Lead(e);
 
 
   ///////////////////////////////////////////////////////////////////////////
