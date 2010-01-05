@@ -11,10 +11,9 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_H
-#define _SID_MIDI_H
+#ifndef _SID_MIDI_B_H
+#define _SID_MIDI_B_H
 
-#include "sid_se.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -30,25 +29,15 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_Init(u32 mode);
-
-extern s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-
-extern s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note);
-extern s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note);
-
-extern s32 SID_MIDI_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity);
-extern s32 SID_MIDI_ArpNoteOff(sid_se_voice_t *v, u8 note);
-
-extern s32 SID_MIDI_NoteOn(sid_se_voice_t *v, u8 note, u8 velocity, sid_se_v_flags_t v_flags);
-extern s32 SID_MIDI_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_v_flags_t v_flags);
-
-extern s32 SID_MIDI_GateOn(sid_se_voice_t *v);
-extern s32 SID_MIDI_GateOff(sid_se_voice_t *v);
+extern s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_MIDI_B_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+  // go through four midi voices
+  // 1 and 2 used to play the bassline/select the sequence
+  // 3 and 4 used to transpose a sequence
 
-#endif /* _SID_MIDI_H */
+#endif /* _SID_MIDI_B_H */

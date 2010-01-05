@@ -333,7 +333,9 @@ typedef struct sid_par_table_item_t {
 // --------------------------------------------------------------------------
 // -- Lead Engine
 // --------------------------------------------------------------------------
-static const sid_par_table_item_t sid_par_table[1][256] = {
+static const sid_par_table_item_t sid_par_table[2][256] = {
+
+// SID_SE_LEAD
 {
   //left string	right string	mod function	register/number
   // --[ 0x00-0x03 ]-----------------------------------------------------------------------------
@@ -631,6 +633,308 @@ static const sid_par_table_item_t sid_par_table[1][256] = {
   { P_S_NOTE,	P_N_OSC123,	P_M_NOTE,	1 }, // SIDL_V2_BASE
   { P_S_NOTE,	P_N_OSC123,	P_M_NOTE,	2 }, // SIDL_V3_BASE
 },
+
+// SID_SE_BASSLINE
+{
+  //left string	right string	mod function	register/number
+  // --[ 0x00-0x03 ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_VOLUME,	P_N_NOP,	P_M_7,		0x52 }, // SID_Ix_L_VOLUME
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_DETUNE,	P_N_OSC,	P_M_8,		0x51 }, // SID_Ix_L_OSC_DETUNE
+  // --[ 0x04-0x07 ]-----------------------------------------------------------------------------
+  { P_S_CUTOFF,	P_N_FIL,	P_M_FIL12,	0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_RESONANCE, P_N_FIL,	P_M_FIL8,	0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_CHANNELS, P_N_FIL,	P_M_FIL4L,	0x54+0 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CHN_MODE
+  { P_S_MODE,	P_N_FIL,	P_M_FIL4U,	0x54+0 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CHN_MODE
+  // --[ 0x08-0x0f ]-----------------------------------------------------------------------------
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+0*5+0 }, // SID_Ix_P_K1_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+1*5+0 }, // SID_Ix_P_K2_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+2*5+0 }, // SID_Ix_P_K3_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+3*5+0 }, // SID_Ix_P_K4_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+4*5+0 }, // SID_Ix_P_K5_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+5*5+0 }, // SID_Ix_P_KV_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+6*5+0 }, // SID_Ix_P_KP_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+7*5+0 }, // SID_Ix_P_KA_BASE+SID_Ix_Px_VALUE
+  // --[ 0x10-0x17 ]-----------------------------------------------------------------------------
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x40 }, // SID_Ix_EXT_PAR1_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x42 }, // SID_Ix_EXT_PAR2_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x44 }, // SID_Ix_EXT_PAR3_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x46 }, // SID_Ix_EXT_PAR4_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x48 }, // SID_Ix_EXT_PAR5_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4a }, // SID_Ix_EXT_PAR6_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4c }, // SID_Ix_EXT_PAR7_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4e }, // SID_Ix_EXT_PAR8_L
+  // --[ 0x18-0x1f ]-----------------------------------------------------------------------------
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  // --[ 0x20-0x23 ]-----------------------------------------------------------------------------
+  { P_S_WAVEFORM, P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+1 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+1 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+1 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+1 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_WAVEFORM
+  // --[ 0x24-0x27 ]-----------------------------------------------------------------------------
+  { P_S_TRANSPOSE, P_N_OSC_BL,	P_M_OSC_BL_PM7,	0x60+8 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_BL,	P_M_OSC_BL_PM7,	0x60+8 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_BL,	P_M_OSC_BL_PM7,	0x60+8 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_BL,	P_M_OSC_BL_PM7,	0x60+8 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_TRANSPOSE
+  // --[ 0x28-0x2b ]-----------------------------------------------------------------------------
+  { P_S_FINETUNE, P_N_OSC_BL,	P_M_OSC_BL_PM8,	0x60+9 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_BL,	P_M_OSC_BL_PM8,	0x60+9 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_BL,	P_M_OSC_BL_PM8,	0x60+9 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_BL,	P_M_OSC_BL_PM8,	0x60+9 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_FINETUNE
+  // --[ 0x2c-0x2f ]-----------------------------------------------------------------------------
+  { P_S_PORTAMENTO, P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+11 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+11 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+11 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+11 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PORTAMENTO
+  // --[ 0x30-0x33 ]-----------------------------------------------------------------------------
+  { P_S_PULSEWIDTH, P_N_OSC_BL,	P_M_OSC_BL_12,	0x60+4 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_BL,	P_M_OSC_BL_12,	0x60+4 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_BL,	P_M_OSC_BL_12,	0x60+4 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_BL,	P_M_OSC_BL_12,	0x60+4 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  // --[ 0x34-0x37 ]-----------------------------------------------------------------------------
+  { P_S_DELAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+7 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_DELAY
+  { P_S_DELAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+7 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_DELAY
+  { P_S_DELAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+7 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_DELAY
+  { P_S_DELAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+7 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_DELAY
+  // --[ 0x38-0x3b ]-----------------------------------------------------------------------------
+  { P_S_ATTACK,	P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  // --[ 0x3c-0x3f ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+2 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_AD
+  // --[ 0x40-0x43 ]-----------------------------------------------------------------------------
+  { P_S_SUSTAIN, P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_BL,	P_M_OSC_BL_4U,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  // --[ 0x44-0x47 ]-----------------------------------------------------------------------------
+  { P_S_RELEASE, P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_BL,	P_M_OSC_BL_4L,	0x60+3 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_SR
+  // --[ 0x48-0x4b ]-----------------------------------------------------------------------------
+  { P_S_ARP_SPEED, P_N_OSC_BL,	P_M_OSC_BL_6L,	0x60+13 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_BL,	P_M_OSC_BL_6L,	0x60+13 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_BL,	P_M_OSC_BL_6L,	0x60+13 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_BL,	P_M_OSC_BL_6L,	0x60+13 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  // --[ 0x4c-0x4f ]-----------------------------------------------------------------------------
+  { P_S_ARP_GL,	P_N_OSC_BL,	P_M_OSC_BL_5L,	0x60+14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_BL,	P_M_OSC_BL_5L,	0x60+14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_BL,	P_M_OSC_BL_5L,	0x60+14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_BL,	P_M_OSC_BL_5L,	0x60+14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  // --[ 0x50-0x53 ]-----------------------------------------------------------------------------
+  { P_S_PITCHBENDER,P_N_OSC_BL,	P_M_OSC_BL_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_BL,	P_M_OSC_BL_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_BL,	P_M_OSC_BL_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_BL,	P_M_OSC_BL_PB,	0 },
+  // --[ 0x54-0x5f ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  // --[ 0x60-0x63 ]-----------------------------------------------------------------------------
+  { P_S_CUTOFF,	P_N_OSC_BL,	P_M_OSC_BL_FIL12,0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_CUTOFF,	P_N_OSC_BL,	P_M_OSC_BL_FIL12,0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_CUTOFF,	P_N_OSC_BL,	P_M_OSC_BL_FIL12,0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_CUTOFF,	P_N_OSC_BL,	P_M_OSC_BL_FIL12,0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  // --[ 0x64-0x67 ]-----------------------------------------------------------------------------
+  { P_S_RESONANCE, P_N_OSC_BL,	P_M_OSC_BL_FIL8,0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_RESONANCE, P_N_OSC_BL,	P_M_OSC_BL_FIL8,0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_RESONANCE, P_N_OSC_BL,	P_M_OSC_BL_FIL8,0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_RESONANCE, P_N_OSC_BL,	P_M_OSC_BL_FIL8,0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  // --[ 0x68-0x6b ]-----------------------------------------------------------------------------
+  { P_S_ENVMOD,	P_N_OSC_BL,	P_M_OSC_BL_P8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_ENVMOD,	P_N_OSC_BL,	P_M_OSC_BL_P8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_ENVMOD,	P_N_OSC_BL,	P_M_OSC_BL_P8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_ENVMOD,	P_N_OSC_BL,	P_M_OSC_BL_P8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  // --[ 0x6c-0x6f ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_OSC_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  // --[ 0x70-0x73 ]-----------------------------------------------------------------------------
+  { P_S_ACCENT,	P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+6 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ACCENT
+  { P_S_ACCENT,	P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+6 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ACCENT
+  { P_S_ACCENT,	P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+6 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ACCENT
+  { P_S_ACCENT,	P_N_OSC_BL,	P_M_OSC_BL_7,	0x60+6 }, // SID_Ix_B_S1V1_BASE+SID_Ix_Vx_ACCENT
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  // --[ 0x80-0x87 ]-----------------------------------------------------------------------------
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x14 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x1b }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x1b }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x1b }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_MODE
+  { P_S_WAVEFORM, P_N_LFO_BL,	P_M_OSC_BL_4U,	0x60+0x1b }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_MODE
+  // --[ 0x88-0x8f ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x15 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x15 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x15 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x15 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1c }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1c }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1c }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1c }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_P
+  // --[ 0x90-0x97 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x19 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x19 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x19 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x19 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x20 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x20 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x20 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x20 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_PW
+  // --[ 0x98-0x9f ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x1a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x21 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x21 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x21 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO_BL,	P_M_OSC_BL_PM8,	0x60+0x21 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DEPTH_F
+  // --[ 0xa0-0xa7 ]-----------------------------------------------------------------------------
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x16 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x16 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x16 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x16 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1f }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1f }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1f }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1f }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_RATE
+  // --[ 0xa8-0xaf ]-----------------------------------------------------------------------------
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x17 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x17 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x17 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x17 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1e }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1e }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1e }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DELAY
+  { P_S_DELAY,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1e }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_DELAY
+  // --[ 0xb0-0xb7 ]-----------------------------------------------------------------------------
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x18 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x18 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x18 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x18 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO1_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1d }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1d }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1d }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_PHASE
+  { P_S_PHASE,	P_N_LFO_BL,	P_M_OSC_BL_8,	0x60+0x1d }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_LFO2_PHASE
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  // --[ 0xc0-0xc3 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_P, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x23 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x23 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x23 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x23 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_P
+  // --[ 0xc4-0xc7 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_PW, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x24 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x24 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x24 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x24 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_PW
+  // --[ 0xc8-0xcb ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_F, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_BL,	P_M_OSC_BL_PM8,	0x60+0x25 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DEPTH_F
+  // --[ 0xcc-0xcf ]-----------------------------------------------------------------------------
+  { P_S_ATTACK,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x26 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x26 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x26 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x26 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_ATTACK
+  // --[ 0xd0-0xd3 ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x27 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY
+  // --[ 0xd4-0xd7 ]-----------------------------------------------------------------------------
+  { P_S_SUSTAIN, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x28 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x28 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x28 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x28 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_SUSTAIN
+  // --[ 0xd8-0xdb ]-----------------------------------------------------------------------------
+  { P_S_RELEASE, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x29 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x29 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x29 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x29 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_RELEASE
+  // --[ 0xdc-0xdf ]-----------------------------------------------------------------------------
+  { P_S_CURVE,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x2a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_CURVE
+  { P_S_CURVE,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x2a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_CURVE
+  { P_S_CURVE,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x2a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_CURVE
+  { P_S_CURVE,	P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x2a }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_CURVE
+  // --[ 0xe0-0xe3 ]-----------------------------------------------------------------------------
+  { P_S_DECAY_A, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x30 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY_A
+  { P_S_DECAY_A, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x30 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY_A
+  { P_S_DECAY_A, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x30 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY_A
+  { P_S_DECAY_A, P_N_ENV_BL,	P_M_OSC_BL_8,	0x60+0x30 }, // SID_Ix_B_S1V1_BASE+SID_Ix_B_Vx_ENV_DECAY_A
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  // --[ 0xf0-0xff ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
+},
 };
 
 
@@ -669,13 +973,27 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
 
   // help variables used by voice parameters
   u8 voice_sel = 0x3f; // select all 6 voices by default
-  if( engine == SID_SE_LEAD ) {
-    if( (par & 3) > 0)
-      voice_sel = 0x09 << ((par&3)-1); // 2 voices
-    if( !(sidlr & 1) )
-      voice_sel &= ~0x7;
-    if( !(sidlr & 2) )
-      voice_sel &= ~0x38;
+  switch( engine ) {
+    case SID_SE_LEAD:
+      if( (par & 3) > 0)
+	voice_sel = 0x09 << ((par&3)-1); // 2 voices
+      if( !(sidlr & 1) )
+	voice_sel &= ~0x7;
+      if( !(sidlr & 2) )
+	voice_sel &= ~0x38;
+      break;
+
+    case SID_SE_BASSLINE:
+      switch( par & 3 ) {
+        case 1: voice_sel = sidlr; break; // selected voices
+        case 2: voice_sel = 0x01; break; // first voice only
+        case 3: voice_sel = 0x02; break; // second voice only
+        default: voice_sel = 3; break; // both voices
+      }
+      break;
+
+    default:
+      return -1; // engine not supported yet
   }
 
   switch( item->mod_function ) {
@@ -791,7 +1109,7 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
     case P_M_OSC123_PB: {
       for(i=0; i<6; ++i)
 	if( voice_sel & (1 << i) )
-	  sid_se_voice[sid][i].pitchbender = value;
+	  sid_se_voice[sid][i].mv->pitchbender = value;
     } break;
   
     case P_M_MOD_PM8: {
@@ -854,56 +1172,74 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
       // TODO  
     } break;
 
-    case P_M_OSC_BL_PM7: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_PM8: {
-      // TODO  
+    case P_M_OSC_BL_PM7:
+    case P_M_OSC_BL_PM8:
+    case P_M_OSC_BL_7:
+    case P_M_OSC_BL_8: {
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = value;
     } break;
 
     case P_M_OSC_BL_P8: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_7: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_8: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = value + 0x80;
     } break;
 
     case P_M_OSC_BL_12: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) ) {
+	  patch->ALL[item->addr_l + i*0x50 + 0] = value;
+	  patch->ALL[item->addr_l + i*0x50 + 1] = (patch->ALL[item->addr_l + i*0x50 + 1] & 0xf0) | ((value >> 8) & 0x0f);
+	}
     } break;
 
     case P_M_OSC_BL_4L: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = (patch->ALL[item->addr_l + i*0x50] & 0xf0) | (value & 0x0f);
     } break;
 
     case P_M_OSC_BL_5L: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = (patch->ALL[item->addr_l + i*0x50] & 0xe0) | (value & 0x1f);
     } break;
 
     case P_M_OSC_BL_6L: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = (patch->ALL[item->addr_l + i*0x50] & 0xc0) | (value & 0x3f);
     } break;
 
     case P_M_OSC_BL_4U: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x50] = (patch->ALL[item->addr_l + i*0x50] & 0x0f) | ((value << 4) & 0xf0);
     } break;
 
     case P_M_OSC_BL_PB: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) ) {
+	  sid_se_voice[sid][i*3+0].mv->pitchbender = value;
+	  sid_se_voice[sid][i*3+1].mv->pitchbender = value;
+	  sid_se_voice[sid][i*3+2].mv->pitchbender = value;
+	}
     } break;
 
     case P_M_OSC_BL_FIL12: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) ) {
+	  patch->ALL[item->addr_l + i*6 + 0] = value;
+	  patch->ALL[item->addr_l + i*6 + 1] = (patch->ALL[item->addr_l + i*6 + 1] & 0xf0) | ((value >> 8) & 0x0f);
+	}
     } break;
 
     case P_M_OSC_BL_FIL8: {
-      // TODO  
+      for(i=0; i<2; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*6 + 0] = value;
     } break;
 
     case P_M_DRM_8: {
@@ -960,9 +1296,9 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
 	      // set new note
 	      // if >= 0x7c, play arpeggiator note
 	      if( value >= 0x7c ) {
-		u8 arp_note = v->wt_stack[value & 3] & 0x7f;
+		u8 arp_note = v->mv->wt_stack[value & 3] & 0x7f;
 		if( !arp_note )
-		  arp_note = v->wt_stack[0] & 0x7f;
+		  arp_note = v->mv->wt_stack[0] & 0x7f;
 
 		if( arp_note ) {
 		  v->note = arp_note;
@@ -1092,11 +1428,25 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
 
   // help variables used by voice parameters
   u8 voice = 0; // select first voice by default
-  if( engine == SID_SE_LEAD ) {
-    if( (par & 3) > 0)
-      voice = (par&3) - 1;
-    if( !(sidlr & 1) ) // if first voice not selected
-      voice += 3;
+  switch( engine ) {
+    case SID_SE_LEAD:
+      if( (par & 3) > 0)
+	voice = (par&3) - 1;
+      if( !(sidlr & 1) ) // if first voice not selected
+	voice += 3;
+      break;
+
+    case SID_SE_BASSLINE:
+      switch( par & 3 ) {
+        case 1: voice = (sidlr & 1) ? 0 : 1; break; // selected voice, first voice has higher priority
+        case 2: voice = 0; break; // first voice
+        case 3: voice = 1; break; // second voice
+        default: voice = 0; // first voice
+      }
+      break;
+
+    default:
+      return -1; // engine not supported yet
   }
 
   switch( item->mod_function ) {
@@ -1195,7 +1545,7 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
   
     case P_M_OSC123_PB: {
-      return sid_se_voice[sid][voice].pitchbender;
+      return sid_se_voice[sid][voice].mv->pitchbender;
     } break;
   
     case P_M_MOD_PM8: {
@@ -1258,56 +1608,49 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
       // TODO  
     } break;
 
-    case P_M_OSC_BL_PM7: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_PM8: {
-      // TODO  
+    case P_M_OSC_BL_PM7:
+    case P_M_OSC_BL_PM8:
+    case P_M_OSC_BL_7:
+    case P_M_OSC_BL_8: {
+      return patch->ALL[item->addr_l + voice*0x50];
     } break;
 
     case P_M_OSC_BL_P8: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_7: {
-      // TODO  
-    } break;
-
-    case P_M_OSC_BL_8: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*0x50] - 0x80;
     } break;
 
     case P_M_OSC_BL_12: {
-      // TODO  
+      u16 value = patch->ALL[item->addr_l + voice*0x50 + 0] | ((u16)patch->ALL[item->addr_l + voice*0x50 + 1] << 8);
+      return value & 0xfff;
     } break;
 
     case P_M_OSC_BL_4L: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*0x50] & 0x0f;
     } break;
 
     case P_M_OSC_BL_5L: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*0x50] & 0x1f;
     } break;
 
     case P_M_OSC_BL_6L: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*0x50] & 0x3f;
     } break;
 
     case P_M_OSC_BL_4U: {
-      // TODO  
+      return (patch->ALL[item->addr_l + voice*0x50] >> 4) & 0x0f;
     } break;
 
     case P_M_OSC_BL_PB: {
-      // TODO  
+      return sid_se_voice[sid][voice*3].mv->pitchbender;
     } break;
 
     case P_M_OSC_BL_FIL12: {
-      // TODO  
+      u16 value = patch->ALL[item->addr_l + voice*6 + 0] | ((u16)patch->ALL[item->addr_l + voice*6 + 1] << 8);
+      return value & 0xfff;
     } break;
 
     case P_M_OSC_BL_FIL8: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*6 + 0];
     } break;
 
     case P_M_DRM_8: {

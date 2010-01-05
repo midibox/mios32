@@ -57,7 +57,7 @@ typedef union {
     u8 header[0x50]; // the same for all engines
 
     // 0x50..0x53
-    u8 flags; // sid_se_l_flags_t 
+    u8 v_flags; // sid_se_v_flags_t 
     u8 osc_detune; // detune left/right oscillators
     u8 volume; // 7bit value, only 4 bit used
     u8 osc_phase; // oscillator phase offset
@@ -66,16 +66,16 @@ typedef union {
     u8 filter[2][6]; // L/R sid_se_filter_patch_t
 
     // 0x60..0xbf
-    u8 voice[6][16]; // Voice 1..6, sid_se_voice_patch_t
+    u8 voice[6][16]; // Voice 1..6, sid_se_voice_patch_t.L
 
     // 0xc0..0xdd
-    u8 lfo[6][5]; // LFO 1..6, sid_se_lfo_patch_t
+    u8 lfo[6][5]; // LFO 1..6, sid_se_lfo_patch_t.L
 
     // 0xde..0xdf
     u8 reserved_lfo[2];
 
     // 0xe0..0xff
-    u8 env[2][16]; // ENV 1..2, sid_se_env_patch_t
+    u8 env[2][16]; // ENV 1..2, sid_se_env_patch_t.L
 
     // 0x100..0x13f
     u8 mod[8][8]; // MOD 1..8, sid_se_mod_patch_t
@@ -93,6 +93,25 @@ typedef union {
     u8 wt_memory[128];
   } L;
 
+  struct {
+    u8 header[0x50]; // the same for all engines
+
+    // 0x50..0x53
+    u8 flags; // not used - flags are available for each individual instrument
+    u8 osc_detune; // detune left/right oscillators
+    u8 volume; // 7bit value, only 4 bit used
+    u8 osc_phase; // oscillator phase offset
+
+    // 0x54..0x5f
+    u8 filter[2][6]; // L/R sid_se_filter_patch_t
+
+    // 0x60..0xaf/0xb0..0xff
+    u8 voice[2][80]; // sid_se_voice_patch_t.B
+
+    // 0x100..0x1ff
+    u8 seq_memory[256];
+  } B;
+
 } sid_patch_t;
 
 
@@ -101,6 +120,7 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SID_PATCH_Init(u32 mode);
+extern s32 SID_PATCH_Changed(u8 sid);
 extern s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine);
 
 

@@ -48,11 +48,12 @@ u8 sid_se_speed_factor;
 sid_se_vars_t sid_se_vars[SID_NUM];
 sid_se_clk_t sid_se_clk;
 sid_se_voice_t sid_se_voice[SID_NUM][SID_SE_NUM_VOICES];
+sid_se_midi_voice_t sid_se_midi_voice[SID_NUM][SID_SE_NUM_MIDI_VOICES];
 sid_se_filter_t sid_se_filter[SID_NUM][SID_SE_NUM_FILTERS];
 sid_se_lfo_t sid_se_lfo[SID_NUM][SID_SE_NUM_LFO];
 sid_se_env_t sid_se_env[SID_NUM][SID_SE_NUM_ENV];
 sid_se_wt_t sid_se_wt[SID_NUM][SID_SE_NUM_WT];
-sid_se_seq_t sid_se_seq[SID_NUM];
+sid_se_seq_t sid_se_seq[SID_NUM][SID_SE_NUM_SEQ];
 
 
 #include "sid_se_frq_table.inc"
@@ -91,37 +92,87 @@ s32 SID_SE_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_InitStructs(u8 sid)
 {
+  sid_se_engine_t engine = sid_patch[sid].engine;
   int i;
 
   sid_se_vars_t *vars = (sid_se_vars_t *)&sid_se_vars[sid];
   memset(vars, 0, sizeof(sid_se_vars_t));
   vars->sid = sid;
 
+  for(i=0; i<SID_SE_NUM_MIDI_VOICES; ++i) {
+    u8 midi_voice = i;
+    sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][midi_voice];
+    memset(mv, 0, sizeof(sid_se_midi_voice_t));
+
+    mv->midi_voice = midi_voice; // assigned MIDI voice
+
+    NOTESTACK_Init(&mv->notestack,
+		   NOTESTACK_MODE_PUSH_TOP,
+		   &mv->notestack_items[0],
+		   SID_SE_NOTESTACK_SIZE);
+    mv->split_upper = 0x7f;
+    mv->transpose = 0x40;
+    mv->pitchbender = 0x80;
+
+    // tmp.
+    if( engine == SID_SE_BASSLINE ) {
+      switch( midi_voice ) {
+        case 0:
+	  mv->midi_channel = 0;
+	  mv->split_lower = 0x00;
+	  mv->split_upper = 0x3b;
+	  break;
+
+        case 1:
+	  mv->midi_channel = 0;
+	  mv->split_lower = 0x3c;
+	  mv->split_upper = 0x7f;
+	  break;
+
+        case 2:
+	  mv->midi_channel = 1;
+	  mv->split_lower = 0x00;
+	  mv->split_upper = 0x3b;
+	  break;
+
+        case 3:
+	  mv->midi_channel = 1;
+	  mv->split_lower = 0x3c;
+	  mv->split_upper = 0x7f;
+	  break;
+      }
+    }
+  }
+
   for(i=0; i<SID_SE_NUM_VOICES; ++i) {
     u8 voice = i;
     sid_se_voice_t *v = (sid_se_voice_t *)&sid_se_voice[sid][voice];
     memset(v, 0, sizeof(sid_se_voice_t));
 
+    v->engine = engine; // engine type
     v->sid = sid; // cross-reference to assigned SID
     v->phys_sid = 2*sid + ((voice>=3) ? 1 : 0); // reference to physical SID (chip)
     v->voice = voice; // cross-reference to assigned voice
     v->phys_voice = voice % 3; // reference to physical voice
     v->phys_sid_voice = (sid_voice_t *)&sid_regs[v->phys_sid].v[v->phys_voice];
-    v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].L.voice[voice];
     v->clk = (sid_se_clk_t *)&sid_se_clk;
+
+    switch( engine ) {
+      case SID_SE_BASSLINE:
+	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][(voice < 3) ? 0 : 1];
+	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[(voice < 3) ? 0 : 1];
+	break;
+
+      default: // SID_SE_LEAD
+	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][voice];
+	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].L.voice[voice];
+    }
+
     v->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + voice];
     v->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + voice];
     v->trg_mask_note_on = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOn][0];
     v->trg_mask_note_off = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOff][0];
     v->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
-
-    NOTESTACK_Init(&v->notestack,
-		   NOTESTACK_MODE_PUSH_TOP,
-		   &v->notestack_items[0],
-		   SID_SE_NOTESTACK_SIZE);
-    v->split_upper = 0x7f;
-    v->transpose = 0x40;
-    v->pitchbender = 0x80;
   }
 
   for(i=0; i<SID_SE_NUM_FILTERS; ++i) {
@@ -129,6 +180,7 @@ s32 SID_SE_InitStructs(u8 sid)
     sid_se_filter_t *f = (sid_se_filter_t *)&sid_se_filter[sid][filter];
     memset(f, 0, sizeof(sid_se_filter_t));
 
+    f->engine = engine; // engine type
     f->sid = sid; // cross-reference to assigned SID
     f->phys_sid = 2*sid + filter; // reference to physical SID (chip)
     f->filter = filter; // cross-reference to assigned filter
@@ -145,11 +197,32 @@ s32 SID_SE_InitStructs(u8 sid)
 
     l->sid = sid; // cross-reference to assigned SID
     l->lfo = lfo; // cross-reference to LFO number
-    l->lfo_patch = (sid_se_lfo_patch_t *)&sid_patch[sid].L.lfo[lfo];
+    l->engine = engine; // different variants depending on engine
+
+    switch( engine ) {
+      case SID_SE_BASSLINE: {
+	u8 patch_voice = (i >= 2) ? 1 : 0;
+	u8 mod_voice = patch_voice * 3;
+	u8 lfo_voice = i & 1;
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[patch_voice];
+	l->lfo_patch = (sid_se_lfo_patch_t *)&voice_patch->B.lfo[lfo_voice];
+	l->trg_mask_lfo_period = NULL;
+	l->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+	l->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + mod_voice];
+	l->mod_dst_filter = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_FIL1 + patch_voice];
+      } break;
+
+      default: // SID_SE_LEAD
+	l->lfo_patch = (sid_se_lfo_patch_t *)&sid_patch[sid].L.lfo[lfo];
+	l->trg_mask_lfo_period = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo][0];
+	l->mod_dst_pitch = NULL;
+	l->mod_dst_pw = NULL;
+	l->mod_dst_filter = NULL;
+    }
+
     l->mod_src_lfo = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_LFO1 + lfo];
     l->mod_dst_lfo_depth = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LD1 + lfo];
     l->mod_dst_lfo_rate = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LR1 + lfo];
-    l->trg_mask_lfo_period = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo][0];
     l->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
   }
 
@@ -160,7 +233,31 @@ s32 SID_SE_InitStructs(u8 sid)
 
     e->sid = sid; // cross-reference to assigned SID
     e->env = env; // cross-reference to ENV number
-    e->env_patch = (sid_se_env_patch_t *)&sid_patch[sid].L.env[env];
+
+    switch( engine ) {
+      case SID_SE_BASSLINE: {
+	u8 patch_voice = i ? 1 : 0;
+	u8 mod_voice = patch_voice * 3;
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[patch_voice];
+	e->env_patch = (sid_se_env_patch_t *)&voice_patch->B.env;
+	e->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+	e->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + mod_voice];
+	e->mod_dst_filter = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_FIL1 + patch_voice];
+	e->voice_state = &sid_se_voice[sid][mod_voice].state;
+	e->decay_a = &voice_patch->B.env_decay_a;
+	e->accent = &voice_patch->accent;
+      } break;
+
+      default: // SID_SE_LEAD
+	e->env_patch = (sid_se_env_patch_t *)&sid_patch[sid].L.env[env];
+	e->mod_dst_pitch = NULL;
+	e->mod_dst_pw = NULL;
+	e->mod_dst_filter = NULL;
+	e->voice_state = NULL;
+	e->decay_a = NULL;
+	e->accent = NULL;
+    }
+
     e->mod_src_env = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_ENV1 + env];
     e->trg_mask_env_sustain = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_E1S + env][0];
     e->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
@@ -173,14 +270,47 @@ s32 SID_SE_InitStructs(u8 sid)
 
     w->sid = sid; // cross-reference to assigned SID
     w->wt = wt; // cross-reference to WT number
-    w->wt_patch = (sid_se_wt_patch_t *)&sid_patch[sid].L.wt[wt];
+
+    switch( engine ) {
+      case SID_SE_BASSLINE:
+	w->wt_patch = NULL;
+	break;
+
+      default: // SID_SE_LEAD
+	w->wt_patch = (sid_se_wt_patch_t *)&sid_patch[sid].L.wt[wt];
+    }
+
     w->mod_src_wt = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_WT1 + wt];
     w->mod_dst_wt = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_WT1 + wt];
     w->trg_src = (u8 *)&sid_se_vars[sid].triggers;
   }
 
-  sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid];
-  memset(s, 0, sizeof(sid_se_seq_t));
+  sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid][0];
+  for(i=0; i<SID_SE_NUM_SEQ; ++i) {
+    u8 seq = i;
+    sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid][seq];
+    memset(s, 0, sizeof(sid_se_seq_t));
+
+    s->sid = sid;
+    s->seq = seq;
+    s->trg_src = (u8 *)&sid_se_vars[sid].triggers;
+
+    switch( engine ) {
+      case SID_SE_BASSLINE: {
+	s->v = (sid_se_voice_t *)&sid_se_voice[sid][seq ? 3 : 0];
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[seq];
+	sid_se_voice_patch_t *voice_patch_shadow = (sid_se_voice_patch_t *)&sid_patch_shadow[sid].B.voice[seq];
+	s->seq_patch = (sid_se_seq_patch_t *)voice_patch->B.seq;
+	s->seq_patch_shadow = (sid_se_seq_patch_t *)voice_patch_shadow->B.seq;
+      } break;
+
+      default: // SID_SE_LEAD
+	s->v = NULL;
+	s->seq_patch = NULL;;
+	s->seq_patch_shadow = NULL;;
+    }
+
+  }
 
   return 0; // no error
 }
@@ -216,7 +346,10 @@ s32 SID_SE_Update(void)
 #endif
 
   switch( engine ) {
-    case SID_SE_LEAD: SID_SE_L_Update(sid); break;
+    case SID_SE_LEAD:     SID_SE_L_Update(sid); break;
+    case SID_SE_BASSLINE: SID_SE_B_Update(sid); break;
+    case SID_SE_DRUM:     break; // TODO
+    case SID_SE_MULTI:    break; // TODO
   }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
@@ -299,19 +432,18 @@ s32 SID_SE_Clk(sid_se_clk_t *clk)
 
   // now determine master/slave flag depending on ensemble setup
   u8 clk_mode = 2; // TODO: selection via ensemble
-  u8 slave_mode = 0;
   switch( clk_mode ) {
     case 0: // master
-      slave_mode = 0;
+      clk->state.SLAVE = 0;
       break;
 
     case 1: // slave
-      slave_mode = 1;
+      clk->state.SLAVE = 1;
       break;
 
     default: // auto
       // slave mode so long incoming clock counter < 0xfff
-      slave_mode = clk->incoming_clk_ctr < 0xfff;
+      clk->state.SLAVE = clk->incoming_clk_ctr < 0xfff;
       break;
   }
 
@@ -340,10 +472,10 @@ s32 SID_SE_Clk(sid_se_clk_t *clk)
     // decrement counter by one (if there are more requests, they will be handled on next handler invocation)
     --clk->clk_req_ctr;
 
-    if( slave_mode )
+    if( clk->state.SLAVE )
       clk->event.CLK = 1;
   } else {
-    if( !slave_mode ) {
+    if( !clk->state.SLAVE ) {
       // TODO: check timer overrun flag
       // temporary solution: use BPM counter
       if( ++clk->tmp_bpm_ctr > 5 ) { // ca. 120 BPM * 4
@@ -370,6 +502,7 @@ s32 SID_SE_Clk(sid_se_clk_t *clk)
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_Arp(sid_se_voice_t *v)
 {
+  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
   sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
   sid_se_voice_arp_speed_div_t arp_speed_div = (sid_se_voice_arp_speed_div_t)v->voice_patch->arp_speed_div;
   sid_se_voice_arp_gl_rng_t arp_gl_rng = (sid_se_voice_arp_gl_rng_t)v->voice_patch->arp_gl_rng;
@@ -379,18 +512,18 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
   u8 gate_clr_req = 0;
 
   // check if arp sync requested
-  if( v->clk->event.MIDI_START || v->arp_state.SYNC_ARP ) {
+  if( v->clk->event.MIDI_START || mv->arp_state.SYNC_ARP ) {
     // set arp counters to max values (forces proper reset)
-    v->arp_note_ctr = 0xff;
-    v->arp_oct_ctr = 0xff;
+    mv->arp_note_ctr = 0xff;
+    mv->arp_oct_ctr = 0xff;
     // reset ARP Up flag (will be set to 1 with first note)
-    v->arp_state.ARP_UP = 0;
+    mv->arp_state.ARP_UP = 0;
     // request first note (for oneshot function)
     first_note_req = 1;
     // reset divider if not disabled or if arp synch on MIDI clock start event
     if( v->clk->event.MIDI_START || !arp_mode.SYNC ) {
-      v->arp_div_ctr = 0xff;
-      v->arp_gl_ctr = 0xff;
+      mv->arp_div_ctr = 0xff;
+      mv->arp_gl_ctr = 0xff;
       // request new note
       new_note_req = 1;
     }
@@ -403,13 +536,13 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
     int inc = 1;
     if( arp_mode.CAC ) {
       // in CAC mode: increment depending on number of pressed keys
-      inc = v->notestack.len;
+      inc = mv->notestack.len;
       if( !inc ) // at least one increment
 	inc = 1;
     }
     // handle divider
     // TODO: improve this!
-    u8 div_ctr = v->arp_div_ctr + inc;
+    u8 div_ctr = mv->arp_div_ctr + inc;
     u8 speed_div = arp_speed_div.DIV + 1;
     while( div_ctr >= speed_div ) {
       div_ctr -= speed_div;
@@ -419,31 +552,31 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
       if( !v->state.VOICE_ACTIVE )
 	gate_clr_req = 1;
     }
-    v->arp_div_ctr = div_ctr;
+    mv->arp_div_ctr = div_ctr;
 
     // increment gatelength counter
     // reset counter if it already has reached the target value
-    if( ++v->arp_gl_ctr > arp_gl_rng.GATELENGTH ) {
+    if( ++mv->arp_gl_ctr > arp_gl_rng.GATELENGTH ) {
       // reset counter
-      v->arp_gl_ctr = 0;
+      mv->arp_gl_ctr = 0;
       // request gate clear
       gate_clr_req = 1;
     }
   }
 
   // check if HOLD mode has been deactivated - disable notes in this case
-  u8 disable_notes = !arp_mode.HOLD && v->arp_state.HOLD_SAVED;
+  u8 disable_notes = !arp_mode.HOLD && mv->arp_state.HOLD_SAVED;
   // store HOLD flag in MIDI voice record
-  v->arp_state.HOLD_SAVED = arp_mode.HOLD;
+  mv->arp_state.HOLD_SAVED = arp_mode.HOLD;
 
   // skip the rest if arp is disabled
   if( disable_notes || !arp_mode.ENABLE ) {
     // check if arp was active before (for proper 1->0 transition when ARP is disabled)
-    if( v->arp_state.ARP_ACTIVE ) {
+    if( mv->arp_state.ARP_ACTIVE ) {
       // notify that arp is not active anymore
-      v->arp_state.ARP_ACTIVE = 0;
+      mv->arp_state.ARP_ACTIVE = 0;
       // clear note stack (especially important in HOLD mode!)
-      NOTESTACK_Clear(&v->notestack);
+      NOTESTACK_Clear(&mv->notestack);
       // propagate Note Off through trigger matrix
       v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately
       v->trg_dst[1] |= v->trg_mask_note_off[1];
@@ -454,7 +587,7 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
     }
   } else {
     // notify that arp is active (for proper 1->0 transition when ARP is disabled)
-    v->arp_state.ARP_ACTIVE = 1;
+    mv->arp_state.ARP_ACTIVE = 1;
 
     // check if voice not active anymore (not valid in HOLD mode) or gate clear has been requested
     // skip voice active check in hold mode and voice sync mode
@@ -473,60 +606,60 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
 
     // check if a new arp note has been requested
     // skip if note counter is 0xaa (oneshot mode)
-    if( new_note_req && v->arp_note_ctr != 0xaa ) {
+    if( new_note_req && mv->arp_note_ctr != 0xaa ) {
       // reset gatelength counter
-      v->arp_gl_ctr = 0;
+      mv->arp_gl_ctr = 0;
       // increment note counter
       // if max value of arp note counter reached, reset it
-      if( ++v->arp_note_ctr >= v->notestack.len )
-	v->arp_note_ctr = 0;
+      if( ++mv->arp_note_ctr >= mv->notestack.len )
+	mv->arp_note_ctr = 0;
       // if note is zero, reset arp note counter
-      if( !v->notestack_items[v->arp_note_ctr].note )
-	v->arp_note_ctr = 0;
+      if( !mv->notestack_items[mv->arp_note_ctr].note )
+	mv->arp_note_ctr = 0;
 
 
       // dir modes
       u8 note_number = 0;
       if( arp_mode.DIR >= 6 ) { // Random
-	note_number = SID_RANDOM_Gen_Range(0, v->notestack.len-1);
+	note_number = SID_RANDOM_Gen_Range(0, mv->notestack.len-1);
       } else {
 	u8 new_note_up;
 	if( arp_mode.DIR >= 2 && arp_mode.DIR <= 5 ) { // Alt Mode 1 and 2
 	  // toggle ARP_UP flag each time the arp note counter is zero
-	  if( !v->arp_note_ctr ) {
-	    v->arp_state.ARP_UP ^= 1;
+	  if( !mv->arp_note_ctr ) {
+	    mv->arp_state.ARP_UP ^= 1;
 	    // increment note counter to prevent double played notes
 	    if( arp_mode.DIR >= 2 && arp_mode.DIR <= 3 ) // only in Alt Mode 1
-	      if( ++v->arp_note_ctr >= v->notestack.len )
-		v->arp_note_ctr = 0;
+	      if( ++mv->arp_note_ctr >= mv->notestack.len )
+		mv->arp_note_ctr = 0;
 	  }
 
 	  // direction depending on Arp Up/Down and Alt Up/Down flag
 	  if( (arp_mode.DIR & 1) == 0 ) // UP modes
-	    new_note_up = v->arp_state.ARP_UP;
+	    new_note_up = mv->arp_state.ARP_UP;
 	  else // DOWN modes
-	    new_note_up = !v->arp_state.ARP_UP;
+	    new_note_up = !mv->arp_state.ARP_UP;
 	} else {
 	  // direction depending on arp mode 0 or 1
 	  new_note_up = (arp_mode.DIR & 1) == 0;
 	}
 
 	if( new_note_up )
-	  note_number = v->arp_note_ctr;
+	  note_number = mv->arp_note_ctr;
 	else
-	  if( v->notestack.len )
-	    note_number = v->notestack.len - v->arp_note_ctr - 1;
+	  if( mv->notestack.len )
+	    note_number = mv->notestack.len - mv->arp_note_ctr - 1;
 	  else
 	    note_number = 0;
       }
 
-      int new_note = v->notestack_items[note_number].note;
+      int new_note = mv->notestack_items[note_number].note;
 
       // now check for oneshot mode: if note is 0, or if note counter and oct counter is 0, stop here
       if( !first_note_req && arp_speed_div.ONESHOT &&
-	  (!new_note || (note_number == 0 && v->arp_oct_ctr == 0)) ) {
+	  (!new_note || (note_number == 0 && mv->arp_oct_ctr == 0)) ) {
 	// set note counter to 0xaa to stop ARP until next reset
-	v->arp_note_ctr = 0xaa;
+	mv->arp_note_ctr = 0xaa;
 	// don't play new note
 	new_note = 0;
       }
@@ -535,15 +668,15 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
       if( new_note ) {
 	// if first note has been selected, increase octave until max value is reached
 	if( first_note_req )
-	  v->arp_oct_ctr = 0;
+	  mv->arp_oct_ctr = 0;
 	else if( note_number == 0 ) {
-	  ++v->arp_oct_ctr;
+	  ++mv->arp_oct_ctr;
 	}
-	if( v->arp_oct_ctr > arp_gl_rng.OCTAVE_RANGE )
-	  v->arp_oct_ctr = 0;
+	if( mv->arp_oct_ctr > arp_gl_rng.OCTAVE_RANGE )
+	  mv->arp_oct_ctr = 0;
 
 	// transpose note
-	new_note += 12*v->arp_oct_ctr;
+	new_note += 12*mv->arp_oct_ctr;
 
 	// saturate octave-wise
 	while( new_note >= 0x6c ) // use 0x6c instead of 128, since range 0x6c..0x7f sets frequency to 0xffff...
@@ -570,7 +703,7 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
   }
 
   // clear arp sync flag
-  v->arp_state.SYNC_ARP = 0;
+  mv->arp_state.SYNC_ARP = 0;
 
   return 0; // no error
 }
@@ -644,44 +777,87 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 
 	// if ABW (ADSR bug workaround) function active: update ADSR registers now!
 	if( opt_flags.ABW ) {
-	  v->phys_sid_voice->ad = v->voice_patch->ad;
-	  v->phys_sid_voice->sr = v->voice_patch->sr;
+	  // force sustain to maximum if accent flag active
+	  u8 ad = v->voice_patch->ad;
+	  u8 sr = v->voice_patch->sr;
+
+	  // accent only used in bassline and drum mode
+	  // force sustain to maximum if accent active
+	  if( v->state.ACCENT )
+	    sr |= 0xf0;
+
+	  v->phys_sid_voice->ad = ad;
+	  v->phys_sid_voice->sr = sr;
 	}
 
 	// optional OSC synchronisation
-	// TODO: will be different for drum and multi engine
-	u8 osc_phase;
-	if( !v->state.OSC_SYNC_IN_PROGRESS && (osc_phase=sid_patch[v->sid].L.osc_phase) ) {
-	  // notify that OSC synchronisation has been started
-	  v->state.OSC_SYNC_IN_PROGRESS = 1;
-	  // set test flag for one update cycle
-	  v->phys_sid_voice->test = 1;
-	  // set pitch depending on selected oscillator phase to achieve an offset between the waveforms
-	  // This approach has been invented by Wilba! :-)
-	  u32 reference_frq = 16779; // 1kHz
-	  u32 osc_sync_frq;
-	  switch( v->voice % 3 ) {
-	    case 1: osc_sync_frq = (reference_frq * (1000 + 4*(u32)osc_phase)) / 1000; break;
-	    case 2: osc_sync_frq = (reference_frq * (1000 + 8*(u32)osc_phase)) / 1000; break;
-	    default: osc_sync_frq = reference_frq; // (Voice 0 and 3)
+	u8 skip_gate = 0;
+	if( !v->state.OSC_SYNC_IN_PROGRESS ) {
+	  switch( v->engine ) {
+	    case SID_SE_LEAD: {
+	      u8 osc_phase;
+	      if( osc_phase=sid_patch[v->sid].L.osc_phase ) {
+		// notify that OSC synchronisation has been started
+		v->state.OSC_SYNC_IN_PROGRESS = 1;
+		// set test flag for one update cycle
+		v->phys_sid_voice->test = 1;
+		// set pitch depending on selected oscillator phase to achieve an offset between the waveforms
+		// This approach has been invented by Wilba! :-)
+		u32 reference_frq = 16779; // 1kHz
+		u32 osc_sync_frq;
+		switch( v->voice % 3 ) {
+		  case 1: osc_sync_frq = (reference_frq * (1000 + 4*(u32)osc_phase)) / 1000; break;
+		  case 2: osc_sync_frq = (reference_frq * (1000 + 8*(u32)osc_phase)) / 1000; break;
+		  default: osc_sync_frq = reference_frq; // (Voice 0 and 3)
+		}
+		v->phys_sid_voice->frq_l = osc_sync_frq & 0xff;
+		v->phys_sid_voice->frq_h = osc_sync_frq >> 8;
+		// don't change pitch for this update cycle!
+		change_pitch = 0;
+		// skip gate handling for this update cycle
+		skip_gate = 1;
+	      }
+	    } break;
+
+	    case SID_SE_BASSLINE: {
+	      // set test flag if OSC_PHASE_SYNC enabled
+	      sid_se_v_flags_t v_flags = (sid_se_v_flags_t)v->voice_patch->B.v_flags;
+	      if( v_flags.OSC_PHASE_SYNC ) {
+		// notify that OSC synchronisation has been started
+		v->state.OSC_SYNC_IN_PROGRESS = 1;
+		// set test flag for one update cycle
+		v->phys_sid_voice->test = 1;
+		// don't change pitch for this update cycle!
+		change_pitch = 0;
+		// skip gate handling for this update cycle
+		skip_gate = 1;
+	      }
+	    } break;
+
+	    case SID_SE_MULTI: {
+	      // TODO
+	    } break;
+
+	    case SID_SE_DRUM: {
+	    } break;
 	  }
-	  v->phys_sid_voice->frq_l = osc_sync_frq & 0xff;
-	  v->phys_sid_voice->frq_h = osc_sync_frq >> 8;
-	  // don't change pitch for this update cycle!
-	  change_pitch = 0;
-	} else if( v->phys_sid_voice->test ) {
-	  // clear test flag
-	  v->phys_sid_voice->test = 0;
-	  // don't change pitch for this update cycle!
-	  change_pitch = 0;
-	  // ensure that pitch handler will re-calculate pitch frequency on next update cycle
-	  v->linear_frq = 0;
-	} else {
-	  // this code is also executed if OSC synchronisation disabled
-	  // set the gate flag
-	  v->phys_sid_voice->gate = 1;
-	  // OSC sync finished
-	  v->state.OSC_SYNC_IN_PROGRESS = 0;
+	}
+
+	if( !skip_gate ) { // set by code below if OSC sync is started
+	  if( v->phys_sid_voice->test ) {
+	    // clear test flag
+	    v->phys_sid_voice->test = 0;
+	    // don't change pitch for this update cycle!
+	    change_pitch = 0;
+	    // ensure that pitch handler will re-calculate pitch frequency on next update cycle
+	    v->linear_frq = 0;
+	  } else {
+	    // this code is also executed if OSC synchronisation disabled
+	    // set the gate flag
+	    v->phys_sid_voice->gate = 1;
+	    // OSC sync finished
+	    v->state.OSC_SYNC_IN_PROGRESS = 0;
+	  }
 	}
       }
     }
@@ -724,8 +900,61 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
   sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
   int transposed_note = arp_mode.ENABLE ? v->arp_note : v->note;
 
-  transposed_note += (int)v->voice_patch->transpose - 64;
-  transposed_note += (int)v->transpose - 64;
+  if( v->engine == SID_SE_BASSLINE ) {
+    // get transpose value depending on voice number
+    switch( v->voice ) {
+      case 1:
+      case 4:
+	if( v->voice_patch->B.v2_static_note )
+	  transposed_note = v->voice_patch->B.v2_static_note;
+	else {
+	  u8 oct_transpose = v->voice_patch->B.v2_oct_transpose;
+	  if( oct_transpose & 4 )
+	    transposed_note -= 12*(4-(oct_transpose & 3));
+	  else
+	    transposed_note += 12*(oct_transpose & 3);
+	}
+	break;
+
+      case 2:
+      case 5:
+	if( v->voice_patch->B.v3_static_note )
+	  transposed_note = v->voice_patch->B.v3_static_note;
+	else {
+	  u8 oct_transpose = v->voice_patch->B.v3_oct_transpose;
+	  if( oct_transpose & 4 )
+	    transposed_note -= 12*(4-(oct_transpose & 3));
+	  else
+	    transposed_note += 12*(oct_transpose & 3);
+	}
+	break;
+
+      default: // 0 and 3
+	transposed_note += v->voice_patch->transpose - 64;
+    }
+
+    // MV transpose: if sequencer running, we can transpose with MIDI voice 3/4
+    sid_se_v_flags_t v_flags = (sid_se_v_flags_t)v->voice_patch->B.v_flags;
+    if( v_flags.WTO ) {
+      sid_se_midi_voice_t *mv_transpose = (v->voice >= 3)
+	? (sid_se_midi_voice_t *)&sid_se_midi_voice[v->sid][3]
+	: (sid_se_midi_voice_t *)&sid_se_midi_voice[v->sid][2];
+
+      // check for MIDI channel to ensure compatibility with older ensemble patches
+      if( mv_transpose->midi_channel < 16 && mv_transpose->notestack.len )
+	transposed_note += mv_transpose->notestack.note_items[0].note - 0x3c + mv_transpose->transpose - 64;
+      else
+	transposed_note += (int)v->mv->transpose - 64;
+    } else {
+      transposed_note += (int)v->mv->transpose - 64;
+    }    
+  } else {
+    // Lead & Multi engine
+    transposed_note += v->voice_patch->transpose - 64;
+    transposed_note += (int)v->mv->transpose - 64;
+  }
+
+
 
   // octave-wise saturation
   while( transposed_note < 0 )
@@ -776,7 +1005,7 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
   // increase/decrease target frequency by pitchrange
   // depending on pitchbender and finetune value
   if( v->voice_patch->pitchrange ) {
-    u16 pitchbender = v->pitchbender; // TODO: multi/bassline/drum engine take pitchbender from MIDI Voice
+    u16 pitchbender = v->mv->pitchbender; // TODO: multi/bassline/drum engine take pitchbender from MIDI Voice
     int delta = (int)pitchbender - 0x80;
     delta += (int)v->voice_patch->finetune-0x80;
 
@@ -791,8 +1020,8 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
       // Left OSC3: -detune
       // Right OSC3: +detune
       switch( v->voice ) {
-        case 0: delta += detune/4; break;
-        case 3: delta -= detune/4; break;
+        case 0: if( v->engine == SID_SE_LEAD ) delta += detune/4; break; // makes only sense on stereo sounds
+        case 3: if( v->engine == SID_SE_LEAD ) delta -= detune/4; break; // makes only sense on stereo sounds
 
         case 1:
         case 5: delta += detune; break;
@@ -917,7 +1146,27 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
 s32 SID_SE_PW(sid_se_voice_t *v)
 {
   // convert pulsewidth to 12bit signed value
-  int pulsewidth = ((v->voice_patch->pulsewidth_h & 0x0f) << 8) | v->voice_patch->pulsewidth_l;
+  int pulsewidth;
+  if( v->engine == SID_SE_BASSLINE ) {
+    // get pulsewidth value depending on voice number
+    switch( v->voice ) {
+      case 1:
+      case 4:
+	pulsewidth = ((v->voice_patch->B.v2_pulsewidth_h & 0x0f) << 8) | v->voice_patch->B.v2_pulsewidth_l;
+	break;
+
+      case 2:
+      case 5:
+	pulsewidth = ((v->voice_patch->B.v3_pulsewidth_h & 0x0f) << 8) | v->voice_patch->B.v3_pulsewidth_l;
+	break;
+
+      default: // 0 and 3
+	pulsewidth = ((v->voice_patch->pulsewidth_h & 0x0f) << 8) | v->voice_patch->pulsewidth_l;
+	break;
+    }
+  } else {
+    pulsewidth = ((v->voice_patch->pulsewidth_h & 0x0f) << 8) | v->voice_patch->pulsewidth_l;
+  }
 
   // PW modulation
   pulsewidth += *v->mod_dst_pw / 16;
@@ -942,6 +1191,19 @@ s32 SID_SE_FilterAndVolume(sid_se_filter_t *f)
   // cutoff modulation (/8 instead of /16 to simplify extreme modulation results)
   cutoff += *f->mod_dst_filter / 8;
   if( cutoff > 0xfff ) cutoff = 0xfff; else if( cutoff < 0 ) cutoff = 0;
+
+  // lead and bassline engine: add keytracking * linear frequency value (of first voice)
+  if( f->engine == SID_SE_LEAD || f->engine == SID_SE_BASSLINE ) {
+    if( f->filter_patch->keytrack ) {
+      s32 linear_frq = sid_se_voice[f->sid][f->filter*3].linear_frq;
+      s32 delta = (linear_frq * f->filter_patch->keytrack) / 0x1000; // 24bit -> 12bit
+      // bias at C-3 (0x3c)
+      delta -= (0x3c << 5);
+
+      cutoff += delta;
+      if( cutoff > 0xfff ) cutoff = 0xfff; else if( cutoff < 0 ) cutoff = 0;
+    }
+  }
 
   // calibration
   // TODO: take calibration values from ensemble
@@ -1033,9 +1295,11 @@ s32 SID_SE_LFO(sid_se_lfo_t *l)
 	    new_ctr = 0xffff; // stop at end position
 
 	  // propagate overrun to trigger matrix
-	  l->trg_dst[0] |= l->trg_mask_lfo_period[0];
-	  l->trg_dst[1] |= l->trg_mask_lfo_period[1];
-	  l->trg_dst[2] |= l->trg_mask_lfo_period[2];
+	  if( l->trg_mask_lfo_period ) {
+	    l->trg_dst[0] |= l->trg_mask_lfo_period[0];
+	    l->trg_dst[1] |= l->trg_mask_lfo_period[1];
+	    l->trg_dst[2] |= l->trg_mask_lfo_period[2];
+	  }
 
 	  // required for oneshot mode
 	  sid_se_vars[l->sid].lfo_overrun |= (1 << l->lfo);
@@ -1126,13 +1390,25 @@ s32 SID_SE_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun)
   }
 
   if( !lfo_waveform_skipped ) {
-    // scale to LFO depth
-    // the depth can be modulated
-    s32 lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
-    if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
+    if( l->engine == SID_SE_LEAD ) {
+      // scale to LFO depth
+      // the depth can be modulated
+      s32 lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
+      if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
     
-    // final LFO value
-    *l->mod_src_lfo = (wave * lfo_depth) / 128;
+      // final LFO value
+      *l->mod_src_lfo = (wave * lfo_depth) / 128;
+    } else {
+      // directly write to modulation destinations depending on depths
+      s32 depth_p = (s32)l->lfo_patch->MINIMAL.depth_p - 0x80;
+      *l->mod_dst_pitch += (wave * depth_p) / 128;
+
+      s32 depth_pw = (s32)l->lfo_patch->MINIMAL.depth_pw - 0x80;
+      *l->mod_dst_pw += (wave * depth_pw) / 128;
+
+      s32 depth_f = (s32)l->lfo_patch->MINIMAL.depth_f - 0x80;
+      *l->mod_dst_filter += (wave * depth_f) / 128;
+    }
   }
 
   return 0; // no error
@@ -1158,64 +1434,144 @@ s32 SID_SE_LFO_Restart(sid_se_lfo_t *l)
 /////////////////////////////////////////////////////////////////////////////
 // ENV
 /////////////////////////////////////////////////////////////////////////////
+
+// Reduced version for Bassline/Multi engine
 s32 SID_SE_ENV(sid_se_env_t *e)
 {
+  sid_se_env_mode_t env_mode = (sid_se_env_mode_t)e->env_patch->mode;
+
   // if clock sync enabled: only increment on each 16th clock event
-  if( (e->env_patch->mode & (1 << 7)) &&
-      (!sid_se_clk.event.CLK || sid_se_clk.global_clk_ctr6 != 0) ) {
+  if( env_mode.MINIMAL.CLKSYNC && (!sid_se_clk.event.CLK || sid_se_clk.global_clk_ctr6 != 0) ) {
+    if( e->state == SID_SE_ENV_STATE_IDLE )
+      return 0; // nothing to do
+  } else {
+    // TODO: curve enable flags
+    switch( e->state ) {
+      case SID_SE_ENV_STATE_ATTACK1: {
+	u8 curve = env_mode.MINIMAL.CURVE_A ? e->env_patch->MINIMAL.curve : 0x80;
+        if( SID_SE_ENV_Step(&e->ctr, 0xffff, e->env_patch->MINIMAL.attack, curve) )
+          e->state = SID_SE_ENV_STATE_DECAY1;
+      } break;
+  
+      case SID_SE_ENV_STATE_DECAY1: {
+	// use alternative decay on accented notes (only used for basslines)
+	u8 decay = (e->decay_a != NULL && e->voice_state->ACCENT) ? *e->decay_a : e->env_patch->MINIMAL.decay;
+	u8 curve = env_mode.MINIMAL.CURVE_D ? e->env_patch->MINIMAL.curve : 0x80;
+        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->MINIMAL.sustain << 8, decay, curve) )
+          e->state = SID_SE_ENV_STATE_SUSTAIN;
+      } break;
+  
+      case SID_SE_ENV_STATE_SUSTAIN:
+        // always update sustain level
+        e->ctr = e->env_patch->MINIMAL.sustain << 8;
+        break;
+  
+      case SID_SE_ENV_STATE_RELEASE1: {
+	u8 curve = env_mode.MINIMAL.CURVE_R ? e->env_patch->MINIMAL.curve : 0x80;
+        if( e->ctr )
+          SID_SE_ENV_Step(&e->ctr, 0x0000, e->env_patch->MINIMAL.release, curve);
+      } break;
+  
+      default: // like SID_SE_ENV_STATE_IDLE
+        return 0; // nothing to do...
+    }
+  }
+
+  // directly write to modulation destinations depending on depths
+  // if accent flag of voice set: increase/decrease depth based on accent value
+  s32 depth_p = (s32)e->env_patch->MINIMAL.depth_p - 0x80;
+  if( depth_p && e->voice_state->ACCENT ) {
+    if( depth_p >= 0 ) {
+      if( (depth_p += *e->accent) > 128 ) depth_p = 128;
+    } else {
+      if( (depth_p -= *e->accent) < -128 ) depth_p = -128;
+    }
+  }
+  *e->mod_dst_pitch += ((e->ctr/2) * depth_p) / 128;
+
+  s32 depth_pw = (s32)e->env_patch->MINIMAL.depth_pw - 0x80;
+  if( depth_pw && e->voice_state->ACCENT ) {
+    if( depth_pw >= 0 ) {
+      if( (depth_pw += *e->accent) > 128 ) depth_pw = 128;
+    } else {
+      if( (depth_pw -= *e->accent) < -128 ) depth_pw = -128;
+    }
+  }
+  *e->mod_dst_pw += ((e->ctr/2) * depth_pw) / 128;
+
+  s32 depth_f = (s32)e->env_patch->MINIMAL.depth_f - 0x80;
+  if( depth_f && e->voice_state->ACCENT ) {
+    if( depth_f >= 0 ) {
+      if( (depth_f += *e->accent) > 128 ) depth_f = 128;
+    } else {
+      if( (depth_f -= *e->accent) < -128 ) depth_f = -128;
+    }
+  }
+  *e->mod_dst_filter += ((e->ctr/2) * depth_f) / 128;
+
+  return 0; // no error
+}
+
+// Extended version for Lead engine
+s32 SID_SE_ENV_Lead(sid_se_env_t *e)
+{
+  sid_se_env_mode_t env_mode = (sid_se_env_mode_t)e->env_patch->mode;
+
+  // if clock sync enabled: only increment on each 16th clock event
+  if( env_mode.L.CLKSYNC && (!sid_se_clk.event.CLK || sid_se_clk.global_clk_ctr6 != 0) ) {
     if( e->state == SID_SE_ENV_STATE_IDLE )
       return 0; // nothing to do
   } else {
     switch( e->state ) {
       case SID_SE_ENV_STATE_ATTACK1:
         if( e->delay_ctr ) {
-  	int new_delay_ctr = e->delay_ctr + (sid_se_env_table[e->env_patch->delay] / sid_se_speed_factor);
-  	if( new_delay_ctr > 0xffff )
-  	  e->delay_ctr = 0; // delay passed
-  	else {
-  	  e->delay_ctr = new_delay_ctr; // delay not passed
-  	  return 0; // no error
-  	}
+          int new_delay_ctr = e->delay_ctr + (sid_se_env_table[e->env_patch->L.delay] / sid_se_speed_factor);
+          if( new_delay_ctr > 0xffff )
+	    e->delay_ctr = 0; // delay passed
+          else {
+	    e->delay_ctr = new_delay_ctr; // delay not passed
+	    return 0; // no error
+          }
         }
   
-        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->attlvl << 8, e->env_patch->attack1, e->env_patch->att_curve) )
-  	e->state = SID_SE_ENV_STATE_ATTACK2; // TODO: Set Phase depending on e->mode
+        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->L.attlvl << 8, e->env_patch->L.attack1, e->env_patch->L.att_curve) )
+          e->state = SID_SE_ENV_STATE_ATTACK2; // TODO: Set Phase depending on e->mode
         break;
   
       case SID_SE_ENV_STATE_ATTACK2:
-        if( SID_SE_ENV_Step(&e->ctr, 0xffff, e->env_patch->attack2, e->env_patch->att_curve) )
-  	e->state = SID_SE_ENV_STATE_DECAY1; // TODO: Set Phase depending on e->mode
+        if( SID_SE_ENV_Step(&e->ctr, 0xffff, e->env_patch->L.attack2, e->env_patch->L.att_curve) )
+          e->state = SID_SE_ENV_STATE_DECAY1; // TODO: Set Phase depending on e->mode
         break;
-  
+
       case SID_SE_ENV_STATE_DECAY1:
-        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->declvl << 8, e->env_patch->decay1, e->env_patch->dec_curve) )
-  	e->state = SID_SE_ENV_STATE_DECAY2; // TODO: Set Phase depending on e->mode
+        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->L.declvl << 8, e->env_patch->L.decay1, e->env_patch->L.dec_curve) )
+          e->state = SID_SE_ENV_STATE_DECAY2; // TODO: Set Phase depending on e->mode
         break;
   
       case SID_SE_ENV_STATE_DECAY2:
-        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->sustain << 8, e->env_patch->decay2, e->env_patch->dec_curve) ) {
-  	e->state = SID_SE_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on e->mode
+        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->L.sustain << 8, e->env_patch->L.decay2, e->env_patch->L.dec_curve) ) {
+          e->state = SID_SE_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on e->mode
   
-  	// propagate sustain phase to trigger matrix
-  	e->trg_dst[0] |= e->trg_mask_env_sustain[0];
-  	e->trg_dst[1] |= e->trg_mask_env_sustain[1];
-  	e->trg_dst[2] |= e->trg_mask_env_sustain[2];
+          // propagate sustain phase to trigger matrix
+          e->trg_dst[0] |= e->trg_mask_env_sustain[0];
+          e->trg_dst[1] |= e->trg_mask_env_sustain[1];
+          e->trg_dst[2] |= e->trg_mask_env_sustain[2];
         }
         break;
   
       case SID_SE_ENV_STATE_SUSTAIN:
         // always update sustain level
-        e->ctr = e->env_patch->sustain << 8;
+        e->ctr = e->env_patch->L.sustain << 8;
         break;
   
       case SID_SE_ENV_STATE_RELEASE1:
-        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->rellvl << 8, e->env_patch->release1, e->env_patch->rel_curve) )
-  	e->state = SID_SE_ENV_STATE_RELEASE2; // TODO: Set Phase depending on e->mode
+        if( SID_SE_ENV_Step(&e->ctr, e->env_patch->L.rellvl << 8, e->env_patch->L.release1, e->env_patch->L.rel_curve) )
+          e->state = SID_SE_ENV_STATE_RELEASE2; // TODO: Set Phase depending on e->mode
         break;
   
       case SID_SE_ENV_STATE_RELEASE2:
         if( e->ctr )
-  	SID_SE_ENV_Step(&e->ctr, 0x0000, e->env_patch->release2, e->env_patch->rel_curve);
+          SID_SE_ENV_Step(&e->ctr, 0x0000, e->env_patch->L.release2, e->env_patch->L.rel_curve);
         break;
   
       default: // like SID_SE_ENV_STATE_IDLE
@@ -1224,7 +1580,7 @@ s32 SID_SE_ENV(sid_se_env_t *e)
   }
 
   // scale to ENV depth
-  s32 env_depth = (s32)e->env_patch->depth - 0x80;
+  s32 env_depth = (s32)e->env_patch->L.depth - 0x80;
     
   // final ENV value (range +/- 0x7fff)
   *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
@@ -1293,7 +1649,11 @@ s32 SID_SE_ENV_Restart(sid_se_env_t *e)
   e->state = SID_SE_ENV_STATE_ATTACK1;
 
   // check if ENV should be delayed - set delay counter to 0x0001 in this case
-  e->delay_ctr = e->env_patch->delay ? 1 : 0;
+  sid_se_engine_t engine = sid_patch[e->sid].engine;
+  if( engine == SID_SE_LEAD )
+    e->delay_ctr = e->env_patch->L.delay ? 1 : 0;
+  else
+    e->delay_ctr = 0;
 
   return 0; // no error
 }

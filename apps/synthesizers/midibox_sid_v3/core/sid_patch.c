@@ -82,6 +82,32 @@ s32 SID_PATCH_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Has to be called whenever a patch has changed
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_PATCH_Changed(u8 sid)
+{
+  // disable interrupts to ensure atomic change
+  MIOS32_IRQ_Disable();
+
+  // remember previous engine and get new engine
+  sid_se_engine_t prev_engine = sid_patch_shadow[sid].engine;
+  sid_se_engine_t engine = sid_patch[sid].engine;
+
+  // copy patch into shadow buffer
+  memcpy((u8 *)&sid_patch_shadow[sid].ALL[0], (u8 *)&sid_patch[sid].ALL[0], 512);
+
+  // re-initialize structures if engine has changed
+  if( prev_engine != engine )
+    SID_SE_InitStructs(sid);
+
+  // enable interrupts again
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Preloads a patch
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)

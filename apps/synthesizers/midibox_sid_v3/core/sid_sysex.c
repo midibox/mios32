@@ -390,7 +390,7 @@ static s32 SID_SYSEX_Cmd_PatchWrite(mios32_midi_port_t port, sysex_cmd_state_t c
   	  case 0x08: // RAM Write
 	    // TODO: tmp. copy routine
 	    memcpy((u8 *)&sid_patch[0].ALL[0], (u8 *)sysex_buffer, 512);
-	    memcpy((u8 *)&sid_patch_shadow[0].ALL[0], (u8 *)sysex_buffer, 512);
+	    SID_PATCH_Changed(0); // sid==0
 	    // notify that bytes have been written
 	    SID_SYSEX_SendAck(port, SYSEX_ACK, sysex_received_checksum);
 	    break;

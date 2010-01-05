@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MBSID MIDI Parser
+ * Header file for MBSID Bassline Engine
  *
  * ==========================================================================
  *
@@ -11,10 +11,9 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_H
-#define _SID_MIDI_H
+#ifndef _SID_SE_B_H
+#define _SID_SE_B_H
 
-#include "sid_se.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -25,30 +24,26 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  u8 ALL;
+  struct {
+    unsigned LEGATO:1; // mono/legato
+    unsigned WTO:1; // Wavetable Only
+    unsigned SUSKEY:1;
+    unsigned OSC_PHASE_SYNC:1;
+  };
+} sid_se_b_flags_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_Init(u32 mode);
-
-extern s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
-
-extern s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note);
-extern s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note);
-
-extern s32 SID_MIDI_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity);
-extern s32 SID_MIDI_ArpNoteOff(sid_se_voice_t *v, u8 note);
-
-extern s32 SID_MIDI_NoteOn(sid_se_voice_t *v, u8 note, u8 velocity, sid_se_v_flags_t v_flags);
-extern s32 SID_MIDI_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_v_flags_t v_flags);
-
-extern s32 SID_MIDI_GateOn(sid_se_voice_t *v);
-extern s32 SID_MIDI_GateOff(sid_se_voice_t *v);
+extern s32 SID_SE_B_Update(u8 sid);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_MIDI_H */
+#endif /* _SID_SE_B_H */
