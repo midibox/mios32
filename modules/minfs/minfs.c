@@ -387,7 +387,7 @@ int32_t MINFS_FileOpen(MINFS_fs_t *p_fs, uint32_t file_id, MINFS_file_t *p_file,
   if( status = File_Open(p_fs, p_fs->calc.first_datablock_n, MINFS_FILE_INDEX, p_file, &p_block_buf) )
     return status; // return error status
   // Get file-pointer
-  if( (status = GetFilePointer(p_fs, file_id, &p_block_buf)) < 0 ){
+  if( (status = File_GetFilePointer(p_file, file_id, &p_block_buf)) < 0 ){
     if( status != MINFS_ERROR_FILE_NOT_EXISTS )
       return status; // return error-status
     // file does not exist, create it
