@@ -228,9 +228,8 @@ static s32 SID_MIDI_B_SetSeq(sid_se_voice_t *v)
     seq_number = 8;
 
   // set new sequence in patch/shadow buffer
-  u8 patch_voice = (v->voice >= 3) ? 1 : 0;
-  sid_se_seq[v->sid][patch_voice].seq_patch->num = seq_number;
-  sid_se_seq[v->sid][patch_voice].seq_patch_shadow->num = seq_number;
+  sid_se_seq[v->sid][mv->midi_voice].seq_patch->num = seq_number;
+  sid_se_seq[v->sid][mv->midi_voice].seq_patch_shadow->num = seq_number;
   
   return 0; // no error
 }

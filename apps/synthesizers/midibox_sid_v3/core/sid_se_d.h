@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MBSID MIDI Parser
+ * Header file for MBSID Bassline Engine
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_B_H
-#define _SID_MIDI_B_H
+#ifndef _SID_SE_D_H
+#define _SID_SE_D_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -24,17 +24,19 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
-extern s32 SID_MIDI_B_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_SE_D_Update(u8 sid);
+
+extern s32 SID_SE_D_NoteOn(u8 sid, u8 drum, u8 velocity);
+extern s32 SID_SE_D_NoteOff(u8 sid, u8 drum);
+extern s32 SID_SE_D_AllNotesOff(u8 sid);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_MIDI_B_H */
+#endif /* _SID_SE_D_H */

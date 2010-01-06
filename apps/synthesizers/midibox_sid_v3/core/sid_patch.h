@@ -112,6 +112,25 @@ typedef union {
     u8 seq_memory[256];
   } B;
 
+  struct {
+    u8 header[0x50]; // the same for all engines
+
+    // 0x50..0x53
+    u8 seq_speed; // sid_se_seq_speed_par_t
+    u8 seq_num; // sequence number (0-8, 8=disabled)
+    u8 volume; // 7bit value, only 4 bit used
+    u8 seq_length; // steps (0-15)
+
+    // 0x54..0x5f
+    u8 filter[2][6]; // L/R sid_se_filter_patch_t
+
+    // 0x60..0xaf/0xb0..0xff
+    u8 voice[16][10]; // sid_se_voice_patch_t.D
+
+    // 0x100..0x1ff
+    u8 seq_memory[256];
+  } D;
+
 } sid_patch_t;
 
 

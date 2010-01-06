@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for MBSID MIDI Parser
+ * Header file for Voice Allocation
  *
  * ==========================================================================
  *
@@ -11,12 +11,12 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_B_H
-#define _SID_MIDI_B_H
+#ifndef _SID_VOICE_H
+#define _SID_VOICE_H
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global definitions
+// Global Defines
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -29,12 +29,21 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
-extern s32 SID_MIDI_B_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_VOICE_Init(u32 mode);
+
+extern s32 SID_VOICE_QueueInit(u8 sid);
+extern s32 SID_VOICE_QueueInitExclusive(u8 sid);
+
+extern u8 SID_VOICE_Get(u8 sid, u8 instrument, u8 voice_asg, u8 num_voices);
+extern u8 SID_VOICE_GetLast(u8 sid, u8 instrument, u8 voice_asg, u8 num_voices, u8 search_voice);
+extern u8 SID_VOICE_Release(u8 sid, u8 release_voice);
+
+extern s32 SID_VOICE_SendDebugMessage(u8 sid);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_MIDI_B_H */
+
+#endif /* _SID_VOICE_H */
