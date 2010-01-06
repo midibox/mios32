@@ -88,7 +88,7 @@ s32 SID_SE_D_Update(u8 sid)
   // EGs/LFOs not relevant for drum engine
   trg->ALL[1] = 0;
 
-  // done by WT handler
+  // done after WTs have been handled
   // trg->ALL[2] = 0;
 
 
@@ -99,6 +99,8 @@ s32 SID_SE_D_Update(u8 sid)
   sid_se_wt_t *w = &sid_se_wt[sid][0];
   for(i=0; i<6; ++i, ++w)
     SID_SE_D_WT(w);
+
+  trg->ALL[2] = 0;
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -244,8 +246,6 @@ static s32 SID_SE_D_WT(sid_se_wt_t *w)
 
   // check if WT reset requested
   if( w->trg_src[2] & (1 << w->wt) ) {
-    // acknowledge WT reset
-    w->trg_src[2] &= ~(1 << w->wt);
     // next clock will increment div to 0
     w->div_ctr = ~0;
     // next step will increment to start position
@@ -543,7 +543,6 @@ s32 SID_SE_D_NoteOn(u8 sid, u8 drum, u8 velocity)
 /////////////////////////////////////////////////////////////////////////////
 // Note Off Handler
 /////////////////////////////////////////////////////////////////////////////
-
 s32 SID_SE_D_NoteOff(u8 sid, u8 drum)
 {
   if( drum >= 16 )
