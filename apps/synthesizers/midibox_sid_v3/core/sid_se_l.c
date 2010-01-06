@@ -197,9 +197,8 @@ s32 SID_SE_L_Update(u8 sid)
     v->phys_sid_voice->sync = waveform.SYNC;
     v->phys_sid_voice->ringmod = waveform.RINGMOD;
 
-    // if ABW (ADSR bug workaround) function active, ADSR registers will be controlled by SID_SE_Gate()
-    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
-    if( !opt_flags.ABW ) {
+    // don't change ADSR so long delay is active (also important for ABW - ADSR bug workaround)
+    if( !v->set_delay_ctr ) {
       v->phys_sid_voice->ad = v->voice_patch->ad;
       v->phys_sid_voice->sr = v->voice_patch->sr;
     }

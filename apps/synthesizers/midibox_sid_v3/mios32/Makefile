@@ -19,15 +19,19 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/sid_midi.c \
 		../core/sid_midi_l.c \
 		../core/sid_midi_b.c \
+		../core/sid_midi_d.c \
 		../core/sid_sysex.c \
 		../core/sid_asid.c \
 		../core/sid_patch.c \
 		../core/sid_knob.c \
 		../core/sid_par.c \
 		../core/sid_random.c \
+		../core/sid_dmodel.c \
+		../core/sid_voice.c \
 		../core/sid_se.c \
 		../core/sid_se_l.c \
-		../core/sid_se_b.c
+		../core/sid_se_b.c \
+		../core/sid_se_d.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

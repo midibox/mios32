@@ -333,7 +333,7 @@ typedef struct sid_par_table_item_t {
 // --------------------------------------------------------------------------
 // -- Lead Engine
 // --------------------------------------------------------------------------
-static const sid_par_table_item_t sid_par_table[2][256] = {
+static const sid_par_table_item_t sid_par_table[4][256] = {
 
 // SID_SE_LEAD
 {
@@ -935,6 +935,580 @@ static const sid_par_table_item_t sid_par_table[2][256] = {
   { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
   { P_S_NOP,	P_N_NOP,	P_M_NOP,	0 },
 },
+
+// SID_SE_DRUM
+{
+  //left string	right string	mod function	register/number
+  // --[ 0x00-0x03 ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_VOLUME,	P_N_NOP,	P_M_7,		0x52 }, // SID_Ix_L_VOLUME
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0x04-0x07 ]-----------------------------------------------------------------------------
+  { P_S_CUTOFF,	P_N_FIL,	P_M_FIL12,	0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_RESONANCE, P_N_FIL,	P_M_FIL8,	0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0x08-0x0f ]-----------------------------------------------------------------------------
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+0*5+0 }, // SID_Ix_P_K1_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+1*5+0 }, // SID_Ix_P_K2_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+2*5+0 }, // SID_Ix_P_K3_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+3*5+0 }, // SID_Ix_P_K4_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+4*5+0 }, // SID_Ix_P_K5_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+5*5+0 }, // SID_Ix_P_KV_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+6*5+0 }, // SID_Ix_P_KP_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+7*5+0 }, // SID_Ix_P_KA_BASE+SID_Ix_Px_VALUE
+  // --[ 0x10-0x17 ]-----------------------------------------------------------------------------
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x40 }, // SID_Ix_EXT_PAR1_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x42 }, // SID_Ix_EXT_PAR2_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x44 }, // SID_Ix_EXT_PAR3_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x46 }, // SID_Ix_EXT_PAR4_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x48 }, // SID_Ix_EXT_PAR5_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4a }, // SID_Ix_EXT_PAR6_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4c }, // SID_Ix_EXT_PAR7_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4e }, // SID_Ix_EXT_PAR8_L
+  // --[ 0x18-0x1f ]-----------------------------------------------------------------------------
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  // --[ 0x20-0x2f ]-----------------------------------------------------------------------------
+  { P_S_MODEL,	P_N_DRM_CUR,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_ATTACK,	P_N_DRM_CUR,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_CUR,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_SUSTAIN, P_N_DRM_CUR,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_CUR,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_FINETUNE, P_N_DRM_CUR,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_GATELENGTH, P_N_DRM_CUR, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_SPEED,	P_N_DRM_CUR,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_PAR3,	P_N_DRM_CUR,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0x30-0x3f ]-----------------------------------------------------------------------------
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  { P_S_MODEL,	P_N_DRM_INS,	P_M_DRM_8,	0x60+1 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_MODEL
+  // --[ 0x40-0x4f ]-----------------------------------------------------------------------------
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_ATTACK,	P_N_DRM_INS,	P_M_DRM_4U,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  // --[ 0x50-0x5f ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  { P_S_DECAY,	P_N_DRM_INS,	P_M_DRM_4L,	0x60+2 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_AD
+  // --[ 0x60-0x6f ]-----------------------------------------------------------------------------
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_SUSTAIN, P_N_DRM_INS,	P_M_DRM_4U,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  // --[ 0x70-0x7f ]-----------------------------------------------------------------------------
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  { P_S_RELEASE, P_N_DRM_INS,	P_M_DRM_4L,	0x60+3 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_SR
+  // --[ 0x80-0x8f ]-----------------------------------------------------------------------------
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  { P_S_FINETUNE, P_N_DRM_INS,	P_M_DRM_PM8,	0x60+4 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_TUNE
+  // --[ 0x90-0x9f ]-----------------------------------------------------------------------------
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  { P_S_GATELENGTH, P_N_DRM_INS, P_M_DRM_PM8,	0x60+5 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR1
+  // --[ 0xa0-0xaf ]-----------------------------------------------------------------------------
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  { P_S_SPEED,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+6 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR2
+  // --[ 0xb0-0xbf ]-----------------------------------------------------------------------------
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  { P_S_PAR3,	P_N_DRM_INS,	P_M_DRM_PM8,	0x60+7 }, // SID_Ix_D_I1_BASE+SID_Ix_Dx_PAR3
+  // --[ 0xc0-0xcf ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0xd0-0xdf ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0xe0-0xef ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  // --[ 0xf0-0xff ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+},
+
+// SID_SE_MULTI
+{
+  //left string	right string	mod function	register/number
+  // --[ 0x00-0x03 ]-----------------------------------------------------------------------------
+  { P_S_NOP,	P_N_NOP,	P_M_NOP,	0x00 },
+  { P_S_VOLUME,	P_N_NOP,	P_M_7,		0x52 }, // SID_Ix_L_VOLUME
+  { P_S_PHASE,	P_N_OSC,	P_M_8,		0x53 }, // SID_Ix_L_OSC_PHASE
+  { P_S_DETUNE,	P_N_OSC,	P_M_8,		0x51 }, // SID_Ix_L_OSC_DETUNE
+  // --[ 0x04-0x07 ]-----------------------------------------------------------------------------
+  { P_S_CUTOFF,	P_N_FIL,	P_M_FIL12,	0x54+1 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L
+  { P_S_RESONANCE, P_N_FIL,	P_M_FIL8,	0x54+3 }, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_RESONANCE
+  { P_S_CUTOFF,	P_N_FIL_L,	P_M_FIL12_DIRECT,0x54+0*6+1}, // SID_Ix_L_S1F_BASE+SID_Ix_L_Fx_CUTOFF_L   located here, since there is no other space free
+  { P_S_CUTOFF,	P_N_FIL_L,	P_M_FIL12_DIRECT,0x54+1*6+1}, // SID_Ix_L_S2F_BASE+SID_Ix_L_Fx_CUTOFF_L   located here, since there is no other space free
+  // --[ 0x08-0x0f ]-----------------------------------------------------------------------------
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+0*5+0 }, // SID_Ix_P_K1_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+1*5+0 }, // SID_Ix_P_K2_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+2*5+0 }, // SID_Ix_P_K3_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+3*5+0 }, // SID_Ix_P_K4_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+4*5+0 }, // SID_Ix_P_K5_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+5*5+0 }, // SID_Ix_P_KV_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+6*5+0 }, // SID_Ix_P_KP_BASE+SID_Ix_Px_VALUE
+  { P_S_KNOB,	P_N_KNOB,	P_M_8,		0x18+7*5+0 }, // SID_Ix_P_KA_BASE+SID_Ix_Px_VALUE
+  // --[ 0x10-0x17 ]-----------------------------------------------------------------------------
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x40 }, // SID_Ix_EXT_PAR1_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x42 }, // SID_Ix_EXT_PAR2_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x44 }, // SID_Ix_EXT_PAR3_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x46 }, // SID_Ix_EXT_PAR4_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x48 }, // SID_Ix_EXT_PAR5_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4a }, // SID_Ix_EXT_PAR6_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4c }, // SID_Ix_EXT_PAR7_L
+  { P_S_EXT_AOUT, P_N_EXT,	P_M_PAR12,	0x4e }, // SID_Ix_EXT_PAR8_L
+  // --[ 0x18-0x1f ]-----------------------------------------------------------------------------
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  { P_S_EXT_SWITCH, P_N_EXT,	P_M_CUSTOM_SW,	0x14 }, // SID_Ix_CUSTOM_SW
+  // --[ 0x20-0x27 ]-----------------------------------------------------------------------------
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  { P_S_WAVEFORM, P_N_OSC_INS,	P_M_OSC_INS_7,	0x60+1 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_WAVEFORM
+  // --[ 0x28-0x2f ]-----------------------------------------------------------------------------
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  { P_S_TRANSPOSE, P_N_OSC_INS,	P_M_OSC_INS_PM7, 0x60+8 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_TRANSPOSE
+  // --[ 0x30-0x37 ]-----------------------------------------------------------------------------
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  { P_S_FINETUNE, P_N_OSC_INS,	P_M_OSC_INS_PM8, 0x60+9 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_FINETUNE
+  // --[ 0x38-0x3f ]-----------------------------------------------------------------------------
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  { P_S_PORTAMENTO, P_N_OSC_INS, P_M_OSC_INS_8,	 0x60+11 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PORTAMENTO
+  // --[ 0x40-0x47 ]-----------------------------------------------------------------------------
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  { P_S_PULSEWIDTH, P_N_OSC_INS, P_M_OSC_INS_12, 0x60+4 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_PULSEWIDTH_L
+  // --[ 0x48-0x4f ]-----------------------------------------------------------------------------
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_ATTACK,	P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  // --[ 0x50-0x57 ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  { P_S_DECAY,	P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+2 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_AD
+  // --[ 0x58-0x5f ]-----------------------------------------------------------------------------
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_SUSTAIN, P_N_OSC_INS,	P_M_OSC_INS_4U,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  // --[ 0x60-0x67 ]-----------------------------------------------------------------------------
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  { P_S_RELEASE, P_N_OSC_INS,	P_M_OSC_INS_4L,	0x60+3 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_SR
+  // --[ 0x68-0x6f ]-----------------------------------------------------------------------------
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  { P_S_ARP_SPEED, P_N_OSC_INS,	P_M_OSC_INS_6L,	0x60+13 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_SPEED_DIV
+  // --[ 0x70-0x77 ]-----------------------------------------------------------------------------
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  { P_S_ARP_GL,	P_N_OSC_INS,	P_M_OSC_INS_5L,	0x60+14 }, // SID_Ix_M_I1_BASE+SID_Ix_Vx_ARP_GL_RNG
+  // --[ 0x78-0x7f ]-----------------------------------------------------------------------------
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  { P_S_PITCHBENDER,P_N_OSC_INS, P_M_OSC_INS_PB,	0 },
+  // --[ 0x80-0x87 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x15 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_P
+  // --[ 0x88-0x8f ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x19 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_PW
+  // --[ 0x90-0x97 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x1a }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_DEPTH_F
+  // --[ 0x98-0x9f ]-----------------------------------------------------------------------------
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  { P_S_RATE,	P_N_LFO1_INS,	P_M_OSC_INS_PM8,0x60+0x16 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO1_RATE
+  // --[ 0xa0-0xa7 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  { P_S_DEPTH_P, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1c }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_P
+  // --[ 0xa8-0xaf ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x20 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_PW
+  // --[ 0xb0-0xb7 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  { P_S_DEPTH_F, P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x21 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_DEPTH_F
+  // --[ 0xb8-0xbf ]-----------------------------------------------------------------------------
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  { P_S_RATE,	P_N_LFO2_INS,	P_M_OSC_INS_PM8,0x60+0x1d }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_LFO2_RATE
+  // --[ 0xc0-0xc7 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  { P_S_DEPTH_P, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x23 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_P
+  // --[ 0xc8-0xcf ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  { P_S_DEPTH_PW, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x24 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_PW
+  // --[ 0xd0-0xd7 ]-----------------------------------------------------------------------------
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  { P_S_DEPTH_F, P_N_ENV_INS,	P_M_OSC_INS_PM8,0x60+0x25 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DEPTH_F
+  // --[ 0xd8-0xdf ]-----------------------------------------------------------------------------
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  { P_S_ATTACK,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x26 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_ATTACK
+  // --[ 0xe0-0xe7 ]-----------------------------------------------------------------------------
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  { P_S_DECAY,	P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x27 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_DECAY
+  // --[ 0xe8-0xef ]-----------------------------------------------------------------------------
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  { P_S_SUSTAIN, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x28 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_SUSTAIN
+  // --[ 0xf0-0xf7 ]-----------------------------------------------------------------------------
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  { P_S_RELEASE, P_N_ENV_INS,	P_M_OSC_INS_8,  0x60+0x29 }, // SID_Ix_M_I1_BASE+SID_Ix_M_Vx_ENV_RELEASE
+  // --[ 0xf8-0ff ]-----------------------------------------------------------------------------
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+  { P_S_NOTE,	P_N_OSC_INS,	P_M_NOTE_INS,	0 },
+}
 };
 
 
@@ -972,7 +1546,7 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
   sid_patch_t *patch = (sid_patch_t *)&sid_patch[sid];
 
   // help variables used by voice parameters
-  u8 voice_sel = 0x3f; // select all 6 voices by default
+  u16 voice_sel = 0x3f; // select all 6 voices by default
   switch( engine ) {
     case SID_SE_LEAD:
       if( (par & 3) > 0)
@@ -989,6 +1563,22 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
         case 2: voice_sel = 0x01; break; // first voice only
         case 3: voice_sel = 0x02; break; // second voice only
         default: voice_sel = 3; break; // both voices
+      }
+      break;
+
+    case SID_SE_DRUM:
+      if( par >= 0x20 && par <= 0x2f )
+	voice_sel = (1 << ins);
+      else
+	voice_sel = (1 << (par & 0xf)); // dedicated instrument
+      break;
+
+    case SID_SE_MULTI:
+      switch( par & 0x7 ) {
+        case 0: voice_sel = 0x3f; break; // all instruments
+        case 1: voice_sel = (1 << ins); break; // selected instrument
+        default:
+	  voice_sel = (1 << ((par&7)-2)); // dedicated instrument
       }
       break;
 
@@ -1132,44 +1722,51 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
       sid_se_wt[sid][par&3].pos = value & 0x7f;
     } break;
   
-    case P_M_OSC_INS_PM7: {
-      // TODO
-    } break;
-  
-    case P_M_OSC_INS_PM8: {
-      // TODO
-    } break;
-  
-    case P_M_OSC_INS_7: {
-      // TODO
-    } break;
-  
+    case P_M_OSC_INS_PM7:
+    case P_M_OSC_INS_PM8:
+    case P_M_OSC_INS_7:
     case P_M_OSC_INS_8: {
-      // TODO
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x30] = value;
     } break;
   
     case P_M_OSC_INS_12: {
-      // TODO
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) ) {
+	  patch->ALL[item->addr_l + i*0x30 + 0] = value;
+	  patch->ALL[item->addr_l + i*0x30 + 1] = (patch->ALL[item->addr_l + i*0x30 + 1] & 0xf0) | ((value >> 8) & 0x0f);
+	}
     } break;
   
     case P_M_OSC_INS_4L: {
-      // TODO
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x30] = (patch->ALL[item->addr_l + i*0x30] & 0xf0) | (value & 0x0f);
     } break;
   
     case P_M_OSC_INS_5L: {
-      // TODO
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x30] = (patch->ALL[item->addr_l + i*0x30] & 0xe0) | (value & 0x1f);
     } break;
   
     case P_M_OSC_INS_6L: {
-      // TODO
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x30] = (patch->ALL[item->addr_l + i*0x30] & 0xc0) | (value & 0x3f);
     } break;
 
     case P_M_OSC_INS_4U: {
-      // TODO  
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*0x30] = (patch->ALL[item->addr_l + i*0x30] & 0x0f) | ((value << 4) & 0xf0);
     } break;
 
     case P_M_OSC_INS_PB: {
-      // TODO  
+      for(i=0; i<6; ++i)
+	if( voice_sel & (1 << i) )
+	  sid_se_voice[sid][i].mv->pitchbender = value;
     } break;
 
     case P_M_OSC_BL_PM7:
@@ -1242,20 +1839,23 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
 	  patch->ALL[item->addr_l + i*6 + 0] = value;
     } break;
 
-    case P_M_DRM_8: {
-      // TODO  
-    } break;
-
+    case P_M_DRM_8:
     case P_M_DRM_PM8: {
-      // TODO  
+      for(i=0; i<16; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*10] = value;
     } break;
 
     case P_M_DRM_4U: {
-      // TODO  
+      for(i=0; i<16; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*10] = (patch->ALL[item->addr_l + i*10] & 0x0f) | ((value << 4) & 0xf0);
     } break;
   
     case P_M_DRM_4L: {
-      // TODO
+      for(i=0; i<16; ++i)
+	if( voice_sel & (1 << i) )
+	  patch->ALL[item->addr_l + i*10] = (patch->ALL[item->addr_l + i*10] & 0xf0) | (value & 0x0f);
     } break;
   
     case P_M_NOTE_INS: {
@@ -1445,6 +2045,22 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
       }
       break;
 
+    case SID_SE_DRUM:
+      if( par >= 0x20 && par <= 0x2f )
+	voice = ins; // selected instrument
+      else
+	voice = par & 0xf;
+      break;
+
+    case SID_SE_MULTI:
+      switch( par & 0x7 ) {
+        case 0: voice = 0; break; // first instrument
+        case 1: voice = ins; break; // selected instrument
+        default:
+	  voice = (par&7) - 2; // dedicated instrument
+      }
+      break;
+
     default:
       return -1; // engine not supported yet
   }
@@ -1568,44 +2184,36 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
       return sid_se_wt[sid][par&3].pos;
     } break;
   
-    case P_M_OSC_INS_PM7: {
-      // TODO
-    } break;
-  
-    case P_M_OSC_INS_PM8: {
-      // TODO
-    } break;
-  
-    case P_M_OSC_INS_7: {
-      // TODO
-    } break;
-  
+    case P_M_OSC_INS_PM7:
+    case P_M_OSC_INS_PM8:
+    case P_M_OSC_INS_7:
     case P_M_OSC_INS_8: {
-      // TODO
+      return patch->ALL[item->addr_l + voice*0x30];
     } break;
   
     case P_M_OSC_INS_12: {
-      // TODO
+      u16 value = patch->ALL[item->addr_l + voice*0x30 + 0] | ((u16)patch->ALL[item->addr_l + voice*0x30 + 1] << 8);
+      return value & 0xfff;
     } break;
   
     case P_M_OSC_INS_4L: {
-      // TODO
+      return patch->ALL[item->addr_l + voice*0x30] & 0x0f;
     } break;
   
     case P_M_OSC_INS_5L: {
-      // TODO
+      return patch->ALL[item->addr_l + voice*0x30] & 0x1f;
     } break;
   
     case P_M_OSC_INS_6L: {
-      // TODO
+      return patch->ALL[item->addr_l + voice*0x30] & 0x3f;
     } break;
 
     case P_M_OSC_INS_4U: {
-      // TODO  
+      return (patch->ALL[item->addr_l + voice*0x30] >> 4) & 0x0f;
     } break;
 
     case P_M_OSC_INS_PB: {
-      // TODO  
+      return sid_se_voice[sid][voice].mv->pitchbender;
     } break;
 
     case P_M_OSC_BL_PM7:
@@ -1653,20 +2261,17 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
       return patch->ALL[item->addr_l + voice*6 + 0];
     } break;
 
-    case P_M_DRM_8: {
-      // TODO  
-    } break;
-
+    case P_M_DRM_8:
     case P_M_DRM_PM8: {
-      // TODO  
+      return patch->ALL[item->addr_l + voice*10];
     } break;
 
     case P_M_DRM_4U: {
-      // TODO  
+      return (patch->ALL[item->addr_l + voice*10] >> 4) & 0x0f;
     } break;
   
     case P_M_DRM_4L: {
-      // TODO
+      return patch->ALL[item->addr_l + voice*10] & 0x0f;
     } break;
   
     case P_M_NOTE_INS: {

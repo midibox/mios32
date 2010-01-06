@@ -16,6 +16,7 @@
 
 #include <sid.h>
 #include <notestack.h>
+#include "sid_dmodel.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@
 #define SID_SE_NUM_FILTERS     2 // must be at least 2 for all engines
 #define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES) // must be at least SID_SE_NUM_VOICES for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
 #define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES) // must be at least 2 for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
-#define SID_SE_NUM_WT          (SID_SE_NUM_VOICES) // must be at least 4 for lead engine, and SID_SE_NUM_VOICES for multi engine
+#define SID_SE_NUM_WT          (SID_SE_NUM_VOICES) // must be at least 4 for lead engine, and SID_SE_NUM_VOICES for multi/drum engine
 #define SID_SE_NUM_SEQ         2 // must be two for bassline engine
 
 #define SID_SE_NOTESTACK_SIZE 10
@@ -218,6 +219,7 @@ typedef union {
 } sid_se_arp_state_t;
 
 typedef struct sid_se_midi_voice_t {
+  u8     sid;   // number of assigned SID engine
   u8     midi_voice; // number of MIDI voice
 
   u8 midi_channel;
@@ -338,6 +340,7 @@ typedef union {
     unsigned WTO:1; // Wavetable Only
     unsigned SUSKEY:1;
     unsigned OSC_PHASE_SYNC:1; // only used by Bassline and Multi Engine, Lead engine uses osc_phase parameter
+    unsigned VOICE_ASG:4; // only used by Drum and Multi engine
   };
 } sid_se_v_flags_t;
 
@@ -391,6 +394,20 @@ typedef union {
     u8 v3_static_note;
     u8 v3_reserved[3]; // free offset: 0x4d..0x4f
   } B;
+
+  struct {
+    u8 v_flags; // sid_se_v_flags_t
+    u8 dmodel; // drum model
+    u8 ad; // sid_se_voice_ad_t
+    u8 sr; // sid_se_voice_sr_t 
+    u8 tune; // 8bit
+    u8 par1; // 8bit
+    u8 par2; // 8bit
+    u8 par3; // 8bit
+    u8 velocity_asg; // optional velocity assignment
+    u8 reserved1; // reserved for future extensions
+  } D;
+
 } sid_se_voice_patch_t;
 
 typedef struct sid_se_voice_t {
@@ -408,6 +425,7 @@ typedef struct sid_se_voice_t {
   u8     *trg_mask_note_on;
   u8     *trg_mask_note_off;
   u8     *trg_dst;
+  sid_dmodel_t *dm;
 
   sid_se_voice_state_t state;
   u8     note;
@@ -421,6 +439,13 @@ typedef struct sid_se_voice_t {
   u16    linear_frq;
   u16    set_delay_ctr;
   u16    clr_delay_ctr;
+
+  u8     assigned_instrument;
+
+  u8     drum_waveform;
+  u8     drum_gatelength;
+  u8     drum_wt_speed;
+  u8     drum_par3;
 } sid_se_voice_t;
 
 
@@ -630,7 +655,7 @@ typedef struct sid_se_wt_t {
   u8     *trg_src;
 
   u8 pos;
-  u8 div_ctr;
+  u16 div_ctr; // should be >8bit for Drum mode (WTs clocked independent from BPM generator)
 } sid_se_wt_t;
 
 
@@ -721,7 +746,7 @@ typedef union {
   u8 ALL;
   struct {
     unsigned CLKDIV:6;
-    unsigned reserved:1;
+    unsigned SEQ_ON:1; // only used by drum sequencer
     unsigned SYNCH_TO_MEASURE:1; // also called "16step sync"
   };
 } sid_se_seq_speed_par_t;

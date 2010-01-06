@@ -22,6 +22,7 @@
 
 #include "sid_se.h"
 #include "sid_patch.h"
+#include "sid_voice.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -99,6 +100,9 @@ s32 SID_PATCH_Changed(u8 sid)
   // re-initialize structures if engine has changed
   if( prev_engine != engine )
     SID_SE_InitStructs(sid);
+
+  // clear voice queue
+  SID_VOICE_QueueInit(sid);
 
   // enable interrupts again
   MIOS32_IRQ_Enable();

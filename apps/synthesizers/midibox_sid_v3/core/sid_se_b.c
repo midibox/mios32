@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MBSID Lead Engine
+ * MBSID Bassline Engine
  *
  * ==========================================================================
  *
@@ -189,9 +189,8 @@ s32 SID_SE_B_Update(u8 sid)
       v3->phys_sid_voice->ringmod = v3_waveform.RINGMOD;
     }
 
-    // if ABW (ADSR bug workaround) function active, ADSR registers will be controlled by SID_SE_Gate()
-    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v1->sid].opt_flags;
-    if( !opt_flags.ABW ) {
+    // don't change ADSR so long delay is active (also important for ABW - ADSR bug workaround)
+    if( !v->set_delay_ctr ) {
       u8 ad = v1->voice_patch->ad;
       u8 sr = v1->voice_patch->sr;
 
@@ -221,7 +220,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
   sid_se_v_flags_t v_flags = (sid_se_v_flags_t)v->voice_patch->B.v_flags;
 
   // clear gate and deselect sequence if MIDI clock stop requested
-  if( sid_se_clk.event.MIDI_STOP_REQ ) {
+  if( sid_se_clk.event.MIDI_STOP ) {
     v->state.VOICE_ACTIVE = 0;
     v->state.GATE_CLR_REQ = 1;
     v->state.GATE_SET_REQ = 0;
@@ -249,17 +248,17 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
     return 0;
 
   // check if reset requested for FA event or sequencer was disabled before (transition Seq off->on)
-  if( !s->state.ENABLED || sid_se_clk.event.MIDI_START_REQ || (s->trg_src[2] & (1 << s->seq)) ) {
+  if( !s->state.ENABLED || sid_se_clk.event.MIDI_START || (s->trg_src[2] & (1 << s->seq)) ) {
     // next clock event will increment to 0
-    s->div_ctr = 0xff;
-    s->sub_ctr = 0xff;
+    s->div_ctr = ~0;
+    s->sub_ctr = ~0;
     // next step will increment to start position
     s->pos = ((s->seq_patch->num & 0x7) << 4) - 1;
     // ensure that slide flag is cleared
     v->state.SLIDE = 0;
   }
 
-  if( sid_se_clk.event.MIDI_START_REQ || sid_se_clk.event.MIDI_CONTINUE_REQ ) {
+  if( sid_se_clk.event.MIDI_START || sid_se_clk.event.MIDI_CONTINUE ) {
     // enable voice (again)
     v->state.VOICE_ACTIVE = 1;
   }
@@ -299,7 +298,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 
 	// play the step
 
-	// gate off (without slide) if invalid song number (stop featur: seq >= 8)
+	// gate off (without slide) if invalid song number (stop feature: seq >= 8)
 	if( s->seq_patch->num >= 8 ) {
 	  if( v->state.GATE_ACTIVE ) {
 	    v->state.GATE_CLR_REQ = 1;
@@ -307,6 +306,21 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 	    v->trg_dst[1] |= (1 << s->seq); // ENV Release
 	  }
 	} else {
+          // Sequence Storage - Structure:
+          //   2 bytes for each step (selected with address bit #7)
+          //   lower byte: [3:0] note, [5:4] octave, [6] glide, [7] gate
+          //   upper byte: [6:0] parameter value, [7] accent
+          // 16 Steps per sequence (offset 0x00..0x0f)
+          // 8 sequences:
+          //  0x100..0x10f/0x180..0x18f: sequence #1
+          //  0x110..0x11f/0x190..0x19f: sequence #2
+          //  0x120..0x12f/0x1a0..0x1af: sequence #3
+          //  0x130..0x13f/0x1b0..0x1bf: sequence #4
+          //  0x140..0x14f/0x1c0..0x1cf: sequence #5
+          //  0x150..0x15f/0x1d0..0x1df: sequence #6
+          //  0x160..0x16f/0x1e0..0x1ef: sequence #7
+          //  0x170..0x17f/0x1f0..0x1ff: sequence #8
+
 	  // get note/par value
 	  sid_se_seq_note_item_t note_item = (sid_se_seq_note_item_t)sid_patch[s->sid].B.seq_memory[s->pos];
 	  sid_se_seq_asg_item_t asg_item = (sid_se_seq_asg_item_t)sid_patch[s->sid].B.seq_memory[s->pos + 0x80];

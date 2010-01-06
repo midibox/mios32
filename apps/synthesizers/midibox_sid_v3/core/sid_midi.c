@@ -20,10 +20,12 @@
 #include <sid.h>
 
 #include "sid_midi.h"
+#include "sid_midi_l.h"
+#include "sid_midi_b.h"
+#include "sid_midi_d.h"
 
 #include "sid_patch.h"
 #include "sid_se.h"
-#include "sid_se_l.h"
 #include "sid_knob.h"
 
 
@@ -61,7 +63,7 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
       switch( engine ) {
         case SID_SE_LEAD:      return SID_MIDI_L_Receive_Note(sid, midi_package);
         case SID_SE_BASSLINE:  return SID_MIDI_B_Receive_Note(sid, midi_package);
-        case SID_SE_DRUM:      return -2; // TODO
+        case SID_SE_DRUM:      return SID_MIDI_D_Receive_Note(sid, midi_package);
         case SID_SE_MULTI:     return -2; // TODO
         default:               return -1; // unsupported engine
       }
@@ -82,7 +84,7 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
       switch( engine ) {
         case SID_SE_LEAD:      return SID_MIDI_L_Receive_CC(sid, midi_package);
         case SID_SE_BASSLINE:  return SID_MIDI_B_Receive_CC(sid, midi_package);
-        case SID_SE_DRUM:      return -2; // TODO
+        case SID_SE_DRUM:      return SID_MIDI_D_Receive_CC(sid, midi_package);
         case SID_SE_MULTI:     return -2; // TODO
         default:               return -1; // unsupported engine
       }

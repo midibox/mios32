@@ -24,6 +24,7 @@
 #include "sid_se.h"
 #include "sid_se_l.h"
 #include "sid_patch.h"
+#include "sid_voice.h"
 #include "sid_random.h"
 #include "sid_asid.h"
 
@@ -75,6 +76,9 @@ s32 SID_SE_Init(u32 mode)
   // ensure that clock generator structure is cleared
   memset(&sid_se_clk, 0, sizeof(sid_se_clk_t));
 
+  // initialize voice queues
+  SID_VOICE_Init(0);
+
   // initialize structures of each SID engine
   for(sid=0; sid<SID_NUM; ++sid)
     SID_SE_InitStructs(sid);
@@ -104,6 +108,7 @@ s32 SID_SE_InitStructs(u8 sid)
     sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][midi_voice];
     memset(mv, 0, sizeof(sid_se_midi_voice_t));
 
+    mv->sid = sid; // assigned SID
     mv->midi_voice = midi_voice; // assigned MIDI voice
 
     NOTESTACK_Init(&mv->notestack,
@@ -163,6 +168,11 @@ s32 SID_SE_InitStructs(u8 sid)
 	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[(voice < 3) ? 0 : 1];
 	break;
 
+      case SID_SE_DRUM:
+	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][0]; // always use first midi voice
+	v->voice_patch = NULL; // not used!
+	break;
+
       default: // SID_SE_LEAD
 	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][voice];
 	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].L.voice[voice];
@@ -173,6 +183,12 @@ s32 SID_SE_InitStructs(u8 sid)
     v->trg_mask_note_on = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOn][0];
     v->trg_mask_note_off = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOff][0];
     v->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
+
+    v->assigned_instrument = ~0; // invalid instrument
+    v->dm = NULL; // will be assigned by drum engine
+    v->drum_gatelength = 0; // will be configured by drum engine
+    v->drum_wt_speed = 0; // will be configured by drum engine
+    v->drum_par3 = 0; // will be configured by drum engine
   }
 
   for(i=0; i<SID_SE_NUM_FILTERS; ++i) {
@@ -212,6 +228,15 @@ s32 SID_SE_InitStructs(u8 sid)
 	l->mod_dst_filter = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_FIL1 + patch_voice];
       } break;
 
+      case SID_SE_DRUM:
+	// not relevant
+	l->lfo_patch = NULL;
+	l->trg_mask_lfo_period = NULL;
+	l->mod_dst_pitch = NULL;
+	l->mod_dst_pw = NULL;
+	l->mod_dst_filter = NULL;
+	break;
+
       default: // SID_SE_LEAD
 	l->lfo_patch = (sid_se_lfo_patch_t *)&sid_patch[sid].L.lfo[lfo];
 	l->trg_mask_lfo_period = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo][0];
@@ -248,6 +273,17 @@ s32 SID_SE_InitStructs(u8 sid)
 	e->accent = &voice_patch->accent;
       } break;
 
+      case SID_SE_DRUM:
+	// not relevant
+	e->env_patch = NULL;
+	e->mod_dst_pitch = NULL;
+	e->mod_dst_pw = NULL;
+	e->mod_dst_filter = NULL;
+	e->voice_state = NULL;
+	e->decay_a = NULL;
+	e->accent = NULL;
+	break;
+
       default: // SID_SE_LEAD
 	e->env_patch = (sid_se_env_patch_t *)&sid_patch[sid].L.env[env];
 	e->mod_dst_pitch = NULL;
@@ -273,6 +309,11 @@ s32 SID_SE_InitStructs(u8 sid)
 
     switch( engine ) {
       case SID_SE_BASSLINE:
+	w->wt_patch = NULL;
+	break;
+
+      case SID_SE_DRUM:
+	// not relevant
 	w->wt_patch = NULL;
 	break;
 
@@ -304,12 +345,18 @@ s32 SID_SE_InitStructs(u8 sid)
 	s->seq_patch_shadow = (sid_se_seq_patch_t *)voice_patch_shadow->B.seq;
       } break;
 
+      case SID_SE_DRUM:
+	// not relevant
+	s->v = NULL;
+	s->seq_patch = NULL;;
+	s->seq_patch_shadow = NULL;;
+	break;
+
       default: // SID_SE_LEAD
 	s->v = NULL;
 	s->seq_patch = NULL;;
 	s->seq_patch_shadow = NULL;;
     }
-
   }
 
   return 0; // no error
@@ -348,7 +395,7 @@ s32 SID_SE_Update(void)
   switch( engine ) {
     case SID_SE_LEAD:     SID_SE_L_Update(sid); break;
     case SID_SE_BASSLINE: SID_SE_B_Update(sid); break;
-    case SID_SE_DRUM:     break; // TODO
+    case SID_SE_DRUM:     SID_SE_D_Update(sid); break;
     case SID_SE_MULTI:    break; // TODO
   }
 
@@ -514,16 +561,16 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
   // check if arp sync requested
   if( v->clk->event.MIDI_START || mv->arp_state.SYNC_ARP ) {
     // set arp counters to max values (forces proper reset)
-    mv->arp_note_ctr = 0xff;
-    mv->arp_oct_ctr = 0xff;
+    mv->arp_note_ctr = ~0;
+    mv->arp_oct_ctr = ~0;
     // reset ARP Up flag (will be set to 1 with first note)
     mv->arp_state.ARP_UP = 0;
     // request first note (for oneshot function)
     first_note_req = 1;
     // reset divider if not disabled or if arp synch on MIDI clock start event
     if( v->clk->event.MIDI_START || !arp_mode.SYNC ) {
-      mv->arp_div_ctr = 0xff;
-      mv->arp_gl_ctr = 0xff;
+      mv->arp_div_ctr = ~0;
+      mv->arp_gl_ctr = ~0;
       // request new note
       new_note_req = 1;
     }
@@ -717,7 +764,15 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
   s32 change_pitch = 1;
 
   // voice disable handling (allows to turn on/off voice via waveform parameter)
-  sid_se_voice_waveform_t waveform = (sid_se_voice_waveform_t)v->voice_patch->waveform;
+  sid_se_voice_waveform_t waveform;
+  if( v->engine == SID_SE_DRUM ) {
+    if( v->dm )
+      waveform = (sid_se_voice_waveform_t)v->dm->waveform;
+    else
+      return 0; // no drum model selected
+  } else
+    waveform = (sid_se_voice_waveform_t)v->voice_patch->waveform;
+
   if( v->state.VOICE_DISABLED ) {
     if( !waveform.VOICE_OFF ) {
       v->state.VOICE_DISABLED = 0;
@@ -740,7 +795,12 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
     v->state.GATE_CLR_REQ = 0;
 
     // clear SID gate flag if GSA (gate stays active) function not enabled
-    sid_se_voice_flags_t voice_flags = (sid_se_voice_flags_t)v->voice_patch->flags;
+    sid_se_voice_flags_t voice_flags;
+    if( v->engine == SID_SE_DRUM )
+      voice_flags.ALL = 0;
+    else
+      voice_flags = (sid_se_voice_flags_t)v->voice_patch->flags;
+
     if( !voice_flags.GSA )
       v->phys_sid_voice->gate = 0;
 
@@ -753,7 +813,10 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 
       // delay note so long 16bit delay counter != 0
       if( v->set_delay_ctr ) {
-	int delay_inc = v->voice_patch->delay;
+	int delay_inc = 0;
+	if( v->engine != SID_SE_DRUM )
+	  delay_inc = v->voice_patch->delay;
+
 	// if ABW (ADSR bug workaround) active: use at least 30 mS delay
 	if( opt_flags.ABW ) {
 	  delay_inc += 25;
@@ -762,7 +825,7 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 	}
 
 	int set_delay_ctr = v->set_delay_ctr + sid_se_env_table[delay_inc] / sid_se_speed_factor;
-	if( set_delay_ctr < 0xffff ) {
+	if( delay_inc && set_delay_ctr < 0xffff ) {
 	  // no overrun
 	  v->set_delay_ctr = set_delay_ctr;
 	  // don't change pitch so long delay is active
@@ -770,25 +833,14 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 	} else {
 	  // overrun: clear counter to disable delay
 	  v->set_delay_ctr = 0x0000;
+	  // for ABW (hard-sync)
+	  v->phys_sid_voice->test = 0;
 	}
-      } else {
+      }
+
+      if( !v->set_delay_ctr ) {
 	// acknowledge the set request
 	v->state.GATE_SET_REQ = 0;
-
-	// if ABW (ADSR bug workaround) function active: update ADSR registers now!
-	if( opt_flags.ABW ) {
-	  // force sustain to maximum if accent flag active
-	  u8 ad = v->voice_patch->ad;
-	  u8 sr = v->voice_patch->sr;
-
-	  // accent only used in bassline and drum mode
-	  // force sustain to maximum if accent active
-	  if( v->state.ACCENT )
-	    sr |= 0xf0;
-
-	  v->phys_sid_voice->ad = ad;
-	  v->phys_sid_voice->sr = sr;
-	}
 
 	// optional OSC synchronisation
 	u8 skip_gate = 0;
@@ -839,6 +891,7 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 	    } break;
 
 	    case SID_SE_DRUM: {
+	      // not relevant
 	    } break;
 	  }
 	}
@@ -875,16 +928,36 @@ s32 SID_SE_NoteRestart(sid_se_voice_t *v)
   if( v->state.VOICE_ACTIVE )
     v->state.GATE_SET_REQ = 1;
 
-  // check if voice should be delayed - set delay counter to 0x0001 in this case, else to 0x0000
-  v->set_delay_ctr = v->voice_patch->delay ? 0x0001 : 0x0000;
+  if( v->engine == SID_SE_DRUM ) {
+    // initialize clear delay counter (drum engine controls the gate active time)
+    v->clr_delay_ctr = v->drum_gatelength ? 1 : 0;
+    // no set delay by default
+    v->set_delay_ctr = 0;
 
-  // delay also if ABW (ADSR bug workaround) option is active
-  sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
-  if( opt_flags.ABW ) {
-    v->set_delay_ctr = 0x0001;
-    // clear ADSR registers, so that the envelope gets completely released
-    v->phys_sid_voice->ad = 0x00;
-    v->phys_sid_voice->sr = 0x00;
+    // delay if ABW (ADSR bug workaround) option active
+    // this feature works different for drum engine: test flag is set and waveform is cleared
+    // instead of clearing the ADSR registers - this approach is called "hard-sync"
+    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
+    if( opt_flags.ABW ) {
+      v->set_delay_ctr = 0x0001;
+
+      // clear waveform register and set test+gate flag
+      v->phys_sid_voice->waveform_reg = 0x09;
+    }
+  } else {
+    // check if voice should be delayed - set delay counter to 0x0001 in this case, else to 0x0000
+    v->set_delay_ctr = v->voice_patch->delay ? 0x0001 : 0x0000;
+
+    // delay also if ABW (ADSR bug workaround) option is active
+    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
+    if( opt_flags.ABW ) {
+      if( !v->set_delay_ctr ) // at least +1 delay
+	v->set_delay_ctr = 0x0001;
+
+      // clear ADSR registers, so that the envelope gets completely released
+      v->phys_sid_voice->ad = 0x00;
+      v->phys_sid_voice->sr = 0x00;
+    }
   }
 
   return 0; // no error
@@ -1005,7 +1078,7 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
   // increase/decrease target frequency by pitchrange
   // depending on pitchbender and finetune value
   if( v->voice_patch->pitchrange ) {
-    u16 pitchbender = v->mv->pitchbender; // TODO: multi/bassline/drum engine take pitchbender from MIDI Voice
+    u16 pitchbender = v->mv->pitchbender;
     int delta = (int)pitchbender - 0x80;
     delta += (int)v->voice_patch->finetune-0x80;
 
@@ -1445,7 +1518,6 @@ s32 SID_SE_ENV(sid_se_env_t *e)
     if( e->state == SID_SE_ENV_STATE_IDLE )
       return 0; // nothing to do
   } else {
-    // TODO: curve enable flags
     switch( e->state ) {
       case SID_SE_ENV_STATE_ATTACK1: {
 	u8 curve = env_mode.MINIMAL.CURVE_A ? e->env_patch->MINIMAL.curve : 0x80;
@@ -1703,7 +1775,7 @@ s32 SID_SE_WT(sid_se_wt_t *w)
     // check if WT reset requested
     if( w->trg_src[2] & (1 << w->wt) ) {
       // next clock will increment div to 0
-      w->div_ctr = 0xff;
+      w->div_ctr = ~0;
       // next step will increment to start position
       w->pos = (w->wt_patch->begin & 0x7f) - 1;
     }
