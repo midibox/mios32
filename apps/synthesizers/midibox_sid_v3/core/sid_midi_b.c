@@ -87,7 +87,7 @@ s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 	// branch depending on normal/arp/seq mode
 	if( v_flags.WTO ) {
 	  // push note into WT stack
-	  SID_MIDI_PushWT(v, midi_package.note);
+	  SID_MIDI_PushWT(mv, midi_package.note);
 	  // push note into normal note stack
 	  NOTESTACK_Push(&mv->notestack, midi_package.note, midi_package.velocity);
 
@@ -96,9 +96,9 @@ s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 	  // (only done in Clock Master mode)
 	  if( !sid_se_clk.state.SLAVE ) {
 	    if( !sid_se_voice[sid][0].state.VOICE_ACTIVE )
-	      v->trg_dst[2] |= (1 << 0); // WT Reset right voice1
+	      sid_se_seq[sid][0].restart_req = 1;
 	    if( !sid_se_voice[sid][3].state.VOICE_ACTIVE )
-	      v->trg_dst[2] |= (1 << 1); // WT Reset left voice1
+	      sid_se_seq[sid][1].restart_req = 1;
 	  }
 
 	  // change sequence
@@ -125,7 +125,7 @@ s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 
 	  // switch off gate if not in legato or WTO mode
 	  if( !v_flags.LEGATO && !v_flags.WTO )
-	    SID_MIDI_GateOff(v);
+	    SID_MIDI_GateOff(v, mv, midi_package.note);
 
 	  // call Note On Handler
 	  SID_MIDI_NoteOn(v, midi_package.note, midi_package.velocity, v_flags);
@@ -137,7 +137,7 @@ s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 	// branch depending on normal/arp/seq mode
 	if( v_flags.WTO ) {
 	  // pop from WT stack
-	  SID_MIDI_PopWT(v, midi_package.note);
+	  SID_MIDI_PopWT(mv, midi_package.note);
 	  // pop note from normal note stack
 	  if( NOTESTACK_Pop(&mv->notestack, midi_package.note) > 0 ) {
 	    // change sequence if there is still a note in stack
@@ -184,15 +184,50 @@ s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // CC Handling
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_MIDI_B_Receive_CC(u8 sid, mios32_midi_package_t midi_package)
 {
-  sid_se_voice_t *v = &sid_se_voice[sid][0];
-  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
-  if( midi_package.chn != mv->midi_channel )
-    return 0; // CC filtered
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  int midi_voice;
+  for(midi_voice=0; midi_voice<2; ++midi_voice, ++mv) {
+    if( midi_package.chn != mv->midi_channel )
+      continue; // filtered
+
+    // TODO
+  }
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Pitchbender Handling
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_MIDI_B_Receive_PitchBender(u8 sid, mios32_midi_package_t midi_package)
+{
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  int midi_voice;
+  for(midi_voice=0; midi_voice<2; ++midi_voice, ++mv) {
+    if( midi_package.chn != mv->midi_channel )
+      continue; // filtered
+
+    // TODO
+  }
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

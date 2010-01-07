@@ -64,7 +64,7 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
         case SID_SE_LEAD:      return SID_MIDI_L_Receive_Note(sid, midi_package);
         case SID_SE_BASSLINE:  return SID_MIDI_B_Receive_Note(sid, midi_package);
         case SID_SE_DRUM:      return SID_MIDI_D_Receive_Note(sid, midi_package);
-        case SID_SE_MULTI:     return -2; // TODO
+        case SID_SE_MULTI:     return SID_MIDI_M_Receive_Note(sid, midi_package);
         default:               return -1; // unsupported engine
       }
       break;
@@ -85,7 +85,7 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
         case SID_SE_LEAD:      return SID_MIDI_L_Receive_CC(sid, midi_package);
         case SID_SE_BASSLINE:  return SID_MIDI_B_Receive_CC(sid, midi_package);
         case SID_SE_DRUM:      return SID_MIDI_D_Receive_CC(sid, midi_package);
-        case SID_SE_MULTI:     return -2; // TODO
+        case SID_SE_MULTI:     return SID_MIDI_M_Receive_CC(sid, midi_package);
         default:               return -1; // unsupported engine
       }
       break;
@@ -96,6 +96,14 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
 
       // copy pitchbender value into mod matrix source
       SID_KNOB_SetValue(sid, SID_KNOB_PITCHBENDER, pitchbend_value_8bit);
+
+      switch( engine ) {
+        case SID_SE_LEAD:      return SID_MIDI_L_Receive_PitchBender(sid, midi_package);
+        case SID_SE_BASSLINE:  return SID_MIDI_B_Receive_PitchBender(sid, midi_package);
+        case SID_SE_DRUM:      return SID_MIDI_D_Receive_PitchBender(sid, midi_package);
+        case SID_SE_MULTI:     return SID_MIDI_M_Receive_PitchBender(sid, midi_package);
+        default:               return -1; // unsupported engine
+      }
     } break;
   }
 
@@ -106,9 +114,8 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
 /////////////////////////////////////////////////////////////////////////////
 // Wavetable Notestack Handling
 /////////////////////////////////////////////////////////////////////////////
-s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note)
+s32 SID_MIDI_PushWT(sid_se_midi_voice_t *mv, u8 note)
 {
-  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
   int i;
   for(i=0; i<4; ++i) {
     u8 stack_note = mv->wt_stack[i] & 0x7f;
@@ -143,9 +150,8 @@ s32 SID_MIDI_PushWT(sid_se_voice_t *v, u8 note)
   return 0; // no error
 }
 
-s32 SID_MIDI_PopWT(sid_se_voice_t *v, u8 note)
+s32 SID_MIDI_PopWT(sid_se_midi_voice_t *mv, u8 note)
 {
-  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
   int i;
 
   // search for note entry with the same number, erase it and push the entries behind
@@ -288,30 +294,7 @@ s32 SID_MIDI_NoteOn(sid_se_voice_t *v, u8 note, u8 velocity, sid_se_v_flags_t v_
     v->state.ACCENT = (velocity >= 0x40) ? 1 : 0;
 
     // trigger matrix
-    switch( v->engine ) {
-      case SID_SE_LEAD:
-	if( !v_flags.LEGATO || mv->notestack.len == 1 ) {
-	  v->trg_dst[0] |= v->trg_mask_note_on[0] & (0xc0 | (1 << v->voice)); // only current voice can trigger NoteOn
-	  v->trg_dst[1] |= v->trg_mask_note_on[1];
-	  v->trg_dst[2] |= v->trg_mask_note_on[2];
-	}
-	break;
-
-      case SID_SE_BASSLINE:
-	if( v->voice >= 3 )
-	  v->trg_dst[0] |= 0x80 | 0x38; // ENV attack + 3 voices
-	else
-	  v->trg_dst[0] |= 0x40 | 0x07; // ENV attack + 3 voices
-	v->trg_dst[1] |= (7 << (v->voice+2)); // LFO resync (for both, can be disabled by LFO individually)
-	v->trg_dst[2] |= (v->voice >= 3) ? 0x02 : 0x01; // SEQ Reset
-	break;
-
-      case SID_SE_MULTI:
-	v->trg_dst[0] |= 0xc0 | (1 << v->voice); // ENV attack + voice
-	v->trg_dst[1] |= (1 << (v->voice+2)); // LFO resync (for both, can be disabled by LFO individually)
-	v->trg_dst[2] |= (1 << v->voice); // WT Reset
-	break;
-    }
+    SID_SE_TriggerNoteOn(v, 0);
   }
 
   return 0; // no error
@@ -322,10 +305,10 @@ s32 SID_MIDI_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_v_fl
   sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
 
   // if there is still a note in the stack, play new note with NoteOn Function (checked by caller)
-  if( mv->notestack.len ) {
+  if( mv->notestack.len && !v_flags.POLY ) {
     // if not in legato mode and current note-off number equat to last entry #0: gate off
     if( !v_flags.LEGATO && note == last_first_note )
-      SID_MIDI_GateOff(v);
+      SID_MIDI_GateOff(v, mv, note);
 
     // activate portamento (will be ignored by pitch handler if no portamento active - important for SusKey function to have it here!)
     v->state.PORTA_ACTIVE = 1;
@@ -333,28 +316,10 @@ s32 SID_MIDI_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_v_fl
   }
 
   // request gate clear bit
-  SID_MIDI_GateOff(v);
+  SID_MIDI_GateOff(v, mv, note);
 
   // trigger matrix
-  switch( v->engine ) {
-    case SID_SE_LEAD:
-      v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately in SID_MIDI_GateOff
-      v->trg_dst[1] |= v->trg_mask_note_off[1];
-      v->trg_dst[2] |= v->trg_mask_note_off[2];
-      break;
-
-    case SID_SE_BASSLINE:
-      // v->trg_dst[0] |= 0x00;
-      v->trg_dst[1] |= (v->voice >= 3) ? 0x02 : 0x01; // ENV Release
-      // v->trg_dst[2] |= 0x00;
-      break;
-
-    case SID_SE_MULTI:
-      // v->trg_dst[0] |= 0x00;
-      v->trg_dst[1] |= 0x03; // ENV Release
-      // v->trg_dst[2] |= 0x00;
-      break;
-  }
+  SID_SE_TriggerNoteOff(v, 0);
 
   return 0; // no error, NO note on!
 }
@@ -371,19 +336,43 @@ s32 SID_MIDI_GateOn(sid_se_voice_t *v)
   return 0; // no error
 }
 
-s32 SID_MIDI_GateOff(sid_se_voice_t *v)
+
+static s32 SID_MIDI_GateOff_SingleVoice(sid_se_voice_t *v)
 {
   if( v->state.VOICE_ACTIVE ) {
     v->state.VOICE_ACTIVE = 0;
     v->state.GATE_SET_REQ = 0;
 
     // request gate off if not disabled via trigger matrix
-    u8 *triggers = (u8 *)&sid_patch[v->sid].L.trg_matrix[SID_SE_TRG_NOff][0];
-    if( triggers[0] & (1 << v->voice) )
+    if( v->trg_mask_note_off ) {
+      u8 *trg_mask_note_off = (u8 *)&v->trg_mask_note_off;
+      if( trg_mask_note_off[0] & (1 << v->voice) )
+	v->state.GATE_CLR_REQ = 1;
+    } else
       v->state.GATE_CLR_REQ = 1;
 
     // remove gate set request
-    v->trg_dst[0] &= ~(1 << v->voice);
+    v->note_restart_req = 0;
+  }
+
+  return 0; // no error
+}
+
+
+s32 SID_MIDI_GateOff(sid_se_voice_t *v, sid_se_midi_voice_t *mv, u8 note)
+{
+  if( v->engine == SID_SE_MULTI ) {
+    // go through all voices which are assigned to the current instrument and note
+    u8 instrument = mv->midi_voice;
+    sid_se_voice_t *v_i = (sid_se_voice_t *)&sid_se_voice[mv->sid][0];
+    int voice;
+    for(voice=0; voice<SID_SE_NUM_VOICES; ++voice, ++v_i)
+      if( v_i->assigned_instrument == instrument && v_i->played_note == note ) {
+	SID_MIDI_GateOff_SingleVoice(v_i);
+	SID_VOICE_Release(mv->sid, voice);
+      }
+  } else {
+    SID_MIDI_GateOff_SingleVoice(v);
   }
 
   return 0; // no error

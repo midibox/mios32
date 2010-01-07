@@ -133,9 +133,9 @@ s32 SID_VOICE_QueueInitExclusive(u8 sid)
 
     case SID_SE_DRUM: {
       u8 drum;
-      for(drum=0; drum<16; ++drum) {
-	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].D.voice[drum];
-	u8 voice_asg = ((sid_se_v_flags_t)voice_patch->D.v_flags).VOICE_ASG;
+      sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].D.voice[0];
+      for(drum=0; drum<16; ++drum, ++voice_patch) {
+	u8 voice_asg = ((sid_se_v_flags_t)voice_patch->D.v_flags).D.VOICE_ASG;
 	int direct_voice_asg = voice_asg - 3;
 	if( direct_voice_asg >= 0 && direct_voice_asg < SID_SE_NUM_VOICES ) {
 	  // search for drum instrument in queue and set exclusive flag
@@ -148,7 +148,19 @@ s32 SID_VOICE_QueueInitExclusive(u8 sid)
     } break;
 
     case SID_SE_MULTI: {
-      // TODO
+      u8 ins;
+      sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0];
+      for(ins=0; ins<6; ++ins, ++voice_patch) {
+	u8 voice_asg = voice_patch->M.voice_asg;
+	int direct_voice_asg = voice_asg - 3;
+	if( direct_voice_asg >= 0 && direct_voice_asg < SID_SE_NUM_VOICES ) {
+	  // search for drum instrument in queue and set exclusive flag
+	  item = (sid_voice_queue_item_t *)&queue->item[0];
+	  for(voice=0; voice<SID_SE_NUM_VOICES; ++voice, ++item)
+	    if( item->instrument == ins )
+	      item->EXCLUSIVE = 1;
+	}
+      }
     } break;
   }
 
@@ -308,7 +320,7 @@ u8 SID_VOICE_Release(u8 sid, u8 release_voice)
 
   // we should never reach this part!
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[SID_VOICE_Releaset:%d] voice %d not in queue anymore!\n", sid, release_voice);
+  DEBUG_MSG("[SID_VOICE_Release:%d] voice %d not in queue anymore!\n", sid, release_voice);
 #endif
 
   return 0; // take first voice on this error case

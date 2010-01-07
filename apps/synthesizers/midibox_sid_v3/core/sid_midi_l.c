@@ -68,7 +68,7 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
       sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
 
       // push note into WT stack
-      SID_MIDI_PushWT(v, midi_package.note);
+      SID_MIDI_PushWT(mv, midi_package.note);
 #if DEBUG_VERBOSE_LEVEL >= 2
       if( mv->midi_voice == 0 )
 	DEBUG_MSG("WT_STACK>%02x %02x %02x %02x\n", mv->wt_stack[0], mv->wt_stack[1], mv->wt_stack[2], mv->wt_stack[3]);
@@ -84,7 +84,7 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
 
 	// switch off gate if not in legato or WTO mode
 	if( !v_flags.LEGATO && !v_flags.WTO )
-	  SID_MIDI_GateOff(v);
+	  SID_MIDI_GateOff(v, mv, midi_package.note);
 
 	// call Note On Handler
 	SID_MIDI_NoteOn(v, midi_package.note, midi_package.velocity, v_flags);
@@ -99,7 +99,7 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
       sid_se_voice_arp_mode_t arp_mode = (sid_se_voice_arp_mode_t)v->voice_patch->arp_mode;
 
       // pop from WT stack if sustain not active (TODO: sustain switch)
-      SID_MIDI_PopWT(v, midi_package.note);
+      SID_MIDI_PopWT(mv, midi_package.note);
 #if DEBUG_VERBOSE_LEVEL >= 2
       if( mv->midi_voice == 0 )
 	DEBUG_MSG("WT_STACK<%02x %02x %02x %02x\n", mv->wt_stack[0], mv->wt_stack[1], mv->wt_stack[2], mv->wt_stack[3]);
@@ -129,15 +129,40 @@ s32 SID_MIDI_L_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // CC Handling
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_MIDI_L_Receive_CC(u8 sid, mios32_midi_package_t midi_package)
 {
-  sid_se_voice_t *v = &sid_se_voice[sid][0];
-  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
-  if( midi_package.chn != mv->midi_channel )
-    return 0; // CC filtered
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  if( midi_package.chn == mv->midi_channel ) {
+  }
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Pitchbender Handling
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_MIDI_L_Receive_PitchBender(u8 sid, mios32_midi_package_t midi_package)
+{
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  if( midi_package.chn == mv->midi_channel ) {
+  }
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

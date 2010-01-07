@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SID_MIDI_B_H
-#define _SID_MIDI_B_H
+#ifndef _SID_MIDI_M_H
+#define _SID_MIDI_M_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -29,13 +29,13 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SID_MIDI_B_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
-extern s32 SID_MIDI_B_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
-extern s32 SID_MIDI_B_Receive_PitchBender(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_MIDI_M_Receive_Note(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_MIDI_M_Receive_CC(u8 sid, mios32_midi_package_t midi_package);
+extern s32 SID_MIDI_M_Receive_PitchBender(u8 sid, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SID_MIDI_B_H */
+#endif /* _SID_MIDI_M_H */

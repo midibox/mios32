@@ -32,6 +32,8 @@
 
 extern s32 SID_SE_L_Update(u8 sid);
 
+extern s32 SID_SE_L_Trigger(u8 sid, sid_se_trg_t *trg);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
