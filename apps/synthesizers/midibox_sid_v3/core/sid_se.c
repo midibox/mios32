@@ -120,32 +120,37 @@ s32 SID_SE_InitStructs(u8 sid)
     mv->pitchbender = 0x80;
 
     // tmp.
-    if( engine == SID_SE_BASSLINE ) {
-      switch( midi_voice ) {
-        case 0:
-	  mv->midi_channel = 0;
-	  mv->split_lower = 0x00;
-	  mv->split_upper = 0x3b;
-	  break;
+    switch( engine ) {
+      case SID_SE_BASSLINE:
+	switch( midi_voice ) {
+          case 0:
+	    mv->midi_channel = 0;
+	    mv->split_lower = 0x00;
+	    mv->split_upper = 0x3b;
+	    break;
+  
+          case 1:
+	    mv->midi_channel = 0;
+	    mv->split_lower = 0x3c;
+	    mv->split_upper = 0x7f;
+	    break;
+  
+          case 2:
+	    mv->midi_channel = 1;
+	    mv->split_lower = 0x00;
+	    mv->split_upper = 0x3b;
+	    break;
+  
+          case 3:
+	    mv->midi_channel = 1;
+	    mv->split_lower = 0x3c;
+	    mv->split_upper = 0x7f;
+	    break;
+        }
+	break;
 
-        case 1:
-	  mv->midi_channel = 0;
-	  mv->split_lower = 0x3c;
-	  mv->split_upper = 0x7f;
-	  break;
-
-        case 2:
-	  mv->midi_channel = 1;
-	  mv->split_lower = 0x00;
-	  mv->split_upper = 0x3b;
-	  break;
-
-        case 3:
-	  mv->midi_channel = 1;
-	  mv->split_lower = 0x3c;
-	  mv->split_upper = 0x7f;
-	  break;
-      }
+      case SID_SE_MULTI:
+	mv->midi_channel = midi_voice;
     }
   }
 
@@ -166,23 +171,33 @@ s32 SID_SE_InitStructs(u8 sid)
       case SID_SE_BASSLINE:
 	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][(voice < 3) ? 0 : 1];
 	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].B.voice[(voice < 3) ? 0 : 1];
+	v->trg_mask_note_on = NULL;
+	v->trg_mask_note_off = NULL;
 	break;
 
       case SID_SE_DRUM:
 	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][0]; // always use first midi voice
 	v->voice_patch = NULL; // not used!
+	v->trg_mask_note_on = NULL;
+	v->trg_mask_note_off = NULL;
+	break;
+
+      case SID_SE_MULTI:
+	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][0]; // will be automatically re-assigned
+	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0]; // will be automatically re-assigned
+	v->trg_mask_note_on = NULL;
+	v->trg_mask_note_off = NULL;
 	break;
 
       default: // SID_SE_LEAD
 	v->mv = (sid_se_midi_voice_t *)&sid_se_midi_voice[sid][voice];
 	v->voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].L.voice[voice];
+	v->trg_mask_note_on = (sid_se_trg_t *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOn];
+	v->trg_mask_note_off = (sid_se_trg_t *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOff];
     }
 
     v->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + voice];
     v->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + voice];
-    v->trg_mask_note_on = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOn][0];
-    v->trg_mask_note_off = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_NOff][0];
-    v->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
 
     v->assigned_instrument = ~0; // invalid instrument
     v->dm = NULL; // will be assigned by drum engine
@@ -226,6 +241,9 @@ s32 SID_SE_InitStructs(u8 sid)
 	l->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + mod_voice];
 	l->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + mod_voice];
 	l->mod_dst_filter = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_FIL1 + patch_voice];
+	l->mod_src_lfo = NULL;
+	l->mod_dst_lfo_depth = NULL;
+	l->mod_dst_lfo_rate = NULL;
       } break;
 
       case SID_SE_DRUM:
@@ -235,20 +253,35 @@ s32 SID_SE_InitStructs(u8 sid)
 	l->mod_dst_pitch = NULL;
 	l->mod_dst_pw = NULL;
 	l->mod_dst_filter = NULL;
+	l->mod_src_lfo = NULL;
+	l->mod_dst_lfo_depth = NULL;
+	l->mod_dst_lfo_rate = NULL;
 	break;
+
+      case SID_SE_MULTI: {
+	u8 mod_voice = i >> 1;
+	u8 lfo_voice = i & 1;
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0];
+	l->lfo_patch = (sid_se_lfo_patch_t *)&voice_patch->M.lfo[lfo_voice]; // will be dynamically changed depending on assigned instrument
+	l->trg_mask_lfo_period = NULL;
+	l->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+	l->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + mod_voice];
+	l->mod_dst_filter = &sid_se_vars[sid].mod_dst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
+	l->mod_src_lfo = NULL;
+	l->mod_dst_lfo_depth = NULL;
+	l->mod_dst_lfo_rate = NULL;
+      } break;
 
       default: // SID_SE_LEAD
 	l->lfo_patch = (sid_se_lfo_patch_t *)&sid_patch[sid].L.lfo[lfo];
-	l->trg_mask_lfo_period = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo][0];
+	l->trg_mask_lfo_period = (sid_se_trg_t *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_L1P + lfo];
 	l->mod_dst_pitch = NULL;
 	l->mod_dst_pw = NULL;
 	l->mod_dst_filter = NULL;
+	l->mod_src_lfo = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_LFO1 + lfo];
+	l->mod_dst_lfo_depth = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LD1 + lfo];
+	l->mod_dst_lfo_rate = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LR1 + lfo];
     }
-
-    l->mod_src_lfo = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_LFO1 + lfo];
-    l->mod_dst_lfo_depth = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LD1 + lfo];
-    l->mod_dst_lfo_rate = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_LR1 + lfo];
-    l->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
   }
 
   for(i=0; i<SID_SE_NUM_ENV; ++i) {
@@ -271,6 +304,7 @@ s32 SID_SE_InitStructs(u8 sid)
 	e->voice_state = &sid_se_voice[sid][mod_voice].state;
 	e->decay_a = &voice_patch->B.env_decay_a;
 	e->accent = &voice_patch->accent;
+	e->mod_src_env = NULL;
       } break;
 
       case SID_SE_DRUM:
@@ -282,7 +316,21 @@ s32 SID_SE_InitStructs(u8 sid)
 	e->voice_state = NULL;
 	e->decay_a = NULL;
 	e->accent = NULL;
+	e->mod_src_env = NULL;
 	break;
+
+      case SID_SE_MULTI: {
+	u8 mod_voice = i;
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0];
+	e->env_patch = (sid_se_env_patch_t *)&voice_patch->M.env; // will be dynamically changed depending on assigned instrument
+	e->mod_dst_pitch = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+	e->mod_dst_pw = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_PW1 + mod_voice];
+	e->mod_dst_filter = &sid_se_vars[sid].mod_dst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
+	e->voice_state = &sid_se_voice[sid][mod_voice].state;
+	e->decay_a = &voice_patch->B.env_decay_a;
+	e->accent = &voice_patch->accent;
+	e->mod_src_env = NULL;
+      } break;
 
       default: // SID_SE_LEAD
 	e->env_patch = (sid_se_env_patch_t *)&sid_patch[sid].L.env[env];
@@ -292,11 +340,10 @@ s32 SID_SE_InitStructs(u8 sid)
 	e->voice_state = NULL;
 	e->decay_a = NULL;
 	e->accent = NULL;
+	e->mod_src_env = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_ENV1 + env];
     }
 
-    e->mod_src_env = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_ENV1 + env];
-    e->trg_mask_env_sustain = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_E1S + env][0];
-    e->trg_dst = (u8 *)&sid_se_vars[sid].triggers;
+    e->trg_mask_env_sustain = (sid_se_trg_t *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_E1S + env];
   }
 
   for(i=0; i<SID_SE_NUM_WT; ++i) {
@@ -317,13 +364,18 @@ s32 SID_SE_InitStructs(u8 sid)
 	w->wt_patch = NULL;
 	break;
 
+      case SID_SE_MULTI: {
+	u8 mod_voice = i;
+	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0];
+	w->wt_patch = (sid_se_wt_patch_t *)&voice_patch->M.wt; // will be dynamically changed depending on assigned instrument
+      } break;
+
       default: // SID_SE_LEAD
 	w->wt_patch = (sid_se_wt_patch_t *)&sid_patch[sid].L.wt[wt];
     }
 
     w->mod_src_wt = &sid_se_vars[sid].mod_src[SID_SE_MOD_SRC_WT1 + wt];
     w->mod_dst_wt = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_WT1 + wt];
-    w->trg_src = (u8 *)&sid_se_vars[sid].triggers;
   }
 
   sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid][0];
@@ -334,7 +386,6 @@ s32 SID_SE_InitStructs(u8 sid)
 
     s->sid = sid;
     s->seq = seq;
-    s->trg_src = (u8 *)&sid_se_vars[sid].triggers;
 
     switch( engine ) {
       case SID_SE_BASSLINE: {
@@ -346,7 +397,7 @@ s32 SID_SE_InitStructs(u8 sid)
       } break;
 
       case SID_SE_DRUM:
-	// not relevant
+	// sequencer is used, but these variables are not relevant
 	s->v = NULL;
 	s->seq_patch = NULL;;
 	s->seq_patch_shadow = NULL;;
@@ -396,7 +447,7 @@ s32 SID_SE_Update(void)
     case SID_SE_LEAD:     SID_SE_L_Update(sid); break;
     case SID_SE_BASSLINE: SID_SE_B_Update(sid); break;
     case SID_SE_DRUM:     SID_SE_D_Update(sid); break;
-    case SID_SE_MULTI:    break; // TODO
+    case SID_SE_MULTI:    SID_SE_M_Update(sid); break;
   }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
@@ -545,6 +596,101 @@ s32 SID_SE_Clk(sid_se_clk_t *clk)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Note On/Off Triggers
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_SE_TriggerNoteOn(sid_se_voice_t *v, u8 no_wt)
+{
+  switch( v->engine ) {
+    case SID_SE_LEAD: {
+      sid_se_trg_t trg = *v->trg_mask_note_on;
+      trg.ALL[0] &= 0xc0 | (1 << v->voice); // only the dedicated voice should trigger
+      if( no_wt ) // optionally WT triggers are masked out
+	trg.ALL[2] = 0;
+      SID_SE_L_Trigger(v->sid, &trg);
+    } break;
+
+    case SID_SE_BASSLINE: {
+      if( v->voice < 3 ) {
+	sid_se_voice[v->sid][0].note_restart_req = 1;
+	sid_se_voice[v->sid][1].note_restart_req = 1;
+	sid_se_voice[v->sid][2].note_restart_req = 1;
+
+	if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][0].lfo_patch->mode).KEYSYNC )
+	  sid_se_lfo[v->sid][0].restart_req = 1;
+	if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][1].lfo_patch->mode).KEYSYNC )
+	  sid_se_lfo[v->sid][1].restart_req = 1;
+
+	sid_se_env[v->sid][0].restart_req = 1;
+      } else {
+	sid_se_voice[v->sid][3].note_restart_req = 1;
+	sid_se_voice[v->sid][4].note_restart_req = 1;
+	sid_se_voice[v->sid][5].note_restart_req = 1;
+
+	if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][2].lfo_patch->mode).KEYSYNC )
+	  sid_se_lfo[v->sid][2].restart_req = 1;
+	if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][3].lfo_patch->mode).KEYSYNC )
+	  sid_se_lfo[v->sid][3].restart_req = 1;
+
+	sid_se_env[v->sid][1].restart_req = 1;
+      }
+    } break;
+
+    case SID_SE_DRUM: {
+      v->note_restart_req = 1;
+      sid_se_wt[v->sid][v->voice].restart_req = 1;
+    } break;
+
+    case SID_SE_MULTI: {
+      v->note_restart_req = 1;
+
+      u8 lfo1 = 2*v->voice + 0;
+      if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][lfo1].lfo_patch->mode).KEYSYNC )
+	sid_se_lfo[v->sid][lfo1].restart_req = 1;
+
+      u8 lfo2 = 2*v->voice + 1;
+      if( ((sid_se_lfo_mode_t)sid_se_lfo[v->sid][lfo2].lfo_patch->mode).KEYSYNC )
+	sid_se_lfo[v->sid][lfo2].restart_req = 1;
+
+      sid_se_env[v->sid][v->voice].restart_req = 1;
+
+      //sid_se_wt[v->sid][v->voice].restart_req = 1;
+      // (no good idea, WTs will quickly get out of sync - see also "A107 Poly Trancegate" patch)
+    } break;
+  }
+
+  return 0; // no error
+}
+
+
+s32 SID_SE_TriggerNoteOff(sid_se_voice_t *v, u8 no_wt)
+{
+  switch( v->engine ) {
+    case SID_SE_LEAD: {
+      sid_se_trg_t trg = *v->trg_mask_note_off;
+      trg.ALL[0] &= 0xc0; // mask out all gate trigger flags
+      if( no_wt ) // optionally WT triggers are masked out
+	trg.ALL[2] = 0;
+      SID_SE_L_Trigger(v->sid, &trg);
+    } break;
+
+    case SID_SE_BASSLINE: {
+      sid_se_env[v->sid][(v->voice >= 3) ? 1 : 0].release_req = 1;
+    } break;
+
+    case SID_SE_DRUM: {
+      // nothing to do
+    } break;
+
+    case SID_SE_MULTI: {
+      sid_se_env[v->sid][v->voice].release_req = 1;
+    } break;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Arpeggiator
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_Arp(sid_se_voice_t *v)
@@ -625,9 +771,7 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
       // clear note stack (especially important in HOLD mode!)
       NOTESTACK_Clear(&mv->notestack);
       // propagate Note Off through trigger matrix
-      v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately
-      v->trg_dst[1] |= v->trg_mask_note_off[1];
-      v->trg_dst[2] |= v->trg_mask_note_off[2];
+      SID_SE_TriggerNoteOff(v, 0);
       // request gate clear
       v->state.GATE_SET_REQ = 0;
       v->state.GATE_CLR_REQ = 1;
@@ -642,9 +786,7 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
       // forward this to note handler if gate is not already deactivated
       if( v->state.GATE_ACTIVE ) {
 	// propagate Note Off through trigger matrix
-	v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately
-	v->trg_dst[1] |= v->trg_mask_note_off[1];
-	v->trg_dst[2] |= v->trg_mask_note_off[2];
+	SID_SE_TriggerNoteOff(v, 0);
 	// request gate clear
 	v->state.GATE_SET_REQ = 0;
 	v->state.GATE_CLR_REQ = 1;
@@ -740,9 +882,7 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
 	    v->state.GATE_SET_REQ = 1;
 
 	    // propagate Note On through trigger matrix
-	    v->trg_dst[0] |= v->trg_mask_note_on[0] & 0xc0; // gates handled separately
-	    v->trg_dst[1] |= v->trg_mask_note_on[1];
-	    v->trg_dst[2] |= v->trg_mask_note_on[2];
+	    SID_SE_TriggerNoteOn(v, 0);
 	  }
 	}
       }
@@ -762,6 +902,48 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
 s32 SID_SE_Gate(sid_se_voice_t *v)
 {
   s32 change_pitch = 1;
+
+  // restart request?
+  if( v->note_restart_req ) {
+    v->note_restart_req = 0;
+
+    // request gate if voice is active (and request clear for proper ADSR handling)
+    v->state.GATE_CLR_REQ = 1;
+    if( v->state.VOICE_ACTIVE )
+      v->state.GATE_SET_REQ = 1;
+
+    if( v->engine == SID_SE_DRUM ) {
+      // initialize clear delay counter (drum engine controls the gate active time)
+      v->clr_delay_ctr = v->drum_gatelength ? 1 : 0;
+      // no set delay by default
+      v->set_delay_ctr = 0;
+
+      // delay if ABW (ADSR bug workaround) option active
+      // this feature works different for drum engine: test flag is set and waveform is cleared
+      // instead of clearing the ADSR registers - this approach is called "hard-sync"
+      sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
+      if( opt_flags.ABW ) {
+	v->set_delay_ctr = 0x0001;
+
+	// clear waveform register and set test+gate flag
+	v->phys_sid_voice->waveform_reg = 0x09;
+      }
+    } else {
+      // check if voice should be delayed - set delay counter to 0x0001 in this case, else to 0x0000
+      v->set_delay_ctr = v->voice_patch->delay ? 0x0001 : 0x0000;
+
+      // delay also if ABW (ADSR bug workaround) option is active
+      sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
+      if( opt_flags.ABW ) {
+	if( !v->set_delay_ctr ) // at least +1 delay
+	  v->set_delay_ctr = 0x0001;
+
+	// clear ADSR registers, so that the envelope gets completely released
+	v->phys_sid_voice->ad = 0x00;
+	v->phys_sid_voice->sr = 0x00;
+      }
+    }
+  }
 
   // voice disable handling (allows to turn on/off voice via waveform parameter)
   sid_se_voice_waveform_t waveform;
@@ -903,7 +1085,7 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 	    // don't change pitch for this update cycle!
 	    change_pitch = 0;
 	    // ensure that pitch handler will re-calculate pitch frequency on next update cycle
-	    v->linear_frq = 0;
+	    v->state.FORCE_FRQ_RECALC = 1;
 	  } else {
 	    // this code is also executed if OSC synchronisation disabled
 	    // set the gate flag
@@ -918,49 +1100,6 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
   }
 
   return change_pitch;
-}
-
-
-s32 SID_SE_NoteRestart(sid_se_voice_t *v)
-{
-  // request gate if voice is active (and request clear for proper ADSR handling)
-  v->state.GATE_CLR_REQ = 1;
-  if( v->state.VOICE_ACTIVE )
-    v->state.GATE_SET_REQ = 1;
-
-  if( v->engine == SID_SE_DRUM ) {
-    // initialize clear delay counter (drum engine controls the gate active time)
-    v->clr_delay_ctr = v->drum_gatelength ? 1 : 0;
-    // no set delay by default
-    v->set_delay_ctr = 0;
-
-    // delay if ABW (ADSR bug workaround) option active
-    // this feature works different for drum engine: test flag is set and waveform is cleared
-    // instead of clearing the ADSR registers - this approach is called "hard-sync"
-    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
-    if( opt_flags.ABW ) {
-      v->set_delay_ctr = 0x0001;
-
-      // clear waveform register and set test+gate flag
-      v->phys_sid_voice->waveform_reg = 0x09;
-    }
-  } else {
-    // check if voice should be delayed - set delay counter to 0x0001 in this case, else to 0x0000
-    v->set_delay_ctr = v->voice_patch->delay ? 0x0001 : 0x0000;
-
-    // delay also if ABW (ADSR bug workaround) option is active
-    sid_se_opt_flags_t opt_flags = (sid_se_opt_flags_t)sid_patch[v->sid].opt_flags;
-    if( opt_flags.ABW ) {
-      if( !v->set_delay_ctr ) // at least +1 delay
-	v->set_delay_ctr = 0x0001;
-
-      // clear ADSR registers, so that the envelope gets completely released
-      v->phys_sid_voice->ad = 0x00;
-      v->phys_sid_voice->sr = 0x00;
-    }
-  }
-
-  return 0; // no error
 }
 
 
@@ -1188,7 +1327,8 @@ s32 SID_SE_Pitch(sid_se_voice_t *v)
   if( linear_frq < 0 ) linear_frq = 0; else if( linear_frq > 0xffff ) linear_frq = 0xffff;
 
   // if frequency has been changed
-  if( v->linear_frq != linear_frq ) {
+  if( v->state.FORCE_FRQ_RECALC || v->linear_frq != linear_frq ) {
+    v->state.FORCE_FRQ_RECALC = 0;
     v->linear_frq = linear_frq;
 
     // linear frequency -> SID frequency conversion
@@ -1317,9 +1457,24 @@ s32 SID_SE_LFO(sid_se_lfo_t *l)
 {
   sid_se_lfo_mode_t lfo_mode = (sid_se_lfo_mode_t)l->lfo_patch->mode;
 
+  // LFO restart requested?
+  if( l->restart_req ) {
+    l->restart_req = 0;
+
+    // reset counter (take phase into account)
+    l->ctr = l->lfo_patch->phase << 8;
+
+    // clear overrun flag (for oneshot mode)
+    sid_se_vars[l->sid].lfo_overrun &= ~(1 << l->lfo);
+
+    // check if LFO should be delayed - set delay counter to 0x0001 in this case
+    l->delay_ctr = l->lfo_patch->delay ? 1 : 0;
+  }
+
   // set wave register to initial value and skip LFO if not enabled
   if( !lfo_mode.ENABLE ) {
-    *l->mod_src_lfo = 0;
+    if( l->mod_src_lfo )
+      *l->mod_src_lfo = 0;
   } else {
     if( l->delay_ctr ) {
       int new_delay_ctr = l->delay_ctr + (sid_se_env_table[l->lfo_patch->delay] / sid_se_speed_factor);
@@ -1349,8 +1504,13 @@ s32 SID_SE_LFO(sid_se_lfo_t *l)
       if( !lfo_stalled ) {
 	// increment 16bit counter by given rate
 	// the rate can be modulated
-	s32 lfo_rate = l->lfo_patch->rate + (*l->mod_dst_lfo_rate / 256);
-	if( lfo_rate > 255 ) lfo_rate = 255; else if( lfo_rate < 0 ) lfo_rate = 0;
+	s32 lfo_rate;
+	if( l->mod_dst_lfo_rate ) {
+	  lfo_rate = l->lfo_patch->rate + (*l->mod_dst_lfo_rate / 256);
+	  if( lfo_rate > 255 ) lfo_rate = 255; else if( lfo_rate < 0 ) lfo_rate = 0;
+	} else {
+	  lfo_rate = l->lfo_patch->rate;
+	}
 
 	// if LFO synched via clock, replace 245-255 by MIDI clock optimized incrementers
 	u16 inc;
@@ -1368,11 +1528,8 @@ s32 SID_SE_LFO(sid_se_lfo_t *l)
 	    new_ctr = 0xffff; // stop at end position
 
 	  // propagate overrun to trigger matrix
-	  if( l->trg_mask_lfo_period ) {
-	    l->trg_dst[0] |= l->trg_mask_lfo_period[0];
-	    l->trg_dst[1] |= l->trg_mask_lfo_period[1];
-	    l->trg_dst[2] |= l->trg_mask_lfo_period[2];
-	  }
+	  if( l->trg_mask_lfo_period )
+	    SID_SE_L_Trigger(l->sid, l->trg_mask_lfo_period);
 
 	  // required for oneshot mode
 	  sid_se_vars[l->sid].lfo_overrun |= (1 << l->lfo);
@@ -1380,127 +1537,108 @@ s32 SID_SE_LFO(sid_se_lfo_t *l)
 	l->ctr = (u16)new_ctr;
       }
 
-      SID_SE_LFO_GenWave(l, lfo_overrun);
-    }
-  }
 
-  return 0; // no error
-}
+      // map counter to waveform
+      u8 lfo_waveform_skipped = 0;
+      s16 wave;
+      switch( lfo_mode.WAVEFORM ) {
+        case 0: { // Sine
+	  // sine table contains a quarter of a sine
+	  // we have to negate/mirror it depending on the mapped counter value
+	  u8 ptr = l->ctr >> 7;
+	  if( l->ctr & (1 << 14) )
+	    ptr ^= 0x7f;
+	  ptr &= 0x7f;
+	  wave = sid_se_sin_table[ptr];
+	  if( l->ctr & (1 << 15) )
+	    wave = -wave;
+	} break;  
 
+        case 1: { // Triangle
+	  // similar to sine, but linear waveform
+	  wave = (l->ctr & 0x3fff) << 1;
+	  if( l->ctr & (1 << 14) )
+	    wave = 0x7fff - wave;
+	  if( l->ctr & (1 << 15) )
+	    wave = -wave;
+	} break;  
 
-s32 SID_SE_LFO_GenWave(sid_se_lfo_t *l, u8 lfo_overrun)
-{
-  sid_se_lfo_mode_t lfo_mode = (sid_se_lfo_mode_t)l->lfo_patch->mode;
+        case 2: { // Saw
+	  wave = l->ctr - 0x8000;
+	} break;  
 
-  // map counter to waveform
-  u8 lfo_waveform_skipped = 0;
-  s16 wave;
-  switch( lfo_mode.WAVEFORM ) {
-    case 0: { // Sine
-      // sine table contains a quarter of a sine
-      // we have to negate/mirror it depending on the mapped counter value
-      u8 ptr = l->ctr >> 7;
-      if( l->ctr & (1 << 14) )
-	ptr ^= 0x7f;
-      ptr &= 0x7f;
-      wave = sid_se_sin_table[ptr];
-      if( l->ctr & (1 << 15) )
-	wave = -wave;
-    } break;  
+        case 3: { // Pulse
+	  wave = (l->ctr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
+	} break;  
 
-    case 1: { // Triangle
-      // similar to sine, but linear waveform
-      wave = (l->ctr & 0x3fff) << 1;
-      if( l->ctr & (1 << 14) )
-	wave = 0x7fff - wave;
-      if( l->ctr & (1 << 15) )
-	wave = -wave;
-    } break;  
+        case 4: { // Random
+	  // only on LFO overrun
+	  if( lfo_overrun )
+	    wave = SID_RANDOM_Gen_Range(0x0000, 0xffff);
+	  else
+	    lfo_waveform_skipped = 1;
+	} break;  
 
-    case 2: { // Saw
-      wave = l->ctr - 0x8000;
-    } break;  
+        case 5: { // Positive Sine
+	  // sine table contains a quarter of a sine
+	  // we have to negate/mirror it depending on the mapped counter value
+	  u8 ptr = l->ctr >> 8;
+	  if( l->ctr & (1 << 15) )
+	    ptr ^= 0x7f;
+	  ptr &= 0x7f;
+	  wave = sid_se_sin_table[ptr];
+	} break;  
 
-    case 3: { // Pulse
-      wave = (l->ctr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
-    } break;  
+        case 6: { // Positive Triangle
+	  // similar to sine, but linear waveform
+	  wave = (l->ctr & 0x7fff);
+	  if( l->ctr & (1 << 15) )
+	    wave = 0x7fff - wave;
+	} break;  
 
-    case 4: { // Random
-      // only on LFO overrun
-      if( lfo_overrun )
-	wave = SID_RANDOM_Gen_Range(0x0000, 0xffff);
-      else
-	lfo_waveform_skipped = 1;
-    } break;  
+        case 7: { // Positive Saw
+	  wave = l->ctr >> 1;
+	} break;  
 
-    case 5: { // Positive Sine
-      // sine table contains a quarter of a sine
-      // we have to negate/mirror it depending on the mapped counter value
-      u8 ptr = l->ctr >> 8;
-      if( l->ctr & (1 << 15) )
-	ptr ^= 0x7f;
-      ptr &= 0x7f;
-      wave = sid_se_sin_table[ptr];
-    } break;  
+        case 8: { // Positive Pulse
+	  wave = (l->ctr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
+	} break;  
 
-    case 6: { // Positive Triangle
-      // similar to sine, but linear waveform
-      wave = (l->ctr & 0x7fff);
-      if( l->ctr & (1 << 15) )
-	wave = 0x7fff - wave;
-    } break;  
+        default: // take saw as default
+	  wave = l->ctr - 0x8000;
+      }
 
-    case 7: { // Positive Saw
-      wave = l->ctr >> 1;
-    } break;  
-
-    case 8: { // Positive Pulse
-      wave = (l->ctr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
-    } break;  
-
-    default: // take saw as default
-      wave = l->ctr - 0x8000;
-  }
-
-  if( !lfo_waveform_skipped ) {
-    if( l->engine == SID_SE_LEAD ) {
-      // scale to LFO depth
-      // the depth can be modulated
-      s32 lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
-      if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
+      if( !lfo_waveform_skipped ) {
+	if( l->engine == SID_SE_LEAD ) {
+	  // scale to LFO depth
+	  // the depth can be modulated
+	  s32 lfo_depth;
+	  if( l->mod_dst_lfo_depth ) {
+	    lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
+	    if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
+	  } else {
+	    lfo_depth = (s32)l->lfo_patch->depth - 0x80;
+	  }
     
-      // final LFO value
-      *l->mod_src_lfo = (wave * lfo_depth) / 128;
-    } else {
-      // directly write to modulation destinations depending on depths
-      s32 depth_p = (s32)l->lfo_patch->MINIMAL.depth_p - 0x80;
-      *l->mod_dst_pitch += (wave * depth_p) / 128;
+	  // final LFO value
+	  if( l->mod_src_lfo )
+	    *l->mod_src_lfo = (wave * lfo_depth) / 128;
+	} else {
+	  // directly write to modulation destinations depending on depths
+	  s32 depth_p = (s32)l->lfo_patch->MINIMAL.depth_p - 0x80;
+	  *l->mod_dst_pitch += (wave * depth_p) / 128;
 
-      s32 depth_pw = (s32)l->lfo_patch->MINIMAL.depth_pw - 0x80;
-      *l->mod_dst_pw += (wave * depth_pw) / 128;
+	  s32 depth_pw = (s32)l->lfo_patch->MINIMAL.depth_pw - 0x80;
+	  *l->mod_dst_pw += (wave * depth_pw) / 128;
 
-      s32 depth_f = (s32)l->lfo_patch->MINIMAL.depth_f - 0x80;
-      *l->mod_dst_filter += (wave * depth_f) / 128;
+	  s32 depth_f = (s32)l->lfo_patch->MINIMAL.depth_f - 0x80;
+	  *l->mod_dst_filter += (wave * depth_f) / 128;
+	}
+      }
     }
   }
 
   return 0; // no error
-}
-
-
-s32 SID_SE_LFO_Restart(sid_se_lfo_t *l)
-{
-  // reset counter (take phase into account)
-  l->ctr = l->lfo_patch->phase << 8;
-
-  // clear overrun flag (for oneshot mode)
-  sid_se_vars[l->sid].lfo_overrun &= ~(1 << l->lfo);
-
-  // check if LFO should be delayed - set delay counter to 0x0001 in this case
-  l->delay_ctr = l->lfo_patch->delay ? 1 : 0;
-
-  // re-calculate waveform
-  return SID_SE_LFO_GenWave(l, 0);
 }
 
 
@@ -1512,6 +1650,17 @@ s32 SID_SE_LFO_Restart(sid_se_lfo_t *l)
 s32 SID_SE_ENV(sid_se_env_t *e)
 {
   sid_se_env_mode_t env_mode = (sid_se_env_mode_t)e->env_patch->mode;
+
+  if( e->restart_req ) {
+    e->restart_req = 0;
+    e->state = SID_SE_ENV_STATE_ATTACK1;
+    e->delay_ctr = 0; // delay counter not supported by this function...
+  }
+
+  if( e->release_req ) {
+    e->release_req = 0;
+    e->state = SID_SE_ENV_STATE_RELEASE1;
+  }
 
   // if clock sync enabled: only increment on each 16th clock event
   if( env_mode.MINIMAL.CLKSYNC && (!sid_se_clk.event.CLK || sid_se_clk.global_clk_ctr6 != 0) ) {
@@ -1589,6 +1738,17 @@ s32 SID_SE_ENV_Lead(sid_se_env_t *e)
 {
   sid_se_env_mode_t env_mode = (sid_se_env_mode_t)e->env_patch->mode;
 
+  if( e->restart_req ) {
+    e->restart_req = 0;
+    e->state = SID_SE_ENV_STATE_ATTACK1;
+    e->delay_ctr = e->env_patch->L.delay ? 1 : 0;
+  }
+
+  if( e->release_req ) {
+    e->release_req = 0;
+    e->state = SID_SE_ENV_STATE_RELEASE1;
+  }
+
   // if clock sync enabled: only increment on each 16th clock event
   if( env_mode.L.CLKSYNC && (!sid_se_clk.event.CLK || sid_se_clk.global_clk_ctr6 != 0) ) {
     if( e->state == SID_SE_ENV_STATE_IDLE )
@@ -1625,9 +1785,8 @@ s32 SID_SE_ENV_Lead(sid_se_env_t *e)
           e->state = SID_SE_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on e->mode
   
           // propagate sustain phase to trigger matrix
-          e->trg_dst[0] |= e->trg_mask_env_sustain[0];
-          e->trg_dst[1] |= e->trg_mask_env_sustain[1];
-          e->trg_dst[2] |= e->trg_mask_env_sustain[2];
+	  if( e->trg_mask_env_sustain )
+	    SID_SE_L_Trigger(e->sid, e->trg_mask_env_sustain);
         }
         break;
   
@@ -1655,7 +1814,8 @@ s32 SID_SE_ENV_Lead(sid_se_env_t *e)
   s32 env_depth = (s32)e->env_patch->L.depth - 0x80;
     
   // final ENV value (range +/- 0x7fff)
-  *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
+  if( e->mod_src_env )
+    *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
 
   return 0; // no error
 }
@@ -1715,31 +1875,6 @@ s32 SID_SE_ENV_Step(u16 *ctr, u16 target, u8 rate, u8 curve)
 }
 
 
-s32 SID_SE_ENV_Restart(sid_se_env_t *e)
-{
-  // start at attack phase
-  e->state = SID_SE_ENV_STATE_ATTACK1;
-
-  // check if ENV should be delayed - set delay counter to 0x0001 in this case
-  sid_se_engine_t engine = sid_patch[e->sid].engine;
-  if( engine == SID_SE_LEAD )
-    e->delay_ctr = e->env_patch->L.delay ? 1 : 0;
-  else
-    e->delay_ctr = 0;
-
-  return 0; // no error
-}
-
-
-s32 SID_SE_ENV_Release(sid_se_env_t *e)
-{
-  // set release phase
-  e->state = SID_SE_ENV_STATE_RELEASE1;
-
-  return 0; // no error
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Wavetable
 /////////////////////////////////////////////////////////////////////////////
@@ -1773,15 +1908,17 @@ s32 SID_SE_WT(sid_se_wt_t *w)
     u8 next_step_req = 0;
 
     // check if WT reset requested
-    if( w->trg_src[2] & (1 << w->wt) ) {
+    if( w->restart_req ) {
+      w->restart_req = 0;
       // next clock will increment div to 0
       w->div_ctr = ~0;
       // next step will increment to start position
       w->pos = (w->wt_patch->begin & 0x7f) - 1;
     }
 
-    // check for WT step event
-    if( w->trg_src[2] & (1 << (4+w->wt)) ) {
+    // check for WT clock event
+    if( w->clk_req ) {
+      w->clk_req = 0;
       // increment clock divider
       // reset divider if it already has reached the target value
       if( ++w->div_ctr == 0 || (w->div_ctr > (w->wt_patch->speed & 0x3f)) ) {

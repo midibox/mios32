@@ -46,46 +46,26 @@ s32 SID_SE_L_Update(u8 sid)
 {
   int i;
   sid_se_vars_t *vars = &sid_se_vars[sid];
+  sid_patch_t *patch = (sid_patch_t *)&sid_patch[sid];
 
 
   ///////////////////////////////////////////////////////////////////////////
   // Clock
   ///////////////////////////////////////////////////////////////////////////
 
-  if( sid_se_clk.event.MIDI_START ) {
-    // propagate LFO/ENV/WT sync via trigger matrix
-    u8 *trg_mask_midi_start = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_MST][0];
-    u8 *triggers = (u8 *)&vars->triggers.ALL[0];
-    *triggers++ |= *trg_mask_midi_start++;
-    *triggers++ |= *trg_mask_midi_start++;
-    *triggers++ |= *trg_mask_midi_start++;
-  }
+  if( sid_se_clk.event.MIDI_START )
+    SID_SE_L_Trigger(sid, (sid_se_trg_t *)&patch->L.trg_matrix[SID_SE_TRG_MST]);
 
   if( sid_se_clk.event.CLK ) {
-    // clock propagation
-    u8 *trg_mask_clk = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_CLK][0];
-    u8 *triggers = (u8 *)&vars->triggers.ALL[0];
-    *triggers++ |= *trg_mask_clk++;
-    *triggers++ |= *trg_mask_clk++;
-    *triggers++ |= *trg_mask_clk++;
+    SID_SE_L_Trigger(sid, (sid_se_trg_t *)&patch->L.trg_matrix[SID_SE_TRG_CLK]);
 
     // propagate clock/4 event to trigger matrix on each 6th clock
-    if( sid_se_clk.global_clk_ctr6 == 0 ) {
-      u8 *trg_mask_cl6 = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_CL6][0];
-      u8 *triggers = (u8 *)&vars->triggers.ALL[0];
-      *triggers++ |= *trg_mask_cl6++;
-      *triggers++ |= *trg_mask_cl6++;
-      *triggers++ |= *trg_mask_cl6++;
-    }
+    if( sid_se_clk.global_clk_ctr6 == 0 )
+      SID_SE_L_Trigger(sid, (sid_se_trg_t *)&patch->L.trg_matrix[SID_SE_TRG_CL6]);
 
     // propagate clock/16 event to trigger matrix on each 24th clock
-    if( sid_se_clk.global_clk_ctr24 == 0 ) {
-      u8 *trg_mask_c24 = (u8 *)&sid_patch[sid].L.trg_matrix[SID_SE_TRG_C24][0];
-      u8 *triggers = (u8 *)&vars->triggers.ALL[0];
-      *triggers++ |= *trg_mask_c24++;
-      *triggers++ |= *trg_mask_c24++;
-      *triggers++ |= *trg_mask_c24++;
-    }
+    if( sid_se_clk.global_clk_ctr24 == 0 )
+      SID_SE_L_Trigger(sid, (sid_se_trg_t *)&patch->L.trg_matrix[SID_SE_TRG_C24]);
   }
 
 
@@ -137,38 +117,6 @@ s32 SID_SE_L_Update(u8 sid)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // Syncs via Trigger Matrix
-  ///////////////////////////////////////////////////////////////////////////
-  sid_se_trg_t *trg = &vars->triggers;
-  if( trg->ALL[0] ) {
-    if( trg->O1L ) SID_SE_NoteRestart(&sid_se_voice[sid][0]);
-    if( trg->O2L ) SID_SE_NoteRestart(&sid_se_voice[sid][1]);
-    if( trg->O3L ) SID_SE_NoteRestart(&sid_se_voice[sid][2]);
-    if( trg->O1R ) SID_SE_NoteRestart(&sid_se_voice[sid][3]);
-    if( trg->O2R ) SID_SE_NoteRestart(&sid_se_voice[sid][4]);
-    if( trg->O3R ) SID_SE_NoteRestart(&sid_se_voice[sid][5]);
-    if( trg->E1A ) SID_SE_ENV_Restart(&sid_se_env[sid][0]);
-    if( trg->E2A ) SID_SE_ENV_Restart(&sid_se_env[sid][1]);
-    trg->ALL[0] = 0;
-  }
-
-  if( trg->ALL[1] ) {
-    if( trg->E1R ) SID_SE_ENV_Release(&sid_se_env[sid][0]);
-    if( trg->E2R ) SID_SE_ENV_Release(&sid_se_env[sid][1]);
-    if( trg->L1  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][0]);
-    if( trg->L2  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][1]);
-    if( trg->L3  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][2]);
-    if( trg->L4  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][3]);
-    if( trg->L5  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][4]);
-    if( trg->L6  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][5]);
-    trg->ALL[1] = 0;
-  }
-
-  // trg->ALL[2] already handled by WT function
-  trg->ALL[2] = 0;
-
-
-  ///////////////////////////////////////////////////////////////////////////
   // Voices
   ///////////////////////////////////////////////////////////////////////////
   v = &sid_se_voice[sid][0];
@@ -205,6 +153,50 @@ s32 SID_SE_L_Update(u8 sid)
   }
 
   return 0; // no error
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Input function for trigger matrix
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_SE_L_Trigger(u8 sid, sid_se_trg_t *trg)
+{
+  if( trg->ALL[0] ) {
+    if( trg->O1L ) sid_se_voice[sid][0].note_restart_req = 1;
+    if( trg->O2L ) sid_se_voice[sid][1].note_restart_req = 1;
+    if( trg->O3L ) sid_se_voice[sid][2].note_restart_req = 1;
+    if( trg->O1R ) sid_se_voice[sid][3].note_restart_req = 1;
+    if( trg->O2R ) sid_se_voice[sid][4].note_restart_req = 1;
+    if( trg->O3R ) sid_se_voice[sid][5].note_restart_req = 1;
+    if( trg->E1A ) sid_se_env[sid][0].restart_req = 1;
+    if( trg->E2A ) sid_se_env[sid][1].restart_req = 1;
+  }
+
+  if( trg->ALL[1] ) {
+    if( trg->E1R ) sid_se_env[sid][0].release_req = 1;
+    if( trg->E2R ) sid_se_env[sid][1].release_req = 1;
+    if( trg->L1  ) sid_se_lfo[sid][0].restart_req = 1;
+    if( trg->L2  ) sid_se_lfo[sid][1].restart_req = 1;
+    if( trg->L3  ) sid_se_lfo[sid][2].restart_req = 1;
+    if( trg->L4  ) sid_se_lfo[sid][3].restart_req = 1;
+    if( trg->L5  ) sid_se_lfo[sid][4].restart_req = 1;
+    if( trg->L6  ) sid_se_lfo[sid][5].restart_req = 1;
+  }
+
+  if( trg->ALL[2] ) {
+    if( trg->W1R ) sid_se_wt[sid][0].restart_req = 1;
+    if( trg->W2R ) sid_se_wt[sid][1].restart_req = 1;
+    if( trg->W3R ) sid_se_wt[sid][2].restart_req = 1;
+    if( trg->W4R ) sid_se_wt[sid][3].restart_req = 1;
+    if( trg->W1S ) sid_se_wt[sid][0].clk_req = 1;
+    if( trg->W2S ) sid_se_wt[sid][1].clk_req = 1;
+    if( trg->W3S ) sid_se_wt[sid][2].clk_req = 1;
+    if( trg->W4S ) sid_se_wt[sid][3].clk_req = 1;
+  }
+
+  return 0;
 }
 
 

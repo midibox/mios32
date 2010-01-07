@@ -70,37 +70,12 @@ s32 SID_SE_D_Update(u8 sid)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // Sync requests
-  ///////////////////////////////////////////////////////////////////////////
-  sid_se_trg_t *trg = &vars->triggers;
-  if( trg->ALL[0] ) {
-    if( trg->O1L ) SID_SE_NoteRestart(&sid_se_voice[sid][0]);
-    if( trg->O2L ) SID_SE_NoteRestart(&sid_se_voice[sid][1]);
-    if( trg->O3L ) SID_SE_NoteRestart(&sid_se_voice[sid][2]);
-    if( trg->O1R ) SID_SE_NoteRestart(&sid_se_voice[sid][3]);
-    if( trg->O2R ) SID_SE_NoteRestart(&sid_se_voice[sid][4]);
-    if( trg->O3R ) SID_SE_NoteRestart(&sid_se_voice[sid][5]);
-    //if( trg->E1A ) SID_SE_ENV_Restart(&sid_se_env[sid][0]);
-    //if( trg->E2A ) SID_SE_ENV_Restart(&sid_se_env[sid][1]);
-    trg->ALL[0] = 0;
-  }
-
-  // EGs/LFOs not relevant for drum engine
-  trg->ALL[1] = 0;
-
-  // done after WTs have been handled
-  // trg->ALL[2] = 0;
-
-
-  ///////////////////////////////////////////////////////////////////////////
   // Wavetables
   ///////////////////////////////////////////////////////////////////////////
 
   sid_se_wt_t *w = &sid_se_wt[sid][0];
   for(i=0; i<6; ++i, ++w)
     SID_SE_D_WT(w);
-
-  trg->ALL[2] = 0;
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -245,7 +220,8 @@ static s32 SID_SE_D_WT(sid_se_wt_t *w)
     return 0;
 
   // check if WT reset requested
-  if( w->trg_src[2] & (1 << w->wt) ) {
+  if( w->restart_req ) {
+    w->restart_req = 0;
     // next clock will increment div to 0
     w->div_ctr = ~0;
     // next step will increment to start position
@@ -329,7 +305,8 @@ static s32 SID_SE_D_Seq(sid_se_seq_t *s)
   }
 
   // check if reset requested for FA event or sequencer was disabled before (transition Seq off->on)
-  if( !s->state.ENABLED || sid_se_clk.event.MIDI_START ) {
+  if( !s->state.ENABLED || s->restart_req || sid_se_clk.event.MIDI_START ) {
+    s->restart_req = 0;
     // next clock event will increment to 0
     s->div_ctr = ~0;
     s->sub_ctr = ~0;
@@ -462,7 +439,7 @@ s32 SID_SE_D_NoteOn(u8 sid, u8 drum, u8 velocity)
 
   // get voice assignment
   sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].D.voice[drum];
-  u8 voice_asg = ((sid_se_v_flags_t)voice_patch->D.v_flags).VOICE_ASG;
+  u8 voice_asg = ((sid_se_v_flags_t)voice_patch->D.v_flags).D.VOICE_ASG;
 
   // number of voices depends on mono/stereo mode (TODO: once ensemble available...)
   u8 num_voices = 6;
@@ -533,8 +510,7 @@ s32 SID_SE_D_NoteOn(u8 sid, u8 drum, u8 velocity)
 
   // activate voice and request gate
   v->state.VOICE_ACTIVE = 1;
-  v->trg_dst[0] |= (1 << v->voice); // request gate
-  v->trg_dst[2] |= (1 << v->voice); // reset wavetable
+  SID_SE_TriggerNoteOn(v, 0);
 
   return 0; // no error
 }

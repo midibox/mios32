@@ -76,7 +76,7 @@ s32 SID_MIDI_D_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
       // (only done in Clock Master mode)
       if( !sid_se_clk.state.SLAVE ) {
 	if( !sid_se_seq[sid][0].state.RUNNING )
-	  sid_se_vars[sid].triggers.W1R = 0; // WT Reset
+	  sid_se_seq[sid][0].restart_req = 1;
       }
 
       // change sequence
@@ -160,15 +160,40 @@ s32 SID_MIDI_D_Receive_Note(u8 sid, mios32_midi_package_t midi_package)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // CC Handling
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_MIDI_D_Receive_CC(u8 sid, mios32_midi_package_t midi_package)
 {
-  sid_se_voice_t *v = &sid_se_voice[sid][0];
-  sid_se_midi_voice_t *mv = (sid_se_midi_voice_t *)v->mv;
-  if( midi_package.chn != mv->midi_channel )
-    return 0; // CC filtered
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  if( midi_package.chn == mv->midi_channel ) {
+  }
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Pitchbender Handling
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_MIDI_D_Receive_PitchBender(u8 sid, mios32_midi_package_t midi_package)
+{
+  sid_se_midi_voice_t *mv = &sid_se_midi_voice[sid][0];
+
+  // operation must be atomic!
+  MIOS32_IRQ_Disable();
+
+  if( midi_package.chn == mv->midi_channel ) {
+  }
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

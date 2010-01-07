@@ -93,38 +93,6 @@ s32 SID_SE_B_Update(u8 sid)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // Sync requests
-  ///////////////////////////////////////////////////////////////////////////
-  sid_se_trg_t *trg = &vars->triggers;
-  if( trg->ALL[0] ) {
-    if( trg->O1L ) SID_SE_NoteRestart(&sid_se_voice[sid][0]);
-    if( trg->O2L ) SID_SE_NoteRestart(&sid_se_voice[sid][1]);
-    if( trg->O3L ) SID_SE_NoteRestart(&sid_se_voice[sid][2]);
-    if( trg->O1R ) SID_SE_NoteRestart(&sid_se_voice[sid][3]);
-    if( trg->O2R ) SID_SE_NoteRestart(&sid_se_voice[sid][4]);
-    if( trg->O3R ) SID_SE_NoteRestart(&sid_se_voice[sid][5]);
-    if( trg->E1A ) SID_SE_ENV_Restart(&sid_se_env[sid][0]);
-    if( trg->E2A ) SID_SE_ENV_Restart(&sid_se_env[sid][1]);
-    trg->ALL[0] = 0;
-  }
-
-  if( trg->ALL[1] ) {
-    if( trg->E1R ) SID_SE_ENV_Release(&sid_se_env[sid][0]);
-    if( trg->E2R ) SID_SE_ENV_Release(&sid_se_env[sid][1]);
-    if( trg->L1 && ((sid_se_lfo_mode_t)sid_se_lfo[sid][0].lfo_patch->mode).KEYSYNC ) SID_SE_LFO_Restart(&sid_se_lfo[sid][0]);
-    if( trg->L2 && ((sid_se_lfo_mode_t)sid_se_lfo[sid][1].lfo_patch->mode).KEYSYNC ) SID_SE_LFO_Restart(&sid_se_lfo[sid][1]);
-    if( trg->L3 && ((sid_se_lfo_mode_t)sid_se_lfo[sid][2].lfo_patch->mode).KEYSYNC ) SID_SE_LFO_Restart(&sid_se_lfo[sid][2]);
-    if( trg->L4 && ((sid_se_lfo_mode_t)sid_se_lfo[sid][3].lfo_patch->mode).KEYSYNC ) SID_SE_LFO_Restart(&sid_se_lfo[sid][3]);
-    //if( trg->L5  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][4]);
-    //if( trg->L6  ) SID_SE_LFO_Restart(&sid_se_lfo[sid][5]);
-    trg->ALL[1] = 0;
-  }
-
-  // trg->ALL[2] already handled by WT function
-  trg->ALL[2] = 0;
-
-
-  ///////////////////////////////////////////////////////////////////////////
   // Voices
   ///////////////////////////////////////////////////////////////////////////
 
@@ -224,7 +192,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
     v->state.VOICE_ACTIVE = 0;
     v->state.GATE_CLR_REQ = 1;
     v->state.GATE_SET_REQ = 0;
-    v->trg_dst[1] |= (1 << s->seq); // ENV Release
+    SID_SE_TriggerNoteOff(v, 0);
     return 0; // nothing else to do
   }
 
@@ -236,7 +204,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
       // clear gate
       v->state.GATE_CLR_REQ = 1;
       v->state.GATE_SET_REQ = 0;
-      v->trg_dst[1] |= (1 << s->seq); // ENV Release
+      SID_SE_TriggerNoteOff(v, 0);
     }
     s->state.ENABLED = 0;
     return 0; // nothing else to do
@@ -248,7 +216,8 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
     return 0;
 
   // check if reset requested for FA event or sequencer was disabled before (transition Seq off->on)
-  if( !s->state.ENABLED || sid_se_clk.event.MIDI_START || (s->trg_src[2] & (1 << s->seq)) ) {
+  if( !s->state.ENABLED || sid_se_clk.event.MIDI_START || s->restart_req ) {
+    s->restart_req = 0;
     // next clock event will increment to 0
     s->div_ctr = ~0;
     s->sub_ctr = ~0;
@@ -303,7 +272,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 	  if( v->state.GATE_ACTIVE ) {
 	    v->state.GATE_CLR_REQ = 1;
 	    v->state.GATE_SET_REQ = 0;
-	    v->trg_dst[1] |= (1 << s->seq); // ENV Release
+	    SID_SE_TriggerNoteOff(v, 0);
 	  }
 	} else {
           // Sequence Storage - Structure:
@@ -342,14 +311,12 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 	  // transfer to voice
 	  v->note = note;
 
-	  // set accent and LFO sync flag
+	  // set accent
 	  // ignore if slide has been set by previous step
 	  // (important for SID sustain: transition from sustain < 0xf to 0xf will reset the VCA)
 	  if( !v->state.SLIDE ) {
 	    // take over accent
 	    v->state.ACCENT = asg_item.ACCENT;
-	    // request LFO sync
-	    v->trg_dst[1] |= (7 << (v->voice+2)); // LFO resync (for both, can be disabled by LFO individually)
 	  }
 
 	  // activate portamento if slide has been set by previous step
@@ -365,8 +332,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 	      v->state.GATE_SET_REQ = 1;
 
 	      // request ENV attack and LFO sync
-	      v->trg_dst[0] |= (1 << (s->seq+6)); // ENV attack
-	      v->trg_dst[1] |= (7 << (v->voice+2)); // LFO resync (for both, can be disabled by LFO individually)
+	      SID_SE_TriggerNoteOn(v, 0);
 	    }
 	  }
 
@@ -383,7 +349,7 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s)
 	if( !v->state.SLIDE ) {
 	  v->state.GATE_CLR_REQ = 1;
 	  v->state.GATE_SET_REQ = 0;
-	  v->trg_dst[1] |= (1 << s->seq); // ENV Release
+	  SID_SE_TriggerNoteOff(v, 0);
 	}
       }
     }

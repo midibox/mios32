@@ -60,7 +60,7 @@ typedef union {
     u8 v_flags; // sid_se_v_flags_t 
     u8 osc_detune; // detune left/right oscillators
     u8 volume; // 7bit value, only 4 bit used
-    u8 osc_phase; // oscillator phase offset
+    u8 osc_phase; // oscillator phase offset -- not used by bassline engine!
 
     // 0x54..0x5f
     u8 filter[2][6]; // L/R sid_se_filter_patch_t
@@ -130,6 +130,25 @@ typedef union {
     // 0x100..0x1ff
     u8 seq_memory[256];
   } D;
+
+  struct {
+    u8 header[0x50]; // the same for all engines
+
+    // 0x50..0x53
+    u8 flags; // not used - flags are available for each individual instrument
+    u8 osc_detune; // detune left/right oscillators -- not used by multi engine!
+    u8 volume; // 7bit value, only 4 bit used
+    u8 osc_phase; // oscillator phase offset -- not used by multi engine!
+
+    // 0x54..0x5f
+    u8 filter[2][6]; // L/R sid_se_filter_patch_t
+
+    // 0x060/0x090/0x0c0/0x0f0/0x120/0x150..0x17f
+    u8 voice[6][48]; // sid_se_voice_patch_t.M
+
+    // 0x180..0x1ff
+    u8 wt_memory[128];
+  } M;
 
 } sid_patch_t;
 

@@ -30,6 +30,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // String IDs and Table
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1547,6 +1553,7 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
 
   // help variables used by voice parameters
   u16 voice_sel = 0x3f; // select all 6 voices by default
+  u8 ins_sel = ins; // can be modified
   switch( engine ) {
     case SID_SE_LEAD:
       if( (par & 3) > 0)
@@ -1576,11 +1583,10 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
     case SID_SE_MULTI:
       switch( par & 0x7 ) {
         case 0: voice_sel = 0x3f; break; // all instruments
-        case 1: voice_sel = (1 << ins); break; // selected instrument
-        default:
-	  voice_sel = (1 << ((par&7)-2)); // dedicated instrument
+        case 1: ins_sel = ins; voice_sel = (1 << ins); break; // selected instrument
+        default: ins_sel = (par&7) - 2; voice_sel = (1 << ins_sel); // dedicated instrument
       }
-      break;
+    break;
 
     default:
       return -1; // engine not supported yet
@@ -1764,9 +1770,14 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
     } break;
 
     case P_M_OSC_INS_PB: {
-      for(i=0; i<6; ++i)
-	if( voice_sel & (1 << i) )
+      if( voice_sel == 0x3f ) {
+	for(i=0; i<6; ++i)
 	  sid_se_voice[sid][i].mv->pitchbender = value;
+      } else {
+	for(i=0; i<6; ++i)
+	  if( sid_se_voice[sid][i].assigned_instrument == ins_sel )
+	    sid_se_voice[sid][i].mv->pitchbender = value;
+      }
     } break;
 
     case P_M_OSC_BL_PM7:
@@ -1859,73 +1870,90 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
     } break;
   
     case P_M_NOTE_INS: {
-      // TODO
+      if( voice_sel == 0x3f )
+	SID_PAR_HlpNote(sid, value, voice_sel);
+      else {
+	voice_sel = 0;
+	for(i=0; i<6; ++i)
+	  if( sid_se_voice[sid][i].assigned_instrument == ins_sel )
+	    voice_sel |= (1 << i);
+
+	if( voice_sel )
+	  SID_PAR_HlpNote(sid, value, voice_sel);
+      }
     } break;
   
     case P_M_NOTE: {
-      // do nothing if hold note (0x01) is played
-      if( value != 0x01 ) {
-	for(i=0; i<6; ++i)
-	  if( voice_sel & (1 << i) ) {
-	    sid_se_voice_t *v = (sid_se_voice_t *)&sid_se_voice[sid][i];
+      SID_PAR_HlpNote(sid, value, voice_sel);
+    } break;
+  
+    default:
+      return -1; // unsupported mod function
+  }
 
-	    // clear gate bit if note value is 0
-	    if( value == 0 ) {
+  return 0; // no error
+}
+
+
+
+// help function to control a note
+static SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel)
+{
+  int i;
+
+  // do nothing if hold note (0x01) is played
+  if( value != 0x01 ) {
+    for(i=0; i<6; ++i)
+      if( voice_sel & (1 << i) ) {
+	sid_se_voice_t *v = (sid_se_voice_t *)&sid_se_voice[sid][i];
+
+	// clear gate bit if note value is 0
+	if( value == 0 ) {
+	  if( v->state.GATE_ACTIVE ) {
+	    v->state.GATE_SET_REQ = 0;
+	    v->state.GATE_CLR_REQ = 1;
+
+	    // propagate to trigger matrix
+	    SID_SE_TriggerNoteOff(v, 1); // don't trigger WTs (wouldn't make sense here!)
+	  }
+	} else {
+	  // TODO: hold mode (via trigger matrix?)
+
+	  // set gate bit if voice active and gate not already active
+	  if( v->state.VOICE_ACTIVE && !v->state.GATE_ACTIVE ) {
+	    v->state.GATE_SET_REQ = 1;
+
+	    // propagate to trigger matrix
+	    SID_SE_TriggerNoteOn(v, 1);  // don't trigger WTs (wouldn't make sense here!)
+	    v->note_restart_req = 0; // clear note restart request which has been set by trigger function - gate already set!
+	  }
+
+	  // set new note
+	  // if >= 0x7c, play arpeggiator note
+	  if( value >= 0x7c ) {
+	    u8 arp_note = v->mv->wt_stack[value & 3] & 0x7f;
+	    if( !arp_note )
+	      arp_note = v->mv->wt_stack[0] & 0x7f;
+
+	    if( arp_note ) {
+	      v->note = arp_note;
+	      v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
+	    } else {
+	      // no note played: request note off if gate active
 	      if( v->state.GATE_ACTIVE ) {
 		v->state.GATE_SET_REQ = 0;
 		v->state.GATE_CLR_REQ = 1;
 
 		// propagate to trigger matrix
-		v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately
-		v->trg_dst[1] |= v->trg_mask_note_off[1];
-		//v->trg_dst[2] |= v->trg_mask_note_off[2]; // no wavetable events - wouldn't make sense here!
-	      }
-	    } else {
-	      // TODO: hold mode (via trigger matrix?)
-
-	      // set gate bit if voice active and gate not already active
-	      if( v->state.VOICE_ACTIVE && !v->state.GATE_ACTIVE ) {
-		v->state.GATE_SET_REQ = 1;
-
-		// propagate to trigger matrix
-		v->trg_dst[0] |= v->trg_mask_note_on[0] & 0xc0; // gates handled separately
-		v->trg_dst[1] |= v->trg_mask_note_on[1];
-		//v->trg_dst[2] |= v->trg_mask_note_on[2]; // no wavetable events - wouldn't make sense here!
-	      }
-
-	      // set new note
-	      // if >= 0x7c, play arpeggiator note
-	      if( value >= 0x7c ) {
-		u8 arp_note = v->mv->wt_stack[value & 3] & 0x7f;
-		if( !arp_note )
-		  arp_note = v->mv->wt_stack[0] & 0x7f;
-
-		if( arp_note ) {
-		  v->note = arp_note;
-		  v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
-		} else {
-		  // no note played: request note off if gate active
-		  if( v->state.GATE_ACTIVE ) {
-		    v->state.GATE_SET_REQ = 0;
-		    v->state.GATE_CLR_REQ = 1;
-
-		    // propagate to trigger matrix
-		    v->trg_dst[0] |= v->trg_mask_note_off[0] & 0xc0; // gates handled separately
-		    v->trg_dst[1] |= v->trg_mask_note_off[1];
-		    //v->trg_dst[2] |= v->trg_mask_note_off[2]; // no wavetable events - wouldn't make sense here!
-		  }
-		}
-	      } else {
-		v->note = value;
-		v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
+		SID_SE_TriggerNoteOff(v, 1); // neither trigger voices, nor WTs (wouldn't make sense here!)
 	      }
 	    }
+	  } else {
+	    v->note = value;
+	    v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
 	  }
+	}
       }
-    } break;
-  
-    default:
-      return -1; // unsupported mod function
   }
 
   return 0; // no error
@@ -2161,7 +2189,11 @@ u16 SID_PAR_Get(u8 sid, u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
   
     case P_M_OSC123_PB: {
-      return sid_se_voice[sid][voice].mv->pitchbender;
+      // return first voice to which instrument is assigned
+      for(i=0; i<6; ++i)
+	if( sid_se_voice[sid][i].assigned_instrument == voice )
+	  return sid_se_voice[sid][voice].mv->pitchbender;
+      return 0x80; // no voice found
     } break;
   
     case P_M_MOD_PM8: {
