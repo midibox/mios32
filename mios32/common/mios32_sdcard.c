@@ -119,8 +119,7 @@ s32 MIOS32_SDCARD_Init(u32 mode)
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
   MIOS32_SDCARD_MUTEX_GIVE
-  MIOS32_MIDI_SendDebugMessage("GIVEN1\n");
-
+ 
   return 0; // no error
 }
 
@@ -179,6 +178,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
 	if(i < 16384) { 
 	  status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_OCR, 0, SDCMD_READ_OCR_CRC);
 	  CardType=((status>>24) & 0x40)  ? CT_SD2 | CT_BLOCK : CT_SD2;
+	  status=0;
 	} else {
 		// We waited long enough!
 	    status = -2;
@@ -397,7 +397,7 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
       timeout = 1;
   }
   
-  if ((cmd == SDCMD_SEND_IF_COND || cmd == SDCMD_READ_OCR) && timeout!=1 && ret==1){
+  if ((cmd == SDCMD_SEND_IF_COND || cmd == SDCMD_READ_OCR) && timeout!=1){
   
 	// This is a 4 byte R3 or R7 response.
     ret=(MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff)<<24);
