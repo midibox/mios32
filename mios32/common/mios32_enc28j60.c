@@ -15,6 +15,13 @@
 //!
 //! Most parts of the driver have been taken from ENC28J60.c file of the
 //! Microchip TCP/IP stack, and adapted to MIOS32 routines.
+//! 
+//! philetaylor (07 Jan 10): I have added mutex support. As many functions
+//! are not used externally they rely on the mutex being taked/given by the
+//! calling function. Please bear this in mind if calling functions directly.
+//! Only MIOS32_ENC28J60_Init(), MIOS32_ENC28J60_CheckAvailable() 
+//! MIOS32_ENC28J60_PackageSend() and MIOS32_ENC28J60_PackageReceive()
+//! Will handle mutexes themselves all other functions will not.
 //!
 //! \{
 /* ==========================================================================
@@ -37,6 +44,12 @@
 #if !defined(MIOS32_DONT_USE_ENC28J60)
 
 #include <mios32_enc28j60_regs.h>
+
+#if !defined(MIOS32_ENC28J60_MUTEX_TAKE)
+#define MIOS32_ENC28J60_MUTEX_TAKE
+#define MIOS32_ENC28J60_MUTEX_GIVE
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -103,6 +116,7 @@ static u8 mac_addr[6];
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC28J60_Init(u32 mode)
 {
+  s32 ret;
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -114,8 +128,11 @@ s32 MIOS32_ENC28J60_Init(u32 mode)
     MIOS32_ENC28J60_MY_MAC_ADDR4, MIOS32_ENC28J60_MY_MAC_ADDR5, MIOS32_ENC28J60_MY_MAC_ADDR6
   };
   memcpy(mac_addr, default_mac_addr, 6);
-
-  return MIOS32_ENC28J60_PowerOn();
+  MIOS32_ENC28J60_MUTEX_TAKE
+  ret=MIOS32_ENC28J60_PowerOn();
+  MIOS32_ENC28J60_MUTEX_GIVE
+  return ret;
+  
 }
 
 
@@ -129,6 +146,7 @@ s32 MIOS32_ENC28J60_PowerOn(void)
 {
   s32 status;
 
+  
   // deactivate chip select
   CSN_1;
 
@@ -136,9 +154,9 @@ s32 MIOS32_ENC28J60_PowerOn(void)
   MIOS32_SPI_IO_Init(MIOS32_ENC28J60_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
-  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 )
+  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) 
     return status;
-
+  
   // send system reset command
 
   // RESET the entire ENC28J60, clearing all registers
@@ -164,9 +182,9 @@ s32 MIOS32_ENC28J60_PowerOn(void)
 
   rev_id = status;
 
-  if( !rev_id || rev_id >= 32 )
+  if( !rev_id || rev_id >= 32 ) {
     return -17; // unsupported revision ID
-
+  }
 
   // Start up in Bank 0 and configure the receive buffer boundary pointers 
   // and the buffer write protect pointer (receive buffer read pointer)
@@ -314,23 +332,34 @@ s32 MIOS32_ENC28J60_PowerOff(void)
 s32 MIOS32_ENC28J60_CheckAvailable(u8 was_available)
 {
   s32 status = 0;
-
+  MIOS32_ENC28J60_MUTEX_TAKE
+  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
+    return 0;
+  }
+  
   // read revision ID to check if ENC28J60 is connected
   MIOS32_ENC28J60_BankSel(EREVID);
-  if( (status=MIOS32_ENC28J60_ReadMACReg((u8)EREVID)) < 0 )
+  if( (status=MIOS32_ENC28J60_ReadMACReg((u8)EREVID)) < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return 0;
+  }
 
   // chip not connected if value < 1 or >= 32
-  if( !status || status >= 32 )
+  if( !status || status >= 32 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return 0;
-
+  }
   // initialize chip if it has been detected
   if( !was_available ) {
     // run power-on sequence
-    if( MIOS32_ENC28J60_PowerOn() < 0 )
-      return 0; // ENC28J60 not available anymore
+    if( MIOS32_ENC28J60_PowerOn() < 0 ) { 
+      MIOS32_ENC28J60_MUTEX_GIVE
+  	  return 0; // ENC28J60 not available anymore
+	}
   }
   
+  MIOS32_ENC28J60_MUTEX_GIVE
   return 1; // ENC28J60 available
 }
 
@@ -452,32 +481,40 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
 {
   s32 status = 0;
 
+  MIOS32_ENC28J60_MUTEX_TAKE
+
   // re-init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 )
+  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
+  
   // wait until a new package can be transmitted
   int timeout_ctr = 1000;
   while( --timeout_ctr > 0 ) {
     status = MIOS32_ENC28J60_ReadETHReg(ECON1);
-    if( status < 0 )
+    if( status < 0 ) {
+      MIOS32_ENC28J60_MUTEX_GIVE
       return -1;
+	}
     if( !(status & ECON1_TXRTS) )
       break;
   }
 
-  if( timeout_ctr == 0 )
+  if( timeout_ctr == 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return -16;
-
+  }
   // Set the SPI write pointer to the beginning of the transmit buffer
   status |= MIOS32_ENC28J60_BankSel(EWRPTL);
   status |= MIOS32_ENC28J60_WriteReg(EWRPTL, TXSTART & 0xff);
   status |= MIOS32_ENC28J60_WriteReg(EWRPTH, (TXSTART >> 8) & 0xff);
 
-  if( status < 0 )
+  if( status < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
   // Calculate where to put the TXND pointer
   u16 end_addr = TXSTART + len + len2; // package control byte has already been considered in this calculation (+1 .. -1)
 
@@ -485,9 +522,11 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
   status |= MIOS32_ENC28J60_WriteReg(ETXNDL, end_addr & 0xff);
   status |= MIOS32_ENC28J60_WriteReg(ETXNDH, (end_addr >> 8) & 0xff);
 
-  if( status < 0 )
+  if( status < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
+	
   // per-packet control byte:
   status |= MIOS32_ENC28J60_MACPut(0x07); // enable CRC calculation and padding to 60 bytes
 
@@ -508,9 +547,13 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
   // Start the transmission
   status |= MIOS32_ENC28J60_BFSReg(ECON1, ECON1_TXRTS);
 
-  if( status < 0 )
+  if( status < 0 ) {
+    MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
+  // We have finished with the mutex.
+  MIOS32_ENC28J60_MUTEX_GIVE
+	
   // Revision B5 and B7 silicon errata workaround
   if( rev_id == 0x05 || rev_id == 0x06 ) {
     // TODO --- add a lot of code here
@@ -534,24 +577,31 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   s32 status = 0;
   s32 package_count;
 
+  MIOS32_ENC28J60_MUTEX_TAKE
+
   // re-init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 )
+  if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) {
+  	MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
   // Test if at least one packet has been received and is waiting
   status |= MIOS32_ENC28J60_BankSel(EPKTCNT);
   package_count = MIOS32_ENC28J60_ReadETHReg((u8)EPKTCNT);
   status |= MIOS32_ENC28J60_BankSel(ERDPTL);
 
-  if( status < 0 )
+  if( status < 0 ) {
+	MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-  if( package_count <= 0 )
+  }
+  if( package_count <= 0 ) {
+  	 MIOS32_ENC28J60_MUTEX_GIVE
     return package_count;
-
+  }
   // Make absolutely certain that any previous packet was discarded
   if( !WasDiscarded ) {
     status = MIOS32_ENC28J60_MACDiscardRx();
+ 	MIOS32_ENC28J60_MUTEX_GIVE
     return (status < 0) ? status : 0;
   }
 
@@ -560,9 +610,11 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   status |= MIOS32_ENC28J60_WriteReg(ERDPTL, CurrentPacketLocation & 0xff);
   status |= MIOS32_ENC28J60_WriteReg(ERDPTH, (CurrentPacketLocation >> 8) & 0xff);
 
-  if( status < 0 )
+  if( status < 0 ) {
+	MIOS32_ENC28J60_MUTEX_GIVE
     return status;
-
+  }
+  
   // Obtain the MAC header from the Ethernet buffer
   ENC_PREAMBLE header;
   status |= MIOS32_ENC28J60_MACGetArray((u8 *)&header, sizeof(header));
@@ -579,10 +631,12 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
 				 header.NextPacketPointer,
 				 header.StatusVector.bits.ByteCount,
 				 header.StatusVector.v[3], header.StatusVector.v[2]);
-    // Reset device
+    // Reset device (must keep mutex)
     MIOS32_ENC28J60_PowerOn();
     // no packet received
+    MIOS32_ENC28J60_MUTEX_GIVE				 
     return -16; // notify this as an error
+
   }
 
   // Save the location where the hardware will write the next packet to
@@ -595,6 +649,7 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   u16 packet_len = header.StatusVector.bits.ByteCount;
   if( !packet_len || header.StatusVector.bits.CRCError || !header.StatusVector.bits.ReceiveOk ) {
     status = MIOS32_ENC28J60_MACDiscardRx(); // discard package immediately
+    MIOS32_ENC28J60_MUTEX_GIVE
     return (status < 0) ? status : 0;
   }
 
@@ -607,6 +662,9 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
 
   // discard package immediately
   status |= MIOS32_ENC28J60_MACDiscardRx();
+  
+  // No more processing so can safely give mutex back.
+  MIOS32_ENC28J60_MUTEX_GIVE
 
   if( status < 0 )
     return status;
@@ -673,6 +731,7 @@ s32 MIOS32_ENC28J60_ReadETHReg(u8 address)
 
   // send opcode
   CSN_0;
+
   status |= MIOS32_SPI_TransferByte(MIOS32_ENC28J60_SPI, RCR | address);
 
   // skip if something already failed
@@ -1010,7 +1069,7 @@ s32 MIOS32_ENC28J60_MACPut(u8 value)
 /////////////////////////////////////////////////////////////////////////////
 //! writes several sequential bytes to the ENC28J60 RAM. It performs faster 
 //! than multiple MIOS32_ENC28J60_MACPut() calls.
-
+//!
 //! EWRPT is incremented by len.
 //! \param[in] buffer source buffer
 //! \param[in] len number of bytes which should be written
