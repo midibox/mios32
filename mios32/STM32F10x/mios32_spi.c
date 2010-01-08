@@ -508,29 +508,46 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
     return -3; // invalid prescaler selected
 
   switch( spi ) {
-    case 0:
+    case 0: {
 #ifdef MIOS32_DONT_USE_SPI0
       return -1; // disabled SPI port
 #else
+      u16 prev_cr1 = MIOS32_SPI0_PTR->CR1;
       // SPI1 perpipheral is located in APB2 domain and clocked at full speed
       // therefore we have to add +1 to the prescaler
       SPI_InitStructure.SPI_BaudRatePrescaler = ((u16)spi_prescaler&7) << 3;
       SPI_Init(MIOS32_SPI0_PTR, &SPI_InitStructure);
-      break;
-#endif
 
-    case 1:
+      if( (prev_cr1 ^ MIOS32_SPI0_PTR->CR1) & 3 ) { // CPOL and CPHA located at bit #1 and #0
+	// clock configuration has been changed - we should send a dummy byte
+	// before the application activates chip select.
+	// this solves a dependency between SDCard and ENC28J60 driver
+	MIOS32_SPI_TransferByte(spi, 0xff);
+      }
+#endif
+    } break;
+
+    case 1: {
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
+      u16 prev_cr1 = MIOS32_SPI0_PTR->CR1;
+
       // SPI2 perpipheral is located in APB1 domain and clocked at half speed
       if( spi_prescaler == 0 )
 	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
       else
 	SPI_InitStructure.SPI_BaudRatePrescaler = (((u16)spi_prescaler&7)-1) << 3;
       SPI_Init(MIOS32_SPI1_PTR, &SPI_InitStructure);
-      break;
+
+      if( (prev_cr1 ^ MIOS32_SPI0_PTR->CR1) & 3 ) { // CPOL and CPHA located at bit #1 and #0
+	// clock configuration has been changed - we should send a dummy byte
+	// before the application activates chip select.
+	// this solves a dependency between SDCard and ENC28J60 driver
+	MIOS32_SPI_TransferByte(spi, 0xff);
+      }
 #endif
+    } break;
 
     case 2:
 #ifdef MIOS32_DONT_USE_SPI2
