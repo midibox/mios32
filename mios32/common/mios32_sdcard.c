@@ -448,7 +448,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 {
   s32 status;
   int i;
-  if (!(CardType & CT_BLOCK) && !(CardType & CT_SD2)) 
+  if (!(CardType & CT_BLOCK)) 
 	sector *= 512;
 
   MIOS32_SDCARD_MUTEX_TAKE
@@ -522,7 +522,8 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 
   MIOS32_SDCARD_MUTEX_TAKE
 
-  if (!(CardType & CT_BLOCK) && !(CardType & CT_SD2)) sector *= 512;
+  if (!(CardType & CT_BLOCK))
+	sector *= 512;
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
