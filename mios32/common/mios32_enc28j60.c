@@ -46,8 +46,8 @@
 #include <mios32_enc28j60_regs.h>
 
 #if !defined(MIOS32_ENC28J60_MUTEX_TAKE)
-#define MIOS32_ENC28J60_MUTEX_TAKE{}
-#define MIOS32_ENC28J60_MUTEX_GIVE{}
+#define MIOS32_ENC28J60_MUTEX_TAKE {}
+#define MIOS32_ENC28J60_MUTEX_GIVE {}
 #endif
 
 
