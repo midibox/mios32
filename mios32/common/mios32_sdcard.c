@@ -306,7 +306,6 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
 		
     // deactivate chip select
     MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-    MIOS32_MIDI_SendDebugMessage("Returning with %d\n",ret);
 
     MIOS32_SDCARD_MUTEX_GIVE;  
     // run power-on sequence (negative return = not available)
