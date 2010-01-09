@@ -21,8 +21,8 @@
 
 // can be overruled in mios32_config.h
 #ifndef OSC_REMOTE_IP
-//                      10        .    0        .    0       .    2
-#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+//                     192        .  168        .    2       .    1
+#define OSC_REMOTE_IP (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
 #endif
 
 // can be overruled in mios32_config.h
@@ -35,7 +35,9 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef unsigned int uip_udp_appstate_t;
+// clashes with dhcpc.h
+// not used by OSC server anyhow
+//typedef unsigned int uip_udp_appstate_t;
 
 
 /////////////////////////////////////////////////////////////////////////////

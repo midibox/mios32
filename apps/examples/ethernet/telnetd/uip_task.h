@@ -22,19 +22,25 @@
 // Ethernet configuration
 // can be overruled in mios32_config.h
 
-#ifndef MY_IP_ADDRESS
-//                      10        .    0        .    0       .    3
-#define MY_IP_ADDRESS ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  3 << 0)
-#endif
+// By default the IP will be configured via DHCP
+// By defining DONT_USE_DHCP we can optionally use static addresses
 
-#ifndef MY_NETMASK
-//                     255        .  255        .  255       .    0
-#define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
-#endif
+#ifdef DONT_USE_DHCP
 
-#ifndef MY_GATEWAY
-//                      10        .    0        .    0       .    1
-#define MY_GATEWAY    (  0 << 24) | (  0 << 16) | (  0 << 8) | (  1 << 0)
+# ifndef MY_IP_ADDRESS
+//                      192        .  168        .    2       .  100
+# define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
+# endif
+
+# ifndef MY_NETMASK
+//                      255        .  255        .  255       .    0
+# define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
+# endif
+
+# ifndef MY_GATEWAY
+//                      192        .  168        .    2       .    1
+# define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
+# endif
 #endif
 
 
@@ -48,6 +54,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 UIP_TASK_Init(u32 mode);
+extern s32 UIP_TASK_ServicesRunning(void);
+
+extern s32 UIP_TASK_UDP_AppCall(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

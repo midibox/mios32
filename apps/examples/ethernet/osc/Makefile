@@ -18,6 +18,7 @@ THUMB_SOURCE    = app.c \
                   uip_task.c \
 		  osc_server.c \
 		  osc_client.c \
+		  dhcpc.c \
 		  telnetd.c \
 		  shell.c
 

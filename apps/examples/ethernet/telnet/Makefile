@@ -16,7 +16,8 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = app.c \
                   uip_task.c \
-				  telnet.c 
+		  dhcpc.c \
+		  telnet.c 
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
