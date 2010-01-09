@@ -126,10 +126,8 @@ s32 OSC_SERVER_AppCall(void)
 /////////////////////////////////////////////////////////////////////////////
 // Called by OSC client to send an UDP datagram
 // To ensure proper mutex handling, functions inside the server have to
-// use OSC_SERVER_SendPacket_Internal instead to avoid a hang-up while
-// waiting for a mutex which the server already got
 /////////////////////////////////////////////////////////////////////////////
-static s32 OSC_SERVER_SendPacket_Internal(u8 *packet, u32 len)
+s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
 {
   // exit immediately if length == 0
   if( len == 0 )
@@ -154,6 +152,9 @@ static s32 OSC_SERVER_SendPacket_Internal(u8 *packet, u32 len)
   MIOS32_MIDI_SendDebugHexDump(packet, len);
 #endif
 
+  // take over exclusive access to UIP functions
+  MUTEX_UIP_TAKE;
+
   // store pointer and len in global variable, so that OSC_SERVER_AppCall() can take over
   osc_send_packet = packet;
   osc_send_len = len;
@@ -170,21 +171,10 @@ static s32 OSC_SERVER_SendPacket_Internal(u8 *packet, u32 len)
     uip_len = 0;
   }
 
-  return 0; // no error
-}
-
-s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
-{
-  // take over exclusive access to UIP functions
-  MUTEX_UIP_TAKE;
-
-  // send packet
-  s32 status = OSC_SERVER_SendPacket_Internal(packet, len);
-
   // release exclusive access to UIP functions
   MUTEX_UIP_GIVE;
 
-  return status;
+  return 0; // no error
 }
 
 

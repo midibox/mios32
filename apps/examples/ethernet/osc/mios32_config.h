@@ -32,18 +32,25 @@
 #define MIOS32_ENC28J60_MY_MAC_ADDR6 0
 
 
+// By default the IP will be configured via DHCP
+// By defining DONT_USE_DHCP we can optionally use static addresses
+
+// #define DONT_USE_DHCP
+
+#ifndef DONT_USE_DHCP
 // Ethernet configuration:
-//                      10        .    0        .    0       .    3
-#define MY_IP_ADDRESS ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  3 << 0)
+//                      192        .  168        .    2       .  100
+# define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
+//                      255        .  255        .  255       .    0
+# define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
+//                      192        .  168        .    2       .    1
+# define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
+#endif
 
-//                     255        .  255        .  255       .    0
-#define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
 
-//                      10        .    0        .    0       .    1
-#define MY_GATEWAY    (  0 << 24) | (  0 << 16) | (  0 << 8) | (  1 << 0)
-
-//                      10        .    0        .    0       .    2
-#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+// not automatically configured yet!
+//                     192        .  168        .    2       .    1
+#define OSC_REMOTE_IP (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
 
 #define OSC_SERVER_PORT 10000
 

@@ -154,11 +154,13 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
   MIOS32_MIDI_SendDebugMessage("[DIN] %d %d\n", pin, pin_value ? 0 : 1);
 #endif
 
-  // send button state as OSC message
-  mios32_osc_timetag_t timetag;
-  timetag.seconds = 0;
-  timetag.fraction = 1;
-  OSC_CLIENT_SendButtonState(timetag, pin, pin_value ? 0 : 1);
+  if( UIP_TASK_ServicesRunning() ) {
+    // send button state as OSC message
+    mios32_osc_timetag_t timetag;
+    timetag.seconds = 0;
+    timetag.fraction = 1;
+    OSC_CLIENT_SendButtonState(timetag, pin, pin_value ? 0 : 1);
+  }
 }
 
 
@@ -186,9 +188,14 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
   MIOS32_MIDI_SendDebugMessage("[AIN] %d %d\n", pin, pin_value);
 #endif
 
-  // send AIN value as OSC message
-  mios32_osc_timetag_t timetag;
-  timetag.seconds = 0;
-  timetag.fraction = 1;
-  OSC_CLIENT_SendPotValue(timetag, pin, (float)pin_value / 4095.0);
+  // disable this if no pots/faders connected
+#if 0
+  if( UIP_TASK_ServicesRunning() ) {
+    // send AIN value as OSC message
+    mios32_osc_timetag_t timetag;
+    timetag.seconds = 0;
+    timetag.fraction = 1;
+    OSC_CLIENT_SendPotValue(timetag, pin, (float)pin_value / 4095.0);
+  }
+#endif
 }

@@ -93,6 +93,9 @@ typedef u16 uip_stats_t;
 #define UIP_CONF_STATISTICS      1
 
 
+// required for DHCP Client
+#define UIP_CONF_FIXEDADDR	 0
+
 /**
  * Ping IP address asignment.
  *
@@ -111,12 +114,14 @@ typedef u16 uip_stats_t;
 /*#include "hello-world.h"*/
 #include "telnetd.h"
 /*#include "webserver.h"*/
-/*#include "dhcpc.h"*/
+#include "dhcpc.h"
 /*#include "resolv.h"*/
 /*#include "webclient.h"*/
 
 #include "osc_server.h"
-#define UIP_UDP_APPCALL OSC_SERVER_AppCall
+
+#include "uip_task.h"
+#define UIP_UDP_APPCALL UIP_TASK_UDP_AppCall
 
 
 #endif /* __UIP_CONF_H__ */

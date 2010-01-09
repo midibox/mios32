@@ -1109,7 +1109,6 @@ uip_process(u8_t flag)
        connection is bound to a remote port. Finally, if the
        connection is bound to a remote IP address, the source IP
        address of the packet is checked. */
-#if 1
     if(uip_udp_conn->lport != 0 &&
        UDPBUF->destport == uip_udp_conn->lport &&
        (uip_udp_conn->rport == 0 ||
@@ -1118,14 +1117,6 @@ uip_process(u8_t flag)
 	uip_ipaddr_cmp(uip_udp_conn->ripaddr, all_ones_addr) ||
 	uip_ipaddr_cmp(BUF->srcipaddr, uip_udp_conn->ripaddr))) {
       goto udp_found;
-#else
-      MIOS32_MIDI_SendDebugMessage("%d %d / %d %d\n", uip_udp_conn->lport, UDPBUF->destport , uip_udp_conn->rport, UDPBUF->srcport);
-    if(uip_udp_conn->lport != 0 &&
-       UDPBUF->srcport == uip_udp_conn->lport &&
-       (uip_udp_conn->rport == 0 ||
-        UDPBUF->destport == uip_udp_conn->rport)) {
-      goto udp_found;
-#endif
     }
   }
   UIP_LOG("udp: no matching connection found");
