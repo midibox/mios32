@@ -24,6 +24,11 @@
 //! Since DMA is used for serial transfers, Reading/Writing a sector typically
 //! takes ca. 500 uS, accordingly the achievable transfer rate is ca. 1 MByte/s
 //! (8 MBit/s)
+//!
+//! 08 Jan 2009: Modified by philetaylor to add MMC and HCSD support also added
+//! a first attempt at using a mutex to allow sharing of SPI0 between SD cards and 
+//! ENC28J60 ethernet. If used in this way, SD card must be inserted at poweron and
+//! will not be recognised if inserted after. Hopefully a fix will be found for this!
 //! \{
 /* ==========================================================================
  *
@@ -49,8 +54,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if !defined(MIOS32_SDCARD_MUTEX_TAKE)
-#define MIOS32_SDCARD_MUTEX_TAKE
-#define MIOS32_SDCARD_MUTEX_GIVE
+#define MIOS32_SDCARD_MUTEX_TAKE{}
+#define MIOS32_SDCARD_MUTEX_GIVE{}
 #endif
 
 
@@ -111,14 +116,14 @@ s32 MIOS32_SDCARD_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 	
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
   // ensure that fast pin drivers are activated
   MIOS32_SPI_IO_Init(MIOS32_SDCARD_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 
   // init SPI port for slow frequency access (ca. 0.3 MBit/s)
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
-  MIOS32_SDCARD_MUTEX_GIVE
+  MIOS32_SDCARD_MUTEX_GIVE;
  
   return 0; // no error
 }
@@ -133,7 +138,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
   s32 status;
   int i,j;
 
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
   // ensure that chip select line deactivated
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
@@ -151,26 +156,16 @@ s32 MIOS32_SDCARD_PowerOn(void)
   MIOS32_DELAY_Wait_uS(1000);
 
   // send CMD0 to reset the media
-  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC)) < 0 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-	
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-  	MIOS32_SDCARD_MUTEX_GIVE
-    return status; // return error code
-  }
+  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC)) < 0 ) 
+	goto error;
   
   CardType=0;
 
   // A card is detected, what type is it? Use SEND_IF_COND (CMD8) to find out
-  // If the response to a value of 0x1AA is 0x1aa then card is HC if not it is SD1 or MMC
   if ((status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_IF_COND, 0x1AA, SDCMD_SEND_IF_COND_CRC)) == 0x01aa ) { 
 	// SDHC Card Detected.
 
-	// We now check to see if we should use block mode or byte mode.
-	// Command is SEND_OP_COND_SDC (ACMD41) with HCS (bit 30) set
-	// Once command is complete, it will return a value other than 1.
+	// We now check to see if we should use block mode or byte mode. Command is SEND_OP_COND_SDC (ACMD41) with HCS (bit 30) set
 	for (i=0;i<16384;i++) 
 	  if((status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_OP_COND_SDC, 0x01<<30, SDCMD_SEND_OP_COND_SDC_CRC)) == 0 ) 
 		break;
@@ -199,28 +194,26 @@ s32 MIOS32_SDCARD_PowerOn(void)
 	    status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_OP_COND, 0, SDCMD_SEND_OP_COND_CRC);
 		
 	  if (status<0){
-		i=16384; // fake a timeout!
 		break;
 	  }
 	  if (status==0)
 		break;
 	}
 	
-	// The block size should already be 512 bytes but re-initialize just in case
-    if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SET_BLOCKLEN, 512, SDCMD_SEND_OP_COND_CRC)) != 0 ) 
-	  status=-2;	
+	// The block size should already be 512 bytes but re-initialize just in case (ignore if it fails)
+    MIOS32_SDCARD_SendSDCCmd(SDCMD_SET_BLOCKLEN, 512, SDCMD_SEND_OP_COND_CRC);
   }
   
+
+  if( i == 16384 || CardType==0 ) 
+    status=-2; // the last loop timed out or the cardtype was not detected...
+error:
   // deactivate chip select
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   // Send dummy byte once deactivated to drop cards DO
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-  MIOS32_SDCARD_MUTEX_GIVE
-
-  if( i == 16384 || CardType==0 ) 
-    status=-2; // the last loop timed out or the cardtype was not detected...
-
+  MIOS32_SDCARD_MUTEX_GIVE;
   return status; // Status should be 0 if nothing went wrong!
 }
 
@@ -280,8 +273,9 @@ s32 MIOS32_SDCARD_PowerOff(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
 {
-  MIOS32_SDCARD_MUTEX_TAKE
-
+  s32 ret;
+  MIOS32_SDCARD_MUTEX_TAKE;
+  
   if( was_available ) {
     // init SPI port for fast frequency access (ca. 18 MBit/s)
     // this is required for the case that the SPI port is shared with other devices
@@ -290,57 +284,44 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
     MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
     // send STATUS command to check if media is available
-    if( MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_STATUS, 0, SDCMD_SEND_STATUS_CRC) < 0 ) {
-	
-      // deactivate chip select
-      MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    ret=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_STATUS, 0, SDCMD_SEND_STATUS_CRC);
 
-	  // Send dummy byte once deactivated to drop cards DO
-      MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-      MIOS32_SDCARD_MUTEX_GIVE
-
-      return 0; // SD card not available anymore
-	}
-	
-    // deactivate chip select
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-	
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-	
   } else {
 
     // ensure that SPI interface is clocked at low speed
     MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_256);
 
-    // send CMD0 to reset the media
-    if( MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC) < 0 ) {
-	
-      // deactivate chip select
-      MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
-	  // Send dummy byte once deactivated to drop cards DO
-      MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-      MIOS32_SDCARD_MUTEX_GIVE
-
-      return 0; // SD card still not available
-	}
-
     // deactivate chip select
     MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    // send 80 clock cycles to start up
+	u8 i;
+    for(i=0; i<10; ++i)
+       MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+    // activate chip select
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+    // send CMD0 to reset the media
+    if( ret=(MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC)) < 0 ) 
+	  goto not_available;
+		
+    // deactivate chip select
+    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    MIOS32_MIDI_SendDebugMessage("Returning with %d\n",ret);
 
-    MIOS32_SDCARD_MUTEX_GIVE 
+    MIOS32_SDCARD_MUTEX_GIVE;  
+    // run power-on sequence (negative return = not available)
+    ret=MIOS32_SDCARD_PowerOn();
 
-    // run power-on sequence (will take the mutex itself)
-    if( MIOS32_SDCARD_PowerOn() < 0 )
-      return 0; // SD card not available anymore
   }
-  
-  return 1; // SD card available
+
+not_available:
+  // deactivate chip select
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+  // Send dummy byte once deactivated to drop cards DO
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SDCARD_MUTEX_GIVE;  
+
+  return (ret == 0) ? 1 : 0; // 1=available, 0=not available.
 }
 
 
@@ -355,7 +336,8 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
 s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 {
   int i;
-  u32 ret;
+  s32 ret;
+
   if (cmd & 0x80) {	/* ACMD<n> is the command sequence of CMD55-CMD<n> */
 	cmd &= 0x7F;
 	ret = MIOS32_SDCARD_SendSDCCmd(SDCMD_APP_CMD, 0,SDCMD_APP_CMD_CRC);
@@ -416,7 +398,6 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 
 	// Send dummy byte once deactivated to drop cards DO
     MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-
     return -1;
   }
   
@@ -451,15 +432,17 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
   if (!(CardType & CT_BLOCK)) 
 	sector *= 512;
 
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
-  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_SINGLE_BLOCK, sector, SDCMD_READ_SINGLE_BLOCK_CRC)) )
-    return (status < 0) ? -256 : status; // return timeout indicator or error flags
-
+  if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_SINGLE_BLOCK, sector, SDCMD_READ_SINGLE_BLOCK_CRC)) ) {
+    status=(status < 0) ? -256 : status; // return timeout indicator or error flags
+	goto error;
+  }
+  
   // wait for start token of the data block
   for(i=0; i<65536; ++i) { // TODO: check if sufficient
     u8 ret = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
@@ -467,12 +450,8 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
       break;
   }
   if( i == 65536 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-    return -257;
+    status= -257;
+	goto error;
   }
 
   // read 512 bytes via DMA
@@ -485,13 +464,14 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
   // required for clocking (see spec)
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
+error:
   // deactivate chip select
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   // Send dummy byte once deactivated to drop cards DO
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-  MIOS32_SDCARD_MUTEX_GIVE
-  return 0; // no error
+  MIOS32_SDCARD_MUTEX_GIVE;
+  return status; 
 }
 
 
@@ -520,7 +500,7 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   s32 status;
   int i;
 
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
 
   if (!(CardType & CT_BLOCK))
 	sector *= 512;
@@ -529,9 +509,9 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_WRITE_SINGLE_BLOCK, sector, SDCMD_WRITE_SINGLE_BLOCK_CRC)) ) {
-    MIOS32_SDCARD_MUTEX_GIVE
-    return (status < 0) ? -256 : status; // return timeout indicator or error flags
-  }
+    status=(status < 0) ? -256 : status; // return timeout indicator or error flags
+	goto error;
+  }  
   // send start token
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xfe);
 
@@ -545,15 +525,9 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   // read response
   u8 response = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
   if( (response & 0x0f) != 0x5 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-
-    return -257;
-  }
+    status= -257;
+	goto error;
+   }
 
   // wait for write completion
   for(i=0; i<32*65536; ++i) { // TODO: check if sufficient
@@ -562,28 +536,23 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
       break;
   }
   if( i == 32*65536 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-
-    return -258;
+    status= -258;
+	goto error;
   }
 
   // required for clocking (see spec)
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
+error:
   // deactivate chip select
   MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
   // Send dummy byte once deactivated to drop cards DO
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
 
-  MIOS32_SDCARD_MUTEX_GIVE
+  MIOS32_SDCARD_MUTEX_GIVE;
 
-  return 0; // no error
+  return status;
 }
 
 
@@ -602,14 +571,14 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
 
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CID, 0, SDCMD_SEND_CID_CRC)) ) {
-    MIOS32_SDCARD_MUTEX_GIVE
-    return (status < 0) ? -256 : status; // return timeout indicator or error flags
-  }
+    status=(status < 0) ? -256 : status; // return timeout indicator or error flags
+	goto error;
+  }  
 	
   // wait for start token of the data block
   for(i=0; i<65536; ++i) { // TODO: check if sufficient
@@ -617,14 +586,9 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
     if( ret != 0xff )
       break;
   }
-  if( i == 65536 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-    return -257;
-  }
+  if( i == 65536 ) 
+    status= -257;
+  
 
   // read 16 bytes via DMA
   u8 cid_buffer[16];
@@ -636,14 +600,6 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
 
   // required for clocking (see spec)
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-
-  // deactivate chip select
-  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-  
-  // Send dummy byte once deactivated to drop cards DO
-  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-
-  MIOS32_SDCARD_MUTEX_GIVE
 
 
   // sort returned informations into CID structure
@@ -678,7 +634,14 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
   cid->msd_CRC = (cid_buffer[15] & 0xFE) >> 1;
   cid->Reserved2 = 1;
 
-  return 0; // no error
+error:
+  // deactivate chip select
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+  // Send dummy byte once deactivated to drop cards DO
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SDCARD_MUTEX_GIVE;
+
+  return status;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -694,15 +657,15 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
   s32 status;
   int i;
   
-  MIOS32_SDCARD_MUTEX_TAKE
+  MIOS32_SDCARD_MUTEX_TAKE;
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CSD, 0, SDCMD_SEND_CSD_CRC)) ) {
-    MIOS32_SDCARD_MUTEX_GIVE
-    return (status < 0) ? -256 : status; // return timeout indicator or error flags
+    status=(status < 0) ? -256 : status; // return timeout indicator or error flags
+	goto error;
   }
   // wait for start token of the data block
   for(i=0; i<65536; ++i) { // TODO: check if sufficient
@@ -711,14 +674,8 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
       break;
   }
   if( i == 65536 ) {
-    // deactivate chip select and return error code
-    MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
-	// Send dummy byte once deactivated to drop cards DO
-    MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-    MIOS32_SDCARD_MUTEX_GIVE
-
-    return -257;
+    status= -257;
+	goto error;
   }
 
   // read 16 bytes via DMA
@@ -731,14 +688,6 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
 
   // required for clocking (see spec)
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-
-  // deactivate chip select
-  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
-  // Send dummy byte once deactivated to drop cards DO
-  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
-
-  MIOS32_SDCARD_MUTEX_GIVE
 
   // sort returned informations into CSD structure
   // from STM Mass Storage example
@@ -803,7 +752,14 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
   csd->msd_CRC = (csd_buffer[15] & 0xFE) >> 1;
   csd->Reserved4 = 1;
 
-  return 0; // no error
+error:
+  // deactivate chip select
+  MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+  // Send dummy byte once deactivated to drop cards DO
+  MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
+  MIOS32_SDCARD_MUTEX_GIVE;
+
+  return status; 
 }
 
 
