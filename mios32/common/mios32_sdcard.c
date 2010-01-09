@@ -54,8 +54,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if !defined(MIOS32_SDCARD_MUTEX_TAKE)
-#define MIOS32_SDCARD_MUTEX_TAKE{}
-#define MIOS32_SDCARD_MUTEX_GIVE{}
+#define MIOS32_SDCARD_MUTEX_TAKE {}
+#define MIOS32_SDCARD_MUTEX_GIVE {}
 #endif
 
 
