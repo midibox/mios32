@@ -147,7 +147,13 @@ create_msg(register struct dhcp_msg *m)
   m->hlen = s.mac_len;
   m->hops = 0;
   memcpy(m->xid, xid, sizeof(m->xid));
-  m->secs = 0;
+#if 0
+  m->secs = HTONS(0);
+#else
+  // TK: for MacOS DHCP Server we need a value > 3, otherwise request will be ignored.
+  // found out by comparison with DHCP requests from Mac and WinXP PC
+  m->secs = HTONS(10); // should be a secure value?
+#endif
   m->flags = HTONS(BOOTP_BROADCAST); /*  Broadcast bit. */
   /*  uip_ipaddr_copy(m->ciaddr, uip_hostaddr);*/
   memcpy(m->ciaddr, uip_hostaddr, sizeof(m->ciaddr));

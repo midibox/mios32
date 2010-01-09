@@ -27,3 +27,5 @@ Modifications:
       http://www.sics.se/~adam/uip/uip-1.0-refman/
   - Applied patch to uip.c to correct problem with uip_len, as per the
       known bugs page on the uIP website
+  - apps/dhcpc/dhcpc.c: m->secs ("Seconds elapsed") set to value > 3
+    This seems to be required for Mac based DHCP server
