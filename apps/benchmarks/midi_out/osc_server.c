@@ -89,35 +89,33 @@ s32 OSC_SERVER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 OSC_SERVER_AppCall(void)
 {
-  if( uip_udp_conn->rport == HTONS(OSC_SERVER_PORT) ) {
-    if( uip_poll() ) {
-      // called each second or on request (-> uip_udp_periodic_conn)
+  if( uip_poll() ) {
+    // called each second or on request (-> uip_udp_periodic_conn)
 
-      if( osc_send_packet != NULL ) {
-	// send datagram
-	uip_send(osc_send_packet, osc_send_len);
-	osc_send_packet = NULL;
-      }
+    if( osc_send_packet != NULL ) {
+      // send datagram
+      uip_send(osc_send_packet, osc_send_len);
+      osc_send_packet = NULL;
     }
+  }
 
-    if( uip_newdata() ) {
-      // new UDP package has been received
+  if( uip_newdata() ) {
+    // new UDP package has been received
 #if DEBUG_VERBOSE_LEVEL >= 2
-      MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
-				   (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
-				   (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
-				   (uip_udp_conn->ripaddr[1] >> 0) & 0xff,
-				   (uip_udp_conn->ripaddr[1] >> 8) & 0xff,
-				   HTONS(uip_udp_conn->rport),
-				   uip_len);
-      MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
+    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
+				 (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
+				 (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
+				 (uip_udp_conn->ripaddr[1] >> 0) & 0xff,
+				 (uip_udp_conn->ripaddr[1] >> 8) & 0xff,
+				 HTONS(uip_udp_conn->rport),
+				 uip_len);
+    MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
 #endif
-      s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
-      if( status < 0 ) {
+    s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
+    if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] invalid OSC packet, status %d\n", status);
+      MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] invalid OSC packet, status %d\n", status);
 #endif
-      }
     }
   }
 }
