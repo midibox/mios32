@@ -85,6 +85,16 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 #define J15_E2_PORT        GPIOC
 #define J15_E2_PIN         GPIO_Pin_6
 
+#ifdef MIOS32_BOARD_LCD_E3_PORT
+#define LCD_E3_PORT        MIOS32_BOARD_LCD_E3_PORT
+#define LCD_E3_PIN         MIOS32_BOARD_LCD_E3_PIN
+#endif
+
+#ifdef MIOS32_BOARD_LCD_E4_PORT
+#define LCD_E4_PORT        MIOS32_BOARD_LCD_E4_PORT
+#define LCD_E4_PIN         MIOS32_BOARD_LCD_E4_PIN
+#endif
+
 #define J15_RW_PORT        GPIOB        // also used to control data output of serial interfaces
 #define J15_RW_PIN         GPIO_Pin_2
 
@@ -99,6 +109,12 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 #define J15_PIN_SER(b)  { J15_SER_PORT->BSRR = (b) ? J15_SER_PIN : (J15_SER_PIN << 16); }
 #define J15_PIN_E1(b)   { J15_E1_PORT->BSRR  = (b) ? J15_E1_PIN  : (J15_E1_PIN << 16); }
 #define J15_PIN_E2(b)   { J15_E2_PORT->BSRR  = (b) ? J15_E2_PIN  : (J15_E2_PIN << 16); }
+#ifdef MIOS32_BOARD_LCD_E3_PORT
+#define LCD_PIN_E3(b)   { LCD_E3_PORT->BSRR  = (b) ? LCD_E3_PIN  : (LCD_E3_PIN << 16); }
+#endif
+#ifdef MIOS32_BOARD_LCD_E4_PORT
+#define LCD_PIN_E4(b)   { LCD_E4_PORT->BSRR  = (b) ? LCD_E4_PIN  : (LCD_E4_PIN << 16); }
+#endif
 #define J15_PIN_RW(b)   { J15_RW_PORT->BSRR  = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
 
 #define J15_PIN_SERLCD_DATAOUT(b) { J15_RW_PORT->BSRR = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
@@ -482,6 +498,12 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
   J15_PIN_RW(0);
   J15_PIN_E1(0);
   J15_PIN_E2(0);
+#ifdef MIOS32_BOARD_LCD_E3_PORT
+  LCD_PIN_E3(0);
+#endif
+#ifdef MIOS32_BOARD_LCD_E4_PORT
+  LCD_PIN_E4(0);
+#endif
 
   // configure push-pull pins
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -505,6 +527,16 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
 
   GPIO_InitStructure.GPIO_Pin = J15_E2_PIN;
   GPIO_Init(J15_E2_PORT, &GPIO_InitStructure);
+
+#ifdef MIOS32_BOARD_LCD_E3_PORT
+  GPIO_InitStructure.GPIO_Pin = LCD_E3_PIN;
+  GPIO_Init(LCD_E3_PORT, &GPIO_InitStructure);
+#endif
+
+#ifdef MIOS32_BOARD_LCD_E4_PORT
+  GPIO_InitStructure.GPIO_Pin = LCD_E4_PIN;
+  GPIO_Init(LCD_E4_PORT, &GPIO_InitStructure);
+#endif
 
   GPIO_InitStructure.GPIO_Pin = J15_RW_PIN;
   GPIO_Init(J15_RW_PORT, &GPIO_InitStructure);
@@ -689,6 +721,19 @@ s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e)
     case 1: 
       J15_PIN_E2(e);
       return 0; // no error
+
+#ifdef MIOS32_BOARD_LCD_E3_PORT
+    case 2: 
+      LCD_PIN_E3(e);
+      return 0; // no error
+#endif
+
+#ifdef MIOS32_BOARD_LCD_E4_PORT
+    case 3: 
+      LCD_PIN_E4(e);
+      return 0; // no error
+#endif
+
   }
 
   return -1; // pin not available
