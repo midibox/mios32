@@ -250,6 +250,16 @@ into your local mios32_config.h file
 #define MIOS32_LCD_BOOT_MSG_DELAY 2000
 
 
+// optional third Enable line (Pull-Up required)
+#define MIOS32_BOARD_LCD_E3_PORT GPIOB       // J15C.A10
+#define MIOS32_BOARD_LCD_E3_PIN  GPIO_Pin_0
+
+// optional third Enable line (Pull-Up required)
+#define MIOS32_BOARD_LCD_E4_PORT GPIOB       // J15C.A11
+#define MIOS32_BOARD_LCD_E4_PIN  GPIO_Pin_1
+
+
+
 // bit mask to enable channels
 //
 // Pin mapping on MBHP_CORE_STM32 module:
