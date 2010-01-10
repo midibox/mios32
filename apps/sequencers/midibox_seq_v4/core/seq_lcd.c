@@ -2,7 +2,9 @@
 /*
  * LCD utility functions
  *
- * Both 2x40 LCD screens are buffered.
+ * The 2x80 screen is buffered and can be output over multiple LCDs 
+ * (e.g. 2 * 2x40, but also 4 * 2x20)
+ *
  * The application should only access the displays via SEQ_LCD_* commands.
  *
  * The buffer method has the advantage, that multiple tasks can write to the
@@ -49,8 +51,20 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// can be overruled in mios32_config.h
+#ifndef LCD_NUM_DEVICES
+# define LCD_NUM_DEVICES          2
+#endif
+
+#ifndef LCD_COLUMNS_PER_DEVICE
+# define LCD_COLUMNS_PER_DEVICE  40
+#endif
+
+
+// shouldn't be overruled
 #define LCD_MAX_LINES    2
-#define LCD_MAX_COLUMNS  80
+#define LCD_MAX_COLUMNS  (LCD_NUM_DEVICES*LCD_COLUMNS_PER_DEVICE)
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -127,6 +141,26 @@ static u8 lcd_buffer[LCD_MAX_LINES][LCD_MAX_COLUMNS];
 
 static u16 lcd_cursor_x;
 static u16 lcd_cursor_y;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Display Initialisation
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_Init(u32 mode)
+{
+  u8 dev;
+
+  // first LCD already initialized
+  for(dev=1; dev<LCD_NUM_DEVICES; ++dev) {
+    MIOS32_LCD_DeviceSet(dev);
+    MIOS32_LCD_Init(0);
+  }
+
+  // switch back to first LCD
+  MIOS32_LCD_DeviceSet(0);
+
+  return 0; // no error
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -222,9 +256,8 @@ s32 SEQ_LCD_Update(u8 force)
 	remote_last_x[y] = x;
 
 	if( x != next_x || y != next_y ) {
-	  // for 2 * 2x40 LCDs
-	  MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
-	  MIOS32_LCD_CursorSet(x%40, y);
+	  MIOS32_LCD_DeviceSet(x / LCD_COLUMNS_PER_DEVICE);
+	  MIOS32_LCD_CursorSet(x % LCD_COLUMNS_PER_DEVICE, y);
 	}
 	MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
@@ -235,8 +268,8 @@ s32 SEQ_LCD_Update(u8 force)
 	next_y = y;
 	next_x = x+1;
 
-	// for 2 * 2x40 LCDs: ensure that cursor is set when we reach the second half
-	if( next_x == 40 )
+	// for multiple LCDs: ensure that cursor is set when we reach the next partition
+	if( (next_x % LCD_COLUMNS_PER_DEVICE) == 0 )
 	  next_x = -1;
       }
       ++ptr;
@@ -271,7 +304,7 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 
     MUTEX_LCD_TAKE;
     int dev;
-    for(dev=0; dev<2; ++dev) {
+    for(dev=0; dev<LCD_NUM_DEVICES; ++dev) {
       MIOS32_LCD_DeviceSet(dev);
       switch( charset ) {
         case SEQ_LCD_CHARSET_Menu:
