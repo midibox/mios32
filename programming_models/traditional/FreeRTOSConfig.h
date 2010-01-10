@@ -33,7 +33,14 @@
 #define configMINIMAL_STACK_SIZE            ( ( unsigned portSHORT ) (MIOS32_MINIMAL_STACK_SIZE/4) )
 #define configTOTAL_HEAP_SIZE               ( ( size_t ) ( MIOS32_HEAP_SIZE ) )
 #define configMAX_TASK_NAME_LEN             ( 16 )
+
+// philetaylor: Added optional trace facility to allow tasks to be displayed
+// This is only used on the webserver example at the moment
+// It is very slow so shouldn't be used unless necessary. Default is off.
+#ifndef configUSE_TRACE_FACILITY
 #define configUSE_TRACE_FACILITY            0
+#endif
+
 #define configUSE_16_BIT_TICKS              0
 #define configIDLE_SHOULD_YIELD             1
 #define configUSE_MUTEXES                   1
@@ -54,8 +61,10 @@
 #endif
 
 // vApplicationMallocFailedHook located in main.c (debug message will be sent to debug terminal and LCD)
+// philetaylor: Changed to allow this to be configured in mios32_config.h 
+#ifndef configUSE_MALLOC_FAILED_HOOK
 #define configUSE_MALLOC_FAILED_HOOK        1
-
+#endif
 
 
 #define INCLUDE_vTaskPrioritySet            1
