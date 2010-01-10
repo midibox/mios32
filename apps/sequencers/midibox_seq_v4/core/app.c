@@ -79,10 +79,8 @@ void APP_Init(void)
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
 
-  // initialize second CLCD
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_Init(0);
-  MIOS32_LCD_DeviceSet(0);
+  // initialize CLCDs
+  SEQ_LCD_Init(0);
 
   // init BLMs
   BLM_Init(0);

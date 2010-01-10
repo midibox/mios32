@@ -114,4 +114,17 @@
 #define BLM_X_ROWSEL_INV_MASK     0   // dummy, will be changed in seq_file_hw.c
 #define BLM_X_DEBOUNCE_MODE       0
 
+
+// optional for Francois' 4 * 20x2 LCD configuration
+// currently this option cannot be enabled in the MBSEQ_HW.V4 file - this will be possible later
+#if 0
+#define LCD_NUM_DEVICES          4
+#define LCD_COLUMNS_PER_DEVICE  20
+#define MIOS32_BOARD_LCD_E3_PORT GPIOB       // J15C.A10
+#define MIOS32_BOARD_LCD_E3_PIN  GPIO_Pin_0
+
+#define MIOS32_BOARD_LCD_E4_PORT GPIOB       // J15C.A11
+#define MIOS32_BOARD_LCD_E4_PIN  GPIO_Pin_1
+#endif
+
 #endif /* _MIOS32_CONFIG_H */
