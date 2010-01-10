@@ -1,0 +1,7 @@
+%!: /header.htm
+<h1>System processes</h1><br><table width="100%">
+<tr><th>ID</th><th>Name</th><th>Priority</th><th>Poll handler</th><th>Event handler</th><th>Procstate</th></tr>
+<tr>
+%! rtos-stats
+</tr>
+%!: /footer.htm
