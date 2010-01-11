@@ -73,4 +73,15 @@ s32 MIOS32_BOARD_J5_PinGet(u8 pin)
 	return -1; // not implemented
 }
 
+s32 MIOS32_BOARD_DAC_PinInit(u8 chn, u8 enable)
+{
+	return -1; // not implemented
+}
+
+s32 MIOS32_BOARD_DAC_PinSet(u8 chn, u16 value)
+{
+	return -1; // not implemented
+}
+
+
 @end

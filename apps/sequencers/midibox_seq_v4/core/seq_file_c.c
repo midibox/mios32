@@ -293,6 +293,31 @@ s32 SEQ_FILE_C_Read(void)
 	      seq_midi_in_ta_split_note &= ~0x80;
 	  } else if( strcmp(parameter, "MIDI_IN_TA_SplitNote") == 0 ) {
 	    seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
+	  } else if( strcmp(parameter, "MIDI_IN_SectChannel") == 0 ) {
+	    seq_midi_in_sect_channel = value;
+	  } else if( strcmp(parameter, "MIDI_IN_SectPort") == 0 ) {
+	    seq_midi_in_sect_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "MIDI_IN_SectNotes") == 0 ) {
+	    int values[4];
+
+	    values[0] = value;
+	    int i;
+	    for(i=1; i<4; ++i) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      values[i] = get_dec(word);
+	      if( values[i] < 0 ) {
+		break;
+	      }
+	    }
+
+	    if( i != 4 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_IN_SectNotes: missing parameter %d\n", i);
+#endif
+	    } else {
+	      for(i=0; i<4; ++i)
+		seq_midi_in_sect_note[i] = values[i];
+	    }
 	  } else if( strcmp(parameter, "MIDI_OUT_MClock_Ports") == 0 ) {
 	    seq_midi_router_mclk_out = value;
 	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
@@ -460,6 +485,15 @@ static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_SectChannel %d\n", seq_midi_in_sect_channel);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_SectPort %d\n", (u8)seq_midi_in_sect_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_SectNotes %d %d %d %d\n", (u8)seq_midi_in_sect_note[0], (u8)seq_midi_in_sect_note[1], (u8)seq_midi_in_sect_note[2], (u8)seq_midi_in_sect_note[3]);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);

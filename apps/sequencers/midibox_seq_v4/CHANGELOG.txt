@@ -9,10 +9,31 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta15
 ~~~~~~~~~~~~~~~~~~~~~
 
+  o Track sections which should be played can now be selected via MIDI
+    Keyboard as demonstrated in http://www.youtube.com/watch?v=U_RQL24j8no
+
+    Each group (G1/2/3/4) has a separate selection zone on the keyboard.
+    Key C..A# select section 1..11, the last key of the octave (B) disables
+    the selection.
+
+    The width of a section depends on the track length.
+
+    E.g., if the track length is set to 32, and if it consists of 256 steps,
+    8 sections are available which can be selected with Key C/C#/D/D#/E/F#/F/F#/G
+
+  o TODO: sections can also be selected with the BLM4x16 on the same way like
+    with a keyboard. The currently active section is displayed by the LEDs.
+
+  o TODO: sections can also be selected with the BLM16x16. In this case, we
+    have individual selections for all 16 tracks.
+
+  o the MIDI configuration page has been overworked to handle the new parameters.
+    Track sections can be selected from a dedicated MIDI Port and Channel.
+    The keyboard zone assigned to the group can be changed, so that it's possible
+    to merge groups (e.g. all 4 groups controlled from a single octave).
+
   o implemented CC#123 (All Notes Off) - it empties the note stacks if
     value 0 is received. Values > 0 will be ignored
-
-  o experimental patch changer via MIDI keyboard
 
 
 MIDIboxSEQ V4.0beta14

@@ -46,18 +46,23 @@
 #define SEQ_MIDI_IN_NOTESTACK_SIZE 10
 #endif
 
+#define SEQ_MIDI_IN_SECTION_CHANGER_NOTESTACK_SIZE 4
 #define SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE 4
 
 
 // number of notestacks and assignments
-#define NOTESTACK_NUM             7
+#define NOTESTACK_NUM             11
 #define NOTESTACK_TRANSPOSER      0
 #define NOTESTACK_ARP_SORTED      1
 #define NOTESTACK_ARP_UNSORTED    2
-#define NOTESTACK_PATCH_CHANGER_G1 3
-#define NOTESTACK_PATCH_CHANGER_G2 4
-#define NOTESTACK_PATCH_CHANGER_G3 5
-#define NOTESTACK_PATCH_CHANGER_G4 6
+#define NOTESTACK_SECTION_CHANGER_G1 3
+#define NOTESTACK_SECTION_CHANGER_G2 4
+#define NOTESTACK_SECTION_CHANGER_G3 5
+#define NOTESTACK_SECTION_CHANGER_G4 6
+#define NOTESTACK_PATCH_CHANGER_G1 7
+#define NOTESTACK_PATCH_CHANGER_G2 8
+#define NOTESTACK_PATCH_CHANGER_G3 9
+#define NOTESTACK_PATCH_CHANGER_G4 10
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,6 +70,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity);
+static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity);
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity);
 static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 
@@ -73,15 +79,23 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// For Transposer/Arpeggiator:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_channel;
-
 // which IN port should be used? (0: All)
 mios32_midi_port_t seq_midi_in_port;
-
 // Transposer/Arpeggiator split note
 // (bit 7 enables/disables split)
 u8 seq_midi_in_ta_split_note;
+
+
+// for Sections:
+// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
+u8 seq_midi_in_sect_channel;
+// which IN port should be used? (0: All)
+mios32_midi_port_t seq_midi_in_sect_port;
+// Starting note for section selection:
+u8 seq_midi_in_sect_note[4];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -108,12 +122,19 @@ static u8 remote_active;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_Init(u32 mode)
 {
-  SEQ_MIDI_IN_ResetNoteStacks();
+  int i;
+
+  SEQ_MIDI_IN_ResetAllStacks();
 
   // stored in global config:
   seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_port = DEFAULT; // All ports
   seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
+
+  seq_midi_in_sect_channel = 0; // disabled by default
+  seq_midi_in_sect_port = DEFAULT; // All ports
+  for(i=0; i<4; ++i)
+    seq_midi_in_sect_note[i] = 0x30 + 12*i;
 
   remote_active = 0;
 
@@ -122,9 +143,9 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// resets the note stacks
+// resets note stacks used for transposer/arpeggiator
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_IN_ResetNoteStacks(void)
+s32 SEQ_MIDI_IN_ResetTransArpStacks(void)
 {
   int i;
 
@@ -143,26 +164,6 @@ s32 SEQ_MIDI_IN_ResetNoteStacks(void)
 		 &notestack_items[NOTESTACK_ARP_UNSORTED][0],
 		 SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G1],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_PATCH_CHANGER_G1][0],
-		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
-
-  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G2],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_PATCH_CHANGER_G2][0],
-		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
-
-  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G3],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_PATCH_CHANGER_G3][0],
-		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
-
-  NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G4],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_PATCH_CHANGER_G4][0],
-		 SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
-
   // initial hold notes
   transposer_hold_note = 0x3c; // C-3
 
@@ -179,6 +180,50 @@ s32 SEQ_MIDI_IN_ResetNoteStacks(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// resets note stacks used for patch changer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_IN_ResetChangerStacks(void)
+{
+  int i;
+
+  for(i=0; i<4; ++i) {
+    NOTESTACK_Init(&notestack[NOTESTACK_SECTION_CHANGER_G1 + i],
+		   NOTESTACK_MODE_PUSH_TOP,
+		   &notestack_items[NOTESTACK_SECTION_CHANGER_G1 + i][0],
+		   SEQ_MIDI_IN_SECTION_CHANGER_NOTESTACK_SIZE);
+
+    NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G1 + i],
+		   NOTESTACK_MODE_PUSH_TOP,
+		   &notestack_items[NOTESTACK_PATCH_CHANGER_G1 + i][0],
+		   SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
+  }
+
+  // following operation should be atomic!
+  u8 track;
+  seq_core_trk_t *t = &seq_core_trk[0];
+  MIOS32_IRQ_Disable();
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t)
+    t->play_section = -1; // don't select section
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// resets all note stacks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_IN_ResetAllStacks(void)
+{
+  s32 status = 0;
+
+  status |= SEQ_MIDI_IN_ResetTransArpStacks();
+  status |= SEQ_MIDI_IN_ResetChangerStacks();
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -186,78 +231,90 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   s32 status = 0;
   u8 loopback_port = port == 0xf0;
 
-  // filter MIDI port (if 0: no filter, listen to all ports)
-#if 0
-  if( seq_midi_in_port && port != seq_midi_in_port )
-#else
-  // Loopback port not filtered!
-  if( seq_midi_in_port && port != seq_midi_in_port && !loopback_port )
-#endif
-    return status;
-
-  // if not loopback, no remote and MIDI channel matching: forward to record function in record page
-  if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC && midi_package.chn == (seq_midi_in_channel-1) )
-    return SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
-
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
   // SEQ_CORE_* for loopbacks)
 
-  // Note Events: ignore channel if loopback
-  if( loopback_port || midi_package.chn == (seq_midi_in_channel-1) ) {
-    switch( midi_package.event ) {
 
-      case NoteOff: 
-	if( !loopback_port && remote_active ) {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    int i;
+  // filter MIDI port (if 0: no filter, listen to all ports)
+  // Loopback port not filtered!
+  if( loopback_port || (seq_midi_in_port && port == seq_midi_in_port) ) {
+    if( loopback_port || midi_package.chn == (seq_midi_in_channel-1) ) {
+      switch( midi_package.event ) {
 
-	    remote_active = 0;
-	    // send "button depressed" state to all remote functions
-	    for(i=0; i<128; ++i)
-	      SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
+        case NoteOff: 
+	  if( !loopback_port && remote_active ) {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      int i;
 
-	    status = 1;
-	  } else
-	    status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
-	} else {
+	      remote_active = 0;
+	      // send "button depressed" state to all remote functions
+	      for(i=0; i<128; ++i)
+		SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
+
+	      status = 1;
+	    } else
+	      status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
+	  } else {
+	    MUTEX_MIDIIN_TAKE;
+	    status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
+	    MUTEX_MIDIIN_GIVE;
+	  }
+	  break;
+
+        case NoteOn:
+	  if( !loopback_port && remote_active )
+	    status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
+	  else {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      remote_active = 1;
+	      status = 1;
+	    } else {
+	      MUTEX_MIDIIN_TAKE;
+	      status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
+	      MUTEX_MIDIIN_GIVE;
+	    }
+	  }
+	  break;
+
+        case CC:
 	  MUTEX_MIDIIN_TAKE;
-	  status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
+	  if( loopback_port )
+	    status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
+	  else
+	    status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
 	  MUTEX_MIDIIN_GIVE;
-	}
+	  break;
+      }
+    } else {
+      // if not loopback, no remote and MIDI channel matching: forward to record function in record page
+      if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC )
+	return SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
+    }
+  }
+
+  // Section Changer
+  if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
+    switch( midi_package.event ) {
+      case NoteOff: 
+	MUTEX_MIDIIN_TAKE;
+	status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, 0x00);
+	MUTEX_MIDIIN_GIVE;
 	break;
 
       case NoteOn:
-	if( !loopback_port && remote_active )
-	  status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
-	else {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    remote_active = 1;
-	    status = 1;
-	  } else {
-	    MUTEX_MIDIIN_TAKE;
-	    status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
-	    MUTEX_MIDIIN_GIVE;
-	  }
-	}
-	break;
-
-      case CC:
 	MUTEX_MIDIIN_TAKE;
-	if( loopback_port )
-	  status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
-	else
-	  status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
+	status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, midi_package.velocity);
 	MUTEX_MIDIIN_GIVE;
 	break;
     }
   }
 
-
-  // Patch Changer (currently assigned to MIDI channel + 1
-  if( !loopback_port && midi_package.chn == (seq_midi_in_channel) ) {
+#if 0
+  // Patch Changer (currently assigned to channel+1)
+  // Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
+  if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel)) ) {
     switch( midi_package.event ) {
-
       case NoteOff: 
 	MUTEX_MIDIIN_TAKE;
 	status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, 0x00);
@@ -271,6 +328,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	break;
     }
   }
+#endif
 
   return status;
 }
@@ -364,62 +422,101 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// For Section Changes
+// If velocity == 0, Note Off event has been received, otherwise Note On event
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
+{
+  int octave = note / 12;
+
+  int group;
+  for(group=0; group<4; ++group) {
+    if( octave == (seq_midi_in_sect_note[group] / 12) ) {
+      notestack_t *n = &notestack[NOTESTACK_SECTION_CHANGER_G1 + group];
+
+      int section = -1;
+      if( velocity ) { // Note On
+	NOTESTACK_Push(n, note, velocity);
+	section = n->note_items[0].note % 12;
+      } else { // Note Off
+	if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
+	  section = n->note_items[0].note % 12;
+	}
+      }
+
+      // switch to new section if required
+      if( section >= 0 && section < 12 ) {
+	section = -1; // disable section with B-x
+	s8 play_section = (section == 11) ? -1 : section;
+
+#if 0
+	if( play_section < 0) {
+	  DEBUG_MSG("Group %d Section disabled\n", group);
+	} else {
+	  DEBUG_MSG("Group %d Section %d\n", group, section);
+	}
+#endif
+
+	// following operation should be atomic!
+	u8 track;
+	seq_core_trk_t *t = &seq_core_trk[group*SEQ_CORE_NUM_TRACKS_PER_GROUP];
+	MIOS32_IRQ_Disable();
+	for(track=0; track<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track, ++t)
+	  t->play_section = play_section;
+	MIOS32_IRQ_Enable();
+      }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("NOTESTACK_SECTION_CHANGER_G%d:\n", group+1);
+      NOTESTACK_SendDebugMessage(n);
+#endif
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // For Patch Changes (assigned to different MIDI channel)
 // If velocity == 0, Note Off event has been received, otherwise Note On event
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 {
-  notestack_t *n;
-  int group;
-
   int octave = note / 12;
 
-  switch( octave ) {
-    case 4:
-      group = 0;
-      n = &notestack[NOTESTACK_PATCH_CHANGER_G1];
-      break;
-    case 5:
-      group = 1;
-      n = &notestack[NOTESTACK_PATCH_CHANGER_G2];
-      break;
-    case 6:
-      group = 2;
-      n = &notestack[NOTESTACK_PATCH_CHANGER_G3];
-      break;
-    case 7:
-      group = 3;
-      n = &notestack[NOTESTACK_PATCH_CHANGER_G4];
-      break;
-    default:
-      return -1; // not assigned
-  }
+  int group;
+  for(group=0; group<4; ++group) {
+    if( octave == (seq_midi_in_sect_note[group] / 12) ) {
+      notestack_t *n = &notestack[NOTESTACK_PATCH_CHANGER_G1 + group];
 
-  int patch = -1;
-  if( velocity ) { // Note On
-    NOTESTACK_Push(n, note, velocity);
-    patch = n->note_items[0].note % 12;
-  } else { // Note Off
-    if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
-      patch = n->note_items[0].note % 12;
-    }
-  }
+      int patch = -1;
+      if( velocity ) { // Note On
+	NOTESTACK_Push(n, note, velocity);
+	patch = n->note_items[0].note % 12;
+      } else { // Note Off
+	if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
+	  patch = n->note_items[0].note % 12;
+	}
+      }
 
-  // switch to new patch if required
-  if( patch >= 0 && patch < 8 ) {
-    seq_pattern_t pattern = seq_pattern[group];
-    if( pattern.num != patch ) {
-      pattern.num = patch;
-      pattern.DISABLED = 0;
-      pattern.SYNCHED = 0;
-      SEQ_PATTERN_Change(group, pattern);
-    }
-  }
+      // switch to new patch if required
+      if( patch >= 0 && patch < 8 ) {
+	seq_pattern_t pattern = seq_pattern[group];
+	if( pattern.num != patch ) {
+	  pattern.num = patch;
+	  pattern.DISABLED = 0;
+	  pattern.SYNCHED = 0;
+	  SEQ_PATTERN_Change(group, pattern);
+	}
+      }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("NOTESTACK_PATCH_CHANGER_G%d:\n", group+1);
-  NOTESTACK_SendDebugMessage(n);
+#if DEBUG_VERBOSE_LEVEL >= 0
+      DEBUG_MSG("NOTESTACK_PATCH_CHANGER_G%d:\n", group+1);
+      NOTESTACK_SendDebugMessage(n);
 #endif
+    }
+  }
 
   return 0; // no error
 }
@@ -490,7 +587,7 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
 
     case 0x7b: // all notes off (transposer, arpeggiator, patch changer)
       if( value == 0 )
-	SEQ_MIDI_IN_ResetNoteStacks();
+	SEQ_MIDI_IN_ResetAllStacks();
       break;
   }
 
