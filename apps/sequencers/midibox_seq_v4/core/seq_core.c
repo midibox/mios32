@@ -207,6 +207,9 @@ s32 SEQ_CORE_Init(u32 mode)
     // clear glide note storage
     for(i=0; i<4; ++i)
       t->glide_notes[i] = 0;
+
+    // don't select sections
+    t->play_section = -1;
   }
 
   // reset sequencer

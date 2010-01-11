@@ -95,6 +95,7 @@ typedef struct seq_core_trk_t {
   u8                   vu_meter;         // for visualisation in mute menu
   u32                  rec_timestamp;    // for recording function
   u8                   rec_poly_ctr;     // for recording function
+  s8                   play_section;     // selects the section which should be played. If -1, no section selection
 } seq_core_trk_t;
 
 

@@ -31,7 +31,9 @@
 
 extern s32 SEQ_MIDI_IN_Init(u32 mode);
 
-extern s32 SEQ_MIDI_IN_ResetNoteStacks(void);
+extern s32 SEQ_MIDI_IN_ResetTransArpStacks(void);
+extern s32 SEQ_MIDI_IN_ResetChangerStacks(void);
+extern s32 SEQ_MIDI_IN_ResetAllStacks(void);
 
 extern s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
@@ -46,6 +48,10 @@ extern s32 SEQ_MIDI_IN_ArpNoteGet(u8 hold, u8 sorted, u8 key_num);
 extern u8 seq_midi_in_channel;
 extern mios32_midi_port_t seq_midi_in_port;
 extern u8 seq_midi_in_ta_split_note;
+
+extern u8 seq_midi_in_sect_channel;
+extern mios32_midi_port_t seq_midi_in_sect_port;
+extern u8 seq_midi_in_sect_note[4];
 
 
 #endif /* _SEQ_MIDI_IN_H */

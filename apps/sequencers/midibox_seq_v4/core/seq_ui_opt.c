@@ -27,7 +27,6 @@
 #include "seq_cc.h"
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
-#include "seq_midi_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,7 +43,6 @@
 #define ITEM_REMOTE_ID     6
 #define ITEM_REMOTE_PORT   7
 #define ITEM_REMOTE_REQUEST 8
-#define ITEM_BLM_SCALAR_PORT 9
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -71,7 +69,6 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_REMOTE_ID:      *gp_leds = 0x0200; break;
     case ITEM_REMOTE_PORT:    *gp_leds = 0x0400; break;
     case ITEM_REMOTE_REQUEST: *gp_leds = 0x1800; break;
-    case ITEM_BLM_SCALAR_PORT: *gp_leds = 0xc000; break;
   }
 
   return 0; // no error
@@ -130,12 +127,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
       
     case SEQ_UI_ENCODER_GP14:
-      return -1; // not mapped
-
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_BLM_SCALAR_PORT;
-      break;
+      return -1; // not mapped
   }
 
   // for GP encoders and Datawheel
@@ -251,19 +245,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 1;
     } break;
-
-    case ITEM_BLM_SCALAR_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_blm_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
-	MUTEX_MIDIOUT_TAKE;
-	SEQ_MIDI_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
-	MUTEX_MIDIOUT_GIVE;
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
-    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -332,13 +313,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request        BLM_SCALAR
-  //  16 Steps  16 Steps  off  off    Steps   Auto  00 Def. Connect:yes       USB4   
+  //  Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request                  
+  //  16 Steps  16 Steps  off  off    Steps   Auto  00 Def. Connect:yes              
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request        BLM_SCALAR");
+  SEQ_LCD_PrintString(" Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request                  ");
   SEQ_LCD_PrintSpaces(18);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -416,18 +397,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString(" Connect:%s", (seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_AUTO) ? "yes" : "no ");
   }
-  SEQ_LCD_PrintSpaces(7);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_BLM_SCALAR_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    if( !seq_midi_blm_port )
-      SEQ_LCD_PrintString(" off");
-    else
-      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_OutIxGet(seq_midi_blm_port)));
-  }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(20);
 
   return 0; // no error
 }

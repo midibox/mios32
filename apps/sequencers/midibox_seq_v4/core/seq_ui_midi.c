@@ -27,23 +27,48 @@
 #include "seq_midi_router.h"
 #include "seq_midi_port.h"
 #include "seq_bpm.h"
+#include "seq_midi_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       10
-#define ITEM_DEF_PORT      0
-#define ITEM_IN_PORT       1
-#define ITEM_IN_CHN        2
-#define ITEM_TA_SPLIT      3
-#define ITEM_TA_SPLIT_NOTE 4
-#define ITEM_R_NODE        5
-#define ITEM_R_SRC_PORT    6
-#define ITEM_R_SRC_CHN     7
-#define ITEM_R_DST_PORT    8
-#define ITEM_R_DST_CHN     9
+#define SUBPAGE_TRANSPOSE  0
+#define SUBPAGE_SECTIONS   1
+#define SUBPAGE_ROUTER     2
+#define SUBPAGE_MISC       3
+
+
+
+#define NUM_OF_ITEMS       19
+
+// Transpose
+#define ITEM_IN_PORT       0
+#define ITEM_IN_CHN        1
+#define ITEM_TA_SPLIT      2
+#define ITEM_TA_SPLIT_NOTE 3
+#define ITEM_RESET_STACKS  4
+
+// Sections
+#define ITEM_S_PORT        5
+#define ITEM_S_CHN         6
+#define ITEM_S_OCT_G1      7
+#define ITEM_S_OCT_G2      8
+#define ITEM_S_OCT_G3      9
+#define ITEM_S_OCT_G4      10
+#define ITEM_S_RESET_STACKS 11
+
+// MIDI Router
+#define ITEM_R_NODE        12
+#define ITEM_R_SRC_PORT    13
+#define ITEM_R_SRC_CHN     14
+#define ITEM_R_DST_PORT    15
+#define ITEM_R_DST_CHN     16
+#define ITEM_DEF_PORT      17
+
+// Misc
+#define ITEM_BLM_SCALAR_PORT 18
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -51,6 +76,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 store_file_required;
+static u8 selected_subpage = SUBPAGE_TRANSPOSE;
 static u8 selected_router_node = 0;
 
 
@@ -62,18 +88,67 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  switch( ui_selected_item ) {
-    case ITEM_DEF_PORT: *gp_leds = 0x0003; break;
-    case ITEM_IN_PORT: *gp_leds = 0x0004; break;
-    case ITEM_IN_CHN: *gp_leds = 0x0008; break;
-    case ITEM_TA_SPLIT: *gp_leds = 0x0030; break;
-    case ITEM_TA_SPLIT_NOTE: *gp_leds = 0x00c0; break;
-    case ITEM_R_NODE: *gp_leds = 0x0100; break;
-    case ITEM_R_SRC_PORT: *gp_leds = 0x0200; break;
-    case ITEM_R_SRC_CHN: *gp_leds = 0x0400; break;
-    case ITEM_R_DST_PORT: *gp_leds = 0x0800; break;
-    case ITEM_R_DST_CHN: *gp_leds = 0x1000; break;
+  *gp_leds = (3 << (2*selected_subpage));
+
+  switch( selected_subpage ) {
+    case SUBPAGE_TRANSPOSE:
+      switch( ui_selected_item ) {
+        case ITEM_IN_PORT: *gp_leds |= 0x0100; break;
+        case ITEM_IN_CHN: *gp_leds |= 0x0200; break;
+        case ITEM_TA_SPLIT: *gp_leds |= 0x0c00; break;
+        case ITEM_TA_SPLIT_NOTE: *gp_leds |= 0x3000; break;
+        case ITEM_RESET_STACKS: *gp_leds |= 0x8000; break;
+      }
+      break;
+
+    case SUBPAGE_SECTIONS:
+      switch( ui_selected_item ) {
+        case ITEM_S_PORT: *gp_leds |= 0x0100; break;
+        case ITEM_S_CHN: *gp_leds |= 0x0200; break;
+        case ITEM_S_OCT_G1: *gp_leds |= 0x0400; break;
+        case ITEM_S_OCT_G2: *gp_leds |= 0x0800; break;
+        case ITEM_S_OCT_G3: *gp_leds |= 0x1000; break;
+        case ITEM_S_OCT_G4: *gp_leds |= 0x2000; break;
+        case ITEM_S_RESET_STACKS: *gp_leds |= 0x8000; break;
+      }
+      break;
+
+    case SUBPAGE_ROUTER:
+      switch( ui_selected_item ) {
+        case ITEM_R_NODE: *gp_leds |= 0x0100; break;
+        case ITEM_R_SRC_PORT: *gp_leds |= 0x0200; break;
+        case ITEM_R_SRC_CHN: *gp_leds |= 0x0400; break;
+        case ITEM_R_DST_PORT: *gp_leds |= 0x0800; break;
+        case ITEM_R_DST_CHN: *gp_leds |= 0x1000; break;
+        case ITEM_DEF_PORT: *gp_leds |= 0xc000; break;
+      }
+      break;
+
+    case SUBPAGE_MISC:
+      switch( ui_selected_item ) {
+        case ITEM_BLM_SCALAR_PORT: *gp_leds |= 0x0300; break;
+      }
+      break;
   }
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function
+/////////////////////////////////////////////////////////////////////////////
+static s32 SetSubpageBasedOnItem(u8 item)
+{
+  if( item <= ITEM_RESET_STACKS )
+    selected_subpage = SUBPAGE_TRANSPOSE;
+  else if( item <= ITEM_S_RESET_STACKS )
+    selected_subpage = SUBPAGE_SECTIONS;
+  else if( item <= ITEM_DEF_PORT )
+    selected_subpage = SUBPAGE_ROUTER;
+  else
+    selected_subpage = SUBPAGE_MISC;
 
   return 0; // no error
 }
@@ -90,72 +165,152 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   seq_midi_router_node_t *n = &seq_midi_router_node[selected_router_node];
 
-  switch( encoder ) {
-    case SEQ_UI_ENCODER_GP1:
-    case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_DEF_PORT;
+  if( encoder <= SEQ_UI_ENCODER_GP8 ) {
+    selected_subpage = encoder/2;
+    switch( selected_subpage ) {
+      case SUBPAGE_TRANSPOSE:
+	ui_selected_item = ITEM_IN_PORT;
+	break;
+
+      case SUBPAGE_SECTIONS:
+	ui_selected_item = ITEM_S_PORT;
+	break;
+
+      case SUBPAGE_ROUTER:
+	ui_selected_item = ITEM_R_NODE;
+	break;
+
+      case SUBPAGE_MISC:
+	ui_selected_item = ITEM_BLM_SCALAR_PORT;
+	break;
+    }
+    return 1;
+  }
+
+  switch( selected_subpage ) {
+    case SUBPAGE_TRANSPOSE:
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP9:
+	  ui_selected_item = ITEM_IN_PORT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP10:
+	  ui_selected_item = ITEM_IN_CHN;
+	  break;
+
+        case SEQ_UI_ENCODER_GP11:
+        case SEQ_UI_ENCODER_GP12:
+	  ui_selected_item = ITEM_TA_SPLIT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP13:
+        case SEQ_UI_ENCODER_GP14:
+	  ui_selected_item = ITEM_TA_SPLIT_NOTE;
+	  break;
+
+        case SEQ_UI_ENCODER_GP15:
+	  return -1; // not mapped
+
+        case SEQ_UI_ENCODER_GP16:
+	  ui_selected_item = ITEM_RESET_STACKS;
+	  break;
+      }
       break;
 
-    case SEQ_UI_ENCODER_GP3:
-      ui_selected_item = ITEM_IN_PORT;
+    case SUBPAGE_SECTIONS:
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP9:
+	  ui_selected_item = ITEM_S_PORT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP10:
+	  ui_selected_item = ITEM_S_CHN;
+	  break;
+
+        case SEQ_UI_ENCODER_GP11:
+	  ui_selected_item = ITEM_S_OCT_G1;
+	  break;
+
+        case SEQ_UI_ENCODER_GP12:
+	  ui_selected_item = ITEM_S_OCT_G2;
+	  break;
+
+        case SEQ_UI_ENCODER_GP13:
+	  ui_selected_item = ITEM_S_OCT_G3;
+	  break;
+
+        case SEQ_UI_ENCODER_GP14:
+	  ui_selected_item = ITEM_S_OCT_G4;
+	  break;
+
+        case SEQ_UI_ENCODER_GP15:
+	  return -1; // not mapped
+
+        case SEQ_UI_ENCODER_GP16:
+	  ui_selected_item = ITEM_S_RESET_STACKS;
+	  break;
+      }
       break;
 
-    case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_IN_CHN;
+    case SUBPAGE_ROUTER:
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP9:
+	  ui_selected_item = ITEM_R_NODE;
+	  break;
+
+        case SEQ_UI_ENCODER_GP10:
+	  ui_selected_item = ITEM_R_SRC_PORT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP11:
+	  ui_selected_item = ITEM_R_SRC_CHN;
+	  break;
+
+        case SEQ_UI_ENCODER_GP12:
+	  ui_selected_item = ITEM_R_DST_PORT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP13:
+	  ui_selected_item = ITEM_R_DST_CHN;
+	  break;
+
+        case SEQ_UI_ENCODER_GP14:
+	  return -1; // not used (yet)
+
+        case SEQ_UI_ENCODER_GP15:
+        case SEQ_UI_ENCODER_GP16:
+	  ui_selected_item = ITEM_DEF_PORT;
+	  break;
+      }
       break;
 
-    case SEQ_UI_ENCODER_GP5:
-    case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_TA_SPLIT;
+    case SUBPAGE_MISC:
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP9:
+        case SEQ_UI_ENCODER_GP10:
+	  ui_selected_item = ITEM_BLM_SCALAR_PORT;
+	  break;
+
+        case SEQ_UI_ENCODER_GP11:
+        case SEQ_UI_ENCODER_GP12:
+        case SEQ_UI_ENCODER_GP13:
+        case SEQ_UI_ENCODER_GP14:
+	  return -1; // not used (yet)
+
+        case SEQ_UI_ENCODER_GP15:
+        case SEQ_UI_ENCODER_GP16:
+	  // enter midi monitor page
+	  SEQ_UI_PageSet(SEQ_UI_PAGE_MIDIMON);
+	  return 1;
+      }
       break;
 
-    case SEQ_UI_ENCODER_GP7:
-    case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_TA_SPLIT_NOTE;
-      break;
-
-    case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_R_NODE;
-      break;
-
-    case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_R_SRC_PORT;
-      break;
-
-    case SEQ_UI_ENCODER_GP11:
-      ui_selected_item = ITEM_R_SRC_CHN;
-      break;
-
-    case SEQ_UI_ENCODER_GP12:
-      ui_selected_item = ITEM_R_DST_PORT;
-      break;
-
-    case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_R_DST_CHN;
-      break;
-
-    case SEQ_UI_ENCODER_GP14:
-      return -1; // not used (yet)
-
-    case SEQ_UI_ENCODER_GP15:
-    case SEQ_UI_ENCODER_GP16:
-	// enter midi monitor page
-	SEQ_UI_PageSet(SEQ_UI_PAGE_MIDIMON);
-	return 1;
+    default:
+      return -1; // unsupported subpage
   }
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_DEF_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(MIOS32_MIDI_DefaultPortGet());
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
-	MIOS32_MIDI_DefaultPortSet(SEQ_MIDI_PORT_OutPortGet(port_ix));
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
-    } break;
-
     case ITEM_IN_PORT: {
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
@@ -192,6 +347,80 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0; // no change
     } break;
+
+
+    case ITEM_RESET_STACKS: {
+      SEQ_MIDI_IN_ResetTransArpStacks();
+      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Transposer/Arp.", "Stacks cleared!");
+      return 1;
+    } break;
+
+
+    case ITEM_S_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_sect_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_in_sect_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_S_CHN:
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_sect_channel, 0, 16, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+
+
+    case ITEM_S_OCT_G1: {
+      u8 oct = seq_midi_in_sect_note[0] / 12;
+      if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
+	seq_midi_in_sect_note[0] = 12*oct;
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_S_OCT_G2: {
+      u8 oct = seq_midi_in_sect_note[1] / 12;
+      if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
+	seq_midi_in_sect_note[1] = 12*oct;
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_S_OCT_G3: {
+      u8 oct = seq_midi_in_sect_note[2] / 12;
+      if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
+	seq_midi_in_sect_note[2] = 12*oct;
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_S_OCT_G4: {
+      u8 oct = seq_midi_in_sect_note[3] / 12;
+      if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
+	seq_midi_in_sect_note[3] = 12*oct;
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_S_RESET_STACKS: {
+      SEQ_MIDI_IN_ResetChangerStacks();
+      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Section Changer", "Stacks cleared!");
+      return 1;
+    } break;
+
+
 
     case ITEM_R_NODE:
       if( SEQ_UI_Var8_Inc(&selected_router_node, 0, SEQ_MIDI_ROUTER_NUM_NODES-1, incrementer) >= 0 ) {
@@ -233,6 +462,31 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1; // value changed
       }
       return 0; // no change
+
+
+    case ITEM_DEF_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(MIOS32_MIDI_DefaultPortGet());
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	MIOS32_MIDI_DefaultPortSet(SEQ_MIDI_PORT_OutPortGet(port_ix));
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+
+    case ITEM_BLM_SCALAR_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_blm_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	MUTEX_MIDIOUT_TAKE;
+	SEQ_MIDI_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
+	MUTEX_MIDIOUT_GIVE;
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -266,11 +520,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Right:
       if( ++ui_selected_item >= NUM_OF_ITEMS )
 	ui_selected_item = 0;
+      SetSubpageBasedOnItem(ui_selected_item);
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Left:
       if( ui_selected_item == 0 )
 	ui_selected_item = NUM_OF_ITEMS-1;
+      SetSubpageBasedOnItem(ui_selected_item);
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:
@@ -297,129 +553,254 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn          MIDI  
-  //    USB0   Def. #16     off       C-3     #1  Def. All  Def. # 1          Monitor
+  // Transposer  Section    MIDI             Port Chn. T/A Split Midd.Note      Reset
+  //  and Arp.   Control   Router    Misc.   IN1  #16     off       C-3        Stacks
+
+  // Transposer  Section    MIDI             Port Chn.  G1   G2   G3   G4       Reset
+  //  and Arp.   Control   Router    Misc.   Def. #16  C-1  C-2  C-3  C-4      Stacks
+
+  // Transposer  Section    MIDI             Node IN P/Chn  OUT P/Chn     DefaultPort
+  //  and Arp.   Control   Router    Misc.    #1  Def. All  Def. # 1         USB1    
+
+  // Transposer  Section    MIDI             BLM_SCALAR                       MIDI   
+  //  and Arp.   Control   Router    Misc.   Port: USB4                      Monitor 
 
 
   seq_midi_router_node_t *n = &seq_midi_router_node[selected_router_node];
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Def.Port Keyb.Chn. T/A Split Midd.Note Node IN P/Chn  OUT P/Chn          MIDI  ");
+  const char leftpage[2][41] = {
+    "Transposer  Section    MIDI             ",
+    " and Arp.   Control   Router    Misc.   "
+  };
 
+  int line;
+  for(line=0; line<2; ++line) {
+    int i;
 
-  ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_CursorSet(0, line);
 
-  SEQ_LCD_PrintSpaces(3);
-  if( ui_selected_item == ITEM_DEF_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(MIOS32_MIDI_DefaultPortGet())));
-  }
-  SEQ_LCD_PrintSpaces(3);
+    for(i=0; i<selected_subpage*10; ++i)
+      SEQ_LCD_PrintChar(leftpage[line][i]);
 
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_IN_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    if( seq_midi_in_port )
-      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_port)));
-    else
-      SEQ_LCD_PrintString(" All");
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_IN_CHN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    if( seq_midi_in_channel )
-      SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_channel);
-    else
-      SEQ_LCD_PrintString("---");
-  }
-  SEQ_LCD_PrintSpaces(5);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_TA_SPLIT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString((seq_midi_in_ta_split_note & 0x80) ? "on " : "off");
-  }
-  SEQ_LCD_PrintSpaces(7);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_TA_SPLIT_NOTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintNote(seq_midi_in_ta_split_note & 0x7f);
-  }
-  SEQ_LCD_PrintSpaces(4 + 1);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_R_NODE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
-  } else {
-    SEQ_LCD_PrintFormattedString("#%d", selected_router_node+1);
-  }
-  SEQ_LCD_PrintSpaces(2);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_R_SRC_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(n->src_port)));
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_R_SRC_CHN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    if( !n->src_chn ) {
-      SEQ_LCD_PrintString("---");
-    } else if( n->src_chn > 16 ) {
-      SEQ_LCD_PrintString("All");
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(10);
+      i+=10;
     } else {
-      SEQ_LCD_PrintFormattedString("#%2d", n->src_chn);
+      for(;i<(10 + selected_subpage*10); ++i)
+	SEQ_LCD_PrintChar(leftpage[line][i]);
     }
+
+    for(; i<40; ++i)
+      SEQ_LCD_PrintChar(leftpage[line][i]);
   }
-  SEQ_LCD_PrintSpaces(2);
+
+  switch( selected_subpage ) {
+  ///////////////////////////////////////////////////////////////////////////
+    case SUBPAGE_TRANSPOSE: {
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("Port Chn. T/A Split Midd.Note      Reset");
+      SEQ_LCD_CursorSet(40, 1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_IN_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	if( seq_midi_in_port )
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_port)));
+	else
+	  SEQ_LCD_PrintString(" All");
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_IN_CHN && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	if( seq_midi_in_channel )
+	  SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_channel);
+	else
+	  SEQ_LCD_PrintString("---");
+      }
+      SEQ_LCD_PrintSpaces(5);
+
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_TA_SPLIT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintString((seq_midi_in_ta_split_note & 0x80) ? "on " : "off");
+      }
+      SEQ_LCD_PrintSpaces(7);
+
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_TA_SPLIT_NOTE && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintNote(seq_midi_in_ta_split_note & 0x7f);
+      }
+
+      SEQ_LCD_PrintSpaces(8);
+      SEQ_LCD_PrintString("Stacks");
+    } break;
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_R_DST_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(n->dst_port)));
-  }
-  SEQ_LCD_PrintSpaces(1);
+    case SUBPAGE_SECTIONS: {
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("Port Chn.  G1   G2   G3   G4       Reset");
+      SEQ_LCD_CursorSet(40, 1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	if( seq_midi_in_sect_port )
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_sect_port)));
+	else
+	  SEQ_LCD_PrintString(" All");
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_CHN && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	if( seq_midi_in_sect_channel )
+	  SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_sect_channel);
+	else
+	  SEQ_LCD_PrintString("---");
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_OCT_G1 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintNote(seq_midi_in_sect_note[0]);
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_OCT_G2 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintNote(seq_midi_in_sect_note[1]);
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_OCT_G3 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintNote(seq_midi_in_sect_note[2]);
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_OCT_G4 && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintNote(seq_midi_in_sect_note[3]);
+      }
+
+      SEQ_LCD_PrintSpaces(6);
+      SEQ_LCD_PrintString("Stacks");
+    } break;
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_R_DST_CHN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    if( !n->dst_chn ) {
-      SEQ_LCD_PrintString("---");
-    } else if( n->dst_chn > 16 ) {
-      SEQ_LCD_PrintString("All");
-    } else {
-      SEQ_LCD_PrintFormattedString("#%2d", n->dst_chn);
-    }
+    case SUBPAGE_ROUTER: {
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("Node IN P/Chn  OUT P/Chn     DefaultPort");
+      SEQ_LCD_CursorSet(40, 1);
+
+      ///////////////////////////////////////////////////////////////////////
+      SEQ_LCD_PrintSpaces(1);
+      if( ui_selected_item == ITEM_R_NODE && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(2);
+      } else {
+	SEQ_LCD_PrintFormattedString("#%d", selected_router_node+1);
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_R_SRC_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(n->src_port)));
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_R_SRC_CHN && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	if( !n->src_chn ) {
+	  SEQ_LCD_PrintString("---");
+	} else if( n->src_chn > 16 ) {
+	  SEQ_LCD_PrintString("All");
+	} else {
+	  SEQ_LCD_PrintFormattedString("#%2d", n->src_chn);
+	}
+      }
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_R_DST_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(n->dst_port)));
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_R_DST_CHN && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	if( !n->dst_chn ) {
+	  SEQ_LCD_PrintString("---");
+	} else if( n->dst_chn > 16 ) {
+	  SEQ_LCD_PrintString("All");
+	} else {
+	  SEQ_LCD_PrintFormattedString("#%2d", n->dst_chn);
+	}
+      }
+      SEQ_LCD_PrintSpaces(9);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_DEF_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(MIOS32_MIDI_DefaultPortGet())));
+      }
+      SEQ_LCD_PrintSpaces(4);
+    } break;
+
+    case SUBPAGE_MISC: {
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("BLM_SCALAR                       MIDI   ");
+      SEQ_LCD_CursorSet(40, 1);
+
+      ///////////////////////////////////////////////////////////////////////
+      SEQ_LCD_PrintString("Port: ");
+      if( ui_selected_item == ITEM_BLM_SCALAR_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	if( !seq_midi_blm_port )
+	  SEQ_LCD_PrintString(" off");
+	else
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_OutIxGet(seq_midi_blm_port)));
+      }
+      SEQ_LCD_PrintSpaces(22);
+
+      ///////////////////////////////////////////////////////////////////////
+      SEQ_LCD_PrintString("Monitor ");
+
+    } break;
   }
-  SEQ_LCD_PrintSpaces(10);
-
-  SEQ_LCD_PrintString("Monitor");
-
 
   return 0; // no error
 }
