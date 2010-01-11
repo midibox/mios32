@@ -224,6 +224,8 @@ PT_THREAD(handle_output(struct httpd_state *s))
   
   PT_BEGIN(&s->outputpt);
  
+ 
+  int f;
   if(FS_open(s->filename,&s->file)!=0) {
     strcpy(s->filename, http_404_html);
     FS_open(s->filename,&s->file);
@@ -238,9 +240,9 @@ PT_THREAD(handle_output(struct httpd_state *s))
 		   http_header_200));
     ptr = strchr(s->filename, ISO_period);
     if(ptr != NULL && strncmp(ptr, http_shtml, 4) == 0) {
-      ptr=s->file.data;
 #if WEBSERVER_USE_MALLOC == 1
-	  s->file.data = (char *)pvPortMalloc(s->file.fi.filelen);
+	  s->memptr = (char *)pvPortMalloc(s->file.fi.filelen);
+      s->file.data=s->memptr;
       if( s->file.data == NULL ) {
 	    MIOS32_MIDI_SendDebugMessage("httpd: Cannot Allocate Memory for script: %s size: %d\n",s->filename,s->file.fi.filelen);
 	  } else {
@@ -250,7 +252,7 @@ PT_THREAD(handle_output(struct httpd_state *s))
         PT_INIT(&s->scriptpt);
         PT_WAIT_THREAD(&s->outputpt, handle_script(s));
 #if WEBSERVER_USE_MALLOC == 1
-		vPortFree(ptr);
+		vPortFree(s->memptr);
 	  }
 #endif
     } else {
@@ -270,10 +272,13 @@ PT_THREAD(handle_input(struct httpd_state *s))
   PSOCK_READTO(&s->sin, ISO_space);
 
   
-  if(strncmp(s->inputbuf, http_get, 4) != 0) {
+  if(strncmp(s->inputbuf, http_post, sizeof(http_post)-1) == 0) {
+	// HTTP POST
+  } else if(strncmp(s->inputbuf, http_get, sizeof(http_get)-1) == 0) {
+	// HTTP GET
+  } else {
     PSOCK_CLOSE_EXIT(&s->sin);
-  }
-  PSOCK_READTO(&s->sin, ISO_space);
+  }  PSOCK_READTO(&s->sin, ISO_space);
 
   if(s->inputbuf[0] != ISO_slash) {
     PSOCK_CLOSE_EXIT(&s->sin);
@@ -289,16 +294,15 @@ PT_THREAD(handle_input(struct httpd_state *s))
   /*  httpd_log_file(uip_conn->ripaddr, s->filename);*/
   
   s->state = STATE_OUTPUT;
-
+  
   while(1) {
     PSOCK_READTO(&s->sin, ISO_nl);
 
-    if(strncmp(s->inputbuf, http_referer, 8) == 0) {
+    if(strncmp(s->inputbuf, http_referer, sizeof(http_referer)-1) == 0) {
       s->inputbuf[PSOCK_DATALEN(&s->sin) - 2] = 0;
       /*      httpd_log(&s->inputbuf[9]);*/
     }
   }
-  
   PSOCK_END(&s->sin);
 }
 /*---------------------------------------------------------------------------*/

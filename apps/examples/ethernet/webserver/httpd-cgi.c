@@ -246,13 +246,10 @@ PT_THREAD(rtos_stats(struct httpd_state *s, char *ptr))
 
 char *pcStatus;
 unsigned long ulString;
-//extern portBASE_TYPE xGetLEDState( unsigned portBASE_TYPE uxLED );
 static unsigned short generate_io_state( void *arg )
 {
-	int xGetLEDState=0;
-	( void ) arg;
 
-	if( xGetLEDState == 0 )
+	if( MIOS32_BOARD_LED_Get() == 0 )
 	{
 		pcStatus = "";
 	}

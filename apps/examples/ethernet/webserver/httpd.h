@@ -40,6 +40,8 @@
 #include "httpd-fs.h"
 #include "fs.h"
 
+#define MAX_ARG	12
+
 struct httpd_state {
   unsigned char timer;
   struct psock sin, sout;
@@ -51,7 +53,8 @@ struct httpd_state {
   int len;
   char *scriptptr;
   int scriptlen;
-  
+  char* memptr;
+
   unsigned short count;
 };
 

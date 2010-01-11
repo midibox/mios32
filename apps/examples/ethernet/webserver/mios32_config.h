@@ -37,8 +37,6 @@
 #define MIOS32_ENC28J60_MUTEX_TAKE    APP_MutexSPI0Take()
 #define MIOS32_ENC28J60_MUTEX_GIVE    APP_MutexSPI0Give()
 
-#define MIOS32_USE_DHCP 	// Use DHCP for IP address configuration
-
 // optional performance measuring
 #define configGENERATE_RUN_TIME_STATS           1
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
@@ -53,10 +51,10 @@
 
 
 // Disable malloc hook as I want to test if program can survive if malloc fails!
-#define configUSE_MALLOC_FAILED_HOOK        1
+#define configUSE_MALLOC_FAILED_HOOK        0
 
 // Use malloc function. Seems to fail occasionally (best to set the above to 0 as well!)
-#define WEBSERVER_USE_MALLOC				0
+#define WEBSERVER_USE_MALLOC				1
 
 
 #endif /* _MIOS32_CONFIG_H */
