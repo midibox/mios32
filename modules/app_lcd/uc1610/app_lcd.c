@@ -1,37 +1,40 @@
 // $Id: app_lcd.c 95 2008-10-19 14:13:14Z tk $
 /*
- * for up to 8 * DOG GLCD (every display provides a resolution of 128x64) 
+ * for up to 8 * UC1610 Based GLCD's (every display provides a resolution of 160x104) 
+ *
+ * This driver supports 2 bit greyscale as per the UC1610 specification.
  *
  * This driver allows to drive up to 8 of them, every display is connected
  * to a dedicated chip select line. They can be addressed with
  * following (graphical) cursor positions:
+ *
  * 
  * 
  * +--------------+  +--------------+  
  * |              |  |              |  
- * | X =   0..127 |  | X = 128..255 |    
- * | Y =   0..  7 |  | Y =   0..  7 | 
+ * | X =   0..159 |  | X = 160.. 319|    
+ * | Y =   0.. 15 |  | Y =   0.. 15 | 
  * |              |  |              |  
  * +--------------+  +--------------+  
  *
  * +--------------+  +--------------+ 
  * |              |  |              | 
  * | X =   0..127 |  | X = 128..255 | 
- * | Y =   8.. 15 |  | Y =   8.. 15 | 
+ * | Y =  16.. 31 |  | Y =  16.. 31 | 
  * |              |  |              | 
  * +--------------+  +--------------+ 
  *
  * +--------------+  +--------------+
  * |              |  |              |
  * | X =   0..127 |  | X = 128..255 |
- * | Y =  16.. 23 |  | Y =  16.. 23 |
+ * | Y =  32.. 47 |  | Y =  32.. 47 |
  * |              |  |              |
  * +--------------+  +--------------+
  *
  * +--------------+  +--------------+
  * |              |  |              |
  * | X =   0..127 |  | X = 128..255 |
- * | Y =  24.. 31 |  | Y =  24.. 31 |
+ * | Y =  48.. 65 |  | Y =  48.. 65 |
  * |              |  |              |
  * +--------------+  +--------------+
  *
@@ -109,9 +112,9 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd(0x2b); 
   APP_LCD_Cmd(0xeb); 
   APP_LCD_Cmd(0x81); 
-  APP_LCD_Cmd(0x5f);
+  APP_LCD_Cmd(0x58); // contrast(0x00-0xff Default 0x5f
   APP_LCD_Cmd(0x89);
-  APP_LCD_Cmd(0xd0); //Greyscale control
+  //APP_LCD_Cmd(0xd0); //Greyscale control
   APP_LCD_Cmd(0xaf); 
 
   return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
