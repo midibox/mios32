@@ -241,7 +241,7 @@ PT_THREAD(handle_output(struct httpd_state *s))
     ptr = strchr(s->filename, ISO_period);
     if(ptr != NULL && strncmp(ptr, http_shtml, 4) == 0) {
 #if WEBSERVER_USE_MALLOC == 1
-	  s->memptr = (char *)pvPortMalloc(s->file.fi.filelen);
+	  s->memptr = (char *)pvPortMalloc(s->file.fi.filelen+1);
       s->file.data=s->memptr;
       if( s->file.data == NULL ) {
 	    MIOS32_MIDI_SendDebugMessage("httpd: Cannot Allocate Memory for script: %s size: %d\n",s->filename,s->file.fi.filelen);
@@ -253,6 +253,7 @@ PT_THREAD(handle_output(struct httpd_state *s))
         PT_WAIT_THREAD(&s->outputpt, handle_script(s));
 #if WEBSERVER_USE_MALLOC == 1
 		vPortFree(s->memptr);
+		s->memptr=NULL;
 	  }
 #endif
     } else {
