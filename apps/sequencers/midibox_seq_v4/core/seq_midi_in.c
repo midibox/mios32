@@ -203,7 +203,7 @@ s32 SEQ_MIDI_IN_ResetChangerStacks(void)
   seq_core_trk_t *t = &seq_core_trk[0];
   MIOS32_IRQ_Disable();
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t)
-    t->play_section = -1; // don't select section
+    t->play_section = 0; // don't select section
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -446,15 +446,8 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
 
       // switch to new section if required
       if( section >= 0 && section < 12 ) {
-	section = -1; // disable section with B-x
-	s8 play_section = (section == 11) ? -1 : section;
-
-#if 0
-	if( play_section < 0) {
-	  DEBUG_MSG("Group %d Section disabled\n", group);
-	} else {
-	  DEBUG_MSG("Group %d Section %d\n", group, section);
-	}
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("Group %d Section %d\n", group, section);
 #endif
 
 	// following operation should be atomic!
@@ -462,7 +455,7 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
 	seq_core_trk_t *t = &seq_core_trk[group*SEQ_CORE_NUM_TRACKS_PER_GROUP];
 	MIOS32_IRQ_Disable();
 	for(track=0; track<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track, ++t)
-	  t->play_section = play_section;
+	  t->play_section = section;
 	MIOS32_IRQ_Enable();
       }
 

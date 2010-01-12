@@ -60,6 +60,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+  int track_length = (int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH) + 1;
 
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -67,6 +68,32 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
+    if( seq_ui_button_state.SELECT_PRESSED ) {
+      int section;
+      if( num_steps > 128 )
+	section = encoder / (track_length / 16);
+      else if( num_steps > 64 )
+	section = encoder / ((2 * track_length) / 16);
+      else
+	section = encoder / ((4 * track_length) / 16);
+
+      // operation should be atomic (change all selected tracks)
+      u8 track;
+      seq_core_trk_t *t = &seq_core_trk[0];
+      MIOS32_IRQ_Disable();
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t)
+	if( ui_selected_tracks & (1 << track) )
+	  t->play_section = section;
+      MIOS32_IRQ_Enable();
+    } else {
+      // won't work if Follow function active!
+      if( seq_core_options.FOLLOW_SONG ) {
+	// print message and exit
+	SEQ_UI_Msg((encoder <= SEQ_UI_ENCODER_GP8) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 2000, "\"Follow\" active!", "Please deactivate!");
+	return 1;
+      }
+    }
+
     // select new step view
     ui_selected_step_view = (encoder * (num_steps/16)) / 16;
 
@@ -115,7 +142,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
-      return -1; // unsupported (yet)
+      return 1; // selects section mode, checked via seq_ui_button_state.SELECT_PRESSED
 
     case SEQ_UI_BUTTON_Right:
     case SEQ_UI_BUTTON_Up:
@@ -179,6 +206,9 @@ static s32 LCD_Handler(u8 high_prio)
     if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_state.LOOP ) {
       SEQ_LCD_CursorSet(71, 0);
       SEQ_LCD_PrintString(" *LOOPED*");
+    } else if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_trk[visible_track].play_section > 0 ) {
+      SEQ_LCD_CursorSet(71, 0);
+      SEQ_LCD_PrintFormattedString(" *Sect.%c*", 'A'+seq_core_trk[visible_track].play_section);
     } else {
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	// print drum name at the rightmost side

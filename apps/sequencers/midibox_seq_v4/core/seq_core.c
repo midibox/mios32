@@ -209,7 +209,7 @@ s32 SEQ_CORE_Init(u32 mode)
       t->glide_notes[i] = 0;
 
     // don't select sections
-    t->play_section = -1;
+    t->play_section = 0;
   }
 
   // reset sequencer
@@ -537,7 +537,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
         // increment step if not in arpeggiator mode or arp position == 0
         if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
-	  u8 prev_step = t->step;
+	  // wrap step position around length - especially required for "section selection" later,
+	  // which can set t->step beyond tcc->length+1
+	  u8 prev_step = (u8)((int)t->step % ((int)tcc->length + 1));
+	  t->step = prev_step; // store back wrapped step position
+
 	  u8 skip_ctr = 0;
 	  do {
 	    // determine next step depending on direction mode
@@ -554,6 +558,19 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 	      break;
 	    
 	  } while( skip_ctr < 32 ); // try 32 times maximum
+
+	  // Section selection
+	  // Approach:
+	  // o enabled with t->play_section > 0
+	  // o section width matches with the Track length, which means that the sequencer will
+	  //   play steps beyond the "last step" with t->play_section > 0
+	  // o section controlled via UI, MIDI Keyboard or BLM
+	  // o lower priority than global loop mode
+	  if( t->play_section > 0 ) {
+	    // note: SEQ_TRG_Get() will return 0 if t->step beyond total track size - no need to consider this here
+	    int step_offset = t->play_section * ((int)tcc->length+1);
+	    t->step += step_offset;
+	  }
 
 	  // global loop mode handling
 	  // requirements:
