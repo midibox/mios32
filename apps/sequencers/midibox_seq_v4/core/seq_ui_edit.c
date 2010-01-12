@@ -445,6 +445,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // print flashing *LOOPED* at right corner if loop mode activated to remind that steps will be played differntly
   if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_state.LOOP ) {
     SEQ_LCD_PrintString(" *LOOPED*");
+  } else if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_trk[visible_track].play_section > 0 ) {
+    SEQ_LCD_PrintFormattedString(" *Sect.%c*", 'A'+seq_core_trk[visible_track].play_section);
   } else {
     SEQ_LCD_PrintSpaces(4);
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -669,11 +671,16 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
+#if 0
+  // disabled in MBSEQ V4.0beta15 due to issue reported by Gridracer:
+  // http://midibox.org/forums/index.php?/topic/13137-midibox-seq-v4-beta-release-feedback/page__st__100
+
   // if note/chord/velocity parameter: only change gate if requested
   if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) &&
       !change_gate &&
       !SEQ_TRG_GateGet(track, trg_step, ui_selected_instrument) )
     return -1;
+#endif
 
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
