@@ -14,7 +14,6 @@
 #ifndef _UIP_TASK_H
 #define _UIP_TASK_H
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -58,6 +57,34 @@ extern s32 UIP_TASK_ServicesRunning(void);
 
 extern s32 UIP_TASK_UDP_AppCall(void);
 
+
+
+struct udp_state {
+  struct pt pt;
+  char state;
+  struct uip_udp_conn *conn;
+  struct timer timer;
+  u32 ticks;
+  const void *mac_addr;
+  int mac_len;
+  
+  u8_t serverid[4];
+
+  u16_t lease_time[2];
+  u16_t ipaddr[2];
+  u16_t netmask[2];
+  u16_t dnsaddr[2];
+  u16_t default_router[2];
+
+  // data required to keep track of the exact time
+  struct ntp_time last_sync;
+  ntp_adjust_t adjust;
+    
+};
+ 
+void dhcpc_configured(const struct udp_state *s);
+
+typedef struct udp_state uip_udp_appstate_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

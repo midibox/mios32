@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "uip.h"
-#include "dhcpc.h"
+#include "uip_task.h"
 #include "timer.h"
 #include "pt.h"
 
@@ -44,7 +44,7 @@
 #define STATE_OFFER_RECEIVED  2
 #define STATE_CONFIG_RECEIVED 3
 
-static struct dhcpc_state s;
+static struct udp_state s;
 
 struct dhcp_msg {
   u8_t op, htype, hlen, hops;

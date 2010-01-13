@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Swedish Institute of Computer Science
+ * Copyright (c) 2006, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,48 +28,37 @@
  *
  * This file is part of the uIP TCP/IP stack
  *
- * @(#)$Id: dhcpc.h 817 2010-01-09 22:57:32Z tk $
+ * $Id: clock-arch.c,v 1.2 2006/06/12 08:00:31 adam Exp $
  */
-#ifndef __DHCPC_H__
-#define __DHCPC_H__
 
-#define BOOTP_BROADCAST 0x8000
+/**
+ * \file
+ *         Implementation of architecture-specific clock functionality
+ * \author
+ *         Adam Dunkels <adam@sics.se>
+ */
 
-#define DHCP_REQUEST        1
-#define DHCP_REPLY          2
-#define DHCP_HTYPE_ETHERNET 1
-#define DHCP_HLEN_ETHERNET  6
-#define DHCP_MSG_LEN      236
+#include <mios32.h>
 
-#define DHCPC_SERVER_PORT  67
-#define DHCPC_CLIENT_PORT  68
-
-#define DHCPDISCOVER  1
-#define DHCPOFFER     2
-#define DHCPREQUEST   3
-#define DHCPDECLINE   4
-#define DHCPACK       5
-#define DHCPNAK       6
-#define DHCPRELEASE   7
-
-#define DHCP_OPTION_SUBNET_MASK   1
-#define DHCP_OPTION_ROUTER        3
-#define DHCP_OPTION_DNS_SERVER    6
-#define DHCP_OPTION_REQ_IPADDR   50
-#define DHCP_OPTION_LEASE_TIME   51
-#define DHCP_OPTION_MSG_TYPE     53
-#define DHCP_OPTION_SERVER_ID    54
-#define DHCP_OPTION_REQ_LIST     55
-#define DHCP_OPTION_END         255
+// ntp needs an extension to the timer
+#include "ntpclient.h"
 
 
-void dhcpc_init(const void *mac_addr, int mac_len);
-void dhcpc_request(void);
+void 
+clock_get_ntptime(struct ntp_time *time) 
+{
+  mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+  time->seconds=t.seconds;
+  time->fraction=t.fraction_ms;
+}
 
-void dhcpc_appcall(void);
+// routine to set system time in ntp format
+void 
+clock_set_ntptime(struct ntp_time *time) 
+{
+  mios32_sys_time_t t;
+  t.seconds=time->seconds;
+  t.fraction_ms=time->fraction;
+  MIOS32_SYS_TimeSet(t);
+}
 
-//typedef struct dhcpc_state uip_udp_appstate_t;
-//#define UIP_UDP_APPCALL dhcpc_appcall
-
-
-#endif /* __DHCPC_H__ */
