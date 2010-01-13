@@ -111,6 +111,35 @@ typedef u16 uip_stats_t;
 #define UIP_CONF_FIXEDADDR		0
 
 
+/**
+ * set language of ntp ascii time conversion
+ *
+ * \hideinitializer
+ */
+#define NTP_LANG_UK
+
+/**
+ * set ntp time zone
+ *
+ * \hideinitializer
+ */
+#define NTP_TZ   +0
+
+/**
+ * set ntp request cycle in seconds (max 65536/CLOCK_CONF_SECOND)
+ *
+ * \hideinitializer
+ */
+#define NTP_REQ_CYCLE 600
+
+/**
+ * set number of subsequent ntp requests to asure short turn around time
+ *
+ * \hideinitializer
+ */
+#define NTP_REPEAT  4
+
+
 /* Here we include the header file for the application(s) we use in
    our project. */
 /*#include "smtp.h"*/
@@ -118,7 +147,8 @@ typedef u16 uip_stats_t;
 /*#include "telnetd.h"*/
 #include "webserver.h"
 #include "dhcpc.h"
-/*#include "resolv.h"*/
+#include "ntpclient.h"
+//#include "resolv.h"
 /*#include "webclient.h"*/
 
 #include "uip_task.h"

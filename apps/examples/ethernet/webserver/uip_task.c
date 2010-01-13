@@ -22,13 +22,16 @@
 #include <task.h>
 #include <queue.h>
 
-#include "uip.h"
-#include "uip_arp.h"
-#include "network-device.h"
+#include "pt.h"
 #include "timer.h"
 
-#include "uip_task.h"
+#include "uip.h"
+#include "uip_arp.h"
 #include "dhcpc.h"
+#include "ntpclient.h"
+#include "uip_task.h"
+
+#include "network-device.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -259,9 +262,13 @@ static s32 UIP_TASK_StartServices(void)
   // print IP settings
   UIP_TASK_SendDebugMessage_IP();
 
+  // start NTP client (to set clock!)
+  ntpclient_init();
+  
   // start webserver
   httpd_init();
 
+  
   // services available now
   services_running = 1;
 
@@ -286,8 +293,11 @@ s32 UIP_TASK_UDP_AppCall(void)
   // DHCP client
   if( uip_udp_conn->rport == HTONS(DHCPC_SERVER_PORT) || uip_udp_conn->rport == HTONS(DHCPC_CLIENT_PORT) ) {
     dhcpc_appcall();
+	// NTP Client
+  } else if (uip_udp_conn->rport == HTONS(NTP_PORT)) {
+    ntpclient_appcall();
+	// DNS Client
   }
-
   return 0; // no error
 }
 
@@ -295,13 +305,12 @@ s32 UIP_TASK_UDP_AppCall(void)
 /////////////////////////////////////////////////////////////////////////////
 // Called by DHCP client once it got IP addresses
 /////////////////////////////////////////////////////////////////////////////
-void dhcpc_configured(const struct dhcpc_state *s)
+void dhcpc_configured(const struct udp_state *s)
 {
   // set IP settings
   uip_sethostaddr(s->ipaddr);
   uip_setnetmask(s->netmask);
   uip_setdraddr(s->default_router);
-
   // start services
   UIP_TASK_StartServices();
 
@@ -312,3 +321,7 @@ void dhcpc_configured(const struct dhcpc_state *s)
   MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Lease expires in %d hours\n",
 			       (ntohs(s->lease_time[0])*65536ul + ntohs(s->lease_time[1]))/3600);
 }
+
+
+		
+	

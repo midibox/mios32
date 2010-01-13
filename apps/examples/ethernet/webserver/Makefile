@@ -20,7 +20,9 @@ THUMB_SOURCE    = app.c \
 		          httpd-cgi.c \
 				  fs.c \
 		          http-strings.c \
-				  dhcpc.c
+				  dhcpc.c \
+				  ntpclient.c \
+				  clock-arch.c 
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)

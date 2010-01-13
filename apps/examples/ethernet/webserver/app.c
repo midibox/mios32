@@ -20,12 +20,11 @@
 #include <string.h>
 
 #include "app.h"
-#include <uip.h>
-#include <uip_arp.h>
-#include <timer.h>
+#include "uip.h"
+#include "timer.h"
+#include "pt.h"
 #include "uip_task.h"
-#include "dhcpc.h"
-
+#include "glcd_font.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -82,7 +81,16 @@ void APP_Init(void)
 void APP_Background(void)
 {
   int i;
-
+  struct ntp_tm tm;
+  const char *month_names[] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+	  
+  const char *weekday_names[] = {
+    "Sun", "Mon", "Tue", "Wed", 
+    "Thu", "Fri", "Sat" };
+  mios32_sys_time_t t;
+  char timestring[64];
   // clear LCD screen
   MIOS32_LCD_Clear();
 
@@ -100,6 +108,7 @@ void APP_Background(void)
 
     switch( new_msg ) {
       case PRINT_MSG_INIT:
+		MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
         MIOS32_LCD_CursorSet(0, 0);
         MIOS32_LCD_PrintString("see README.txt   ");
         MIOS32_LCD_CursorSet(0, 1);
@@ -108,13 +117,24 @@ void APP_Background(void)
 
       case PRINT_MSG_STATUS:
       {
-        MIOS32_LCD_CursorSet(0, 0);
-
-	// request status screen again (will stop once a new screen is requested by another task)
-	print_msg = PRINT_MSG_STATUS;
+	    MIOS32_LCD_CursorSet(0, 0);
+		// request status screen again (will stop once a new screen is requested by another task)
+		print_msg = PRINT_MSG_STATUS;
       }
       break;
     }
+	  
+
+	t = MIOS32_SYS_TimeGet();
+	// convert ntp seconds since 1900 into useful time structure
+	ntp_tmtime(t.seconds, &tm);
+ 	// honour dailight savings
+ 	ntp_dst(&tm);
+	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_SMALL);
+    MIOS32_LCD_CursorSet(15, 12);
+	MIOS32_LCD_PrintFormattedString("%s %02d %s %04d %02d:%02d:%02d", weekday_names[tm.weekday], tm.day, month_names[tm.month-1], tm.year,tm.hour, tm.minute, tm.second);
+  
+	  
   }
 }
 

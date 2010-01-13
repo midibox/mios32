@@ -56,5 +56,4 @@
 // Use malloc function. Seems to fail occasionally (best to set the above to 0 as well!)
 #define WEBSERVER_USE_MALLOC				1
 
-
 #endif /* _MIOS32_CONFIG_H */
