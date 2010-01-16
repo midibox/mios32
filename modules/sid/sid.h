@@ -152,9 +152,8 @@ typedef union {
 
 
 typedef union {
-  struct {
-    u8 ALL[SID_REGS_NUM];
-  };
+  u8 ALL[SID_REGS_NUM];
+
   struct {
 #if 0
     // issue: this results into 8 byte packages, but the sid_voice_t union defines 7 bytes
