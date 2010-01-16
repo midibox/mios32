@@ -25,13 +25,15 @@
 // Help Macros
 /////////////////////////////////////////////////////////////////////////////
 
-#define PIN_SER(b)  { SID_SER_PORT->BSRR = (b) ? SID_SER_PIN : (SID_SER_PIN << 16); }
+#ifdef MIOS32_FAMILY_STM32F10x
+# define PIN_SER(b)  { SID_SER_PORT->BSRR = (b) ? SID_SER_PIN : (SID_SER_PIN << 16); }
 
-#define PIN_RCLK_0  { SID_RCLK_PORT->BRR  = SID_RCLK_PIN; }
-#define PIN_RCLK_1  { SID_RCLK_PORT->BSRR = SID_RCLK_PIN; }
+# define PIN_RCLK_0  { SID_RCLK_PORT->BRR  = SID_RCLK_PIN; }
+# define PIN_RCLK_1  { SID_RCLK_PORT->BSRR = SID_RCLK_PIN; }
 
-#define PIN_SCLK_0  { SID_SCLK_PORT->BRR  = SID_SCLK_PIN; }
-#define PIN_SCLK_1  { SID_SCLK_PORT->BSRR = SID_SCLK_PIN; }
+# define PIN_SCLK_0  { SID_SCLK_PORT->BRR  = SID_SCLK_PIN; }
+# define PIN_SCLK_1  { SID_SCLK_PORT->BSRR = SID_SCLK_PIN; }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,6 +60,7 @@ static const u8 update_order[SID_REGS_NUM] = {
 
 
 
+#ifdef MIOS32_FAMILY_STM32F10x
 typedef struct {
   GPIO_TypeDef *port;
   u16 pin_mask;
@@ -87,6 +90,12 @@ static const sid_cs_pin_t sid_cs_pin[SID_NUM] = {
   { SID_CSN7_PORT, SID_CSN7_PIN },
 #endif
 };
+#else
+// dummy
+typedef struct {
+  u8 dummy;
+} sid_cs_pin_t;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +123,7 @@ s32 SID_Init(u32 mode)
 #endif
 
 #ifndef SIDPHYS_DISABLED
+#ifdef MIOS32_FAMILY_STM32F10x
   // GPIO initialisation
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -197,6 +207,7 @@ s32 SID_Init(u32 mode)
   TIM_ARRPreloadConfig(TIM4, ENABLE);
   TIM_Cmd(TIM4, ENABLE);
 #endif
+#endif
 
   // clear all SID registers
   for(sid=0; sid<SID_NUM; ++sid)
@@ -226,8 +237,13 @@ s32 SID_Update(u32 mode)
   // trigger reset?
   if( mode == 2 ) {
     // (cs pins don't need to be set during reset, but the SID_UpdateReg() routine requires the pointers)
+#ifdef MIOS32_FAMILY_STM32F10x
     sid_cs_pin_t *cs_pin0 = (sid_cs_pin_t *)&sid_cs_pin[0];
     sid_cs_pin_t *cs_pin1 = (sid_cs_pin_t *)&sid_cs_pin[1];
+#else
+    sid_cs_pin_t *cs_pin0 = NULL;
+    sid_cs_pin_t *cs_pin1 = NULL;
+#endif
     SID_UpdateReg(cs_pin0, cs_pin1, 0xff, 0x00, 0x00, 1); // CS lines, address, data, reset
   }
 
@@ -249,8 +265,13 @@ s32 SID_Update(u32 mode)
     u8 cs_both = (3 << (2*sid));
     u8 cs_l_only = (1 << (2*sid));
     u8 cs_r_only = (2 << (2*sid));
+#ifdef MIOS32_FAMILY_STM32F10x
     sid_cs_pin_t *cs_pin0 = (sid_cs_pin_t *)&sid_cs_pin[2*sid+0];
     sid_cs_pin_t *cs_pin1 = (sid_cs_pin_t *)&sid_cs_pin[2*sid+1];
+#else
+    sid_cs_pin_t *cs_pin0 = NULL;
+    sid_cs_pin_t *cs_pin1 = NULL;
+#endif
 
     for(i=0; i<SID_REGS_NUM; ++i, update_order_ptr++) {
       u8 data;
@@ -298,7 +319,10 @@ s32 SID_Update(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u8 cs, u8 addr, u8 data, u8 reset)
 {
-  //  SID_Wrapper_Write(cs, addr, data, reset);
+#ifdef MIOS32_FAMILY_EMULATION
+  // tmp. solution for emulation
+  SID_Wrapper_Write(cs, addr, data, reset);
+#endif
 
 #ifdef SIDEMU_ENABLED
   // currently only single SID available
@@ -306,6 +330,7 @@ static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u
     SIDEMU_setRegister(addr, data);
 #endif
 
+#ifdef MIOS32_FAMILY_STM32F10x
   // low-active reset is connected to "A6" of the first SR
   if( !reset )
     addr |= (1 << 5);
@@ -399,6 +424,7 @@ static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u
 
   // enable interrupts again
   MIOS32_IRQ_Enable();
+#endif
 #endif
 }
 

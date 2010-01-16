@@ -34,9 +34,7 @@
 // Combined Patch Structure
 ////////////////////////////////////////
 typedef union {
-  struct {
-    u8 ALL[512];
-  };
+  u8 ALL[512];
 
   struct {
     u8 name[16]; // 16 chars w/o null termination

@@ -33,18 +33,29 @@
 #include "AudioProcessing.h"
 #include "EditorComponent.h"
 
-#include "../resid/sid.h"
+#include "../resid/resid.h"
+
+
+#include <mios32.h>
+
 
 
 // for output to console (stderr)
 // should be at least 1 to inform the user on fatal errors
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 2
+
+// sampling method
+#define RESID_SAMPLING_METHOD SAMPLE_RESAMPLE_INTERPOLATE
+//#define RESID_SAMPLING_METHOD SAMPLE_FAST
+
+// SID frequency
+#define RESID_FREQUENCY 1000000
+
+// play testtone at startup?
+// nice for first checks of the emulation w/o MIDI input
+#define RESID_PLAY_TESTTONE 1
 
 
-// these global variables are used by ReSID
-double mixer_value1;
-double mixer_value2;
-double mixer_value3;
 
 // number of emulated SID(s)
 // if 0: emulation disabled
@@ -54,18 +65,24 @@ double mixer_value3;
 // TK: note that static memory allocation is used here
 // auval fails if reSID is dynamically allocated/deallocated.
 // Sometimes the object is accessed after it has been deallocated, this seems to be a bug in MacOS 10.6? 
+// MEMO: ok, it could be that multiple instances of the AudioProcessor class are created - this would
+// be fatal for the emulation, since MBSID core isn't implemented object oriented :-/
+// we need access from C to reSID[]
 SID reSID[SID_NUM];
 #endif
 
-// sampling method
-#define RESID_SAMPLING_METHOD SAMPLE_RESAMPLE_INTERPOLATE
-//#define RESID_SAMPLING_METHOD SAMPLE_FAST
 
-// play testtone at startup?
-// nice for first checks of the emulation w/o MIDI input
-#define RESID_PLAY_TESTTONE 1
-
+// global variables... not nice for OO programming, but sometimes required by external C code :-/
+// TODO: find better solution!
 int reSidEnabled;
+double reSidSampleRate;
+double reSidDeltaCycleCounter;
+
+
+// these global variables are used by ReSID
+double mixer_value1;
+double mixer_value2;
+double mixer_value3;
 
 
 //==============================================================================
@@ -94,13 +111,14 @@ AudioProcessing::AudioProcessing()
   mixer_value1 = 1.0f;
   mixer_value2 = 1.0f;
   mixer_value3 = 1.0f;
-  
+  reSidDeltaCycleCounter = 0.0f;
+  reSidSampleRate = 44100.0f;
+
 #if SID_NUM
   reSidEnabled = 1;
   for(int i=0; i<SID_NUM; ++i) {
     reSID[i].reset();
-    double freq = 44100.0;
-    if( !reSID[i].set_sampling_parameters(1000000, RESID_SAMPLING_METHOD, freq) ) {
+    if( !reSID[i].set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       fprintf(stderr, "Initialisation of reSID[%d] failed for unexpected reasons! All SIDs disabled now!\n", i);
 #endif
@@ -132,8 +150,11 @@ int AudioProcessing::getNumParameters()
 
 float AudioProcessing::getParameter (int index)
 {
-  return (index == 0) ? gain
-		      : 0.0f;
+  switch( index ) {
+    case 0: return gain;
+  }
+  
+  return 0.0f;
 }
 
 void AudioProcessing::setParameter (int index, float newValue)
@@ -206,9 +227,11 @@ void AudioProcessing::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 #if SID_NUM
   reSidEnabled = 1;
+  reSidSampleRate = sampleRate;
+
   for(int i=0; i<SID_NUM; ++i) {
     reSID[i].reset();
-    if( !reSID[i].set_sampling_parameters(1000000, RESID_SAMPLING_METHOD, sampleRate) ) {
+    if( !reSID[i].set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       fprintf(stderr, "Initialisation of reSID[%d] failed at sample rate %7.2f Hz! All SIDs disabled now!\n", i, sampleRate);
 #endif
@@ -254,12 +277,14 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
     // number of samples which have to be rendered
     int numSamples = buffer.getNumSamples();
     
-    // TODO: delta clocks depend on sample rate
-    cycle_count delta_t = 23;
-
     // add SID sound(s) to output(s)
     // TK: this nested loop isn't optimal for CPU load, but we have to ensure that all SIDs are in lock-step
     for(int i=0; i<numSamples; ++i) {
+      // number of SID cycles per sample
+      reSidDeltaCycleCounter += (double)RESID_FREQUENCY / reSidSampleRate;
+      cycle_count delta_t = (cycle_count)reSidDeltaCycleCounter;
+      reSidDeltaCycleCounter -= (double)delta_t;
+      
       for(int channel = 0; channel < numChannels; ++channel) {
 	reSID[channel].clock(delta_t);
 	float currentSample = (float)reSID[channel].output(16) / 32768.0;
