@@ -33,12 +33,7 @@
 #include "AudioProcessing.h"
 #include "EditorComponent.h"
 
-#include "../resid/resid.h"
-
-
 #include <mios32.h>
-
-
 
 // for output to console (stderr)
 // should be at least 1 to inform the user on fatal errors
@@ -55,28 +50,6 @@
 // nice for first checks of the emulation w/o MIDI input
 #define RESID_PLAY_TESTTONE 1
 
-
-
-// number of emulated SID(s)
-// if 0: emulation disabled
-#define SID_NUM 2
-
-#if SID_NUM
-// TK: note that static memory allocation is used here
-// auval fails if reSID is dynamically allocated/deallocated.
-// Sometimes the object is accessed after it has been deallocated, this seems to be a bug in MacOS 10.6? 
-// MEMO: ok, it could be that multiple instances of the AudioProcessor class are created - this would
-// be fatal for the emulation, since MBSID core isn't implemented object oriented :-/
-// we need access from C to reSID[]
-SID reSID[SID_NUM];
-#endif
-
-
-// global variables... not nice for OO programming, but sometimes required by external C code :-/
-// TODO: find better solution!
-int reSidEnabled;
-double reSidSampleRate;
-double reSidDeltaCycleCounter;
 
 
 // these global variables are used by ReSID
@@ -117,8 +90,9 @@ AudioProcessing::AudioProcessing()
 #if SID_NUM
   reSidEnabled = 1;
   for(int i=0; i<SID_NUM; ++i) {
-    reSID[i].reset();
-    if( !reSID[i].set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
+    reSID[i] = new SID;
+    reSID[i]->reset();
+    if( !reSID[i]->set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       fprintf(stderr, "Initialisation of reSID[%d] failed for unexpected reasons! All SIDs disabled now!\n", i);
 #endif
@@ -135,6 +109,10 @@ AudioProcessing::AudioProcessing()
 
 AudioProcessing::~AudioProcessing()
 {
+#if SID_NUM
+  for(int i=0; i<SID_NUM; ++i)
+    delete reSID[i];
+#endif
 }
 
 //==============================================================================
@@ -230,8 +208,8 @@ void AudioProcessing::prepareToPlay (double sampleRate, int samplesPerBlock)
   reSidSampleRate = sampleRate;
 
   for(int i=0; i<SID_NUM; ++i) {
-    reSID[i].reset();
-    if( !reSID[i].set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
+    reSID[i]->reset();
+    if( !reSID[i]->set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       fprintf(stderr, "Initialisation of reSID[%d] failed at sample rate %7.2f Hz! All SIDs disabled now!\n", i, sampleRate);
 #endif
@@ -243,12 +221,12 @@ void AudioProcessing::prepareToPlay (double sampleRate, int samplesPerBlock)
 #if DEBUG_VERBOSE_LEVEL >= 2
       fprintf(stderr, "playing testtone on SID %d\n", i);
 #endif
-      reSID[i].write(0x18, 0x0f); // Volume
-      reSID[i].write(0x05, 0x00); // Attack/Decay
-      reSID[i].write(0x06, 0xf8); // Sustain/Release
-      reSID[i].write(0x00, 16777 & 0xff); // Frequency Low
-      reSID[i].write(0x01, 16777 >> 8); // Frequency High
-      reSID[i].write(0x04, 0x11); // Waveform + Gate
+      reSID[i]->write(0x18, 0x0f); // Volume
+      reSID[i]->write(0x05, 0x00); // Attack/Decay
+      reSID[i]->write(0x06, 0xf8); // Sustain/Release
+      reSID[i]->write(0x00, 16777 & 0xff); // Frequency Low
+      reSID[i]->write(0x01, 16777 >> 8); // Frequency High
+      reSID[i]->write(0x04, 0x11); // Waveform + Gate
     }
 #endif
   }
@@ -286,8 +264,8 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
       reSidDeltaCycleCounter -= (double)delta_t;
       
       for(int channel = 0; channel < numChannels; ++channel) {
-	reSID[channel].clock(delta_t);
-	float currentSample = (float)reSID[channel].output(16) / 32768.0;
+	reSID[channel]->clock(delta_t);
+	float currentSample = (float)reSID[channel]->output(16) / 32768.0;
 	*buffer.getSampleData(channel, i) = currentSample;
       }
     }
@@ -389,6 +367,8 @@ void AudioProcessing::setStateInformation (const void* data, int sizeInBytes)
 extern "C" {
   void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
   {
+#if 0
+    // Requires some work to handle multiple AU instances :-/
 #if SID_NUM
     if( reSidEnabled ) {
       int i;
@@ -406,6 +386,7 @@ extern "C" {
 	}
       }
     }
+#endif
 #endif
   }
 }
