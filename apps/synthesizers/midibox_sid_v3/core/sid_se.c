@@ -23,8 +23,13 @@
 
 #include "sid_se.h"
 #include "sid_se_l.h"
+#include "sid_se_b.h"
+#include "sid_se_d.h"
+#include "sid_se_m.h"
+
 #include "sid_patch.h"
 #include "sid_voice.h"
+#include "sid_par.h"
 #include "sid_random.h"
 #include "sid_asid.h"
 
@@ -367,7 +372,6 @@ s32 SID_SE_InitStructs(u8 sid)
 	break;
 
       case SID_SE_MULTI: {
-	u8 mod_voice = i;
 	sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].M.voice[0];
 	w->wt_patch = (sid_se_wt_patch_t *)&voice_patch->M.wt; // will be dynamically changed depending on assigned instrument
       } break;
@@ -380,7 +384,6 @@ s32 SID_SE_InitStructs(u8 sid)
     w->mod_dst_wt = &sid_se_vars[sid].mod_dst[SID_SE_MOD_DST_WT1 + wt];
   }
 
-  sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid][0];
   for(i=0; i<SID_SE_NUM_SEQ; ++i) {
     u8 seq = i;
     sid_se_seq_t *s = (sid_se_seq_t *)&sid_se_seq[sid][seq];
@@ -606,7 +609,7 @@ s32 SID_SE_TriggerNoteOn(sid_se_voice_t *v, u8 no_wt)
     case SID_SE_LEAD: {
       sid_se_trg_t trg = *v->trg_mask_note_on;
       trg.ALL[0] &= 0xc0 | (1 << v->voice); // only the dedicated voice should trigger
-      if( no_wt ) // optionally WT triggers are masked out
+      if( no_wt ) // optional ly WT triggers are masked out
 	trg.ALL[2] = 0;
       SID_SE_L_Trigger(v->sid, &trg);
     } break;

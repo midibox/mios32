@@ -40,12 +40,6 @@
 #define SID_NUM 2
 
 
-//==============================================================================
-/**
-    A simple plugin filter that just applies a gain change to the audio
-    passing through it.
-
-*/
 class AudioProcessing  : public AudioProcessor,
 public ChangeBroadcaster
 {
@@ -107,7 +101,7 @@ public:
   AudioPlayHead::CurrentPositionInfo lastPosInfo;
   
   // these are used to persist the UI's size - the values are stored along with the
-  // filter's other parameters, and the UI component will update them when it gets
+  // SidEmu's other parameters, and the UI component will update them when it gets
   // resized.
   int lastUIWidth, lastUIHeight;
 
@@ -133,9 +127,9 @@ public:
   juce_UseDebuggingNewOperator
   
 private:
-  // this is our gain - the UI and the host can access this by getting/setting
-  // parameter 0.
   float gain;
+  unsigned char bank;
+  unsigned char patch;
 };
 
 

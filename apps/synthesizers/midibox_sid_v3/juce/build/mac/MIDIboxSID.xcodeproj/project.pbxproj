@@ -63,6 +63,8 @@
 		5278A0A4110231CA0011DBA2 /* wave8580_P_T.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A093110231CA0011DBA2 /* wave8580_P_T.cc */; };
 		5278A0A5110231CA0011DBA2 /* wave8580_PS_.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A094110231CA0011DBA2 /* wave8580_PS_.cc */; };
 		5278A0A6110231CA0011DBA2 /* wave8580_PST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A095110231CA0011DBA2 /* wave8580_PST.cc */; };
+		528B861E110335BC003F6346 /* sid_bank.c in Sources */ = {isa = PBXBuildFile; fileRef = 528B861B110335BC003F6346 /* sid_bank.c */; };
+		528B861F110335BC003F6346 /* sid_bank.h in Headers */ = {isa = PBXBuildFile; fileRef = 528B861C110335BC003F6346 /* sid_bank.h */; };
 		52959FF411025D62003FC4D0 /* app.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC511025D62003FC4D0 /* app.c */; };
 		52959FF511025D62003FC4D0 /* app.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FC611025D62003FC4D0 /* app.h */; };
 		52959FF611025D62003FC4D0 /* sid_asid.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC711025D62003FC4D0 /* sid_asid.c */; };
@@ -267,6 +269,8 @@
 		5278A093110231CA0011DBA2 /* wave8580_P_T.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_P_T.cc; path = ../../resid/wave8580_P_T.cc; sourceTree = SOURCE_ROOT; };
 		5278A094110231CA0011DBA2 /* wave8580_PS_.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PS_.cc; path = ../../resid/wave8580_PS_.cc; sourceTree = SOURCE_ROOT; };
 		5278A095110231CA0011DBA2 /* wave8580_PST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PST.cc; path = ../../resid/wave8580_PST.cc; sourceTree = SOURCE_ROOT; };
+		528B861B110335BC003F6346 /* sid_bank.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_bank.c; path = ../../../core/sid_bank.c; sourceTree = SOURCE_ROOT; };
+		528B861C110335BC003F6346 /* sid_bank.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_bank.h; path = ../../../core/sid_bank.h; sourceTree = SOURCE_ROOT; };
 		52959FC511025D62003FC4D0 /* app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = app.c; path = ../../../core/app.c; sourceTree = SOURCE_ROOT; };
 		52959FC611025D62003FC4D0 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app.h; path = ../../../core/app.h; sourceTree = SOURCE_ROOT; };
 		52959FC711025D62003FC4D0 /* sid_asid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_asid.c; path = ../../../core/sid_asid.c; sourceTree = SOURCE_ROOT; };
@@ -566,6 +570,8 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				528B861B110335BC003F6346 /* sid_bank.c */,
+				528B861C110335BC003F6346 /* sid_bank.h */,
 				52959FC511025D62003FC4D0 /* app.c */,
 				52959FC611025D62003FC4D0 /* app.h */,
 				52959FC711025D62003FC4D0 /* sid_asid.c */,
@@ -913,6 +919,7 @@
 				5295A04411025F5C003FC4D0 /* resid.h in Headers */,
 				5295A0851102687F003FC4D0 /* mios32_config.h in Headers */,
 				5295A09A110269DD003FC4D0 /* aout.h in Headers */,
+				528B861F110335BC003F6346 /* sid_bank.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1059,6 +1066,7 @@
 				5295A0861102687F003FC4D0 /* mios32_wrapper_code.c in Sources */,
 				5295A099110269DD003FC4D0 /* aout.c in Sources */,
 				5295A0A211026ADE003FC4D0 /* tasks.c in Sources */,
+				528B861E110335BC003F6346 /* sid_bank.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -26,7 +26,9 @@
 #include "sid_midi_m.h"
 
 #include "sid_patch.h"
+#include "sid_bank.h"
 #include "sid_se.h"
+#include "sid_voice.h"
 #include "sid_knob.h"
 
 
@@ -105,6 +107,13 @@ s32 SID_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package
         case SID_SE_MULTI:     return SID_MIDI_M_Receive_PitchBender(sid, midi_package);
         default:               return -1; // unsupported engine
       }
+    } break;
+
+    case ProgramChange: {
+      sid_patch_ref_t *pr = &sid_patch_ref[sid];
+      pr->patch = midi_package.evnt1;
+      SID_BANK_PatchRead(pr);
+      SID_PATCH_Changed(sid);
     } break;
   }
 
@@ -346,7 +355,7 @@ static s32 SID_MIDI_GateOff_SingleVoice(sid_se_voice_t *v)
 
     // request gate off if not disabled via trigger matrix
     if( v->trg_mask_note_off ) {
-      u8 *trg_mask_note_off = (u8 *)&v->trg_mask_note_off;
+      u8 *trg_mask_note_off = (u8 *)&v->trg_mask_note_off->ALL;
       if( trg_mask_note_off[0] & (1 << v->voice) )
 	v->state.GATE_CLR_REQ = 1;
     } else

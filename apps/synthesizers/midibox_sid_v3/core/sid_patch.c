@@ -39,21 +39,7 @@
 sid_patch_t sid_patch[SID_PATCH_NUM];
 sid_patch_t sid_patch_shadow[SID_PATCH_NUM];
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Type definitions
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
+sid_patch_ref_t sid_patch_ref[SID_PATCH_NUM];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,6 +62,11 @@ s32 SID_PATCH_Init(u32 mode)
   for(i=0; i<SID_PATCH_NUM; ++i) {
     SID_PATCH_Preset((sid_patch_t *)&sid_patch[i], SID_SE_LEAD);
     SID_PATCH_Preset((sid_patch_t *)&sid_patch_shadow[i], SID_SE_LEAD);
+
+    sid_patch_ref[i].sid = i;
+    sid_patch_ref[i].bank = 0;
+    sid_patch_ref[i].patch = 0;
+    sid_patch_ref[i].p = &sid_patch[i];
   }
 
   
@@ -128,7 +119,7 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
       memcpy(patch, sid_patch_preset_lead, sizeof(sid_patch_preset_lead));
 #if 0
       // this code helps to check if the patch structure is aligned correctly
-      DEBUG_MSG("chk1: %08x\n", (u8 *)&patch->L.flags - (u8 *)&patch->engine);
+      DEBUG_MSG("chk1: %08x\n", (u8 *)&patch->L.v_flags - (u8 *)&patch->engine);
       DEBUG_MSG("chk2: %08x\n", (u8 *)&patch->L.osc_detune - (u8 *)&patch->engine);
       DEBUG_MSG("chk3: %08x\n", (u8 *)&patch->L.filter[0] - (u8 *)&patch->engine);
       DEBUG_MSG("chk4: %08x\n", (u8 *)&patch->L.voice[0] - (u8 *)&patch->engine);

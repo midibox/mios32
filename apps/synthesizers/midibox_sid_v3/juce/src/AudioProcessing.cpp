@@ -1,33 +1,15 @@
+// $Id$
 /*
-  ==============================================================================
-
-   This file is part of the JUCE library - "Jules' Utility Class Extensions"
-   Copyright 2004-7 by Raw Material Software ltd.
-
-  ------------------------------------------------------------------------------
-
-   JUCE can be redistributed and/or modified under the terms of the
-   GNU General Public License, as published by the Free Software Foundation;
-   either version 2 of the License, or (at your option) any later version.
-
-   JUCE is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with JUCE; if not, visit www.gnu.org/licenses or write to the
-   Free Software Foundation, Inc., 59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
-
-  ------------------------------------------------------------------------------
-
-   If you'd like to release a closed-source product which uses JUCE, commercial
-   licenses are also available: visit www.rawmaterialsoftware.com/juce for
-   more information.
-
-  ==============================================================================
-*/
+ * Audio Processing Routines
+ *
+ * ==========================================================================
+ *
+ *  Copyright (C) 2010 Thorsten Klose (tk@midibox.org)
+ *  Licensed for personal non-commercial use only.
+ *  All other rights reserved.
+ * 
+ * ==========================================================================
+ */
 
 #include "includes.h"
 #include "AudioProcessing.h"
@@ -76,6 +58,8 @@ SID *_reSID[SID_NUM];
 // TODO: this method has to be overworked!!!
 extern "C" {
 #include "app.h"
+#include "sid_patch.h"
+#include "sid_bank.h"
 
   void TMP_StartApplication(void)
   {
@@ -91,6 +75,15 @@ extern "C" {
   void TMP_SID_SE_Update(void)
   {
     SID_SE_Update();
+  }
+
+  void TMP_ChangePatch(u8 bank, u8 patch)
+  {
+    u8 sid = 0;
+    sid_patch_ref[sid].bank = bank;
+    sid_patch_ref[sid].patch = patch;
+    SID_BANK_PatchRead(&sid_patch_ref[sid]);
+    SID_PATCH_Changed(sid);
   }
 }
 
@@ -108,6 +101,8 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 //==============================================================================
 AudioProcessing::AudioProcessing()
 {
+  patch = 0;
+  bank = 0;
   gain = 1.0f;
   lastUIWidth = 400;
   lastUIHeight = 140;
@@ -170,7 +165,7 @@ AudioProcessing::~AudioProcessing()
 //==============================================================================
 const String AudioProcessing::getName() const
 {
-  return "Juce Demo Filter";
+  return "MIDIbox SID Emulation";
 }
 
 int AudioProcessing::getNumParameters()
@@ -182,6 +177,8 @@ float AudioProcessing::getParameter (int index)
 {
   switch( index ) {
     case 0: return gain;
+    case 1: return (float)bank;
+    case 2: return (float)patch;
   }
   
   return 0.0f;
@@ -193,11 +190,28 @@ void AudioProcessing::setParameter (int index, float newValue)
     case 0:
       if( gain != newValue ) {
 	gain = newValue;
-
+	
 	// if this is changing the gain, broadcast a change message which
 	// our editor will pick up.
 	sendChangeMessage (this);
       }
+      break;
+
+    case 1:
+      if( bank != (unsigned char)newValue ) {
+	bank = (unsigned char)newValue;
+        TMP_ChangePatch(bank, patch);
+	sendChangeMessage (this);
+      }
+      break;
+
+    case 2:
+      if( patch != (unsigned char)newValue ) {
+	patch = (unsigned char)newValue;
+        TMP_ChangePatch(bank, patch);
+	sendChangeMessage (this);
+      }
+      break;
   }
 }
 
@@ -205,6 +219,8 @@ const String AudioProcessing::getParameterName (int index)
 {
   switch( index ) {
     case 0: return T("gain");
+    case 1: return T("bank");
+    case 2: return T("patch");
   }
 
   return String::empty;
@@ -214,6 +230,8 @@ const String AudioProcessing::getParameterText (int index)
 {
   switch( index ) {
     case 0: return String (gain, 2);
+    case 1: return String ((float)bank, 2);
+    case 2: return String ((float)patch, 2);
   }
   
   return String::empty;
