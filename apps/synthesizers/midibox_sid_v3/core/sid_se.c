@@ -80,8 +80,10 @@ s32 SID_SE_Init(u32 mode)
   SID_VOICE_Init(0);
 
   // initialize structures of each SID engine
-  for(sid=0; sid<SID_NUM; ++sid)
+  for(sid=0; sid<SID_NUM; ++sid) {
     SID_SE_InitStructs(sid);
+    SID_PATCH_Changed(sid);
+  }
 
   // start timer
   // TODO: increase sid_se_speed_factor once performance has been evaluated

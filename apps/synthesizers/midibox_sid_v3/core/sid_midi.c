@@ -23,6 +23,7 @@
 #include "sid_midi_l.h"
 #include "sid_midi_b.h"
 #include "sid_midi_d.h"
+#include "sid_midi_m.h"
 
 #include "sid_patch.h"
 #include "sid_se.h"

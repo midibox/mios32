@@ -111,6 +111,12 @@ public:
   // resized.
   int lastUIWidth, lastUIHeight;
 
+  void processNextMidiEvent (const MidiMessage& message);
+  void processNextMidiBuffer (MidiBuffer& buffer,
+					       const int startSample,
+					       const int numSamples,
+					       const bool injectIndirectEvents);
+  
   
 #if SID_NUM
   SID *reSID[SID_NUM];
@@ -119,7 +125,9 @@ public:
   int reSidEnabled;
   double reSidSampleRate;
   double reSidDeltaCycleCounter;
-  
+
+  double mbSidUpdateCounter;
+
   
   //==============================================================================
   juce_UseDebuggingNewOperator
