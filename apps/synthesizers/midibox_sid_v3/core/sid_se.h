@@ -209,8 +209,8 @@ typedef struct sid_se_clk_t {
 // Trigger Matrix
 ////////////////////////////////////////
 typedef union {
-  u32 ALL32;
-  u8 ALL[4];
+  //u32 ALL32;
+  u8 ALL[3];
   struct {
     unsigned O1L:1; // OSC1 Left
     unsigned O2L:1; // OSC2 Left

@@ -28,6 +28,7 @@
 #include "sid_sysex.h"
 #include "sid_asid.h"
 #include "sid_patch.h"
+#include "sid_bank.h"
 #include "sid_se.h"
 
 
@@ -89,6 +90,7 @@ void APP_Init(void)
   SID_ASID_Init(0);
 
   // init sound engine
+  SID_BANK_Init(0);
   SID_PATCH_Init(0);
   SID_SE_Init(0);
 }

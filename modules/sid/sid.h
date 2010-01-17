@@ -132,10 +132,7 @@ typedef union {
     u8 sr;
   };
   struct {
-    u8 frq_l; // don't use u16 to avoid little/big endian issues
-    u8 frq_h;
-    u8 pw_l;
-    u8 pw_h;
+    u8 dummy[4]; // don't define frq_[lh] and pw_[lh] again
 
     unsigned gate:1;
     unsigned sync:1;
@@ -183,7 +180,7 @@ typedef union {
     sid_voice_t v2;
   };
   struct {
-    u8 dummy_v1[7];
+    u8 dummy_v1_2[7]; // don't define dummy_v1 again
     u8 dummy_v2[7];
     sid_voice_t v3;
   };

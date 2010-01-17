@@ -151,6 +151,17 @@ typedef union {
 } sid_patch_t;
 
 
+////////////////////////////////////////
+// Patch references
+////////////////////////////////////////
+typedef struct {
+  u8 sid;
+  u8 bank;
+  u8 patch;
+  sid_patch_t *p;
+} sid_patch_ref_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -166,5 +177,7 @@ extern s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine);
 
 extern sid_patch_t sid_patch[SID_PATCH_NUM];
 extern sid_patch_t sid_patch_shadow[SID_PATCH_NUM];
+
+extern sid_patch_ref_t sid_patch_ref[SID_PATCH_NUM];
 
 #endif /* _SID_PATCH_H */

@@ -23,6 +23,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/sid_midi_m.c \
 		../core/sid_sysex.c \
 		../core/sid_asid.c \
+		../core/sid_bank.c \
 		../core/sid_patch.c \
 		../core/sid_knob.c \
 		../core/sid_par.c \
