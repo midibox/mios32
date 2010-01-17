@@ -39,6 +39,8 @@ extern s32 SID_BANK_Init(u32 mode);
 extern s32 SID_BANK_PatchWrite(sid_patch_ref_t *pr);
 extern s32 SID_BANK_PatchRead(sid_patch_ref_t *pr);
 
+extern s32 SID_BANK_PatchNameGet(u8 bank, u8 patch, char *buffer);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

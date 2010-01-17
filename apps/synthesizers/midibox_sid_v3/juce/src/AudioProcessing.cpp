@@ -27,7 +27,8 @@
 
 
 // sampling method
-#define RESID_SAMPLING_METHOD SAMPLE_RESAMPLE_INTERPOLATE
+//#define RESID_SAMPLING_METHOD SAMPLE_RESAMPLE_INTERPOLATE
+#define RESID_SAMPLING_METHOD SAMPLE_INTERPOLATE
 //#define RESID_SAMPLING_METHOD SAMPLE_FAST
 
 // SID frequency
@@ -66,8 +67,18 @@ extern "C" {
     APP_Init();
   }
 
+  extern s32 SID_SE_IncomingRealTimeEvent(u8 midi_byte);
   void TMP_MIDI_NotifyPackage(mios32_midi_package_t midi_package)
   {
+    // remove channel
+    if( midi_package.type >= NoteOff && midi_package.type <= PitchBend )
+      midi_package.chn = Chn1;
+
+    // pass to MIDI clock parser
+    if( midi_package.evnt0 >= 0xf8 )
+      SID_SE_IncomingRealTimeEvent(midi_package.evnt0);
+
+    // pass to application
     APP_MIDI_NotifyPackage(DEFAULT, midi_package);
   }
   
@@ -85,6 +96,60 @@ extern "C" {
     SID_BANK_PatchRead(&sid_patch_ref[sid]);
     SID_PATCH_Changed(sid);
   }
+
+  // buffer size must be at least 22 characters!
+  void TMP_PatchNameFromBank(u8 bank, u8 patch, char *buffer)
+  {
+    char patchName[17];
+    SID_BANK_PatchNameGet(bank, patch, patchName);
+    
+    sprintf(buffer, "%c%03d %s",
+	    'A' + bank,
+	    patch + 1,
+	    patchName);
+  }
+
+  // buffer size must be at least 22 characters!
+  void TMP_PatchName(char *buffer)
+  {
+    u8 sid = 0;
+    u8 bank = sid_patch_ref[sid].bank;
+    u8 patch = sid_patch_ref[sid].patch;
+    sid_patch_t *p = (sid_patch_t *)&sid_patch[sid];
+    
+    char patchName[17];
+    SID_PATCH_NameGet(p, patchName);
+    
+    sprintf(buffer, "%c%03d %s",
+	    'A' + bank,
+	    patch + 1,
+	    patchName);
+  }
+  
+  
+  // called from sid.c
+  void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
+  {
+    // Requires some work to handle multiple AU instances :-/
+#if SID_NUM
+    int i;
+    
+#if DEBUG_VERBOSE_LEVEL >= 2
+    fprintf(stderr, "cs%d %02x:%02x\n", cs, addr, data);
+#endif
+    if( reset ) {
+      for(i=0; i<SID_NUM; ++i)
+	if( _reSID[i] )
+	  _reSID[i]->reset();
+    } else {
+      for(i=0; i<SID_NUM; ++i) {
+	if( (cs & (1 << i)) && _reSID[i] )
+	  _reSID[i]->write(addr, data);
+      }
+    }
+#endif
+  }
+  
 }
 
 
@@ -116,7 +181,6 @@ AudioProcessing::AudioProcessing()
   mixer_value1 = 1.0f;
   mixer_value2 = 1.0f;
   mixer_value3 = 1.0f;
-  reSidDeltaCycleCounter = 0.0f;
   reSidSampleRate = 44100.0f;
 
 #if SID_NUM
@@ -150,6 +214,7 @@ AudioProcessing::AudioProcessing()
   TMP_StartApplication();
 #endif
   mbSidUpdateCounter = 0;  
+  SID_SE_BPMRestart();
 }
 
 AudioProcessing::~AudioProcessing()
@@ -272,6 +337,7 @@ void AudioProcessing::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
   // do your pre-playback setup stuff here..
   keyboardState.reset();
+  keyboardState.addListener(this);
 
 #if SID_NUM
   reSidEnabled = 1;
@@ -312,6 +378,34 @@ void AudioProcessing::releaseResources()
 void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
 				    MidiBuffer& midiMessages)
 {
+  // have a go at getting the current time from the host, and if it's changed, tell
+  // our UI to update itself.
+  AudioPlayHead::CurrentPositionInfo pos;
+  
+  if (getPlayHead() != 0 && getPlayHead()->getCurrentPosition (pos)) {
+    // send MIDI Start if position is 0
+    if( lastPosInfo.ppqPosition != 0 && pos.ppqPosition == 0 )
+      SID_SE_BPMRestart();
+
+    // update BPM
+    SID_SE_BPMSet((float)pos.bpm);
+
+    // update position
+    if (memcmp (&pos, &lastPosInfo, sizeof (pos)) != 0) {
+      lastPosInfo = pos;
+      sendChangeMessage (this);
+    }
+  } else {
+    zeromem (&lastPosInfo, sizeof (lastPosInfo));
+    lastPosInfo.timeSigNumerator = 4;
+    lastPosInfo.timeSigDenominator = 4;
+    lastPosInfo.bpm = 120;
+
+    // send MIDI Start and first clock
+    SID_SE_IncomingRealTimeEvent(0xfa);
+    SID_SE_IncomingRealTimeEvent(0xf8);
+  }
+
 #if RESID_PLAY_TESTTONE == 0
   // pass MIDI events to application
   processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(), true);
@@ -342,14 +436,15 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
 #endif
       }
 
-      // number of SID cycles per sample
-      reSidDeltaCycleCounter += (double)RESID_FREQUENCY / reSidSampleRate;
-      cycle_count delta_t = (cycle_count)reSidDeltaCycleCounter;
-      reSidDeltaCycleCounter -= (double)delta_t;
-      
       for(int channel = 0; channel < numChannels; ++channel) {
-	reSID[channel]->clock(delta_t);
-	float currentSample = (float)reSID[channel]->output(16) / 32768.0;
+	// poll for next sample
+	short sample_buf;
+	cycle_count delta_t = 1;
+	while( !reSID[channel]->clock(delta_t, &sample_buf, 1) )
+	  if( !delta_t ) // delta_t can be changed by clock()
+	    delta_t = 1;
+
+	float currentSample = (float)sample_buf / 32768.0;
 	*buffer.getSampleData(channel, i) = currentSample;
       }
     }
@@ -374,22 +469,6 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
   keyboardState.processNextMidiBuffer (midiMessages,
 				       0, buffer.getNumSamples(),
 				       true);
-  
-  // have a go at getting the current time from the host, and if it's changed, tell
-  // our UI to update itself.
-  AudioPlayHead::CurrentPositionInfo pos;
-  
-  if (getPlayHead() != 0 && getPlayHead()->getCurrentPosition (pos)) {
-    if (memcmp (&pos, &lastPosInfo, sizeof (pos)) != 0) {
-      lastPosInfo = pos;
-      sendChangeMessage (this);
-    }
-  } else {
-    zeromem (&lastPosInfo, sizeof (lastPosInfo));
-    lastPosInfo.timeSigNumerator = 4;
-    lastPosInfo.timeSigDenominator = 4;
-    lastPosInfo.bpm = 120;
-  }
 }
 
 //==============================================================================
@@ -412,6 +491,8 @@ void AudioProcessing::getStateInformation (MemoryBlock& destData)
   // add some attributes to it..
   xmlState.setAttribute (T("pluginVersion"), 1);
   xmlState.setAttribute (T("gainLevel"), gain);
+  xmlState.setAttribute (T("bank"), bank);
+  xmlState.setAttribute (T("patch"), patch);
   xmlState.setAttribute (T("uiWidth"), lastUIWidth);
   xmlState.setAttribute (T("uiHeight"), lastUIHeight);
   
@@ -434,6 +515,8 @@ void AudioProcessing::setStateInformation (const void* data, int sizeInBytes)
     {
       // ok, now pull out our parameters..
       gain = (float) xmlState->getDoubleAttribute (T("gainLevel"), gain);
+      bank = (float) xmlState->getDoubleAttribute (T("bank"), bank);
+      patch = (float) xmlState->getDoubleAttribute (T("patch"), patch);
       
       lastUIWidth = xmlState->getIntAttribute (T("uiWidth"), lastUIWidth);
       lastUIHeight = xmlState->getIntAttribute (T("uiHeight"), lastUIHeight);
@@ -453,12 +536,9 @@ void AudioProcessing::processNextMidiEvent (const MidiMessage& message)
   u8 *data = message.getRawData();
 
   // TODO: support for SysEx (has to be splitted into multiple packages)
-  mios32_midi_package_t p;
-  p.type = data[0] >> 4;
-  p.evnt0 = data[0];
-  p.evnt1 = (size >= 2) ? data[1] : 0x00;
-  p.evnt2 = (size >= 3) ? data[2] : 0x00;
-  TMP_MIDI_NotifyPackage(p);
+  sendMidiEvent(data[0],
+		(size >= 2) ? data[1] : 0x00,
+		(size >= 3) ? data[2] : 0x00);
 }
 
 void AudioProcessing::processNextMidiBuffer (MidiBuffer& buffer,
@@ -496,27 +576,77 @@ void AudioProcessing::processNextMidiBuffer (MidiBuffer& buffer,
 }
 
 
-// Accessible for C
-extern "C" void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
+//==============================================================================
+int AudioProcessing::getNumPrograms()
 {
-  // Requires some work to handle multiple AU instances :-/
-#if SID_NUM
-  int i;
-    
-#if DEBUG_VERBOSE_LEVEL >= 2
-  fprintf(stderr, "cs%d %02x:%02x\n", cs, addr, data);
-#endif
-  if( reset ) {
-    for(i=0; i<SID_NUM; ++i)
-      if( _reSID[i] )
-	_reSID[i]->reset();
-  } else {
-    for(i=0; i<SID_NUM; ++i) {
-      if( (cs & (1 << i)) && _reSID[i] )
-	_reSID[i]->write(addr, data);
-    }
-  }
-#endif
+  return 128;
 }
+
+int AudioProcessing::getCurrentProgram()
+{
+  return patch;
+}
+
+void AudioProcessing::setCurrentProgram (int index)
+{
+  patch = index;
+  TMP_ChangePatch(bank, patch);
+  sendChangeMessage(this);
+}
+
+const String AudioProcessing::getProgramName (int index)
+{
+  char buffer[22];
+  TMP_PatchNameFromBank(bank, index, buffer);
+  return String(buffer);
+}
+
+void AudioProcessing::changeProgramName (int index, const String& newName)
+{
+  // TODO
+}
+
+// called from editor to display current patch name
+const String AudioProcessing::getPatchName()
+{
+  char buffer[22];
+  TMP_PatchName(buffer);
+  return String(buffer);
+}
+
+const String AudioProcessing::getPatchNameFromBank(int bank, int patch)
+{
+  char buffer[22];
+  TMP_PatchNameFromBank(bank, patch, buffer);
+  return String(buffer);
+}
+
+//==============================================================================
+void AudioProcessing::sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2)
+{
+  mios32_midi_package_t p;
+  p.type = evnt0 >> 4;
+  p.evnt0 = evnt0;
+  p.evnt1 = evnt1;
+  p.evnt2 = evnt2;
+  TMP_MIDI_NotifyPackage(p);  
+}
+
+void AudioProcessing::handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
+{
+  unsigned char evnt0 = 0x90 + ((midiChannel > 15) ? 15 : midiChannel);
+  unsigned char evnt1 = (midiNoteNumber > 127) ? 127 : midiNoteNumber;
+  unsigned char evnt2 = (velocity >= 1.0) ? 127 : (velocity*127);
+  sendMidiEvent(evnt0, evnt1, evnt2);
+}
+
+void AudioProcessing::handleNoteOff (MidiKeyboardState *source, int midiChannel, int midiNoteNumber)
+{
+  unsigned char evnt0 = 0x90 + ((midiChannel > 15) ? 15 : midiChannel);
+  unsigned char evnt1 = (midiNoteNumber > 127) ? 127 : midiNoteNumber;
+  unsigned char evnt2 = 0x00;
+  sendMidiEvent(evnt0, evnt1, evnt2);
+}
+
 
 

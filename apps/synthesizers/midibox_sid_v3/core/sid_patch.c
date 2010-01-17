@@ -173,3 +173,18 @@ s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine)
   }
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the patch name as zero-terminated C string (17 chars)
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_PATCH_NameGet(sid_patch_t *patch, char *buffer)
+{
+  int i;
+
+  for(i=0; i<16; ++i)
+    buffer[i] = patch->name[i] >= 0x20 ? patch->name[i] : ' ';
+  buffer[i] = 0;
+
+  return 0; // no error
+}

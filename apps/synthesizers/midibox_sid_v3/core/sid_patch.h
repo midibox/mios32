@@ -169,6 +169,7 @@ typedef struct {
 extern s32 SID_PATCH_Init(u32 mode);
 extern s32 SID_PATCH_Changed(u8 sid);
 extern s32 SID_PATCH_Preset(sid_patch_t *patch, sid_se_engine_t engine);
+extern s32 SID_PATCH_NameGet(sid_patch_t *patch, char *buffer);
 
 
 /////////////////////////////////////////////////////////////////////////////
