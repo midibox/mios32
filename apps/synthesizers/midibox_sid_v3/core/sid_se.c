@@ -80,6 +80,7 @@ s32 SID_SE_Init(u32 mode)
 
   // ensure that clock generator structure is cleared
   memset(&sid_se_clk, 0, sizeof(sid_se_clk_t));
+  SID_SE_BPMSet(120.0);
 
   // initialize voice queues
   SID_VOICE_Init(0);
@@ -523,6 +524,30 @@ s32 SID_SE_IncomingRealTimeEvent(u8 event)
   return 0; // no error
 }
 
+
+// temporary
+s32 SID_SE_BPMSet(float bpm)
+{
+  // ensure that BPM doesn't lead to integer overflow
+  if( bpm < 1 )
+    bpm = 120;
+
+  // how many SID SE ticks for next 96ppqn event?
+  // result is fixed point arithmetic * 10000000 (for higher accuracy)
+  sid_se_clk.tmp_bpm_ctr_mod = (u32)(((60.0/bpm) / (2E-3 / (float)sid_se_speed_factor)) * (1000000.0/96.0));
+				     
+  return 0; // no error
+}
+
+
+// temporary
+s32 SID_SE_BPMRestart(void)
+{
+  sid_se_clk.event.MIDI_START_REQ = 1;
+
+  return 0; // no error
+}
+
 s32 SID_SE_Clk(sid_se_clk_t *clk)
 {
   // clear previous clock events
@@ -581,8 +606,9 @@ s32 SID_SE_Clk(sid_se_clk_t *clk)
     if( !clk->state.SLAVE ) {
       // TODO: check timer overrun flag
       // temporary solution: use BPM counter
-      if( ++clk->tmp_bpm_ctr > 5 ) { // ca. 120 BPM * 4
-	clk->tmp_bpm_ctr = 0;
+      clk->tmp_bpm_ctr += 1000000;
+      if( clk->tmp_bpm_ctr > sid_se_clk.tmp_bpm_ctr_mod ) {
+	clk->tmp_bpm_ctr -= sid_se_clk.tmp_bpm_ctr_mod;
 	clk->event.CLK = 1;
       }
     }

@@ -79,3 +79,39 @@ s32 SID_BANK_PatchRead(sid_patch_ref_t *pr)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the name of a preset patch as zero-terminated C string (17 chars)
+/////////////////////////////////////////////////////////////////////////////
+s32 SID_BANK_PatchNameGet(u8 bank, u8 patch, char *buffer)
+{
+  int i;
+  sid_patch_t *p;
+
+  if( bank >= SID_BANK_NUM ) {
+    sprintf(buffer, "<Invalid Bank %c>", 'A'+bank);
+    return -1; // invalid bank
+  }
+
+  if( patch >= 128 ) {
+    sprintf(buffer, "<WrongPatch %03d>", patch);
+    return -2; // invalid patch
+  }
+
+  switch( bank ) {
+    case 0:
+      p = (sid_patch_t *)&sid_bank_preset_0[patch];
+      break;
+
+    default:
+      sprintf(buffer, "<Empty Bank %c>  ", 'A'+bank);
+      return -3; // no bank in ROM
+  }
+
+  for(i=0; i<16; ++i)
+    buffer[i] = p->name[i] >= 0x20 ? p->name[i] : ' ';
+  buffer[i] = 0;
+
+  return 0; // no error
+}

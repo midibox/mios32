@@ -40,7 +40,9 @@
 #define SID_NUM 2
 
 
-class AudioProcessing  : public AudioProcessor,
+class AudioProcessing  : 
+public AudioProcessor, 
+public MidiKeyboardStateListener,
 public ChangeBroadcaster
 {
 public:
@@ -76,14 +78,23 @@ public:
   
   bool acceptsMidi() const;
   bool producesMidi() const;
+
+  const String getPatchName(void);
+  const String getPatchNameFromBank(int bank, int patch);
+
+  //==============================================================================
+  int getNumPrograms();
+  int getCurrentProgram();
+  void setCurrentProgram (int index);
+  const String getProgramName (int index);
+  void changeProgramName (int index, const String& newName);
   
   //==============================================================================
-  int getNumPrograms()                                        { return 0; }
-  int getCurrentProgram()                                     { return 0; }
-  void setCurrentProgram (int index)                          { }
-  const String getProgramName (int index)                     { return String::empty; }
-  void changeProgramName (int index, const String& newName)   { }
-  
+  void sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2);
+
+  void handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
+  void handleNoteOff (MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
+
   //==============================================================================
   void getStateInformation (MemoryBlock& destData);
   void setStateInformation (const void* data, int sizeInBytes);

@@ -10,60 +10,30 @@
 #include "EditorComponent.h"
 
 //==============================================================================
-// quick-and-dirty function to format a timecode string
-static const String timeToTimecodeString (const double seconds)
-{
-  const double absSecs = fabs (seconds);
-  const tchar* const sign = (seconds < 0) ? T("-") : T("");
-  
-  const int hours = (int) (absSecs / (60.0 * 60.0));
-  const int mins  = ((int) (absSecs / 60.0)) % 60;
-  const int secs  = ((int) absSecs) % 60;
-  
-  return String::formatted (T("%s%02d:%02d:%02d:%03d"),
-			    sign, hours, mins, secs,
-			    roundDoubleToInt (absSecs * 1000) % 1000);
-}
-
-// quick-and-dirty function to format a bars/beats string
-static const String ppqToBarsBeatsString (const double ppq,
-                                          const double lastBarPPQ,
-                                          const int numerator,
-                                          const int denominator)
-{
-  if (numerator == 0 || denominator == 0)
-    return T("1|1|0");
-  
-  const int ppqPerBar = (numerator * 4 / denominator);
-  const double beats  = (fmod (ppq, ppqPerBar) / ppqPerBar) * numerator;
-  
-  const int bar       = ((int) ppq) / ppqPerBar + 1;
-  const int beat      = ((int) beats) + 1;
-  const int ticks     = ((int) (fmod (beats, 1.0) * 960.0));
-  
-  String s;
-  s << bar << T('|') << beat << T('|') << ticks;
-  return s;
-}
-
-
-//==============================================================================
 EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 : AudioProcessorEditor (ownerSidEmu)
 {
+  // patch selection
+  addAndMakeVisible(patchComboBox = new ComboBox(T("Patch")));
+  patchComboBox->addListener(this);
+  patchComboBox->setEditableText(false);
+  patchComboBox->setJustificationType (Justification::centred);
+  patchComboBox->setTextWhenNothingSelected (String::empty);
+  patchComboBox->setTextWhenNoChoicesAvailable (T("(no choices)"));
+  for(int patch=0; patch<128; ++patch)
+    patchComboBox->addItem(ownerSidEmu->getPatchNameFromBank(0, patch), patch+1);
+  patchComboBox->addSeparator();
+  patchComboBox->setTooltip (T("selects a patch"));
+  patchComboBox->setSelectedId((int)ownerSidEmu->getParameter(2)+1, false);
+
   // create our gain slider..
   addAndMakeVisible (gainSlider = new Slider (T("gain")));
   gainSlider->addListener (this);
+  gainSlider->setSliderStyle(Slider::RotaryVerticalDrag);
+  gainSlider->setTextBoxStyle(Slider::NoTextBox, true, 0, 0);
   gainSlider->setRange (0.0, 1.0, 0.01);
-  gainSlider->setTooltip (T("changes the volume of the audio that runs through the plugin.."));
+  gainSlider->setTooltip (T("changes the volume"));
   gainSlider->setValue (ownerSidEmu->getParameter(0), false);
-  
-  // create our patch selection slider..
-  addAndMakeVisible (patchSlider = new Slider (T("patch")));
-  patchSlider->addListener (this);
-  patchSlider->setRange (0.0, 127.0, 1.0);
-  patchSlider->setTooltip (T("selects a patch"));
-  patchSlider->setValue (ownerSidEmu->getParameter(2), false);
   
   // create and add the midi keyboard component..
   addAndMakeVisible (midiKeyboard
@@ -103,8 +73,8 @@ void EditorComponent::paint (Graphics& g)
 
 void EditorComponent::resized()
 {
-  gainSlider->setBounds (10, 10, 150, 22);
-  patchSlider->setBounds (170, 10, 150, 22);
+  gainSlider->setBounds (10, 10, 30, 30);
+  patchComboBox->setBounds (50, 13, 200, 22);
   infoLabel->setBounds (10, 35, 450, 20);
   
   const int keyboardHeight = 70;
@@ -130,7 +100,11 @@ void EditorComponent::changeListenerCallback (void* source)
 void EditorComponent::sliderValueChanged (Slider*)
 {
   getSidEmu()->setParameterNotifyingHost (0, (float) gainSlider->getValue());
-  getSidEmu()->setParameterNotifyingHost (2, (float) patchSlider->getValue());
+}
+
+void EditorComponent::comboBoxChanged (ComboBox*)
+{
+  getSidEmu()->setParameterNotifyingHost (2, (float) patchComboBox->getSelectedId()-1);
 }
 
 //==============================================================================
@@ -142,7 +116,7 @@ void EditorComponent::updateParametersFromSidEmu()
   // lastMidiMessage variable while we're trying to read it, but be extra-careful to
   // only hold the lock for a minimum amount of time..
   sidEmu->getCallbackLock().enter();
-  
+
   // take a local copy of the info we need while we've got the lock..
   const AudioPlayHead::CurrentPositionInfo positionInfo (sidEmu->lastPosInfo);
   const float newGain = sidEmu->getParameter(0);
@@ -152,22 +126,13 @@ void EditorComponent::updateParametersFromSidEmu()
   // ..release the lock ASAP
   sidEmu->getCallbackLock().exit();
   
-  
+#if 0
   // ..and after releasing the lock, we're free to do the time-consuming UI stuff..
   String infoText;
-  infoText << String (positionInfo.bpm, 2) << T(" bpm, ")
-  << positionInfo.timeSigNumerator << T("/") << positionInfo.timeSigDenominator
-  << T("  -  ") << timeToTimecodeString (positionInfo.timeInSeconds)
-  << T("  -  ") << ppqToBarsBeatsString (positionInfo.ppqPosition,
-					 positionInfo.ppqPositionOfLastBarStart,
-					 positionInfo.timeSigNumerator,
-					 positionInfo.timeSigDenominator);
-  
-  if (positionInfo.isPlaying)
-    infoText << T("  (playing)");
-  
+  infoText << sidEmu->getPatchName();  
   infoLabel->setText (infoText, false);
-  
+#endif
+
   /* Update our slider.
    
    (note that it's important here to tell the slider not to send a change
@@ -175,7 +140,7 @@ void EditorComponent::updateParametersFromSidEmu()
    change message again, and the values would drift out.
    */
   gainSlider->setValue(newGain, false);
-  patchSlider->setValue(newPatch, false);
+  patchComboBox->setSelectedId((int)newPatch+1, false);
   
   setSize (sidEmu->lastUIWidth,
 	   sidEmu->lastUIHeight);

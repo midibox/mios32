@@ -201,7 +201,8 @@ typedef struct sid_se_clk_t {
   u8 clk_req_ctr;
   u8 global_clk_ctr6;
   u8 global_clk_ctr24;
-  u8 tmp_bpm_ctr; // tmp.
+  u32 tmp_bpm_ctr; // tmp.
+  u32 tmp_bpm_ctr_mod; // tmp.
 } sid_se_clk_t;
 
 
@@ -839,6 +840,8 @@ extern s32 SID_SE_InitStructs(u8 sid);
 extern s32 SID_SE_Update(void);
 
 extern s32 SID_SE_IncomingRealTimeEvent(u8 event);
+extern s32 SID_SE_BPMSet(float bpm);
+extern s32 SID_SE_BPMRestart(void);
 extern s32 SID_SE_Clk(sid_se_clk_t *clk);
 
 extern s32 SID_SE_TriggerNoteOn(sid_se_voice_t *v, u8 no_wt);

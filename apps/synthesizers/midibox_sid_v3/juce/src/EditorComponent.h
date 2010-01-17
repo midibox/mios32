@@ -32,7 +32,8 @@
  */
 class EditorComponent   : public AudioProcessorEditor,
 public ChangeListener,
-public SliderListener
+public SliderListener,
+public ComboBoxListener
 {
 public:
   /** Constructor.
@@ -52,7 +53,8 @@ public:
   void changeListenerCallback (void* source);
   
   void sliderValueChanged (Slider*);
-  
+  void comboBoxChanged (ComboBox*);
+
   //==============================================================================
   /** Standard Juce paint callback. */
   void paint (Graphics& g);
@@ -64,7 +66,7 @@ public:
 private:
   //==============================================================================
   Slider* gainSlider;
-  Slider* patchSlider;
+  ComboBox* patchComboBox;
   MidiKeyboardComponent* midiKeyboard;
   Label* infoLabel;
   ResizableCornerComponent* resizer;
