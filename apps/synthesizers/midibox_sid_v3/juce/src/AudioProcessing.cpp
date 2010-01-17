@@ -37,7 +37,12 @@
 
 // for output to console (stderr)
 // should be at least 1 to inform the user on fatal errors
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
+
+
+// update frequency of MBSID
+#define MBSID_UPDATE_FRQ 1000
+
 
 // sampling method
 #define RESID_SAMPLING_METHOD SAMPLE_RESAMPLE_INTERPOLATE
@@ -46,9 +51,12 @@
 // SID frequency
 #define RESID_FREQUENCY 1000000
 
+// selected Model (could be variable later)
+#define RESID_MODEL MOS8580
+
 // play testtone at startup?
 // nice for first checks of the emulation w/o MIDI input
-#define RESID_PLAY_TESTTONE 1
+#define RESID_PLAY_TESTTONE 0
 
 
 
@@ -56,6 +64,35 @@
 double mixer_value1;
 double mixer_value2;
 double mixer_value3;
+
+
+// temporary workaround to access reSID from a single AudioProcessing object
+// TODO: this method has to be overworked!!!
+
+SID *_reSID[SID_NUM];
+
+
+// temporary way to access application functions from a single AudioProcessing object
+// TODO: this method has to be overworked!!!
+extern "C" {
+#include "app.h"
+
+  void TMP_StartApplication(void)
+  {
+    APP_Init();
+  }
+
+  void TMP_MIDI_NotifyPackage(mios32_midi_package_t midi_package)
+  {
+    APP_MIDI_NotifyPackage(DEFAULT, midi_package);
+  }
+  
+  extern s32 SID_SE_Update();
+  void TMP_SID_SE_Update(void)
+  {
+    SID_SE_Update();
+  }
+}
 
 
 //==============================================================================
@@ -91,6 +128,12 @@ AudioProcessing::AudioProcessing()
   reSidEnabled = 1;
   for(int i=0; i<SID_NUM; ++i) {
     reSID[i] = new SID;
+    
+    // temporary workaround to access reSID from a single AudioProcessing object
+    // TODO: this method has to be overworked!!!
+    _reSID[i] = reSID[i];
+
+    reSID[i]->set_chip_model(RESID_MODEL);
     reSID[i]->reset();
     if( !reSID[i]->set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -105,13 +148,22 @@ AudioProcessing::AudioProcessing()
   fprintf(stderr, "SID_NUM == 0: emulation disabled!\n");
 #endif
 #endif
+  
+  // MBSID integration
+  // temporary code!
+#if RESID_PLAY_TESTTONE == 0
+  TMP_StartApplication();
+#endif
+  mbSidUpdateCounter = 0;  
 }
 
 AudioProcessing::~AudioProcessing()
 {
 #if SID_NUM
-  for(int i=0; i<SID_NUM; ++i)
+  for(int i=0; i<SID_NUM; ++i) {
     delete reSID[i];
+    _reSID[i] = 0;
+  }
 #endif
 }
 
@@ -242,6 +294,11 @@ void AudioProcessing::releaseResources()
 void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
 				    MidiBuffer& midiMessages)
 {
+#if RESID_PLAY_TESTTONE == 0
+  // pass MIDI events to application
+  processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(), true);
+#endif
+
   // determine how many channels have to be services
   int numChannels = getNumInputChannels();
 
@@ -258,6 +315,15 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
     // add SID sound(s) to output(s)
     // TK: this nested loop isn't optimal for CPU load, but we have to ensure that all SIDs are in lock-step
     for(int i=0; i<numSamples; ++i) {
+      // update sound engine
+      mbSidUpdateCounter += (double)MBSID_UPDATE_FRQ / reSidSampleRate;
+      if( mbSidUpdateCounter >= 1.0 ) {
+	mbSidUpdateCounter -= 1.0;
+#if RESID_PLAY_TESTTONE == 0
+	TMP_SID_SE_Update();
+#endif
+      }
+
       // number of SID cycles per sample
       reSidDeltaCycleCounter += (double)RESID_FREQUENCY / reSidSampleRate;
       cycle_count delta_t = (cycle_count)reSidDeltaCycleCounter;
@@ -284,7 +350,7 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
   for (int i = numChannels; i < getNumOutputChannels(); ++i) {
     buffer.clear (i, 0, buffer.getNumSamples());
   }
-  
+
   // if any midi messages come in, use them to update the keyboard state object. This
   // object sends notification to the UI component about key up/down changes
   keyboardState.processNextMidiBuffer (midiMessages,
@@ -362,32 +428,77 @@ void AudioProcessing::setStateInformation (const void* data, int sizeInBytes)
 }
 
 
+//==============================================================================
+void AudioProcessing::processNextMidiEvent (const MidiMessage& message)
+{
+  int size = message.getRawDataSize();
+  u8 *data = message.getRawData();
+
+  // TODO: support for SysEx (has to be splitted into multiple packages)
+  mios32_midi_package_t p;
+  p.type = data[0] >> 4;
+  p.evnt0 = data[0];
+  p.evnt1 = (size >= 2) ? data[1] : 0x00;
+  p.evnt2 = (size >= 3) ? data[2] : 0x00;
+  TMP_MIDI_NotifyPackage(p);
+}
+
+void AudioProcessing::processNextMidiBuffer (MidiBuffer& buffer,
+					     const int startSample,
+					     const int numSamples,
+					     const bool injectIndirectEvents)
+{
+  MidiBuffer::Iterator i (buffer);
+  MidiMessage message (0xf4, 0.0);
+  int time;
+  
+#if 0
+  const ScopedLock sl (lock);
+#endif
+
+  while (i.getNextEvent (message, time))
+    processNextMidiEvent (message);
+
+#if 0
+  if (injectIndirectEvents)
+  {
+    MidiBuffer::Iterator i2 (eventsToAdd);
+    const int firstEventToAdd = eventsToAdd.getFirstEventTime();
+    const double scaleFactor = numSamples / (double) (eventsToAdd.getLastEventTime() + 1 - firstEventToAdd);
+    
+    while (i2.getNextEvent (message, time))
+    {
+      const int pos = jlimit (0, numSamples - 1, roundDoubleToInt ((time - firstEventToAdd) * scaleFactor));
+      buffer.addEvent (message, startSample + pos);
+    }
+  }
+  
+  eventsToAdd.clear();
+#endif
+}
+
 
 // Accessible for C
-extern "C" {
-  void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
-  {
-#if 0
-    // Requires some work to handle multiple AU instances :-/
+extern "C" void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
+{
+  // Requires some work to handle multiple AU instances :-/
 #if SID_NUM
-    if( reSidEnabled ) {
-      int i;
-      
+  int i;
+    
 #if DEBUG_VERBOSE_LEVEL >= 2
-      fprintf(stderr, "cs%d %02x:%02x\n", cs, addr, data);
+  fprintf(stderr, "cs%d %02x:%02x\n", cs, addr, data);
 #endif
-      if( reset ) {
-	for(i=0; i<SID_NUM; ++i)
-	  reSID[i].reset();
-      } else {
-	for(i=0; i<SID_NUM; ++i) {
-	  if( cs & (1 << i) )
-	    reSID[0].write(addr, data);
-	}
-      }
+  if( reset ) {
+    for(i=0; i<SID_NUM; ++i)
+      if( _reSID[i] )
+	_reSID[i]->reset();
+  } else {
+    for(i=0; i<SID_NUM; ++i) {
+      if( (cs & (1 << i)) && _reSID[i] )
+	_reSID[i]->write(addr, data);
     }
-#endif
-#endif
   }
+#endif
 }
+
 

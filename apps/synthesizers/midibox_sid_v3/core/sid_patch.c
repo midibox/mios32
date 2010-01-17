@@ -78,6 +78,7 @@ s32 SID_PATCH_Init(u32 mode)
     SID_PATCH_Preset((sid_patch_t *)&sid_patch_shadow[i], SID_SE_LEAD);
   }
 
+  
   return 0; // no error
 }
 
