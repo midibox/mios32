@@ -841,7 +841,10 @@ s32 SID_SE_Arp(sid_se_voice_t *v)
       // dir modes
       u8 note_number = 0;
       if( arp_mode.DIR >= 6 ) { // Random
-	note_number = SID_RANDOM_Gen_Range(0, mv->notestack.len-1);
+	if( mv->notestack.len > 0 )
+	  note_number = SID_RANDOM_Gen_Range(0, mv->notestack.len-1);
+	else
+	  note_number = 0;
       } else {
 	u8 new_note_up;
 	if( arp_mode.DIR >= 2 && arp_mode.DIR <= 5 ) { // Alt Mode 1 and 2
