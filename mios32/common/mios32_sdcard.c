@@ -136,7 +136,7 @@ s32 MIOS32_SDCARD_Init(u32 mode)
 s32 MIOS32_SDCARD_PowerOn(void)
 {
   s32 status;
-  int i,j;
+  int i;
 
   MIOS32_SDCARD_MUTEX_TAKE;
   // ensure that chip select line deactivated
@@ -301,7 +301,7 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
     MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
     // send CMD0 to reset the media
-    if( ret=(MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC)) < 0 ) 
+    if( (ret=(MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC))) < 0 ) 
 	  goto not_available;
 		
     // deactivate chip select

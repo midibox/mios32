@@ -32,7 +32,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel);
+static s32 SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1717,11 +1717,11 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
     } break;
   
     case P_M_WT_6: {
-      patch->ALL[0x100 | item->addr_l] = (0x100 | patch->ALL[item->addr_l] & 0xc0) | (value & 0x3f);
+      patch->ALL[0x100 | item->addr_l] = (0x100 | (patch->ALL[item->addr_l] & 0xc0)) | (value & 0x3f);
     } break;
   
     case P_M_WT_7: {
-      patch->ALL[0x100 | item->addr_l] = (0x100 | patch->ALL[item->addr_l] & 0x80) | (value & 0x7f);
+      patch->ALL[0x100 | item->addr_l] = (0x100 | (patch->ALL[item->addr_l] & 0x80)) | (value & 0x7f);
     } break;
   
     case P_M_WT_POS: {
@@ -1897,7 +1897,7 @@ s32 SID_PAR_Set(u8 sid, u8 par, u16 value, u8 sidlr, u8 ins)
 
 
 // help function to control a note
-static SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel)
+static s32 SID_PAR_HlpNote(u8 sid, u8 value, u8 voice_sel)
 {
   int i;
 

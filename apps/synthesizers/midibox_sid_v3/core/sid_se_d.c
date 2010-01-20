@@ -49,7 +49,6 @@ static s32 SID_SE_D_Seq(sid_se_seq_t *s);
 s32 SID_SE_D_Update(u8 sid)
 {
   int i;
-  sid_se_vars_t *vars = &sid_se_vars[sid];
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -432,8 +431,6 @@ static s32 SID_SE_D_Seq(sid_se_seq_t *s)
 /////////////////////////////////////////////////////////////////////////////
 s32 SID_SE_D_NoteOn(u8 sid, u8 drum, u8 velocity)
 {
-  int i;
-
   if( drum >= 16 )
     return -1; // unsupported drum
 

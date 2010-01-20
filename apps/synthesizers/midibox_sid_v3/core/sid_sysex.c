@@ -327,8 +327,8 @@ static s32 SID_SYSEX_Cmd_PatchRead(mios32_midi_port_t port, sysex_cmd_state_t cm
 /////////////////////////////////////////////////////////////////////////////
 static s32 SID_SYSEX_Cmd_PatchWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-  static buffer_ix = 0;
-  static buffer_ix_max = 0;
+  static int buffer_ix = 0;
+  static int buffer_ix_max = 0;
 
   switch( cmd_state ) {
 
@@ -413,7 +413,7 @@ static s32 SID_SYSEX_Cmd_ParWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd
 {
   static u16 addr = 0;
   static u8 data = 0;
-  static u8 write_status = 0;
+  static s32 write_status = 0;
 
   switch( cmd_state ) {
 
@@ -484,8 +484,8 @@ static s32 SID_SYSEX_Cmd_ParWrite(mios32_midi_port_t port, sysex_cmd_state_t cmd
 /////////////////////////////////////////////////////////////////////////////
 static s32 SID_SYSEX_Cmd_Extra(mios32_midi_port_t port, sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-  static extra_cmd = 0;
-  static play_instrument = 0;
+  static int extra_cmd = 0;
+  static int play_instrument = 0;
 
   switch( cmd_state ) {
 

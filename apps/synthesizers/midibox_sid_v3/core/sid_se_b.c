@@ -23,6 +23,7 @@
 #include "sid_se.h"
 #include "sid_se_b.h"
 #include "sid_patch.h"
+#include "sid_par.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,6 @@ static s32 SID_SE_B_Seq(sid_se_seq_t *s);
 s32 SID_SE_B_Update(u8 sid)
 {
   int i;
-  sid_se_vars_t *vars = &sid_se_vars[sid];
 
 
   ///////////////////////////////////////////////////////////////////////////

@@ -18,6 +18,9 @@
 #include <mios32.h>
 #include <string.h>
 
+#include <FreeRTOS.h>
+#include <portmacro.h>
+
 #include "mid_parser.h"
 
 

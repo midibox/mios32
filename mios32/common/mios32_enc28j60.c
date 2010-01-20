@@ -567,6 +567,7 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
 {
   s32 status = 0;
   s32 package_count;
+  u16 packet_len = 0;
 
   MIOS32_ENC28J60_MUTEX_TAKE;
 
@@ -633,7 +634,7 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   WasDiscarded = 0;
 
   // empty package or CRC/symbol errors?
-  u16 packet_len = header.StatusVector.bits.ByteCount;
+  packet_len = header.StatusVector.bits.ByteCount;
   if( !packet_len || header.StatusVector.bits.CRCError || !header.StatusVector.bits.ReceiveOk ) {
     status = MIOS32_ENC28J60_MACDiscardRx(); // discard package immediately
     status = (status < 0) ? status : 0;

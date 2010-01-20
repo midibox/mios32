@@ -69,7 +69,9 @@
 // Local functions
 /////////////////////////////////////////////////////////////////////////////
 
+#if configGENERATE_RUN_TIME_STATS != 0
 static void PerfTimerIRQ(void);
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -168,10 +170,10 @@ s32 FREERTOS_UTILS_RunTimeStats(void)
 //! \}
 
 
+#if configGENERATE_RUN_TIME_STATS != 0
 // this interrupt increments the performance counter
 static void PerfTimerIRQ(void)
 {
   ++perf_counter;
 }
-
-
+#endif
