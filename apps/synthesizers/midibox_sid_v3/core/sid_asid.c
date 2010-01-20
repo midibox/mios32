@@ -59,8 +59,8 @@ static mios32_midi_port_t asid_last_sysex_port;
 static u8 asid_cmd;
 static u8 asid_stream_ix;
 static u8 asid_reg_ix;
-static asid_masks[4];
-static asid_msbs[4];
+static u8 asid_masks[4];
+static u8 asid_msbs[4];
 
 static const u8 asid_reg_map[28] = {
   0x00, 0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0c, 0x0d, 0x0e, 0x0f,

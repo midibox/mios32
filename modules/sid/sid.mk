@@ -8,8 +8,6 @@ C_INCLUDE += -I $(MIOS32_PATH)/modules/sid
 # add modules to thumb sources (TODO: provide makefile option to add code to ARM sources)
 THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/sid/sid.c \
-	$(MIOS32_PATH)/modules/sid/sidemu.c \
-	$(MIOS32_PATH)/modules/sid/sidemu_filter.c
 
 
 # directories and files that should be part of the distribution (release) package

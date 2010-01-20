@@ -120,10 +120,10 @@ void MSD_SCSI_ReadCapacity10_Cmd(uint8_t lun)
     return;
   }
 
-  MSD_ReadCapacity10_Data[0] = (uint8_t)(MSD_Mass_Block_Count[lun] - 1 >> 24);
-  MSD_ReadCapacity10_Data[1] = (uint8_t)(MSD_Mass_Block_Count[lun] - 1 >> 16);
-  MSD_ReadCapacity10_Data[2] = (uint8_t)(MSD_Mass_Block_Count[lun] - 1 >>  8);
-  MSD_ReadCapacity10_Data[3] = (uint8_t)(MSD_Mass_Block_Count[lun] - 1);
+  MSD_ReadCapacity10_Data[0] = (uint8_t)((MSD_Mass_Block_Count[lun] - 1) >> 24);
+  MSD_ReadCapacity10_Data[1] = (uint8_t)((MSD_Mass_Block_Count[lun] - 1) >> 16);
+  MSD_ReadCapacity10_Data[2] = (uint8_t)((MSD_Mass_Block_Count[lun] - 1) >>  8);
+  MSD_ReadCapacity10_Data[3] = (uint8_t)((MSD_Mass_Block_Count[lun] - 1));
 
   MSD_ReadCapacity10_Data[4] = (uint8_t)(MSD_Mass_Block_Size[lun] >>  24);
   MSD_ReadCapacity10_Data[5] = (uint8_t)(MSD_Mass_Block_Size[lun] >>  16);

@@ -28,6 +28,7 @@
 
 #include "sid_patch.h"
 #include "sid_knob.h"
+#include "sid_par.h"
 #include "sid_voice.h"
 
 

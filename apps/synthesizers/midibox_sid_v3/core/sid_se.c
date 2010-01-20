@@ -21,6 +21,8 @@
 #include <sid.h>
 #include <notestack.h>
 
+#include "app.h"
+
 #include "sid_se.h"
 #include "sid_se_l.h"
 #include "sid_se_b.h"
@@ -159,6 +161,10 @@ s32 SID_SE_InitStructs(u8 sid)
 
       case SID_SE_MULTI:
 	mv->midi_channel = midi_voice;
+	
+      case SID_SE_LEAD:
+      case SID_SE_DRUM:
+	break; // not relevant
     }
   }
 
@@ -1064,7 +1070,7 @@ s32 SID_SE_Gate(sid_se_voice_t *v)
 	  switch( v->engine ) {
 	    case SID_SE_LEAD: {
 	      u8 osc_phase;
-	      if( osc_phase=sid_patch[v->sid].L.osc_phase ) {
+	      if( (osc_phase=sid_patch[v->sid].L.osc_phase) ) {
 		// notify that OSC synchronisation has been started
 		v->state.OSC_SYNC_IN_PROGRESS = 1;
 		// set test flag for one update cycle

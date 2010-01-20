@@ -308,7 +308,8 @@ mios32_mf_config_t MIOS32_MF_ConfigGet(u32 mf)
 {
 #if !MIOS32_MF_NUM
   // return 0; // doesn't work :-/
-  // no motors
+    const mios32_mf_config_t dummy = { .cfg.deadband=3, .cfg.pwm_period=3, .cfg.pwm_duty_cycle_up=1, .cfg.pwm_duty_cycle_down=1 };
+    return dummy;
 #else
   // MF number valid?
   if( mf >= MIOS32_MF_NUM ) {

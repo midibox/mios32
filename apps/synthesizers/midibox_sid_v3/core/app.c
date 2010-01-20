@@ -209,7 +209,7 @@ void SID_TASK_Period1S(void)
   MUTEX_MIDIOUT_GIVE;
 
   static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
-  u8 load_sd_content = 0;
+  //u8 load_sd_content = 0;
 
   // don't check for SD Card if MSD enabled
   if( TASK_MSD_EnableGet() > 0 )

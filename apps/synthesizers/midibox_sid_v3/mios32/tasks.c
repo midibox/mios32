@@ -20,6 +20,7 @@
 
 #include <msd.h>
 
+#include "app.h"
 #include "tasks.h"
 
 

@@ -39,6 +39,10 @@ extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
 extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
+extern void SID_TASK_Period1mS(void);
+extern void SID_TASK_Period1mS_LowPrio(void);
+extern void SID_TASK_Period1S(void);
+
 extern s32 APP_StopwatchInit(void);
 extern s32 APP_StopwatchReset(void);
 extern s32 APP_StopwatchCapture(void);
