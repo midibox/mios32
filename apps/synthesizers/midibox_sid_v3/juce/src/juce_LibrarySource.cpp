@@ -9,4 +9,7 @@
 */
 
 #include "juce_AppConfig.h"
-#include "../../../../juce_amalgamated.cpp"
+
+#ifndef WIN32
+#include "/midibox/juce/juce_amalgamated.cpp"
+#endif

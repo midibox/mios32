@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="MIDIboxSIDPlugin" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug Win32">
+				<Option output="$(SolutionDir)Debug Win32\MIDIboxSIDPlugin" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug Win32" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DMIDIBOXSIDPLUGIN_EXPORTS" />
+					<Add option="-DMIOS32_FAMILY_EMULATION" />
+					<Add directory="..\..\src" />
+					<Add directory="..\..\..\core" />
+					<Add directory="..\..\..\..\..\..\include\mios32" />
+					<Add directory="..\..\..\..\..\..\modules\notestack" />
+					<Add directory="..\..\..\..\..\..\modules\random" />
+					<Add directory="..\..\..\..\..\..\modules\sequencer" />
+					<Add directory="..\..\..\..\..\..\modules\sid" />
+					<Add directory="." />
+					<Add directory="..\..\..\..\..\..\modules\aout" />
+					<Add directory="..\..\wrapper" />
+					<Add directory="..\..\resid" />
+					<Add directory="C:\Midibox\vstsdk2.4" />
+					<Add directory="C:\Midibox\juce" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\src" />
+					<Add directory="..\..\..\core" />
+					<Add directory="..\..\..\..\..\..\include\mios32" />
+					<Add directory="..\..\..\..\..\..\modules\notestack" />
+					<Add directory="..\..\..\..\..\..\modules\random" />
+					<Add directory="..\..\..\..\..\..\modules\sequencer" />
+					<Add directory="..\..\..\..\..\..\modules\sid" />
+				</ResourceCompiler>
+			</Target>
+			<Target title="Release Win32">
+				<Option output="$(SolutionDir)Release Win32\MIDIboxSIDPlugin" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release Win32" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wno-return-type" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DMIDIBOXSIDPLUGIN_EXPORTS" />
+					<Add option="-DMIOS32_FAMILY_EMULATION" />
+					<Add directory="..\..\src" />
+					<Add directory="..\..\..\core" />
+					<Add directory="..\..\..\..\..\..\include\mios32" />
+					<Add directory="..\..\..\..\..\..\modules\notestack" />
+					<Add directory="..\..\..\..\..\..\modules\random" />
+					<Add directory="..\..\..\..\..\..\modules\sequencer" />
+					<Add directory="..\..\..\..\..\..\modules\sid" />
+					<Add directory="..\..\..\..\..\..\modules\aout" />
+					<Add directory="..\..\resid" />
+					<Add directory="C:\Midibox\vstsdk2.4" />
+					<Add directory="C:\Midibox\juce" />
+					<Add directory="..\..\wrapper" />
+					<Add directory="." />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\src" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="libjuce" />
+					<Add library="libshell32" />
+					<Add library="libvfw32" />
+					<Add library="libwinmm" />
+					<Add library="libwininet" />
+					<Add library="libdsound" />
+					<Add library="libwsock32" />
+					<Add library="libopengl32" />
+					<Add library="libglu32" />
+					<Add library="libuuid" />
+					<Add library="librpcrt4" />
+					<Add library="libgdi32" />
+					<Add library="libole32" />
+					<Add directory="c:\midibox\juce\bin\codeblocks" />
+					<Add directory="c:\mingw\lib" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add directory="..\..\src" />
+			<Add directory="..\..\..\core" />
+			<Add directory="..\..\..\..\..\..\include\mios32" />
+			<Add directory="..\..\..\..\..\..\modules\notestack" />
+			<Add directory="..\..\..\..\..\..\modules\random" />
+			<Add directory="..\..\..\..\..\..\modules\sequencer" />
+			<Add directory="..\..\..\..\..\..\modules\sid" />
+			<Add directory="." />
+			<Add directory="..\..\..\..\..\..\modules\aout" />
+		</Compiler>
+		<Unit filename="..\..\..\core\app.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_asid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_bank.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_dmodel.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_knob.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_midi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_midi_b.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_midi_d.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_midi_l.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_midi_m.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_par.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_patch.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_random.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_se.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_se_b.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_se_d.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_se_l.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_se_m.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_sysex.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\core\sid_voice.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\resid\envelope.cc" />
+		<Unit filename="..\..\resid\extfilt.cc" />
+		<Unit filename="..\..\resid\filter.cc" />
+		<Unit filename="..\..\resid\pot.cc" />
+		<Unit filename="..\..\resid\resid.cc" />
+		<Unit filename="..\..\resid\version.cc" />
+		<Unit filename="..\..\resid\voice.cc" />
+		<Unit filename="..\..\resid\wave.cc" />
+		<Unit filename="..\..\resid\wave6581_PST.cc" />
+		<Unit filename="..\..\resid\wave6581_PS_.cc" />
+		<Unit filename="..\..\resid\wave6581_P_T.cc" />
+		<Unit filename="..\..\resid\wave6581__ST.cc" />
+		<Unit filename="..\..\resid\wave8580_PST.cc" />
+		<Unit filename="..\..\resid\wave8580_PS_.cc" />
+		<Unit filename="..\..\resid\wave8580_P_T.cc" />
+		<Unit filename="..\..\resid\wave8580__ST.cc" />
+		<Unit filename="..\..\src\AudioProcessing.cpp" />
+		<Unit filename="..\..\src\AudioProcessing.h" />
+		<Unit filename="..\..\src\EditorComponent.cpp" />
+		<Unit filename="..\..\src\EditorComponent.h" />
+		<Unit filename="..\..\src\JucePluginCharacteristics.h" />
+		<Unit filename="..\..\src\includes.h" />
+		<Unit filename="..\..\src\juce_AppConfig.h" />
+		<Unit filename="..\..\src\juce_LibrarySource.cpp" />
+		<Unit filename="..\..\src\mios32_wrapper_code.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\src\tasks.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_DigiCode1.cpp" />
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_DigiCode2.cpp" />
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_DigiCode3.cpp" />
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_DigiCode_Header.h" />
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_WinUtilities.cpp" />
+		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_Wrapper.cpp" />
+		<Unit filename="..\..\wrapper\VST\juce_VstWrapper.cpp" />
+		<Unit filename="..\..\wrapper\juce_IncludeCharacteristics.h" />
+		<Unit filename="..\..\wrapper\juce_PluginHeaders.h" />
+		<Unit filename="..\..\..\..\..\..\modules\aout\aout.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\..\..\..\modules\notestack\notestack.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\..\..\..\modules\random\jsw_rand.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\..\..\..\..\modules\sid\sid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
