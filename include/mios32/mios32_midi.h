@@ -7,7 +7,7 @@
  *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
- * 
+ *
  * ==========================================================================
  */
 
@@ -143,7 +143,7 @@ typedef union {
   };
 
 #ifndef __cplusplus
-#ifndef WIN32 
+#ifndef _MSCVER
   // C++ doesn't allow to redefine names in unions
   // as a simple workaround, we only provide them for .c code
   // VC doesn't like it in C or C++ mode!
