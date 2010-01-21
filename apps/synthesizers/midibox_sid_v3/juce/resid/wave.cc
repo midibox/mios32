@@ -68,27 +68,22 @@ void WaveformGenerator::set_chip_model(chip_model model)
 // ----------------------------------------------------------------------------
 void WaveformGenerator::writeFREQ_LO(reg8 freq_lo)
 {
-  freq = (freq & 0xff00) | (freq_lo & 0x00ff);
+  freq = freq & 0xff00 | freq_lo & 0x00ff;
 }
 
 void WaveformGenerator::writeFREQ_HI(reg8 freq_hi)
 {
-  freq = ((freq_hi << 8) & 0xff00) | (freq & 0x00ff);
+  freq = (freq_hi << 8) & 0xff00 | freq & 0x00ff;
 }
 
-/* The original form was (acc >> 12) >= pw, where truth value is not affected
- * by the contents of the low 12 bits. Therefore the lowest bits must be zero
- * in the new formulation acc >= (pw << 12). */
 void WaveformGenerator::writePW_LO(reg8 pw_lo)
 {
-  pw = (pw & 0xf00) | (pw_lo & 0x0ff);
-  pw_acc_scale = pw << 12;
+  pw = pw & 0xf00 | pw_lo & 0x0ff;
 }
 
 void WaveformGenerator::writePW_HI(reg8 pw_hi)
 {
-  pw = ((pw_hi << 8) & 0xf00) | (pw & 0x0ff);
-  pw_acc_scale = pw << 12;
+  pw = (pw_hi << 8) & 0xf00 | pw & 0x0ff;
 }
 
 void WaveformGenerator::writeCONTROL_REG(reg8 control)
@@ -99,34 +94,31 @@ void WaveformGenerator::writeCONTROL_REG(reg8 control)
 
   reg8 test_next = control & 0x08;
 
-  /* SounDemoN found out that test bit can be used to control the noise
-   * register. Hear the result in Bojojoing.sid. */
-
-  // testbit set. invert bit 19 and write it to bit 1
-  if (test_next && !test) {
+  // Test bit set.
+  // The accumulator and the shift register are both cleared.
+  // NB! The shift register is not really cleared immediately. It seems like
+  // the individual bits in the shift register start to fade down towards
+  // zero when test is set. All bits reach zero within approximately
+  // $2000 - $4000 cycles.
+  // This is not modeled. There should fortunately be little audible output
+  // from this peculiar behavior.
+  if (test_next) {
     accumulator = 0;
-    reg24 bit19 = (shift_register >> 19) & 1;
-    shift_register = (shift_register & 0x7ffffd) | ((bit19^1) << 1);
-    noise_overwrite_delay = 200000; /* 200 ms, probably too generous? */
+    shift_register = 0;
   }
   // Test bit cleared.
   // The accumulator starts counting, and the shift register is reset to
   // the value 0x7ffff8.
-  else if (!test_next && test) {
-    reg24 bit0 = ((shift_register >> 22) ^ (shift_register >> 17)) & 0x1;
-    shift_register <<= 1;
-    shift_register |= bit0;
-  }
-  // clear output bits of shift register if noise and other waveforms
-  // are selected simultaneously
-  if (waveform > 8) {
-    shift_register &= 0x7fffff^(1<<22)^(1<<20)^(1<<16)^(1<<13)^(1<<11)^(1<<7)^(1<<4)^(1<<2);
+  // NB! The shift register will not actually be set to this exact value if the
+  // shift register bits have not had time to fade to zero.
+  // This is not modeled.
+  else if (test) {
+    shift_register = 0x7ffff8;
   }
 
   test = test_next;
-  
-  /* update noise anyway, just in case the above paths triggered */
-  noise_output_cached = outputN___();
+
+  // The gate bit is handled by the EnvelopeGenerator.
 }
 
 reg8 WaveformGenerator::readOSC()
@@ -140,12 +132,13 @@ reg8 WaveformGenerator::readOSC()
 void WaveformGenerator::reset()
 {
   accumulator = 0;
-  previous = 0;
-  shift_register = 0x7ffffc;
+  shift_register = 0x7ffff8;
   freq = 0;
   pw = 0;
-  pw_acc_scale = 0;
+
   test = 0;
-  writeCONTROL_REG(0);
+  ring_mod = 0;
+  sync = 0;
+
   msb_rising = false;
 }

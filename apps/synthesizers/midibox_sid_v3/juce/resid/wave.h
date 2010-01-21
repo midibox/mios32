@@ -62,13 +62,11 @@ protected:
 
   reg24 accumulator;
   reg24 shift_register;
-  reg12 previous, noise_output_cached;
-  int noise_overwrite_delay;
 
   // Fout  = (Fn*Fclk/16777216)Hz
   reg16 freq;
-  // PWout = (PWn/40.95)%, also the same << 12 for direct comparison against acc
-  reg12 pw; reg24 pw_acc_scale;
+  // PWout = (PWn/40.95)%
+  reg12 pw;
 
   // The control register right-shifted 4 bits; used for output function
   // table lookup.
@@ -81,6 +79,7 @@ protected:
   // The gate bit is handled by the EnvelopeGenerator.
 
   // 16 possible combinations of waveforms.
+  RESID_INLINE reg12 output____();
   RESID_INLINE reg12 output___T();
   RESID_INLINE reg12 output__S_();
   RESID_INLINE reg12 output__ST();
@@ -132,14 +131,8 @@ friend class SID;
 RESID_INLINE
 void WaveformGenerator::clock()
 {
-  /* no digital operation if test bit is set. Only emulate analog fade. */
+  // No operation if test bit is set.
   if (test) {
-    if (noise_overwrite_delay != 0) {
-	if (-- noise_overwrite_delay == 0) {
-	    shift_register |= 0x7ffffc;
-	    noise_output_cached = outputN___();
-	}
-    }
     return;
   }
 
@@ -149,31 +142,17 @@ void WaveformGenerator::clock()
   accumulator += freq;
   accumulator &= 0xffffff;
 
-  // Check whether the MSB became set high. This is used for synchronization.
+  // Check whether the MSB is set high. This is used for synchronization.
   msb_rising = !(accumulator_prev & 0x800000) && (accumulator & 0x800000);
 
   // Shift noise register once for each time accumulator bit 19 is set high.
   if (!(accumulator_prev & 0x080000) && (accumulator & 0x080000)) {
     reg24 bit0 = ((shift_register >> 22) ^ (shift_register >> 17)) & 0x1;
     shift_register <<= 1;
-    // optimization: fall into the bit bucket
-    //shift_register &= 0x7fffff;
+    shift_register &= 0x7fffff;
     shift_register |= bit0;
-
-    /* since noise changes relatively infrequently, we'll avoid the relatively
-     * expensive bit shuffling at output time. */
-    noise_output_cached = outputN___();
-  }
-
-  // clear output bits of shift register if noise and other waveforms
-  // are selected simultaneously
-  if (waveform > 8) {
-    /* ANDing the noise regs & output state might be more accurate? */
-    shift_register &= 0x7fffff^(1<<22)^(1<<20)^(1<<16)^(1<<13)^(1<<11)^(1<<7)^(1<<4)^(1<<2);
-    noise_output_cached = outputN___();
   }
 }
-
 
 // ----------------------------------------------------------------------------
 // SID clocking - delta_t cycles.
@@ -181,55 +160,55 @@ void WaveformGenerator::clock()
 RESID_INLINE
 void WaveformGenerator::clock(cycle_count delta_t)
 {
-	// No operation if test bit is set.
-	if (test) {
-		return;
+  // No operation if test bit is set.
+  if (test) {
+    return;
+  }
+
+  reg24 accumulator_prev = accumulator;
+
+  // Calculate new accumulator value;
+  reg24 delta_accumulator = delta_t*freq;
+  accumulator += delta_accumulator;
+  accumulator &= 0xffffff;
+
+  // Check whether the MSB is set high. This is used for synchronization.
+  msb_rising = !(accumulator_prev & 0x800000) && (accumulator & 0x800000);
+
+  // Shift noise register once for each time accumulator bit 19 is set high.
+  // Bit 19 is set high each time 2^20 (0x100000) is added to the accumulator.
+  reg24 shift_period = 0x100000;
+
+  while (delta_accumulator) {
+    if (delta_accumulator < shift_period) {
+      shift_period = delta_accumulator;
+      // Determine whether bit 19 is set on the last period.
+      // NB! Requires two's complement integer.
+      if (shift_period <= 0x080000) {
+	// Check for flip from 0 to 1.
+	if (((accumulator - shift_period) & 0x080000) || !(accumulator & 0x080000))
+	{
+	  break;
 	}
-	
-	reg24 accumulator_prev = accumulator;
-	
-	// Calculate new accumulator value;
-	reg24 delta_accumulator = delta_t*freq;
-	accumulator += delta_accumulator;
-	accumulator &= 0xffffff;
-	
-	// Check whether the MSB is set high. This is used for synchronization.
-	msb_rising = !(accumulator_prev & 0x800000) && (accumulator & 0x800000);
-	
-	// Shift noise register once for each time accumulator bit 19 is set high.
-	// Bit 19 is set high each time 2^20 (0x100000) is added to the accumulator.
-	reg24 shift_period = 0x100000;
-	
-	while (delta_accumulator) {
-		if (delta_accumulator < shift_period) {
-			shift_period = delta_accumulator;
-			// Determine whether bit 19 is set on the last period.
-			// NB! Requires two's complement integer.
-			if (shift_period <= 0x080000) {
-				// Check for flip from 0 to 1.
-				if (((accumulator - shift_period) & 0x080000) || !(accumulator & 0x080000))
-				{
-					break;
-				}
-			}
-			else {
-				// Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
-				if (((accumulator - shift_period) & 0x080000) && !(accumulator & 0x080000))
-				{
-					break;
-				}
-			}
-		}
-		
-		// Shift the noise/random register.
-		// NB! The shift is actually delayed 2 cycles, this is not modeled.
-		reg24 bit0 = ((shift_register >> 22) ^ (shift_register >> 17)) & 0x1;
-		shift_register <<= 1;
-		shift_register &= 0x7fffff;
-		shift_register |= bit0;
-		
-		delta_accumulator -= shift_period;
+      }
+      else {
+	// Check for flip from 0 (to 1 or via 1 to 0) or from 1 via 0 to 1.
+	if (((accumulator - shift_period) & 0x080000) && !(accumulator & 0x080000))
+	{
+	  break;
 	}
+      }
+    }
+
+    // Shift the noise/random register.
+    // NB! The shift is actually delayed 2 cycles, this is not modeled.
+    reg24 bit0 = ((shift_register >> 22) ^ (shift_register >> 17)) & 0x1;
+    shift_register <<= 1;
+    shift_register &= 0x7fffff;
+    shift_register |= bit0;
+
+    delta_accumulator -= shift_period;
+  }
 }
 
 
@@ -257,6 +236,15 @@ void WaveformGenerator::synchronize()
 // NB! The output from SID 8580 is delayed one cycle compared to SID 6581,
 // this is not modeled.
 // ----------------------------------------------------------------------------
+
+// No waveform:
+// Zero output.
+//
+RESID_INLINE
+reg12 WaveformGenerator::output____()
+{
+  return 0x000;
+}
 
 // Triangle:
 // The upper 12 bits of the accumulator are used.
@@ -295,7 +283,7 @@ reg12 WaveformGenerator::output__S_()
 RESID_INLINE
 reg12 WaveformGenerator::output_P__()
 {
-  return (test || accumulator >= pw_acc_scale) ? 0xfff : 0x000;
+  return (test || (accumulator >> 12) >= pw) ? 0xfff : 0x000;
 }
 
 // Noise:
@@ -398,8 +386,6 @@ reg12 WaveformGenerator::output__ST()
 RESID_INLINE
 reg12 WaveformGenerator::output_P_T()
 {
-  /* ring modulation does something odd with this waveform. But I don't know
-   * how to emulate it. */
   return (wave_P_T[output___T() >> 1] << 4) & output_P__();
 }
 
@@ -472,56 +458,44 @@ reg12 WaveformGenerator::outputNPST()
 RESID_INLINE
 reg12 WaveformGenerator::output()
 {
+  // It may seem cleaner to use an array of member functions to return
+  // waveform output; however a switch with inline functions is faster.
+
   switch (waveform) {
-  case 0x1:
-    previous = output___T();
-    break;
-  case 0x2:
-    previous = output__S_();
-    break;
-  case 0x3:
-    previous = output__ST();
-    break;
-  case 0x4:
-    previous = output_P__();
-    break;
-  case 0x5:
-    previous = output_P_T();
-    break;
-  case 0x6:
-    previous = output_PS_();
-    break;
-  case 0x7:
-    previous = output_PST();
-    break;
-  case 0x8:
-    previous = noise_output_cached;
-    break;
-  case 0x9:
-    previous = outputN__T();
-    break;
-  case 0xa:
-    previous = outputN_S_();
-    break;
-  case 0xb:
-    previous = outputN_ST();
-    break;
-  case 0xc:
-    previous = outputNP__();
-    break;
-  case 0xd:
-    previous = outputNP_T();
-    break;
-  case 0xe:
-    previous = outputNPS_();
-    break;
-  case 0xf:
-    previous = outputNPST();
-    break;
   default:
-    break;
+  case 0x0:
+    return output____();
+  case 0x1:
+    return output___T();
+  case 0x2:
+    return output__S_();
+  case 0x3:
+    return output__ST();
+  case 0x4:
+    return output_P__();
+  case 0x5:
+    return output_P_T();
+  case 0x6:
+    return output_PS_();
+  case 0x7:
+    return output_PST();
+  case 0x8:
+    return outputN___();
+  case 0x9:
+    return outputN__T();
+  case 0xa:
+    return outputN_S_();
+  case 0xb:
+    return outputN_ST();
+  case 0xc:
+    return outputNP__();
+  case 0xd:
+    return outputNP_T();
+  case 0xe:
+    return outputNPS_();
+  case 0xf:
+    return outputNPST();
   }
-  return previous;
 }
 
 #endif // RESID_INLINING || defined(__WAVE_CC__)

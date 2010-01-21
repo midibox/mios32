@@ -33,11 +33,6 @@ public:
   ~SID();
 
   void set_chip_model(chip_model model);
-  
-#ifdef RESID_DISTORTION_PATCH
-  void set_distortion_properties(int, int, int, int, int);
-#endif
-
   void enable_filter(bool enable);
   void enable_external_filter(bool enable);
   bool set_sampling_parameters(double clock_freq, sampling_method method,
@@ -45,9 +40,8 @@ public:
 			       double filter_scale = 0.97);
   void adjust_sampling_frequency(double sample_freq);
 
-  void fc_default(const fc_point** points, int& count);
+  void fc_default(const fc_point*& points, int& count);
   PointPlotter<sound_sample> fc_plotter();
-  void *fc_get_table(void);
 
   void clock();
   void clock(cycle_count delta_t);

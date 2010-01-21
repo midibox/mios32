@@ -20,8 +20,6 @@
 #define __FILTER_CC__
 #include "filter.h"
 
-#include <stdio.h>
-
 // Maximum cutoff frequency is specified as
 // FCmax = 2.6e-5/C = 2.6e-5/2200e-12 = 11818.
 //
@@ -141,15 +139,6 @@ Filter::Filter()
 	      PointPlotter<sound_sample>(f0_8580), 1.0);
 
   set_chip_model(MOS6581);
-
-  /* no distortion by default. 64000 should be large enough to make no
-   * clamping. On the real chip, clamping between 16000 and 32000 is probably
-   * right. */
-#ifdef RESID_DISTORTION_PATCH
-  set_distortion_properties(0, 0, 0, -64000, 64000);
-	
-  w0_deriv_smoothed = 6000;
-#endif
 }
 
 
@@ -196,28 +185,6 @@ void Filter::set_chip_model(chip_model model)
   set_w0();
   set_Q();
 }
-
-
-#ifdef RESID_DISTORTION_PATCH
-void Filter::set_distortion_properties(int enable, int rate, int headroom, int opmin, int opmax)
-{
-    this->distortion_enable = enable;
-    this->rate = rate;
-    this->headroom = headroom;
-    this->opmin = opmin;
-    this->opmax = opmax;
-	
-	/*
-	printf("distortion: %d, %d, %d, %d, %d\n", 
-			this->distortion_enable,
-			this->rate,
-			this->headroom,
-			this->opmin,
-			this->opmax
-	);
-	*/ 
-}
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -289,35 +256,9 @@ void Filter::set_w0()
   // shifting 20 times (2 ^ 20 = 1048576).
   w0 = static_cast<sound_sample>(2*pi*f0[fc]*1.048576);
 
-#ifdef RESID_DISTORTION_PATCH
-
-  /* the derivate is used to scale the distortion factor, because the
-   * true shape of the distortion is related to the fc curve itself. By and
-   * large the distortion acts as if the FC value itself was changed. */
-  int fc_min = (int) fc - 64;
-  int fc_max = (int) fc + 64;
-  if (fc_min < 0)
-    fc_min = 0;
-  if (fc_max > 2047)
-    fc_max = 2047;
-
-  /* If this estimate passes the 1023->1024 kink, cancel it out to better
-   * estimate the derivate. The other kinks seem too small to bother with.
-   * This should be the right thing to do because the DAC distortion does not
-   * affect the filter distortion; the DAC merely serves as a bias. */
-  int kinkfix = 0;
-  if (fc_min <= 1023 && fc_max >= 1024)
-    kinkfix = f0[1024] - f0[1023];
-
-  w0_deriv = (f0[fc_max] - f0[fc_min] - kinkfix) * 256 / (fc_max - fc_min);
-
-#else
-
   // Limit f0 to 16kHz to keep 1 cycle filter stable.
   const sound_sample w0_max_1 = static_cast<sound_sample>(2*pi*16000*1.048576);
   w0_ceil_1 = w0 <= w0_max_1 ? w0 : w0_max_1;
-
-#endif
 
   // Limit f0 to 4kHz to keep delta_t cycle filter stable.
   const sound_sample w0_max_dt = static_cast<sound_sample>(2*pi*4000*1.048576);
@@ -344,9 +285,9 @@ void Filter::set_Q()
 // Return the array of spline interpolation points used to map the FC register
 // to filter cutoff frequency.
 // ----------------------------------------------------------------------------
-void Filter::fc_default(const fc_point**points, int& count)
+void Filter::fc_default(const fc_point*& points, int& count)
 {
-  *points = f0_points;
+  points = f0_points;
   count = f0_count;
 }
 
