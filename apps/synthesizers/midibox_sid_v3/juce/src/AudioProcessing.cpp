@@ -319,7 +319,7 @@ bool AudioProcessing::isInputChannelStereoPair (int index) const
 
 bool AudioProcessing::isOutputChannelStereoPair (int index) const
 {
-  return false;
+  return true;
 }
 
 bool AudioProcessing::acceptsMidi() const
