@@ -1,9 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(sid.h)
+AC_INIT(resid.h)
 
 dnl Use Automake
-AM_INIT_AUTOMAKE(resid, 0.13)
-LTVERSION=2:1:0
+AM_INIT_AUTOMAKE(resid, 0.16)
+LTVERSION=5:0:0
 
 dnl Use C++ for tests.
 AC_LANG_CPLUSPLUS
@@ -26,7 +26,7 @@ AC_SUBST(RESID_INLINE)
 dnl Checks for programs.
 AC_PROG_CXX
 
-dnl Set CXXFLAGS for G++. Use -fno-exceptions if supported.
+dnl Set CXXFLAGS for g++. Use -fno-exceptions if supported.
 if test "$GXX" = yes; then
   if test "$ac_test_CXXFLAGS" != set; then
     CXXFLAGS="-g -Wall -O2 -funroll-loops -fomit-frame-pointer -fno-exceptions"

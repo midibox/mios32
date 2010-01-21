@@ -23,11 +23,6 @@
 #include "siddefs.h"
 #include "spline.h"
 
-
-extern double		mixer_value1;
-extern double		mixer_value2;
-extern double		mixer_value3;
-
 // ----------------------------------------------------------------------------
 // The SID filter is modeled with a two-integrator-loop biquadratic filter,
 // which has been confirmed by Bob Yannes to be the actual circuit used in
@@ -131,10 +126,6 @@ public:
   void enable_filter(bool enable);
   void set_chip_model(chip_model model);
 
-#ifdef RESID_DISTORTION_PATCH
-   void set_distortion_properties(int, int, int, int, int);
-#endif
-
   RESID_INLINE
   void clock(sound_sample voice1, sound_sample voice2, sound_sample voice3,
 	     sound_sample ext_in);
@@ -154,16 +145,12 @@ public:
   sound_sample output();
 
   // Spline functions.
-  void fc_default(const fc_point** points, int& count);
+  void fc_default(const fc_point*& points, int& count);
   PointPlotter<sound_sample> fc_plotter();
 
 protected:
   void set_w0();
   void set_Q();
-
-#ifdef RESID_DISTORTION_PATCH
-  sound_sample estimate_distorted_w0(sound_sample);
-#endif
 
   // Filter enabled.
   bool enabled;
@@ -195,17 +182,8 @@ protected:
   sound_sample Vlp; // lowpass
   sound_sample Vnf; // not filtered
 
-#ifdef RESID_DISTORTION_PATCH
-  sound_sample distortion_enable, rate, headroom, opmin, opmax;
-#endif
-
   // Cutoff frequency, resonance.
-#ifdef RESID_DISTORTION_PATCH
-  sound_sample w0, w0_ceil_dt, w0_deriv, w0_deriv_smoothed;
-#else
   sound_sample w0, w0_ceil_1, w0_ceil_dt;
-#endif
-
   sound_sample _1024_div_Q;
 
   // Cutoff frequency tables.
@@ -229,42 +207,6 @@ friend class SID;
 // ----------------------------------------------------------------------------
 
 #if RESID_INLINING || defined(__FILTER_CC__)
-
-#ifdef RESID_DISTORTION_PATCH
-
-RESID_INLINE
-sound_sample Filter::estimate_distorted_w0(sound_sample source)
-{
-    const double pi = 3.1415926535897932385;
-
-    /* smoothly ramp distortion from 0 */
-    if (source <= 0)
-        source = 0;
-    else
-        source = source * source / rate;
-
-    /* This might be better modelled by allowing source go negative. */
-    source -= headroom * rate >> 8;
-
-    sound_sample w0_eff = w0 + w0_deriv_smoothed * source / rate;
-
-    /* The maximum is not exactly known, but it's probably not much above 18.5
-     * kHz because the FET seems to saturate. Similarly, 170 is the bottom
-     * limit for R4 (220 for R3) given by a fixed resistor. */
-    const sound_sample w0_min_1 = static_cast<sound_sample>(2 * pi * 170 * 1.048576);
-    const sound_sample w0_max_1 = static_cast<sound_sample>(2 * pi * 20000 * 1.048576);
-    
-    /* protect against extreme w0:s */
-    if (w0_eff < w0_min_1)
-	w0_eff = w0_min_1;
-    if (w0_eff > w0_max_1)
-        w0_eff = w0_max_1;
-
-    return w0_eff;
-}
-
-#endif
-
 
 // ----------------------------------------------------------------------------
 // SID clocking - 1 cycle.
@@ -290,20 +232,12 @@ void Filter::clock(sound_sample voice1,
 
   ext_in >>= 7;
 
-  voice1 = int( mixer_value1 * double( voice1 ) );
-  voice2 = int( mixer_value2 * double( voice2 ) );
-  voice3 = int( mixer_value3 * double( voice3 ) );
-
   // This is handy for testing.
   if (!enabled) {
     Vnf = voice1 + voice2 + voice3 + ext_in;
     Vhp = Vbp = Vlp = 0;
     return;
   }
-
-#ifdef RESID_DISTORTION_PATCH
-  sound_sample Vi = Vnf = 0;
-#else
 
   // Route voices into or around filter.
   // The code below is expanded to a switch for faster execution.
@@ -380,17 +314,7 @@ void Filter::clock(sound_sample voice1,
     Vnf = 0;
     break;
   }
-#endif
-
-#ifdef RESID_DISTORTION_PATCH
-
-  ((filt & 1) ? Vi : Vnf) += voice1;
-  ((filt & 2) ? Vi : Vnf) += voice2;
-  ((filt & 4) ? Vi : Vnf) += voice3;
-  ((filt & 8) ? Vi : Vnf) += ext_in;
- 
-#else
-
+    
   // delta_t = 1 is converted to seconds given a 1MHz clock by dividing
   // with 1 000 000.
 
@@ -404,42 +328,6 @@ void Filter::clock(sound_sample voice1,
   Vbp -= dVbp;
   Vlp -= dVlp;
   Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
-#endif
-
-#ifdef RESID_DISTORTION_PATCH
-
-  sound_sample w0_eff = distortion_enable ? estimate_distorted_w0(Vhp+Vbp) : w0;
-  if (w0_deriv_smoothed < w0_deriv)
-    w0_deriv_smoothed ++;
-  if (w0_deriv_smoothed > w0_deriv)
-    w0_deriv_smoothed --;
-
-  /* This procedure is no longer appropriate for 8580, because the bandpass
-   * phase is flipped in this calculation. It should be mixed in with reverse
-   * phase to correct for it. */
-  Vhp = (-Vbp*_1024_div_Q >> 10);
-  if (Vhp < opmin)
-    Vhp = opmin;
-  if (Vhp > opmax)
-    Vhp = opmax;
-  Vhp -= Vlp + Vi;
-  if (Vhp < opmin)
-    Vhp = opmin;
-  if (Vhp > opmax)
-    Vhp = opmax;
-  Vlp += w0_eff*Vbp >> 20;
-  if (Vlp < opmin)
-    Vlp = opmin;
-  if (Vlp > opmax)
-    Vlp = opmax;
-  Vbp += w0_eff*Vhp >> 20;
-  if (Vbp < opmin)
-    Vbp = opmin;
-  if (Vbp > opmax)
-    Vbp = opmax;
-
-#endif
-
 }
 
 // ----------------------------------------------------------------------------
@@ -467,10 +355,6 @@ void Filter::clock(cycle_count delta_t,
 
   ext_in >>= 7;
 
-  voice1 = int( mixer_value1 * double( voice1 ) );
-  voice2 = int( mixer_value2 * double( voice2 ) );
-  voice3 = int( mixer_value3 * double( voice3 ) );
-
   // Enable filter on/off.
   // This is not really part of SID, but is useful for testing.
   // On slow CPUs it may be necessary to bypass the filter to lower the CPU
@@ -480,12 +364,6 @@ void Filter::clock(cycle_count delta_t,
     Vhp = Vbp = Vlp = 0;
     return;
   }
-
-#ifdef RESID_DISTORTION_PATCH
-
-  sound_sample Vi = Vnf = 0;
-
-#else
 
   // Route voices into or around filter.
   // The code below is expanded to a switch for faster execution.
@@ -562,14 +440,6 @@ void Filter::clock(cycle_count delta_t,
     Vnf = 0;
     break;
   }
-#endif
-
-#ifdef RESID_DISTORTION_PATCH
-  ((filt & 1) ? Vi : Vnf) += voice1;
-  ((filt & 2) ? Vi : Vnf) += voice2;
-  ((filt & 4) ? Vi : Vnf) += voice3;
-  ((filt & 8) ? Vi : Vnf) += ext_in;
-#endif
 
   // Maximum delta cycles for the filter to work satisfactorily under current
   // cutoff frequency and resonance constraints is approximately 8.
@@ -592,15 +462,9 @@ void Filter::clock(cycle_count delta_t,
 
     sound_sample dVbp = (w0_delta_t*Vhp >> 14);
     sound_sample dVlp = (w0_delta_t*Vbp >> 14);
-#ifdef RESID_DISTORTION_PATCH
-    Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
-    Vlp -= dVlp;
-    Vbp -= dVbp;
-#else
     Vbp -= dVbp;
     Vlp -= dVlp;
     Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
-#endif
 
     delta_t -= delta_t_flt;
   }
@@ -617,16 +481,6 @@ sound_sample Filter::output()
   if (!enabled) {
     return (Vnf + mixer_DC)*static_cast<sound_sample>(vol);
   }
-
-#ifdef RESID_DISTORTION_PATCH
-   sound_sample Vf = 0;
-   if (hp_bp_lp & 1)
-      Vf += Vlp;
-   if (hp_bp_lp & 2)
-      Vf += Vbp;
-   if (hp_bp_lp & 4)
-      Vf += Vhp;
-#else
 
   // Mix highpass, bandpass, and lowpass outputs. The sum is not
   // weighted, this can be confirmed by sampling sound output for
@@ -666,7 +520,6 @@ sound_sample Filter::output()
     Vf = Vlp + Vbp + Vhp;
     break;
   }
-#endif
 
   // Sum non-filtered and filtered output.
   // Multiply the sum with volume.

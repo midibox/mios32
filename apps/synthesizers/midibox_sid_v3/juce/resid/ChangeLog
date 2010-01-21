@@ -1,3 +1,110 @@
+
+2010-01-21  Thorsten Klose <tk@midibox.org>
+
+	* quick&dirty changes for MBSID integration:
+	- renamed sid.cc/sid.h to resid.cc/resid.h to avoid conflict
+	  with $MIOS32_PATH/modules/sid/
+	- fixed this also in Makefile and configure*
+	- disabled reference to FIR_RES_INTERPOLATE and FIR_RES_FAST
+	  in sid.cc -- currently I don't understand why the linker
+	  doesn't find these static variables
+	- disabled ADSR bug in envelope.h (could be provided as an
+	  option later)
+
+
+2004-06-11  Dag Lem  <resid@nimrod.no>
+
+	* Version 0.16 released.
+
+	* envelope.h (EnvelopeGenerator::clock): Corrected off-by-one
+	error in check for ADSR delay bug in delta_t cycle interface.
+
+	* filter.cc (Filter::set_chip_model): Initialize filter cutoff
+	mappings before call to set_chip_model.
+
+	* sid.cc (SID::set_sampling_parameters): Build shifted FIR tables
+	with samples according to the sampling frequency.
+	(SID::clock_resample_interpolate): New function; factorized linear
+	interpolation out from filter convolutions, and made convolutions
+	vectorizable.
+	(SID::clock_resample_fast): New function; single convolution, same
+	accuracy as with interpolation by using more filter tables.
+	(SID::State, SID::read_state, SID::write_state): Read and write
+	rate_counter_period and exponential_counter_period. Read sustain
+	value.
+
+2003-10-20  Dag Lem  <resid@nimrod.no>
+
+	* Version 0.15 released.
+
+	* envelope.h (EnvelopeGenerator): Added public State enum.
+	(EnvelopeGenerator::clock): Rate counter is 15 bits, count
+	rate_period - 1 after wrapping from 0x8000 to 0 in ADSR delay bug.
+
+	* sid.cc, sid.h (SID::State): Added envelope_state.
+	(SID::State::write_state): Restore register 0x18.
+	(SID::set_sampling_parameters): Scale resampling filter to avoid
+	clipping.
+	(SID::clock_resample): Saturated arithmetics to avoid clipping.
+
+2002-12-31  Dag Lem  <resid@nimrod.no>
+
+	* Version 0.14 released.
+
+	* envelope.h (EnvelopeGenerator::clock): Corrected one cycle error
+	in ADSR delay bug. Only load the exponential counter period at the
+	envelope counter values 255, 93, 54, 26, 14, 6, 0.
+	
+	* filter.cc (Filter::set_chip_model): Call set_w0() and set_Q() to
+	update filter settings.
+	(Filter::set_w0): Limit cutoff frequency for both 1 cycle and
+	delta_t cycle filter.
+
+	* filter.h (Filter::clock): Mix in external audio input.
+
+	* sid.cc, sid.h (SID::input): New function; accepts external audio
+	input sample.
+	
+	* spline.h (PointPlotter::operator ()): Clamp negative values to
+	zero.
+
+	* voice.cc, voice.h: Changed misleading name wave_DC to wave_zero.
+	
+	* wave.h (WaveformGenerator::clock): Corrected bug in check for
+	accumulator bit 19 in noise register shift.
+
+2002-01-19  Dag Lem  <resid@nimrod.no>
+
+	* Version 0.13 released.
+
+	* configure.in: Replaced AC_TRY_COMPILER with AC_TRY_COMPILE,
+	removed AC_PROG_RANLIB.
+
+	* envelope.h (EnvelopeGenerator::clock): Reset rate_step on state
+	change.
+
+	* extfilt.cc (ExternalFilter::set_chip_model): New calculation of
+	maximum mixer DC level.
+
+	* filter.cc (Filter::set_chip_model): Moved calculation of
+	voice_DC to voice.cc, corrected calculation of mixer_DC.
+
+	* filter.h (Filter::output): Mixer output is not inverted.
+
+	* sid.cc (SID::set_chip_model): Call voice.set_chip_model instead
+	of voice.wave.set_chip_model.
+	
+	* voice.cc (Voice::Voice): Call set_chip_model.
+	(Voice::set_chip_model): New function; model both waveform D/A
+	converter and envelope multiplying D/A converter DC offsets.
+	
+	* voice.h (Voice::output): Add both waveform D/A converter and
+	envelope multiplying D/A converter DC offsets.
+	
+	* wave.h (WaveformGenerator::output____): Reverted to output
+	minimum wave level when no waveform is selected. The maximum and
+	minimum wave output levels are interchanged in C= Hacking Issue	#20.
+
 2001-10-20  Dag Lem  <resid@nimrod.no>
 
 	* Version 0.12 released.

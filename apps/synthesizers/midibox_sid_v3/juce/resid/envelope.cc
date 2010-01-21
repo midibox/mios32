@@ -186,7 +186,7 @@ void EnvelopeGenerator::writeCONTROL_REG(reg8 control)
   // Gate bit on: Start attack, decay, sustain.
   if (!gate && gate_next) {
     state = ATTACK;
-    update_rate_period(rate_counter_period[attack]);
+    rate_period = rate_counter_period[attack];
 
     // Switching to attack state unlocks the zero freeze.
     hold_zero = false;
@@ -194,7 +194,7 @@ void EnvelopeGenerator::writeCONTROL_REG(reg8 control)
   // Gate bit off: Start release.
   else if (gate && !gate_next) {
     state = RELEASE;
-    update_rate_period(rate_counter_period[release]);
+    rate_period = rate_counter_period[release];
   }
 
   gate = gate_next;
@@ -205,10 +205,10 @@ void EnvelopeGenerator::writeATTACK_DECAY(reg8 attack_decay)
   attack = (attack_decay >> 4) & 0x0f;
   decay = attack_decay & 0x0f;
   if (state == ATTACK) {
-    update_rate_period(rate_counter_period[attack]);
+    rate_period = rate_counter_period[attack];
   }
   else if (state == DECAY_SUSTAIN) {
-    update_rate_period(rate_counter_period[decay]);
+    rate_period = rate_counter_period[decay];
   }
 }
 
@@ -217,35 +217,8 @@ void EnvelopeGenerator::writeSUSTAIN_RELEASE(reg8 sustain_release)
   sustain = (sustain_release >> 4) & 0x0f;
   release = sustain_release & 0x0f;
   if (state == RELEASE) {
-    update_rate_period(rate_counter_period[release]);
+    rate_period = rate_counter_period[release];
   }
-}
-
-void EnvelopeGenerator::update_rate_period(reg16 newperiod)
-{
-    rate_period = newperiod;
-
-   /* The ADSR counter is XOR shift register with 0x7fff unique values.
-    * If the rate_period is adjusted to a value already seen in this cycle,
-    * the register will wrap around. This is known as the ADSR delay bug.
-    *
-    * To simplify the hot path calculation, we simulate this through observing
-    * that we add the 0x7fff cycle delay by changing the rate_counter variable
-    * directly. This takes care of the 99 % common case. However, playroutine
-    * could make multiple consequtive rate_period adjustments, in which case we
-    * need to cancel the previous adjustment. */
-
-    /* if the new period exeecds 0x7fff, we need to wrap */
-    if (rate_period - rate_counter > 0x7fff)
-	rate_counter += 0x7fff;
-
-    /* simulate 0x7fff wraparound, if the period-to-be-written
-     * is less than the current value. */
-    if (rate_period <= rate_counter)
-	rate_counter -= 0x7fff;
-
-    /* at this point it should be impossible for
-     * rate_counter >= rate_period. If it is, there is a bug... */
 }
 
 reg8 EnvelopeGenerator::readENV()

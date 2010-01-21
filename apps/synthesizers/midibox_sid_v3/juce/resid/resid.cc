@@ -17,6 +17,8 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //  ---------------------------------------------------------------------------
 
+//#include "sid.h"
+// TK: conflict with $MIOS32_PATH/modules/sid - therefore renamed to resid.h
 #include "resid.h"
 #include <math.h>
 
@@ -47,16 +49,8 @@ SID::SID()
 // ----------------------------------------------------------------------------
 SID::~SID()
 {
-#if 0
   delete[] sample;
   delete[] fir;
-#else
-  // TK: to avoid warnings and unexpected segmentation faults
-  if( sample )
-    delete[] sample;
-  if( fir )
-    delete[] fir;
-#endif
 }
 
 
@@ -73,15 +67,6 @@ void SID::set_chip_model(chip_model model)
   extfilt.set_chip_model(model);
 }
 
-
-#ifdef RESID_DISTORTION_PATCH
-
-void SID::set_distortion_properties(int a1, int a2, int a3, int a4, int a5)
-{
-  filter.set_distortion_properties(a1, a2, a3, a4, a5);
-}
-
-#endif
 
 // ----------------------------------------------------------------------------
 // SID reset.
@@ -494,16 +479,8 @@ bool SID::set_sampling_parameters(double clock_freq, sampling_method method,
   // FIR initialization is only necessary for resampling.
   if (method != SAMPLE_RESAMPLE_INTERPOLATE && method != SAMPLE_RESAMPLE_FAST)
   {
-#if 0
     delete[] sample;
     delete[] fir;
-#else
-  // TK: to avoid warnings and unexpected segmentation faults
-  if( sample )
-    delete[] sample;
-  if( fir )
-    delete[] fir;
-#endif
     sample = 0;
     fir = 0;
     return true;
@@ -541,26 +518,18 @@ bool SID::set_sampling_parameters(double clock_freq, sampling_method method,
 
   // We clamp the filter table resolution to 2^n, making the fixpoint
   // sample_offset a whole multiple of the filter table resolution.
-  
-  // [AV] this didn't compile in gcc 4.0
-  //int res = method == SAMPLE_RESAMPLE_INTERPOLATE ? FIR_RES_INTERPOLATE : FIR_RES_FAST;
-  
-  int res = FIR_RES_FAST;
-  if (method == SAMPLE_RESAMPLE_INTERPOLATE) {
-	res = FIR_RES_INTERPOLATE;
-  }
-  
+#if 0
+  int res = method == SAMPLE_RESAMPLE_INTERPOLATE ?
+    FIR_RES_INTERPOLATE : FIR_RES_FAST;
+#else
+  // TK: currently I don't understand why the linker doesn't find these static variables
+  int res = (method == SAMPLE_RESAMPLE_INTERPOLATE) ? 285 : 51473;
+#endif
   int n = (int)ceil(log(res/f_cycles_per_sample)/log(2));
   fir_RES = 1 << n;
 
   // Allocate memory for FIR tables.
-#if 0
   delete[] fir;
-#else
-  // TK: to avoid warnings and unexpected segmentation faults
-  if( fir )
-    delete[] fir;
-#endif
   fir = new short[fir_N*fir_RES];
 
   // Calculate fir_RES FIR tables for linear interpolation.
@@ -620,7 +589,7 @@ void SID::adjust_sampling_frequency(double sample_freq)
 // Return array of default spline interpolation points to map FC to
 // filter cutoff frequency.
 // ----------------------------------------------------------------------------
-void SID::fc_default(const fc_point** points, int& count)
+void SID::fc_default(const fc_point*& points, int& count)
 {
   filter.fc_default(points, count);
 }
@@ -632,11 +601,6 @@ void SID::fc_default(const fc_point** points, int& count)
 PointPlotter<sound_sample> SID::fc_plotter()
 {
   return filter.fc_plotter();
-}
-
-void *SID::fc_get_table(void)
-{
-        return ( (void *) filter.f0 );
 }
 
 
