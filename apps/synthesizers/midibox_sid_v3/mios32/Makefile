@@ -36,6 +36,9 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/sid_se_d.c \
 		../core/sid_se_m.c
 
+THUMB_CPP_SOURCE = ../core/MbSidEnvironment.cpp \
+		   ../core/MbSid.cpp
+
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
 ARM_SOURCE      =

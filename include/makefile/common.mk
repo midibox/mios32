@@ -8,8 +8,10 @@
 #   - LD_FILE   e.g.: $(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 #   - PROJECT   e.g.: project   # (.lst, .hex, .map, etc... will be added automatically)
 #   - THUMB_SOURCE e.g.: main.c (.c only)
+#   - THUMB_CPP_SOURCE e.g.: main.cp (.cpp only)
 #   - THUMB_AS_SOURCE e.g.: assembly.s (.s only)
 #   - ARM_SOURCE e.g.: my_startup.c (.c only)
+#   - ARM_CPP_SOURCE e.g.: my_startup.cpp (.cpp only)
 #   - ARM_AS_SOURCE e.g.: assembly.s (.s only)
 #   - C_INCLUDE     e.g.: -I./ui  # (more include pathes will be added by .mk files)
 #   - A_INCLUDE     same for assembly code
@@ -30,19 +32,24 @@ export MIOS32_SHELL
 MIOS32_GCC_PREFIX ?= arm-none-eabi
 
 CC      = $(MIOS32_GCC_PREFIX)-gcc
+CPP     = $(MIOS32_GCC_PREFIX)-g++
 OBJCOPY = $(MIOS32_GCC_PREFIX)-objcopy
 OBJDUMP = $(MIOS32_GCC_PREFIX)-objdump
 NM      = $(MIOS32_GCC_PREFIX)-nm
 SIZE    = $(MIOS32_GCC_PREFIX)-size
 
 # default linker flags
-LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
+#LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
+LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -lstdc++
 
 # default assembler flags
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
 
 # define C flags
-CFLAGS += $(C_DEFINES) $(C_INCLUDE) 
+CFLAGS += $(C_DEFINES) $(C_INCLUDE)
+
+# define CPP flags (will be added to CFLAGS)
+CPPFLAGS += -fno-rtti -fno-exceptions
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
@@ -56,8 +63,10 @@ endif
 
 # convert .c/.s -> .o
 THUMB_OBJS = $(THUMB_SOURCE:.c=.o)
+THUMB_CPP_OBJS = $(THUMB_CPP_SOURCE:.cpp=.o)
 THUMB_AS_OBJS = $(THUMB_AS_SOURCE:.s=.o)
 ARM_OBJS = $(ARM_SOURCE:.c=.o)
+ARM_CPP_OBJS = $(ARM_CPP_SOURCE:.cpp=.o)
 ARM_AS_OBJS = $(ARM_AS_SOURCE:.s=.o)
 
 # convert .s -> .lst
@@ -94,8 +103,8 @@ Release: all
 	$(NM) -n $< > $@
 
 # rule to create .elf file
-$(PROJECT).elf: $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
-	$(CC) $(CFLAGS) $(ARM_OBJS) $(THUMB_OBJS) $(ARM_AS_OBJS) $(THUMB_AS_OBJS) $(LIBS) $(LDFLAGS) 
+$(PROJECT).elf: $(THUMB_CPP_OBJS) $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_CPP_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
+	$(CC) $(CFLAGS) $(ARM_OBJS) $(THUMB_OBJS) $(ARM_AS_OBJS) $(THUMB_CPP_OBJS) $(ARM_CPP_OBJS) $(THUMB_AS_OBJS) $(LIBS) $(LDFLAGS) 
 
 # rule to output project informations
 projectinfo:
@@ -115,6 +124,13 @@ $(THUMB_OBJS) : %.o : %.c
 $(ARM_OBJS) : %.o : %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
+# default rule for compiling .cpp programs
+$(THUMB_CPP_OBJS) : %.o : %.cpp
+	$(CPP) -c $(CFLAGS) $(CPPFLAGS) -mthumb $< -o $@
+
+$(ARM_CPP_OBJS) : %.o : %.cpp
+	$(CPP) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
 # default rule for compiling assembly programs
 $(THUMB_AS_OBJS) : %.o : %.s
 	$(CC) -c $(AFLAGS) -mthumb $< -o $@
@@ -125,7 +141,7 @@ $(ARM_AS_OBJS) : %.o : %.s
 # clean temporary files
 clean:
 	rm -f *.lss $(PROJECT).sym $(PROJECT).map $(PROJECT).elf
-	rm -f $(THUMB_OBJS) $(THUMB_AS_OBJS) $(THUMB_AS_LST) $(ARM_OBJS) $(ARM_AS_OBJS)  $(ARM_AS_LST)
+	rm -f $(THUMB_OBJS) $(THUMB_CPP_OBJS) $(THUMB_CS_OBJS) $(THUMB_AS_LST) $(ARM_OBJS) $(ARM_CPP_OBJS) $(ARM_AS_OBJS)  $(ARM_AS_LST)
 
 # clean temporary files + project image
 cleanall: clean

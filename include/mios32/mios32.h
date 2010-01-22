@@ -23,7 +23,12 @@ extern "C" {
 /////////////////////////////////////////////////////////////////////////////
 
 #if defined(MIOS32_FAMILY_STM32F10x)
-# include <stm32f10x_conf.h>
+# ifndef __cplusplus
+#  include <stm32f10x_conf.h>
+#  else
+  // STM32 drivers currently not enabled for C++ due to typedef conflicts (e.g. "bool")
+#  include <mios32_datatypes.h>
+#  endif
 #elif defined(MIOS32_FAMILY_EMULATION)
 # include <mios32_datatypes.h>
 #elif defined(MIOS32_FAMILY_MIOSJUCE)
