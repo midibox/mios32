@@ -58,6 +58,7 @@ static u32 stopwatch_value_accumulated;
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
+extern s32 MbSidEnvironment_Init(u32 mode); // located in MbSidEnvironment.cpp
 void APP_Init(void)
 {
   // initialize all LEDs
@@ -93,6 +94,9 @@ void APP_Init(void)
   SID_BANK_Init(0);
   SID_PATCH_Init(0);
   SID_SE_Init(0);
+
+  MbSidEnvironment_Init(0); // located in MbSidEnvironment.cpp
+
 }
 
 
