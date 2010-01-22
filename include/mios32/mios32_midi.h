@@ -142,37 +142,32 @@ typedef union {
     unsigned value2:8;
   };
 
-#ifndef __cplusplus
-#ifndef _MSCVER
-  // C++ doesn't allow to redefine names in unions
-  // as a simple workaround, we only provide them for .c code
-  // VC doesn't like it in C or C++ mode!
+  // C++ doesn't allow to redefine names in anonymous unions
+  // as a simple workaround, we rename these redundant names
   struct {
     unsigned cin:4;
-    unsigned cable:4;
-    mios32_midi_chn_t chn:4;
-    mios32_midi_event_t event:4;
+    unsigned dummy1_cable:4;
+    mios32_midi_chn_t dummy1_chn:4;
+    mios32_midi_event_t dummy1_event:4;
     unsigned note:8;
     unsigned velocity:8;
   };
   struct {
-    unsigned cin:4;
-    unsigned cable:4;
-    mios32_midi_chn_t chn:4;
-    mios32_midi_event_t event:4;
+    unsigned dummy2_cin:4;
+    unsigned dummy2_cable:4;
+    mios32_midi_chn_t dummy2_chn:4;
+    mios32_midi_event_t dummy2_event:4;
     unsigned cc_number:8;
     unsigned value:8;
   };
   struct {
-    unsigned cin:4;
-    unsigned cable:4;
-    mios32_midi_chn_t chn:4;
-    mios32_midi_event_t event:4;
+    unsigned dummy3_cin:4;
+    unsigned dummy3_cable:4;
+    mios32_midi_chn_t dummy3_chn:4;
+    mios32_midi_event_t dummy3_event:4;
     unsigned program_change:8;
-    unsigned dummy:8;
+    unsigned dummy3:8;
   };
-#endif
-#endif
 } mios32_midi_package_t;
 
 
