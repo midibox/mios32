@@ -22,7 +22,8 @@ THUMB_SOURCE += \
 		$(FREE_RTOS)/Source/portable/GCC/ARM_CM3/port.c \
 		$(FREE_RTOS)/Source/portable/MemMang/heap_2.c 
 
-THUMB_CPP_SOURCE += $(MIOS32_PATH)/programming_models/traditional/mini_cpp.cpp
+THUMB_CPP_SOURCE += $(MIOS32_PATH)/programming_models/traditional/mini_cpp.cpp \
+		    $(MIOS32_PATH)/programming_models/traditional/freertos_heap.cpp
 
 # add MIOS32 sources
 include $(MIOS32_PATH)/mios32/mios32.mk
