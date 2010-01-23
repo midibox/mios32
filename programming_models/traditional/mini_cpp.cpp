@@ -27,11 +27,11 @@
 
 //............................................................................
 void *operator new(size_t size) throw() {
-	return malloc(size);
+	return malloc(size); // note: will use FreeRTOS based malloc() in freertos_malloc.cpp
 }
 //............................................................................
 void operator delete(void *p) throw() {
-	free(p);
+	free(p); // note: will use FreeRTOS based free() in freertos_malloc.cpp
 }
 //............................................................................
 extern "C" int __aeabi_atexit(void *object,
