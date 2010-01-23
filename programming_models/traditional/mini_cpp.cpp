@@ -19,21 +19,19 @@
 // Further information can be found in the documents from Quantum Leaps.
 //////////////////////////////////////////////////////////////////////////////
 // another very minor modification by Thorsten Klose (2010-01)
-// Use FreeRTOS based malloc
+// just added comments to new() and delete(), that the versions of
+// freertos_heap.cpp are used
 //////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>                   // for prototypes of malloc() and free()
 
-#include <FreeRTOS.h>
-#include <portmacro.h>
-
 //............................................................................
 void *operator new(size_t size) throw() {
-	return pvPortMalloc(size);
+	return malloc(size);
 }
 //............................................................................
 void operator delete(void *p) throw() {
-	vPortFree(p);
+	free(p);
 }
 //............................................................................
 extern "C" int __aeabi_atexit(void *object,
