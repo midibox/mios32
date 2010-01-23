@@ -27,10 +27,10 @@
 typedef union {
   u8 ALL;
   struct {
-    unsigned LEGATO:1; // mono/legato
-    unsigned WTO:1; // Wavetable Only
-    unsigned SUSKEY:1;
-    unsigned OSC_PHASE_SYNC:1;
+    u8 LEGATO:1; // mono/legato
+    u8 WTO:1; // Wavetable Only
+    u8 SUSKEY:1;
+    u8 OSC_PHASE_SYNC:1;
   };
 } sid_se_b_flags_t;
 

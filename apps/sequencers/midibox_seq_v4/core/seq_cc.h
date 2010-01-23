@@ -161,20 +161,20 @@ typedef struct {
   seq_event_mode_t event_mode;  // event mode
   mios32_midi_port_t midi_port; // MIDI port
   mios32_midi_chn_t midi_chn:4; // MIDI channel
-  unsigned dir_mode:4;        // track direction mode (limited to 4 bits, see also seq_cc_trk_dir_t)
-  unsigned steps_replay:4;    // steps replay value
-  unsigned steps_forward:4;   // steps forward value
-  unsigned steps_jump_back:4; // steps jump back value
+  u8       dir_mode:4;        // track direction mode (limited to 4 bits, see also seq_cc_trk_dir_t)
+  u8       steps_replay:4;    // steps replay value
+  u8       steps_forward:4;   // steps forward value
+  u8       steps_jump_back:4; // steps jump back value
   u8       steps_repeat;      // steps repeat value
   u8       steps_skip;        // steps skip value
   u8       steps_rs_interval; // interval of Repeat/Skip function
   seq_core_clkdiv_t clkdiv;     // clock divider and flags
   u8       length;            // track length
   u8       loop;              // loop point
-  unsigned transpose_semi:4;  // semitons transpose
-  unsigned transpose_oct:4;   // octave transpose
-  unsigned morph_mode:4;      // morph mode
-  unsigned humanize_mode:4;   // humanize mode
+  u8       transpose_semi:4;  // semitons transpose
+  u8       transpose_oct:4;   // octave transpose
+  u8       morph_mode:4;      // morph mode
+  u8       humanize_mode:4;   // humanize mode
   u8       morph_dst;         // morph destination step
   u8       groove_style;      // groove style
   u8       groove_value;      // groove intensity
@@ -184,13 +184,13 @@ typedef struct {
   u8       par_assignment_drum[2]; // only used in drum mode
 
   // new in MBSEQ V4
-  unsigned echo_repeats:4;    // repeats (0..15)
-  unsigned echo_delay:4;      // delay between echoed notes (different predefined lengths + Rnd1/2)
-  unsigned echo_velocity:8;   // initial velocity 0%..200%, 5 step resolution (41 values)
-  unsigned echo_fb_velocity:8; // feedbacked velocity (41 values)
-  unsigned echo_fb_note:8;    // feedbacked note (-24..24 + random = 50 values)
-  unsigned echo_fb_gatelength:8; // feedbacked gatelength 0%..200%, 5 step resolution (41 values)
-  unsigned echo_fb_ticks:8;   // feedbacked ticks 0%..200%, 5 step resolution (41 values)
+  u8       echo_repeats:4;    // repeats (0..15)
+  u8       echo_delay:4;      // delay between echoed notes (different predefined lengths + Rnd1/2)
+  u8       echo_velocity;     // initial velocity 0%..200%, 5 step resolution (41 values)
+  u8       echo_fb_velocity;   // feedbacked velocity (41 values)
+  u8       echo_fb_note;      // feedbacked note (-24..24 + random = 50 values)
+  u8       echo_fb_gatelength; // feedbacked gatelength 0%..200%, 5 step resolution (41 values)
+  u8       echo_fb_ticks;     // feedbacked ticks 0%..200%, 5 step resolution (41 values)
 
   seq_lfo_waveform_t lfo_waveform; // off/Sine/Tri/Saw/Rec 5..95
   u8       lfo_amplitude;     // -128..0..127

@@ -27,9 +27,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  struct {
-    unsigned ALL:32;
-  };
+  u32 ALL;
   struct {
     u8 src_port; // don't use mios32_midi_port_t, since data width is important for save/restore function
     u8 src_chn; // 0 == All, 1..16: specific source channel

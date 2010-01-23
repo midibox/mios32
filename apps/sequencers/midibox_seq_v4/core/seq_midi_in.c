@@ -94,6 +94,8 @@ u8 seq_midi_in_ta_split_note;
 u8 seq_midi_in_sect_channel;
 // which IN port should be used? (0: All)
 mios32_midi_port_t seq_midi_in_sect_port;
+// optional OUT port to forward octaves not taken by section selection (0: disable)
+mios32_midi_port_t seq_midi_in_sect_fwd_port;
 // Starting note for section selection:
 u8 seq_midi_in_sect_note[4];
 
@@ -133,6 +135,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 
   seq_midi_in_sect_channel = 0; // disabled by default
   seq_midi_in_sect_port = DEFAULT; // All ports
+  seq_midi_in_sect_fwd_port = DEFAULT; // 0 = disable
   for(i=0; i<4; ++i)
     seq_midi_in_sect_note[i] = 0x30 + 12*i;
 
@@ -295,18 +298,28 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
   // Section Changer
   if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
+    u8 forward_event = 1;
+
     switch( midi_package.event ) {
       case NoteOff: 
 	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, 0x00);
+	if( (status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, 0x00)) >= 1 )
+	  forward_event = 0;
 	MUTEX_MIDIIN_GIVE;
 	break;
 
       case NoteOn:
 	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, midi_package.velocity);
+	if( (status = SEQ_MIDI_IN_Receive_NoteSC(midi_package.note, midi_package.velocity)) >= 1 )
+	  forward_event = 0;
 	MUTEX_MIDIIN_GIVE;
 	break;
+    }
+
+    if( seq_midi_in_sect_fwd_port && forward_event ) { // octave hasn't been taken, optionally forward to forwarding port
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendPackage(seq_midi_in_sect_fwd_port, midi_package);
+      MUTEX_MIDIOUT_GIVE;
     }
   }
 
@@ -314,18 +327,28 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // Patch Changer (currently assigned to channel+1)
   // Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
   if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel)) ) {
+    u8 forward_event = 1;
+
     switch( midi_package.event ) {
       case NoteOff: 
 	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, 0x00);
+	if( (status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, 0x00)) >= 1 )
+	  forward_event = 0;
 	MUTEX_MIDIIN_GIVE;
 	break;
 
       case NoteOn:
 	MUTEX_MIDIIN_TAKE;
-	status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, midi_package.velocity);
+	if( (status = SEQ_MIDI_IN_Receive_NotePC(midi_package.note, midi_package.velocity)) >= 1 )
+	  forward_event = 0;
 	MUTEX_MIDIIN_GIVE;
 	break;
+    }
+
+    if( seq_midi_in_sect_fwd_port && forward_event ) { // octave hasn't been taken, optionally forward to forwarding port
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendPackage(seq_midi_in_sect_fwd_port, midi_package);
+      MUTEX_MIDIOUT_GIVE;
     }
   }
 #endif
@@ -428,10 +451,12 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
 static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
 {
   int octave = note / 12;
+  int octave_taken = 0;
 
   int group;
   for(group=0; group<4; ++group) {
     if( octave == (seq_midi_in_sect_note[group] / 12) ) {
+      octave_taken = 1;
       notestack_t *n = &notestack[NOTESTACK_SECTION_CHANGER_G1 + group];
 
       int section = -1;
@@ -466,7 +491,7 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
     }
   }
 
-  return 0; // no error
+  return octave_taken; // return 1 if octave has been taken, otherwise 0
 }
 
 
@@ -477,10 +502,12 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 {
   int octave = note / 12;
+  int octave_taken = 0;
 
   int group;
   for(group=0; group<4; ++group) {
     if( octave == (seq_midi_in_sect_note[group] / 12) ) {
+      octave_taken = 1;
       notestack_t *n = &notestack[NOTESTACK_PATCH_CHANGER_G1 + group];
 
       int patch = -1;
@@ -511,7 +538,7 @@ static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
     }
   }
 
-  return 0; // no error
+  return octave_taken; // return 1 if octave has been taken, otherwise 0
 }
 
 

@@ -66,50 +66,50 @@ typedef enum {
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   };
 
   struct {
-    unsigned CTR:3;
-    unsigned MY_SYSEX:1;
-    unsigned CMD:1;
+    u8 CTR:3;
+    u8 MY_SYSEX:1;
+    u8 CMD:1;
   };
 
   struct {
-    unsigned CTR:3;
-    unsigned MY_SYSEX:1;
-    unsigned CMD:1;
-    unsigned TYPE_RECEIVED:1; // used by most actions
+    u8 CTR:3;
+    u8 MY_SYSEX:1;
+    u8 CMD:1;
+    u8 TYPE_RECEIVED:1; // used by most actions
   };
 
   struct {
-    unsigned CTR:3;
-    unsigned MY_SYSEX:1;
-    unsigned CMD:1;
-    unsigned TYPE_RECEIVED:1; // used by most actions
-    unsigned BANK_RECEIVED:1; // used by PATCH_[Read/Write]
-    unsigned PATCH_RECEIVED:1; // used by PATCH_[Read/Write]
-    unsigned CHECKSUM_RECEIVED:1; // used by PATCH_Write
-    unsigned LNIBBLE_RECV:1; // used by PATCH_Write
+    u8 CTR:3;
+    u8 MY_SYSEX:1;
+    u8 CMD:1;
+    u8 TYPE_RECEIVED:1; // used by most actions
+    u8 BANK_RECEIVED:1; // used by PATCH_[Read/Write]
+    u8 PATCH_RECEIVED:1; // used by PATCH_[Read/Write]
+    u8 CHECKSUM_RECEIVED:1; // used by PATCH_Write
+    u8 LNIBBLE_RECV:1; // used by PATCH_Write
   };
 
   struct {
-    unsigned CTR:3;
-    unsigned MY_SYSEX:1;
-    unsigned CMD:1;
-    unsigned TYPE_RECEIVED:1; // used by most actions
-    unsigned AH_RECEIVED:1; // used by PAR_[Read/Write]
-    unsigned AL_RECEIVED:1; // used by PAR_[Read/Write]
-    unsigned DL_RECEIVED:1; // used by PAR_[Read/Write]
-    unsigned DH_RECEIVED:1; // used by PAR_[Read/Write]
+    u8 CTR:3;
+    u8 MY_SYSEX:1;
+    u8 CMD:1;
+    u8 TYPE_RECEIVED:1; // used by most actions
+    u8 AH_RECEIVED:1; // used by PAR_[Read/Write]
+    u8 AL_RECEIVED:1; // used by PAR_[Read/Write]
+    u8 DL_RECEIVED:1; // used by PAR_[Read/Write]
+    u8 DH_RECEIVED:1; // used by PAR_[Read/Write]
   };
 
   struct {
-    unsigned CTR:3;
-    unsigned MY_SYSEX:1;
-    unsigned CMD:1;
-    unsigned TYPE_RECEIVED:1; // used by most actions
-    unsigned EXTRA_CMD_RECEIVED:1; // used by Patch_ExtraCmd
+    u8 CTR:3;
+    u8 MY_SYSEX:1;
+    u8 CMD:1;
+    u8 TYPE_RECEIVED:1; // used by most actions
+    u8 EXTRA_CMD_RECEIVED:1; // used by Patch_ExtraCmd
   };
 
 } sysex_state_t;

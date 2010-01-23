@@ -36,17 +36,17 @@
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   };
   struct {
-    unsigned gate:4;
-    unsigned accent:4;
-    unsigned roll:4;
-    unsigned glide:4;
-    unsigned skip:4;
-    unsigned random_gate:4;
-    unsigned random_value:4;
-    unsigned no_fx:4;
+    u8 gate:4;
+    u8 accent:4;
+    u8 roll:4;
+    u8 glide:4;
+    u8 skip:4;
+    u8 random_gate:4;
+    u8 random_value:4;
+    u8 no_fx:4;
   };
 } seq_trg_assignments_t;
 

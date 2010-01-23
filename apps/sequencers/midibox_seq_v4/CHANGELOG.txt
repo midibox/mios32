@@ -6,6 +6,15 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta16
+~~~~~~~~~~~~~~~~~~~~~
+
+  o MIDI->Section Control: Octaves which are not taken for section selection
+    can now be optionally forwarded to a definable MIDI port.
+    This saves you from adding a keyboard splitter to your MIDI keyboard, if
+    you want to play a MIDI instrument from an unused keyboard zone.
+
+
 MIDIboxSEQ V4.0beta15
 ~~~~~~~~~~~~~~~~~~~~~
 
