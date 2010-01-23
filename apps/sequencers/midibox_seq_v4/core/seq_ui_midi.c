@@ -41,7 +41,7 @@
 
 
 
-#define NUM_OF_ITEMS       19
+#define NUM_OF_ITEMS       20
 
 // Transpose
 #define ITEM_IN_PORT       0
@@ -57,18 +57,19 @@
 #define ITEM_S_OCT_G2      8
 #define ITEM_S_OCT_G3      9
 #define ITEM_S_OCT_G4      10
-#define ITEM_S_RESET_STACKS 11
+#define ITEM_S_FWD_PORT    11
+#define ITEM_S_RESET_STACKS 12
 
 // MIDI Router
-#define ITEM_R_NODE        12
-#define ITEM_R_SRC_PORT    13
-#define ITEM_R_SRC_CHN     14
-#define ITEM_R_DST_PORT    15
-#define ITEM_R_DST_CHN     16
-#define ITEM_DEF_PORT      17
+#define ITEM_R_NODE        13
+#define ITEM_R_SRC_PORT    14
+#define ITEM_R_SRC_CHN     15
+#define ITEM_R_DST_PORT    16
+#define ITEM_R_DST_CHN     17
+#define ITEM_DEF_PORT      18
 
 // Misc
-#define ITEM_BLM_SCALAR_PORT 18
+#define ITEM_BLM_SCALAR_PORT 19
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -109,6 +110,7 @@ static s32 LED_Handler(u16 *gp_leds)
         case ITEM_S_OCT_G2: *gp_leds |= 0x0800; break;
         case ITEM_S_OCT_G3: *gp_leds |= 0x1000; break;
         case ITEM_S_OCT_G4: *gp_leds |= 0x2000; break;
+        case ITEM_S_FWD_PORT: *gp_leds |= 0x4000; break;
         case ITEM_S_RESET_STACKS: *gp_leds |= 0x8000; break;
       }
       break;
@@ -244,7 +246,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  break;
 
         case SEQ_UI_ENCODER_GP15:
-	  return -1; // not mapped
+	  ui_selected_item = ITEM_S_FWD_PORT;
+	  break;
 
         case SEQ_UI_ENCODER_GP16:
 	  ui_selected_item = ITEM_S_RESET_STACKS;
@@ -414,6 +417,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // no change
     } break;
 
+    case ITEM_S_FWD_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_midi_in_sect_fwd_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_in_sect_fwd_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
     case ITEM_S_RESET_STACKS: {
       SEQ_MIDI_IN_ResetChangerStacks();
       SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Section Changer", "Stacks cleared!");
@@ -556,8 +569,8 @@ static s32 LCD_Handler(u8 high_prio)
   // Transposer  Section    MIDI             Port Chn. T/A Split Midd.Note      Reset
   //  and Arp.   Control   Router    Misc.   IN1  #16     off       C-3        Stacks
 
-  // Transposer  Section    MIDI             Port Chn.  G1   G2   G3   G4       Reset
-  //  and Arp.   Control   Router    Misc.   Def. #16  C-1  C-2  C-3  C-4      Stacks
+  // Transposer  Section    MIDI             Port Chn.  G1   G2   G3   G4  Fwd  Reset
+  //  and Arp.   Control   Router    Misc.   Def. #16  C-1  C-2  C-3  C-4  USB1 Stcks
 
   // Transposer  Section    MIDI             Node IN P/Chn  OUT P/Chn     DefaultPort
   //  and Arp.   Control   Router    Misc.    #1  Def. All  Def. # 1         USB1    
@@ -650,7 +663,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
     case SUBPAGE_SECTIONS: {
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("Port Chn.  G1   G2   G3   G4       Reset");
+      SEQ_LCD_PrintString("Port Chn.  G1   G2   G3   G4  Fwd  Reset");
       SEQ_LCD_CursorSet(40, 1);
 
       ///////////////////////////////////////////////////////////////////////
@@ -706,8 +719,20 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintNote(seq_midi_in_sect_note[3]);
       }
 
-      SEQ_LCD_PrintSpaces(6);
-      SEQ_LCD_PrintString("Stacks");
+      SEQ_LCD_PrintSpaces(2);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_S_FWD_PORT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	if( seq_midi_in_sect_fwd_port == 0 )
+	  SEQ_LCD_PrintString("----");
+	else
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_midi_in_sect_fwd_port)));
+      }
+
+      SEQ_LCD_PrintSpaces(1);
+      SEQ_LCD_PrintString("Stcks");
     } break;
 
 

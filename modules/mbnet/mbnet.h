@@ -54,15 +54,13 @@ typedef enum {
 } mbnet_tos_ack_t;
 
 typedef union {
+  u32 ALL;
   struct {
-    unsigned ALL:32;
-  };
-  struct {
-    unsigned control:16;
-    unsigned tos:2;
-    unsigned ms:3;
-    unsigned node:7;
-    unsigned ack:1;
+    u16 control;
+    u8 tos:2;
+    u8 ms:3;
+    u8 node:7;
+    u8 ack:1;
   };
 } mbnet_id_t;
 
@@ -87,12 +85,10 @@ typedef union {
 
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned PANIC:1;
-    unsigned PERMANENT_OFF:1;
+    u8 PANIC:1;
+    u8 PERMANENT_OFF:1;
   };
 } mbnet_state_t;
 

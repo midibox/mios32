@@ -146,17 +146,17 @@ typedef enum sid_se_engine_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned sid_type:2; // 0=no SID restriction, 1=6581, 2=6582/8580, 3=SwinSID
-    unsigned reserved:1;
-    unsigned stereo:1;
-    unsigned caps:4; // 0=470pF, 1=1nF, 2=2.2nF, 3=4.7nF, 4=6.8nF, 5=10nF, 6=22nF, 7=47nF, 8=100nF
+    u8 sid_type:2; // 0=no SID restriction, 1=6581, 2=6582/8580, 3=SwinSID
+    u8 reserved:1;
+    u8 stereo:1;
+    u8 caps:4; // 0=470pF, 1=1nF, 2=2.2nF, 3=4.7nF, 4=6.8nF, 5=10nF, 6=22nF, 7=47nF, 8=100nF
   };
 } sid_se_hw_flags_t;
 
 typedef union {
   u16 ALL;
   struct {
-    unsigned ABW:1; // ADSR Bug Workaround
+    u8 ABW:1; // ADSR Bug Workaround
   };
 } sid_se_opt_flags_t;
 
@@ -168,26 +168,26 @@ typedef union {
 typedef union {
   u8 ALL;
   struct {
-    unsigned SLAVE:1;
+    u8 SLAVE:1;
   };
 } sid_se_clk_state_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned CLK:1;
-    unsigned MIDI_START:1;
-    unsigned MIDI_CONTINUE:1;
-    unsigned MIDI_STOP:1;
+    u8 CLK:1;
+    u8 MIDI_START:1;
+    u8 MIDI_CONTINUE:1;
+    u8 MIDI_STOP:1;
 
-    unsigned MIDI_START_REQ:1;
-    unsigned MIDI_CONTINUE_REQ:1;
-    unsigned MIDI_STOP_REQ:1;
+    u8 MIDI_START_REQ:1;
+    u8 MIDI_CONTINUE_REQ:1;
+    u8 MIDI_STOP_REQ:1;
   };
 
   struct {
-    unsigned ALL_SE:4;
-    unsigned ALL_MIDI:3;
+    u8 ALL_SE:4;
+    u8 ALL_MIDI:3;
   };
 } sid_se_clk_event_t;
 
@@ -213,30 +213,30 @@ typedef union {
   //u32 ALL32;
   u8 ALL[3];
   struct {
-    unsigned O1L:1; // OSC1 Left
-    unsigned O2L:1; // OSC2 Left
-    unsigned O3L:1; // OSC3 Left
-    unsigned O1R:1; // OSC1 Right
-    unsigned O2R:1; // OSC2 Right
-    unsigned O3R:1; // OSC3 Right
-    unsigned E1A:1; // ENV1 Attack
-    unsigned E2A:1; // ENV2 Attack
-    unsigned E1R:1; // ENV1 Release
-    unsigned E2R:1; // ENV2 Release
-    unsigned L1:1; // LFO1 Sync
-    unsigned L2:1; // LFO2 Sync
-    unsigned L3:1; // LFO3 Sync
-    unsigned L4:1; // LFO4 Sync
-    unsigned L5:1; // LFO5 Sync
-    unsigned L6:1; // LFO6 Sync
-    unsigned W1R:1; // WT1 reset
-    unsigned W2R:1; // WT2 reset
-    unsigned W3R:1; // WT3 reset
-    unsigned W4R:1; // WT4 reset
-    unsigned W1S:1; // WT1 step
-    unsigned W2S:1; // WT2 step
-    unsigned W3S:1; // WT3 step
-    unsigned W4S:1; // WT4 step
+    u8 O1L:1; // OSC1 Left
+    u8 O2L:1; // OSC2 Left
+    u8 O3L:1; // OSC3 Left
+    u8 O1R:1; // OSC1 Right
+    u8 O2R:1; // OSC2 Right
+    u8 O3R:1; // OSC3 Right
+    u8 E1A:1; // ENV1 Attack
+    u8 E2A:1; // ENV2 Attack
+    u8 E1R:1; // ENV1 Release
+    u8 E2R:1; // ENV2 Release
+    u8 L1:1; // LFO1 Sync
+    u8 L2:1; // LFO2 Sync
+    u8 L3:1; // LFO3 Sync
+    u8 L4:1; // LFO4 Sync
+    u8 L5:1; // LFO5 Sync
+    u8 L6:1; // LFO6 Sync
+    u8 W1R:1; // WT1 reset
+    u8 W2R:1; // WT2 reset
+    u8 W3R:1; // WT3 reset
+    u8 W4R:1; // WT4 reset
+    u8 W1S:1; // WT1 step
+    u8 W2S:1; // WT2 step
+    u8 W3S:1; // WT3 step
+    u8 W4S:1; // WT4 step
   };
 } sid_se_trg_t;
 
@@ -247,10 +247,10 @@ typedef union {
 typedef union {
   u8 ALL;
   struct {
-    unsigned ARP_ACTIVE:1;
-    unsigned ARP_UP:1;
-    unsigned SYNC_ARP:1;
-    unsigned HOLD_SAVED:1;
+    u8 ARP_ACTIVE:1;
+    u8 ARP_UP:1;
+    u8 SYNC_ARP:1;
+    u8 HOLD_SAVED:1;
   };
 } sid_se_arp_state_t;
 
@@ -281,107 +281,107 @@ typedef struct sid_se_midi_voice_t {
 typedef union {
   u16 ALL;
   struct {
-    unsigned VOICE_ACTIVE:1;
-    unsigned VOICE_DISABLED:1;
-    unsigned GATE_ACTIVE:1;
-    unsigned GATE_SET_REQ:1;
-    unsigned GATE_CLR_REQ:1;
-    unsigned OSC_SYNC_IN_PROGRESS:1;
-    unsigned PORTA_ACTIVE:1;
-    unsigned PORTA_INITIALIZED:1; // portamento omitted when first key played 
-    unsigned ACCENT:1;
-    unsigned SLIDE:1;
-    unsigned FORCE_FRQ_RECALC:1; // forces SID frequency re-calculation (if SID frequency registers have been changed externally)
+    u8 VOICE_ACTIVE:1;
+    u8 VOICE_DISABLED:1;
+    u8 GATE_ACTIVE:1;
+    u8 GATE_SET_REQ:1;
+    u8 GATE_CLR_REQ:1;
+    u8 OSC_SYNC_IN_PROGRESS:1;
+    u8 PORTA_ACTIVE:1;
+    u8 PORTA_INITIALIZED:1; // portamento omitted when first key played 
+    u8 ACCENT:1;
+    u8 SLIDE:1;
+    u8 FORCE_FRQ_RECALC:1; // forces SID frequency re-calculation (if SID frequency registers have been changed externally)
   };
 } sid_se_voice_state_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned PORTA_MODE:2; // portamento (0), constant time glide (1), glissando (2)
-    unsigned GSA:1; // gate always enabled
+    u8 PORTA_MODE:2; // portamento (0), constant time glide (1), glissando (2)
+    u8 GSA:1; // gate always enabled
   };
 } sid_se_voice_flags_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned WAVEFORM:4;
-    unsigned VOICE_OFF:1;
-    unsigned SYNC:1;
-    unsigned RINGMOD:1;
-    unsigned RESERVED:1;
+    u8 WAVEFORM:4;
+    u8 VOICE_OFF:1;
+    u8 SYNC:1;
+    u8 RINGMOD:1;
+    u8 RESERVED:1;
   };
 } sid_se_voice_waveform_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned DECAY:4;
-    unsigned ATTACK:4;
+    u8 DECAY:4;
+    u8 ATTACK:4;
   };
 } sid_se_voice_ad_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned SUSTAIN:4;
-    unsigned RELEASE:4;
+    u8 SUSTAIN:4;
+    u8 RELEASE:4;
   };
 } sid_se_voice_sr_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned ENABLE:1;
-    unsigned DIR:3; // up/down/U&D/D&U/Random
-    unsigned SORTED:1;
-    unsigned HOLD:1;
-    unsigned SYNC:1;
-    unsigned CAC:1;
+    u8 ENABLE:1;
+    u8 DIR:3; // up/down/U&D/D&U/Random
+    u8 SORTED:1;
+    u8 HOLD:1;
+    u8 SYNC:1;
+    u8 CAC:1;
   };
 } sid_se_voice_arp_mode_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned DIV:6;
-    unsigned EASY_CHORD:1;
-    unsigned ONESHOT:1;
+    u8 DIV:6;
+    u8 EASY_CHORD:1;
+    u8 ONESHOT:1;
   };
 } sid_se_voice_arp_speed_div_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned GATELENGTH:5;
-    unsigned OCTAVE_RANGE:3;
+    u8 GATELENGTH:5;
+    u8 OCTAVE_RANGE:3;
   };
 } sid_se_voice_arp_gl_rng_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned WAVEFORM_SECOND:4;
-    unsigned ENABLE_SECOND:1;
-    unsigned PITCHX2:1;
-    unsigned REVERSED_WAVEFORM:1;
+    u8 WAVEFORM_SECOND:4;
+    u8 ENABLE_SECOND:1;
+    u8 PITCHX2:1;
+    u8 REVERSED_WAVEFORM:1;
   };
 } sid_se_voice_swinsid_mode_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned LEGATO:1; // mono/legato
-    unsigned WTO:1; // Wavetable Only
-    unsigned SUSKEY:1;
-    unsigned POLY:1; // Multi Engine only
-    unsigned OSC_PHASE_SYNC:1; // only used by Bassline and Multi Engine, Lead engine uses osc_phase parameter
+    u8 LEGATO:1; // mono/legato
+    u8 WTO:1; // Wavetable Only
+    u8 SUSKEY:1;
+    u8 POLY:1; // Multi Engine only
+    u8 OSC_PHASE_SYNC:1; // only used by Bassline and Multi Engine, Lead engine uses osc_phase parameter
   };
 
   struct {
-    unsigned dummy:4;
-    unsigned VOICE_ASG:4; // only used by Drum engine
+    u8 dummy:4;
+    u8 VOICE_ASG:4; // only used by Drum engine
   } D;
 
 } sid_se_v_flags_t;
@@ -536,11 +536,11 @@ typedef struct sid_se_filter_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned ENABLE:1;
-    unsigned KEYSYNC:1; // *not* used for lead engine (keysync via trigger matrix)
-    unsigned CLKSYNC:1;
-    unsigned ONESHOT:1;
-    unsigned WAVEFORM:4;
+    u8 ENABLE:1;
+    u8 KEYSYNC:1; // *not* used for lead engine (keysync via trigger matrix)
+    u8 CLKSYNC:1;
+    u8 ONESHOT:1;
+    u8 WAVEFORM:4;
   };
 } sid_se_lfo_mode_t;
 
@@ -598,18 +598,18 @@ typedef struct sid_se_lfo_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned LOOP_BEGIN:3;
-    unsigned RESERVED1:1;
-    unsigned LOOP_END:3;
-    unsigned CLKSYNC:1;
+    u8 LOOP_BEGIN:3;
+    u8 RESERVED1:1;
+    u8 LOOP_END:3;
+    u8 CLKSYNC:1;
   } L;
 
   struct {
-    unsigned RESERVED:4;
-    unsigned CURVE_A:1;
-    unsigned CURVE_D:1;
-    unsigned CURVE_R:1;
-    unsigned CLKSYNC:1;
+    u8 RESERVED:4;
+    u8 CURVE_A:1;
+    u8 CURVE_D:1;
+    u8 CURVE_R:1;
+    u8 CLKSYNC:1;
   } MINIMAL;
 } sid_se_env_mode_t;
 
@@ -688,9 +688,9 @@ typedef struct sid_se_env_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned CLKDIV:6;
-    unsigned CHANNEL_TARGET_SIDL:1;
-    unsigned CHANNEL_TARGET_SIDR:1;
+    u8 CLKDIV:6;
+    u8 CHANNEL_TARGET_SIDL:1;
+    u8 CHANNEL_TARGET_SIDR:1;
   };
 } sid_se_wt_speed_par_t;
 
@@ -722,24 +722,24 @@ typedef struct sid_se_wt_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned OP:4;
-    unsigned RESERVED:2;
-    unsigned INVERT_TARGET_1;
-    unsigned INVERT_TARGET_2;
+    u8 OP:4;
+    u8 RESERVED:2;
+    u8 INVERT_TARGET_1;
+    u8 INVERT_TARGET_2;
   };
 } sid_se_mod_op_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned PITCH_1:1;
-    unsigned PITCH_2:1;
-    unsigned PITCH_3:1;
-    unsigned PW_1:1;
-    unsigned PW_2:1;
-    unsigned PW_3:1;
-    unsigned FILTER:1;
-    unsigned VOLUME:1;
+    u8 PITCH_1:1;
+    u8 PITCH_2:1;
+    u8 PITCH_3:1;
+    u8 PW_1:1;
+    u8 PW_2:1;
+    u8 PW_3:1;
+    u8 FILTER:1;
+    u8 VOLUME:1;
   };
 } sid_se_mod_direct_targets_t;
 
@@ -759,35 +759,35 @@ typedef struct sid_se_mod_patch_t {
 typedef union {
   u8 ALL;
   struct {
-    unsigned ENABLED:1;
-    unsigned RUNNING:1;
+    u8 ENABLED:1;
+    u8 RUNNING:1;
   };
 } sid_se_seq_state_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned CLKDIV:6;
-    unsigned SEQ_ON:1; // only used by drum sequencer
-    unsigned SYNCH_TO_MEASURE:1; // also called "16step sync"
+    u8 CLKDIV:6;
+    u8 SEQ_ON:1; // only used by drum sequencer
+    u8 SYNCH_TO_MEASURE:1; // also called "16step sync"
   };
 } sid_se_seq_speed_par_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned NOTE:4;
-    unsigned OCTAVE:2;
-    unsigned SLIDE:1;
-    unsigned GATE:1;
+    u8 NOTE:4;
+    u8 OCTAVE:2;
+    u8 SLIDE:1;
+    u8 GATE:1;
   };
 } sid_se_seq_note_item_t;
 
 typedef union {
   u8 ALL;
   struct {
-    unsigned PAR_VALUE:7;
-    unsigned ACCENT:1;
+    u8 PAR_VALUE:7;
+    u8 ACCENT:1;
   };
 } sid_se_seq_asg_item_t;
 

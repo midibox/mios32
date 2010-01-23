@@ -40,6 +40,10 @@
 		522FC56711012B4B00C77010 /* AUControlGroup.h in Headers */ = {isa = PBXBuildFile; fileRef = 522FC55E11012B4B00C77010 /* AUControlGroup.h */; };
 		522FC56811012B4B00C77010 /* CarbonEventHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522FC55F11012B4B00C77010 /* CarbonEventHandler.cpp */; };
 		522FC56911012B4B00C77010 /* CarbonEventHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 522FC56011012B4B00C77010 /* CarbonEventHandler.h */; };
+		525B0CA7110BB56800F93C55 /* MbSid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 525B0CA3110BB56800F93C55 /* MbSid.cpp */; };
+		525B0CA8110BB56800F93C55 /* MbSid.h in Headers */ = {isa = PBXBuildFile; fileRef = 525B0CA4110BB56800F93C55 /* MbSid.h */; };
+		525B0CA9110BB56800F93C55 /* MbSidEnvironment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 525B0CA5110BB56800F93C55 /* MbSidEnvironment.cpp */; };
+		525B0CAA110BB56800F93C55 /* MbSidEnvironment.h in Headers */ = {isa = PBXBuildFile; fileRef = 525B0CA6110BB56800F93C55 /* MbSidEnvironment.h */; };
 		5278A07B110231940011DBA2 /* envelope.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A075110231940011DBA2 /* envelope.cc */; };
 		5278A07C110231940011DBA2 /* envelope.h in Headers */ = {isa = PBXBuildFile; fileRef = 5278A076110231940011DBA2 /* envelope.h */; };
 		5278A07D110231940011DBA2 /* extfilt.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A077110231940011DBA2 /* extfilt.cc */; };
@@ -246,6 +250,10 @@
 		522FC55E11012B4B00C77010 /* AUControlGroup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AUControlGroup.h; path = Extras/CoreAudio/AudioUnits/AUPublic/AUCarbonViewBase/AUControlGroup.h; sourceTree = DEVELOPER_DIR; };
 		522FC55F11012B4B00C77010 /* CarbonEventHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CarbonEventHandler.cpp; path = Extras/CoreAudio/AudioUnits/AUPublic/AUCarbonViewBase/CarbonEventHandler.cpp; sourceTree = DEVELOPER_DIR; };
 		522FC56011012B4B00C77010 /* CarbonEventHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CarbonEventHandler.h; path = Extras/CoreAudio/AudioUnits/AUPublic/AUCarbonViewBase/CarbonEventHandler.h; sourceTree = DEVELOPER_DIR; };
+		525B0CA3110BB56800F93C55 /* MbSid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSid.cpp; path = ../../../core/MbSid.cpp; sourceTree = SOURCE_ROOT; };
+		525B0CA4110BB56800F93C55 /* MbSid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSid.h; path = ../../../core/MbSid.h; sourceTree = SOURCE_ROOT; };
+		525B0CA5110BB56800F93C55 /* MbSidEnvironment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidEnvironment.cpp; path = ../../../core/MbSidEnvironment.cpp; sourceTree = SOURCE_ROOT; };
+		525B0CA6110BB56800F93C55 /* MbSidEnvironment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidEnvironment.h; path = ../../../core/MbSidEnvironment.h; sourceTree = SOURCE_ROOT; };
 		5278A075110231940011DBA2 /* envelope.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = envelope.cc; path = ../../resid/envelope.cc; sourceTree = SOURCE_ROOT; };
 		5278A076110231940011DBA2 /* envelope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = envelope.h; path = ../../resid/envelope.h; sourceTree = SOURCE_ROOT; };
 		5278A077110231940011DBA2 /* extfilt.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = extfilt.cc; path = ../../resid/extfilt.cc; sourceTree = SOURCE_ROOT; };
@@ -570,6 +578,10 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				525B0CA3110BB56800F93C55 /* MbSid.cpp */,
+				525B0CA4110BB56800F93C55 /* MbSid.h */,
+				525B0CA5110BB56800F93C55 /* MbSidEnvironment.cpp */,
+				525B0CA6110BB56800F93C55 /* MbSidEnvironment.h */,
 				528B861B110335BC003F6346 /* sid_bank.c */,
 				528B861C110335BC003F6346 /* sid_bank.h */,
 				52959FC511025D62003FC4D0 /* app.c */,
@@ -920,6 +932,8 @@
 				5295A0851102687F003FC4D0 /* mios32_config.h in Headers */,
 				5295A09A110269DD003FC4D0 /* aout.h in Headers */,
 				528B861F110335BC003F6346 /* sid_bank.h in Headers */,
+				525B0CA8110BB56800F93C55 /* MbSid.h in Headers */,
+				525B0CAA110BB56800F93C55 /* MbSidEnvironment.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1067,6 +1081,8 @@
 				5295A099110269DD003FC4D0 /* aout.c in Sources */,
 				5295A0A211026ADE003FC4D0 /* tasks.c in Sources */,
 				528B861E110335BC003F6346 /* sid_bank.c in Sources */,
+				525B0CA7110BB56800F93C55 /* MbSid.cpp in Sources */,
+				525B0CA9110BB56800F93C55 /* MbSidEnvironment.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

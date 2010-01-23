@@ -38,40 +38,40 @@
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   };
   struct {
-    unsigned PAGE_CHANGE_BUTTON_FLAGS:6;
+    u8 PAGE_CHANGE_BUTTON_FLAGS:6;
   };
   struct {
     // these button functions will change a page (special "radio button" handling required)
-    unsigned MENU_PRESSED:1;
-    unsigned STEP_VIEW:1;
-    unsigned PAR_LAYER_SEL:1;
-    unsigned TRG_LAYER_SEL:1;
-    unsigned TRACK_SEL:1;
-    unsigned TEMPO_PRESET:1;
+    u8 MENU_PRESSED:1;
+    u8 STEP_VIEW:1;
+    u8 PAR_LAYER_SEL:1;
+    u8 TRG_LAYER_SEL:1;
+    u8 TRACK_SEL:1;
+    u8 TEMPO_PRESET:1;
 
     // remaining functions
-    unsigned MENU_FIRST_PAGE_SELECTED:1;
-    unsigned CHANGE_ALL_STEPS:1;
-    unsigned CHANGE_ALL_STEPS_SAME_VALUE:1;
-    unsigned SELECT_PRESSED:1;
-    unsigned EDIT_PRESSED:1;
-    unsigned MUTE_PRESSED:1;
-    unsigned PATTERN_PRESSED:1;
-    unsigned SONG_PRESSED:1;
-    unsigned FAST_ENCODERS:1;
-    unsigned SOLO:1;
-    unsigned SCRUB:1;
-    unsigned REW:1;
-    unsigned FWD:1;
-    unsigned COPY:1;
-    unsigned PASTE:1;
-    unsigned CLEAR:1;
-    unsigned TAP_TEMPO:1;
-    unsigned UP:1;
-    unsigned DOWN:1;
+    u8 MENU_FIRST_PAGE_SELECTED:1;
+    u8 CHANGE_ALL_STEPS:1;
+    u8 CHANGE_ALL_STEPS_SAME_VALUE:1;
+    u8 SELECT_PRESSED:1;
+    u8 EDIT_PRESSED:1;
+    u8 MUTE_PRESSED:1;
+    u8 PATTERN_PRESSED:1;
+    u8 SONG_PRESSED:1;
+    u8 FAST_ENCODERS:1;
+    u8 SOLO:1;
+    u8 SCRUB:1;
+    u8 REW:1;
+    u8 FWD:1;
+    u8 COPY:1;
+    u8 PASTE:1;
+    u8 CLEAR:1;
+    u8 TAP_TEMPO:1;
+    u8 UP:1;
+    u8 DOWN:1;
   };
 } seq_ui_button_state_t;
 

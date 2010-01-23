@@ -25,15 +25,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned NAME:1;
-    unsigned CHN:1;
-    unsigned MAPS:1;
-    unsigned CFG:1;
-    unsigned STEPS:1;
+    u8 NAME:1;
+    u8 CHN:1;
+    u8 MAPS:1;
+    u8 CFG:1;
+    u8 STEPS:1;
   };
 } seq_file_t_import_flags_t;
 

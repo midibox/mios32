@@ -25,12 +25,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned MIDI_CLOCK:1;
-    unsigned ACTIVE_SENSE:1;
+    u8 MIDI_CLOCK:1;
+    u8 ACTIVE_SENSE:1;
   };
 } seq_midi_port_mon_filter_t;
 

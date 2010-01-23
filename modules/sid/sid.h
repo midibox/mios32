@@ -119,9 +119,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  struct {
-    u8 ALL[7];
-  };
+  u8 ALL[7];
   struct {
     u8 frq_l; // don't use u16 to avoid little/big endian issues
     u8 frq_h;
@@ -134,16 +132,16 @@ typedef union {
   struct {
     u8 dummy[4]; // don't define frq_[lh] and pw_[lh] again
 
-    unsigned gate:1;
-    unsigned sync:1;
-    unsigned ringmod:1;
-    unsigned test:1;
-    unsigned waveform:4;
+    u8 gate:1;
+    u8 sync:1;
+    u8 ringmod:1;
+    u8 test:1;
+    u8 waveform:4;
 
-    unsigned decay:4;
-    unsigned attack:4;
-    unsigned release:4;
-    unsigned sustain:4;
+    u8 decay:4;
+    u8 attack:4;
+    u8 release:4;
+    u8 sustain:4;
   };
 } sid_voice_t;
 
@@ -164,10 +162,10 @@ typedef union {
     u8 filter_l;
     u8 filter_h;
 
-    unsigned filter_select:4;
-    unsigned resonance: 4;
-    unsigned volume: 4;
-    unsigned filter_mode: 4;
+    u8 filter_select:4;
+    u8 resonance: 4;
+    u8 volume: 4;
+    u8 filter_mode: 4;
 
     u8 swinsid_phase[3];
     u8 swinsid_mode[3];

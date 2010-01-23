@@ -53,15 +53,13 @@ typedef enum {
 
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:5;
-  };
-  struct {
-    unsigned ONE_SHOT:1;
-    unsigned NOTE:1;
-    unsigned VELOCITY:1;
-    unsigned LENGTH:1;
-    unsigned CC:1;
+    u8 ONE_SHOT:1;
+    u8 NOTE:1;
+    u8 VELOCITY:1;
+    u8 LENGTH:1;
+    u8 CC:1;
   };
 } seq_lfo_enable_flags_t;
 

@@ -125,48 +125,48 @@ typedef enum {
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   };
   struct {
-    unsigned cin_cable:8;
-    unsigned evnt0:8;
-    unsigned evnt1:8;
-    unsigned evnt2:8;
+    u8 cin_cable;
+    u8 evnt0;
+    u8 evnt1;
+    u8 evnt2;
   };
   struct {
-    unsigned type:4;
-    unsigned cable:4;
+    u8 type:4;
+    u8 cable:4;
     mios32_midi_chn_t chn:4;
     mios32_midi_event_t event:4;
-    unsigned value1:8;
-    unsigned value2:8;
+    u8 value1;
+    u8 value2;
   };
 
   // C++ doesn't allow to redefine names in anonymous unions
   // as a simple workaround, we rename these redundant names
   struct {
-    unsigned cin:4;
-    unsigned dummy1_cable:4;
+    u8 cin:4;
+    u8 dummy1_cable:4;
     mios32_midi_chn_t dummy1_chn:4;
     mios32_midi_event_t dummy1_event:4;
-    unsigned note:8;
-    unsigned velocity:8;
+    u8 note:8;
+    u8 velocity:8;
   };
   struct {
-    unsigned dummy2_cin:4;
-    unsigned dummy2_cable:4;
+    u8 dummy2_cin:4;
+    u8 dummy2_cable:4;
     mios32_midi_chn_t dummy2_chn:4;
     mios32_midi_event_t dummy2_event:4;
-    unsigned cc_number:8;
-    unsigned value:8;
+    u8 cc_number:8;
+    u8 value:8;
   };
   struct {
-    unsigned dummy3_cin:4;
-    unsigned dummy3_cable:4;
+    u8 dummy3_cin:4;
+    u8 dummy3_cable:4;
     mios32_midi_chn_t dummy3_chn:4;
     mios32_midi_event_t dummy3_event:4;
-    unsigned program_change:8;
-    unsigned dummy3:8;
+    u8 program_change:8;
+    u8 dummy3:8;
   };
 } mios32_midi_package_t;
 

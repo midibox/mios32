@@ -33,13 +33,11 @@ typedef enum {
 
 
 typedef union {
+  u16 ALL;
   struct {
-    unsigned ALL:16;
-  };
-  struct {
-    unsigned note:7;
-    unsigned depressed:1;
-    unsigned tag:8;
+    u8 note:7;
+    u8 depressed:1;
+    u8 tag;
   };
 } notestack_item_t;
 

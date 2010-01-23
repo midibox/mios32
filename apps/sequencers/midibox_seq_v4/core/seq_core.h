@@ -30,47 +30,41 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned SYNCHED_PATTERN_CHANGE:1;
-    unsigned FOLLOW_SONG:1;
-    unsigned PASTE_CLR_ALL:1;
+    u8 SYNCHED_PATTERN_CHANGE:1;
+    u8 FOLLOW_SONG:1;
+    u8 PASTE_CLR_ALL:1;
   };
 } seq_core_options_t;
 
 
 typedef union {
+  u32 ALL;
   struct {
-    unsigned ALL:16;
-  };
-  struct {
-    u16      ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
+    u16 ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
 
-    unsigned FIRST_CLK:1;
-    unsigned METRONOME:1;
-    unsigned MANUAL_TRIGGER_STOP_REQ:1;
-    unsigned EXT_RESTART_REQ:1;
-    unsigned LOOP:1;
+    u8  FIRST_CLK:1;
+    u8  METRONOME:1;
+    u8  MANUAL_TRIGGER_STOP_REQ:1;
+    u8  EXT_RESTART_REQ:1;
+    u8  LOOP:1;
   };
 } seq_core_state_t;
 
 
 typedef union {
+  u16 ALL;
   struct {
-    unsigned ALL:16;
-  };
-  struct {
-    unsigned DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
-    unsigned MUTED:1;       // track is muted
-    unsigned POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
-    unsigned BACKWARD:1;    // if set, the track will be played in backward direction
-    unsigned FIRST_CLK:1;   // don't increment on the first clock event
-    unsigned REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
-    unsigned SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
-    unsigned SUSTAINED:1;    // sustained note
-    unsigned STRETCHED_GL:1; // stretched gatelength
+    u8 DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
+    u8 MUTED:1;       // track is muted
+    u8 POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
+    u8 BACKWARD:1;    // if set, the track will be played in backward direction
+    u8 FIRST_CLK:1;   // don't increment on the first clock event
+    u8 REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
+    u8 SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
+    u8 SUSTAINED:1;    // sustained note
+    u8 STRETCHED_GL:1; // stretched gatelength
   };
 } seq_core_trk_state_t;
 
@@ -136,36 +130,32 @@ typedef union {
 
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
+    u8 playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
+    u8 flags:6;        // combines all flags (for CC access)
   };
   struct {
-    unsigned playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
-    unsigned flags:6;        // combines all flags (for CC access)
-  };
-  struct {
-    unsigned playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
-    unsigned UNSORTED:1;     // sort mode for arpeggiator
-    unsigned HOLD:1;         // hold mode for transposer/arpeggiator
-    unsigned RESTART:1;      // track restart on key press
-    unsigned FORCE_SCALE:1;  // note values are forced to scale
-    unsigned SUSTAIN:1;      // events are sustained
+    u8 playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
+    u8 UNSORTED:1;     // sort mode for arpeggiator
+    u8 HOLD:1;         // hold mode for transposer/arpeggiator
+    u8 RESTART:1;      // track restart on key press
+    u8 FORCE_SCALE:1;  // note values are forced to scale
+    u8 SUSTAIN:1;      // events are sustained
   };
 } seq_core_trkmode_flags_t;
 
 
 typedef union {
-  struct {
-    unsigned ALL:8;
-  };
+  u16 ALL;
   struct {
     u8 value;                // clock divider value
-    unsigned flags:6;        // combines all flags (for CC access)
+    u8 flags:6;              // combines all flags (for CC access)
   };
   struct {
-    u8       value;          // clock divider value
-    unsigned SYNCH_TO_MEASURE:1; // synch to globally selectable measure
-    unsigned TRIPLETS:1;     // play triplets
+    u8 value;          // clock divider value
+    u8 SYNCH_TO_MEASURE:1; // synch to globally selectable measure
+    u8 TRIPLETS:1;     // play triplets
   };
 } seq_core_clkdiv_t;
 

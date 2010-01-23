@@ -59,9 +59,7 @@ typedef enum {
 } seq_song_action_t;
 
 typedef union {
-  struct {
-    unsigned long long ALL; // 8 bytes per step
-  };
+  unsigned long long ALL; // 8 bytes per step
 
   struct {
     u32 ALL_L;
@@ -75,10 +73,10 @@ typedef union {
     u8 pattern_g2;
     u8 pattern_g3;
     u8 pattern_g4;
-    unsigned bank_g1:4;
-    unsigned bank_g2:4;
-    unsigned bank_g3:4;
-    unsigned bank_g4:4;
+    u8 bank_g1:4;
+    u8 bank_g2:4;
+    u8 bank_g3:4;
+    u8 bank_g4:4;
   };
 } seq_song_step_t;
 

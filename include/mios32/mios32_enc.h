@@ -46,14 +46,14 @@ typedef enum {
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   } all;
   struct {
     mios32_enc_type_t   type:8;
     mios32_enc_speed_t  speed:2;
-    unsigned            speed_par:3;
-    unsigned            sr:4;
-    unsigned            pos:3;
+    u8                  speed_par:3;
+    u8                  sr:4;
+    u8                  pos:3;
   } cfg;
 } mios32_enc_config_t;
 

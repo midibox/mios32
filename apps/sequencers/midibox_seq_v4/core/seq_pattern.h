@@ -28,20 +28,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  u16 ALL;
   struct {
-    unsigned ALL:16;
+    u8 pattern:7;      // full pattern number
+    u8 DISABLED:1;     // pattern can be disabled
+    u8 REQ:1;          // change pattern request flag
+    u8 SYNCHED:1;      // change should be synched to measure
+    u8 bank:3;         // pattern bank
   };
   struct {
-    unsigned pattern:7;      // full pattern number
-    unsigned DISABLED:1;     // pattern can be disabled
-    unsigned REQ:1;          // change pattern request flag
-    unsigned SYNCHED:1;      // change should be synched to measure
-    unsigned bank:3;         // pattern bank
-  };
-  struct {
-    unsigned num:3;          // pattern number (1-8)
-    unsigned group:3;        // pattern group (A-H)
-    unsigned lower:1;        // selects between upper (A-H) and lower (a-h) group
+    u8 num:3;          // pattern number (1-8)
+    u8 group:3;        // pattern group (A-H)
+    u8 lower:1;        // selects between upper (A-H) and lower (a-h) group
   };
 } seq_pattern_t;
 

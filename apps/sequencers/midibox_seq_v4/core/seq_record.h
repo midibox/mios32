@@ -24,23 +24,19 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned STEP_RECORD:1;
-    unsigned POLY_RECORD:1;
-    unsigned AUTO_START:1;
+    u8 STEP_RECORD:1;
+    u8 POLY_RECORD:1;
+    u8 AUTO_START:1;
   };
 } seq_record_options_t;
 
 
 typedef union {
+  u8 ALL;
   struct {
-    unsigned ALL:8;
-  };
-  struct {
-    unsigned spare:1;
+    u8 spare:1;
   };
 } seq_record_state_t;
 

@@ -99,19 +99,19 @@ typedef struct {
 
 
 typedef struct {
-  unsigned fast:1;
-  unsigned all:1;
-  unsigned all_with_triggers:1;
-  unsigned solo:1;
-  unsigned metronome:1;
-  unsigned loop:1;
-  unsigned scrub:1;
-  unsigned menu:1;
-  unsigned step_view:1;
-  unsigned trg_layer:1;
-  unsigned par_layer:1;
-  unsigned track_sel:1;
-  unsigned tempo_preset:1;
+  u8 fast:1;
+  u8 all:1;
+  u8 all_with_triggers:1;
+  u8 solo:1;
+  u8 metronome:1;
+  u8 loop:1;
+  u8 scrub:1;
+  u8 menu:1;
+  u8 step_view:1;
+  u8 trg_layer:1;
+  u8 par_layer:1;
+  u8 track_sel:1;
+  u8 tempo_preset:1;
 } seq_hwcfg_button_beh_t;
 
 

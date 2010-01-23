@@ -23,7 +23,7 @@ extern "C" void *malloc(size_t size)
 }
 
 //............................................................................
-extern "C" void *cmalloc(size_t count, size_t size)
+extern "C" void *calloc(size_t count, size_t size)
 {
   return pvPortMalloc(count*size);
 }

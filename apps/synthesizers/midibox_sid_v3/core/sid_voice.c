@@ -43,13 +43,13 @@
 
 typedef union {
   struct {
-    unsigned ALL:16;
+    u16 ALL;
   };
   struct {
-    unsigned voice:6;
-    unsigned ASSIGNED:1;
-    unsigned EXCLUSIVE:1;
-    unsigned instrument:8;
+    u8 voice:6;
+    u8 ASSIGNED:1;
+    u8 EXCLUSIVE:1;
+    u8 instrument;
   };
 } sid_voice_queue_item_t;
 

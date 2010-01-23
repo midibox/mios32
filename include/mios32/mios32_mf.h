@@ -50,7 +50,7 @@ typedef enum {
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    u32 ALL;
   } all;
   struct {
     u8 deadband;
