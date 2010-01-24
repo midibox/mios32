@@ -16,28 +16,18 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
-		../core/sid_midi.c \
-		../core/sid_midi_l.c \
-		../core/sid_midi_b.c \
-		../core/sid_midi_d.c \
-		../core/sid_midi_m.c \
 		../core/sid_sysex.c \
 		../core/sid_asid.c \
-		../core/sid_bank.c \
-		../core/sid_patch.c \
-		../core/sid_knob.c \
-		../core/sid_par.c \
-		../core/sid_random.c \
-		../core/sid_dmodel.c \
-		../core/sid_voice.c \
-		../core/sid_se.c \
-		../core/sid_se_l.c \
-		../core/sid_se_b.c \
-		../core/sid_se_d.c \
-		../core/sid_se_m.c
+		../core/sid_random.c
 
 THUMB_CPP_SOURCE = ../core/MbSidEnvironment.cpp \
-		   ../core/MbSid.cpp
+		   ../core/MbSidTables.cpp \
+		   ../core/MbSid.cpp \
+		   ../core/MbSidPar.cpp \
+		   ../core/MbSidVoiceQueue.cpp \
+		   ../core/MbSidKnob.cpp \
+		   ../core/MbSidPatch.cpp \
+		   ../core/MbSidSe.cpp
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

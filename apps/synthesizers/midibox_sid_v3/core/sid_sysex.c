@@ -24,7 +24,7 @@
 
 #include "sid_sysex.h"
 #include "sid_asid.h"
-#include "sid_patch.h"
+#include "MbSidStructs.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -388,9 +388,11 @@ static s32 SID_SYSEX_Cmd_PatchWrite(mios32_midi_port_t port, sysex_cmd_state_t c
 	switch( sysex_patch_type ) {
 	  case 0x00: // Bank Write (tmp. write into RAM as well)
   	  case 0x08: // RAM Write
+#if 0
 	    // TODO: tmp. copy routine
 	    memcpy((u8 *)&sid_patch[0].ALL[0], (u8 *)sysex_buffer, 512);
 	    SID_PATCH_Changed(0); // sid==0
+#endif
 	    // notify that bytes have been written
 	    SID_SYSEX_SendAck(port, SYSEX_ACK, sysex_received_checksum);
 	    break;
@@ -631,8 +633,8 @@ static s32 SID_SYSEX_WritePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data)
 
   if( wopt == 0 ) {
     // write directly into patch with wopt==0
-    sid_patch[0].ALL[addr] = data;
-    sid_patch_shadow[0].ALL[addr] = data;
+    //sid_patch[0].ALL[addr] = data;
+    //sid_patch_shadow[0].ALL[addr] = data;
     // TODO: transfer to multiple SIDs depending on sid_selection
     return 0; // no error
     // important: we *must* return here to avoid endless recursion!
@@ -660,7 +662,8 @@ static s32 SID_SYSEX_WritePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data)
   }
 
   // Engine dependend ranges
-  sid_se_engine_t engine = (sid_se_engine_t)sid_patch_shadow[0].engine;
+  //TODO sid_se_engine_t engine = (sid_se_engine_t)sid_patch_shadow[0].engine;
+  sid_se_engine_t engine = SID_SE_LEAD;
   switch( engine ) {
     case SID_SE_LEAD:
       if( addr >= 0x60 && addr <= 0xbf ) {
@@ -803,7 +806,8 @@ s32 SID_SYSEX_SendDump(mios32_midi_port_t port, u8 type, u8 bank, u8 patch)
     // TODO
     c = PATCH_ReadByte((u8)i);
 #else
-    c = sid_patch_shadow[0].ALL[i];
+    //c = sid_patch_shadow[0].ALL[i];
+    c = 0;
 #endif
 
     sysex_buffer[sysex_buffer_ix++] = c & 0x0f;

@@ -24,12 +24,8 @@
 
 #include "app.h"
 #include "sid_random.h"
-#include "sid_midi.h"
 #include "sid_sysex.h"
 #include "sid_asid.h"
-#include "sid_patch.h"
-#include "sid_bank.h"
-#include "sid_se.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,13 +34,26 @@
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 1
 
+// measure performance with the stopwatch
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
+static void SID_TIMER_SE_Update(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Temporary solution to import MbSidEnvironment hooks
+/////////////////////////////////////////////////////////////////////////////
+extern s32 MbSidEnvironment_Init(u32 mode);
+extern s32 MbSidEnvironment_updateSpeedFactorSet(u32 factor);
+extern s32 MbSidEnvironment_IncomingRealTimeEvent(u8 event);
+extern s32 MbSidEnvironment_UpdateSe(void);
+extern s32 MbSidEnvironment_midiReceive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,11 +63,12 @@ static u32 stopwatch_value;
 static u32 stopwatch_value_max;
 static u32 stopwatch_value_accumulated;
 
+static u32 sid_se_speed_factor;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
-extern s32 MbSidEnvironment_Init(u32 mode); // located in MbSidEnvironment.cpp
 void APP_Init(void)
 {
   // initialize all LEDs
@@ -86,17 +96,17 @@ void APP_Init(void)
   APP_StopwatchInit();
 
   // init MIDI parsers
-  SID_MIDI_Init(0);
   SID_SYSEX_Init(0);
   SID_ASID_Init(0);
 
-  // init sound engine
-  SID_BANK_Init(0);
-  SID_PATCH_Init(0);
-  SID_SE_Init(0);
-
   MbSidEnvironment_Init(0); // located in MbSidEnvironment.cpp
 
+  sid_se_speed_factor = 2;
+  MbSidEnvironment_updateSpeedFactorSet(sid_se_speed_factor);
+
+  // start timer
+  // TODO: increase  once performance has been evaluated
+  MIOS32_TIMER_Init(2, 2000 / sid_se_speed_factor, SID_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
 }
 
 
@@ -117,8 +127,8 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // forward to MIDI parser
-  SID_MIDI_Receive(port, midi_package);
+  // forward to MBSID
+  MbSidEnvironment_midiReceive(port, midi_package);
 }
 
 
@@ -168,6 +178,35 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This timer interrupt periodically calls the sound engine update
+/////////////////////////////////////////////////////////////////////////////
+void SID_TIMER_SE_Update(void)
+{
+  // exit in ASID mode
+  if( SID_ASID_ModeGet() != SID_ASID_MODE_OFF )
+    return;
+
+#if STOPWATCH_PERFORMANCE_MEASURING >= 1
+  APP_StopwatchReset();
+#endif
+
+  MbSidEnvironment_UpdateSe();
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  APP_StopwatchCapture();
+#endif
+
+  // update SID registers
+  SID_Update(0);
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 2
+  APP_StopwatchCapture();
+#endif
 }
 
 
@@ -244,7 +283,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
   // TODO: better port filtering!
   if( port < USB1 || port >= UART0 ) {
     if( midi_byte >= 0xf8 )
-      SID_SE_IncomingRealTimeEvent(midi_byte);
+      MbSidEnvironment_IncomingRealTimeEvent(midi_byte);
   }
 
   return 0; // no error, no filtering

@@ -34,6 +34,7 @@
 #define AUDIO_PROCESSING_H
 
 #include "../resid/resid.h"
+#include "MbSidEnvironment.h"
 
 
 // number of emulated SID(s)
@@ -126,6 +127,7 @@ public:
   
 #if SID_NUM
     SID *reSID[SID_NUM];
+    MbSidEnvironment mbSidEnvironment;
 #endif
   
     int reSidEnabled;
@@ -133,6 +135,10 @@ public:
     double reSidDeltaCycleCounter;
 
     double mbSidUpdateCounter;
+
+    sid_regs_t sidRegs[SID_NUM];
+    sid_regs_t sidRegsShadow[SID_NUM];
+    s32 RESID_Update(u32 mode);
 
   
     //==============================================================================

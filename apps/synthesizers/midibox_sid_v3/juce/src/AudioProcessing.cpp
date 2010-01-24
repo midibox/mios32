@@ -50,110 +50,6 @@ double mixer_value2;
 double mixer_value3;
 
 
-// temporary workaround to access reSID from a single AudioProcessing object
-// TODO: this method has to be overworked!!!
-
-SID *_reSID[SID_NUM];
-
-
-// temporary way to access application functions from a single AudioProcessing object
-// TODO: this method has to be overworked!!!
-extern "C" {
-#include "app.h"
-#include "sid_patch.h"
-#include "sid_bank.h"
-
-    void TMP_StartApplication(void)
-    {
-        APP_Init();
-    }
-
-    extern s32 SID_SE_IncomingRealTimeEvent(u8 midi_byte);
-    void TMP_MIDI_NotifyPackage(mios32_midi_package_t midi_package)
-    {
-        // remove channel
-        if( midi_package.type >= NoteOff && midi_package.type <= PitchBend )
-            midi_package.chn = Chn1;
-
-        // pass to MIDI clock parser
-        if( midi_package.evnt0 >= 0xf8 )
-            SID_SE_IncomingRealTimeEvent(midi_package.evnt0);
-
-        // pass to application
-        APP_MIDI_NotifyPackage(DEFAULT, midi_package);
-    }
-  
-    extern s32 SID_SE_Update();
-    void TMP_SID_SE_Update(void)
-    {
-        SID_SE_Update();
-    }
-
-    void TMP_ChangePatch(u8 bank, u8 patch)
-    {
-        u8 sid = 0;
-        sid_patch_ref[sid].bank = bank;
-        sid_patch_ref[sid].patch = patch;
-        SID_BANK_PatchRead(&sid_patch_ref[sid]);
-        SID_PATCH_Changed(sid);
-    }
-
-    // buffer size must be at least 22 characters!
-    void TMP_PatchNameFromBank(u8 bank, u8 patch, char *buffer)
-    {
-        char patchName[17];
-        SID_BANK_PatchNameGet(bank, patch, patchName);
-    
-        sprintf(buffer, "%c%03d %s",
-                'A' + bank,
-                patch + 1,
-                patchName);
-    }
-
-    // buffer size must be at least 22 characters!
-    void TMP_PatchName(char *buffer)
-    {
-        u8 sid = 0;
-        u8 bank = sid_patch_ref[sid].bank;
-        u8 patch = sid_patch_ref[sid].patch;
-        sid_patch_t *p = (sid_patch_t *)&sid_patch[sid];
-    
-        char patchName[17];
-        SID_PATCH_NameGet(p, patchName);
-    
-        sprintf(buffer, "%c%03d %s",
-                'A' + bank,
-                patch + 1,
-                patchName);
-    }
-  
-  
-    // called from sid.c
-    void SID_Wrapper_Write(unsigned char cs, unsigned char addr, unsigned char data, unsigned char reset)
-    {
-        // Requires some work to handle multiple AU instances :-/
-#if SID_NUM
-        int i;
-    
-#if DEBUG_VERBOSE_LEVEL >= 2
-        fprintf(stderr, "cs%d %02x:%02x\n", cs, addr, data);
-#endif
-        if( reset ) {
-            for(i=0; i<SID_NUM; ++i)
-                if( _reSID[i] )
-                    _reSID[i]->reset();
-        } else {
-            for(i=0; i<SID_NUM; ++i) {
-                if( (cs & (1 << i)) && _reSID[i] )
-                    _reSID[i]->write(addr, data);
-            }
-        }
-#endif
-    }
-  
-}
-
-
 //==============================================================================
 /**
    This function must be implemented to create a new instance of your
@@ -188,11 +84,6 @@ AudioProcessing::AudioProcessing()
     reSidEnabled = 1;
     for(int i=0; i<SID_NUM; ++i) {
         reSID[i] = new SID;
-    
-        // temporary workaround to access reSID from a single AudioProcessing object
-        // TODO: this method has to be overworked!!!
-        _reSID[i] = reSID[i];
-
         reSID[i]->set_chip_model(RESID_MODEL);
         reSID[i]->reset();
         if( !reSID[i]->set_sampling_parameters(RESID_FREQUENCY, RESID_SAMPLING_METHOD, reSidSampleRate) ) {
@@ -211,11 +102,24 @@ AudioProcessing::AudioProcessing()
   
     // MBSID integration
     // temporary code!
-#if RESID_PLAY_TESTTONE == 0
-    TMP_StartApplication();
-#endif
     mbSidUpdateCounter = 0;  
-    SID_SE_BPMRestart();
+
+    // initialize my private SID registers
+    for(int sid=0; sid<SID_NUM; ++sid)
+        for(int reg=0; reg<SID_REGS_NUM; ++reg) {
+            sidRegs[sid].ALL[reg] = 0;
+            sidRegsShadow[sid].ALL[reg] = 0;
+        }
+
+    // trigger reset
+    RESID_Update(2);
+    
+    // change pointer to physical SID registers
+    mbSidEnvironment.mbSid[0].sidRegLPtr = &sidRegs[0];
+    mbSidEnvironment.mbSid[0].sidRegRPtr = &sidRegs[1];
+    mbSidEnvironment.mbSid[0].initStructs();
+
+    mbSidEnvironment.bpmRestart();
 }
 
 AudioProcessing::~AudioProcessing()
@@ -223,7 +127,6 @@ AudioProcessing::~AudioProcessing()
 #if SID_NUM
     for(int i=0; i<SID_NUM; ++i) {
         delete reSID[i];
-        _reSID[i] = 0;
     }
 #endif
 }
@@ -266,7 +169,7 @@ void AudioProcessing::setParameter (int index, float newValue)
     case 1:
         if( bank != (unsigned char)newValue ) {
             bank = (unsigned char)newValue;
-            TMP_ChangePatch(bank, patch);
+            sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
             sendChangeMessage (this);
         }
         break;
@@ -274,7 +177,7 @@ void AudioProcessing::setParameter (int index, float newValue)
     case 2:
         if( patch != (unsigned char)newValue ) {
             patch = (unsigned char)newValue;
-            TMP_ChangePatch(bank, patch);
+            sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
             sendChangeMessage (this);
         }
         break;
@@ -386,10 +289,10 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
     if (getPlayHead() != 0 && getPlayHead()->getCurrentPosition (pos)) {
         // send MIDI Start if position is 0
         if( lastPosInfo.ppqPosition != 0 && pos.ppqPosition == 0 )
-            SID_SE_BPMRestart();
+            mbSidEnvironment.bpmRestart();
 
         // update BPM
-        SID_SE_BPMSet((float)pos.bpm);
+        mbSidEnvironment.bpmSet((float)pos.bpm);
 
         // update position
         if (memcmp (&pos, &lastPosInfo, sizeof (pos)) != 0) {
@@ -403,8 +306,8 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
         lastPosInfo.bpm = 120;
 
         // send MIDI Start and first clock
-        SID_SE_IncomingRealTimeEvent(0xfa);
-        SID_SE_IncomingRealTimeEvent(0xf8);
+        mbSidEnvironment.incomingRealTimeEvent(0xfa);
+        mbSidEnvironment.incomingRealTimeEvent(0xf8);
     }
 
 #if RESID_PLAY_TESTTONE == 0
@@ -433,7 +336,8 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
             if( mbSidUpdateCounter >= 1.0 ) {
                 mbSidUpdateCounter -= 1.0;
 #if RESID_PLAY_TESTTONE == 0
-                TMP_SID_SE_Update();
+                mbSidEnvironment.updateSe();
+                RESID_Update(0);
 #endif
             }
 
@@ -591,15 +495,13 @@ int AudioProcessing::getCurrentProgram()
 void AudioProcessing::setCurrentProgram (int index)
 {
     patch = index;
-    TMP_ChangePatch(bank, patch);
+    sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
     sendChangeMessage(this);
 }
 
 const String AudioProcessing::getProgramName (int index)
 {
-    char buffer[22];
-    TMP_PatchNameFromBank(bank, index, buffer);
-    return String(buffer);
+    return getPatchNameFromBank(bank, index);
 }
 
 void AudioProcessing::changeProgramName (int index, const String& newName)
@@ -611,14 +513,30 @@ void AudioProcessing::changeProgramName (int index, const String& newName)
 const String AudioProcessing::getPatchName()
 {
     char buffer[22];
-    TMP_PatchName(buffer);
+
+    char patchName[17];
+    mbSidEnvironment.mbSid[0].mbSidPatch.nameGet(patchName);
+    
+    sprintf(buffer, "%c%03d %s",
+            'A' + bank,
+            patch + 1,
+            patchName);
+
     return String(buffer);
 }
 
 const String AudioProcessing::getPatchNameFromBank(int bank, int patch)
 {
     char buffer[22];
-    TMP_PatchNameFromBank(bank, patch, buffer);
+
+    char patchName[17];
+    mbSidEnvironment.mbSid[0].patchNameGet(bank, patch, patchName);
+    
+    sprintf(buffer, "%c%03d %s",
+            'A' + bank,
+            patch + 1,
+            patchName);
+
     return String(buffer);
 }
 
@@ -630,7 +548,11 @@ void AudioProcessing::sendMidiEvent(unsigned char evnt0, unsigned char evnt1, un
     p.evnt0 = evnt0;
     p.evnt1 = evnt1;
     p.evnt2 = evnt2;
-    TMP_MIDI_NotifyPackage(p);  
+
+    // temporary ignore channel
+    p.evnt0 &= 0xf0;
+
+    mbSidEnvironment.midiReceive(DEFAULT, p);
 }
 
 void AudioProcessing::handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
@@ -647,4 +569,45 @@ void AudioProcessing::handleNoteOff (MidiKeyboardState *source, int midiChannel,
     unsigned char evnt1 = (midiNoteNumber > 127) ? 127 : midiNoteNumber;
     unsigned char evnt2 = 0x00;
     sendMidiEvent(evnt0, evnt1, evnt2);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Updates all RESID registers
+// IN: <mode>: if 0: only register changes will be transfered to SID(s)
+//             if 1: force transfer of all registers
+//             if 2: reset SID, thereafter force transfer of all registers
+// OUT: returns < 0 if update failed
+/////////////////////////////////////////////////////////////////////////////
+static const u8 update_order[] = { 
+   0,  1,  2,  3,  5,  6, // voice 1 w/o osc control register
+   7,  8,  9, 10, 12, 13, // voice 2 w/o osc control register
+  14, 15, 16, 17, 19, 20, // voice 3 w/o osc control register
+   4, 11, 18,             // voice 1/2/3 control registers
+  21, 22, 23, 24,         // remaining SID registers
+   // 25, 26, 27, 28, 29, 30, 31 // SwinSID registers
+};
+
+s32 AudioProcessing::RESID_Update(u32 mode)
+{
+    // trigger reset?
+    if( mode == 2 ) {
+        for(int i=0; i<SID_NUM; ++i)
+            reSID[i]->reset();
+    }
+
+    // check for updates
+    for(int i=0; i<(int)sizeof(update_order); ++i) {
+        u8 reg = update_order[i];
+
+        for(int sid=0; sid<SID_NUM; ++sid) {
+            u8 data;
+            if( (data=sidRegs[sid].ALL[reg]) != sidRegsShadow[sid].ALL[reg] || mode >= 1 ) {
+                sidRegsShadow[sid].ALL[reg] = data;
+                reSID[sid]->write(reg, data);
+            }
+        }
+    }
+
+  return 0; // no error
 }
