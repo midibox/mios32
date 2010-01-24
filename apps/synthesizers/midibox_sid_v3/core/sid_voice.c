@@ -135,7 +135,14 @@ s32 SID_VOICE_QueueInitExclusive(u8 sid)
       u8 drum;
       sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&sid_patch[sid].D.voice[0];
       for(drum=0; drum<16; ++drum, ++voice_patch) {
+#if 0
 	u8 voice_asg = ((sid_se_v_flags_t)voice_patch->D.v_flags).D.VOICE_ASG;
+#else
+	// for MSVC compatibility - results into the same code
+	sid_se_v_flags_t v_flags;
+	v_flags.ALL = voice_patch->D.v_flags;
+	u8 voice_asg = v_flags.D.VOICE_ASG;
+#endif
 	int direct_voice_asg = voice_asg - 3;
 	if( direct_voice_asg >= 0 && direct_voice_asg < SID_SE_NUM_VOICES ) {
 	  // search for drum instrument in queue and set exclusive flag

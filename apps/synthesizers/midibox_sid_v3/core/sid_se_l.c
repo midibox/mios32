@@ -140,7 +140,13 @@ s32 SID_SE_L_Update(u8 sid)
   ///////////////////////////////////////////////////////////////////////////
   v = &sid_se_voice[sid][0];
   for(i=0; i<6; ++i, ++v) {
+#if 0
     sid_se_voice_waveform_t waveform = (sid_se_voice_waveform_t)v->voice_patch->waveform;
+#else
+    // for MSVC compatibility - results into the same code
+    sid_se_voice_waveform_t waveform;
+    waveform.ALL = v->voice_patch->waveform;
+#endif
     v->phys_sid_voice->waveform = waveform.WAVEFORM;
     v->phys_sid_voice->sync = waveform.SYNC;
     v->phys_sid_voice->ringmod = waveform.RINGMOD;

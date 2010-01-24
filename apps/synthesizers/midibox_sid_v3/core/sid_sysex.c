@@ -660,7 +660,7 @@ static s32 SID_SYSEX_WritePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data)
   }
 
   // Engine dependend ranges
-  sid_se_engine_t engine = sid_patch_shadow[0].engine;
+  sid_se_engine_t engine = (sid_se_engine_t)sid_patch_shadow[0].engine;
   switch( engine ) {
     case SID_SE_LEAD:
       if( addr >= 0x60 && addr <= 0xbf ) {
