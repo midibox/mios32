@@ -29,6 +29,14 @@ extern "C" void *calloc(size_t count, size_t size)
 }
 
 //............................................................................
+extern "C" void *realloc(void *p, size_t size)
+{
+  vPortFree(p);
+  p = pvPortMalloc(size);
+  return p;
+}
+
+//............................................................................
 extern "C" void free(void *p)
 {
   vPortFree(p);

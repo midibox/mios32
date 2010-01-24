@@ -319,11 +319,6 @@ s32 SID_Update(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 static inline void SID_UpdateReg(sid_cs_pin_t *cs_pin0, sid_cs_pin_t *cs_pin1, u8 cs, u8 addr, u8 data, u8 reset)
 {
-#ifdef MIOS32_FAMILY_EMULATION
-  // tmp. solution for emulation
-  SID_Wrapper_Write(cs, addr, data, reset);
-#endif
-
 #ifdef SIDEMU_ENABLED
   // currently only single SID available
   if( (cs & 1) && addr <= 24 )

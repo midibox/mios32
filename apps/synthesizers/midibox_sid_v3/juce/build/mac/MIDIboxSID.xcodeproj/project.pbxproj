@@ -67,46 +67,14 @@
 		5278A0A4110231CA0011DBA2 /* wave8580_P_T.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A093110231CA0011DBA2 /* wave8580_P_T.cc */; };
 		5278A0A5110231CA0011DBA2 /* wave8580_PS_.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A094110231CA0011DBA2 /* wave8580_PS_.cc */; };
 		5278A0A6110231CA0011DBA2 /* wave8580_PST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A095110231CA0011DBA2 /* wave8580_PST.cc */; };
-		528B861E110335BC003F6346 /* sid_bank.c in Sources */ = {isa = PBXBuildFile; fileRef = 528B861B110335BC003F6346 /* sid_bank.c */; };
-		528B861F110335BC003F6346 /* sid_bank.h in Headers */ = {isa = PBXBuildFile; fileRef = 528B861C110335BC003F6346 /* sid_bank.h */; };
 		52959FF411025D62003FC4D0 /* app.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC511025D62003FC4D0 /* app.c */; };
 		52959FF511025D62003FC4D0 /* app.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FC611025D62003FC4D0 /* app.h */; };
 		52959FF611025D62003FC4D0 /* sid_asid.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC711025D62003FC4D0 /* sid_asid.c */; };
 		52959FF711025D62003FC4D0 /* sid_asid.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FC811025D62003FC4D0 /* sid_asid.h */; };
-		52959FF811025D62003FC4D0 /* sid_dmodel.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC911025D62003FC4D0 /* sid_dmodel.c */; };
-		52959FF911025D62003FC4D0 /* sid_dmodel.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FCA11025D62003FC4D0 /* sid_dmodel.h */; };
-		52959FFA11025D62003FC4D0 /* sid_knob.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FCB11025D62003FC4D0 /* sid_knob.c */; };
-		52959FFB11025D62003FC4D0 /* sid_knob.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FCC11025D62003FC4D0 /* sid_knob.h */; };
-		52959FFC11025D62003FC4D0 /* sid_midi_b.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FCD11025D62003FC4D0 /* sid_midi_b.c */; };
-		52959FFD11025D62003FC4D0 /* sid_midi_b.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FCE11025D62003FC4D0 /* sid_midi_b.h */; };
-		52959FFE11025D62003FC4D0 /* sid_midi_d.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FCF11025D62003FC4D0 /* sid_midi_d.c */; };
-		52959FFF11025D62003FC4D0 /* sid_midi_d.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FD011025D62003FC4D0 /* sid_midi_d.h */; };
-		5295A00011025D62003FC4D0 /* sid_midi_l.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FD111025D62003FC4D0 /* sid_midi_l.c */; };
-		5295A00111025D62003FC4D0 /* sid_midi_l.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FD211025D62003FC4D0 /* sid_midi_l.h */; };
-		5295A00211025D62003FC4D0 /* sid_midi_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FD311025D62003FC4D0 /* sid_midi_m.c */; };
-		5295A00311025D62003FC4D0 /* sid_midi_m.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FD411025D62003FC4D0 /* sid_midi_m.h */; };
-		5295A00411025D62003FC4D0 /* sid_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FD511025D62003FC4D0 /* sid_midi.c */; };
-		5295A00511025D62003FC4D0 /* sid_midi.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FD611025D62003FC4D0 /* sid_midi.h */; };
-		5295A00611025D62003FC4D0 /* sid_par.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FD711025D62003FC4D0 /* sid_par.c */; };
-		5295A00711025D62003FC4D0 /* sid_par.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FD811025D62003FC4D0 /* sid_par.h */; };
-		5295A00C11025D62003FC4D0 /* sid_patch.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FDD11025D62003FC4D0 /* sid_patch.c */; };
-		5295A00D11025D62003FC4D0 /* sid_patch.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FDE11025D62003FC4D0 /* sid_patch.h */; };
 		5295A00E11025D62003FC4D0 /* sid_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FDF11025D62003FC4D0 /* sid_random.c */; };
 		5295A00F11025D62003FC4D0 /* sid_random.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FE011025D62003FC4D0 /* sid_random.h */; };
-		5295A01011025D62003FC4D0 /* sid_se_b.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FE111025D62003FC4D0 /* sid_se_b.c */; };
-		5295A01111025D62003FC4D0 /* sid_se_b.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FE211025D62003FC4D0 /* sid_se_b.h */; };
-		5295A01211025D62003FC4D0 /* sid_se_d.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FE311025D62003FC4D0 /* sid_se_d.c */; };
-		5295A01311025D62003FC4D0 /* sid_se_d.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FE411025D62003FC4D0 /* sid_se_d.h */; };
-		5295A01611025D62003FC4D0 /* sid_se_l.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FE711025D62003FC4D0 /* sid_se_l.c */; };
-		5295A01711025D62003FC4D0 /* sid_se_l.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FE811025D62003FC4D0 /* sid_se_l.h */; };
-		5295A01911025D62003FC4D0 /* sid_se_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FEA11025D62003FC4D0 /* sid_se_m.c */; };
-		5295A01A11025D62003FC4D0 /* sid_se_m.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FEB11025D62003FC4D0 /* sid_se_m.h */; };
-		5295A01C11025D62003FC4D0 /* sid_se.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FED11025D62003FC4D0 /* sid_se.c */; };
-		5295A01D11025D62003FC4D0 /* sid_se.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FEE11025D62003FC4D0 /* sid_se.h */; };
 		5295A01E11025D62003FC4D0 /* sid_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FEF11025D62003FC4D0 /* sid_sysex.c */; };
 		5295A01F11025D62003FC4D0 /* sid_sysex.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FF011025D62003FC4D0 /* sid_sysex.h */; };
-		5295A02011025D62003FC4D0 /* sid_voice.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FF111025D62003FC4D0 /* sid_voice.c */; };
-		5295A02111025D62003FC4D0 /* sid_voice.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FF211025D62003FC4D0 /* sid_voice.h */; };
 		5295A02211025D62003FC4D0 /* tasks.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FF311025D62003FC4D0 /* tasks.h */; };
 		5295A02811025D8A003FC4D0 /* sid.c in Sources */ = {isa = PBXBuildFile; fileRef = 5295A02611025D8A003FC4D0 /* sid.c */; };
 		5295A02911025D8A003FC4D0 /* sid.h in Headers */ = {isa = PBXBuildFile; fileRef = 5295A02711025D8A003FC4D0 /* sid.h */; };
@@ -162,6 +130,18 @@
 		52DE5A0511025B04009F3BA2 /* mios32_usb.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59E611025B04009F3BA2 /* mios32_usb.h */; };
 		52DE5A0611025B04009F3BA2 /* mios32.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59E711025B04009F3BA2 /* mios32.h */; };
 		52ED22271101477000D2D0CC /* install.sh in Resources */ = {isa = PBXBuildFile; fileRef = 52ED22261101477000D2D0CC /* install.sh */; };
+		52EFCE40110C5FCE00E119E8 /* MbSidSe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */; };
+		52EFCE41110C5FCE00E119E8 /* MbSidSe.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */; };
+		52EFD0B3110C88F700E119E8 /* MbSidPar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */; };
+		52EFD0B4110C88F700E119E8 /* MbSidPar.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD0B2110C88F700E119E8 /* MbSidPar.h */; };
+		52EFD2E7110CB67200E119E8 /* MbSidKnob.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */; };
+		52EFD2E8110CB67200E119E8 /* MbSidKnob.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD2E6110CB67200E119E8 /* MbSidKnob.h */; };
+		52EFD2FB110CB89500E119E8 /* MbSidVoiceQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */; };
+		52EFD2FC110CB89500E119E8 /* MbSidVoiceQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD2FA110CB89500E119E8 /* MbSidVoiceQueue.h */; };
+		52EFD39C110CCD6700E119E8 /* MbSidPatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD39A110CCD6700E119E8 /* MbSidPatch.cpp */; };
+		52EFD39D110CCD6700E119E8 /* MbSidPatch.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD39B110CCD6700E119E8 /* MbSidPatch.h */; };
+		52EFD3F2110CDA0600E119E8 /* MbSidTables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD3F0110CDA0600E119E8 /* MbSidTables.cpp */; };
+		52EFD3F3110CDA0600E119E8 /* MbSidTables.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD3F1110CDA0600E119E8 /* MbSidTables.h */; };
 		8BA05AAE072073D300365D66 /* AUBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8BA05A7F072073D200365D66 /* AUBase.cpp */; };
 		8BA05AAF072073D300365D66 /* AUBase.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BA05A80072073D200365D66 /* AUBase.h */; };
 		8BA05AB0072073D300365D66 /* AUDispatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8BA05A81072073D200365D66 /* AUDispatch.cpp */; };
@@ -277,46 +257,14 @@
 		5278A093110231CA0011DBA2 /* wave8580_P_T.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_P_T.cc; path = ../../resid/wave8580_P_T.cc; sourceTree = SOURCE_ROOT; };
 		5278A094110231CA0011DBA2 /* wave8580_PS_.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PS_.cc; path = ../../resid/wave8580_PS_.cc; sourceTree = SOURCE_ROOT; };
 		5278A095110231CA0011DBA2 /* wave8580_PST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PST.cc; path = ../../resid/wave8580_PST.cc; sourceTree = SOURCE_ROOT; };
-		528B861B110335BC003F6346 /* sid_bank.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_bank.c; path = ../../../core/sid_bank.c; sourceTree = SOURCE_ROOT; };
-		528B861C110335BC003F6346 /* sid_bank.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_bank.h; path = ../../../core/sid_bank.h; sourceTree = SOURCE_ROOT; };
 		52959FC511025D62003FC4D0 /* app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = app.c; path = ../../../core/app.c; sourceTree = SOURCE_ROOT; };
 		52959FC611025D62003FC4D0 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app.h; path = ../../../core/app.h; sourceTree = SOURCE_ROOT; };
 		52959FC711025D62003FC4D0 /* sid_asid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_asid.c; path = ../../../core/sid_asid.c; sourceTree = SOURCE_ROOT; };
 		52959FC811025D62003FC4D0 /* sid_asid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_asid.h; path = ../../../core/sid_asid.h; sourceTree = SOURCE_ROOT; };
-		52959FC911025D62003FC4D0 /* sid_dmodel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_dmodel.c; path = ../../../core/sid_dmodel.c; sourceTree = SOURCE_ROOT; };
-		52959FCA11025D62003FC4D0 /* sid_dmodel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_dmodel.h; path = ../../../core/sid_dmodel.h; sourceTree = SOURCE_ROOT; };
-		52959FCB11025D62003FC4D0 /* sid_knob.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_knob.c; path = ../../../core/sid_knob.c; sourceTree = SOURCE_ROOT; };
-		52959FCC11025D62003FC4D0 /* sid_knob.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_knob.h; path = ../../../core/sid_knob.h; sourceTree = SOURCE_ROOT; };
-		52959FCD11025D62003FC4D0 /* sid_midi_b.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_midi_b.c; path = ../../../core/sid_midi_b.c; sourceTree = SOURCE_ROOT; };
-		52959FCE11025D62003FC4D0 /* sid_midi_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_midi_b.h; path = ../../../core/sid_midi_b.h; sourceTree = SOURCE_ROOT; };
-		52959FCF11025D62003FC4D0 /* sid_midi_d.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_midi_d.c; path = ../../../core/sid_midi_d.c; sourceTree = SOURCE_ROOT; };
-		52959FD011025D62003FC4D0 /* sid_midi_d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_midi_d.h; path = ../../../core/sid_midi_d.h; sourceTree = SOURCE_ROOT; };
-		52959FD111025D62003FC4D0 /* sid_midi_l.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_midi_l.c; path = ../../../core/sid_midi_l.c; sourceTree = SOURCE_ROOT; };
-		52959FD211025D62003FC4D0 /* sid_midi_l.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_midi_l.h; path = ../../../core/sid_midi_l.h; sourceTree = SOURCE_ROOT; };
-		52959FD311025D62003FC4D0 /* sid_midi_m.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_midi_m.c; path = ../../../core/sid_midi_m.c; sourceTree = SOURCE_ROOT; };
-		52959FD411025D62003FC4D0 /* sid_midi_m.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_midi_m.h; path = ../../../core/sid_midi_m.h; sourceTree = SOURCE_ROOT; };
-		52959FD511025D62003FC4D0 /* sid_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_midi.c; path = ../../../core/sid_midi.c; sourceTree = SOURCE_ROOT; };
-		52959FD611025D62003FC4D0 /* sid_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_midi.h; path = ../../../core/sid_midi.h; sourceTree = SOURCE_ROOT; };
-		52959FD711025D62003FC4D0 /* sid_par.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_par.c; path = ../../../core/sid_par.c; sourceTree = SOURCE_ROOT; };
-		52959FD811025D62003FC4D0 /* sid_par.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_par.h; path = ../../../core/sid_par.h; sourceTree = SOURCE_ROOT; };
-		52959FDD11025D62003FC4D0 /* sid_patch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_patch.c; path = ../../../core/sid_patch.c; sourceTree = SOURCE_ROOT; };
-		52959FDE11025D62003FC4D0 /* sid_patch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_patch.h; path = ../../../core/sid_patch.h; sourceTree = SOURCE_ROOT; };
 		52959FDF11025D62003FC4D0 /* sid_random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_random.c; path = ../../../core/sid_random.c; sourceTree = SOURCE_ROOT; };
 		52959FE011025D62003FC4D0 /* sid_random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_random.h; path = ../../../core/sid_random.h; sourceTree = SOURCE_ROOT; };
-		52959FE111025D62003FC4D0 /* sid_se_b.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_se_b.c; path = ../../../core/sid_se_b.c; sourceTree = SOURCE_ROOT; };
-		52959FE211025D62003FC4D0 /* sid_se_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_se_b.h; path = ../../../core/sid_se_b.h; sourceTree = SOURCE_ROOT; };
-		52959FE311025D62003FC4D0 /* sid_se_d.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_se_d.c; path = ../../../core/sid_se_d.c; sourceTree = SOURCE_ROOT; };
-		52959FE411025D62003FC4D0 /* sid_se_d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_se_d.h; path = ../../../core/sid_se_d.h; sourceTree = SOURCE_ROOT; };
-		52959FE711025D62003FC4D0 /* sid_se_l.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_se_l.c; path = ../../../core/sid_se_l.c; sourceTree = SOURCE_ROOT; };
-		52959FE811025D62003FC4D0 /* sid_se_l.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_se_l.h; path = ../../../core/sid_se_l.h; sourceTree = SOURCE_ROOT; };
-		52959FEA11025D62003FC4D0 /* sid_se_m.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_se_m.c; path = ../../../core/sid_se_m.c; sourceTree = SOURCE_ROOT; };
-		52959FEB11025D62003FC4D0 /* sid_se_m.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_se_m.h; path = ../../../core/sid_se_m.h; sourceTree = SOURCE_ROOT; };
-		52959FED11025D62003FC4D0 /* sid_se.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_se.c; path = ../../../core/sid_se.c; sourceTree = SOURCE_ROOT; };
-		52959FEE11025D62003FC4D0 /* sid_se.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_se.h; path = ../../../core/sid_se.h; sourceTree = SOURCE_ROOT; };
 		52959FEF11025D62003FC4D0 /* sid_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_sysex.c; path = ../../../core/sid_sysex.c; sourceTree = SOURCE_ROOT; };
 		52959FF011025D62003FC4D0 /* sid_sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_sysex.h; path = ../../../core/sid_sysex.h; sourceTree = SOURCE_ROOT; };
-		52959FF111025D62003FC4D0 /* sid_voice.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_voice.c; path = ../../../core/sid_voice.c; sourceTree = SOURCE_ROOT; };
-		52959FF211025D62003FC4D0 /* sid_voice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_voice.h; path = ../../../core/sid_voice.h; sourceTree = SOURCE_ROOT; };
 		52959FF311025D62003FC4D0 /* tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tasks.h; path = ../../../core/tasks.h; sourceTree = SOURCE_ROOT; };
 		5295A02611025D8A003FC4D0 /* sid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid.c; path = ../../../../../../modules/sid/sid.c; sourceTree = SOURCE_ROOT; };
 		5295A02711025D8A003FC4D0 /* sid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid.h; path = ../../../../../../modules/sid/sid.h; sourceTree = SOURCE_ROOT; };
@@ -372,6 +320,18 @@
 		52DE59E611025B04009F3BA2 /* mios32_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb.h; path = ../../../../../../include/mios32/mios32_usb.h; sourceTree = SOURCE_ROOT; };
 		52DE59E711025B04009F3BA2 /* mios32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32.h; path = ../../../../../../include/mios32/mios32.h; sourceTree = SOURCE_ROOT; };
 		52ED22261101477000D2D0CC /* install.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = install.sh; sourceTree = "<group>"; };
+		52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSe.cpp; path = ../../../core/MbSidSe.cpp; sourceTree = SOURCE_ROOT; };
+		52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSe.h; path = ../../../core/MbSidSe.h; sourceTree = SOURCE_ROOT; };
+		52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidPar.cpp; path = ../../../core/MbSidPar.cpp; sourceTree = SOURCE_ROOT; };
+		52EFD0B2110C88F700E119E8 /* MbSidPar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidPar.h; path = ../../../core/MbSidPar.h; sourceTree = SOURCE_ROOT; };
+		52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidKnob.cpp; path = ../../../core/MbSidKnob.cpp; sourceTree = SOURCE_ROOT; };
+		52EFD2E6110CB67200E119E8 /* MbSidKnob.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidKnob.h; path = ../../../core/MbSidKnob.h; sourceTree = SOURCE_ROOT; };
+		52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidVoiceQueue.cpp; path = ../../../core/MbSidVoiceQueue.cpp; sourceTree = SOURCE_ROOT; };
+		52EFD2FA110CB89500E119E8 /* MbSidVoiceQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidVoiceQueue.h; path = ../../../core/MbSidVoiceQueue.h; sourceTree = SOURCE_ROOT; };
+		52EFD39A110CCD6700E119E8 /* MbSidPatch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidPatch.cpp; path = ../../../core/MbSidPatch.cpp; sourceTree = SOURCE_ROOT; };
+		52EFD39B110CCD6700E119E8 /* MbSidPatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidPatch.h; path = ../../../core/MbSidPatch.h; sourceTree = SOURCE_ROOT; };
+		52EFD3F0110CDA0600E119E8 /* MbSidTables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidTables.cpp; path = ../../../core/MbSidTables.cpp; sourceTree = SOURCE_ROOT; };
+		52EFD3F1110CDA0600E119E8 /* MbSidTables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidTables.h; path = ../../../core/MbSidTables.h; sourceTree = SOURCE_ROOT; };
 		8BA05A670720730100365D66 /* MIDIboxSID.exp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.exports; path = MIDIboxSID.exp; sourceTree = "<group>"; };
 		8BA05A7F072073D200365D66 /* AUBase.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = AUBase.cpp; sourceTree = "<group>"; };
 		8BA05A80072073D200365D66 /* AUBase.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = AUBase.h; sourceTree = "<group>"; };
@@ -578,50 +538,30 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52EFD39A110CCD6700E119E8 /* MbSidPatch.cpp */,
+				52EFD39B110CCD6700E119E8 /* MbSidPatch.h */,
+				52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */,
+				52EFD2FA110CB89500E119E8 /* MbSidVoiceQueue.h */,
+				52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */,
+				52EFD2E6110CB67200E119E8 /* MbSidKnob.h */,
+				52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */,
+				52EFD0B2110C88F700E119E8 /* MbSidPar.h */,
+				52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */,
+				52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */,
+				52EFD3F0110CDA0600E119E8 /* MbSidTables.cpp */,
+				52EFD3F1110CDA0600E119E8 /* MbSidTables.h */,
 				525B0CA3110BB56800F93C55 /* MbSid.cpp */,
 				525B0CA4110BB56800F93C55 /* MbSid.h */,
 				525B0CA5110BB56800F93C55 /* MbSidEnvironment.cpp */,
 				525B0CA6110BB56800F93C55 /* MbSidEnvironment.h */,
-				528B861B110335BC003F6346 /* sid_bank.c */,
-				528B861C110335BC003F6346 /* sid_bank.h */,
 				52959FC511025D62003FC4D0 /* app.c */,
 				52959FC611025D62003FC4D0 /* app.h */,
 				52959FC711025D62003FC4D0 /* sid_asid.c */,
 				52959FC811025D62003FC4D0 /* sid_asid.h */,
-				52959FC911025D62003FC4D0 /* sid_dmodel.c */,
-				52959FCA11025D62003FC4D0 /* sid_dmodel.h */,
-				52959FCB11025D62003FC4D0 /* sid_knob.c */,
-				52959FCC11025D62003FC4D0 /* sid_knob.h */,
-				52959FCD11025D62003FC4D0 /* sid_midi_b.c */,
-				52959FCE11025D62003FC4D0 /* sid_midi_b.h */,
-				52959FCF11025D62003FC4D0 /* sid_midi_d.c */,
-				52959FD011025D62003FC4D0 /* sid_midi_d.h */,
-				52959FD111025D62003FC4D0 /* sid_midi_l.c */,
-				52959FD211025D62003FC4D0 /* sid_midi_l.h */,
-				52959FD311025D62003FC4D0 /* sid_midi_m.c */,
-				52959FD411025D62003FC4D0 /* sid_midi_m.h */,
-				52959FD511025D62003FC4D0 /* sid_midi.c */,
-				52959FD611025D62003FC4D0 /* sid_midi.h */,
-				52959FD711025D62003FC4D0 /* sid_par.c */,
-				52959FD811025D62003FC4D0 /* sid_par.h */,
-				52959FDD11025D62003FC4D0 /* sid_patch.c */,
-				52959FDE11025D62003FC4D0 /* sid_patch.h */,
 				52959FDF11025D62003FC4D0 /* sid_random.c */,
 				52959FE011025D62003FC4D0 /* sid_random.h */,
-				52959FE111025D62003FC4D0 /* sid_se_b.c */,
-				52959FE211025D62003FC4D0 /* sid_se_b.h */,
-				52959FE311025D62003FC4D0 /* sid_se_d.c */,
-				52959FE411025D62003FC4D0 /* sid_se_d.h */,
-				52959FE711025D62003FC4D0 /* sid_se_l.c */,
-				52959FE811025D62003FC4D0 /* sid_se_l.h */,
-				52959FEA11025D62003FC4D0 /* sid_se_m.c */,
-				52959FEB11025D62003FC4D0 /* sid_se_m.h */,
-				52959FED11025D62003FC4D0 /* sid_se.c */,
-				52959FEE11025D62003FC4D0 /* sid_se.h */,
 				52959FEF11025D62003FC4D0 /* sid_sysex.c */,
 				52959FF011025D62003FC4D0 /* sid_sysex.h */,
-				52959FF111025D62003FC4D0 /* sid_voice.c */,
-				52959FF211025D62003FC4D0 /* sid_voice.h */,
 				52959FF311025D62003FC4D0 /* tasks.h */,
 			);
 			name = Core;
@@ -907,23 +847,8 @@
 				52DE5A0611025B04009F3BA2 /* mios32.h in Headers */,
 				52959FF511025D62003FC4D0 /* app.h in Headers */,
 				52959FF711025D62003FC4D0 /* sid_asid.h in Headers */,
-				52959FF911025D62003FC4D0 /* sid_dmodel.h in Headers */,
-				52959FFB11025D62003FC4D0 /* sid_knob.h in Headers */,
-				52959FFD11025D62003FC4D0 /* sid_midi_b.h in Headers */,
-				52959FFF11025D62003FC4D0 /* sid_midi_d.h in Headers */,
-				5295A00111025D62003FC4D0 /* sid_midi_l.h in Headers */,
-				5295A00311025D62003FC4D0 /* sid_midi_m.h in Headers */,
-				5295A00511025D62003FC4D0 /* sid_midi.h in Headers */,
-				5295A00711025D62003FC4D0 /* sid_par.h in Headers */,
-				5295A00D11025D62003FC4D0 /* sid_patch.h in Headers */,
 				5295A00F11025D62003FC4D0 /* sid_random.h in Headers */,
-				5295A01111025D62003FC4D0 /* sid_se_b.h in Headers */,
-				5295A01311025D62003FC4D0 /* sid_se_d.h in Headers */,
-				5295A01711025D62003FC4D0 /* sid_se_l.h in Headers */,
-				5295A01A11025D62003FC4D0 /* sid_se_m.h in Headers */,
-				5295A01D11025D62003FC4D0 /* sid_se.h in Headers */,
 				5295A01F11025D62003FC4D0 /* sid_sysex.h in Headers */,
-				5295A02111025D62003FC4D0 /* sid_voice.h in Headers */,
 				5295A02211025D62003FC4D0 /* tasks.h in Headers */,
 				5295A02911025D8A003FC4D0 /* sid.h in Headers */,
 				5295A02D11025DA0003FC4D0 /* notestack.h in Headers */,
@@ -931,9 +856,14 @@
 				5295A04411025F5C003FC4D0 /* resid.h in Headers */,
 				5295A0851102687F003FC4D0 /* mios32_config.h in Headers */,
 				5295A09A110269DD003FC4D0 /* aout.h in Headers */,
-				528B861F110335BC003F6346 /* sid_bank.h in Headers */,
 				525B0CA8110BB56800F93C55 /* MbSid.h in Headers */,
 				525B0CAA110BB56800F93C55 /* MbSidEnvironment.h in Headers */,
+				52EFCE41110C5FCE00E119E8 /* MbSidSe.h in Headers */,
+				52EFD0B4110C88F700E119E8 /* MbSidPar.h in Headers */,
+				52EFD2E8110CB67200E119E8 /* MbSidKnob.h in Headers */,
+				52EFD2FC110CB89500E119E8 /* MbSidVoiceQueue.h in Headers */,
+				52EFD39D110CCD6700E119E8 /* MbSidPatch.h in Headers */,
+				52EFD3F3110CDA0600E119E8 /* MbSidTables.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1056,23 +986,8 @@
 				5278A0A6110231CA0011DBA2 /* wave8580_PST.cc in Sources */,
 				52959FF411025D62003FC4D0 /* app.c in Sources */,
 				52959FF611025D62003FC4D0 /* sid_asid.c in Sources */,
-				52959FF811025D62003FC4D0 /* sid_dmodel.c in Sources */,
-				52959FFA11025D62003FC4D0 /* sid_knob.c in Sources */,
-				52959FFC11025D62003FC4D0 /* sid_midi_b.c in Sources */,
-				52959FFE11025D62003FC4D0 /* sid_midi_d.c in Sources */,
-				5295A00011025D62003FC4D0 /* sid_midi_l.c in Sources */,
-				5295A00211025D62003FC4D0 /* sid_midi_m.c in Sources */,
-				5295A00411025D62003FC4D0 /* sid_midi.c in Sources */,
-				5295A00611025D62003FC4D0 /* sid_par.c in Sources */,
-				5295A00C11025D62003FC4D0 /* sid_patch.c in Sources */,
 				5295A00E11025D62003FC4D0 /* sid_random.c in Sources */,
-				5295A01011025D62003FC4D0 /* sid_se_b.c in Sources */,
-				5295A01211025D62003FC4D0 /* sid_se_d.c in Sources */,
-				5295A01611025D62003FC4D0 /* sid_se_l.c in Sources */,
-				5295A01911025D62003FC4D0 /* sid_se_m.c in Sources */,
-				5295A01C11025D62003FC4D0 /* sid_se.c in Sources */,
 				5295A01E11025D62003FC4D0 /* sid_sysex.c in Sources */,
-				5295A02011025D62003FC4D0 /* sid_voice.c in Sources */,
 				5295A02811025D8A003FC4D0 /* sid.c in Sources */,
 				5295A02C11025DA0003FC4D0 /* notestack.c in Sources */,
 				5295A03011025DB3003FC4D0 /* jsw_rand.c in Sources */,
@@ -1080,9 +995,14 @@
 				5295A0861102687F003FC4D0 /* mios32_wrapper_code.c in Sources */,
 				5295A099110269DD003FC4D0 /* aout.c in Sources */,
 				5295A0A211026ADE003FC4D0 /* tasks.c in Sources */,
-				528B861E110335BC003F6346 /* sid_bank.c in Sources */,
 				525B0CA7110BB56800F93C55 /* MbSid.cpp in Sources */,
 				525B0CA9110BB56800F93C55 /* MbSidEnvironment.cpp in Sources */,
+				52EFCE40110C5FCE00E119E8 /* MbSidSe.cpp in Sources */,
+				52EFD0B3110C88F700E119E8 /* MbSidPar.cpp in Sources */,
+				52EFD2E7110CB67200E119E8 /* MbSidKnob.cpp in Sources */,
+				52EFD2FB110CB89500E119E8 /* MbSidVoiceQueue.cpp in Sources */,
+				52EFD39C110CCD6700E119E8 /* MbSidPatch.cpp in Sources */,
+				52EFD3F2110CDA0600E119E8 /* MbSidTables.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
