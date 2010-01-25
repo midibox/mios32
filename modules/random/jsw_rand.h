@@ -11,13 +11,21 @@
 #ifndef JSW_RAND_H
 #define JSW_RAND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Seed the RNG. Must be called first */
-void          jsw_seed ( unsigned long s );
+extern void          jsw_seed ( unsigned long s );
 
 /* Return a 32-bit random number */
-unsigned long jsw_rand ( void );
+extern unsigned long jsw_rand ( void );
 
 /* Seed with current system time */
-unsigned      jsw_time_seed();
+extern unsigned      jsw_time_seed();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

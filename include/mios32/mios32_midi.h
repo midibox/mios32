@@ -136,8 +136,8 @@ typedef union {
   struct {
     u8 type:4;
     u8 cable:4;
-    mios32_midi_chn_t chn:4;
-    mios32_midi_event_t event:4;
+    u8 chn:4; // mios32_midi_chn_t
+    u8 event:4; // mios32_midi_event_t
     u8 value1;
     u8 value2;
   };
@@ -147,24 +147,24 @@ typedef union {
   struct {
     u8 cin:4;
     u8 dummy1_cable:4;
-    mios32_midi_chn_t dummy1_chn:4;
-    mios32_midi_event_t dummy1_event:4;
+    u8 dummy1_chn:4; // mios32_midi_chn_t 
+    u8 dummy1_event:4; // mios32_midi_event_t 
     u8 note:8;
     u8 velocity:8;
   };
   struct {
     u8 dummy2_cin:4;
     u8 dummy2_cable:4;
-    mios32_midi_chn_t dummy2_chn:4;
-    mios32_midi_event_t dummy2_event:4;
+    u8 dummy2_chn:4; // mios32_midi_chn_t 
+    u8 dummy2_event:4; // mios32_midi_event_t 
     u8 cc_number:8;
     u8 value:8;
   };
   struct {
     u8 dummy3_cin:4;
     u8 dummy3_cable:4;
-    mios32_midi_chn_t dummy3_chn:4;
-    mios32_midi_event_t dummy3_event:4;
+    u8 dummy3_chn:4; // mios32_midi_chn_t 
+    u8 dummy3_event:4; // mios32_midi_event_t
     u8 program_change:8;
     u8 dummy3:8;
   };

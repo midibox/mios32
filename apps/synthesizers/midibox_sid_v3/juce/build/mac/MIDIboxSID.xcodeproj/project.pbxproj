@@ -67,14 +67,7 @@
 		5278A0A4110231CA0011DBA2 /* wave8580_P_T.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A093110231CA0011DBA2 /* wave8580_P_T.cc */; };
 		5278A0A5110231CA0011DBA2 /* wave8580_PS_.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A094110231CA0011DBA2 /* wave8580_PS_.cc */; };
 		5278A0A6110231CA0011DBA2 /* wave8580_PST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5278A095110231CA0011DBA2 /* wave8580_PST.cc */; };
-		52959FF411025D62003FC4D0 /* app.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC511025D62003FC4D0 /* app.c */; };
 		52959FF511025D62003FC4D0 /* app.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FC611025D62003FC4D0 /* app.h */; };
-		52959FF611025D62003FC4D0 /* sid_asid.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FC711025D62003FC4D0 /* sid_asid.c */; };
-		52959FF711025D62003FC4D0 /* sid_asid.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FC811025D62003FC4D0 /* sid_asid.h */; };
-		5295A00E11025D62003FC4D0 /* sid_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FDF11025D62003FC4D0 /* sid_random.c */; };
-		5295A00F11025D62003FC4D0 /* sid_random.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FE011025D62003FC4D0 /* sid_random.h */; };
-		5295A01E11025D62003FC4D0 /* sid_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 52959FEF11025D62003FC4D0 /* sid_sysex.c */; };
-		5295A01F11025D62003FC4D0 /* sid_sysex.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FF011025D62003FC4D0 /* sid_sysex.h */; };
 		5295A02211025D62003FC4D0 /* tasks.h in Headers */ = {isa = PBXBuildFile; fileRef = 52959FF311025D62003FC4D0 /* tasks.h */; };
 		5295A02811025D8A003FC4D0 /* sid.c in Sources */ = {isa = PBXBuildFile; fileRef = 5295A02611025D8A003FC4D0 /* sid.c */; };
 		5295A02911025D8A003FC4D0 /* sid.h in Headers */ = {isa = PBXBuildFile; fileRef = 5295A02711025D8A003FC4D0 /* sid.h */; };
@@ -98,6 +91,16 @@
 		5295ED3C11012E4E00115AAF /* AUOutputBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5295ED3311012E4E00115AAF /* AUOutputBase.cpp */; };
 		5295ED3D11012E4E00115AAF /* AUOutputBase.h in Headers */ = {isa = PBXBuildFile; fileRef = 5295ED3411012E4E00115AAF /* AUOutputBase.h */; };
 		5295EE32110132D000115AAF /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5295EE31110132D000115AAF /* CoreAudio.framework */; };
+		52DD0E1B110E003400B92219 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E1A110E003400B92219 /* app.cpp */; };
+		52DD0E29110E06BA00B92219 /* MbSidStructs.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E26110E06BA00B92219 /* MbSidStructs.h */; };
+		52DD0E2A110E06BA00B92219 /* MbSidSysEx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */; };
+		52DD0E2B110E06BA00B92219 /* MbSidSysEx.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E28110E06BA00B92219 /* MbSidSysEx.h */; };
+		52DD0E3A110E0A1B00B92219 /* MbSidAsid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E38110E0A1B00B92219 /* MbSidAsid.cpp */; };
+		52DD0E3B110E0A1B00B92219 /* MbSidAsid.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E39110E0A1B00B92219 /* MbSidAsid.h */; };
+		52DD0E5A110E191600B92219 /* MbSidClock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E58110E191600B92219 /* MbSidClock.cpp */; };
+		52DD0E5B110E191600B92219 /* MbSidClock.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E59110E191600B92219 /* MbSidClock.h */; };
+		52DD0E95110E340700B92219 /* MbSidRandomGen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */; };
+		52DD0E96110E340700B92219 /* MbSidRandomGen.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E94110E340700B92219 /* MbSidRandomGen.h */; };
 		52DE59E811025B04009F3BA2 /* mios32_ain.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59C911025B04009F3BA2 /* mios32_ain.h */; };
 		52DE59E911025B04009F3BA2 /* mios32_board.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59CA11025B04009F3BA2 /* mios32_board.h */; };
 		52DE59EA11025B04009F3BA2 /* mios32_com.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59CB11025B04009F3BA2 /* mios32_com.h */; };
@@ -257,14 +260,7 @@
 		5278A093110231CA0011DBA2 /* wave8580_P_T.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_P_T.cc; path = ../../resid/wave8580_P_T.cc; sourceTree = SOURCE_ROOT; };
 		5278A094110231CA0011DBA2 /* wave8580_PS_.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PS_.cc; path = ../../resid/wave8580_PS_.cc; sourceTree = SOURCE_ROOT; };
 		5278A095110231CA0011DBA2 /* wave8580_PST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PST.cc; path = ../../resid/wave8580_PST.cc; sourceTree = SOURCE_ROOT; };
-		52959FC511025D62003FC4D0 /* app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = app.c; path = ../../../core/app.c; sourceTree = SOURCE_ROOT; };
 		52959FC611025D62003FC4D0 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app.h; path = ../../../core/app.h; sourceTree = SOURCE_ROOT; };
-		52959FC711025D62003FC4D0 /* sid_asid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_asid.c; path = ../../../core/sid_asid.c; sourceTree = SOURCE_ROOT; };
-		52959FC811025D62003FC4D0 /* sid_asid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_asid.h; path = ../../../core/sid_asid.h; sourceTree = SOURCE_ROOT; };
-		52959FDF11025D62003FC4D0 /* sid_random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_random.c; path = ../../../core/sid_random.c; sourceTree = SOURCE_ROOT; };
-		52959FE011025D62003FC4D0 /* sid_random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_random.h; path = ../../../core/sid_random.h; sourceTree = SOURCE_ROOT; };
-		52959FEF11025D62003FC4D0 /* sid_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid_sysex.c; path = ../../../core/sid_sysex.c; sourceTree = SOURCE_ROOT; };
-		52959FF011025D62003FC4D0 /* sid_sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid_sysex.h; path = ../../../core/sid_sysex.h; sourceTree = SOURCE_ROOT; };
 		52959FF311025D62003FC4D0 /* tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tasks.h; path = ../../../core/tasks.h; sourceTree = SOURCE_ROOT; };
 		5295A02611025D8A003FC4D0 /* sid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid.c; path = ../../../../../../modules/sid/sid.c; sourceTree = SOURCE_ROOT; };
 		5295A02711025D8A003FC4D0 /* sid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid.h; path = ../../../../../../modules/sid/sid.h; sourceTree = SOURCE_ROOT; };
@@ -288,6 +284,16 @@
 		5295ED3311012E4E00115AAF /* AUOutputBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AUOutputBase.cpp; path = Extras/CoreAudio/AudioUnits/AUPublic/OtherBases/AUOutputBase.cpp; sourceTree = DEVELOPER_DIR; };
 		5295ED3411012E4E00115AAF /* AUOutputBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AUOutputBase.h; path = Extras/CoreAudio/AudioUnits/AUPublic/OtherBases/AUOutputBase.h; sourceTree = DEVELOPER_DIR; };
 		5295EE31110132D000115AAF /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		52DD0E1A110E003400B92219 /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app.cpp; path = ../../../core/app.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0E26110E06BA00B92219 /* MbSidStructs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidStructs.h; path = ../../../core/MbSidStructs.h; sourceTree = SOURCE_ROOT; };
+		52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSysEx.cpp; path = ../../../core/MbSidSysEx.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0E28110E06BA00B92219 /* MbSidSysEx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSysEx.h; path = ../../../core/MbSidSysEx.h; sourceTree = SOURCE_ROOT; };
+		52DD0E38110E0A1B00B92219 /* MbSidAsid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidAsid.cpp; path = ../../../core/MbSidAsid.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0E39110E0A1B00B92219 /* MbSidAsid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidAsid.h; path = ../../../core/MbSidAsid.h; sourceTree = SOURCE_ROOT; };
+		52DD0E58110E191600B92219 /* MbSidClock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidClock.cpp; path = ../../../core/MbSidClock.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0E59110E191600B92219 /* MbSidClock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidClock.h; path = ../../../core/MbSidClock.h; sourceTree = SOURCE_ROOT; };
+		52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidRandomGen.cpp; path = ../../../core/MbSidRandomGen.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0E94110E340700B92219 /* MbSidRandomGen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidRandomGen.h; path = ../../../core/MbSidRandomGen.h; sourceTree = SOURCE_ROOT; };
 		52DE59C911025B04009F3BA2 /* mios32_ain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_ain.h; path = ../../../../../../include/mios32/mios32_ain.h; sourceTree = SOURCE_ROOT; };
 		52DE59CA11025B04009F3BA2 /* mios32_board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_board.h; path = ../../../../../../include/mios32/mios32_board.h; sourceTree = SOURCE_ROOT; };
 		52DE59CB11025B04009F3BA2 /* mios32_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_com.h; path = ../../../../../../include/mios32/mios32_com.h; sourceTree = SOURCE_ROOT; };
@@ -538,6 +544,15 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */,
+				52DD0E94110E340700B92219 /* MbSidRandomGen.h */,
+				52DD0E58110E191600B92219 /* MbSidClock.cpp */,
+				52DD0E59110E191600B92219 /* MbSidClock.h */,
+				52DD0E38110E0A1B00B92219 /* MbSidAsid.cpp */,
+				52DD0E39110E0A1B00B92219 /* MbSidAsid.h */,
+				52DD0E26110E06BA00B92219 /* MbSidStructs.h */,
+				52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */,
+				52DD0E28110E06BA00B92219 /* MbSidSysEx.h */,
 				52EFD39A110CCD6700E119E8 /* MbSidPatch.cpp */,
 				52EFD39B110CCD6700E119E8 /* MbSidPatch.h */,
 				52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */,
@@ -554,14 +569,8 @@
 				525B0CA4110BB56800F93C55 /* MbSid.h */,
 				525B0CA5110BB56800F93C55 /* MbSidEnvironment.cpp */,
 				525B0CA6110BB56800F93C55 /* MbSidEnvironment.h */,
-				52959FC511025D62003FC4D0 /* app.c */,
 				52959FC611025D62003FC4D0 /* app.h */,
-				52959FC711025D62003FC4D0 /* sid_asid.c */,
-				52959FC811025D62003FC4D0 /* sid_asid.h */,
-				52959FDF11025D62003FC4D0 /* sid_random.c */,
-				52959FE011025D62003FC4D0 /* sid_random.h */,
-				52959FEF11025D62003FC4D0 /* sid_sysex.c */,
-				52959FF011025D62003FC4D0 /* sid_sysex.h */,
+				52DD0E1A110E003400B92219 /* app.cpp */,
 				52959FF311025D62003FC4D0 /* tasks.h */,
 			);
 			name = Core;
@@ -846,9 +855,6 @@
 				52DE5A0511025B04009F3BA2 /* mios32_usb.h in Headers */,
 				52DE5A0611025B04009F3BA2 /* mios32.h in Headers */,
 				52959FF511025D62003FC4D0 /* app.h in Headers */,
-				52959FF711025D62003FC4D0 /* sid_asid.h in Headers */,
-				5295A00F11025D62003FC4D0 /* sid_random.h in Headers */,
-				5295A01F11025D62003FC4D0 /* sid_sysex.h in Headers */,
 				5295A02211025D62003FC4D0 /* tasks.h in Headers */,
 				5295A02911025D8A003FC4D0 /* sid.h in Headers */,
 				5295A02D11025DA0003FC4D0 /* notestack.h in Headers */,
@@ -864,6 +870,11 @@
 				52EFD2FC110CB89500E119E8 /* MbSidVoiceQueue.h in Headers */,
 				52EFD39D110CCD6700E119E8 /* MbSidPatch.h in Headers */,
 				52EFD3F3110CDA0600E119E8 /* MbSidTables.h in Headers */,
+				52DD0E29110E06BA00B92219 /* MbSidStructs.h in Headers */,
+				52DD0E2B110E06BA00B92219 /* MbSidSysEx.h in Headers */,
+				52DD0E3B110E0A1B00B92219 /* MbSidAsid.h in Headers */,
+				52DD0E5B110E191600B92219 /* MbSidClock.h in Headers */,
+				52DD0E96110E340700B92219 /* MbSidRandomGen.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -984,10 +995,6 @@
 				5278A0A4110231CA0011DBA2 /* wave8580_P_T.cc in Sources */,
 				5278A0A5110231CA0011DBA2 /* wave8580_PS_.cc in Sources */,
 				5278A0A6110231CA0011DBA2 /* wave8580_PST.cc in Sources */,
-				52959FF411025D62003FC4D0 /* app.c in Sources */,
-				52959FF611025D62003FC4D0 /* sid_asid.c in Sources */,
-				5295A00E11025D62003FC4D0 /* sid_random.c in Sources */,
-				5295A01E11025D62003FC4D0 /* sid_sysex.c in Sources */,
 				5295A02811025D8A003FC4D0 /* sid.c in Sources */,
 				5295A02C11025DA0003FC4D0 /* notestack.c in Sources */,
 				5295A03011025DB3003FC4D0 /* jsw_rand.c in Sources */,
@@ -1003,6 +1010,11 @@
 				52EFD2FB110CB89500E119E8 /* MbSidVoiceQueue.cpp in Sources */,
 				52EFD39C110CCD6700E119E8 /* MbSidPatch.cpp in Sources */,
 				52EFD3F2110CDA0600E119E8 /* MbSidTables.cpp in Sources */,
+				52DD0E1B110E003400B92219 /* app.cpp in Sources */,
+				52DD0E2A110E06BA00B92219 /* MbSidSysEx.cpp in Sources */,
+				52DD0E3A110E0A1B00B92219 /* MbSidAsid.cpp in Sources */,
+				52DD0E5A110E191600B92219 /* MbSidClock.cpp in Sources */,
+				52DD0E95110E340700B92219 /* MbSidRandomGen.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

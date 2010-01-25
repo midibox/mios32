@@ -14,20 +14,22 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = ../core/app.c \
-		../mios32/tasks.c \
-		../core/sid_sysex.c \
-		../core/sid_asid.c \
-		../core/sid_random.c
+THUMB_SOURCE    = ../mios32/tasks.c
 
-THUMB_CPP_SOURCE = ../core/MbSidEnvironment.cpp \
+THUMB_CPP_SOURCE = ../core/app.cpp \
+		   ../core/MbSidEnvironment.cpp \
+		   ../core/MbSidSysEx.cpp \
+		   ../core/MbSidAsid.cpp \
+		   ../core/MbSidClock.cpp \
+		   ../core/MbSidRandomGen.cpp \
 		   ../core/MbSidTables.cpp \
 		   ../core/MbSid.cpp \
 		   ../core/MbSidPar.cpp \
 		   ../core/MbSidVoiceQueue.cpp \
 		   ../core/MbSidKnob.cpp \
 		   ../core/MbSidPatch.cpp \
-		   ../core/MbSidSe.cpp
+		   ../core/MbSidSe.cpp \
+
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

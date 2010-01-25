@@ -15,21 +15,21 @@
 
 #include <mios32.h>
 
-void TASKS_SDCardSemaphoreTake(void) { return -1; }
-void TASKS_SDCardSemaphoreGive(void) { return -1; }
-void TASKS_MIDIINSemaphoreTake(void) { return -1; }
-void TASKS_MIDIINSemaphoreGive(void) { return -1; }
-void TASKS_MIDIOUTSemaphoreTake(void) { return -1; }
-void TASKS_MIDIOUTSemaphoreGive(void) { return -1; }
-void TASKS_LCDSemaphoreTake(void) { return -1; }
-void TASKS_LCDSemaphoreGive(void) { return -1; }
+s32 TASKS_SDCardSemaphoreTake(void) { return -1; }
+s32 TASKS_SDCardSemaphoreGive(void) { return -1; }
+s32 TASKS_MIDIINSemaphoreTake(void) { return -1; }
+s32 TASKS_MIDIINSemaphoreGive(void) { return -1; }
+s32 TASKS_MIDIOUTSemaphoreTake(void) { return -1; }
+s32 TASKS_MIDIOUTSemaphoreGive(void) { return -1; }
+s32 TASKS_LCDSemaphoreTake(void) { return -1; }
+s32 TASKS_LCDSemaphoreGive(void) { return -1; }
 
 s32 TASKS_Init(u32 mode) { return -1; }
 
-void SEQ_TASK_SID(void) { return -1; }
-void SEQ_TASK_Period1mS(void) { return -1; }
-void SEQ_TASK_Period1mS_LowPrio(void) { return -1; }
-void SEQ_TASK_Period1S(void) { return -1; }
+s32 SEQ_TASK_SID(void) { return -1; }
+s32 SEQ_TASK_Period1mS(void) { return -1; }
+s32 SEQ_TASK_Period1mS_LowPrio(void) { return -1; }
+s32 SEQ_TASK_Period1S(void) { return -1; }
 
 s32 TASK_MSD_EnableSet(u8 enable) { return -1; }
 s32 TASK_MSD_EnableGet() { return -1; }

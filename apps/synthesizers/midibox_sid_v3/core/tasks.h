@@ -17,6 +17,10 @@
 #ifndef _TASKS_H
 #define _TASKS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifndef MIOS32_FAMILY_EMULATION
 # include <FreeRTOS.h>
@@ -108,6 +112,10 @@ extern s32 TASK_MSD_FlagStrGet(char str[5]);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _TASKS_H */

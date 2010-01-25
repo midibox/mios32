@@ -304,10 +304,8 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
         lastPosInfo.timeSigNumerator = 4;
         lastPosInfo.timeSigDenominator = 4;
         lastPosInfo.bpm = 120;
-
-        // send MIDI Start and first clock
-        mbSidEnvironment.incomingRealTimeEvent(0xfa);
-        mbSidEnvironment.incomingRealTimeEvent(0xf8);
+        mbSidEnvironment.bpmSet(lastPosInfo.bpm);
+        mbSidEnvironment.bpmRestart();
     }
 
 #if RESID_PLAY_TESTTONE == 0

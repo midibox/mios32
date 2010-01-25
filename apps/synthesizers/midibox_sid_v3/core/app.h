@@ -29,6 +29,10 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void APP_Init(void);
 extern void APP_Background(void);
 extern void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
@@ -47,10 +51,12 @@ extern s32 APP_StopwatchInit(void);
 extern s32 APP_StopwatchReset(void);
 extern s32 APP_StopwatchCapture(void);
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _APP_H */
