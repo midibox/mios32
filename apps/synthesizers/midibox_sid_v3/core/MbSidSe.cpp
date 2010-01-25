@@ -177,127 +177,79 @@ void MbSidSe::initStructs(void)
         f->mod_dst_volume = &modDst[SID_SE_MOD_DST_VOL1 + filter];
     }
 
-    for(i=0; i<SID_SE_NUM_LFO; ++i) {
-        u8 lfo = i;
-        sid_se_lfo_t *l = (sid_se_lfo_t *)&sid_se_lfo[lfo]; 
-        memset(l, 0, sizeof(sid_se_lfo_t));
-
-        l->lfo = lfo; // cross-reference to LFO number
-        l->engine = engine; // different variants depending on engine
-
+    MbSidLfo *l = &mbSidLfo[0];
+    for(int lfo=0; lfo<SID_SE_NUM_LFO; ++lfo, ++l) {
         switch( engine ) {
         case SID_SE_BASSLINE: {
-            u8 patch_voice = (i >= 2) ? 1 : 0;
+            u8 patch_voice = (lfo >= 2) ? 1 : 0;
             u8 mod_voice = patch_voice * 3;
-            u8 lfo_voice = i & 1;
-            sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
-            l->lfo_patch = (sid_se_lfo_patch_t *)&voice_patch->B.lfo[lfo_voice];
-            l->trg_mask_lfo_period = NULL;
-            l->mod_dst_pitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
-            l->mod_dst_pw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
-            l->mod_dst_filter = &modDst[SID_SE_MOD_DST_FIL1 + patch_voice];
-            l->mod_src_lfo = NULL;
-            l->mod_dst_lfo_depth = NULL;
-            l->mod_dst_lfo_rate = NULL;
+            u8 lfo_voice = lfo & 1;
+            sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
+            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&voicePatch->B.lfo[lfo_voice], mbSidClockPtr);
+
+            l->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+            l->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
+            l->modDstFilter = &modDst[SID_SE_MOD_DST_FIL1 + patch_voice];
         } break;
 
         case SID_SE_DRUM:
-            // not relevant
-            l->lfo_patch = NULL;
-            l->trg_mask_lfo_period = NULL;
-            l->mod_dst_pitch = NULL;
-            l->mod_dst_pw = NULL;
-            l->mod_dst_filter = NULL;
-            l->mod_src_lfo = NULL;
-            l->mod_dst_lfo_depth = NULL;
-            l->mod_dst_lfo_rate = NULL;
+            // not used
+            l->init(engine, updateSpeedFactor, NULL, NULL);
             break;
 
         case SID_SE_MULTI: {
-            u8 mod_voice = i >> 1;
-            u8 lfo_voice = i & 1;
-            sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
-            l->lfo_patch = (sid_se_lfo_patch_t *)&voice_patch->M.lfo[lfo_voice]; // will be dynamically changed depending on assigned instrument
-            l->trg_mask_lfo_period = NULL;
-            l->mod_dst_pitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
-            l->mod_dst_pw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
-            l->mod_dst_filter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
-            l->mod_src_lfo = NULL;
-            l->mod_dst_lfo_depth = NULL;
-            l->mod_dst_lfo_rate = NULL;
+            u8 mod_voice = lfo >> 1;
+            u8 lfo_voice = lfo & 1;
+            sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
+            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&voicePatch->M.lfo[lfo_voice], mbSidClockPtr);
+            l->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+            l->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
+            l->modDstFilter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
         } break;
 
         default: // SID_SE_LEAD
-            l->lfo_patch = (sid_se_lfo_patch_t *)&mbSidPatch.body.L.lfo[lfo];
-            l->trg_mask_lfo_period = (sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_L1P + lfo];
-            l->mod_dst_pitch = NULL;
-            l->mod_dst_pw = NULL;
-            l->mod_dst_filter = NULL;
-            l->mod_src_lfo = &modSrc[SID_SE_MOD_SRC_LFO1 + lfo];
-            l->mod_dst_lfo_depth = &modDst[SID_SE_MOD_DST_LD1 + lfo];
-            l->mod_dst_lfo_rate = &modDst[SID_SE_MOD_DST_LR1 + lfo];
+            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&mbSidPatch.body.L.lfo[lfo], mbSidClockPtr);
+            l->modSrcLfo = &modSrc[SID_SE_MOD_SRC_LFO1 + lfo];
+            l->modDstLfoDepth = &modDst[SID_SE_MOD_DST_LD1 + lfo];
+            l->modDstLfoRate = &modDst[SID_SE_MOD_DST_LR1 + lfo];
         }
     }
 
-    for(i=0; i<SID_SE_NUM_ENV; ++i) {
-        u8 env = i;
-        sid_se_env_t *e = (sid_se_env_t *)&sid_se_env[env];
-        memset(e, 0, sizeof(sid_se_env_t));
-
-        e->env = env; // cross-reference to ENV number
-
+    MbSidEnv *e = &mbSidEnv[0];
+    for(int env=0; env<SID_SE_NUM_ENV; ++env, ++e) {
         switch( engine ) {
         case SID_SE_BASSLINE: {
-            u8 patch_voice = i ? 1 : 0;
+            u8 patch_voice = env ? 1 : 0;
             u8 mod_voice = patch_voice * 3;
-            sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
-            e->env_patch = (sid_se_env_patch_t *)&voice_patch->B.env;
-            e->mod_dst_pitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
-            e->mod_dst_pw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
-            e->mod_dst_filter = &modDst[SID_SE_MOD_DST_FIL1 + patch_voice];
-            e->voice_state = &sid_se_voice[mod_voice].state;
-            e->decay_a = &voice_patch->B.env_decay_a;
-            e->accent = &voice_patch->accent;
-            e->mod_src_env = NULL;
+            sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
+            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&voicePatch->B.env, mbSidClockPtr);
+            e->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+            e->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
+            e->modDstFilter = &modDst[SID_SE_MOD_DST_FIL1 + patch_voice];
+            e->decayA = &voicePatch->B.env_decay_a;
+            e->accent = &voicePatch->accent;
         } break;
 
         case SID_SE_DRUM:
-            // not relevant
-            e->env_patch = NULL;
-            e->mod_dst_pitch = NULL;
-            e->mod_dst_pw = NULL;
-            e->mod_dst_filter = NULL;
-            e->voice_state = NULL;
-            e->decay_a = NULL;
-            e->accent = NULL;
-            e->mod_src_env = NULL;
+            // not used
+            e->init(engine, updateSpeedFactor, NULL, NULL);
             break;
 
         case SID_SE_MULTI: {
-            u8 mod_voice = i;
-            sid_se_voice_patch_t *voice_patch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
-            e->env_patch = (sid_se_env_patch_t *)&voice_patch->M.env; // will be dynamically changed depending on assigned instrument
-            e->mod_dst_pitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
-            e->mod_dst_pw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
-            e->mod_dst_filter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
-            e->voice_state = &sid_se_voice[mod_voice].state;
-            e->decay_a = &voice_patch->B.env_decay_a;
-            e->accent = &voice_patch->accent;
-            e->mod_src_env = NULL;
+            u8 mod_voice = env;
+            sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
+            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&voicePatch->M.env, mbSidClockPtr);
+            e->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
+            e->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
+            e->modDstFilter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
+            e->decayA = &voicePatch->B.env_decay_a;
+            e->accent = &voicePatch->accent;
         } break;
 
         default: // SID_SE_LEAD
-            e->env_patch = (sid_se_env_patch_t *)&mbSidPatch.body.L.env[env];
-            e->mod_dst_pitch = NULL;
-            e->mod_dst_pw = NULL;
-            e->mod_dst_filter = NULL;
-            e->voice_state = NULL;
-            e->decay_a = NULL;
-            e->accent = NULL;
-            e->mod_src_env = &modSrc[SID_SE_MOD_SRC_ENV1 + env];
+            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&mbSidPatch.body.L.env[env], mbSidClockPtr);
+            e->modSrcEnv = &modSrc[SID_SE_MOD_SRC_ENV1 + env];
         }
-
-        e->trg_mask_env_sustain = (sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_E1S + env];
     }
 
     for(i=0; i<SID_SE_NUM_WT; ++i) {
@@ -406,14 +358,18 @@ bool MbSidSe::updateSe(void)
     switch( engine ) {
     case SID_SE_LEAD: {
         // LFOs
-        sid_se_lfo_t *l = &sid_se_lfo[0];
-        for(int i=0; i<6; ++i, ++l)
-            seLfo(l);
+        MbSidLfo *l = &mbSidLfo[0];
+        for(int lfo=0; lfo<6; ++lfo, ++l) {
+            if( l->tick() ) // returns true on overrun
+                triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_L1P + lfo]);
+        }
 
         // ENVs
-        sid_se_env_t *e = &sid_se_env[0];
-        for(int i=0; i<2; ++i, ++e)
-            seEnvLead(e);
+        MbSidEnv *e = &mbSidEnv[0];
+        for(int env=0; env<2; ++env, ++e) {
+            if( e->tick() ) // returns true if sustain phase reached
+                triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_E1S + env]);
+        }
 
         // Modulation Matrix
         // since this isn't done anywhere else:
@@ -466,14 +422,16 @@ bool MbSidSe::updateSe(void)
 
     case SID_SE_BASSLINE: {
         // LFOs
-        sid_se_lfo_t *l = &sid_se_lfo[0];
-        for(int i=0; i<2*2; ++i, ++l)
-            seLfo(l);
+        MbSidLfo *l = &mbSidLfo[0];
+        for(int lfo=0; lfo<2*2; ++lfo, ++l)
+            l->tick();
 
         // ENVs
-        sid_se_env_t *e = &sid_se_env[0];
-        for(int i=0; i<2; ++i, ++e)
-            seEnv(e);
+        MbSidEnv *e = &mbSidEnv[0];
+        for(int env=0; env<2; ++env, ++e) {
+            e->accentReq = sid_se_voice[3*env].state.ACCENT;
+            e->tick();
+        }
 
         // Sequencer
         sid_se_seq_t *s = &sid_se_seq[0];
@@ -636,14 +594,16 @@ bool MbSidSe::updateSe(void)
 
     case SID_SE_MULTI: {
         // LFOs
-        sid_se_lfo_t *l = &sid_se_lfo[0];
-        for(int i=0; i<2*6; ++i, ++l)
-            seLfo(l);
+        MbSidLfo *l = &mbSidLfo[0];
+        for(int lfo=0; lfo<2*6; ++lfo, ++l)
+            l->tick();
 
         // ENVs
-        sid_se_env_t *e = &sid_se_env[0];
-        for(int i=0; i<6; ++i, ++e)
-            seEnv(e);
+        MbSidEnv *e = &mbSidEnv[0];
+        for(int env=0; env<6; ++env, ++e) {
+            e->accentReq = sid_se_voice[env].state.ACCENT;
+            e->tick();
+        }
 
         // Wavetables
         sid_se_wt_t *w = &sid_se_wt[0];
@@ -722,12 +682,12 @@ void MbSidSe::triggerNoteOn(sid_se_voice_t *v, u8 no_wt)
 
             sid_se_lfo_mode_t lfo_mode;
             for(int lfo=0; lfo<2; ++lfo) {
-                lfo_mode.ALL = sid_se_lfo[lfo].lfo_patch->mode;
+                lfo_mode.ALL = mbSidLfo[lfo].lfoPatch->mode;
                 if( lfo_mode.KEYSYNC )
-                    sid_se_lfo[lfo].restart_req = 1;
+                    mbSidLfo[lfo].restartReq = 1;
             }
 
-            sid_se_env[0].restart_req = 1;
+            mbSidEnv[0].restartReq = 1;
         } else {
             sid_se_voice[3].note_restart_req = 1;
             sid_se_voice[4].note_restart_req = 1;
@@ -735,12 +695,12 @@ void MbSidSe::triggerNoteOn(sid_se_voice_t *v, u8 no_wt)
 
             sid_se_lfo_mode_t lfo_mode;
             for(int lfo=2; lfo<4; ++lfo) {
-                lfo_mode.ALL = sid_se_lfo[lfo].lfo_patch->mode;
+                lfo_mode.ALL = mbSidLfo[lfo].lfoPatch->mode;
                 if( lfo_mode.KEYSYNC )
-                    sid_se_lfo[lfo].restart_req = 1;
+                    mbSidLfo[lfo].restartReq = 1;
             }
 
-            sid_se_env[1].restart_req = 1;
+            mbSidEnv[1].restartReq = 1;
         }
     } break;
 
@@ -755,12 +715,12 @@ void MbSidSe::triggerNoteOn(sid_se_voice_t *v, u8 no_wt)
         sid_se_lfo_mode_t lfo_mode;
         int lfo_offset = 2*v->voice;
         for(int lfo=0; lfo<2; ++lfo) {
-            lfo_mode.ALL = sid_se_lfo[lfo_offset + lfo].lfo_patch->mode;
+            lfo_mode.ALL = mbSidLfo[lfo_offset + lfo].lfoPatch->mode;
             if( lfo_mode.KEYSYNC )
-                sid_se_lfo[lfo_offset + lfo].restart_req = 1;
+                mbSidLfo[lfo_offset + lfo].restartReq = 1;
         }
 
-        sid_se_env[v->voice].restart_req = 1;
+        mbSidEnv[v->voice].restartReq = 1;
 
         //sid_se_wt[v->voice].restart_req = 1;
         // (no good idea, WTs will quickly get out of sync - see also "A107 Poly Trancegate" patch)
@@ -781,7 +741,7 @@ void MbSidSe::triggerNoteOff(sid_se_voice_t *v, u8 no_wt)
     } break;
 
     case SID_SE_BASSLINE: {
-        sid_se_env[(v->voice >= 3) ? 1 : 0].release_req = 1;
+        mbSidEnv[(v->voice >= 3) ? 1 : 0].releaseReq = 1;
     } break;
 
     case SID_SE_DRUM: {
@@ -789,7 +749,7 @@ void MbSidSe::triggerNoteOff(sid_se_voice_t *v, u8 no_wt)
     } break;
 
     case SID_SE_MULTI: {
-        sid_se_env[v->voice].release_req = 1;
+        mbSidEnv[v->voice].releaseReq = 1;
     } break;
     }
 }
@@ -807,19 +767,19 @@ void MbSidSe::triggerLead(sid_se_trg_t *trg)
     if( trg->O1R ) sid_se_voice[3].note_restart_req = 1;
     if( trg->O2R ) sid_se_voice[4].note_restart_req = 1;
     if( trg->O3R ) sid_se_voice[5].note_restart_req = 1;
-    if( trg->E1A ) sid_se_env[0].restart_req = 1;
-    if( trg->E2A ) sid_se_env[1].restart_req = 1;
+    if( trg->E1A ) mbSidEnv[0].restartReq = 1;
+    if( trg->E2A ) mbSidEnv[1].restartReq = 1;
   }
 
   if( trg->ALL[1] ) {
-    if( trg->E1R ) sid_se_env[0].release_req = 1;
-    if( trg->E2R ) sid_se_env[1].release_req = 1;
-    if( trg->L1  ) sid_se_lfo[0].restart_req = 1;
-    if( trg->L2  ) sid_se_lfo[1].restart_req = 1;
-    if( trg->L3  ) sid_se_lfo[2].restart_req = 1;
-    if( trg->L4  ) sid_se_lfo[3].restart_req = 1;
-    if( trg->L5  ) sid_se_lfo[4].restart_req = 1;
-    if( trg->L6  ) sid_se_lfo[5].restart_req = 1;
+    if( trg->E1R ) mbSidEnv[0].releaseReq = 1;
+    if( trg->E2R ) mbSidEnv[1].releaseReq = 1;
+    if( trg->L1  ) mbSidLfo[0].restartReq = 1;
+    if( trg->L2  ) mbSidLfo[1].restartReq = 1;
+    if( trg->L3  ) mbSidLfo[2].restartReq = 1;
+    if( trg->L4  ) mbSidLfo[3].restartReq = 1;
+    if( trg->L5  ) mbSidLfo[4].restartReq = 1;
+    if( trg->L6  ) mbSidLfo[5].restartReq = 1;
   }
 
   if( trg->ALL[2] ) {
@@ -1826,429 +1786,6 @@ void MbSidSe::seFilterAndVolume(sid_se_filter_t *f)
     if( volume > 0xffff ) volume = 0xffff; else if( volume < 0 ) volume = 0;
 
     f->phys_sid_regs->volume = volume >> 12;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// LFO
-/////////////////////////////////////////////////////////////////////////////
-void MbSidSe::seLfo(sid_se_lfo_t *l)
-{
-    sid_se_lfo_mode_t lfo_mode;
-    lfo_mode.ALL = l->lfo_patch->mode;
-
-    // LFO restart requested?
-    if( l->restart_req ) {
-        l->restart_req = 0;
-
-        // reset counter (take phase into account)
-        l->ctr = l->lfo_patch->phase << 8;
-
-        // clear overrun flag (for oneshot mode)
-        lfoOverrun &= ~(1 << l->lfo);
-
-        // check if LFO should be delayed - set delay counter to 0x0001 in this case
-        l->delay_ctr = l->lfo_patch->delay ? 1 : 0;
-    }
-
-    // set wave register to initial value and skip LFO if not enabled
-    if( !lfo_mode.ENABLE ) {
-        if( l->mod_src_lfo )
-            *l->mod_src_lfo = 0;
-    } else {
-        if( l->delay_ctr ) {
-            int new_delay_ctr = l->delay_ctr + (mbSidEnvTable[l->lfo_patch->delay] / updateSpeedFactor);
-            if( new_delay_ctr > 0xffff )
-                l->delay_ctr = 0; // delay passed
-            else
-                l->delay_ctr = new_delay_ctr; // delay not passed
-        }
-
-        if( !l->delay_ctr ) { // delay passed?
-            u8 lfo_overrun = 0;
-            u8 lfo_stalled = 0;
-
-            // in oneshot mode: check if overrun already occured
-            if( lfo_mode.ONESHOT ) {
-                if( lfoOverrun & (1 << l->lfo) ) {
-                    // set counter to maximum value and skip sweep
-                    l->ctr = 0xffff;
-                    lfo_stalled = 1;
-                }
-            }
-
-            // if clock sync enabled: only increment on each 16th clock event
-            if( lfo_mode.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) )
-                lfo_stalled = 1;
-
-            if( !lfo_stalled ) {
-                // increment 16bit counter by given rate
-                // the rate can be modulated
-                s32 lfo_rate;
-                if( l->mod_dst_lfo_rate ) {
-                    lfo_rate = l->lfo_patch->rate + (*l->mod_dst_lfo_rate / 256);
-                    if( lfo_rate > 255 ) lfo_rate = 255; else if( lfo_rate < 0 ) lfo_rate = 0;
-                } else {
-                    lfo_rate = l->lfo_patch->rate;
-                }
-
-                // if LFO synched via clock, replace 245-255 by MIDI clock optimized incrementers
-                u16 inc;
-                if( lfo_mode.CLKSYNC && lfo_rate >= 245 )
-                    inc = mbSidLfoTableMclk[lfo_rate-245]; // / updateSpeedFactor;
-                else
-                    inc = mbSidLfoTable[lfo_rate] / updateSpeedFactor;
-
-                // add to counter and check for overrun
-                s32 new_ctr = l->ctr + inc;
-                if( new_ctr > 0xffff ) {
-                    lfo_overrun = 1;
-
-                    if( lfo_mode.ONESHOT )
-                        new_ctr = 0xffff; // stop at end position
-
-                    // propagate overrun to trigger matrix
-                    if( l->trg_mask_lfo_period )
-                        triggerLead(l->trg_mask_lfo_period);
-
-                    // required for oneshot mode
-                    lfoOverrun |= (1 << l->lfo);
-                }
-                l->ctr = (u16)new_ctr;
-            }
-
-
-            // map counter to waveform
-            u8 lfo_waveform_skipped = 0;
-            s16 wave;
-            switch( lfo_mode.WAVEFORM ) {
-            case 0: { // Sine
-                // sine table contains a quarter of a sine
-                // we have to negate/mirror it depending on the mapped counter value
-                u8 ptr = l->ctr >> 7;
-                if( l->ctr & (1 << 14) )
-                    ptr ^= 0x7f;
-                ptr &= 0x7f;
-                wave = mbSidSinTable[ptr];
-                if( l->ctr & (1 << 15) )
-                    wave = -wave;
-            } break;  
-
-            case 1: { // Triangle
-                // similar to sine, but linear waveform
-                wave = (l->ctr & 0x3fff) << 1;
-                if( l->ctr & (1 << 14) )
-                    wave = 0x7fff - wave;
-                if( l->ctr & (1 << 15) )
-                    wave = -wave;
-            } break;  
-
-            case 2: { // Saw
-                wave = l->ctr - 0x8000;
-            } break;  
-
-            case 3: { // Pulse
-                wave = (l->ctr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
-            } break;  
-
-            case 4: { // Random
-                // only on LFO overrun
-                if( lfo_overrun )
-                    wave = randomGen.value(0x0000, 0xffff);
-                else
-                    lfo_waveform_skipped = 1;
-            } break;  
-
-            case 5: { // Positive Sine
-                // sine table contains a quarter of a sine
-                // we have to negate/mirror it depending on the mapped counter value
-                u8 ptr = l->ctr >> 8;
-                if( l->ctr & (1 << 15) )
-                    ptr ^= 0x7f;
-                ptr &= 0x7f;
-                wave = mbSidSinTable[ptr];
-            } break;  
-
-            case 6: { // Positive Triangle
-                // similar to sine, but linear waveform
-                wave = (l->ctr & 0x7fff);
-                if( l->ctr & (1 << 15) )
-                    wave = 0x7fff - wave;
-            } break;  
-
-            case 7: { // Positive Saw
-                wave = l->ctr >> 1;
-            } break;  
-
-            case 8: { // Positive Pulse
-                wave = (l->ctr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
-            } break;  
-
-            default: // take saw as default
-                wave = l->ctr - 0x8000;
-            }
-
-            if( !lfo_waveform_skipped ) {
-                if( l->engine == SID_SE_LEAD ) {
-                    // scale to LFO depth
-                    // the depth can be modulated
-                    s32 lfo_depth;
-                    if( l->mod_dst_lfo_depth ) {
-                        lfo_depth = ((s32)l->lfo_patch->depth - 0x80) + (*l->mod_dst_lfo_depth / 256);
-                        if( lfo_depth > 127 ) lfo_depth = 127; else if( lfo_depth < -128 ) lfo_depth = -128;
-                    } else {
-                        lfo_depth = (s32)l->lfo_patch->depth - 0x80;
-                    }
-    
-                    // final LFO value
-                    if( l->mod_src_lfo )
-                        *l->mod_src_lfo = (wave * lfo_depth) / 128;
-                } else {
-                    // directly write to modulation destinations depending on depths
-                    s32 depth_p = (s32)l->lfo_patch->MINIMAL.depth_p - 0x80;
-                    *l->mod_dst_pitch += (wave * depth_p) / 128;
-
-                    s32 depth_pw = (s32)l->lfo_patch->MINIMAL.depth_pw - 0x80;
-                    *l->mod_dst_pw += (wave * depth_pw) / 128;
-
-                    s32 depth_f = (s32)l->lfo_patch->MINIMAL.depth_f - 0x80;
-                    *l->mod_dst_filter += (wave * depth_f) / 128;
-                }
-            }
-        }
-    }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// ENV
-/////////////////////////////////////////////////////////////////////////////
-
-// Reduced version for Bassline/Multi engine
-void MbSidSe::seEnv(sid_se_env_t *e)
-{
-    sid_se_env_mode_t env_mode;
-    env_mode.ALL = e->env_patch->mode;
-
-    if( e->restart_req ) {
-        e->restart_req = 0;
-        e->state = SID_SE_ENV_STATE_ATTACK1;
-        e->delay_ctr = 0; // delay counter not supported by this function...
-    }
-
-    if( e->release_req ) {
-        e->release_req = 0;
-        e->state = SID_SE_ENV_STATE_RELEASE1;
-    }
-
-    // if clock sync enabled: only increment on each 16th clock event
-    if( env_mode.MINIMAL.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
-        if( e->state == SID_SE_ENV_STATE_IDLE )
-            return; // nothing to do
-    } else {
-        switch( e->state ) {
-        case SID_SE_ENV_STATE_ATTACK1: {
-            u8 curve = env_mode.MINIMAL.CURVE_A ? e->env_patch->MINIMAL.curve : 0x80;
-            if( seEnvStep(&e->ctr, 0xffff, e->env_patch->MINIMAL.attack, curve) )
-                e->state = SID_SE_ENV_STATE_DECAY1;
-        } break;
-  
-        case SID_SE_ENV_STATE_DECAY1: {
-            // use alternative decay on accented notes (only used for basslines)
-            u8 decay = (e->decay_a != NULL && e->voice_state->ACCENT) ? *e->decay_a : e->env_patch->MINIMAL.decay;
-            u8 curve = env_mode.MINIMAL.CURVE_D ? e->env_patch->MINIMAL.curve : 0x80;
-            if( seEnvStep(&e->ctr, e->env_patch->MINIMAL.sustain << 8, decay, curve) )
-                e->state = SID_SE_ENV_STATE_SUSTAIN;
-        } break;
-  
-        case SID_SE_ENV_STATE_SUSTAIN:
-            // always update sustain level
-            e->ctr = e->env_patch->MINIMAL.sustain << 8;
-            break;
-  
-        case SID_SE_ENV_STATE_RELEASE1: {
-            u8 curve = env_mode.MINIMAL.CURVE_R ? e->env_patch->MINIMAL.curve : 0x80;
-            if( e->ctr )
-                seEnvStep(&e->ctr, 0x0000, e->env_patch->MINIMAL.release, curve);
-        } break;
-  
-        default: // like SID_SE_ENV_STATE_IDLE
-            return; // nothing to do...
-        }
-    }
-
-    // directly write to modulation destinations depending on depths
-    // if accent flag of voice set: increase/decrease depth based on accent value
-    s32 depth_p = (s32)e->env_patch->MINIMAL.depth_p - 0x80;
-    if( depth_p && e->voice_state->ACCENT ) {
-        if( depth_p >= 0 ) {
-            if( (depth_p += *e->accent) > 128 ) depth_p = 128;
-        } else {
-            if( (depth_p -= *e->accent) < -128 ) depth_p = -128;
-        }
-    }
-    *e->mod_dst_pitch += ((e->ctr/2) * depth_p) / 128;
-
-    s32 depth_pw = (s32)e->env_patch->MINIMAL.depth_pw - 0x80;
-    if( depth_pw && e->voice_state->ACCENT ) {
-        if( depth_pw >= 0 ) {
-            if( (depth_pw += *e->accent) > 128 ) depth_pw = 128;
-        } else {
-            if( (depth_pw -= *e->accent) < -128 ) depth_pw = -128;
-        }
-    }
-    *e->mod_dst_pw += ((e->ctr/2) * depth_pw) / 128;
-
-    s32 depth_f = (s32)e->env_patch->MINIMAL.depth_f - 0x80;
-    if( depth_f && e->voice_state->ACCENT ) {
-        if( depth_f >= 0 ) {
-            if( (depth_f += *e->accent) > 128 ) depth_f = 128;
-        } else {
-            if( (depth_f -= *e->accent) < -128 ) depth_f = -128;
-        }
-    }
-    *e->mod_dst_filter += ((e->ctr/2) * depth_f) / 128;
-}
-
-
-// Extended version for Lead engine
-void MbSidSe::seEnvLead(sid_se_env_t *e)
-{
-    sid_se_env_mode_t env_mode;
-    env_mode.ALL = e->env_patch->mode;
-
-    if( e->restart_req ) {
-        e->restart_req = 0;
-        e->state = SID_SE_ENV_STATE_ATTACK1;
-        e->delay_ctr = e->env_patch->L.delay ? 1 : 0;
-    }
-
-    if( e->release_req ) {
-        e->release_req = 0;
-        e->state = SID_SE_ENV_STATE_RELEASE1;
-    }
-
-    // if clock sync enabled: only increment on each 16th clock event
-    if( env_mode.L.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
-        if( e->state == SID_SE_ENV_STATE_IDLE )
-            return; // nothing to do
-    } else {
-        switch( e->state ) {
-        case SID_SE_ENV_STATE_ATTACK1:
-            if( e->delay_ctr ) {
-                int new_delay_ctr = e->delay_ctr + (mbSidEnvTable[e->env_patch->L.delay] / updateSpeedFactor);
-                if( new_delay_ctr > 0xffff )
-                    e->delay_ctr = 0; // delay passed
-                else {
-                    e->delay_ctr = new_delay_ctr; // delay not passed
-                    return; // no error
-                }
-            }
-  
-            if( seEnvStep(&e->ctr, e->env_patch->L.attlvl << 8, e->env_patch->L.attack1, e->env_patch->L.att_curve) )
-                e->state = SID_SE_ENV_STATE_ATTACK2; // TODO: Set Phase depending on e->mode
-            break;
-  
-        case SID_SE_ENV_STATE_ATTACK2:
-            if( seEnvStep(&e->ctr, 0xffff, e->env_patch->L.attack2, e->env_patch->L.att_curve) )
-                e->state = SID_SE_ENV_STATE_DECAY1; // TODO: Set Phase depending on e->mode
-            break;
-
-        case SID_SE_ENV_STATE_DECAY1:
-            if( seEnvStep(&e->ctr, e->env_patch->L.declvl << 8, e->env_patch->L.decay1, e->env_patch->L.dec_curve) )
-                e->state = SID_SE_ENV_STATE_DECAY2; // TODO: Set Phase depending on e->mode
-            break;
-  
-        case SID_SE_ENV_STATE_DECAY2:
-            if( seEnvStep(&e->ctr, e->env_patch->L.sustain << 8, e->env_patch->L.decay2, e->env_patch->L.dec_curve) ) {
-                e->state = SID_SE_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on e->mode
-  
-                // propagate sustain phase to trigger matrix
-                if( e->trg_mask_env_sustain )
-                    triggerLead(e->trg_mask_env_sustain);
-            }
-            break;
-  
-        case SID_SE_ENV_STATE_SUSTAIN:
-            // always update sustain level
-            e->ctr = e->env_patch->L.sustain << 8;
-            break;
-  
-        case SID_SE_ENV_STATE_RELEASE1:
-            if( seEnvStep(&e->ctr, e->env_patch->L.rellvl << 8, e->env_patch->L.release1, e->env_patch->L.rel_curve) )
-                e->state = SID_SE_ENV_STATE_RELEASE2; // TODO: Set Phase depending on e->mode
-            break;
-  
-        case SID_SE_ENV_STATE_RELEASE2:
-            if( e->ctr )
-                seEnvStep(&e->ctr, 0x0000, e->env_patch->L.release2, e->env_patch->L.rel_curve);
-            break;
-  
-        default: // like SID_SE_ENV_STATE_IDLE
-            return; // nothing to do...
-        }
-    }
-
-    // scale to ENV depth
-    s32 env_depth = (s32)e->env_patch->L.depth - 0x80;
-    
-    // final ENV value (range +/- 0x7fff)
-    if( e->mod_src_env )
-        *e->mod_src_env = ((e->ctr/2) * env_depth) / 128;
-}
-
-
-bool MbSidSe::seEnvStep(u16 *ctr, u16 target, u8 rate, u8 curve)
-{
-    if( target == *ctr )
-        return true; // next state
-
-    // modify rate if curve != 0x80
-    u16 inc_rate;
-    if( curve != 0x80 ) {
-        // this nice trick has been proposed by Razmo
-        int abs_curve = curve - 0x80;
-        if( abs_curve < 0 )
-            abs_curve = -abs_curve;
-        else
-            abs_curve ^= 0x7f; // invert if positive range for more logical behaviour of positive/negative curve
-
-        int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
-        int feedback = (abs_curve * (*ctr>>8)) >> 8; 
-        int ix;
-        if( curve > 0x80 ) { // bend up
-            ix = (rate_msbs ^ 0x7f) - feedback;
-            if( ix < 0 )
-                ix = 0;
-        } else { // bend down
-            ix = (rate_msbs ^ 0x7f) + feedback;
-            if( ix >= 127 )
-                ix = 127;
-        }
-        inc_rate = mbSidFrqTable[ix];
-    } else {
-        inc_rate = mbSidEnvTable[rate];
-    }
-
-    // positive or negative direction?
-    if( target > *ctr ) {
-        s32 new_ctr = (s32)*ctr + (inc_rate / updateSpeedFactor);
-        if( new_ctr >= target ) {
-            *ctr = target;
-            return true; // next state
-        }
-        *ctr = new_ctr;
-        return false; // stay in state
-    }
-
-    s32 new_ctr = (s32)*ctr - (inc_rate / updateSpeedFactor);
-    if( new_ctr <= target ) {
-        *ctr = target;
-        return true; // next state
-    }
-    *ctr = new_ctr;
-
-    return false; // stay in state
 }
 
 

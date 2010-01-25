@@ -550,23 +550,6 @@ typedef union {
 
 } sid_se_lfo_patch_t;
 
-typedef struct sid_se_lfo_t {
-    u8     lfo; // number of assigned LFO
-    sid_se_engine_t engine; // engine type
-    sid_se_lfo_patch_t *lfo_patch; // cross-reference to LFO patch
-    s16    *mod_src_lfo; // reference to SID_SE_MOD_SRC_LFOx
-    s32    *mod_dst_lfo_depth; // reference to SID_SE_MOD_DST_LDx
-    s32    *mod_dst_lfo_rate; // reference to SID_SE_MOD_DST_LRx
-    s32    *mod_dst_pitch; // reference to SID_SE_MOD_DST_PITCHx
-    s32    *mod_dst_pw; // reference to SID_SE_MOD_DST_PWx
-    s32    *mod_dst_filter; // reference to SID_SE_MOD_DST_FILx
-    sid_se_trg_t *trg_mask_lfo_period;
-
-    u16 ctr;
-    u16 delay_ctr;
-    u8  restart_req;
-} sid_se_lfo_t;
-
 
 ////////////////////////////////////////
 // Envelope
@@ -588,18 +571,6 @@ typedef union {
         u8 CLKSYNC:1;
     } MINIMAL;
 } sid_se_env_mode_t;
-
-typedef enum {
-    SID_SE_ENV_STATE_IDLE = 0,
-    SID_SE_ENV_STATE_ATTACK1,
-    SID_SE_ENV_STATE_ATTACK2,
-    SID_SE_ENV_STATE_DECAY1,
-    SID_SE_ENV_STATE_DECAY2,
-    SID_SE_ENV_STATE_SUSTAIN,
-    SID_SE_ENV_STATE_RELEASE1,
-    SID_SE_ENV_STATE_RELEASE2
-} sid_se_env_state_t;
-
 
 typedef union {
     u8 mode; // sid_se_env_mode_t
@@ -636,25 +607,6 @@ typedef union {
     } MINIMAL;
 
 } sid_se_env_patch_t;
-
-typedef struct sid_se_env_t {
-    u8     env; // number of assigned envelope
-    sid_se_env_patch_t *env_patch; // cross-reference to ENV patch
-    s16    *mod_src_env; // reference to SID_SE_MOD_SRC_ENVx
-    s32    *mod_dst_pitch; // reference to SID_SE_MOD_DST_PITCHx
-    s32    *mod_dst_pw; // reference to SID_SE_MOD_DST_PWx
-    s32    *mod_dst_filter; // reference to SID_SE_MOD_DST_FILx
-    sid_se_trg_t *trg_mask_env_sustain;
-    sid_se_voice_state_t *voice_state; // reference to voice state (to check for ACCENT)
-    u8     *decay_a; // reference to alternative decay value (used on ACCENTed notes)
-    u8     *accent; // reference to accent value (used on ACCENTed notes)
-
-    sid_se_env_state_t state;
-    u16 ctr;
-    u16 delay_ctr;
-    u8 restart_req;
-    u8 release_req;
-} sid_se_env_t;
 
 
 ////////////////////////////////////////
