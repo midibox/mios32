@@ -26,7 +26,20 @@ MbSidClock::MbSidClock()
     clockModeSet(MBSID_CLOCK_MODE_AUTO);
 
     // set default BPM rate
+    bpmCtr = 0;
     bpmSet(120.0);
+
+    state.ALL = 0;
+    event.ALL = 0;
+
+    clkCtr6 = 0;
+    clkCtr24 = 0;
+
+    incomingClkCtr = 0;
+    incomingClkDelay = 0;
+    sentClkDelay = 0;
+    sentClkCtr = 0;
+    clkReqCtr = 0;
 }
 
 

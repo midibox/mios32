@@ -101,6 +101,12 @@
 		52DD0E5B110E191600B92219 /* MbSidClock.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E59110E191600B92219 /* MbSidClock.h */; };
 		52DD0E95110E340700B92219 /* MbSidRandomGen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */; };
 		52DD0E96110E340700B92219 /* MbSidRandomGen.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E94110E340700B92219 /* MbSidRandomGen.h */; };
+		52DD0ECD110E400700B92219 /* MbSidPar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0ECB110E400700B92219 /* MbSidPar.cpp */; };
+		52DD0ECE110E400700B92219 /* MbSidPar.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0ECC110E400700B92219 /* MbSidPar.h */; };
+		52DD0ED3110E408300B92219 /* MbSidLfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0ED1110E408300B92219 /* MbSidLfo.cpp */; };
+		52DD0ED4110E408300B92219 /* MbSidLfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0ED2110E408300B92219 /* MbSidLfo.h */; };
+		52DD0F3F110E552B00B92219 /* MbSidEnv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0F3D110E552B00B92219 /* MbSidEnv.cpp */; };
+		52DD0F40110E552B00B92219 /* MbSidEnv.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0F3E110E552B00B92219 /* MbSidEnv.h */; };
 		52DE59E811025B04009F3BA2 /* mios32_ain.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59C911025B04009F3BA2 /* mios32_ain.h */; };
 		52DE59E911025B04009F3BA2 /* mios32_board.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59CA11025B04009F3BA2 /* mios32_board.h */; };
 		52DE59EA11025B04009F3BA2 /* mios32_com.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DE59CB11025B04009F3BA2 /* mios32_com.h */; };
@@ -135,8 +141,6 @@
 		52ED22271101477000D2D0CC /* install.sh in Resources */ = {isa = PBXBuildFile; fileRef = 52ED22261101477000D2D0CC /* install.sh */; };
 		52EFCE40110C5FCE00E119E8 /* MbSidSe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */; };
 		52EFCE41110C5FCE00E119E8 /* MbSidSe.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */; };
-		52EFD0B3110C88F700E119E8 /* MbSidPar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */; };
-		52EFD0B4110C88F700E119E8 /* MbSidPar.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD0B2110C88F700E119E8 /* MbSidPar.h */; };
 		52EFD2E7110CB67200E119E8 /* MbSidKnob.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */; };
 		52EFD2E8110CB67200E119E8 /* MbSidKnob.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EFD2E6110CB67200E119E8 /* MbSidKnob.h */; };
 		52EFD2FB110CB89500E119E8 /* MbSidVoiceQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */; };
@@ -294,6 +298,12 @@
 		52DD0E59110E191600B92219 /* MbSidClock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidClock.h; path = ../../../core/MbSidClock.h; sourceTree = SOURCE_ROOT; };
 		52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidRandomGen.cpp; path = ../../../core/MbSidRandomGen.cpp; sourceTree = SOURCE_ROOT; };
 		52DD0E94110E340700B92219 /* MbSidRandomGen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidRandomGen.h; path = ../../../core/MbSidRandomGen.h; sourceTree = SOURCE_ROOT; };
+		52DD0ECB110E400700B92219 /* MbSidPar.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidPar.cpp; path = ../../../core/MbSidPar.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0ECC110E400700B92219 /* MbSidPar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidPar.h; path = ../../../core/MbSidPar.h; sourceTree = SOURCE_ROOT; };
+		52DD0ED1110E408300B92219 /* MbSidLfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidLfo.cpp; path = ../../../core/MbSidLfo.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0ED2110E408300B92219 /* MbSidLfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidLfo.h; path = ../../../core/MbSidLfo.h; sourceTree = SOURCE_ROOT; };
+		52DD0F3D110E552B00B92219 /* MbSidEnv.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidEnv.cpp; path = ../../../core/MbSidEnv.cpp; sourceTree = SOURCE_ROOT; };
+		52DD0F3E110E552B00B92219 /* MbSidEnv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidEnv.h; path = ../../../core/MbSidEnv.h; sourceTree = SOURCE_ROOT; };
 		52DE59C911025B04009F3BA2 /* mios32_ain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_ain.h; path = ../../../../../../include/mios32/mios32_ain.h; sourceTree = SOURCE_ROOT; };
 		52DE59CA11025B04009F3BA2 /* mios32_board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_board.h; path = ../../../../../../include/mios32/mios32_board.h; sourceTree = SOURCE_ROOT; };
 		52DE59CB11025B04009F3BA2 /* mios32_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_com.h; path = ../../../../../../include/mios32/mios32_com.h; sourceTree = SOURCE_ROOT; };
@@ -328,8 +338,6 @@
 		52ED22261101477000D2D0CC /* install.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = install.sh; sourceTree = "<group>"; };
 		52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSe.cpp; path = ../../../core/MbSidSe.cpp; sourceTree = SOURCE_ROOT; };
 		52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSe.h; path = ../../../core/MbSidSe.h; sourceTree = SOURCE_ROOT; };
-		52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidPar.cpp; path = ../../../core/MbSidPar.cpp; sourceTree = SOURCE_ROOT; };
-		52EFD0B2110C88F700E119E8 /* MbSidPar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidPar.h; path = ../../../core/MbSidPar.h; sourceTree = SOURCE_ROOT; };
 		52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidKnob.cpp; path = ../../../core/MbSidKnob.cpp; sourceTree = SOURCE_ROOT; };
 		52EFD2E6110CB67200E119E8 /* MbSidKnob.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidKnob.h; path = ../../../core/MbSidKnob.h; sourceTree = SOURCE_ROOT; };
 		52EFD2F9110CB89500E119E8 /* MbSidVoiceQueue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidVoiceQueue.cpp; path = ../../../core/MbSidVoiceQueue.cpp; sourceTree = SOURCE_ROOT; };
@@ -544,6 +552,12 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52DD0F3D110E552B00B92219 /* MbSidEnv.cpp */,
+				52DD0F3E110E552B00B92219 /* MbSidEnv.h */,
+				52DD0ED1110E408300B92219 /* MbSidLfo.cpp */,
+				52DD0ED2110E408300B92219 /* MbSidLfo.h */,
+				52DD0ECB110E400700B92219 /* MbSidPar.cpp */,
+				52DD0ECC110E400700B92219 /* MbSidPar.h */,
 				52DD0E93110E340700B92219 /* MbSidRandomGen.cpp */,
 				52DD0E94110E340700B92219 /* MbSidRandomGen.h */,
 				52DD0E58110E191600B92219 /* MbSidClock.cpp */,
@@ -559,8 +573,6 @@
 				52EFD2FA110CB89500E119E8 /* MbSidVoiceQueue.h */,
 				52EFD2E5110CB67200E119E8 /* MbSidKnob.cpp */,
 				52EFD2E6110CB67200E119E8 /* MbSidKnob.h */,
-				52EFD0B1110C88F700E119E8 /* MbSidPar.cpp */,
-				52EFD0B2110C88F700E119E8 /* MbSidPar.h */,
 				52EFCE3C110C5FCE00E119E8 /* MbSidSe.cpp */,
 				52EFCE3D110C5FCE00E119E8 /* MbSidSe.h */,
 				52EFD3F0110CDA0600E119E8 /* MbSidTables.cpp */,
@@ -865,7 +877,6 @@
 				525B0CA8110BB56800F93C55 /* MbSid.h in Headers */,
 				525B0CAA110BB56800F93C55 /* MbSidEnvironment.h in Headers */,
 				52EFCE41110C5FCE00E119E8 /* MbSidSe.h in Headers */,
-				52EFD0B4110C88F700E119E8 /* MbSidPar.h in Headers */,
 				52EFD2E8110CB67200E119E8 /* MbSidKnob.h in Headers */,
 				52EFD2FC110CB89500E119E8 /* MbSidVoiceQueue.h in Headers */,
 				52EFD39D110CCD6700E119E8 /* MbSidPatch.h in Headers */,
@@ -875,6 +886,9 @@
 				52DD0E3B110E0A1B00B92219 /* MbSidAsid.h in Headers */,
 				52DD0E5B110E191600B92219 /* MbSidClock.h in Headers */,
 				52DD0E96110E340700B92219 /* MbSidRandomGen.h in Headers */,
+				52DD0ECE110E400700B92219 /* MbSidPar.h in Headers */,
+				52DD0ED4110E408300B92219 /* MbSidLfo.h in Headers */,
+				52DD0F40110E552B00B92219 /* MbSidEnv.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1005,7 +1019,6 @@
 				525B0CA7110BB56800F93C55 /* MbSid.cpp in Sources */,
 				525B0CA9110BB56800F93C55 /* MbSidEnvironment.cpp in Sources */,
 				52EFCE40110C5FCE00E119E8 /* MbSidSe.cpp in Sources */,
-				52EFD0B3110C88F700E119E8 /* MbSidPar.cpp in Sources */,
 				52EFD2E7110CB67200E119E8 /* MbSidKnob.cpp in Sources */,
 				52EFD2FB110CB89500E119E8 /* MbSidVoiceQueue.cpp in Sources */,
 				52EFD39C110CCD6700E119E8 /* MbSidPatch.cpp in Sources */,
@@ -1015,6 +1028,9 @@
 				52DD0E3A110E0A1B00B92219 /* MbSidAsid.cpp in Sources */,
 				52DD0E5A110E191600B92219 /* MbSidClock.cpp in Sources */,
 				52DD0E95110E340700B92219 /* MbSidRandomGen.cpp in Sources */,
+				52DD0ECD110E400700B92219 /* MbSidPar.cpp in Sources */,
+				52DD0ED3110E408300B92219 /* MbSidLfo.cpp in Sources */,
+				52DD0F3F110E552B00B92219 /* MbSidEnv.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

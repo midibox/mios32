@@ -28,6 +28,8 @@ THUMB_CPP_SOURCE = ../core/app.cpp \
 		   ../core/MbSidVoiceQueue.cpp \
 		   ../core/MbSidKnob.cpp \
 		   ../core/MbSidPatch.cpp \
+		   ../core/MbSidLfo.cpp \
+		   ../core/MbSidEnv.cpp \
 		   ../core/MbSidSe.cpp \
 
 
