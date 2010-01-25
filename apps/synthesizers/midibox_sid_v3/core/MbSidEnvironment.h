@@ -19,6 +19,9 @@
 #include <mios32.h>
 #include "MbSid.h"
 #include "MbSidStructs.h"
+#include "MbSidSysEx.h"
+#include "MbSidAsid.h"
+#include "MbSidClock.h"
 
 class MbSidEnvironment
 {
@@ -37,23 +40,32 @@ public:
     void updateSpeedFactorSet(u8 _updateSpeedFactor);
 
     // Sound Engines Update Cycle
-    void updateSe(void);
+    // returns true if SID registers have to be updated
+    bool updateSe(void);
 
     // speed factor compared to MBSIDV2
     u8 updateSpeedFactor;
 
-    // tempo events
-    sid_se_clk_t mbSidClk;
+    // set/get BPM
+    void bpmSet(float bpm);
+    float bpmGet(void);
+
+    // resets internal Tempo generator
+    void bpmRestart(void);
 
     // MIDI
     void midiReceive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+    s32 midiReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
+    void midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in);
+    void midiTimeOut(mios32_midi_port_t port);
 
-    // Clock Generator
-    void incomingRealTimeEvent(u8 event);
-    void bpmSet(float bpm);
-    void bpmRestart(void);
-    void clock(void);
+protected:
+    // SysEx parsers
+    MbSidSysEx mbSidSysEx;
+    MbSidAsid mbSidAsid;
 
+    // Tempo Clock
+    MbSidClock mbSidClock;
 };
 
 #endif /* _MB_SID_ENVIRONMENT_H */

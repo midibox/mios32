@@ -15,7 +15,6 @@
 #include "MbSidSe.h"
 #include "MbSidTables.h"
 #include <string.h>
-#include "sid_random.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -366,7 +365,7 @@ void MbSidSe::initStructs(void)
 /////////////////////////////////////////////////////////////////////////////
 // Sound Engine Update Cycle
 /////////////////////////////////////////////////////////////////////////////
-void MbSidSe::updateSe(void)
+bool MbSidSe::updateSe(void)
 {
     sid_se_engine_t engine = (sid_se_engine_t)mbSidPatch.body.engine;
 
@@ -376,7 +375,7 @@ void MbSidSe::updateSe(void)
         *modDst_clr++ = 0; // faster than memset()! (ca. 20 uS) - seems that memset only copies byte-wise
 
     // Clock
-    if( mbSidClkPtr->event.MIDI_START ) {
+    if( mbSidClockPtr->event.MIDI_START ) {
         if( engine == SID_SE_LEAD )
             triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_MST]);
         else {
@@ -384,7 +383,7 @@ void MbSidSe::updateSe(void)
         }
     }
 
-    if( mbSidClkPtr->event.CLK ) {
+    if( mbSidClockPtr->event.CLK ) {
         if( engine == SID_SE_LEAD )
             triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_CLK]);
         else {
@@ -395,11 +394,11 @@ void MbSidSe::updateSe(void)
         }
 
         // propagate clock/4 event to trigger matrix on each 6th clock
-        if( mbSidClkPtr->global_clk_ctr6 == 0 )
+        if( mbSidClockPtr->clkCtr6 == 0 )
             triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_CL6]);
 
         // propagate clock/16 event to trigger matrix on each 24th clock
-        if( mbSidClkPtr->global_clk_ctr24 == 0 )
+        if( mbSidClockPtr->clkCtr24 == 0 )
             triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_C24]);
     }
 
@@ -695,6 +694,9 @@ void MbSidSe::updateSe(void)
     } break;
 
     }
+
+    // currently no detection if SIDs have to be updated
+    return true;
 }
 
 
@@ -1024,7 +1026,7 @@ void MbSidSe::seArp(sid_se_voice_t *v)
     u8 gate_clr_req = 0;
 
     // check if arp sync requested
-    if( mbSidClkPtr->event.MIDI_START || mv->arp_state.SYNC_ARP ) {
+    if( mbSidClockPtr->event.MIDI_START || mv->arp_state.SYNC_ARP ) {
         // set arp counters to max values (forces proper reset)
         mv->arp_note_ctr = ~0;
         mv->arp_oct_ctr = ~0;
@@ -1033,7 +1035,7 @@ void MbSidSe::seArp(sid_se_voice_t *v)
         // request first note (for oneshot function)
         first_note_req = 1;
         // reset divider if not disabled or if arp synch on MIDI clock start event
-        if( mbSidClkPtr->event.MIDI_START || !arp_mode.SYNC ) {
+        if( mbSidClockPtr->event.MIDI_START || !arp_mode.SYNC ) {
             mv->arp_div_ctr = ~0;
             mv->arp_gl_ctr = ~0;
             // request new note
@@ -1042,7 +1044,7 @@ void MbSidSe::seArp(sid_se_voice_t *v)
     }
 
     // if clock sync event:
-    if( mbSidClkPtr->event.CLK ) {
+    if( mbSidClockPtr->event.CLK ) {
         // increment clock divider
         // reset divider if it already has reached the target value
         int inc = 1;
@@ -1130,7 +1132,7 @@ void MbSidSe::seArp(sid_se_voice_t *v)
             u8 note_number = 0;
             if( arp_mode.DIR >= 6 ) { // Random
                 if( mv->notestack.len > 0 )
-                    note_number = SID_RANDOM_Gen_Range(0, mv->notestack.len-1);
+                    note_number = randomGen.value(0, mv->notestack.len-1);
                 else
                     note_number = 0;
             } else {
@@ -1876,7 +1878,7 @@ void MbSidSe::seLfo(sid_se_lfo_t *l)
             }
 
             // if clock sync enabled: only increment on each 16th clock event
-            if( lfo_mode.CLKSYNC && (!mbSidClkPtr->event.CLK || mbSidClkPtr->global_clk_ctr6 != 0) )
+            if( lfo_mode.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) )
                 lfo_stalled = 1;
 
             if( !lfo_stalled ) {
@@ -1952,7 +1954,7 @@ void MbSidSe::seLfo(sid_se_lfo_t *l)
             case 4: { // Random
                 // only on LFO overrun
                 if( lfo_overrun )
-                    wave = SID_RANDOM_Gen_Range(0x0000, 0xffff);
+                    wave = randomGen.value(0x0000, 0xffff);
                 else
                     lfo_waveform_skipped = 1;
             } break;  
@@ -2040,7 +2042,7 @@ void MbSidSe::seEnv(sid_se_env_t *e)
     }
 
     // if clock sync enabled: only increment on each 16th clock event
-    if( env_mode.MINIMAL.CLKSYNC && (!mbSidClkPtr->event.CLK || mbSidClkPtr->global_clk_ctr6 != 0) ) {
+    if( env_mode.MINIMAL.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
         if( e->state == SID_SE_ENV_STATE_IDLE )
             return; // nothing to do
     } else {
@@ -2127,7 +2129,7 @@ void MbSidSe::seEnvLead(sid_se_env_t *e)
     }
 
     // if clock sync enabled: only increment on each 16th clock event
-    if( env_mode.L.CLKSYNC && (!mbSidClkPtr->event.CLK || mbSidClkPtr->global_clk_ctr6 != 0) ) {
+    if( env_mode.L.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
         if( e->state == SID_SE_ENV_STATE_IDLE )
             return; // nothing to do
     } else {
@@ -2339,7 +2341,7 @@ void MbSidSe::seWt(sid_se_wt_t *w)
 #if DEBUG_VERBOSE_LEVEL >= 2
             DEBUG_MSG("WT %d: 0x%02x 0x%02x\n", w->wt, step, wt_value);
 #endif
-            this->parSetWT(w->wt_patch->assign, wt_value, sidlr, ins);
+            parSetWT(w->wt_patch->assign, wt_value, sidlr, ins);
         }
     }
 }
@@ -2426,7 +2428,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
     v_flags.ALL = v->voice_patch->B.v_flags;
 
     // clear gate and deselect sequence if MIDI clock stop requested
-    if( mbSidClkPtr->event.MIDI_STOP ) {
+    if( mbSidClockPtr->event.MIDI_STOP ) {
         v->state.VOICE_ACTIVE = 0;
         v->state.GATE_CLR_REQ = 1;
         v->state.GATE_SET_REQ = 0;
@@ -2455,7 +2457,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
         return;
 
     // check if reset requested for FA event or sequencer was disabled before (transition Seq off->on)
-    if( !s->state.ENABLED || mbSidClkPtr->event.MIDI_START || s->restart_req ) {
+    if( !s->state.ENABLED || mbSidClockPtr->event.MIDI_START || s->restart_req ) {
         s->restart_req = 0;
         // next clock event will increment to 0
         s->div_ctr = ~0;
@@ -2466,7 +2468,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
         v->state.SLIDE = 0;
     }
 
-    if( mbSidClkPtr->event.MIDI_START || mbSidClkPtr->event.MIDI_CONTINUE ) {
+    if( mbSidClockPtr->event.MIDI_START || mbSidClockPtr->event.MIDI_CONTINUE ) {
         // enable voice (again)
         v->state.VOICE_ACTIVE = 1;
     }
@@ -2475,7 +2477,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
     s->state.ENABLED = 1;
 
     // check for clock sync event
-    if( mbSidClkPtr->event.CLK ) {
+    if( mbSidClockPtr->event.CLK ) {
         sid_se_seq_speed_par_t speed_par;
         speed_par.ALL = s->seq_patch->speed;
 
@@ -2584,7 +2586,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
                     if( s->seq_patch->assign ) {
                         u8 sidlr = 1 << s->seq; // SIDL/R selection
                         u8 ins = 0;
-                        this->parSetWT(s->seq_patch->assign, asg_item.PAR_VALUE + 0x80, sidlr, ins);
+                        parSetWT(s->seq_patch->assign, asg_item.PAR_VALUE + 0x80, sidlr, ins);
                     }
                 }
             } else if( s->sub_ctr == 4 ) { // clear gate
@@ -2606,7 +2608,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
 void MbSidSe::seSeqDrum(sid_se_seq_t *s)
 {
     // clear gate and deselect sequence if MIDI clock stop requested
-    if( mbSidClkPtr->event.MIDI_STOP ) {
+    if( mbSidClockPtr->event.MIDI_STOP ) {
         // stop sequencer
         s->state.RUNNING = 0;
         // clear gates
@@ -2630,7 +2632,7 @@ void MbSidSe::seSeqDrum(sid_se_seq_t *s)
     }
 
     // check if reset requested for FA event or sequencer was disabled before (transition Seq off->on)
-    if( !s->state.ENABLED || s->restart_req || mbSidClkPtr->event.MIDI_START ) {
+    if( !s->state.ENABLED || s->restart_req || mbSidClockPtr->event.MIDI_START ) {
         s->restart_req = 0;
         // next clock event will increment to 0
         s->div_ctr = ~0;
@@ -2639,7 +2641,7 @@ void MbSidSe::seSeqDrum(sid_se_seq_t *s)
         s->pos = ((mbSidPatch.body.D.seq_num & 0x7) << 4) - 1;
     }
 
-    if( mbSidClkPtr->event.MIDI_START || mbSidClkPtr->event.MIDI_CONTINUE ) {
+    if( mbSidClockPtr->event.MIDI_START || mbSidClockPtr->event.MIDI_CONTINUE ) {
         // start sequencer
         s->state.RUNNING = 1;
     }
@@ -2648,7 +2650,7 @@ void MbSidSe::seSeqDrum(sid_se_seq_t *s)
     s->state.ENABLED = 1;
 
     // check for clock sync event
-    if( mbSidClkPtr->event.CLK ) {
+    if( mbSidClockPtr->event.CLK ) {
         // increment clock divider
         // reset divider if it already has reached the target value
         if( ++s->div_ctr == 0 || s->div_ctr > speed_par.CLKDIV ) {

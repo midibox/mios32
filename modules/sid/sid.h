@@ -14,6 +14,10 @@
 #ifndef _SID_H
 #define _SID_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -199,5 +203,8 @@ extern s32 SID_Update(u32 mode);
 
 extern sid_regs_t sid_regs[SID_NUM];
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SID_H */

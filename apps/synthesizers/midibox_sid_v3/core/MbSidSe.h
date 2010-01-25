@@ -19,6 +19,8 @@
 #include "MbSidStructs.h"
 #include "MbSidVoiceQueue.h"
 #include "MbSidPatch.h"
+#include "MbSidClock.h"
+#include "MbSidRandomGen.h"
 
 class MbSidSe
 {
@@ -42,13 +44,14 @@ public:
 
 
     // reference to clock generator
-    sid_se_clk_t *mbSidClkPtr;
+    MbSidClock *mbSidClockPtr;
 
     // Initialises the structures of a SID sound engine
     void initStructs(void);
 
     // sound engine update cycle
-    void updateSe(void);
+    // returns true if SID registers have to be updated
+    bool updateSe(void);
 
     // Trigger matrix
     void triggerNoteOn(sid_se_voice_t *v, u8 no_wt);
@@ -114,6 +117,9 @@ public:
 
     // voice queue
     MbSidVoiceQueue voiceQueue;
+
+    // random generator
+    MbSidRandomGen randomGen;
 };
 
 #endif /* _MB_SID_SE_H */

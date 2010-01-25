@@ -168,51 +168,6 @@ typedef union {
 
 
 ////////////////////////////////////////
-// Clock
-////////////////////////////////////////
-
-typedef union {
-    u8 ALL;
-    struct {
-        u8 SLAVE:1;
-    };
-} sid_se_clk_state_t;
-
-typedef union {
-    u8 ALL;
-    struct {
-        u8 CLK:1;
-        u8 MIDI_START:1;
-        u8 MIDI_CONTINUE:1;
-        u8 MIDI_STOP:1;
-
-        u8 MIDI_START_REQ:1;
-        u8 MIDI_CONTINUE_REQ:1;
-        u8 MIDI_STOP_REQ:1;
-    };
-
-    struct {
-        u8 ALL_SE:4;
-        u8 ALL_MIDI:3;
-    };
-} sid_se_clk_event_t;
-
-typedef struct sid_se_clk_t {
-    sid_se_clk_state_t state;
-    sid_se_clk_event_t event;
-    u16 incoming_clk_ctr;
-    u16 incoming_clk_delay;
-    u16 sent_clk_delay;
-    u8 sent_clk_ctr;
-    u8 clk_req_ctr;
-    u8 global_clk_ctr6;
-    u8 global_clk_ctr24;
-    u32 tmp_bpm_ctr; // tmp.
-    u32 tmp_bpm_ctr_mod; // tmp.
-} sid_se_clk_t;
-
-
-////////////////////////////////////////
 // Trigger Matrix
 ////////////////////////////////////////
 typedef union {
