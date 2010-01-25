@@ -49,11 +49,11 @@ u32 MbSidRandomGen::value(void)
 u32 MbSidRandomGen::value(u32 max)
 {
     // return result within the given range
-    return value() % max;
+    return max == 0xffffffff ? value() : (value() % (max+1));
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns random number in a given range
+// returns random number in a given range (max has to be < 0xffffffff)
 /////////////////////////////////////////////////////////////////////////////
 u32 MbSidRandomGen::value(u32 min, u32 max)
 {
@@ -70,5 +70,5 @@ u32 MbSidRandomGen::value(u32 min, u32 max)
     }
 
     // return result within the given range
-    return min + value(max-min+1);
+    return min + value(max-min);
 }
