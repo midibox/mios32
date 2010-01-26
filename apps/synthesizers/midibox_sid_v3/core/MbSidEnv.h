@@ -42,23 +42,17 @@ public:
     ~MbSidEnv();
 
     // ENV init function
-    void init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_env_patch_t *_envPatch, MbSidClock *_mbSidClockPtr);
+    void init(sid_se_env_patch_t *_envPatch, MbSidClock *_mbSidClockPtr);
 
     // ENV handler (returns true when sustain phase reached)
-    bool tick(void);
+    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
 
     // requests a restart and release phase
-    u8 restartReq;
-    u8 releaseReq;
+    bool restartReq;
+    bool releaseReq;
 
     // requests to use accented parameters
-    u8 accentReq;
-
-    // engine type
-    sid_se_engine_t engine;
-
-    // update speed factor
-    u8     updateSpeedFactor;
+    bool accentReq;
 
     // cross-references
     sid_se_env_patch_t *envPatch; // ENV-Patch
@@ -72,8 +66,8 @@ public:
 
 
 protected:
-    bool tickLead(void);
-    bool step(u16 target, u8 rate, u8 curve);
+    bool tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
+    bool step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor);
 
     mbsid_env_state_t state;
     u16 ctr;

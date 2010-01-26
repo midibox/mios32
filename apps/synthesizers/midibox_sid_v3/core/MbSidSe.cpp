@@ -190,7 +190,7 @@ void MbSidSe::initStructs(void)
             u8 mod_voice = patch_voice * 3;
             u8 lfo_voice = lfo & 1;
             sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
-            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&voicePatch->B.lfo[lfo_voice], mbSidClockPtr);
+            l->init((sid_se_lfo_patch_t *)&voicePatch->B.lfo[lfo_voice], mbSidClockPtr);
 
             l->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
             l->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
@@ -199,21 +199,21 @@ void MbSidSe::initStructs(void)
 
         case SID_SE_DRUM:
             // not used
-            l->init(engine, updateSpeedFactor, NULL, NULL);
+            l->init(NULL, NULL);
             break;
 
         case SID_SE_MULTI: {
             u8 mod_voice = lfo >> 1;
             u8 lfo_voice = lfo & 1;
             sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
-            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&voicePatch->M.lfo[lfo_voice], mbSidClockPtr);
+            l->init((sid_se_lfo_patch_t *)&voicePatch->M.lfo[lfo_voice], mbSidClockPtr);
             l->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
             l->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
             l->modDstFilter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
         } break;
 
         default: // SID_SE_LEAD
-            l->init(engine, updateSpeedFactor, (sid_se_lfo_patch_t *)&mbSidPatch.body.L.lfo[lfo], mbSidClockPtr);
+            l->init((sid_se_lfo_patch_t *)&mbSidPatch.body.L.lfo[lfo], mbSidClockPtr);
             l->modSrcLfo = &modSrc[SID_SE_MOD_SRC_LFO1 + lfo];
             l->modDstLfoDepth = &modDst[SID_SE_MOD_DST_LD1 + lfo];
             l->modDstLfoRate = &modDst[SID_SE_MOD_DST_LR1 + lfo];
@@ -227,7 +227,7 @@ void MbSidSe::initStructs(void)
             u8 patch_voice = env ? 1 : 0;
             u8 mod_voice = patch_voice * 3;
             sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.B.voice[patch_voice];
-            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&voicePatch->B.env, mbSidClockPtr);
+            e->init((sid_se_env_patch_t *)&voicePatch->B.env, mbSidClockPtr);
             e->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
             e->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
             e->modDstFilter = &modDst[SID_SE_MOD_DST_FIL1 + patch_voice];
@@ -237,13 +237,13 @@ void MbSidSe::initStructs(void)
 
         case SID_SE_DRUM:
             // not used
-            e->init(engine, updateSpeedFactor, NULL, NULL);
+            e->init(NULL, NULL);
             break;
 
         case SID_SE_MULTI: {
             u8 mod_voice = env;
             sid_se_voice_patch_t *voicePatch = (sid_se_voice_patch_t *)&mbSidPatch.body.M.voice[0];
-            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&voicePatch->M.env, mbSidClockPtr);
+            e->init((sid_se_env_patch_t *)&voicePatch->M.env, mbSidClockPtr);
             e->modDstPitch = &modDst[SID_SE_MOD_DST_PITCH1 + mod_voice];
             e->modDstPw = &modDst[SID_SE_MOD_DST_PW1 + mod_voice];
             e->modDstFilter = &modDst[(mod_voice >= 3) ? SID_SE_MOD_DST_FIL2 : SID_SE_MOD_DST_FIL1];
@@ -252,7 +252,7 @@ void MbSidSe::initStructs(void)
         } break;
 
         default: // SID_SE_LEAD
-            e->init(engine, updateSpeedFactor, (sid_se_env_patch_t *)&mbSidPatch.body.L.env[env], mbSidClockPtr);
+            e->init((sid_se_env_patch_t *)&mbSidPatch.body.L.env[env], mbSidClockPtr);
             e->modSrcEnv = &modSrc[SID_SE_MOD_SRC_ENV1 + env];
         }
     }
@@ -365,14 +365,14 @@ bool MbSidSe::updateSe(void)
         // LFOs
         MbSidLfo *l = &mbSidLfo[0];
         for(int lfo=0; lfo<6; ++lfo, ++l) {
-            if( l->tick() ) // returns true on overrun
+            if( l->tick(engine, updateSpeedFactor) ) // returns true on overrun
                 triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_L1P + lfo]);
         }
 
         // ENVs
         MbSidEnv *e = &mbSidEnv[0];
         for(int env=0; env<2; ++env, ++e) {
-            if( e->tick() ) // returns true if sustain phase reached
+            if( e->tick(engine, updateSpeedFactor) ) // returns true if sustain phase reached
                 triggerLead((sid_se_trg_t *)&mbSidPatch.body.L.trg_matrix[SID_SE_TRG_E1S + env]);
         }
 
@@ -429,13 +429,13 @@ bool MbSidSe::updateSe(void)
         // LFOs
         MbSidLfo *l = &mbSidLfo[0];
         for(int lfo=0; lfo<2*2; ++lfo, ++l)
-            l->tick();
+            l->tick(engine, updateSpeedFactor);
 
         // ENVs
         MbSidEnv *e = &mbSidEnv[0];
         for(int env=0; env<2; ++env, ++e) {
             e->accentReq = sid_se_voice[3*env].state.ACCENT;
-            e->tick();
+            e->tick(engine, updateSpeedFactor);
         }
 
         // Sequencer
@@ -601,13 +601,13 @@ bool MbSidSe::updateSe(void)
         // LFOs
         MbSidLfo *l = &mbSidLfo[0];
         for(int lfo=0; lfo<2*6; ++lfo, ++l)
-            l->tick();
+            l->tick(engine, updateSpeedFactor);
 
         // ENVs
         MbSidEnv *e = &mbSidEnv[0];
         for(int env=0; env<6; ++env, ++e) {
             e->accentReq = sid_se_voice[env].state.ACCENT;
-            e->tick();
+            e->tick(engine, updateSpeedFactor);
         }
 
         // Wavetables

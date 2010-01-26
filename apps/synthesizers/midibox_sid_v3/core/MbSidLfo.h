@@ -30,19 +30,13 @@ public:
     ~MbSidLfo();
 
     // LFO init function
-    void init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr);
+    void init(sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr);
 
     // LFO handler (returns true on overrun)
-    bool tick(void);
+    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
 
     // requests a restart
-    u8 restartReq;
-
-    // engine type
-    sid_se_engine_t engine;
-
-    // update speed factor
-    u8     updateSpeedFactor;
+    bool restartReq;
 
     // cross-references
     sid_se_lfo_patch_t *lfoPatch; // LFO-Patch
