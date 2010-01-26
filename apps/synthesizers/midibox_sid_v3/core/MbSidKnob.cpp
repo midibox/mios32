@@ -92,7 +92,7 @@ void MbSidKnob::set(u8 value)
     // forward to parameter handler
     // interrupts should be disabled to ensure atomic access
     MIOS32_IRQ_Disable();
-    mbSidParPtr->parSet16(knob->assign1, scaled_value16, sidlr, ins);
-    mbSidParPtr->parSet16(knob->assign2, scaled_value16, sidlr, ins);
+    mbSidSePtr->mbSidPar.parSet16(knob->assign1, scaled_value16, sidlr, ins);
+    mbSidSePtr->mbSidPar.parSet16(knob->assign2, scaled_value16, sidlr, ins);
     MIOS32_IRQ_Enable();
 }

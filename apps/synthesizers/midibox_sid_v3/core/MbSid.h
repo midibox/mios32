@@ -17,11 +17,10 @@
 
 #include <mios32.h>
 #include "MbSidSe.h"
-#include "MbSidPar.h"
 #include "MbSidKnob.h"
 #include "MbSidPatch.h"
 
-class MbSid : public MbSidSe, MbSidPar
+class MbSid : public MbSidSe
 {
 public:
     // Constructor
@@ -32,9 +31,6 @@ public:
 
     // test function
     void sendAlive(void);
-
-    // link functions
-    void parSetWT(u8 par, u8 wt_value, u8 sidlr, u8 ins);
 
     // bank access
     s32 bankWrite(MbSidPatch *p);

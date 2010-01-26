@@ -17,7 +17,8 @@
 
 #include <mios32.h>
 #include "MbSidStructs.h"
-#include "MbSidSe.h"
+//#include "MbSidSe.h"
+class MbSidSe; // forward declaration, see also http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.11
 
 typedef struct mbsid_par_table_item_t {
     u8 left_string;
@@ -31,7 +32,7 @@ class MbSidPar
 {
 public:
     // Constructor
-    MbSidPar(MbSidSe *_mbSidSePtr);
+    MbSidPar();
 
     // Destructor
     ~MbSidPar();

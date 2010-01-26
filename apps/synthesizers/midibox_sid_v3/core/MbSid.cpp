@@ -28,11 +28,9 @@
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
 MbSid::MbSid()
-    : MbSidPar(this)
 {
     for(int i=0; i<SID_SE_KNOB_NUM; ++i) {
         knob[i].knobNum = i;
-        knob[i].mbSidParPtr = this;
         knob[i].mbSidSePtr = this;
     }        
 }
@@ -52,18 +50,6 @@ MbSid::~MbSid()
 void MbSid::sendAlive(void)
 {
     MIOS32_MIDI_SendDebugMessage("MbSid%d is alive!\n", sidNum);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Link functions
-/////////////////////////////////////////////////////////////////////////////
-
-// used by MbSidSe to set a WT parameter
-void MbSid::parSetWT(u8 par, u8 wt_value, u8 sidlr, u8 ins)
-{
-    // TODO: find better method to access parameter from MbSidSe
-    MbSidPar::parSetWT(par, wt_value, sidlr, ins);
 }
 
 
