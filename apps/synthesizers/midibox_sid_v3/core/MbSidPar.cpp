@@ -12,8 +12,9 @@
  * ==========================================================================
  */
 
-#include "MbSidPar.h"
 #include <string.h>
+#include "MbSidPar.h"
+#include "MbSidSe.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1491,8 +1492,7 @@ static const mbsid_par_table_item_t mbsid_par_table[4][256] = {
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
-MbSidPar::MbSidPar(MbSidSe *_mbSidSePtr)
-    : mbSidSePtr(_mbSidSePtr)
+MbSidPar::MbSidPar()
 {
 }
 

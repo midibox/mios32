@@ -33,6 +33,11 @@ MbSidSe::MbSidSe()
     physSidR = 1;
     updateSpeedFactor = 1;
     updatePatch();
+
+    // note: this initialisation would be more secure if we would use new(),
+    // such as mbSidPar = new MbSidPar(this)... but malloc()s are bad for
+    // deterministic applications...
+    mbSidPar.mbSidSePtr = this;
 }
 
 
@@ -1878,14 +1883,9 @@ void MbSidSe::seWt(sid_se_wt_t *w)
 #if DEBUG_VERBOSE_LEVEL >= 2
             DEBUG_MSG("WT %d: 0x%02x 0x%02x\n", w->wt, step, wt_value);
 #endif
-            parSetWT(w->wt_patch->assign, wt_value, sidlr, ins);
+            mbSidPar.parSetWT(w->wt_patch->assign, wt_value, sidlr, ins);
         }
     }
-}
-
-// dummy stub - has to be overloaded outside this class
-void MbSidSe::parSetWT(u8 par, u8 wt_value, u8 sidlr, u8 ins)
-{
 }
 
 
@@ -2123,7 +2123,7 @@ void MbSidSe::seSeqBassline(sid_se_seq_t *s)
                     if( s->seq_patch->assign ) {
                         u8 sidlr = 1 << s->seq; // SIDL/R selection
                         u8 ins = 0;
-                        parSetWT(s->seq_patch->assign, asg_item.PAR_VALUE + 0x80, sidlr, ins);
+                        mbSidPar.parSetWT(s->seq_patch->assign, asg_item.PAR_VALUE + 0x80, sidlr, ins);
                     }
                 }
             } else if( s->sub_ctr == 4 ) { // clear gate

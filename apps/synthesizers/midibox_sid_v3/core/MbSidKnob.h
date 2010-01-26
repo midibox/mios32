@@ -18,7 +18,6 @@
 #include <mios32.h>
 #include "MbSidStructs.h"
 #include "MbSidSe.h"
-#include "MbSidPar.h"
 
 typedef struct mbsid_knob_t {
   u8 assign1;
@@ -42,7 +41,6 @@ public:
     u8 knobNum;
 
     // references
-    MbSidPar *mbSidParPtr;
     MbSidSe  *mbSidSePtr;
 
     // set functions

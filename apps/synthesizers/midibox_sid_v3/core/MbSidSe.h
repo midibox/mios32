@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include "MbSidStructs.h"
+#include "MbSidPar.h"
 #include "MbSidVoiceQueue.h"
 #include "MbSidPatch.h"
 #include "MbSidClock.h"
@@ -83,9 +84,6 @@ public:
     void updatePatch(void);
 
 
-    // has to be implemented outside this class
-    void parSetWT(u8 par, u8 wt_value, u8 sidlr, u8 ins);
-
     // speed factor compared to MBSIDV2
     u8 updateSpeedFactor;
 
@@ -107,6 +105,9 @@ public:
     sid_se_filter_t sid_se_filter[SID_SE_NUM_FILTERS];
     sid_se_wt_t sid_se_wt[SID_SE_NUM_WT];
     sid_se_seq_t sid_se_seq[SID_SE_NUM_SEQ];
+
+    // Parameter Handler
+    MbSidPar mbSidPar;
 
     // voice queue
     MbSidVoiceQueue voiceQueue;
