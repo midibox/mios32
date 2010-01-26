@@ -1,3 +1,7 @@
+2010-10-21 Phil Taylor <phil@taylor.org.uk
+	* Simple modification to resid.cc to cure MSVC compiler error:
+	  Line 528 - change log(2) to log((double)2) as log() in MSVC 
+	  has overloads for both float and double.
 
 2010-01-21  Thorsten Klose <tk@midibox.org>
 

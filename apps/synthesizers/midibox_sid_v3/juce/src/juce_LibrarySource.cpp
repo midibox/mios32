@@ -11,5 +11,7 @@
 #include "juce_AppConfig.h"
 
 #ifndef WIN32
-#include "/midibox/juce/juce_amalgamated.cpp"
+#include "../../../../../../../juce/juce_amalgamated.cpp"
+#else
+#include "../../../../../../../juce/juce.h"
 #endif
