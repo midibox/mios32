@@ -1537,8 +1537,8 @@ extern "C" __declspec (dllexport) AEffect* VSTPluginMain (audioMasterCallback au
 {
     return pluginEntryPoint (audioMaster);
 }
-
-#ifndef _WIN64 // (can't compile this on win64, but it's not needed anyway with VST2.4)
+// MinGW doesn't like this as main should return int and it can't compile on win64.
+#if !defined(WIN64) && defined(_MSC_VER) && defined (WIN32)
 extern "C" __declspec (dllexport) void* main (audioMasterCallback audioMaster)
 {
     return (void*) pluginEntryPoint (audioMaster);

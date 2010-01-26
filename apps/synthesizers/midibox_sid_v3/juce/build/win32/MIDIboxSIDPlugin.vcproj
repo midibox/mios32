@@ -42,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS"
+				AdditionalIncludeDirectories="../../../core;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/sid;."
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS;MIOS32_FAMILY_EMULATION"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -66,7 +66,7 @@
 				AdditionalOptions="/FORCE:multiple"
 				OutputFile="$(OutDir)\$(ProjectName).dpm"
 				LinkIncremental="2"
-				ModuleDefinitionFile="../../../wrapper/RTAS/juce_RTAS_WinExports.def"
+				ModuleDefinitionFile="../../wrapper/RTAS/juce_RTAS_WinExports.def"
 				DelayLoadDLLs="DAE.dll; DigiExt.dll; DSI.dll; PluginLib.dll; DSPManager.dll"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -110,7 +110,7 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="copy /Y &quot;..\..\..\wrapper\RTAS\juce_RTAS_WinResources.rsr&quot; &quot;$(TargetPath)&quot;.rsr&#x0D;&#x0A;"
+				CommandLine="copy /Y &quot;..\..\wrapper\RTAS\juce_RTAS_WinResources.rsr&quot; &quot;$(TargetPath)&quot;.rsr&#x0D;&#x0A;"
 				Outputs="&quot;$(TargetPath)&quot;.rsr"
 			/>
 			<Tool
@@ -124,13 +124,20 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../../src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				AdditionalIncludeDirectories="../../../core;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/sid;."
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS;MIOS32_FAMILY_EMULATION"
+				ExceptionHandling="1"
 				RuntimeLibrary="2"
+				StructMemberAlignment="0"
+				DisableLanguageExtensions="false"
+				DefaultCharIsUnsigned="false"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				WarningLevel="1"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
+				CallingConvention="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -144,14 +151,17 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/FORCE:multiple"
-				OutputFile="$(OutDir)\$(ProjectName).dpm"
+				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="1"
-				ModuleDefinitionFile="../../../wrapper/RTAS/juce_RTAS_WinExports.def"
-				DelayLoadDLLs="DAE.dll; DigiExt.dll; DSI.dll; PluginLib.dll; DSPManager.dll"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="libcmt.lib"
+				ModuleDefinitionFile="../../wrapper/RTAS/juce_RTAS_WinExports.def"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				SupportUnloadOfDelayLoadedDLL="false"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -159,6 +169,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="true"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -192,19 +203,19 @@
 				Name="plugin"
 				>
 				<File
-					RelativePath="..\..\src\EditorComponent.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\EditorComponent.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\src\AudioProcessing.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\..\src\AudioProcessing.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\EditorComponent.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\EditorComponent.h"
 					>
 				</File>
 				<File
@@ -228,105 +239,279 @@
 				Name="wrapper"
 				>
 				<Filter
-					Name="VST"
+					Name="RTAS"
 					>
 					<File
-						RelativePath="..\..\..\wrapper\VST\juce_VST_Wrapper.cpp"
+						RelativePath="..\..\wrapper\RTAS\juce_RTAS_DigiCode1.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\wrapper\RTAS\juce_RTAS_DigiCode2.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\wrapper\RTAS\juce_RTAS_DigiCode3.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\wrapper\RTAS\juce_RTAS_WinUtilities.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\wrapper\RTAS\juce_RTAS_Wrapper.cpp"
 						>
 					</File>
 				</Filter>
 				<Filter
-					Name="RTAS"
+					Name="VST"
 					>
 					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_DigiCode1.cpp"
+						RelativePath="..\..\wrapper\VST\juce_VST_Wrapper.cpp"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_DigiCode2.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_DigiCode3.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_DigiCode_Header.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_WinUtilities.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\wrapper\RTAS\juce_RTAS_Wrapper.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								CallingConvention="2"
-							/>
-						</FileConfiguration>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="core"
+				>
+				<File
+					RelativePath="..\..\..\core\app.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSid.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidAsid.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidClock.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidEnv.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidEnvironment.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidKnob.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidLfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidPar.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidPatch.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidRandomGen.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidSe.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidSysEx.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidTables.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidVoiceQueue.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\mios32_wrapper_code.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CallingConvention="0"
+							CompileAs="0"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\src\tasks.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CallingConvention="0"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+			</Filter>
+			<Filter
+				Name="resid"
+				>
+				<File
+					RelativePath="..\..\resid\envelope.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\extfilt.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\filter.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\pot.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\resid.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\version.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\voice.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave6581__ST.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave6581_P_T.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave6581_PS_.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave6581_PST.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave8580__ST.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave8580_P_T.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave8580_PS_.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\resid\wave8580_PST.cc"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="modules"
+				>
+				<File
+					RelativePath="..\..\..\..\..\..\modules\aout\aout.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\..\..\modules\random\jsw_rand.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\..\..\modules\notestack\notestack.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\..\..\modules\sid\sid.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -334,6 +519,14 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\..\..\..\..\..\juce\juce_Config.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\sid_random.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

@@ -34,6 +34,7 @@
 					<Add directory="..\..\resid" />
 					<Add directory="C:\Midibox\vstsdk2.4" />
 					<Add directory="C:\Midibox\juce" />
+					<Add directory="C:\Midibox\mios32\juce" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\src" />
@@ -70,7 +71,7 @@
 					<Add directory="..\..\..\..\..\..\modules\aout" />
 					<Add directory="..\..\resid" />
 					<Add directory="C:\Midibox\vstsdk2.4" />
-					<Add directory="C:\Midibox\juce" />
+					<Add directory="C:\Midibox\mios32\juce" />
 					<Add directory="..\..\wrapper" />
 					<Add directory="." />
 				</Compiler>
@@ -91,7 +92,9 @@
 					<Add library="librpcrt4" />
 					<Add library="libgdi32" />
 					<Add library="libole32" />
-					<Add directory="c:\midibox\juce\bin\codeblocks" />
+					<Add library="libComdlg32" />
+					<Add library="libversion" />
+					<Add directory="c:\midibox\mios32\juce\bin\codeblocks" />
 					<Add directory="c:\mingw\lib" />
 				</Linker>
 			</Target>
@@ -107,66 +110,21 @@
 			<Add directory="." />
 			<Add directory="..\..\..\..\..\..\modules\aout" />
 		</Compiler>
-		<Unit filename="..\..\..\core\app.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_asid.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_bank.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_dmodel.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_knob.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_midi.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_midi_b.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_midi_d.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_midi_l.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_midi_m.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_par.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_patch.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_random.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_se.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_se_b.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_se_d.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_se_l.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_se_m.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_sysex.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\..\core\sid_voice.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\..\core\MbSid.cpp" />
+		<Unit filename="..\..\..\core\MbSidAsid.cpp" />
+		<Unit filename="..\..\..\core\MbSidClock.cpp" />
+		<Unit filename="..\..\..\core\MbSidEnv.cpp" />
+		<Unit filename="..\..\..\core\MbSidEnvironment.cpp" />
+		<Unit filename="..\..\..\core\MbSidKnob.cpp" />
+		<Unit filename="..\..\..\core\MbSidLfo.cpp" />
+		<Unit filename="..\..\..\core\MbSidPar.cpp" />
+		<Unit filename="..\..\..\core\MbSidPatch.cpp" />
+		<Unit filename="..\..\..\core\MbSidRandomGen.cpp" />
+		<Unit filename="..\..\..\core\MbSidSe.cpp" />
+		<Unit filename="..\..\..\core\MbSidSysEx.cpp" />
+		<Unit filename="..\..\..\core\MbSidTables.cpp" />
+		<Unit filename="..\..\..\core\MbSidVoiceQueue.cpp" />
+		<Unit filename="..\..\..\core\app.cpp" />
 		<Unit filename="..\..\resid\envelope.cc" />
 		<Unit filename="..\..\resid\extfilt.cc" />
 		<Unit filename="..\..\resid\filter.cc" />
@@ -203,7 +161,7 @@
 		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_DigiCode_Header.h" />
 		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_WinUtilities.cpp" />
 		<Unit filename="..\..\wrapper\RTAS\juce_RTAS_Wrapper.cpp" />
-		<Unit filename="..\..\wrapper\VST\juce_VstWrapper.cpp" />
+		<Unit filename="..\..\wrapper\VST\juce_VST_Wrapper.cpp" />
 		<Unit filename="..\..\wrapper\juce_IncludeCharacteristics.h" />
 		<Unit filename="..\..\wrapper\juce_PluginHeaders.h" />
 		<Unit filename="..\..\..\..\..\..\modules\aout\aout.c">

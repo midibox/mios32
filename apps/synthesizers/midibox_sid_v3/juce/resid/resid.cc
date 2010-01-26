@@ -525,7 +525,7 @@ bool SID::set_sampling_parameters(double clock_freq, sampling_method method,
   // TK: currently I don't understand why the linker doesn't find these static variables
   int res = (method == SAMPLE_RESAMPLE_INTERPOLATE) ? 285 : 51473;
 #endif
-  int n = (int)ceil(log(res/f_cycles_per_sample)/log(2));
+  int n = (int)ceil(log(res/f_cycles_per_sample)/log((double)2));
   fir_RES = 1 << n;
 
   // Allocate memory for FIR tables.
