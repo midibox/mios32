@@ -22,7 +22,7 @@
 /////////////////////////////////////////////////////////////////////////////
 MbSidEnv::MbSidEnv()
 {
-    init(SID_SE_LEAD, 1, NULL, NULL);
+    init(NULL, NULL);
 }
 
 
@@ -38,17 +38,15 @@ MbSidEnv::~MbSidEnv()
 /////////////////////////////////////////////////////////////////////////////
 // ENV init function
 /////////////////////////////////////////////////////////////////////////////
-void MbSidEnv::init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_env_patch_t *_envPatch, MbSidClock *_mbSidClockPtr)
+void MbSidEnv::init(sid_se_env_patch_t *_envPatch, MbSidClock *_mbSidClockPtr)
 {
-    engine = _engine;
-    updateSpeedFactor = _updateSpeedFactor;
     envPatch = _envPatch;
     mbSidClockPtr = _mbSidClockPtr;
 
     // clear flags
-    restartReq = 0;
-    releaseReq = 0;
-    accentReq = 0;
+    restartReq = false;
+    releaseReq = false;
+    accentReq = false;
 
     // clear references
     modSrcEnv = 0;
@@ -63,13 +61,13 @@ void MbSidEnv::init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_env_p
 /////////////////////////////////////////////////////////////////////////////
 // Envelope handler
 /////////////////////////////////////////////////////////////////////////////
-bool MbSidEnv::tick(void)
+bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
 {
     if( !envPatch ) // exit if no patch reference initialized
         return false;
 
     if( engine == SID_SE_LEAD )
-        return tickLead();
+        return tickLead(engine, updateSpeedFactor);
 
     // Reduced version for Bassline/Multi engine
     bool sustainPhase = false; // will be the return value
@@ -78,13 +76,13 @@ bool MbSidEnv::tick(void)
     envMode.ALL = envPatch->mode;
 
     if( restartReq ) {
-        restartReq = 0;
+        restartReq = false;
         state = MBSID_ENV_STATE_ATTACK1;
         delayCtr = 0; // delay counter not supported by this function...
     }
 
     if( releaseReq ) {
-        releaseReq = 0;
+        releaseReq = false;
         state = MBSID_ENV_STATE_RELEASE1;
     }
 
@@ -96,7 +94,7 @@ bool MbSidEnv::tick(void)
         switch( state ) {
         case MBSID_ENV_STATE_ATTACK1: {
             u8 curve = envMode.MINIMAL.CURVE_A ? envPatch->MINIMAL.curve : 0x80;
-            if( step(0xffff, envPatch->MINIMAL.attack, curve) )
+            if( step(0xffff, envPatch->MINIMAL.attack, curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_DECAY1;
         } break;
   
@@ -104,7 +102,7 @@ bool MbSidEnv::tick(void)
             // use alternative decay on accented notes (only used for basslines)
             u8 decay = (decayA != NULL && accentReq) ? *decayA : envPatch->MINIMAL.decay;
             u8 curve = envMode.MINIMAL.CURVE_D ? envPatch->MINIMAL.curve : 0x80;
-            if( step(envPatch->MINIMAL.sustain << 8, decay, curve) )
+            if( step(envPatch->MINIMAL.sustain << 8, decay, curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_SUSTAIN;
         } break;
   
@@ -116,7 +114,7 @@ bool MbSidEnv::tick(void)
         case MBSID_ENV_STATE_RELEASE1: {
             u8 curve = envMode.MINIMAL.CURVE_R ? envPatch->MINIMAL.curve : 0x80;
             if( ctr )
-                step(0x0000, envPatch->MINIMAL.release, curve);
+                step(0x0000, envPatch->MINIMAL.release, curve, updateSpeedFactor);
         } break;
   
         default: // like MBSID_ENV_STATE_IDLE
@@ -156,14 +154,14 @@ bool MbSidEnv::tick(void)
     }
     *modDstFilter += ((ctr/2) * depth_f) / 128;
 
-    accentReq = 0;
+    accentReq = false;
 
     return sustainPhase;
 }
 
 
 // Extended version for Lead engine
-bool MbSidEnv::tickLead(void)
+bool MbSidEnv::tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
 {
     bool sustainPhase = false; // will be the return value
 
@@ -171,13 +169,13 @@ bool MbSidEnv::tickLead(void)
     envMode.ALL = envPatch->mode;
 
     if( restartReq ) {
-        restartReq = 0;
+        restartReq = false;
         state = MBSID_ENV_STATE_ATTACK1;
         delayCtr = envPatch->L.delay ? 1 : 0;
     }
 
     if( releaseReq ) {
-        releaseReq = 0;
+        releaseReq = false;
         state = MBSID_ENV_STATE_RELEASE1;
     }
 
@@ -198,22 +196,22 @@ bool MbSidEnv::tickLead(void)
                 }
             }
   
-            if( step(envPatch->L.attlvl << 8, envPatch->L.attack1, envPatch->L.att_curve) )
+            if( step(envPatch->L.attlvl << 8, envPatch->L.attack1, envPatch->L.att_curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_ATTACK2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_ATTACK2:
-            if( step(0xffff, envPatch->L.attack2, envPatch->L.att_curve) )
+            if( step(0xffff, envPatch->L.attack2, envPatch->L.att_curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_DECAY1; // TODO: Set Phase depending on mode
             break;
 
         case MBSID_ENV_STATE_DECAY1:
-            if( step(envPatch->L.declvl << 8, envPatch->L.decay1, envPatch->L.dec_curve) )
+            if( step(envPatch->L.declvl << 8, envPatch->L.decay1, envPatch->L.dec_curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_DECAY2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_DECAY2:
-            if( step(envPatch->L.sustain << 8, envPatch->L.decay2, envPatch->L.dec_curve) ) {
+            if( step(envPatch->L.sustain << 8, envPatch->L.decay2, envPatch->L.dec_curve, updateSpeedFactor) ) {
                 state = MBSID_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
                 // propagate sustain phase to trigger matrix
@@ -227,13 +225,13 @@ bool MbSidEnv::tickLead(void)
             break;
   
         case MBSID_ENV_STATE_RELEASE1:
-            if( step(envPatch->L.rellvl << 8, envPatch->L.release1, envPatch->L.rel_curve) )
+            if( step(envPatch->L.rellvl << 8, envPatch->L.release1, envPatch->L.rel_curve, updateSpeedFactor) )
                 state = MBSID_ENV_STATE_RELEASE2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_RELEASE2:
             if( ctr )
-                step(0x0000, envPatch->L.release2, envPatch->L.rel_curve);
+                step(0x0000, envPatch->L.release2, envPatch->L.rel_curve, updateSpeedFactor);
             break;
   
         default: // like MBSID_ENV_STATE_IDLE
@@ -252,7 +250,7 @@ bool MbSidEnv::tickLead(void)
 }
 
 
-bool MbSidEnv::step(u16 target, u8 rate, u8 curve)
+bool MbSidEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor)
 {
     if( target == ctr )
         return true; // next state

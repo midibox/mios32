@@ -22,7 +22,7 @@
 /////////////////////////////////////////////////////////////////////////////
 MbSidLfo::MbSidLfo()
 {
-    init(SID_SE_LEAD, 1, NULL, NULL);
+    init(NULL, NULL);
 }
 
 
@@ -38,15 +38,13 @@ MbSidLfo::~MbSidLfo()
 /////////////////////////////////////////////////////////////////////////////
 // LFO init function
 /////////////////////////////////////////////////////////////////////////////
-void MbSidLfo::init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr)
+void MbSidLfo::init(sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr)
 {
-    engine = _engine;
-    updateSpeedFactor = _updateSpeedFactor;
     lfoPatch = _lfoPatch;
     mbSidClockPtr = _mbSidClockPtr;
 
     // clear flags
-    restartReq = 0;
+    restartReq = false;
 
     // clear references
     modSrcLfo = 0;
@@ -61,7 +59,7 @@ void MbSidLfo::init(sid_se_engine_t _engine, u8 _updateSpeedFactor, sid_se_lfo_p
 /////////////////////////////////////////////////////////////////////////////
 // LFO handler
 /////////////////////////////////////////////////////////////////////////////
-bool MbSidLfo::tick(void)
+bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
 {
     bool overrun = false; // will be the return value
 
@@ -73,7 +71,7 @@ bool MbSidLfo::tick(void)
 
     // LFO restart requested?
     if( restartReq ) {
-        restartReq = 0;
+        restartReq = false;
 
         // reset counter (take phase into account)
         ctr = lfoPatch->phase << 8;
