@@ -1691,7 +1691,7 @@ void MbSidPar::parSet(u8 par, u16 value, u8 sidlr, u8 ins)
     case P_M_OSC123_PB: {
         for(i=0; i<6; ++i)
             if( voice_sel & (1 << i) )
-                mbSidSePtr->sid_se_voice[i].mv->pitchbender = value;
+                mbSidSePtr->mbSidVoice[i].midiVoice->pitchbender = value;
     } break;
   
     case P_M_MOD_PM8: {
@@ -1711,7 +1711,7 @@ void MbSidPar::parSet(u8 par, u16 value, u8 sidlr, u8 ins)
     } break;
   
     case P_M_WT_POS: {
-        mbSidSePtr->sid_se_wt[par&3].pos = value & 0x7f;
+        mbSidSePtr->mbSidWt[par&3].wtPos = value & 0x7f;
     } break;
   
     case P_M_OSC_INS_PM7:
@@ -1758,11 +1758,11 @@ void MbSidPar::parSet(u8 par, u16 value, u8 sidlr, u8 ins)
     case P_M_OSC_INS_PB: {
         if( voice_sel == 0x3f ) {
             for(i=0; i<6; ++i)
-                mbSidSePtr->sid_se_voice[i].mv->pitchbender = value;
+                mbSidSePtr->mbSidVoice[i].midiVoice->pitchbender = value;
         } else {
             for(i=0; i<6; ++i)
-                if( mbSidSePtr->sid_se_voice[i].assigned_instrument == ins_sel )
-                    mbSidSePtr->sid_se_voice[i].mv->pitchbender = value;
+                if( mbSidSePtr->mbSidVoice[i].assignedInstrument == ins_sel )
+                    mbSidSePtr->mbSidVoice[i].midiVoice->pitchbender = value;
         }
     } break;
 
@@ -1816,9 +1816,9 @@ void MbSidPar::parSet(u8 par, u16 value, u8 sidlr, u8 ins)
     case P_M_OSC_BL_PB: {
         for(i=0; i<2; ++i)
             if( voice_sel & (1 << i) ) {
-                mbSidSePtr->sid_se_voice[i*3+0].mv->pitchbender = value;
-                mbSidSePtr->sid_se_voice[i*3+1].mv->pitchbender = value;
-                mbSidSePtr->sid_se_voice[i*3+2].mv->pitchbender = value;
+                mbSidSePtr->mbSidVoice[i*3+0].midiVoice->pitchbender = value;
+                mbSidSePtr->mbSidVoice[i*3+1].midiVoice->pitchbender = value;
+                mbSidSePtr->mbSidVoice[i*3+2].midiVoice->pitchbender = value;
             }
     } break;
 
@@ -1861,7 +1861,7 @@ void MbSidPar::parSet(u8 par, u16 value, u8 sidlr, u8 ins)
         else {
             voice_sel = 0;
             for(i=0; i<6; ++i)
-                if( mbSidSePtr->sid_se_voice[i].assigned_instrument == ins_sel )
+                if( mbSidSePtr->mbSidVoice[i].assignedInstrument == ins_sel )
                     voice_sel |= (1 << i);
 
             if( voice_sel )
@@ -1889,13 +1889,13 @@ void MbSidPar::parHlpNote(u8 value, u8 voice_sel)
     if( value != 0x01 ) {
         for(i=0; i<6; ++i)
             if( voice_sel & (1 << i) ) {
-                sid_se_voice_t *v = (sid_se_voice_t *)&mbSidSePtr->sid_se_voice[i];
+                MbSidVoice *v = &mbSidSePtr->mbSidVoice[i];
 
                 // clear gate bit if note value is 0
                 if( value == 0 ) {
-                    if( v->state.GATE_ACTIVE ) {
-                        v->state.GATE_SET_REQ = 0;
-                        v->state.GATE_CLR_REQ = 1;
+                    if( v->gateActive ) {
+                        v->gateSetReq = 0;
+                        v->gateClrReq = 1;
 
                         // propagate to trigger matrix
                         mbSidSePtr->triggerNoteOff(v, 1); // don't trigger WTs (wouldn't make sense here!)
@@ -1904,29 +1904,29 @@ void MbSidPar::parHlpNote(u8 value, u8 voice_sel)
                     // TODO: hold mode (via trigger matrix?)
 
                     // set gate bit if voice active and gate not already active
-                    if( v->state.VOICE_ACTIVE && !v->state.GATE_ACTIVE ) {
-                        v->state.GATE_SET_REQ = 1;
+                    if( v->voiceActive && !v->gateActive ) {
+                        v->gateSetReq = 1;
 
                         // propagate to trigger matrix
                         mbSidSePtr->triggerNoteOn(v, 1);  // don't trigger WTs (wouldn't make sense here!)
-                        v->note_restart_req = 0; // clear note restart request which has been set by trigger function - gate already set!
+                        v->noteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
                     }
 
                     // set new note
                     // if >= 0x7c, play arpeggiator note
                     if( value >= 0x7c ) {
-                        u8 arp_note = v->mv->wt_stack[value & 3] & 0x7f;
+                        u8 arp_note = v->midiVoice->wt_stack[value & 3] & 0x7f;
                         if( !arp_note )
-                            arp_note = v->mv->wt_stack[0] & 0x7f;
+                            arp_note = v->midiVoice->wt_stack[0] & 0x7f;
 
                         if( arp_note ) {
                             v->note = arp_note;
-                            v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
+                            v->portaActive = 1; // will be cleared automatically if no portamento enabled
                         } else {
                             // no note played: request note off if gate active
-                            if( v->state.GATE_ACTIVE ) {
-                                v->state.GATE_SET_REQ = 0;
-                                v->state.GATE_CLR_REQ = 1;
+                            if( v->gateActive ) {
+                                v->gateSetReq = 0;
+                                v->gateClrReq = 1;
 
                                 // propagate to trigger matrix
                                 mbSidSePtr->triggerNoteOff(v, 1); // neither trigger voices, nor WTs (wouldn't make sense here!)
@@ -1934,7 +1934,7 @@ void MbSidPar::parHlpNote(u8 value, u8 voice_sel)
                         }
                     } else {
                         v->note = value;
-                        v->state.PORTA_ACTIVE = 1; // will be cleared automatically if no portamento enabled
+                        v->portaActive = 1; // will be cleared automatically if no portamento enabled
                     }
                 }
             }
@@ -2170,8 +2170,8 @@ u16 MbSidPar::parGet(u8 par, u8 sidlr, u8 ins, u8 shadow)
     case P_M_OSC123_PB: {
         // return first voice to which instrument is assigned
         for(i=0; i<6; ++i)
-            if( mbSidSePtr->sid_se_voice[i].assigned_instrument == voice )
-                return mbSidSePtr->sid_se_voice[voice].mv->pitchbender;
+            if( mbSidSePtr->mbSidVoice[i].assignedInstrument == voice )
+                return mbSidSePtr->mbSidVoice[voice].midiVoice->pitchbender;
         return 0x80; // no voice found
     } break;
   
@@ -2192,7 +2192,7 @@ u16 MbSidPar::parGet(u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
   
     case P_M_WT_POS: {
-        return mbSidSePtr->sid_se_wt[par&3].pos;
+        return mbSidSePtr->mbSidWt[par&3].wtPos;
     } break;
   
     case P_M_OSC_INS_PM7:
@@ -2224,7 +2224,7 @@ u16 MbSidPar::parGet(u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
 
     case P_M_OSC_INS_PB: {
-        return mbSidSePtr->sid_se_voice[voice].mv->pitchbender;
+        return mbSidSePtr->mbSidVoice[voice].midiVoice->pitchbender;
     } break;
 
     case P_M_OSC_BL_PM7:
@@ -2260,7 +2260,7 @@ u16 MbSidPar::parGet(u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
 
     case P_M_OSC_BL_PB: {
-        return mbSidSePtr->sid_se_voice[voice*3].mv->pitchbender;
+        return mbSidSePtr->mbSidVoice[voice*3].midiVoice->pitchbender;
     } break;
 
     case P_M_OSC_BL_FIL12: {
@@ -2290,7 +2290,7 @@ u16 MbSidPar::parGet(u8 par, u8 sidlr, u8 ins, u8 shadow)
     } break;
   
     case P_M_NOTE: {
-        return mbSidSePtr->sid_se_voice[voice].note;
+        return mbSidSePtr->mbSidVoice[voice].note;
     } break;
   
     default:

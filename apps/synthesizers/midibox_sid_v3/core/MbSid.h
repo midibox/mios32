@@ -52,13 +52,13 @@ protected:
     // MIDI helpers
     void SID_MIDI_PushWT(sid_se_midi_voice_t *mv, u8 note);
     void SID_MIDI_PopWT(sid_se_midi_voice_t *mv, u8 note);
-    void SID_MIDI_ArpNoteOn(sid_se_voice_t *v, u8 note, u8 velocity);
-    void SID_MIDI_ArpNoteOff(sid_se_voice_t *v, u8 note);
-    void SID_MIDI_NoteOn(sid_se_voice_t *v, u8 note, u8 velocity, sid_se_v_flags_t v_flags);
-    bool SID_MIDI_NoteOff(sid_se_voice_t *v, u8 note, u8 last_first_note, sid_se_v_flags_t v_flags);
-    void SID_MIDI_GateOn(sid_se_voice_t *v);
-    void SID_MIDI_GateOff_SingleVoice(sid_se_voice_t *v);
-    void SID_MIDI_GateOff(sid_se_voice_t *v, sid_se_midi_voice_t *mv, u8 note);
+    void SID_MIDI_ArpNoteOn(MbSidVoice *v, u8 note, u8 velocity);
+    void SID_MIDI_ArpNoteOff(MbSidVoice *v, u8 note);
+    void SID_MIDI_NoteOn(MbSidVoice *v, u8 note, u8 velocity, sid_se_v_flags_t v_flags);
+    bool SID_MIDI_NoteOff(MbSidVoice *v, u8 note, u8 last_first_note, sid_se_v_flags_t v_flags);
+    void SID_MIDI_GateOn(MbSidVoice *v);
+    void SID_MIDI_GateOff_SingleVoice(MbSidVoice *v);
+    void SID_MIDI_GateOff(MbSidVoice *v, sid_se_midi_voice_t *mv, u8 note);
 };
 
 #endif /* _MB_SID_H */

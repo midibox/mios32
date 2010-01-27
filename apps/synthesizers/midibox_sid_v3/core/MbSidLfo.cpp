@@ -18,11 +18,18 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+// should be at least 1 for sending error messages
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 1
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
 MbSidLfo::MbSidLfo()
 {
-    init(NULL, NULL);
+    init(NULL);
 }
 
 
@@ -38,21 +45,25 @@ MbSidLfo::~MbSidLfo()
 /////////////////////////////////////////////////////////////////////////////
 // LFO init function
 /////////////////////////////////////////////////////////////////////////////
-void MbSidLfo::init(sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr)
+void MbSidLfo::init(sid_se_lfo_patch_t *_lfoPatch)
 {
     lfoPatch = _lfoPatch;
-    mbSidClockPtr = _mbSidClockPtr;
 
     // clear flags
     restartReq = false;
+    syncClockReq = false;
+
+    // clear variables
+    lfoCtr = 0;
+    lfoDelayCtr = 0;
 
     // clear references
-    modSrcLfo = 0;
-    modDstLfoDepth = 0;
-    modDstLfoRate = 0;
-    modDstPitch = 0;
-    modDstPw = 0;
-    modDstFilter = 0;
+    modSrcLfo = NULL;
+    modDstLfoDepth = NULL;
+    modDstLfoRate = NULL;
+    modDstPitch = NULL;
+    modDstPw = NULL;
+    modDstFilter = NULL;
 }
 
 
@@ -74,10 +85,10 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
         restartReq = false;
 
         // reset counter (take phase into account)
-        ctr = lfoPatch->phase << 8;
+        lfoCtr = lfoPatch->phase << 8;
 
         // check if LFO should be delayed - set delay counter to 0x0001 in this case
-        delayCtr = lfoPatch->delay ? 1 : 0;
+        lfoDelayCtr = lfoPatch->delay ? 1 : 0;
     }
 
     // set wave register to initial value and skip LFO if not enabled
@@ -85,24 +96,25 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
         if( modSrcLfo )
             *modSrcLfo = 0;
     } else {
-        if( delayCtr ) {
-            int new_delayCtr = delayCtr + (mbSidEnvTable[lfoPatch->delay] / updateSpeedFactor);
-            if( new_delayCtr > 0xffff )
-                delayCtr = 0; // delay passed
+        if( lfoDelayCtr ) {
+            int newDelayCtr = lfoDelayCtr + (mbSidEnvTable[lfoPatch->delay] / updateSpeedFactor);
+            if( newDelayCtr > 0xffff )
+                lfoDelayCtr = 0; // delay passed
             else
-                delayCtr = new_delayCtr; // delay not passed
+                lfoDelayCtr = newDelayCtr; // delay not passed
         }
 
-        if( !delayCtr ) { // delay passed?
-            u8 lfoStalled = 0;
+        if( !lfoDelayCtr ) { // delay passed?
+            bool lfoStalled = false;
 
             // in oneshot mode: check if counter already reached 0xffff
-            if( lfoMode.ONESHOT && ctr >= 0xffff )
-                lfoStalled = 1;
+            if( lfoMode.ONESHOT && lfoCtr >= 0xffff )
+                lfoStalled = true;
 
             // if clock sync enabled: only increment on each 16th clock event
-            if( lfoMode.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) )
-                lfoStalled = 1;
+            if( lfoMode.CLKSYNC && !syncClockReq )
+                lfoStalled = true;
+            syncClockReq = false;
 
             if( !lfoStalled ) {
                 // increment 16bit counter by given rate
@@ -123,15 +135,15 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
                     inc = mbSidLfoTable[lfo_rate] / updateSpeedFactor;
 
                 // add to counter and check for overrun
-                s32 new_ctr = ctr + inc;
-                if( new_ctr > 0xffff ) {
+                s32 newCtr = lfoCtr + inc;
+                if( newCtr > 0xffff ) {
                     overrun = true;
 
                     if( lfoMode.ONESHOT )
-                        new_ctr = 0xffff; // stop at end position
+                        newCtr = 0xffff; // stop at end position
                 }
 
-                ctr = (u16)new_ctr;
+                lfoCtr = (u16)newCtr;
             }
 
 
@@ -142,30 +154,30 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             case 0: { // Sine
                 // sine table contains a quarter of a sine
                 // we have to negate/mirror it depending on the mapped counter value
-                u8 ptr = ctr >> 7;
-                if( ctr & (1 << 14) )
+                u8 ptr = lfoCtr >> 7;
+                if( lfoCtr & (1 << 14) )
                     ptr ^= 0x7f;
                 ptr &= 0x7f;
                 wave = mbSidSinTable[ptr];
-                if( ctr & (1 << 15) )
+                if( lfoCtr & (1 << 15) )
                     wave = -wave;
             } break;  
 
             case 1: { // Triangle
                 // similar to sine, but linear waveform
-                wave = (ctr & 0x3fff) << 1;
-                if( ctr & (1 << 14) )
+                wave = (lfoCtr & 0x3fff) << 1;
+                if( lfoCtr & (1 << 14) )
                     wave = 0x7fff - wave;
-                if( ctr & (1 << 15) )
+                if( lfoCtr & (1 << 15) )
                     wave = -wave;
             } break;  
 
             case 2: { // Saw
-                wave = ctr - 0x8000;
+                wave = lfoCtr - 0x8000;
             } break;  
 
             case 3: { // Pulse
-                wave = (ctr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
+                wave = (lfoCtr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
             } break;  
 
             case 4: { // Random
@@ -179,8 +191,8 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             case 5: { // Positive Sine
                 // sine table contains a quarter of a sine
                 // we have to negate/mirror it depending on the mapped counter value
-                u8 ptr = ctr >> 8;
-                if( ctr & (1 << 15) )
+                u8 ptr = lfoCtr >> 8;
+                if( lfoCtr & (1 << 15) )
                     ptr ^= 0x7f;
                 ptr &= 0x7f;
                 wave = mbSidSinTable[ptr];
@@ -188,21 +200,21 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
 
             case 6: { // Positive Triangle
                 // similar to sine, but linear waveform
-                wave = (ctr & 0x7fff);
-                if( ctr & (1 << 15) )
+                wave = (lfoCtr & 0x7fff);
+                if( lfoCtr & (1 << 15) )
                     wave = 0x7fff - wave;
             } break;  
 
             case 7: { // Positive Saw
-                wave = ctr >> 1;
+                wave = lfoCtr >> 1;
             } break;  
 
             case 8: { // Positive Pulse
-                wave = (ctr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
+                wave = (lfoCtr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
             } break;  
 
             default: // take saw as default
-                wave = ctr - 0x8000;
+                wave = lfoCtr - 0x8000;
             }
 
             if( !lfo_waveform_skipped ) {
@@ -222,14 +234,20 @@ bool MbSidLfo::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
                         *modSrcLfo = (wave * lfoDepth) / 128;
                 } else {
                     // directly write to modulation destinations depending on depths
-                    s32 depth_p = (s32)lfoPatch->MINIMAL.depth_p - 0x80;
-                    *modDstPitch += (wave * depth_p) / 128;
+                    if( modDstPitch ) {
+                        s32 depth_p = (s32)lfoPatch->MINIMAL.depth_p - 0x80;
+                        *modDstPitch += (wave * depth_p) / 128;
+                    }
 
-                    s32 depth_pw = (s32)lfoPatch->MINIMAL.depth_pw - 0x80;
-                    *modDstPw += (wave * depth_pw) / 128;
+                    if( modDstPw ) {
+                        s32 depth_pw = (s32)lfoPatch->MINIMAL.depth_pw - 0x80;
+                        *modDstPw += (wave * depth_pw) / 128;
+                    }
 
-                    s32 depth_f = (s32)lfoPatch->MINIMAL.depth_f - 0x80;
-                    *modDstFilter += (wave * depth_f) / 128;
+                    if( modDstFilter ) {
+                        s32 depth_f = (s32)lfoPatch->MINIMAL.depth_f - 0x80;
+                        *modDstFilter += (wave * depth_f) / 128;
+                    }
                 }
             }
         }

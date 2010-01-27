@@ -18,7 +18,7 @@
 #include <mios32.h>
 #include "MbSidStructs.h"
 #include "MbSidRandomGen.h"
-#include "MbSidClock.h"
+
 
 class MbSidLfo
 {
@@ -30,7 +30,7 @@ public:
     ~MbSidLfo();
 
     // LFO init function
-    void init(sid_se_lfo_patch_t *_lfoPatch, MbSidClock *_mbSidClockPtr);
+    void init(sid_se_lfo_patch_t *_lfoPatch);
 
     // LFO handler (returns true on overrun)
     bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
@@ -38,9 +38,13 @@ public:
     // requests a restart
     bool restartReq;
 
+    // set by each 6th MIDI clock (if LFO in SYNC mode)
+    bool syncClockReq;
+
+    // LFO Patch
+    sid_se_lfo_patch_t *lfoPatch;
+
     // cross-references
-    sid_se_lfo_patch_t *lfoPatch; // LFO-Patch
-    MbSidClock *mbSidClockPtr;    // reference to clock generator
     s16    *modSrcLfo;            // reference to SID_SE_MOD_SRC_LFOx
     s32    *modDstLfoDepth;       // reference to SID_SE_MOD_DST_LDx
     s32    *modDstLfoRate;        // reference to SID_SE_MOD_DST_LRx
@@ -52,8 +56,9 @@ public:
     MbSidRandomGen randomGen;
 
 protected:
-    u16 ctr;
-    u16 delayCtr;
+    // internal variables
+    u16 lfoCtr;
+    u16 lfoDelayCtr;
 };
 
 #endif /* _MB_SID_LFO_H */

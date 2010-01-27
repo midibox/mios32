@@ -50,12 +50,12 @@ void MbSidKnob::set(u8 value)
     s32 scaled_value16 = knob->min + (value * factor); // 16bit
 
     // copy as signed value into modulation source array
-    mbSidSePtr->modSrc[SID_SE_MOD_SRC_KNOB1 + knobNum] = (value << 8) - 0x8000;
+    mbSidSePtr->mbSidMod.modSrc[SID_SE_MOD_SRC_KNOB1 + knobNum] = (value << 8) - 0x8000;
 
     if( knobNum == SID_KNOB_1 ) {
         // copy knob1 to MDW source
         // in distance to KNOB1, this one goes only into positive direction
-        mbSidSePtr->modSrc[SID_SE_MOD_SRC_MDW] = value << 7;
+        mbSidSePtr->mbSidMod.modSrc[SID_SE_MOD_SRC_MDW] = value << 7;
     }
 
     // determine sidl/r and instrument selection depending on engine
