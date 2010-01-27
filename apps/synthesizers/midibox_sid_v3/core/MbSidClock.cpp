@@ -29,8 +29,11 @@ MbSidClock::MbSidClock()
     bpmCtr = 0;
     bpmSet(120.0);
 
-    state.ALL = 0;
-    event.ALL = 0;
+    slaveMode = false;
+
+    midiStartReq = false;
+    midiContinueReq = false;
+    midiStopReq = false;
 
     clkCtr6 = 0;
     clkCtr24 = 0;
@@ -57,7 +60,9 @@ MbSidClock::~MbSidClock()
 void MbSidClock::tick(void)
 {
     // clear previous clock events
-    event.ALL_SE = 0;
+    eventClock = false;
+    eventStart = false;
+    eventStop = false;
 
     // increment the clock counter, used to measure the delay between two F8 events
     // see also SID_SE_IncomingClk()
@@ -67,16 +72,16 @@ void MbSidClock::tick(void)
     // now determine master/slave flag depending on ensemble setup
     switch( clockMode ) {
     case MBSID_CLOCK_MODE_MASTER:
-        state.SLAVE = 0;
+        slaveMode = false;
         break;
 
     case MBSID_CLOCK_MODE_SLAVE:
-        state.SLAVE = 1;
+        slaveMode = true;
         break;
 
     default: // MBSID_CLOCK_MODE_AUTO
         // slave mode so long incoming clock counter < 0xfff
-        state.SLAVE = incomingClkCtr < 0xfff;
+        slaveMode = incomingClkCtr < 0xfff;
         break;
     }
 
@@ -89,10 +94,10 @@ void MbSidClock::tick(void)
     }
 
     // handle MIDI Start Event
-    if( event.MIDI_START_REQ ) {
+    if( midiStartReq ) {
         // take over
-        event.MIDI_START_REQ = 0;
-        event.MIDI_START = 1; // read by sequencers
+        midiStartReq = false;
+        eventStart = true;
 
         // reset counters
         clkCtr6 = 0;
@@ -100,9 +105,17 @@ void MbSidClock::tick(void)
     }
 
     // handle MIDI Stop Event
-    if( event.MIDI_STOP_REQ ) {
-        event.MIDI_STOP_REQ = 0;
-        event.MIDI_STOP = 1; // read by sequencers
+    if( midiStopReq ) {
+        // take over
+        midiStopReq = false;
+        eventStop = true;
+    }
+
+    // handle MIDI continue event
+    if( midiContinueReq ) {
+        // take over
+        midiContinueReq = false;
+        eventContinue = true;
     }
 
     // handle MIDI Clock Event
@@ -110,20 +123,20 @@ void MbSidClock::tick(void)
         // decrement counter by one (if there are more requests, they will be handled on next handler invocation)
         --clkReqCtr;
 
-        if( state.SLAVE )
-            event.CLK = 1;
+        if( slaveMode )
+            eventClock = 1;
     } else {
-        if( !state.SLAVE ) {
+        if( !slaveMode ) {
             // TODO: check timer overrun flag
             bpmCtr += 1000000;
             if( bpmCtr > bpmCtrMod ) {
                 bpmCtr -= bpmCtrMod;
-                event.CLK = 1;
+                eventClock = 1;
             }
         }
     }
 
-    if( event.CLK ) {
+    if( eventClock ) {
         // increment clock counter (for Clk/6 and Clk/24 divider)
         if( ++clkCtr6 >= 6 ) {
             clkCtr6 = 0;
@@ -162,7 +175,7 @@ void MbSidClock::midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in)
         break;
 
     case 0xfa: // MIDI Clock Start
-        event.MIDI_START_REQ = 1;
+        midiStartReq = true;
 
         // Auto Mode: immediately switch to slave mode
         // TODO
@@ -177,11 +190,11 @@ void MbSidClock::midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in)
         break;
 
     case 0xfb: // MIDI Clock Continue
-        event.MIDI_CONTINUE_REQ = 1;
+        midiContinueReq = true;
         break;
 
     case 0xfc: // MIDI Clock Stop
-        event.MIDI_STOP_REQ = 1;
+        midiStopReq = true;
         break;
     }
 
@@ -214,7 +227,7 @@ float MbSidClock::bpmGet(void)
 /////////////////////////////////////////////////////////////////////////////
 void MbSidClock::bpmRestart(void)
 {
-    event.MIDI_START_REQ = 1;
+    midiStartReq = true;
 }
 
 

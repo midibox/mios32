@@ -31,6 +31,7 @@
 #define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES) // must be at least SID_SE_NUM_VOICES for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
 #define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES) // must be at least 2 for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
 #define SID_SE_NUM_WT          (SID_SE_NUM_VOICES) // must be at least 4 for lead engine, and SID_SE_NUM_VOICES for multi/drum engine
+#define SID_SE_NUM_ARP         (SID_SE_NUM_VOICES) // each voice should have an arpeggiator
 #define SID_SE_NUM_SEQ         2 // must be two for bassline engine
 
 #define SID_SE_NOTESTACK_SIZE 10
@@ -225,16 +226,6 @@ typedef struct sid_drum_model_t {
 ////////////////////////////////////////
 // MIDI Voice
 ////////////////////////////////////////
-typedef union {
-    u8 ALL;
-    struct {
-        u8 ARP_ACTIVE:1;
-        u8 ARP_UP:1;
-        u8 SYNC_ARP:1;
-        u8 HOLD_SAVED:1;
-    };
-} sid_se_arp_state_t;
-
 typedef struct sid_se_midi_voice_t {
     u8     midi_voice; // number of MIDI voice
 
@@ -243,11 +234,6 @@ typedef struct sid_se_midi_voice_t {
     u8 split_upper;
     u8 transpose;
     u8 last_voice;
-    sid_se_arp_state_t arp_state;
-    u8 arp_div_ctr;
-    u8 arp_gl_ctr;
-    u8 arp_note_ctr;
-    u8 arp_oct_ctr;
     u8 pitchbender;
     u8 wt_stack[4];
     notestack_t notestack;
@@ -445,42 +431,6 @@ typedef union {
 
 } sid_se_voice_patch_t;
 
-typedef struct sid_se_voice_t {
-    sid_se_engine_t engine; // engine type
-    u8     phys_sid; // number of assigned physical SID (chip)
-    u8     voice; // number of assigned voice
-    u8     phys_voice; // number of assigned physical SID voice
-    sid_voice_t *phys_sid_voice; // reference to SID register
-    sid_se_midi_voice_t *mv; // reference to assigned MIDI voice
-    sid_se_voice_patch_t *voice_patch; // reference to Voice part of a patch
-    s32    *mod_dst_pitch; // reference to SID_SE_MOD_DST_PITCHx
-    s32    *mod_dst_pw; // reference to SID_SE_MOD_DST_PWx
-    sid_se_trg_t *trg_mask_note_on;
-    sid_se_trg_t *trg_mask_note_off;
-    sid_drum_model_t *dm;
-
-    sid_se_voice_state_t state;
-    u8     note_restart_req;
-    u8     note;
-    u8     arp_note;
-    u8     played_note;
-    u8     prev_transposed_note;
-    u8     glissando_note;
-    u16    portamento_begin_frq;
-    u16    portamento_end_frq;
-    u16    portamento_ctr;
-    u16    linear_frq;
-    u16    set_delay_ctr;
-    u16    clr_delay_ctr;
-
-    u8     assigned_instrument;
-
-    u8     drum_waveform;
-    u8     drum_gatelength;
-    u8     drum_wt_speed;
-    u8     drum_par3;
-} sid_se_voice_t;
-
 
 ////////////////////////////////////////
 // Filters
@@ -629,18 +579,6 @@ typedef struct {
     u8 loop; // [6:0] loop position in wavetable, [7] one shot
 } sid_se_wt_patch_t;
 
-typedef struct sid_se_wt_t {
-    u8     wt; // number of assigned WT
-    sid_se_wt_patch_t *wt_patch; // cross-reference to WT patch
-    s16    *mod_src_wt; // reference to SID_SE_MOD_SRC_WTx
-    s32    *mod_dst_wt; // reference to SID_SE_MOD_DST_WTx
-
-    u8 pos;
-    u16 div_ctr; // should be >8bit for Drum mode (WTs clocked independent from BPM generator)
-    u8 restart_req;
-    u8 clk_req;
-} sid_se_wt_t;
-
 
 ////////////////////////////////////////
 // Modulation Pathes
@@ -725,11 +663,12 @@ typedef struct {
     u8 reserved;
 } sid_se_seq_patch_t;
 
+class MbSidVoice; // forward reference
 typedef struct sid_se_seq_t {
     u8     seq; // number of assigned SEQ
     sid_se_seq_patch_t *seq_patch; // cross-reference to Seq patch
     sid_se_seq_patch_t *seq_patch_shadow; // cross-reference to Seq shadow patch
-    sid_se_voice_t *v; // reference to assigned voice
+    MbSidVoice *v; // reference to assigned voice
 
     sid_se_seq_state_t state;
     u8 pos;

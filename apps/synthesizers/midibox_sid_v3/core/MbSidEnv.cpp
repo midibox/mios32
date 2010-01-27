@@ -18,11 +18,18 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+// should be at least 1 for sending error messages
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 1
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
 MbSidEnv::MbSidEnv()
 {
-    init(NULL, NULL);
+    init(NULL);
 }
 
 
@@ -38,23 +45,28 @@ MbSidEnv::~MbSidEnv()
 /////////////////////////////////////////////////////////////////////////////
 // ENV init function
 /////////////////////////////////////////////////////////////////////////////
-void MbSidEnv::init(sid_se_env_patch_t *_envPatch, MbSidClock *_mbSidClockPtr)
+void MbSidEnv::init(sid_se_env_patch_t *_envPatch)
 {
     envPatch = _envPatch;
-    mbSidClockPtr = _mbSidClockPtr;
 
     // clear flags
     restartReq = false;
     releaseReq = false;
+    syncClockReq = false;
     accentReq = false;
 
+    // clear variables
+    envState = MBSID_ENV_STATE_IDLE;
+    envCtr = 0;
+    envDelayCtr = 0;
+
     // clear references
-    modSrcEnv = 0;
-    modDstPitch = 0;
-    modDstPw = 0;
-    modDstFilter = 0;
-    decayA = 0;
-    accent = 0;
+    modSrcEnv = NULL;
+    modDstPitch = NULL;
+    modDstPw = NULL;
+    modDstFilter = NULL;
+    decayA = NULL;
+    accent = NULL;
 }
 
 
@@ -77,25 +89,27 @@ bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
 
     if( restartReq ) {
         restartReq = false;
-        state = MBSID_ENV_STATE_ATTACK1;
-        delayCtr = 0; // delay counter not supported by this function...
+        envState = MBSID_ENV_STATE_ATTACK1;
+        envDelayCtr = 0; // delay counter not supported by this function...
     }
 
     if( releaseReq ) {
         releaseReq = false;
-        state = MBSID_ENV_STATE_RELEASE1;
+        envState = MBSID_ENV_STATE_RELEASE1;
     }
 
     // if clock sync enabled: only increment on each 16th clock event
-    if( envMode.MINIMAL.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
-        if( state == MBSID_ENV_STATE_IDLE )
+    if( envMode.MINIMAL.CLKSYNC && !syncClockReq ) {
+        if( envState == MBSID_ENV_STATE_IDLE )
             return false; // nothing to do
     } else {
-        switch( state ) {
+        syncClockReq = false;
+
+        switch( envState ) {
         case MBSID_ENV_STATE_ATTACK1: {
             u8 curve = envMode.MINIMAL.CURVE_A ? envPatch->MINIMAL.curve : 0x80;
             if( step(0xffff, envPatch->MINIMAL.attack, curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_DECAY1;
+                envState = MBSID_ENV_STATE_DECAY1;
         } break;
   
         case MBSID_ENV_STATE_DECAY1: {
@@ -103,17 +117,17 @@ bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             u8 decay = (decayA != NULL && accentReq) ? *decayA : envPatch->MINIMAL.decay;
             u8 curve = envMode.MINIMAL.CURVE_D ? envPatch->MINIMAL.curve : 0x80;
             if( step(envPatch->MINIMAL.sustain << 8, decay, curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_SUSTAIN;
+                envState = MBSID_ENV_STATE_SUSTAIN;
         } break;
   
         case MBSID_ENV_STATE_SUSTAIN:
             // always update sustain level
-            ctr = envPatch->MINIMAL.sustain << 8;
+            envCtr = envPatch->MINIMAL.sustain << 8;
             break;
   
         case MBSID_ENV_STATE_RELEASE1: {
             u8 curve = envMode.MINIMAL.CURVE_R ? envPatch->MINIMAL.curve : 0x80;
-            if( ctr )
+            if( envCtr )
                 step(0x0000, envPatch->MINIMAL.release, curve, updateSpeedFactor);
         } break;
   
@@ -132,7 +146,8 @@ bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             if( (depth_p -= *accent) < -128 ) depth_p = -128;
         }
     }
-    *modDstPitch += ((ctr/2) * depth_p) / 128;
+    if( modDstPitch )
+        *modDstPitch += ((envCtr/2) * depth_p) / 128;
 
     s32 depth_pw = (s32)envPatch->MINIMAL.depth_pw - 0x80;
     if( depth_pw && accentReq ) {
@@ -142,7 +157,8 @@ bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             if( (depth_pw -= *accent) < -128 ) depth_pw = -128;
         }
     }
-    *modDstPw += ((ctr/2) * depth_pw) / 128;
+    if( modDstPw )
+        *modDstPw += ((envCtr/2) * depth_pw) / 128;
 
     s32 depth_f = (s32)envPatch->MINIMAL.depth_f - 0x80;
     if( depth_f && accentReq ) {
@@ -152,7 +168,8 @@ bool MbSidEnv::tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor)
             if( (depth_f -= *accent) < -128 ) depth_f = -128;
         }
     }
-    *modDstFilter += ((ctr/2) * depth_f) / 128;
+    if( modDstFilter )
+        *modDstFilter += ((envCtr/2) * depth_f) / 128;
 
     accentReq = false;
 
@@ -170,49 +187,51 @@ bool MbSidEnv::tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFact
 
     if( restartReq ) {
         restartReq = false;
-        state = MBSID_ENV_STATE_ATTACK1;
-        delayCtr = envPatch->L.delay ? 1 : 0;
+        envState = MBSID_ENV_STATE_ATTACK1;
+        envDelayCtr = envPatch->L.delay ? 1 : 0;
     }
 
     if( releaseReq ) {
         releaseReq = false;
-        state = MBSID_ENV_STATE_RELEASE1;
+        envState = MBSID_ENV_STATE_RELEASE1;
     }
 
     // if clock sync enabled: only increment on each 16th clock event
-    if( envMode.L.CLKSYNC && (!mbSidClockPtr->event.CLK || mbSidClockPtr->clkCtr6 != 0) ) {
-        if( state == MBSID_ENV_STATE_IDLE )
+    if( envMode.L.CLKSYNC && !syncClockReq ) {
+        if( envState == MBSID_ENV_STATE_IDLE )
             return false; // nothing to do
     } else {
-        switch( state ) {
+        syncClockReq = false;
+
+        switch( envState ) {
         case MBSID_ENV_STATE_ATTACK1:
-            if( delayCtr ) {
-                int new_delay_ctr = delayCtr + (mbSidEnvTable[envPatch->L.delay] / updateSpeedFactor);
+            if( envDelayCtr ) {
+                int new_delay_ctr = envDelayCtr + (mbSidEnvTable[envPatch->L.delay] / updateSpeedFactor);
                 if( new_delay_ctr > 0xffff )
-                    delayCtr = 0; // delay passed
+                    envDelayCtr = 0; // delay passed
                 else {
-                    delayCtr = new_delay_ctr; // delay not passed
+                    envDelayCtr = new_delay_ctr; // delay not passed
                     return false; // no error
                 }
             }
   
             if( step(envPatch->L.attlvl << 8, envPatch->L.attack1, envPatch->L.att_curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_ATTACK2; // TODO: Set Phase depending on mode
+                envState = MBSID_ENV_STATE_ATTACK2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_ATTACK2:
             if( step(0xffff, envPatch->L.attack2, envPatch->L.att_curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_DECAY1; // TODO: Set Phase depending on mode
+                envState = MBSID_ENV_STATE_DECAY1; // TODO: Set Phase depending on mode
             break;
 
         case MBSID_ENV_STATE_DECAY1:
             if( step(envPatch->L.declvl << 8, envPatch->L.decay1, envPatch->L.dec_curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_DECAY2; // TODO: Set Phase depending on mode
+                envState = MBSID_ENV_STATE_DECAY2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_DECAY2:
             if( step(envPatch->L.sustain << 8, envPatch->L.decay2, envPatch->L.dec_curve, updateSpeedFactor) ) {
-                state = MBSID_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
+                envState = MBSID_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
                 // propagate sustain phase to trigger matrix
                 sustainPhase = true;
@@ -221,16 +240,16 @@ bool MbSidEnv::tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFact
   
         case MBSID_ENV_STATE_SUSTAIN:
             // always update sustain level
-            ctr = envPatch->L.sustain << 8;
+            envCtr = envPatch->L.sustain << 8;
             break;
   
         case MBSID_ENV_STATE_RELEASE1:
             if( step(envPatch->L.rellvl << 8, envPatch->L.release1, envPatch->L.rel_curve, updateSpeedFactor) )
-                state = MBSID_ENV_STATE_RELEASE2; // TODO: Set Phase depending on mode
+                envState = MBSID_ENV_STATE_RELEASE2; // TODO: Set Phase depending on mode
             break;
   
         case MBSID_ENV_STATE_RELEASE2:
-            if( ctr )
+            if( envCtr )
                 step(0x0000, envPatch->L.release2, envPatch->L.rel_curve, updateSpeedFactor);
             break;
   
@@ -244,7 +263,9 @@ bool MbSidEnv::tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFact
     
     // final ENV value (range +/- 0x7fff)
     if( modSrcEnv )
-        *modSrcEnv = ((ctr/2) * env_depth) / 128;
+        *modSrcEnv = ((envCtr/2) * env_depth) / 128;
+
+    accentReq = false;
 
     return sustainPhase;
 }
@@ -252,7 +273,7 @@ bool MbSidEnv::tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFact
 
 bool MbSidEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor)
 {
-    if( target == ctr )
+    if( target == envCtr )
         return true; // next state
 
     // modify rate if curve != 0x80
@@ -266,7 +287,7 @@ bool MbSidEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8
             abs_curve ^= 0x7f; // invert if positive range for more logical behaviour of positive/negative curve
 
         int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
-        int feedback = (abs_curve * (ctr>>8)) >> 8; 
+        int feedback = (abs_curve * (envCtr>>8)) >> 8; 
         int ix;
         if( curve > 0x80 ) { // bend up
             ix = (rate_msbs ^ 0x7f) - feedback;
@@ -283,22 +304,22 @@ bool MbSidEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8
     }
 
     // positive or negative direction?
-    if( target > ctr ) {
-        s32 new_ctr = (s32)ctr + (inc_rate / updateSpeedFactor);
-        if( new_ctr >= target ) {
-            ctr = target;
+    if( target > envCtr ) {
+        s32 newCtr = (s32)envCtr + (inc_rate / updateSpeedFactor);
+        if( newCtr >= target ) {
+            envCtr = target;
             return true; // next state
         }
-        ctr = new_ctr;
+        envCtr = newCtr;
         return false; // stay in state
     }
 
-    s32 new_ctr = (s32)ctr - (inc_rate / updateSpeedFactor);
-    if( new_ctr <= target ) {
-        ctr = target;
+    s32 newCtr = (s32)envCtr - (inc_rate / updateSpeedFactor);
+    if( newCtr <= target ) {
+        envCtr = target;
         return true; // next state
     }
-    ctr = new_ctr;
+    envCtr = newCtr;
 
     return false; // stay in state
 }

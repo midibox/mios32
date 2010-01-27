@@ -24,33 +24,6 @@ typedef enum {
     MBSID_CLOCK_MODE_AUTO
 } mbsid_clock_mode_t;
 
-typedef union {
-    u8 ALL;
-    struct {
-        u8 SLAVE:1;
-    };
-} mbsid_clock_state_t;
-
-typedef union {
-    u8 ALL;
-
-    struct {
-        u8 CLK:1;
-        u8 MIDI_START:1;
-        u8 MIDI_CONTINUE:1;
-        u8 MIDI_STOP:1;
-
-        u8 MIDI_START_REQ:1;
-        u8 MIDI_CONTINUE_REQ:1;
-        u8 MIDI_STOP_REQ:1;
-    };
-
-    struct {
-        u8 ALL_SE:4;
-        u8 ALL_MIDI:3;
-    };
-} mbsid_clock_event_t;
-
 
 class MbSidClock
 {
@@ -78,9 +51,11 @@ public:
     // resets internal Tempo generator
     void bpmRestart(void);
 
-
-    mbsid_clock_state_t state;
-    mbsid_clock_event_t event;
+    // event flags (valid for one cycle)
+    bool eventClock;
+    bool eventStart;
+    bool eventContinue;
+    bool eventStop;
 
     u8 updateSpeedFactor;
 
@@ -88,8 +63,18 @@ public:
     u8 clkCtr24;
 
 protected:
+    // clock mode Master/Slave/Auto
     mbsid_clock_mode_t clockMode;
 
+    // current master/slave mode (will be changed depending on clockMode)
+    bool slaveMode;
+
+    // MIDI requests
+    bool midiStartReq;
+    bool midiContinueReq;
+    bool midiStopReq;
+
+    // counter stuff
     u16 incomingClkCtr;
     u16 incomingClkDelay;
     u16 sentClkDelay;
