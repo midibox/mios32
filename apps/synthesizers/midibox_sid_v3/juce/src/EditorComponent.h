@@ -16,7 +16,7 @@
 #define EDITOR_COMPONENT_H
 
 #include "AudioProcessing.h"
-
+#include "CLCDView.h"
 
 //==============================================================================
 /**
@@ -63,6 +63,9 @@ public:
     /** Standard Juce resize callback. */
     void resized();
   
+	// CLCD
+	CLCDView *clcdView;
+
   
 private:
     //==============================================================================

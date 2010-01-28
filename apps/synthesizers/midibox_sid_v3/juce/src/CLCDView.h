@@ -5,12 +5,14 @@
 //  Ported to C++ by Phil Taylor 27/01/10
 //
 
+#ifndef _CLCDVIEW_H
+#define _CLCDVIEW_H
 
 // increase if required
 #define LCD_MAX_COLUMNS 80
 #define LCD_MAX_LINES    8
 
-class CLCDView
+class CLCDView : public Component
 {
 public:
     CLCDView (int originx, int originy);
@@ -55,7 +57,7 @@ public:
 	void setLCDOriginX (unsigned char num);
 	unsigned char getLCDOriginY(void);
 	void setLCDOriginY (unsigned char num);
-	void drawRect (Graphics& g);
+	void paint (Graphics& g);
 
 private:
 
@@ -88,3 +90,5 @@ private:
 	unsigned char		LCDScreen[LCD_MAX_LINES][LCD_MAX_COLUMNS];
 	bool		NeedsDisplay;
 };
+
+#endif /* _CLCDVIEW_H */

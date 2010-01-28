@@ -115,9 +115,9 @@ AudioProcessing::AudioProcessing()
     RESID_Update(2);
     
     // change pointer to physical SID registers
-    mbSidEnvironment.mbSid[0].sidRegLPtr = &sidRegs[0];
-    mbSidEnvironment.mbSid[0].sidRegRPtr = &sidRegs[1];
-    mbSidEnvironment.mbSid[0].initStructs();
+    mbSidEnvironment.mbSid[0].mbSidSeLead.sidRegLPtr = &sidRegs[0];
+    mbSidEnvironment.mbSid[0].mbSidSeLead.sidRegRPtr = &sidRegs[1];
+    mbSidEnvironment.mbSid[0].mbSidSeLead.initStructs();
 
     mbSidEnvironment.bpmRestart();
 }
@@ -513,7 +513,7 @@ const String AudioProcessing::getPatchName()
     char buffer[22];
 
     char patchName[17];
-    mbSidEnvironment.mbSid[0].mbSidPatch.nameGet(patchName);
+    mbSidEnvironment.mbSid[0].mbSidSeLead.mbSidPatch.nameGet(patchName);
     
     sprintf(buffer, "%c%03d %s",
             'A' + bank,
