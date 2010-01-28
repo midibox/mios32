@@ -171,6 +171,7 @@ void CTR_HP(void)
   // TK: made local - we have a conflict if CTR_LP() and CTR_HP()
   // are called with different priorities
   uint8_t EPindex;
+  uint16_t wIstr;
 
   while (((wIstr = _GetISTR()) & ISTR_CTR) != 0)
   {
