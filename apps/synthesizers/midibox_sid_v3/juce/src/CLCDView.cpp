@@ -177,7 +177,7 @@ void CLCDView::setLCDOriginY (unsigned char num) { LCDOriginY = num; }
 //////////////////////////////////////////////////////////////////////////////
 // (Re-)draw view
 //////////////////////////////////////////////////////////////////////////////  
-void CLCDView::drawRect(Graphics& g) 
+void CLCDView::paint(Graphics& g) 
 {		
 	
 	// help variables
@@ -215,6 +215,5 @@ void CLCDView::drawRect(Graphics& g)
 			}
 		}
 	}
-	
 }
 

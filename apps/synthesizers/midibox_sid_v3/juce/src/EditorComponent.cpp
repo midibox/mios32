@@ -43,7 +43,10 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
   
     // add a label that will display the current timecode and status..
     addAndMakeVisible (infoLabel = new Label (String::empty, String::empty));
-  
+
+	// add a CLCD
+	addAndMakeVisible(clcdView = new CLCDView(50, 50));
+	
     // add the triangular resizer component for the bottom-right of the UI
     addAndMakeVisible (resizer = new ResizableCornerComponent (this, &resizeLimits));
     resizeLimits.setSizeLimits (150, 150, 800, 300);
