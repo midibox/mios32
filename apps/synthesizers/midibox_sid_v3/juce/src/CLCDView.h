@@ -15,7 +15,7 @@
 class CLCDView : public Component
 {
 public:
-    CLCDView (int originx, int originy);
+    CLCDView (unsigned originx, unsigned originy);
   
     /** Destructor. */
     ~CLCDView();
@@ -27,67 +27,76 @@ public:
 	void LCDSpecialCharInit (unsigned char num, unsigned char * table);
     void LCDSpecialCharsInit (unsigned char * table);
 
-	void setLCDBColor (float r, float g, float b);
-    void setLCDFColor (float r, float g, float b);
-	unsigned char getLCDColumns(void);
-	void setLCDColumns (unsigned char num);
-    unsigned char getLCDLines(void);
-    void setLCDLines (unsigned char num);
-	unsigned char getLCDCharWidth(void);
-	void setLCDCharWidth (unsigned char num);
-	unsigned char getLCDCharHeight(void);
-	void setLCDCharHeight (unsigned char num);
-	unsigned char getLCDOffsetColumns(void);
-	void setLCDOffsetColumns(unsigned char num);
-	unsigned char getLCDOffsetLines();
-	void setLCDOffsetLines (unsigned char num);
-	unsigned char getLCDPixelX(void);
-	void setLCDPixelX (unsigned char num);
-	unsigned char getLCDPixelY(void);
-	void setLCDPixelY(unsigned char num);
-	unsigned char getLCDBorderX(void);
-	void setLCDBorderX (unsigned char num);
-	unsigned char getLCDBorderY(void);
-	void setLCDBorderY (unsigned char num);
-	unsigned char getLCDCursorX(void);
-	void setLCDCursorX (unsigned char num);
-	unsigned char getLCDCursorY(void);
-	void setLCDCursorY (unsigned char num);
-	unsigned char getLCDOriginX(void);
-	void setLCDOriginX (unsigned char num);
-	unsigned char getLCDOriginY(void);
-	void setLCDOriginY (unsigned char num);
+	void setLCDBColor (unsigned char r, unsigned char g, unsigned char b);
+    void setLCDFColor (unsigned char r, unsigned char g, unsigned char b);
+	
+	
+	int CLCDView::getLCDColumns(void) { return LCDColumns; }
+	void CLCDView::setLCDColumns (int num) { LCDColumns = num; }
+	int CLCDView::getLCDLines(void) { return LCDLines; }
+	void CLCDView::setLCDLines (int num) { LCDLines = num; }
+
+	int CLCDView::getLCDCharWidth (void) { return LCDCharWidth; }
+	void CLCDView::setLCDCharWidth (int num) { LCDCharWidth = num; }
+	int CLCDView::getLCDCharHeight (void) { return LCDCharHeight; }
+	void CLCDView::setLCDCharHeight (int num) { LCDCharHeight = num; }	
+
+	int CLCDView::getLCDOffsetColumns (void) { return LCDOffsetColumns; }
+	void CLCDView::setLCDOffsetColumns (int num) { LCDOffsetColumns = num; }
+	int CLCDView::getLCDOffsetLines (void) { return LCDOffsetLines; }
+	void CLCDView::setLCDOffsetLines (int num) { LCDOffsetLines = num; }
+	
+	int CLCDView::getLCDPixelX (void) { return LCDPixelX; }
+	void CLCDView::setLCDPixelX (int num) { LCDPixelX = num; }
+	int CLCDView::getLCDPixelY (void){ return LCDPixelY; }
+	void CLCDView::setLCDPixelY (int num) { LCDPixelY = num; }	
+
+	int CLCDView::getLCDBorder (void) { return LCDBorder; }
+	void CLCDView::setLCDBorder (int num) { LCDBorder = num; }
+
+	int CLCDView::getLCDCursorX (void) { return LCDCursorX; }
+	void CLCDView::setLCDCursorX (int num) { LCDCursorX = num; }
+	int CLCDView::getLCDCursorY (void) { return LCDCursorY; }
+	void CLCDView::setLCDCursorY (int num) { LCDCursorY = num; }
+
+	int CLCDView::getLCDOriginX (void) { return LCDOriginX; }
+	void CLCDView::setLCDOriginX (int num) { LCDOriginX = num; }
+	int CLCDView::getLCDOriginY (void) { return LCDOriginY; }
+	void CLCDView::setLCDOriginY (int num) { LCDOriginY = num; }
+
+	int getLCDSizeX(void);
+	int getLCDSizeY(void);
+
 	void paint (Graphics& g);
 
 private:
 
 // Various variables for holding LCD contents.
-	unsigned char		LCDBColorR, LCDBColorG, LCDBColorB; // background color
-	unsigned char		LCDFColorR, LCDFColorG, LCDFColorB; // foreground color
+	unsigned char	LCDBColorR, LCDBColorG, LCDBColorB; // background color
+	unsigned char	LCDFColorR, LCDFColorG, LCDFColorB; // foreground color
 
-	unsigned char	LCDColumns; // number of characters per line (default 40)
-	unsigned char	LCDLines;  // number of lines (default 2)
+	int	LCDColumns; // number of characters per line (default 40)
+	int	LCDLines;  // number of lines (default 2)
 	
-	unsigned char	LCDCharWidth; // width of a single character (default 6)
-	unsigned char	LCDCharHeight; // height of a single character (default 8)
+	int	LCDCharWidth; // width of a single character (default 6)
+	int	LCDCharHeight; // height of a single character (default 8)
 	
-	unsigned char	LCDOffsetColumns; // offset between columns (default 0)
-	unsigned char	LCDOffsetLines; // offset between lines (default 4)
+	int	LCDOffsetColumns; // offset between columns (default 0)
+	int	LCDOffsetLines; // offset between lines (default 4)
 	
-	unsigned char	LCDPixelX;	// X dimension of a pixel (default 2)
-	unsigned char	LCDPixelY;	// Y dimension of a pixel (default 2)
+	int	LCDPixelX;	// X dimension of a pixel (default 2)
+	int	LCDPixelY;	// Y dimension of a pixel (default 2)
 
-	unsigned char	LCDBorderX;	// left/right distance to frame (default 4)
-	unsigned char	LCDBorderY;	// upper/lower distance to frame (default 8)
+	int 	LCDBorder;	// distance to frame (default 4)
 	
-	unsigned char	LCDCursorX; // cursor X pos (default 0)
-	unsigned char	LCDCursorY; // cursor Y pos (default 0)
+	int 	LCDCursorX; // cursor X pos (default 0)
+	int 	LCDCursorY; // cursor Y pos (default 0)
 	
-	unsigned char   LCDOriginX; // Origin position (default 16);
-	unsigned char   LCDOriginY; // Origin position (default 60);
+	int    LCDOriginX; // Origin position (default 16);
+	int   LCDOriginY; // Origin position (default 60);
 	
 	
-	unsigned char		LCDScreen[LCD_MAX_LINES][LCD_MAX_COLUMNS];
+	unsigned char 	LCDScreen[LCD_MAX_LINES][LCD_MAX_COLUMNS];
 	bool		NeedsDisplay;
 };
 

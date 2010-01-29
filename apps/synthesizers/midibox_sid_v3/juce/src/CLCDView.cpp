@@ -1,27 +1,27 @@
-// $Id: CLCDView.m 261 2009-01-09 00:08:48Z tk $
+// $Id: CLCDView.cpp 261 2009-01-09 00:08:48Z tk $
 //
-//  CLCDView.m
-//  midibox_seq_v4
+//  CLCDView.cpp
+//  
 //
 //  Created by Thorsten Klose on 28.09.08.
-//  Copyright 2008 __MyCompanyName__. All rights reserved.
+//  Ported to C++ by Phil Taylor 27/01/10
+//  Copyright 2008-2010
 //
 #include "includes.h"
 
 #include "CLCDView.h"
 #include "EditorComponent.h"
+#include "AudioProcessing.h"
 
-
+#include "mios32.h"
 // include default character set from separate file
 #include "CLCDView_charset.inc"
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Frame initialisation
 //////////////////////////////////////////////////////////////////////////////
 
-CLCDView::CLCDView(int originx,int originy)
+CLCDView::CLCDView(unsigned originx,unsigned originy)
 {
 	//self = [super initWithFrame:frameRect];
 
@@ -40,16 +40,19 @@ CLCDView::CLCDView(int originx,int originy)
 	setLCDPixelX(2);
 	setLCDPixelY(2);
 
-	setLCDBorderX(4);
-	setLCDBorderY(8);
+	setLCDBorder(4);
 
 	setLCDOriginX(originx);
 	setLCDOriginY(originy);
 
+	
+	setSize (getLCDSizeX(), getLCDSizeY());
+	setTopLeftPosition(originx,originy);
 	LCDClear(); // will also reset cursor position
 	
 	LCDPrintString("READY.");
-
+	
+	
 	return;
 }
 
@@ -77,7 +80,7 @@ void CLCDView::LCDClear(void)
 	setLCDCursorY(0);
 	
 	// request display update
-	NeedsDisplay=true;
+	repaint();
 }
 
 void CLCDView::LCDPrintChar (unsigned char c)
@@ -88,7 +91,7 @@ void CLCDView::LCDPrintChar (unsigned char c)
 		LCDCursorX = LCD_MAX_COLUMNS-1;
 	
 	// request display update
-	NeedsDisplay=true;
+	repaint();
 }
 
 void CLCDView::LCDPrintString (const char *str)
@@ -124,54 +127,30 @@ void CLCDView::LCDSpecialCharsInit (unsigned char *table)
 //////////////////////////////////////////////////////////////////////////////
 // Get/Set functions
 //////////////////////////////////////////////////////////////////////////////
-void CLCDView::setLCDBColor (float r, float g, float b)
+void CLCDView::setLCDBColor (unsigned char r, unsigned char g, unsigned char b)
 {
 	LCDBColorR=r;
 	LCDBColorG=g;
 	LCDBColorB=b;
 }
 
-void CLCDView::setLCDFColor (float r, float g, float b)
+void CLCDView::setLCDFColor (unsigned char r, unsigned char g, unsigned char b)
 {
 	LCDFColorR=r;
 	LCDFColorG=g;
 	LCDFColorB=b;
 }
 
-unsigned char CLCDView::getLCDColumns(void) { return LCDColumns; }
-void CLCDView::setLCDColumns (unsigned char num) { LCDColumns = num; }
-unsigned char CLCDView::getLCDLines(void) { return LCDLines; }
-void CLCDView::setLCDLines (unsigned char num) { LCDLines = num; }
 
-unsigned char CLCDView::getLCDCharWidth (void) { return LCDCharWidth; }
-void CLCDView::setLCDCharWidth (unsigned char num) { LCDCharWidth = num; }
-unsigned char CLCDView::getLCDCharHeight (void) { return LCDCharHeight; }
-void CLCDView::setLCDCharHeight (unsigned char num) { LCDCharHeight = num; }
+int CLCDView::getLCDSizeX (void) 
+{ 
+	return (2*LCDBorder) + (LCDPixelX*LCDColumns*LCDCharWidth) + (LCDOffsetColumns*(LCDColumns-1)) + 2;
+}
 
-unsigned char CLCDView::getLCDOffsetColumns (void) { return LCDOffsetColumns; }
-void CLCDView::setLCDOffsetColumns (unsigned char num) { LCDOffsetColumns = num; }
-unsigned char CLCDView::getLCDOffsetLines (void) { return LCDOffsetLines; }
-void CLCDView::setLCDOffsetLines (unsigned char num) { LCDOffsetLines = num; }
-
-unsigned char CLCDView::getLCDPixelX (void) { return LCDPixelX; }
-void CLCDView::setLCDPixelX (unsigned char num) { LCDPixelX = num; }
-unsigned char CLCDView::getLCDPixelY (void){ return LCDPixelY; }
-void CLCDView::setLCDPixelY (unsigned char num) { LCDPixelY = num; }
-
-unsigned char CLCDView::getLCDBorderX (void) { return LCDBorderX; }
-void CLCDView::setLCDBorderX (unsigned char num) { LCDBorderX = num; }
-unsigned char CLCDView::getLCDBorderY (void) { return LCDBorderY; }
-void CLCDView::setLCDBorderY (unsigned char num) { LCDBorderY = num; }
-
-unsigned char CLCDView::getLCDCursorX (void) { return LCDCursorX; }
-void CLCDView::setLCDCursorX (unsigned char num) { LCDCursorX = num; }
-unsigned char CLCDView::getLCDCursorY (void) { return LCDCursorY; }
-void CLCDView::setLCDCursorY (unsigned char num) { LCDCursorY = num; }
-
-unsigned char CLCDView::getLCDOriginX (void) { return LCDOriginX; }
-void CLCDView::setLCDOriginX (unsigned char num) { LCDOriginX = num; }
-unsigned char CLCDView::getLCDOriginY (void) { return LCDOriginY; }
-void CLCDView::setLCDOriginY (unsigned char num) { LCDOriginY = num; }
+int CLCDView::getLCDSizeY (void) 
+{ 	
+	return (2*LCDBorder) + (LCDPixelY*LCDLines*LCDCharHeight) + (LCDOffsetLines*(LCDLines-1)); 
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -179,19 +158,12 @@ void CLCDView::setLCDOriginY (unsigned char num) { LCDOriginY = num; }
 //////////////////////////////////////////////////////////////////////////////  
 void CLCDView::paint(Graphics& g) 
 {		
-	
 	// help variables
-	unsigned column, line, x, y;
+	int column, line, x, y;
 
-	// calculate X/Y dimensions of LCD
-	unsigned lcd_size_x = 2*LCDBorderX + LCDPixelX*LCDColumns*LCDCharWidth + LCDOffsetColumns*(LCDColumns-1) + 2;
-	unsigned lcd_size_y = 2*LCDBorderY + LCDPixelY*LCDLines*LCDCharHeight + LCDOffsetLines*(LCDLines-1);
-	
 	g.setColour (Colour(LCDBColorR,LCDBColorG,LCDBColorB));
-    g.fillRect (LCDOriginX, LCDOriginY, lcd_size_x, lcd_size_y);
+    g.fillRect (0,0, getLCDSizeX(), getLCDSizeY());
 
-    g.setColour (Colour (0xffabaeb6)); // Grey border
-    g.drawRect (LCDOriginX, LCDOriginY, lcd_size_x, lcd_size_y, LCDBorderX);
 
 	// print each character
 	// TODO: optimized version, which buffers characters during printChar() to avoid that complete bitmap has to be re-created on each redraw
@@ -208,8 +180,8 @@ void CLCDView::paint(Graphics& g)
 						g.setColour (Colour(LCDBColorR,LCDBColorG,LCDBColorB));
 					}
 					g.drawRect(
-						LCDOriginX+LCDBorderX + LCDPixelX*(column*LCDCharWidth+x) + column*LCDOffsetColumns,
-						LCDOriginY+LCDBorderY + LCDPixelY*(y+line*(LCDCharHeight+LCDOffsetLines)), 
+						LCDBorder + LCDPixelX*(column*LCDCharWidth+x) + column*LCDOffsetColumns,
+						LCDBorder + LCDPixelY*(y+line*(LCDCharHeight+LCDOffsetLines)), 
 						LCDPixelX, LCDPixelY);
 				}
 			}
