@@ -181,7 +181,7 @@ extern "C" void SID_TIMER_SE_Update(void)
   APP_StopwatchReset();
 #endif
 
-  if( !mbSidEnvironment.updateSe() )
+  if( !mbSidEnvironment.tick() )
     return; // no update required (e.g. in ASID mode)
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1

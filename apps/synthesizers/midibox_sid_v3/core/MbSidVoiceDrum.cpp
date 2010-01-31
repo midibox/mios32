@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIDIbox SID Sound Engine Toplevel
+ * MIDIbox SID Voice Handlers for Drum Engine
  *
  * ==========================================================================
  *
@@ -12,29 +12,39 @@
  * ==========================================================================
  */
 
-#include "MbSidSe.h"
-#include "MbSidTables.h"
 #include <string.h>
-
-
-/////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
-// should be at least 1 for sending error messages
-/////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 1
+#include "MbSidVoiceDrum.h"
+#include "MbSidMidiVoice.h"
+#include "MbSidTables.h"
+#include "MbSidSe.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
-MbSidSe::MbSidSe()
+MbSidVoiceDrum::MbSidVoiceDrum()
 {
+    MbSidVoice::init(0, 0, NULL);
+    midiVoicePtr = NULL; // assigned by MbSid!
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Destructor
 /////////////////////////////////////////////////////////////////////////////
-MbSidSe::~MbSidSe()
+MbSidVoiceDrum::~MbSidVoiceDrum()
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Voice init function
+/////////////////////////////////////////////////////////////////////////////
+void MbSidVoiceDrum::init(void)
+{
+    MbSidVoice::init();
+
+    drumWaveform = 0;
+    drumGatelength = 0;
+    drumModel = 0;
 }

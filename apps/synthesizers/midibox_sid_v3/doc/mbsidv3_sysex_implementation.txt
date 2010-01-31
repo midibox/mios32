@@ -138,6 +138,8 @@ Response Messages
          0c == invalid command
          10 == RAM access not supported
          11 == BankStick too small (only 32k BS connected, patch number >= 64)
+	 12 == wrong type
+	 13 == selected SID not available
 
 
 Patch Structure --- Address 0x000-0x04f is identical for all Engines

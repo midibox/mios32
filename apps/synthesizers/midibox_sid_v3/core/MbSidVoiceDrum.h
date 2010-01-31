@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIDIbox SID Patch
+ * MIDIbox SID Voice Handlers for Drum Engine
  *
  * ==========================================================================
  *
@@ -12,33 +12,32 @@
  * ==========================================================================
  */
 
-#ifndef _MB_SID_PATCH_H
-#define _MB_SID_PATCH_H
+#ifndef _MB_SID_VOICE_DRUM_H
+#define _MB_SID_VOICE_DRUM_H
 
 #include <mios32.h>
 #include "MbSidStructs.h"
+#include "MbSidVoice.h"
 
-class MbSidPatch
+
+class MbSidVoiceDrum : public MbSidVoice
 {
 public:
     // Constructor
-    MbSidPatch();
+    MbSidVoiceDrum();
 
     // Destructor
-    ~MbSidPatch();
+    ~MbSidVoiceDrum();
 
-    // patch functions
-    void copyToPatch(sid_patch_t *p);
-    void copyFromPatch(sid_patch_t *p);
-    void copyPreset(sid_se_engine_t engine);
-    void nameGet(char *buffer);
+    // voice init functions
+    void init();
 
-    // bank and patch number
-    u8 bankNum;
-    u8 patchNum;
+    // see MbSidVoice.h for input parameters
 
-    // the patch
-    sid_patch_t body;
+    // additional parameters for drum engine:
+    u8  drumWaveform;
+    u8  drumGatelength;
+    sid_drum_model_t *drumModel;
 };
 
-#endif /* _MB_SID_PATCH_H */
+#endif /* _MB_SID_VOICE_DRUM_H */

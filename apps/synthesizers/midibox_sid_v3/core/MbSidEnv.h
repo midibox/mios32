@@ -21,12 +21,12 @@
 
 typedef enum {
     MBSID_ENV_STATE_IDLE = 0,
-    MBSID_ENV_STATE_ATTACK1,
+    MBSID_ENV_STATE_ATTACK,
     MBSID_ENV_STATE_ATTACK2,
-    MBSID_ENV_STATE_DECAY1,
+    MBSID_ENV_STATE_DECAY,
     MBSID_ENV_STATE_DECAY2,
     MBSID_ENV_STATE_SUSTAIN,
-    MBSID_ENV_STATE_RELEASE1,
+    MBSID_ENV_STATE_RELEASE,
     MBSID_ENV_STATE_RELEASE2
 } mbsid_env_state_t;
 
@@ -41,10 +41,32 @@ public:
     ~MbSidEnv();
 
     // ENV init function
-    void init(sid_se_env_patch_t *_envPatch);
+    virtual void init(void);
 
     // ENV handler (returns true when sustain phase reached)
-    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
+    virtual bool tick(const u8 &updateSpeedFactor);
+
+    // input parameters
+    sid_se_env_mode_t envMode;
+    u8 envDepth;
+    u8 envDelay;
+    u8 envAttack;
+    u8 envDecay;
+    u8 envDecayAccented;
+    u8 envSustain;
+    u8 envRelease;
+    u8 envCurve;
+    bool envCurveOnAttack;
+    bool envCurveOnDecay;
+    bool envCurveOnRelease;
+
+    // used by Multi and Bassline engine - too lazy to create a new class for these three variables
+    u8 envDepthPitch;
+    u8 envDepthPulsewidth;
+    u8 envDepthFilter;
+
+    // output waveform
+    s16 envOut;
 
     // requests a restart and release phase
     bool restartReq;
@@ -56,20 +78,8 @@ public:
     // requests to use accented parameters
     bool accentReq;
 
-    // ENV Patch
-    sid_se_env_patch_t *envPatch;
-
-    // cross-references
-    s16    *modSrcEnv;            // reference to SID_SE_MOD_SRC_ENVx
-    s32    *modDstPitch;          // reference to SID_SE_MOD_DST_PITCHx
-    s32    *modDstPw;             // reference to SID_SE_MOD_DST_PWx
-    s32    *modDstFilter;         // reference to SID_SE_MOD_DST_FILx
-    u8     *decayA;               // reference to alternative decay value (used on ACCENTed notes)
-    u8     *accent;               // reference to accent value (used on ACCENTed notes)
-
 
 protected:
-    bool tickLead(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
     bool step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor);
 
     // internal variables

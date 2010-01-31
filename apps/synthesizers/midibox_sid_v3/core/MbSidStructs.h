@@ -25,13 +25,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define SID_SE_NUM             (SID_NUM/2) // should match with number of SIDs / 2 (stereo configuration)
-#define SID_SE_NUM_VOICES      6
 #define SID_SE_NUM_MIDI_VOICES 6
 #define SID_SE_NUM_FILTERS     2 // must be at least 2 for all engines
-#define SID_SE_NUM_LFO         (2*SID_SE_NUM_VOICES) // must be at least SID_SE_NUM_VOICES for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
-#define SID_SE_NUM_ENV         (2*SID_SE_NUM_VOICES) // must be at least 2 for lead engine, and 2*SID_SE_NUM_VOICES for multi engine
-#define SID_SE_NUM_WT          (SID_SE_NUM_VOICES) // must be at least 4 for lead engine, and SID_SE_NUM_VOICES for multi/drum engine
-#define SID_SE_NUM_ARP         (SID_SE_NUM_VOICES) // each voice should have an arpeggiator
 #define SID_SE_NUM_SEQ         2 // must be two for bassline engine
 
 #define SID_SE_NOTESTACK_SIZE 10
@@ -221,24 +216,6 @@ typedef struct sid_drum_model_t {
     u8 wt_loop;
     u8 *wavetable;
 } sid_drum_model_t;
-
-
-////////////////////////////////////////
-// MIDI Voice
-////////////////////////////////////////
-typedef struct sid_se_midi_voice_t {
-    u8     midi_voice; // number of MIDI voice
-
-    u8 midi_channel;
-    u8 split_lower;
-    u8 split_upper;
-    u8 transpose;
-    u8 last_voice;
-    u8 pitchbender;
-    u8 wt_stack[4];
-    notestack_t notestack;
-    notestack_item_t notestack_items[SID_SE_NOTESTACK_SIZE];
-} sid_se_midi_voice_t;
 
 
 ////////////////////////////////////////
@@ -445,18 +422,6 @@ typedef struct sid_se_filter_patch_t {
 } sid_se_filter_patch_t;
 
 
-typedef struct sid_se_filter_t {
-    sid_se_engine_t engine; // engine type
-    u8     phys_sid; // number of assigned physical SID (chip)
-    u8     filter; // number of assigned filter
-    s32    *mod_dst_filter; // reference to SID_SE_MOD_DST_FILTERx
-    s32    *mod_dst_volume; // reference to SID_SE_MOD_DST_VOLUMEx
-
-    sid_regs_t *phys_sid_regs; // reference to SID registers
-    sid_se_filter_patch_t *filter_patch; // reference to filter part of a patch
-} sid_se_filter_t;
-
-
 ////////////////////////////////////////
 // LFO
 ////////////////////////////////////////
@@ -499,6 +464,14 @@ typedef union {
     } MINIMAL;
 
 } sid_se_lfo_patch_t;
+
+typedef struct {
+        u8 mode; // sid_se_lfo_mode_t
+        u8 depth;
+        u8 rate;
+        u8 delay;
+        u8 phase;
+} sid_se_lfo_lead_patch_t;
 
 
 ////////////////////////////////////////
@@ -558,6 +531,25 @@ typedef union {
 
 } sid_se_env_patch_t;
 
+
+typedef struct {
+    u8 mode; // sid_se_env_mode_t
+    u8 depth;
+    u8 delay;
+    u8 attack1;
+    u8 attlvl;
+    u8 attack2;
+    u8 decay1;
+    u8 declvl;
+    u8 decay2;
+    u8 sustain;
+    u8 release1;
+    u8 rellvl;
+    u8 release2;
+    u8 att_curve;
+    u8 dec_curve;
+    u8 rel_curve;
+} sid_se_env_lead_patch_t;
 
 ////////////////////////////////////////
 // Wavetable
@@ -620,13 +612,6 @@ typedef struct sid_se_mod_patch_t {
 ////////////////////////////////////////
 // Sequencer (Bassline/Drum Mode)
 ////////////////////////////////////////
-typedef union {
-    u8 ALL;
-    struct {
-        u8 ENABLED:1;
-        u8 RUNNING:1;
-    };
-} sid_se_seq_state_t;
 
 typedef union {
     u8 ALL;
@@ -662,22 +647,6 @@ typedef struct {
     u8 assign; // parameter assignment
     u8 reserved;
 } sid_se_seq_patch_t;
-
-class MbSidVoice; // forward reference
-typedef struct sid_se_seq_t {
-    u8     seq; // number of assigned SEQ
-    sid_se_seq_patch_t *seq_patch; // cross-reference to Seq patch
-    sid_se_seq_patch_t *seq_patch_shadow; // cross-reference to Seq shadow patch
-    MbSidVoice *v; // reference to assigned voice
-
-    sid_se_seq_state_t state;
-    u8 pos;
-    u8 div_ctr;
-    u8 sub_ctr;
-    u8 restart_req;
-} sid_se_seq_t;
-
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -819,5 +788,14 @@ typedef enum {
   SID_KNOB_PITCHBENDER,
   SID_KNOB_AFTERTOUCH
 } sid_knob_num_t;
+
+typedef struct mbsid_knob_t {
+  u8 assign1;
+  u8 assign2;
+  u8 value;
+  u8 min;
+  u8 max;
+} mbsid_knob_t;
+
 
 #endif /* _MBSID_STRUCTS_H */

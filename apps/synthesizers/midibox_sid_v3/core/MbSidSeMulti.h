@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIDIbox SID Knob
+ * MIDIbox SID Multi Engine
  *
  * ==========================================================================
  *
@@ -12,42 +12,30 @@
  * ==========================================================================
  */
 
-#ifndef _MB_SID_KNOB_H
-#define _MB_SID_KNOB_H
+#ifndef _MB_SID_SE_MULTI_H
+#define _MB_SID_SE_MULTI_H
 
 #include <mios32.h>
-#include "MbSidStructs.h"
 #include "MbSidSe.h"
 
-typedef struct mbsid_knob_t {
-  u8 assign1;
-  u8 assign2;
-  u8 value;
-  u8 min;
-  u8 max;
-} mbsid_knob_t;
-
-
-class MbSidKnob
+class MbSidSeMulti : public MbSidSe
 {
 public:
     // Constructor
-    MbSidKnob();
+    MbSidSeMulti();
 
     // Destructor
-    ~MbSidKnob();
+    ~MbSidSeMulti();
 
-    // knob number
-    u8 knobNum;
+    // voices and filters
+    array<MbSidVoice, 6> mbSidVoice;
+    array<MbSidFilter, 2> mbSidFilter;
 
-    // references
-    MbSidSe  *mbSidSePtr;
-
-    // set functions
-    void set(u8 value);
-
-private:
-
+    // modulators
+    array<MbSidLfo, 12> mbSidLfo;
+    array<MbSidEnv, 6> mbSidEnvLead;
+    array<MbSidWt, 6> mbSidWt;
+    array<MbSidArp, 6> mbSidArp;
 };
 
-#endif /* _MB_SID_KNOB_H */
+#endif /* _MB_SID_SE_MULTI_H */

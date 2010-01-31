@@ -15,6 +15,9 @@
 #include "MbSidVoiceQueue.h"
 #include <string.h>
 
+// tmp-.
+#define SID_SE_NUM_VOICES 6
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)

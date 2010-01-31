@@ -33,7 +33,6 @@ MbSidPatch::MbSidPatch()
     patchNum = 0;
 
     copyPreset(SID_SE_LEAD);
-    updateShadow();
 }
 
 
@@ -55,12 +54,11 @@ void MbSidPatch::copyToPatch(sid_patch_t *p)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Copies body into bodyShadow
+// copies body into the given RAM location
 /////////////////////////////////////////////////////////////////////////////
-void MbSidPatch::updateShadow(void)
+void MbSidPatch::copyFromPatch(sid_patch_t *p)
 {
-    // copy patch into shadow buffer
-    memcpy((u8 *)&bodyShadow.ALL[0], (u8 *)&body.ALL[0], 512);
+    memcpy((u8 *)&p->ALL[0], (u8 *)&body.ALL[0], 512);
 }
 
 

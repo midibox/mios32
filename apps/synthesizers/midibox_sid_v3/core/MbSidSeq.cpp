@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIDIbox SID Sound Engine Toplevel
+ * MIDIbox SID Sequencer Prototype
  *
  * ==========================================================================
  *
@@ -12,29 +12,48 @@
  * ==========================================================================
  */
 
-#include "MbSidSe.h"
-#include "MbSidTables.h"
 #include <string.h>
-
-
-/////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
-// should be at least 1 for sending error messages
-/////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 1
+#include "MbSidSeq.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
-MbSidSe::MbSidSe()
+MbSidSeq::MbSidSeq()
 {
+    init();
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Destructor
 /////////////////////////////////////////////////////////////////////////////
-MbSidSe::~MbSidSe()
+MbSidSeq::~MbSidSeq()
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sequencer init function
+/////////////////////////////////////////////////////////////////////////////
+void MbSidSeq::init(void)
+{
+    seqEnabled = false;
+    seqClockReq = false;
+    seqRestartReq = false;
+    seqStopReq = false;
+
+    seqPatternNum = 0;
+    seqPatternLength = 16;
+    seqPatternMemory = NULL;
+    seqClockDivider = 3;
+    seqSynchToMeasure = false;
+    seqParameterAssign = 0;
+
+    seqRunning = 0;
+    seqPos = 0;
+    seqDivCtr = 0;
+    seqSubCtr = 0;
+
+    seqEnabledSaved = false;
 }
