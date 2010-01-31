@@ -17,7 +17,6 @@
 
 #include <mios32.h>
 #include "MbSidStructs.h"
-#include "MbSidPar.h"
 
 
 class MbSidWt
@@ -30,18 +29,22 @@ public:
     ~MbSidWt();
 
     // WT init function
-    void init(sid_se_wt_patch_t *_wtPatch, u8 _wtNum, MbSidPar *_mbSidParPtr);
+    void init(void);
 
     // Wavetable handler (returns true on loop)
-    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
+    bool tick(s32 step, const u8 &updateSpeedFactor);
     bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor,
               sid_drum_model_t *drumModel, u8 &voiceNote, u8 &voiceWaveform);
 
-    // reference to parameter handler
-    MbSidPar *mbSidParPtr;
-    
-    // my number (for multi engine)
-    u8 wtNum;
+    // input parameters
+    u8 wtBegin;
+    u8 wtEnd;
+    u8 wtLoop;
+    u8 wtSpeed;
+    bool wtOneshotMode;
+
+    // output parameter
+    s16 wtOut;
 
     // requests a restart and next clock (divided by WT)
     bool restartReq;
@@ -53,14 +56,6 @@ public:
 
     // position
     u8 wtPos;
-
-    // Wavetable Patch
-    sid_se_wt_patch_t *wtPatch;
-
-    // cross-references
-    s16    *modSrcWt;             // reference to SID_SE_MOD_SRC_WTx
-    s32    *modDstWt;             // reference to SID_SE_MOD_DST_WTx
-    u8     *wtMemory;             // reference to wavetable memory
 
 protected:
     // internal variables

@@ -31,38 +31,38 @@ public:
     void setLCDFColor (unsigned char r, unsigned char g, unsigned char b);
 	
 	
-	int CLCDView::getLCDColumns(void) { return LCDColumns; }
-	void CLCDView::setLCDColumns (int num) { LCDColumns = num; }
-	int CLCDView::getLCDLines(void) { return LCDLines; }
-	void CLCDView::setLCDLines (int num) { LCDLines = num; }
+	int getLCDColumns(void) { return LCDColumns; }
+	void setLCDColumns (int num) { LCDColumns = num; }
+	int getLCDLines(void) { return LCDLines; }
+	void setLCDLines (int num) { LCDLines = num; }
 
-	int CLCDView::getLCDCharWidth (void) { return LCDCharWidth; }
-	void CLCDView::setLCDCharWidth (int num) { LCDCharWidth = num; }
-	int CLCDView::getLCDCharHeight (void) { return LCDCharHeight; }
-	void CLCDView::setLCDCharHeight (int num) { LCDCharHeight = num; }	
+	int getLCDCharWidth (void) { return LCDCharWidth; }
+	void setLCDCharWidth (int num) { LCDCharWidth = num; }
+	int getLCDCharHeight (void) { return LCDCharHeight; }
+	void setLCDCharHeight (int num) { LCDCharHeight = num; }	
 
-	int CLCDView::getLCDOffsetColumns (void) { return LCDOffsetColumns; }
-	void CLCDView::setLCDOffsetColumns (int num) { LCDOffsetColumns = num; }
-	int CLCDView::getLCDOffsetLines (void) { return LCDOffsetLines; }
-	void CLCDView::setLCDOffsetLines (int num) { LCDOffsetLines = num; }
+	int getLCDOffsetColumns (void) { return LCDOffsetColumns; }
+	void setLCDOffsetColumns (int num) { LCDOffsetColumns = num; }
+	int getLCDOffsetLines (void) { return LCDOffsetLines; }
+	void setLCDOffsetLines (int num) { LCDOffsetLines = num; }
 	
-	int CLCDView::getLCDPixelX (void) { return LCDPixelX; }
-	void CLCDView::setLCDPixelX (int num) { LCDPixelX = num; }
-	int CLCDView::getLCDPixelY (void){ return LCDPixelY; }
-	void CLCDView::setLCDPixelY (int num) { LCDPixelY = num; }	
+	int getLCDPixelX (void) { return LCDPixelX; }
+	void setLCDPixelX (int num) { LCDPixelX = num; }
+	int getLCDPixelY (void){ return LCDPixelY; }
+	void setLCDPixelY (int num) { LCDPixelY = num; }	
 
-	int CLCDView::getLCDBorder (void) { return LCDBorder; }
-	void CLCDView::setLCDBorder (int num) { LCDBorder = num; }
+	int getLCDBorder (void) { return LCDBorder; }
+	void setLCDBorder (int num) { LCDBorder = num; }
 
-	int CLCDView::getLCDCursorX (void) { return LCDCursorX; }
-	void CLCDView::setLCDCursorX (int num) { LCDCursorX = num; }
-	int CLCDView::getLCDCursorY (void) { return LCDCursorY; }
-	void CLCDView::setLCDCursorY (int num) { LCDCursorY = num; }
+	int getLCDCursorX (void) { return LCDCursorX; }
+	void setLCDCursorX (int num) { LCDCursorX = num; }
+	int getLCDCursorY (void) { return LCDCursorY; }
+	void setLCDCursorY (int num) { LCDCursorY = num; }
 
-	int CLCDView::getLCDOriginX (void) { return LCDOriginX; }
-	void CLCDView::setLCDOriginX (int num) { LCDOriginX = num; }
-	int CLCDView::getLCDOriginY (void) { return LCDOriginY; }
-	void CLCDView::setLCDOriginY (int num) { LCDOriginY = num; }
+	int getLCDOriginX (void) { return LCDOriginX; }
+	void setLCDOriginX (int num) { LCDOriginX = num; }
+	int getLCDOriginY (void) { return LCDOriginY; }
+	void setLCDOriginY (int num) { LCDOriginY = num; }
 
 	int getLCDSizeX(void);
 	int getLCDSizeY(void);

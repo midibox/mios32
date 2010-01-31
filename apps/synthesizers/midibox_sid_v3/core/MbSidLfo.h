@@ -30,27 +30,33 @@ public:
     ~MbSidLfo();
 
     // LFO init function
-    void init(sid_se_lfo_patch_t *_lfoPatch);
+    void init();
 
     // LFO handler (returns true on overrun)
-    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor);
+    bool tick(const u8 &updateSpeedFactor);
+
+    // input parameters
+    sid_se_lfo_mode_t lfoMode;
+    u8 lfoDepth;
+    u8 lfoRate;
+    u8 lfoDelay;
+    u8 lfoPhase;
+    s32 lfoRateModulation;
+
+    // used by Multi and Bassline engine - too lazy to create a new class for these four variables
+    u8 lfoDepthPitch;
+    u8 lfoDepthPulsewidth;
+    u8 lfoDepthFilter;
+    bool lfoKeySync;
+
+    // output waveform
+    s16 lfoOut;
 
     // requests a restart
     bool restartReq;
 
     // set by each 6th MIDI clock (if LFO in SYNC mode)
     bool syncClockReq;
-
-    // LFO Patch
-    sid_se_lfo_patch_t *lfoPatch;
-
-    // cross-references
-    s16    *modSrcLfo;            // reference to SID_SE_MOD_SRC_LFOx
-    s32    *modDstLfoDepth;       // reference to SID_SE_MOD_DST_LDx
-    s32    *modDstLfoRate;        // reference to SID_SE_MOD_DST_LRx
-    s32    *modDstPitch;          // reference to SID_SE_MOD_DST_PITCHx
-    s32    *modDstPw;             // reference to SID_SE_MOD_DST_PWx
-    s32    *modDstFilter;         // reference to SID_SE_MOD_DST_FILx
 
     // random generator
     MbSidRandomGen randomGen;

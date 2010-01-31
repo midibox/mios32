@@ -14,14 +14,8 @@
 
 #include <string.h>
 #include "MbSidSysEx.h"
+#include "MbSidEnvironment.h"
 #include "tasks.h"
-
-
-/////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
-// should be at least 1 for sending error messages
-/////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -34,19 +28,20 @@
 
 // disacknowledge arguments
 #define SID_DISACK_LESS_BYTES_THAN_EXP	0x01
-#define SID_DISACK_WRONG_CHECKSUM	0x03
-#define SID_DISACK_BS_NOT_AVAILABLE	0x0a
+#define SID_DISACK_WRONG_CHECKSUM	    0x03
+#define SID_DISACK_BS_NOT_AVAILABLE	    0x0a
 #define SID_DISACK_PAR_NOT_AVAILABLE	0x0b
-#define SID_DISACK_INVALID_COMMAND	0x0c
-#define SID_DISACK_NO_RAM_ACCESS	0x10
-#define SID_DISACK_BS_TOO_SMALL		0x11
-#define SID_DISACK_WRONG_TYPE		0x12
+#define SID_DISACK_INVALID_COMMAND	    0x0c
+#define SID_DISACK_NO_RAM_ACCESS	    0x10
+#define SID_DISACK_BS_TOO_SMALL		    0x11
+#define SID_DISACK_WRONG_TYPE		    0x12
+#define SID_DISACK_SID_NOT_AVAILABLE    0x13
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local constants
 /////////////////////////////////////////////////////////////////////////////
-static const u8 sid_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4b };
+static const u8 sidSysexHeader[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4b };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,10 +49,10 @@ static const u8 sid_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4b };
 /////////////////////////////////////////////////////////////////////////////
 MbSidSysEx::MbSidSysEx()
 {
-    last_sysex_port = DEFAULT;
-    sysex_state.ALL = 0;
-    sysex_device_id = MIOS32_MIDI_DeviceIDGet(); // taken from MIOS32
-    sysex_sid_selection = 0x0f;
+    lastSysexPort = DEFAULT;
+    sysexState.ALL = 0;
+    sysexDeviceId = MIOS32_MIDI_DeviceIDGet(); // taken from MIOS32
+    sysexSidSelection = 0x0f;
 }
 
 
@@ -85,35 +80,35 @@ bool MbSidSysEx::parse(mios32_midi_port_t port, u8 midi_in)
 
 
     // TODO: here we could send an error notification, that multiple devices are trying to access the device
-    if( sysex_state.MY_SYSEX && port != last_sysex_port )
+    if( sysexState.MY_SYSEX && port != lastSysexPort )
         return false;
 
-    last_sysex_port = port;
+    lastSysexPort = port;
 
     // branch depending on state
-    if( !sysex_state.MY_SYSEX ) {
-        if( (sysex_state.CTR < sizeof(sid_sysex_header) && midi_in != sid_sysex_header[sysex_state.CTR]) ||
-            (sysex_state.CTR == sizeof(sid_sysex_header) && midi_in != sysex_device_id) ) {
+    if( !sysexState.MY_SYSEX ) {
+        if( (sysexState.CTR < sizeof(sidSysexHeader) && midi_in != sidSysexHeader[sysexState.CTR]) ||
+            (sysexState.CTR == sizeof(sidSysexHeader) && midi_in != sysexDeviceId) ) {
             // incoming byte doesn't match
             cmdFinished();
         } else {
-            if( ++sysex_state.CTR > sizeof(sid_sysex_header) ) {
+            if( ++sysexState.CTR > sizeof(sidSysexHeader) ) {
                 // complete header received, waiting for data
-                sysex_state.MY_SYSEX = 1;
+                sysexState.MY_SYSEX = 1;
             }
         }
     } else {
         // check for end of SysEx message or invalid status byte
         if( midi_in >= 0x80 ) {
-            if( midi_in == 0xf7 && sysex_state.CMD ) {
+            if( midi_in == 0xf7 && sysexState.CMD ) {
                 cmd(port, SYSEX_CMD_STATE_END, midi_in);
             }
             cmdFinished();
         } else {
             // check if command byte has been received
-            if( !sysex_state.CMD ) {
-                sysex_state.CMD = 1;
-                sysex_cmd = midi_in;
+            if( !sysexState.CMD ) {
+                sysexState.CMD = 1;
+                sysexCmd = midi_in;
                 cmd(port, SYSEX_CMD_STATE_BEGIN, midi_in);
             }
             else
@@ -132,7 +127,7 @@ bool MbSidSysEx::parse(mios32_midi_port_t port, u8 midi_in)
 void MbSidSysEx::timeOut(mios32_midi_port_t port)
 {
     // if we receive a SysEx command (MY_SYSEX flag set), abort parser if port matches
-    if( sysex_state.MY_SYSEX && port == last_sysex_port )
+    if( sysexState.MY_SYSEX && port == lastSysexPort )
         cmdFinished();
 }
 
@@ -144,8 +139,8 @@ void MbSidSysEx::timeOut(mios32_midi_port_t port)
 void MbSidSysEx::cmdFinished(void)
 {
     // clear all status variables
-    sysex_state.ALL = 0;
-    sysex_cmd = 0;
+    sysexState.ALL = 0;
+    sysexCmd = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -153,7 +148,7 @@ void MbSidSysEx::cmdFinished(void)
 /////////////////////////////////////////////////////////////////////////////
 void MbSidSysEx::cmd(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-    switch( sysex_cmd ) {
+    switch( sysexCmd ) {
     case 0x01:
         cmdPatchRead(port, cmd_state, midi_in);
         break;
@@ -194,33 +189,33 @@ void MbSidSysEx::cmdPatchRead(mios32_midi_port_t port, mbsid_sysex_cmd_state_t c
     switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-        sysex_state.TYPE_RECEIVED = 0;
+        sysexState.TYPE_RECEIVED = 0;
         break;
 
     case SYSEX_CMD_STATE_CONT:
-        if( !sysex_state.TYPE_RECEIVED ) {
-            sysex_state.TYPE_RECEIVED = 1;
-            sysex_patch_type = midi_in;
-        } else if( !sysex_state.BANK_RECEIVED ) {
-            sysex_state.BANK_RECEIVED = 1;
-            sysex_bank = midi_in;
-        } else if( !sysex_state.PATCH_RECEIVED ) {
-            sysex_state.PATCH_RECEIVED = 1;
-            sysex_patch = midi_in;
+        if( !sysexState.TYPE_RECEIVED ) {
+            sysexState.TYPE_RECEIVED = 1;
+            sysexPatchType = midi_in;
+        } else if( !sysexState.BANK_RECEIVED ) {
+            sysexState.BANK_RECEIVED = 1;
+            sysexBank = midi_in;
+        } else if( !sysexState.PATCH_RECEIVED ) {
+            sysexState.PATCH_RECEIVED = 1;
+            sysexPatch = midi_in;
         }
 
         break;
 
     default: // SYSEX_CMD_STATE_END
-        if( sysex_patch_type != 0x00 && sysex_patch_type != 0x08 && sysex_patch_type != 0x70 ) {
+        if( sysexPatchType >= 0x10 && sysexPatchType != 0x70 ) {
             // invalid if unsupported type
             sendAck(port, SYSEX_DISACK, SID_DISACK_WRONG_TYPE);
-        } else if( !sysex_state.PATCH_RECEIVED ) {
+        } else if( !sysexState.PATCH_RECEIVED ) {
             // invalid if patch number has not been received
             sendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
         } else {
             // try to send dump, send disack if this failed
-            if( sendDump(port, sysex_patch_type, sysex_bank, sysex_patch) < 0 ) {
+            if( sendDump(port, sysexPatchType, sysexBank, sysexPatch) < 0 ) {
                 sendAck(port, SYSEX_DISACK, SID_DISACK_BS_NOT_AVAILABLE);
             }
         }
@@ -233,50 +228,50 @@ void MbSidSysEx::cmdPatchRead(mios32_midi_port_t port, mbsid_sysex_cmd_state_t c
 /////////////////////////////////////////////////////////////////////////////
 void MbSidSysEx::cmdPatchWrite(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
-    static int buffer_ix = 0;
-    static int buffer_ix_max = 0;
+    static int bufferIx = 0;
+    static int bufferIxMax = 0;
 
     switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-        sysex_state.TYPE_RECEIVED = 0;
-        sysex_state.LNIBBLE_RECV = 0;
-        sysex_checksum = 0;
-        buffer_ix = 0;
+        sysexState.TYPE_RECEIVED = 0;
+        sysexState.LNIBBLE_RECV = 0;
+        sysexChecksum = 0;
+        bufferIx = 0;
         break;
 
     case SYSEX_CMD_STATE_CONT:
-        if( !sysex_state.TYPE_RECEIVED ) {
-            sysex_state.TYPE_RECEIVED = 1;
-            sysex_patch_type = midi_in;
-            if( sysex_patch_type == 0x00 || sysex_patch_type == 0x08 ) {
-                buffer_ix_max = 512; // patch
-            } else if( sysex_patch_type == 0x70 ) {
-                buffer_ix_max = 256; // ensemble
+        if( !sysexState.TYPE_RECEIVED ) {
+            sysexState.TYPE_RECEIVED = 1;
+            sysexPatchType = midi_in;
+            if( sysexPatchType < 0x10 ) {
+                bufferIxMax = 512; // patch
+            } else if( sysexPatchType == 0x70 ) {
+                bufferIxMax = 256; // ensemble
             } else {
-                buffer_ix_max = 0; // invalid type
+                bufferIxMax = 0; // invalid type
             }
-        } else if( !sysex_state.BANK_RECEIVED ) {
-            sysex_state.BANK_RECEIVED = 1;
-            sysex_bank = midi_in;
-        } else if( !sysex_state.PATCH_RECEIVED ) {
-            sysex_state.PATCH_RECEIVED = 1;
-            sysex_patch = midi_in;
-        } else if( !sysex_state.CHECKSUM_RECEIVED ) {
-            if( buffer_ix >= buffer_ix_max ) {
-                sysex_state.CHECKSUM_RECEIVED = 1;
-                sysex_received_checksum = midi_in;
+        } else if( !sysexState.BANK_RECEIVED ) {
+            sysexState.BANK_RECEIVED = 1;
+            sysexBank = midi_in;
+        } else if( !sysexState.PATCH_RECEIVED ) {
+            sysexState.PATCH_RECEIVED = 1;
+            sysexPatch = midi_in;
+        } else if( !sysexState.CHECKSUM_RECEIVED ) {
+            if( bufferIx >= bufferIxMax ) {
+                sysexState.CHECKSUM_RECEIVED = 1;
+                sysexReceivedChecksum = midi_in;
             } else {
                 // add to checksum
-                sysex_checksum += midi_in;
+                sysexChecksum += midi_in;
 
-                if( !sysex_state.LNIBBLE_RECV ) {
-                    sysex_state.LNIBBLE_RECV = 1;
-                    sysex_buffer[buffer_ix] = midi_in & 0x0f;
+                if( !sysexState.LNIBBLE_RECV ) {
+                    sysexState.LNIBBLE_RECV = 1;
+                    sysexBuffer[bufferIx] = midi_in & 0x0f;
                 } else {
-                    sysex_state.LNIBBLE_RECV = 0;
-                    sysex_buffer[buffer_ix] |= (midi_in & 0x0f) << 4;
-                    ++buffer_ix;
+                    sysexState.LNIBBLE_RECV = 0;
+                    sysexBuffer[bufferIx] |= (midi_in & 0x0f) << 4;
+                    ++bufferIx;
                 }
             }
         }
@@ -284,24 +279,29 @@ void MbSidSysEx::cmdPatchWrite(mios32_midi_port_t port, mbsid_sysex_cmd_state_t 
         break;
 
     default: // SYSEX_CMD_STATE_END
-        if( !sysex_state.CHECKSUM_RECEIVED ) {
+        if( !sysexState.CHECKSUM_RECEIVED ) {
             // invalid if checksum has not been received
             sendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
-        } else if( sysex_received_checksum != (-sysex_checksum & 0x7f) ) {
+        } else if( sysexReceivedChecksum != (-sysexChecksum & 0x7f) ) {
             // invalid if wrong checksum has been received
             sendAck(port, SYSEX_DISACK, SID_DISACK_WRONG_CHECKSUM);
         } else {
-            switch( sysex_patch_type ) {
-            case 0x00: // Bank Write (tmp. write into RAM as well)
-            case 0x08: // RAM Write
-#if 0
-                // TODO: tmp. copy routine
-                memcpy((u8 *)&sid_patch[0].ALL[0], (u8 *)sysex_buffer, 512);
-                SID_PATCH_Changed(0); // sid==0
-#endif
-                // notify that bytes have been written
-                sendAck(port, SYSEX_ACK, sysex_received_checksum);
-                break;
+            switch( sysexPatchType & 0xf8 ) {
+            case 0x00: // Bank Write
+            case 0x08: { // RAM Write
+                u8 sid = sysexPatchType & 0x07; // prepared for up to 8 mbSids
+                bool toBank = sysexPatchType < 0x08;
+                if( mbSidEnvironmentPtr->sysexSetPatch(sid, (sid_patch_t *)sysexBuffer, toBank, sysexBank, sysexPatch) ) {
+                    // notify that bytes have been written
+                    sendAck(port, SYSEX_ACK, sysexReceivedChecksum);
+                } else {
+                    // SID not available
+                    sendAck(port, SYSEX_DISACK, SID_DISACK_SID_NOT_AVAILABLE);
+                }
+            } break;
+
+            // TODO: Ensemble write
+
             default:
                 // unsuported type
                 sendAck(port, SYSEX_DISACK, SID_DISACK_WRONG_TYPE);
@@ -324,41 +324,38 @@ void MbSidSysEx::cmdParWrite(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cm
     switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-        sysex_state.TYPE_RECEIVED = 0;
+        sysexState.TYPE_RECEIVED = 0;
         write_status = 0;
         break;
 
     case SYSEX_CMD_STATE_CONT:
-        if( !sysex_state.TYPE_RECEIVED ) {
-            sysex_state.TYPE_RECEIVED = 1;
-            sysex_patch_type = midi_in;
-        } else if( !sysex_state.AH_RECEIVED ) {
-            sysex_state.AH_RECEIVED = 1;
+        if( !sysexState.TYPE_RECEIVED ) {
+            sysexState.TYPE_RECEIVED = 1;
+            sysexPatchType = midi_in;
+        } else if( !sysexState.AH_RECEIVED ) {
+            sysexState.AH_RECEIVED = 1;
             addr = (midi_in & 0x7f) << 7;
-        } else if( !sysex_state.AL_RECEIVED ) {
-            sysex_state.AL_RECEIVED = 1;
+        } else if( !sysexState.AL_RECEIVED ) {
+            sysexState.AL_RECEIVED = 1;
             addr |= (midi_in & 0x7f);
-        } else if( !sysex_state.DL_RECEIVED ) {
-            sysex_state.DL_RECEIVED = 1;
-            sysex_state.DH_RECEIVED = 0; // for the case that DH_RECEIVED switched back to DL_RECEIVED
+        } else if( !sysexState.DL_RECEIVED ) {
+            sysexState.DL_RECEIVED = 1;
+            sysexState.DH_RECEIVED = 0; // for the case that DH_RECEIVED switched back to DL_RECEIVED
             data = midi_in & 0x0f;
-        } else if( !sysex_state.DH_RECEIVED ) {
-            sysex_state.DH_RECEIVED = 1;
+        } else if( !sysexState.DH_RECEIVED ) {
+            sysexState.DH_RECEIVED = 1;
             data |= (midi_in & 0x0f) << 4;
-            switch( sysex_patch_type ) {
-            case 0x00: // write parameter data for WOPT(0..3)
-            case 0x01:
-            case 0x02:
-            case 0x03: {
-                u8 wopt = sysex_patch_type & 3; // unnecessary masking, variable only used for documentation reasons
+            switch( sysexPatchType & 0xf8 ) {
+            case 0x00: { // write parameter data for WOPT(0..7)
+                u8 wopt = sysexPatchType & 7; // unnecessary masking, variable only used for documentation reasons
                 MIOS32_IRQ_Disable(); // ensure atomic change of all selected addresses
-                write_status |= writePatchPar(sysex_sid_selection, wopt, addr, data);
+                write_status |= writePatchPar(sysexSidSelection, wopt, addr, data);
                 MIOS32_IRQ_Enable();
             } break;
 
             case 0x70: // Ensemble Write
                 MIOS32_IRQ_Disable(); // ensure atomic change of all selected addresses
-                write_status |= writeEnsPar(sysex_sid_selection, addr, data);
+                write_status |= writeEnsPar(sysexSidSelection, addr, data);
                 MIOS32_IRQ_Enable();
 
             default:
@@ -366,13 +363,13 @@ void MbSidSysEx::cmdParWrite(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cm
             }
 
             // clear DL_RECEIVED. This allows to send additional bytes to the next address
-            sysex_state.DL_RECEIVED = 0;
+            sysexState.DL_RECEIVED = 0;
             ++addr;
         }
         break;
 
     default: // SYSEX_CMD_STATE_END
-        if( !sysex_state.DH_RECEIVED ) {
+        if( !sysexState.DH_RECEIVED ) {
             sendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
         } else if( write_status < 0 ) {
             sendAck(port, SYSEX_DISACK, SID_DISACK_PAR_NOT_AVAILABLE);
@@ -394,21 +391,21 @@ void MbSidSysEx::cmdExtra(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_s
     switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-        sysex_state.TYPE_RECEIVED = 0;
+        sysexState.TYPE_RECEIVED = 0;
         extra_cmd = 0;
         play_instrument = 0;
         break;
 
     case SYSEX_CMD_STATE_CONT:
-        if( !sysex_state.TYPE_RECEIVED ) {
-            sysex_state.TYPE_RECEIVED = 1;
+        if( !sysexState.TYPE_RECEIVED ) {
+            sysexState.TYPE_RECEIVED = 1;
             extra_cmd = midi_in;
-        } else if( !sysex_state.EXTRA_CMD_RECEIVED ) {
-            sysex_state.EXTRA_CMD_RECEIVED = 1;
+        } else if( !sysexState.EXTRA_CMD_RECEIVED ) {
+            sysexState.EXTRA_CMD_RECEIVED = 1;
         } else {
             switch( extra_cmd ) {
             case 0x00: // select SIDs
-                sysex_sid_selection = midi_in;
+                sysexSidSelection = midi_in;
                 break;
 
             case 0x08: // All Notes On/Off
@@ -422,15 +419,15 @@ void MbSidSysEx::cmdExtra(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_s
         break;
 
     default: // SYSEX_CMD_STATE_END
-        if( !sysex_state.EXTRA_CMD_RECEIVED ) {
+        if( !sysexState.EXTRA_CMD_RECEIVED ) {
             // invalid if command has not been received
             sendAck(port, SYSEX_DISACK, SID_DISACK_LESS_BYTES_THAN_EXP);
         } else {
             switch( extra_cmd ) {
-            case 0x00: // select SIDs
+            case 0x00: { // select SIDs
                 // return available SIDs (TODO)
-                sendAck(port, SYSEX_ACK, 0x01 & sysex_sid_selection); // only SID1 available
-                break;
+                sendAck(port, SYSEX_ACK, 0x01 & sysexSidSelection); // only SID1 available
+            } break;
 
             case 0x08: // All Notes On/Off
                 sendAck(port, SYSEX_ACK, 0x00);
@@ -457,17 +454,17 @@ void MbSidSysEx::cmdPing(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_st
     switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-        sysex_state.TYPE_RECEIVED = 0;
+        sysexState.TYPE_RECEIVED = 0;
         break;
 
     case SYSEX_CMD_STATE_CONT:
-        sysex_state.TYPE_RECEIVED = 1;
+        sysexState.TYPE_RECEIVED = 1;
         break;
 
     default: // SYSEX_CMD_STATE_END
         // send acknowledge if no additional byte has been received
         // to avoid feedback loop if two cores are directly connected
-        if( !sysex_state.TYPE_RECEIVED )
+        if( !sysexState.TYPE_RECEIVED )
             sendAck(port, SYSEX_ACK, 0x00);
 
         break;
@@ -480,25 +477,25 @@ void MbSidSysEx::cmdPing(mios32_midi_port_t port, mbsid_sysex_cmd_state_t cmd_st
 /////////////////////////////////////////////////////////////////////////////
 s32 MbSidSysEx::sendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 {
-    u8 sysex_buffer[32]; // should be enough?
-    u8 *sysex_buffer_ptr = &sysex_buffer[0];
+    u8 sysexBuffer[32]; // should be enough?
+    u8 *sysexBuffer_ptr = &sysexBuffer[0];
 
-    for(int i=0; i<(int)sizeof(sid_sysex_header); ++i)
-        *sysex_buffer_ptr++ = sid_sysex_header[i];
+    for(int i=0; i<(int)sizeof(sidSysexHeader); ++i)
+        *sysexBuffer_ptr++ = sidSysexHeader[i];
 
     // device ID
-    *sysex_buffer_ptr++ = sysex_device_id;
+    *sysexBuffer_ptr++ = sysexDeviceId;
 
     // send ack code and argument
-    *sysex_buffer_ptr++ = ack_code;
-    *sysex_buffer_ptr++ = ack_arg;
+    *sysexBuffer_ptr++ = ack_code;
+    *sysexBuffer_ptr++ = ack_arg;
 
     // send footer
-    *sysex_buffer_ptr++ = 0xf7;
+    *sysexBuffer_ptr++ = 0xf7;
 
     // finally send SysEx stream
     MUTEX_MIDIOUT_TAKE;
-    s32 status = MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+    s32 status = MIOS32_MIDI_SendSysEx(port, (u8 *)sysexBuffer, (u32)sysexBuffer_ptr - ((u32)&sysexBuffer[0]));
     MUTEX_MIDIOUT_GIVE;
     return status;
 }
@@ -515,12 +512,20 @@ s32 MbSidSysEx::writePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data)
         return -1;
 
     if( wopt == 0 ) {
+        s32 status = 0;
         // write directly into patch with wopt==0
-        //sid_patch[0].ALL[addr] = data;
-        //sid_patch_shadow[0].ALL[addr] = data;
-        // TODO: transfer to multiple SIDs depending on sid_selection
-        return 0; // no error
+        for(int sid=0; sid<8; ++sid)
+            if( sid_selection & (1 << sid) )
+                status |= (mbSidEnvironmentPtr->sysexSetParameter(sid, addr, data) ? 0 : -1);
         // important: we *must* return here to avoid endless recursion!
+        // workaround for current java based Midibox SID Editor version:
+        // don't check for SID availability...
+        // seems that we should never remove this workaround to avoid user confusion (they probably won't update the editor)
+#if 0
+        return status;
+#else
+        return 0;
+#endif
     }
 
     // WOPT == 1: SID L/R write
@@ -662,52 +667,58 @@ s32 MbSidSysEx::writeEnsPar(u8 sid_selection, u16 addr, u8 data)
 /////////////////////////////////////////////////////////////////////////////
 s32 MbSidSysEx::sendDump(mios32_midi_port_t port, u8 type, u8 bank, u8 patch)
 {
-    int sysex_buffer_ix = 0;
-    u8 checksum;
-    u8 c;
+    int sysexBufferIx = 0;
 
     // TODO: currently only support for patch
-    if( type != 0x00 && type != 0x08 )
+    if( type >= 0x10 )
         return -1;
 
+    // prepared for up to 8 SIDs
+    u8 sid = type & 0x07;
+    bool fromBank = type < 0x08;
+
     // send header
-    for(int i=0; i<(int)sizeof(sid_sysex_header); ++i)
-        sysex_buffer[sysex_buffer_ix++] = sid_sysex_header[i];
+    for(int i=0; i<(int)sizeof(sidSysexHeader); ++i)
+        sysexBuffer[sysexBufferIx++] = sidSysexHeader[i];
+
+    // device ID
+    sysexBuffer[sysexBufferIx++] = sysexDeviceId;
 
     // "write patch" command (so that dump could be sent back to overwrite EEPROM w/o modifications)
-    sysex_buffer[sysex_buffer_ix++] = 0x02;
+    sysexBuffer[sysexBufferIx++] = 0x02;
 
     // send type, bank and patch number
-    sysex_buffer[sysex_buffer_ix++] = type;
-    sysex_buffer[sysex_buffer_ix++] = patch;
-    sysex_buffer[sysex_buffer_ix++] = bank;
+    sysexBuffer[sysexBufferIx++] = type;
+    sysexBuffer[sysexBufferIx++] = patch;
+    sysexBuffer[sysexBufferIx++] = bank;
 
-    // send patch content
-    checksum = 0;
-    for(int i=0; i<512; ++i) {
-#if 0
-        // TODO
-        c = PATCH_ReadByte((u8)i);
-#else
-        //c = sid_patch_shadow[0].ALL[i];
-        c = 0;
-#endif
+    // copy patch into SysEx buffer
+    u8 *patchRange = &sysexBuffer[sysexBufferIx];
+    if( !mbSidEnvironmentPtr->sysexGetPatch(sid, (sid_patch_t *)patchRange, fromBank, sysexBank, sysexPatch) )
+        return -2; // SID not available
 
-        sysex_buffer[sysex_buffer_ix++] = c & 0x0f;
-        checksum += c & 0x0f;
-        sysex_buffer[sysex_buffer_ix++] = c >> 4;
-        checksum += c >> 4;
+    // this is tricky: nibbleize the patch inside buffer
+    u8 checksum = 0;
+    for(int i=511; i>=0; --i) {
+        u8 b = patchRange[i];
+        u8 upper = b >> 4;
+        patchRange[2*i + 1] = upper;
+        checksum += upper;
+        u8 lower = b & 0x0f;
+        patchRange[2*i + 0] = lower;
+        checksum += lower;
     }
+    sysexBufferIx += 2*512;
 
     // send checksum
-    sysex_buffer[sysex_buffer_ix++] = -checksum & 0x7f;
+    sysexBuffer[sysexBufferIx++] = -checksum & 0x7f;
 
     // send footer
-    sysex_buffer[sysex_buffer_ix++] = 0xf7;
+    sysexBuffer[sysexBufferIx++] = 0xf7;
 
     // finally send SysEx stream and return error status
     MUTEX_MIDIOUT_TAKE;
-    s32 status = MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, sysex_buffer_ix);
+    s32 status = MIOS32_MIDI_SendSysEx(port, (u8 *)sysexBuffer, sysexBufferIx);
     MUTEX_MIDIOUT_GIVE;
     return status;
 }

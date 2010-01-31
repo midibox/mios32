@@ -24,17 +24,26 @@ THUMB_CPP_SOURCE = ../core/app.cpp \
 		   ../core/MbSidRandomGen.cpp \
 		   ../core/MbSidTables.cpp \
 		   ../core/MbSid.cpp \
-		   ../core/MbSidPar.cpp \
 		   ../core/MbSidVoiceQueue.cpp \
-		   ../core/MbSidKnob.cpp \
 		   ../core/MbSidPatch.cpp \
 		   ../core/MbSidVoice.cpp \
+		   ../core/MbSidVoiceDrum.cpp \
 		   ../core/MbSidLfo.cpp \
 		   ../core/MbSidEnv.cpp \
+		   ../core/MbSidEnvLead.cpp \
 		   ../core/MbSidWt.cpp \
 		   ../core/MbSidMod.cpp \
 		   ../core/MbSidArp.cpp \
+		   ../core/MbSidSeq.cpp \
+		   ../core/MbSidSeqBassline.cpp \
+		   ../core/MbSidSeqDrum.cpp \
+		   ../core/MbSidFilter.cpp \
+		   ../core/MbSidMidiVoice.cpp \
 		   ../core/MbSidSe.cpp \
+		   ../core/MbSidSeBassline.cpp \
+		   ../core/MbSidSeDrum.cpp \
+		   ../core/MbSidSeMulti.cpp \
+		   ../core/MbSidSeLead.cpp \
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)

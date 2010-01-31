@@ -80,6 +80,8 @@ typedef union {
 } mbsid_sysex_state_t;
 
 
+class MbSidEnvironment; // forward declaration
+
 class MbSidSysEx
 {
 public:
@@ -89,6 +91,8 @@ public:
     // Destructor
     ~MbSidSysEx();
 
+    // pointer to environment - required for sysex callbacks
+    MbSidEnvironment *mbSidEnvironmentPtr;
 
     bool parse(mios32_midi_port_t port, u8 midi_in);
     void timeOut(mios32_midi_port_t port);
@@ -106,20 +110,20 @@ protected:
     s32 writePatchPar(u8 sid_selection, u8 wopt, u16 addr, u8 data);
     s32 writeEnsPar(u8 sid_selection, u16 addr, u8 data);
 
-    u8 sysex_buffer[MBSID_SYSEX_BUFFER_SIZE]; 
+    u8 sysexBuffer[MBSID_SYSEX_BUFFER_SIZE]; 
 
-    mbsid_sysex_state_t sysex_state;
-    u8 sysex_device_id;
-    u8 sysex_cmd;
-    mios32_midi_port_t last_sysex_port;
+    mbsid_sysex_state_t sysexState;
+    u8 sysexDeviceId;
+    u8 sysexCmd;
+    mios32_midi_port_t lastSysexPort;
 
 
-    u8 sysex_patch_type;
-    u8 sysex_bank;
-    u8 sysex_patch;
-    u8 sysex_checksum;
-    u8 sysex_received_checksum;
-    u8 sysex_sid_selection;
+    u8 sysexPatchType;
+    u8 sysexBank;
+    u8 sysexPatch;
+    u8 sysexChecksum;
+    u8 sysexReceivedChecksum;
+    u8 sysexSidSelection;
 };
 
 #endif /* _MB_SID_SYSEX_H */

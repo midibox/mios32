@@ -38,6 +38,27 @@ public:
     // arpeggiator handler
     void tick(MbSidVoice *v, MbSidSe *mbSidSe);
 
+    // Notestack handling
+    void noteOn(MbSidVoice *v, u8 note, u8 velocity);
+    void noteOff(MbSidVoice *v, u8 note);
+
+
+    // input parameters
+    bool arpEnabled;
+    bool arpDown;
+    bool arpUpAndDown;
+    bool arpPingPong;
+    bool arpRandomNotes;
+    bool arpSortedNotes;
+    bool arpHoldMode;
+    bool arpSyncMode;
+    bool arpConstantCycle;
+    bool arpEasyChordMode;
+    bool arpOneshotMode;
+    u8 arpSpeed;
+    u8 arpGatelength;
+    u8 arpOctaveRange;
+
     // requests a restart and next clock (divided by Arp)
     bool restartReq;
     bool clockReq;
@@ -49,12 +70,12 @@ protected:
     // internal variables
     bool arpActive;
     bool arpUp;
-    bool arpHoldSaved;
+    bool arpHoldModeSaved;
 
     u8 arpDivCtr;
-    u8 arpGlCtr;
+    u8 arpGatelengthCtr;
     u8 arpNoteCtr;
-    u8 arpOctCtr;
+    u8 arpOctaveCtr;
 
 };
 

@@ -32,7 +32,7 @@ typedef union {
 
 
 typedef struct {
-  mbsid_voice_queue_item_t item[SID_SE_NUM_VOICES];
+  mbsid_voice_queue_item_t item[6]; // SID_SE_NUM_VOICES
 } mbsid_voice_queue_t;
 
 
