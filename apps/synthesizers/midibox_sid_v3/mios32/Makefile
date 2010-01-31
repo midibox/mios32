@@ -17,28 +17,28 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    = ../mios32/tasks.c
 
 THUMB_CPP_SOURCE = ../core/app.cpp \
+		   ../core/components/MbSidClock.cpp \
+		   ../core/components/MbSidRandomGen.cpp \
+		   ../core/components/MbSidVoiceQueue.cpp \
+		   ../core/components/MbSidLfo.cpp \
+		   ../core/components/MbSidEnv.cpp \
+		   ../core/components/MbSidEnvLead.cpp \
+		   ../core/components/MbSidWt.cpp \
+		   ../core/components/MbSidMod.cpp \
+		   ../core/components/MbSidArp.cpp \
+		   ../core/components/MbSidSeq.cpp \
+		   ../core/components/MbSidSeqBassline.cpp \
+		   ../core/components/MbSidSeqDrum.cpp \
+		   ../core/components/MbSidFilter.cpp \
+		   ../core/components/MbSidMidiVoice.cpp \
+		   ../core/components/MbSidVoice.cpp \
+		   ../core/components/MbSidVoiceDrum.cpp \
 		   ../core/MbSidEnvironment.cpp \
 		   ../core/MbSidSysEx.cpp \
 		   ../core/MbSidAsid.cpp \
-		   ../core/MbSidClock.cpp \
-		   ../core/MbSidRandomGen.cpp \
 		   ../core/MbSidTables.cpp \
 		   ../core/MbSid.cpp \
-		   ../core/MbSidVoiceQueue.cpp \
 		   ../core/MbSidPatch.cpp \
-		   ../core/MbSidVoice.cpp \
-		   ../core/MbSidVoiceDrum.cpp \
-		   ../core/MbSidLfo.cpp \
-		   ../core/MbSidEnv.cpp \
-		   ../core/MbSidEnvLead.cpp \
-		   ../core/MbSidWt.cpp \
-		   ../core/MbSidMod.cpp \
-		   ../core/MbSidArp.cpp \
-		   ../core/MbSidSeq.cpp \
-		   ../core/MbSidSeqBassline.cpp \
-		   ../core/MbSidSeqDrum.cpp \
-		   ../core/MbSidFilter.cpp \
-		   ../core/MbSidMidiVoice.cpp \
 		   ../core/MbSidSe.cpp \
 		   ../core/MbSidSeBassline.cpp \
 		   ../core/MbSidSeDrum.cpp \
@@ -52,7 +52,8 @@ ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
 C_INCLUDE = 	-I . \
-		-I ../core
+		-I ../core \
+		-I ../core/components
 
 A_INCLUDE = 	-I .
 
