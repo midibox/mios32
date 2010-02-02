@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: app_lcd.h 775 2009-11-14 18:42:41Z tk $
+// $Id$
 /*
  * Header file for application specific LCD Driver
  *

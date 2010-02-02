@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: CLCDView.h 41 2008-09-30 17:20:12Z tk $
+// $Id$
 //
 //
 //  Created by Thorsten Klose on 28.09.08.

@@ -64,7 +64,7 @@ public:
     void resized();
   
 	// CLCD
-	CLcdView *clcdView;
+	CLcdView *cLcdView;
 
   
 private:
