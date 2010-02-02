@@ -126,7 +126,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="../../../core;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/sid;."
+				AdditionalIncludeDirectories="../../../core;../../../core/components;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/app_lcd/juce;../../../../../../modules/sid;."
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS;MIOS32_FAMILY_EMULATION"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
@@ -151,7 +151,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/FORCE:multiple"
-				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -282,6 +281,18 @@
 						>
 					</File>
 				</Filter>
+				<Filter
+					Name="Standalone"
+					>
+					<File
+						RelativePath="..\..\wrapper\Standalone\juce_AudioFilterStreamer.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\wrapper\Standalone\juce_StandaloneFilterWindow.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="core"
@@ -291,23 +302,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\app.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\core\MbSid.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSid.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidArp.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidArp.h"
 					>
 				</File>
 				<File
@@ -315,63 +310,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\MbSidAsid.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidClock.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidClock.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidEnv.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidEnv.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\core\MbSidEnvironment.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidEnvironment.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidKnob.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidKnob.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidLfo.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidLfo.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidMod.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidMod.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidPar.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidPar.h"
 					>
 				</File>
 				<File
@@ -379,27 +318,23 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\MbSidPatch.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidRandomGen.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidRandomGen.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\core\MbSidSe.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\MbSidSe.h"
+					RelativePath="..\..\..\core\MbSidSeBassline.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\MbSidStructs.h"
+					RelativePath="..\..\..\core\MbSidSeDrum.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidSeLead.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\core\MbSidSeMulti.cpp"
 					>
 				</File>
 				<File
@@ -407,53 +342,8 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\core\MbSidSysEx.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\core\MbSidTables.cpp"
 					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidTables.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidVoice.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidVoice.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidVoiceQueue.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidVoiceQueue.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidWt.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\core\MbSidWt.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\mios32_wrapper_code.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							CallingConvention="0"
-							CompileAs="0"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\..\..\core\sid_bank_preset_a.inc"
@@ -472,10 +362,74 @@
 						/>
 					</FileConfiguration>
 				</File>
-				<File
-					RelativePath="..\..\..\core\tasks.h"
+				<Filter
+					Name="components"
 					>
-				</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidArp.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidClock.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidEnv.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidEnvLead.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidFilter.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidLfo.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidMidiVoice.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidMod.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidRandomGen.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidSeq.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidSeqBassline.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidSeqDrum.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidVoice.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidVoiceDrum.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidVoiceQueue.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidWt.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="resid"
@@ -605,6 +559,18 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\..\..\..\..\modules\random\jsw_rand.c"
 					>
 					<FileConfiguration
@@ -665,6 +631,35 @@
 					</FileConfiguration>
 				</File>
 			</Filter>
+			<Filter
+				Name="mios"
+				>
+				<File
+					RelativePath="..\..\..\..\..\..\mios32\common\mios32_lcd.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\src\mios32_wrapper_code.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CallingConvention="0"
+							CompileAs="0"
+						/>
+					</FileConfiguration>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -672,11 +667,87 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\..\..\core\app.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\..\..\..\juce\juce_Config.h"
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\core\MbSid.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidArp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidAsid.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidClock.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidEnv.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidEnvironment.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidKnob.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidLfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidRandomGen.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidSe.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidStructs.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidSysEx.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidTables.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidVoice.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidVoiceQueue.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\MbSidWt.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\core\sid_random.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\core\tasks.h"
 				>
 			</File>
 		</Filter>

@@ -9,6 +9,62 @@
 
 #include "includes.h"
 #include "EditorComponent.h"
+#include "app_lcd.h"
+
+// Allow access to the CLCDView object from C code
+CLCDView *lcdView;
+
+
+//////////////////////////////////////////////////
+// lcdCmd is called from app_lcd.c 
+// Currently there is no support for user defined 
+// characters but I am working on this!
+//////////////////////////////////////////////////
+extern "C" s32 lcdCmd(u8 cmd)
+{
+	if (lcdView->isValidComponent())
+	{
+		if (cmd==0x01) {
+			lcdView->LCDClear();
+		}
+		else if (cmd >= 0x40 && cmd < 0x80) {
+			// User defined character. Next 8xlcdData is the actual character.
+
+		}
+		else if (cmd >= 0x80) {
+			// This is to set the cursor position
+			// Need to come up with a more portable solution as this
+			// Is fixed for a single display.
+			cmd=cmd&~0x80; // AND with ~0x80 to remove cmd bit. 
+			if (cmd & 0x40) {
+				lcdView->setLCDCursorY(1);
+				lcdView->setLCDCursorX(cmd&~0x40);
+			} else {
+				lcdView->setLCDCursorY(0);
+				lcdView->setLCDCursorX(cmd);
+			}
+		}
+		return 0;
+	}
+	return -1;
+}
+
+//////////////////////////////////////////////////
+// lcdData is called from app_lcd.c 
+//////////////////////////////////////////////////
+extern "C" s32 lcdData(u8 data)
+{
+	// Check that the component is valid to make sure that it has been
+	// initialized
+	if (lcdView->isValidComponent())
+	{
+		lcdView->LCDPrintChar(data);
+		return 0;
+	}
+	return -1;
+}
+
+
 
 //==============================================================================
 EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
@@ -46,7 +102,8 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 
 	// add a CLCD
 	addAndMakeVisible(clcdView = new CLCDView(50, 50));
-	
+	// Give access to c functions.
+	lcdView=clcdView;
     // add the triangular resizer component for the bottom-right of the UI
     addAndMakeVisible (resizer = new ResizableCornerComponent (this, &resizeLimits));
     resizeLimits.setSizeLimits (150, 150, 800, 300);
@@ -59,6 +116,10 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     // class to tell us when something has changed, and this will call our changeListenerCallback()
     // method.
     ownerSidEmu->addChangeListener (this);
+	if (lcdView->isValidComponent())
+		MIOS32_MIDI_SendDebugMessage("Component valid!");
+	MIOS32_LCD_Init(0);
+
 }
 
 EditorComponent::~EditorComponent()
@@ -91,6 +152,7 @@ void EditorComponent::resized()
     // in its settings
     getSidEmu()->lastUIWidth = getWidth();
     getSidEmu()->lastUIHeight = getHeight();
+
 }
 
 //==============================================================================

@@ -486,6 +486,7 @@ void MbSidSeBassline::parSet(u8 par, u16 value, u8 sidlr, u8 ins, bool scaleFrom
 u16 MbSidSeBassline::parGet(u8 par, u8 sidlr, u8 ins, bool scaleTo16bit)
 {
     // TODO
+	return 0;
 }
 
 
@@ -514,5 +515,6 @@ void MbSidSeBassline::parSetNRPN(u8 addr_lsb, u8 addr_msb, u8 data_lsb, u8 data_
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidSeBassline::sysexSetParameter(u16 addr, u8 data)
 {
+	return false;
     // TODO
 }
