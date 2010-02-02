@@ -26,6 +26,7 @@
 #include "tasks.h"
 
 #include "app.h"
+#include "seq_lcd.h"
 
 #include "seq_hwcfg.h"
 
@@ -36,6 +37,7 @@
 #include "seq_mixer.h"
 #include "seq_song.h"
 #include "seq_label.h"
+#include "seq_cc_labels.h"
 
 #include "seq_midply.h"
 
@@ -116,11 +118,11 @@ void APP_Init(void)
   TASKS_Init(0);
 
   // install MIDI Rx/Tx callback functions
-  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
-  MIOS32_MIDI_DirectTxCallback_Init(NOTIFY_MIDI_Tx);
+  MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
+  MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
 
   // install timeout callback function
-  MIOS32_MIDI_TimeOutCallback_Init(NOTIFY_MIDI_TimeOut);
+  MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 }
 
 

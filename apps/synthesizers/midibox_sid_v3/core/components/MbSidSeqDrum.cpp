@@ -84,7 +84,7 @@ void MbSidSeqDrum::tick(MbSidSe *se)
         seqDivCtr = ~0;
         seqSubCtr = ~0;
         // next step will increment to start position
-        seqPos = (seqPatternNum << 4) - 1;
+        seqPos = (seqPatternNumber << 4) - 1;
     }
 
 
@@ -115,14 +115,14 @@ void MbSidSeqDrum::tick(MbSidSe *se)
                 // change to new sequence number immediately if SYNCH_TO_MEASURE flag not set, or first step reached
                 u8 nextPattern = seqPos >> 4;
                 if( !seqSynchToMeasure || nextStep == 0 )
-                    nextPattern = seqPatternNum;
+                    nextPattern = seqPatternNumber;
 
                 seqPos = (nextPattern << 4) | nextStep;
 
                 // play the step
 
                 // gate off if invalid song number (stop feature: seq >= 8)
-                if( seqPatternNum >= 8 ) {
+                if( seqPatternNumber >= 8 ) {
                     // clear gates
                     se->noteAllOff(0, bypassNotestack);
                 } else {

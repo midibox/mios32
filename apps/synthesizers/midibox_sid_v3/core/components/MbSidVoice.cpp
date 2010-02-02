@@ -98,7 +98,7 @@ void MbSidVoice::init(void)
     voiceNoteRestartReq = false;
 
     voiceNote = 0;
-    voiceArpNote = 0;
+    voiceForcedNote = 0;
     voicePlayedNote = 0;
     voicePrevTransposedNote = 0;
     voiceGlissandoNote = 0;
@@ -275,79 +275,23 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
 void MbSidVoice::pitch(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
 {
     // transpose MIDI note
-    int transposed_note = voiceNote;
+    int transposedNote = voiceForcedNote;
 
-#if 0
-    if( engine == SID_SE_BASSLINE ) {
-        // get transpose value depending on voice number
-        switch( voiceNum ) {
-        case 1:
-        case 4:
-            if( voicePatch->B.v2_static_note )
-                transposed_note = voicePatch->B.v2_static_note;
-            else {
-                u8 oct_transpose = voicePatch->B.v2_oct_transpose;
-                if( oct_transpose & 4 )
-                    transposed_note -= 12*(4-(oct_transpose & 3));
-                else
-                    transposed_note += 12*(oct_transpose & 3);
-            }
-            break;
+    if( !transposedNote ) {
+        transposedNote = voiceNote;
+        transposedNote += voiceTranspose - 64;
+        transposedNote += (int)midiVoicePtr->midivoiceTranspose - 64;
 
-        case 2:
-        case 5:
-            if( voicePatch->B.v3_static_note )
-                transposed_note = voicePatch->B.v3_static_note;
-            else {
-                u8 oct_transpose = voicePatch->B.v3_oct_transpose;
-                if( oct_transpose & 4 )
-                    transposed_note -= 12*(4-(oct_transpose & 3));
-                else
-                    transposed_note += 12*(oct_transpose & 3);
-            }
-            break;
-
-        default: // 0 and 3
-            transposed_note += voiceTranspose - 64;
-        }
-
-        // MV transpose: if sequencer running, we can transpose with MIDI voice 3/4
-        sid_se_v_flags_t v_flags;
-		v_flags.ALL = voicePatch->B.v_flags;
-        if( v_flags.WTO ) {
-            MbSidMidiVoice *mv_transpose = (voiceNum >= 3)
-                ? (MbSidMidiVoice *)&mbSidSe->mbSidMidiVoice[3]
-                : (MbSidMidiVoice *)&mbSidSe->mbSidMidiVoice[2];
-
-            // check for MIDI channel to ensure compatibility with older ensemble patches
-            if( mv_transpose->midi_channel < 16 && mv_transpose->notestack.len )
-                transposed_note += mv_transpose->notestack.note_items[0].note - 0x3c + mv_transpose->transpose - 64;
-            else
-                transposed_note += (int)midiVoicePtr->midivoiceTranspose - 64;
-        } else {
-            transposed_note += (int)midiVoicePtr->midivoiceTranspose - 64;
-        }    
-    } else {
-        // Lead & Multi engine
-        transposed_note += voiceTranspose - 64;
-        transposed_note += (int)midiVoicePtr->midivoiceTranspose - 64;
+        // octave-wise saturation
+        while( transposedNote < 0 )
+            transposedNote += 12;
+        while( transposedNote >= 128 )
+            transposedNote -= 12;
     }
-#else
-    transposed_note += voiceTranspose - 64;
-    transposed_note += (int)midiVoicePtr->midivoiceTranspose - 64;
-#endif
-
-
-
-    // octave-wise saturation
-    while( transposed_note < 0 )
-        transposed_note += 12;
-    while( transposed_note >= 128 )
-        transposed_note -= 12;
 
     // Glissando handling
-    if( transposed_note != voicePrevTransposedNote ) {
-        voicePrevTransposedNote = transposed_note;
+    if( transposedNote != voicePrevTransposedNote ) {
+        voicePrevTransposedNote = transposedNote;
         if( voiceGlissandoMode ) // Glissando active?
             voicePortamentoCtr = 0xffff; // force overrun
     }
@@ -361,27 +305,27 @@ void MbSidVoice::pitch(const sid_se_engine_t &engine, const u8 &updateSpeedFacto
             voicePortamentoCtr = 0;
 
             // increment/decrement note
-            if( transposed_note > voiceGlissandoNote )
+            if( transposedNote > voiceGlissandoNote )
                 ++voiceGlissandoNote;
-            else if( transposed_note < voiceGlissandoNote )
+            else if( transposedNote < voiceGlissandoNote )
                 --voiceGlissandoNote;
 
             // target reached?
-            if( transposed_note == voiceGlissandoNote )
+            if( transposedNote == voiceGlissandoNote )
                 voicePortamentoActive = 0;
         } else {
             // take over new counter value
             voicePortamentoCtr = portamentoCtr;
         }
         // switch to current glissando note
-        transposed_note = voiceGlissandoNote;
+        transposedNote = voiceGlissandoNote;
     } else {
         // store current transposed note (optionally varried by glissando effect)
-        voiceGlissandoNote = transposed_note;
+        voiceGlissandoNote = transposedNote;
     }
 
     // transfer note -> linear frequency
-    int target_frq = transposed_note << 9;
+    int target_frq = transposedNote << 9;
 
     // increase/decrease target frequency by pitchrange
     // depending on pitchbender and finetune value
@@ -507,28 +451,6 @@ void MbSidVoice::pw(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, 
 {
     // convert pulsewidth to 12bit signed value
     int pulsewidth = voicePulsewidth;
-#if 0
-    if( engine == SID_SE_BASSLINE ) {
-        // get pulsewidth value depending on voice number
-        switch( voiceNum ) {
-        case 1:
-        case 4:
-            pulsewidth = ((voicePatch->B.v2_pulsewidth_h & 0x0f) << 8) | voicePatch->B.v2_pulsewidth_l;
-            break;
-
-        case 2:
-        case 5:
-            pulsewidth = ((voicePatch->B.v3_pulsewidth_h & 0x0f) << 8) | voicePatch->B.v3_pulsewidth_l;
-            break;
-
-        default: // 0 and 3
-            pulsewidth = ((voicePatch->pulsewidth_h & 0x0f) << 8) | voicePatch->pulsewidth_l;
-            break;
-        }
-    } else {
-        pulsewidth = ((voicePatch->pulsewidth_h & 0x0f) << 8) | voicePatch->pulsewidth_l;
-    }
-#endif
 
     // PW modulation
     if( voicePulsewidthModulation ) {
@@ -654,10 +576,8 @@ void MbSidVoice::gateOff(u8 note)
 // Returns 2 if additional Note Off events should be triggered via matrix
 // Otherwise returns 0
 /////////////////////////////////////////////////////////////////////////////
-s32 MbSidVoice::playWtNote(u8 wtValue)
+void MbSidVoice::playWtNote(MbSidSe *se, MbSidVoice *v, u8 wtValue)
 {
-    s32 retAction = 0;
-
     // only absolute values supported
     wtValue &= 0x7f;
 
@@ -670,7 +590,7 @@ s32 MbSidVoice::playWtNote(u8 wtValue)
                 voiceGateClrReq = 1;
 
                 // propagate to trigger matrix
-                retAction = 1; // triggerNoteOff
+                se->triggerNoteOff(v, 1);
             }
         } else {
             // TODO: hold mode (via trigger matrix?)
@@ -680,7 +600,7 @@ s32 MbSidVoice::playWtNote(u8 wtValue)
                 voiceGateSetReq = 1;
 
                 // propagate to trigger matrix
-                retAction = 2; // triggerNoteOn
+                se->triggerNoteOn(v, 1);
                 voiceNoteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
             }
 
@@ -701,7 +621,7 @@ s32 MbSidVoice::playWtNote(u8 wtValue)
                         voiceGateClrReq = 1;
 
                         // propagate to trigger matrix
-                        retAction = 2; // triggerNoteOn
+                        se->triggerNoteOff(v, 1);
                     }
                 }
             } else {
@@ -710,6 +630,4 @@ s32 MbSidVoice::playWtNote(u8 wtValue)
             }
         }
     }
-
-    return retAction;
 }

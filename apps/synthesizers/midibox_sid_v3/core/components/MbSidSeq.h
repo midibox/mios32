@@ -37,7 +37,7 @@ public:
     bool seqRestartReq;
     bool seqStopReq;
 
-    u8 seqPatternNum;
+    u8 seqPatternNumber;
     u8 seqPatternLength;
     u8 *seqPatternMemory;
     u8 seqClockDivider;

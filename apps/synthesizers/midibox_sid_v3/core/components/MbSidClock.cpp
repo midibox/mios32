@@ -29,7 +29,7 @@ MbSidClock::MbSidClock()
     bpmCtr = 0;
     bpmSet(120.0);
 
-    slaveMode = false;
+    clockSlaveMode = false;
 
     midiStartReq = false;
     midiContinueReq = false;
@@ -72,16 +72,16 @@ void MbSidClock::tick(void)
     // now determine master/slave flag depending on ensemble setup
     switch( clockMode ) {
     case MBSID_CLOCK_MODE_MASTER:
-        slaveMode = false;
+        clockSlaveMode = false;
         break;
 
     case MBSID_CLOCK_MODE_SLAVE:
-        slaveMode = true;
+        clockSlaveMode = true;
         break;
 
     default: // MBSID_CLOCK_MODE_AUTO
         // slave mode so long incoming clock counter < 0xfff
-        slaveMode = incomingClkCtr < 0xfff;
+        clockSlaveMode = incomingClkCtr < 0xfff;
         break;
     }
 
@@ -123,10 +123,10 @@ void MbSidClock::tick(void)
         // decrement counter by one (if there are more requests, they will be handled on next handler invocation)
         --clkReqCtr;
 
-        if( slaveMode )
+        if( clockSlaveMode )
             eventClock = 1;
     } else {
-        if( !slaveMode ) {
+        if( !clockSlaveMode ) {
             // TODO: check timer overrun flag
             bpmCtr += 1000000;
             if( bpmCtr > bpmCtrMod ) {

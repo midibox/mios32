@@ -345,7 +345,7 @@ Patch Structure --- Lead Engine
 ------+--------------------------------------------------------------------------
 0x053 | Oscillators Phase Offset (0-255)
 ======+==========================================================================
-0x050 |
+0x054 |
  ...  | Filter Parameters (see table above)
 0x05f |
 ======+==========================================================================
@@ -625,7 +625,8 @@ Patch Structure --- Bassline Engine
 0x04f |
 ======+==========================================================================
 0x050 | reserved for future extensions
-0x051 | reserved for future extensions
+------+--------------------------------------------------------------------------
+0x051 | [7:0] Oscillators Detune (0-255)
 ------+--------------------------------------------------------------------------
 0x052 | [6:0] Volume (0-127, only most significant 4bits are used by SID)
       | [7] reserved
@@ -738,9 +739,9 @@ Patch Structure --- Bassline Engine
 0x0ac | [6:0] static note (0=off, track with master oscillator OSC1)
       | [7] reserved
 ------+--------------------------------------------------------------------------
-0x06d |
+0x0ad |
  ...  | reserved for future extensions
-0x06f |
+0x0af |
 ======+==========================================================================
 0x0b0 |
  ...  | Right Channel Bassline (same voice structure as for Left Bassline)

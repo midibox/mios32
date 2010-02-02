@@ -37,7 +37,7 @@ public:
     // see MbSidEnv.h for input parameters
 
     // additional parameters for lead engine:
-    u8 envDepth;
+    s8 envDepth;
     u8 envAttackLevel;
     u8 envAttack2;
     u8 envDecayLevel;

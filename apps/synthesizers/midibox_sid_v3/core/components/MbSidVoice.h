@@ -80,7 +80,7 @@ public:
     void gateOff_SingleVoice(void);
     void gateOff(u8 note);
 
-    s32 playWtNote(u8 wtValue);
+    void playWtNote(MbSidSe *se, MbSidVoice *v, u8 wtValue);
 
     // some flags
     bool voiceActive;
@@ -101,7 +101,7 @@ public:
     u8  physVoiceNum; // number of assigned physical SID voice
     sid_voice_t *physSidVoice; // reference to SID register
     u8  voiceNote;
-    u8  voiceArpNote;
+    u8  voiceForcedNote;
     u8  voicePlayedNote;
     u8  voicePrevTransposedNote;
     u8  voiceGlissandoNote;

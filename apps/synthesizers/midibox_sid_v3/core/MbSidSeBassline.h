@@ -54,6 +54,9 @@ public:
     void noteOff(u8 instrument, u8 note, bool bypassNotestack);
     void noteAllOff(u8 instrument, bool bypassNotestack);
 
+    // Bassline Sequencer: change pattern on keypress
+    void seqChangePattern(u8 instrument, u8 note);
+
     // access knob values
     void knobSet(u8 knob, u8 value);
     u8 knobGet(u8 knob);

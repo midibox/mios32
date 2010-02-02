@@ -140,18 +140,15 @@ bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
         // the rate can be modulated
         l->lfoRateModulation = mbSidMod.modDst[SID_SE_MOD_DST_LR1 + lfo];
 
-        u16 oldOut = l->lfoOut;
         if( l->tick(updateSpeedFactor) ) // returns true on overrun
             triggerLead((sid_se_trg_t *)&mbSidPatchPtr->body.L.trg_matrix[SID_SE_TRG_L1P + lfo]);
 
-        if( l->lfoOut != oldOut ) {
-            // scale to LFO depth
-            // the depth can be modulated
-            s32 lfoDepth = ((s32)l->lfoDepth - 0x80) + (mbSidMod.modDst[SID_SE_MOD_DST_LD1 + lfo] / 256);
-            if( lfoDepth > 127 ) lfoDepth = 127; else if( lfoDepth < -128 ) lfoDepth = -128;
-            // final LFO value
-            mbSidMod.modSrc[SID_SE_MOD_SRC_LFO1 + lfo] = (l->lfoOut * lfoDepth) / 128;
-        }
+        // scale to LFO depth
+        // the depth can be modulated
+        s32 lfoDepth = l->lfoDepth + (mbSidMod.modDst[SID_SE_MOD_DST_LD1 + lfo] / 256);
+        if( lfoDepth > 127 ) lfoDepth = 127; else if( lfoDepth < -128 ) lfoDepth = -128;
+        // final LFO value
+        mbSidMod.modSrc[SID_SE_MOD_SRC_LFO1 + lfo] = (l->lfoOut * (s32)lfoDepth) / 128;
     }
 
     // ENVs
@@ -161,9 +158,8 @@ bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
             triggerLead((sid_se_trg_t *)&mbSidPatchPtr->body.L.trg_matrix[SID_SE_TRG_E1S + env]);
 
         // scale to ENV depth
-        s32 depth = ((s32)e->envDepth - 0x80);
         // final ENV value (range +/- 0x7fff)
-        mbSidMod.modSrc[SID_SE_MOD_SRC_ENV1 + env] = (e->envOut * depth) / 128;
+        mbSidMod.modSrc[SID_SE_MOD_SRC_ENV1 + env] = (e->envOut * (s32)e->envDepth) / 128;
     }
 
     // Modulation Matrix
@@ -610,12 +606,8 @@ void MbSidSeLead::parSet(u8 par, u16 value, u8 sidlr, u8 ins, bool scaleFrom16bi
         case 0xfc: // Note
             if( scaleFrom16bit ) value >>= 9;
             for(int voice=0; voice<mbSidVoice.size; ++voice, ++v)
-                if( voiceSel & (1 << voice) ) {
-                    switch( v->playWtNote(value) ) {
-                    case 1: triggerNoteOff(v, 1); break; // don't trigger WTs (wouldn't make sense here!)
-                    case 2: triggerNoteOn(v, 1); break; // don't trigger WTs (wouldn't make sense here!)
-                    }
-                }
+                if( voiceSel & (1 << voice) )
+                    v->playWtNote(this, v, value);
             break;
 
         case 0x20: { // Waveform
@@ -740,7 +732,7 @@ void MbSidSeLead::parSet(u8 par, u16 value, u8 sidlr, u8 ins, bool scaleFrom16bi
 
         case 0x88: // LFO Depth
             if( scaleFrom16bit ) value >>= 8;
-            l->lfoDepth = value;
+            l->lfoDepth = (s32)value - 0x80;
             break;
 
         case 0x90: // LFO Rate
@@ -764,7 +756,7 @@ void MbSidSeLead::parSet(u8 par, u16 value, u8 sidlr, u8 ins, bool scaleFrom16bi
 
         switch( par & 0xf0 ) {
         case 0x0: e->envMode.ALL = value; break;
-        case 0x1: e->envDepth = value; break;
+        case 0x1: e->envDepth = (s32)value - 0x80; break;
         case 0x2: e->envDelay = value; break;
         case 0x3: e->envAttack = value; break;
         case 0x4: e->envAttackLevel = value; break;
@@ -977,7 +969,7 @@ u16 MbSidSeLead::parGet(u8 par, u8 sidlr, u8 ins, bool scaleTo16bit)
             break;
 
         case 0x88: // LFO Depth
-            value = l->lfoDepth;
+            value = (s32)l->lfoDepth + 0x80;
             if( scaleTo16bit ) value <<= 8;
             break;
 
@@ -1001,7 +993,7 @@ u16 MbSidSeLead::parGet(u8 par, u8 sidlr, u8 ins, bool scaleTo16bit)
 
         switch( par & 0xf0 ) {
         case 0x0: value = e->envMode.ALL; break;
-        case 0x1: value = e->envDepth; break;
+        case 0x1: value = (s32)e->envDepth + 0x80; break;
         case 0x2: value = e->envDelay; break;
         case 0x3: value = e->envAttack; break;
         case 0x4: value = e->envAttackLevel; break;
@@ -1132,9 +1124,9 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
             globalVoiceFlags.ALL = data;
             for(MbSidVoice *v = mbSidVoice.first(); v != NULL ; v=mbSidVoice.next(v)) {
                 v->voiceLegato = globalVoiceFlags.LEGATO;
+                v->voiceWavetableOnly = globalVoiceFlags.WTO;
                 v->voiceSusKey = globalVoiceFlags.SUSKEY;
                 v->voicePoly = globalVoiceFlags.POLY;
-                v->voiceWavetableOnly = globalVoiceFlags.WTO;
             }
         } else if( addr == 0x51 ) {
             for(MbSidVoice *v = mbSidVoice.first(); v != NULL ; v=mbSidVoice.next(v)) {
@@ -1161,7 +1153,7 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
         }
         return true;
     } else if( addr <= 0x05f ) { // filters
-        u8 filter = (addr < 0x05a) ? 1 : 0;
+        u8 filter = (addr >= 0x05a) ? 1 : 0;
         MbSidFilter *f = &mbSidFilter[filter];
 
         switch( (addr - 0x54) % 6 ) {
@@ -1175,7 +1167,8 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
     } else if( addr <= 0x0bf ) { // voices
         u8 voice = (addr - 0x060) / 16;
         MbSidVoice *v = &mbSidVoice[voice];
-        switch( addr & 0x0f ) {
+        u8 voiceAddr = addr & 0x0f;
+        switch( voiceAddr ) {
         case 0x0: {
             sid_se_voice_flags_t voiceFlags;
             voiceFlags.ALL = data;
@@ -1238,9 +1231,10 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
     } else if( addr <= 0x0dd ) { // LFOs
         u8 lfo = (addr - 0x0c0) / 5;
         MbSidLfo *l = &mbSidLfo[lfo];
-        switch( (addr-0xc0) % 5 ) {
+        u8 lfoAddr = (addr-0xc0) % 5;
+        switch( lfoAddr ) {
         case 0: l->lfoMode.ALL = data; break;
-        case 1: l->lfoDepth = data; break;
+        case 1: l->lfoDepth = (s32)data - 0x80; break;
         case 2: l->lfoRate = data; break;
         case 3: l->lfoDelay = data; break;
         case 4: l->lfoPhase = data; break;
@@ -1251,9 +1245,10 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
     } else if( addr <= 0x0ff ) { // ENVs
         u8 env = (addr >= 0xf0) ? 1 : 0;
         MbSidEnvLead *e = &mbSidEnvLead[env];
-        switch( addr & 0x0f ) {
+        u8 envAddr = addr & 0x0f;
+        switch( envAddr ) {
         case 0x0: e->envMode.ALL = data; break;
-        case 0x1: e->envDepth = data; break;
+        case 0x1: e->envDepth = (s32)data - 0x80; break;
         case 0x2: e->envDelay = data; break;
         case 0x3: e->envAttack = data; break;
         case 0x4: e->envAttackLevel = data; break;
@@ -1281,8 +1276,8 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
     } else if( addr <= 0x17f ) { // WT Sequencers
         u8 wt = (addr - 0x16c) / 5;
         MbSidWt *w = &mbSidWt[wt];
-
-        switch( (addr-0x16c) % 5 ) {
+        u8 wtAddr = (addr-0x16c) % 5;
+        switch( wtAddr ) {
         case 0: w->wtSpeed = data & 0x3f; break; // left/right flag is read directly from patch
         case 1: break; // assign is directly read from patch
         case 2: w->wtBegin = data & 0x7f; break;

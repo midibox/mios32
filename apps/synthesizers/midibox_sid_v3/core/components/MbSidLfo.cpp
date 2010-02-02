@@ -55,7 +55,6 @@ void MbSidLfo::init()
     lfoDepthPitch = 0;
     lfoDepthPulsewidth = 0;
     lfoDepthFilter = 0;
-    lfoKeySync = 0;
 
     lfoOut = 0;
 
@@ -196,42 +195,6 @@ bool MbSidLfo::tick(const u8 &updateSpeedFactor)
             default: // take saw as default
                 lfoOut = lfoCtr - 0x8000;
             }
-
-#if 0
-            if( !lfo_waveform_skipped ) {
-                if( engine == SID_SE_LEAD ) {
-                    // scale to LFO depth
-                    // the depth can be modulated
-                    s32 lfoDepth;
-                    if( modDstLfoDepth ) {
-                        lfoDepth = ((s32)lfoPatch->depth - 0x80) + (*modDstLfoDepth / 256);
-                        if( lfoDepth > 127 ) lfoDepth = 127; else if( lfoDepth < -128 ) lfoDepth = -128;
-                    } else {
-                        lfoDepth = (s32)lfoPatch->depth - 0x80;
-                    }
-    
-                    // final LFO value
-                    if( modSrcLfo )
-                        *modSrcLfo = (wave * lfoDepth) / 128;
-                } else {
-                    // directly write to modulation destinations depending on depths
-                    if( modDstPitch ) {
-                        s32 depth_p = (s32)lfoPatch->MINIMAL.depth_p - 0x80;
-                        *modDstPitch += (wave * depth_p) / 128;
-                    }
-
-                    if( modDstPw ) {
-                        s32 depth_pw = (s32)lfoPatch->MINIMAL.depth_pw - 0x80;
-                        *modDstPw += (wave * depth_pw) / 128;
-                    }
-
-                    if( modDstFilter ) {
-                        s32 depth_f = (s32)lfoPatch->MINIMAL.depth_f - 0x80;
-                        *modDstFilter += (wave * depth_f) / 128;
-                    }
-                }
-            }
-#endif
         }
     }
 

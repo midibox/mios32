@@ -1,3 +1,4 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id: app_lcd.h 775 2009-11-14 18:42:41Z tk $
 /*
  * Header file for application specific LCD Driver
@@ -14,9 +15,12 @@
 #ifndef _APP_LCD_H
 #define _APP_LCD_H
 
+// C++ check required, since app_lcd.h is also included by mios32.h for C-only code
 #ifdef __cplusplus
-extern "C" {
+#include "CLCDView.h"
 #endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -42,6 +46,10 @@ extern "C" {
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // hooks to MIOS32_LCD
 extern s32 APP_LCD_Init(u32 mode);
 extern s32 APP_LCD_Data(u8 data);
@@ -55,16 +63,20 @@ extern s32 APP_LCD_FColourSet(u32 rgb);
 extern s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour);
 extern s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
-// hooks to the actual lcdData/Cmd functions
-extern s32 lcdCmd(u8 cmd);
-extern s32 lcdData(u8 data);
+#ifdef __cplusplus
+}
+#endif
+
+
+// C++ check required, since app_lcd.h is also included by mios32.h for C-only code
+#ifdef __cplusplus
+CLcdView *APP_LCD_GetComponentPtr(u8 device);
+CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy);
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-
-#ifdef __cplusplus
-}
-#endif
 #endif /* _APP_LCD_H */

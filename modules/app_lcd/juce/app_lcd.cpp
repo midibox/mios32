@@ -1,6 +1,10 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id: app_lcd.c 775 2009-11-14 18:42:41Z tk $
 /*
  * Application specific CLCD driver for Juce CLCD Emulation
+ *
+ * Note: this module has been created for running on a PC/Mac
+ * Therefore we are allowed to use malloc based map here w/o dangers
  *
  * ==========================================================================
  *
@@ -19,6 +23,9 @@
 
 #include "app_lcd.h"
 
+#include "CLCDView.h"
+#include <map>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -32,28 +39,34 @@
 
 static u32 display_available = 0;
 
+std::map<unsigned char, CLcdView *> clcdView;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes application specific LCD driver
 // IN: <mode>: optional configuration
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_Init(u32 mode)
+extern "C" s32 APP_LCD_Init(u32 mode)
 {
-  // currently only mode 0 supported
-  if( mode != 0 )
-    return -1; // unsupported mode
+    // currently only mode 0 supported
+    if( mode != 0 )
+        return -1; // unsupported mode
 
-  // enable display by default
-  display_available |= (1 << mios32_lcd_device);
+    // only up to 32 displays supported
+    if( mios32_lcd_device >= 32 )
+        return -2; // unsupported display number
 
-  // initialize LCD
-  APP_LCD_Cmd(0x08); // Display Off
-  APP_LCD_Cmd(0x0c); // Display On
-  APP_LCD_Cmd(0x06); // Entry Mode
-  APP_LCD_Cmd(0x01); // Clear Display
+    // enable display
+    display_available |= (1 << mios32_lcd_device);
 
-  return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
+    // initialize LCD
+    APP_LCD_Cmd(0x08); // Display Off
+    APP_LCD_Cmd(0x0c); // Display On
+    APP_LCD_Cmd(0x06); // Entry Mode
+    APP_LCD_Cmd(0x01); // Clear Display
+
+    return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
 
 
@@ -62,16 +75,17 @@ s32 APP_LCD_Init(u32 mode)
 // IN: data byte in <data>
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_Data(u8 data)
+extern "C" s32 APP_LCD_Data(u8 data)
 {
-  // check if if display already has been disabled
-  if( !(display_available & (1 << mios32_lcd_device)) )
-    return -1;
+    // check if if display already has been disabled
+    if( !(display_available & (1 << mios32_lcd_device)) )
+        return -1;
 
-  // Call Juce specific LCD_Data function.
-  lcdData(data);
+    // forward to LCD emulation
+    // Note: the <map> will automatically create the object if it doesn't exist yet
+    clcdView[mios32_lcd_device]->lcdData(data);
 	
-  return 0; // no error
+    return 0; // no error
 }
 
 
@@ -80,16 +94,17 @@ s32 APP_LCD_Data(u8 data)
 // IN: command byte in <cmd>
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_Cmd(u8 cmd)
+extern "C" s32 APP_LCD_Cmd(u8 cmd)
 {
-  // check if if display already has been disabled
-  if( !(display_available & (1 << mios32_lcd_device)) )
-    return -1;
+    // check if if display already has been disabled
+    if( !(display_available & (1 << mios32_lcd_device)) )
+        return -1;
 
-  // Call Juce specific LCD_Cmd function.
-  lcdCmd(cmd);
+    // forward to LCD emulation
+    // Note: the <map> will automatically create the object if it doesn't exist yet
+    clcdView[mios32_lcd_device]->lcdCmd(cmd);
 
-  return 0; // no error
+    return 0; // no error
 }
 
 
@@ -98,10 +113,10 @@ s32 APP_LCD_Cmd(u8 cmd)
 // IN: -
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_Clear(void)
+extern "C" s32 APP_LCD_Clear(void)
 {
-  // -> send clear command
-  return APP_LCD_Cmd(0x01);
+    // -> send clear command
+    return APP_LCD_Cmd(0x01);
 }
 
 
@@ -110,14 +125,14 @@ s32 APP_LCD_Clear(void)
 // IN: <column> and <line>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_CursorSet(u16 column, u16 line)
+extern "C" s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
-  // exit with error if line is not in allowed range
-  if( line >= MIOS32_LCD_MAX_MAP_LINES )
-    return -1;
+    // exit with error if line is not in allowed range
+    if( line >= MIOS32_LCD_MAX_MAP_LINES )
+        return -1;
 
-  // -> set cursor address
-  return APP_LCD_Cmd(0x80 | (mios32_lcd_cursor_map[line] + column));
+    // -> set cursor address
+    return APP_LCD_Cmd(0x80 | (mios32_lcd_cursor_map[line] + column));
 }
 
 
@@ -126,10 +141,10 @@ s32 APP_LCD_CursorSet(u16 column, u16 line)
 // IN: <x> and <y>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_GCursorSet(u16 x, u16 y)
+extern "C" s32 APP_LCD_GCursorSet(u16 x, u16 y)
 {
-  // n.a.
-  return -1;
+    // n.a.
+    return -1;
 }
 
 
@@ -138,20 +153,20 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
 // IN: character number (0-7) in <num>, pattern in <table[8]>
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
+extern "C" s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
-  s32 i;
+    s32 i;
 
-  // send character number
-  APP_LCD_Cmd(((num&7)<<3) | 0x40);
+    // send character number
+    APP_LCD_Cmd(((num&7)<<3) | 0x40);
 
-  // send 8 data bytes
-  for(i=0; i<8; ++i)
-    if( APP_LCD_Data(table[i]) < 0 )
-      return -1; // error during sending character
+    // send 8 data bytes
+    for(i=0; i<8; ++i)
+        if( APP_LCD_Data(table[i]) < 0 )
+            return -1; // error during sending character
 
-  // set cursor to original position
-  return APP_LCD_CursorSet(mios32_lcd_column, mios32_lcd_line);
+    // set cursor to original position
+    return APP_LCD_CursorSet(mios32_lcd_column, mios32_lcd_line);
 }
 
 
@@ -161,9 +176,9 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 // IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BColourSet(u32 rgb)
+extern "C" s32 APP_LCD_BColourSet(u32 rgb)
 {
-  return -1; // n.a.
+    return -1; // n.a.
 }
 
 
@@ -173,9 +188,9 @@ s32 APP_LCD_BColourSet(u32 rgb)
 // IN: r/g/b value
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_FColourSet(u32 rgb)
+extern "C" s32 APP_LCD_FColourSet(u32 rgb)
 {
-  return -1; // n.a.
+    return -1; // n.a.
 }
 
 
@@ -185,9 +200,9 @@ s32 APP_LCD_FColourSet(u32 rgb)
 // IN: bitmap, x/y position and colour value (value range depends on APP_LCD_COLOUR_DEPTH)
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
+extern "C" s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 {
-  return -1; // n.a.
+    return -1; // n.a.
 }
 
 
@@ -197,7 +212,40 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 // IN: bitmap
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
+extern "C" s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 {
-  return -1; // n.a.
+    return -1; // n.a.
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns a pointer to the CLCD Juce component
+// Creates a new CLCD if it doesn't exist yet (up to 256 displays can be created ;)
+/////////////////////////////////////////////////////////////////////////////
+CLcdView *APP_LCD_GetComponentPtr(u8 device)
+{
+    return APP_LCD_GetComponentPtr(device, 0, 0);
+}
+
+CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
+{
+    if( !(display_available & (1 << device)) ) {
+        // create display
+        clcdView[device] = new CLcdView(originx, originy);
+
+        // initialize display
+        u8 mios32_lcd_device_saved = mios32_lcd_device;
+        mios32_lcd_device = device;
+        s32 status = APP_LCD_Init(0);
+        mios32_lcd_device = mios32_lcd_device_saved;
+
+        if( status < 0 ) {
+            // display cannot be created
+            delete clcdView[device];
+            clcdView[device] = NULL;
+        }
+    }
+
+    return clcdView[device]; // returns NULL if not available
 }

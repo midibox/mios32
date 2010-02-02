@@ -51,6 +51,9 @@ public:
     // resets internal Tempo generator
     void bpmRestart(void);
 
+    // current master/slave mode (will be changed depending on clockMode)
+    bool clockSlaveMode;
+
     // event flags (valid for one cycle)
     bool eventClock;
     bool eventStart;
@@ -65,9 +68,6 @@ public:
 protected:
     // clock mode Master/Slave/Auto
     mbsid_clock_mode_t clockMode;
-
-    // current master/slave mode (will be changed depending on clockMode)
-    bool slaveMode;
 
     // MIDI requests
     bool midiStartReq;
