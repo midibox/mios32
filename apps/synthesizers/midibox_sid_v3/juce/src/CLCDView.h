@@ -69,13 +69,13 @@ public:
 
 	void paint (Graphics& g);
 
+
 private:
 
 // Various variables for holding LCD contents.
 	unsigned char	LCDBColorR, LCDBColorG, LCDBColorB; // background color
 	unsigned char	LCDFColorR, LCDFColorG, LCDFColorB; // foreground color
 
-	int	LCDColumns; // number of characters per line (default 40)
 	int	LCDLines;  // number of lines (default 2)
 	
 	int	LCDCharWidth; // width of a single character (default 6)
@@ -94,7 +94,8 @@ private:
 	
 	int    LCDOriginX; // Origin position (default 16);
 	int   LCDOriginY; // Origin position (default 60);
-	
+	int	LCDColumns; // number of characters per line (default 40)
+
 	
 	unsigned char 	LCDScreen[LCD_MAX_LINES][LCD_MAX_COLUMNS];
 	bool		NeedsDisplay;

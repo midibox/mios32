@@ -73,13 +73,19 @@ bool MbSid::tick(const u8 &updateSpeedFactor)
 /////////////////////////////////////////////////////////////////////////////
 void MbSid::midiReceive(mios32_midi_package_t midi_package)
 {
+	MIOS32_LCD_CursorSet(19,1);
     switch( midi_package.event ) {
     case NoteOff:
         midiReceiveNote(midi_package.chn, midi_package.note, 0x00);
+		MIOS32_LCD_PrintString(" ");
         break;
 
     case NoteOn:
         midiReceiveNote(midi_package.chn, midi_package.note, midi_package.velocity);
+		if (midi_package.velocity==0)
+			MIOS32_LCD_PrintString(" ");
+		else
+			MIOS32_LCD_PrintString("*");
         break;
 
     case PolyPressure:
@@ -230,6 +236,11 @@ void MbSid::updatePatch(bool forceEngineInit)
 
     // enable interrupts again
     MIOS32_IRQ_Enable();
+	MIOS32_LCD_CursorSet(0,0);
+
+    char patchName[17];
+    mbSidPatch.nameGet(patchName);
+	MIOS32_LCD_PrintFormattedString("P:%s", patchName	);
 }
 
 

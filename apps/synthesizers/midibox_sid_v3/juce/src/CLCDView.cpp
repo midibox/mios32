@@ -12,14 +12,20 @@
 #include "CLCDView.h"
 #include "EditorComponent.h"
 #include "AudioProcessing.h"
-
+#include "MbSidEnvironment.h"
 #include "mios32.h"
 // include default character set from separate file
 #include "CLCDView_charset.inc"
 
+// Allow object to be accessed from "C" functions
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Frame initialisation
-//////////////////////////////////////////////////////////////////////////////
+///////////////////////////////
+
+
+///////////////////////////////////////////////
 
 CLCDView::CLCDView(unsigned originx,unsigned originy)
 {
