@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: app_lcd.c 775 2009-11-14 18:42:41Z tk $
+// $Id$
 /*
  * Application specific CLCD driver for Juce CLCD Emulation
  *
@@ -39,7 +39,7 @@
 
 static u32 display_available = 0;
 
-std::map<unsigned char, CLcdView *> clcdView;
+std::map<unsigned char, CLcdView *> cLcdView;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,8 +82,7 @@ extern "C" s32 APP_LCD_Data(u8 data)
         return -1;
 
     // forward to LCD emulation
-    // Note: the <map> will automatically create the object if it doesn't exist yet
-    clcdView[mios32_lcd_device]->lcdData(data);
+    cLcdView[mios32_lcd_device]->lcdData(data);
 	
     return 0; // no error
 }
@@ -101,8 +100,7 @@ extern "C" s32 APP_LCD_Cmd(u8 cmd)
         return -1;
 
     // forward to LCD emulation
-    // Note: the <map> will automatically create the object if it doesn't exist yet
-    clcdView[mios32_lcd_device]->lcdCmd(cmd);
+    cLcdView[mios32_lcd_device]->lcdCmd(cmd);
 
     return 0; // no error
 }
@@ -232,7 +230,7 @@ CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
 {
     if( !(display_available & (1 << device)) ) {
         // create display
-        clcdView[device] = new CLcdView(originx, originy);
+        cLcdView[device] = new CLcdView(originx, originy);
 
         // initialize display
         u8 mios32_lcd_device_saved = mios32_lcd_device;
@@ -242,10 +240,10 @@ CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
 
         if( status < 0 ) {
             // display cannot be created
-            delete clcdView[device];
-            clcdView[device] = NULL;
+            delete cLcdView[device];
+            cLcdView[device] = NULL;
         }
     }
 
-    return clcdView[device]; // returns NULL if not available
+    return cLcdView[device]; // returns NULL if not available
 }

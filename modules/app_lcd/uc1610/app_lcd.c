@@ -1,4 +1,4 @@
-// $Id: app_lcd.c 95 2008-10-19 14:13:14Z tk $
+// $Id$
 /*
  * for up to 8 * UC1610 Based GLCD's (every display provides a resolution of 160x104) 
  *

@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: CLCDView.cpp 261 2009-01-09 00:08:48Z tk $
+// $Id$
 //
 //  CLCDView.cpp
 //  

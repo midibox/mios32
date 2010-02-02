@@ -47,7 +47,7 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     addAndMakeVisible (infoLabel = new Label (String::empty, String::empty));
 
 	// create a CLCD via APP_LCD module and add it
-	addAndMakeVisible(clcdView = APP_LCD_GetComponentPtr(0, 50, 50));
+	addAndMakeVisible(cLcdView = APP_LCD_GetComponentPtr(0, 50, 50));
     // add the triangular resizer component for the bottom-right of the UI
     addAndMakeVisible (resizer = new ResizableCornerComponent (this, &resizeLimits));
     resizeLimits.setSizeLimits (150, 150, 800, 300);
@@ -60,7 +60,7 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     // class to tell us when something has changed, and this will call our changeListenerCallback()
     // method.
     ownerSidEmu->addChangeListener (this);
-	if (clcdView->isValidComponent())
+	if (cLcdView->isValidComponent())
 		MIOS32_MIDI_SendDebugMessage("Component valid!");
 	MIOS32_LCD_Init(0);
 
