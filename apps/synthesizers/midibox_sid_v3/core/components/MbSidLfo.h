@@ -37,17 +37,16 @@ public:
 
     // input parameters
     sid_se_lfo_mode_t lfoMode;
-    u8 lfoDepth;
+    s8 lfoDepth;
     u8 lfoRate;
     u8 lfoDelay;
     u8 lfoPhase;
     s32 lfoRateModulation;
 
     // used by Multi and Bassline engine - too lazy to create a new class for these four variables
-    u8 lfoDepthPitch;
-    u8 lfoDepthPulsewidth;
-    u8 lfoDepthFilter;
-    bool lfoKeySync;
+    s8 lfoDepthPitch;
+    s8 lfoDepthPulsewidth;
+    s8 lfoDepthFilter;
 
     // output waveform
     s16 lfoOut;

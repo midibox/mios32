@@ -48,7 +48,7 @@ public:
 
     // input parameters
     sid_se_env_mode_t envMode;
-    u8 envDepth;
+    s8 envDepth;
     u8 envDelay;
     u8 envAttack;
     u8 envDecay;
@@ -56,14 +56,11 @@ public:
     u8 envSustain;
     u8 envRelease;
     u8 envCurve;
-    bool envCurveOnAttack;
-    bool envCurveOnDecay;
-    bool envCurveOnRelease;
 
     // used by Multi and Bassline engine - too lazy to create a new class for these three variables
-    u8 envDepthPitch;
-    u8 envDepthPulsewidth;
-    u8 envDepthFilter;
+    s8 envDepthPitch;
+    s8 envDepthPulsewidth;
+    s8 envDepthFilter;
 
     // output waveform
     s16 envOut;

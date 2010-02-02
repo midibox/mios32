@@ -55,7 +55,9 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
     if( seqStopReq ) {
         seqStopReq = 0;
         seqRunning = 0;
-        se->noteAllOff((v->voiceNum >= 3) ? 1 : 0, bypassNotestack);
+        v->voiceGateClrReq = 1;
+        v->voiceGateSetReq = 0;
+        se->triggerNoteOff(v, 0); // propagate to trigger matrix
         return; // nothing else to do
     }
 
@@ -63,8 +65,9 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
     // clear gate if enable flag just has been disabled (for proper transitions)
     if( !seqEnabled ) {
         if( seqEnabledSaved ) {
-            // clear gate
-            se->noteAllOff((v->voiceNum >= 3) ? 1 : 0, bypassNotestack);
+            v->voiceGateClrReq = 1;
+            v->voiceGateSetReq = 0;
+            se->triggerNoteOff(v, 0); // propagate to trigger matrix
         }
         seqEnabledSaved = 0;
         return; // nothing else to do
@@ -86,7 +89,7 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
         seqDivCtr = ~0;
         seqSubCtr = ~0;
         // next step will increment to start position
-        seqPos = (seqPatternNum << 4) - 1;
+        seqPos = (seqPatternNumber << 4) - 1;
         // ensure that slide flag is cleared
         v->voiceSlideActive = 0;
     }
@@ -118,16 +121,18 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
                 // change to new sequence number immediately if SYNCH_TO_MEASURE flag not set, or first step reached
                 u8 nextPattern = seqPos >> 4;
                 if( !seqSynchToMeasure || nextStep == 0 )
-                    nextPattern = seqPatternNum;
+                    nextPattern = seqPatternNumber;
 
                 seqPos = (nextPattern << 4) | nextStep;
 
                 // play the step
 
                 // gate off (without slide) if invalid song number (stop feature: seq >= 8)
-                if( seqPatternNum >= 8 ) {
+                if( seqPatternNumber >= 8 ) {
                     if( v->voiceGateActive ) {
-                        se->noteAllOff((v->voiceNum >= 3) ? 1 : 0, bypassNotestack);
+                        v->voiceGateClrReq = 1;
+                        v->voiceGateSetReq = 0;
+                        se->triggerNoteOff(v, 0); // propagate to trigger matrix
                     }
                 } else {
                     // Sequence Storage - Structure:
@@ -151,7 +156,7 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
                     sid_se_seq_asg_item_t asgItem;
                     asgItem.ALL = seqPatternMemory[seqPos + 0x80];
 
-#if 1
+#if 0
                     DEBUG_MSG("SEQ %d@%d/%d: 0x%02x 0x%02x\n", 0, seqPos >> 4, seqPos & 0xf, noteItem.ALL, asgItem.ALL);
 #endif
 
@@ -185,7 +190,10 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
                     // set gate if flag is set
                     if( noteItem.GATE && v->voiceActive ) {
                         if( !v->voiceGateActive ) {
-                            se->noteOn((v->voiceNum >= 3) ? 1 : 0, note, 0x7f, bypassNotestack);
+                            v->voiceGateClrReq = 0;
+                            v->voiceGateSetReq = 1;
+                            se->triggerNoteOn(v, 0); // propagate to trigger matrix
+                            v->voiceNoteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
                         }
                     }
 
@@ -199,8 +207,11 @@ void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
                 }
             } else if( seqSubCtr == 4 ) { // clear gate
                 // don't clear if slide flag is set!
-                if( !v->voiceSlideActive )
-                    se->noteAllOff((v->voiceNum >= 3) ? 1 : 0, bypassNotestack);
+                if( !v->voiceSlideActive ) {
+                    v->voiceGateClrReq = 1;
+                    v->voiceGateSetReq = 0;
+                    se->triggerNoteOff(v, 0); // propagate to trigger matrix
+                }
             }
         }
     }

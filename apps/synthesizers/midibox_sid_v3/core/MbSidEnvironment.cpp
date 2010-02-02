@@ -261,6 +261,7 @@ bool MbSidEnvironment::sysexSetPatch(u8 sid, sid_patch_t *p, bool toBank, u8 ban
         // forward to selected SID
         return mbSid[sid].sysexSetPatch(p);
     }
+	
 	return true;
 }
 

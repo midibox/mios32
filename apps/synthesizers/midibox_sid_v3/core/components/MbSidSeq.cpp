@@ -43,7 +43,7 @@ void MbSidSeq::init(void)
     seqRestartReq = false;
     seqStopReq = false;
 
-    seqPatternNum = 0;
+    seqPatternNumber = 0;
     seqPatternLength = 16;
     seqPatternMemory = NULL;
     seqClockDivider = 3;

@@ -53,6 +53,8 @@ void MbSid::init(u8 _sidNum, sid_regs_t *sidRegLPtr, sid_regs_t *sidRegRPtr, MbS
         mbSidMidiVoice[midiVoice].init();
         mbSidSeLead.mbSidVoice[midiVoice].midiVoicePtr = &mbSidMidiVoice[midiVoice];
         mbSidSeBassline.mbSidVoice[midiVoice].midiVoicePtr = &mbSidMidiVoice[(midiVoice >= 3) ? 1 : 0];
+        mbSidSeDrum.mbSidVoiceDrum[midiVoice].midiVoicePtr = &mbSidMidiVoice[0];
+        mbSidSeMulti.mbSidVoice[midiVoice].midiVoicePtr = &mbSidMidiVoice[0]; // will be dynamically assigned by MIDI handler
     }
 
     updatePatch(true);
@@ -73,6 +75,34 @@ bool MbSid::tick(const u8 &updateSpeedFactor)
 /////////////////////////////////////////////////////////////////////////////
 void MbSid::midiReceive(mios32_midi_package_t midi_package)
 {
+#ifndef MIOS32_FAMILY_EMULATION
+    switch( midi_package.event ) {
+    case NoteOff:
+        midiReceiveNote(midi_package.chn, midi_package.note, 0x00);
+        break;
+
+    case NoteOn:
+        midiReceiveNote(midi_package.chn, midi_package.note, midi_package.velocity);
+        break;
+
+    case PolyPressure:
+        midiReceiveAftertouch(midi_package.chn, midi_package.evnt2);
+        break;
+
+    case CC:
+        midiReceiveCC(midi_package.chn, midi_package.cc_number, midi_package.value);
+        break;
+
+    case PitchBend: {
+        u16 pitchbend_value_14bit = (midi_package.evnt2 << 7) | (midi_package.evnt1 & 0x7f);
+        midiReceivePitchBend(midi_package.chn, pitchbend_value_14bit);
+    } break;
+
+    case Aftertouch:
+        midiReceiveAftertouch(midi_package.chn, midi_package.evnt1);
+        break;
+  }
+#else
 	MIOS32_LCD_CursorSet(19,1);
     switch( midi_package.event ) {
     case NoteOff:
@@ -105,6 +135,8 @@ void MbSid::midiReceive(mios32_midi_package_t midi_package)
         midiReceiveAftertouch(midi_package.chn, midi_package.evnt1);
         break;
   }
+
+#endif
 }
 
 
@@ -155,6 +187,7 @@ void MbSid::updatePatch(bool forceEngineInit)
     // force initialisation if engine has changed
     sid_se_engine_t engine = (sid_se_engine_t)mbSidPatch.body.engine;
     if( engine != prevEngine ) {
+        prevEngine = engine;
         forceEngineInit = true;
 
         switch( engine ) {
@@ -224,9 +257,6 @@ void MbSid::updatePatch(bool forceEngineInit)
         }
     }
 
-    // store new engine
-    prevEngine = engine;
-
     // transfer patch data to sound elements
     bool patchOnly = !forceEngineInit;
     currentMbSidSePtr->initPatch(patchOnly);
@@ -236,11 +266,15 @@ void MbSid::updatePatch(bool forceEngineInit)
 
     // enable interrupts again
     MIOS32_IRQ_Enable();
+
+#ifdef MIOS32_FAMILY_EMULATION
 	MIOS32_LCD_CursorSet(0,0);
 
     char patchName[17];
     mbSidPatch.nameGet(patchName);
 	MIOS32_LCD_PrintFormattedString("P:%s", patchName	);
+
+#endif
 }
 
 

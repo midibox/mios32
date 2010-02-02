@@ -55,9 +55,6 @@ void MbSidEnv::init(void)
     envSustain = 0;
     envRelease = 0;
     envCurve = 0;
-    envCurveOnAttack = false;
-    envCurveOnDecay = false;
-    envCurveOnRelease = false;
 
     envDepthPitch = 0;
     envDepthPulsewidth = 0;
@@ -108,14 +105,14 @@ bool MbSidEnv::tick(const u8 &updateSpeedFactor)
                 }
             }
   
-            u8 curve = envCurveOnAttack ? envCurve : 0x80;
+            u8 curve = envMode.MINIMAL.CURVE_A ? envCurve : 0x80;
             if( step(0xffff, envAttack, curve, updateSpeedFactor) )
                 envState = MBSID_ENV_STATE_DECAY;
         } break;
   
         case MBSID_ENV_STATE_DECAY: {
             u8 decay = accentReq ? envDecayAccented : envDecay;
-            u8 curve = envCurveOnDecay ? envCurve : 0x80;
+            u8 curve = envMode.MINIMAL.CURVE_D ? envCurve : 0x80;
             if( step(envSustain << 8, decay, curve, updateSpeedFactor) ) {
                 envState = MBSID_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
@@ -130,7 +127,7 @@ bool MbSidEnv::tick(const u8 &updateSpeedFactor)
             break;
   
         case MBSID_ENV_STATE_RELEASE: {
-            u8 curve = envCurveOnRelease ? envCurve : 0x80;
+            u8 curve = envMode.MINIMAL.CURVE_R ? envCurve : 0x80;
             if( envCtr )
                 step(0x0000, envRelease, curve, updateSpeedFactor);
         } break;

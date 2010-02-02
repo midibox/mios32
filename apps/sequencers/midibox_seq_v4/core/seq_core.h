@@ -136,7 +136,7 @@ typedef union {
     u8 flags:6;        // combines all flags (for CC access)
   };
   struct {
-    u8 playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
+    u8 playmode_dummy:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
     u8 UNSORTED:1;     // sort mode for arpeggiator
     u8 HOLD:1;         // hold mode for transposer/arpeggiator
     u8 RESTART:1;      // track restart on key press
@@ -153,7 +153,7 @@ typedef union {
     u8 flags:6;              // combines all flags (for CC access)
   };
   struct {
-    u8 value;          // clock divider value
+    u8 value_dummy;          // clock divider value
     u8 SYNCH_TO_MEASURE:1; // synch to globally selectable measure
     u8 TRIPLETS:1;     // play triplets
   };
