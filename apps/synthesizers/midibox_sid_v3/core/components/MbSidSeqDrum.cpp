@@ -151,7 +151,7 @@ void MbSidSeqDrum::tick(MbSidSe *se)
                     //  0x1a0..0x1bf: sequence #6
                     //  0x1c0..0x1df: sequence #7
                     //  0x1e0..0x1ff: sequence #8
-                    u8 *pattern = (u8 *)&seqPatternMemory[(seqPos & 0xf0) << 1];
+                    u8 *pattern = (u8 *)&seqPatternMemory[(seqPos & 0x70) << 1];
 
                     // loop through 8 tracks
                     u8 step = seqPos & 0x0f;
@@ -179,7 +179,13 @@ void MbSidSeqDrum::tick(MbSidSe *se)
                         case 3: gate = 1; ++drum; break;
                         }
 
-                        se->noteOn(0, drum, velocity, bypassNotestack);
+                        if( gate ) {
+                            se->noteOn(0, drum, velocity, bypassNotestack);
+#if 0
+                            DEBUG_MSG("[SEQ:%2d] drum:%d, velocity:%02x\n",
+                                      step, drum, velocity);
+#endif
+                        }
                     }
                 }
             } else if( seqSubCtr == 4 ) { // clear gates

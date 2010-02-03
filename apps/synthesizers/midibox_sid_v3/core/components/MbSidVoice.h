@@ -70,9 +70,9 @@ public:
 
 
     // voice handlers
-    virtual bool gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
-    virtual void pitch(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
-    virtual void pw(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
+    virtual bool gate(const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
+    virtual void pitch(const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
+    virtual void pw(const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
 
     bool noteOn(u8 note, u8 velocity);
     bool noteOff(u8 note, u8 lastFirstNote);

@@ -24,6 +24,7 @@ THUMB_CPP_SOURCE = ../core/app.cpp \
 		   ../core/components/MbSidEnv.cpp \
 		   ../core/components/MbSidEnvLead.cpp \
 		   ../core/components/MbSidWt.cpp \
+		   ../core/components/MbSidWtDrum.cpp \
 		   ../core/components/MbSidMod.cpp \
 		   ../core/components/MbSidArp.cpp \
 		   ../core/components/MbSidSeq.cpp \
@@ -33,6 +34,7 @@ THUMB_CPP_SOURCE = ../core/app.cpp \
 		   ../core/components/MbSidMidiVoice.cpp \
 		   ../core/components/MbSidVoice.cpp \
 		   ../core/components/MbSidVoiceDrum.cpp \
+		   ../core/components/MbSidDrum.cpp \
 		   ../core/MbSidEnvironment.cpp \
 		   ../core/MbSidSysEx.cpp \
 		   ../core/MbSidAsid.cpp \

@@ -221,7 +221,7 @@ void MbSid::updatePatch(bool forceEngineInit)
          
             // temporary code to configure MIDI voices - will be part of ensemble later
             mbSidMidiVoice[0].init();
-            mbSidMidiVoice[1].init();
+			mbSidMidiVoice[1].init();
             mbSidMidiVoice[2].init();
             mbSidMidiVoice[3].init();
             mbSidMidiVoice[4].init();
@@ -260,9 +260,6 @@ void MbSid::updatePatch(bool forceEngineInit)
     // transfer patch data to sound elements
     bool patchOnly = !forceEngineInit;
     currentMbSidSePtr->initPatch(patchOnly);
-
-    // clear voice queue
-    currentMbSidSePtr->voiceQueue.init(&mbSidPatch.body);
 
     // enable interrupts again
     MIOS32_IRQ_Enable();

@@ -18,7 +18,9 @@
 #include <mios32.h>
 #include "MbSidStructs.h"
 #include "MbSidVoice.h"
+#include "MbSidDrum.h"
 
+class MbSidWtDrum; // forward declaration
 
 class MbSidVoiceDrum : public MbSidVoice
 {
@@ -30,14 +32,20 @@ public:
     ~MbSidVoiceDrum();
 
     // voice init functions
+    void init(u8 _voiceNum, u8 _physVoiceNum, sid_voice_t *_physSidVoice);
     void init();
+    void init(MbSidDrum *d, u8 note, u8 velocity);
+
+    void tick(const u8 &updateSpeedFactor, MbSidSe *mbSidSe, MbSidWtDrum *w);
+
+    void pitch(const u8 &updateSpeedFactor, MbSidSe *mbSidSe);
 
     // see MbSidVoice.h for input parameters
 
     // additional parameters for drum engine:
-    u8  drumWaveform;
     u8  drumGatelength;
-    sid_drum_model_t *drumModel;
+    u8  drumSpeed;
+    MbSidDrum *mbSidDrumPtr;
 };
 
 #endif /* _MB_SID_VOICE_DRUM_H */

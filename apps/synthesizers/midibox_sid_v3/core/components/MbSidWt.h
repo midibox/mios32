@@ -33,8 +33,6 @@ public:
 
     // Wavetable handler (returns true on loop)
     bool tick(s32 step, const u8 &updateSpeedFactor);
-    bool tick(const sid_se_engine_t &engine, const u8 &updateSpeedFactor,
-              sid_drum_model_t *drumModel, u8 &voiceNote, u8 &voiceWaveform);
 
     // input parameters
     u8 wtBegin;
@@ -49,10 +47,6 @@ public:
     // requests a restart and next clock (divided by WT)
     bool restartReq;
     bool clockReq;
-
-    // speed and parameter for drums
-    u8 wtDrumSpeed;
-    u8 wtDrumPar;
 
     // position
     u8 wtPos;

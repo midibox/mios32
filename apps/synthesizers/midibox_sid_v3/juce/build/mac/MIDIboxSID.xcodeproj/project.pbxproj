@@ -43,7 +43,6 @@
 		524BE3661118AC39004EB33E /* app_lcd.h in Headers */ = {isa = PBXBuildFile; fileRef = 524BE3641118AC39004EB33E /* app_lcd.h */; };
 		524BE36E1118ACDD004EB33E /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 524BE36D1118ACDD004EB33E /* mios32_lcd.c */; };
 		524BE3891118C35A004EB33E /* app_lcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 524BE3851118C35A004EB33E /* app_lcd.cpp */; };
-		524BE38A1118C35A004EB33E /* CLCDView_charset.inc in Sources */ = {isa = PBXBuildFile; fileRef = 524BE3861118C35A004EB33E /* CLCDView_charset.inc */; };
 		524BE38B1118C35A004EB33E /* CLCDView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 524BE3871118C35A004EB33E /* CLCDView.cpp */; };
 		524BE38C1118C35A004EB33E /* CLCDView.h in Headers */ = {isa = PBXBuildFile; fileRef = 524BE3881118C35A004EB33E /* CLCDView.h */; };
 		525B0CA7110BB56800F93C55 /* MbSid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 525B0CA3110BB56800F93C55 /* MbSid.cpp */; };
@@ -99,6 +98,10 @@
 		5295EE32110132D000115AAF /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5295EE31110132D000115AAF /* CoreAudio.framework */; };
 		52BCC00F11110738006ED6F4 /* MbSidSeLead.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52BCC00D11110738006ED6F4 /* MbSidSeLead.cpp */; };
 		52BCC01011110738006ED6F4 /* MbSidSeLead.h in Headers */ = {isa = PBXBuildFile; fileRef = 52BCC00E11110738006ED6F4 /* MbSidSeLead.h */; };
+		52CDED7E1118DE9D00CF7F74 /* MbSidDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52CDED7C1118DE9D00CF7F74 /* MbSidDrum.cpp */; };
+		52CDED7F1118DE9D00CF7F74 /* MbSidDrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 52CDED7D1118DE9D00CF7F74 /* MbSidDrum.h */; };
+		52CDED9E1118E39A00CF7F74 /* MbSidWtDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52CDED9C1118E39A00CF7F74 /* MbSidWtDrum.cpp */; };
+		52CDED9F1118E39A00CF7F74 /* MbSidWtDrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 52CDED9D1118E39A00CF7F74 /* MbSidWtDrum.h */; };
 		52DD0E1B110E003400B92219 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E1A110E003400B92219 /* app.cpp */; };
 		52DD0E29110E06BA00B92219 /* MbSidStructs.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E26110E06BA00B92219 /* MbSidStructs.h */; };
 		52DD0E2A110E06BA00B92219 /* MbSidSysEx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */; };
@@ -272,7 +275,6 @@
 		524BE3641118AC39004EB33E /* app_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app_lcd.h; path = ../../../../../../modules/app_lcd/juce/app_lcd.h; sourceTree = SOURCE_ROOT; };
 		524BE36D1118ACDD004EB33E /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
 		524BE3851118C35A004EB33E /* app_lcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app_lcd.cpp; path = ../../../../../../modules/app_lcd/juce/app_lcd.cpp; sourceTree = SOURCE_ROOT; };
-		524BE3861118C35A004EB33E /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; name = CLCDView_charset.inc; path = ../../../../../../modules/app_lcd/juce/CLCDView_charset.inc; sourceTree = SOURCE_ROOT; };
 		524BE3871118C35A004EB33E /* CLCDView.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CLCDView.cpp; path = ../../../../../../modules/app_lcd/juce/CLCDView.cpp; sourceTree = SOURCE_ROOT; };
 		524BE3881118C35A004EB33E /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLCDView.h; path = ../../../../../../modules/app_lcd/juce/CLCDView.h; sourceTree = SOURCE_ROOT; };
 		525B0CA3110BB56800F93C55 /* MbSid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSid.cpp; path = ../../../core/MbSid.cpp; sourceTree = SOURCE_ROOT; };
@@ -328,6 +330,10 @@
 		5295EE31110132D000115AAF /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		52BCC00D11110738006ED6F4 /* MbSidSeLead.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeLead.cpp; path = ../../../core/MbSidSeLead.cpp; sourceTree = SOURCE_ROOT; };
 		52BCC00E11110738006ED6F4 /* MbSidSeLead.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeLead.h; path = ../../../core/MbSidSeLead.h; sourceTree = SOURCE_ROOT; };
+		52CDED7C1118DE9D00CF7F74 /* MbSidDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidDrum.cpp; path = ../../../core/components/MbSidDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52CDED7D1118DE9D00CF7F74 /* MbSidDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidDrum.h; path = ../../../core/components/MbSidDrum.h; sourceTree = SOURCE_ROOT; };
+		52CDED9C1118E39A00CF7F74 /* MbSidWtDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidWtDrum.cpp; path = ../../../core/components/MbSidWtDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52CDED9D1118E39A00CF7F74 /* MbSidWtDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidWtDrum.h; path = ../../../core/components/MbSidWtDrum.h; sourceTree = SOURCE_ROOT; };
 		52DD0E1A110E003400B92219 /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app.cpp; path = ../../../core/app.cpp; sourceTree = SOURCE_ROOT; };
 		52DD0E26110E06BA00B92219 /* MbSidStructs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidStructs.h; path = ../../../core/MbSidStructs.h; sourceTree = SOURCE_ROOT; };
 		52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSysEx.cpp; path = ../../../core/MbSidSysEx.cpp; sourceTree = SOURCE_ROOT; };
@@ -617,6 +623,10 @@
 		52959FC211025D22003FC4D0 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52CDED9C1118E39A00CF7F74 /* MbSidWtDrum.cpp */,
+				52CDED9D1118E39A00CF7F74 /* MbSidWtDrum.h */,
+				52CDED7C1118DE9D00CF7F74 /* MbSidDrum.cpp */,
+				52CDED7D1118DE9D00CF7F74 /* MbSidDrum.h */,
 				52FF1A5C111644AF002B0C8F /* MbSidSeMulti.cpp */,
 				52FF1A5D111644AF002B0C8F /* MbSidSeMulti.h */,
 				52FF1A54111643FC002B0C8F /* MbSidSeDrum.cpp */,
@@ -652,7 +662,6 @@
 			children = (
 				524BE3851118C35A004EB33E /* app_lcd.cpp */,
 				524BE3641118AC39004EB33E /* app_lcd.h */,
-				524BE3861118C35A004EB33E /* CLCDView_charset.inc */,
 				524BE3871118C35A004EB33E /* CLCDView.cpp */,
 				524BE3881118C35A004EB33E /* CLCDView.h */,
 				524BE36D1118ACDD004EB33E /* mios32_lcd.c */,
@@ -1008,6 +1017,8 @@
 				52FF1AAC111649EF002B0C8F /* MbSidMidiVoice.h in Headers */,
 				524BE3661118AC39004EB33E /* app_lcd.h in Headers */,
 				524BE38C1118C35A004EB33E /* CLCDView.h in Headers */,
+				52CDED7F1118DE9D00CF7F74 /* MbSidDrum.h in Headers */,
+				52CDED9F1118E39A00CF7F74 /* MbSidWtDrum.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1165,8 +1176,9 @@
 				52FF1AAB111649EF002B0C8F /* MbSidMidiVoice.cpp in Sources */,
 				524BE36E1118ACDD004EB33E /* mios32_lcd.c in Sources */,
 				524BE3891118C35A004EB33E /* app_lcd.cpp in Sources */,
-				524BE38A1118C35A004EB33E /* CLCDView_charset.inc in Sources */,
 				524BE38B1118C35A004EB33E /* CLCDView.cpp in Sources */,
+				52CDED7E1118DE9D00CF7F74 /* MbSidDrum.cpp in Sources */,
+				52CDED9E1118E39A00CF7F74 /* MbSidWtDrum.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -99,8 +99,6 @@ void MbSidSeBassline::initPatch(bool patchOnly)
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidSeBassline::tick(const u8 &updateSpeedFactor)
 {
-    sid_se_engine_t engine = (sid_se_engine_t)mbSidPatchPtr->body.engine;
-
     // clear modulation destinations
     mbSidVoice[0].voicePitchModulation = 0;
     mbSidVoice[0].voicePulsewidthModulation = 0;
@@ -112,6 +110,8 @@ bool MbSidSeBassline::tick(const u8 &updateSpeedFactor)
 
     // Clock
     if( mbSidClockPtr->eventStart ) {
+        for(int seq=0; seq<mbSidSeqBassline.size; ++seq)
+            mbSidSeqBassline[seq].seqRestartReq = 1;
     }
 
     if( mbSidClockPtr->eventClock ) {
@@ -212,9 +212,9 @@ bool MbSidSeBassline::tick(const u8 &updateSpeedFactor)
             }
         }
 
-        if( v->gate(engine, updateSpeedFactor, this) > 0 )
-            v->pitch(engine, updateSpeedFactor, this);
-        v->pw(engine, updateSpeedFactor, this);
+        if( v->gate(updateSpeedFactor, this) )
+            v->pitch(updateSpeedFactor, this);
+        v->pw(updateSpeedFactor, this);
 
         v->physSidVoice->waveform = v->voiceWaveform;
         v->physSidVoice->sync = v->voiceWaveformSync;
@@ -223,7 +223,12 @@ bool MbSidSeBassline::tick(const u8 &updateSpeedFactor)
         // don't change ADSR so long delay is active (also important for ABW - ADSR bug workaround)
         if( !v->voiceSetDelayCtr ) {
             v->physSidVoice->ad = v->voiceAttackDecay.ALL;
-            v->physSidVoice->sr = v->voiceSustainRelease.ALL;
+
+            // force sustain to maximum if accent flag active
+            u8 sr = v->voiceSustainRelease.ALL;
+            if( v->voiceAccentActive )
+                sr |= 0xf0;
+            v->physSidVoice->sr = sr;
         }
     }
 
@@ -1333,6 +1338,8 @@ bool MbSidSeBassline::sysexSetParameter(u16 addr, u8 data)
         }
 
         return true;
+    } else if( addr <= 0x1ff ) {
+        return true; // no update required
     }
 
     // unsupported sysex address
