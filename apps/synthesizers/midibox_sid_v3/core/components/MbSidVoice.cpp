@@ -56,17 +56,17 @@ void MbSidVoice::init(u8 _voiceNum, u8 _physVoiceNum, sid_voice_t *_physSidVoice
 /////////////////////////////////////////////////////////////////////////////
 void MbSidVoice::init(void)
 {
-    voiceLegato = false;
-    voiceWavetableOnly = false;
-    voiceSusKey = false;
-    voicePoly = false;
-    voiceConstantTimeGlide = false;
-    voiceGlissandoMode = false;
-    voiceGateStaysActive = false;
-    voiceAdsrBugWorkaround = false;
-    voiceWaveformOff = false;
-    voiceWaveformSync = false;
-    voiceWaveformRingmod = false;
+    voiceLegato = 0;
+    voiceWavetableOnly = 0;
+    voiceSusKey = 0;
+    voicePoly = 0;
+    voiceConstantTimeGlide = 0;
+    voiceGlissandoMode = 0;
+    voiceGateStaysActive = 0;
+    voiceAdsrBugWorkaround = 0;
+    voiceWaveformOff = 0;
+    voiceWaveformSync = 0;
+    voiceWaveformRingmod = 0;
     voiceWaveform = 0;
     voiceAttackDecay.ALL = 0;
     voiceSustainRelease.ALL = 0;
@@ -84,18 +84,18 @@ void MbSidVoice::init(void)
     voicePitchModulation = 0;
     voicePulsewidthModulation = 0;
 
-    voiceActive = false;
-    voiceDisabled = false;
-    voiceGateActive = false;
-    voiceGateSetReq = false;
-    voiceGateClrReq = false;
-    voiceOscSyncInProgress = false;
-    voicePortamentoActive = false;
-    voicePortamentoInitialized = false;
-    voiceAccentActive = false;
-    voiceSlideActive = false;
-    voiceForceFrqRecalc = false;
-    voiceNoteRestartReq = false;
+    voiceActive = 0;
+    voiceDisabled = 0;
+    voiceGateActive = 0;
+    voiceGateSetReq = 0;
+    voiceGateClrReq = 0;
+    voiceOscSyncInProgress = 0;
+    voicePortamentoActive = 0;
+    voicePortamentoInitialized = 0;
+    voiceAccentActive = 0;
+    voiceSlideActive = 0;
+    voiceForceFrqRecalc = 0;
+    voiceNoteRestartReq = 0;
 
     voiceNote = 0;
     voiceForcedNote = 0;
@@ -118,20 +118,20 @@ void MbSidVoice::init(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Voice Gate
-// returns true if pitch should be changed
+// returns 1 if pitch should be changed
 /////////////////////////////////////////////////////////////////////////////
-bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
+bool MbSidVoice::gate(const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
 {
-    bool changePitch = true;
+    bool changePitch = 1;
 
     // restart request?
     if( voiceNoteRestartReq ) {
-        voiceNoteRestartReq = false;
+        voiceNoteRestartReq = 0;
 
         // request gate if voice is active (and request clear for proper ADSR handling)
-        voiceGateClrReq = true;
+        voiceGateClrReq = 1;
         if( voiceActive )
-            voiceGateSetReq = true;
+            voiceGateSetReq = 1;
 
         // check if voice should be delayed - set delay counter to 0x0001 in this case, else to 0x0000
         voiceSetDelayCtr = voiceDelay ? 0x0001 : 0x0000;
@@ -147,34 +147,33 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
         }
     }
 
-
     if( voiceDisabled ) {
         if( !voiceWaveformOff ) {
-            voiceDisabled = false;
+            voiceDisabled = 0;
             if( voiceActive )
-                voiceGateSetReq = true;
+                voiceGateSetReq = 1;
         }
     } else {
         if( voiceWaveformOff ) {
-            voiceDisabled = true;
-            voiceGateClrReq = true;
+            voiceDisabled = 1;
+            voiceGateClrReq = 1;
         }
     }
 
     // if gate not active: ignore clear request
     if( !voiceGateActive )
-        voiceGateClrReq = false;
+        voiceGateClrReq = 0;
 
     // gate set/clear request?
     if( voiceGateClrReq ) {
-        voiceGateClrReq = false;
+        voiceGateClrReq = 0;
 
         // clear SID gate flag if GSA function not enabled
         if( !voiceGateStaysActive )
             physSidVoice->gate = 0;
 
         // gate not active anymore
-        voiceGateActive = false;
+        voiceGateActive = 0;
     } else if( voiceGateSetReq || voiceOscSyncInProgress ) {
         // don't set gate if oscillator disabled
         if( !voiceWaveformOff ) {
@@ -189,15 +188,15 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
                         delayInc = 255;
                 }
 
-                int setDelayCtr = setDelayCtr + mbSidEnvTable[delayInc] / updateSpeedFactor;
-                if( delayInc && setDelayCtr < 0xffff ) {
+                int delayCtr = voiceSetDelayCtr + mbSidEnvTable[delayInc] / updateSpeedFactor;
+                if( delayInc && delayCtr < 0xffff ) {
                     // no overrun
-                    setDelayCtr = setDelayCtr;
+                    voiceSetDelayCtr = delayCtr;
                     // don't change pitch so long delay is active
-                    changePitch = false;
+                    changePitch = 0;
                 } else {
                     // overrun: clear counter to disable delay
-                    setDelayCtr = 0x0000;
+                    voiceSetDelayCtr = 0x0000;
                     // for ADSR Bug Workaround (hard-sync)
                     physSidVoice->test = 0;
                 }
@@ -205,10 +204,10 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
 
             if( !voiceSetDelayCtr ) {
                 // acknowledge the set request
-                voiceGateSetReq = false;
+                voiceGateSetReq = 0;
 
                 // optional OSC synchronisation
-                u8 skip_gate = 0;
+                u8 skipGate = 0;
                 if( !voiceOscSyncInProgress ) {
                     if( voiceOscPhase ) {
                         if( voiceOscPhase == 1 ) {
@@ -217,12 +216,12 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
                             // set test flag for one update cycle
                             physSidVoice->test = 1;
                             // don't change pitch for this update cycle!
-                            changePitch = false;
+                            changePitch = 0;
                             // skip gate handling for this update cycle
-                            skip_gate = 1;
+                            skipGate = 1;
                         } else {
                             // notify that OSC synchronisation has been started
-                            voiceOscSyncInProgress = true;
+                            voiceOscSyncInProgress = 1;
                             // set test flag for one update cycle
                             physSidVoice->test = 1;
                             // set pitch depending on selected oscillator phase to achieve an offset between the waveforms
@@ -237,19 +236,19 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
                             physSidVoice->frq_l = osc_sync_frq & 0xff;
                             physSidVoice->frq_h = osc_sync_frq >> 8;
                             // don't change pitch for this update cycle!
-                            changePitch = false;
+                            changePitch = 0;
                             // skip gate handling for this update cycle
-                            skip_gate = 1;
+                            skipGate = 1;
                         }
                     }
                 }
 
-                if( !skip_gate ) { // set by code below if OSC sync is started
+                if( !skipGate ) { // set by code below if OSC sync is started
                     if( physSidVoice->test ) {
                         // clear test flag
                         physSidVoice->test = 0;
                         // don't change pitch for this update cycle!
-                        changePitch = false;
+                        changePitch = 0;
                         // ensure that pitch handler will re-calculate pitch frequency on next update cycle
                         voiceForceFrqRecalc = 1;
                     } else {
@@ -272,7 +271,7 @@ bool MbSidVoice::gate(const sid_se_engine_t &engine, const u8 &updateSpeedFactor
 /////////////////////////////////////////////////////////////////////////////
 // Voice Pitch
 /////////////////////////////////////////////////////////////////////////////
-void MbSidVoice::pitch(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
+void MbSidVoice::pitch(const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
 {
     // transpose MIDI note
     int transposedNote = voiceForcedNote;
@@ -447,7 +446,7 @@ void MbSidVoice::pitch(const sid_se_engine_t &engine, const u8 &updateSpeedFacto
 /////////////////////////////////////////////////////////////////////////////
 // Voice Pulsewidth
 /////////////////////////////////////////////////////////////////////////////
-void MbSidVoice::pw(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
+void MbSidVoice::pw(const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
 {
     // convert pulsewidth to 12bit signed value
     int pulsewidth = voicePulsewidth;
@@ -466,7 +465,7 @@ void MbSidVoice::pw(const sid_se_engine_t &engine, const u8 &updateSpeedFactor, 
 
 /////////////////////////////////////////////////////////////////////////////
 // Note On Handling
-// returns true if gate has been retriggered (for propagation to trigger matrix)
+// returns 1 if gate has been retriggered (for propagation to trigger matrix)
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidVoice::noteOn(u8 note, u8 velocity)
 {
@@ -500,16 +499,16 @@ bool MbSidVoice::noteOn(u8 note, u8 velocity)
         voiceAccentActive = (velocity >= 0x40) ? 1 : 0;
 
         // notify that new note has been triggered
-        return true;
+        return 1;
     }
 
-    return false; // gate not triggered
+    return 0; // gate not triggered
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Note Off Handling
-// returns true to request gate-retrigger
+// returns 1 to request gate-retrigger
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidVoice::noteOff(u8 note, u8 lastFirstNote)
 {
@@ -521,13 +520,13 @@ bool MbSidVoice::noteOff(u8 note, u8 lastFirstNote)
 
         // activate portamento (will be ignored by pitch handler if no portamento active - important for SusKey function to have it here!)
         voicePortamentoActive = 1;
-        return true; // request Note On!
+        return 1; // request Note On!
     }
 
     // request gate clear bit
     gateOff(note);
 
-    return false; // NO note on!
+    return 0; // NO note on!
 }
 
 
@@ -601,7 +600,7 @@ void MbSidVoice::playWtNote(MbSidSe *se, MbSidVoice *v, u8 wtValue)
 
                 // propagate to trigger matrix
                 se->triggerNoteOn(v, 1);
-                voiceNoteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
+                voiceNoteRestartReq = 0; // clear note restart request which has been set by trigger function - gate already set!
             }
 
             // set new note

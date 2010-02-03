@@ -98,8 +98,6 @@ void MbSidSeLead::initPatch(bool patchOnly)
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
 {
-    sid_se_engine_t engine = (sid_se_engine_t)mbSidPatchPtr->body.engine;
-
     // Clear all modulation destinations
     mbSidMod.clearDestinations();
 
@@ -220,9 +218,9 @@ bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
 
         mbSidArp[voice].tick(v, this);
 
-        if( v->gate(engine, updateSpeedFactor, this) > 0 )
-            v->pitch(engine, updateSpeedFactor, this);
-        v->pw(engine, updateSpeedFactor, this);
+        if( v->gate(updateSpeedFactor, this) )
+            v->pitch(updateSpeedFactor, this);
+        v->pw(updateSpeedFactor, this);
 
         v->physSidVoice->waveform = v->voiceWaveform;
         v->physSidVoice->sync = v->voiceWaveformSync;

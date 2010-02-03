@@ -70,11 +70,13 @@ public:
 #include "MbSidEnv.h"
 #include "MbSidEnvLead.h"
 #include "MbSidWt.h"
+#include "MbSidWtDrum.h"
 #include "MbSidMod.h"
 #include "MbSidArp.h"
 #include "MbSidSeq.h"
 #include "MbSidSeqBassline.h"
 #include "MbSidSeqDrum.h"
+#include "MbSidDrum.h"
 
 
 class MbSidSe
@@ -112,9 +114,6 @@ public:
     // Callback from MbSidSysEx to set a dedicated SysEx parameter
     // (forwarded from MbSidEnvironment and MbSid)
     virtual bool sysexSetParameter(u16 addr, u8 data) { return false; }; // has to be implemented in engine, returns false on invalid access
-
-    // voice queue
-    MbSidVoiceQueue voiceQueue;
 
     // MIDI access
     virtual void midiReceiveNote(u8 chn, u8 note, u8 velocity) {};
