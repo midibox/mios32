@@ -27,7 +27,7 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="copy /Y &quot;..\..\..\wrapper\RTAS\juce_RTAS_WinResources.rsr&quot; &quot;$(TargetPath)&quot;.rsr&#x0D;&#x0A;"
+				CommandLine="copy /Y &quot;..\..\wrapper\RTAS\juce_RTAS_WinResources.rsr&quot; &quot;$(TargetPath)&quot;.rsr&#x0D;&#x0A;"
 				Outputs="&quot;$(TargetPath)&quot;.rsr"
 			/>
 			<Tool
@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../../core;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/sid;."
+				AdditionalIncludeDirectories="../../../core;../../../core/components;../../../../../../include/mios32;../../src;../../../../../../modules/aout;../../../../../../modules/notestack;../../../../../../modules/random;../../../../../../modules/app_lcd/juce;../../../../../../modules/sid;."
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MIDIBOXSIDPLUGIN_EXPORTS;MIOS32_FAMILY_EMULATION"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,8 +66,9 @@
 				AdditionalOptions="/FORCE:multiple"
 				OutputFile="$(OutDir)\$(ProjectName).dpm"
 				LinkIncremental="2"
+				IgnoreDefaultLibraryNames="libcmtd.lib"
 				ModuleDefinitionFile="../../wrapper/RTAS/juce_RTAS_WinExports.def"
-				DelayLoadDLLs="DAE.dll; DigiExt.dll; DSI.dll; PluginLib.dll; DSPManager.dll"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -207,14 +208,6 @@
 				</File>
 				<File
 					RelativePath="..\..\src\AudioProcessing.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\CLCDView.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\CLCDView.h"
 					>
 				</File>
 				<File
@@ -374,6 +367,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\core\components\MbSidDrum.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\core\components\MbSidEnv.cpp"
 						>
 					</File>
@@ -427,6 +424,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\core\components\MbSidWt.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\core\components\MbSidWtDrum.cpp"
 						>
 					</File>
 				</Filter>
@@ -559,18 +560,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							CompileAs="2"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath="..\..\..\..\..\..\modules\random\jsw_rand.c"
 					>
 					<FileConfiguration
@@ -635,8 +624,42 @@
 				Name="mios"
 				>
 				<File
+					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\CLCDView.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\..\..\..\mios32\common\mios32_lcd.c"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="2"
+						/>
+					</FileConfiguration>
 					<FileConfiguration
 						Name="Release|Win32"
 						>
@@ -672,6 +695,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\CLCDView.h"
 				>
 			</File>
 			<File

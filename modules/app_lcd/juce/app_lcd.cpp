@@ -37,7 +37,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 display_available = 0;
+volatile u32 display_available = 0;
 
 std::map<unsigned char, CLcdView *> cLcdView;
 
@@ -49,7 +49,7 @@ std::map<unsigned char, CLcdView *> cLcdView;
 /////////////////////////////////////////////////////////////////////////////
 extern "C" s32 APP_LCD_Init(u32 mode)
 {
-    // currently only mode 0 supported
+	// currently only mode 0 supported
     if( mode != 0 )
         return -1; // unsupported mode
 
@@ -57,8 +57,8 @@ extern "C" s32 APP_LCD_Init(u32 mode)
     if( mios32_lcd_device >= 32 )
         return -2; // unsupported display number
 
-    // enable display
-    display_available |= (1 << mios32_lcd_device);
+	// enable display
+	display_available |= (1 << mios32_lcd_device);
 
     // initialize LCD
     APP_LCD_Cmd(0x08); // Display Off
@@ -77,13 +77,17 @@ extern "C" s32 APP_LCD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" s32 APP_LCD_Data(u8 data)
 {
-    // check if if display already has been disabled
+	// check if if display already has been disabled
     if( !(display_available & (1 << mios32_lcd_device)) )
         return -1;
 
-    // forward to LCD emulation
-    cLcdView[mios32_lcd_device]->lcdData(data);
-	
+	if( !cLcdView[mios32_lcd_device]->isValidComponent() ) {
+		// display hasn't been created yet - disable it
+		display_available &= ~(1 << mios32_lcd_device);
+		return -1; // display not available (anymore)    
+	} else {    // forward to LCD emulation
+		cLcdView[mios32_lcd_device]->lcdData(data);
+	}	
     return 0; // no error
 }
 
@@ -99,9 +103,13 @@ extern "C" s32 APP_LCD_Cmd(u8 cmd)
     if( !(display_available & (1 << mios32_lcd_device)) )
         return -1;
 
-    // forward to LCD emulation
-    cLcdView[mios32_lcd_device]->lcdCmd(cmd);
-
+	if( !cLcdView[mios32_lcd_device]->isValidComponent() ) {
+		// display hasn't been created yet - disable it
+		display_available &= ~(1 << mios32_lcd_device);
+		return -1; // display not available (anymore)    
+	} else {    // forward to LCD emulation
+	    cLcdView[mios32_lcd_device]->lcdCmd(cmd);
+	}
     return 0; // no error
 }
 
@@ -228,14 +236,16 @@ CLcdView *APP_LCD_GetComponentPtr(u8 device)
 
 CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
 {
-    if( !(display_available & (1 << device)) ) {
-        // create display
+	if( !cLcdView[device]->isValidComponent()) // create display
         cLcdView[device] = new CLcdView(originx, originy);
 
+	if(cLcdView[device]->isValidComponent() && !(display_available & (1 << device)) ) {
         // initialize display
         u8 mios32_lcd_device_saved = mios32_lcd_device;
         mios32_lcd_device = device;
-        s32 status = APP_LCD_Init(0);
+
+		s32 status = APP_LCD_Init(0);
+
         mios32_lcd_device = mios32_lcd_device_saved;
 
         if( status < 0 ) {
@@ -243,7 +253,7 @@ CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
             delete cLcdView[device];
             cLcdView[device] = NULL;
         }
-    }
+	} 
 
     return cLcdView[device]; // returns NULL if not available
 }
