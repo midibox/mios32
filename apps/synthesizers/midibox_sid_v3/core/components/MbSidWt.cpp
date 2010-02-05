@@ -48,7 +48,11 @@ void MbSidWt::init(void)
     wtEnd = 0;
     wtLoop = 0;
     wtSpeed = 0;
-    wtOneshotMode = false;
+    wtAssign = 0;
+    wtAssignLeftRight = 0;
+    wtOneshotMode = 0;
+    wtKeyControlMode = 0;
+    wtModControlMode = 0;
 
     wtOut = -1;
 
@@ -62,7 +66,7 @@ void MbSidWt::init(void)
 /////////////////////////////////////////////////////////////////////////////
 bool MbSidWt::tick(s32 step, const u8 &updateSpeedFactor)
 {
-    bool restarted = false;
+    bool restarted = 0;
 
     if( step >= 0 ) {
         // use modulated step position
@@ -78,12 +82,12 @@ bool MbSidWt::tick(s32 step, const u8 &updateSpeedFactor)
         }
     } else {
         // don't use modulated position - normal mode
-        bool nextStepReq = false;
+        bool nextStepReq = 0;
 
         // check if WT reset requested
         if( restartReq ) {
-            restartReq = false;
-            restarted = true;
+            restartReq = 0;
+            restarted = 1;
 
             // next clock will increment div to 0
             wtDivCtr = ~0;
@@ -93,12 +97,12 @@ bool MbSidWt::tick(s32 step, const u8 &updateSpeedFactor)
 
         // check for WT clock event
         if( clockReq ) {
-            clockReq = false;
+            clockReq = 0;
             // increment clock divider
             // reset divider if it already has reached the target value
             if( ++wtDivCtr == 0 || (wtDivCtr > wtSpeed) ) {
                 wtDivCtr = 0;
-                nextStepReq = true;
+                nextStepReq = 1;
             }
         }
 
@@ -107,7 +111,7 @@ bool MbSidWt::tick(s32 step, const u8 &updateSpeedFactor)
         if( nextStepReq && wtPos != 0xaa ) {
             // increment position counter, reset at end position
             if( ++wtPos > wtEnd ) {
-                restarted = true;
+                restarted = 1;
                 // if oneshot mode: set position to 0xaa, WT is stopped now!
                 if( wtOneshotMode )
                     wtPos = 0xaa;

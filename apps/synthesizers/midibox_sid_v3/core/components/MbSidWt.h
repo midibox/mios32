@@ -39,7 +39,11 @@ public:
     u8 wtEnd;
     u8 wtLoop;
     u8 wtSpeed;
+    u8 wtAssign;
+    u8 wtAssignLeftRight;
     bool wtOneshotMode;
+    bool wtKeyControlMode;
+    bool wtModControlMode;
 
     // output parameter
     s16 wtOut;

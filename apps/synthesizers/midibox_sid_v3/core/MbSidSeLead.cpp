@@ -170,17 +170,16 @@ bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
 
     // Wavetables
     MbSidWt *w = mbSidWt.first();
-    sid_se_wt_patch_t *wtPatch = (sid_se_wt_patch_t *)&mbSidPatchPtr->body.L.wt[0];
-    for(int wt=0; wt < mbSidWt.size; ++wt, ++w, ++wtPatch) {
+    for(int wt=0; wt < mbSidWt.size; ++wt, ++w) {
         s32 step = -1;
 
-        // if key control flag (END[7]) set, control position from current played key
-        if( wtPatch->end & (1 << 7) ) {
+        // if key control flag set, control position from current played key
+        if( w->wtKeyControlMode ) {
             // copy currently played note to step position
             step = mbSidVoice[0].voicePlayedNote;
 
-        // if MOD control flag (BEGIN[7]) set, control step position from modulation matrix
-        } else if( wtPatch->begin & (1 << 7) ) {
+        // if MOD control flag set, control step position from modulation matrix
+        } else if( w->wtModControlMode ) {
             step = ((s32)mbSidMod.modDst[SID_SE_MOD_DST_WT1 + wt] + 0x8000) >> 9; // 16bit signed -> 7bit unsigned
         }
 
@@ -200,12 +199,12 @@ bool MbSidSeLead::tick(const u8 &updateSpeedFactor)
             }
 
             // call parameter handler
-            if( wtPatch->assign ) {
+            if( w->wtAssign ) {
                 // determine SID channels which should be modified
-                u8 sidlr = (wtPatch->speed >> 6); // SID selection
+                u8 sidlr = w->wtAssignLeftRight; // SID selection
                 u8 ins = wt;
 
-                parSetWT(wtPatch->assign, wtValue, sidlr, ins);
+                parSetWT(w->wtAssign, wtValue, sidlr, ins);
             }
         }
     }
@@ -1276,10 +1275,10 @@ bool MbSidSeLead::sysexSetParameter(u16 addr, u8 data)
         MbSidWt *w = &mbSidWt[wt];
         u8 wtAddr = (addr-0x16c) % 5;
         switch( wtAddr ) {
-        case 0: w->wtSpeed = data & 0x3f; break; // left/right flag is read directly from patch
-        case 1: break; // assign is directly read from patch
-        case 2: w->wtBegin = data & 0x7f; break;
-        case 3: w->wtEnd = data & 0x7f; break;
+        case 0: w->wtSpeed = data & 0x3f; w->wtAssignLeftRight = (data >> 6); break;
+        case 1: w->wtAssign = data; break;
+        case 2: w->wtBegin = data & 0x7f; w->wtModControlMode = (data & 0x80) ? true : false; break;
+        case 3: w->wtEnd = data & 0x7f; w->wtKeyControlMode = (data & 0x80) ? true : false; break;
         case 4: w->wtLoop = data & 0x7f; w->wtOneshotMode = (data & 0x80) ? true : false; break;
         }
         return true;

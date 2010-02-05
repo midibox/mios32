@@ -542,21 +542,9 @@ void MbSidVoice::gateOn(void)
 
 void MbSidVoice::gateOff(u8 note)
 {
-#if 0
-    sid_se_engine_t engine = (sid_se_engine_t)mbSidPatch.body.engine;
-    if( engine == SID_SE_MULTI ) {
-        // TODO
-        // go through all voices which are assigned to the current instrument and note
-        u8 instrument = midi_voice;
-        MbSidVoice *v_i = (MbSidVoice *)&mbSidVoice[0];
-        int voice;
-        for(voice=0; voice<mbSidVoice.size; ++voice, ++v_i)
-            if( v_i->assignedInstrument == instrument && v_i->playedNote == note ) {
-                gateOff_SingleVoice(v_i);
-                voiceQueue.release(voice);
-            }
-    } else {
-#endif
+    if( voicePoly && note != voicePlayedNote )
+        return; // has to be done outside the noteOff handler! (see MbSidSeMulti.cpp)
+
     if( voiceActive ) {
         voiceActive = 0;
         voiceGateSetReq = 0;
