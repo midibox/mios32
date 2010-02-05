@@ -1269,8 +1269,11 @@ bool MbSidSeBassline::sysexSetParameter(u16 addr, u8 data)
 
             // special for Bassline
             mbSidSeqBassline[instrument].seqEnabled = v->voiceWavetableOnly;
+        } else if( voiceAddr <= 0x13 ) {
+            // 0x11..0x13 reserved for future extensions
+            // taken for voice/velcity/pitch assignment by multi engine
         } else if( voiceAddr <= 0x21 ) { // LFOs
-            u8 lfo = 2*instrument + ((voiceAddr >= 0x2b) ? 1 : 0);
+            u8 lfo = 2*instrument + ((voiceAddr >= 0x1b) ? 1 : 0);
             MbSidLfo *l = &mbSidLfo[lfo];
             u8 lfoAddr = (voiceAddr - 0x14) % 7;
             switch( lfoAddr ) {

@@ -55,6 +55,7 @@ void MbSid::init(u8 _sidNum, sid_regs_t *sidRegLPtr, sid_regs_t *sidRegRPtr, MbS
         mbSidSeBassline.mbSidVoice[midiVoice].midiVoicePtr = &mbSidMidiVoice[(midiVoice >= 3) ? 1 : 0];
         mbSidSeDrum.mbSidVoiceDrum[midiVoice].midiVoicePtr = &mbSidMidiVoice[0];
         mbSidSeMulti.mbSidVoice[midiVoice].midiVoicePtr = &mbSidMidiVoice[0]; // will be dynamically assigned by MIDI handler
+        mbSidSeMulti.midiVoicePtr = &mbSidMidiVoice[0]; // therefore a reference to the first voice is required in SE as well
     }
 
     updatePatch(true);
