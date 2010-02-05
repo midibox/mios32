@@ -77,7 +77,6 @@ private:
     ComponentBoundsConstrainer resizeLimits;
     TooltipWindow tooltipWindow;
 
-	AudioDeviceManager audioDeviceManager;
     ComboBox* midiOutputSelector;
     Label* midiOutputLabel;
     ComboBox* midiInputSelector;

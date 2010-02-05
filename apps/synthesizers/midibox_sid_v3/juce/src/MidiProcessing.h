@@ -26,6 +26,9 @@ public:
 
     MbSidEnvironment *mbSidEnvironment;
 
+    // stores MIDI In/Out
+	AudioDeviceManager audioDeviceManager;
+
     // for MidiKeyboardStateListener
     void handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
     void handleNoteOff (MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
