@@ -57,6 +57,7 @@ void MidiProcessing::processNextMidiEvent(const MidiMessage& message)
 
     // TODO: integrate this properly into $MIOS32_PATH/mios32/juce/ !!!
     if( size >= 1 && data[0] == 0xf0 ) {
+        DEBUG_MSG("got SysEx buffer with size: %u\n", size);
         for(int i=0; i<size; ++i)
             mbSidEnvironment->midiReceiveSysEx(DEFAULT, data[i]);
     } else {
