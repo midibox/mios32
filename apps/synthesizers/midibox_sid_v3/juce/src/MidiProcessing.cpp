@@ -55,9 +55,12 @@ void MidiProcessing::processNextMidiEvent(const MidiMessage& message)
     int size = message.getRawDataSize();
     u8 *data = message.getRawData();
 
+    // quick&dirty workaround for splitted SysEx streams - the later implementation will use the MIOS32 serializer
+    if( data[0] & 0x80 )
+        runningStatus = data[0];
+
     // TODO: integrate this properly into $MIOS32_PATH/mios32/juce/ !!!
-    if( size >= 1 && data[0] == 0xf0 ) {
-        DEBUG_MSG("got SysEx buffer with size: %u\n", size);
+    if( size >= 1 && runningStatus == 0xf0 ) {
         for(int i=0; i<size; ++i)
             mbSidEnvironment->midiReceiveSysEx(DEFAULT, data[i]);
     } else {

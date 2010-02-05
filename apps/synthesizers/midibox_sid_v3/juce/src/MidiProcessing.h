@@ -47,6 +47,8 @@ public:
     // bridge to MIOS32
     void sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2);
 
+    // stores the running status of incoming events
+    unsigned char runningStatus;
 };
 
 #endif /* _MIDI_PROCESSING_H */
