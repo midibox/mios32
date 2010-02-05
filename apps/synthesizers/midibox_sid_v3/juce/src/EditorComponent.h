@@ -76,7 +76,13 @@ private:
     ResizableCornerComponent* resizer;
     ComponentBoundsConstrainer resizeLimits;
     TooltipWindow tooltipWindow;
-  
+
+	AudioDeviceManager audioDeviceManager;
+    ComboBox* midiOutputSelector;
+    Label* midiOutputLabel;
+    ComboBox* midiInputSelector;
+    Label* midiInputLabel;
+
     void updateParametersFromSidEmu();
   
     // handy wrapper method to avoid having to cast the SidEmu to a AudioProcessing
