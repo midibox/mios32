@@ -18,11 +18,16 @@
 #include <mios32.h>
 
 
+// temporary!!!
+AudioDeviceManager *audioDeviceManagerForMidiTmp;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
 /////////////////////////////////////////////////////////////////////////////
 MidiProcessing::MidiProcessing()
 {
+    audioDeviceManagerForMidiTmp = &audioDeviceManager;
 }
 
 
@@ -139,12 +144,10 @@ void MidiProcessing::sendMidiEvent(unsigned char evnt0, unsigned char evnt1, uns
 // MIDI Output Events
 /////////////////////////////////////////////////////////////////////////////
 
-// temporary!!!
-AudioDeviceManager audioDeviceManagerForMidiTmp;
 s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 {
     MidiMessage message(stream, count);
-    MidiOutput *out = audioDeviceManagerForMidiTmp.getDefaultMidiOutput();
+    MidiOutput *out = audioDeviceManagerForMidiTmp->getDefaultMidiOutput();
 
     if( out ) {
         out->sendMessageNow(message);

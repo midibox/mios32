@@ -67,12 +67,12 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 			enabled = true;
 			current = i+1;
 		}
-		audioDeviceManager.setMidiInputEnabled (midiIns[i], enabled);
+		ownerSidEmu->midiProcessing.audioDeviceManager.setMidiInputEnabled (midiIns[i], enabled);
 	}
 	midiInputSelector->setSelectedId(current, true);
 
 	// add MIDI collector to audio device manager
-	audioDeviceManager.addMidiInputCallback(String::empty, &ownerSidEmu->midiProcessing);
+	ownerSidEmu->midiProcessing.audioDeviceManager.addMidiInputCallback(String::empty, &ownerSidEmu->midiProcessing);
 
 
 	///////////////////////////////////////////////////////////////////////////
@@ -95,7 +95,7 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 		midiOutputSelector->addItem (midiOuts[i], i + 1);
 		if( midiOuts[i] == ownerSidEmu->lastSysexMidiOut ) {
 			current = i+1;
-			audioDeviceManager.setDefaultMidiOutput(midiOuts[i]);
+			ownerSidEmu->midiProcessing.audioDeviceManager.setDefaultMidiOutput(midiOuts[i]);
 		}
 	}
 	midiOutputSelector->setSelectedId (current, true);
@@ -192,13 +192,13 @@ void EditorComponent::sliderValueChanged (Slider*)
 void EditorComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
     if( comboBoxThatHasChanged == midiOutputSelector ) {
-        audioDeviceManager.setDefaultMidiOutput(midiOutputSelector->getText());
+        getSidEmu()->midiProcessing.audioDeviceManager.setDefaultMidiOutput(midiOutputSelector->getText());
 		getSidEmu()->lastSysexMidiOut = midiOutputSelector->getText();
 	} else if( comboBoxThatHasChanged == midiInputSelector ) {
         const StringArray allMidiIns (MidiInput::getDevices());
         for (int i = allMidiIns.size(); --i >= 0;) {
 			bool enabled = allMidiIns[i] == midiInputSelector->getText();
-            audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
+            getSidEmu()->midiProcessing.audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
             if( enabled )
                 getSidEmu()->lastSysexMidiIn = allMidiIns[i];
 		}
