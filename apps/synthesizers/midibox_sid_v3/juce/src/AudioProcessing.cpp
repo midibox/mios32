@@ -118,6 +118,7 @@ AudioProcessing::AudioProcessing()
     sid_regs_t *sidRegLPtr = &sidRegs[2*sid+0];
     sid_regs_t *sidRegRPtr = &sidRegs[2*sid+1];
     mbSidEnvironment.mbSid[0].init(sid, sidRegLPtr, sidRegRPtr, &mbSidEnvironment.mbSidClock);
+    midiProcessing.mbSidEnvironment = &mbSidEnvironment;
 }
 
 AudioProcessing::~AudioProcessing()
@@ -167,7 +168,7 @@ void AudioProcessing::setParameter (int index, float newValue)
     case 1:
         if( bank != (unsigned char)newValue ) {
             bank = (unsigned char)newValue;
-            sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
+            midiProcessing.sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
             sendChangeMessage (this);
         }
         break;
@@ -175,7 +176,7 @@ void AudioProcessing::setParameter (int index, float newValue)
     case 2:
         if( patch != (unsigned char)newValue ) {
             patch = (unsigned char)newValue;
-            sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
+            midiProcessing.sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
             sendChangeMessage (this);
         }
         break;
@@ -239,7 +240,7 @@ void AudioProcessing::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // do your pre-playback setup stuff here..
     keyboardState.reset();
-    keyboardState.addListener(this);
+    keyboardState.addListener(&midiProcessing);
 
 #if SID_NUM
     reSidEnabled = 1;
@@ -308,7 +309,7 @@ void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
 
 #if RESID_PLAY_TESTTONE == 0
     // pass MIDI events to application
-    processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(), true);
+    midiProcessing.processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(), true);
 #endif
 
     // determine how many channels have to be services
@@ -378,6 +379,7 @@ AudioProcessorEditor* AudioProcessing::createEditor()
     return new EditorComponent (this);
 }
 
+
 //==============================================================================
 void AudioProcessing::getStateInformation (MemoryBlock& destData)
 {
@@ -396,6 +398,8 @@ void AudioProcessing::getStateInformation (MemoryBlock& destData)
     xmlState.setAttribute (T("patch"), patch);
     xmlState.setAttribute (T("uiWidth"), lastUIWidth);
     xmlState.setAttribute (T("uiHeight"), lastUIHeight);
+    xmlState.setAttribute (T("sysexMidiIn"), lastSysexMidiIn);
+    xmlState.setAttribute (T("sysexMidiOut"), lastSysexMidiOut);
   
     // you could also add as many child elements as you need to here..
   
@@ -421,59 +425,15 @@ void AudioProcessing::setStateInformation (const void* data, int sizeInBytes)
       
                     lastUIWidth = xmlState->getIntAttribute (T("uiWidth"), lastUIWidth);
                     lastUIHeight = xmlState->getIntAttribute (T("uiHeight"), lastUIHeight);
+					
+					lastSysexMidiIn = xmlState->getStringAttribute (T("sysexMidiIn"), lastSysexMidiIn);
+					lastSysexMidiOut = xmlState->getStringAttribute (T("sysexMidiOut"), lastSysexMidiOut);
       
                     sendChangeMessage (this);
                 }
     
             delete xmlState;
         }
-}
-
-
-//==============================================================================
-void AudioProcessing::processNextMidiEvent (const MidiMessage& message)
-{
-    int size = message.getRawDataSize();
-    u8 *data = message.getRawData();
-
-    // TODO: support for SysEx (has to be splitted into multiple packages)
-    sendMidiEvent(data[0],
-                  (size >= 2) ? data[1] : 0x00,
-                  (size >= 3) ? data[2] : 0x00);
-}
-
-void AudioProcessing::processNextMidiBuffer (MidiBuffer& buffer,
-                                             const int startSample,
-                                             const int numSamples,
-                                             const bool injectIndirectEvents)
-{
-    MidiBuffer::Iterator i (buffer);
-    MidiMessage message (0xf4, 0.0);
-    int time;
-  
-#if 0
-    const ScopedLock sl (lock);
-#endif
-
-    while (i.getNextEvent (message, time))
-        processNextMidiEvent (message);
-
-#if 0
-    if (injectIndirectEvents)
-        {
-            MidiBuffer::Iterator i2 (eventsToAdd);
-            const int firstEventToAdd = eventsToAdd.getFirstEventTime();
-            const double scaleFactor = numSamples / (double) (eventsToAdd.getLastEventTime() + 1 - firstEventToAdd);
-    
-            while (i2.getNextEvent (message, time))
-                {
-                    const int pos = jlimit (0, numSamples - 1, roundDoubleToInt ((time - firstEventToAdd) * scaleFactor));
-                    buffer.addEvent (message, startSample + pos);
-                }
-        }
-  
-    eventsToAdd.clear();
-#endif
 }
 
 
@@ -491,7 +451,7 @@ int AudioProcessing::getCurrentProgram()
 void AudioProcessing::setCurrentProgram (int index)
 {
     patch = index;
-    sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
+    midiProcessing.sendMidiEvent(0xc0, patch, 0x00); // TODO: send bank CC
     sendChangeMessage(this);
 }
 
@@ -535,38 +495,6 @@ const String AudioProcessing::getPatchNameFromBank(int bank, int patch)
 
     return String(buffer);
 }
-
-//==============================================================================
-void AudioProcessing::sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2)
-{
-    mios32_midi_package_t p;
-    p.type = evnt0 >> 4;
-    p.evnt0 = evnt0;
-    p.evnt1 = evnt1;
-    p.evnt2 = evnt2;
-
-    // temporary ignore channel
-    p.evnt0 &= 0xf0;
-
-    mbSidEnvironment.midiReceive(DEFAULT, p);
-}
-
-void AudioProcessing::handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
-{
-    unsigned char evnt0 = 0x90 + ((midiChannel > 15) ? 15 : midiChannel);
-    unsigned char evnt1 = (midiNoteNumber > 127) ? 127 : midiNoteNumber;
-    unsigned char evnt2 = (velocity >= 1.0) ? 127 : (velocity*127);
-    sendMidiEvent(evnt0, evnt1, evnt2);
-}
-
-void AudioProcessing::handleNoteOff (MidiKeyboardState *source, int midiChannel, int midiNoteNumber)
-{
-    unsigned char evnt0 = 0x90 + ((midiChannel > 15) ? 15 : midiChannel);
-    unsigned char evnt1 = (midiNoteNumber > 127) ? 127 : midiNoteNumber;
-    unsigned char evnt2 = 0x00;
-    sendMidiEvent(evnt0, evnt1, evnt2);
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Updates all RESID registers

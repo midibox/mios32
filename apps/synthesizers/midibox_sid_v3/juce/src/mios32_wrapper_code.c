@@ -31,13 +31,14 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   return 0; // no error
 }
 
-s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count) { return -1; }
+// now temporary in MidiProcessing.cpp
+//s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count) { return -1; }
 
 s32 MIOS32_MIDI_SysExCallback_Init(void *callback_sysex) { return -1; }
 s32 MIOS32_MIDI_TimeOutCallback_Init(void *callback_timeout) { return -1; }
 s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx) { return -1; }
 s32 MIOS32_MIDI_DirectRxCallback_Init(void *callback_rx) { return -1; }
-u8  MIOS32_MIDI_DeviceIDGet(void) { return -1; }
+u8  MIOS32_MIDI_DeviceIDGet(void) { return 0x00; }
 
 s32 MIOS32_STOPWATCH_Init(u32 resolution) { return -1; }
 s32 MIOS32_STOPWATCH_Reset(void) { return -1; }

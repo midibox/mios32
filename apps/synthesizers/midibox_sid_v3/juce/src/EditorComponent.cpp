@@ -16,7 +16,9 @@
 EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     : AudioProcessorEditor (ownerSidEmu)
 {
-    // patch selection
+	///////////////////////////////////////////////////////////////////////////
+	// Patch Selection
+	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible(patchComboBox = new ComboBox(T("Patch")));
     patchComboBox->addListener(this);
     patchComboBox->setEditableText(false);
@@ -29,7 +31,10 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     patchComboBox->setTooltip (T("selects a patch"));
     patchComboBox->setSelectedId((int)ownerSidEmu->getParameter(2)+1, false);
 
+
+	///////////////////////////////////////////////////////////////////////////
     // create our gain slider..
+	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible (gainSlider = new Slider (T("gain")));
     gainSlider->addListener (this);
     gainSlider->setSliderStyle(Slider::RotaryVerticalDrag);
@@ -37,24 +42,94 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     gainSlider->setRange (0.0, 1.0, 0.01);
     gainSlider->setTooltip (T("changes the volume"));
     gainSlider->setValue (ownerSidEmu->getParameter(0), false);
-  
+
+	
+	///////////////////////////////////////////////////////////////////////////
+    // create MIDI input selector
+	///////////////////////////////////////////////////////////////////////////
+	addAndMakeVisible (midiInputSelector = new ComboBox (String::empty));
+	midiInputSelector->addListener (this);
+
+	midiInputLabel = new Label ("lm", TRANS("SysEx Input:"));
+	midiInputLabel->attachToComponent (midiInputSelector, true);
+	midiInputSelector->clear();
+	
+	const StringArray midiIns (MidiInput::getDevices());
+	
+	midiInputSelector->addItem (TRANS("<< none >>"), -1);
+	midiInputSelector->addSeparator();
+	
+	int current = -1;
+	for (int i = 0; i < midiIns.size(); ++i) {
+		midiInputSelector->addItem (midiIns[i], i + 1);
+		bool enabled = false;
+		if( midiIns[i] == ownerSidEmu->lastSysexMidiIn ) {
+			enabled = true;
+			current = i+1;
+		}
+		audioDeviceManager.setMidiInputEnabled (midiIns[i], enabled);
+	}
+	midiInputSelector->setSelectedId(current, true);
+
+	// add MIDI collector to audio device manager
+	audioDeviceManager.addMidiInputCallback(String::empty, &ownerSidEmu->midiProcessing);
+
+
+	///////////////////////////////////////////////////////////////////////////
+    // create MIDI output selector
+	///////////////////////////////////////////////////////////////////////////
+	addAndMakeVisible (midiOutputSelector = new ComboBox (String::empty));
+	midiOutputSelector->addListener (this);
+	
+	midiOutputLabel = new Label ("lm", TRANS("SysEx Output:"));
+	midiOutputLabel->attachToComponent (midiOutputSelector, true);
+	midiOutputSelector->clear();
+	
+	const StringArray midiOuts (MidiOutput::getDevices());
+	
+	midiOutputSelector->addItem (TRANS("<< none >>"), -1);
+	midiOutputSelector->addSeparator();
+	
+	current = -1;
+	for (int i = 0; i < midiOuts.size(); ++i) {
+		midiOutputSelector->addItem (midiOuts[i], i + 1);
+		if( midiOuts[i] == ownerSidEmu->lastSysexMidiOut ) {
+			current = i+1;
+			audioDeviceManager.setDefaultMidiOutput(midiOuts[i]);
+		}
+	}
+	midiOutputSelector->setSelectedId (current, true);
+	
+	
+	///////////////////////////////////////////////////////////////////////////
     // create and add the midi keyboard component..
+	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible (midiKeyboard
                        = new MidiKeyboardComponent (ownerSidEmu->keyboardState,
                                                     MidiKeyboardComponent::horizontalKeyboard));
   
+	///////////////////////////////////////////////////////////////////////////
     // add a label that will display the current timecode and status..
+	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible (infoLabel = new Label (String::empty, String::empty));
 
-	// create a CLCD via APP_LCD module and add it
-	if (!cLcdView->isValidComponent()) 
-		addAndMakeVisible(cLcdView = APP_LCD_GetComponentPtr(0, 50, 50));
 	
+	///////////////////////////////////////////////////////////////////////////
+	// create a CLCD via APP_LCD module and add it
+	///////////////////////////////////////////////////////////////////////////
+	if (!cLcdView->isValidComponent()) 
+		addAndMakeVisible(cLcdView = APP_LCD_GetComponentPtr(0, 300, 50));
+	
+	///////////////////////////////////////////////////////////////////////////
     // add the triangular resizer component for the bottom-right of the UI
+	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible (resizer = new ResizableCornerComponent (this, &resizeLimits));
     resizeLimits.setSizeLimits (150, 150, 800, 300);
   
+	
+	///////////////////////////////////////////////////////////////////////////
     // set our component's initial size to be the last one that was stored in the SidEmu's settings
+	///////////////////////////////////////////////////////////////////////////
     setSize (ownerSidEmu->lastUIWidth,
              ownerSidEmu->lastUIHeight);
   
@@ -81,15 +156,18 @@ void EditorComponent::paint (Graphics& g)
 
 void EditorComponent::resized()
 {
-    gainSlider->setBounds (10, 10, 30, 30);
-    patchComboBox->setBounds (50, 13, 200, 22);
+    gainSlider->setBounds (30, 10, 30, 30);
+    patchComboBox->setBounds (100, 13, 200, 22);
     infoLabel->setBounds (10, 35, 450, 20);
-  
+
+	midiInputSelector->setBounds (100, 50, 200, 22);
+	midiOutputSelector->setBounds (100, 75, 200, 22);
+
     const int keyboardHeight = 70;
     midiKeyboard->setBounds (4, getHeight() - keyboardHeight - 4,
                              getWidth() - 8, keyboardHeight);
   
-    resizer->setBounds (getWidth() - 16, getHeight() - 16, 16, 16);
+    //resizer->setBounds (getWidth() - 16, getHeight() - 16, 16, 16);
   
     // if we've been resized, tell the SidEmu so that it can store the new size
     // in its settings
@@ -111,9 +189,23 @@ void EditorComponent::sliderValueChanged (Slider*)
     getSidEmu()->setParameterNotifyingHost (0, (float) gainSlider->getValue());
 }
 
-void EditorComponent::comboBoxChanged (ComboBox*)
+void EditorComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
-    getSidEmu()->setParameterNotifyingHost (2, (float) patchComboBox->getSelectedId()-1);
+    if( comboBoxThatHasChanged == midiOutputSelector ) {
+        audioDeviceManager.setDefaultMidiOutput(midiOutputSelector->getText());
+		getSidEmu()->lastSysexMidiOut = midiOutputSelector->getText();
+	} else if( comboBoxThatHasChanged == midiInputSelector ) {
+        const StringArray allMidiIns (MidiInput::getDevices());
+        for (int i = allMidiIns.size(); --i >= 0;) {
+			bool enabled = allMidiIns[i] == midiInputSelector->getText();
+            audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
+            if( enabled )
+                getSidEmu()->lastSysexMidiIn = allMidiIns[i];
+		}
+	} else {
+		getSidEmu()->setParameterNotifyingHost (2, (float) patchComboBox->getSelectedId()-1);
+	}
+        
 }
 
 //==============================================================================

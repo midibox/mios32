@@ -35,6 +35,7 @@
 
 #include "../resid/resid.h"
 #include "MbSidEnvironment.h"
+#include "MidiProcessing.h"
 
 
 // number of emulated SID(s)
@@ -44,7 +45,6 @@
 
 class AudioProcessing  : 
     public AudioProcessor, 
-    public MidiKeyboardStateListener,
     public ChangeBroadcaster
 {
 public:
@@ -92,11 +92,8 @@ public:
     void changeProgramName (int index, const String& newName);
   
     //==============================================================================
-    void sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2);
-
-    void handleNoteOn (MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
-    void handleNoteOff (MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
-
+    MidiProcessing midiProcessing;
+  
     //==============================================================================
     void getStateInformation (MemoryBlock& destData);
     void setStateInformation (const void* data, int sizeInBytes);
@@ -112,19 +109,20 @@ public:
     // this keeps a copy of the last set of time info that was acquired during an audio
     // callback - the UI component will read this and display it.
     AudioPlayHead::CurrentPositionInfo lastPosInfo;
-  
+
+    //==============================================================================
+    // the additional MIDI interface for SysEx data
+    MidiMessageCollector midiCollector;
+
     // these are used to persist the UI's size - the values are stored along with the
     // SidEmu's other parameters, and the UI component will update them when it gets
     // resized.
     int lastUIWidth, lastUIHeight;
 
-    void processNextMidiEvent (const MidiMessage& message);
-    void processNextMidiBuffer (MidiBuffer& buffer,
-                                const int startSample,
-                                const int numSamples,
-                                const bool injectIndirectEvents);
-  
-  
+	// MIDI In/Out stored in preferences file
+	String lastSysexMidiIn, lastSysexMidiOut;
+	
+
 #if SID_NUM
     SID *reSID[SID_NUM];
     MbSidEnvironment mbSidEnvironment;

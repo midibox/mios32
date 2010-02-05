@@ -102,6 +102,8 @@
 		52CDED7F1118DE9D00CF7F74 /* MbSidDrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 52CDED7D1118DE9D00CF7F74 /* MbSidDrum.h */; };
 		52CDED9E1118E39A00CF7F74 /* MbSidWtDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52CDED9C1118E39A00CF7F74 /* MbSidWtDrum.cpp */; };
 		52CDED9F1118E39A00CF7F74 /* MbSidWtDrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 52CDED9D1118E39A00CF7F74 /* MbSidWtDrum.h */; };
+		52CDF0F2111B897300CF7F74 /* MidiProcessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52CDF0F0111B897300CF7F74 /* MidiProcessing.cpp */; };
+		52CDF0F3111B897300CF7F74 /* MidiProcessing.h in Headers */ = {isa = PBXBuildFile; fileRef = 52CDF0F1111B897300CF7F74 /* MidiProcessing.h */; };
 		52DD0E1B110E003400B92219 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E1A110E003400B92219 /* app.cpp */; };
 		52DD0E29110E06BA00B92219 /* MbSidStructs.h in Headers */ = {isa = PBXBuildFile; fileRef = 52DD0E26110E06BA00B92219 /* MbSidStructs.h */; };
 		52DD0E2A110E06BA00B92219 /* MbSidSysEx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */; };
@@ -334,6 +336,8 @@
 		52CDED7D1118DE9D00CF7F74 /* MbSidDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidDrum.h; path = ../../../core/components/MbSidDrum.h; sourceTree = SOURCE_ROOT; };
 		52CDED9C1118E39A00CF7F74 /* MbSidWtDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidWtDrum.cpp; path = ../../../core/components/MbSidWtDrum.cpp; sourceTree = SOURCE_ROOT; };
 		52CDED9D1118E39A00CF7F74 /* MbSidWtDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidWtDrum.h; path = ../../../core/components/MbSidWtDrum.h; sourceTree = SOURCE_ROOT; };
+		52CDF0F0111B897300CF7F74 /* MidiProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiProcessing.cpp; path = ../../src/MidiProcessing.cpp; sourceTree = SOURCE_ROOT; };
+		52CDF0F1111B897300CF7F74 /* MidiProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiProcessing.h; path = ../../src/MidiProcessing.h; sourceTree = SOURCE_ROOT; };
 		52DD0E1A110E003400B92219 /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app.cpp; path = ../../../core/app.cpp; sourceTree = SOURCE_ROOT; };
 		52DD0E26110E06BA00B92219 /* MbSidStructs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidStructs.h; path = ../../../core/MbSidStructs.h; sourceTree = SOURCE_ROOT; };
 		52DD0E27110E06BA00B92219 /* MbSidSysEx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSysEx.cpp; path = ../../../core/MbSidSysEx.cpp; sourceTree = SOURCE_ROOT; };
@@ -561,6 +565,8 @@
 		52135BAC11014358004E7094 /* MBSID_Emulation */ = {
 			isa = PBXGroup;
 			children = (
+				52CDF0F0111B897300CF7F74 /* MidiProcessing.cpp */,
+				52CDF0F1111B897300CF7F74 /* MidiProcessing.h */,
 				5295A0A111026ADE003FC4D0 /* tasks.c */,
 				5295A0831102687F003FC4D0 /* mios32_config.h */,
 				5295A0841102687F003FC4D0 /* mios32_wrapper_code.c */,
@@ -1019,6 +1025,7 @@
 				524BE38C1118C35A004EB33E /* CLCDView.h in Headers */,
 				52CDED7F1118DE9D00CF7F74 /* MbSidDrum.h in Headers */,
 				52CDED9F1118E39A00CF7F74 /* MbSidWtDrum.h in Headers */,
+				52CDF0F3111B897300CF7F74 /* MidiProcessing.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1179,6 +1186,7 @@
 				524BE38B1118C35A004EB33E /* CLCDView.cpp in Sources */,
 				52CDED7E1118DE9D00CF7F74 /* MbSidDrum.cpp in Sources */,
 				52CDED9E1118E39A00CF7F74 /* MbSidWtDrum.cpp in Sources */,
+				52CDF0F2111B897300CF7F74 /* MidiProcessing.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
