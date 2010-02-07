@@ -3,7 +3,7 @@
 
   This is an automatically generated file created by the Jucer!
 
-  Creation date:  7 Feb 2010 12:17:46 pm
+  Creation date:  7 Feb 2010 7:52:20 pm
 
   Be careful when adding custom code to these files, as only the code within
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
@@ -34,8 +34,13 @@ MainComponent::MainComponent ()
       triggersButton (0),
       tracksButton (0),
       patternsButton (0),
-      setupButton (0),
-      blmClass (0)
+      blmClass (0),
+      midiInput (0),
+      midiOutput (0),
+      blmSize (0),
+      label (0),
+      label2 (0),
+      label3 (0)
 {
     addAndMakeVisible (resizer = new ResizableBorderComponent (this,0));
 
@@ -57,21 +62,93 @@ MainComponent::MainComponent ()
     patternsButton->setColour (TextButton::buttonColourId, Colours::azure);
     patternsButton->setColour (TextButton::buttonOnColourId, Colours::red);
 
-    addAndMakeVisible (setupButton = new TextButton (String::empty));
-    setupButton->setButtonText (T("Setup"));
-    setupButton->addButtonListener (this);
-    setupButton->setColour (TextButton::buttonColourId, Colour (0xffc5f5f1));
-    setupButton->setColour (TextButton::buttonOnColourId, Colour (0xff18b7e8));
-
     addAndMakeVisible (blmClass = new BlmClass (32,16));
     blmClass->setName (T("blmClass"));
 
+    addAndMakeVisible (midiInput = new ComboBox (T("new combo box")));
+    midiInput->setEditableText (false);
+    midiInput->setJustificationType (Justification::centredLeft);
+    midiInput->setTextWhenNothingSelected (String::empty);
+    midiInput->setTextWhenNoChoicesAvailable (T("(no choices)"));
+    midiInput->addListener (this);
+
+    addAndMakeVisible (midiOutput = new ComboBox (T("new combo box")));
+    midiOutput->setEditableText (false);
+    midiOutput->setJustificationType (Justification::centredLeft);
+    midiOutput->setTextWhenNothingSelected (String::empty);
+    midiOutput->setTextWhenNoChoicesAvailable (T("(no choices)"));
+    midiOutput->addListener (this);
+
+    addAndMakeVisible (blmSize = new ComboBox (T("new combo box")));
+    blmSize->setEditableText (false);
+    blmSize->setJustificationType (Justification::centredLeft);
+    blmSize->setTextWhenNothingSelected (T("32x16"));
+    blmSize->setTextWhenNoChoicesAvailable (T("(no choices)"));
+    blmSize->addItem (T("32x16"), 1);
+    blmSize->addItem (T("64x16"), 2);
+    blmSize->addItem (T("128x16"), 3);
+    blmSize->addItem (T("16x8"), 4);
+    blmSize->addItem (T("32x8"), 5);
+    blmSize->addItem (T("64x8"), 6);
+    blmSize->addItem (T("16x4"), 7);
+    blmSize->addItem (T("32x4"), 8);
+    blmSize->addItem (T("64x4"), 9);
+    blmSize->addListener (this);
+
+    addAndMakeVisible (label = new Label (T("new label"),
+                                          T("Midi In:")));
+    label->setFont (Font (11.0000f, Font::plain));
+    label->setJustificationType (Justification::centredLeft);
+    label->setEditable (false, false, false);
+    label->setColour (TextEditor::textColourId, Colours::black);
+    label->setColour (TextEditor::backgroundColourId, Colour (0x0));
+
+    addAndMakeVisible (label2 = new Label (T("new label"),
+                                           T("Midi Out:")));
+    label2->setFont (Font (11.0000f, Font::plain));
+    label2->setJustificationType (Justification::centredLeft);
+    label2->setEditable (false, false, false);
+    label2->setColour (TextEditor::textColourId, Colours::black);
+    label2->setColour (TextEditor::backgroundColourId, Colour (0x0));
+
+    addAndMakeVisible (label3 = new Label (T("new label"),
+                                           T("Size:")));
+    label3->setFont (Font (11.0000f, Font::plain));
+    label3->setJustificationType (Justification::centredLeft);
+    label3->setEditable (false, false, false);
+    label3->setColour (TextEditor::textColourId, Colours::black);
+    label3->setColour (TextEditor::backgroundColourId, Colour (0x0));
+
 
     //[UserPreSize]
-	triggersButton->setClickingTogglesState(true);
-	tracksButton->setClickingTogglesState(true);
-	patternsButton->setClickingTogglesState(true);
-	setupWindow=new SetupWindow; // Create setup window but don't display.
+	//triggersButton->setClickingTogglesState(true);
+	//tracksButton->setClickingTogglesState(true);
+	//patternsButton->setClickingTogglesState(true);
+	//setupWindow=new SetupWindow; // Create setup window but don't display.
+
+	const StringArray midiOuts (MidiOutput::getDevices());
+
+	midiOutput->addItem (TRANS("<< none >>"), -1);
+	midiOutput->addSeparator();
+	int current = -1;
+	for (int i = 0; i < midiOuts.size(); ++i) {
+		midiOutput->addItem (midiOuts[i], i + 1);
+	}
+	midiOutput->setSelectedId(current, true);
+
+	const StringArray midiIns (MidiInput::getDevices());
+
+	midiInput->addItem (TRANS("<< none >>"), -1);
+	midiInput->addSeparator();
+
+	current = -1;
+	for (int i = 0; i < midiIns.size(); ++i) {
+		midiInput->addItem (midiIns[i], i + 1);
+		bool enabled = false;
+	}
+	midiInput->setSelectedId(current, true);
+
+
 
     //[/UserPreSize]
 
@@ -90,8 +167,13 @@ MainComponent::~MainComponent()
     deleteAndZero (triggersButton);
     deleteAndZero (tracksButton);
     deleteAndZero (patternsButton);
-    deleteAndZero (setupButton);
     deleteAndZero (blmClass);
+    deleteAndZero (midiInput);
+    deleteAndZero (midiOutput);
+    deleteAndZero (blmSize);
+    deleteAndZero (label);
+    deleteAndZero (label2);
+    deleteAndZero (label3);
 
     //[Destructor]. You can add your own custom destruction code here..
     //[/Destructor]
@@ -115,8 +197,13 @@ void MainComponent::resized()
     triggersButton->setBounds (8, 8, 88, 24);
     tracksButton->setBounds (8, 40, 88, 24);
     patternsButton->setBounds (8, 72, 88, 24);
-    setupButton->setBounds (8, getHeight() - 31, 88, 24);
-    blmClass->setBounds (104, 5, getWidth() - 109, getHeight() - 10);
+    blmClass->setBounds (112, 5, getWidth() - 117, getHeight() - 10);
+    midiInput->setBounds (8, 112, 88, 24);
+    midiOutput->setBounds (8, 152, 88, 24);
+    blmSize->setBounds (8, 192, 88, 24);
+    label->setBounds (8, 96, 48, 16);
+    label2->setBounds (8, 136, 48, 16);
+    label3->setBounds (8, 176, 48, 16);
     //[UserResized] Add your own custom resize handling here..
     //[/UserResized]
 }
@@ -144,46 +231,52 @@ void MainComponent::buttonClicked (Button* buttonThatWasClicked)
 		blmClass->sendCCEvent(0,0x42,(buttonThatWasClicked->getToggleState() ? 0x7f:0x00));
         //[/UserButtonCode_patternsButton]
     }
-    else if (buttonThatWasClicked == setupButton)
-    {
-        //[UserButtonCode_setupButton] -- add your button handler code here..
-		DialogWindow::showModalDialog (T("BLM Setup"),
-                                   setupWindow,
-                                   this,
-                                   Colours::azure,
-                                   true);
-		int rows,cols;
-		switch (setupWindow->getBlmSize()) {
-		case 2: cols=64; rows=16; break;
-		case 3: cols=128; rows=16; break;
-		case 4: cols=16; rows=8; break;
-		case 5: cols=32; rows=8; break;
-		case 6: cols=64; rows=8; break;
-		case 7: cols=16; rows=4; break;
-		case 8: cols=32; rows=4; break;
-		case 9: cols=64; rows=4; break;
-		default: cols=32; rows=16; // 1 was selected!
-		}
-		deleteAndZero(blmClass);
-	    addAndMakeVisible (blmClass = new BlmClass (cols,rows));
-
-		if (setupWindow->getMidiInput())
-			blmClass->setMidiInput(setupWindow->getMidiInput()-1);
-		else
-			blmClass->setMidiInput(MidiInput::getDefaultDeviceIndex());
-
-		if (setupWindow->getMidiOutput())
-			blmClass->setMidiOutput(setupWindow->getMidiOutput()-1);
-		else
-			blmClass->setMidiOutput(MidiOutput::getDefaultDeviceIndex());
-
-		resized(); // force call to resized!
-
-        //[/UserButtonCode_setupButton]
-    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
+}
+
+void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
+{
+    //[UsercomboBoxChanged_Pre]
+    //[/UsercomboBoxChanged_Pre]
+
+    if (comboBoxThatHasChanged == midiInput)
+    {
+        //[UserComboBoxCode_midiInput] -- add your combo box handling code here..
+		blmClass->setMidiInput(midiInput->getSelectedId()-1);
+        //[/UserComboBoxCode_midiInput]
+    }
+    else if (comboBoxThatHasChanged == midiOutput)
+    {
+        //[UserComboBoxCode_midiOutput] -- add your combo box handling code here..
+		blmClass->setMidiOutput(midiOutput->getSelectedId()-1);
+        //[/UserComboBoxCode_midiOutput]
+    }
+    else if (comboBoxThatHasChanged == blmSize)
+    {
+        //[UserComboBoxCode_blmSize] -- add your combo box handling code here..
+		 int rows,cols;
+         switch (blmSize->getSelectedId()) {
+         case 2: cols=64; rows=16; break;
+         case 3: cols=128; rows=16; break;
+         case 4: cols=16; rows=8; break;
+         case 5: cols=32; rows=8; break;
+         case 6: cols=64; rows=8; break;
+         case 7: cols=16; rows=4; break;
+         case 8: cols=32; rows=4; break;
+         case 9: cols=64; rows=4; break;
+         default: cols=32; rows=16; // 1 was selected!
+         }
+         //deleteAndZero(blmClass);
+         //addAndMakeVisible (blmClass = new BlmClass (cols,rows));
+		 blmClass->setBlmDimensions(cols,rows);
+		 blmClass->resized(); // Force call to resized to redraw new BLM
+        //[/UserComboBoxCode_blmSize]
+    }
+
+    //[UsercomboBoxChanged_Post]
+    //[/UsercomboBoxChanged_Post]
 }
 
 
@@ -217,13 +310,34 @@ BEGIN_JUCER_METADATA
   <TEXTBUTTON name="" id="68a0577452511158" memberName="patternsButton" virtualName=""
               explicitFocusOrder="0" pos="8 72 88 24" bgColOff="fff0ffff" bgColOn="ffff0000"
               buttonText="Patterns" connectedEdges="0" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="" id="d34028cb0db05000" memberName="setupButton" virtualName=""
-              explicitFocusOrder="0" pos="8 31R 88 24" bgColOff="ffc5f5f1"
-              bgColOn="ff18b7e8" buttonText="Setup" connectedEdges="0" needsCallback="1"
-              radioGroupId="0"/>
   <GENERICCOMPONENT name="blmClass" id="f588e2887ead362d" memberName="blmClass" virtualName=""
-                    explicitFocusOrder="0" pos="104 5 109M 10M" class="BlmClass"
+                    explicitFocusOrder="0" pos="112 5 117M 10M" class="BlmClass"
                     params="32,16"/>
+  <COMBOBOX name="new combo box" id="d5b1c2215727b7d1" memberName="midiInput"
+            virtualName="" explicitFocusOrder="0" pos="8 112 88 24" editable="0"
+            layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <COMBOBOX name="new combo box" id="8075aa1c2b4cfb8b" memberName="midiOutput"
+            virtualName="" explicitFocusOrder="0" pos="8 152 88 24" editable="0"
+            layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <COMBOBOX name="new combo box" id="9468b7928e9045ee" memberName="blmSize"
+            virtualName="" explicitFocusOrder="0" pos="8 192 88 24" editable="0"
+            layout="33" items="32x16&#10;64x16&#10;128x16&#10;16x8&#10;32x8&#10;64x8&#10;16x4&#10;32x4&#10;64x4"
+            textWhenNonSelected="32x16" textWhenNoItems="(no choices)"/>
+  <LABEL name="new label" id="8614fa3b9e19ab4c" memberName="label" virtualName=""
+         explicitFocusOrder="0" pos="8 96 48 16" edTextCol="ff000000"
+         edBkgCol="0" labelText="Midi In:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="11"
+         bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="a6e208682370a799" memberName="label2" virtualName=""
+         explicitFocusOrder="0" pos="8 136 48 16" edTextCol="ff000000"
+         edBkgCol="0" labelText="Midi Out:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="11"
+         bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="75a4fdd6febd8a0b" memberName="label3" virtualName=""
+         explicitFocusOrder="0" pos="8 176 48 16" edTextCol="ff000000"
+         edBkgCol="0" labelText="Size:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="11"
+         bold="0" italic="0" justification="33"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

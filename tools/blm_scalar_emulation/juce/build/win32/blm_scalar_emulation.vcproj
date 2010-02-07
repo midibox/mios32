@@ -192,10 +192,6 @@
 				RelativePath="..\..\src\MainComponent.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\src\SetupWindow.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -216,10 +212,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\MainComponent.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\SetupWindow.h"
 				>
 			</File>
 		</Filter>

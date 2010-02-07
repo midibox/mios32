@@ -11,13 +11,17 @@ BlmClass::BlmClass(int cols,int rows)
 	setBlmDimensions(cols,rows); 
 	ledColours=2;
 	int x,y;
-	for (x=0;x<cols;x++){
-		for (y=0;y<rows;y++){
+	for (x=0;x<MAX_COLS;x++){
+		for (y=0;y<MAX_ROWS;y++){
 			addAndMakeVisible (buttons[x][y] = new TextButton (String::empty));
 		    buttons[x][y]->addButtonListener (this);
-			buttons[x][y]->setClickingTogglesState(true);
-		    buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
-			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
+			//buttons[x][y]->setClickingTogglesState(true);
+			//if (x<cols && y < rows){
+				buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
+				buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
+			//} else {
+			//	buttons[x][y]->setEnabled(false);
+			//}
 		}
 	}
     Timer::startTimer(1);
@@ -33,8 +37,8 @@ BlmClass::~BlmClass()
 	deleteAndZero (midiOutput);
 
 	int x,y;
-	for (x=0;x<blmColumns;x++){
-		for (y=0;y<blmRows;y++){
+	for (x=0;x<MAX_COLS;x++){
+		for (y=0;y<MAX_ROWS;y++){
 			deleteAndZero (buttons[x][y]);
 		}
 	}
@@ -45,10 +49,15 @@ void BlmClass::resized()
 	int ledSize=getWidth()/getBlmColumns();
 
 	int x,y;
-	for (x=0;x<blmColumns;x++){
-		for (y=0;y<blmRows;y++){
-			buttons[x][y]->setSize(ledSize,ledSize);
-			buttons[x][y]->setTopLeftPosition(x*ledSize,y*ledSize);
+	for (x=0;x<MAX_COLS;x++){
+		for (y=0;y<MAX_ROWS;y++){
+			if (x<blmColumns && y<blmRows) {
+				buttons[x][y]->setVisible(true);
+				buttons[x][y]->setSize(ledSize,ledSize);
+				buttons[x][y]->setTopLeftPosition(x*ledSize,y*ledSize);
+			} else {
+				buttons[x][y]->setVisible(false);
+			}
 		}
 	}
 	sendBLMLayout();
@@ -57,6 +66,14 @@ void BlmClass::resized()
 
 void BlmClass::buttonClicked (Button* buttonThatWasClicked)
 {
+}
+
+void BlmClass::buttonStateChanged (Button* buttonThatWasClicked)
+{
+
+	if(!midiOutput || !buttonThatWasClicked->isMouseOver()) // Should stop phantom events!
+		return;
+	
 	int x,y,row=-1,col=-1;
 	for (x=0;x<getBlmColumns();x++){
 		for (y=0;y<getBlmRows();y++){
@@ -72,13 +89,7 @@ void BlmClass::buttonClicked (Button* buttonThatWasClicked)
 		return;
 	}
 
-	if(midiOutput && buttonThatWasClicked->isMouseOver()) // Should stop phantom events!
-		sendNoteEvent(row,col,(buttonThatWasClicked->getToggleState() ? 0x7f:0x00));
-}
-
-void BlmClass::buttonStateChanged (Button* buttonThatWasClicked)
-{
-
+	sendNoteEvent(row,col,(buttonThatWasClicked->isMouseButtonDown() ? 0x7f:0x00));
 }
 
 
@@ -141,11 +152,6 @@ void BlmClass::handleIncomingMidiMessage(MidiInput *source, const MidiMessage &m
 
 void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus)
 {
-	//unsigned char event_type = message[0] >> 4;
-	//unsigned char chn = message.getChannel();
-	//unsigned char evnt1 = message.getNoteNumber();
-	//unsigned char evnt2 = message.getVelocity();
-
 	uint8 *data=message.getRawData();
 	uint8 event_type = data[0] >> 4;
 	uint8 chn = data[0] & 0xf;
