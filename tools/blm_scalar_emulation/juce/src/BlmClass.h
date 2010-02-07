@@ -28,11 +28,11 @@ public:
 	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
 	void sendBLMLayout(void);
 	void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
-	void BlmClass::closeMidiPorts(void);
-	void BlmClass::setButtonState(int col, int row, int state);
-	int BlmClass::getButtonState(int col, int row);
-	void BlmClass::sendCCEvent(int chn,int cc, int value);
-	void BlmClass::sendNoteEvent(int chn,int key, int velocity);
+	void closeMidiPorts(void);
+	void setButtonState(int col, int row, int state);
+	int getButtonState(int col, int row);
+	void sendCCEvent(int chn,int cc, int value);
+	void sendNoteEvent(int chn,int key, int velocity);
 
 private:
 	int blmColumns,blmRows,ledColours,inputPort,outputPort;

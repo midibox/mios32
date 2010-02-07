@@ -27,4 +27,4 @@
 #include "juce_AppConfig.h"
 
 // And this includes all the juce headers..
-#include "../../../../../juce/juce_amalgamated.h"
+#include "../../../../../../juce/juce_amalgamated.h"

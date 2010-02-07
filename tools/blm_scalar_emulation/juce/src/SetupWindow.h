@@ -23,7 +23,7 @@
 #define __JUCER_HEADER_SETUPWINDOW_SETUPWINDOW_86F66210__
 
 //[Headers]     -- You can add your own extra header files here --
-#include "juce.h"
+#include "includes.h"
 //[/Headers]
 
 

@@ -18,7 +18,7 @@ MidiClass::~MidiClass()
 
 
 
-MidiClass::~sendBLMLayout()
+void MidiClass::sendBLMLayout(void)
 {
 }
 
