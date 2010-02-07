@@ -9,4 +9,8 @@
 */
 
 #include "juce_AppConfig.h"
+#ifdef WIN32
+#include "../../../../../juce/juce.h"
+#else
 #include "../../../../../juce/juce_amalgamated.cpp"
+#endif
