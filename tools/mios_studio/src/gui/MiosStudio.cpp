@@ -24,9 +24,9 @@ MiosStudio::MiosStudio()
     addAndMakeVisible(midiKeyboard = new MidiKeyboard(this));
 
     //                             num  min   max  prefered  
-    horizontalLayout.setItemLayout(0, -0.1, -0.9, -0.30); // Upload Window
+    horizontalLayout.setItemLayout(0, -0.1, -0.9, -0.25); // MIDI In/Out Monitors
     horizontalLayout.setItemLayout(1,    8,    8,     8); // Resizer
-    horizontalLayout.setItemLayout(2, -0.1, -0.9, -0.25); // MIDI In/Out Monitors
+    horizontalLayout.setItemLayout(2, -0.1, -0.9, -0.30); // Upload Window
     horizontalLayout.setItemLayout(3,    8,    8,     8); // Resizer
     horizontalLayout.setItemLayout(4, -0.1, -0.9, -0.25); // MIOS Terminal
     horizontalLayout.setItemLayout(5,    8,    8,     8); // Resizer
@@ -72,9 +72,9 @@ void MiosStudio::paint (Graphics& g)
 
 void MiosStudio::resized()
 {
-    Component* hcomps[] = { uploadWindow,
+    Component* hcomps[] = { 0,
                             horizontalDividerBar1,
-                            0,
+                            uploadWindow,
                             horizontalDividerBar2,
                             miosTerminal,
                             horizontalDividerBar3,
@@ -91,9 +91,9 @@ void MiosStudio::resized()
 
     verticalLayoutMonitors.layOutComponents(vcomps, 3,
                                             4,
-                                            4 + horizontalLayout.getItemCurrentPosition(2),
+                                            4 + horizontalLayout.getItemCurrentPosition(0),
                                             getWidth() - 8,
-                                            horizontalLayout.getItemCurrentAbsoluteSize(2),
+                                            horizontalLayout.getItemCurrentAbsoluteSize(0),
                                             false, // lay out side-by-side
                                             true); // resize the components' heights as well as widths
 }
