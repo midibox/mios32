@@ -9,4 +9,4 @@
 */
 
 #include "juce_AppConfig.h"
-#include "../../../juce_amalgamated.mm"
+#include "../../../../../../juce/juce_amalgamated.mm"

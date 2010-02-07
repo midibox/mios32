@@ -12,7 +12,7 @@ class MidiClass : public Component,
 public:
 	MidiClass();
 	~MidiClass();
-	sendBLMLayout();
+	void sendBLMLayout(void);
 private:
 
 
