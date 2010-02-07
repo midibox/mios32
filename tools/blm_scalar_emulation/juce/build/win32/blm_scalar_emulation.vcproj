@@ -177,23 +177,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\BlmClass.cpp"
+				RelativePath="..\..\src\BlmClass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\juce_LibrarySource.cpp"
+				RelativePath="..\..\src\juce_LibrarySource.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\Main.cpp"
+				RelativePath="..\..\src\Main.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\MainComponent.cpp"
+				RelativePath="..\..\src\MainComponent.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\SetupWindow.cpp"
+				RelativePath="..\..\src\SetupWindow.cpp"
 				>
 			</File>
 		</Filter>
@@ -203,23 +203,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\BlmClass.h"
+				RelativePath="..\..\src\BlmClass.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\includes.h"
+				RelativePath="..\..\src\includes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\juce_AppConfig.h"
+				RelativePath="..\..\src\juce_AppConfig.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\MainComponent.h"
+				RelativePath="..\..\src\MainComponent.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\SetupWindow.h"
+				RelativePath="..\..\src\SetupWindow.h"
 				>
 			</File>
 		</Filter>

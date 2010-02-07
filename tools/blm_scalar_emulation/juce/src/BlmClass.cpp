@@ -20,12 +20,15 @@ BlmClass::BlmClass(int cols,int rows)
 			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
 		}
 	}
+    Timer::startTimer(1);
+
 }
 
 
 BlmClass::~BlmClass()
 {
 	//midiInput->stop();
+    Timer::stopTimer();
 	deleteAndZero (midiInput);
 	deleteAndZero (midiOutput);
 
@@ -131,15 +134,23 @@ int BlmClass::getButtonState(int col, int row)
 
 void BlmClass::handleIncomingMidiMessage(MidiInput *source, const MidiMessage &message)
 {
+	midiQueue.push(message);
+}
+
+
+
+void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus)
+{
 	//unsigned char event_type = message[0] >> 4;
 	//unsigned char chn = message.getChannel();
 	//unsigned char evnt1 = message.getNoteNumber();
 	//unsigned char evnt2 = message.getVelocity();
-	int size=message.getRawDataSize();
-	unsigned char event_type = message.getRawData()[0] >> 4;
-	unsigned char chn = message.getRawData()[0] & 0xf;
-	unsigned char evnt1 = message.getRawData()[1];
-	unsigned char evnt2 = message.getRawData()[2];
+
+	uint8 *data=message.getRawData();
+	uint8 event_type = data[0] >> 4;
+	uint8 chn = data[0] & 0xf;
+	uint8 evnt1 = data[1];
+	uint8 evnt2 = data[2];
 
 	int LED_State;
 	if( evnt2 == 0 )
@@ -222,15 +233,16 @@ void BlmClass::handleIncomingMidiMessage(MidiInput *source, const MidiMessage &m
 
 		case 0xf: {
 			// in the hope that SysEx messages will always be sent in a single packet...
+			int size=message.getRawDataSize();
 			if( size >= 8 &&
-			   message.getRawData()[0] == 0xf0 &&
-			   message.getRawData()[1] == 0x00 &&
-			   message.getRawData()[2] == 0x00 &&
-			   message.getRawData()[3] == 0x7e &&
-			   message.getRawData()[4] == 0x4e && // MBHP_BLM_SCALAR
-			   message.getRawData()[5] == 0x00  // Device ID
+			   data[0] == 0xf0 &&
+			   data[1] == 0x00 &&
+			   data[2] == 0x00 &&
+			   data[3] == 0x7e &&
+			   data[4] == 0x4e && // MBHP_BLM_SCALAR
+			   data[5] == 0x00  // Device ID
 			   ) {
-				if( message.getRawData()[6] == 0x00 && message.getRawData()[7] == 0x00 ) {
+				if( data[6] == 0x00 && data[7] == 0x00 ) {
 					// no error checking... just send layout (the hardware version will check better)
 					sendBLMLayout();
 				}
@@ -275,3 +287,20 @@ void BlmClass::sendNoteEvent(int chn,int key, int velocity)
 		midiOutput->sendMessageNow(message);
 }
 
+void BlmClass::timerCallback()
+{
+    MidiMessage message(0xfe);    
+
+    while( !midiQueue.empty() ) {
+        message = midiQueue.front();
+        midiQueue.pop();
+
+        uint8 *data = message.getRawData();
+        if( data[0] >= 0x80 && data[0] < 0xf8 )
+            runningStatus = data[0];
+
+        // propagate incoming event to MIDI components
+        BLMIncomingMidiMessage(message, runningStatus);
+
+    }
+}
