@@ -16,6 +16,7 @@
 #define _MIDI_MONITOR_H
 
 #include "../includes.h"
+#include "../SysexHelper.h"
 
 class MiosStudio; // forward declaration
 
@@ -52,6 +53,7 @@ protected:
     bool filterMidiClock;
     bool filterActiveSense;
     bool filterMiosTerminalMessage;
+    bool cutLongMessages;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

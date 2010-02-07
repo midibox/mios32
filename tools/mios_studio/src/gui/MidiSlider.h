@@ -40,7 +40,7 @@ public:
     void sliderValueChanged(Slider* sliderThatWasMoved);
 
 
-private:
+protected:
     //==============================================================================
     Slider *slider;
     Label *label;

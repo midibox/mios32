@@ -16,6 +16,8 @@
 #define _UPLOAD_WINDOW_H
 
 #include "../includes.h"
+#include "../HexFileLoader.h"
+#include "../SysexHelper.h"
 
 class MiosStudio; // forward declaration
 
@@ -23,7 +25,7 @@ class UploadWindow
     : public Component
     , public ButtonListener
     , public FilenameComponentListener
-                     
+    , public MultiTimer
 {
 public:
     //==============================================================================
@@ -41,6 +43,17 @@ public:
 
     void midiPortChanged(void);
     void queryCore(int queryRequest);
+    void rebootCore(void);
+
+    //==============================================================================
+    void uploadStart(void);
+    void uploadStartNow(void);
+    void uploadStop(void);
+    void uploadNext(void);
+    void uploadRetry(int errorAcknowledge);
+
+    //==============================================================================
+    void timerCallback(const int timerId);
 
 
 protected:
@@ -55,10 +68,21 @@ protected:
     MiosStudio *miosStudio;
 
     //==============================================================================
+    HexFileLoader hexFileLoader;
+
+    //==============================================================================
     uint8 deviceId;
     bool gotFirstMessage;
-    bool ongoingMidiMessage;
     int ongoingQueryMessage;
+    bool ongoingUpload;
+    bool ongoingUploadRequest;
+    bool ongoingRebootRequest;
+
+    int currentCoreType;
+    uint32 currentUploadBlock;
+    uint32 retryCounter;
+
+    int64 timeUploadBegin;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

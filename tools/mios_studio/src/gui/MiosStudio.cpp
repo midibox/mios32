@@ -137,11 +137,11 @@ void MiosStudio::timerCallback()
 //==============================================================================
 void MiosStudio::sendMidiMessage(const MidiMessage &message)
 {
-    midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
-
     MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
     if( out )
         out->sendMessageNow(message);
+
+    midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
 }
 
 

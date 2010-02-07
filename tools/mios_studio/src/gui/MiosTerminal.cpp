@@ -53,28 +53,19 @@ void MiosTerminal::resized()
 //==============================================================================
 void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    const int mios32SysExId = 0x32;
-
     uint8 *data = message.getRawData();
+    uint32 size = message.getRawDataSize();
     int messageOffset = 0;
 
-    if( runningStatus == 0xf0 && !ongoingMidiMessage ) {
-        if( data[1] == 0x00 &&
-            data[2] == 0x00 &&
-            data[3] == 0x7e &&
-            data[4] == mios32SysExId &&
-            // data[5] == 0x00 && // ignore device id
-            data[6] == 0x0d &&
-            data[7] == 0x40 ) { // string message
+    if( runningStatus == 0xf0 && !ongoingMidiMessage &&
+        SysexHelper::isValidMios32DebugMessage(data, size, -1) ) {
             ongoingMidiMessage = 1;
-            messageOffset = 7;
-        }
+            messageOffset = 8;
     } else
         ongoingMidiMessage = 0;
 
     if( ongoingMidiMessage ) {
         String str = "";
-        int size = message.getRawDataSize();
 
         for(int i=messageOffset; i<size; ++i) {
             if( data[i] == 0xf7 ) {
