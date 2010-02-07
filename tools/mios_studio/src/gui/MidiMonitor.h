@@ -17,14 +17,15 @@
 
 #include "../includes.h"
 
+class MiosStudio; // forward declaration
+
 class MidiMonitor
     : public Component
     , public ComboBoxListener
-    , public MidiInputCallback
 {
 public:
     //==============================================================================
-    MidiMonitor(AudioDeviceManager &_audioDeviceManager, const bool _inPort);
+    MidiMonitor(MiosStudio *_miosStudio, const bool _inPort);
     ~MidiMonitor();
 
     //==============================================================================
@@ -33,18 +34,24 @@ public:
     void comboBoxChanged(ComboBox*);
 
     //==============================================================================
-    void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
-    void handlePartialSysexMessage(MidiInput* source, const uint8 *messageData, const int numBytesSoFar, const double timestamp);
+    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
-private:
+protected:
     //==============================================================================
     TextEditor* monitorWindow;
     ComboBox* midiPortSelector;
     Label* midiPortLabel;
 
     //==============================================================================
-    AudioDeviceManager *audioDeviceManager;
+    MiosStudio *miosStudio;
     bool inPort;
+
+    //==============================================================================
+    bool gotFirstMessage;
+
+    bool filterMidiClock;
+    bool filterActiveSense;
+    bool filterMiosTerminalMessage;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

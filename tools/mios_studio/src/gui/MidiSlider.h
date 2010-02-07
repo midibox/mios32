@@ -18,13 +18,15 @@
 #include "../includes.h"
 #include <vector>
 
+class MiosStudio; // forward declaration
+
 class MidiSlider
     : public Component
     , public SliderListener
 {
 public:
     //==============================================================================
-    MidiSlider(AudioDeviceManager &_audioDeviceManager);
+    MidiSlider(MiosStudio *_miosStudio, String _functionName, int _functionArg, int _midiChannel, int initialValue);
     ~MidiSlider();
 
     //==============================================================================
@@ -32,7 +34,7 @@ public:
     void resized();
 
     //==============================================================================
-    void setFunction(String _functionName, int _functionArg);
+    void setFunction(String _functionName, int _functionArg, int _midiChannel, int initialValue);
 
     //==============================================================================
     void sliderValueChanged(Slider* sliderThatWasMoved);
@@ -47,7 +49,10 @@ private:
     int functionArg;
 
     //==============================================================================
-    AudioDeviceManager *audioDeviceManager;
+    MiosStudio *miosStudio;
+
+    //==============================================================================
+    int midiChannel;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

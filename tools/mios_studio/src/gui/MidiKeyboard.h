@@ -19,17 +19,24 @@
 #include "MidiSlider.h"
 #include <vector>
 
+class MiosStudio; // forward declaration
+
 class MidiKeyboard
     : public Component
+    , public MidiKeyboardStateListener
 {
 public:
     //==============================================================================
-    MidiKeyboard(AudioDeviceManager &_audioDeviceManager);
+    MidiKeyboard(MiosStudio *_miosStudio);
     ~MidiKeyboard();
 
     //==============================================================================
     void paint(Graphics& g);
     void resized();
+
+    //==============================================================================
+    void handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
+    void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
 
 private:
     //==============================================================================
@@ -38,7 +45,7 @@ private:
     MidiKeyboardState keyboardState;
 
     //==============================================================================
-    AudioDeviceManager *audioDeviceManager;
+    MiosStudio *miosStudio;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

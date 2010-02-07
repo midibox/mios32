@@ -17,6 +17,8 @@
 
 #include "../includes.h"
 
+class MiosStudio; // forward declaration
+
 class UploadWindow
     : public Component
     , public ButtonListener
@@ -25,7 +27,7 @@ class UploadWindow
 {
 public:
     //==============================================================================
-    UploadWindow(AudioDeviceManager &_audioDeviceManager);
+    UploadWindow(MiosStudio *_miosStudio);
     ~UploadWindow();
 
     //==============================================================================
@@ -34,8 +36,14 @@ public:
     void buttonClicked (Button* buttonThatWasClicked);
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
+    //==============================================================================
+    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
-private:
+    void midiPortChanged(void);
+    void queryCore(int queryRequest);
+
+
+protected:
     //==============================================================================
     FilenameComponent* fileChooser;
     TextEditor* uploadStatus;
@@ -44,7 +52,13 @@ private:
     TextButton* queryButton;
 
     //==============================================================================
-    AudioDeviceManager *audioDeviceManager;
+    MiosStudio *miosStudio;
+
+    //==============================================================================
+    uint8 deviceId;
+    bool gotFirstMessage;
+    bool ongoingMidiMessage;
+    int ongoingQueryMessage;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

@@ -13,12 +13,18 @@
  */
 
 #include "MidiMonitor.h"
+#include "MiosStudio.h"
 
 
 //==============================================================================
-MidiMonitor::MidiMonitor(AudioDeviceManager &_audioDeviceManager, const bool _inPort)
-    : audioDeviceManager(&_audioDeviceManager)
+MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
+    : miosStudio(_miosStudio)
     , inPort(_inPort)
+    , gotFirstMessage(0)
+    , filterMidiClock(1)
+    , filterActiveSense(1)
+    , filterMiosTerminalMessage(1)
+
 {
 	addAndMakeVisible(midiPortSelector = new ComboBox(String::empty));
 	midiPortSelector->addListener(this);
@@ -32,8 +38,8 @@ MidiMonitor::MidiMonitor(AudioDeviceManager &_audioDeviceManager, const bool _in
     for(int i = 0; i < midiPorts.size(); ++i) {
         midiPortSelector->addItem (midiPorts[i], i + 1);
         bool enabled = inPort
-            ? audioDeviceManager->isMidiInputEnabled(midiPorts[i])
-            : (audioDeviceManager->getDefaultMidiOutputName() == midiPorts[i]);
+            ? miosStudio->audioDeviceManager.isMidiInputEnabled(midiPorts[i])
+            : (miosStudio->audioDeviceManager.getDefaultMidiOutputName() == midiPorts[i]);
 
         if( enabled )
             current = i + 1;
@@ -44,8 +50,8 @@ MidiMonitor::MidiMonitor(AudioDeviceManager &_audioDeviceManager, const bool _in
 	midiPortLabel->attachToComponent(midiPortSelector, true);
 
     addAndMakeVisible(monitorWindow = new TextEditor (String::empty));
-    monitorWindow->setMultiLine(false);
-    monitorWindow->setReturnKeyStartsNewLine(false);
+    monitorWindow->setMultiLine(true);
+    monitorWindow->setReturnKeyStartsNewLine(true);
     monitorWindow->setReadOnly(true);
     monitorWindow->setScrollbarsShown(true);
     monitorWindow->setCaretVisible(true);
@@ -78,25 +84,51 @@ void MidiMonitor::resized()
 void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
     if( comboBoxThatHasChanged == midiPortSelector ) {
-        if( inPort ) {
-            const StringArray allMidiIns(MidiInput::getDevices());
-            for (int i = allMidiIns.size(); --i >= 0;) {
-                bool enabled = allMidiIns[i] == midiPortSelector->getText();
-                audioDeviceManager->setMidiInputEnabled(allMidiIns[i], enabled);
-                // lastSysexMidiIn = allMidiIns[i];
-            }
-        } else {
-            audioDeviceManager->setDefaultMidiOutput(midiPortSelector->getText());
-            // lastSysexMidiOut = midiOutputSelector->getText();
-        }
+        if( inPort )
+            miosStudio->setMidiInput(midiPortSelector->getText());
+        else
+            miosStudio->setMidiOutput(midiPortSelector->getText());
     }
 }
 
 //==============================================================================
-void MidiMonitor::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
+void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-}
+    int size = message.getRawDataSize();
+    uint8 *data = message.getRawData();
+    String hexStr = String::toHexString(data, size);
 
-void MidiMonitor::handlePartialSysexMessage(MidiInput* source, const uint8 *messageData, const int numBytesSoFar, const double timestamp)
-{
+    bool isMidiClock = data[0] == 0xf8;
+    bool isActiveSense = data[0] == 0xfe;
+    bool isMiosTerminalMessage =
+        data[0] == 0xf0 &&
+        data[1] == 0x00 &&
+        data[2] == 0x00 &&
+        data[3] == 0x7e &&
+        data[4] == 0x32 &&
+        // data[5] == 0x00 && // ignore device id
+        data[6] == 0x0d &&
+        data[7] == 0x40;
+
+
+    if( !(isMidiClock && filterMidiClock) &&
+        !(isActiveSense && filterActiveSense) &&
+        !(isMiosTerminalMessage && filterMiosTerminalMessage) ) {
+
+        if( !gotFirstMessage )
+            monitorWindow->clear();
+
+        double timeStamp = message.getTimeStamp();
+        String timeStampStr = (timeStamp > 0)
+            ? String::formatted(T("%8.3f"), timeStamp)
+            : T("now");
+
+        String out = String::formatted(T("%s[%s] %s"),
+                                       gotFirstMessage ? "\n" : "",
+                                       (const char *)timeStampStr,
+                                       (const char *)hexStr);
+
+        monitorWindow->insertTextAtCursor(out);
+        gotFirstMessage = 1;
+    }
 }

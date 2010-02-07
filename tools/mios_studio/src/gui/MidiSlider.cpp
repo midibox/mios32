@@ -13,10 +13,12 @@
  */
 
 #include "MidiSlider.h"
+#include "MiosStudio.h"
+
 
 //==============================================================================
-MidiSlider::MidiSlider(AudioDeviceManager &_audioDeviceManager)
-    : audioDeviceManager(&_audioDeviceManager)
+MidiSlider::MidiSlider(MiosStudio *_miosStudio, String _functionName, int _functionArg, int _midiChannel, int initialValue)
+    : miosStudio(_miosStudio)
 {
     slider = new Slider(T("Slider"));
     addAndMakeVisible(slider);
@@ -28,6 +30,8 @@ MidiSlider::MidiSlider(AudioDeviceManager &_audioDeviceManager)
     label = new Label("", "<no function>");
     addAndMakeVisible(label);
     label->setJustificationType(Justification::centred);
+
+    setFunction(_functionName, _functionArg, _midiChannel, initialValue);
 
     setSize(128, 24+18);
 }
@@ -52,20 +56,33 @@ void MidiSlider::resized()
 
 
 //==============================================================================
-void MidiSlider::setFunction(String _functionName, int _functionArg)
+void MidiSlider::setFunction(String _functionName, int _functionArg, int _midiChannel, int initialValue)
 {
     functionName = _functionName;
     functionArg = _functionArg;
+    midiChannel = _midiChannel;
 
     if( functionName.containsWholeWord(T("CC")) ) {
         String labelStr(functionArg);
         label->setText("CC#" + labelStr, true);
+    } else if( functionName.containsWholeWord(T("PB")) ) {
+        String labelStr(functionArg);
+        label->setText("PitchBender", true);
     } else {
         label->setText("<no function>", true);
     }
+
+    slider->setValue(initialValue, false); // don't send update message
 }
 
 //==============================================================================
 void MidiSlider::sliderValueChanged(Slider* sliderThatWasMoved)
 {
+    if( functionName.containsWholeWord(T("CC")) ) {
+        MidiMessage message = MidiMessage::controllerEvent(midiChannel, functionArg, (uint8)slider->getValue());
+        miosStudio->sendMidiMessage(message);
+    } else if( functionName.containsWholeWord(T("PB")) ) {
+        MidiMessage message = MidiMessage::pitchWheel(midiChannel, (uint8)slider->getValue());
+        miosStudio->sendMidiMessage(message);
+    }
 }
