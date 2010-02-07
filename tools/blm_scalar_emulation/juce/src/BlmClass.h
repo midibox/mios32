@@ -5,20 +5,26 @@
 //
 #ifndef _BLM_H
 
+#include <queue>
+
 #define MAX_ROWS 16
 #define MAX_COLS 128
 
 class BlmClass : public Component,
                  public ButtonListener,
-				 public MidiInputCallback
+				 public MidiInputCallback,
+				 public Timer
 {
 public:
 	BlmClass(int cols, int rows);
 	~BlmClass();
 
+	void resized();
+
+    void timerCallback();
+
 	int getBlmColumns(void) { return blmColumns; }	
 	int getBlmRows(void) { return blmRows; }
-	void resized();
     void buttonClicked (Button* buttonThatWasClicked);
     void buttonStateChanged (Button* buttonThatWasClicked);
 	void setMidiOutput(int port);
@@ -28,11 +34,18 @@ public:
 	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
 	void sendBLMLayout(void);
 	void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
+	void BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus);
 	void closeMidiPorts(void);
 	void setButtonState(int col, int row, int state);
 	int getButtonState(int col, int row);
 	void sendCCEvent(int chn,int cc, int value);
 	void sendNoteEvent(int chn,int key, int velocity);
+
+protected:
+	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
+    // therefore I'm using a std::queue instead
+    std::queue<MidiMessage> midiQueue;
+    uint8 runningStatus;
 
 private:
 	int blmColumns,blmRows,ledColours,inputPort,outputPort;
