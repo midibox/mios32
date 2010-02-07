@@ -66,12 +66,12 @@ class JUCEMiosStudioApplication : public JUCEApplication
        This is because the application object gets created before Juce has been properly
        initialised, so any embedded objects would also get constructed too soon.
    */
-    MiosStudioWindow* helloWorldWindow;
+    MiosStudioWindow* miosStudioWindow;
 
 public:
     //==============================================================================
     JUCEMiosStudioApplication()
-        : helloWorldWindow (0)
+        : miosStudioWindow (0)
     {
         // NEVER do anything in here that could involve any Juce function being called
         // - leave all your startup tasks until the initialise() method.
@@ -90,7 +90,7 @@ public:
     void initialise (const String& commandLine)
     {
         // just create the main window...
-        helloWorldWindow = new MiosStudioWindow();
+        miosStudioWindow = new MiosStudioWindow();
 
         /*  ..and now return, which will fall into to the main event
             dispatch loop, and this will run until something calls
@@ -105,14 +105,14 @@ public:
     {
         // clear up..
 
-        if (helloWorldWindow != 0)
-            delete helloWorldWindow;
+        if (miosStudioWindow != 0)
+            delete miosStudioWindow;
     }
 
     //==============================================================================
     const String getApplicationName()
     {
-        return T("Hello World for JUCE");
+        return T("MIOS Studio");
     }
 
     const String getApplicationVersion()

@@ -24,7 +24,7 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
     , filterMidiClock(1)
     , filterActiveSense(1)
     , filterMiosTerminalMessage(1)
-
+    , cutLongMessages(1)
 {
 	addAndMakeVisible(midiPortSelector = new ComboBox(String::empty));
 	midiPortSelector->addListener(this);
@@ -94,22 +94,18 @@ void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 //==============================================================================
 void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    int size = message.getRawDataSize();
+    uint32 size = message.getRawDataSize();
     uint8 *data = message.getRawData();
-    String hexStr = String::toHexString(data, size);
+
+    String hexStr;
+    if( cutLongMessages && size > 16 )
+        hexStr = String::toHexString(data, 16) + " ...";
+    else
+        hexStr = String::toHexString(data, size);
 
     bool isMidiClock = data[0] == 0xf8;
     bool isActiveSense = data[0] == 0xfe;
-    bool isMiosTerminalMessage =
-        data[0] == 0xf0 &&
-        data[1] == 0x00 &&
-        data[2] == 0x00 &&
-        data[3] == 0x7e &&
-        data[4] == 0x32 &&
-        // data[5] == 0x00 && // ignore device id
-        data[6] == 0x0d &&
-        data[7] == 0x40;
-
+    bool isMiosTerminalMessage = SysexHelper::isValidMios32DebugMessage(data, size, -1);
 
     if( !(isMidiClock && filterMidiClock) &&
         !(isActiveSense && filterActiveSense) &&

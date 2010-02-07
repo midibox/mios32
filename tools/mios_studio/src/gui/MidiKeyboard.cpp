@@ -72,7 +72,6 @@ void MidiKeyboard::handleNoteOn(MidiKeyboardState *source, int midiChannel, int 
     miosStudio->sendMidiMessage(message);
 }
 
-// inherited from MidiKeyboardStateListener
 void MidiKeyboard::handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber)
 {
     MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)0);

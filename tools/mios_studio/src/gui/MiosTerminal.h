@@ -16,6 +16,7 @@
 #define _MIOS_TERMINAL_H
 
 #include "../includes.h"
+#include "../SysexHelper.h"
 
 class MiosStudio; // forward declaration
 
