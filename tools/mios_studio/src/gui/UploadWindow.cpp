@@ -13,10 +13,16 @@
  */
 
 #include "UploadWindow.h"
+#include "MiosStudio.h"
+
 
 //==============================================================================
-UploadWindow::UploadWindow(AudioDeviceManager &_audioDeviceManager)
-    : audioDeviceManager(&_audioDeviceManager)
+UploadWindow::UploadWindow(MiosStudio *_miosStudio)
+    : miosStudio(_miosStudio)
+    , ongoingMidiMessage(0)
+    , gotFirstMessage(0)
+    , ongoingQueryMessage(0)
+    , deviceId(0x00)
 {
 	addAndMakeVisible(fileChooser = new FilenameComponent (T("hexfile"),
                                                            File::nonexistent,
@@ -40,8 +46,8 @@ UploadWindow::UploadWindow(AudioDeviceManager &_audioDeviceManager)
     queryButton->addButtonListener(this);
 
     addAndMakeVisible(uploadStatus = new TextEditor(T("Upload Status")));
-    uploadStatus->setMultiLine(false);
-    uploadStatus->setReturnKeyStartsNewLine(false);
+    uploadStatus->setMultiLine(true);
+    uploadStatus->setReturnKeyStartsNewLine(true);
     uploadStatus->setReadOnly(true);
     uploadStatus->setScrollbarsShown(true);
     uploadStatus->setCaretVisible(true);
@@ -89,3 +95,92 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
 {
 }
 
+
+//==============================================================================
+void UploadWindow::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
+{
+    const int mios32SysExId = 0x32;
+
+    uint8 *data = message.getRawData();
+    int messageOffset = 0;
+
+    if( runningStatus == 0xf0 && !ongoingMidiMessage ) {
+        if( data[1] == 0x00 &&
+            data[2] == 0x00 &&
+            data[3] == 0x7e &&
+            data[4] == mios32SysExId &&
+            data[5] == deviceId &&
+            data[6] == 0x0f ) { // acknowledge message
+            ongoingMidiMessage = 1;
+            messageOffset = 7;
+        }
+    } else
+        ongoingMidiMessage = 0;
+
+    if( ongoingMidiMessage ) {
+        String out = gotFirstMessage ? "\n" : "Got reply from MIOS32 core:\n";
+
+        if( ongoingQueryMessage ) {
+
+            switch( ongoingQueryMessage ) {
+            case 0x01: out += "Operating System: "; break;
+            case 0x02: out += "Board: "; break;
+            case 0x03: out += "Core Family: "; break;
+            case 0x04: out += "Chip ID: 0x"; break;
+            case 0x05: out += "Serial Number: #"; break;
+            case 0x06: out += "Flash Memory Size: "; break;
+            case 0x07: out += "RAM Size: "; break;
+            case 0x08: break; // Application first line
+            case 0x09: break; // Application second line
+            default: {
+                String decString = String(ongoingQueryMessage);
+                out += "Query #" + decString + ": ";
+            }
+            }
+
+            int size = message.getRawDataSize();
+
+            for(int i=messageOffset; i<size; ++i) {
+                if( data[i] == 0xf7 ) {
+                    ongoingMidiMessage = 0;
+                } else {
+                    if( data[i] != '\n' || size < (i+1) )
+                        out += String::formatted(T("%c"), data[i] & 0x7f);
+                }
+            }
+
+            // request next query
+            if( ongoingQueryMessage < 0x09 )
+                queryCore(ongoingQueryMessage + 1);
+        } else {
+            // TODO
+            out = T("<unsupported yet>");
+        }
+
+        if( !gotFirstMessage )
+            uploadStatus->clear();
+        uploadStatus->insertTextAtCursor(out);
+        gotFirstMessage = 1;
+    }
+}
+
+
+//==============================================================================
+void UploadWindow::midiPortChanged(void)
+{
+    uploadStatus->clear();
+    uploadStatus->setText(T("No response from a core yet... check MIDI IN/OUT  connections!"));
+    queryCore(1);
+}
+
+//==============================================================================
+void UploadWindow::queryCore(int queryRequest)
+{
+    const int mios32SysExId = 0x32;
+
+    ongoingQueryMessage = queryRequest;
+
+    const uint8 queryMios32[9] = { 0xf0, 0x00, 0x00, 0x7e, mios32SysExId, deviceId, 0x00, queryRequest, 0xf7 };
+    MidiMessage message = MidiMessage(queryMios32, 9);
+    miosStudio->sendMidiMessage(message);
+}

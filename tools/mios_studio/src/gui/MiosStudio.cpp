@@ -17,15 +17,11 @@
 //==============================================================================
 MiosStudio::MiosStudio()
 {
-    addAndMakeVisible(uploadWindow = new UploadWindow(audioDeviceManager));
-    addAndMakeVisible(midiInMonitor = new MidiMonitor(audioDeviceManager, true));
-    addAndMakeVisible(midiOutMonitor = new MidiMonitor(audioDeviceManager, false));
-    addAndMakeVisible(miosTerminal = new MiosTerminal(audioDeviceManager));
-    addAndMakeVisible(midiKeyboard = new MidiKeyboard(audioDeviceManager));
-
-
-    audioDeviceManager.addMidiInputCallback("MIDI IN Monitor", midiInMonitor);
-
+    addAndMakeVisible(uploadWindow = new UploadWindow(this));
+    addAndMakeVisible(midiInMonitor = new MidiMonitor(this, true));
+    addAndMakeVisible(midiOutMonitor = new MidiMonitor(this, false));
+    addAndMakeVisible(miosTerminal = new MiosTerminal(this));
+    addAndMakeVisible(midiKeyboard = new MidiKeyboard(this));
 
     //                             num  min   max  prefered  
     horizontalLayout.setItemLayout(0, -0.1, -0.9, -0.30); // Upload Window
@@ -50,6 +46,10 @@ MiosStudio::MiosStudio()
 
     verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
     addAndMakeVisible(verticalDividerBarMonitors);
+
+
+    audioDeviceManager.addMidiInputCallback(String::empty, this);
+    Timer::startTimer(1);
 
     setSize (800, 600);
 }
@@ -97,3 +97,73 @@ void MiosStudio::resized()
                                             false, // lay out side-by-side
                                             true); // resize the components' heights as well as widths
 }
+
+
+//==============================================================================
+void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
+{
+    // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
+    // therefore I'm using a std::queue instead
+    
+    midiQueue.push(message);
+}
+
+
+//==============================================================================
+void MiosStudio::timerCallback()
+{
+    MidiMessage message(0xfe);    
+
+    while( !midiQueue.empty() ) {
+        message = midiQueue.front();
+        midiQueue.pop();
+
+        uint8 *data = message.getRawData();
+        if( data[0] >= 0x80 && data[0] < 0xf8 )
+            runningStatus = data[0];
+
+        // propagate incoming event to MIDI components
+        midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+
+        // filter runtime events for following components to improve performance
+        if( data[0] < 0xf8 ) {
+            uploadWindow->handleIncomingMidiMessage(message, runningStatus);
+            miosTerminal->handleIncomingMidiMessage(message, runningStatus);
+        }
+    }
+}
+
+
+//==============================================================================
+void MiosStudio::sendMidiMessage(const MidiMessage &message)
+{
+    midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
+
+    MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
+    if( out )
+        out->sendMessageNow(message);
+}
+
+
+//==============================================================================
+void MiosStudio::setMidiInput(const String &port)
+{
+    const StringArray allMidiIns(MidiInput::getDevices());
+    for (int i = allMidiIns.size(); --i >= 0;) {
+        bool enabled = allMidiIns[i] == port;
+        audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
+        // lastSysexMidiIn = allMidiIns[i];
+    }
+
+    // propagate port change
+    uploadWindow->midiPortChanged();
+}
+
+void MiosStudio::setMidiOutput(const String &port)
+{
+    audioDeviceManager.setDefaultMidiOutput(port);
+
+    // propagate port change
+    uploadWindow->midiPortChanged();
+}
+

@@ -17,25 +17,33 @@
 
 #include "../includes.h"
 
+class MiosStudio; // forward declaration
+
 class MiosTerminal
     : public Component
 {
 public:
     //==============================================================================
-    MiosTerminal(AudioDeviceManager &_audioDeviceManager);
+    MiosTerminal(MiosStudio *_miosStudio);
     ~MiosTerminal();
 
     //==============================================================================
     void paint(Graphics& g);
     void resized();
 
+    //==============================================================================
+    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
-private:
+protected:
     //==============================================================================
     TextEditor* terminalWindow;
 
     //==============================================================================
-    AudioDeviceManager *audioDeviceManager;
+    MiosStudio *miosStudio;
+
+    //==============================================================================
+    bool gotFirstMessage;
+    bool ongoingMidiMessage;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

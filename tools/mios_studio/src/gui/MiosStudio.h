@@ -16,6 +16,7 @@
 #define _MIOS_STUDIO_H
 
 #include "includes.h"
+#include <queue>
 
 #include "UploadWindow.h"
 #include "MidiMonitor.h"
@@ -24,6 +25,8 @@
 
 class MiosStudio
     : public Component
+    , public MidiInputCallback
+    , public Timer
 {
 public:
     //==============================================================================
@@ -34,8 +37,19 @@ public:
     void paint (Graphics& g);
     void resized();
 
+    //==============================================================================
+    void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 
-private:
+    void timerCallback();
+
+    void sendMidiMessage(const MidiMessage &message);
+
+    void setMidiInput(const String &port);
+    void setMidiOutput(const String &port);
+
+    AudioDeviceManager audioDeviceManager;
+
+protected:
     //==============================================================================
     UploadWindow *uploadWindow;
     MidiMonitor *midiInMonitor;
@@ -51,7 +65,10 @@ private:
     StretchableLayoutManager verticalLayoutMonitors;
     StretchableLayoutResizerBar* verticalDividerBarMonitors;
 
-    AudioDeviceManager audioDeviceManager;
+    // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
+    // therefore I'm using a std::queue instead
+    std::queue<MidiMessage> midiQueue;
+    uint8 runningStatus;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

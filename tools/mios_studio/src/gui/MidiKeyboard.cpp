@@ -13,22 +13,31 @@
  */
 
 #include "MidiKeyboard.h"
+#include "MiosStudio.h"
 
 
 //==============================================================================
-MidiKeyboard::MidiKeyboard(AudioDeviceManager &_audioDeviceManager)
-    : audioDeviceManager(&_audioDeviceManager)
+MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
+    : miosStudio(_miosStudio)
 {
     for(int i=0; i<5; ++i) {
-        MidiSlider *s = new MidiSlider(_audioDeviceManager);
+        MidiSlider *s;
+        if( i == 0 )
+            s = new MidiSlider(miosStudio, "PB", 0, 1, 0x40);
+        else
+            s = new MidiSlider(miosStudio, "CC", i+16-1, 1, 0);
+
         midiSlider.push_back(s);
-        s->setFunction("CC", i+16);
         addAndMakeVisible(s);
     }
 
     addAndMakeVisible(midiKeyboardComponent
                       = new MidiKeyboardComponent(keyboardState,
                                                   MidiKeyboardComponent::horizontalKeyboard));
+
+    keyboardState.addListener(this);
+
+    midiKeyboardComponent->setLowestVisibleKey(24); // does match better with layout
 
     setSize(400, 200);
 }
@@ -53,4 +62,19 @@ void MidiKeyboard::resized()
         midiSlider[i]->setBounds(sliderOffset + distanceBetweenSliders*i, 4, sliderWidth, 42);
 
     midiKeyboardComponent->setBounds(4, 4+44+4, getWidth()-8, getHeight()-8-44-4);
+}
+
+
+//==============================================================================
+void MidiKeyboard::handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
+{
+    MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)(velocity*128));
+    miosStudio->sendMidiMessage(message);
+}
+
+// inherited from MidiKeyboardStateListener
+void MidiKeyboard::handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber)
+{
+    MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)0);
+    miosStudio->sendMidiMessage(message);
 }
