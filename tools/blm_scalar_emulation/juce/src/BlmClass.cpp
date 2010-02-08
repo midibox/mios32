@@ -21,13 +21,16 @@ BlmClass::BlmClass(int cols,int rows)
 	}
     Timer::startTimer(1);
 	addMouseListener(this,true); // Add mouse listener for all child components
-
+	// if unitialised in windows a pointer isn't necessarilly null!
+	midiOutput= NULL;
+	midiInput= NULL;
 }
 
 
 BlmClass::~BlmClass()
 {
-	//midiInput->stop();
+	if(midiInput)
+		midiInput->stop();
     Timer::stopTimer();
 	deleteAndZero (midiInput);
 	deleteAndZero (midiOutput);
@@ -38,6 +41,8 @@ BlmClass::~BlmClass()
 			deleteAndZero (buttons[x][y]);
 		}
 	}
+	deleteAllChildren();
+
 }
 
 void BlmClass::resized()

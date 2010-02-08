@@ -121,11 +121,6 @@ MainComponent::MainComponent ()
 
 
     //[UserPreSize]
-	//triggersButton->setClickingTogglesState(true);
-	//tracksButton->setClickingTogglesState(true);
-	//patternsButton->setClickingTogglesState(true);
-	//setupWindow=new SetupWindow; // Create setup window but don't display.
-
 	const StringArray midiOuts (MidiOutput::getDevices());
 
 	midiOutput->addItem (TRANS("<< none >>"), -1);
@@ -147,8 +142,6 @@ MainComponent::MainComponent ()
 		bool enabled = false;
 	}
 	midiInput->setSelectedId(current, true);
-
-
 
     //[/UserPreSize]
 
@@ -174,7 +167,7 @@ MainComponent::~MainComponent()
     deleteAndZero (label);
     deleteAndZero (label2);
     deleteAndZero (label3);
-
+	deleteAllChildren();
     //[Destructor]. You can add your own custom destruction code here..
     //[/Destructor]
 }
