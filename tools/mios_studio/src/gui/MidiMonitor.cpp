@@ -119,10 +119,11 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        String out = String::formatted(T("%s[%s] %s"),
-                                       gotFirstMessage ? "\n" : "",
-                                       (const char *)timeStampStr,
-                                       (const char *)hexStr);
+        String out;
+        out << (gotFirstMessage ? T("\n[") : T("["))
+            << timeStampStr
+            << T("] ")
+            << hexStr;
 
         monitorWindow->insertTextAtCursor(out);
         gotFirstMessage = 1;

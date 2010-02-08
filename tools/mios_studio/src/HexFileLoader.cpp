@@ -130,10 +130,10 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
         hexDump[blockAddress] = dataArray;
     }
 
-    statusMessage = String::formatted(T("%s contains %u bytes (%u blocks)."),
-                                      (const char *)inFile.getFileName(),
-                                      totalBytes,
-                                      hexDumpAddressBlocks.size());
+    statusMessage << inFile.getFileName()
+                  << String::formatted(T(" contains %u bytes (%u blocks)."),
+                                       totalBytes,
+                                       hexDumpAddressBlocks.size());
     return true;
 }
 

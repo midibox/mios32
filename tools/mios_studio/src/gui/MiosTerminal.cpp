@@ -84,10 +84,11 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        String out = String::formatted(T("%s[%s] %s"),
-                                       gotFirstMessage ? "\n" : "",
-                                       (const char *)timeStampStr,
-                                       (const char *)str);
+        String out;
+        out << (gotFirstMessage ? T("\n[") : T("["))
+            << timeStampStr
+            << T("] ")
+            << str;
 
         terminalWindow->insertTextAtCursor(out);
         gotFirstMessage = 1;
