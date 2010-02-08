@@ -16,6 +16,7 @@ BlmClass::BlmClass(int cols,int rows)
 			addAndMakeVisible (buttons[x][y] = new TextButton (String::empty));
 			buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
 			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
+		    buttons[x][y]->addButtonListener (this);
 		}
 	}
     Timer::startTimer(1);
@@ -48,12 +49,10 @@ void BlmClass::resized()
 		for (y=0;y<MAX_ROWS;y++){
 			if (x<blmColumns && y<blmRows) {
 				buttons[x][y]->setVisible(true);
-			    buttons[x][y]->addButtonListener (this);
 				buttons[x][y]->setSize(ledSize,ledSize);
 				buttons[x][y]->setTopLeftPosition(x*ledSize,y*ledSize);
 			} else {
 				buttons[x][y]->setVisible(false);
-			    buttons[x][y]->removeButtonListener (this);
 
 			}
 		}
