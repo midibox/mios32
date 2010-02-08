@@ -14,17 +14,12 @@ BlmClass::BlmClass(int cols,int rows)
 	for (x=0;x<MAX_COLS;x++){
 		for (y=0;y<MAX_ROWS;y++){
 			addAndMakeVisible (buttons[x][y] = new TextButton (String::empty));
-		    buttons[x][y]->addButtonListener (this);
-			//buttons[x][y]->setClickingTogglesState(true);
-			//if (x<cols && y < rows){
-				buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
-				buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
-			//} else {
-			//	buttons[x][y]->setEnabled(false);
-			//}
+			buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
+			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
 		}
 	}
     Timer::startTimer(1);
+	addMouseListener(this,true); // Add mouse listener for all child components
 
 }
 
@@ -53,10 +48,13 @@ void BlmClass::resized()
 		for (y=0;y<MAX_ROWS;y++){
 			if (x<blmColumns && y<blmRows) {
 				buttons[x][y]->setVisible(true);
+			    buttons[x][y]->addButtonListener (this);
 				buttons[x][y]->setSize(ledSize,ledSize);
 				buttons[x][y]->setTopLeftPosition(x*ledSize,y*ledSize);
 			} else {
 				buttons[x][y]->setVisible(false);
+			    buttons[x][y]->removeButtonListener (this);
+
 			}
 		}
 	}
@@ -66,30 +64,12 @@ void BlmClass::resized()
 
 void BlmClass::buttonClicked (Button* buttonThatWasClicked)
 {
+	// Take no action as using MouseListener events instead
 }
 
 void BlmClass::buttonStateChanged (Button* buttonThatWasClicked)
 {
-
-	if(!midiOutput || !buttonThatWasClicked->isMouseOver()) // Should stop phantom events!
-		return;
-	
-	int x,y,row=-1,col=-1;
-	for (x=0;x<getBlmColumns();x++){
-		for (y=0;y<getBlmRows();y++){
-			if (buttonThatWasClicked==buttons[x][y]) {
-				col=x;
-				row=y;
-				break;
-			}
-		}
-	}
-	if ((row == -1) && ( col == -1)) {
-		// Something REALLY bad happened
-		return;
-	}
-
-	sendNoteEvent(row,col,(buttonThatWasClicked->isMouseButtonDown() ? 0x7f:0x00));
+	// Take no action as using MouseListener events instead
 }
 
 
@@ -309,4 +289,70 @@ void BlmClass::timerCallback()
         BLMIncomingMidiMessage(message, runningStatus);
 
     }
+}
+
+void BlmClass::mouseDown(const MouseEvent &e)
+{
+
+	int x,y,row=-1,col=-1;
+	for (x=0;x<getBlmColumns();x++){
+		for (y=0;y<getBlmRows();y++){
+			if (e.eventComponent==buttons[x][y]) {
+				col=x;
+				row=y;
+				break;
+			}
+		}
+	}
+	if ((row == -1) && ( col == -1)) {
+		// Something REALLY bad happened
+		return;
+	}
+	sendNoteEvent(row,col,0x7f);
+
+}
+void BlmClass::mouseUp(const MouseEvent &e)
+{
+
+	int x,y,row=-1,col=-1;
+	for (x=0;x<getBlmColumns();x++){
+		for (y=0;y<getBlmRows();y++){
+			if (e.eventComponent==buttons[x][y]) {
+				col=x;
+				row=y;
+				break;
+			}
+		}
+	}
+	if ((row == -1) && ( col == -1)) {
+		// Something REALLY bad happened
+		return;
+	}
+	sendNoteEvent(row,col,0);
+}
+
+
+void BlmClass::mouseDrag(const MouseEvent &e)
+{
+
+	int x,y,row=-1,col=-1;
+	for (x=0;x<getBlmColumns();x++){
+		for (y=0;y<getBlmRows();y++){
+			if (getComponentUnderMouse()==buttons[x][y]) {
+				col=x;
+				row=y;
+				break;
+
+			}
+		}
+	}
+#if 0
+	fprintf(stderr,"In MouseDrag: [%d,%d]\n",col,row);
+	fflush(stderr);
+#endif
+	if ((row == -1) && ( col == -1)) {
+		// Something REALLY bad happened
+		return;
+	}
+	sendNoteEvent(row,col,0x7f);
 }

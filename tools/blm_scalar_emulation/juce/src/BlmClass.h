@@ -40,6 +40,9 @@ public:
 	int getButtonState(int col, int row);
 	void sendCCEvent(int chn,int cc, int value);
 	void sendNoteEvent(int chn,int key, int velocity);
+	void mouseDown(const MouseEvent &e);
+	void mouseUp(const MouseEvent &e);
+	void mouseDrag(const MouseEvent &e);
 
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
