@@ -106,7 +106,7 @@ void UploadWindow::buttonClicked (Button* buttonThatWasClicked)
     if( buttonThatWasClicked == startButton ) {
         File inFile = fileChooser->getCurrentFile();
         uploadStatus->clear();
-        uploadStatus->insertTextAtCursor(String::formatted(T("Reading %s\n"), (const char *)inFile.getFileName()));
+        uploadStatus->insertTextAtCursor(T("Reading ") + inFile.getFileName() + T("\n"));
         MultiTimer::startTimer(TIMER_LOAD_HEXFILE_AND_UPLOAD, 1);
         startButton->setEnabled(false); // will be enabled again if file is valid
     }
@@ -125,7 +125,7 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
         File inFile = fileChooser->getCurrentFile();
 
         uploadStatus->clear();
-        uploadStatus->insertTextAtCursor(String::formatted(T("Reading %s\n"), (const char *)inFile.getFileName()));
+        uploadStatus->insertTextAtCursor(T("Reading ") + inFile.getFileName() + T("\n"));
         MultiTimer::startTimer(TIMER_LOAD_HEXFILE, 1);
         startButton->setEnabled(false); // will be enabled if file is valid
     }
