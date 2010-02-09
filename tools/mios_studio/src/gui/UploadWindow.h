@@ -18,12 +18,15 @@
 #include "../includes.h"
 #include "../HexFileLoader.h"
 #include "../SysexHelper.h"
+#include "../UploadHandler.h"
 
 class MiosStudio; // forward declaration
+
 
 class UploadWindow
     : public Component
     , public ButtonListener
+    , public SliderListener
     , public FilenameComponentListener
     , public MultiTimer
 {
@@ -36,21 +39,18 @@ public:
     void paint (Graphics& g);
     void resized();
     void buttonClicked (Button* buttonThatWasClicked);
+    void sliderValueChanged(Slider* slider);
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
     void midiPortChanged(void);
-    void queryCore(int queryRequest);
-    void rebootCore(void);
+    void queryCore(void);
 
     //==============================================================================
     void uploadStart(void);
-    void uploadStartNow(void);
     void uploadStop(void);
-    void uploadNext(void);
-    void uploadRetry(int errorAcknowledge);
 
     //==============================================================================
     void timerCallback(const int timerId);
@@ -59,30 +59,21 @@ public:
 protected:
     //==============================================================================
     FilenameComponent* fileChooser;
+    TextButton* queryButton;
+    Slider*     deviceIdSlider;
     TextEditor* uploadStatus;
+    TextEditor* uploadQuery;
     TextButton* startButton;
     TextButton* stopButton;
-    TextButton* queryButton;
+    ProgressBar* progressBar;
 
     //==============================================================================
     MiosStudio *miosStudio;
 
     //==============================================================================
-    HexFileLoader hexFileLoader;
-
-    //==============================================================================
-    uint8 deviceId;
-    bool gotFirstMessage;
-    int ongoingQueryMessage;
-    bool ongoingUpload;
-    bool ongoingUploadRequest;
-    bool ongoingRebootRequest;
-
-    int currentCoreType;
-    uint32 currentUploadBlock;
-    uint32 retryCounter;
-
+    uint32 queryRetryCounter;
     int64 timeUploadBegin;
+    double progress;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

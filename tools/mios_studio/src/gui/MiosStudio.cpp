@@ -47,6 +47,7 @@ MiosStudio::MiosStudio()
     verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
     addAndMakeVisible(verticalDividerBarMonitors);
 
+    uploadHandler = new UploadHandler(this);
 
     audioDeviceManager.addMidiInputCallback(String::empty, this);
     Timer::startTimer(1);
@@ -59,8 +60,12 @@ MiosStudio::~MiosStudio()
     deleteAndZero(midiInMonitor);
     deleteAndZero(midiOutMonitor);
     deleteAndZero(uploadWindow);
+    deleteAndZero(miosTerminal);
+    deleteAndZero(midiKeyboard);
+    deleteAndZero(uploadHandler);
     deleteAndZero(horizontalDividerBar1);
     deleteAndZero(horizontalDividerBar2);
+    deleteAndZero(horizontalDividerBar3);
     deleteAndZero(verticalDividerBarMonitors);
 }
 
@@ -105,32 +110,10 @@ void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage&
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
     
-    midiQueue.push(message);
-}
+    midiInQueue.push(message);
 
-
-//==============================================================================
-void MiosStudio::timerCallback()
-{
-    MidiMessage message(0xfe);    
-
-    while( !midiQueue.empty() ) {
-        message = midiQueue.front();
-        midiQueue.pop();
-
-        uint8 *data = message.getRawData();
-        if( data[0] >= 0x80 && data[0] < 0xf8 )
-            runningStatus = data[0];
-
-        // propagate incoming event to MIDI components
-        midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
-
-        // filter runtime events for following components to improve performance
-        if( data[0] < 0xf8 ) {
-            uploadWindow->handleIncomingMidiMessage(message, runningStatus);
-            miosTerminal->handleIncomingMidiMessage(message, runningStatus);
-        }
-    }
+    // propagate to upload handler
+    uploadHandler->handleIncomingMidiMessage(source, message);
 }
 
 
@@ -141,7 +124,40 @@ void MiosStudio::sendMidiMessage(const MidiMessage &message)
     if( out )
         out->sendMessageNow(message);
 
-    midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
+    midiOutQueue.push(message);
+}
+
+
+//==============================================================================
+void MiosStudio::timerCallback()
+{
+    do {
+        if( !midiInQueue.empty() ) {
+            MidiMessage &message = midiInQueue.front();
+
+            uint8 *data = message.getRawData();
+            if( data[0] >= 0x80 && data[0] < 0xf8 )
+                runningStatus = data[0];
+
+            // propagate incoming event to MIDI components
+            midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+
+            // filter runtime events for following components to improve performance
+            if( data[0] < 0xf8 ) {
+                miosTerminal->handleIncomingMidiMessage(message, runningStatus);
+            }
+
+            midiInQueue.pop();
+        }
+
+        if( !midiOutQueue.empty() ) {
+            MidiMessage &message = midiOutQueue.front();
+
+            midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
+
+            midiOutQueue.pop();
+        }
+    } while( !midiInQueue.empty() || !midiOutQueue.empty() );
 }
 
 
