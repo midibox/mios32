@@ -22,6 +22,7 @@
 #include "MidiMonitor.h"
 #include "MiosTerminal.h"
 #include "MidiKeyboard.h"
+#include "../UploadHandler.h"
 
 class MiosStudio
     : public Component
@@ -49,6 +50,8 @@ public:
 
     AudioDeviceManager audioDeviceManager;
 
+    UploadHandler *uploadHandler;
+
 protected:
     //==============================================================================
     UploadWindow *uploadWindow;
@@ -67,8 +70,9 @@ protected:
 
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
-    std::queue<MidiMessage> midiQueue;
+    std::queue<MidiMessage> midiInQueue;
     uint8 runningStatus;
+    std::queue<MidiMessage> midiOutQueue;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
