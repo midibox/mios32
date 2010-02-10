@@ -27,7 +27,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  //commented this out because it produced a compilation error and does not seem to be needed
 	struct {
 	 unsigned long long ALL:64;
 	 };
