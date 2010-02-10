@@ -43,6 +43,8 @@ public:
 	void mouseDown(const MouseEvent &e);
 	void mouseUp(const MouseEvent &e);
 	void mouseDrag(const MouseEvent &e);
+	void mouseOver(const MouseEvent &e);
+
 
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
@@ -52,9 +54,11 @@ protected:
 
 private:
 	int blmColumns,blmRows,ledColours,inputPort,outputPort;
+	int lastButtonX,lastButtonY;
 	TextButton  *buttons[MAX_COLS][MAX_ROWS]; // Not ideal but saves dynamic memory alloc later.
 	MidiOutput *midiOutput;
 	MidiInput *midiInput;
+    SelectedItemSet <Component*> selected;
 	
 };
 

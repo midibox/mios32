@@ -16,14 +16,19 @@ BlmClass::BlmClass(int cols,int rows)
 			addAndMakeVisible (buttons[x][y] = new TextButton (String::empty));
 			buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
 			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
-		    buttons[x][y]->addButtonListener (this);
+			//buttons[x][y]->addButtonListener(this);
+			buttons[x][y]->setInterceptsMouseClicks(false, false);
 		}
 	}
     Timer::startTimer(1);
 	addMouseListener(this,true); // Add mouse listener for all child components
+
 	// if unitialised in windows a pointer isn't necessarilly null!
 	midiOutput= NULL;
 	midiInput= NULL;
+	lastButtonX=-1;
+	lastButtonY=-1;
+
 }
 
 
@@ -297,66 +302,76 @@ void BlmClass::timerCallback()
 
 void BlmClass::mouseDown(const MouseEvent &e)
 {
+	int ledSize=getWidth()/getBlmColumns();
+	int x=e.x/ledSize;
+	int y=e.y/ledSize;
 
-	int x,y,row=-1,col=-1;
-	for (x=0;x<getBlmColumns();x++){
-		for (y=0;y<getBlmRows();y++){
-			if (e.eventComponent==buttons[x][y]) {
-				col=x;
-				row=y;
-				break;
-			}
-		}
+#if 0
+	fprintf(stderr,"In MouseDown: [%d,%d]\n",x,y);
+	fflush(stderr);
+#endif
+	if (x!=lastButtonX && y!=lastButtonY)
+	{
+		buttons[x][y]->triggerClick();
+		lastButtonX=x;
+		lastButtonY=y;
+		sendNoteEvent(y,x,0x7f);
 	}
-	if ((row == -1) && ( col == -1)) {
-		// Something REALLY bad happened
-		return;
-	}
-	sendNoteEvent(row,col,0x7f);
-
 }
 void BlmClass::mouseUp(const MouseEvent &e)
 {
 
-	int x,y,row=-1,col=-1;
-	for (x=0;x<getBlmColumns();x++){
-		for (y=0;y<getBlmRows();y++){
-			if (e.eventComponent==buttons[x][y]) {
-				col=x;
-				row=y;
-				break;
-			}
-		}
+	int ledSize=getWidth()/getBlmColumns();
+	int x=e.x/ledSize;
+	int y=e.y/ledSize;
+
+#if 0
+	fprintf(stderr,"In MouseUp: [%d,%d]\n",x,y);
+	fflush(stderr);
+#endif
+	if (lastButtonX>-1){
+		sendNoteEvent(y,x,0x00);
+		lastButtonX=-1;
+		lastButtonY=-1;
 	}
-	if ((row == -1) && ( col == -1)) {
-		// Something REALLY bad happened
-		return;
-	}
-	sendNoteEvent(row,col,0);
+	//selected.addToSelectionOnMouseUp(buttons[x][y],e.mods,true,true);
 }
 
 
 void BlmClass::mouseDrag(const MouseEvent &e)
 {
+	int ledSize=getWidth()/getBlmColumns();
+	int x=e.x/ledSize;
+	int y=e.y/ledSize;
 
+#if 0
+	fprintf(stderr,"In MouseDrag: [%d,%d]\n",x,y);
+	fflush(stderr);
+#endif
+	if ((lastButtonX!=x || lastButtonY!=y) && lastButtonX>-1) {
+		buttons[x][y]->triggerClick();
+		sendNoteEvent(lastButtonY,lastButtonX,0x00);
+		sendNoteEvent(y,x,0x7f);
+		lastButtonX=x;
+		lastButtonY=y;
+	} 
+}
+
+// Not used!
+void BlmClass::mouseOver(const MouseEvent &e)
+{
 	int x,y,row=-1,col=-1;
 	for (x=0;x<getBlmColumns();x++){
 		for (y=0;y<getBlmRows();y++){
-			if (getComponentUnderMouse()==buttons[x][y]) {
+			if (e.eventComponent->getComponentUnderMouse() ==buttons[x][y]) {
 				col=x;
 				row=y;
 				break;
-
 			}
 		}
 	}
 #if 0
-	fprintf(stderr,"In MouseDrag: [%d,%d]\n",col,row);
+	fprintf(stderr,"In MouseOver: [%d,%d]\n",col,row);
 	fflush(stderr);
 #endif
-	if ((row == -1) && ( col == -1)) {
-		// Something REALLY bad happened
-		return;
-	}
-	sendNoteEvent(row,col,0x7f);
 }
