@@ -340,6 +340,8 @@ void BlmClass::mouseUp(const MouseEvent &e)
 
 void BlmClass::mouseDrag(const MouseEvent &e)
 {
+	if (e.x<0 || e.x>getWidth() || e.y<0 || e.y>getHeight())
+		return; // Outside of boundaries!
 	int ledSize=getWidth()/getBlmColumns();
 	int x=e.x/ledSize;
 	int y=e.y/ledSize;
