@@ -23,14 +23,14 @@ MiosStudio::MiosStudio()
     addAndMakeVisible(miosTerminal = new MiosTerminal(this));
     addAndMakeVisible(midiKeyboard = new MidiKeyboard(this));
 
-    //                             num  min   max  prefered  
-    horizontalLayout.setItemLayout(0, -0.1, -0.9, -0.25); // MIDI In/Out Monitors
-    horizontalLayout.setItemLayout(1,    8,    8,     8); // Resizer
-    horizontalLayout.setItemLayout(2, -0.1, -0.9, -0.30); // Upload Window
-    horizontalLayout.setItemLayout(3,    8,    8,     8); // Resizer
-    horizontalLayout.setItemLayout(4, -0.1, -0.9, -0.25); // MIOS Terminal
-    horizontalLayout.setItemLayout(5,    8,    8,     8); // Resizer
-    horizontalLayout.setItemLayout(6, -0.1, -0.9, -0.20); // MIDI Keyboard
+    //                             num   min   max  prefered  
+    horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
+    horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(2, -0.005, -0.9, -0.30); // Upload Window
+    horizontalLayout.setItemLayout(3,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(4, -0.005, -0.9, -0.25); // MIOS Terminal
+    horizontalLayout.setItemLayout(5,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(6, -0.005, -0.2, -0.20); // MIDI Keyboard
 
     horizontalDividerBar1 = new StretchableLayoutResizerBar(&horizontalLayout, 1, false);
     addAndMakeVisible(horizontalDividerBar1);
@@ -131,33 +131,34 @@ void MiosStudio::sendMidiMessage(const MidiMessage &message)
 //==============================================================================
 void MiosStudio::timerCallback()
 {
-    do {
-        if( !midiInQueue.empty() ) {
-            MidiMessage &message = midiInQueue.front();
+    // important: only broadcast one message per timer tick to avoid GUI hangups when
+    // a large bulk of data is received
 
-            uint8 *data = message.getRawData();
-            if( data[0] >= 0x80 && data[0] < 0xf8 )
-                runningStatus = data[0];
+    if( !midiInQueue.empty() ) {
+        MidiMessage &message = midiInQueue.front();
 
-            // propagate incoming event to MIDI components
-            midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+        uint8 *data = message.getRawData();
+        if( data[0] >= 0x80 && data[0] < 0xf8 )
+            runningStatus = data[0];
 
-            // filter runtime events for following components to improve performance
-            if( data[0] < 0xf8 ) {
-                miosTerminal->handleIncomingMidiMessage(message, runningStatus);
-            }
+        // propagate incoming event to MIDI components
+        midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
 
-            midiInQueue.pop();
+        // filter runtime events for following components to improve performance
+        if( data[0] < 0xf8 ) {
+            miosTerminal->handleIncomingMidiMessage(message, runningStatus);
         }
 
-        if( !midiOutQueue.empty() ) {
-            MidiMessage &message = midiOutQueue.front();
+        midiInQueue.pop();
+    }
 
-            midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
+    if( !midiOutQueue.empty() ) {
+        MidiMessage &message = midiOutQueue.front();
+        
+        midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
 
-            midiOutQueue.pop();
-        }
-    } while( !midiInQueue.empty() || !midiOutQueue.empty() );
+        midiOutQueue.pop();
+    }
 }
 
 

@@ -17,6 +17,7 @@
 
 #include "../includes.h"
 #include "../SysexHelper.h"
+#include "LogBox.h"
 
 class MiosStudio; // forward declaration
 
@@ -39,7 +40,7 @@ public:
 
 protected:
     //==============================================================================
-    TextEditor* monitorWindow;
+    LogBox* monitorLogBox;
     ComboBox* midiPortSelector;
     Label* midiPortLabel;
 

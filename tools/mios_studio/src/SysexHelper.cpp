@@ -15,26 +15,6 @@
 #include "SysexHelper.h"
 
 
-// for decoding error messages (not supported yet)
-#define MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP  0x01
-#define MIOS32_MIDI_SYSEX_DISACK_MORE_BYTES_THAN_EXP  0x02
-#define MIOS32_MIDI_SYSEX_DISACK_WRONG_CHECKSUM       0x03
-#define MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED         0x04
-#define MIOS32_MIDI_SYSEX_DISACK_WRITE_ACCESS         0x05
-#define MIOS32_MIDI_SYSEX_DISACK_MIDI_TIMEOUT         0x06
-#define MIOS32_MIDI_SYSEX_DISACK_WRONG_DEBUG_CMD      0x07
-#define MIOS32_MIDI_SYSEX_DISACK_WRONG_ADDR_RANGE     0x08
-#define MIOS32_MIDI_SYSEX_DISACK_ADDR_NOT_ALIGNED     0x09
-#define MIOS32_MIDI_SYSEX_DISACK_BS_NOT_AVAILABLE     0x0a
-#define MIOS32_MIDI_SYSEX_DISACK_OVERRUN              0x0b
-#define MIOS32_MIDI_SYSEX_DISACK_FRAME_ERROR          0x0c
-#define MIOS32_MIDI_SYSEX_DISACK_UNKNOWN_QUERY        0x0d
-#define MIOS32_MIDI_SYSEX_DISACK_INVALID_COMMAND      0x0e
-#define MIOS32_MIDI_SYSEX_DISACK_PROG_ID_NOT_ALLOWED  0x0f
-#define MIOS32_MIDI_SYSEX_DISACK_UNSUPPORTED_DEBUG    0x10
-
-
-
 //==============================================================================
 SysexHelper::SysexHelper()
 {
@@ -253,3 +233,28 @@ MidiMessage SysexHelper::createMidiMessage(Array<uint8> &dataArray)
     return MidiMessage(data, dataArray.size());
 }
 
+
+//==============================================================================
+String SysexHelper::decodeMiosErrorCode(uint8 errorCode)
+{
+    switch( errorCode ) {
+    case 0x01: return "Less bytes than expected have been received";
+    case 0x02: return "More bytes than expected have been received";
+    case 0x03: return "Checksum mismatch";
+    case 0x04: return "Write failed (verify error or invalid address)";
+    case 0x05: return "Write access failed (invalid address range)";
+    case 0x06: return "MIDI Time Out";
+    case 0x07: return "Wrong Debug Command";
+    case 0x08: return "Read/Write command tried to access an invalid address range";
+    case 0x09: return "Read/Write address not correctly aligned";
+    case 0x0a: return "BankStick not available";
+    case 0x0b: return "MIDI IN Overrun Error";
+    case 0x0c: return "MIDI IN Frame Error";
+    case 0x0d: return "Unknown Query";
+    case 0x0e: return "Invalid SysEx command";
+    case 0x0f: return "Device ID cannot be programmed again";
+    case 0x10: return "Unsupported Debug Command";
+    }
+
+    return "Unknown Error Code";
+}

@@ -19,6 +19,7 @@
 #include "../HexFileLoader.h"
 #include "../SysexHelper.h"
 #include "../UploadHandler.h"
+#include "LogBox.h"
 
 class MiosStudio; // forward declaration
 
@@ -61,8 +62,8 @@ protected:
     FilenameComponent* fileChooser;
     TextButton* queryButton;
     Slider*     deviceIdSlider;
-    TextEditor* uploadStatus;
-    TextEditor* uploadQuery;
+    LogBox* uploadStatus;
+    LogBox* uploadQuery;
     TextButton* startButton;
     TextButton* stopButton;
     ProgressBar* progressBar;
