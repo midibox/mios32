@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIOS Terminal Component
+ * Log Box (an optimized Log window)
  *
  * ==========================================================================
  *
@@ -12,45 +12,42 @@
  * ==========================================================================
  */
 
-#ifndef _MIOS_TERMINAL_H
-#define _MIOS_TERMINAL_H
+#ifndef _LOG_BOX_H
+#define _LOG_BOX_H
 
 #include "../includes.h"
-#include "../SysexHelper.h"
-#include "LogBox.h"
 
-class MiosStudio; // forward declaration
 
-class MiosTerminal
-    : public Component
+class LogBox
+    : public ListBox
+    , public ListBoxModel
 {
 public:
     //==============================================================================
-    MiosTerminal(MiosStudio *_miosStudio);
-    ~MiosTerminal();
+    LogBox(const String &componentName);
+    ~LogBox();
+
 
     //==============================================================================
-    void paint(Graphics& g);
-    void resized();
+    int getNumRows();
+    void paintListBoxItem(int rowNumber, Graphics& g, int width, int height, bool rowIsSelected);
 
     //==============================================================================
-    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
+    void paintOverChildren(Graphics& g);
+
+    //==============================================================================
+    void clear(void);
+    void addEntry(String text);
 
 protected:
-    //==============================================================================
-    LogBox* terminalLogBox;
+    Font logEntryFont;
 
-    //==============================================================================
-    MiosStudio *miosStudio;
-
-    //==============================================================================
-    bool gotFirstMessage;
-    bool ongoingMidiMessage;
+    Array<String> logEntries;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
-    MiosTerminal (const MiosTerminal&);
-    const MiosTerminal& operator= (const MiosTerminal&);
+    LogBox (const LogBox&);
+    const LogBox& operator= (const LogBox&);
 };
 
-#endif /* _MIOS_TERMINAL_H */
+#endif /* _LOG_BOX_H */

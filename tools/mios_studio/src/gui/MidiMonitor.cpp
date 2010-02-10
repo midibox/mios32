@@ -49,21 +49,15 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
 	midiPortLabel = new Label("", inPort ? T("MIDI IN: ") : T("MIDI OUT: "));
 	midiPortLabel->attachToComponent(midiPortSelector, true);
 
-    addAndMakeVisible(monitorWindow = new TextEditor (String::empty));
-    monitorWindow->setMultiLine(true);
-    monitorWindow->setReturnKeyStartsNewLine(true);
-    monitorWindow->setReadOnly(true);
-    monitorWindow->setScrollbarsShown(true);
-    monitorWindow->setCaretVisible(true);
-    monitorWindow->setPopupMenuEnabled(false);
-    monitorWindow->setText(T("MIDI Monitor ready."));
+    addAndMakeVisible(monitorLogBox = new LogBox(T("Midi Monitor")));
+    monitorLogBox->addEntry(T("MIDI Monitor ready."));
 
     setSize(400, 200);
 }
 
 MidiMonitor::~MidiMonitor()
 {
-    deleteAndZero(monitorWindow);
+    deleteAndZero(monitorLogBox);
 }
 
 //==============================================================================
@@ -76,7 +70,7 @@ void MidiMonitor::resized()
 {
     midiPortLabel->setBounds(4, 4, 50-8, 22);
 	midiPortSelector->setBounds(4+50+4, 4, getWidth()-8-50-4, 22);
-    monitorWindow->setBounds(4, 4+22+4, getWidth()-8, getHeight()-(4+22+4+4));
+    monitorLogBox->setBounds(4, 4+22+4, getWidth()-8, getHeight()-(4+22+4+4));
 }
 
 
@@ -112,20 +106,14 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
         !(isMiosTerminalMessage && filterMiosTerminalMessage) ) {
 
         if( !gotFirstMessage )
-            monitorWindow->clear();
+            monitorLogBox->clear();
 
         double timeStamp = message.getTimeStamp();
         String timeStampStr = (timeStamp > 0)
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        String out;
-        out << (gotFirstMessage ? T("\n[") : T("["))
-            << timeStampStr
-            << T("] ")
-            << hexStr;
-
-        monitorWindow->insertTextAtCursor(out);
+        monitorLogBox->addEntry("[" + timeStampStr + "] " + hexStr);
         gotFirstMessage = 1;
     }
 }

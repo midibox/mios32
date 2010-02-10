@@ -7,9 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		521D8E3F1120CDB00013F929 /* UploadHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521D8E3D1120CDB00013F929 /* UploadHandler.cpp */; };
 		527D1040111F2CDD002A091B /* SysexHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 527D103E111F2CDD002A091B /* SysexHelper.cpp */; };
 		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
+		529E4B221122041D00784362 /* LogBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529E4B201122041D00784362 /* LogBox.cpp */; };
 		52B71397111DB614000B8F5A /* MidiMonitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71393111DB614000B8F5A /* MidiMonitor.cpp */; };
 		52B71398111DB614000B8F5A /* UploadWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71395111DB614000B8F5A /* UploadWindow.cpp */; };
 		52B71402111DBDE4000B8F5A /* MiosStudio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71400111DBDE4000B8F5A /* MiosStudio.cpp */; };
@@ -35,12 +37,16 @@
 		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		4A9504C8FFE6A3BC11CA0CBA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = /System/Library/Frameworks/ApplicationServices.framework; sourceTree = "<absolute>"; };
 		4A9504CAFFE6A41611CA0CBA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		521D8E3D1120CDB00013F929 /* UploadHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UploadHandler.cpp; path = ../../src/UploadHandler.cpp; sourceTree = SOURCE_ROOT; };
+		521D8E3E1120CDB00013F929 /* UploadHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UploadHandler.h; path = ../../src/UploadHandler.h; sourceTree = SOURCE_ROOT; };
 		527D103E111F2CDD002A091B /* SysexHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexHelper.cpp; path = ../../src/SysexHelper.cpp; sourceTree = SOURCE_ROOT; };
 		527D103F111F2CDD002A091B /* SysexHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexHelper.h; path = ../../src/SysexHelper.h; sourceTree = SOURCE_ROOT; };
 		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
 		529C75CB111DAB1200DFE267 /* juce_AppConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AppConfig.h; path = ../../src/juce_AppConfig.h; sourceTree = SOURCE_ROOT; };
 		529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_LibrarySource.mm; path = ../../src/juce_LibrarySource.mm; sourceTree = SOURCE_ROOT; };
 		529C75CE111DAB1200DFE267 /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../src/Main.cpp; sourceTree = SOURCE_ROOT; };
+		529E4B201122041D00784362 /* LogBox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LogBox.cpp; path = ../../src/gui/LogBox.cpp; sourceTree = SOURCE_ROOT; };
+		529E4B211122041D00784362 /* LogBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LogBox.h; path = ../../src/gui/LogBox.h; sourceTree = SOURCE_ROOT; };
 		52B71393111DB614000B8F5A /* MidiMonitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiMonitor.cpp; path = ../../src/gui/MidiMonitor.cpp; sourceTree = SOURCE_ROOT; };
 		52B71394111DB614000B8F5A /* MidiMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiMonitor.h; path = ../../src/gui/MidiMonitor.h; sourceTree = SOURCE_ROOT; };
 		52B71395111DB614000B8F5A /* UploadWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UploadWindow.cpp; path = ../../src/gui/UploadWindow.cpp; sourceTree = SOURCE_ROOT; };
@@ -67,7 +73,7 @@
 		84FBB8870E06CCE900B52196 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84FBB88C0E06CD0100B52196 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = /System/Library/Frameworks/WebKit.framework; sourceTree = "<absolute>"; };
 		8D0C4E960486CD37000505A6 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		8D0C4E970486CD37000505A6 /* juce_application.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = juce_application.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D0C4E970486CD37000505A6 /* MIOS_Studio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MIOS_Studio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,7 +101,7 @@
 		195DF8CFFE9D517E11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D0C4E970486CD37000505A6 /* juce_application.app */,
+				8D0C4E970486CD37000505A6 /* MIOS_Studio.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -160,6 +166,10 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				529E4B201122041D00784362 /* LogBox.cpp */,
+				529E4B211122041D00784362 /* LogBox.h */,
+				521D8E3D1120CDB00013F929 /* UploadHandler.cpp */,
+				521D8E3E1120CDB00013F929 /* UploadHandler.h */,
 				52B71592111DF8B6000B8F5A /* MidiSlider.cpp */,
 				52B71593111DF8B6000B8F5A /* MidiSlider.h */,
 				52B71525111DEB9F000B8F5A /* MidiKeyboard.cpp */,
@@ -186,9 +196,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8D0C4E890486CD37000505A6 /* juce_application */ = {
+		8D0C4E890486CD37000505A6 /* MIOS_Studio */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "juce_application" */;
+			buildConfigurationList = 84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIOS_Studio" */;
 			buildPhases = (
 				8D0C4E8C0486CD37000505A6 /* Resources */,
 				8D0C4E8F0486CD37000505A6 /* Sources */,
@@ -198,10 +208,10 @@
 			);
 			dependencies = (
 			);
-			name = juce_application;
+			name = MIOS_Studio;
 			productInstallPath = "$(HOME)/Applications";
 			productName = juce_application;
-			productReference = 8D0C4E970486CD37000505A6 /* juce_application.app */;
+			productReference = 8D0C4E970486CD37000505A6 /* MIOS_Studio.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -209,14 +219,14 @@
 /* Begin PBXProject section */
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "juce_application" */;
+			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIOS_Studio" */;
 			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* juce_application */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8D0C4E890486CD37000505A6 /* juce_application */,
+				8D0C4E890486CD37000505A6 /* MIOS_Studio */,
 			);
 		};
 /* End PBXProject section */
@@ -247,6 +257,8 @@
 				52B71594111DF8B6000B8F5A /* MidiSlider.cpp in Sources */,
 				52C4601F111EF90D00F179A8 /* HexFileLoader.cpp in Sources */,
 				527D1040111F2CDD002A091B /* SysexHelper.cpp in Sources */,
+				521D8E3F1120CDB00013F929 /* UploadHandler.cpp in Sources */,
+				529E4B221122041D00784362 /* LogBox.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,7 +290,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
 				PREBINDING = NO;
-				PRODUCT_NAME = juce_application;
+				PRODUCT_NAME = MIOS_Studio;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -295,7 +307,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
 				PREBINDING = NO;
-				PRODUCT_NAME = juce_application;
+				PRODUCT_NAME = MIOS_Studio;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = NO;
 			};
@@ -316,7 +328,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "juce_application" */ = {
+		84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIOS_Studio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				84F30CC008FEAA620087E26C /* Debug */,
@@ -325,7 +337,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "juce_application" */ = {
+		84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIOS_Studio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				84F30CC408FEAA620087E26C /* Debug */,

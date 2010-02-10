@@ -33,6 +33,7 @@ UploadHandler::UploadHandler(MiosStudio *_miosStudio)
     , deviceId(0x00)
     , retryCounter(0)
 {
+    clearCoreInfo();
 }
 
 UploadHandler::~UploadHandler()
@@ -86,7 +87,12 @@ bool UploadHandler::startUpload(void)
     if( busy )
         return false;
 
+    currentBlock = 0;
+    ignoredBlocks = 0;
+    totalBlocks = hexFileLoader.hexDumpAddressBlocks.size();
+
     busy = 1;
+    currentErrorCode = -1;
     ongoingRebootRequest = 1;
     rebootCore(false);
 

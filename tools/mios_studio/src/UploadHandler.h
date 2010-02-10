@@ -77,7 +77,6 @@ protected:
     uint8 ongoingQueryMessage;
     bool ongoingUpload;
     bool ongoingRebootRequest;
-
     uint32 retryCounter;
 
 };

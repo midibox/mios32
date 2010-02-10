@@ -22,21 +22,15 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
     , ongoingMidiMessage(0)
     , gotFirstMessage(0)
 {
-    addAndMakeVisible(terminalWindow = new TextEditor (String::empty));
-    terminalWindow->setMultiLine(true);
-    terminalWindow->setReturnKeyStartsNewLine(true);
-    terminalWindow->setReadOnly(true);
-    terminalWindow->setScrollbarsShown(true);
-    terminalWindow->setCaretVisible(true);
-    terminalWindow->setPopupMenuEnabled(false);
-    terminalWindow->setText(T("MIOS Terminal ready."));
+    addAndMakeVisible(terminalLogBox = new LogBox(T("MIOS Terminal")));
+    terminalLogBox->addEntry(T("MIOS Terminal ready."));
 
     setSize(400, 200);
 }
 
 MiosTerminal::~MiosTerminal()
 {
-    deleteAndZero(terminalWindow);
+    deleteAndZero(terminalLogBox);
 }
 
 //==============================================================================
@@ -47,7 +41,7 @@ void MiosTerminal::paint (Graphics& g)
 
 void MiosTerminal::resized()
 {
-    terminalWindow->setBounds(4, 4, getWidth()-8, getHeight()-8);
+    terminalLogBox->setBounds(4, 4, getWidth()-8, getHeight()-8);
 }
 
 //==============================================================================
@@ -77,20 +71,14 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
         }
 
         if( !gotFirstMessage )
-            terminalWindow->clear();
+            terminalLogBox->clear();
 
         double timeStamp = message.getTimeStamp();
         String timeStampStr = (timeStamp > 0)
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        String out;
-        out << (gotFirstMessage ? T("\n[") : T("["))
-            << timeStampStr
-            << T("] ")
-            << str;
-
-        terminalWindow->insertTextAtCursor(out);
+        terminalLogBox->addEntry("[" + timeStampStr + "] " + str);
         gotFirstMessage = 1;
     }
 }
