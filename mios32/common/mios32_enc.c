@@ -28,9 +28,9 @@
 
 typedef union {
   //commented this out because it produced a compilation error and does not seem to be needed
-	/*struct {
-	 unsigned ALL:41;
-	 };*/
+	struct {
+	 unsigned long long ALL:64;
+	 };
   struct {
     unsigned act1:1;						// current status of pin 1
     unsigned act2:1;						// current status of pin 2
