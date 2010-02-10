@@ -27,18 +27,22 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
+  //commented this out because it produced a compilation error and does not seem to be needed
+	/*struct {
+	 unsigned ALL:41;
+	 };*/
   struct {
-    unsigned ALL:32;
-  };
-  struct {
-    unsigned act1:1;        // current status of pin 1
-    unsigned act2:1;        // current status of pin 2
-    unsigned last1:1;       // last status of pin 1
-    unsigned last2:1;       // last status of pin 2
-    unsigned decinc:1;      // 1 if last action was decrement, 0 if increment
-    signed   incrementer:8; // the incrementer
-    unsigned accelerator:8; // the accelerator for encoder speed detetion
-    unsigned predivider:4;  // predivider for slow mode
+    unsigned act1:1;						// current status of pin 1
+    unsigned act2:1;						// current status of pin 2
+    unsigned last1:1;						// last status of pin 1
+    unsigned last2:1;						// last status of pin 2
+    unsigned decinc:1;					// 1 if last action was decrement, 0 if increment
+    signed   incrementer:8;			// the incrementer
+    unsigned accelerator:8;			// the accelerator for encoder speed detetion
+    unsigned prev_state_dec:4;	//last INC state
+		unsigned prev_state_inc:4;	// last DEC state	
+		unsigned prev_acc:8;				//last acceleration value, for smoothing out sudden acceleration changes
+		unsigned predivider:4;			//predivider for SLOW mode
   };
   struct {
     unsigned act12:2;       // combines act1/act2
@@ -80,7 +84,10 @@ s32 MIOS32_ENC_Init(u32 mode)
     enc_state[i].decinc = 0;
     enc_state[i].incrementer = 0;
     enc_state[i].accelerator = 0;
-    enc_state[i].predivider = 0;
+		enc_state[i].prev_state_dec = 0;
+		enc_state[i].prev_state_inc = 0;
+		enc_state[i].prev_acc = 0;
+		enc_state[i].predivider = 0;
   }
 
   return 0; // no error
@@ -146,27 +153,27 @@ mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 s32 MIOS32_ENC_UpdateStates(void)
 {
   u8 enc;
-
+	
   // no SRIOs?
 #if MIOS32_SRIO_NUM_SR == 0
   return -1; // no SRIO
 #endif
-
+	
   // check all encoders
   // Note: scanning of 64 encoders takes ca. 30 uS @ 72 MHz :-)
   for(enc=0; enc<MIOS32_ENC_NUM_MAX; ++enc) {
     mios32_enc_config_t *enc_config_ptr = &enc_config[enc];
-
+		
     // skip if encoder not configured
     if( enc_config_ptr->cfg.type == DISABLED )
       continue;
-
+		
     enc_state_t *enc_state_ptr = &enc_state[enc];
-
+		
     // decrement accelerator until it is zero (used to determine rotation speed)
     if( enc_state_ptr->accelerator )
       --enc_state_ptr->accelerator;
-
+		
     // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
     u8 sr = enc_config_ptr->cfg.sr-1;
     u8 pos = enc_config_ptr->cfg.pos;
@@ -177,13 +184,13 @@ s32 MIOS32_ENC_UpdateStates(void)
       enc_state_ptr->act12 = (MIOS32_DIN_SRGet(sr) >> pos) & 3;
       s32 predivider;
       s32 acc;
-
+			
       // State Machine (own Design from 1999)
       // changed 2000-1-5: special "analyse" state which corrects the ENC direction
       // if encoder is rotated to fast - I should patent it ;-)
       // changed 2009-09-14: new ENC_MODE-format, using Bits of ENC_MODE_xx to
       // indicate edges, which trigger Do_Inc / Do_Dec
-
+			
       // if Bit N of ENC_MODE is set, according ENC_STAT triggers Do_Inc / Do_Dec
       //
       // Bit N     7   6   5   4  
@@ -195,83 +202,99 @@ s32 MIOS32_ENC_UpdateStates(void)
       // ENC_STAT  2   B   D   4
       // Bit N     0   1   2   3 
       // This method is based on ideas from Avogra
-
-      if( (enc_state_ptr->state == 0x01 && (enc_type & (1 << 4))) ||
-	  (enc_state_ptr->state == 0x07 && (enc_type & (1 << 5))) ||
-	  (enc_state_ptr->state == 0x0e && (enc_type & (1 << 6))) ||
-	  (enc_state_ptr->state == 0x08 && (enc_type & (1 << 7))) ) {
-	// DEC
-
-	// plausibility check: when accelerator > 0xe0, exit if last event was a INC
-	if( enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0 ) {
-	  // memorize DEC
-	  enc_state_ptr->decinc = 1;
-
-	  // branch depending on speed mode
-	  switch( enc_config_ptr->cfg.speed ) {
-	    case FAST:
-	      if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
-		acc = 1;
-	      enc_state_ptr->incrementer -= acc;
-	      break;
-
-	    case SLOW:
-	      predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
-	      // increment on 4bit underrun
-	      if( predivider < 0 )
-		--enc_state_ptr->incrementer;
-	      enc_state_ptr->predivider = predivider;
-	      break;
-
-	    default: // NORMAL
-	      --enc_state_ptr->incrementer;
-	      break;
-	  }
-
-
-	  // set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
-	  enc_state_ptr->accelerator = 0xff;
-	}
-
-      } else if( (enc_state_ptr->state == 0x02 && (enc_type & (1 << 0))) ||
-		 (enc_state_ptr->state == 0x0b && (enc_type & (1 << 1))) ||
-		 (enc_state_ptr->state == 0x0d && (enc_type & (1 << 2))) ||
-		 (enc_state_ptr->state == 0x04 && (enc_type & (1 << 3))) ) {
-	// INC
-	// plausibility check: when accelerator > 0xe0, exit if last event was a DEC
-	if( !enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0 ) {
-	  // memorize INC
-	  enc_state_ptr->decinc = 0;
-
-	  // branch depending on speed mode
-	  switch( enc_config_ptr->cfg.speed ) {
-	    case FAST:
-	      if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
-		acc = 1;
-	      enc_state_ptr->incrementer += acc;
-	      break;
-
-	    case SLOW:
-	      predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
-	      // increment on 4bit overrun
-	      if( predivider >= 16 )
-		++enc_state_ptr->incrementer;
-	      enc_state_ptr->predivider = predivider;
-	      break;
-
-	    default: // NORMAL
-	      ++enc_state_ptr->incrementer;
-	      break;
-	  }
-
-	  // set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
-	  enc_state_ptr->accelerator = 0xff;
-	}
-      }
-    }
-  }
-
-  return 0; // no error
+			
+			if( (enc_state_ptr->state == 0x01 && (enc_type & (1 << 4))) ||
+				 (enc_state_ptr->state == 0x07 && (enc_type & (1 << 5))) ||
+				 (enc_state_ptr->state == 0x0e && (enc_type & (1 << 6))) ||
+				 (enc_state_ptr->state == 0x08 && (enc_type & (1 << 7))) ) {
+				// DEC
+				// plausibility check: when accelerator > 0xe0, exit if last event was a INC. Also, only do anything if the state has actually changed
+				if( (enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0) && enc_state_ptr->state != enc_state_ptr->prev_state_dec ) {
+					// memorize DEC
+					enc_state_ptr->decinc = 1;
+					
+					//limit maximum increase of accelerator
+					if (enc_state_ptr->accelerator - enc_state_ptr->prev_acc > 20) {
+						enc_state_ptr->accelerator = enc_state_ptr->prev_acc + 20;
+					}
+					
+					// branch depending on speed mode
+					switch( enc_config_ptr->cfg.speed ) {
+						case FAST:
+							if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+								acc = 1;
+							enc_state_ptr->incrementer -= acc;
+							break;
+							
+						case SLOW:
+							predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
+							// increment on 4bit underrun
+							if( predivider < 0 )
+								--enc_state_ptr->incrementer;
+							enc_state_ptr->predivider = predivider;
+							break;
+							
+						default: // NORMAL
+							--enc_state_ptr->incrementer;
+							break;
+					}
+					//save last acceleration value
+					enc_state_ptr->prev_acc = enc_state_ptr->accelerator;
+					
+					// set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
+					enc_state_ptr->accelerator = 0xff;
+					
+					//save last state to compare whether the state changed in the next run
+					enc_state_ptr->prev_state_dec = enc_state_ptr->state;
+				}
+			} else if( (enc_state_ptr->state == 0x02 && (enc_type & (1 << 0))) ||
+								(enc_state_ptr->state == 0x0b && (enc_type & (1 << 1))) ||
+								(enc_state_ptr->state == 0x0d && (enc_type & (1 << 2))) ||
+								(enc_state_ptr->state == 0x04 && (enc_type & (1 << 3))) ) {
+				// INC
+				// plausibility check: when accelerator > 0xe0, exit if last event was a DEC. Also, only do anything if the state has actually changed
+				if( (!enc_state_ptr->decinc || enc_state_ptr->accelerator <= 0xe0) && enc_state_ptr->state != enc_state_ptr->prev_state_inc ) {
+					// memorize INC
+					enc_state_ptr->decinc = 0;
+					
+					//limit maximum increase of accelerator
+					if (enc_state_ptr->accelerator - enc_state_ptr->prev_acc > 20) {
+						enc_state_ptr->accelerator = enc_state_ptr->prev_acc + 20;
+					}
+					
+					// branch depending on speed mode
+					switch( enc_config_ptr->cfg.speed ) {
+						case FAST:
+							if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+								acc = 1;
+							enc_state_ptr->incrementer += acc;
+							break;
+							
+						case SLOW:
+							predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
+							// increment on 4bit overrun
+							if( predivider >= 16 )
+								++enc_state_ptr->incrementer;
+							enc_state_ptr->predivider = predivider;
+							break;
+							
+						default: // NORMAL
+							++enc_state_ptr->incrementer;
+							break;
+					}
+					//save last acceleration value
+					enc_state_ptr->prev_acc = enc_state_ptr->accelerator;
+					
+					// set accelerator to max value (will be decremented on each tick, so that the encoder speed can be determined)
+					enc_state_ptr->accelerator = 0xff;
+					
+					//save last state to compare whether the state changed in the next run
+					enc_state_ptr->prev_state_inc = enc_state_ptr->state;
+				}
+			}
+		}
+	}	
+return 0; // no error
 }
 
 
