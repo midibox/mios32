@@ -72,7 +72,6 @@ protected:
     MiosStudio *miosStudio;
 
     //==============================================================================
-    uint32 queryRetryCounter;
     int64 timeUploadBegin;
     double progress;
 
