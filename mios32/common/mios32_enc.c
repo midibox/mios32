@@ -213,8 +213,7 @@ s32 MIOS32_ENC_UpdateStates(void)
 	  enc_state_ptr->decinc = 1;
 
 	  // limit maximum increase of accelerator
-	  if( enc_state_ptr->accelerator > enc_state_ptr->prev_acc && 
-       enc_state_ptr->accelerator - enc_state_ptr->prev_acc > 20) {
+	  if( (int)enc_state_ptr->accelerator - (int)enc_state_ptr->prev_acc > 20) {
 	    enc_state_ptr->accelerator = enc_state_ptr->prev_acc + 20;
 	  }
 
@@ -260,8 +259,7 @@ s32 MIOS32_ENC_UpdateStates(void)
 	  enc_state_ptr->decinc = 0;
 
 	  // limit maximum increase of accelerator
-	  if( enc_state_ptr->accelerator > enc_state_ptr->prev_acc && 
-       enc_state_ptr->accelerator - enc_state_ptr->prev_acc > 20) {
+	  if( (int)enc_state_ptr->accelerator - (int)enc_state_ptr->prev_acc > 20) {
 	    enc_state_ptr->accelerator = enc_state_ptr->prev_acc + 20;
 	  }
 
