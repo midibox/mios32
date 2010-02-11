@@ -28,7 +28,6 @@
 //==============================================================================
 UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
-    , queryRetryCounter(0)
     , timeUploadBegin(0)
     , progress(0)
 {
@@ -54,7 +53,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
     addAndMakeVisible(uploadQuery = new LogBox(T("Upload Query")));
     uploadQuery->addEntry(T("No response from a core yet..."));
-    uploadQuery->addEntry(T("Check MIDI IN/OUT  connections!"));
+    uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
 
     addAndMakeVisible(uploadStatus = new LogBox(T("Upload Status")));
 
@@ -160,14 +159,14 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
 //==============================================================================
 void UploadWindow::midiPortChanged(void)
 {
-    miosStudio->uploadHandler->stop();
+    miosStudio->uploadHandler->finish();
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
     deviceIdSlider->setEnabled(true);
 
     uploadQuery->clear();
     uploadQuery->addEntry(T("No response from a core yet..."));
-    uploadQuery->addEntry(T("Check MIDI IN/OUT  connections!"));
+    uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
     uploadStatus->clear();
     queryCore();
 }
@@ -181,7 +180,6 @@ void UploadWindow::queryCore(void)
     } else {
         queryButton->setEnabled(false);
         deviceIdSlider->setEnabled(false);
-        queryRetryCounter = 0;
         MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
     }
 }
@@ -207,7 +205,7 @@ void UploadWindow::uploadStart(void)
 
 void UploadWindow::uploadStop(void)
 {
-    miosStudio->uploadHandler->stop();
+    miosStudio->uploadHandler->finish();
     startButton->setEnabled(miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size() >= 1);
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
@@ -275,17 +273,17 @@ void UploadWindow::timerCallback(const int timerId)
         }
     } else if( timerId == TIMER_UPLOAD ) {
         progress = (double)miosStudio->uploadHandler->currentBlock / (double)miosStudio->uploadHandler->totalBlocks;
-        if( miosStudio->uploadHandler->busy ) {
+
+        if( miosStudio->uploadHandler->busy() ) {
+            // wait again for 10 mS - the uploader provides an own timeout mechanism
             MultiTimer::startTimer(TIMER_UPLOAD, 10);
         } else {
-            if( miosStudio->uploadHandler->currentBlock != miosStudio->uploadHandler->totalBlocks ) {
-                int errorCode = miosStudio->uploadHandler->currentErrorCode;
-                if( errorCode >= 0 ) {
-                    uploadStatus->addEntry("Upload aborted due to error #" + String(errorCode) + ":");
-                    uploadStatus->addEntry(SysexHelper::decodeMiosErrorCode(errorCode));
-                } else {
-                    uploadStatus->addEntry(T("Upload aborted due to unknown error!"));
-                }
+            String errorMessage = miosStudio->uploadHandler->finish();
+
+            if( errorMessage != String::empty ) {
+                // TODO: word-wrapping required here for multiple lines
+                uploadStatus->addEntry(errorMessage);
+                uploadQuery->clear();
             } else {
                 uint32 totalBlocks = miosStudio->uploadHandler->totalBlocks - miosStudio->uploadHandler->ignoredBlocks;
                 Time currentTime = Time::getCurrentTime();
@@ -296,52 +294,54 @@ void UploadWindow::timerCallback(const int timerId)
                                                          totalBlocks*256,
                                                          timeUpload,
                                                          transferRateKb));
+
+                uploadQuery->clear();
+                uploadQuery->addEntry(T("Waiting for reboot..."));
             }
             uploadStop();
 
             // delay must be long enough so that it is ensured that the application has booted and can repond on queries
             MultiTimer::startTimer(TIMER_DELAYED_PROGRESS_OFF, 5000);
-            uploadQuery->clear();
-            uploadQuery->addEntry(T("Waiting for reboot..."));
         }
     } else if( timerId == TIMER_DELAYED_PROGRESS_OFF ) {
-        if( !miosStudio->uploadHandler->busy ) { // only if loader still unbusy
+        if( !miosStudio->uploadHandler->busy() ) { // only if loader still unbusy
             progress = 0;
             queryCore(); // query for new application
         }
     } else if( timerId == TIMER_QUERY_CORE ) {
-        if( miosStudio->uploadHandler->busy ) {
-            if( ++queryRetryCounter >= 100 ) {
-                uploadStop();
-                uploadQuery->clear();
-                uploadQuery->addEntry(T("No reply from core on queries!"));
-            } else {
-                // 100*10 = 1 second should be sufficient to retrieve all queries
-                MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
-            }
+        if( miosStudio->uploadHandler->busy() ) {
+            // wait again for 10 mS - the uploader provides an own timeout mechanism
+            MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
         } else {
+            String errorMessage = miosStudio->uploadHandler->finish();
             uploadStop();
-            String str;
-            uploadStatus->clear();
-            uploadQuery->clear();
-            if( !(str=miosStudio->uploadHandler->coreOperatingSystem).isEmpty() )
-                uploadQuery->addEntry("Operating Systen: " + str);
-            if( !(str=miosStudio->uploadHandler->coreBoard).isEmpty() )
-                uploadQuery->addEntry("Board: " + str);
-            if( !(str=miosStudio->uploadHandler->coreFamily).isEmpty() )
-                uploadQuery->addEntry("Core Family: " + str);
-            if( !(str=miosStudio->uploadHandler->coreChipId).isEmpty() )
-                uploadQuery->addEntry("Chip ID: 0x" + str);
-            if( !(str=miosStudio->uploadHandler->coreSerialNumber).isEmpty() )
-                uploadQuery->addEntry("Serial Number: #" + str);
-            if( !(str=miosStudio->uploadHandler->coreFlashSize).isEmpty() )
-                uploadQuery->addEntry("Flash Memory Size: " + str);
-            if( !(str=miosStudio->uploadHandler->coreRamSize).isEmpty() )
-                uploadQuery->addEntry("RAM Size: " + str);
-            if( !(str=miosStudio->uploadHandler->coreAppHeader1).isEmpty() )
-                uploadQuery->addEntry(str);
-            if( !(str=miosStudio->uploadHandler->coreAppHeader2).isEmpty() )
-                uploadQuery->addEntry(str);
+
+            if( errorMessage != String::empty ) {
+                uploadQuery->clear();
+                uploadQuery->addEntry(errorMessage);
+                uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
+            } else {
+                String str;
+                uploadQuery->clear();
+                if( !(str=miosStudio->uploadHandler->coreOperatingSystem).isEmpty() )
+                    uploadQuery->addEntry("Operating Systen: " + str);
+                if( !(str=miosStudio->uploadHandler->coreBoard).isEmpty() )
+                    uploadQuery->addEntry("Board: " + str);
+                if( !(str=miosStudio->uploadHandler->coreFamily).isEmpty() )
+                    uploadQuery->addEntry("Core Family: " + str);
+                if( !(str=miosStudio->uploadHandler->coreChipId).isEmpty() )
+                    uploadQuery->addEntry("Chip ID: 0x" + str);
+                if( !(str=miosStudio->uploadHandler->coreSerialNumber).isEmpty() )
+                    uploadQuery->addEntry("Serial Number: #" + str);
+                if( !(str=miosStudio->uploadHandler->coreFlashSize).isEmpty() )
+                    uploadQuery->addEntry("Flash Memory Size: " + str);
+                if( !(str=miosStudio->uploadHandler->coreRamSize).isEmpty() )
+                    uploadQuery->addEntry("RAM Size: " + str);
+                if( !(str=miosStudio->uploadHandler->coreAppHeader1).isEmpty() )
+                    uploadQuery->addEntry(str);
+                if( !(str=miosStudio->uploadHandler->coreAppHeader2).isEmpty() )
+                    uploadQuery->addEntry(str);
+            }
         }
     }
 }

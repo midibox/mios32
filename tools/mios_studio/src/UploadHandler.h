@@ -21,6 +21,42 @@
 
 
 class MiosStudio; // forward declaration
+class UploadHandler; // forward declaration
+
+
+class UploadHandlerThread
+    : public Thread
+{
+public:
+    UploadHandlerThread(MiosStudio *_miosStudio, UploadHandler *_uploadHandler, bool _queryOnly);
+    ~UploadHandlerThread();
+
+    void run();
+
+
+    MiosStudio *miosStudio;
+    UploadHandler *uploadHandler;
+
+    bool queryOnly;
+
+    // error status message from run() thread
+    String errorStatusMessage;
+
+    int queryRequest;
+    bool mios32RebootRequest;
+
+    bool uploadRequest;
+    int uploadErrorCode;
+
+#if 0    
+    bool ongoingRebootRequest;
+    uint32 retryCounter;
+#endif
+protected:
+    void sendQuery(uint8 query);
+    void sendRebootCore(void);
+};
+
 
 class UploadHandler
     : public MidiInputCallback
@@ -43,9 +79,13 @@ public:
     void clearCoreInfo(void);
 
     //==============================================================================
+    bool busy(void);
     bool startQuery(void);
     bool startUpload(void);
-    bool stop(void);
+
+    // returns error message or String::empty if thread passed
+    // must always be called before startQuery() or startUpload() is called again
+    String finish(void);
 
     //==============================================================================
     void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
@@ -55,7 +95,6 @@ public:
 
     uint8 deviceId;
 
-    bool busy;
     uint32 currentBlock;
     uint32 totalBlocks;
     uint32 ignoredBlocks;
@@ -65,19 +104,10 @@ protected:
     //==============================================================================
     MiosStudio *miosStudio;
 
-    //==============================================================================
-    bool requestCoreInfo(uint8 queryRequest);
-    bool rebootCore(bool afterTransfer);
-
-    void sendBlock(const uint32 &block);
+    UploadHandlerThread *uploadHandlerThread;
 
     //==============================================================================
     uint8 runningStatus;
-
-    uint8 ongoingQueryMessage;
-    bool ongoingUpload;
-    bool ongoingRebootRequest;
-    uint32 retryCounter;
 
 };
 
