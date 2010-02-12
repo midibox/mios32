@@ -148,6 +148,7 @@ MainComponent::MainComponent ()
     setSize (1024, 300);
 
     //[Constructor] You can add your own custom stuff here..
+	// Set size again here (so component can be edited in Jucer if necessary
     setSize(117+(blmClass->getBlmColumns()*blmClass->getLedSize()),10+(blmClass->getBlmRows()*blmClass->getLedSize()));
     //[/Constructor]
 }
@@ -263,8 +264,10 @@ void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
          default: cols=32; rows=16; // 1 was selected!
          }
 		 blmClass->setBlmDimensions(cols,rows);
+		 if (rows<16)
+			 rows=11; // Quick fix so window controls are not lost!
 		 setSize(117+(cols*blmClass->getLedSize()),10+(rows*blmClass->getLedSize()));
-		 //blmClass->resized(); // Force call to resized to redraw new BLM
+		 blmClass->resized(); // Force call to resized to redraw new BLM (in case window size hasn't changed)
         //[/UserComboBoxCode_blmSize]
     }
 
