@@ -17,6 +17,11 @@
 
 //==============================================================================
 HexFileLoader::HexFileLoader()
+    : qualifiedForMios8(0)
+    , disqualifiedForMios8(0)
+    , requiresMios8Reboot(0)
+    , qualifiedForMios32_STM32(0)
+    , disqualifiedForMios32_STM32(0)
 {
 }
 
@@ -118,10 +123,32 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
     }
 
     // transform maps into vectors for easier usage outside this function
+    // while doing this, try to qualify the content for Mios8/32
+    qualifiedForMios8 = false;
+    disqualifiedForMios8 = false;
+    requiresMios8Reboot = false;
+    qualifiedForMios32_STM32 = false;
+    disqualifiedForMios32_STM32 = false;
     std::map<uint32, uint32>::iterator it = addressBlocks.begin();
     for(; it!=addressBlocks.end(); ++it) {
         uint32 blockAddress = (*it).first;
         hexDumpAddressBlocks.push_back(blockAddress);
+
+        if( (blockAddress >= HEX_RANGE_MIOS8_FLASH_START && blockAddress <= HEX_RANGE_MIOS8_FLASH_END) ||
+            (blockAddress >= HEX_RANGE_MIOS8_EEPROM_START && blockAddress <= HEX_RANGE_MIOS8_EEPROM_END) ||
+            (blockAddress >= HEX_RANGE_MIOS8_BANKSTICK_START && blockAddress <= HEX_RANGE_MIOS8_BANKSTICK_END) ) {
+            qualifiedForMios8 = true;
+            disqualifiedForMios32_STM32 = true;
+
+            if( blockAddress >= HEX_RANGE_MIOS8_OS_START && blockAddress <= HEX_RANGE_MIOS8_OS_END )
+                requiresMios8Reboot = true;
+        } else if( (blockAddress >= HEX_RANGE_MIOS32_STM32_FLASH_START && blockAddress <= HEX_RANGE_MIOS32_STM32_FLASH_END) ) {
+            qualifiedForMios32_STM32 = true; // note: upload to RAM supported by bootloader, but too dangerous, e.g. if used RAM is overwritten!
+            disqualifiedForMios8 = true;
+        } else {
+            disqualifiedForMios8 = true;
+            disqualifiedForMios32_STM32 = true;
+        }
 
         Array<uint8> dataArray;
         for(int offset=0; offset<256; ++offset)

@@ -215,7 +215,7 @@ bool SysexHelper::isValidMios32UploadRequest(const uint8 *data, const uint32 &si
 //==============================================================================
 bool SysexHelper::isValidMios32Query(const uint8 *data, const uint32 &size, const int &deviceId)
 {
-    return isValidMios32Header(data, size, deviceId) && data[6] == 0x0d;
+    return isValidMios32Header(data, size, deviceId) && data[6] == 0x00;
 }
 
 Array<uint8> SysexHelper::createMios32Query(const uint8 &deviceId)
