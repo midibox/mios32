@@ -89,7 +89,7 @@ public:
     //==============================================================================
     void initialise (const String& commandLine)
     {
-#ifdef WIN32
+#if 0
 		freopen("c:/stderr.log","a+",stderr);
 #endif
         // just create the main window...

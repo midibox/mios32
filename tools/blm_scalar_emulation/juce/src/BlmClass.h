@@ -11,7 +11,6 @@
 #define MAX_COLS 128
 
 class BlmClass : public Component,
-                 public ButtonListener,
 				 public MidiInputCallback,
 				 public Timer
 {
@@ -25,25 +24,27 @@ public:
 
 	int getBlmColumns(void) { return blmColumns; }	
 	int getBlmRows(void) { return blmRows; }
-    void buttonClicked (Button* buttonThatWasClicked);
-    void buttonStateChanged (Button* buttonThatWasClicked);
+
+	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
+
 	void setMidiOutput(int port);
 	void setMidiInput(int port);
 	int getMidiInput(void) {return inputPort;}
 	int getMidiOutput(void) {return outputPort;}
-	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
-	void sendBLMLayout(void);
 	void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 	void BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus);
 	void closeMidiPorts(void);
+
 	void setButtonState(int col, int row, int state);
 	int getButtonState(int col, int row);
+
+	void sendBLMLayout(void);
 	void sendCCEvent(int chn,int cc, int value);
 	void sendNoteEvent(int chn,int key, int velocity);
+
 	void mouseDown(const MouseEvent &e);
 	void mouseUp(const MouseEvent &e);
 	void mouseDrag(const MouseEvent &e);
-	void mouseOver(const MouseEvent &e);
 
 
 protected:
@@ -55,6 +56,7 @@ protected:
 private:
 	int blmColumns,blmRows,ledColours,inputPort,outputPort;
 	int lastButtonX,lastButtonY;
+	int ledSize;
 	TextButton  *buttons[MAX_COLS][MAX_ROWS]; // Not ideal but saves dynamic memory alloc later.
 	MidiOutput *midiOutput;
 	MidiInput *midiInput;
