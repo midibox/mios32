@@ -10,7 +10,6 @@
 		521044E6111F267D006CF032 /* BlmClass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E4111F267D006CF032 /* BlmClass.cpp */; };
 		521044ED111F268B006CF032 /* MainComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E7111F268B006CF032 /* MainComponent.cpp */; };
 		521044EE111F268B006CF032 /* MidiClass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E9111F268B006CF032 /* MidiClass.cpp */; };
-		521044EF111F268B006CF032 /* SetupWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044EB111F268B006CF032 /* SetupWindow.cpp */; };
 		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
@@ -37,8 +36,6 @@
 		521044E8111F268B006CF032 /* MainComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MainComponent.h; path = ../../src/MainComponent.h; sourceTree = SOURCE_ROOT; };
 		521044E9111F268B006CF032 /* MidiClass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiClass.cpp; path = ../../src/MidiClass.cpp; sourceTree = SOURCE_ROOT; };
 		521044EA111F268B006CF032 /* MidiClass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiClass.h; path = ../../src/MidiClass.h; sourceTree = SOURCE_ROOT; };
-		521044EB111F268B006CF032 /* SetupWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SetupWindow.cpp; path = ../../src/SetupWindow.cpp; sourceTree = SOURCE_ROOT; };
-		521044EC111F268B006CF032 /* SetupWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SetupWindow.h; path = ../../src/SetupWindow.h; sourceTree = SOURCE_ROOT; };
 		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
 		529C75CB111DAB1200DFE267 /* juce_AppConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AppConfig.h; path = ../../src/juce_AppConfig.h; sourceTree = SOURCE_ROOT; };
 		529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_LibrarySource.mm; path = ../../src/juce_LibrarySource.mm; sourceTree = SOURCE_ROOT; };
@@ -108,8 +105,6 @@
 				521044E8111F268B006CF032 /* MainComponent.h */,
 				521044E9111F268B006CF032 /* MidiClass.cpp */,
 				521044EA111F268B006CF032 /* MidiClass.h */,
-				521044EB111F268B006CF032 /* SetupWindow.cpp */,
-				521044EC111F268B006CF032 /* SetupWindow.h */,
 				521044E4111F267D006CF032 /* BlmClass.cpp */,
 				521044E5111F267D006CF032 /* BlmClass.h */,
 				529C75CA111DAB1200DFE267 /* includes.h */,
@@ -222,7 +217,6 @@
 				521044E6111F267D006CF032 /* BlmClass.cpp in Sources */,
 				521044ED111F268B006CF032 /* MainComponent.cpp in Sources */,
 				521044EE111F268B006CF032 /* MidiClass.cpp in Sources */,
-				521044EF111F268B006CF032 /* SetupWindow.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

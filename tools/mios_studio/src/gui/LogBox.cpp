@@ -79,13 +79,14 @@ void LogBox::clear(void)
 
     updateContent();
     repaint(); // note: sometimes not updated without repaint()
+    setVerticalPosition(1.0); // has to be done after updateContent()!
 }
 
 void LogBox::addEntry(String textLine)
 {
     logEntries.add(textLine);
-    setVerticalPosition(1.0);
 
     updateContent();
     repaint(); // note: sometimes not updated without repaint()
+    setVerticalPosition(1.0); // has to be done after updateContent()!
 }

@@ -18,6 +18,7 @@
 #include "includes.h"
 #include "HexFileLoader.h"
 #include "SysexHelper.h"
+#include "LogBox.h"
 
 
 class MiosStudio; // forward declaration
@@ -42,19 +43,26 @@ public:
     // error status message from run() thread
     String errorStatusMessage;
 
-    int queryRequest;
-    bool mios32RebootRequest;
+    volatile bool detectedMios8FeedbackLoop;
+    volatile bool detectedMios32FeedbackLoop;
 
-    bool uploadRequest;
-    int uploadErrorCode;
+    volatile bool detectedMios8UploadRequest;
+    volatile bool detectedMios32UploadRequest;
 
-#if 0    
-    bool ongoingRebootRequest;
-    uint32 retryCounter;
-#endif
+    volatile bool mios8QueryRequest;
+
+    volatile int mios32QueryRequest;
+    volatile bool mios32RebootRequest;
+
+    volatile bool mios32UploadRequest;
+
+    volatile int uploadErrorCode;
+
 protected:
-    void sendQuery(uint8 query);
-    void sendRebootCore(void);
+    void sendMios8Query(void);
+    void sendMios32Query(uint8 query);
+    void sendMios8InvalidBlock(void);
+    void sendMios32RebootCore(void);
 };
 
 
@@ -87,6 +95,9 @@ public:
     // must always be called before startQuery() or startUpload() is called again
     String finish(void);
 
+    bool checkAndDisplayRanges(LogBox* logbox);
+    bool checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddress, uint32 endAddress);
+
     //==============================================================================
     void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 
@@ -97,8 +108,12 @@ public:
 
     uint32 currentBlock;
     uint32 totalBlocks;
-    uint32 ignoredBlocks;
+    uint32 excludedBlocks;
     int currentErrorCode;
+    int recoveredErrorsCounter;
+
+    int64 timeUploadBegin;
+    int64 timeUploadEnd;
 
 protected:
     //==============================================================================

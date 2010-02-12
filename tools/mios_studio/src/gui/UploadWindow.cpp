@@ -28,7 +28,6 @@
 //==============================================================================
 UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
-    , timeUploadBegin(0)
     , progress(0)
 {
 	addAndMakeVisible(fileChooser = new FilenameComponent (T("hexfile"),
@@ -194,7 +193,7 @@ void UploadWindow::uploadStart(void)
     queryButton->setEnabled(false);
     deviceIdSlider->setEnabled(false);
 
-    uploadStatus->addEntry(T("Sending reboot request to enter Bootloader Mode."));
+    uploadStatus->addEntry(T("Trying to contact the connected core..."));
 
     uploadQuery->clear();
     uploadQuery->addEntry(T("Upload in progress..."));
@@ -230,39 +229,15 @@ void UploadWindow::timerCallback(const int timerId)
                 uploadStatus->addEntry(T("ERROR: no blocks found"));
             } else {
                 // display and check ranges
-                uint32 currentBlockAddress = miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks[0];
-                uint32 currentBlockStartAddress = currentBlockAddress;
-                for(int i=1; i<miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size(); ++i) {
-                    uint32 blockAddress = miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks[i];
-
-                    if( blockAddress != (currentBlockAddress + 0x100) ) {
-                        uploadStatus->addEntry(String::formatted(T("Range 0x%08x-0x%08x (%u bytes)"),
-                                                                           currentBlockStartAddress,
-                                                                           currentBlockAddress+0xff,
-                                                                           (currentBlockAddress-currentBlockStartAddress)+0x100));
-                        currentBlockStartAddress = blockAddress;
-                    }
-                    currentBlockAddress = blockAddress;
-                }
-
-                uploadStatus->addEntry(String::formatted(T("Range 0x%08x-0x%08x (%u bytes)"),
-                                                                   currentBlockStartAddress,
-                                                                   currentBlockAddress+0xff,
-                                                                   (currentBlockAddress-currentBlockStartAddress)+0x100));
-
-
-                uploadStatus->addEntry(T("TODO: check for invalid ranges!"));
-
-                if( timerId == TIMER_LOAD_HEXFILE_AND_UPLOAD ) {
+                if( !miosStudio->uploadHandler->checkAndDisplayRanges(uploadStatus) ) {
+                    uploadStatus->addEntry(T("ERROR: Range check failed!"));
+                } else if( timerId == TIMER_LOAD_HEXFILE_AND_UPLOAD ) {
                     // start upload of first block
                     stopButton->setEnabled(true);
                     queryButton->setEnabled(false);
                     deviceIdSlider->setEnabled(false);
                     miosStudio->uploadHandler->startUpload();
                     MultiTimer::startTimer(TIMER_UPLOAD, 10);
-
-                    Time currentTime = Time::getCurrentTime();
-                    timeUploadBegin = currentTime.toMilliseconds();
                 } else {
                     uploadStatus->addEntry(T("Press start button to begin upload."));
                     startButton->setEnabled(true);
@@ -285,15 +260,20 @@ void UploadWindow::timerCallback(const int timerId)
                 uploadStatus->addEntry(errorMessage);
                 uploadQuery->clear();
             } else {
-                uint32 totalBlocks = miosStudio->uploadHandler->totalBlocks - miosStudio->uploadHandler->ignoredBlocks;
-                Time currentTime = Time::getCurrentTime();
-                int64 timeUploadEnd = currentTime.toMilliseconds();
+                uint32 totalBlocks = miosStudio->uploadHandler->totalBlocks - miosStudio->uploadHandler->excludedBlocks;
+                int64 timeUploadBegin = miosStudio->uploadHandler->timeUploadBegin;
+                int64 timeUploadEnd = miosStudio->uploadHandler->timeUploadEnd;
                 float timeUpload = (float) (timeUploadEnd - timeUploadBegin) / 1000;
                 float transferRateKb = ((totalBlocks * 256) / timeUpload) / 1024;
                 uploadStatus->addEntry(String::formatted(T("Upload of %d bytes completed after %3.2fs (%3.2f kb/s)"),
                                                          totalBlocks*256,
                                                          timeUpload,
                                                          transferRateKb));
+
+                if( miosStudio->uploadHandler->recoveredErrorsCounter > 0 ) {
+                    uploadStatus->addEntry(String::formatted(T("%d ignorable errors during upload solved (no issue!)"),
+                                                             miosStudio->uploadHandler->recoveredErrorsCounter));
+                }
 
                 uploadQuery->clear();
                 uploadQuery->addEntry(T("Waiting for reboot..."));

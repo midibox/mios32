@@ -35,6 +35,31 @@ public:
 
     std::vector<uint32> hexDumpAddressBlocks;
 
+    // check if address ranges are allowed for Mios8 and/or Mios32
+    bool qualifiedForMios8;
+    bool disqualifiedForMios8;
+    bool requiresMios8Reboot;
+    bool qualifiedForMios32_STM32;
+    bool disqualifiedForMios32_STM32;
+
+    //==============================================================================
+    static const uint32 HEX_RANGE_MIOS8_BL_START           = 0x00000000; // Bootloader range
+    static const uint32 HEX_RANGE_MIOS8_BL_END             = 0x000003ff; // Upload not allowed here!
+    static const uint32 HEX_RANGE_MIOS8_OS_START           = 0x00000000; // MIOS8 range
+    static const uint32 HEX_RANGE_MIOS8_OS_END             = 0x00002fff; // allowed flash range, but reboot required
+    static const uint32 HEX_RANGE_MIOS8_FLASH_START        = 0x00000400;
+    static const uint32 HEX_RANGE_MIOS8_FLASH_END          = 0x0003ffff;
+    static const uint32 HEX_RANGE_MIOS8_EEPROM_START       = 0x00f00000;
+    static const uint32 HEX_RANGE_MIOS8_EEPROM_END         = 0x00f00fff;
+    static const uint32 HEX_RANGE_MIOS8_BANKSTICK_START    = 0x00400000;
+    static const uint32 HEX_RANGE_MIOS8_BANKSTICK_END      = 0x0047ffff;
+
+    static const uint32 HEX_RANGE_MIOS32_STM32_FLASH_START = 0x08000000;
+    static const uint32 HEX_RANGE_MIOS32_STM32_FLASH_END   = 0x08ffffff;
+    static const uint32 HEX_RANGE_MIOS32_STM32_BL_START    = 0x08000000; // Bootloader within
+    static const uint32 HEX_RANGE_MIOS32_STM32_BL_END      = 0x08003fff; // allowed flash range - will be excluded automatically
+
+
 protected:
     std::map<uint32, Array<uint8> > hexDump;
 };
