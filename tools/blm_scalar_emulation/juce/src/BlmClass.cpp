@@ -28,7 +28,6 @@ BlmClass::BlmClass(int cols,int rows)
 	midiInput= NULL;
 	lastButtonX=-1;
 	lastButtonY=-1;
-
 }
 
 
@@ -52,7 +51,7 @@ BlmClass::~BlmClass()
 
 void BlmClass::resized()
 {
-	int ledSize=getWidth()/getBlmColumns();
+	ledSize=getWidth()/getBlmColumns();
 
 	int x,y;
 	for (x=0;x<MAX_COLS;x++){
@@ -61,6 +60,8 @@ void BlmClass::resized()
 				buttons[x][y]->setVisible(true);
 				buttons[x][y]->setSize(ledSize,ledSize);
 				buttons[x][y]->setTopLeftPosition(x*ledSize,y*ledSize);
+				buttons[x][y]->setToggleState(false,false);
+				buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
 			} else {
 				buttons[x][y]->setVisible(false);
 
@@ -69,16 +70,6 @@ void BlmClass::resized()
 	}
 	sendBLMLayout();
 
-}
-
-void BlmClass::buttonClicked (Button* buttonThatWasClicked)
-{
-	// Take no action as using MouseListener events instead
-}
-
-void BlmClass::buttonStateChanged (Button* buttonThatWasClicked)
-{
-	// Take no action as using MouseListener events instead
 }
 
 
@@ -156,21 +147,24 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
 		LED_State = 2;
 	else
 		LED_State = 3;
+#if 0
+	fprintf(stderr,"Got Event... Chn: 0x%02x, event_type: 0x%02x, evnt1: 0x%02x, evnt2: 0x%02x\n",chn,event_type,evnt1,evnt2);
+			fflush(stderr);
+#endif
 
 
 	switch( event_type ) {
 		case 0x8: // Note Off
 			evnt2 = 0; // handle like Note On with velocity 0
 		case 0x9:
-			if( evnt1 < blmColumns ) {
+			if( evnt1 < blmColumns) {
 				int row = chn;
 				int column = evnt1;
 				setButtonState(column,row,LED_State);
-				if (!evnt2)
+				if (evnt2==0)
 					buttons[column][row]->setToggleState(false,false);
 				else
 					buttons[column][row]->setToggleState(true,false);
-
 			}
 			break;
 
@@ -213,10 +207,12 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
 						for(column=0; column<8; ++column) {
 							int led_mask = (pattern & (1 << column)) ? state_mask : 0;
 							int _column = column+column_offset;
-							int state = getButtonState(column,row);
+							int state = getButtonState(_column,row);
 							int new_state = (state & ~state_mask) | led_mask;
+							if (_column>MAX_COLS || row>MAX_ROWS)
+								continue; // make sure column/row are within limits.
 							setButtonState(_column,row,new_state);
-							if (!new_state)
+							if (new_state==0)
 								buttons[_column][row]->setToggleState(false,false);
 							else
 								buttons[_column][row]->setToggleState(true,false);
@@ -284,27 +280,29 @@ void BlmClass::sendNoteEvent(int chn,int key, int velocity)
 
 void BlmClass::timerCallback()
 {
-    MidiMessage message(0xfe);    
 
     while( !midiQueue.empty() ) {
-        message = midiQueue.front();
+        MidiMessage &message = midiQueue.front();
         midiQueue.pop();
 
-        uint8 *data = message.getRawData();
-        if( data[0] >= 0x80 && data[0] < 0xf8 )
-            runningStatus = data[0];
-
         // propagate incoming event to MIDI components
-        BLMIncomingMidiMessage(message, runningStatus);
-
+		if (message.getRawData()[0]<0xf8)
+	        BLMIncomingMidiMessage(message, runningStatus);
     }
 }
 
 void BlmClass::mouseDown(const MouseEvent &e)
 {
-	int ledSize=getWidth()/getBlmColumns();
+	// Get rid of spurious messages
+	// I think that setToggleState() can sometimes trigger a mouseDown()???
+	if (!e.mouseWasClicked())
+		return;
+
 	int x=e.x/ledSize;
 	int y=e.y/ledSize;
+
+	if (x<0 || y<0 || x>blmColumns || y> blmRows)
+		return;
 
 #if 0
 	fprintf(stderr,"In MouseDown: [%d,%d]\n",x,y);
@@ -320,10 +318,11 @@ void BlmClass::mouseDown(const MouseEvent &e)
 }
 void BlmClass::mouseUp(const MouseEvent &e)
 {
-
-	int ledSize=getWidth()/getBlmColumns();
 	int x=e.x/ledSize;
 	int y=e.y/ledSize;
+
+	if (x<0 || y<0 || x>blmColumns || y> blmRows)
+		return;
 
 #if 0
 	fprintf(stderr,"In MouseUp: [%d,%d]\n",x,y);
@@ -340,9 +339,6 @@ void BlmClass::mouseUp(const MouseEvent &e)
 
 void BlmClass::mouseDrag(const MouseEvent &e)
 {
-	if (e.x<0 || e.x>getWidth() || e.y<0 || e.y>getHeight())
-		return; // Outside of boundaries!
-	int ledSize=getWidth()/getBlmColumns();
 	int x=e.x/ledSize;
 	int y=e.y/ledSize;
 
@@ -350,30 +346,24 @@ void BlmClass::mouseDrag(const MouseEvent &e)
 	fprintf(stderr,"In MouseDrag: [%d,%d]\n",x,y);
 	fflush(stderr);
 #endif
-	if ((lastButtonX!=x || lastButtonY!=y) && lastButtonX>-1) {
+
+	// Dragged outside boundary so send off event and clear button.
+	if ( x>=blmColumns || y>=blmRows || e.x<0 || e.y<0)
+	{
+		if (lastButtonX>=0 && lastButtonY>=0) 
+			sendNoteEvent(lastButtonY,lastButtonX,0x00);
+		 
+		lastButtonX=-1;
+		lastButtonY=-1;
+		return;
+	}
+
+	if ((lastButtonX!=x || lastButtonY!=y)) {
 		buttons[x][y]->triggerClick();
-		sendNoteEvent(lastButtonY,lastButtonX,0x00);
+		if (lastButtonX>=0 && lastButtonY>=0)	
+			sendNoteEvent(lastButtonY,lastButtonX,0x00);
 		sendNoteEvent(y,x,0x7f);
 		lastButtonX=x;
 		lastButtonY=y;
 	} 
-}
-
-// Not used!
-void BlmClass::mouseOver(const MouseEvent &e)
-{
-	int x,y,row=-1,col=-1;
-	for (x=0;x<getBlmColumns();x++){
-		for (y=0;y<getBlmRows();y++){
-			if (e.eventComponent->getComponentUnderMouse() ==buttons[x][y]) {
-				col=x;
-				row=y;
-				break;
-			}
-		}
-	}
-#if 0
-	fprintf(stderr,"In MouseOver: [%d,%d]\n",col,row);
-	fflush(stderr);
-#endif
 }
