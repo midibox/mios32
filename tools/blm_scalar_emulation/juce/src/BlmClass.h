@@ -24,6 +24,7 @@ public:
 
 	int getBlmColumns(void) { return blmColumns; }	
 	int getBlmRows(void) { return blmRows; }
+	int getLedSize(void) { return ledSize; }
 
 	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
 
