@@ -27,10 +27,8 @@ public:
 
 	void setBlmDimensions(int col,int row) {blmColumns=col; blmRows=row;}	
 
-	void setMidiOutput(int port);
-	void setMidiInput(int port);
-	int getMidiInput(void) {return inputPort;}
-	int getMidiOutput(void) {return outputPort;}
+	void setMidiOutput(const String &port);
+	void setMidiInput(const String &port);
 	void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 	void BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus);
 	void closeMidiPorts(void);
@@ -46,6 +44,7 @@ public:
 	void mouseUp(const MouseEvent &e);
 	void mouseDrag(const MouseEvent &e);
 
+    AudioDeviceManager audioDeviceManager;
 
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
@@ -58,8 +57,6 @@ private:
 	int lastButtonX,lastButtonY;
 	int ledSize;
 	TextButton  *buttons[MAX_COLS][MAX_ROWS]; // Not ideal but saves dynamic memory alloc later.
-	MidiOutput *midiOutput;
-	MidiInput *midiInput;
     SelectedItemSet <Component*> selected;
 	
 };

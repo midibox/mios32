@@ -237,13 +237,13 @@ void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     if (comboBoxThatHasChanged == midiInput)
     {
         //[UserComboBoxCode_midiInput] -- add your combo box handling code here..
-		blmClass->setMidiInput(midiInput->getSelectedId()-1);
+		blmClass->setMidiInput(midiInput->getText());
         //[/UserComboBoxCode_midiInput]
     }
     else if (comboBoxThatHasChanged == midiOutput)
     {
         //[UserComboBoxCode_midiOutput] -- add your combo box handling code here..
-		blmClass->setMidiOutput(midiOutput->getSelectedId()-1);
+		blmClass->setMidiOutput(midiOutput->getText());
         //[/UserComboBoxCode_midiOutput]
     }
     else if (comboBoxThatHasChanged == blmSize)
