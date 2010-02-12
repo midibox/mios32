@@ -20,12 +20,13 @@ BlmClass::BlmClass(int cols,int rows)
 			buttons[x][y]->setInterceptsMouseClicks(false, false);
 		}
 	}
+
+	audioDeviceManager.addMidiInputCallback(String::empty, this);
+
     Timer::startTimer(1);
 	addMouseListener(this,true); // Add mouse listener for all child components
 
 	// if unitialised in windows a pointer isn't necessarilly null!
-	midiOutput= NULL;
-	midiInput= NULL;
 	lastButtonX=-1;
 	lastButtonY=-1;
 }
@@ -33,11 +34,7 @@ BlmClass::BlmClass(int cols,int rows)
 
 BlmClass::~BlmClass()
 {
-	if(midiInput)
-		midiInput->stop();
     Timer::stopTimer();
-	deleteAndZero (midiInput);
-	deleteAndZero (midiOutput);
 
 	int x,y;
 	for (x=0;x<MAX_COLS;x++){
@@ -73,24 +70,18 @@ void BlmClass::resized()
 }
 
 
-void BlmClass::closeMidiPorts(void)
+void BlmClass::setMidiInput(const String &port)
 {
-	if (midiInput)
-		midiInput->stop();
+    const StringArray allMidiIns(MidiInput::getDevices());
+    for (int i = allMidiIns.size(); --i >= 0;) {
+        bool enabled = allMidiIns[i] == port;
+        audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
+    }
 }
 
-
-void BlmClass::setMidiOutput(int port)
+void BlmClass::setMidiOutput(const String &port)
 {
-	outputPort=port;
-	midiOutput=MidiOutput::openDevice(port);
-}
-
-void BlmClass::setMidiInput(int port)
-{
-	inputPort=port;
-	midiInput=MidiInput::openDevice(port,this);
-	midiInput->start();
+    audioDeviceManager.setDefaultMidiOutput(port);
 }
 
 
@@ -258,24 +249,27 @@ void BlmClass::sendBLMLayout(void)
 	sysex[9] = ledColours;
 	sysex[10] = 0xf7;
 	MidiMessage message(sysex,11);
-	if(midiOutput)
-		midiOutput->sendMessageNow(message);
+    MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
+    if( out )
+        out->sendMessageNow(message);
 }
 
 
 void BlmClass::sendCCEvent(int chn,int cc, int value)
 {
 	MidiMessage message(0xb0|chn,cc,value);
-	if(midiOutput)
-		midiOutput->sendMessageNow(message);
+    MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
+    if( out )
+        out->sendMessageNow(message);
 }
 
 
 void BlmClass::sendNoteEvent(int chn,int key, int velocity)
 {
 	MidiMessage message(0x90|chn,key,velocity);
-	if(midiOutput)
-		midiOutput->sendMessageNow(message);
+    MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
+    if( out )
+        out->sendMessageNow(message);
 }
 
 void BlmClass::timerCallback()
