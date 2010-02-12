@@ -175,8 +175,25 @@ MidiMessage HexFileLoader::createMidiMessageForBlock(const uint8 &deviceId, cons
 
     if( forMios32 )
         dataArray = SysexHelper::createMios32WriteBlock(deviceId, blockAddress, size, checksum);
-    else
-        dataArray = SysexHelper::createMios8WriteBlock(deviceId, blockAddress, size, checksum);
+    else {
+        uint32 miosBlockAddress = 0xffffffff; // invalid
+        uint8 miosBlockExtension = 0x7; // invalid
+        if( blockAddress >= 0x0000 && blockAddress <= 0x7fff ) {
+            miosBlockAddress = blockAddress; // lower flash range
+            miosBlockExtension = 0x0;
+        } else if( blockAddress >= 0x8000 && blockAddress <= 0x3ffff ) {
+            miosBlockAddress = blockAddress & 0x7fff; // upper flash range
+            miosBlockExtension = blockAddress >> 15;
+        } else if( blockAddress >= 0xf00000 && blockAddress <= 0xf00fff ) {
+            miosBlockAddress = 0x8000 | (blockAddress & 0x7fff); // EEPROM range
+            miosBlockExtension = 0x0;
+        } else if( blockAddress >= 0x400000 && blockAddress <= 0x47ffff ) {
+            miosBlockAddress = 0x10000 | (blockAddress & 0xffff); // BankStick range
+            miosBlockExtension = blockAddress >> 16;
+        }
+
+        dataArray = SysexHelper::createMios8WriteBlock(deviceId, miosBlockAddress, miosBlockExtension, size, checksum);
+    }
 
     uint8 m = 0x00;
     int mCounter = 0;
