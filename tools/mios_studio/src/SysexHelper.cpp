@@ -158,13 +158,12 @@ bool SysexHelper::isValidMios8WriteBlock(const uint8 *data, const uint32 &size, 
     return isValidMios8Header(data, size, deviceId) && data[6] == 0x02;
 }
 
-Array<uint8> SysexHelper::createMios8WriteBlock(const uint8 &deviceId, const uint32 &address, const uint32 &size, uint8 &checksum)
+Array<uint8> SysexHelper::createMios8WriteBlock(const uint8 &deviceId, const uint32 &address, const uint8 &extension, const uint32 &size, uint8 &checksum)
 {
     Array<uint8> dataArray = createMios8Header(deviceId);
     checksum = 0x00;
 
-    // TODO: address extension!
-    uint8 cmd = 0x02;
+    uint8 cmd = 0x02 | ((extension << 4) & 0x70);
     uint8 b;
     dataArray.add(cmd);
     dataArray.add(b = (address >> 10) & 0x7f); checksum += b;

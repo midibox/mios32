@@ -29,8 +29,7 @@ UploadHandler::UploadHandler(MiosStudio *_miosStudio)
     , runningStatus(0x00)
     , deviceId(0x00)
     , recoveredErrorsCounter(0)
-    , timeUploadBegin(0)
-    , timeUploadEnd(0)
+    , timeUpload(0.0)
 {
     clearCoreInfo();
 }
@@ -84,8 +83,6 @@ bool UploadHandler::startUpload(void)
         return false;
 
     clearCoreInfo();
-    timeUploadBegin = 0;
-    timeUploadEnd = 0;
     uploadHandlerThread = new UploadHandlerThread(miosStudio, this, false); // !queryOnly
 
     return true;
@@ -216,7 +213,6 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
     }
 
 
-
     // query request?
     if( uploadHandlerThread->mios8QueryRequest || uploadHandlerThread->mios32QueryRequest ) {
 
@@ -270,6 +266,27 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
             uploadHandlerThread->notify(); // wakeup run() thread
         }
     }
+
+    if( uploadHandlerThread->mios8UploadRequest ) {
+        if( SysexHelper::isValidMios8Acknowledge(data, size, deviceId) ) {
+            uploadHandlerThread->mios8UploadRequest = 0;
+            uploadHandlerThread->detectedMios8UploadRequest = 1;
+            uploadHandlerThread->notify(); // wakeup run() thread
+        } else if( SysexHelper::isValidMios8Error(data, size, deviceId) ) {
+            uploadHandlerThread->mios8UploadRequest = 0;
+            uploadHandlerThread->detectedMios8UploadRequest = 0;
+            uploadHandlerThread->uploadErrorCode = data[7]; // data[7] contains error code
+            uploadHandlerThread->notify(); // wakeup run() thread
+        }
+    }
+
+    // for MIOS8 reboot
+    if( uploadHandlerThread->mios8RebootRequest &&
+        SysexHelper::isValidMios8Error(data, size, deviceId) &&
+        size >= 8 && data[7] == 0x01 ) {
+        uploadHandlerThread->mios8RebootRequest = 0;
+    }
+
 }
 
 
@@ -287,6 +304,9 @@ UploadHandlerThread::UploadHandlerThread(MiosStudio *_miosStudio, UploadHandler 
     , detectedMios32UploadRequest(0)
     , mios8QueryRequest(0)
     , mios32QueryRequest(0)
+    , mios8UploadRequest(0)
+    , mios32UploadRequest(0)
+    , mios8RebootRequest(0)
     , mios32RebootRequest(0)
     , uploadErrorCode(-1)
 {
@@ -305,6 +325,21 @@ UploadHandlerThread::~UploadHandlerThread()
     stopThread(2000); // give it a chance for 2 seconds
 }
 
+
+void UploadHandlerThread::sendMios8RebootCore()
+{
+    // dummy write operation, core will return error 0x01 "less bytes than expected"
+    uint32 address = 0x00000000;
+    uint8 extension = 0x00;
+    uint32 size = 0;
+    uint8 checksum = 0x00;
+    Array<uint8> dataArray = SysexHelper::createMios8WriteBlock(uploadHandler->deviceId, address, extension, size, checksum);
+    dataArray.add(0x00); // dummy byte
+    dataArray.add(0x00); // dummy byte
+    dataArray.add(0xf7);
+    MidiMessage message = SysexHelper::createMidiMessage(dataArray);
+    miosStudio->sendMidiMessage(message);
+}
 
 void UploadHandlerThread::sendMios32RebootCore()
 {
@@ -341,10 +376,15 @@ void UploadHandlerThread::sendMios8Query(void)
 void UploadHandlerThread::sendMios8InvalidBlock(void)
 {
     // try to upload some bytes to invalid address and with invalid checksum
+    // this is a way to get a response from the (stupid) bootloader which doesn't
+    // support all MIOS8 error messages
+    // But this method also has an advantage: MIOS8 would reply with an error
+    // acknowledge, so that we are able to differ between BL and MIOS8
     uint32 address = 0x00000000;
+    uint8 extension = 0x00;
     uint32 size = 8;
     uint8 checksum = 0x00;
-    Array<uint8> dataArray = SysexHelper::createMios8WriteBlock(uploadHandler->deviceId, address, size, checksum);
+    Array<uint8> dataArray = SysexHelper::createMios8WriteBlock(uploadHandler->deviceId, address, extension, size, checksum);
     // note: the number of bytes is important!
     for(int i=0; i<11; ++i)
         dataArray.add(0x10 + i);
@@ -433,24 +473,35 @@ void UploadHandlerThread::run()
     // Step 2) check for MIOS8 bootloader
     //////////////////////////////////////////////////////////////////////////////////////
     if( tryMios8Bootloader ) {
-        detectedMios8UploadRequest = 0;
-        sendMios8InvalidBlock();
-        
-        // wait for wakeup from handleIncomingMidiMessage() - timeout after 100 mS
-        // we wait for up to 20*10 mS (for the case that multiple replies are received)
-        for(int i=0; i<20; ++i)
-            wait(10);
+        // try to detect bootloader 5 times, take overall result
 
-        if( detectedMios32FeedbackLoop && detectedMios8FeedbackLoop ) {
-            errorStatusMessage = "Detected a feedback loop!";
-            return;
-        } else if( detectedMios8UploadRequest ) {
-            forMios32 = false;
-            viaBootloader = true;
-        } else {
+        detectedMios32FeedbackLoop = 0;
+        detectedMios8FeedbackLoop = 0;
+        detectedMios8UploadRequest = 0;
+
+        for(int retry=0; !detectedMios8UploadRequest && retry<5; ++retry) {
+            
+            detectedMios8UploadRequest = 0;
+            sendMios8InvalidBlock();
+        
+            // wait for wakeup from handleIncomingMidiMessage() - timeout after 100 mS
+            // we wait for up to 20*10 mS (for the case that multiple replies are received)
+            for(int i=0; i<20; ++i)
+                wait(10);
+
+            if( detectedMios32FeedbackLoop && detectedMios8FeedbackLoop ) {
+                errorStatusMessage = "Detected a feedback loop!";
+                return;
+            }
+        }
+
+        if( !detectedMios8UploadRequest ) {
             errorStatusMessage = "No response from MIOS8 or MIOS32 core!";
             return;
         }
+
+        forMios32 = false;
+        viaBootloader = true;
     }
 
 
@@ -539,15 +590,10 @@ void UploadHandlerThread::run()
         }
     }
 
-
-    // exit if MIOS8... not supported yet
-    if( !forMios32 ) {
-        errorStatusMessage = "MIOS8 upload not supported yet!";
-        return;
-    }
         
     //////////////////////////////////////////////////////////////////////////////////////
     // MIOS32: always reboot the core to enter BL mode
+    // MIOS8: only reboot if MIOS range will be overwritten
     //////////////////////////////////////////////////////////////////////////////////////
     if( forMios32 ) {
         mios32RebootRequest = 1;
@@ -557,15 +603,34 @@ void UploadHandlerThread::run()
         wait(1000);
 
         if( mios32RebootRequest ) {
-            errorStatusMessage = "Bootloader Mode cannot be entered - try again?";
+            errorStatusMessage = "MIOS32 Bootloader Mode cannot be entered - try again?";
+            return;
+        }
+    } else if( uploadHandler->hexFileLoader.requiresMios8Reboot ) {
+        mios8RebootRequest = 1;
+        detectedMios8UploadRequest = 0;
+        sendMios8RebootCore();
+
+        // wait for wakeup from handleIncomingMidiMessage() - timeout after 5 seconds
+        bool blEntered = false;
+        for(int i=0; !blEntered && i<50; ++i) { // iterate 50 times for the case that multiple messages are received
+            if( !mios8RebootRequest && detectedMios8UploadRequest )
+                blEntered = true;
+            else
+                wait(100);
+        }
+
+        if( !blEntered ) {
+            errorStatusMessage = "MIOS8 Bootloader Mode cannot be entered - try again?";
             return;
         }
     }
 
+
     //////////////////////////////////////////////////////////////////////////////////////
     // upload code blocks
     //////////////////////////////////////////////////////////////////////////////////////
-    uploadHandler->timeUploadBegin = Time::getCurrentTime().toMilliseconds();
+    int64 timeUploadBegin = Time::getCurrentTime().toMilliseconds();
 
     for(int block=0; block<uploadHandler->totalBlocks; ++block) {
         uploadHandler->currentBlock = block;
@@ -587,7 +652,8 @@ void UploadHandlerThread::run()
         int retry = 0;        
         do {
             uploadErrorCode = -1;
-            mios32UploadRequest = 1;
+            mios32UploadRequest = forMios32;
+            mios8UploadRequest = !forMios32;
             miosStudio->sendMidiMessage(uploadHandler->hexFileLoader.createMidiMessageForBlock(uploadHandler->deviceId, blockAddress, forMios32));
 
             // wait for wakeup from handleIncomingMidiMessage() - timeout after 1 second
@@ -596,7 +662,9 @@ void UploadHandlerThread::run()
             if( uploadErrorCode >= 0 )
                 ++uploadHandler->recoveredErrorsCounter; // counter is only relevant if the procedure passes
 
-        } while( (mios32UploadRequest || uploadErrorCode >= 0) && ++retry < maxRetries );
+        } while( (forMios32 && mios32UploadRequest ||
+                  !forMios32 && mios8UploadRequest ||
+                  uploadErrorCode >= 0) && ++retry < maxRetries );
 
         // got error acknowledge? (note: up to 16 retries on error acknowledge)
         if( uploadErrorCode >= 0 ) {
@@ -617,11 +685,13 @@ void UploadHandlerThread::run()
 	uploadHandler->currentBlock = uploadHandler->totalBlocks;
 
     // for statistics
-    uploadHandler->timeUploadEnd = Time::getCurrentTime().toMilliseconds();
+    int64 timeUploadEnd = Time::getCurrentTime().toMilliseconds();
+    uploadHandler->timeUpload = (float) (timeUploadEnd - timeUploadBegin) / 1000;
 	
 
     //////////////////////////////////////////////////////////////////////////////////////
     // MIOS32: reboot again
+    // MIOS8: wait for at least 3 second to ensure that core has been rebooted
     //////////////////////////////////////////////////////////////////////////////////////
     if( forMios32 ) {
         mios32RebootRequest = 1;
@@ -634,6 +704,10 @@ void UploadHandlerThread::run()
             errorStatusMessage = "No response from core after reboot";
             return;
         }
+    } else {
+        // application will reboot automatically (unfortunately... this was a bad decition 10 years ago!)
+        // we wait for up to 300*10 mS (for the case that multiple replies are received)
+        for(int i=0; i<300; ++i)
+            wait(10);
     }
-
 }

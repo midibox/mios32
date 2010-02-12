@@ -51,7 +51,7 @@ public:
 
     //==============================================================================
     static bool isValidMios8WriteBlock(const uint8 *data, const uint32 &size, const int &deviceId);
-    static Array<uint8> createMios8WriteBlock(const uint8 &deviceId, const uint32 &address, const uint32 &size, uint8 &checksum);
+    static Array<uint8> createMios8WriteBlock(const uint8 &deviceId, const uint32 &address, const uint8 &extension, const uint32 &size, uint8 &checksum);
     static bool isValidMios32WriteBlock(const uint8 *data, const uint32 &size, const int &deviceId);
     static Array<uint8> createMios32WriteBlock(const uint8 &deviceId, const uint32 &address, const uint32 &size, uint8 &checksum);
 

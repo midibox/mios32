@@ -50,10 +50,12 @@ public:
     volatile bool detectedMios32UploadRequest;
 
     volatile bool mios8QueryRequest;
-
     volatile int mios32QueryRequest;
+
+    volatile bool mios8RebootRequest;
     volatile bool mios32RebootRequest;
 
+    volatile bool mios8UploadRequest;
     volatile bool mios32UploadRequest;
 
     volatile int uploadErrorCode;
@@ -62,6 +64,7 @@ protected:
     void sendMios8Query(void);
     void sendMios32Query(uint8 query);
     void sendMios8InvalidBlock(void);
+    void sendMios8RebootCore(void);
     void sendMios32RebootCore(void);
 };
 
@@ -112,8 +115,7 @@ public:
     int currentErrorCode;
     int recoveredErrorsCounter;
 
-    int64 timeUploadBegin;
-    int64 timeUploadEnd;
+    float timeUpload;
 
 protected:
     //==============================================================================
