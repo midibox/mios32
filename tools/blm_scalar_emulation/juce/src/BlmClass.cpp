@@ -25,7 +25,8 @@ BlmClass::BlmClass(int cols,int rows)
 
     Timer::startTimer(1);
 	addMouseListener(this,true); // Add mouse listener for all child components
-
+	
+	ledSize=20;
 	// if unitialised in windows a pointer isn't necessarilly null!
 	lastButtonX=-1;
 	lastButtonY=-1;
@@ -48,7 +49,7 @@ BlmClass::~BlmClass()
 
 void BlmClass::resized()
 {
-	ledSize=getWidth()/getBlmColumns();
+	//ledSize=getWidth()/getBlmColumns();
 
 	int x,y;
 	for (x=0;x<MAX_COLS;x++){

@@ -148,6 +148,7 @@ MainComponent::MainComponent ()
     setSize (1024, 300);
 
     //[Constructor] You can add your own custom stuff here..
+    setSize(117+(blmClass->getBlmColumns()*blmClass->getLedSize()),10+(blmClass->getBlmRows()*blmClass->getLedSize()));
     //[/Constructor]
 }
 
@@ -209,19 +210,19 @@ void MainComponent::buttonClicked (Button* buttonThatWasClicked)
     if (buttonThatWasClicked == triggersButton)
     {
         //[UserButtonCode_triggersButton] -- add your button handler code here..
-		blmClass->sendCCEvent(0,0x40,(buttonThatWasClicked->getToggleState() ? 0x7f:0x00));
+		blmClass->sendCCEvent(0,0x40, 0x7f);
         //[/UserButtonCode_triggersButton]
     }
     else if (buttonThatWasClicked == tracksButton)
     {
         //[UserButtonCode_tracksButton] -- add your button handler code here..
-		blmClass->sendCCEvent(0,0x41,(buttonThatWasClicked->getToggleState() ? 0x7f:0x00));
+		blmClass->sendCCEvent(0,0x41,0x7f);
         //[/UserButtonCode_tracksButton]
     }
     else if (buttonThatWasClicked == patternsButton)
     {
         //[UserButtonCode_patternsButton] -- add your button handler code here..
-		blmClass->sendCCEvent(0,0x42,(buttonThatWasClicked->getToggleState() ? 0x7f:0x00));
+		blmClass->sendCCEvent(0,0x42,0x7f);
         //[/UserButtonCode_patternsButton]
     }
 
@@ -261,10 +262,9 @@ void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
          case 9: cols=64; rows=4; break;
          default: cols=32; rows=16; // 1 was selected!
          }
-         //deleteAndZero(blmClass);
-         //addAndMakeVisible (blmClass = new BlmClass (cols,rows));
 		 blmClass->setBlmDimensions(cols,rows);
-		 blmClass->resized(); // Force call to resized to redraw new BLM
+		 setSize(117+(cols*blmClass->getLedSize()),10+(rows*blmClass->getLedSize()));
+		 //blmClass->resized(); // Force call to resized to redraw new BLM
         //[/UserComboBoxCode_blmSize]
     }
 
