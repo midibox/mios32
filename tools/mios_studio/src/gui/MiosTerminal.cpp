@@ -76,6 +76,10 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
 
         inputLine->setText(String::empty);
 
+        if( !gotFirstMessage )
+            terminalLogBox->clear();
+        gotFirstMessage = 1;
+
 #if 0
         String timeStampStr = T("input");
 #else
@@ -128,6 +132,7 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
 
         if( !gotFirstMessage )
             terminalLogBox->clear();
+        gotFirstMessage = 1;
 
         double timeStamp = message.getTimeStamp() ? message.getTimeStamp() : ((double)Time::getMillisecondCounter() / 1000.0);
         String timeStampStr = (timeStamp > 0)
@@ -135,6 +140,5 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
             : T("now");
 
         terminalLogBox->addEntry("[" + timeStampStr + "] " + str);
-        gotFirstMessage = 1;
     }
 }
