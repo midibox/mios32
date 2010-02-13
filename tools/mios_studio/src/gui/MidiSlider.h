@@ -20,6 +20,21 @@
 
 class MiosStudio; // forward declaration
 
+
+class MidiSliderComponent
+    : public Slider
+{
+public:
+    MidiSliderComponent(const String &componentName);
+    ~MidiSliderComponent();
+    void mouseUp(const MouseEvent& e);
+
+    bool snapsBackOnRelease;
+
+};
+
+
+
 class MidiSlider
     : public Component
     , public SliderListener
@@ -46,7 +61,7 @@ public:
 
 protected:
     //==============================================================================
-    Slider *slider;
+    MidiSliderComponent *slider;
     Label *label;
 
     int sliderNum;
