@@ -39,10 +39,23 @@ public:
     void clear(void);
     void addEntry(String text);
 
+    //==============================================================================
+    void copy(void);
+    void cut(void);
+
+    //==============================================================================
+    void mouseDown(const MouseEvent& e);
+    void listBoxItemClicked(int row, const MouseEvent& e);
+
+    void addPopupMenuItems(PopupMenu& m, const MouseEvent*);
+    void performPopupMenuAction(const int menuItemId);
+
 protected:
     Font logEntryFont;
 
     Array<String> logEntries;
+
+    bool wasFocused;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

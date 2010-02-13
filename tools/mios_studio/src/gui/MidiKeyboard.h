@@ -41,6 +41,9 @@ public:
     void setMidiChannel(const int midiChannel);
     int getMidiChannel(void);
 
+    //==============================================================================
+    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
+
 protected:
     //==============================================================================
     std::vector<MidiSlider*> midiSlider;

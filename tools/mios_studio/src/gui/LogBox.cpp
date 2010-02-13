@@ -29,6 +29,7 @@ LogBox::LogBox(const String &componentName)
 
 LogBox::~LogBox()
 {
+    logEntries.clear();
 }
 
 //==============================================================================
@@ -89,4 +90,94 @@ void LogBox::addEntry(String textLine)
     updateContent();
     repaint(); // note: sometimes not updated without repaint()
     setVerticalPosition(1.0); // has to be done after updateContent()!
+}
+
+
+//==============================================================================
+void LogBox::copy(void)
+{
+    String selectedText;
+
+    for(int row=0; row<getNumRows(); ++row)
+        if( isRowSelected(row) ) {
+            if( selectedText != String::empty )
+                selectedText += T("\n");
+            selectedText += logEntries[row];
+        }
+
+    if( selectedText != String::empty )
+        SystemClipboard::copyTextToClipboard(selectedText);
+}
+
+void LogBox::cut(void)
+{
+    for(int row=0; row<getNumRows(); ++row)
+        if( isRowSelected(row) )
+            logEntries.remove(row);
+
+    repaint(); // note: sometimes not updated without repaint()
+    setVerticalPosition(1.0); // has to be done after updateContent()!
+}
+
+//==============================================================================
+void LogBox::mouseDown(const MouseEvent& e)
+{
+    listBoxItemClicked(-1, e);
+}
+
+void LogBox::listBoxItemClicked(int row, const MouseEvent& e)
+{
+    if( e.mouseWasClicked() ) {
+        if( e.mods.isLeftButtonDown() ) {
+            if( row == -1 )
+                deselectAllRows();
+        } else if( e.mods.isRightButtonDown() ) {
+            PopupMenu m;
+            addPopupMenuItems(m, &e);
+
+            const int result = m.show();
+
+            if( result != 0 )
+                performPopupMenuAction(result);
+        }
+    }
+}
+
+
+const int baseMenuItemId = 0x7fff0000;
+
+void LogBox::addPopupMenuItems(PopupMenu& m, const MouseEvent*)
+{
+    m.addItem(baseMenuItemId + 1, TRANS("cut"), true);
+    m.addItem(baseMenuItemId + 2, TRANS("copy"), true);
+    m.addSeparator();
+    m.addItem(baseMenuItemId + 3, TRANS("select all"), true);
+    m.addItem(baseMenuItemId + 4, TRANS("delete all"), true);
+}
+
+void LogBox::performPopupMenuAction(const int menuItemId)
+{
+    switch (menuItemId)
+    {
+    case baseMenuItemId + 1:
+        copy();
+        cut();
+        break;
+
+    case baseMenuItemId + 2:
+        copy();
+        break;
+
+    case baseMenuItemId + 3:
+        for(int row=0; row<getNumRows(); ++row)
+            selectRow(row, false, false);
+        break;
+
+    case baseMenuItemId + 4:
+        clear();
+        break;
+
+    default:
+        break;
+    }
 }
