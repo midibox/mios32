@@ -29,7 +29,7 @@ public:
         ApplicationProperties::getInstance()->setStorageParameters(T("MIOS_Studio"),
                                                                    T(".xml"),
                                                                    String::empty,
-                                                                   100,
+                                                                   1000,
                                                                    PropertiesFile::storeAsXML);
 
         // Create an instance of our main content component, and add it 
@@ -113,6 +113,7 @@ public:
     {
         // create the main window...
         miosStudioWindow = new MiosStudioWindow();
+        miosStudioWindow->setUsingNativeTitleBar(true);
 
         /*  ..and now return, which will fall into to the main event
             dispatch loop, and this will run until something calls
@@ -130,15 +131,6 @@ public:
         // clear up..
         if( miosStudioWindow != 0 )
             delete miosStudioWindow;
-#if 0
-        // create properties saver
-        applicationProperties = new ApplicationProperties();
-        ApplicationProperties::juce_DeclareSingleton(applicationProperties, false);
-
-
-        if( applicationProperties != 0 )
-            delete applicationProperties;
-#endif
     }
 
 

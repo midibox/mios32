@@ -20,12 +20,14 @@
 MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    for(int i=0; i<5; ++i) {
+    for(int i=0; i<6; ++i) {
         MidiSlider *s;
         if( i == 0 )
-            s = new MidiSlider(miosStudio, i, "PB", 0, 1, 0x40);
+            s = new MidiSlider(miosStudio, i, "PB", 0, 1, 0x40, true);
+        else if( i == 1 )
+            s = new MidiSlider(miosStudio, i, "CC", 1, 1, 0, false);
         else
-            s = new MidiSlider(miosStudio, i, "CC", i+16-1, 1, 0);
+            s = new MidiSlider(miosStudio, i, "CC", i+16-1, 1, 0, false);
 
         midiSlider.push_back(s);
         addAndMakeVisible(s);
@@ -60,14 +62,18 @@ void MidiKeyboard::paint (Graphics& g)
 
 void MidiKeyboard::resized()
 {
+    // pitchbender
+    midiSlider[0]->setBounds(4, 24, 24, getHeight()-8);
+
+    // CCs
     int sliderWidth = 128;
     int distanceBetweenSliders = 150;
-    int sliderArrayWidth = midiSlider.size() * distanceBetweenSliders - (distanceBetweenSliders-sliderWidth);
-    int sliderOffset = 4 + ((getWidth()-8-sliderArrayWidth) / 2);
-    for(int i=0; i<midiSlider.size(); ++i)
-        midiSlider[i]->setBounds(sliderOffset + distanceBetweenSliders*i, 4, sliderWidth, 42);
+    int sliderArrayWidth = (midiSlider.size()-1) * distanceBetweenSliders - (distanceBetweenSliders-sliderWidth);
+    int sliderOffset = 20 + ((getWidth()-8-sliderArrayWidth) / 2);
+    for(int i=1; i<midiSlider.size(); ++i)
+        midiSlider[i]->setBounds(sliderOffset + distanceBetweenSliders*(i-1), 4, sliderWidth, 42);
 
-    midiKeyboardComponent->setBounds(4, 4+44+4, getWidth()-8, getHeight()-8-44-4);
+    midiKeyboardComponent->setBounds(4+24+4, 4+44+4, getWidth()-8-24-4, getHeight()-8-44-4);
 }
 
 
@@ -75,6 +81,7 @@ void MidiKeyboard::resized()
 void MidiKeyboard::setMidiChannel(const int midiChannel)
 {
     midiKeyboardComponent->setMidiChannel(midiChannel);
+    midiKeyboardComponent->setMidiChannelsToDisplay(1 << midiChannel);
 
     // store setting
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
@@ -101,3 +108,11 @@ void MidiKeyboard::handleNoteOff(MidiKeyboardState *source, int midiChannel, int
     MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)0);
     miosStudio->sendMidiMessage(message);
 }
+
+
+//==============================================================================
+void MidiKeyboard::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
+{
+
+}
+

@@ -162,6 +162,7 @@ void MiosStudio::timerCallback()
         // filter runtime events for following components to improve performance
         if( data[0] < 0xf8 ) {
             miosTerminal->handleIncomingMidiMessage(message, runningStatus);
+            midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
         }
 
         midiInQueue.pop();

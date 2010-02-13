@@ -23,6 +23,7 @@ class MiosStudio; // forward declaration
 
 class MiosTerminal
     : public Component
+    , public TextEditorListener
 {
 public:
     //==============================================================================
@@ -34,11 +35,18 @@ public:
     void resized();
 
     //==============================================================================
+    void textEditorTextChanged(TextEditor &editor);
+    void textEditorReturnKeyPressed(TextEditor &editor);
+    void textEditorEscapeKeyPressed(TextEditor &editor);
+    void textEditorFocusLost(TextEditor &editor);
+
+    //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
 protected:
     //==============================================================================
     LogBox* terminalLogBox;
+    TextEditor* inputLine;
 
     //==============================================================================
     MiosStudio *miosStudio;

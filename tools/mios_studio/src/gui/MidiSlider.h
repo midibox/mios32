@@ -26,7 +26,7 @@ class MidiSlider
 {
 public:
     //==============================================================================
-    MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue);
+    MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue, bool vertical);
     ~MidiSlider();
 
     //==============================================================================
@@ -50,6 +50,7 @@ protected:
     Label *label;
 
     int sliderNum;
+    bool vertical;
 
     String functionName;
     int functionArg;

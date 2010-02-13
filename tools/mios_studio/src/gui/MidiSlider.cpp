@@ -17,14 +17,15 @@
 
 
 //==============================================================================
-MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue)
+MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue, bool _vertical)
     : miosStudio(_miosStudio)
     , sliderNum(_num)
+    , vertical(_vertical)
 {
     slider = new Slider(T("Slider"));
     addAndMakeVisible(slider);
     slider->setRange(0, 127, 1);
-    slider->setSliderStyle(Slider::LinearHorizontal);
+    slider->setSliderStyle(vertical ? Slider::LinearVertical : Slider::LinearHorizontal);
     slider->setTextBoxStyle(Slider::NoTextBox, true, 80, 20);
     slider->addListener(this);
 
@@ -43,7 +44,10 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, 
 
     setFunction(_functionName, _functionArg, _midiChannel, initialValue);
 
-    setSize(128, 24+18);
+    if( vertical )
+        setSize(24, 18+80);
+    else
+        setSize(128, 24+18);
 }
 
 MidiSlider::~MidiSlider()
@@ -60,8 +64,13 @@ void MidiSlider::paint (Graphics& g)
 
 void MidiSlider::resized()
 {
-    label->setBounds(0, 0, 128, 24);
-    slider->setBounds(0, 18, 128, 24);
+    if( vertical ) {
+        label->setBounds(0, 0, 24, 18);
+        slider->setBounds(0, 18, 24, 80);
+    } else {
+        label->setBounds(0, 0, 128, 24);
+        slider->setBounds(0, 18, 128, 24);
+    }
 }
 
 
@@ -77,7 +86,7 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
         label->setText("CC#" + labelStr, true);
     } else if( functionName.containsWholeWord(T("PB")) ) {
         String labelStr(functionArg);
-        label->setText("PitchBender", true);
+        label->setText("PB", true);
     } else {
         label->setText("<no function>", true);
     }

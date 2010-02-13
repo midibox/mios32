@@ -25,6 +25,16 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
     addAndMakeVisible(terminalLogBox = new LogBox(T("MIOS Terminal")));
     terminalLogBox->addEntry(T("MIOS Terminal ready."));
 
+    addAndMakeVisible(inputLine = new TextEditor(String::empty));
+    inputLine->setMultiLine(false);
+    inputLine->setReturnKeyStartsNewLine(false);
+    inputLine->setReadOnly(false);
+    inputLine->setScrollbarsShown(false);
+    inputLine->setCaretVisible(true);
+    inputLine->setPopupMenuEnabled(true);
+    inputLine->setTextToShowWhenEmpty(T("(send a command to MIOS32 application)"), Colours::grey);
+    inputLine->addListener(this);
+
     setSize(400, 200);
 }
 
@@ -41,8 +51,44 @@ void MiosTerminal::paint (Graphics& g)
 
 void MiosTerminal::resized()
 {
-    terminalLogBox->setBounds(4, 4, getWidth()-8, getHeight()-8);
+    terminalLogBox->setBounds(4, 4, getWidth()-8, getHeight()-8-24-4);
+    inputLine->setBounds(4, getHeight()-4-24, getWidth()-8, 24);
 }
+
+//==============================================================================
+void MiosTerminal::textEditorTextChanged(TextEditor &editor)
+{
+}
+
+void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
+{
+    if( &editor == inputLine ) {
+        String command = inputLine->getText();
+
+        Array<uint8> dataArray = SysexHelper::createMios32DebugMessage(0x00);
+        dataArray.add(0x00); // input string
+        for(int i=0; i<command.length(); ++i)
+            dataArray.add(command[i] & 0x7f);
+        dataArray.add('\n');
+        dataArray.add(0xf7);
+        MidiMessage message = SysexHelper::createMidiMessage(dataArray);
+        miosStudio->sendMidiMessage(message);
+
+        inputLine->setText(String::empty);
+    }
+}
+
+void MiosTerminal::textEditorEscapeKeyPressed(TextEditor &editor)
+{
+    if( &editor == inputLine ) {
+        inputLine->setText(String::empty);
+    }
+}
+
+void MiosTerminal::textEditorFocusLost(TextEditor &editor)
+{
+}
+
 
 //==============================================================================
 void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
