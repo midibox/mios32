@@ -87,7 +87,7 @@ void LogBox::clear(void)
 
     updateContent();
     repaint(); // note: sometimes not updated without repaint()
-    setVerticalPosition(1.0); // has to be done after updateContent()!
+    setVerticalPosition(2.0); // has to be done after updateContent()!
 }
 
 void LogBox::addEntry(String textLine)
@@ -95,9 +95,8 @@ void LogBox::addEntry(String textLine)
     logEntries.add(textLine);
 
     updateContent();
-    repaint(); // note: sometimes not updated without repaint()
-    setVerticalPosition(1.0); // has to be done after updateContent()!
-}
+    setVerticalPosition(2.0); // has to be done after updateContent()!
+} 
 
 
 //==============================================================================
@@ -109,7 +108,7 @@ void LogBox::copy(void)
         if( isRowSelected(row) ) {
 #if JUCE_WIN32
             if( selectedText != String::empty )
-                selectedText += T("\n\r");
+                selectedText += T("\r\n");
 #else
             if( selectedText != String::empty )
                 selectedText += T("\n");
@@ -128,7 +127,7 @@ void LogBox::cut(void)
             logEntries.remove(row);
 
     repaint(); // note: sometimes not updated without repaint()
-    setVerticalPosition(1.0); // has to be done after updateContent()!
+    setVerticalPosition(2.0); // has to be done after updateContent()!
 }
 
 //==============================================================================
