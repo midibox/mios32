@@ -129,7 +129,7 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
         if( !gotFirstMessage )
             terminalLogBox->clear();
 
-        double timeStamp = message.getTimeStamp();
+        double timeStamp = message.getTimeStamp() ? message.getTimeStamp() : ((double)Time::getMillisecondCounter() / 1000.0);
         String timeStampStr = (timeStamp > 0)
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
