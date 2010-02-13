@@ -220,6 +220,7 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
     uint32 size = message.getRawDataSize();
     uint8 currentDeviceId = uploadHandlerThread->deviceId; // ensure that the device ID tagged to the thread will be taken
 
+
     if( data[0] >= 0x80 && data[0] < 0xf8 )
         runningStatus = data[0];
 
@@ -237,6 +238,16 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
         uploadHandlerThread->detectedMios8UploadRequest = 1;
     }
 
+    // extra for windows: it seems that Juce doesn't split the stream if a F0 is sent w/o previous F7
+    // this check is currently only relevant for MIOS8 upload request
+    if( size >= 9 ) {
+        for(int pos=1; pos<=(size-7); ++pos) {
+            if( data[pos] == 0xf0 && SysexHelper::isValidMios8UploadRequest(data+pos, size-pos, currentDeviceId) ) {
+                uploadHandlerThread->detectedMios8UploadRequest = 1;
+                break;
+            }
+        }
+    }
 
     // query request?
     if( uploadHandlerThread->mios8QueryRequest || uploadHandlerThread->mios32QueryRequest ) {
