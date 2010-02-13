@@ -40,6 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="../../src;../../src/gui"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,6 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				IgnoreDefaultLibraryNames="libcmtd"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -95,6 +97,9 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			UseOfMFC="0"
+			UseOfATL="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -117,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="../../src;../../src/gui"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -135,7 +140,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
-				IgnoreDefaultLibraryNames="libcmt"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="libcmt libcpmt"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -177,6 +183,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\..\src\HexFileLoader.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\juce_LibrarySource.cpp"
 				>
 			</File>
@@ -184,9 +194,21 @@
 				RelativePath="..\..\src\Main.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\SysexHelper.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\UploadHandler.cpp"
+				>
+			</File>
 			<Filter
 				Name="gui"
 				>
+				<File
+					RelativePath="..\..\src\gui\LogBox.cpp"
+					>
+				</File>
 				<File
 					RelativePath="..\..\src\gui\MidiKeyboard.cpp"
 					>
@@ -219,6 +241,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\..\src\HexFileLoader.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\includes.h"
 				>
 			</File>
@@ -226,9 +252,21 @@
 				RelativePath="..\..\src\juce_AppConfig.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\SysexHelper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\UploadHandler.h"
+				>
+			</File>
 			<Filter
 				Name="gui"
 				>
+				<File
+					RelativePath="..\..\src\gui\LogBox.h"
+					>
+				</File>
 				<File
 					RelativePath="..\..\src\gui\MidiKeyboard.h"
 					>
