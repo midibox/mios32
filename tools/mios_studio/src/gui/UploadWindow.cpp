@@ -44,6 +44,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     queryButton->addButtonListener(this);
 
     addAndMakeVisible(deviceIdSlider = new Slider (T("Device ID")));
+    deviceIdSlider->setValue(miosStudio->uploadHandler->getDeviceId()); // restored from setup file
     deviceIdSlider->setRange(0, 127, 1);
     deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
     deviceIdSlider->setTextBoxStyle(Slider::TextBoxAbove, false, 80, 20);
@@ -67,8 +68,25 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     stopButton->addButtonListener(this);
     stopButton->setEnabled(false);
 
-
     addAndMakeVisible(progressBar = new ProgressBar(progress));
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        String recentlyUsedHexFiles = propertiesFile->getValue(T("recentlyUsedHexFiles"), String::empty);
+        // seems that Juce doesn't provide a split function?
+        StringArray recentlyUsedHexFilesArray;
+        int index = 0;
+        while( (index=recentlyUsedHexFiles.indexOfChar(';')) >= 0 ) {
+            recentlyUsedHexFilesArray.add(recentlyUsedHexFiles.substring(0, index));
+            recentlyUsedHexFiles = recentlyUsedHexFiles.substring(index+1);
+        }
+        if( recentlyUsedHexFiles != String::empty )
+            recentlyUsedHexFilesArray.add(recentlyUsedHexFiles);
+        fileChooser->setRecentlyUsedFilenames(recentlyUsedHexFilesArray);
+
+        fileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultFile"), String::empty));
+    }
 
     setSize(400, 200);
 }
@@ -138,7 +156,7 @@ void UploadWindow::sliderValueChanged(Slider* slider)
 {
     if( slider == deviceIdSlider ) {
         uploadStop();
-        miosStudio->uploadHandler->deviceId = (uint8)slider->getValue();
+        miosStudio->uploadHandler->setDeviceId((uint8)slider->getValue());
     }
 }
 
@@ -151,6 +169,14 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
         uploadStatus->addEntry(T("Reading ") + inFile.getFileName());
         MultiTimer::startTimer(TIMER_LOAD_HEXFILE, 1);
         startButton->setEnabled(false); // will be enabled if file is valid
+
+        // store setting
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile ) {
+            String recentlyUsedHexFiles = fileChooser->getRecentlyUsedFilenames().joinIntoString(";");
+            propertiesFile->setValue(T("recentlyUsedHexFiles"), recentlyUsedHexFiles);
+            propertiesFile->setValue(T("defaultFile"), inFile.getFullPathName());
+        }
     }
 }
 
@@ -177,6 +203,7 @@ void UploadWindow::queryCore(void)
         uploadQuery->clear();
         uploadQuery->addEntry(T("Please try again later - ongoing transactions!"));
     } else {
+        uploadQuery->clear();
         queryButton->setEnabled(false);
         deviceIdSlider->setEnabled(false);
         MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
@@ -193,7 +220,7 @@ void UploadWindow::uploadStart(void)
     queryButton->setEnabled(false);
     deviceIdSlider->setEnabled(false);
 
-    uploadStatus->addEntry(T("Trying to contact the connected core..."));
+    uploadStatus->addEntry(T("Trying to contact the core..."));
 
     uploadQuery->clear();
     uploadQuery->addEntry(T("Upload in progress..."));

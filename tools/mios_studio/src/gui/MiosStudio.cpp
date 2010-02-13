@@ -16,7 +16,21 @@
 
 //==============================================================================
 MiosStudio::MiosStudio()
+    : uploadWindow(0)
+    , midiInMonitor(0)
+    , midiOutMonitor(0)
+    , miosTerminal(0)
+    , midiKeyboard(0)
 {
+    uploadHandler = new UploadHandler(this);
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        setMidiInput(propertiesFile->getValue(T("midiIn"), String::empty));
+        setMidiOutput(propertiesFile->getValue(T("midiOut"), String::empty));
+    }
+
     addAndMakeVisible(uploadWindow = new UploadWindow(this));
     addAndMakeVisible(midiInMonitor = new MidiMonitor(this, true));
     addAndMakeVisible(midiOutMonitor = new MidiMonitor(this, false));
@@ -47,22 +61,23 @@ MiosStudio::MiosStudio()
     verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
     addAndMakeVisible(verticalDividerBarMonitors);
 
-    uploadHandler = new UploadHandler(this);
-
     audioDeviceManager.addMidiInputCallback(String::empty, this);
     Timer::startTimer(1);
+
+    if( audioDeviceManager.getDefaultMidiOutputName() != String::empty )
+        uploadWindow->queryCore();
 
     setSize (800, 600);
 }
 
 MiosStudio::~MiosStudio()
 {
+    deleteAndZero(uploadHandler);
+    deleteAndZero(uploadWindow);
     deleteAndZero(midiInMonitor);
     deleteAndZero(midiOutMonitor);
-    deleteAndZero(uploadWindow);
     deleteAndZero(miosTerminal);
     deleteAndZero(midiKeyboard);
-    deleteAndZero(uploadHandler);
     deleteAndZero(horizontalDividerBar1);
     deleteAndZero(horizontalDividerBar2);
     deleteAndZero(horizontalDividerBar3);
@@ -169,11 +184,27 @@ void MiosStudio::setMidiInput(const String &port)
     for (int i = allMidiIns.size(); --i >= 0;) {
         bool enabled = allMidiIns[i] == port;
         audioDeviceManager.setMidiInputEnabled(allMidiIns[i], enabled);
-        // lastSysexMidiIn = allMidiIns[i];
     }
 
     // propagate port change
-    uploadWindow->midiPortChanged();
+    if( uploadWindow )
+        uploadWindow->midiPortChanged();
+
+    // store setting
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile )
+        propertiesFile->setValue(T("midiIn"), port);
+}
+
+String MiosStudio::getMidiInput(void)
+{
+    const StringArray allMidiIns(MidiInput::getDevices());
+    for (int i = allMidiIns.size(); --i >= 0;) {
+        if( audioDeviceManager.isMidiInputEnabled(allMidiIns[i]) )
+            return allMidiIns[i];
+    }
+
+    return String::empty;
 }
 
 void MiosStudio::setMidiOutput(const String &port)
@@ -181,6 +212,16 @@ void MiosStudio::setMidiOutput(const String &port)
     audioDeviceManager.setDefaultMidiOutput(port);
 
     // propagate port change
-    uploadWindow->midiPortChanged();
+    if( uploadWindow )
+        uploadWindow->midiPortChanged();
+
+    // store setting
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile )
+        propertiesFile->setValue(T("midiOut"), port);
 }
 
+String MiosStudio::getMidiOutput(void)
+{
+    return audioDeviceManager.getDefaultMidiOutputName();
+}

@@ -23,9 +23,9 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
     for(int i=0; i<5; ++i) {
         MidiSlider *s;
         if( i == 0 )
-            s = new MidiSlider(miosStudio, "PB", 0, 1, 0x40);
+            s = new MidiSlider(miosStudio, i, "PB", 0, 1, 0x40);
         else
-            s = new MidiSlider(miosStudio, "CC", i+16-1, 1, 0);
+            s = new MidiSlider(miosStudio, i, "CC", i+16-1, 1, 0);
 
         midiSlider.push_back(s);
         addAndMakeVisible(s);
@@ -38,6 +38,12 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
     keyboardState.addListener(this);
 
     midiKeyboardComponent->setLowestVisibleKey(24); // does match better with layout
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        midiKeyboardComponent->setMidiChannel(propertiesFile->getIntValue("midiKeyboardChannel", 1));
+    }
 
     setSize(400, 200);
 }
@@ -62,6 +68,24 @@ void MidiKeyboard::resized()
         midiSlider[i]->setBounds(sliderOffset + distanceBetweenSliders*i, 4, sliderWidth, 42);
 
     midiKeyboardComponent->setBounds(4, 4+44+4, getWidth()-8, getHeight()-8-44-4);
+}
+
+
+//==============================================================================
+void MidiKeyboard::setMidiChannel(const int midiChannel)
+{
+    midiKeyboardComponent->setMidiChannel(midiChannel);
+
+    // store setting
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile )
+        propertiesFile->setValue("midiKeyboardChannel", midiChannel);
+}
+
+
+int MidiKeyboard::getMidiChannel(void)
+{
+    return midiKeyboardComponent->getMidiChannel();
 }
 
 

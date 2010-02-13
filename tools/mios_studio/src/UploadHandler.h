@@ -43,6 +43,8 @@ public:
     // error status message from run() thread
     String errorStatusMessage;
 
+    uint8 deviceId; // taken over from upload handler to ensure that upload always accesses the firstly selected one
+
     volatile bool detectedMios8FeedbackLoop;
     volatile bool detectedMios32FeedbackLoop;
 
@@ -66,6 +68,7 @@ protected:
     void sendMios8InvalidBlock(void);
     void sendMios8RebootCore(void);
     void sendMios32RebootCore(void);
+
 };
 
 
@@ -102,12 +105,14 @@ public:
     bool checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddress, uint32 endAddress);
 
     //==============================================================================
+    uint8 getDeviceId();
+    void setDeviceId(uint8 id);
+
+    //==============================================================================
     void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 
     //==============================================================================
     HexFileLoader hexFileLoader;
-
-    uint8 deviceId;
 
     uint32 currentBlock;
     uint32 totalBlocks;
@@ -122,6 +127,8 @@ protected:
     MiosStudio *miosStudio;
 
     UploadHandlerThread *uploadHandlerThread;
+
+    uint8 deviceId;
 
     //==============================================================================
     uint8 runningStatus;

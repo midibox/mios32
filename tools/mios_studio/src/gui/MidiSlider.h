@@ -26,7 +26,7 @@ class MidiSlider
 {
 public:
     //==============================================================================
-    MidiSlider(MiosStudio *_miosStudio, String _functionName, int _functionArg, int _midiChannel, int initialValue);
+    MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue);
     ~MidiSlider();
 
     //==============================================================================
@@ -34,7 +34,11 @@ public:
     void resized();
 
     //==============================================================================
-    void setFunction(String _functionName, int _functionArg, int _midiChannel, int initialValue);
+    void setFunction(const String &_functionName, const int &_functionArg, const int &_midiChannel, const int &initialValue);
+    String getFunctionName(void);
+    int getFunctionArg(void);
+    int getMidiChannel(void);
+    uint8 getInitialValue(void);
 
     //==============================================================================
     void sliderValueChanged(Slider* sliderThatWasMoved);
@@ -44,6 +48,8 @@ protected:
     //==============================================================================
     Slider *slider;
     Label *label;
+
+    int sliderNum;
 
     String functionName;
     int functionArg;
