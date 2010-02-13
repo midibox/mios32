@@ -57,7 +57,6 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
     addAndMakeVisible(uploadStatus = new LogBox(T("Upload Status")));
 
-
     addAndMakeVisible(startButton = new TextButton(T("Start Button")));
     startButton->setButtonText(T("Start"));
     startButton->addButtonListener(this);
@@ -112,7 +111,7 @@ void UploadWindow::resized()
 {
     fileChooser->setBounds(4, 4, getWidth()-8, 24);
 
-    int middleX = getWidth()/2 - 50;
+    int middleX = getWidth()/2 - 75;
 
     int buttonY = 4+40;
     int buttonWidth = 72;
@@ -337,11 +336,11 @@ void UploadWindow::timerCallback(const int timerId)
                 if( !(str=miosStudio->uploadHandler->coreChipId).isEmpty() )
                     uploadQuery->addEntry("Chip ID: 0x" + str);
                 if( !(str=miosStudio->uploadHandler->coreSerialNumber).isEmpty() )
-                    uploadQuery->addEntry("Serial Number: #" + str);
+                    uploadQuery->addEntry("Serial: #" + str);
                 if( !(str=miosStudio->uploadHandler->coreFlashSize).isEmpty() )
-                    uploadQuery->addEntry("Flash Memory Size: " + str);
+                    uploadQuery->addEntry("Flash Memory Size: " + str + " bytes");
                 if( !(str=miosStudio->uploadHandler->coreRamSize).isEmpty() )
-                    uploadQuery->addEntry("RAM Size: " + str);
+                    uploadQuery->addEntry("RAM Size: " + str + " bytes");
                 if( !(str=miosStudio->uploadHandler->coreAppHeader1).isEmpty() )
                     uploadQuery->addEntry(str);
                 if( !(str=miosStudio->uploadHandler->coreAppHeader2).isEmpty() )

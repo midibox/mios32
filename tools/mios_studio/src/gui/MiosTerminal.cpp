@@ -75,6 +75,16 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
         miosStudio->sendMidiMessage(message);
 
         inputLine->setText(String::empty);
+
+#if 0
+        String timeStampStr = T("input");
+#else
+        double timeStamp = Time::getMillisecondCounter() / 1000.0; // Note: it's intented that this is the system up time
+        String timeStampStr = (timeStamp > 0)
+            ? String::formatted(T("%8.3f"), timeStamp)
+            : T("now");
+#endif
+        terminalLogBox->addEntry("[" + timeStampStr + "] " + command);
     }
 }
 

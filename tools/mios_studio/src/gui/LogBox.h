@@ -55,7 +55,7 @@ protected:
 
     Array<String> logEntries;
 
-    bool wasFocused;
+    int maxRowWidth;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

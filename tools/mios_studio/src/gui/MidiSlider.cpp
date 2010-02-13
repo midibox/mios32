@@ -17,16 +17,34 @@
 
 
 //==============================================================================
+MidiSliderComponent::MidiSliderComponent(const String &componentName)
+    : Slider(componentName)
+    , snapsBackOnRelease(0)
+{
+    setRange(0, 127, 1);
+    setTextBoxStyle(Slider::NoTextBox, true, 80, 20);
+}
+
+MidiSliderComponent::~MidiSliderComponent()
+{
+}
+
+void MidiSliderComponent::mouseUp(const MouseEvent& e)
+{
+    if( snapsBackOnRelease )
+        setValue(64);
+}
+
+
+//==============================================================================
 MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue, bool _vertical)
     : miosStudio(_miosStudio)
     , sliderNum(_num)
     , vertical(_vertical)
 {
-    slider = new Slider(T("Slider"));
+    slider = new MidiSliderComponent(T("Slider"));
     addAndMakeVisible(slider);
-    slider->setRange(0, 127, 1);
-    slider->setSliderStyle(vertical ? Slider::LinearVertical : Slider::LinearHorizontal);
-    slider->setTextBoxStyle(Slider::NoTextBox, true, 80, 20);
+    slider->setSliderStyle(vertical ? MidiSliderComponent::LinearVertical : MidiSliderComponent::LinearHorizontal);
     slider->addListener(this);
 
     label = new Label("", "<no function>");
@@ -81,12 +99,14 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
     functionArg = _functionArg;
     midiChannel = _midiChannel;
 
+    slider->snapsBackOnRelease = 0;
     if( functionName.containsWholeWord(T("CC")) ) {
         String labelStr(functionArg);
         label->setText("CC#" + labelStr, true);
     } else if( functionName.containsWholeWord(T("PB")) ) {
         String labelStr(functionArg);
         label->setText("PB", true);
+        slider->snapsBackOnRelease = 1;
     } else {
         label->setText("<no function>", true);
     }

@@ -18,7 +18,8 @@
 //==============================================================================
 LogBox::LogBox(const String &componentName)
     : ListBox(componentName, 0)
-    , logEntryFont(T("Helvetica Neue"), 14.0, 0)
+    , maxRowWidth(0)
+    , logEntryFont(Typeface::defaultTypefaceNameMono, 13.0, 0)
 {
     setModel(this);
     setMultipleSelectionEnabled(true);
@@ -45,6 +46,11 @@ void LogBox::paintListBoxItem(int rowNumber,
                               int width, int height,
                               bool rowIsSelected)
 {
+    int fontWidth = 6; // DIRTY - how to find out the real width without generating the complete graphic?
+    int rowWidth = 30 + fontWidth * logEntries[rowNumber].length();
+    if( rowWidth > maxRowWidth )
+        setMinimumContentWidth(maxRowWidth = rowWidth);
+
     if( rowIsSelected )
         g.fillAll(Colours::lightblue);
 
@@ -77,6 +83,7 @@ void LogBox::paintOverChildren(Graphics& g)
 void LogBox::clear(void)
 {
     logEntries.clear();
+    setMinimumContentWidth(maxRowWidth = 1);
 
     updateContent();
     repaint(); // note: sometimes not updated without repaint()
@@ -100,8 +107,13 @@ void LogBox::copy(void)
 
     for(int row=0; row<getNumRows(); ++row)
         if( isRowSelected(row) ) {
+#if JUCE_WIN32
+            if( selectedText != String::empty )
+                selectedText += T("\n\r");
+#else
             if( selectedText != String::empty )
                 selectedText += T("\n");
+#endif
             selectedText += logEntries[row];
         }
 
