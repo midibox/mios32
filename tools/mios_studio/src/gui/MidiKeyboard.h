@@ -38,6 +38,9 @@ public:
     void handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
     void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
 
+    void setMidiChannel(const int midiChannel);
+    int getMidiChannel(void);
+
 protected:
     //==============================================================================
     std::vector<MidiSlider*> midiSlider;

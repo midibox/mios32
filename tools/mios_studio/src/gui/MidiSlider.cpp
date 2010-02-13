@@ -17,8 +17,9 @@
 
 
 //==============================================================================
-MidiSlider::MidiSlider(MiosStudio *_miosStudio, String _functionName, int _functionArg, int _midiChannel, int initialValue)
+MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, int _functionArg, int _midiChannel, int initialValue)
     : miosStudio(_miosStudio)
+    , sliderNum(_num)
 {
     slider = new Slider(T("Slider"));
     addAndMakeVisible(slider);
@@ -30,6 +31,15 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, String _functionName, int _funct
     label = new Label("", "<no function>");
     addAndMakeVisible(label);
     label->setJustificationType(Justification::centred);
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        _functionName = propertiesFile->getValue("slider" + String(sliderNum) + "FunctionName", _functionName);
+        _functionArg = propertiesFile->getIntValue("slider" + String(sliderNum) + "FunctionArg", _functionArg);
+        _midiChannel = propertiesFile->getIntValue("slider" + String(sliderNum) + "MidiChannel", _midiChannel);
+        initialValue = propertiesFile->getIntValue("slider" + String(sliderNum) + "InitialValue", initialValue);
+    }
 
     setFunction(_functionName, _functionArg, _midiChannel, initialValue);
 
@@ -56,7 +66,7 @@ void MidiSlider::resized()
 
 
 //==============================================================================
-void MidiSlider::setFunction(String _functionName, int _functionArg, int _midiChannel, int initialValue)
+void MidiSlider::setFunction(const String &_functionName, const int &_functionArg, const int &_midiChannel, const int &initialValue)
 {
     functionName = _functionName;
     functionArg = _functionArg;
@@ -73,7 +83,17 @@ void MidiSlider::setFunction(String _functionName, int _functionArg, int _midiCh
     }
 
     slider->setValue(initialValue, false); // don't send update message
+
+    // store settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        propertiesFile->setValue("slider" + String(sliderNum) + "FunctionName",_functionName);
+        propertiesFile->setValue("slider" + String(sliderNum) + "FunctionArg", functionArg);
+        propertiesFile->setValue("slider" + String(sliderNum) + "MidiChannel", midiChannel);
+        propertiesFile->setValue("slider" + String(sliderNum) + "InitialValue", slider->getValue());
+    }
 }
+
 
 //==============================================================================
 void MidiSlider::sliderValueChanged(Slider* sliderThatWasMoved)

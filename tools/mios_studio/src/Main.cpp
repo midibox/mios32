@@ -25,16 +25,21 @@ public:
                           DocumentWindow::allButtons,
                           true)
     {
+        // initialise our settings file..
+        ApplicationProperties::getInstance()->setStorageParameters(T("MIOS_Studio"),
+                                                                   T(".xml"),
+                                                                   String::empty,
+                                                                   100,
+                                                                   PropertiesFile::storeAsXML);
+
         // Create an instance of our main content component, and add it 
         // to our window.
-
         MiosStudio* const contentComponent = new MiosStudio();
+        setContentComponent(contentComponent, true, true);
+        centreWithSize(getWidth(), getHeight());
 
-        setContentComponent (contentComponent, true, true);
+        setVisible(true);
 
-        centreWithSize (getWidth(), getHeight());
-
-        setVisible (true);
     }
 
     ~MiosStudioWindow()
@@ -50,6 +55,23 @@ public:
         // 
         JUCEApplication::quit();
     }
+
+#if 0
+    //==============================================================================
+    PropertySet* MiosStudioWindow::getGlobalSettings()
+    {
+        /* If you want this class to store the settings, you can set up an
+           ApplicationProperties object and use this method as it is, or override this
+           method to return your own custom PropertySet.
+           
+           If using this method without changing it, you'll probably need to call
+           ApplicationProperties::setStorageParameters() in your plugin's constructor to
+           tell it where to save the file.
+        */
+        return ApplicationProperties::getInstance()->getUserSettings();
+    }
+#endif
+
 };
 
 //==============================================================================
@@ -89,7 +111,7 @@ public:
     //==============================================================================
     void initialise (const String& commandLine)
     {
-        // just create the main window...
+        // create the main window...
         miosStudioWindow = new MiosStudioWindow();
 
         /*  ..and now return, which will fall into to the main event
@@ -103,11 +125,22 @@ public:
 
     void shutdown()
     {
-        // clear up..
+        ApplicationProperties::getInstance()->closeFiles();
 
-        if (miosStudioWindow != 0)
+        // clear up..
+        if( miosStudioWindow != 0 )
             delete miosStudioWindow;
+#if 0
+        // create properties saver
+        applicationProperties = new ApplicationProperties();
+        ApplicationProperties::juce_DeclareSingleton(applicationProperties, false);
+
+
+        if( applicationProperties != 0 )
+            delete applicationProperties;
+#endif
     }
+
 
     //==============================================================================
     const String getApplicationName()

@@ -46,7 +46,9 @@ public:
     void sendMidiMessage(const MidiMessage &message);
 
     void setMidiInput(const String &port);
+    String getMidiInput(void);
     void setMidiOutput(const String &port);
+    String getMidiOutput(void);
 
     AudioDeviceManager audioDeviceManager;
 

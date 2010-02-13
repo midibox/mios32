@@ -33,13 +33,13 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
     midiPortSelector->addSeparator();
 	
     const StringArray midiPorts = inPort ? MidiInput::getDevices() : MidiOutput::getDevices();
+    String inPortName = miosStudio->getMidiInput();
+    String outPortName = miosStudio->getMidiOutput();
 
     int current = -1;
-    for(int i = 0; i < midiPorts.size(); ++i) {
-        midiPortSelector->addItem (midiPorts[i], i + 1);
-        bool enabled = inPort
-            ? miosStudio->audioDeviceManager.isMidiInputEnabled(midiPorts[i])
-            : (miosStudio->audioDeviceManager.getDefaultMidiOutputName() == midiPorts[i]);
+    for(int i=0; i<midiPorts.size(); ++i) {
+        midiPortSelector->addItem(midiPorts[i], i+1);
+        bool enabled = inPort ? (inPortName == midiPorts[i]) : (outPortName == midiPorts[i]);
 
         if( enabled )
             current = i + 1;
@@ -91,12 +91,6 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
     uint32 size = message.getRawDataSize();
     uint8 *data = message.getRawData();
 
-    String hexStr;
-    if( cutLongMessages && size > 16 )
-        hexStr = String::toHexString(data, 16) + " ...";
-    else
-        hexStr = String::toHexString(data, size);
-
     bool isMidiClock = data[0] == 0xf8;
     bool isActiveSense = data[0] == 0xfe;
     bool isMiosTerminalMessage = SysexHelper::isValidMios32DebugMessage(data, size, -1);
@@ -112,6 +106,8 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
         String timeStampStr = (timeStamp > 0)
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
+
+        String hexStr = String::toHexString(data, size);
 
         monitorLogBox->addEntry("[" + timeStampStr + "] " + hexStr);
         gotFirstMessage = 1;
