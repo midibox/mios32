@@ -35,15 +35,13 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 	///////////////////////////////////////////////////////////////////////////
     // create our gain slider..
 	///////////////////////////////////////////////////////////////////////////
-    addAndMakeVisible (gainSlider = new Slider (T("gain")));
+    addAndMakeVisible (gainSlider = new KnobBlue(T("gain")));
     gainSlider->addListener (this);
-    gainSlider->setSliderStyle(Slider::RotaryVerticalDrag);
-    gainSlider->setTextBoxStyle(Slider::NoTextBox, true, 0, 0);
     gainSlider->setRange (0.0, 1.0, 0.01);
     gainSlider->setTooltip (T("changes the volume"));
     gainSlider->setValue (ownerSidEmu->getParameter(0), false);
 
-	
+
 	///////////////////////////////////////////////////////////////////////////
     // create MIDI input selector
 	///////////////////////////////////////////////////////////////////////////
@@ -113,13 +111,20 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 	///////////////////////////////////////////////////////////////////////////
     addAndMakeVisible (infoLabel = new Label (String::empty, String::empty));
 
-	
+
+	///////////////////////////////////////////////////////////////////////////
+    // Control Groups
+	///////////////////////////////////////////////////////////////////////////
+    addAndMakeVisible(controlGroupKnobs = new ControlGroupKnobs(T("Knobs")));
+
+#if 0
 	///////////////////////////////////////////////////////////////////////////
 	// create a CLCD via APP_LCD module and add it
 	///////////////////////////////////////////////////////////////////////////
 	if (!cLcdView->isValidComponent()) 
 		addAndMakeVisible(cLcdView = APP_LCD_GetComponentPtr(0, 300, 50));
-	
+#endif
+
 	///////////////////////////////////////////////////////////////////////////
     // add the triangular resizer component for the bottom-right of the UI
 	///////////////////////////////////////////////////////////////////////////
@@ -151,17 +156,19 @@ EditorComponent::~EditorComponent()
 void EditorComponent::paint (Graphics& g)
 {
     // just clear the window
-    g.fillAll (Colour::greyLevel (0.9f));
+    g.fillAll(Colour::greyLevel(0.25f));
 }
 
 void EditorComponent::resized()
 {
-    gainSlider->setBounds (30, 10, 30, 30);
+    gainSlider->setBounds (30, 10, 48, 48);
     patchComboBox->setBounds (100, 13, 200, 22);
     infoLabel->setBounds (10, 35, 450, 20);
 
 	midiInputSelector->setBounds (100, 50, 200, 22);
 	midiOutputSelector->setBounds (100, 75, 200, 22);
+
+    controlGroupKnobs->setBounds(10, 100, 500, 100);
 
     const int keyboardHeight = 70;
     midiKeyboard->setBounds (4, getHeight() - keyboardHeight - 4,

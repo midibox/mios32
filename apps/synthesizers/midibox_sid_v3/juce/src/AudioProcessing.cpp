@@ -66,8 +66,8 @@ AudioProcessing::AudioProcessing()
     patch = 0;
     bank = 0;
     gain = 1.0f;
-    lastUIWidth = 400;
-    lastUIHeight = 220;
+    lastUIWidth = 800;
+    lastUIHeight = 600;
     zeromem (&lastPosInfo, sizeof (lastPosInfo));
     lastPosInfo.timeSigNumerator = 4;
     lastPosInfo.timeSigDenominator = 4;
