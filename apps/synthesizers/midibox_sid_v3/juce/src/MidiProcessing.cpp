@@ -48,7 +48,7 @@ void MidiProcessing::handleIncomingMidiMessage(MidiInput* source, const MidiMess
 {
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
-    
+
     midiInQueue.push(message);
 }
 
@@ -74,7 +74,8 @@ void MidiProcessing::processNextMidiEvent(const MidiMessage& message)
     // TODO: integrate this properly into $MIOS32_PATH/mios32/juce/ !!!
     if( size >= 1 && runningStatus == 0xf0 ) {
         for(int i=0; i<size; ++i)
-            mbSidEnvironment->midiReceiveSysEx(DEFAULT, data[i]);
+            if( mbSidEnvironment )
+                mbSidEnvironment->midiReceiveSysEx(DEFAULT, data[i]);
     } else {
         sendMidiEvent(data[0],
                       (size >= 2) ? data[1] : 0x00,
@@ -152,7 +153,8 @@ void MidiProcessing::sendMidiEvent(unsigned char evnt0, unsigned char evnt1, uns
     // temporary ignore channel
     p.evnt0 &= 0xf0;
 
-    mbSidEnvironment->midiReceive(DEFAULT, p);
+    if( mbSidEnvironment )
+        mbSidEnvironment->midiReceive(DEFAULT, p);
 }
 
 

@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		521C028511288254009C813B /* ControlGroup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C027911288254009C813B /* ControlGroup.cpp */; };
+		521C028611288254009C813B /* Knob.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C027B11288254009C813B /* Knob.cpp */; };
+		521C028711288254009C813B /* KnobBlue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C027D11288254009C813B /* KnobBlue.cpp */; };
+		521C028811288254009C813B /* KnobNegPos.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C027F11288254009C813B /* KnobNegPos.cpp */; };
+		521C028911288254009C813B /* KnobOrange.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C028111288254009C813B /* KnobOrange.cpp */; };
+		521C028A11288254009C813B /* KnobSmall.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C028311288254009C813B /* KnobSmall.cpp */; };
+		521C02CA11288BC5009C813B /* ControlGroupKnobs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521C02C811288BC5009C813B /* ControlGroupKnobs.cpp */; };
 		52217F94112822C100232F93 /* MbSidArp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F70112822C100232F93 /* MbSidArp.cpp */; };
 		52217F95112822C100232F93 /* MbSidClock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F72112822C100232F93 /* MbSidClock.cpp */; };
 		52217F96112822C100232F93 /* MbSidDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F74112822C100232F93 /* MbSidDrum.cpp */; };
@@ -95,6 +102,20 @@
 		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		4A9504C8FFE6A3BC11CA0CBA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = /System/Library/Frameworks/ApplicationServices.framework; sourceTree = "<absolute>"; };
 		4A9504CAFFE6A41611CA0CBA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		521C027911288254009C813B /* ControlGroup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ControlGroup.cpp; path = ../../src/gui/components/ControlGroup.cpp; sourceTree = SOURCE_ROOT; };
+		521C027A11288254009C813B /* ControlGroup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ControlGroup.h; path = ../../src/gui/components/ControlGroup.h; sourceTree = SOURCE_ROOT; };
+		521C027B11288254009C813B /* Knob.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Knob.cpp; path = ../../src/gui/components/Knob.cpp; sourceTree = SOURCE_ROOT; };
+		521C027C11288254009C813B /* Knob.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Knob.h; path = ../../src/gui/components/Knob.h; sourceTree = SOURCE_ROOT; };
+		521C027D11288254009C813B /* KnobBlue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KnobBlue.cpp; path = ../../src/gui/components/KnobBlue.cpp; sourceTree = SOURCE_ROOT; };
+		521C027E11288254009C813B /* KnobBlue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KnobBlue.h; path = ../../src/gui/components/KnobBlue.h; sourceTree = SOURCE_ROOT; };
+		521C027F11288254009C813B /* KnobNegPos.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KnobNegPos.cpp; path = ../../src/gui/components/KnobNegPos.cpp; sourceTree = SOURCE_ROOT; };
+		521C028011288254009C813B /* KnobNegPos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KnobNegPos.h; path = ../../src/gui/components/KnobNegPos.h; sourceTree = SOURCE_ROOT; };
+		521C028111288254009C813B /* KnobOrange.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KnobOrange.cpp; path = ../../src/gui/components/KnobOrange.cpp; sourceTree = SOURCE_ROOT; };
+		521C028211288254009C813B /* KnobOrange.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KnobOrange.h; path = ../../src/gui/components/KnobOrange.h; sourceTree = SOURCE_ROOT; };
+		521C028311288254009C813B /* KnobSmall.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KnobSmall.cpp; path = ../../src/gui/components/KnobSmall.cpp; sourceTree = SOURCE_ROOT; };
+		521C028411288254009C813B /* KnobSmall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KnobSmall.h; path = ../../src/gui/components/KnobSmall.h; sourceTree = SOURCE_ROOT; };
+		521C02C811288BC5009C813B /* ControlGroupKnobs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ControlGroupKnobs.cpp; path = ../../src/gui/ControlGroupKnobs.cpp; sourceTree = SOURCE_ROOT; };
+		521C02C911288BC5009C813B /* ControlGroupKnobs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ControlGroupKnobs.h; path = ../../src/gui/ControlGroupKnobs.h; sourceTree = SOURCE_ROOT; };
 		52217F70112822C100232F93 /* MbSidArp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidArp.cpp; path = ../../../core/components/MbSidArp.cpp; sourceTree = SOURCE_ROOT; };
 		52217F71112822C100232F93 /* MbSidArp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidArp.h; path = ../../../core/components/MbSidArp.h; sourceTree = SOURCE_ROOT; };
 		52217F72112822C100232F93 /* MbSidClock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidClock.cpp; path = ../../../core/components/MbSidClock.cpp; sourceTree = SOURCE_ROOT; };
@@ -303,6 +324,7 @@
 		20286C29FDCF999611CA2CEA /* juce_application */ = {
 			isa = PBXGroup;
 			children = (
+				521C0270112881D6009C813B /* GUI */,
 				522180631128260600232F93 /* MIDIboxSIDVersion.h */,
 				5221804F1128243B00232F93 /* Wrapper */,
 				5221803F1128240700232F93 /* MBSID_Emulation */,
@@ -357,6 +379,27 @@
 				84FBB88C0E06CD0100B52196 /* WebKit.framework */,
 			);
 			name = "External Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+		521C0270112881D6009C813B /* GUI */ = {
+			isa = PBXGroup;
+			children = (
+				521C02C811288BC5009C813B /* ControlGroupKnobs.cpp */,
+				521C02C911288BC5009C813B /* ControlGroupKnobs.h */,
+				521C027911288254009C813B /* ControlGroup.cpp */,
+				521C027A11288254009C813B /* ControlGroup.h */,
+				521C027B11288254009C813B /* Knob.cpp */,
+				521C027C11288254009C813B /* Knob.h */,
+				521C027D11288254009C813B /* KnobBlue.cpp */,
+				521C027E11288254009C813B /* KnobBlue.h */,
+				521C027F11288254009C813B /* KnobNegPos.cpp */,
+				521C028011288254009C813B /* KnobNegPos.h */,
+				521C028111288254009C813B /* KnobOrange.cpp */,
+				521C028211288254009C813B /* KnobOrange.h */,
+				521C028311288254009C813B /* KnobSmall.cpp */,
+				521C028411288254009C813B /* KnobSmall.h */,
+			);
+			name = GUI;
 			sourceTree = "<group>";
 		};
 		52217F6C1128228D00232F93 /* CoreComponents */ = {
@@ -695,6 +738,13 @@
 				522180571128245800232F93 /* juce_AudioFilterStreamer.cpp in Sources */,
 				522180581128245800232F93 /* juce_StandaloneFilterWindow.cpp in Sources */,
 				522180591128245800232F93 /* Main.cpp in Sources */,
+				521C028511288254009C813B /* ControlGroup.cpp in Sources */,
+				521C028611288254009C813B /* Knob.cpp in Sources */,
+				521C028711288254009C813B /* KnobBlue.cpp in Sources */,
+				521C028811288254009C813B /* KnobNegPos.cpp in Sources */,
+				521C028911288254009C813B /* KnobOrange.cpp in Sources */,
+				521C028A11288254009C813B /* KnobSmall.cpp in Sources */,
+				521C02CA11288BC5009C813B /* ControlGroupKnobs.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

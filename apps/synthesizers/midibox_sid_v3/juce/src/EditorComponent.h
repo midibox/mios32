@@ -17,6 +17,8 @@
 
 #include "AudioProcessing.h"
 #include "CLCDView.h"
+#include "gui/components/KnobBlue.h"
+#include "gui/ControlGroupKnobs.h"
 
 //==============================================================================
 /**
@@ -69,7 +71,8 @@ public:
   
 private:
     //==============================================================================
-    Slider* gainSlider;
+    ControlGroupKnobs* controlGroupKnobs;
+    KnobBlue* gainSlider;
     ComboBox* patchComboBox;
     MidiKeyboardComponent* midiKeyboard;
     Label* infoLabel;
