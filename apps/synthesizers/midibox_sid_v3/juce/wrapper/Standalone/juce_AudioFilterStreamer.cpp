@@ -56,9 +56,6 @@ void AudioFilterStreamer::audioDeviceIOCallback (const float** inputChannelData,
                                                  int totalNumOutputChannels,
                                                  int numSamples)
 {
-    MidiBuffer midiBuffer;
-    midiCollector.removeNextBlockOfMessages (midiBuffer, numSamples);
-
     int i, numActiveInChans = 0, numActiveOutChans = 0;
     int numOutsWanted = filter.getNumOutputChannels();
     const int numInsWanted = filter.getNumInputChannels();
@@ -78,7 +75,9 @@ void AudioFilterStreamer::audioDeviceIOCallback (const float** inputChannelData,
     while (numActiveOutChans < numOutsWanted)
         outChans [numActiveOutChans++] = emptyBuffer.getSampleData (++i, 0);
 
+#if 0
     AudioSampleBuffer input (inChans, jmin (numInsWanted, numActiveInChans), numSamples);
+#endif
     AudioSampleBuffer output (outChans, jmin (numOutsWanted, numActiveOutChans), numSamples);
 
     {
@@ -90,9 +89,12 @@ void AudioFilterStreamer::audioDeviceIOCallback (const float** inputChannelData,
         }
         else
         {
+#if 0
             for (int i = jmin (output.getNumChannels(), input.getNumChannels()); --i >= 0;)
                 output.copyFrom (i, 0, input, i, 0, numSamples);
+#endif
 
+	    MidiBuffer midiBuffer; // dummy... MIDI handled separately by MBSID emulation
             filter.processBlock (output, midiBuffer);
         }
     }
@@ -111,8 +113,6 @@ void AudioFilterStreamer::audioDeviceAboutToStart (AudioIODevice* device)
                          jmax (2048, device->getCurrentBufferSizeSamples() * 2));
     emptyBuffer.clear();
 
-    midiCollector.reset (sampleRate);
-
     filter.prepareToPlay (device->getCurrentSampleRate(),
                           device->getCurrentBufferSizeSamples());
 }
@@ -121,15 +121,7 @@ void AudioFilterStreamer::audioDeviceStopped()
 {
     isPlaying = false;
     filter.releaseResources();
-    midiCollector.reset (sampleRate > 0 ? sampleRate : 44100.0);
     emptyBuffer.setSize (1, 32);
-}
-
-void AudioFilterStreamer::handleIncomingMidiMessage (MidiInput* source, const MidiMessage& message)
-{
-#if JucePlugin_WantsMidiInput
-    midiCollector.addMessageToQueue (message);
-#endif
 }
 
 bool AudioFilterStreamer::getCurrentPosition (AudioPlayHead::CurrentPositionInfo& info)
@@ -154,7 +146,6 @@ void AudioFilterStreamingDeviceManager::setFilter (AudioProcessor* filterToStrea
 {
     if (streamer != 0)
     {
-        removeMidiInputCallback (String::empty, streamer);
         removeAudioCallback (streamer);
 
         delete streamer;
@@ -166,7 +157,6 @@ void AudioFilterStreamingDeviceManager::setFilter (AudioProcessor* filterToStrea
         streamer = new AudioFilterStreamer (*filterToStream);
 
         addAudioCallback (streamer);
-        addMidiInputCallback (String::empty, streamer);
     }
 }
 

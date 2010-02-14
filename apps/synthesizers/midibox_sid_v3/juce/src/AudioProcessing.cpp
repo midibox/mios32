@@ -138,7 +138,7 @@ const String AudioProcessing::getName() const
 
 int AudioProcessing::getNumParameters()
 {
-    return 1;
+    return 3;
 }
 
 float AudioProcessing::getParameter (int index)
@@ -281,6 +281,9 @@ void AudioProcessing::releaseResources()
 void AudioProcessing::processBlock (AudioSampleBuffer& buffer,
                                     MidiBuffer& midiMessages)
 {
+    // poll for new MIDI events
+    midiProcessing.tick();
+
     // have a go at getting the current time from the host, and if it's changed, tell
     // our UI to update itself.
     AudioPlayHead::CurrentPositionInfo pos;

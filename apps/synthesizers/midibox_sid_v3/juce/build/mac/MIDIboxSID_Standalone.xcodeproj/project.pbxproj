@@ -1,0 +1,802 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		52217F94112822C100232F93 /* MbSidArp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F70112822C100232F93 /* MbSidArp.cpp */; };
+		52217F95112822C100232F93 /* MbSidClock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F72112822C100232F93 /* MbSidClock.cpp */; };
+		52217F96112822C100232F93 /* MbSidDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F74112822C100232F93 /* MbSidDrum.cpp */; };
+		52217F97112822C100232F93 /* MbSidEnv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F76112822C100232F93 /* MbSidEnv.cpp */; };
+		52217F98112822C100232F93 /* MbSidEnvLead.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F78112822C100232F93 /* MbSidEnvLead.cpp */; };
+		52217F99112822C100232F93 /* MbSidFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F7A112822C100232F93 /* MbSidFilter.cpp */; };
+		52217F9A112822C100232F93 /* MbSidLfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F7C112822C100232F93 /* MbSidLfo.cpp */; };
+		52217F9B112822C100232F93 /* MbSidMidiVoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F7E112822C100232F93 /* MbSidMidiVoice.cpp */; };
+		52217F9C112822C100232F93 /* MbSidMod.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F80112822C100232F93 /* MbSidMod.cpp */; };
+		52217F9D112822C100232F93 /* MbSidRandomGen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F82112822C100232F93 /* MbSidRandomGen.cpp */; };
+		52217F9E112822C100232F93 /* MbSidSeq.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F84112822C100232F93 /* MbSidSeq.cpp */; };
+		52217F9F112822C100232F93 /* MbSidSeqBassline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F86112822C100232F93 /* MbSidSeqBassline.cpp */; };
+		52217FA0112822C100232F93 /* MbSidSeqDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F88112822C100232F93 /* MbSidSeqDrum.cpp */; };
+		52217FA1112822C100232F93 /* MbSidVoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F8A112822C100232F93 /* MbSidVoice.cpp */; };
+		52217FA2112822C100232F93 /* MbSidVoiceDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F8C112822C100232F93 /* MbSidVoiceDrum.cpp */; };
+		52217FA3112822C100232F93 /* MbSidVoiceQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F8E112822C100232F93 /* MbSidVoiceQueue.cpp */; };
+		52217FA4112822C100232F93 /* MbSidWt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F90112822C100232F93 /* MbSidWt.cpp */; };
+		52217FA5112822C100232F93 /* MbSidWtDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217F92112822C100232F93 /* MbSidWtDrum.cpp */; };
+		52217FAC112822E500232F93 /* app_lcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FA7112822E500232F93 /* app_lcd.cpp */; };
+		52217FAE112822E500232F93 /* CLCDView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FAA112822E500232F93 /* CLCDView.cpp */; };
+		52217FB01128230100232F93 /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 52217FAF1128230100232F93 /* mios32_lcd.c */; };
+		52217FB31128231200232F93 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 52217FB11128231200232F93 /* aout.c */; };
+		52217FB61128232F00232F93 /* jsw_rand.c in Sources */ = {isa = PBXBuildFile; fileRef = 52217FB41128232F00232F93 /* jsw_rand.c */; };
+		52217FB91128233E00232F93 /* notestack.c in Sources */ = {isa = PBXBuildFile; fileRef = 52217FB71128233E00232F93 /* notestack.c */; };
+		52217FBC1128234C00232F93 /* sid.c in Sources */ = {isa = PBXBuildFile; fileRef = 52217FBA1128234C00232F93 /* sid.c */; };
+		52217FC11128236D00232F93 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FBF1128236D00232F93 /* app.cpp */; };
+		52217FD91128238300232F93 /* MbSid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FC21128238300232F93 /* MbSid.cpp */; };
+		52217FDA1128238300232F93 /* MbSidAsid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FC41128238300232F93 /* MbSidAsid.cpp */; };
+		52217FDB1128238300232F93 /* MbSidEnvironment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FC61128238300232F93 /* MbSidEnvironment.cpp */; };
+		52217FDC1128238300232F93 /* MbSidPatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FC81128238300232F93 /* MbSidPatch.cpp */; };
+		52217FDD1128238300232F93 /* MbSidSe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FCA1128238300232F93 /* MbSidSe.cpp */; };
+		52217FDE1128238300232F93 /* MbSidSeBassline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FCC1128238300232F93 /* MbSidSeBassline.cpp */; };
+		52217FDF1128238300232F93 /* MbSidSeDrum.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FCE1128238300232F93 /* MbSidSeDrum.cpp */; };
+		52217FE01128238300232F93 /* MbSidSeLead.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FD01128238300232F93 /* MbSidSeLead.cpp */; };
+		52217FE11128238300232F93 /* MbSidSeMulti.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FD21128238300232F93 /* MbSidSeMulti.cpp */; };
+		52217FE21128238300232F93 /* MbSidSysEx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FD51128238300232F93 /* MbSidSysEx.cpp */; };
+		52217FE31128238300232F93 /* MbSidTables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52217FD71128238300232F93 /* MbSidTables.cpp */; };
+		5221800C112823CF00232F93 /* envelope.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218006112823CF00232F93 /* envelope.cc */; };
+		5221800D112823CF00232F93 /* extfilt.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218008112823CF00232F93 /* extfilt.cc */; };
+		5221800E112823CF00232F93 /* filter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5221800A112823CF00232F93 /* filter.cc */; };
+		5221802A112823FB00232F93 /* pot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5221800F112823FB00232F93 /* pot.cc */; };
+		5221802B112823FB00232F93 /* resid.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218011112823FB00232F93 /* resid.cc */; };
+		5221802C112823FB00232F93 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218015112823FB00232F93 /* version.cc */; };
+		5221802D112823FB00232F93 /* voice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218016112823FB00232F93 /* voice.cc */; };
+		5221802E112823FB00232F93 /* wave.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218018112823FB00232F93 /* wave.cc */; };
+		5221802F112823FB00232F93 /* wave6581__ST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5221801A112823FB00232F93 /* wave6581__ST.cc */; };
+		52218030112823FB00232F93 /* wave6581__ST.dat in Resources */ = {isa = PBXBuildFile; fileRef = 5221801B112823FB00232F93 /* wave6581__ST.dat */; };
+		52218031112823FB00232F93 /* wave6581_P_T.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5221801C112823FB00232F93 /* wave6581_P_T.cc */; };
+		52218032112823FB00232F93 /* wave6581_P_T.dat in Resources */ = {isa = PBXBuildFile; fileRef = 5221801D112823FB00232F93 /* wave6581_P_T.dat */; };
+		52218033112823FB00232F93 /* wave6581_PS_.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5221801E112823FB00232F93 /* wave6581_PS_.cc */; };
+		52218034112823FB00232F93 /* wave6581_PS_.dat in Resources */ = {isa = PBXBuildFile; fileRef = 5221801F112823FB00232F93 /* wave6581_PS_.dat */; };
+		52218035112823FB00232F93 /* wave6581_PST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218020112823FB00232F93 /* wave6581_PST.cc */; };
+		52218036112823FB00232F93 /* wave6581_PST.dat in Resources */ = {isa = PBXBuildFile; fileRef = 52218021112823FB00232F93 /* wave6581_PST.dat */; };
+		52218037112823FB00232F93 /* wave8580__ST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218022112823FB00232F93 /* wave8580__ST.cc */; };
+		52218038112823FB00232F93 /* wave8580__ST.dat in Resources */ = {isa = PBXBuildFile; fileRef = 52218023112823FB00232F93 /* wave8580__ST.dat */; };
+		52218039112823FB00232F93 /* wave8580_P_T.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218024112823FB00232F93 /* wave8580_P_T.cc */; };
+		5221803A112823FB00232F93 /* wave8580_P_T.dat in Resources */ = {isa = PBXBuildFile; fileRef = 52218025112823FB00232F93 /* wave8580_P_T.dat */; };
+		5221803B112823FB00232F93 /* wave8580_PS_.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218026112823FB00232F93 /* wave8580_PS_.cc */; };
+		5221803C112823FB00232F93 /* wave8580_PS_.dat in Resources */ = {isa = PBXBuildFile; fileRef = 52218027112823FB00232F93 /* wave8580_PS_.dat */; };
+		5221803D112823FB00232F93 /* wave8580_PST.cc in Sources */ = {isa = PBXBuildFile; fileRef = 52218028112823FB00232F93 /* wave8580_PST.cc */; };
+		5221803E112823FB00232F93 /* wave8580_PST.dat in Resources */ = {isa = PBXBuildFile; fileRef = 52218029112823FB00232F93 /* wave8580_PST.dat */; };
+		5221804A1128243000232F93 /* AudioProcessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180401128243000232F93 /* AudioProcessing.cpp */; };
+		5221804B1128243000232F93 /* EditorComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180421128243000232F93 /* EditorComponent.cpp */; };
+		5221804C1128243000232F93 /* MidiProcessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180451128243000232F93 /* MidiProcessing.cpp */; };
+		5221804D1128243000232F93 /* mios32_wrapper_code.c in Sources */ = {isa = PBXBuildFile; fileRef = 522180481128243000232F93 /* mios32_wrapper_code.c */; };
+		5221804E1128243000232F93 /* tasks.c in Sources */ = {isa = PBXBuildFile; fileRef = 522180491128243000232F93 /* tasks.c */; };
+		522180571128245800232F93 /* juce_AudioFilterStreamer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180521128245800232F93 /* juce_AudioFilterStreamer.cpp */; };
+		522180581128245800232F93 /* juce_StandaloneFilterWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180541128245800232F93 /* juce_StandaloneFilterWindow.cpp */; };
+		522180591128245800232F93 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 522180561128245800232F93 /* Main.cpp */; };
+		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
+		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
+		841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8411369F0D0480DE0054B790 /* OpenGL.framework */; };
+		84204DA50FDEFA3800FA4ABC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84204DA40FDEFA3800FA4ABC /* Carbon.framework */; };
+		846EC7870EB607050080CCFF /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 846EC7860EB607050080CCFF /* QTKit.framework */; };
+		84F30CED08FEAD7A0087E26C /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F30CEC08FEAD7A0087E26C /* CoreAudio.framework */; };
+		84FAD61A0C7C3CCB00AF3028 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FAD6190C7C3CCB00AF3028 /* IOKit.framework */; };
+		84FBB8730E06CC5D00B52196 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FBB8720E06CC5D00B52196 /* Cocoa.framework */; };
+		84FBB8770E06CCB200B52196 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FBB8760E06CCB200B52196 /* CoreMIDI.framework */; };
+		84FBB87B0E06CCC600B52196 /* DiscRecording.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FBB87A0E06CCC600B52196 /* DiscRecording.framework */; };
+		84FBB8880E06CCE900B52196 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FBB8870E06CCE900B52196 /* AudioUnit.framework */; };
+		84FBB88D0E06CD0100B52196 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84FBB88C0E06CD0100B52196 /* WebKit.framework */; };
+		8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		4A9504C8FFE6A3BC11CA0CBA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = /System/Library/Frameworks/ApplicationServices.framework; sourceTree = "<absolute>"; };
+		4A9504CAFFE6A41611CA0CBA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		52217F70112822C100232F93 /* MbSidArp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidArp.cpp; path = ../../../core/components/MbSidArp.cpp; sourceTree = SOURCE_ROOT; };
+		52217F71112822C100232F93 /* MbSidArp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidArp.h; path = ../../../core/components/MbSidArp.h; sourceTree = SOURCE_ROOT; };
+		52217F72112822C100232F93 /* MbSidClock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidClock.cpp; path = ../../../core/components/MbSidClock.cpp; sourceTree = SOURCE_ROOT; };
+		52217F73112822C100232F93 /* MbSidClock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidClock.h; path = ../../../core/components/MbSidClock.h; sourceTree = SOURCE_ROOT; };
+		52217F74112822C100232F93 /* MbSidDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidDrum.cpp; path = ../../../core/components/MbSidDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52217F75112822C100232F93 /* MbSidDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidDrum.h; path = ../../../core/components/MbSidDrum.h; sourceTree = SOURCE_ROOT; };
+		52217F76112822C100232F93 /* MbSidEnv.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidEnv.cpp; path = ../../../core/components/MbSidEnv.cpp; sourceTree = SOURCE_ROOT; };
+		52217F77112822C100232F93 /* MbSidEnv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidEnv.h; path = ../../../core/components/MbSidEnv.h; sourceTree = SOURCE_ROOT; };
+		52217F78112822C100232F93 /* MbSidEnvLead.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidEnvLead.cpp; path = ../../../core/components/MbSidEnvLead.cpp; sourceTree = SOURCE_ROOT; };
+		52217F79112822C100232F93 /* MbSidEnvLead.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidEnvLead.h; path = ../../../core/components/MbSidEnvLead.h; sourceTree = SOURCE_ROOT; };
+		52217F7A112822C100232F93 /* MbSidFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidFilter.cpp; path = ../../../core/components/MbSidFilter.cpp; sourceTree = SOURCE_ROOT; };
+		52217F7B112822C100232F93 /* MbSidFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidFilter.h; path = ../../../core/components/MbSidFilter.h; sourceTree = SOURCE_ROOT; };
+		52217F7C112822C100232F93 /* MbSidLfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidLfo.cpp; path = ../../../core/components/MbSidLfo.cpp; sourceTree = SOURCE_ROOT; };
+		52217F7D112822C100232F93 /* MbSidLfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidLfo.h; path = ../../../core/components/MbSidLfo.h; sourceTree = SOURCE_ROOT; };
+		52217F7E112822C100232F93 /* MbSidMidiVoice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidMidiVoice.cpp; path = ../../../core/components/MbSidMidiVoice.cpp; sourceTree = SOURCE_ROOT; };
+		52217F7F112822C100232F93 /* MbSidMidiVoice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidMidiVoice.h; path = ../../../core/components/MbSidMidiVoice.h; sourceTree = SOURCE_ROOT; };
+		52217F80112822C100232F93 /* MbSidMod.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidMod.cpp; path = ../../../core/components/MbSidMod.cpp; sourceTree = SOURCE_ROOT; };
+		52217F81112822C100232F93 /* MbSidMod.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidMod.h; path = ../../../core/components/MbSidMod.h; sourceTree = SOURCE_ROOT; };
+		52217F82112822C100232F93 /* MbSidRandomGen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidRandomGen.cpp; path = ../../../core/components/MbSidRandomGen.cpp; sourceTree = SOURCE_ROOT; };
+		52217F83112822C100232F93 /* MbSidRandomGen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidRandomGen.h; path = ../../../core/components/MbSidRandomGen.h; sourceTree = SOURCE_ROOT; };
+		52217F84112822C100232F93 /* MbSidSeq.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeq.cpp; path = ../../../core/components/MbSidSeq.cpp; sourceTree = SOURCE_ROOT; };
+		52217F85112822C100232F93 /* MbSidSeq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeq.h; path = ../../../core/components/MbSidSeq.h; sourceTree = SOURCE_ROOT; };
+		52217F86112822C100232F93 /* MbSidSeqBassline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeqBassline.cpp; path = ../../../core/components/MbSidSeqBassline.cpp; sourceTree = SOURCE_ROOT; };
+		52217F87112822C100232F93 /* MbSidSeqBassline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeqBassline.h; path = ../../../core/components/MbSidSeqBassline.h; sourceTree = SOURCE_ROOT; };
+		52217F88112822C100232F93 /* MbSidSeqDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeqDrum.cpp; path = ../../../core/components/MbSidSeqDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52217F89112822C100232F93 /* MbSidSeqDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeqDrum.h; path = ../../../core/components/MbSidSeqDrum.h; sourceTree = SOURCE_ROOT; };
+		52217F8A112822C100232F93 /* MbSidVoice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidVoice.cpp; path = ../../../core/components/MbSidVoice.cpp; sourceTree = SOURCE_ROOT; };
+		52217F8B112822C100232F93 /* MbSidVoice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidVoice.h; path = ../../../core/components/MbSidVoice.h; sourceTree = SOURCE_ROOT; };
+		52217F8C112822C100232F93 /* MbSidVoiceDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidVoiceDrum.cpp; path = ../../../core/components/MbSidVoiceDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52217F8D112822C100232F93 /* MbSidVoiceDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidVoiceDrum.h; path = ../../../core/components/MbSidVoiceDrum.h; sourceTree = SOURCE_ROOT; };
+		52217F8E112822C100232F93 /* MbSidVoiceQueue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidVoiceQueue.cpp; path = ../../../core/components/MbSidVoiceQueue.cpp; sourceTree = SOURCE_ROOT; };
+		52217F8F112822C100232F93 /* MbSidVoiceQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidVoiceQueue.h; path = ../../../core/components/MbSidVoiceQueue.h; sourceTree = SOURCE_ROOT; };
+		52217F90112822C100232F93 /* MbSidWt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidWt.cpp; path = ../../../core/components/MbSidWt.cpp; sourceTree = SOURCE_ROOT; };
+		52217F91112822C100232F93 /* MbSidWt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidWt.h; path = ../../../core/components/MbSidWt.h; sourceTree = SOURCE_ROOT; };
+		52217F92112822C100232F93 /* MbSidWtDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidWtDrum.cpp; path = ../../../core/components/MbSidWtDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52217F93112822C100232F93 /* MbSidWtDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidWtDrum.h; path = ../../../core/components/MbSidWtDrum.h; sourceTree = SOURCE_ROOT; };
+		52217FA7112822E500232F93 /* app_lcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app_lcd.cpp; path = ../../../../../../modules/app_lcd/juce/app_lcd.cpp; sourceTree = SOURCE_ROOT; };
+		52217FA8112822E500232F93 /* app_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app_lcd.h; path = ../../../../../../modules/app_lcd/juce/app_lcd.h; sourceTree = SOURCE_ROOT; };
+		52217FAA112822E500232F93 /* CLCDView.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CLCDView.cpp; path = ../../../../../../modules/app_lcd/juce/CLCDView.cpp; sourceTree = SOURCE_ROOT; };
+		52217FAB112822E500232F93 /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLCDView.h; path = ../../../../../../modules/app_lcd/juce/CLCDView.h; sourceTree = SOURCE_ROOT; };
+		52217FAF1128230100232F93 /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
+		52217FB11128231200232F93 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
+		52217FB21128231200232F93 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
+		52217FB41128232F00232F93 /* jsw_rand.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsw_rand.c; path = ../../../../../../modules/random/jsw_rand.c; sourceTree = SOURCE_ROOT; };
+		52217FB51128232F00232F93 /* jsw_rand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsw_rand.h; path = ../../../../../../modules/random/jsw_rand.h; sourceTree = SOURCE_ROOT; };
+		52217FB71128233E00232F93 /* notestack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = notestack.c; path = ../../../../../../modules/notestack/notestack.c; sourceTree = SOURCE_ROOT; };
+		52217FB81128233E00232F93 /* notestack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = notestack.h; path = ../../../../../../modules/notestack/notestack.h; sourceTree = SOURCE_ROOT; };
+		52217FBA1128234C00232F93 /* sid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sid.c; path = ../../../../../../modules/sid/sid.c; sourceTree = SOURCE_ROOT; };
+		52217FBB1128234C00232F93 /* sid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sid.h; path = ../../../../../../modules/sid/sid.h; sourceTree = SOURCE_ROOT; };
+		52217FBF1128236D00232F93 /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app.cpp; path = ../../../core/app.cpp; sourceTree = SOURCE_ROOT; };
+		52217FC01128236D00232F93 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app.h; path = ../../../core/app.h; sourceTree = SOURCE_ROOT; };
+		52217FC21128238300232F93 /* MbSid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSid.cpp; path = ../../../core/MbSid.cpp; sourceTree = SOURCE_ROOT; };
+		52217FC31128238300232F93 /* MbSid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSid.h; path = ../../../core/MbSid.h; sourceTree = SOURCE_ROOT; };
+		52217FC41128238300232F93 /* MbSidAsid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidAsid.cpp; path = ../../../core/MbSidAsid.cpp; sourceTree = SOURCE_ROOT; };
+		52217FC51128238300232F93 /* MbSidAsid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidAsid.h; path = ../../../core/MbSidAsid.h; sourceTree = SOURCE_ROOT; };
+		52217FC61128238300232F93 /* MbSidEnvironment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidEnvironment.cpp; path = ../../../core/MbSidEnvironment.cpp; sourceTree = SOURCE_ROOT; };
+		52217FC71128238300232F93 /* MbSidEnvironment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidEnvironment.h; path = ../../../core/MbSidEnvironment.h; sourceTree = SOURCE_ROOT; };
+		52217FC81128238300232F93 /* MbSidPatch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidPatch.cpp; path = ../../../core/MbSidPatch.cpp; sourceTree = SOURCE_ROOT; };
+		52217FC91128238300232F93 /* MbSidPatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidPatch.h; path = ../../../core/MbSidPatch.h; sourceTree = SOURCE_ROOT; };
+		52217FCA1128238300232F93 /* MbSidSe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSe.cpp; path = ../../../core/MbSidSe.cpp; sourceTree = SOURCE_ROOT; };
+		52217FCB1128238300232F93 /* MbSidSe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSe.h; path = ../../../core/MbSidSe.h; sourceTree = SOURCE_ROOT; };
+		52217FCC1128238300232F93 /* MbSidSeBassline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeBassline.cpp; path = ../../../core/MbSidSeBassline.cpp; sourceTree = SOURCE_ROOT; };
+		52217FCD1128238300232F93 /* MbSidSeBassline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeBassline.h; path = ../../../core/MbSidSeBassline.h; sourceTree = SOURCE_ROOT; };
+		52217FCE1128238300232F93 /* MbSidSeDrum.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeDrum.cpp; path = ../../../core/MbSidSeDrum.cpp; sourceTree = SOURCE_ROOT; };
+		52217FCF1128238300232F93 /* MbSidSeDrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeDrum.h; path = ../../../core/MbSidSeDrum.h; sourceTree = SOURCE_ROOT; };
+		52217FD01128238300232F93 /* MbSidSeLead.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeLead.cpp; path = ../../../core/MbSidSeLead.cpp; sourceTree = SOURCE_ROOT; };
+		52217FD11128238300232F93 /* MbSidSeLead.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeLead.h; path = ../../../core/MbSidSeLead.h; sourceTree = SOURCE_ROOT; };
+		52217FD21128238300232F93 /* MbSidSeMulti.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSeMulti.cpp; path = ../../../core/MbSidSeMulti.cpp; sourceTree = SOURCE_ROOT; };
+		52217FD31128238300232F93 /* MbSidSeMulti.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSeMulti.h; path = ../../../core/MbSidSeMulti.h; sourceTree = SOURCE_ROOT; };
+		52217FD41128238300232F93 /* MbSidStructs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidStructs.h; path = ../../../core/MbSidStructs.h; sourceTree = SOURCE_ROOT; };
+		52217FD51128238300232F93 /* MbSidSysEx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidSysEx.cpp; path = ../../../core/MbSidSysEx.cpp; sourceTree = SOURCE_ROOT; };
+		52217FD61128238300232F93 /* MbSidSysEx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidSysEx.h; path = ../../../core/MbSidSysEx.h; sourceTree = SOURCE_ROOT; };
+		52217FD71128238300232F93 /* MbSidTables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbSidTables.cpp; path = ../../../core/MbSidTables.cpp; sourceTree = SOURCE_ROOT; };
+		52217FD81128238300232F93 /* MbSidTables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbSidTables.h; path = ../../../core/MbSidTables.h; sourceTree = SOURCE_ROOT; };
+		52217FE41128239000232F93 /* tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tasks.h; path = ../../../core/tasks.h; sourceTree = SOURCE_ROOT; };
+		52217FE6112823AD00232F93 /* mios32_ain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_ain.h; path = ../../../../../../include/mios32/mios32_ain.h; sourceTree = SOURCE_ROOT; };
+		52217FE7112823AD00232F93 /* mios32_board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_board.h; path = ../../../../../../include/mios32/mios32_board.h; sourceTree = SOURCE_ROOT; };
+		52217FE8112823AD00232F93 /* mios32_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_com.h; path = ../../../../../../include/mios32/mios32_com.h; sourceTree = SOURCE_ROOT; };
+		52217FE9112823AD00232F93 /* mios32_datatypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_datatypes.h; path = ../../../../../../include/mios32/mios32_datatypes.h; sourceTree = SOURCE_ROOT; };
+		52217FEA112823AD00232F93 /* mios32_delay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_delay.h; path = ../../../../../../include/mios32/mios32_delay.h; sourceTree = SOURCE_ROOT; };
+		52217FEB112823AD00232F93 /* mios32_din.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_din.h; path = ../../../../../../include/mios32/mios32_din.h; sourceTree = SOURCE_ROOT; };
+		52217FEC112823AD00232F93 /* mios32_dout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_dout.h; path = ../../../../../../include/mios32/mios32_dout.h; sourceTree = SOURCE_ROOT; };
+		52217FED112823AD00232F93 /* mios32_enc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc.h; path = ../../../../../../include/mios32/mios32_enc.h; sourceTree = SOURCE_ROOT; };
+		52217FEE112823AD00232F93 /* mios32_enc28j60_regs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc28j60_regs.h; path = ../../../../../../include/mios32/mios32_enc28j60_regs.h; sourceTree = SOURCE_ROOT; };
+		52217FEF112823AD00232F93 /* mios32_enc28j60.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc28j60.h; path = ../../../../../../include/mios32/mios32_enc28j60.h; sourceTree = SOURCE_ROOT; };
+		52217FF0112823AD00232F93 /* mios32_i2s.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_i2s.h; path = ../../../../../../include/mios32/mios32_i2s.h; sourceTree = SOURCE_ROOT; };
+		52217FF1112823AD00232F93 /* mios32_iic_bs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic_bs.h; path = ../../../../../../include/mios32/mios32_iic_bs.h; sourceTree = SOURCE_ROOT; };
+		52217FF2112823AD00232F93 /* mios32_iic_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic_midi.h; path = ../../../../../../include/mios32/mios32_iic_midi.h; sourceTree = SOURCE_ROOT; };
+		52217FF3112823AD00232F93 /* mios32_iic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic.h; path = ../../../../../../include/mios32/mios32_iic.h; sourceTree = SOURCE_ROOT; };
+		52217FF4112823AD00232F93 /* mios32_irq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_irq.h; path = ../../../../../../include/mios32/mios32_irq.h; sourceTree = SOURCE_ROOT; };
+		52217FF5112823AD00232F93 /* mios32_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_lcd.h; path = ../../../../../../include/mios32/mios32_lcd.h; sourceTree = SOURCE_ROOT; };
+		52217FF6112823AD00232F93 /* mios32_mf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_mf.h; path = ../../../../../../include/mios32/mios32_mf.h; sourceTree = SOURCE_ROOT; };
+		52217FF7112823AD00232F93 /* mios32_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_midi.h; path = ../../../../../../include/mios32/mios32_midi.h; sourceTree = SOURCE_ROOT; };
+		52217FF8112823AD00232F93 /* mios32_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_osc.h; path = ../../../../../../include/mios32/mios32_osc.h; sourceTree = SOURCE_ROOT; };
+		52217FF9112823AD00232F93 /* mios32_sdcard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_sdcard.h; path = ../../../../../../include/mios32/mios32_sdcard.h; sourceTree = SOURCE_ROOT; };
+		52217FFA112823AD00232F93 /* mios32_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_spi.h; path = ../../../../../../include/mios32/mios32_spi.h; sourceTree = SOURCE_ROOT; };
+		52217FFB112823AD00232F93 /* mios32_srio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_srio.h; path = ../../../../../../include/mios32/mios32_srio.h; sourceTree = SOURCE_ROOT; };
+		52217FFC112823AD00232F93 /* mios32_stopwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_stopwatch.h; path = ../../../../../../include/mios32/mios32_stopwatch.h; sourceTree = SOURCE_ROOT; };
+		52217FFD112823AD00232F93 /* mios32_sys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_sys.h; path = ../../../../../../include/mios32/mios32_sys.h; sourceTree = SOURCE_ROOT; };
+		52217FFE112823AD00232F93 /* mios32_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_timer.h; path = ../../../../../../include/mios32/mios32_timer.h; sourceTree = SOURCE_ROOT; };
+		52217FFF112823AD00232F93 /* mios32_uart_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_uart_midi.h; path = ../../../../../../include/mios32/mios32_uart_midi.h; sourceTree = SOURCE_ROOT; };
+		52218000112823AE00232F93 /* mios32_uart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_uart.h; path = ../../../../../../include/mios32/mios32_uart.h; sourceTree = SOURCE_ROOT; };
+		52218001112823AE00232F93 /* mios32_usb_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb_com.h; path = ../../../../../../include/mios32/mios32_usb_com.h; sourceTree = SOURCE_ROOT; };
+		52218002112823AE00232F93 /* mios32_usb_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb_midi.h; path = ../../../../../../include/mios32/mios32_usb_midi.h; sourceTree = SOURCE_ROOT; };
+		52218003112823AE00232F93 /* mios32_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb.h; path = ../../../../../../include/mios32/mios32_usb.h; sourceTree = SOURCE_ROOT; };
+		52218004112823AE00232F93 /* mios32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32.h; path = ../../../../../../include/mios32/mios32.h; sourceTree = SOURCE_ROOT; };
+		52218006112823CF00232F93 /* envelope.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = envelope.cc; path = ../../resid/envelope.cc; sourceTree = SOURCE_ROOT; };
+		52218007112823CF00232F93 /* envelope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = envelope.h; path = ../../resid/envelope.h; sourceTree = SOURCE_ROOT; };
+		52218008112823CF00232F93 /* extfilt.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = extfilt.cc; path = ../../resid/extfilt.cc; sourceTree = SOURCE_ROOT; };
+		52218009112823CF00232F93 /* extfilt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = extfilt.h; path = ../../resid/extfilt.h; sourceTree = SOURCE_ROOT; };
+		5221800A112823CF00232F93 /* filter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = filter.cc; path = ../../resid/filter.cc; sourceTree = SOURCE_ROOT; };
+		5221800B112823CF00232F93 /* filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = filter.h; path = ../../resid/filter.h; sourceTree = SOURCE_ROOT; };
+		5221800F112823FB00232F93 /* pot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pot.cc; path = ../../resid/pot.cc; sourceTree = SOURCE_ROOT; };
+		52218010112823FB00232F93 /* pot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pot.h; path = ../../resid/pot.h; sourceTree = SOURCE_ROOT; };
+		52218011112823FB00232F93 /* resid.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = resid.cc; path = ../../resid/resid.cc; sourceTree = SOURCE_ROOT; };
+		52218012112823FB00232F93 /* resid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = resid.h; path = ../../resid/resid.h; sourceTree = SOURCE_ROOT; };
+		52218013112823FB00232F93 /* siddefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = siddefs.h; path = ../../resid/siddefs.h; sourceTree = SOURCE_ROOT; };
+		52218014112823FB00232F93 /* spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = spline.h; path = ../../resid/spline.h; sourceTree = SOURCE_ROOT; };
+		52218015112823FB00232F93 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = version.cc; path = ../../resid/version.cc; sourceTree = SOURCE_ROOT; };
+		52218016112823FB00232F93 /* voice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = voice.cc; path = ../../resid/voice.cc; sourceTree = SOURCE_ROOT; };
+		52218017112823FB00232F93 /* voice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = voice.h; path = ../../resid/voice.h; sourceTree = SOURCE_ROOT; };
+		52218018112823FB00232F93 /* wave.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave.cc; path = ../../resid/wave.cc; sourceTree = SOURCE_ROOT; };
+		52218019112823FB00232F93 /* wave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wave.h; path = ../../resid/wave.h; sourceTree = SOURCE_ROOT; };
+		5221801A112823FB00232F93 /* wave6581__ST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave6581__ST.cc; path = ../../resid/wave6581__ST.cc; sourceTree = SOURCE_ROOT; };
+		5221801B112823FB00232F93 /* wave6581__ST.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave6581__ST.dat; path = ../../resid/wave6581__ST.dat; sourceTree = SOURCE_ROOT; };
+		5221801C112823FB00232F93 /* wave6581_P_T.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave6581_P_T.cc; path = ../../resid/wave6581_P_T.cc; sourceTree = SOURCE_ROOT; };
+		5221801D112823FB00232F93 /* wave6581_P_T.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave6581_P_T.dat; path = ../../resid/wave6581_P_T.dat; sourceTree = SOURCE_ROOT; };
+		5221801E112823FB00232F93 /* wave6581_PS_.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave6581_PS_.cc; path = ../../resid/wave6581_PS_.cc; sourceTree = SOURCE_ROOT; };
+		5221801F112823FB00232F93 /* wave6581_PS_.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave6581_PS_.dat; path = ../../resid/wave6581_PS_.dat; sourceTree = SOURCE_ROOT; };
+		52218020112823FB00232F93 /* wave6581_PST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave6581_PST.cc; path = ../../resid/wave6581_PST.cc; sourceTree = SOURCE_ROOT; };
+		52218021112823FB00232F93 /* wave6581_PST.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave6581_PST.dat; path = ../../resid/wave6581_PST.dat; sourceTree = SOURCE_ROOT; };
+		52218022112823FB00232F93 /* wave8580__ST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580__ST.cc; path = ../../resid/wave8580__ST.cc; sourceTree = SOURCE_ROOT; };
+		52218023112823FB00232F93 /* wave8580__ST.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave8580__ST.dat; path = ../../resid/wave8580__ST.dat; sourceTree = SOURCE_ROOT; };
+		52218024112823FB00232F93 /* wave8580_P_T.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_P_T.cc; path = ../../resid/wave8580_P_T.cc; sourceTree = SOURCE_ROOT; };
+		52218025112823FB00232F93 /* wave8580_P_T.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave8580_P_T.dat; path = ../../resid/wave8580_P_T.dat; sourceTree = SOURCE_ROOT; };
+		52218026112823FB00232F93 /* wave8580_PS_.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PS_.cc; path = ../../resid/wave8580_PS_.cc; sourceTree = SOURCE_ROOT; };
+		52218027112823FB00232F93 /* wave8580_PS_.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave8580_PS_.dat; path = ../../resid/wave8580_PS_.dat; sourceTree = SOURCE_ROOT; };
+		52218028112823FB00232F93 /* wave8580_PST.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wave8580_PST.cc; path = ../../resid/wave8580_PST.cc; sourceTree = SOURCE_ROOT; };
+		52218029112823FB00232F93 /* wave8580_PST.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = wave8580_PST.dat; path = ../../resid/wave8580_PST.dat; sourceTree = SOURCE_ROOT; };
+		522180401128243000232F93 /* AudioProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AudioProcessing.cpp; path = ../../src/AudioProcessing.cpp; sourceTree = SOURCE_ROOT; };
+		522180411128243000232F93 /* AudioProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AudioProcessing.h; path = ../../src/AudioProcessing.h; sourceTree = SOURCE_ROOT; };
+		522180421128243000232F93 /* EditorComponent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EditorComponent.cpp; path = ../../src/EditorComponent.cpp; sourceTree = SOURCE_ROOT; };
+		522180431128243000232F93 /* EditorComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EditorComponent.h; path = ../../src/EditorComponent.h; sourceTree = SOURCE_ROOT; };
+		522180441128243000232F93 /* JucePluginCharacteristics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JucePluginCharacteristics.h; path = ../../src/JucePluginCharacteristics.h; sourceTree = SOURCE_ROOT; };
+		522180451128243000232F93 /* MidiProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiProcessing.cpp; path = ../../src/MidiProcessing.cpp; sourceTree = SOURCE_ROOT; };
+		522180461128243000232F93 /* MidiProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiProcessing.h; path = ../../src/MidiProcessing.h; sourceTree = SOURCE_ROOT; };
+		522180471128243000232F93 /* mios32_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_config.h; path = ../../src/mios32_config.h; sourceTree = SOURCE_ROOT; };
+		522180481128243000232F93 /* mios32_wrapper_code.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_wrapper_code.c; path = ../../src/mios32_wrapper_code.c; sourceTree = SOURCE_ROOT; };
+		522180491128243000232F93 /* tasks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = tasks.c; path = ../../src/tasks.c; sourceTree = SOURCE_ROOT; };
+		522180501128244A00232F93 /* juce_IncludeCharacteristics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_IncludeCharacteristics.h; path = ../../wrapper/juce_IncludeCharacteristics.h; sourceTree = SOURCE_ROOT; };
+		522180511128244A00232F93 /* juce_PluginHeaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_PluginHeaders.h; path = ../../wrapper/juce_PluginHeaders.h; sourceTree = SOURCE_ROOT; };
+		522180521128245800232F93 /* juce_AudioFilterStreamer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = juce_AudioFilterStreamer.cpp; path = ../../wrapper/Standalone/juce_AudioFilterStreamer.cpp; sourceTree = SOURCE_ROOT; };
+		522180531128245800232F93 /* juce_AudioFilterStreamer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AudioFilterStreamer.h; path = ../../wrapper/Standalone/juce_AudioFilterStreamer.h; sourceTree = SOURCE_ROOT; };
+		522180541128245800232F93 /* juce_StandaloneFilterWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = juce_StandaloneFilterWindow.cpp; path = ../../wrapper/Standalone/juce_StandaloneFilterWindow.cpp; sourceTree = SOURCE_ROOT; };
+		522180551128245800232F93 /* juce_StandaloneFilterWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_StandaloneFilterWindow.h; path = ../../wrapper/Standalone/juce_StandaloneFilterWindow.h; sourceTree = SOURCE_ROOT; };
+		522180561128245800232F93 /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../wrapper/Standalone/Main.cpp; sourceTree = SOURCE_ROOT; };
+		522180631128260600232F93 /* MIDIboxSIDVersion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIDIboxSIDVersion.h; sourceTree = "<group>"; };
+		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
+		529C75CB111DAB1200DFE267 /* juce_AppConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AppConfig.h; path = ../../src/juce_AppConfig.h; sourceTree = SOURCE_ROOT; };
+		529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_LibrarySource.mm; path = ../../src/juce_LibrarySource.mm; sourceTree = SOURCE_ROOT; };
+		8407902A09E6B5BD004E7BCD /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
+		8411369F0D0480DE0054B790 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		84204DA40FDEFA3800FA4ABC /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		846EC7860EB607050080CCFF /* QTKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QTKit.framework; path = /System/Library/Frameworks/QTKit.framework; sourceTree = "<absolute>"; };
+		84F30CEC08FEAD7A0087E26C /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = /System/Library/Frameworks/CoreAudio.framework; sourceTree = "<absolute>"; };
+		84FAD6190C7C3CCB00AF3028 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
+		84FBB8720E06CC5D00B52196 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		84FBB8760E06CCB200B52196 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = /System/Library/Frameworks/CoreMIDI.framework; sourceTree = "<absolute>"; };
+		84FBB87A0E06CCC600B52196 /* DiscRecording.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiscRecording.framework; path = /System/Library/Frameworks/DiscRecording.framework; sourceTree = "<absolute>"; };
+		84FBB8870E06CCE900B52196 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
+		84FBB88C0E06CD0100B52196 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = /System/Library/Frameworks/WebKit.framework; sourceTree = "<absolute>"; };
+		8D0C4E960486CD37000505A6 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8D0C4E970486CD37000505A6 /* MIOS_Studio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MIOS_Studio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D0C4E910486CD37000505A6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84F30CED08FEAD7A0087E26C /* CoreAudio.framework in Frameworks */,
+				8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */,
+				84FAD61A0C7C3CCB00AF3028 /* IOKit.framework in Frameworks */,
+				841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */,
+				84FBB8730E06CC5D00B52196 /* Cocoa.framework in Frameworks */,
+				84FBB8770E06CCB200B52196 /* CoreMIDI.framework in Frameworks */,
+				84FBB87B0E06CCC600B52196 /* DiscRecording.framework in Frameworks */,
+				84FBB8880E06CCE900B52196 /* AudioUnit.framework in Frameworks */,
+				84FBB88D0E06CD0100B52196 /* WebKit.framework in Frameworks */,
+				846EC7870EB607050080CCFF /* QTKit.framework in Frameworks */,
+				84204DA50FDEFA3800FA4ABC /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		195DF8CFFE9D517E11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D0C4E970486CD37000505A6 /* MIOS_Studio.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		20286C29FDCF999611CA2CEA /* juce_application */ = {
+			isa = PBXGroup;
+			children = (
+				522180631128260600232F93 /* MIDIboxSIDVersion.h */,
+				5221804F1128243B00232F93 /* Wrapper */,
+				5221803F1128240700232F93 /* MBSID_Emulation */,
+				52218005112823B700232F93 /* ReSID */,
+				52217FE51128239800232F93 /* MIOS32Headers */,
+				52217FBE1128235F00232F93 /* Core */,
+				52217FA6112822CA00232F93 /* Modules */,
+				52217F6C1128228D00232F93 /* CoreComponents */,
+				20286C2AFDCF999611CA2CEA /* Sources */,
+				20286C2CFDCF999611CA2CEA /* Resources */,
+				841084830DB3749300AB8583 /* Build settings */,
+				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
+				195DF8CFFE9D517E11CA2CBB /* Products */,
+			);
+			name = juce_application;
+			sourceTree = "<group>";
+		};
+		20286C2AFDCF999611CA2CEA /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				529C75CA111DAB1200DFE267 /* includes.h */,
+				529C75CB111DAB1200DFE267 /* juce_AppConfig.h */,
+				529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+		20286C2CFDCF999611CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8D0C4E960486CD37000505A6 /* Info.plist */,
+				0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				84204DA40FDEFA3800FA4ABC /* Carbon.framework */,
+				84FBB8870E06CCE900B52196 /* AudioUnit.framework */,
+				84FBB8720E06CC5D00B52196 /* Cocoa.framework */,
+				4A9504CAFFE6A41611CA0CBA /* CoreServices.framework */,
+				84F30CEC08FEAD7A0087E26C /* CoreAudio.framework */,
+				84FBB8760E06CCB200B52196 /* CoreMIDI.framework */,
+				84FBB87A0E06CCC600B52196 /* DiscRecording.framework */,
+				4A9504C8FFE6A3BC11CA0CBA /* ApplicationServices.framework */,
+				846EC7860EB607050080CCFF /* QTKit.framework */,
+				8407902A09E6B5BD004E7BCD /* QuickTime.framework */,
+				84FAD6190C7C3CCB00AF3028 /* IOKit.framework */,
+				8411369F0D0480DE0054B790 /* OpenGL.framework */,
+				84FBB88C0E06CD0100B52196 /* WebKit.framework */,
+			);
+			name = "External Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+		52217F6C1128228D00232F93 /* CoreComponents */ = {
+			isa = PBXGroup;
+			children = (
+				52217F70112822C100232F93 /* MbSidArp.cpp */,
+				52217F71112822C100232F93 /* MbSidArp.h */,
+				52217F72112822C100232F93 /* MbSidClock.cpp */,
+				52217F73112822C100232F93 /* MbSidClock.h */,
+				52217F74112822C100232F93 /* MbSidDrum.cpp */,
+				52217F75112822C100232F93 /* MbSidDrum.h */,
+				52217F76112822C100232F93 /* MbSidEnv.cpp */,
+				52217F77112822C100232F93 /* MbSidEnv.h */,
+				52217F78112822C100232F93 /* MbSidEnvLead.cpp */,
+				52217F79112822C100232F93 /* MbSidEnvLead.h */,
+				52217F7A112822C100232F93 /* MbSidFilter.cpp */,
+				52217F7B112822C100232F93 /* MbSidFilter.h */,
+				52217F7C112822C100232F93 /* MbSidLfo.cpp */,
+				52217F7D112822C100232F93 /* MbSidLfo.h */,
+				52217F7E112822C100232F93 /* MbSidMidiVoice.cpp */,
+				52217F7F112822C100232F93 /* MbSidMidiVoice.h */,
+				52217F80112822C100232F93 /* MbSidMod.cpp */,
+				52217F81112822C100232F93 /* MbSidMod.h */,
+				52217F82112822C100232F93 /* MbSidRandomGen.cpp */,
+				52217F83112822C100232F93 /* MbSidRandomGen.h */,
+				52217F84112822C100232F93 /* MbSidSeq.cpp */,
+				52217F85112822C100232F93 /* MbSidSeq.h */,
+				52217F86112822C100232F93 /* MbSidSeqBassline.cpp */,
+				52217F87112822C100232F93 /* MbSidSeqBassline.h */,
+				52217F88112822C100232F93 /* MbSidSeqDrum.cpp */,
+				52217F89112822C100232F93 /* MbSidSeqDrum.h */,
+				52217F8A112822C100232F93 /* MbSidVoice.cpp */,
+				52217F8B112822C100232F93 /* MbSidVoice.h */,
+				52217F8C112822C100232F93 /* MbSidVoiceDrum.cpp */,
+				52217F8D112822C100232F93 /* MbSidVoiceDrum.h */,
+				52217F8E112822C100232F93 /* MbSidVoiceQueue.cpp */,
+				52217F8F112822C100232F93 /* MbSidVoiceQueue.h */,
+				52217F90112822C100232F93 /* MbSidWt.cpp */,
+				52217F91112822C100232F93 /* MbSidWt.h */,
+				52217F92112822C100232F93 /* MbSidWtDrum.cpp */,
+				52217F93112822C100232F93 /* MbSidWtDrum.h */,
+			);
+			name = CoreComponents;
+			sourceTree = "<group>";
+		};
+		52217FA6112822CA00232F93 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				52217FBA1128234C00232F93 /* sid.c */,
+				52217FBB1128234C00232F93 /* sid.h */,
+				52217FB71128233E00232F93 /* notestack.c */,
+				52217FB81128233E00232F93 /* notestack.h */,
+				52217FB41128232F00232F93 /* jsw_rand.c */,
+				52217FB51128232F00232F93 /* jsw_rand.h */,
+				52217FB11128231200232F93 /* aout.c */,
+				52217FB21128231200232F93 /* aout.h */,
+				52217FAF1128230100232F93 /* mios32_lcd.c */,
+				52217FA7112822E500232F93 /* app_lcd.cpp */,
+				52217FA8112822E500232F93 /* app_lcd.h */,
+				52217FAA112822E500232F93 /* CLCDView.cpp */,
+				52217FAB112822E500232F93 /* CLCDView.h */,
+			);
+			name = Modules;
+			sourceTree = "<group>";
+		};
+		52217FBE1128235F00232F93 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				52217FE41128239000232F93 /* tasks.h */,
+				52217FC21128238300232F93 /* MbSid.cpp */,
+				52217FC31128238300232F93 /* MbSid.h */,
+				52217FC41128238300232F93 /* MbSidAsid.cpp */,
+				52217FC51128238300232F93 /* MbSidAsid.h */,
+				52217FC61128238300232F93 /* MbSidEnvironment.cpp */,
+				52217FC71128238300232F93 /* MbSidEnvironment.h */,
+				52217FC81128238300232F93 /* MbSidPatch.cpp */,
+				52217FC91128238300232F93 /* MbSidPatch.h */,
+				52217FCA1128238300232F93 /* MbSidSe.cpp */,
+				52217FCB1128238300232F93 /* MbSidSe.h */,
+				52217FCC1128238300232F93 /* MbSidSeBassline.cpp */,
+				52217FCD1128238300232F93 /* MbSidSeBassline.h */,
+				52217FCE1128238300232F93 /* MbSidSeDrum.cpp */,
+				52217FCF1128238300232F93 /* MbSidSeDrum.h */,
+				52217FD01128238300232F93 /* MbSidSeLead.cpp */,
+				52217FD11128238300232F93 /* MbSidSeLead.h */,
+				52217FD21128238300232F93 /* MbSidSeMulti.cpp */,
+				52217FD31128238300232F93 /* MbSidSeMulti.h */,
+				52217FD41128238300232F93 /* MbSidStructs.h */,
+				52217FD51128238300232F93 /* MbSidSysEx.cpp */,
+				52217FD61128238300232F93 /* MbSidSysEx.h */,
+				52217FD71128238300232F93 /* MbSidTables.cpp */,
+				52217FD81128238300232F93 /* MbSidTables.h */,
+				52217FBF1128236D00232F93 /* app.cpp */,
+				52217FC01128236D00232F93 /* app.h */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		52217FE51128239800232F93 /* MIOS32Headers */ = {
+			isa = PBXGroup;
+			children = (
+				52217FE6112823AD00232F93 /* mios32_ain.h */,
+				52217FE7112823AD00232F93 /* mios32_board.h */,
+				52217FE8112823AD00232F93 /* mios32_com.h */,
+				52217FE9112823AD00232F93 /* mios32_datatypes.h */,
+				52217FEA112823AD00232F93 /* mios32_delay.h */,
+				52217FEB112823AD00232F93 /* mios32_din.h */,
+				52217FEC112823AD00232F93 /* mios32_dout.h */,
+				52217FED112823AD00232F93 /* mios32_enc.h */,
+				52217FEE112823AD00232F93 /* mios32_enc28j60_regs.h */,
+				52217FEF112823AD00232F93 /* mios32_enc28j60.h */,
+				52217FF0112823AD00232F93 /* mios32_i2s.h */,
+				52217FF1112823AD00232F93 /* mios32_iic_bs.h */,
+				52217FF2112823AD00232F93 /* mios32_iic_midi.h */,
+				52217FF3112823AD00232F93 /* mios32_iic.h */,
+				52217FF4112823AD00232F93 /* mios32_irq.h */,
+				52217FF5112823AD00232F93 /* mios32_lcd.h */,
+				52217FF6112823AD00232F93 /* mios32_mf.h */,
+				52217FF7112823AD00232F93 /* mios32_midi.h */,
+				52217FF8112823AD00232F93 /* mios32_osc.h */,
+				52217FF9112823AD00232F93 /* mios32_sdcard.h */,
+				52217FFA112823AD00232F93 /* mios32_spi.h */,
+				52217FFB112823AD00232F93 /* mios32_srio.h */,
+				52217FFC112823AD00232F93 /* mios32_stopwatch.h */,
+				52217FFD112823AD00232F93 /* mios32_sys.h */,
+				52217FFE112823AD00232F93 /* mios32_timer.h */,
+				52217FFF112823AD00232F93 /* mios32_uart_midi.h */,
+				52218000112823AE00232F93 /* mios32_uart.h */,
+				52218001112823AE00232F93 /* mios32_usb_com.h */,
+				52218002112823AE00232F93 /* mios32_usb_midi.h */,
+				52218003112823AE00232F93 /* mios32_usb.h */,
+				52218004112823AE00232F93 /* mios32.h */,
+			);
+			name = MIOS32Headers;
+			sourceTree = "<group>";
+		};
+		52218005112823B700232F93 /* ReSID */ = {
+			isa = PBXGroup;
+			children = (
+				5221800F112823FB00232F93 /* pot.cc */,
+				52218010112823FB00232F93 /* pot.h */,
+				52218011112823FB00232F93 /* resid.cc */,
+				52218012112823FB00232F93 /* resid.h */,
+				52218013112823FB00232F93 /* siddefs.h */,
+				52218014112823FB00232F93 /* spline.h */,
+				52218015112823FB00232F93 /* version.cc */,
+				52218016112823FB00232F93 /* voice.cc */,
+				52218017112823FB00232F93 /* voice.h */,
+				52218018112823FB00232F93 /* wave.cc */,
+				52218019112823FB00232F93 /* wave.h */,
+				5221801A112823FB00232F93 /* wave6581__ST.cc */,
+				5221801B112823FB00232F93 /* wave6581__ST.dat */,
+				5221801C112823FB00232F93 /* wave6581_P_T.cc */,
+				5221801D112823FB00232F93 /* wave6581_P_T.dat */,
+				5221801E112823FB00232F93 /* wave6581_PS_.cc */,
+				5221801F112823FB00232F93 /* wave6581_PS_.dat */,
+				52218020112823FB00232F93 /* wave6581_PST.cc */,
+				52218021112823FB00232F93 /* wave6581_PST.dat */,
+				52218022112823FB00232F93 /* wave8580__ST.cc */,
+				52218023112823FB00232F93 /* wave8580__ST.dat */,
+				52218024112823FB00232F93 /* wave8580_P_T.cc */,
+				52218025112823FB00232F93 /* wave8580_P_T.dat */,
+				52218026112823FB00232F93 /* wave8580_PS_.cc */,
+				52218027112823FB00232F93 /* wave8580_PS_.dat */,
+				52218028112823FB00232F93 /* wave8580_PST.cc */,
+				52218029112823FB00232F93 /* wave8580_PST.dat */,
+				52218006112823CF00232F93 /* envelope.cc */,
+				52218007112823CF00232F93 /* envelope.h */,
+				52218008112823CF00232F93 /* extfilt.cc */,
+				52218009112823CF00232F93 /* extfilt.h */,
+				5221800A112823CF00232F93 /* filter.cc */,
+				5221800B112823CF00232F93 /* filter.h */,
+			);
+			name = ReSID;
+			sourceTree = "<group>";
+		};
+		5221803F1128240700232F93 /* MBSID_Emulation */ = {
+			isa = PBXGroup;
+			children = (
+				522180401128243000232F93 /* AudioProcessing.cpp */,
+				522180411128243000232F93 /* AudioProcessing.h */,
+				522180421128243000232F93 /* EditorComponent.cpp */,
+				522180431128243000232F93 /* EditorComponent.h */,
+				522180441128243000232F93 /* JucePluginCharacteristics.h */,
+				522180451128243000232F93 /* MidiProcessing.cpp */,
+				522180461128243000232F93 /* MidiProcessing.h */,
+				522180471128243000232F93 /* mios32_config.h */,
+				522180481128243000232F93 /* mios32_wrapper_code.c */,
+				522180491128243000232F93 /* tasks.c */,
+			);
+			name = MBSID_Emulation;
+			sourceTree = "<group>";
+		};
+		5221804F1128243B00232F93 /* Wrapper */ = {
+			isa = PBXGroup;
+			children = (
+				522180521128245800232F93 /* juce_AudioFilterStreamer.cpp */,
+				522180531128245800232F93 /* juce_AudioFilterStreamer.h */,
+				522180541128245800232F93 /* juce_StandaloneFilterWindow.cpp */,
+				522180551128245800232F93 /* juce_StandaloneFilterWindow.h */,
+				522180561128245800232F93 /* Main.cpp */,
+				522180501128244A00232F93 /* juce_IncludeCharacteristics.h */,
+				522180511128244A00232F93 /* juce_PluginHeaders.h */,
+			);
+			name = Wrapper;
+			sourceTree = "<group>";
+		};
+		841084830DB3749300AB8583 /* Build settings */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "Build settings";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D0C4E890486CD37000505A6 /* MIOS_Studio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIOS_Studio" */;
+			buildPhases = (
+				8D0C4E8C0486CD37000505A6 /* Resources */,
+				8D0C4E8F0486CD37000505A6 /* Sources */,
+				8D0C4E910486CD37000505A6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MIOS_Studio;
+			productInstallPath = "$(HOME)/Applications";
+			productName = juce_application;
+			productReference = 8D0C4E970486CD37000505A6 /* MIOS_Studio.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		20286C28FDCF999611CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIDIboxSID_Standalone" */;
+			compatibilityVersion = "Xcode 2.4";
+			hasScannedForEncodings = 1;
+			mainGroup = 20286C29FDCF999611CA2CEA /* juce_application */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D0C4E890486CD37000505A6 /* MIOS_Studio */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D0C4E8C0486CD37000505A6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */,
+				52218030112823FB00232F93 /* wave6581__ST.dat in Resources */,
+				52218032112823FB00232F93 /* wave6581_P_T.dat in Resources */,
+				52218034112823FB00232F93 /* wave6581_PS_.dat in Resources */,
+				52218036112823FB00232F93 /* wave6581_PST.dat in Resources */,
+				52218038112823FB00232F93 /* wave8580__ST.dat in Resources */,
+				5221803A112823FB00232F93 /* wave8580_P_T.dat in Resources */,
+				5221803C112823FB00232F93 /* wave8580_PS_.dat in Resources */,
+				5221803E112823FB00232F93 /* wave8580_PST.dat in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D0C4E8F0486CD37000505A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */,
+				52217F94112822C100232F93 /* MbSidArp.cpp in Sources */,
+				52217F95112822C100232F93 /* MbSidClock.cpp in Sources */,
+				52217F96112822C100232F93 /* MbSidDrum.cpp in Sources */,
+				52217F97112822C100232F93 /* MbSidEnv.cpp in Sources */,
+				52217F98112822C100232F93 /* MbSidEnvLead.cpp in Sources */,
+				52217F99112822C100232F93 /* MbSidFilter.cpp in Sources */,
+				52217F9A112822C100232F93 /* MbSidLfo.cpp in Sources */,
+				52217F9B112822C100232F93 /* MbSidMidiVoice.cpp in Sources */,
+				52217F9C112822C100232F93 /* MbSidMod.cpp in Sources */,
+				52217F9D112822C100232F93 /* MbSidRandomGen.cpp in Sources */,
+				52217F9E112822C100232F93 /* MbSidSeq.cpp in Sources */,
+				52217F9F112822C100232F93 /* MbSidSeqBassline.cpp in Sources */,
+				52217FA0112822C100232F93 /* MbSidSeqDrum.cpp in Sources */,
+				52217FA1112822C100232F93 /* MbSidVoice.cpp in Sources */,
+				52217FA2112822C100232F93 /* MbSidVoiceDrum.cpp in Sources */,
+				52217FA3112822C100232F93 /* MbSidVoiceQueue.cpp in Sources */,
+				52217FA4112822C100232F93 /* MbSidWt.cpp in Sources */,
+				52217FA5112822C100232F93 /* MbSidWtDrum.cpp in Sources */,
+				52217FAC112822E500232F93 /* app_lcd.cpp in Sources */,
+				52217FAE112822E500232F93 /* CLCDView.cpp in Sources */,
+				52217FB01128230100232F93 /* mios32_lcd.c in Sources */,
+				52217FB31128231200232F93 /* aout.c in Sources */,
+				52217FB61128232F00232F93 /* jsw_rand.c in Sources */,
+				52217FB91128233E00232F93 /* notestack.c in Sources */,
+				52217FBC1128234C00232F93 /* sid.c in Sources */,
+				52217FC11128236D00232F93 /* app.cpp in Sources */,
+				52217FD91128238300232F93 /* MbSid.cpp in Sources */,
+				52217FDA1128238300232F93 /* MbSidAsid.cpp in Sources */,
+				52217FDB1128238300232F93 /* MbSidEnvironment.cpp in Sources */,
+				52217FDC1128238300232F93 /* MbSidPatch.cpp in Sources */,
+				52217FDD1128238300232F93 /* MbSidSe.cpp in Sources */,
+				52217FDE1128238300232F93 /* MbSidSeBassline.cpp in Sources */,
+				52217FDF1128238300232F93 /* MbSidSeDrum.cpp in Sources */,
+				52217FE01128238300232F93 /* MbSidSeLead.cpp in Sources */,
+				52217FE11128238300232F93 /* MbSidSeMulti.cpp in Sources */,
+				52217FE21128238300232F93 /* MbSidSysEx.cpp in Sources */,
+				52217FE31128238300232F93 /* MbSidTables.cpp in Sources */,
+				5221800C112823CF00232F93 /* envelope.cc in Sources */,
+				5221800D112823CF00232F93 /* extfilt.cc in Sources */,
+				5221800E112823CF00232F93 /* filter.cc in Sources */,
+				5221802A112823FB00232F93 /* pot.cc in Sources */,
+				5221802B112823FB00232F93 /* resid.cc in Sources */,
+				5221802C112823FB00232F93 /* version.cc in Sources */,
+				5221802D112823FB00232F93 /* voice.cc in Sources */,
+				5221802E112823FB00232F93 /* wave.cc in Sources */,
+				5221802F112823FB00232F93 /* wave6581__ST.cc in Sources */,
+				52218031112823FB00232F93 /* wave6581_P_T.cc in Sources */,
+				52218033112823FB00232F93 /* wave6581_PS_.cc in Sources */,
+				52218035112823FB00232F93 /* wave6581_PST.cc in Sources */,
+				52218037112823FB00232F93 /* wave8580__ST.cc in Sources */,
+				52218039112823FB00232F93 /* wave8580_P_T.cc in Sources */,
+				5221803B112823FB00232F93 /* wave8580_PS_.cc in Sources */,
+				5221803D112823FB00232F93 /* wave8580_PST.cc in Sources */,
+				5221804A1128243000232F93 /* AudioProcessing.cpp in Sources */,
+				5221804B1128243000232F93 /* EditorComponent.cpp in Sources */,
+				5221804C1128243000232F93 /* MidiProcessing.cpp in Sources */,
+				5221804D1128243000232F93 /* mios32_wrapper_code.c in Sources */,
+				5221804E1128243000232F93 /* tasks.c in Sources */,
+				522180571128245800232F93 /* juce_AudioFilterStreamer.cpp in Sources */,
+				522180581128245800232F93 /* juce_StandaloneFilterWindow.cpp in Sources */,
+				522180591128245800232F93 /* Main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0867D6ABFE840B52C02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		84F30CC008FEAA620087E26C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = MIOS_Studio;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		84F30CC108FEAA620087E26C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = MIOS_Studio;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		84F30CC408FEAA620087E26C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"$(GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_1)",
+					"$(GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_2)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_1 = "MIOS32_FAMILY_STR=\\\"EMULATION\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_2 = "MIOS32_BOARD_STR=\\\"MACOS\\\"";
+			};
+			name = Debug;
+		};
+		84F30CC508FEAA620087E26C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"$(GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_1)",
+					"$(GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_2)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_1 = "MIOS32_FAMILY_STR=\\\"EMULATION\\\"";
+				GCC_PREPROCESSOR_DEFINITIONS_QUOTED_FOR_PROJECT_2 = "MIOS32_BOARD_STR=\\\"MACOS\\\"";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIOS_Studio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84F30CC008FEAA620087E26C /* Debug */,
+				84F30CC108FEAA620087E26C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIDIboxSID_Standalone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84F30CC408FEAA620087E26C /* Debug */,
+				84F30CC508FEAA620087E26C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 20286C28FDCF999611CA2CEA /* Project object */;
+}

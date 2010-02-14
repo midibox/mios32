@@ -49,10 +49,10 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 	///////////////////////////////////////////////////////////////////////////
 	addAndMakeVisible (midiInputSelector = new ComboBox (String::empty));
 	midiInputSelector->addListener (this);
+	midiInputSelector->clear();
 
 	midiInputLabel = new Label ("lm", TRANS("SysEx Input:"));
 	midiInputLabel->attachToComponent (midiInputSelector, true);
-	midiInputSelector->clear();
 	
 	const StringArray midiIns (MidiInput::getDevices());
 	
@@ -80,10 +80,10 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 	///////////////////////////////////////////////////////////////////////////
 	addAndMakeVisible (midiOutputSelector = new ComboBox (String::empty));
 	midiOutputSelector->addListener (this);
+	midiOutputSelector->clear();
 	
 	midiOutputLabel = new Label ("lm", TRANS("SysEx Output:"));
 	midiOutputLabel->attachToComponent (midiOutputSelector, true);
-	midiOutputSelector->clear();
 	
 	const StringArray midiOuts (MidiOutput::getDevices());
 	

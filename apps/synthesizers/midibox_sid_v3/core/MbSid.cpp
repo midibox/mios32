@@ -76,7 +76,6 @@ bool MbSid::tick(const u8 &updateSpeedFactor)
 /////////////////////////////////////////////////////////////////////////////
 void MbSid::midiReceive(mios32_midi_package_t midi_package)
 {
-#ifndef MIOS32_FAMILY_EMULATION
     switch( midi_package.event ) {
     case NoteOff:
         midiReceiveNote(midi_package.chn, midi_package.note, 0x00);
@@ -103,41 +102,6 @@ void MbSid::midiReceive(mios32_midi_package_t midi_package)
         midiReceiveAftertouch(midi_package.chn, midi_package.evnt1);
         break;
   }
-#else
-	MIOS32_LCD_CursorSet(19,1);
-    switch( midi_package.event ) {
-    case NoteOff:
-        midiReceiveNote(midi_package.chn, midi_package.note, 0x00);
-		MIOS32_LCD_PrintString(" ");
-        break;
-
-    case NoteOn:
-        midiReceiveNote(midi_package.chn, midi_package.note, midi_package.velocity);
-		if (midi_package.velocity==0)
-			MIOS32_LCD_PrintString(" ");
-		else
-			MIOS32_LCD_PrintString("*");
-        break;
-
-    case PolyPressure:
-        midiReceiveAftertouch(midi_package.chn, midi_package.evnt2);
-        break;
-
-    case CC:
-        midiReceiveCC(midi_package.chn, midi_package.cc_number, midi_package.value);
-        break;
-
-    case PitchBend: {
-        u16 pitchbend_value_14bit = (midi_package.evnt2 << 7) | (midi_package.evnt1 & 0x7f);
-        midiReceivePitchBend(midi_package.chn, pitchbend_value_14bit);
-    } break;
-
-    case Aftertouch:
-        midiReceiveAftertouch(midi_package.chn, midi_package.evnt1);
-        break;
-  }
-
-#endif
 }
 
 
@@ -264,15 +228,6 @@ void MbSid::updatePatch(bool forceEngineInit)
 
     // enable interrupts again
     MIOS32_IRQ_Enable();
-
-#ifdef MIOS32_FAMILY_EMULATION
-	MIOS32_LCD_CursorSet(0,0);
-
-    char patchName[17];
-    mbSidPatch.nameGet(patchName);
-	MIOS32_LCD_PrintFormattedString("P:%s", patchName	);
-
-#endif
 }
 
 
