@@ -16,6 +16,7 @@
 #define _MIDI_PROCESSING_H
 
 #include "MbSidEnvironment.h"
+#include <queue>
 
 class MidiProcessing : public MidiKeyboardStateListener, public MidiInputCallback
 {
@@ -39,6 +40,7 @@ public:
 
 
     // for MidiInputCallback
+    void tick(void);
     void processNextMidiEvent (const MidiMessage& message);
     void handleIncomingMidiMessage (MidiInput* source,
                                     const MidiMessage& message);
@@ -46,6 +48,10 @@ public:
 
     // bridge to MIOS32
     void sendMidiEvent(unsigned char evnt0, unsigned char evnt1, unsigned char evnt2);
+
+    // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
+    // therefore I'm using a std::queue instead
+    std::queue<MidiMessage> midiInQueue;
 
     // stores the running status of incoming events
     unsigned char runningStatus;

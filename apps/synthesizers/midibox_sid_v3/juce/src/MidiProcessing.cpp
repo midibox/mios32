@@ -46,7 +46,19 @@ MidiProcessing::~MidiProcessing()
 // inherited from MidiInputCallback
 void MidiProcessing::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
 {
-    processNextMidiEvent(message);
+    // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
+    // therefore I'm using a std::queue instead
+    
+    midiInQueue.push(message);
+}
+
+// should be periodically called to poll for new MIDI events
+void MidiProcessing::tick(void)
+{
+    while( !midiInQueue.empty() ) {
+        processNextMidiEvent(midiInQueue.front());
+        midiInQueue.pop();
+    }
 }
 
 // inherited from MidiInputCallback

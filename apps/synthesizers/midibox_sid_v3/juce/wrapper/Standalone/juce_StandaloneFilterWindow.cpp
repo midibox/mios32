@@ -1,33 +1,15 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
-  ==============================================================================
-
-   This file is part of the JUCE library - "Jules' Utility Class Extensions"
-   Copyright 2004-7 by Raw Material Software ltd.
-
-  ------------------------------------------------------------------------------
-
-   JUCE can be redistributed and/or modified under the terms of the
-   GNU General Public License, as published by the Free Software Foundation;
-   either version 2 of the License, or (at your option) any later version.
-
-   JUCE is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with JUCE; if not, visit www.gnu.org/licenses or write to the
-   Free Software Foundation, Inc., 59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
-
-  ------------------------------------------------------------------------------
-
-   If you'd like to release a closed-source product which uses JUCE, commercial
-   licenses are also available: visit www.rawmaterialsoftware.com/juce for
-   more information.
-
-  ==============================================================================
-*/
+ * MIDIbox SID Standalone Main Window
+ *
+ * ==========================================================================
+ *
+ *  Copyright (C) 2010 Thorsten Klose (tk@midibox.org)
+ *  Licensed for personal non-commercial use only.
+ *  All other rights reserved.
+ * 
+ * ==========================================================================
+ */
 
 #include "juce_StandaloneFilterWindow.h"
 #include "../juce_PluginHeaders.h"
@@ -49,6 +31,13 @@ StandaloneFilterWindow::StandaloneFilterWindow (const String& title,
       deviceManager (0),
       optionsButton (0)
 {
+    // initialise our settings file..
+    ApplicationProperties::getInstance()->setStorageParameters(T("MIDIbox_SID_Standalone"),
+                                                               T(".xml"),
+                                                               String::empty,
+                                                               1000,
+                                                               PropertiesFile::storeAsXML);
+
     setTitleBarButtonsRequired (DocumentWindow::minimiseButton | DocumentWindow::closeButton, false);
 
     PropertySet* const globalSettings = getGlobalSettings();
@@ -99,9 +88,12 @@ StandaloneFilterWindow::StandaloneFilterWindow (const String& title,
                 setBoundsConstrained (x, y, getWidth(), getHeight());
             else
                 centreWithSize (getWidth(), getHeight());
+
         }
     }
     JUCE_CATCH_ALL
+
+        setVisible(true);
 
     if (deviceManager == 0)
     {

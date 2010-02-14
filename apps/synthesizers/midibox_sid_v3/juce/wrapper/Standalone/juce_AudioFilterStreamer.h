@@ -50,7 +50,6 @@
     AudioFilterStreamingDeviceManager class...
 */
 class AudioFilterStreamer   : public AudioIODeviceCallback,
-                              public MidiInputCallback,
                               public AudioPlayHead
 {
 public:
@@ -69,8 +68,6 @@ public:
     void audioDeviceAboutToStart (AudioIODevice* device);
     void audioDeviceStopped();
 
-    void handleIncomingMidiMessage (MidiInput* source, const MidiMessage& message);
-
     bool getCurrentPosition (AudioPlayHead::CurrentPositionInfo& info);
 
     juce_UseDebuggingNewOperator
@@ -80,7 +77,6 @@ private:
     AudioProcessor& filter;
     bool isPlaying;
     double sampleRate;
-    MidiMessageCollector midiCollector;
 
     float* outChans [128];
     float* inChans [128];
