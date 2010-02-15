@@ -70,8 +70,7 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, 
 
 MidiSlider::~MidiSlider()
 {
-    deleteAndZero(slider);
-    deleteAndZero(label);
+    deleteAllChildren();
 }
 
 //==============================================================================

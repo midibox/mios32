@@ -91,13 +91,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
 UploadWindow::~UploadWindow()
 {
-    deleteAndZero(fileChooser);
-    deleteAndZero(queryButton);
-    deleteAndZero(deviceIdSlider);
-    deleteAndZero(uploadStatus);
-    deleteAndZero(uploadQuery);
-    deleteAndZero(startButton);
-    deleteAndZero(stopButton);
+    deleteAllChildren();
 }
 
 //==============================================================================
