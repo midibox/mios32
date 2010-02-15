@@ -640,7 +640,7 @@ void UploadHandlerThread::run()
         sendMios32RebootCore();
 
         // wait for wakeup from handleIncomingMidiMessage() - timeout after 1 second
-        for(int i=0; mios32QueryRequest && i<10; ++i)
+        for(int i=0; mios32RebootRequest && i<10; ++i)
             wait(10);
 
         if( mios32RebootRequest ) {
