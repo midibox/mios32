@@ -640,7 +640,8 @@ void UploadHandlerThread::run()
         sendMios32RebootCore();
 
         // wait for wakeup from handleIncomingMidiMessage() - timeout after 1 second
-        wait(1000);
+        for(int i=0; mios32QueryRequest && i<10; ++i)
+            wait(10);
 
         if( mios32RebootRequest ) {
             errorStatusMessage = "MIOS32 Bootloader Mode cannot be entered - try again?";
@@ -654,7 +655,9 @@ void UploadHandlerThread::run()
         // wait for wakeup from handleIncomingMidiMessage() - timeout after 5 seconds
         bool blEntered = false;
         for(int i=0; !blEntered && i<50; ++i) { // iterate 50 times for the case that multiple messages are received
-            if( !mios8RebootRequest && detectedMios8UploadRequest )
+            //if( !mios8RebootRequest && detectedMios8UploadRequest )
+            // IMPORTANT: don't wait for mios8RebootRequest getting cleared to cover the case where MIOS isn't installed yet!
+            if( detectedMios8UploadRequest )
                 blEntered = true;
             else
                 wait(100);
