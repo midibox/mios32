@@ -66,8 +66,6 @@ AudioProcessing::AudioProcessing()
     patch = 0;
     bank = 0;
     gain = 1.0f;
-    lastUIWidth = 800;
-    lastUIHeight = 600;
     zeromem (&lastPosInfo, sizeof (lastPosInfo));
     lastPosInfo.timeSigNumerator = 4;
     lastPosInfo.timeSigDenominator = 4;
@@ -399,8 +397,6 @@ void AudioProcessing::getStateInformation (MemoryBlock& destData)
     xmlState.setAttribute (T("gainLevel"), gain);
     xmlState.setAttribute (T("bank"), bank);
     xmlState.setAttribute (T("patch"), patch);
-    xmlState.setAttribute (T("uiWidth"), lastUIWidth);
-    xmlState.setAttribute (T("uiHeight"), lastUIHeight);
     xmlState.setAttribute (T("sysexMidiIn"), lastSysexMidiIn);
     xmlState.setAttribute (T("sysexMidiOut"), lastSysexMidiOut);
   
@@ -426,9 +422,6 @@ void AudioProcessing::setStateInformation (const void* data, int sizeInBytes)
                     bank = (float) xmlState->getDoubleAttribute (T("bank"), bank);
                     patch = (float) xmlState->getDoubleAttribute (T("patch"), patch);
       
-                    lastUIWidth = xmlState->getIntAttribute (T("uiWidth"), lastUIWidth);
-                    lastUIHeight = xmlState->getIntAttribute (T("uiHeight"), lastUIHeight);
-					
 					lastSysexMidiIn = xmlState->getStringAttribute (T("sysexMidiIn"), lastSysexMidiIn);
 					lastSysexMidiOut = xmlState->getStringAttribute (T("sysexMidiOut"), lastSysexMidiOut);
       
