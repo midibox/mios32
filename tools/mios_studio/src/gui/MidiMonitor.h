@@ -31,6 +31,9 @@ public:
     ~MidiMonitor();
 
     //==============================================================================
+    void scanMidiDevices();
+
+    //==============================================================================
     void paint(Graphics& g);
     void resized();
     void comboBoxChanged(ComboBox*);
@@ -49,8 +52,6 @@ protected:
     bool inPort;
 
     //==============================================================================
-    bool gotFirstMessage;
-
     bool filterMidiClock;
     bool filterActiveSense;
     bool filterMiosTerminalMessage;

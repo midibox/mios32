@@ -21,15 +21,9 @@ MiosStudio::MiosStudio()
     , midiOutMonitor(0)
     , miosTerminal(0)
     , midiKeyboard(0)
+    , initialMidiScanCounter(1) // start step-wise MIDI port scan
 {
     uploadHandler = new UploadHandler(this);
-
-    // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
-    if( propertiesFile ) {
-        setMidiInput(propertiesFile->getValue(T("midiIn"), String::empty));
-        setMidiOutput(propertiesFile->getValue(T("midiOut"), String::empty));
-    }
 
     addAndMakeVisible(uploadWindow = new UploadWindow(this));
     addAndMakeVisible(midiInMonitor = new MidiMonitor(this, true));
@@ -61,11 +55,7 @@ MiosStudio::MiosStudio()
     verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
     addAndMakeVisible(verticalDividerBarMonitors);
 
-    audioDeviceManager.addMidiInputCallback(String::empty, this);
     Timer::startTimer(1);
-
-    if( audioDeviceManager.getDefaultMidiOutputName() != String::empty )
-        uploadWindow->queryCore();
 
     setSize (800, 600);
 }
@@ -146,34 +136,57 @@ void MiosStudio::sendMidiMessage(const MidiMessage &message)
 //==============================================================================
 void MiosStudio::timerCallback()
 {
-    // important: only broadcast one message per timer tick to avoid GUI hangups when
-    // a large bulk of data is received
+    // step-wise MIDI port scan after startup
+    if( initialMidiScanCounter ) {
+        switch( initialMidiScanCounter ) {
+        case 1:
+            midiInMonitor->scanMidiDevices();
+            ++initialMidiScanCounter;
+            break;
 
-    if( !midiInQueue.empty() ) {
-        MidiMessage &message = midiInQueue.front();
+        case 2:
+            midiOutMonitor->scanMidiDevices();
+            ++initialMidiScanCounter;
+            break;
 
-        uint8 *data = message.getRawData();
-        if( data[0] >= 0x80 && data[0] < 0xf8 )
-            runningStatus = data[0];
+        case 3:
+            audioDeviceManager.addMidiInputCallback(String::empty, this);
+            if( getMidiOutput() != String::empty )
+                uploadWindow->queryCore();
 
-        // propagate incoming event to MIDI components
-        midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+            initialMidiScanCounter = 0; // stop scan
+            break;
+        }
+    } else {
+        // important: only broadcast one message per timer tick to avoid GUI hangups when
+        // a large bulk of data is received
 
-        // filter runtime events for following components to improve performance
-        if( data[0] < 0xf8 ) {
-            miosTerminal->handleIncomingMidiMessage(message, runningStatus);
-            midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
+        if( !midiInQueue.empty() ) {
+            MidiMessage &message = midiInQueue.front();
+
+            uint8 *data = message.getRawData();
+            if( data[0] >= 0x80 && data[0] < 0xf8 )
+                runningStatus = data[0];
+
+            // propagate incoming event to MIDI components
+            midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+
+            // filter runtime events for following components to improve performance
+            if( data[0] < 0xf8 ) {
+                miosTerminal->handleIncomingMidiMessage(message, runningStatus);
+                midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
+            }
+
+            midiInQueue.pop();
         }
 
-        midiInQueue.pop();
-    }
+        if( !midiOutQueue.empty() ) {
+            MidiMessage &message = midiOutQueue.front();
 
-    if( !midiOutQueue.empty() ) {
-        MidiMessage &message = midiOutQueue.front();
-        
-        midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
+            midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
 
-        midiOutQueue.pop();
+            midiOutQueue.pop();
+        }
     }
 }
 
@@ -188,7 +201,7 @@ void MiosStudio::setMidiInput(const String &port)
     }
 
     // propagate port change
-    if( uploadWindow )
+    if( uploadWindow && port != String::empty )
         uploadWindow->midiPortChanged();
 
     // store setting
@@ -199,13 +212,9 @@ void MiosStudio::setMidiInput(const String &port)
 
 String MiosStudio::getMidiInput(void)
 {
-    const StringArray allMidiIns(MidiInput::getDevices());
-    for (int i = allMidiIns.size(); --i >= 0;) {
-        if( audioDeviceManager.isMidiInputEnabled(allMidiIns[i]) )
-            return allMidiIns[i];
-    }
-
-    return String::empty;
+    // restore setting
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    return propertiesFile ? propertiesFile->getValue(T("midiIn"), String::empty) : String::empty;
 }
 
 void MiosStudio::setMidiOutput(const String &port)
@@ -213,7 +222,7 @@ void MiosStudio::setMidiOutput(const String &port)
     audioDeviceManager.setDefaultMidiOutput(port);
 
     // propagate port change
-    if( uploadWindow )
+    if( uploadWindow && port != String::empty )
         uploadWindow->midiPortChanged();
 
     // store setting
@@ -224,5 +233,7 @@ void MiosStudio::setMidiOutput(const String &port)
 
 String MiosStudio::getMidiOutput(void)
 {
-    return audioDeviceManager.getDefaultMidiOutputName();
+    // restore setting
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    return propertiesFile ? propertiesFile->getValue(T("midiOut"), String::empty) : String::empty;
 }

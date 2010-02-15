@@ -76,6 +76,8 @@ protected:
     uint8 runningStatus;
     std::queue<MidiMessage> midiOutQueue;
 
+    int initialMidiScanCounter;
+
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
     MiosStudio (const MiosStudio&);

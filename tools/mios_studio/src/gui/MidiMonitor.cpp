@@ -20,7 +20,6 @@
 MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
     : miosStudio(_miosStudio)
     , inPort(_inPort)
-    , gotFirstMessage(0)
     , filterMidiClock(1)
     , filterActiveSense(1)
     , filterMiosTerminalMessage(1)
@@ -29,28 +28,14 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
 	addAndMakeVisible(midiPortSelector = new ComboBox(String::empty));
 	midiPortSelector->addListener(this);
 	midiPortSelector->clear();
-    midiPortSelector->addItem (TRANS("<< none >>"), -1);
-    midiPortSelector->addSeparator();
-	
-    const StringArray midiPorts = inPort ? MidiInput::getDevices() : MidiOutput::getDevices();
-    String inPortName = miosStudio->getMidiInput();
-    String outPortName = miosStudio->getMidiOutput();
-
-    int current = -1;
-    for(int i=0; i<midiPorts.size(); ++i) {
-        midiPortSelector->addItem(midiPorts[i], i+1);
-        bool enabled = inPort ? (inPortName == midiPorts[i]) : (outPortName == midiPorts[i]);
-
-        if( enabled )
-            current = i + 1;
-    }
-    midiPortSelector->setSelectedId(current, true);
-
+    midiPortSelector->addItem (TRANS("<< device scan running >>"), -1);
+    midiPortSelector->setSelectedId(-1, true);
+    midiPortSelector->setEnabled(false);
 	midiPortLabel = new Label("", inPort ? T("MIDI IN: ") : T("MIDI OUT: "));
 	midiPortLabel->attachToComponent(midiPortSelector, true);
 
     addAndMakeVisible(monitorLogBox = new LogBox(T("Midi Monitor")));
-    monitorLogBox->addEntry(T("MIDI Monitor ready."));
+    monitorLogBox->addEntry(T("Connecting to MIDI driver - be patient!"));
 
     setSize(400, 200);
 }
@@ -58,6 +43,57 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
 MidiMonitor::~MidiMonitor()
 {
     deleteAndZero(monitorLogBox);
+}
+
+//==============================================================================
+// Should be called after startup once window is visible
+void MidiMonitor::scanMidiDevices()
+{
+    monitorLogBox->clear();
+
+    midiPortSelector->setEnabled(false);
+	midiPortSelector->clear();
+    midiPortSelector->addItem (TRANS("<< none >>"), -1);
+    midiPortSelector->addSeparator();
+
+    // restore settings
+    String selectedPort;
+    StringArray midiPorts;
+    if( inPort ) {
+        monitorLogBox->addEntry(T("Scanning for MIDI Inputs..."));
+        selectedPort = miosStudio->getMidiInput();
+        midiPorts = MidiInput::getDevices();
+    } else {
+        monitorLogBox->addEntry(T("Scanning for MIDI Outputs..."));
+        selectedPort = miosStudio->getMidiOutput();
+        midiPorts = MidiOutput::getDevices();
+    }
+
+    int current = -1;
+    for(int i=0; i<midiPorts.size(); ++i) {
+        midiPortSelector->addItem(midiPorts[i], i+1);
+        bool enabled = midiPorts[i] == selectedPort;
+
+        if( enabled )
+            current = i + 1;
+
+        monitorLogBox->addEntry("[" + String(i+1) + "] " + midiPorts[i] + (enabled ? " (*)" : ""));
+
+        if( inPort )
+            miosStudio->audioDeviceManager.setMidiInputEnabled(midiPorts[i], enabled);
+        else if( enabled )
+            miosStudio->audioDeviceManager.setDefaultMidiOutput(midiPorts[i]);
+    }
+    midiPortSelector->setSelectedId(current, true);
+    midiPortSelector->setEnabled(true);
+
+    if( current == -1 )
+        if( inPort )
+            miosStudio->setMidiInput(String::empty);
+        else
+            miosStudio->setMidiOutput(String::empty);
+
+    monitorLogBox->addEntry(T("MIDI Monitor ready."));
 }
 
 //==============================================================================
@@ -78,10 +114,14 @@ void MidiMonitor::resized()
 void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
     if( comboBoxThatHasChanged == midiPortSelector ) {
+        String portName = midiPortSelector->getText();
+        if( portName == T("<< none >>") )
+            portName = String::empty;
+
         if( inPort )
-            miosStudio->setMidiInput(midiPortSelector->getText());
+            miosStudio->setMidiInput(portName);
         else
-            miosStudio->setMidiOutput(midiPortSelector->getText());
+            miosStudio->setMidiOutput(portName);
     }
 }
 
@@ -99,9 +139,6 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
         !(isActiveSense && filterActiveSense) &&
         !(isMiosTerminalMessage && filterMiosTerminalMessage) ) {
 
-        if( !gotFirstMessage )
-            monitorLogBox->clear();
-
         double timeStamp = message.getTimeStamp() ? message.getTimeStamp() : ((double)Time::getMillisecondCounter() / 1000.0);
         String timeStampStr = (timeStamp > 0)
             ? String::formatted(T("%8.3f"), timeStamp)
@@ -110,6 +147,5 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
         String hexStr = String::toHexString(data, size);
 
         monitorLogBox->addEntry("[" + timeStampStr + "] " + hexStr);
-        gotFirstMessage = 1;
     }
 }
