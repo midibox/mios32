@@ -12,6 +12,10 @@
 #include "app_lcd.h"
 
 
+// for faster startup
+#define DISABLE_MIDI 0
+
+
 //==============================================================================
 EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     : AudioProcessorEditor (ownerSidEmu)
@@ -51,11 +55,12 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 
 	midiInputLabel = new Label ("lm", TRANS("SysEx Input:"));
 	midiInputLabel->attachToComponent (midiInputSelector, true);
-	
-	const StringArray midiIns (MidiInput::getDevices());
-	
+
 	midiInputSelector->addItem (TRANS("<< none >>"), -1);
 	midiInputSelector->addSeparator();
+	
+#if !DISABLE_MIDI
+	const StringArray midiIns (MidiInput::getDevices());
 	
 	int current = -1;
 	for (int i = 0; i < midiIns.size(); ++i) {
@@ -71,6 +76,9 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 
 	// add MIDI collector to audio device manager
 	ownerSidEmu->midiProcessing.audioDeviceManager.addMidiInputCallback(String::empty, &ownerSidEmu->midiProcessing);
+#else
+	midiInputSelector->setSelectedId(-1, true);
+#endif
 
 
 	///////////////////////////////////////////////////////////////////////////
@@ -83,10 +91,11 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 	midiOutputLabel = new Label ("lm", TRANS("SysEx Output:"));
 	midiOutputLabel->attachToComponent (midiOutputSelector, true);
 	
-	const StringArray midiOuts (MidiOutput::getDevices());
-	
 	midiOutputSelector->addItem (TRANS("<< none >>"), -1);
 	midiOutputSelector->addSeparator();
+	
+#if !DISABLE_MIDI
+	const StringArray midiOuts (MidiOutput::getDevices());
 	
 	current = -1;
 	for (int i = 0; i < midiOuts.size(); ++i) {
@@ -97,7 +106,9 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
 		}
 	}
 	midiOutputSelector->setSelectedId (current, true);
-	
+#else
+	midiOutputSelector->setSelectedId(-1, true);
+#endif
 	
 	///////////////////////////////////////////////////////////////////////////
     // create and add the midi keyboard component..
@@ -105,6 +116,7 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
     addAndMakeVisible (midiKeyboard
                        = new MidiKeyboardComponent (ownerSidEmu->keyboardState,
                                                     MidiKeyboardComponent::horizontalKeyboard));
+    midiKeyboard->setLowestVisibleKey(24); // does match better with layout
   
 	///////////////////////////////////////////////////////////////////////////
     // add a label that will display the current timecode and status..
@@ -133,10 +145,9 @@ EditorComponent::EditorComponent (AudioProcessing* const ownerSidEmu)
   
 	
 	///////////////////////////////////////////////////////////////////////////
-    // set our component's initial size to be the last one that was stored in the SidEmu's settings
+    // set component size (always the same, not stored in .xml anymore)
 	///////////////////////////////////////////////////////////////////////////
-    setSize (ownerSidEmu->lastUIWidth,
-             ownerSidEmu->lastUIHeight);
+    setSize(800, 600);
   
     // register ourselves with the SidEmu - it will use its ChangeBroadcaster base
     // class to tell us when something has changed, and this will call our changeListenerCallback()
@@ -199,9 +210,12 @@ void EditorComponent::sliderValueChanged (Slider*)
 void EditorComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
     if( comboBoxThatHasChanged == midiOutputSelector ) {
+#if !DISABLE_MIDI
         getSidEmu()->midiProcessing.audioDeviceManager.setDefaultMidiOutput(midiOutputSelector->getText());
 		getSidEmu()->lastSysexMidiOut = midiOutputSelector->getText();
+#endif
 	} else if( comboBoxThatHasChanged == midiInputSelector ) {
+#if !DISABLE_MIDI
         const StringArray allMidiIns (MidiInput::getDevices());
         for (int i = allMidiIns.size(); --i >= 0;) {
 			bool enabled = allMidiIns[i] == midiInputSelector->getText();
@@ -209,6 +223,7 @@ void EditorComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             if( enabled )
                 getSidEmu()->lastSysexMidiIn = allMidiIns[i];
 		}
+#endif
 	} else {
 		getSidEmu()->setParameterNotifyingHost (2, (float) patchComboBox->getSelectedId()-1);
 	}
@@ -249,7 +264,4 @@ void EditorComponent::updateParametersFromSidEmu()
     */
     gainSlider->setValue(newGain, false);
     patchComboBox->setSelectedId((int)newPatch+1, false);
-  
-    setSize (sidEmu->lastUIWidth,
-             sidEmu->lastUIHeight);
 }
