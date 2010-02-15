@@ -235,6 +235,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\MidiProcessing.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\mios32_config.h"
 					>
 				</File>
@@ -624,32 +628,6 @@
 				Name="mios"
 				>
 				<File
-					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\CLCDView.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\..\..\..\mios32\common\mios32_lcd.c"
 					>
 					<FileConfiguration
@@ -682,6 +660,64 @@
 						/>
 					</FileConfiguration>
 				</File>
+				<Filter
+					Name="lcd"
+					>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\app_lcd.cpp"
+						>
+						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								ObjectFile="$(IntDir)\$(InputName)1.obj"
+								XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+							/>
+						</FileConfiguration>
+						<FileConfiguration
+							Name="Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								ObjectFile="$(IntDir)\$(InputName)1.obj"
+								XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+							/>
+						</FileConfiguration>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\app_lcd\juce\CLCDView.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_big.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_knob_icons.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_medium.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_meter_icons_h.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_meter_icons_v.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_normal.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\..\..\..\modules\glcd_font\glcd_font_small.c"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
