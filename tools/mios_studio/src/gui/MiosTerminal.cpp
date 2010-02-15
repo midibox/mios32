@@ -23,7 +23,7 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
     , gotFirstMessage(0)
 {
     addAndMakeVisible(terminalLogBox = new LogBox(T("MIOS Terminal")));
-    terminalLogBox->addEntry(T("MIOS Terminal ready."));
+    terminalLogBox->addEntry(Colours::grey, T("MIOS Terminal ready."));
 
     addAndMakeVisible(inputLine = new TextEditor(String::empty));
     inputLine->setMultiLine(false);
@@ -88,7 +88,7 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 #endif
-        terminalLogBox->addEntry("[" + timeStampStr + "] " + command);
+        terminalLogBox->addEntry(Colours::grey, "[" + timeStampStr + "] " + command);
     }
 }
 
@@ -139,6 +139,6 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        terminalLogBox->addEntry("[" + timeStampStr + "] " + str);
+        terminalLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + str);
     }
 }

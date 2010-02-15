@@ -17,6 +17,7 @@
 
 #include "../includes.h"
 
+#include <utility>
 
 class LogBox
     : public ListBox
@@ -37,7 +38,7 @@ public:
 
     //==============================================================================
     void clear(void);
-    void addEntry(String text);
+    void addEntry(const Colour &colour, const String &textLine);
 
     //==============================================================================
     void copy(void);
@@ -53,7 +54,7 @@ public:
 protected:
     Font logEntryFont;
 
-    Array<String> logEntries;
+    Array<std::pair<Colour, String> > logEntries;
 
     int maxRowWidth;
 

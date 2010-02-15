@@ -46,18 +46,20 @@ void LogBox::paintListBoxItem(int rowNumber,
                               int width, int height,
                               bool rowIsSelected)
 {
+    std::pair<Colour, String> p = logEntries[rowNumber];
+
     int fontWidth = 6; // DIRTY - how to find out the real width without generating the complete graphic?
-    int rowWidth = 30 + fontWidth * logEntries[rowNumber].length();
+    int rowWidth = 30 + fontWidth * p.second.length();
     if( rowWidth > maxRowWidth )
         setMinimumContentWidth(maxRowWidth = rowWidth);
 
     if( rowIsSelected )
         g.fillAll(Colours::lightblue);
 
-    g.setColour(Colours::black);
     g.setFont(logEntryFont);
 
-    g.drawText(logEntries[rowNumber],
+    g.setColour(p.first);
+    g.drawText(p.second,
                5, 0, width, height,
                Justification::centredLeft, true);
 }
@@ -90,9 +92,12 @@ void LogBox::clear(void)
     setVerticalPosition(2.0); // has to be done after updateContent()!
 }
 
-void LogBox::addEntry(String textLine)
+void LogBox::addEntry(const Colour &colour, const String &textLine)
 {
-    logEntries.add(textLine);
+    std::pair<Colour, String> p;
+    p.first = colour;
+    p.second = textLine;
+    logEntries.add(p);
 
     updateContent();
     setVerticalPosition(2.0); // has to be done after updateContent()!
@@ -106,6 +111,8 @@ void LogBox::copy(void)
 
     for(int row=0; row<getNumRows(); ++row)
         if( isRowSelected(row) ) {
+            std::pair<Colour, String> p = logEntries[row];
+
 #if JUCE_WIN32
             if( selectedText != String::empty )
                 selectedText += T("\r\n");
@@ -113,7 +120,7 @@ void LogBox::copy(void)
             if( selectedText != String::empty )
                 selectedText += T("\n");
 #endif
-            selectedText += logEntries[row];
+            selectedText += p.second;
         }
 
     if( selectedText != String::empty )

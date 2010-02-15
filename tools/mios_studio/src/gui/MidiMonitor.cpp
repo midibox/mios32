@@ -35,7 +35,7 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
 	midiPortLabel->attachToComponent(midiPortSelector, true);
 
     addAndMakeVisible(monitorLogBox = new LogBox(T("Midi Monitor")));
-    monitorLogBox->addEntry(T("Connecting to MIDI driver - be patient!"));
+    monitorLogBox->addEntry(Colours::red, T("Connecting to MIDI driver - be patient!"));
 
     setSize(400, 200);
 }
@@ -60,11 +60,11 @@ void MidiMonitor::scanMidiDevices()
     String selectedPort;
     StringArray midiPorts;
     if( inPort ) {
-        monitorLogBox->addEntry(T("Scanning for MIDI Inputs..."));
+        monitorLogBox->addEntry(Colours::red, T("Scanning for MIDI Inputs..."));
         selectedPort = miosStudio->getMidiInput();
         midiPorts = MidiInput::getDevices();
     } else {
-        monitorLogBox->addEntry(T("Scanning for MIDI Outputs..."));
+        monitorLogBox->addEntry(Colours::red, T("Scanning for MIDI Outputs..."));
         selectedPort = miosStudio->getMidiOutput();
         midiPorts = MidiOutput::getDevices();
     }
@@ -77,7 +77,7 @@ void MidiMonitor::scanMidiDevices()
         if( enabled )
             current = i + 1;
 
-        monitorLogBox->addEntry("[" + String(i+1) + "] " + midiPorts[i] + (enabled ? " (*)" : ""));
+        monitorLogBox->addEntry(Colours::blue, "[" + String(i+1) + "] " + midiPorts[i] + (enabled ? " (*)" : ""));
 
         if( inPort )
             miosStudio->audioDeviceManager.setMidiInputEnabled(midiPorts[i], enabled);
@@ -93,7 +93,7 @@ void MidiMonitor::scanMidiDevices()
         else
             miosStudio->setMidiOutput(String::empty);
 
-    monitorLogBox->addEntry(T("MIDI Monitor ready."));
+    monitorLogBox->addEntry(Colours::grey, T("MIDI Monitor ready."));
 }
 
 //==============================================================================
@@ -146,6 +146,6 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
 
         String hexStr = String::toHexString(data, size);
 
-        monitorLogBox->addEntry("[" + timeStampStr + "] " + hexStr);
+        monitorLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + hexStr);
     }
 }

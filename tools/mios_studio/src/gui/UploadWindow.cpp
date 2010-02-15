@@ -52,8 +52,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     deviceIdSlider->addListener(this);
 
     addAndMakeVisible(uploadQuery = new LogBox(T("Upload Query")));
-    uploadQuery->addEntry(T("No response from a core yet..."));
-    uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
+    uploadQuery->addEntry(Colours::grey, T("Waiting for first query."));
 
     addAndMakeVisible(uploadStatus = new LogBox(T("Upload Status")));
 
@@ -139,12 +138,12 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
     if( buttonThatWasClicked == startButton ) {
         File inFile = fileChooser->getCurrentFile();
         uploadStatus->clear();
-        uploadStatus->addEntry(T("Reading ") + inFile.getFileName());
+        uploadStatus->addEntry(Colours::black, T("Reading ") + inFile.getFileName());
         uploadStart();
     }
     else if( buttonThatWasClicked == stopButton ) {
         uploadStop();
-        uploadStatus->addEntry(T("Upload has been stopped by user!"));
+        uploadStatus->addEntry(Colours::red, T("Upload has been stopped by user!"));
     }
     else if( buttonThatWasClicked == queryButton ) {
         queryCore();
@@ -165,7 +164,7 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
         File inFile = fileChooser->getCurrentFile();
 
         uploadStatus->clear();
-        uploadStatus->addEntry(T("Reading ") + inFile.getFileName());
+        uploadStatus->addEntry(Colours::black, T("Reading ") + inFile.getFileName());
         MultiTimer::startTimer(TIMER_LOAD_HEXFILE, 1);
         startButton->setEnabled(false); // will be enabled if file is valid
 
@@ -189,8 +188,8 @@ void UploadWindow::midiPortChanged(void)
     deviceIdSlider->setEnabled(true);
 
     uploadQuery->clear();
-    uploadQuery->addEntry(T("No response from a core yet..."));
-    uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
+    uploadQuery->addEntry(Colours::red, T("No response from a core yet..."));
+    uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections!"));
     uploadStatus->clear();
     queryCore();
 }
@@ -200,7 +199,7 @@ void UploadWindow::queryCore(void)
 {
     if( !miosStudio->uploadHandler->startQuery() ) {
         uploadQuery->clear();
-        uploadQuery->addEntry(T("Please try again later - ongoing transactions!"));
+        uploadQuery->addEntry(Colours::red, T("Please try again later - ongoing transactions!"));
     } else {
         uploadQuery->clear();
         queryButton->setEnabled(false);
@@ -219,10 +218,10 @@ void UploadWindow::uploadStart(void)
     queryButton->setEnabled(false);
     deviceIdSlider->setEnabled(false);
 
-    uploadStatus->addEntry(T("Trying to contact the core..."));
+    uploadStatus->addEntry(Colours::grey, T("Trying to contact the core..."));
 
     uploadQuery->clear();
-    uploadQuery->addEntry(T("Upload in progress..."));
+    uploadQuery->addEntry(Colours::black, T("Upload in progress..."));
 
     MultiTimer::startTimer(TIMER_LOAD_HEXFILE_AND_UPLOAD, 1);
 }
@@ -249,14 +248,14 @@ void UploadWindow::timerCallback(const int timerId)
         File inFile = fileChooser->getCurrentFile();
         String statusMessage;
         if( miosStudio->uploadHandler->hexFileLoader.loadFile(inFile, statusMessage) ) {
-            uploadStatus->addEntry(statusMessage);
+            uploadStatus->addEntry(Colours::black, statusMessage);
 
             if( miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size() < 1 ) {
-                uploadStatus->addEntry(T("ERROR: no blocks found"));
+                uploadStatus->addEntry(Colours::red, T("ERROR: no blocks found"));
             } else {
                 // display and check ranges
                 if( !miosStudio->uploadHandler->checkAndDisplayRanges(uploadStatus) ) {
-                    uploadStatus->addEntry(T("ERROR: Range check failed!"));
+                    uploadStatus->addEntry(Colours::red, T("ERROR: Range check failed!"));
                 } else if( timerId == TIMER_LOAD_HEXFILE_AND_UPLOAD ) {
                     // start upload of first block
                     stopButton->setEnabled(true);
@@ -265,12 +264,12 @@ void UploadWindow::timerCallback(const int timerId)
                     miosStudio->uploadHandler->startUpload();
                     MultiTimer::startTimer(TIMER_UPLOAD, 10);
                 } else {
-                    uploadStatus->addEntry(T("Press start button to begin upload."));
+                    uploadStatus->addEntry(Colours::black, T("Press start button to begin upload."));
                     startButton->setEnabled(true);
                 }
             }
         } else {
-            uploadStatus->addEntry(T("ERROR: ") + statusMessage);
+            uploadStatus->addEntry(Colours::red, T("ERROR: ") + statusMessage);
         }
     } else if( timerId == TIMER_UPLOAD ) {
         progress = (double)miosStudio->uploadHandler->currentBlock / (double)miosStudio->uploadHandler->totalBlocks;
@@ -283,24 +282,24 @@ void UploadWindow::timerCallback(const int timerId)
 
             if( errorMessage != String::empty ) {
                 // TODO: word-wrapping required here for multiple lines
-                uploadStatus->addEntry(errorMessage);
+                uploadStatus->addEntry(Colours::red, errorMessage);
                 uploadQuery->clear();
             } else {
                 uint32 totalBlocks = miosStudio->uploadHandler->totalBlocks - miosStudio->uploadHandler->excludedBlocks;
                 float timeUpload = miosStudio->uploadHandler->timeUpload;
                 float transferRateKb = ((totalBlocks * 256) / timeUpload) / 1024;
-                uploadStatus->addEntry(String::formatted(T("Upload of %d bytes completed after %3.2fs (%3.2f kb/s)"),
-                                                         totalBlocks*256,
-                                                         timeUpload,
-                                                         transferRateKb));
+                uploadStatus->addEntry(Colours::black, String::formatted(T("Upload of %d bytes completed after %3.2fs (%3.2f kb/s)"),
+                                                                         totalBlocks*256,
+                                                                         timeUpload,
+                                                                         transferRateKb));
 
                 if( miosStudio->uploadHandler->recoveredErrorsCounter > 0 ) {
-                    uploadStatus->addEntry(String::formatted(T("%d ignorable errors during upload solved (no issue!)"),
-                                                             miosStudio->uploadHandler->recoveredErrorsCounter));
+                    uploadStatus->addEntry(Colours::grey, String::formatted(T("%d ignorable errors during upload solved (no issue!)"),
+                                                                            miosStudio->uploadHandler->recoveredErrorsCounter));
                 }
 
                 uploadQuery->clear();
-                uploadQuery->addEntry(T("Waiting for reboot..."));
+                uploadQuery->addEntry(Colours::grey, T("Waiting for reboot..."));
             }
             uploadStop();
 
@@ -322,29 +321,29 @@ void UploadWindow::timerCallback(const int timerId)
 
             if( errorMessage != String::empty ) {
                 uploadQuery->clear();
-                uploadQuery->addEntry(errorMessage);
-                uploadQuery->addEntry(T("Check MIDI IN/OUT connections!"));
+                uploadQuery->addEntry(Colours::red, errorMessage);
+                uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections!"));
             } else {
                 String str;
                 uploadQuery->clear();
                 if( !(str=miosStudio->uploadHandler->coreOperatingSystem).isEmpty() )
-                    uploadQuery->addEntry("Operating Systen: " + str);
+                    uploadQuery->addEntry(Colours::black, "Operating Systen: " + str);
                 if( !(str=miosStudio->uploadHandler->coreBoard).isEmpty() )
-                    uploadQuery->addEntry("Board: " + str);
+                    uploadQuery->addEntry(Colours::black, "Board: " + str);
                 if( !(str=miosStudio->uploadHandler->coreFamily).isEmpty() )
-                    uploadQuery->addEntry("Core Family: " + str);
+                    uploadQuery->addEntry(Colours::black, "Core Family: " + str);
                 if( !(str=miosStudio->uploadHandler->coreChipId).isEmpty() )
-                    uploadQuery->addEntry("Chip ID: 0x" + str);
+                    uploadQuery->addEntry(Colours::black, "Chip ID: 0x" + str);
                 if( !(str=miosStudio->uploadHandler->coreSerialNumber).isEmpty() )
-                    uploadQuery->addEntry("Serial: #" + str);
+                    uploadQuery->addEntry(Colours::black, "Serial: #" + str);
                 if( !(str=miosStudio->uploadHandler->coreFlashSize).isEmpty() )
-                    uploadQuery->addEntry("Flash Memory Size: " + str + " bytes");
+                    uploadQuery->addEntry(Colours::black, "Flash Memory Size: " + str + " bytes");
                 if( !(str=miosStudio->uploadHandler->coreRamSize).isEmpty() )
-                    uploadQuery->addEntry("RAM Size: " + str + " bytes");
+                    uploadQuery->addEntry(Colours::black, "RAM Size: " + str + " bytes");
                 if( !(str=miosStudio->uploadHandler->coreAppHeader1).isEmpty() )
-                    uploadQuery->addEntry(str);
+                    uploadQuery->addEntry(Colours::black, str);
                 if( !(str=miosStudio->uploadHandler->coreAppHeader2).isEmpty() )
-                    uploadQuery->addEntry(str);
+                    uploadQuery->addEntry(Colours::black, str);
             }
         }
     }
