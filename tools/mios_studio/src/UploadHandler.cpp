@@ -164,10 +164,10 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
         endAddress <= hexFileLoader.HEX_RANGE_MIOS8_FLASH_END ) {
 
         if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_OS_END ) {
-            logbox->addEntry(String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - MIOS8 area"),
-                                               hexFileLoader.HEX_RANGE_MIOS8_OS_START,
-                                               hexFileLoader.HEX_RANGE_MIOS8_OS_END,
-                                               hexFileLoader.HEX_RANGE_MIOS8_OS_END-hexFileLoader.HEX_RANGE_MIOS8_OS_START+1));
+            logbox->addEntry(Colours::black, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - MIOS8 area"),
+                                                               hexFileLoader.HEX_RANGE_MIOS8_OS_START,
+                                                               hexFileLoader.HEX_RANGE_MIOS8_OS_END,
+                                                               hexFileLoader.HEX_RANGE_MIOS8_OS_END-hexFileLoader.HEX_RANGE_MIOS8_OS_START+1));
             startAddress = hexFileLoader.HEX_RANGE_MIOS8_OS_END + 1;
         }
 
@@ -185,10 +185,10 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
                endAddress <= hexFileLoader.HEX_RANGE_MIOS32_STM32_FLASH_END ) {
 
         if( startAddress <= hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END ) {
-            logbox->addEntry(String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - BL excluded"),
-                                               hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START,
-                                               hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END,
-                                               hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END-hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START+1));
+            logbox->addEntry(Colours::grey, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - BL excluded"),
+                                                              hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START,
+                                                              hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END,
+                                                              hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END-hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START+1));
             startAddress = hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END + 1;
         }
 
@@ -199,10 +199,10 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
         checkOk = false;
     }
 
-    logbox->addEntry(String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - "),
-                                       startAddress,
-                                       endAddress,
-                                       endAddress-startAddress + 1) + rangeName);
+    logbox->addEntry(Colours::black, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - "),
+                                                       startAddress,
+                                                       endAddress,
+                                                       endAddress-startAddress + 1) + rangeName);
 
     return checkOk;
 }
