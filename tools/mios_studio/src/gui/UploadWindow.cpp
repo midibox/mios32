@@ -288,7 +288,7 @@ void UploadWindow::timerCallback(const int timerId)
                 uint32 totalBlocks = miosStudio->uploadHandler->totalBlocks - miosStudio->uploadHandler->excludedBlocks;
                 float timeUpload = miosStudio->uploadHandler->timeUpload;
                 float transferRateKb = ((totalBlocks * 256) / timeUpload) / 1024;
-                uploadStatus->addEntry(Colours::black, String::formatted(T("Upload of %d bytes completed after %3.2fs (%3.2f kb/s)"),
+                uploadStatus->addEntry(Colours::green, String::formatted(T("Upload of %d bytes completed after %3.2fs (%3.2f kb/s)"),
                                                                          totalBlocks*256,
                                                                          timeUpload,
                                                                          transferRateKb));
