@@ -40,7 +40,7 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
 
 MiosTerminal::~MiosTerminal()
 {
-    deleteAndZero(terminalLogBox);
+    deleteAllChildren();
 }
 
 //==============================================================================

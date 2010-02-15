@@ -62,16 +62,14 @@ MiosStudio::MiosStudio()
 
 MiosStudio::~MiosStudio()
 {
-    deleteAndZero(uploadHandler);
-    deleteAndZero(uploadWindow);
-    deleteAndZero(midiInMonitor);
-    deleteAndZero(midiOutMonitor);
-    deleteAndZero(miosTerminal);
-    deleteAndZero(midiKeyboard);
-    deleteAndZero(horizontalDividerBar1);
-    deleteAndZero(horizontalDividerBar2);
-    deleteAndZero(horizontalDividerBar3);
-    deleteAndZero(verticalDividerBarMonitors);
+    deleteAllChildren();
+
+    // try: avoid crash under Windows by disabling all MIDI INs/OUTs
+    const StringArray allMidiIns(MidiInput::getDevices());
+    for (int i = allMidiIns.size(); --i >= 0;)
+        audioDeviceManager.setMidiInputEnabled(allMidiIns[i], false);
+
+    audioDeviceManager.setDefaultMidiOutput(String::empty);
 }
 
 //==============================================================================
