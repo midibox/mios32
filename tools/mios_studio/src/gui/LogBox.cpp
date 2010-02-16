@@ -19,12 +19,20 @@
 LogBox::LogBox(const String &componentName)
     : ListBox(componentName, 0)
     , maxRowWidth(0)
-    , logEntryFont(Typeface::defaultTypefaceNameMono, 13.0, 0)
+#ifdef JUCE_WIN32
+    , logEntryFont(Typeface::defaultTypefaceNameMono, 10.0, 0)
+#else
+	, logEntryFont(Typeface::defaultTypefaceNameMono, 13.0, 0)
+#endif
 {
     setModel(this);
     setMultipleSelectionEnabled(true);
 
-    setRowHeight(14);
+#ifdef JUCE_WIN32
+	setRowHeight(13);
+#else
+	setRowHeight(14);
+#endif
     setSize(300, 200);
 }
 
