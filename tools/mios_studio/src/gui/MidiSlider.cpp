@@ -27,6 +27,7 @@ MidiSliderComponent::MidiSliderComponent(const String &componentName)
 
 MidiSliderComponent::~MidiSliderComponent()
 {
+    deleteAllChildren();
 }
 
 void MidiSliderComponent::mouseUp(const MouseEvent& e)

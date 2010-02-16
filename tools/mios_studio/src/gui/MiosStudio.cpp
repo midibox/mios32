@@ -63,6 +63,7 @@ MiosStudio::MiosStudio()
 MiosStudio::~MiosStudio()
 {
     deleteAllChildren();
+	deleteAndZero(uploadHandler);
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
     const StringArray allMidiIns(MidiInput::getDevices());
