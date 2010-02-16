@@ -559,7 +559,7 @@ void UploadHandlerThread::run()
         
             // wait for wakeup from handleIncomingMidiMessage() - timeout after 1 second
             for(int i=0; mios32QueryRequest && i<10; ++i)
-                wait(10);
+                wait(100);
 
             // check we got a reply (request cleared)
             if( mios32QueryRequest ) {
