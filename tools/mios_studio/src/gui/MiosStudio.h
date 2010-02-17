@@ -15,7 +15,7 @@
 #ifndef _MIOS_STUDIO_H
 #define _MIOS_STUDIO_H
 
-#include "includes.h"
+#include "../includes.h"
 #include <queue>
 
 #include "UploadWindow.h"

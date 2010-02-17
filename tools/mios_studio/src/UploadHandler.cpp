@@ -13,7 +13,7 @@
  */
 
 #include "UploadHandler.h"
-#include "MiosStudio.h"
+#include "gui/MiosStudio.h"
 
 #include <list>
 
