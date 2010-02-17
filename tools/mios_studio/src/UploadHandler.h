@@ -18,7 +18,7 @@
 #include "includes.h"
 #include "HexFileLoader.h"
 #include "SysexHelper.h"
-#include "LogBox.h"
+#include "gui/LogBox.h"
 
 
 class MiosStudio; // forward declaration

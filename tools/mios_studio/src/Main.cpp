@@ -13,7 +13,7 @@
  */
 
 #include "includes.h"
-#include "MiosStudio.h"
+#include "gui/MiosStudio.h"
 
 class MiosStudioWindow : public DocumentWindow
 {
