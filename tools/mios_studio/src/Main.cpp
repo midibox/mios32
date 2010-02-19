@@ -36,6 +36,7 @@ public:
         // to our window.
         MiosStudio* const contentComponent = new MiosStudio();
         setContentComponent(contentComponent, true, true);
+        setUsingNativeTitleBar(true);
         centreWithSize(getWidth(), getHeight());
 
         setVisible(true);
@@ -113,7 +114,6 @@ public:
     {
         // create the main window...
         miosStudioWindow = new MiosStudioWindow();
-        miosStudioWindow->setUsingNativeTitleBar(true);
 
         /*  ..and now return, which will fall into to the main event
             dispatch loop, and this will run until something calls

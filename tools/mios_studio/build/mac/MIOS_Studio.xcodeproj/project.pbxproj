@@ -12,6 +12,7 @@
 		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
 		529E4B221122041D00784362 /* LogBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529E4B201122041D00784362 /* LogBox.cpp */; };
+		529FA890112DEDB400DFD249 /* SysexTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88E112DEDB400DFD249 /* SysexTool.cpp */; };
 		52B71397111DB614000B8F5A /* MidiMonitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71393111DB614000B8F5A /* MidiMonitor.cpp */; };
 		52B71398111DB614000B8F5A /* UploadWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71395111DB614000B8F5A /* UploadWindow.cpp */; };
 		52B71402111DBDE4000B8F5A /* MiosStudio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71400111DBDE4000B8F5A /* MiosStudio.cpp */; };
@@ -47,6 +48,8 @@
 		529C75CE111DAB1200DFE267 /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../src/Main.cpp; sourceTree = SOURCE_ROOT; };
 		529E4B201122041D00784362 /* LogBox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LogBox.cpp; path = ../../src/gui/LogBox.cpp; sourceTree = SOURCE_ROOT; };
 		529E4B211122041D00784362 /* LogBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LogBox.h; path = ../../src/gui/LogBox.h; sourceTree = SOURCE_ROOT; };
+		529FA88E112DEDB400DFD249 /* SysexTool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexTool.cpp; path = ../../src/gui/SysexTool.cpp; sourceTree = SOURCE_ROOT; };
+		529FA88F112DEDB400DFD249 /* SysexTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexTool.h; path = ../../src/gui/SysexTool.h; sourceTree = SOURCE_ROOT; };
 		52B71393111DB614000B8F5A /* MidiMonitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiMonitor.cpp; path = ../../src/gui/MidiMonitor.cpp; sourceTree = SOURCE_ROOT; };
 		52B71394111DB614000B8F5A /* MidiMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiMonitor.h; path = ../../src/gui/MidiMonitor.h; sourceTree = SOURCE_ROOT; };
 		52B71395111DB614000B8F5A /* UploadWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UploadWindow.cpp; path = ../../src/gui/UploadWindow.cpp; sourceTree = SOURCE_ROOT; };
@@ -166,6 +169,8 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				529FA88E112DEDB400DFD249 /* SysexTool.cpp */,
+				529FA88F112DEDB400DFD249 /* SysexTool.h */,
 				529E4B201122041D00784362 /* LogBox.cpp */,
 				529E4B211122041D00784362 /* LogBox.h */,
 				521D8E3D1120CDB00013F929 /* UploadHandler.cpp */,
@@ -259,6 +264,7 @@
 				527D1040111F2CDD002A091B /* SysexHelper.cpp in Sources */,
 				521D8E3F1120CDB00013F929 /* UploadHandler.cpp in Sources */,
 				529E4B221122041D00784362 /* LogBox.cpp in Sources */,
+				529FA890112DEDB400DFD249 /* SysexTool.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

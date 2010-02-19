@@ -22,6 +22,7 @@
 #include "MidiMonitor.h"
 #include "MiosTerminal.h"
 #include "MidiKeyboard.h"
+#include "SysexTool.h"
 #include "../UploadHandler.h"
 
 class MiosStudio
@@ -54,6 +55,9 @@ public:
 
     UploadHandler *uploadHandler;
 
+    // Windows opened by Tools button in Upload Window
+    SysexToolWindow *sysexToolWindow;
+
 protected:
     //==============================================================================
     UploadWindow *uploadWindow;
@@ -69,6 +73,9 @@ protected:
 
     StretchableLayoutManager verticalLayoutMonitors;
     StretchableLayoutResizerBar* verticalDividerBarMonitors;
+
+    ResizableCornerComponent *resizer;
+    ComponentBoundsConstrainer resizeLimits;
 
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
