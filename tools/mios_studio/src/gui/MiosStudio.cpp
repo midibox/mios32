@@ -31,6 +31,9 @@ MiosStudio::MiosStudio()
     addAndMakeVisible(miosTerminal = new MiosTerminal(this));
     addAndMakeVisible(midiKeyboard = new MidiKeyboard(this));
 
+    // tools are made visible via tools button in Upload Window
+    sysexToolWindow = new SysexToolWindow(this);
+
     //                             num   min   max  prefered  
     horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
     horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
@@ -55,6 +58,9 @@ MiosStudio::MiosStudio()
     verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
     addAndMakeVisible(verticalDividerBarMonitors);
 
+    resizeLimits.setSizeLimits(200, 100, 2048, 2048);
+    addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
+
     Timer::startTimer(1);
 
     setSize (800, 600);
@@ -62,8 +68,9 @@ MiosStudio::MiosStudio()
 
 MiosStudio::~MiosStudio()
 {
-    deleteAllChildren();
 	deleteAndZero(uploadHandler);
+	deleteAndZero(sysexToolWindow);
+    deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
     const StringArray allMidiIns(MidiInput::getDevices());
@@ -105,6 +112,8 @@ void MiosStudio::resized()
                                             horizontalLayout.getItemCurrentAbsoluteSize(0),
                                             false, // lay out side-by-side
                                             true); // resize the components' heights as well as widths
+
+    resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
 }
 
 
@@ -172,6 +181,7 @@ void MiosStudio::timerCallback()
 
             // filter runtime events for following components to improve performance
             if( data[0] < 0xf8 ) {
+                sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
                 miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                 midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
             }

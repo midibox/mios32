@@ -38,14 +38,23 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
                                                            T("(choose a .hex file to upload)")));
 	fileChooser->addListener(this);
 	fileChooser->setBrowseButtonText(T("Browse"));
+    fileChooser->setEnabled(true);
 
     addAndMakeVisible(queryButton = new TextButton(T("Query Button")));
     queryButton->setButtonText(T("Query"));
     queryButton->addButtonListener(this);
 
-    addAndMakeVisible(deviceIdSlider = new Slider (T("Device ID")));
-    deviceIdSlider->setValue(miosStudio->uploadHandler->getDeviceId()); // restored from setup file
+    addAndMakeVisible(toolsButton = new TextButton(T("Tools Button")));
+    toolsButton->setButtonText(T("Tools"));
+    toolsButton->addButtonListener(this);
+    toolsButton->setTriggeredOnMouseDown(true);
+
+    addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID")));
+    deviceIdLabel->setJustificationType(Justification::centred);
+    
+    addAndMakeVisible(deviceIdSlider = new Slider(T("Device ID")));
     deviceIdSlider->setRange(0, 127, 1);
+    deviceIdSlider->setValue(miosStudio->uploadHandler->getDeviceId()); // restored from setup file
     deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
     deviceIdSlider->setTextBoxStyle(Slider::TextBoxAbove, false, 80, 20);
     deviceIdSlider->setDoubleClickReturnValue(true, 0);
@@ -106,10 +115,12 @@ void UploadWindow::resized()
 
     int middleX = getWidth()/2 - 75;
 
-    int buttonY = 4+40;
+    int buttonY = 4+56;
     int buttonWidth = 72;
+    deviceIdLabel->setBounds(4, 30, buttonWidth, 40);
     deviceIdSlider->setBounds(4, buttonY+0*36, buttonWidth, 40);
     queryButton->setBounds(4, buttonY+1*36+10, buttonWidth, 24);
+    toolsButton->setBounds(4, buttonY+2*36+10, buttonWidth, 24);
 
     int uploadQueryX = 4+buttonWidth+4;
     int uploadQueryWidth = middleX - 4 - uploadQueryX;
@@ -122,6 +133,7 @@ void UploadWindow::resized()
     uploadStatus->setBounds(uploadStatusX, uploadStatusY, uploadStatusWidth, uploadStatusHeight);
     progressBar->setBounds(uploadStatusX, uploadStatusY+4+uploadStatusHeight, uploadStatusWidth, 24);
 
+    buttonY = 4+40;
     int startStopButtonX = getWidth() - 4 - buttonWidth;
     startButton->setBounds(startStopButtonX, buttonY+0*36, buttonWidth, 24);
     stopButton->setBounds (startStopButtonX, buttonY+1*36, buttonWidth, 24);
@@ -134,13 +146,26 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
         uploadStatus->clear();
         uploadStatus->addEntry(Colours::black, T("Reading ") + inFile.getFileName());
         uploadStart();
-    }
-    else if( buttonThatWasClicked == stopButton ) {
+    } else if( buttonThatWasClicked == stopButton ) {
         uploadStop();
         uploadStatus->addEntry(Colours::red, T("Upload has been stopped by user!"));
-    }
-    else if( buttonThatWasClicked == queryButton ) {
+    } else if( buttonThatWasClicked == queryButton ) {
         queryCore();
+    } else if( buttonThatWasClicked == toolsButton ) {
+        PopupMenu m;
+        m.addItem (1, T("SysEx Tool"), true, miosStudio->sysexToolWindow->isVisible());
+
+        switch( m.showAt(toolsButton) ) {
+        case 1:
+            if( miosStudio->sysexToolWindow->isVisible() )
+                miosStudio->sysexToolWindow->setVisible(false);
+            else {
+                miosStudio->sysexToolWindow->setVisible(true);
+                miosStudio->sysexToolWindow->toFront(true);
+            }
+
+            break;
+        }
     }
 }
 
@@ -179,7 +204,9 @@ void UploadWindow::midiPortChanged(void)
     miosStudio->uploadHandler->finish();
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
+    toolsButton->setEnabled(true);
     deviceIdSlider->setEnabled(true);
+    fileChooser->setEnabled(true);
 
     uploadQuery->clear();
     uploadQuery->addEntry(Colours::red, T("No response from a core yet..."));
@@ -197,7 +224,9 @@ void UploadWindow::queryCore(void)
     } else {
         uploadQuery->clear();
         queryButton->setEnabled(false);
+        toolsButton->setEnabled(false);
         deviceIdSlider->setEnabled(false);
+        fileChooser->setEnabled(false);
         MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
     }
 }
@@ -210,7 +239,9 @@ void UploadWindow::uploadStart(void)
 
     startButton->setEnabled(false); // will be enabled again if file is valid
     queryButton->setEnabled(false);
+    toolsButton->setEnabled(false);
     deviceIdSlider->setEnabled(false);
+    fileChooser->setEnabled(false);
 
     uploadStatus->addEntry(Colours::grey, T("Trying to contact the core..."));
 
@@ -227,7 +258,9 @@ void UploadWindow::uploadStop(void)
     startButton->setEnabled(miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size() >= 1);
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
+    toolsButton->setEnabled(true);
     deviceIdSlider->setEnabled(true);
+    fileChooser->setEnabled(true);
 }
 
 
@@ -254,6 +287,7 @@ void UploadWindow::timerCallback(const int timerId)
                     // start upload of first block
                     stopButton->setEnabled(true);
                     queryButton->setEnabled(false);
+                    toolsButton->setEnabled(false);
                     deviceIdSlider->setEnabled(false);
                     miosStudio->uploadHandler->startUpload();
                     MultiTimer::startTimer(TIMER_UPLOAD, 10);
