@@ -106,7 +106,7 @@ UploadWindow::~UploadWindow()
 //==============================================================================
 void UploadWindow::paint (Graphics& g)
 {
-    g.fillAll (Colours::white);
+    g.fillAll(Colours::white);
 }
 
 void UploadWindow::resized()

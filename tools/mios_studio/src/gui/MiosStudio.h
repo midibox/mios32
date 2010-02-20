@@ -44,7 +44,7 @@ public:
 
     void timerCallback();
 
-    void sendMidiMessage(const MidiMessage &message);
+    void sendMidiMessage(MidiMessage &message);
 
     void setMidiInput(const String &port);
     String getMidiInput(void);
@@ -80,8 +80,11 @@ protected:
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
     std::queue<MidiMessage> midiInQueue;
+    CriticalSection midiInQueueLock;
     uint8 runningStatus;
+
     std::queue<MidiMessage> midiOutQueue;
+    CriticalSection midiOutQueueLock;
 
     int initialMidiScanCounter;
 

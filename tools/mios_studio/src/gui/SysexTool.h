@@ -17,16 +17,16 @@
 
 #include "../includes.h"
 #include "../SysexHelper.h"
-#include "LogBox.h"
+#include "HexTextEditor.h"
 
 class MiosStudio; // forward declaration
 
 class SysexToolSend
     : public Component
-    , public TextEditorListener
     , public ButtonListener
     , public SliderListener
     , public FilenameComponentListener
+    , public Timer
 {
 public:
     //==============================================================================
@@ -38,27 +38,33 @@ public:
     void resized();
 
     //==============================================================================
-    void textEditorTextChanged(TextEditor &editor);
-    void textEditorReturnKeyPressed(TextEditor &editor);
-    void textEditorEscapeKeyPressed(TextEditor &editor);
-    void textEditorFocusLost(TextEditor &editor);
-
     void buttonClicked (Button* buttonThatWasClicked);
     void sliderValueChanged(Slider* slider);
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
+    //==============================================================================
+    void timerCallback();
+
 protected:
     //==============================================================================
-    LogBox* sendBox;
+    Label *statusLabel;
+    HexTextEditor* sendBox;
     FilenameComponent* sendFileChooser;
     Button* sendStartButton;
     Button* sendStopButton;
-    Button* sendEditButton;
+    Button* sendClearButton;
     Label*  sendDelayLabel;
     Slider* sendDelaySlider;
+    ProgressBar* progressBar;
 
     //==============================================================================
     MiosStudio *miosStudio;
+
+    //==============================================================================
+    Array<uint8> sendData;
+    int numBytesToSend;
+    int numBytesSent;
+    double progress;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
@@ -72,7 +78,6 @@ protected:
 //==============================================================================
 class SysexToolReceive
     : public Component
-    , public TextEditorListener
     , public ButtonListener
     , public FilenameComponentListener
 {
@@ -86,11 +91,6 @@ public:
     void resized();
 
     //==============================================================================
-    void textEditorTextChanged(TextEditor &editor);
-    void textEditorReturnKeyPressed(TextEditor &editor);
-    void textEditorEscapeKeyPressed(TextEditor &editor);
-    void textEditorFocusLost(TextEditor &editor);
-
     void buttonClicked (Button* buttonThatWasClicked);
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
@@ -99,12 +99,13 @@ public:
 
 protected:
     //==============================================================================
-    LogBox* receiveBox;
+    Label *statusLabel;
+    HexTextEditor* receiveBox;
     FilenameComponent* receiveFileChooser;
     Button* receiveStartButton;
     Button* receiveStopButton;
-    Button* receiveEditButton;
     Button* receiveClearButton;
+    Label*  receiveNumBytesLabel;
 
     //==============================================================================
     MiosStudio *miosStudio;

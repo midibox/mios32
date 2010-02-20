@@ -57,11 +57,6 @@ void LogBox::paintListBoxItem(int rowNumber,
 {
     std::pair<Colour, String> p = logEntries[rowNumber];
 
-    int fontWidth = 6; // DIRTY - how to find out the real width without generating the complete graphic?
-    int rowWidth = 30 + fontWidth * p.second.length();
-    if( rowWidth > maxRowWidth )
-        setMinimumContentWidth(maxRowWidth = rowWidth);
-
     if( rowIsSelected )
         g.fillAll(Colours::lightblue);
 
@@ -109,6 +104,12 @@ void LogBox::addEntry(const Colour &colour, const String &textLine)
     logEntries.add(p);
 
     updateContent();
+
+    int fontWidth = 6; // DIRTY - how to find out the real width without generating the complete graphic?
+    int rowWidth = 30 + fontWidth * p.second.length();
+    if( rowWidth > maxRowWidth )
+        setMinimumContentWidth(maxRowWidth = rowWidth);
+
     setVerticalPosition(2.0); // has to be done after updateContent()!
 } 
 
