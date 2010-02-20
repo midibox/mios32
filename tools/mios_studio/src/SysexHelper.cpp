@@ -234,6 +234,14 @@ MidiMessage SysexHelper::createMidiMessage(Array<uint8> &dataArray)
 
 
 //==============================================================================
+MidiMessage SysexHelper::createMidiMessage(Array<uint8> &dataArray, const int &lastPos)
+{
+    uint8 *data = &dataArray.getReference(0);
+    return MidiMessage(data, (lastPos < dataArray.size()) ? lastPos : dataArray.size());
+}
+
+
+//==============================================================================
 String SysexHelper::decodeMiosErrorCode(uint8 errorCode)
 {
     switch( errorCode ) {

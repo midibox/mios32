@@ -65,6 +65,7 @@ public:
 
     //==============================================================================
     static MidiMessage createMidiMessage(Array<uint8> &dataArray);
+    static MidiMessage createMidiMessage(Array<uint8> &dataArray, const int &lastPos);
 
     //==============================================================================
     static String decodeMiosErrorCode(uint8 errorCode);

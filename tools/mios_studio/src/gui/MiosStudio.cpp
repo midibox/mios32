@@ -83,7 +83,7 @@ MiosStudio::~MiosStudio()
 //==============================================================================
 void MiosStudio::paint (Graphics& g)
 {
-    g.fillAll(Colour (0xffc1d0ff));
+    g.fillAll(Colour(0xffc1d0ff));
 }
 
 void MiosStudio::resized()
@@ -123,6 +123,7 @@ void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage&
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
     
+    const ScopedLock sl(midiInQueueLock); // lock will be released at end of function
     midiInQueue.push(message);
 
     // propagate to upload handler
@@ -131,12 +132,18 @@ void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage&
 
 
 //==============================================================================
-void MiosStudio::sendMidiMessage(const MidiMessage &message)
+void MiosStudio::sendMidiMessage(MidiMessage &message)
 {
     MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
+
+    // if timestamp isn't set, to this now to ensure a plausible MIDI Out monitor output
+    if( message.getTimeStamp() == 0 )
+        message.setTimeStamp((double)Time::getMillisecondCounter() / 1000.0);
+
     if( out )
         out->sendMessageNow(message);
 
+    const ScopedLock sl(midiOutQueueLock); // lock will be released at end of function
     midiOutQueue.push(message);
 }
 
@@ -170,6 +177,8 @@ void MiosStudio::timerCallback()
         // a large bulk of data is received
 
         if( !midiInQueue.empty() ) {
+            const ScopedLock sl(midiInQueueLock); // lock will be released at end of this scope
+
             MidiMessage &message = midiInQueue.front();
 
             uint8 *data = message.getRawData();
@@ -190,6 +199,8 @@ void MiosStudio::timerCallback()
         }
 
         if( !midiOutQueue.empty() ) {
+            const ScopedLock sl(midiOutQueueLock); // lock will be released at end of this scope
+
             MidiMessage &message = midiOutQueue.front();
 
             midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
@@ -210,7 +221,7 @@ void MiosStudio::setMidiInput(const String &port)
     }
 
     // propagate port change
-    if( uploadWindow && port != String::empty )
+    if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
         uploadWindow->midiPortChanged();
 
     // store setting
@@ -231,7 +242,7 @@ void MiosStudio::setMidiOutput(const String &port)
     audioDeviceManager.setDefaultMidiOutput(port);
 
     // propagate port change
-    if( uploadWindow && port != String::empty )
+    if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
         uploadWindow->midiPortChanged();
 
     // store setting

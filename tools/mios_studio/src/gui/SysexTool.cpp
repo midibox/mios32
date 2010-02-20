@@ -19,8 +19,14 @@
 //==============================================================================
 SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
+    , numBytesToSend(0)
+    , numBytesSent(0)
+    , progress(0)
 {
-    addAndMakeVisible(sendBox = new LogBox(T("SysEx Send")));
+    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String::empty));
+    statusLabel->setJustificationType(Justification::right);
+
+    addAndMakeVisible(sendBox = new HexTextEditor(statusLabel));
 
 	addAndMakeVisible(sendFileChooser = new FilenameComponent (T("syxfile"),
                                                                File::nonexistent,
@@ -41,21 +47,23 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     sendStopButton->setEnabled(false);
     sendStopButton->addButtonListener(this);
 
-    addAndMakeVisible(sendEditButton = new TextButton(T("Edit Button")));
-    sendEditButton->setButtonText(T("Edit"));
-    sendEditButton->setEnabled(false);
-    sendEditButton->addButtonListener(this);
+    addAndMakeVisible(sendClearButton = new TextButton(T("Clear Button")));
+    sendClearButton->setButtonText(T("Clear"));
+    sendClearButton->setEnabled(false);
+    sendClearButton->addButtonListener(this);
 
-    addAndMakeVisible(sendDelayLabel = new Label(T("Send Delay"), T("Send Delay")));
+    addAndMakeVisible(sendDelayLabel = new Label(T("Send Delay"), T("Send Delay:")));
     sendDelayLabel->setJustificationType(Justification::centred);
 
     addAndMakeVisible(sendDelaySlider = new Slider(T("Send Delay (mS)")));
     sendDelaySlider->setRange(0, 5000, 50);
     sendDelaySlider->setValue(750);
     sendDelaySlider->setSliderStyle(Slider::IncDecButtons);
-    sendDelaySlider->setTextBoxStyle(Slider::TextBoxAbove, false, 80, 20);
+    sendDelaySlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
     sendDelaySlider->setDoubleClickReturnValue(true, 0);
     sendDelaySlider->addListener(this);
+
+    addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
@@ -74,8 +82,10 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
             recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles);
         sendFileChooser->setRecentlyUsedFilenames(recentlyUsedSyxFilesArray);
 
-        sendFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultFile"), String::empty));
+        sendFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxSendFile"), String::empty));
     }
+
+    setSize(800, 200);
 }
 
 SysexToolSend::~SysexToolSend()
@@ -92,52 +102,47 @@ void SysexToolSend::paint (Graphics& g)
 void SysexToolSend::resized()
 {
     sendFileChooser->setBounds(4, 4, getWidth()-8, 24);
-    sendBox->setBounds(100, 32, getWidth()-100-4, getHeight()-32-4);
 
-    int sendButtonY = 4+32+8;
+    int sendButtonY = 4+32;
     int sendButtonWidth = 72;
-    sendStartButton->setBounds(14, sendButtonY+0*36, sendButtonWidth, 24);
-    sendStopButton->setBounds(14, sendButtonY+1*36, sendButtonWidth, 24);
-    sendEditButton->setBounds(14, sendButtonY+2*36, sendButtonWidth, 24);
-    sendDelayLabel->setBounds(14, sendButtonY+3*36-10, sendButtonWidth, 24);
-    sendDelaySlider->setBounds(14, sendButtonY+3*36+10, sendButtonWidth, 40);
-}
+    sendStartButton->setBounds(10 + 0*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    sendStopButton->setBounds(10 + 1*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    sendClearButton->setBounds(10 + 2*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    sendDelayLabel->setBounds(10 + 4*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    sendDelaySlider->setBounds(10 + 5*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    statusLabel->setBounds(getWidth()-10-100, sendButtonY, 100, 24);
 
-//==============================================================================
-void SysexToolSend::textEditorTextChanged(TextEditor &editor)
-{
-}
+    sendBox->setBounds(4, 32+40, getWidth()-8, getHeight()-32-40-4-28-4);
 
-void SysexToolSend::textEditorReturnKeyPressed(TextEditor &editor)
-{
+    progressBar->setBounds(4, getHeight()-28, getWidth()-8, 24);
 }
-
-void SysexToolSend::textEditorEscapeKeyPressed(TextEditor &editor)
-{
-}
-
-void SysexToolSend::textEditorFocusLost(TextEditor &editor)
-{
-}
-
 
 //==============================================================================
 void SysexToolSend::buttonClicked(Button* buttonThatWasClicked)
 {
     if( buttonThatWasClicked == sendStartButton ) {
-        sendStartButton->setEnabled(false);
-        sendStopButton->setEnabled(true);
-        sendEditButton->setEnabled(false);
-        sendDelaySlider->setEnabled(false);
-        sendFileChooser->setEnabled(false);
+        sendData = sendBox->getBinary();
+        numBytesToSend = sendData.size();
+        numBytesSent = 0;
+        progress = 0;
+        if( numBytesToSend > 0 ) {
+            startTimer(1);
+            sendStartButton->setEnabled(false);
+            sendStopButton->setEnabled(true);
+            sendDelaySlider->setEnabled(false);
+            sendFileChooser->setEnabled(false);
+            sendClearButton->setEnabled(false);
+        }
     } else if( buttonThatWasClicked == sendStopButton ) {
+        stopTimer();
         sendStopButton->setEnabled(false);
         sendStartButton->setEnabled(true);
-        sendEditButton->setEnabled(sendBox->getNumRows() > 0);
         sendDelaySlider->setEnabled(true);
         sendFileChooser->setEnabled(true);
-    } else if( buttonThatWasClicked == sendEditButton ) {
-        // TODO
+        sendClearButton->setEnabled(true);
+    } else if( buttonThatWasClicked == sendClearButton ) {
+        sendBox->clear();
+        sendClearButton->setEnabled(false);
     }
 }
 
@@ -159,31 +164,99 @@ void SysexToolSend::sliderValueChanged(Slider* slider)
 void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
 {
     if( fileComponentThatHasChanged == sendFileChooser ) {
-        // TODO...
+        File inFile = sendFileChooser->getCurrentFile();
 
-        sendStartButton->setEnabled(true);
-        sendEditButton->setEnabled(true);
+        FileInputStream *inFileStream = inFile.createInputStream();
+
+        if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+            AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                        T("The file"),
+                                        inFile.getFileName(),
+                                        T("doesn't exist!"));
+        } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+            AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                        T("The file"),
+                                        inFile.getFileName(),
+                                        T("is empty!"));
+        } else {
+            int64 size = inFileStream->getTotalLength();
+            uint8 *buffer = (uint8 *)juce_malloc(size);
+            int64 readNumBytes = inFileStream->read(buffer, size);
+            sendBox->setBinary(buffer, readNumBytes);
+            juce_free(buffer);
+
+            // store setting
+            PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+            if( propertiesFile ) {
+                String recentlyUsedHexFiles = sendFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
+                propertiesFile->setValue(T("recentlyUsedSyxSendFiles"), recentlyUsedHexFiles);
+                propertiesFile->setValue(T("defaultSyxSendFile"), inFile.getFullPathName());
+            }
+
+            sendStartButton->setEnabled(true);
+            sendClearButton->setEnabled(true);
+        }
+
+        deleteAndZero(inFileStream);
     }
 }
 
 
+//==============================================================================
+void SysexToolSend::timerCallback()
+{
+    stopTimer(); // will be restarted if required
+
+    if( sendData.size() == 0 ) {
+        sendStopButton->setEnabled(false);
+        sendStartButton->setEnabled(true);
+        sendDelaySlider->setEnabled(true);
+        sendFileChooser->setEnabled(true);
+        sendClearButton->setEnabled(true);
+        progress = 0;
+    } else {
+        int streamEnd = sendData.indexOf(0xf7);
+        if( streamEnd < 0 ) {
+            MidiMessage message = SysexHelper::createMidiMessage(sendData);
+            miosStudio->sendMidiMessage(message);
+            numBytesSent += sendData.size();
+        } else {
+            // send string until 0xf7
+            MidiMessage message = SysexHelper::createMidiMessage(sendData, streamEnd+1);
+            miosStudio->sendMidiMessage(message);
+            sendData.removeRange(0, streamEnd+1);
+            numBytesSent += streamEnd+1;
+        }
+
+        progress = (double)numBytesSent / (double)numBytesToSend;
+
+        if( sendData.size() > 0 ) {
+            int delay = sendDelaySlider->getValue();
+            startTimer((delay > 0) ? delay : 1);
+        } else {
+            startTimer(2000); // stop progress bar after 2 seconds
+        }
+    }
+}
 
 
 //==============================================================================
 SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(receiveBox = new LogBox(T("SysEx Receive")));
+    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String::empty));
+    statusLabel->setJustificationType(Justification::right);
+
+    addAndMakeVisible(receiveBox = new HexTextEditor(statusLabel));
 
 	addAndMakeVisible(receiveFileChooser = new FilenameComponent (T("syxfile"),
                                                                   File::nonexistent,
                                                                   true, false, true,
                                                                   "*.syx",
-                                                                  "*.syx",
+                                                                  ".syx",
                                                                   T("(choose a .syx file to save)")));
 	receiveFileChooser->addListener(this);
 	receiveFileChooser->setBrowseButtonText(T("Browse"));
-    receiveFileChooser->setEnabled(false);
 
     addAndMakeVisible(receiveStartButton = new TextButton(T("Receive Button")));
     receiveStartButton->setButtonText(T("Receive"));
@@ -195,15 +268,29 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     receiveStopButton->setEnabled(false);
     receiveStopButton->addButtonListener(this);
 
-    addAndMakeVisible(receiveEditButton = new TextButton(T("Edit Button")));
-    receiveEditButton->setButtonText(T("Edit"));
-    receiveEditButton->setEnabled(false);
-    receiveEditButton->addButtonListener(this);
-
     addAndMakeVisible(receiveClearButton = new TextButton(T("Clear Button")));
     receiveClearButton->setButtonText(T("Clear"));
-    receiveClearButton->setEnabled(false);
     receiveClearButton->addButtonListener(this);
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxReceiveFiles"), String::empty);
+        // seems that Juce doesn't provide a split function?
+        StringArray recentlyUsedSyxFilesArray;
+        int index = 0;
+        while( (index=recentlyUsedSyxFiles.indexOfChar(';')) >= 0 ) {
+            recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles.substring(0, index));
+            recentlyUsedSyxFiles = recentlyUsedSyxFiles.substring(index+1);
+        }
+        if( recentlyUsedSyxFiles != String::empty )
+            recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles);
+        receiveFileChooser->setRecentlyUsedFilenames(recentlyUsedSyxFilesArray);
+
+        receiveFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxReceiveFile"), String::empty));
+    }
+
+    setSize(800, 200);
 }
 
 SysexToolReceive::~SysexToolReceive()
@@ -220,33 +307,16 @@ void SysexToolReceive::paint (Graphics& g)
 void SysexToolReceive::resized()
 {
     receiveFileChooser->setBounds(4, 4, getWidth()-8, 24);
-    receiveBox->setBounds(100, 32, getWidth()-100-4, getHeight()-32-4);
 
-    int receiveButtonY = 4+32+8;
+    int receiveButtonY = 4+32;
     int receiveButtonWidth = 72;
-    receiveStartButton->setBounds(14, receiveButtonY+0*36, receiveButtonWidth, 24);
-    receiveStopButton->setBounds(14, receiveButtonY+1*36, receiveButtonWidth, 24);
-    receiveEditButton->setBounds(14, receiveButtonY+2*36, receiveButtonWidth, 24);
-    receiveClearButton->setBounds(14, receiveButtonY+3*36, receiveButtonWidth, 24);
-}
+    receiveStartButton->setBounds(10 + 0*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
+    receiveStopButton->setBounds(10 + 1*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
+    receiveClearButton->setBounds(10 + 2*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
+    statusLabel->setBounds(getWidth()-10-100, receiveButtonY, 100, 24);
 
-//==============================================================================
-void SysexToolReceive::textEditorTextChanged(TextEditor &editor)
-{
+    receiveBox->setBounds(4, 32+40, getWidth()-8, getHeight()-32-40-4);
 }
-
-void SysexToolReceive::textEditorReturnKeyPressed(TextEditor &editor)
-{
-}
-
-void SysexToolReceive::textEditorEscapeKeyPressed(TextEditor &editor)
-{
-}
-
-void SysexToolReceive::textEditorFocusLost(TextEditor &editor)
-{
-}
-
 
 //==============================================================================
 void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
@@ -254,22 +324,16 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
     if( buttonThatWasClicked == receiveStartButton ) {
         receiveStartButton->setEnabled(false);
         receiveStopButton->setEnabled(true);
-        receiveEditButton->setEnabled(false);
         receiveFileChooser->setEnabled(false);
         receiveClearButton->setEnabled(false);
+        receiveBox->clear();
     } else if( buttonThatWasClicked == receiveStopButton ) {
         receiveStopButton->setEnabled(false);
         receiveStartButton->setEnabled(true);
-        receiveEditButton->setEnabled(receiveBox->getNumRows() > 0);
-        receiveFileChooser->setEnabled(receiveBox->getNumRows() > 0);
-        receiveClearButton->setEnabled(receiveBox->getNumRows() > 0);
-    } else if( buttonThatWasClicked == receiveEditButton ) {
-        // TODO
+        receiveFileChooser->setEnabled(true);
+        receiveClearButton->setEnabled(true);
     } else if( buttonThatWasClicked == receiveClearButton ) {
         receiveBox->clear();
-        receiveEditButton->setEnabled(false);
-        receiveFileChooser->setEnabled(false);
-        receiveClearButton->setEnabled(false);
     }
 }
 
@@ -278,7 +342,37 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
 void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
 {
     if( fileComponentThatHasChanged == receiveFileChooser ) {
-        // TODO...
+        File outFile = receiveFileChooser->getCurrentFile();
+
+        Array<uint8> saveData = receiveBox->getBinary();
+        if( saveData.size() == 0 ) {
+            AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                        String::empty,
+                                        T("No data to save!"),
+                                        String::empty);
+        } else {
+            FileOutputStream *outFileStream = outFile.createOutputStream();
+            
+            if( !outFileStream || outFileStream->failedToOpen() ) {
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            String::empty,
+                                            T("File cannot be created!"),
+                                            String::empty);
+            } else {
+                uint8 *data = &saveData.getReference(0);
+                outFileStream->write(data, saveData.size());
+                delete outFileStream;
+                statusLabel->setText(String(saveData.size()) + T(" bytes saved"), true);
+            }
+        }
+
+        // store setting
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile ) {
+            String recentlyUsedHexFiles = receiveFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
+            propertiesFile->setValue(T("recentlyUsedSyxReceiveFiles"), recentlyUsedHexFiles);
+            propertiesFile->setValue(T("defaultSyxReceiveFile"), outFile.getFullPathName());
+        }
     }
 }
 
@@ -289,13 +383,7 @@ void SysexToolReceive::handleIncomingMidiMessage(const MidiMessage& message, uin
     if( !receiveStartButton->isEnabled() ) { // !enabled means that we are ready for receive
         uint8 *data = message.getRawData();
         uint32 size = message.getRawDataSize();
-
-        String hexStr = String::toHexString(data, size);
-        receiveBox->addEntry(Colours::black, hexStr);
-
-        receiveEditButton->setEnabled(true);
-        receiveFileChooser->setEnabled(true);
-        receiveClearButton->setEnabled(true);
+        receiveBox->addBinary(data, size);
     }
 }
 
@@ -317,10 +405,10 @@ SysexTool::SysexTool(MiosStudio *_miosStudio)
     horizontalDividerBar = new StretchableLayoutResizerBar(&horizontalLayout, 1, false);
     addAndMakeVisible(horizontalDividerBar);
 
-    resizeLimits.setSizeLimits(200, 100, 2048, 2048);
+    resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(800, 400);
+    setSize(860, 500);
 }
 
 SysexTool::~SysexTool()
@@ -331,7 +419,7 @@ SysexTool::~SysexTool()
 //==============================================================================
 void SysexTool::paint (Graphics& g)
 {
-    g.fillAll(Colours::white);
+    g.fillAll(Colour(0xffc1d0ff));
 }
 
 void SysexTool::resized()
@@ -349,4 +437,3 @@ void SysexTool::resized()
 
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
 }
-

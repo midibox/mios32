@@ -697,7 +697,8 @@ void UploadHandlerThread::run()
             uploadErrorCode = -1;
             mios32UploadRequest = forMios32;
             mios8UploadRequest = !forMios32;
-            miosStudio->sendMidiMessage(uploadHandler->hexFileLoader.createMidiMessageForBlock(deviceId, blockAddress, forMios32));
+            MidiMessage message = uploadHandler->hexFileLoader.createMidiMessageForBlock(deviceId, blockAddress, forMios32);
+            miosStudio->sendMidiMessage(message);
 
             // wait for wakeup from handleIncomingMidiMessage() - timeout after 1 second
             wait(1000);
