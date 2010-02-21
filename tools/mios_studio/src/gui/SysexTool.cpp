@@ -214,6 +214,7 @@ void SysexToolSend::timerCallback()
         if( streamEnd < 0 ) {
             MidiMessage message = SysexHelper::createMidiMessage(sendData);
             miosStudio->sendMidiMessage(message);
+            sendData.clear();
             numBytesSent += sendData.size();
         } else {
             // send string until 0xf7
