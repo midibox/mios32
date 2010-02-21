@@ -39,7 +39,6 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
 
     addAndMakeVisible(sendStartButton = new TextButton(T("Send Button")));
     sendStartButton->setButtonText(T("Send"));
-    sendStartButton->setEnabled(false);
     sendStartButton->addButtonListener(this);
 
     addAndMakeVisible(sendStopButton = new TextButton(T("Stop Button")));
@@ -49,7 +48,6 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
 
     addAndMakeVisible(sendClearButton = new TextButton(T("Clear Button")));
     sendClearButton->setButtonText(T("Clear"));
-    sendClearButton->setEnabled(false);
     sendClearButton->addButtonListener(this);
 
     addAndMakeVisible(sendDelayLabel = new Label(T("Send Delay"), T("Send Delay:")));
@@ -140,9 +138,9 @@ void SysexToolSend::buttonClicked(Button* buttonThatWasClicked)
         sendDelaySlider->setEnabled(true);
         sendFileChooser->setEnabled(true);
         sendClearButton->setEnabled(true);
+        progress = 0;
     } else if( buttonThatWasClicked == sendClearButton ) {
         sendBox->clear();
-        sendClearButton->setEnabled(false);
     }
 }
 
@@ -192,9 +190,6 @@ void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentTha
                 propertiesFile->setValue(T("recentlyUsedSyxSendFiles"), recentlyUsedHexFiles);
                 propertiesFile->setValue(T("defaultSyxSendFile"), inFile.getFullPathName());
             }
-
-            sendStartButton->setEnabled(true);
-            sendClearButton->setEnabled(true);
         }
 
         deleteAndZero(inFileStream);
@@ -234,7 +229,7 @@ void SysexToolSend::timerCallback()
             int delay = sendDelaySlider->getValue();
             startTimer((delay > 0) ? delay : 1);
         } else {
-            startTimer(2000); // stop progress bar after 2 seconds
+            startTimer(1000); // stop progress bar after 1 second
         }
     }
 }
@@ -325,13 +320,11 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
         receiveStartButton->setEnabled(false);
         receiveStopButton->setEnabled(true);
         receiveFileChooser->setEnabled(false);
-        receiveClearButton->setEnabled(false);
         receiveBox->clear();
     } else if( buttonThatWasClicked == receiveStopButton ) {
         receiveStopButton->setEnabled(false);
         receiveStartButton->setEnabled(true);
         receiveFileChooser->setEnabled(true);
-        receiveClearButton->setEnabled(true);
     } else if( buttonThatWasClicked == receiveClearButton ) {
         receiveBox->clear();
     }
