@@ -40,7 +40,6 @@ HexTextEditor::HexTextEditor(Label *_statusLabel)
 
 HexTextEditor::~HexTextEditor()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
