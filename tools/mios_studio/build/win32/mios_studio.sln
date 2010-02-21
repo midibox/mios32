@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mios_studio", "mios_studio.vcproj", "{78175CE0-F97C-4A54-A1CB-CCEAFE1B470C}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "..\Setup\Setup.vdproj", "{FF998C8B-83E7-4701-BBEB-A0E51FD44E07}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{52CFE05B-F7B6-4389-8943-92C3A83056B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +15,10 @@ Global
 		{78175CE0-F97C-4A54-A1CB-CCEAFE1B470C}.Debug|Win32.Build.0 = Debug|Win32
 		{78175CE0-F97C-4A54-A1CB-CCEAFE1B470C}.Release|Win32.ActiveCfg = Release|Win32
 		{78175CE0-F97C-4A54-A1CB-CCEAFE1B470C}.Release|Win32.Build.0 = Release|Win32
-		{FF998C8B-83E7-4701-BBEB-A0E51FD44E07}.Debug|Win32.ActiveCfg = Debug
-		{FF998C8B-83E7-4701-BBEB-A0E51FD44E07}.Release|Win32.ActiveCfg = Release
+		{52CFE05B-F7B6-4389-8943-92C3A83056B3}.Debug|Win32.ActiveCfg = Debug
+		{52CFE05B-F7B6-4389-8943-92C3A83056B3}.Debug|Win32.Build.0 = Debug
+		{52CFE05B-F7B6-4389-8943-92C3A83056B3}.Release|Win32.ActiveCfg = Release
+		{52CFE05B-F7B6-4389-8943-92C3A83056B3}.Release|Win32.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

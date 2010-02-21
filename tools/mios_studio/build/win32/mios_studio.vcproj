@@ -206,6 +206,10 @@
 				Name="gui"
 				>
 				<File
+					RelativePath="..\..\src\gui\HexTextEditor.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\LogBox.cpp"
 					>
 				</File>
@@ -227,6 +231,10 @@
 				</File>
 				<File
 					RelativePath="..\..\src\gui\MiosTerminal.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\SysexTool.cpp"
 					>
 				</File>
 				<File
@@ -264,6 +272,10 @@
 				Name="gui"
 				>
 				<File
+					RelativePath="..\..\src\gui\HexTextEditor.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\LogBox.h"
 					>
 				</File>
@@ -285,6 +297,10 @@
 				</File>
 				<File
 					RelativePath="..\..\src\gui\MiosTerminal.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\SysexTool.h"
 					>
 				</File>
 				<File
