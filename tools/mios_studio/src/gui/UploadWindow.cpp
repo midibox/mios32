@@ -154,6 +154,7 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
     } else if( buttonThatWasClicked == toolsButton ) {
         PopupMenu m;
         m.addItem (1, T("SysEx Tool"), true, miosStudio->sysexToolWindow->isVisible());
+        m.addItem (2, T("MIDIO128 Tool"), true, miosStudio->midio128ToolWindow->isVisible());
 
         switch( m.showAt(toolsButton) ) {
         case 1:
@@ -163,7 +164,15 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
                 miosStudio->sysexToolWindow->setVisible(true);
                 miosStudio->sysexToolWindow->toFront(true);
             }
+            break;
 
+        case 2:
+            if( miosStudio->midio128ToolWindow->isVisible() )
+                miosStudio->midio128ToolWindow->setVisible(false);
+            else {
+                miosStudio->midio128ToolWindow->setVisible(true);
+                miosStudio->midio128ToolWindow->toFront(true);
+            }
             break;
         }
     }

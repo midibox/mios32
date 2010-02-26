@@ -65,11 +65,6 @@ protected:
     int numBytesToSend;
     int numBytesSent;
     double progress;
-
-    //==============================================================================
-    // (prevent copy constructor and operator= being generated..)
-    SysexToolSend (const SysexToolSend&);
-    const SysexToolSend& operator= (const SysexToolSend&);
 };
 
 
@@ -109,11 +104,6 @@ protected:
 
     //==============================================================================
     MiosStudio *miosStudio;
-
-    //==============================================================================
-    // (prevent copy constructor and operator= being generated..)
-    SysexToolReceive (const SysexToolReceive&);
-    const SysexToolReceive& operator= (const SysexToolReceive&);
 };
 
 
@@ -146,11 +136,6 @@ protected:
 
     //==============================================================================
     MiosStudio *miosStudio;
-
-    //==============================================================================
-    // (prevent copy constructor and operator= being generated..)
-    SysexTool (const SysexTool&);
-    const SysexTool& operator= (const SysexTool&);
 };
 
 
@@ -162,7 +147,7 @@ class SysexToolWindow
 {
 public:
     SysexToolWindow(MiosStudio *_miosStudio)
-        : DocumentWindow(T("Sysex Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
+        : DocumentWindow(T("SysEx Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         sysexTool = new SysexTool(_miosStudio);
         setContentComponent(sysexTool, true, true);
