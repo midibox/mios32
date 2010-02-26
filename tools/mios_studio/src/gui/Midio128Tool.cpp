@@ -308,7 +308,7 @@ void Midio128ToolConfigDout::paintCell(Graphics &g, int rowNumber, int columnId,
     } break;
 
     case 2: {
-        const String text = String(rowNumber/8 + 1) + T("/D") + String(rowNumber%8);
+        const String text = String(rowNumber/8 + 1) + T("/D") + String(7 - (rowNumber%8));
         g.drawText(text, 2, 0, width - 4, height, Justification::centred, true);
     } break;
     }
@@ -473,7 +473,7 @@ void Midio128ToolConfigDin::paintCell(Graphics &g, int rowNumber, int columnId, 
     } break;
 
     case 2: {
-        const String text = String(rowNumber/8 + 1) + T("/D") + String(7 - (rowNumber%8));
+        const String text = String(rowNumber/8 + 1) + T("/D") + String(rowNumber%8);
         g.drawText(text, 2, 0, width - 4, height, Justification::centred, true);
     } break;
     }
