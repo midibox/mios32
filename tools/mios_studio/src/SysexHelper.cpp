@@ -265,3 +265,87 @@ String SysexHelper::decodeMiosErrorCode(uint8 errorCode)
 
     return "Unknown Error Code";
 }
+
+
+//==============================================================================
+bool SysexHelper::isValidMidio128Header(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return
+        size >= 7 && // the shortest valid header is F0 00 00 7E 44 ((<deviceId> << 4) | <cmd>) F7
+        data[0] == 0xf0 &&
+        data[1] == 0x00 &&
+        data[2] == 0x00 &&
+        data[3] == 0x7e &&
+        data[4] == 0x44 &&
+        (deviceId < 0 || (data[5] >> 4) == deviceId );
+}
+
+Array<uint8> SysexHelper::createMidio128Header()
+{
+    Array<uint8> dataArray;
+    dataArray.add(0xf0);
+    dataArray.add(0x00);
+    dataArray.add(0x00);
+    dataArray.add(0x7e);
+    dataArray.add(0x44);
+    return dataArray;
+}
+
+bool SysexHelper::isValidMidio128ReadBlock(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMidio128Header(data, size, deviceId) && ((data[5] & 0x0f) == 0x03);
+}
+
+Array<uint8> SysexHelper::createMidio128ReadBlock(const uint8 &deviceId, const uint8 &block)
+{
+    Array<uint8> dataArray = createMidio128Header();
+
+    uint8 cmd = 0x03 | ((deviceId << 4) & 0x70);
+    dataArray.add(cmd);
+    dataArray.add(block);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}
+
+bool SysexHelper::isValidMidio128WriteBlock(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMidio128Header(data, size, deviceId) && ((data[5] & 0x0f) == 0x04);
+}
+
+Array<uint8> SysexHelper::createMidio128WriteBlock(const uint8 &deviceId, const uint8 &block, const uint8 *data)
+{
+    Array<uint8> dataArray = createMidio128Header();
+    uint8 checksum = 0x00;
+
+    uint8 cmd = 0x04 | ((deviceId << 4) & 0x70);
+    dataArray.add(cmd);
+    uint8 b;
+    dataArray.add(b = block); checksum += b;
+
+    for(int i=0; i<256; ++i) {
+        dataArray.add(b = data[i]);
+        checksum += b;
+    }
+
+    dataArray.add(-(int)checksum & 0x7f);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}
+
+bool SysexHelper::isValidMidio128Acknowledge(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMidio128Header(data, size, deviceId) && ((data[5] & 0x0f) == 0x0f);
+}
+
+Array<uint8> SysexHelper::createMidio128Ping(const uint8 &deviceId)
+{
+    Array<uint8> dataArray = createMidio128Header();
+    uint8 checksum = 0x00;
+
+    uint8 cmd = 0x0f | ((deviceId << 4) & 0x70);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}

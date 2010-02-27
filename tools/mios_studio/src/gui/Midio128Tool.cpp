@@ -16,114 +16,6 @@
 #include "MiosStudio.h"
 
 
-//==============================================================================
-Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio)
-    : miosStudio(_miosStudio)
-    , progress(0)
-{
-    addAndMakeVisible(loadButton = new TextButton(T("Load Button")));
-    loadButton->setButtonText(T("Load"));
-    loadButton->addButtonListener(this);
-
-    addAndMakeVisible(saveButton = new TextButton(T("Save Button")));
-    saveButton->setButtonText(T("Save"));
-    saveButton->addButtonListener(this);
-
-    addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
-    deviceIdLabel->setJustificationType(Justification::right);
-    
-    addAndMakeVisible(deviceIdSlider = new Slider(T("Device ID")));
-    deviceIdSlider->setRange(0, 127, 1);
-    deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
-    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
-    deviceIdSlider->setDoubleClickReturnValue(true, 0);
-
-    addAndMakeVisible(sendButton = new TextButton(T("Send Button")));
-    sendButton->setButtonText(T("Send"));
-    sendButton->addButtonListener(this);
-
-    addAndMakeVisible(receiveButton = new TextButton(T("Receive Button")));
-    receiveButton->setButtonText(T("Receive"));
-    receiveButton->addButtonListener(this);
-
-    addAndMakeVisible(progressBar = new ProgressBar(progress));
-
-    // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
-    if( propertiesFile ) {
-        //sendDelaySlider->setValue(propertiesFile->getIntValue(T("sysexSendDelay"), 750));
-    }
-
-    setSize(800, 200);
-}
-
-Midio128ToolControl::~Midio128ToolControl()
-{
-    deleteAllChildren();
-}
-
-//==============================================================================
-void Midio128ToolControl::paint (Graphics& g)
-{
-    g.fillAll(Colours::white);
-}
-
-void Midio128ToolControl::resized()
-{
-    int buttonX0 = 10;
-    int buttonXOffset = 80;
-    int buttonY = 8;
-    int buttonWidth = 72;
-    int buttonHeight = 24;
-
-    loadButton->setBounds(buttonX0 + 0*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-    saveButton->setBounds(buttonX0 + 1*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-
-    deviceIdLabel->setBounds(buttonX0 + 20+2*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-    deviceIdSlider->setBounds(buttonX0 + 20+3*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-
-    sendButton->setBounds(buttonX0 + 40+4*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-    receiveButton->setBounds(buttonX0 + 40+5*buttonXOffset, buttonY, buttonWidth, buttonHeight);
-
-    int progressBarX = receiveButton->getX() + buttonWidth + 20;
-    progressBar->setBounds(progressBarX, buttonY, getWidth()-progressBarX-buttonX0, buttonHeight);
-}
-
-//==============================================================================
-void Midio128ToolControl::buttonClicked(Button* buttonThatWasClicked)
-{
-    if( buttonThatWasClicked == loadButton ) {
-    } else if( buttonThatWasClicked == saveButton ) {
-    } else if( buttonThatWasClicked == sendButton ) {
-    } else if( buttonThatWasClicked == receiveButton ) {
-    }
-}
-
-
-//==============================================================================
-void Midio128ToolControl::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
-{
-}
-
-
-//==============================================================================
-void Midio128ToolControl::timerCallback()
-{
-    stopTimer(); // will be restarted if required
-}
-
-//==============================================================================
-void Midio128ToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
-{
-    uint8 *data = message.getRawData();
-    uint32 size = message.getRawDataSize();
-    //receiveBox->addBinary(data, size);
-}
-
-
-//==============================================================================
-//==============================================================================
-//==============================================================================
 Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
 {
     addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
@@ -165,15 +57,15 @@ Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
     inverseInputsLabel->setJustificationType(Justification::right);
     addAndMakeVisible(inverseInputsComboBox = new ComboBox(String::empty));
     inverseInputsComboBox->setWantsKeyboardFocus(true);
-    inverseInputsComboBox->addItem(T("Normal (0V = Active/Pressed, 5V = Open/Depressed"), 1);
-    inverseInputsComboBox->addItem(T("Inverted (0V = Open/Depressed, 5V = Active/Pressed"), 2);
-    inverseInputsComboBox->setSelectedId(1);
+    inverseInputsComboBox->addItem(T("Inverted (0V = Active/Pressed, 5V = Open/Depressed"), 1);
+    inverseInputsComboBox->addItem(T("Normal (0V = Open/Depressed, 5V = Active/Pressed"), 2);
+    inverseInputsComboBox->setSelectedId(2);
 
     addAndMakeVisible(inverseOutputsLabel = new Label(String::empty, T("DOUT Output Polarity:")));
     inverseOutputsLabel->setJustificationType(Justification::right);
     addAndMakeVisible(inverseOutputsComboBox = new ComboBox(String::empty));
     inverseOutputsComboBox->setWantsKeyboardFocus(true);
-    inverseOutputsComboBox->addItem(T("Normal (5V = Active/On, 5V = Not Active/Off"), 1);
+    inverseOutputsComboBox->addItem(T("Normal (5V = Active/On, 0V = Not Active/Off"), 1);
     inverseOutputsComboBox->addItem(T("Inverted (0V = Not Active/Off, 5V = Active/On"), 2);
     inverseOutputsComboBox->setSelectedId(1);
 
@@ -246,6 +138,52 @@ void Midio128ToolConfigGlobals::resized()
 }
 
 
+//==============================================================================
+void Midio128ToolConfigGlobals::getDump(Array<uint8> &syxDump)
+{
+    int merger = mergerComboBox->getSelectedId()-1;
+    int debounce = debounceSlider->getValue();
+    int altPrgChanges = altPrgChangesComboBox->getSelectedId()-1;
+    int forwardInToOut = forwardInToOutComboBox->getSelectedId()-1;
+    int inverseInputs = inverseInputsComboBox->getSelectedId()-1;
+    int inverseOutputs = inverseOutputsComboBox->getSelectedId()-1;
+    int touchsensorSensitivity = touchsensorSensitivitySlider->getValue();
+    int allNotesOffChannel = allNotesOffChannelComboBox->getSelectedId()-1;
+
+    syxDump.set(0x400, merger);
+    syxDump.set(0x402, debounce & 0x0f);
+    syxDump.set(0x403, (debounce>>4) & 0x0f);
+    syxDump.set(0x404, altPrgChanges);
+    syxDump.set(0x406, forwardInToOut);
+    syxDump.set(0x408, inverseInputs);
+    syxDump.set(0x40a, inverseOutputs);
+    syxDump.set(0x40c, touchsensorSensitivity & 0x0f);
+    syxDump.set(0x40d, (touchsensorSensitivity>>4) & 0x0f);
+    syxDump.set(0x40e, 0x00); // reserved for global channel
+    syxDump.set(0x410, allNotesOffChannel);
+}
+
+void Midio128ToolConfigGlobals::setDump(const Array<uint8> &syxDump)
+{
+    int merger = syxDump[0x400];
+    int debounce = (syxDump[0x402] & 0x0f) | ((syxDump[0x403] << 4) & 0xf0);
+    int altPrgChanges = syxDump[0x404];
+    int forwardInToOut = syxDump[0x406];
+    int inverseInputs = syxDump[0x408];
+    int inverseOutputs = syxDump[0x40a];
+    int touchsensorSensitivity = (syxDump[0x40c] & 0x0f) | ((syxDump[0x40d] << 4) & 0xf0);
+    int allNotesOffChannel = syxDump[0x410];
+
+    mergerComboBox->setSelectedId(merger+1);
+    debounceSlider->setValue(debounce);
+    altPrgChangesComboBox->setSelectedId(altPrgChanges+1);
+    forwardInToOutComboBox->setSelectedId(forwardInToOut+1);
+    inverseInputsComboBox->setSelectedId(inverseInputs+1);
+    inverseOutputsComboBox->setSelectedId(inverseOutputs+1);
+    allNotesOffChannelComboBox->setSelectedId(allNotesOffChannel+1);
+    touchsensorSensitivitySlider->setValue(touchsensorSensitivity);
+}
+
 
 //==============================================================================
 //==============================================================================
@@ -255,14 +193,14 @@ Midio128ToolConfigDout::Midio128ToolConfigDout()
     , numRows(128)
 {
     for(int dout=0; dout<numRows; ++dout) {
-        doutChannel.push_back(1); // Default MIDI Channel
+        doutChannel.add(1); // Default MIDI Channel
 
         if( dout < 64 ) {
-            doutEvent.push_back(1); // Note On
-            doutParameter.push_back(0x30 + dout); // Note Number
+            doutEvent.add(3); // Note On
+            doutParameter.add(0x30 + dout); // Note Number
         } else {
-            doutEvent.push_back(3); // CC
-            doutParameter.push_back(0x10 + dout - 64); // CC Number
+            doutEvent.add(5); // CC
+            doutParameter.add(0x10 + dout - 64); // CC Number
         }
     }
 
@@ -338,13 +276,15 @@ Component* Midio128ToolConfigDout::refreshComponentForCell(int rowNumber, int co
 
         if( comboBox == 0 ) {
             comboBox = new ConfigTableComboBox(*this);
-            comboBox->addItem(T("Note On"), 1);
-            comboBox->addItem(T("Poly Aftertouch"), 2);
-            comboBox->addItem(T("Controller"), 3);
-            comboBox->addItem(T("Program Change"), 4);
-            comboBox->addItem(T("Channel Aftertouch"), 5);
-            comboBox->addItem(T("Pitch Bender"), 6);
-            comboBox->addItem(T("Meta Event"), 7);
+            comboBox->addItem(T("Disabled"), 1);
+            comboBox->addItem(T("Note Off"), 2);
+            comboBox->addItem(T("Note On"), 3);
+            comboBox->addItem(T("Poly Aftertouch"), 4);
+            comboBox->addItem(T("Controller"), 5);
+            comboBox->addItem(T("Program Change"), 6);
+            comboBox->addItem(T("Channel Aftertouch"), 7);
+            comboBox->addItem(T("Pitch Bender"), 8);
+            comboBox->addItem(T("Meta Event"), 9);
         }
 
         comboBox->setRowAndColumn(rowNumber, columnId);
@@ -390,10 +330,49 @@ int Midio128ToolConfigDout::getTableValue(const int rowNumber, const int columnI
 void Midio128ToolConfigDout::setTableValue(const int rowNumber, const int columnId, const int newValue)
 {
     switch( columnId ) {
-    case 3: doutChannel[rowNumber] = newValue; break;
-    case 4: doutEvent[rowNumber] = newValue; break;
-    case 5: doutParameter[rowNumber] = newValue; break;
+    case 3: doutChannel.set(rowNumber, newValue); break;
+    case 4: doutEvent.set(rowNumber, newValue); break;
+    case 5: doutParameter.set(rowNumber, newValue); break;
     }
+}
+
+
+//==============================================================================
+void Midio128ToolConfigDout::getDump(Array<uint8> &syxDump)
+{
+    for(int dout=0; dout<numRows; ++dout) {
+        int channel = (doutChannel[dout] - 1) & 0x0f;
+        int event = (doutEvent[dout] - 2);
+        int parameter = doutParameter[dout] & 0x7f;
+
+        if( event < 0 ) {
+            syxDump.set(0x000 + 2*dout + 0, 0x7f);
+            syxDump.set(0x000 + 2*dout + 1, 0x7f);
+        } else {
+            syxDump.set(0x000 + 2*dout + 0, (event << 4) | channel);
+            syxDump.set(0x000 + 2*dout + 1, parameter);
+        }
+    }
+}
+
+void Midio128ToolConfigDout::setDump(const Array<uint8> &syxDump)
+{
+    for(int dout=0; dout<numRows; ++dout) {
+        int channel = syxDump[0x000 + 2*dout + 0] & 0x0f;
+        int event = (syxDump[0x000 + 2*dout + 0] >> 4) & 0x7;
+        int parameter = syxDump[0x000 + 2*dout + 1] & 0x7f;
+
+        if( channel == 0xf && event == 0x7 && parameter == 0x7f ) {
+            doutChannel.set(dout, 1);
+            doutEvent.set(dout, 1);
+            doutParameter.set(dout, 0);
+        } else {
+            doutChannel.set(dout, channel + 1);
+            doutEvent.set(dout, event ? (event+2) : 1);
+            doutParameter.set(dout, parameter);
+        }
+    }
+    table->updateContent();
 }
 
 
@@ -406,23 +385,23 @@ Midio128ToolConfigDin::Midio128ToolConfigDin()
     , numRows(128)
 {
     for(int din=0; din<numRows; ++din) {
-        dinChannel.push_back(1); // Default MIDI Channel
-        dinMode.push_back(1); // OnOff
+        dinChannel.add(1); // Default MIDI Channel
+        dinMode.add(1); // OnOff
 
         if( din < 64 ) {
-            dinOnEvent.push_back(1); // Note On
-            dinOnParameter1.push_back(0x30 + din); // Note Number
-            dinOnParameter2.push_back(0x7f); // Max Velocity
-            dinOffEvent.push_back(1); // Note On
-            dinOffParameter1.push_back(0x30 + din); // Note Number
-            dinOffParameter2.push_back(0x7f); // 0 Velocity (-> Note Off)
+            dinOnEvent.add(3); // Note On
+            dinOnParameter1.add(0x30 + din); // Note Number
+            dinOnParameter2.add(0x7f); // Max Velocity
+            dinOffEvent.add(3); // Note On
+            dinOffParameter1.add(0x30 + din); // Note Number
+            dinOffParameter2.add(0x00); // 0 Velocity (-> Note Off)
         } else {
-            dinOnEvent.push_back(3); // CC
-            dinOnParameter1.push_back(0x10 + din - 64); // CC Number
-            dinOnParameter2.push_back(0x7f); // Max value
-            dinOffEvent.push_back(3); // CC
-            dinOffParameter1.push_back(0x10 + din - 64); // CC Number
-            dinOffParameter2.push_back(0x7f); // 0
+            dinOnEvent.add(5); // CC
+            dinOnParameter1.add(0x10 + din - 64); // CC Number
+            dinOnParameter2.add(0x7f); // Max value
+            dinOffEvent.add(5); // CC
+            dinOffParameter1.add(0x10 + din - 64); // CC Number
+            dinOffParameter2.add(0x00); // 0
         }
     }
 
@@ -504,13 +483,15 @@ Component* Midio128ToolConfigDin::refreshComponentForCell(int rowNumber, int col
 
         if( comboBox == 0 ) {
             comboBox = new ConfigTableComboBox(*this);
-            comboBox->addItem(T("Note On"), 1);
-            comboBox->addItem(T("Poly Aftertouch"), 2);
-            comboBox->addItem(T("Controller"), 3);
-            comboBox->addItem(T("Program Change"), 4);
-            comboBox->addItem(T("Channel Aftertouch"), 5);
-            comboBox->addItem(T("Pitch Bender"), 6);
-            comboBox->addItem(T("Meta Event"), 7);
+            comboBox->addItem(T("Disabled"), 1);
+            comboBox->addItem(T("Note Off"), 2);
+            comboBox->addItem(T("Note On"), 3);
+            comboBox->addItem(T("Poly Aftertouch"), 4);
+            comboBox->addItem(T("Controller"), 5);
+            comboBox->addItem(T("Program Change"), 6);
+            comboBox->addItem(T("Channel Aftertouch"), 7);
+            comboBox->addItem(T("Pitch Bender"), 8);
+            comboBox->addItem(T("Meta Event"), 9);
         }
 
         comboBox->setRowAndColumn(rowNumber, columnId);
@@ -578,17 +559,109 @@ int Midio128ToolConfigDin::getTableValue(const int rowNumber, const int columnId
 void Midio128ToolConfigDin::setTableValue(const int rowNumber, const int columnId, const int newValue)
 {
     switch( columnId ) {
-    case 3: dinChannel[rowNumber] = newValue; break;
-    case 4: dinOnEvent[rowNumber] = newValue; break;
-    case 5: dinOnParameter1[rowNumber] = newValue; break;
-    case 6: dinOnParameter2[rowNumber] = newValue; break;
-    case 7: dinOffEvent[rowNumber] = newValue; break;
-    case 8: dinOffParameter1[rowNumber] = newValue; break;
-    case 9: dinOffParameter2[rowNumber] = newValue; break;
-    case 10: dinMode[rowNumber] = newValue; break;
+    case 3: dinChannel.set(rowNumber, newValue); break;
+    case 4: dinOnEvent.set(rowNumber, newValue); break;
+    case 5: dinOnParameter1.set(rowNumber, newValue); break;
+    case 6: dinOnParameter2.set(rowNumber, newValue); break;
+    case 7: dinOffEvent.set(rowNumber, newValue); break;
+    case 8: dinOffParameter1.set(rowNumber, newValue); break;
+    case 9: dinOffParameter2.set(rowNumber, newValue); break;
+    case 10: dinMode.set(rowNumber, newValue); break;
     }
 }
 
+
+//==============================================================================
+void Midio128ToolConfigDin::getDump(Array<uint8> &syxDump)
+{
+    for(int din=0; din<numRows; ++din) {
+        int onChannel = (dinChannel[din] - 1) & 0x0f;
+        int onEvent = (dinOnEvent[din] - 2);
+        int onParameter1 = dinOnParameter1[din] & 0x7f;
+        int onParameter2 = dinOnParameter2[din] & 0x7f;
+        int offChannel = (dinChannel[din] - 1) & 0x0f;
+        int offEvent = (dinOffEvent[din] - 2);
+        int offParameter1 = dinOffParameter1[din] & 0x7f;
+        int offParameter2 = dinOffParameter2[din] & 0x7f;
+        int mode = (dinMode[din]-1) & 0x07;
+
+        if( onEvent < 0 ) {
+            syxDump.set(0x100 + 6*din + 0, 0x7f);
+            syxDump.set(0x100 + 6*din + 1, 0x7f);
+            syxDump.set(0x100 + 6*din + 2, 0x7f);
+        } else {
+            syxDump.set(0x100 + 6*din + 0, (onEvent << 4) | onChannel);
+            syxDump.set(0x100 + 6*din + 1, onParameter1);
+            syxDump.set(0x100 + 6*din + 2, onParameter2);
+        }
+
+        if( offEvent < 0 ) {
+            syxDump.set(0x100 + 6*din + 3, 0x7f);
+            syxDump.set(0x100 + 6*din + 4, 0x7f);
+            syxDump.set(0x100 + 6*din + 5, 0x7f);
+        } else {
+            syxDump.set(0x100 + 6*din + 3, (offEvent << 4) | offChannel);
+            syxDump.set(0x100 + 6*din + 4, offParameter1);
+            syxDump.set(0x100 + 6*din + 5, offParameter2);
+        }
+
+        int modeAddr = 0x420 + (din/2);
+        if( din & 1 )
+            syxDump.set(modeAddr, (syxDump[modeAddr] & 0x0f) | (mode << 4));
+        else
+            syxDump.set(modeAddr, (syxDump[modeAddr] & 0xf0) | mode);
+    }
+}
+
+void Midio128ToolConfigDin::setDump(const Array<uint8> &syxDump)
+{
+    for(int din=0; din<numRows; ++din) {
+        int onChannel = syxDump[0x100 + 6*din + 0] & 0x0f;
+        int onEvent = (syxDump[0x100 + 6*din + 0] >> 4) & 0x7;
+        int onParameter1 = syxDump[0x100 + 6*din + 1] & 0x7f;
+        int onParameter2 = syxDump[0x100 + 6*din + 2] & 0x7f;
+        int offChannel = syxDump[0x100 + 6*din + 3] & 0x0f;
+        int offEvent = (syxDump[0x100 + 6*din + 3] >> 4) & 0x7;
+        int offParameter1 = syxDump[0x100 + 6*din + 4] & 0x7f;
+        int offParameter2 = syxDump[0x100 + 6*din + 5] & 0x7f;
+        int mode = syxDump[0x420 + (din/2)];
+        mode = ((din & 1) ? (mode >> 4) : mode) & 0x07;
+
+        if( onChannel == 0xf && onEvent == 0x7 && onParameter1 == 0x7f && onParameter2 == 0x7f ) {
+            onChannel = -1;
+            dinOnEvent.set(din, 1);
+            dinOnParameter1.set(din, 0);
+            dinOnParameter2.set(din, 0);
+        } else {
+            dinOnEvent.set(din, onEvent ? (onEvent+2) : 1);
+            dinOnParameter1.set(din, onParameter1);
+            dinOnParameter2.set(din, onParameter2);
+        }
+
+        if( offChannel == 0xf && offEvent == 0x7 && offParameter1 == 0x7f && offParameter2 == 0x7f ) {
+            offChannel = -1;
+            dinOffEvent.set(din, 1);
+            dinOffParameter1.set(din, 0);
+            dinOffParameter2.set(din, 0);
+        } else {
+            dinOffEvent.set(din, offEvent ? (offEvent+2) : 1);
+            dinOffParameter1.set(din, offParameter1);
+            dinOffParameter2.set(din, offParameter2);
+        }
+
+        // we only allow to configure a single channel for both events
+        if( onChannel >= 0 )
+            dinChannel.set(din, onChannel+1);
+        else if( offChannel >= 0 )
+            dinChannel.set(din, offChannel+1);
+        else
+            dinChannel.set(din, 1);
+
+        // DIN mode
+        dinMode.set(din, mode+1);
+    }
+    table->updateContent();
+}
 
 //==============================================================================
 //==============================================================================
@@ -597,9 +670,9 @@ Midio128ToolConfig::Midio128ToolConfig(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
     , TabbedComponent(TabbedButtonBar::TabsAtTop)
 {
-    addTab(T("Global"), Colour(0xfff0f0e0), new Midio128ToolConfigGlobals(), true);
-    addTab(T("DINs"),   Colour(0xfff0f0d0), new Midio128ToolConfigDin(), true);
-    addTab(T("DOUTs"),  Colour(0xfff0f0c0), new Midio128ToolConfigDout(), true);
+    addTab(T("Global"), Colour(0xfff0f0e0), configGlobals = new Midio128ToolConfigGlobals(), true);
+    addTab(T("DINs"),   Colour(0xfff0f0d0), configDin = new Midio128ToolConfigDin(), true);
+    addTab(T("DOUTs"),  Colour(0xfff0f0c0), configDout = new Midio128ToolConfigDout(), true);
     setSize(800, 200);
 }
 
@@ -608,18 +681,397 @@ Midio128ToolConfig::~Midio128ToolConfig()
 }
 
 //==============================================================================
-void Midio128ToolConfig::buttonClicked(Button* buttonThatWasClicked)
+void Midio128ToolConfig::getDump(Array<uint8> &syxDump)
 {
+    for(int addr=0x000; addr<0x460; ++addr)
+        syxDump.set(addr, 0x00);
+    for(int addr=0x460; addr<0x600; ++addr)
+        syxDump.set(addr, 0x7f);
+
+    configGlobals->getDump(syxDump);
+    configDin->getDump(syxDump);
+    configDout->getDump(syxDump);
+}
+
+void Midio128ToolConfig::setDump(const Array<uint8> &syxDump)
+{
+    configGlobals->setDump(syxDump);
+    configDin->setDump(syxDump);
+    configDout->setDump(syxDump);
+}
+
+
+
+//==============================================================================
+//==============================================================================
+//==============================================================================
+Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolConfig *_midio128ToolConfig)
+    : miosStudio(_miosStudio)
+    , midio128ToolConfig(_midio128ToolConfig)
+    , progress(0)
+    , receiveDump(false)
+    , dumpReceived(false)
+    , checksumError(false)
+{
+    addAndMakeVisible(loadButton = new TextButton(T("Load Button")));
+    loadButton->setButtonText(T("Load"));
+    loadButton->addButtonListener(this);
+
+    addAndMakeVisible(saveButton = new TextButton(T("Save Button")));
+    saveButton->setButtonText(T("Save"));
+    saveButton->addButtonListener(this);
+
+    addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
+    deviceIdLabel->setJustificationType(Justification::right);
+    
+    addAndMakeVisible(deviceIdSlider = new Slider(T("Device ID")));
+    deviceIdSlider->setRange(0, 7, 1);
+    deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
+    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
+    deviceIdSlider->setDoubleClickReturnValue(true, 0);
+
+    addAndMakeVisible(receiveButton = new TextButton(T("Receive Button")));
+    receiveButton->setButtonText(T("Receive"));
+    receiveButton->addButtonListener(this);
+
+    addAndMakeVisible(sendButton = new TextButton(T("Send Button")));
+    sendButton->setButtonText(T("Send"));
+    sendButton->addButtonListener(this);
+
+    addAndMakeVisible(progressBar = new ProgressBar(progress));
+
+    // restore settings
+    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        deviceIdSlider->setValue(propertiesFile->getIntValue(T("midio128DeviceId"), 0) & 7);
+        String syxFileName(propertiesFile->getValue(T("midio128SyxFile"), String::empty));
+        if( syxFileName != String::empty )
+            syxFile = File(syxFileName);
+    }
+
+    setSize(800, 200);
+}
+
+Midio128ToolControl::~Midio128ToolControl()
+{
+    deleteAllChildren();
+}
+
+//==============================================================================
+void Midio128ToolControl::paint (Graphics& g)
+{
+    g.fillAll(Colours::white);
+}
+
+void Midio128ToolControl::resized()
+{
+    int buttonX0 = 10;
+    int buttonXOffset = 80;
+    int buttonY = 8;
+    int buttonWidth = 72;
+    int buttonHeight = 24;
+
+    loadButton->setBounds(buttonX0 + 0*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+    saveButton->setBounds(buttonX0 + 1*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+
+    deviceIdLabel->setBounds(buttonX0 + 20+2*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+    deviceIdSlider->setBounds(buttonX0 + 20+3*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+
+    receiveButton->setBounds(buttonX0 + 40+4*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+    sendButton->setBounds(buttonX0 + 40+5*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+
+    int progressBarX = sendButton->getX() + buttonWidth + 20;
+    progressBar->setBounds(progressBarX, buttonY, getWidth()-progressBarX-buttonX0, buttonHeight);
+}
+
+//==============================================================================
+void Midio128ToolControl::buttonClicked(Button* buttonThatWasClicked)
+{
+    if( buttonThatWasClicked == loadButton ) {
+        FileChooser fc(T("Choose a .syx file that you want to open..."),
+                       syxFile,
+                       T("*.syx"));
+
+        if( fc.browseForFileToOpen() ) {
+            syxFile = fc.getResult();
+            if( loadSyx(syxFile) ) {
+                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                if( propertiesFile )
+                    propertiesFile->setValue(T("midio128SyxFile"), syxFile.getFullPathName());
+            }
+        }
+    } else if( buttonThatWasClicked == saveButton ) {
+        FileChooser fc(T("Choose a .syx file that you want to save..."),
+                       syxFile,
+                       T("*.syx"));
+        if( fc.browseForFileToSave(true) ) {
+            syxFile = fc.getResult();
+            if( saveSyx(syxFile) ) {
+                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                if( propertiesFile )
+                    propertiesFile->setValue(T("midio128SyxFile"), syxFile.getFullPathName());
+            }
+        }
+    } else if( buttonThatWasClicked == sendButton || buttonThatWasClicked == receiveButton ) {
+        loadButton->setEnabled(false);
+        saveButton->setEnabled(false);
+        sendButton->setEnabled(false);
+        receiveButton->setEnabled(false);
+        syxBlock = 0;
+        progress = 0;
+        if( buttonThatWasClicked == receiveButton ) {
+            receiveDump = true;
+            currentSyxDump.clear();
+        } else {
+            receiveDump = false;
+            midio128ToolConfig->getDump(currentSyxDump);
+        }
+        startTimer(1);
+    }
 }
 
 
 //==============================================================================
-void Midio128ToolConfig::sliderValueChanged(Slider* slider)
+void Midio128ToolControl::sliderValueChanged(Slider* slider)
 {
-    //if( slider == sendDelaySlider ) {
-    //}
+    if( slider == deviceIdSlider ) {
+        // store setting
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile )
+            propertiesFile->setValue(T("midio128DeviceId"), (int)slider->getValue());
+    }
 }
 
+
+//==============================================================================
+void Midio128ToolControl::timerCallback()
+{
+    stopTimer(); // will be restarted if required
+
+    bool transferFinished = false;
+
+    if( receiveDump ) {
+        if( syxBlock > 0 ) {
+            int receivedBlock = syxBlock-1;
+            if( !dumpReceived ) {
+                transferFinished = true;
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("No response from core."),
+                                            T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIO128 firmware has been uploaded"),
+                                            String::empty);
+            }
+
+            if( checksumError ) {
+                transferFinished = true;
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("Detected checksum error!"),
+                                            T("Check:\n- MIDI In/Out connections\n- your MIDI interface"),
+                                            String::empty);
+            }
+        }
+
+        if( !transferFinished ) {
+            if( syxBlock >= 6 ) {
+                transferFinished = true;
+
+                if( currentSyxDump.size() != 6*256 ) {
+                    AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                                T("Unexpected MIDI handling error!"),
+                                                T("Please inform TK how this happened."),
+                                                T("will do"));
+                } else {
+                    midio128ToolConfig->setDump(currentSyxDump);
+                }
+            } else {
+                dumpReceived = false;
+                checksumError = false;
+                Array<uint8> data = SysexHelper::createMidio128ReadBlock((uint8)deviceIdSlider->getValue(),
+                                                                         syxBlock);
+                MidiMessage message = SysexHelper::createMidiMessage(data);
+                miosStudio->sendMidiMessage(message);
+
+                progress = (double)++syxBlock / 6.0;
+                startTimer(1000);
+            }
+        }
+    } else {
+        if( syxBlock >= 6 ) {
+            transferFinished = true;
+        } else {
+            Array<uint8> data = SysexHelper::createMidio128WriteBlock((uint8)deviceIdSlider->getValue(),
+                                                                      syxBlock,
+                                                                      &currentSyxDump.getReference(syxBlock*256));
+            MidiMessage message = SysexHelper::createMidiMessage(data);
+            miosStudio->sendMidiMessage(message);
+
+            progress = (double)++syxBlock / 6.0;
+            startTimer(1000);
+        }
+    }
+
+    if( transferFinished ) {
+        progress = 0;
+        loadButton->setEnabled(true);
+        saveButton->setEnabled(true);
+        sendButton->setEnabled(true);
+        receiveButton->setEnabled(true);
+    }
+}
+
+//==============================================================================
+void Midio128ToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
+{
+    uint8 *data = message.getRawData();
+    uint32 size = message.getRawDataSize();
+
+    if( receiveDump ) {
+        int receivedBlock = syxBlock-1;
+        if( SysexHelper::isValidMidio128WriteBlock(data, size, (int)deviceIdSlider->getValue()) &&
+            data[6] == receivedBlock ) {
+            dumpReceived = true;
+
+            if( size != 265 ) {
+                checksumError = true;
+            } else {
+                uint8 checksum = 0x00;
+                int pos;
+                for(pos=6; pos<6+1+256; ++pos)
+                    checksum += data[pos];
+                if( data[pos] != (-(int)checksum & 0x7f) )
+                    checksumError = true;
+                else {
+                    for(pos=7; pos<6+1+256; ++pos)
+                        currentSyxDump.add(data[pos]);
+                }
+            }
+
+            // trigger timer immediately
+            stopTimer();
+            startTimer(1);
+        }
+    } else if( isTimerRunning() ) {
+        if( SysexHelper::isValidMidio128Acknowledge(data, size, (int)deviceIdSlider->getValue()) ) {
+            // trigger timer immediately
+            stopTimer();
+            startTimer(1);
+        }
+    }
+}
+
+
+//==============================================================================
+bool Midio128ToolControl::loadSyx(File &syxFile)
+{
+    FileInputStream *inFileStream = syxFile.createInputStream();
+
+    if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                    T("The file ") + syxFile.getFileName(),
+                                    T("doesn't exist!"),
+                                    String::empty);
+        return false;
+    } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                    T("The file ") + syxFile.getFileName(),
+                                    T("is empty!"),
+                                    String::empty);
+        return false;
+    }
+
+    int64 size = inFileStream->getTotalLength();
+    uint8 *buffer = (uint8 *)juce_malloc(size);
+    int64 readNumBytes = inFileStream->read(buffer, size);
+    int numValidBlocks = 0;
+    Array<uint8> syxDump;
+    String errorMessage;
+
+    if( readNumBytes != size ) {
+        errorMessage = String(T("cannot be read completely!"));
+    } else {
+        for(int pos=0; pos<size; ++pos) {
+            if( SysexHelper::isValidMidio128WriteBlock(buffer+pos, size - pos, -1) ) {
+                pos += 6;
+
+                if( pos < size ) {
+                    int block = buffer[pos++];
+                    if( block < 6 ) {
+                        int blockPos = 0;
+                        uint8 checksum = block;
+                        while( pos < size && buffer[pos] != 0xf7 && blockPos < 256 ) {
+                            uint8 b = buffer[pos++];
+                            syxDump.set(block*256 + blockPos, b);
+                            checksum += b;
+                            ++blockPos;
+                        }
+
+                        if( blockPos != 256 ) {
+                            errorMessage = String::formatted(T("contains invalid data: block %d not complete (only %d bytes)"), block, blockPos);
+                        } else {
+                            checksum = (-(int)checksum) & 0x7f;
+                            if( buffer[pos] != checksum ) {
+                                errorMessage = String::formatted(T("contains invalid checksum in block %d (expected %02X but read %02X)!"), block, checksum, buffer[pos]);
+                            } else {
+                                ++pos;
+                                ++numValidBlocks;
+                            }
+                        }
+                    } else {
+                        errorMessage = String::formatted(T("contains invalid block: %d"), block);
+                    }
+                }
+            }
+        }
+    }
+
+    juce_free(buffer);
+
+    if( errorMessage == String::empty ) {
+        if( !numValidBlocks )
+            errorMessage = String(T("doesn't contain valid MIDIO128 data!"));
+        else if( numValidBlocks < 6 )
+            errorMessage = String::formatted(T("is not complete (expect 6 blocks, only found %d blocks"), numValidBlocks);
+    }
+
+    if( errorMessage != String::empty ) {
+        AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                    T("The file ") + syxFile.getFileName(),
+                                    errorMessage,
+                                    String::empty);
+        return false;
+    }
+
+    midio128ToolConfig->setDump(syxDump);
+
+    return true;
+}
+
+bool Midio128ToolControl::saveSyx(File &syxFile)
+{
+    syxFile.deleteFile();
+    FileOutputStream *outFileStream = syxFile.createOutputStream();
+            
+    if( !outFileStream || outFileStream->failedToOpen() ) {
+        AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                    String::empty,
+                                    T("File cannot be created!"),
+                                    String::empty);
+        return false;
+    }
+
+    Array<uint8> syxDump;
+    midio128ToolConfig->getDump(syxDump);
+
+    for(int block=0; block<6; ++block) {
+        Array<uint8> data = SysexHelper::createMidio128WriteBlock((uint8)deviceIdSlider->getValue(),
+                                                                  block,
+                                                                  &syxDump.getReference(block*256));
+        outFileStream->write(&data.getReference(0), data.size());
+    }
+
+    delete outFileStream;
+
+    return true;
+}
 
 
 //==============================================================================
@@ -628,8 +1080,8 @@ void Midio128ToolConfig::sliderValueChanged(Slider* slider)
 Midio128Tool::Midio128Tool(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(midio128ToolControl = new Midio128ToolControl(miosStudio));
     addAndMakeVisible(midio128ToolConfig = new Midio128ToolConfig(miosStudio));
+    addAndMakeVisible(midio128ToolControl = new Midio128ToolControl(miosStudio, midio128ToolConfig));
 
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
@@ -645,7 +1097,8 @@ Midio128Tool::~Midio128Tool()
 //==============================================================================
 void Midio128Tool::paint (Graphics& g)
 {
-    g.fillAll(Colour(0xffc1d0ff));
+    //g.fillAll(Colour(0xffc1d0ff));
+    g.fillAll(Colours::white);
 }
 
 void Midio128Tool::resized()
