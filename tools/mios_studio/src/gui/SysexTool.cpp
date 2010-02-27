@@ -108,7 +108,7 @@ void SysexToolSend::resized()
     sendClearButton->setBounds(10 + 2*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
     sendDelayLabel->setBounds(10 + 4*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
     sendDelaySlider->setBounds(10 + 5*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
-    statusLabel->setBounds(getWidth()-10-100, sendButtonY, 100, 24);
+    statusLabel->setBounds(getWidth()-10-150, sendButtonY, 150, 24);
 
     sendBox->setBounds(4, 32+40, getWidth()-8, getHeight()-32-40-4-28-4);
 
@@ -168,14 +168,14 @@ void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentTha
 
         if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                        T("The file"),
-                                        inFile.getFileName(),
-                                        T("doesn't exist!"));
+                                        T("The file ") + inFile.getFileName(),
+                                        T("doesn't exist!"),
+                                        String::empty);
         } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                        T("The file"),
-                                        inFile.getFileName(),
-                                        T("is empty!"));
+                                        T("The file ") + inFile.getFileName(),
+                                        T("is empty!"),
+                                        String::empty);
         } else {
             int64 size = inFileStream->getTotalLength();
             uint8 *buffer = (uint8 *)juce_malloc(size);
@@ -244,6 +244,8 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     statusLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(receiveBox = new HexTextEditor(statusLabel));
+    receiveBox->setTextToShowWhenEmpty(T("Received Data will be displayed once the stop button has been pressed!"),
+                                       Colour(0xff808080));
 
 	addAndMakeVisible(receiveFileChooser = new FilenameComponent (T("syxfile"),
                                                                   File::nonexistent,
@@ -309,7 +311,7 @@ void SysexToolReceive::resized()
     receiveStartButton->setBounds(10 + 0*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
     receiveStopButton->setBounds(10 + 1*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
     receiveClearButton->setBounds(10 + 2*(receiveButtonWidth+10), receiveButtonY, receiveButtonWidth, 24);
-    statusLabel->setBounds(getWidth()-10-100, receiveButtonY, 100, 24);
+    statusLabel->setBounds(getWidth()-10-150, receiveButtonY, 150, 24);
 
     receiveBox->setBounds(4, 32+40, getWidth()-8, getHeight()-32-40-4);
 }
@@ -321,11 +323,14 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
         receiveStartButton->setEnabled(false);
         receiveStopButton->setEnabled(true);
         receiveFileChooser->setEnabled(false);
-        receiveBox->clear();
+        receivedData.clear();
+        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), true);
     } else if( buttonThatWasClicked == receiveStopButton ) {
         receiveStopButton->setEnabled(false);
         receiveStartButton->setEnabled(true);
         receiveFileChooser->setEnabled(true);
+        receiveBox->addBinary(&receivedData.getReference(0), receivedData.size());
+        receivedData.clear();
     } else if( buttonThatWasClicked == receiveClearButton ) {
         receiveBox->clear();
     }
@@ -345,6 +350,7 @@ void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponent
                                         T("No data to save!"),
                                         String::empty);
         } else {
+            outFile.deleteFile();
             FileOutputStream *outFileStream = outFile.createOutputStream();
             
             if( !outFileStream || outFileStream->failedToOpen() ) {
@@ -375,9 +381,9 @@ void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponent
 void SysexToolReceive::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
     if( !receiveStartButton->isEnabled() ) { // !enabled means that we are ready for receive
-        uint8 *data = message.getRawData();
-        uint32 size = message.getRawDataSize();
-        receiveBox->addBinary(data, size);
+        Array<uint8> data(message.getRawData(), message.getRawDataSize());
+        receivedData.addArray(data);
+        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), true);
     }
 }
 

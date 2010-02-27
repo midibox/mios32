@@ -70,6 +70,16 @@ public:
     //==============================================================================
     static String decodeMiosErrorCode(uint8 errorCode);
 
+    //==============================================================================
+    static bool isValidMidio128Header(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMidio128Header();
+    static bool isValidMidio128ReadBlock(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMidio128ReadBlock(const uint8 &deviceId, const uint8 &block);
+    static bool isValidMidio128WriteBlock(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMidio128WriteBlock(const uint8 &deviceId, const uint8 &block, const uint8 *data);
+    static bool isValidMidio128Acknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMidio128Ping(const uint8 &deviceId);
+
 protected:
 };
 
