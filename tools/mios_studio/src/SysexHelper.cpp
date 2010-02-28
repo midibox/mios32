@@ -271,12 +271,12 @@ String SysexHelper::decodeMiosErrorCode(uint8 errorCode)
 bool SysexHelper::isValidMidio128Header(const uint8 *data, const uint32 &size, const int &deviceId)
 {
     return
-        size >= 8 && // the shortest valid header is F0 00 00 7E 48 <deviceId> <cmd> F7
+        size >= 7 && // the shortest valid header is F0 00 00 7E 44 ((<deviceId> << 4) | <cmd>) F7
         data[0] == 0xf0 &&
         data[1] == 0x00 &&
         data[2] == 0x00 &&
         data[3] == 0x7e &&
-        data[4] == 0x48 &&
+        data[4] == 0x44 &&
         (deviceId < 0 || (data[5] >> 4) == deviceId);
 }
 

@@ -61,7 +61,6 @@ protected:
     //==============================================================================
     FilenameComponent* fileChooser;
     TextButton* queryButton;
-    TextButton* toolsButton;
     Label*      deviceIdLabel;
     Slider*     deviceIdSlider;
     LogBox* uploadStatus;

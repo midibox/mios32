@@ -36,6 +36,12 @@ MiosStudio::MiosStudio()
     midio128ToolWindow = new Midio128ToolWindow(this);
     mbCvToolWindow = new MbCvToolWindow(this);
 
+    commandManager = new ApplicationCommandManager();
+    commandManager->registerAllCommandsForTarget(this);
+    commandManager->registerAllCommandsForTarget(JUCEApplication::getInstance());
+    addKeyListener(commandManager->getKeyMappings());
+    setApplicationCommandManagerToWatch(commandManager);
+
     //                             num   min   max  prefered  
     horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
     horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
@@ -65,7 +71,7 @@ MiosStudio::MiosStudio()
 
     Timer::startTimer(1);
 
-    setSize (800, 600);
+    setSize(800, 650);
 }
 
 MiosStudio::~MiosStudio()
@@ -77,11 +83,7 @@ MiosStudio::~MiosStudio()
     deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
-    const StringArray allMidiIns(MidiInput::getDevices());
-    for (int i = allMidiIns.size(); --i >= 0;)
-        audioDeviceManager.setMidiInputEnabled(allMidiIns[i], false);
-
-    audioDeviceManager.setDefaultMidiOutput(String::empty);
+    closeMidiPorts();
 }
 
 //==============================================================================
@@ -149,6 +151,17 @@ void MiosStudio::sendMidiMessage(MidiMessage &message)
 
     const ScopedLock sl(midiOutQueueLock); // lock will be released at end of function
     midiOutQueue.push(message);
+}
+
+
+//==============================================================================
+void MiosStudio::closeMidiPorts(void)
+{
+    const StringArray allMidiIns(MidiInput::getDevices());
+    for (int i = allMidiIns.size(); --i >= 0;)
+        audioDeviceManager.setMidiInputEnabled(allMidiIns[i], false);
+
+    audioDeviceManager.setDefaultMidiOutput(String::empty);
 }
 
 
@@ -263,3 +276,152 @@ String MiosStudio::getMidiOutput(void)
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
     return propertiesFile ? propertiesFile->getValue(T("midiOut"), String::empty) : String::empty;
 }
+
+
+
+
+//==============================================================================
+const StringArray MiosStudio::getMenuBarNames()
+{
+    const tchar* const names[] = { T("Application"), T("Tools"), T("Help"), 0 };
+
+    return StringArray ((const tchar**) names);
+}
+
+const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String& menuName)
+{
+    PopupMenu menu;
+
+    if( topLevelMenuIndex == 0 ) {
+        // "Application" menu
+        menu.addCommandItem(commandManager, rescanDevices);
+        menu.addSeparator();
+        menu.addCommandItem(commandManager, StandardApplicationCommandIDs::quit);
+    } else if( topLevelMenuIndex == 1 ) {
+        // "Tools" menu
+        menu.addCommandItem(commandManager, showSysexTool);
+        menu.addCommandItem(commandManager, showMidio128Tool);
+        menu.addCommandItem(commandManager, showMbCvTool);
+    } else if( topLevelMenuIndex == 2 ) {
+        // "Help" menu
+        menu.addCommandItem(commandManager, showMiosStudioPage);
+        menu.addCommandItem(commandManager, showTroubleshootingPage);
+    }
+
+    return menu;
+}
+
+void MiosStudio::menuItemSelected(int menuItemID, int topLevelMenuIndex)
+{
+}
+
+
+//==============================================================================
+// The following methods implement the ApplicationCommandTarget interface, allowing
+// this window to publish a set of actions it can perform, and which can be mapped
+// onto menus, keypresses, etc.
+
+ApplicationCommandTarget* MiosStudio::getNextCommandTarget()
+{
+    // this will return the next parent component that is an ApplicationCommandTarget (in this
+    // case, there probably isn't one, but it's best to use this method in your own apps).
+    return findFirstTargetParentComponent();
+}
+
+void MiosStudio::getAllCommands(Array <CommandID>& commands)
+{
+    // this returns the set of all commands that this target can perform..
+    const CommandID ids[] = { showSysexTool,
+                              showMidio128Tool,
+                              showMbCvTool,
+                              rescanDevices,
+                              showMiosStudioPage,
+                              showTroubleshootingPage
+    };
+
+    commands.addArray (ids, numElementsInArray (ids));
+}
+
+// This method is used when something needs to find out the details about one of the commands
+// that this object can perform..
+void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInfo& result)
+{
+    const String applicationCategory (T("Application"));
+    const String toolsCategory(T("Tools"));
+    const String helpCategory (T("Help"));
+
+    switch( commandID ) {
+    case rescanDevices:
+        result.setInfo(T("Rescan MIDI Devices"), T("Updates the MIDI In/Out port lists"), applicationCategory, 0);
+        result.addDefaultKeypress(T('R'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showSysexTool:
+        result.setInfo(T("SysEx Tool"), T("Allows to send and receive SysEx dumps"), toolsCategory, 0);
+        result.setTicked(sysexToolWindow->isVisible());
+        result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showMidio128Tool:
+        result.setInfo(T("MIDIO128 Tool"), T("Allows to configure a MIDIO128"), toolsCategory, 0);
+        result.setTicked(midio128ToolWindow->isVisible());
+        result.addDefaultKeypress(T('2'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showMbCvTool:
+        result.setInfo(T("MIDIbox CV Tool"), T("Allows to configure a MIDIbox CV"), toolsCategory, 0);
+        result.setTicked(mbCvToolWindow->isVisible());
+        result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showMiosStudioPage:
+        result.setInfo(T("MIOS Studio Page (Web)"), T("Opens the MIOS Studio page on uCApps.de"), helpCategory, 0);
+        result.addDefaultKeypress (T('H'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showTroubleshootingPage:
+        result.setInfo(T("MIDI Troubleshooting Page (Web)"), T("Opens the MIDI Troubleshooting page on uCApps.de"), helpCategory, 0);
+        result.addDefaultKeypress (T('T'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+    }
+}
+
+// this is the ApplicationCommandTarget method that is used to actually perform one of our commands..
+bool MiosStudio::perform(const InvocationInfo& info)
+{
+    switch( info.commandID ) {
+    case rescanDevices:
+        closeMidiPorts();
+        initialMidiScanCounter = 1;
+        break;
+
+    case showSysexTool:
+        sysexToolWindow->setVisible(true);
+        sysexToolWindow->toFront(true);
+        break;
+
+    case showMidio128Tool:
+        midio128ToolWindow->setVisible(true);
+        midio128ToolWindow->toFront(true);
+        break;
+
+    case showMbCvTool:
+        mbCvToolWindow->setVisible(true);
+        mbCvToolWindow->toFront(true);
+        break;
+
+    case showMiosStudioPage: {
+        URL webpage(T("http://www.uCApps.de/mios_studio.html"));
+        webpage.launchInDefaultBrowser();
+    }  break;
+
+    case showTroubleshootingPage: {
+        URL webpage(T("http://www.uCApps.de/howto_debug_midi.html"));
+        webpage.launchInDefaultBrowser();
+    } break;
+    default:
+        return false;
+    }
+
+    return true;
+};

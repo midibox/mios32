@@ -52,6 +52,7 @@
 		526D31791139CC9B004A1521 /* MbCvTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbCvTool.h; path = ../../src/gui/MbCvTool.h; sourceTree = SOURCE_ROOT; };
 		527D103E111F2CDD002A091B /* SysexHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexHelper.cpp; path = ../../src/SysexHelper.cpp; sourceTree = SOURCE_ROOT; };
 		527D103F111F2CDD002A091B /* SysexHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexHelper.h; path = ../../src/SysexHelper.h; sourceTree = SOURCE_ROOT; };
+		527DEE55113AD42600226EF2 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../../src/version.h; sourceTree = SOURCE_ROOT; };
 		5287EE04113076F50001BFBD /* HexTextEditor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HexTextEditor.cpp; path = ../../src/gui/HexTextEditor.cpp; sourceTree = SOURCE_ROOT; };
 		5287EE05113076F50001BFBD /* HexTextEditor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HexTextEditor.h; path = ../../src/gui/HexTextEditor.h; sourceTree = SOURCE_ROOT; };
 		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
@@ -121,7 +122,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		20286C29FDCF999611CA2CEA /* juce_application */ = {
+		20286C29FDCF999611CA2CEA /* MIOS_Studio */ = {
 			isa = PBXGroup;
 			children = (
 				52B71392111DB603000B8F5A /* GUI */,
@@ -131,7 +132,7 @@
 				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
 				195DF8CFFE9D517E11CA2CBB /* Products */,
 			);
-			name = juce_application;
+			name = MIOS_Studio;
 			sourceTree = "<group>";
 		};
 		20286C2AFDCF999611CA2CEA /* Sources */ = {
@@ -181,6 +182,7 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				527DEE55113AD42600226EF2 /* version.h */,
 				526D31781139CC9B004A1521 /* MbCvTool.cpp */,
 				526D31791139CC9B004A1521 /* MbCvTool.h */,
 				526D2D85113871BA004A1521 /* ConfigTableComponents.cpp */,
@@ -235,7 +237,7 @@
 			);
 			name = MIOS_Studio;
 			productInstallPath = "$(HOME)/Applications";
-			productName = juce_application;
+			productName = MIOS_Studio;
 			productReference = 8D0C4E970486CD37000505A6 /* MIOS_Studio.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -247,7 +249,7 @@
 			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIOS_Studio" */;
 			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
-			mainGroup = 20286C29FDCF999611CA2CEA /* juce_application */;
+			mainGroup = 20286C29FDCF999611CA2CEA /* MIOS_Studio */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

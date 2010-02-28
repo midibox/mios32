@@ -13,17 +13,20 @@
  */
 
 #include "includes.h"
+#include "version.h"
 #include "gui/MiosStudio.h"
 
-class MiosStudioWindow : public DocumentWindow
+class MiosStudioWindow
+    : public DocumentWindow
 {
 public:
+
     //==============================================================================
     MiosStudioWindow() 
-        : DocumentWindow (T("MIOS Studio"),
-                          Colours::lightgrey, 
-                          DocumentWindow::allButtons,
-                          true)
+        : DocumentWindow(T("MIOS Studio MkII " MIOS_STUDIO_VERSION),
+                         Colours::lightgrey, 
+                         DocumentWindow::allButtons,
+                         true)
     {
         // initialise our settings file..
         ApplicationProperties::getInstance()->setStorageParameters(T("MIOS_Studio"),
@@ -38,6 +41,7 @@ public:
         setContentComponent(contentComponent, true, true);
         setUsingNativeTitleBar(true);
         centreWithSize(getWidth(), getHeight());
+        setMenuBar(contentComponent);
 
         setVisible(true);
 
@@ -45,6 +49,7 @@ public:
 
     ~MiosStudioWindow()
     {
+        setMenuBar(0);
         // (the content component will be deleted automatically, so no need to do it here)
     }
 
@@ -56,23 +61,6 @@ public:
         // 
         JUCEApplication::quit();
     }
-
-#if 0
-    //==============================================================================
-    PropertySet* MiosStudioWindow::getGlobalSettings()
-    {
-        /* If you want this class to store the settings, you can set up an
-           ApplicationProperties object and use this method as it is, or override this
-           method to return your own custom PropertySet.
-           
-           If using this method without changing it, you'll probably need to call
-           ApplicationProperties::setStorageParameters() in your plugin's constructor to
-           tell it where to save the file.
-        */
-        return ApplicationProperties::getInstance()->getUserSettings();
-    }
-#endif
-
 };
 
 //==============================================================================
@@ -137,12 +125,12 @@ public:
     //==============================================================================
     const String getApplicationName()
     {
-        return T("MIOS Studio");
+        return T("MIOS Studio MkII");
     }
 
     const String getApplicationVersion()
     {
-        return T("1.0");
+        return T(MIOS_STUDIO_VERSION);
     }
 
     bool moreThanOneInstanceAllowed()
