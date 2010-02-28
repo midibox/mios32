@@ -80,6 +80,16 @@ public:
     static bool isValidMidio128Acknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
     static Array<uint8> createMidio128Ping(const uint8 &deviceId);
 
+    //==============================================================================
+    static bool isValidMbCvHeader(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbCvHeader(const int &deviceId);
+    static bool isValidMbCvReadPatch(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbCvReadPatch(const uint8 &deviceId, const uint8 &patch);
+    static bool isValidMbCvWritePatch(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbCvWritePatch(const uint8 &deviceId, const uint8 &patch, const uint8 *data);
+    static bool isValidMbCvAcknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbCvPing(const uint8 &deviceId);
+
 protected:
 };
 

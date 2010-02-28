@@ -280,7 +280,7 @@ Component* Midio128ToolConfigDout::refreshComponentForCell(int rowNumber, int co
             comboBox->addItem(T("Note Off"), 2);
             comboBox->addItem(T("Note On"), 3);
             comboBox->addItem(T("Poly Aftertouch"), 4);
-            comboBox->addItem(T("Controller"), 5);
+            comboBox->addItem(T("Controller (CC)"), 5);
             comboBox->addItem(T("Program Change"), 6);
             comboBox->addItem(T("Channel Aftertouch"), 7);
             comboBox->addItem(T("Pitch Bender"), 8);
@@ -487,7 +487,7 @@ Component* Midio128ToolConfigDin::refreshComponentForCell(int rowNumber, int col
             comboBox->addItem(T("Note Off"), 2);
             comboBox->addItem(T("Note On"), 3);
             comboBox->addItem(T("Poly Aftertouch"), 4);
-            comboBox->addItem(T("Controller"), 5);
+            comboBox->addItem(T("Controller (CC)"), 5);
             comboBox->addItem(T("Program Change"), 6);
             comboBox->addItem(T("Channel Aftertouch"), 7);
             comboBox->addItem(T("Pitch Bender"), 8);
@@ -670,9 +670,9 @@ Midio128ToolConfig::Midio128ToolConfig(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
     , TabbedComponent(TabbedButtonBar::TabsAtTop)
 {
-    addTab(T("Global"), Colour(0xfff0f0e0), configGlobals = new Midio128ToolConfigGlobals(), true);
     addTab(T("DINs"),   Colour(0xfff0f0d0), configDin = new Midio128ToolConfigDin(), true);
     addTab(T("DOUTs"),  Colour(0xfff0f0c0), configDout = new Midio128ToolConfigDout(), true);
+    addTab(T("Global"), Colour(0xfff0f0e0), configGlobals = new Midio128ToolConfigGlobals(), true);
     setSize(800, 200);
 }
 
@@ -852,16 +852,13 @@ void Midio128ToolControl::timerCallback()
 
     if( receiveDump ) {
         if( syxBlock > 0 ) {
-            int receivedBlock = syxBlock-1;
             if( !dumpReceived ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("No response from core."),
                                             T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIO128 firmware has been uploaded"),
                                             String::empty);
-            }
-
-            if( checksumError ) {
+            } else if( checksumError ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Detected checksum error!"),

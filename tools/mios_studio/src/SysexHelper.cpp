@@ -35,7 +35,7 @@ bool SysexHelper::isValidMios8Header(const uint8 *data, const uint32 &size, cons
         data[2] == 0x00 &&
         data[3] == 0x7e &&
         data[4] == 0x40 &&
-        (deviceId < 0 || data[5] == deviceId );
+        (deviceId < 0 || data[5] == deviceId);
 }
 
 Array<uint8> SysexHelper::createMios8Header(const uint8 &deviceId)
@@ -59,7 +59,7 @@ bool SysexHelper::isValidMios32Header(const uint8 *data, const uint32 &size, con
         data[2] == 0x00 &&
         data[3] == 0x7e &&
         data[4] == 0x32 &&
-        (deviceId < 0 || data[5] == deviceId );
+        (deviceId < 0 || data[5] == deviceId);
 }
 
 Array<uint8> SysexHelper::createMios32Header(const uint8 &deviceId)
@@ -271,13 +271,13 @@ String SysexHelper::decodeMiosErrorCode(uint8 errorCode)
 bool SysexHelper::isValidMidio128Header(const uint8 *data, const uint32 &size, const int &deviceId)
 {
     return
-        size >= 7 && // the shortest valid header is F0 00 00 7E 44 ((<deviceId> << 4) | <cmd>) F7
+        size >= 8 && // the shortest valid header is F0 00 00 7E 48 <deviceId> <cmd> F7
         data[0] == 0xf0 &&
         data[1] == 0x00 &&
         data[2] == 0x00 &&
         data[3] == 0x7e &&
-        data[4] == 0x44 &&
-        (deviceId < 0 || (data[5] >> 4) == deviceId );
+        data[4] == 0x48 &&
+        (deviceId < 0 || (data[5] >> 4) == deviceId);
 }
 
 Array<uint8> SysexHelper::createMidio128Header()
@@ -345,6 +345,90 @@ Array<uint8> SysexHelper::createMidio128Ping(const uint8 &deviceId)
     uint8 checksum = 0x00;
 
     uint8 cmd = 0x0f | ((deviceId << 4) & 0x70);
+    dataArray.add(cmd);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}
+
+
+//==============================================================================
+bool SysexHelper::isValidMbCvHeader(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return
+        size >= 7 && // the shortest valid header is F0 00 00 7E 48 ((<deviceId> << 4) | <cmd>) F7
+        data[0] == 0xf0 &&
+        data[1] == 0x00 &&
+        data[2] == 0x00 &&
+        data[3] == 0x7e &&
+        data[4] == 0x48 &&
+        (deviceId < 0 || data[5] == deviceId);
+}
+
+Array<uint8> SysexHelper::createMbCvHeader(const int &deviceId)
+{
+    Array<uint8> dataArray;
+    dataArray.add(0xf0);
+    dataArray.add(0x00);
+    dataArray.add(0x00);
+    dataArray.add(0x7e);
+    dataArray.add(0x48);
+    dataArray.add(deviceId & 0x7f);
+    return dataArray;
+}
+
+bool SysexHelper::isValidMbCvReadPatch(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMbCvHeader(data, size, deviceId) && data[6] == 0x01;
+}
+
+Array<uint8> SysexHelper::createMbCvReadPatch(const uint8 &deviceId, const uint8 &patch)
+{
+    Array<uint8> dataArray = createMbCvHeader(deviceId);
+
+    dataArray.add(0x01);
+    dataArray.add(patch);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}
+
+bool SysexHelper::isValidMbCvWritePatch(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMbCvHeader(data, size, deviceId) && data[6] == 0x02;
+}
+
+Array<uint8> SysexHelper::createMbCvWritePatch(const uint8 &deviceId, const uint8 &patch, const uint8 *data)
+{
+    Array<uint8> dataArray = createMbCvHeader(deviceId);
+    uint8 checksum = 0x00;
+
+    dataArray.add(0x02);
+    dataArray.add(patch);
+
+    uint8 b;
+    for(int i=0; i<256; ++i) {
+        dataArray.add(b = data[i]);
+        checksum += b;
+    }
+
+    dataArray.add(-(int)checksum & 0x7f);
+    dataArray.add(0xf7);
+
+    return dataArray;
+}
+
+bool SysexHelper::isValidMbCvAcknowledge(const uint8 *data, const uint32 &size, const int &deviceId)
+{
+    return isValidMbCvHeader(data, size, deviceId) && data[6] == 0x0f;
+}
+
+Array<uint8> SysexHelper::createMbCvPing(const uint8 &deviceId)
+{
+    Array<uint8> dataArray = createMbCvHeader(deviceId);
+    uint8 checksum = 0x00;
+
+    dataArray.add(0x0f);
     dataArray.add(0xf7);
 
     return dataArray;
