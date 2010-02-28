@@ -30,9 +30,20 @@
 class MiosStudio
     : public Component
     , public MidiInputCallback
+    , public MenuBarModel
+    , public ApplicationCommandTarget
     , public Timer
 {
 public:
+    enum CommandIDs {
+        rescanDevices              = 0x1000,
+        showSysexTool              = 0x2000,
+        showMidio128Tool           = 0x2001,
+        showMbCvTool               = 0x2002,
+        showMiosStudioPage         = 0x3000,
+        showTroubleshootingPage    = 0x3001,
+    };
+
     //==============================================================================
     MiosStudio();
     ~MiosStudio();
@@ -47,11 +58,21 @@ public:
     void timerCallback();
 
     void sendMidiMessage(MidiMessage &message);
+    void closeMidiPorts(void);
 
     void setMidiInput(const String &port);
     String getMidiInput(void);
     void setMidiOutput(const String &port);
     String getMidiOutput(void);
+
+    const StringArray getMenuBarNames();
+    const PopupMenu getMenuForIndex(int topLevelMenuIndex, const String& menuName);
+    void menuItemSelected(int menuItemID, int topLevelMenuIndex);
+
+    ApplicationCommandTarget* getNextCommandTarget();
+    void getAllCommands(Array <CommandID>& commands);
+    void getCommandInfo(const CommandID commandID, ApplicationCommandInfo& result);
+    bool perform(const InvocationInfo& info);
 
     AudioDeviceManager audioDeviceManager;
 
@@ -91,6 +112,9 @@ protected:
     CriticalSection midiOutQueueLock;
 
     int initialMidiScanCounter;
+
+    // the command manager object used to dispatch command events
+    ApplicationCommandManager* commandManager;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

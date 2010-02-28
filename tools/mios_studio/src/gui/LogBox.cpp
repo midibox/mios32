@@ -105,8 +105,7 @@ void LogBox::addEntry(const Colour &colour, const String &textLine)
 
     updateContent();
 
-    int fontWidth = 6; // DIRTY - how to find out the real width without generating the complete graphic?
-    int rowWidth = 30 + fontWidth * p.second.length();
+    int rowWidth = 30 + logEntryFont.getStringWidth(textLine);
     if( rowWidth > maxRowWidth )
         setMinimumContentWidth(maxRowWidth = rowWidth);
 

@@ -44,11 +44,6 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     queryButton->setButtonText(T("Query"));
     queryButton->addButtonListener(this);
 
-    addAndMakeVisible(toolsButton = new TextButton(T("Tools Button")));
-    toolsButton->setButtonText(T("Tools"));
-    toolsButton->addButtonListener(this);
-    toolsButton->setTriggeredOnMouseDown(true);
-
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID")));
     deviceIdLabel->setJustificationType(Justification::centred);
     
@@ -120,7 +115,6 @@ void UploadWindow::resized()
     deviceIdLabel->setBounds(4, 30, buttonWidth, 40);
     deviceIdSlider->setBounds(4, buttonY+0*36, buttonWidth, 40);
     queryButton->setBounds(4, buttonY+1*36+10, buttonWidth, 24);
-    toolsButton->setBounds(4, buttonY+2*36+10, buttonWidth, 24);
 
     int uploadQueryX = 4+buttonWidth+4;
     int uploadQueryWidth = middleX - 4 - uploadQueryX;
@@ -151,40 +145,6 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
         uploadStatus->addEntry(Colours::red, T("Upload has been stopped by user!"));
     } else if( buttonThatWasClicked == queryButton ) {
         queryCore();
-    } else if( buttonThatWasClicked == toolsButton ) {
-        PopupMenu m;
-        m.addItem (1, T("SysEx Tool"), true, miosStudio->sysexToolWindow->isVisible());
-        m.addItem (2, T("MIDIO128 Tool"), true, miosStudio->midio128ToolWindow->isVisible());
-        m.addItem (3, T("MIDIbox CV Tool"), true, miosStudio->mbCvToolWindow->isVisible());
-
-        switch( m.showAt(toolsButton) ) {
-        case 1:
-            if( miosStudio->sysexToolWindow->isVisible() )
-                miosStudio->sysexToolWindow->setVisible(false);
-            else {
-                miosStudio->sysexToolWindow->setVisible(true);
-                miosStudio->sysexToolWindow->toFront(true);
-            }
-            break;
-
-        case 2:
-            if( miosStudio->midio128ToolWindow->isVisible() )
-                miosStudio->midio128ToolWindow->setVisible(false);
-            else {
-                miosStudio->midio128ToolWindow->setVisible(true);
-                miosStudio->midio128ToolWindow->toFront(true);
-            }
-            break;
-
-        case 3:
-            if( miosStudio->mbCvToolWindow->isVisible() )
-                miosStudio->mbCvToolWindow->setVisible(false);
-            else {
-                miosStudio->mbCvToolWindow->setVisible(true);
-                miosStudio->mbCvToolWindow->toFront(true);
-            }
-            break;
-        }
     }
 }
 
@@ -223,7 +183,6 @@ void UploadWindow::midiPortChanged(void)
     miosStudio->uploadHandler->finish();
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
-    toolsButton->setEnabled(true);
     deviceIdSlider->setEnabled(true);
     fileChooser->setEnabled(true);
 
@@ -243,7 +202,6 @@ void UploadWindow::queryCore(void)
     } else {
         uploadQuery->clear();
         queryButton->setEnabled(false);
-        toolsButton->setEnabled(false);
         deviceIdSlider->setEnabled(false);
         fileChooser->setEnabled(false);
         MultiTimer::startTimer(TIMER_QUERY_CORE, 10);
@@ -258,7 +216,6 @@ void UploadWindow::uploadStart(void)
 
     startButton->setEnabled(false); // will be enabled again if file is valid
     queryButton->setEnabled(false);
-    toolsButton->setEnabled(false);
     deviceIdSlider->setEnabled(false);
     fileChooser->setEnabled(false);
 
@@ -277,7 +234,6 @@ void UploadWindow::uploadStop(void)
     startButton->setEnabled(miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size() >= 1);
     stopButton->setEnabled(false);
     queryButton->setEnabled(true);
-    toolsButton->setEnabled(true);
     deviceIdSlider->setEnabled(true);
     fileChooser->setEnabled(true);
 }
@@ -306,7 +262,6 @@ void UploadWindow::timerCallback(const int timerId)
                     // start upload of first block
                     stopButton->setEnabled(true);
                     queryButton->setEnabled(false);
-                    toolsButton->setEnabled(false);
                     deviceIdSlider->setEnabled(false);
                     miosStudio->uploadHandler->startUpload();
                     MultiTimer::startTimer(TIMER_UPLOAD, 10);

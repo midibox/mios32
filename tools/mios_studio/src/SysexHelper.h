@@ -90,6 +90,7 @@ public:
     static bool isValidMbCvAcknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
     static Array<uint8> createMbCvPing(const uint8 &deviceId);
 
+
 protected:
 };
 
