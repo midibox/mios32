@@ -104,8 +104,8 @@ void MidiMonitor::paint (Graphics& g)
 
 void MidiMonitor::resized()
 {
-    midiPortLabel->setBounds(4, 4, 50-8, 22);
-	midiPortSelector->setBounds(4+50+4, 4, getWidth()-8-50-4, 22);
+    midiPortLabel->setBounds(4, 4, 60-8, 22);
+	midiPortSelector->setBounds(4+60+4, 4, getWidth()-8-60-4, 22);
     monitorLogBox->setBounds(4, 4+22+4, getWidth()-8, getHeight()-(4+22+4+4));
 }
 
