@@ -841,7 +841,7 @@ MbCvTool::MbCvTool(MiosStudio *_miosStudio)
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(860, 500);
+    setSize(860, 265);
 }
 
 MbCvTool::~MbCvTool()

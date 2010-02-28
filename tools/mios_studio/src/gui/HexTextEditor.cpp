@@ -119,18 +119,20 @@ void HexTextEditor::setBinary(uint8 *buffer, const int &size)
 //==============================================================================
 void HexTextEditor::addBinary(uint8 *buffer, const int &size)
 {
+    if( size > 0 ) {
 #if 0
-    String hexStr = String::toHexString(buffer, size);
-    if( !isEmpty() )
-        insertTextAtCursor(T("\n"));
-    insertTextAtCursor(hexStr);
+        String hexStr = String::toHexString(buffer, size);
+        if( !isEmpty() )
+            insertTextAtCursor(T("\n"));
+        insertTextAtCursor(hexStr);
 #else
-    // works faster! Will be removed once the Juce TextEditor has been optimized
-    if( bufferedText != String::empty )
-        bufferedText += T("\n");
-    bufferedText += String::toHexString(buffer, size);
-    setText(bufferedText);
+        // works faster! Will be removed once the Juce TextEditor has been optimized
+        if( bufferedText != String::empty )
+            bufferedText += T("\n");
+        bufferedText += String::toHexString(buffer, size);
+        setText(bufferedText);
 #endif
+    }
 }
 
 //==============================================================================

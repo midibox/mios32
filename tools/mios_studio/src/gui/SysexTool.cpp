@@ -329,7 +329,8 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
         receiveStopButton->setEnabled(false);
         receiveStartButton->setEnabled(true);
         receiveFileChooser->setEnabled(true);
-        receiveBox->addBinary(&receivedData.getReference(0), receivedData.size());
+        if( receivedData.size() > 0 )
+            receiveBox->addBinary(&receivedData.getReference(0), receivedData.size());
         receivedData.clear();
     } else if( buttonThatWasClicked == receiveClearButton ) {
         receiveBox->clear();
