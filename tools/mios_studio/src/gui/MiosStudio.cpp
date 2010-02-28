@@ -149,6 +149,9 @@ void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage&
 
     } else if( sysexReceiveBuffer.size() && data[size-1] == 0xf7 ) {
         // finally we received F7
+        for(int pos=0; pos<size; ++pos)
+            sysexReceiveBuffer.add(data[pos]);
+
         // propagate combined message
         uint8 *bufferedData = &sysexReceiveBuffer.getReference(0);        
         MidiMessage combinedMessage(bufferedData, sysexReceiveBuffer.size());
