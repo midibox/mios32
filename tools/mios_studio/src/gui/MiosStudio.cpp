@@ -34,6 +34,7 @@ MiosStudio::MiosStudio()
     // tools are made visible via tools button in Upload Window
     sysexToolWindow = new SysexToolWindow(this);
     midio128ToolWindow = new Midio128ToolWindow(this);
+    mbCvToolWindow = new MbCvToolWindow(this);
 
     //                             num   min   max  prefered  
     horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
@@ -72,6 +73,7 @@ MiosStudio::~MiosStudio()
 	deleteAndZero(uploadHandler);
 	deleteAndZero(sysexToolWindow);
 	deleteAndZero(midio128ToolWindow);
+	deleteAndZero(mbCvToolWindow);
     deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
@@ -194,6 +196,7 @@ void MiosStudio::timerCallback()
             if( data[0] < 0xf8 ) {
                 sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
                 midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
                 miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                 midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
             }

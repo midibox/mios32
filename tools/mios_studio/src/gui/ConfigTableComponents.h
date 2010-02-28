@@ -85,4 +85,28 @@ private:
 };
 
 
+//==============================================================================
+//==============================================================================
+//==============================================================================
+class ConfigTableToggleButton
+    : public Component
+    , public ButtonListener
+{
+public:
+    ConfigTableToggleButton(ConfigTableController& _owner);
+    ~ConfigTableToggleButton();
+
+    void resized();
+
+    void setRowAndColumn(const int newRow, const int newColumn);
+
+    void buttonClicked(Button *button);
+
+private:
+    ConfigTableController& owner;
+    ToggleButton* toggleButton;
+    int row, columnId;
+};
+
+
 #endif /* _CONFIG_TABLE_COMPONENTS_H */

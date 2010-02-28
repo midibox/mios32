@@ -24,6 +24,7 @@
 #include "MidiKeyboard.h"
 #include "SysexTool.h"
 #include "Midio128Tool.h"
+#include "MbCvTool.h"
 #include "../UploadHandler.h"
 
 class MiosStudio
@@ -59,6 +60,7 @@ public:
     // Windows opened by Tools button in Upload Window
     SysexToolWindow *sysexToolWindow;
     Midio128ToolWindow *midio128ToolWindow;
+    MbCvToolWindow *mbCvToolWindow;
 
 protected:
     //==============================================================================

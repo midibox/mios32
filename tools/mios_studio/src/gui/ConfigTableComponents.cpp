@@ -91,3 +91,36 @@ void ConfigTableSlider::setRange(const double newMinimum, const double newMaximu
 {
     slider->setRange(newMinimum, newMaximum, 1);
 }
+
+
+//==============================================================================
+//==============================================================================
+//==============================================================================
+ConfigTableToggleButton::ConfigTableToggleButton(ConfigTableController& _owner)
+    : owner(_owner)
+{
+    addAndMakeVisible(toggleButton = new ToggleButton(String::empty));
+    toggleButton->addButtonListener(this);
+}
+
+ConfigTableToggleButton::~ConfigTableToggleButton()
+{
+    deleteAllChildren();
+}
+
+void ConfigTableToggleButton::resized()
+{
+    toggleButton->setBoundsInset(BorderSize(2));
+}
+
+void ConfigTableToggleButton::setRowAndColumn(const int newRow, const int newColumn)
+{
+    row = newRow;
+    columnId = newColumn;
+    toggleButton->setToggleState(owner.getTableValue(row, columnId), true);
+}
+
+void ConfigTableToggleButton::buttonClicked(Button *button)
+{
+    owner.setTableValue(row, columnId, button->getToggleState());
+}

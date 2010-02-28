@@ -155,6 +155,7 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
         PopupMenu m;
         m.addItem (1, T("SysEx Tool"), true, miosStudio->sysexToolWindow->isVisible());
         m.addItem (2, T("MIDIO128 Tool"), true, miosStudio->midio128ToolWindow->isVisible());
+        m.addItem (3, T("MIDIbox CV Tool"), true, miosStudio->mbCvToolWindow->isVisible());
 
         switch( m.showAt(toolsButton) ) {
         case 1:
@@ -172,6 +173,15 @@ void UploadWindow::buttonClicked(Button* buttonThatWasClicked)
             else {
                 miosStudio->midio128ToolWindow->setVisible(true);
                 miosStudio->midio128ToolWindow->toFront(true);
+            }
+            break;
+
+        case 3:
+            if( miosStudio->mbCvToolWindow->isVisible() )
+                miosStudio->mbCvToolWindow->setVisible(false);
+            else {
+                miosStudio->mbCvToolWindow->setVisible(true);
+                miosStudio->mbCvToolWindow->toFront(true);
             }
             break;
         }
