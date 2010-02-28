@@ -126,14 +126,49 @@ void MiosStudio::resized()
 //==============================================================================
 void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
 {
+    uint8 *data = message.getRawData();
+    uint32 size = message.getRawDataSize();
+
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
     
-    const ScopedLock sl(midiInQueueLock); // lock will be released at end of function
-    midiInQueue.push(message);
 
-    // propagate to upload handler
-    uploadHandler->handleIncomingMidiMessage(source, message);
+    // ugly fix for reduced buffer size under windows...
+    if( size > 2 && data[0] == 0xf0 && data[size-1] != 0xf7 ) {
+        // first message without F7 at the end
+        sysexReceiveBuffer.clear();
+        for(int pos=0; pos<size; ++pos)
+            sysexReceiveBuffer.add(data[pos]);
+        return; // hopefully we will receive F7 with the next call
+
+    } else if( sysexReceiveBuffer.size() && !(data[0] & 0x80) && data[size-1] != 0xf7 ) {
+        // continued message without F7 at the end
+        for(int pos=0; pos<size; ++pos)
+            sysexReceiveBuffer.add(data[pos]);
+        return; // hopefully we will receive F7 with the next call
+
+    } else if( sysexReceiveBuffer.size() && data[size-1] == 0xf7 ) {
+        // finally we received F7
+        // propagate combined message
+        uint8 *bufferedData = &sysexReceiveBuffer.getReference(0);        
+        MidiMessage combinedMessage(bufferedData, sysexReceiveBuffer.size());
+        sysexReceiveBuffer.clear();
+
+        const ScopedLock sl(midiInQueueLock); // lock will be released at end of function
+        midiInQueue.push(combinedMessage);
+
+        // propagate to upload handler
+        uploadHandler->handleIncomingMidiMessage(source, combinedMessage);
+
+    } else {
+        sysexReceiveBuffer.clear();
+
+        const ScopedLock sl(midiInQueueLock); // lock will be released at end of function
+        midiInQueue.push(message);
+
+        // propagate to upload handler
+        uploadHandler->handleIncomingMidiMessage(source, message);
+    }
 }
 
 

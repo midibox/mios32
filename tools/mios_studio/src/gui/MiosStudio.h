@@ -111,6 +111,8 @@ protected:
     std::queue<MidiMessage> midiOutQueue;
     CriticalSection midiOutQueueLock;
 
+    Array<uint8> sysexReceiveBuffer;
+
     int initialMidiScanCounter;
 
     // the command manager object used to dispatch command events
