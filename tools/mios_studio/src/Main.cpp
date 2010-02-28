@@ -23,7 +23,7 @@ public:
 
     //==============================================================================
     MiosStudioWindow() 
-        : DocumentWindow(T("MIOS Studio MkII " MIOS_STUDIO_VERSION),
+        : DocumentWindow(String(T("MIOS Studio MkII ")) + String(T(MIOS_STUDIO_VERSION)),
                          Colours::lightgrey, 
                          DocumentWindow::allButtons,
                          true)
