@@ -206,6 +206,10 @@
 				Name="gui"
 				>
 				<File
+					RelativePath="..\..\src\gui\ConfigTableComponents.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\HexTextEditor.cpp"
 					>
 				</File>
@@ -214,11 +218,19 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\gui\MbCvTool.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\MidiKeyboard.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\..\src\gui\MidiMonitor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\Midio128Tool.cpp"
 					>
 				</File>
 				<File
@@ -268,9 +280,17 @@
 				RelativePath="..\..\src\UploadHandler.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\version.h"
+				>
+			</File>
 			<Filter
 				Name="gui"
 				>
+				<File
+					RelativePath="..\..\src\gui\ConfigTableComponents.h"
+					>
+				</File>
 				<File
 					RelativePath="..\..\src\gui\HexTextEditor.h"
 					>
@@ -280,11 +300,19 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\gui\MbCvTool.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\MidiKeyboard.h"
 					>
 				</File>
 				<File
 					RelativePath="..\..\src\gui\MidiMonitor.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\Midio128Tool.h"
 					>
 				</File>
 				<File
