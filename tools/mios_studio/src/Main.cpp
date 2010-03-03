@@ -23,7 +23,7 @@ public:
 
     //==============================================================================
     MiosStudioWindow() 
-        : DocumentWindow(String(T("MIOS Studio MkII ")) + String(T(MIOS_STUDIO_VERSION)),
+        : DocumentWindow(String(T("MIOS Studio ")) + String(T(MIOS_STUDIO_VERSION)),
                          Colours::lightgrey, 
                          DocumentWindow::allButtons,
                          true)
@@ -125,7 +125,7 @@ public:
     //==============================================================================
     const String getApplicationName()
     {
-        return T("MIOS Studio MkII");
+        return T("MIOS Studio");
     }
 
     const String getApplicationVersion()
