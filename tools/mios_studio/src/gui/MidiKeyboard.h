@@ -24,6 +24,7 @@ class MiosStudio; // forward declaration
 class MidiKeyboard
     : public Component
     , public MidiKeyboardStateListener
+    , public SliderListener
 {
 public:
     //==============================================================================
@@ -44,11 +45,16 @@ public:
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
+    //==============================================================================
+    void sliderValueChanged(Slider* sliderThatWasMoved);
+
 protected:
     //==============================================================================
     std::vector<MidiSlider*> midiSlider;
     MidiKeyboardComponent *midiKeyboardComponent;
     MidiKeyboardState keyboardState;
+    Label* midiChannelLabel;
+    Slider* midiChannelSlider;
 
     //==============================================================================
     MiosStudio *miosStudio;

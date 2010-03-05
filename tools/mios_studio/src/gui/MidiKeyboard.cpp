@@ -27,7 +27,7 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
         else if( i == 1 )
             s = new MidiSlider(miosStudio, i, "CC", 1, 1, 0, false);
         else
-            s = new MidiSlider(miosStudio, i, "CC", i+16-1, 1, 0, false);
+            s = new MidiSlider(miosStudio, i, "CC", i+16-2, 1, 0, false);
 
         midiSlider.push_back(s);
         addAndMakeVisible(s);
@@ -41,10 +41,21 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
 
     midiKeyboardComponent->setLowestVisibleKey(24); // does match better with layout
 
+    addAndMakeVisible(midiChannelLabel = new Label(T("Chn."), T("Chn.")));
+    midiChannelLabel->setJustificationType(Justification::centred);
+
+    addAndMakeVisible(midiChannelSlider = new Slider(T("MIDI Channel")));
+    midiChannelSlider->setRange(1, 16, 1);
+    midiChannelSlider->setSliderStyle(Slider::IncDecButtons);
+    midiChannelSlider->setTextBoxStyle(Slider::TextBoxAbove, false, 80, 20);
+    midiChannelSlider->addListener(this);
+
     // restore settings
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
-        midiKeyboardComponent->setMidiChannel(propertiesFile->getIntValue("midiKeyboardChannel", 1));
+        int chn = propertiesFile->getIntValue("midiKeyboardChannel", 1);
+        midiKeyboardComponent->setMidiChannel(chn);
+        midiChannelSlider->setValue(chn, false);
     }
 
     setSize(400, 200);
@@ -63,8 +74,16 @@ void MidiKeyboard::paint (Graphics& g)
 
 void MidiKeyboard::resized()
 {
-    // pitchbender
-    midiSlider[0]->setBounds(4, 24, 24, getHeight()-8);
+    // MIDI channel
+    if( getWidth() > 764 ) {
+        midiChannelLabel->setVisible(true);
+        midiChannelLabel->setBounds(4, 6, 30, 12);
+        midiChannelSlider->setVisible(true);
+        midiChannelSlider->setBounds(4, 20, 30, 32);
+    } else {
+        midiChannelLabel->setVisible(false);
+        midiChannelSlider->setVisible(false);
+    }
 
     // CCs
     int sliderWidth = 128;
@@ -74,7 +93,17 @@ void MidiKeyboard::resized()
     for(int i=1; i<midiSlider.size(); ++i)
         midiSlider[i]->setBounds(sliderOffset + distanceBetweenSliders*(i-1), 4, sliderWidth, 42);
 
-    midiKeyboardComponent->setBounds(4+24+4, 4+44+4, getWidth()-8-24-4, getHeight()-8-44-4);
+    int keyboardX = 4+24+4;
+    int keyboardWidth = getWidth()-8-24-4;
+    int keyboardY = 4+44+4;
+    int keyboardHeight = getHeight()-8-44-4;
+    if( getWidth() >= (1024+4+24+4+4) ) {
+        keyboardWidth = 1024;
+        keyboardX = 4+24+4 + ((getWidth()-keyboardWidth-4-4) / 2);
+    }
+
+    midiKeyboardComponent->setBounds(keyboardX, keyboardY, keyboardWidth, keyboardHeight);
+    midiSlider[0]->setBounds(keyboardX-24-4, keyboardY-4, 24, keyboardHeight+8);
 }
 
 
@@ -96,7 +125,6 @@ int MidiKeyboard::getMidiChannel(void)
     return midiKeyboardComponent->getMidiChannel();
 }
 
-
 //==============================================================================
 void MidiKeyboard::handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
 {
@@ -108,6 +136,13 @@ void MidiKeyboard::handleNoteOff(MidiKeyboardState *source, int midiChannel, int
 {
     MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)0);
     miosStudio->sendMidiMessage(message);
+}
+
+
+//==============================================================================
+void MidiKeyboard::sliderValueChanged(Slider* sliderThatWasMoved)
+{
+    setMidiChannel(midiChannelSlider->getValue());
 }
 
 

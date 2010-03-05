@@ -24,6 +24,7 @@
 		52B71527111DEB9F000B8F5A /* MidiKeyboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71525111DEB9F000B8F5A /* MidiKeyboard.cpp */; };
 		52B71594111DF8B6000B8F5A /* MidiSlider.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71592111DF8B6000B8F5A /* MidiSlider.cpp */; };
 		52C4601F111EF90D00F179A8 /* HexFileLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */; };
+		52E2183911404AE40030AD40 /* MIOS_Studio.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52E2183811404AE40030AD40 /* MIOS_Studio.icns */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
 		841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8411369F0D0480DE0054B790 /* OpenGL.framework */; };
 		84204DA50FDEFA3800FA4ABC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84204DA40FDEFA3800FA4ABC /* Carbon.framework */; };
@@ -77,6 +78,7 @@
 		52B71593111DF8B6000B8F5A /* MidiSlider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiSlider.h; path = ../../src/gui/MidiSlider.h; sourceTree = SOURCE_ROOT; };
 		52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HexFileLoader.cpp; path = ../../src/HexFileLoader.cpp; sourceTree = SOURCE_ROOT; };
 		52C4601E111EF90D00F179A8 /* HexFileLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HexFileLoader.h; path = ../../src/HexFileLoader.h; sourceTree = SOURCE_ROOT; };
+		52E2183811404AE40030AD40 /* MIOS_Studio.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = MIOS_Studio.icns; path = ../../icon/MIOS_Studio.icns; sourceTree = SOURCE_ROOT; };
 		8407902A09E6B5BD004E7BCD /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		8411369F0D0480DE0054B790 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		84204DA40FDEFA3800FA4ABC /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -153,6 +155,7 @@
 		20286C2CFDCF999611CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				52E2183811404AE40030AD40 /* MIOS_Studio.icns */,
 				8D0C4E960486CD37000505A6 /* Info.plist */,
 				0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */,
 			);
@@ -264,6 +267,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */,
+				52E2183911404AE40030AD40 /* MIOS_Studio.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
