@@ -38,6 +38,7 @@ public:
 class MidiSlider
     : public Component
     , public SliderListener
+    , public ComboBoxListener
 {
 public:
     //==============================================================================
@@ -57,12 +58,13 @@ public:
 
     //==============================================================================
     void sliderValueChanged(Slider* sliderThatWasMoved);
+    void comboBoxChanged(ComboBox *comboBoxThatHasChanged);
 
 
 protected:
     //==============================================================================
     MidiSliderComponent *slider;
-    Label *label;
+    ComboBox* sliderFunction; // only used for horizontal sliders
 
     int sliderNum;
     bool vertical;
