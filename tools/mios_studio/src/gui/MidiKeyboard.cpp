@@ -55,6 +55,8 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
     if( propertiesFile ) {
         int chn = propertiesFile->getIntValue("midiKeyboardChannel", 1);
         midiKeyboardComponent->setMidiChannel(chn);
+        for(int i=0; i<midiSlider.size(); ++i)
+            midiSlider[i]->setMidiChannel(chn);
         midiChannelSlider->setValue(chn, false);
     }
 
@@ -108,10 +110,13 @@ void MidiKeyboard::resized()
 
 
 //==============================================================================
-void MidiKeyboard::setMidiChannel(const int midiChannel)
+void MidiKeyboard::setMidiChannel(const int& midiChannel)
 {
     midiKeyboardComponent->setMidiChannel(midiChannel);
     midiKeyboardComponent->setMidiChannelsToDisplay(1 << midiChannel);
+
+    for(int i=0; i<midiSlider.size(); ++i)
+        midiSlider[i]->setMidiChannel(midiChannel);
 
     // store setting
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);

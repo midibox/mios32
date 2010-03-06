@@ -274,6 +274,17 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
 
 
 //==============================================================================
+void MidiSlider::setMidiChannel(const int& _midiChannel)
+{
+    midiChannel = _midiChannel;
+}
+
+int MidiSlider::getMidiChannel(void)
+{
+    return midiChannel;
+}
+
+//==============================================================================
 void MidiSlider::sliderValueChanged(Slider* sliderThatWasMoved)
 {
     if( functionName.containsWholeWord(T("CC")) ) {

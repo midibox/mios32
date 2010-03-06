@@ -53,8 +53,8 @@ public:
     void setFunction(const String &_functionName, const int &_functionArg, const int &_midiChannel, const int &initialValue);
     String getFunctionName(void);
     int getFunctionArg(void);
+    void setMidiChannel(const int& _midiChannel);
     int getMidiChannel(void);
-    uint8 getInitialValue(void);
 
     //==============================================================================
     void sliderValueChanged(Slider* sliderThatWasMoved);
