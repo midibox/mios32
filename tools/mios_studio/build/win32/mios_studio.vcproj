@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="mios_studio"
+	Name="MIOS_Studio"
 	ProjectGUID="{78175CE0-F97C-4A54-A1CB-CCEAFE1B470C}"
 	RootNamespace="mios_studio"
 	Keyword="Win32Proj"
@@ -139,6 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="libcmt libcpmt"
@@ -273,6 +274,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\SysexHelper.h"
 				>
 			</File>
@@ -342,6 +347,14 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\..\icon\MIOS_Studio.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\MIOS_Studio.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

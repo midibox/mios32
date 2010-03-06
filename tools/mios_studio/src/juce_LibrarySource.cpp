@@ -9,7 +9,7 @@
 */
 
 #include "juce_AppConfig.h"
-#ifdef WIN32
+#if defined(WIN32) && (JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION==50)
 #include "../../../../../juce/juce.h"
 #else
 #include "../../../../../juce/juce_amalgamated.cpp"

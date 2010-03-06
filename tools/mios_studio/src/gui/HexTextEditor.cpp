@@ -28,12 +28,20 @@ HexTextEditor::HexTextEditor(Label *_statusLabel)
     setCaretVisible(true);
     setPopupMenuEnabled(true);
     setInputRestrictions(1000000, T("0123456789ABCDEFabcdef \n"));
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
 #ifdef JUCE_WIN32
     setFont(Font(Typeface::defaultTypefaceNameMono, 10.0, 0));
 #else
     setFont(Font(Typeface::defaultTypefaceNameMono, 13.0, 0));
 #endif
-    addListener(this);
+#else
+#ifdef JUCE_WIN32
+    setFont(Font(Font::getDefaultMonospacedFontName(), 10.0, 0));
+#else
+    setFont(Font(Font::getDefaultMonospacedFontName(), 13.0, 0));
+#endif
+#endif
+	addListener(this);
 
     setSize(600, 200);
 }
@@ -54,7 +62,11 @@ void HexTextEditor::textEditorTextChanged(TextEditor &editor)
 {
     String hexStr = getText();
     int size = hexStr.length();
-    const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
+	const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
+#else
+	const char *strBuffer = hexStr.toCString(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
+#endif
 
     int numBytes = 0;
     int charCounter = 0;
@@ -140,7 +152,12 @@ Array<uint8> HexTextEditor::getBinary(void)
 {
     String hexStr = getText();
     int size = hexStr.length();
-    const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
+
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
+	const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
+#else
+	const char *strBuffer = hexStr.toCString(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
+#endif
 
     Array<uint8> retArray;
     int charCounter = 0;

@@ -83,6 +83,8 @@ public:
     Midio128ToolWindow *midio128ToolWindow;
     MbCvToolWindow *mbCvToolWindow;
 
+	// This is needed by MSVC in debug mode (please #ifdef if it causes Mac problems)
+    juce_UseDebuggingNewOperator
 protected:
     //==============================================================================
     UploadWindow *uploadWindow;
