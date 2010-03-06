@@ -46,6 +46,8 @@
 #include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
 #include "seq_midi_blm.h"
+#include "seq_terminal.h"
+#include "seq_statistics.h"
 
 #include "seq_file.h"
 #include "seq_file_b.h"
@@ -98,6 +100,7 @@ void APP_Init(void)
   SEQ_MIDI_BLM_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
+  SEQ_TERMINAL_Init(0);
 
   // init mixer page
   SEQ_MIXER_Init(0);
@@ -137,7 +140,7 @@ void APP_Background(void)
 #endif
 
   // for idle time measurements
-  SEQ_UI_INFO_Idle();
+  SEQ_STATISTICS_Idle();
 }
 
 

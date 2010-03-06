@@ -30,10 +30,10 @@
 
 
 // jumper options (all pin states are low-active, and will be inverted here)
-#define JUMPER_MIDIMON_ACTIVE  (MIOS32_BOARD_J5_PinGet(4) ? 0 : 1)
-#define JUMPER_FILTER_ACTIVE   (MIOS32_BOARD_J5_PinGet(5) ? 0 : 1)
-#define JUMPER_TEMPO_ACTIVE    (MIOS32_BOARD_J5_PinGet(6) ? 0 : 1)
-#define JUMPER_MTC_ACTIVE      (MIOS32_BOARD_J5_PinGet(7) ? 0 : 1)
+#define JUMPER_MIDIMON_ACTIVE  1
+#define JUMPER_FILTER_ACTIVE   1
+#define JUMPER_TEMPO_ACTIVE    0
+#define JUMPER_MTC_ACTIVE      0
 
 // to determine BPM
 #define NUM_TEMPO_SAMPLES (6+1) // to display BPM correctly after one 16th step

@@ -41,6 +41,7 @@
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
+#include "seq_statistics.h"
 #include "seq_ui.h"
 
 
@@ -56,7 +57,7 @@
 // same for measuring with the stopwatch
 // value is visible in menu (-> press exit button)
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -225,7 +226,7 @@ s32 SEQ_CORE_Init(u32 mode)
   SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], 0.0);
 
 #if STOPWATCH_PERFORMANCE_MEASURING
-  SEQ_UI_INFO_StopwatchInit();
+  SEQ_STATISTICS_StopwatchInit();
 #endif
 
   return 0; // no error
@@ -309,7 +310,7 @@ s32 SEQ_CORE_Handler(void)
 	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	  SEQ_UI_INFO_StopwatchReset();
+	  SEQ_STATISTICS_StopwatchReset();
 #endif
 
 	  // generate MIDI events
@@ -320,7 +321,7 @@ s32 SEQ_CORE_Handler(void)
 	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	  SEQ_UI_INFO_StopwatchCapture();
+	  SEQ_STATISTICS_StopwatchCapture();
 #endif
 
 	  // load new pattern/song step if reference step reached measure
