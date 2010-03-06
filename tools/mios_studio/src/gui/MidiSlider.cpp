@@ -251,7 +251,7 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
         for(int i=0; i<128; ++i) {
             sliderFunction->addItem(T("CC") + String(i) + T(": ") + String(MidiSliderCcNames[i]), i+1);
         }
-        sliderFunction->setSelectedId(functionArg+1, true);
+        sliderFunction->setSelectedId(functionArg+1, false);
     } else if( functionName.containsWholeWord(T("PB")) ) {
         String labelStr(functionArg);
         slider->snapsBackOnRelease = 1;
