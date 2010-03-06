@@ -215,11 +215,6 @@ extern s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds);
 extern s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed);
 extern s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode);
 
-extern s32 SEQ_UI_INFO_Idle(void);
-extern s32 SEQ_UI_INFO_StopwatchInit(void);
-extern s32 SEQ_UI_INFO_StopwatchReset(void);
-extern s32 SEQ_UI_INFO_StopwatchCapture(void);
-
 extern s32 SEQ_UI_UTIL_CopyButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);

@@ -26,6 +26,7 @@
 #include "seq_core.h"
 #include "seq_ui.h"
 #include "seq_file_b.h"
+#include "seq_statistics.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,7 +39,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 1
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,7 +83,7 @@ s32 SEQ_PATTERN_Init(u32 mode)
   }
 
 #if STOPWATCH_PERFORMANCE_MEASURING
-  SEQ_UI_INFO_StopwatchInit();
+  SEQ_STATISTICS_StopwatchInit();
 #endif
 
   return 0; // no error
@@ -190,14 +191,14 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
   MUTEX_SDCARD_TAKE;
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_UI_INFO_StopwatchReset();
+  SEQ_STATISTICS_StopwatchReset();
 #endif
 
   if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_UI_INFO_StopwatchCapture();
+  SEQ_STATISTICS_StopwatchCapture();
 #endif
 
   MUTEX_SDCARD_GIVE;
@@ -215,13 +216,13 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   MUTEX_SDCARD_TAKE;
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_UI_INFO_StopwatchReset();
+  SEQ_STATISTICS_StopwatchReset();
 #endif
 
   status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group);
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_UI_INFO_StopwatchCapture();
+  SEQ_STATISTICS_StopwatchCapture();
 #endif
 
   MUTEX_SDCARD_GIVE;
