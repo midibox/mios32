@@ -3,7 +3,7 @@
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
 "IsWebType" = "8:FALSE"
-"ProjectName" = "8:Setup"
+"ProjectName" = "8:MIOS_Studio_Installer"
 "LanguageId" = "3:1033"
 "CodePage" = "3:1252"
 "UILanguageId" = "3:1033"
@@ -23,6 +23,12 @@
         {
         "MsmKey" = "8:_5B28162FCD41E1640507BA8C17F9DA7B"
         "OwnerKey" = "8:_D33E52A25DD544DDB948BA760D2521FD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C590BA7DF3444ABB97D36521C70FD9A1"
+        "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -66,7 +72,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\Setup.msi"
+        "OutputFilename" = "8:Release\\MIOS_Studio_Installer.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -85,6 +91,11 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.2.0"
+                    {
+                    "Name" = "8:Windows Installer 2.0"
+                    "ProductCode" = "8:Microsoft.Windows.Installer.2.0"
+                    }
                 }
             }
         }
@@ -146,6 +157,26 @@
             "Register" = "3:1"
             "Exclude" = "11:TRUE"
             "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C590BA7DF3444ABB97D36521C70FD9A1"
+            {
+            "SourcePath" = "8:..\\..\\..\\icon\\MIOS_Studio.ico"
+            "TargetName" = "8:MIOS_Studio.ico"
+            "Tag" = "8:"
+            "Folder" = "8:_6A2640B624AA456EB5061A84A8137336"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
         }
@@ -213,19 +244,19 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:MIOS Studio MkII"
-        "ProductCode" = "8:{84980F8A-84FF-4922-AF7E-51D0FBAB08A9}"
-        "PackageCode" = "8:{BF08FE78-67BF-4526-82F9-46B79D93BF45}"
+        "ProductName" = "8:MIOS Studio"
+        "ProductCode" = "8:{44AAA521-0645-463F-9EA9-68F0A88B0D7D}"
+        "PackageCode" = "8:{5F06290A-E1CB-4213-92E9-5F6E3E3C8703}"
         "UpgradeCode" = "8:{2C66247D-2CBB-4810-AD74-AC1E8A8422F0}"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:2.0.0"
         "Manufacturer" = "8:MIDIbox.org"
         "ARPHELPTELEPHONE" = "8:"
-        "ARPHELPLINK" = "8:"
-        "Title" = "8:MIOS_Studio"
+        "ARPHELPLINK" = "8:http://www.ucapps.de/mios_studio.html"
+        "Title" = "8:MIOS Studio"
         "Subject" = "8:"
         "ARPCONTACT" = "8:TK"
         "Keywords" = "8:"
@@ -336,7 +367,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_5DE2B68264DA4B7DB79FBF8C71979999"
             {
-            "Name" = "8:MIOS Studio MkII"
+            "Name" = "8:MIOS Studio"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -345,12 +376,12 @@
             "Target" = "8:_D33E52A25DD544DDB948BA760D2521FD"
             "Folder" = "8:_BB24A4C10A8945A5962A86910702032D"
             "WorkingFolder" = "8:_6A2640B624AA456EB5061A84A8137336"
-            "Icon" = "8:"
+            "Icon" = "8:_C590BA7DF3444ABB97D36521C70FD9A1"
             "Feature" = "8:"
             }
-            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_8B949E7AD20F4E53A8A6A8EC17AC04FC"
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_D3F2885A605E45D69AA260FEEDBE367A"
             {
-            "Name" = "8:MIOS Studio MkII"
+            "Name" = "8:MIOS Studio"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -359,7 +390,7 @@
             "Target" = "8:_D33E52A25DD544DDB948BA760D2521FD"
             "Folder" = "8:_365641E650A747E38879031FBA807428"
             "WorkingFolder" = "8:_6A2640B624AA456EB5061A84A8137336"
-            "Icon" = "8:"
+            "Icon" = "8:_C590BA7DF3444ABB97D36521C70FD9A1"
             "Feature" = "8:"
             }
         }
@@ -763,7 +794,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D33E52A25DD544DDB948BA760D2521FD"
             {
-            "SourcePath" = "8:..\\Release\\mios_studio.exe"
+            "SourcePath" = "8:..\\Release\\MIOS_Studio.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_6A2640B624AA456EB5061A84A8137336"

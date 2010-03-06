@@ -19,10 +19,18 @@
 LogBox::LogBox(const String &componentName)
     : ListBox(componentName, 0)
     , maxRowWidth(0)
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
 #ifdef JUCE_WIN32
     , logEntryFont(Typeface::defaultTypefaceNameMono, 10.0, 0)
 #else
-	, logEntryFont(Typeface::defaultTypefaceNameMono, 13.0, 0)
+    , logEntryFont(Typeface::defaultTypefaceNameMono, 13.0, 0)
+#endif
+#else 
+#ifdef JUCE_WIN32
+    , logEntryFont(Font::getDefaultMonospacedFontName(), 10.0, 0)
+#else
+    , logEntryFont(Font::getDefaultMonospacedFontName(), 13.0, 0)
+#endif
 #endif
 {
     setModel(this);

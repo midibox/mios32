@@ -217,6 +217,8 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, 
 
 MidiSlider::~MidiSlider()
 {
+	deleteAndZero(slider);
+	deleteAndZero(sliderFunction);
     deleteAllChildren();
 }
 
@@ -247,7 +249,7 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
     slider->snapsBackOnRelease = 0;
     if( functionName.containsWholeWord(T("CC")) ) {
         String labelStr(functionArg);
-        sliderFunction->clear();
+        sliderFunction->clear(true);
         for(int i=0; i<128; ++i) {
             sliderFunction->addItem(T("CC") + String(i) + T(": ") + String(MidiSliderCcNames[i]), i+1);
         }
