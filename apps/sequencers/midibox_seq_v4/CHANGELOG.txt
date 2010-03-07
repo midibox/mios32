@@ -10,9 +10,22 @@ MIDIboxSEQ V4.0beta16
 ~~~~~~~~~~~~~~~~~~~~~
 
   o MIDI->Section Control: Octaves which are not taken for section selection
-    can now be optionally forwarded to a definable MIDI port.
+    can now be optionally forwarded to a configurable MIDI port.
     This saves you from adding a keyboard splitter to your MIDI keyboard, if
     you want to play a MIDI instrument from an unused keyboard zone.
+
+  o fixed bug in live recording function (notelength sometimes not recorded correctly)
+
+  o MIOS terminal functions have been added. Just enter "help" in the terminal
+    which has been integrated into MIOS Studio 2
+
+  o copy function now works correctly together with the section concept
+
+  o Follow function now available as dedicated button and with key combination MENU+EXIT
+
+  o the Follow Song option under UTILITY->Options has been removed. The selected
+    follow mode won't be stored on SD Card anymore. Follow is deactivated after
+    power-on and has to be manually enabled (e.g. by pressing MENU+EXIT)
 
 
 MIDIboxSEQ V4.0beta15

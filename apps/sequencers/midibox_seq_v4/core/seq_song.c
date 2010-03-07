@@ -367,8 +367,8 @@ s32 SEQ_SONG_NextPos(void)
 
     SEQ_SONG_FetchPos();
 
-    // correct the song position if follow song mode is active
-    if( seq_core_options.FOLLOW_SONG && SEQ_SONG_ActiveGet() )
+    // correct the song position if follow mode is active
+    if( seq_core_state.FOLLOW && SEQ_SONG_ActiveGet() )
       SEQ_UI_SONG_EditPosSet(song_pos);
 
     // update display immediately

@@ -87,7 +87,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       MIOS32_IRQ_Enable();
     } else {
       // won't work if Follow function active!
-      if( seq_core_options.FOLLOW_SONG ) {
+      if( seq_core_state.FOLLOW ) {
 	// print message and exit
 	SEQ_UI_Msg((encoder <= SEQ_UI_ENCODER_GP8) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 2000, "\"Follow\" active!", "Please deactivate!");
 	return 1;

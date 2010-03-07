@@ -198,6 +198,7 @@ LED_PAUSE  18   3
 LED_REW    19   2
 LED_FWD    17   2
 LED_LOOP    0   0
+LED_FOLLOW  0   0
 
 #              SR  Pin
 LED_EXIT        0   0
@@ -257,6 +258,7 @@ BUTTON_PLAY   18   5
 BUTTON_REW    19   4
 BUTTON_FWD    17   4
 BUTTON_LOOP    0   0
+BUTTON_FOLLOW  0   0
 
 #              SR  Pin
 BUTTON_MENU    23   5
@@ -360,6 +362,7 @@ BUTTON_BEH_ALL          1
 BUTTON_BEH_SOLO         1
 BUTTON_BEH_METRONOME    1
 BUTTON_BEH_LOOP         1
+BUTTON_BEH_FOLLOW       1
 BUTTON_BEH_SCRUB        0
 BUTTON_BEH_MENU         0
 BUTTON_BEH_STEP_VIEW    0

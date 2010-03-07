@@ -54,6 +54,7 @@ typedef struct {
   u8 rew;
   u8 fwd;
   u8 loop;
+  u8 follow;
 
   u8 menu;
   u8 select;
@@ -105,6 +106,7 @@ typedef struct {
   u8 solo:1;
   u8 metronome:1;
   u8 loop:1;
+  u8 follow:1;
   u8 scrub:1;
   u8 menu:1;
   u8 step_view:1;
@@ -146,6 +148,7 @@ typedef struct {
   u8 rew;
   u8 fwd;
   u8 loop;
+  u8 follow;
 
   u8 exit;
   u8 select;
