@@ -270,6 +270,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button_beh.scrub = flag;
 	  } else if( strcmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_button_beh.loop = flag;
+	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	    seq_hwcfg_button_beh.follow = flag;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button_beh.menu = flag;
 	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
@@ -333,6 +335,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.scrub = din_value;
 	  } else if( strcmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_button.loop = din_value;
+	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	    seq_hwcfg_button.follow = din_value;
 	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_button.metronome = din_value;
 	  } else if( strcmp(parameter, "RECORD") == 0 ) {
@@ -493,6 +497,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.scrub = dout_value;
 	  } else if( strcmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_led.loop = dout_value;
+	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	    seq_hwcfg_led.follow = dout_value;
 	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_led.metronome = dout_value;
 	  } else if( strcmp(parameter, "RECORD") == 0 ) {

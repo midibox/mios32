@@ -33,7 +33,6 @@ typedef union {
   u8 ALL;
   struct {
     u8 SYNCHED_PATTERN_CHANGE:1;
-    u8 FOLLOW_SONG:1;
     u8 PASTE_CLR_ALL:1;
   };
 } seq_core_options_t;
@@ -49,6 +48,7 @@ typedef union {
     u8  MANUAL_TRIGGER_STOP_REQ:1;
     u8  EXT_RESTART_REQ:1;
     u8  LOOP:1;
+    u8  FOLLOW:1;
   };
 } seq_core_state_t;
 

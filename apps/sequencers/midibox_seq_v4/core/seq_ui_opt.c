@@ -37,12 +37,11 @@
 #define ITEM_STEPS_MEASURE 0
 #define ITEM_STEPS_PATTERN 1
 #define ITEM_SYNC_CHANGE   2
-#define ITEM_FOLLOW_SONG   3
-#define ITEM_PASTE_CLR_ALL 4
-#define ITEM_REMOTE_MODE   5
-#define ITEM_REMOTE_ID     6
-#define ITEM_REMOTE_PORT   7
-#define ITEM_REMOTE_REQUEST 8
+#define ITEM_PASTE_CLR_ALL 3
+#define ITEM_REMOTE_MODE   4
+#define ITEM_REMOTE_ID     5
+#define ITEM_REMOTE_PORT   6
+#define ITEM_REMOTE_REQUEST 7
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -62,8 +61,7 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( ui_selected_item ) {
     case ITEM_STEPS_MEASURE:  *gp_leds = 0x0003; break;
     case ITEM_STEPS_PATTERN:  *gp_leds = 0x000c; break;
-    case ITEM_SYNC_CHANGE:    *gp_leds = 0x0010; break;
-    case ITEM_FOLLOW_SONG:    *gp_leds = 0x0020; break;
+    case ITEM_SYNC_CHANGE:    *gp_leds = 0x0030; break;
     case ITEM_PASTE_CLR_ALL:  *gp_leds = 0x00c0; break;
     case ITEM_REMOTE_MODE:    *gp_leds = 0x0100; break;
     case ITEM_REMOTE_ID:      *gp_leds = 0x0200; break;
@@ -97,11 +95,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_SYNC_CHANGE;
-      break;
-
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_FOLLOW_SONG;
+      ui_selected_item = ITEM_SYNC_CHANGE;
       break;
 
     case SEQ_UI_ENCODER_GP7:
@@ -173,14 +168,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
-      store_file_required = 1;
-      return 1;
-
-    case ITEM_FOLLOW_SONG:
-      if( incrementer )
-	seq_core_options.FOLLOW_SONG = incrementer > 0 ? 1 : 0;
-      else
-	seq_core_options.FOLLOW_SONG ^= 1;
       store_file_required = 1;
       return 1;
 
@@ -313,13 +300,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request                  
-  //  16 Steps  16 Steps  off  off    Steps   Auto  00 Def. Connect:yes              
+  //  Measure   Pattern  SyncChange Paste/ClrRemote ID Port Request                  
+  //  16 Steps  16 Steps     off      Steps   Auto  00 Def. Connect:yes              
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Measure   Pattern  Sync Follw Paste/ClrRemote ID Port Request                  ");
+  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange Paste/ClrRemote ID Port Request                  ");
   SEQ_LCD_PrintSpaces(18);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -338,22 +325,15 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d Steps ", (int)seq_core_steps_per_pattern + 1);
   }
+  SEQ_LCD_PrintSpaces(4);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_SYNC_CHANGE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "Pat." : " off");
-  }
-  SEQ_LCD_PrintSpaces(2);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_FOLLOW_SONG && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString(seq_core_options.FOLLOW_SONG ? "on " : "off");
+    SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(6);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {

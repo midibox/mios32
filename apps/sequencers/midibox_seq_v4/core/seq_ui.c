@@ -521,6 +521,27 @@ static s32 SEQ_UI_Button_Loop(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Follow(s32 depressed)
+{
+  if( seq_hwcfg_button_beh.follow ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    // should be atomic
+    portENTER_CRITICAL();
+    seq_core_state.FOLLOW ^= 1;
+  } else {
+    // should be atomic
+    portENTER_CRITICAL();
+    // set mode
+    seq_core_state.FOLLOW = depressed ? 0 : 1;
+  }
+  portEXIT_CRITICAL();
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Follow Mode", seq_core_state.FOLLOW ? "    on" : "   off");
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_Scrub(s32 depressed)
 {
   // double function: -> Loop if menu button pressed
@@ -798,6 +819,10 @@ static s32 SEQ_UI_Button_Select(s32 depressed)
 
 static s32 SEQ_UI_Button_Exit(s32 depressed)
 {
+  // double function: -> Follow if menu button pressed
+  if( seq_ui_button_state.MENU_PRESSED )
+    return SEQ_UI_Button_Follow(depressed);
+
   if( depressed ) return -1; // ignore when button depressed
 
   u8 prev_ui_page = ui_page;
@@ -2121,19 +2146,21 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.fwd, seq_ui_button_state.FWD);
 
   SEQ_LED_PinSet(seq_hwcfg_led.loop, seq_core_state.LOOP);
+  SEQ_LED_PinSet(seq_hwcfg_led.follow, seq_core_state.FOLLOW);
   
   SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL);
 
-  SEQ_LED_PinSet(seq_hwcfg_led.exit, ui_page == SEQ_UI_PAGE_MENU);
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
 
   // handle double functions
   if( seq_ui_button_state.MENU_PRESSED ) {
     SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_core_state.LOOP);
+    SEQ_LED_PinSet(seq_hwcfg_led.exit, seq_core_state.FOLLOW);
     SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.EXT_RESTART_REQ);
   } else {
     SEQ_LED_PinSet(seq_hwcfg_led.scrub, seq_ui_button_state.SCRUB);
+    SEQ_LED_PinSet(seq_hwcfg_led.exit, ui_page == SEQ_UI_PAGE_MENU);
     SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
   }
 
@@ -2425,7 +2452,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
 
   // follow step position if enabled
-  if( seq_core_options.FOLLOW_SONG ) {
+  if( seq_core_state.FOLLOW ) {
     u8 trk_step = seq_core_trk[visible_track].step;
     if( (trk_step & 0xf0) != (16*ui_selected_step_view) ) {
       ui_selected_step_view = trk_step / 16;

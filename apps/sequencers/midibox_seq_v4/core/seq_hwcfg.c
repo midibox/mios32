@@ -146,6 +146,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
 
   //            SR   ignore    Pin
   .loop    = ((( 0   -1)<<3)+    0),
+  .follow  = ((( 0   -1)<<3)+    0),
 
   //              SR   ignore    Pin
   .morph     = ((( 0   -1)<<3)+    0),
@@ -161,6 +162,7 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .solo = 1,
   .metronome = 1,
   .loop = 1,
+  .follow = 1,
 #ifdef MIOS32_FAMILY_EMULATION
   .scrub = 1,
   .menu = 1,
@@ -240,6 +242,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .rew   = (((12   -1)<<3)+    6),
   .fwd   = (((12   -1)<<3)+    7),
   .loop  = ((( 0   -1)<<3)+    0),
+  .follow = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
   .exit      = ((( 0   -1)<<3)+    0),
@@ -280,6 +283,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .rew   = ((( 0   -1)<<3)+    0),
   .fwd   = ((( 0   -1)<<3)+    0),
   .loop  = ((( 0   -1)<<3)+    0),
+  .follow = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
   .menu      = ((( 0   -1)<<3)+    0),

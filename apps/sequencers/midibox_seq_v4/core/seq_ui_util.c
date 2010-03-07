@@ -253,11 +253,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       } else {
 	// print message
 	in_menu_msg = MSG_COPY;
-	// select first step
-	SEQ_UI_SelectedStepSet(0);
+	// select first step in section
+	u8 track_length = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+	u8 first_step = ui_selected_step - (ui_selected_step % ((int)track_length + 1));
+	SEQ_UI_SelectedStepSet(first_step);
 	// select full range
-	copypaste_begin = 0;
-	copypaste_end = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+	copypaste_begin = first_step;
+	copypaste_end = first_step + track_length;
       }
       return 1;
 

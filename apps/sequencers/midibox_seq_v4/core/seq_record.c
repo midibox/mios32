@@ -97,7 +97,7 @@ s32 SEQ_RECORD_Reset(u8 track)
   int i;
   for(i=0; i<4; ++i)
     played_notes[i] = 0;
- 
+
   return 0; // no error
 }
 
@@ -148,7 +148,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     case NoteOff:
     case NoteOn: {
       midi_package.note &= 0x7f; // to avoid array overwrites
-      u8 note_mask = 1 << (midi_package.note & 0x1f);
+      u32 note_mask = 1 << (midi_package.note & 0x1f);
 
       // if Note Off and new note number matches with recorded note number
       if( midi_package.event == NoteOff || midi_package.velocity == 0 ) {
