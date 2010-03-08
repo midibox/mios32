@@ -17,7 +17,7 @@
 //#define JUCE_FORCE_DEBUG  1
 //#define JUCE_LOG_ASSERTIONS  1
 //#define JUCE_ASIO  1
-//#define JUCE_ALSA  1
+#define JUCE_ALSA  1
 #define JUCE_QUICKTIME  0
 //#define JUCE_OPENGL  1
 #define JUCE_USE_FLAC  0
