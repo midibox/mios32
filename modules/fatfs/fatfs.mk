@@ -8,6 +8,7 @@ C_INCLUDE += -I $(MIOS32_PATH)/modules/fatfs/src
 # add modules to thumb sources (TODO: provide makefile option to add code to ARM sources)
 THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/fatfs/src/diskio.c \
+	$(MIOS32_PATH)/modules/fatfs/src/option/ccsbcs.c \
 	$(MIOS32_PATH)/modules/fatfs/src/ff.c
 
 

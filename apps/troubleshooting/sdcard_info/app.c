@@ -18,7 +18,7 @@
 #include <mios32.h>
 
 #include <string.h>
-#include <dosfs.h>
+#include <ff.h>
 
 #include "app.h"
 
@@ -35,12 +35,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-// DOS FS variables
-static u8 sector[SECTOR_SIZE];
-static VOLINFO vi;
-static DIRINFO di;
-static DIRENT de;
-static FILEINFO fi;
+// FatFs variables
+static FATFS fs[1]; // Work area (file system object) for logical drives
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -140,72 +136,79 @@ s32 PrintSDCardInfos(void)
     DEBUG_MSG("- Reserved4: %u\n", csd.Reserved4);
     DEBUG_MSG("--------------------\n");
   }
-  
-  // try to mount file system
-  u32 pstart, psize;
-  u8  pactive, ptype;
 
-  pstart = DFS_GetPtnStart(0, sector, 0, &pactive, &ptype, &psize);
-  if( pstart == 0xffffffff ) {
-    DEBUG_MSG("ERROR: Cannot find first partition!\n");
+
+  // mount SD Card
+  FRESULT res;
+  static FILINFO fno;
+  static DIR dir;
+  int i;
+  char *fn;
+#if _USE_LFN
+  static char lfn[_MAX_LFN * (_DF1S ? 2 : 1) + 1];
+  fno.lfname = lfn;
+  fno.lfsize = sizeof(lfn);
+#endif
+
+  DEBUG_MSG("Mounting SD Card...\n");
+  if( (res=f_mount(0, &fs[0])) != FR_OK ) {
+    DEBUG_MSG("Failed to mount SD Card - error status: %d\n", res);
     return -1; // error
   }
 
-  DEBUG_MSG("--------------------\n");
-  // check for partition type, if we don't get one of these types, it can be assumed that the partition
-  // is located at the first sector instead MBR ("superfloppy format")
-  // see also http://mirror.href.com/thestarman/asm/mbr/PartTypes.htm
-  if( ptype != 0x04 && ptype != 0x06 && ptype != 0x0b && ptype != 0x0c && ptype != 0x0e ) {
-    pstart = 0;
-    DEBUG_MSG("Partition 0 start sector %u (invalid type, assuming superfloppy format)\n", pstart);
-  } else {
-    DEBUG_MSG("Partition 0 start sector %u active 0x%02x type 0x%02x size %u\n", pstart, pactive, ptype, psize);
-  }
-    
-  if( DFS_GetVolInfo(0, sector, pstart, &vi) ) {
-    DEBUG_MSG("ERROR: no volume information\n");
+  // note: we have to open a directory to update the disk informations (not done by f_mount)
+  char path[100];
+  strcpy(path, "/");
+  if( (res=f_opendir(&dir, path)) != FR_OK ) {
+    DEBUG_MSG("Failed to open root directory - error status: %d\n", res);
     return -1; // error
   }
 
-  DEBUG_MSG("Volume label '%s'\n", vi.label);
-  DEBUG_MSG("%u sector/s per cluster, %u reserved sector/s, volume total %u sectors.\n", vi.secperclus, vi.reservedsecs, vi.numsecs);
-  DEBUG_MSG("%u sectors per FAT, first FAT at sector #%u, root dir at #%u.\n",vi.secperfat,vi.fat1,vi.rootdir);
-  DEBUG_MSG("(For FAT32, the root dir is a CLUSTER number, FAT12/16 it is a SECTOR number)\n");
-  DEBUG_MSG("%u root dir entries, data area commences at sector #%u.\n",vi.rootentries,vi.dataarea);
+#if 0
+  // TK: won't work - fs structure deleted by f_opendir
+  FATFS *fs = &fs[0];
+  DEBUG_MSG("Volume label '%s'\n", "TODO");
+  DEBUG_MSG("%u sector/s per cluster, %u clusters.\n", fs->csize, fs->max_clust);
+  DEBUG_MSG("%u sectors per FAT, first FAT at sector #%u, root dir at #%u.\n", fs->sects_fat, fs->fatbase, fs->dirbase);
+  DEBUG_MSG("%u root dir entries\n", fs->n_rootdir);
   char file_system[20];
-  if( vi.filesystem == FAT12 )
+  if( fs->fs_type == FS_FAT12 )
     strcpy(file_system, "FAT12");
-  else if (vi.filesystem == FAT16)
+  else if( fs->fs_type == FS_FAT16 )
     strcpy(file_system, "FAT16");
-  else if (vi.filesystem == FAT32)
+  else if( fs->fs_type == FS_FAT32 )
     strcpy(file_system, "FAT32");
   else
     strcpy(file_system, "unknown FS");
-  DEBUG_MSG("%u clusters (%u bytes) in data area, filesystem IDd as %s\n", vi.numclusters, vi.numclusters * vi.secperclus * SECTOR_SIZE, file_system);
-    
-  if( vi.filesystem != FAT12 && vi.filesystem != FAT16 && vi.filesystem != FAT32 ) {
-    DEBUG_MSG("ERROR: unknown file system!\n");
-    return -1; // error
-  }
+  DEBUG_MSG("Filesystem: 0x%02x (%s)\n", fs->fs_type, file_system);
+#endif
 
-  di.scratch = sector;
-  if( DFS_OpenDir(&vi, "", &di) ) {
-    DEBUG_MSG("ERROR: opening root directory - try mounting the partition again\n");
-    return -1; // error
-  }
 
+  DEBUG_MSG("--------------------\n");
   DEBUG_MSG("Content of root directory:\n");
-  u32 num_files = 0;
-  while( !DFS_GetNext(&vi, &di, &de) ) {
-    if( de.name[0] ) {
-      u8 file_name[13];
-      ++num_files;
-      DFS_DirToCanonical(file_name, de.name);
-      DEBUG_MSG("- %s\n", file_name);
+  i = strlen(path);
+  for (;;) {
+    res = f_readdir(&dir, &fno);
+    if (res != FR_OK || fno.fname[0] == 0) break;
+    if (fno.fname[0] == '.') continue;
+#if _USE_LFN
+    fn = *fno.lfname ? fno.lfname : fno.fname;
+#else
+    fn = fno.fname;
+#endif
+
+    if (fno.fattrib & AM_DIR) {
+      if( path[0] == '/' && path[1] == 0 )
+	DEBUG_MSG("%s/\n", fn);
+      else
+	DEBUG_MSG("%s/\n", path, fn);
+    } else {
+      if( path[0] == '/' && path[1] == 0 )
+	DEBUG_MSG("%s\n", fn);
+      else
+	DEBUG_MSG("%s\n", path, fn);
     }
   }
-  DEBUG_MSG("Found %u directory entries.\n", num_files);
-  DEBUG_MSG("--------------------\n");
 
   return 0; // no error
 }

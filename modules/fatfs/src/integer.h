@@ -29,7 +29,9 @@ typedef unsigned long	ULONG;
 typedef unsigned long	DWORD;
 
 /* Boolean type */
-typedef enum { FALSE = 0, TRUE } BOOL;
+// TK: clashes with STM32 setup, therefore defined locally in ff.c
+//typedef enum { FALSE = 0, TRUE } BOOL;
+typedef enum { F_FALSE = 0, F_TRUE } BOOL;
 
 #endif
 
