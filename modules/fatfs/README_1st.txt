@@ -9,8 +9,14 @@ This package has been downloaded from:
 Version R0.07e from Nov 3, 2009 is used
 
 
-TODO:
-  o integrating MIOS32 functions into src/diskio.c
-  o customizing configuration in src/ffconf.h
-  o testing the driver w/ MBSEQ
+Changes:
+  - TRUE/FALSE declaration moved from integer.h to ff.c/diskio.c to avoid clash with STM32 library
+  - integrated MIOS32 functions into src/diskio.c
+  - customized ffconf.h
+  - FATFS_USE_LFN and FATFS_MAX_LFN options included from mios32_config.h, 
+    so that long filename support can be selected for application (disabled by default)
+  - src/option/ccsbcs.c: disabled check for _USE_LFN
 
+
+TODO:
+  o testing the driver w/ MBSEQ

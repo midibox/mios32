@@ -10,6 +10,10 @@
 #define _FFCONFIG 0x007E
 
 
+// TK: include application specific configuration
+// search for FATFS_* defines
+#include "mios32_config.h"
+
 /*---------------------------------------------------------------------------/
 / Function and Buffer Configurations
 /----------------------------------------------------------------------------*/
@@ -53,7 +57,7 @@
 / Locale and Namespace Configurations
 /----------------------------------------------------------------------------*/
 
-#define _CODE_PAGE	932
+#define _CODE_PAGE	437
 /* The _CODE_PAGE specifies the OEM code page to be used on the target system.
 /  Incorrect setting of the code page can cause a file open failure.
 /
@@ -86,8 +90,19 @@
 */
 
 
+// TK: options can be enabled in mios32_config.h
+#ifdef FATFS_USE_LFN
+# define _USE_LFN FATFS_USE_LFN
+#else
 #define	_USE_LFN	0		/* 0, 1 or 2 */
+#endif
+
+#ifdef FATFS_MAX_LFN
+#define	_MAX_LFN FATFS_MAX_LFN
+#else
 #define	_MAX_LFN	255		/* Maximum LFN length to handle (12 to 255) */
+#endif
+
 /* The _USE_LFN option switches the LFN support.
 /
 /   0: Disable LFN. _MAX_LFN and _LFN_UNICODE have no effect.

@@ -79,6 +79,12 @@
 #include "ff.h"			/* FatFs configurations and declarations */
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
 
+// TK: defined in integer.h as bool - alternative enum here
+//typedef enum { FALSE = 0, TRUE } BOOL;
+#define FALSE 0
+#define TRUE 1
+
+
 /*--------------------------------------------------------------------------
 
    Module Private Definitions
@@ -1522,6 +1528,7 @@ FRESULT chk_mounted (	/* FR_OK(0): successful, !=0: any error occured */
 #endif
 	/* Search FAT partition on the drive */
 	fmt = check_fs(fs, bsect = 0);		/* Check sector 0 as an SFD format */
+
 	if (fmt == 1) {						/* Not an FAT boot record, it may be patitioned */
 		/* Check a partition listed in top of the partition table */
 		tbl = &fs->win[MBR_Table + LD2PT(vol) * 16];	/* Partition table */

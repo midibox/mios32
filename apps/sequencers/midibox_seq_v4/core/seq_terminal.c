@@ -417,7 +417,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   } else if( !SEQ_FILE_VolumeAvailable() ) {
     sprintf(str_buffer, "Invalid FAT");
   } else {
-    DEBUG_MSG("Deriving SD Card informations - please wait!\n");
+    DEBUG_MSG("Retrieving SD Card informations - please wait!\n");
     MUTEX_MIDIOUT_GIVE;
     MUTEX_SDCARD_TAKE;
     SEQ_FILE_UpdateFreeBytes();

@@ -14,4 +14,8 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "SD Card Info"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T.Klose"
 
+// FatFs configuration: support long filenames
+#define FATFS_USE_LFN 1
+#define FATFS_MAX_LFN 255
+
 #endif /* _MIOS32_CONFIG_H */

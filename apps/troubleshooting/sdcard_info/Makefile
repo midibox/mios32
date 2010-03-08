@@ -51,7 +51,7 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # DOSFS Driver
-include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
+include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
