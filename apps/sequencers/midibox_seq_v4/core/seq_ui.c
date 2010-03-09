@@ -2918,7 +2918,7 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
 {
   // TODO: add more verbose error messages, they are clearly defined in seq_file.h)
   char str[21];
-  sprintf(str, "E%3d (DOSFS: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
+  sprintf(str, "E%3d (FatFs: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
   return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
 }
 

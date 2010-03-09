@@ -155,8 +155,8 @@ include $(MIOS32_PATH)/modules/notestack/notestack.mk
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
-# DOSFS Driver
-include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
+# FATFS Driver
+include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
 # Portable randomize module
 include $(MIOS32_PATH)/modules/random/random.mk

@@ -24,7 +24,7 @@
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 #include <mid_parser.h>
-#include <dosfs.h>
+#include <ff.h>
 
 #include "seq_midply.h"
 #include "seq_core.h"
@@ -98,8 +98,7 @@ static u32 unplayed_note_off[UNPLAYED_NOTE_OFF_CHN_NUM][128/32];
 #define MIDIFILE_PATH_LEN_MAX 20
 static u8 midifile_path[MIDIFILE_PATH_LEN_MAX];
 
-// DOS FS variables
-static FILEINFO midifile_fi;
+static seq_file_t midifile_fi;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -253,6 +252,7 @@ s32 SEQ_MIDPLY_ReadFile(char *path)
 
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_ReadOpen(&midifile_fi, path);
+  SEQ_FILE_ReadClose(&midifile_fi); // close again - file will be reopened by read handler
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
@@ -264,7 +264,7 @@ s32 SEQ_MIDPLY_ReadFile(char *path)
 
     // got it
     midifile_pos = 0;
-    midifile_len = midifile_fi.filelen;
+    midifile_len = midifile_fi.fsize;
 
     strncpy(midifile_path, path, MIDIFILE_PATH_LEN_MAX);
     midifile_path[MIDIFILE_PATH_LEN_MAX-1] = 0;
@@ -560,7 +560,10 @@ u32 SEQ_MIDPLY_read(void *buffer, u32 len)
     return SEQ_FILE_ERR_NO_FILE;
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_ReadBuffer(&midifile_fi, buffer, len);
+  if( (status=SEQ_FILE_ReadReOpen(&midifile_fi)) >= 0 ) {
+    status = SEQ_FILE_ReadBuffer(buffer, len);
+    SEQ_FILE_ReadClose(&midifile_fi);
+  }
   MUTEX_SDCARD_GIVE;
 
   return (status >= 0) ? len : 0;
@@ -596,8 +599,12 @@ static s32 SEQ_MIDPLY_seek(u32 pos)
 
   if( midifile_pos >= midifile_len )
     status = -1; // end of file reached
-  else
-    status = SEQ_FILE_Seek(&midifile_fi, pos);    
+  else {
+    if( (status=SEQ_FILE_ReadReOpen(&midifile_fi)) >= 0 ) {
+      status = SEQ_FILE_ReadSeek(pos);    
+      SEQ_FILE_ReadClose(&midifile_fi);
+    }
+  }
 
   MUTEX_SDCARD_GIVE;
 

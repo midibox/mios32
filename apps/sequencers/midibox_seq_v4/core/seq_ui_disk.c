@@ -629,10 +629,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	      // Play MIDI File
 	      char mid_file[20];
-	      memcpy((char *)mid_file, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-	      memcpy((char *)mid_file+8, ".mid", 5);
+	      int i;
+	      char *p = (char *)&mid_file[0];
+	      for(i=0; i<8; ++i) {
+		char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+		if( c != ' ' )
+		  *p++ = c;
+	      }
+	      *p++ = 0;
+
 	      char path[40];
-	      sprintf(path, "midi/%s", mid_file);
+	      sprintf(path, "/MIDI/%s.MID", mid_file);
 
 	      MUTEX_MIDIOUT_TAKE;
 	      s32 status;
@@ -843,11 +850,11 @@ static s32 LCD_Handler(u8 high_prio)
   // Song     1                 1            Continue                            EXIT
 
   // Continue:
-  // Please enter Filename:                  /midi/<xxxxxxxx>.mid                    
+  // Please enter Filename:                  /MIDI/<xxxxxxxx>.MID                    
   // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins   SAVE EXIT
 
   // File exists
-  //                                         File '/midi/xxx.mid' already exists     
+  //                                         File '/MIDI/xxx.MID' already exists     
   //                                         Overwrite? YES  NO                  EXIT
 
 
@@ -860,11 +867,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
 	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
-	  SEQ_LCD_PrintString("/midi directory not found on SD Card!");
+	  SEQ_LCD_PrintString("/MIDI directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
       } else if( dir_num_items == 0 ) {
-	SEQ_LCD_PrintFormattedString("No MIDI files found under /midi!");
+	SEQ_LCD_PrintFormattedString("No MIDI files found under /MIDI!");
       } else {
 	SEQ_LCD_PrintFormattedString("Select MIDI File (%d files found)", dir_num_items);
       }
@@ -1060,10 +1067,10 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString("Please enter Filename:");
       SEQ_LCD_PrintSpaces(18);
 
-      SEQ_LCD_PrintString("/midi/<");
+      SEQ_LCD_PrintString("/MIDI/<");
       for(i=0; i<8; ++i)
 	SEQ_LCD_PrintChar(dir_name[i]);
-      SEQ_LCD_PrintString(">.mid");
+      SEQ_LCD_PrintString(">.MID");
       SEQ_LCD_PrintSpaces(20);
 
       // insert flashing cursor
@@ -1081,7 +1088,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
 
-      SEQ_LCD_PrintFormattedString("File '/midi/%s.mid' already exists!", dir_name);
+      SEQ_LCD_PrintFormattedString("File '/MIDI/%s.MID' already exists!", dir_name);
       SEQ_LCD_PrintSpaces(10);
 
       SEQ_LCD_CursorSet(0, 1);
@@ -1228,7 +1235,7 @@ static s32 SEQ_UI_DISK_UpdateDirList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetFiles("midi/", "mid", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = SEQ_FILE_GetFiles("/MIDI", "MID", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -1277,7 +1284,7 @@ static s32 DoExport(u8 force_overwrite)
     return -2;
   }
 
-  strcpy(path, "midi/");
+  strcpy(path, "/MIDI");
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
@@ -1288,12 +1295,12 @@ static s32 DoExport(u8 force_overwrite)
   }
 
   if( status == 0 ) {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/midi directory", "doesn't exist!");
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/MIDI directory", "doesn't exist!");
     return -4;
   }
 
   dir_name[8] = 0;
-  sprintf(path, "midi/%s.mid", dir_name);
+  sprintf(path, "/MIDI/%s.MID", dir_name);
 
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_FileExists(path);
