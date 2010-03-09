@@ -22,7 +22,6 @@
 
 #include <mios32.h>
 
-#include <dosfs.h>
 #include <string.h>
 
 #include "seq_file.h"
@@ -86,7 +85,7 @@ static s32 get_dec(char *word)
 s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 {
   s32 status = 0;
-  FILEINFO fi;
+  seq_file_t file;
 
   if( track > SEQ_CORE_NUM_TRACKS )
     return SEQ_FILE_T_ERR_TRACK;
@@ -97,19 +96,11 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   DEBUG_MSG("[SEQ_FILE_T] Open track preset file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
+  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_T] failed to open file, status: %d\n", status);
 #endif
     return status;
-  }
-
-  // change to file header
-  if( (status=SEQ_FILE_Seek(&fi, 0)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_T] failed to change offset in file, status: %d\n", status);
-#endif
-    return SEQ_FILE_T_ERR_READ;
   }
 
   // layer constraints
@@ -123,7 +114,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   // read track definitions
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 128);
+    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -406,7 +397,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&fi);
+  status |= SEQ_FILE_ReadClose(&file);
 
   // update CC links (again)
   SEQ_CC_LinkUpdate(track);
@@ -429,7 +420,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 // help function to write data into file or send to debug terminal
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
+static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
 {
   s32 status = 0;
   char line_buffer[128];
@@ -441,10 +432,10 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-#define FLUSH_BUFFER if( fileinfo == NULL ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer(fileinfo, (u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write comments if target is a file
-  if( fileinfo != NULL ) {
+  if( write_to_file ) {
     sprintf(line_buffer, "# Only keyword and the first value is parsed for each line\n");
     FLUSH_BUFFER;
     sprintf(line_buffer, "# Value ranges comply to CCs documented under doc/mbseqv4_cc_implementation.txt\n");
@@ -475,7 +466,7 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 
 
   // write comments if target is a file
-  if( fileinfo != NULL ) {
+  if( write_to_file ) {
     sprintf(line_buffer, "\n# Track will be partitioned and initialized here.\n");
     FLUSH_BUFFER;
     sprintf(line_buffer, "\n# The parameters below will be added to the default setup.\n\n");
@@ -783,26 +774,24 @@ static s32 SEQ_FILE_T_Write_Hlp(PFILEINFO fileinfo, u8 track)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_T_Write(char *filepath, u8 track)
 {
-  FILEINFO fi;
-
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_T] Open track preset file '%s' for writing\n", filepath);
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 1)) < 0 ) {
+  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_T] Failed to open/create track preset file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    SEQ_FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // write file
-  status |= SEQ_FILE_T_Write_Hlp(&fi, track);
+  status |= SEQ_FILE_T_Write_Hlp(1, track);
 
   // close file
-  status |= SEQ_FILE_WriteClose(&fi);
+  status |= SEQ_FILE_WriteClose();
 
 
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -819,5 +808,5 @@ s32 SEQ_FILE_T_Write(char *filepath, u8 track)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_T_Debug(u8 track)
 {
-  return SEQ_FILE_T_Write_Hlp(NULL, track); // send to debug terminal
+  return SEQ_FILE_T_Write_Hlp(0, track); // send to debug terminal
 }

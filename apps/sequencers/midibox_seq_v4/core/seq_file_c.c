@@ -22,7 +22,6 @@
 
 #include <mios32.h>
 
-#include <dosfs.h>
 #include <string.h>
 
 #include "seq_file.h"
@@ -54,8 +53,8 @@
 // use "<dir>/" for a subdirectory in root
 // use "<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
 
-#define SEQ_FILES_PATH ""
-//#define SEQ_FILES_PATH "MySongs/"
+#define SEQ_FILES_PATH "/"
+//#define SEQ_FILES_PATH "/MySongs/"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -161,7 +160,7 @@ s32 SEQ_FILE_C_Read(void)
 {
   s32 status = 0;
   seq_file_c_info_t *info = &seq_file_c_info;
-  FILEINFO fi;
+  seq_file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -172,25 +171,17 @@ s32 SEQ_FILE_C_Read(void)
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
+  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_C] failed to open file, status: %d\n", status);
 #endif
     return status;
   }
 
-  // change to file header
-  if( (status=SEQ_FILE_Seek(&fi, 0)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_C] failed to change offset in file, status: %d\n", status);
-#endif
-    return SEQ_FILE_C_ERR_READ;
-  }
-
   // read config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 128);
+    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -387,7 +378,7 @@ s32 SEQ_FILE_C_Read(void)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&fi);
+  status |= SEQ_FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -410,12 +401,12 @@ s32 SEQ_FILE_C_Read(void)
 // help function to write data into file or send to debug terminal
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
+static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 {
   s32 status = 0;
   char line_buffer[128];
 
-#define FLUSH_BUFFER if( fileinfo == NULL ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer(fileinfo, (u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write config values
   u8 bpm_preset;
@@ -541,7 +532,6 @@ static s32 SEQ_FILE_C_Write_Hlp(PFILEINFO fileinfo)
 s32 SEQ_FILE_C_Write(void)
 {
   seq_file_c_info_t *info = &seq_file_c_info;
-  FILEINFO fi;
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_C.V4", SEQ_FILES_PATH);
@@ -551,20 +541,20 @@ s32 SEQ_FILE_C_Write(void)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 1)) < 0 ) {
+  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_C] Failed to open/create config file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    SEQ_FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
     return status;
   }
 
   // write file
-  status |= SEQ_FILE_C_Write_Hlp(&fi);
+  status |= SEQ_FILE_C_Write_Hlp(1);
 
   // close file
-  status |= SEQ_FILE_WriteClose(&fi);
+  status |= SEQ_FILE_WriteClose();
 
 
   // check if file is valid
@@ -585,6 +575,6 @@ s32 SEQ_FILE_C_Write(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_C_Debug(void)
 {
-  return SEQ_FILE_C_Write_Hlp(NULL); // send to debug terminal
+  return SEQ_FILE_C_Write_Hlp(0); // send to debug terminal
 }
 

@@ -23,7 +23,6 @@
 
 #include <seq_midi_out.h>
 #include <mid_parser.h>
-#include <dosfs.h>
 
 #include "seq_midexp.h"
 #include "seq_midply.h"
@@ -112,20 +111,20 @@ s32 SEQ_MIDEXP_ExportStepsPerMeasureSet(u8 steps_per_measure)
 /////////////////////////////////////////////////////////////////////////////
 // help functions
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDEXP_WriteWord(PFILEINFO fileinfo, u32 word, u8 len)
+static s32 SEQ_MIDEXP_WriteWord(u32 word, u8 len)
 {
   int i;
   s32 status = 0;
 
   // ensure big endian coding, therefore byte writes
   for(i=0; i<len; ++i)
-    status |= SEQ_FILE_WriteByte(fileinfo, (u8)(word >> (8*(len-1-i))));
+    status |= SEQ_FILE_WriteByte((u8)(word >> (8*(len-1-i))));
 
   return (status < 0) ? status : len;
 }
 
 
-static s32 SEQ_MIDEXP_WriteVarLen(PFILEINFO fileinfo, u32 value)
+static s32 SEQ_MIDEXP_WriteVarLen(u32 value)
 {
   // based on code example from MIDI file spec
   s32 status = 0;
@@ -140,7 +139,7 @@ static s32 SEQ_MIDEXP_WriteVarLen(PFILEINFO fileinfo, u32 value)
   int num_bytes = 0;
   while( 1 ) {
     ++num_bytes;
-    status |= SEQ_FILE_WriteByte(fileinfo, (u8)(buffer & 0xff));
+    status |= SEQ_FILE_WriteByte((u8)(buffer & 0xff));
     if( buffer & 0x80 )
       buffer >>= 8;
     else
@@ -154,7 +153,6 @@ static s32 SEQ_MIDEXP_WriteVarLen(PFILEINFO fileinfo, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 // Private hooks for MIDI Scheduler
 /////////////////////////////////////////////////////////////////////////////
-static FILEINFO export_fi;
 static u32 export_tick;
 static u32 export_trk_size;
 static u32 export_trk_tick;
@@ -201,8 +199,8 @@ static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t 
 
   if( num_bytes ) {
     u32 delta = export_tick - export_trk_tick;
-    export_trk_size += SEQ_MIDEXP_WriteVarLen(&export_fi, delta);
-    export_trk_size += SEQ_MIDEXP_WriteWord(&export_fi, word, num_bytes);
+    export_trk_size += SEQ_MIDEXP_WriteVarLen(delta);
+    export_trk_size += SEQ_MIDEXP_WriteWord(word, num_bytes);
     export_trk_tick = export_tick;
   }
 
@@ -272,7 +270,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Export to '%s' started\n", path);
 #endif
 
-  if( (status=SEQ_FILE_WriteOpen(&export_fi, path, 1)) < 0 ) {
+  if( (status=SEQ_FILE_WriteOpen(path, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open/create %s, status: %d\n", path, status);
 #endif
@@ -282,12 +280,12 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 
   // write file header
   u32 header_size = 6;
-  status |= SEQ_FILE_WriteBuffer(&export_fi, "MThd", 4);
-  status |= SEQ_MIDEXP_WriteWord(&export_fi, header_size, 4);
-  status |= SEQ_MIDEXP_WriteWord(&export_fi, 1, 2); // MIDI File Format
-  status |= SEQ_MIDEXP_WriteWord(&export_fi, last_track-first_track+1, 2); // Number of Tracks
-  status |= SEQ_MIDEXP_WriteWord(&export_fi, ppqn, 2); // PPQN
-  status |= SEQ_FILE_WriteClose(&export_fi);
+  status |= SEQ_FILE_WriteBuffer("MThd", 4);
+  status |= SEQ_MIDEXP_WriteWord(header_size, 4);
+  status |= SEQ_MIDEXP_WriteWord(1, 2); // MIDI File Format
+  status |= SEQ_MIDEXP_WriteWord(last_track-first_track+1, 2); // Number of Tracks
+  status |= SEQ_MIDEXP_WriteWord(ppqn, 2); // PPQN
+  status |= SEQ_FILE_WriteClose();
 
   // check file status
   if( status < 0 ) {
@@ -336,7 +334,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     SEQ_CORE_Reset();
 
     // open file again
-    if( (status=SEQ_FILE_WriteOpen(&export_fi, path, 0)) < 0 ) {
+    if( (status=SEQ_FILE_WriteOpen(path, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open %s again, status: %d\n", path, status);
 #endif
@@ -345,27 +343,27 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     }
 
     // write Track header
-    u32 track_header_filepos = export_fi.filelen;
-    status |= SEQ_FILE_Seek(&export_fi, track_header_filepos);
+    u32 track_header_filepos = SEQ_FILE_WriteGetCurrentSize();
+    status |= SEQ_FILE_WriteSeek(track_header_filepos);
     export_trk_size = 0;
     export_trk_tick = 0;
-    status |= SEQ_FILE_WriteBuffer(&export_fi, "MTrk", 4);
-    status |= SEQ_MIDEXP_WriteWord(&export_fi, export_trk_size, 4); // Placeholder
+    status |= SEQ_FILE_WriteBuffer("MTrk", 4);
+    status |= SEQ_MIDEXP_WriteWord(export_trk_size, 4); // Placeholder
 
     // add track name as meta event
     {
       u8 buffer[20];
 
-      export_trk_size += SEQ_MIDEXP_WriteVarLen(&export_fi, 0);
+      export_trk_size += SEQ_MIDEXP_WriteVarLen(0);
       buffer[0] = 0xff; // Meta
-      export_trk_size += SEQ_MIDEXP_WriteWord(&export_fi, buffer[0], 1);
+      export_trk_size += SEQ_MIDEXP_WriteWord(buffer[0], 1);
       buffer[0] = 0x03; // Sequence/Track Name
-      export_trk_size += SEQ_MIDEXP_WriteWord(&export_fi, buffer[0], 1);
-      export_trk_size += SEQ_MIDEXP_WriteVarLen(&export_fi, 4); // String Length (4 chars)
+      export_trk_size += SEQ_MIDEXP_WriteWord(buffer[0], 1);
+      export_trk_size += SEQ_MIDEXP_WriteVarLen(4); // String Length (4 chars)
       sprintf(buffer, "G%dT%d",
 	      (export_track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
 	      (export_track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
-      status |= SEQ_FILE_WriteBuffer(&export_fi, buffer, 4);
+      status |= SEQ_FILE_WriteBuffer(buffer, 4);
       export_trk_size += 4;
     }
 
@@ -396,20 +394,20 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     }
 
     // close file
-    status |= SEQ_FILE_WriteClose(&export_fi);
+    status |= SEQ_FILE_WriteClose();
 
     if( export_trk_size ) {
       // switch back to first byte of track and write final track size
-      if( (status=SEQ_FILE_WriteOpen(&export_fi, path, 0)) < 0 ) {
+      if( (status=SEQ_FILE_WriteOpen(path, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open %s again, status: %d\n", path, status);
 #endif
 	status = -3; // file re-open error
 	goto error;
       }
-      status |= SEQ_FILE_Seek(&export_fi, track_header_filepos + 4);
-      status |= SEQ_MIDEXP_WriteWord(&export_fi, export_trk_size, 4);
-      status |= SEQ_FILE_WriteClose(&export_fi);
+      status |= SEQ_FILE_WriteSeek(track_header_filepos + 4);
+      status |= SEQ_MIDEXP_WriteWord(export_trk_size, 4);
+      status |= SEQ_FILE_WriteClose();
     }
   }
 

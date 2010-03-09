@@ -14,8 +14,9 @@
 #ifndef _SEQ_FILE_H
 #define _SEQ_FILE_H
 
-#include <dosfs.h>
-
+// for compatibility with DOSFS
+// TODO: change
+#define MAX_PATH 100
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -27,23 +28,26 @@
 #define SEQ_FILE_ERR_NO_VOLUME         -3 // DFS_GetVolInfo failed to find volume information
 #define SEQ_FILE_ERR_UNKNOWN_FS        -4 // unknown filesystem (only FAT12/16/32 supported)
 #define SEQ_FILE_ERR_OPEN_READ         -5 // DFS_OpenFile(..DFS_READ..) failed, e.g. file not found
-#define SEQ_FILE_ERR_READ              -6 // DFS_ReadFile failed
-#define SEQ_FILE_ERR_READCOUNT         -7 // less bytes read than expected
-#define SEQ_FILE_ERR_WRITE_MALLOC      -8 // SEQ_FILE_WriteOpen failed to allocate memory for write buffer
-#define SEQ_FILE_ERR_OPEN_WRITE        -9 // DFS_OpenFile(..DFS_WRITE..) failed
-#define SEQ_FILE_ERR_WRITE            -10 // DFS_WriteFile failed
-#define SEQ_FILE_ERR_WRITECOUNT       -11 // less bytes written than expected
-#define SEQ_FILE_ERR_WRITECLOSE       -12 // DFS_WriteClose aborted due to previous error
-#define SEQ_FILE_ERR_SEEK             -13 // SEQ_FILE_Seek() failed
-#define SEQ_FILE_ERR_OPEN_DIR         -14 // DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found
-#define SEQ_FILE_ERR_NO_BACKUP_DIR    -15 // SEQ_FILE_CreateBackup() failed because of missing backup directory
-#define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -16 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
-#define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -17 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
-#define SEQ_FILE_ERR_COPY             -18 // SEQ_FILE_Copy() failed
-#define SEQ_FILE_ERR_COPY_NO_FILE     -19 // source file doesn't exist
-#define SEQ_FILE_ERR_NO_DIR           -20 // SEQ_FILE_GetDirs() or SEQ_FILE_GetFiles() failed because of missing directory
-#define SEQ_FILE_ERR_NO_FILE          -21 // SEQ_FILE_GetFiles() failed because of missing directory
-#define SEQ_FILE_ERR_SYSEX_READ       -22 // error while reading .syx file
+#define SEQ_FILE_ERR_OPEN_READ_WITHOUT_CLOSE -6 // SEQ_FILE_ReadOpen() has been called while previous file hasn't been closed via SEQ_FILE_ReadClose()
+#define SEQ_FILE_ERR_READ              -7 // DFS_ReadFile failed
+#define SEQ_FILE_ERR_READCOUNT         -8 // less bytes read than expected
+#define SEQ_FILE_ERR_READCLOSE         -9 // DFS_ReadClose aborted due to previous error
+#define SEQ_FILE_ERR_WRITE_MALLOC     -10 // SEQ_FILE_WriteOpen failed to allocate memory for write buffer
+#define SEQ_FILE_ERR_OPEN_WRITE       -11 // DFS_OpenFile(..DFS_WRITE..) failed
+#define SEQ_FILE_ERR_OPEN_WRITE_WITHOUT_CLOSE -12 // SEQ_FILE_WriteOpen() has been called while previous file hasn't been closed via SEQ_FILE_WriteClose()
+#define SEQ_FILE_ERR_WRITE            -13 // DFS_WriteFile failed
+#define SEQ_FILE_ERR_WRITECOUNT       -14 // less bytes written than expected
+#define SEQ_FILE_ERR_WRITECLOSE       -15 // DFS_WriteClose aborted due to previous error
+#define SEQ_FILE_ERR_SEEK             -16 // SEQ_FILE_Seek() failed
+#define SEQ_FILE_ERR_OPEN_DIR         -17 // DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found
+#define SEQ_FILE_ERR_NO_BACKUP_DIR    -18 // SEQ_FILE_CreateBackup() failed because of missing backup directory
+#define SEQ_FILE_ERR_NO_BACKUP_SUBDIR -19 // SEQ_FILE_CreateBackup() failed because of missing backup subdirectory
+#define SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS -20 // SEQ_FILE_CreateBackup() failed because we need more backup subdirs!
+#define SEQ_FILE_ERR_COPY             -21 // SEQ_FILE_Copy() failed
+#define SEQ_FILE_ERR_COPY_NO_FILE     -22 // source file doesn't exist
+#define SEQ_FILE_ERR_NO_DIR           -23 // SEQ_FILE_GetDirs() or SEQ_FILE_GetFiles() failed because of missing directory
+#define SEQ_FILE_ERR_NO_FILE          -24 // SEQ_FILE_GetFiles() failed because of missing directory
+#define SEQ_FILE_ERR_SYSEX_READ       -25 // error while reading .syx file
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
@@ -104,6 +108,19 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+// simplified file reference, part of FIL structure of FatFs
+typedef struct {
+  u8  flag;  // file status flag
+  u8  csect; // sector address in cluster
+  u32 fptr;  // file r/w pointer
+  u32 fsize; // file size
+  u32 org_clust; // file start cluster
+  u32 curr_clust; // current cluster
+  u32 dsect; // current data sector;
+  u32 dir_sect; // sector containing the directory entry
+  u8 *dir_ptr; // pointer to the directory entry in the window
+} seq_file_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -120,22 +137,24 @@ extern u32 SEQ_FILE_VolumeBytesTotal(void);
 extern char *SEQ_FILE_VolumeLabel(void);
 extern s32 SEQ_FILE_UpdateFreeBytes(void);
 
-extern s32 SEQ_FILE_ReadOpen(PFILEINFO fileinfo, char *filepath);
-extern s32 SEQ_FILE_ReadBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
-extern s32 SEQ_FILE_ReadLine(PFILEINFO fileinfo, u8 *buffer, u32 max_len);
-extern s32 SEQ_FILE_ReadByte(PFILEINFO fileinfo, u8 *byte);
-extern s32 SEQ_FILE_ReadHWord(PFILEINFO fileinfo, u16 *hword);
-extern s32 SEQ_FILE_ReadWord(PFILEINFO fileinfo, u32 *word);
-extern s32 SEQ_FILE_ReadClose(PFILEINFO fileinfo);
+extern s32 SEQ_FILE_ReadOpen(seq_file_t* file, char *filepath);
+extern s32 SEQ_FILE_ReadReOpen(seq_file_t* file);
+extern s32 SEQ_FILE_ReadClose(seq_file_t* file);
+extern s32 SEQ_FILE_ReadSeek(u32 offset);
+extern s32 SEQ_FILE_ReadBuffer(u8 *buffer, u32 len);
+extern s32 SEQ_FILE_ReadLine(u8 *buffer, u32 max_len);
+extern s32 SEQ_FILE_ReadByte(u8 *byte);
+extern s32 SEQ_FILE_ReadHWord(u16 *hword);
+extern s32 SEQ_FILE_ReadWord(u32 *word);
 
-extern s32 SEQ_FILE_WriteOpen(PFILEINFO fileinfo, char *filepath, u8 create);
-extern s32 SEQ_FILE_WriteBuffer(PFILEINFO fileinfo, u8 *buffer, u32 len);
-extern s32 SEQ_FILE_WriteByte(PFILEINFO fileinfo, u8 byte);
-extern s32 SEQ_FILE_WriteHWord(PFILEINFO fileinfo, u16 hword);
-extern s32 SEQ_FILE_WriteWord(PFILEINFO fileinfo, u32 word);
-extern s32 SEQ_FILE_WriteClose(PFILEINFO fileinfo);
-
-extern s32 SEQ_FILE_Seek(PFILEINFO fileinfo, u32 offset);
+extern s32 SEQ_FILE_WriteOpen(char *filepath, u8 create);
+extern s32 SEQ_FILE_WriteClose(void);
+extern s32 SEQ_FILE_WriteSeek(u32 offset);
+extern u32 SEQ_FILE_WriteGetCurrentSize(void);
+extern s32 SEQ_FILE_WriteBuffer(u8 *buffer, u32 len);
+extern s32 SEQ_FILE_WriteByte(u8 byte);
+extern s32 SEQ_FILE_WriteHWord(u16 hword);
+extern s32 SEQ_FILE_WriteWord(u32 word);
 
 extern s32 SEQ_FILE_FileExists(char *filepath);
 extern s32 SEQ_FILE_DirExists(char *path);

@@ -22,7 +22,6 @@
 
 #include <mios32.h>
 
-#include <dosfs.h>
 #include <string.h>
 
 #include "seq_file.h"
@@ -45,12 +44,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // in which subdirectory of the SD card are the MBSEQ files located?
-// use "" for root
-// use "<dir>/" for a subdirectory in root
-// use "<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
+// use "/" for root
+// use "/<dir>/" for a subdirectory in root
+// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
 
-#define SEQ_FILES_PATH ""
-//#define SEQ_FILES_PATH "MySongs/"
+#define SEQ_FILES_PATH "/"
+//#define SEQ_FILES_PATH "/MySongs/"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ typedef struct {
 
   seq_file_b_header_t header;
 
-  FILEINFO file;      // file informations
+  seq_file_t file;      // file informations
 } seq_file_b_info_t;
 
 
@@ -224,8 +223,6 @@ s32 SEQ_FILE_B_Create(u8 bank)
   seq_file_b_info_t *info = &seq_file_b_info[bank];
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
-  FILEINFO fi;
-
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
 
@@ -234,7 +231,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 1)) < 0 ) {
+  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] Failed to create file, status: %d\n", status);
 #endif
@@ -243,20 +240,20 @@ s32 SEQ_FILE_B_Create(u8 bank)
 
   // write seq_file_b_header
   const char file_type[10] = "MBSEQV4_B";
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)file_type, 10);
+  status |= SEQ_FILE_WriteBuffer((u8 *)file_type, 10);
 
   // write bank name w/o zero terminator
   char bank_name[21];
   sprintf(bank_name, "Default Bank        ");
   memcpy(info->header.name, bank_name, 20);
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)info->header.name, 20);
+  status |= SEQ_FILE_WriteBuffer((u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] writing '%s'...\n", bank_name);
 #endif
 
   // number of patterns
   info->header.num_patterns = 64;
-  status |= SEQ_FILE_WriteHWord(&fi, info->header.num_patterns);
+  status |= SEQ_FILE_WriteHWord(info->header.num_patterns);
 
   // write predefined pattern size
   u8 num_tracks = 4;
@@ -269,18 +266,18 @@ s32 SEQ_FILE_B_Create(u8 bank)
 
   info->header.pattern_size = sizeof(seq_file_b_pattern_t) + 
     num_tracks * (sizeof(seq_file_b_track_t) + num_p_instruments*num_p_layers*p_layer_size + num_t_instruments*num_t_layers*t_layer_size);
-  status |= SEQ_FILE_WriteHWord(&fi, info->header.pattern_size);
+  status |= SEQ_FILE_WriteHWord(info->header.pattern_size);
 
   // create empty pattern slots
   u32 pattern;
   for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
     u32 pos;
     for(pos=0; pos<info->header.pattern_size; ++pos)
-      status |= SEQ_FILE_WriteByte(&fi, 0x00);
+      status |= SEQ_FILE_WriteByte(0x00);
   }
 
   // close file
-  status |= SEQ_FILE_WriteClose(&fi);
+  status |= SEQ_FILE_WriteClose();
 
   if( status >= 0 )
     // bank valid - caller should fill the pattern slots with useful data now
@@ -316,7 +313,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
 #endif
 
   s32 status;
-  if( (status=SEQ_FILE_ReadOpen((PFILEINFO)&info->file, filepath)) < 0 ) {
+  if( (status=SEQ_FILE_ReadOpen((seq_file_t*)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] failed to open file, status: %d\n", status);
 #endif
@@ -326,7 +323,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   // read and check header
   // in order to avoid endianess issues, we have to read the sector bytewise!
   char file_type[10];
-  if( (status=SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)file_type, 10)) < 0 ) {
+  if( (status=SEQ_FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] failed to read header, status: %d\n", status);
 #endif
@@ -341,9 +338,9 @@ s32 SEQ_FILE_B_Open(u8 bank)
     return SEQ_FILE_B_ERR_FORMAT;
   }
 
-  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)info->header.name, 20);
-  status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, (u16 *)&info->header.num_patterns);
-  status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, (u16 *)&info->header.pattern_size);
+  status |= SEQ_FILE_ReadBuffer((u8 *)info->header.name, 20);
+  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.num_patterns);
+  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.pattern_size);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -351,6 +348,9 @@ s32 SEQ_FILE_B_Open(u8 bank)
 #endif
     return SEQ_FILE_B_ERR_READ;
   }
+
+  // close file (so that it can be re-opened)
+  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
 
   // bank is valid! :)
   info->valid = 1;
@@ -387,30 +387,36 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   if( pattern >= info->header.num_patterns )
     return SEQ_FILE_B_ERR_INVALID_PATTERN;
 
+  // re-open file
+  if( SEQ_FILE_ReadReOpen((seq_file_t*)&info->file) < 0 )
+    return -1; // file cannot be re-opened
+
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
-  if( (status=SEQ_FILE_Seek((PFILEINFO)&info->file, offset)) < 0 ) {
+  if( (status=SEQ_FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
 #endif
+    // close file (so that it can be re-opened)
+    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
     return SEQ_FILE_B_ERR_READ;
   }
 
-  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_pattern_name[target_group], 20);
+  status |= SEQ_FILE_ReadBuffer((u8 *)seq_pattern_name[target_group], 20);
   seq_pattern_name[target_group][20] = 0;
 
   u8 num_tracks;
-  status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_tracks);
+  status |= SEQ_FILE_ReadByte(&num_tracks);
 
   u8 mixer_map;
-  status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &mixer_map);
+  status |= SEQ_FILE_ReadByte(&mixer_map);
 
   u8 sysex_setup;
-  status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &sysex_setup);
+  status |= SEQ_FILE_ReadByte(&sysex_setup);
 
   u8 reserved;
-  status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &reserved);
+  status |= SEQ_FILE_ReadByte(&reserved);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] read pattern B%d:P%d '%s', %d tracks\n", bank+1, pattern, seq_pattern_name[target_group], num_tracks);
@@ -423,29 +429,29 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   u8 track_i;
   u8 track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track_i=0; track_i<num_tracks; ++track_i, ++track) {
-    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)seq_core_trk[track].name, 80);
+    status |= SEQ_FILE_ReadBuffer((u8 *)seq_core_trk[track].name, 80);
     seq_core_trk[track].name[80] = 0;
 
     u8 num_p_instruments;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_instruments);
+    status |= SEQ_FILE_ReadByte(&num_p_instruments);
 
     u8 num_t_instruments;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_t_instruments);
+    status |= SEQ_FILE_ReadByte(&num_t_instruments);
 
     u8 num_p_layers;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_p_layers);
+    status |= SEQ_FILE_ReadByte(&num_p_layers);
 
     u8 num_t_layers;
-    status |= SEQ_FILE_ReadByte((PFILEINFO)&info->file, &num_t_layers);
+    status |= SEQ_FILE_ReadByte(&num_t_layers);
 
     u16 p_layer_size;
-    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &p_layer_size);
+    status |= SEQ_FILE_ReadHWord(&p_layer_size);
 
     u16 t_layer_size;
-    status |= SEQ_FILE_ReadHWord((PFILEINFO)&info->file, &t_layer_size);
+    status |= SEQ_FILE_ReadHWord(&t_layer_size);
 
     u8 cc_buffer[128];
-    status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, cc_buffer, 128);
+    status |= SEQ_FILE_ReadBuffer(cc_buffer, 128);
     
     // before changing CCs: we should stop here on error if read failed
     if( status < 0 ) {
@@ -475,12 +481,12 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
     u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
     if( par_size_taken )
-      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_par_layer_value[track], par_size_taken);
+      SEQ_FILE_ReadBuffer((u8 *)&seq_par_layer_value[track], par_size_taken);
 
     // read remaining bytes into dummy buffer
     while( par_size > par_size_taken ) {
       u8 dummy;
-      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      SEQ_FILE_ReadByte(&dummy);
       ++par_size_taken;
     }
 
@@ -492,15 +498,18 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
     u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
     if( trg_size_taken )
-      SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)&seq_trg_layer_value[track], trg_size_taken);
+      SEQ_FILE_ReadBuffer((u8 *)&seq_trg_layer_value[track], trg_size_taken);
 
     // read remaining bytes into dummy buffer
     while( trg_size > trg_size_taken ) {
       u8 dummy;
-      SEQ_FILE_ReadByte((PFILEINFO)&info->file, &dummy);
+      SEQ_FILE_ReadByte(&dummy);
       ++trg_size_taken;
     }
   }
+
+  // close file (so that it can be re-opened)
+  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -564,8 +573,6 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #endif
   }
 
-  FILEINFO fi;
-
   char filepath[MAX_PATH];
   sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
 
@@ -574,42 +581,42 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(&fi, filepath, 0)) < 0 ) {
+  if( (status=SEQ_FILE_WriteOpen(filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] Failed to open file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    SEQ_FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // change to file position
   u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
-  if( (status=SEQ_FILE_Seek(&fi, offset)) < 0 ) {
+  if( (status=SEQ_FILE_WriteSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(&fi); // important to free memory given by malloc
+    SEQ_FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // write pattern name w/o zero terminator
-  status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_pattern_name[source_group], 20);
+  status |= SEQ_FILE_WriteBuffer((u8 *)seq_pattern_name[source_group], 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_B] writing pattern '%s'...\n", seq_pattern_name[source_group]);
 #endif
 
   // write number of tracks
-  status |= SEQ_FILE_WriteByte(&fi, num_tracks);
+  status |= SEQ_FILE_WriteByte(num_tracks);
 
   // write link to mixer map
-  status |= SEQ_FILE_WriteByte(&fi, 0x00); // off
+  status |= SEQ_FILE_WriteByte(0x00); // off
 
   // write link to SysEx setup
-  status |= SEQ_FILE_WriteByte(&fi, 0x00); // off
+  status |= SEQ_FILE_WriteByte(0x00); // off
 
   // reserved
-  status |= SEQ_FILE_WriteByte(&fi, 0x00);
+  status |= SEQ_FILE_WriteByte(0x00);
 
   // writing tracks
   track = source_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
@@ -622,25 +629,25 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
     u16 t_layer_size = SEQ_TRG_NumStepsGet(track)/8;
 
     // write track name w/o zero terminator
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)seq_core_trk[track].name, 80);
+    status |= SEQ_FILE_WriteBuffer((u8 *)seq_core_trk[track].name, 80);
 
     // write number of parameter instruments
-    status |= SEQ_FILE_WriteByte(&fi, num_p_instruments);
+    status |= SEQ_FILE_WriteByte(num_p_instruments);
 
     // write number of trigger instruments
-    status |= SEQ_FILE_WriteByte(&fi, num_t_instruments);
+    status |= SEQ_FILE_WriteByte(num_t_instruments);
 
     // write number of parameter layers
-    status |= SEQ_FILE_WriteByte(&fi, num_p_layers);
+    status |= SEQ_FILE_WriteByte(num_p_layers);
 
     // write number of trigger layers
-    status |= SEQ_FILE_WriteByte(&fi, num_t_layers);
+    status |= SEQ_FILE_WriteByte(num_t_layers);
 
     // write size of a single parameter layer
-    status |= SEQ_FILE_WriteHWord(&fi, p_layer_size);
+    status |= SEQ_FILE_WriteHWord(p_layer_size);
 
     // write size of a single trigger layer
-    status |= SEQ_FILE_WriteHWord(&fi, t_layer_size);
+    status |= SEQ_FILE_WriteHWord(t_layer_size);
 
     // write 128 CCs
     u8 cc;
@@ -648,24 +655,24 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
       s32 cc_value = SEQ_CC_Get(track, cc);
       if( cc_value < 0 ) // set CC value to 0 if it doesn't exist (reserved CCs)
 	cc_value = 0;
-      status |= SEQ_FILE_WriteByte(&fi, cc_value);
+      status |= SEQ_FILE_WriteByte(cc_value);
     }
 
     // write parameter layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_par_layer_value[track], num_p_instruments*num_p_layers*p_layer_size);
+    status |= SEQ_FILE_WriteBuffer((u8 *)&seq_par_layer_value[track], num_p_instruments*num_p_layers*p_layer_size);
 
     // write trigger layers
-    status |= SEQ_FILE_WriteBuffer(&fi, (u8 *)&seq_trg_layer_value[track], num_t_instruments*num_t_layers*t_layer_size);
+    status |= SEQ_FILE_WriteBuffer((u8 *)&seq_trg_layer_value[track], num_t_instruments*num_t_layers*t_layer_size);
   }
 
   // fill remaining bytes with zero if required
   while( expected_pattern_size < info->header.pattern_size ) {
-    status |= SEQ_FILE_WriteByte(&fi, 0x00);
+    status |= SEQ_FILE_WriteByte(0x00);
     ++expected_pattern_size;
   }
 
   // close file
-  status |= SEQ_FILE_WriteClose(&fi);
+  status |= SEQ_FILE_WriteClose();
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Pattern written with status %d\n", status);
@@ -717,19 +724,28 @@ s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern
   if( pattern >= info->header.num_patterns )
     return SEQ_FILE_B_ERR_INVALID_PATTERN;
 
+  // re-open file
+  if( SEQ_FILE_ReadReOpen((seq_file_t*)&info->file) < 0 )
+    return -1; // file cannot be re-opened
+
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(seq_file_b_header_t) + pattern * info->header.pattern_size;
-  if( (status=SEQ_FILE_Seek((PFILEINFO)&info->file, offset)) < 0 ) {
+  if( (status=SEQ_FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
 #endif
+    // close file (so that it can be re-opened)
+    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
     return SEQ_FILE_B_ERR_READ;
   }
 
   // read name
-  status |= SEQ_FILE_ReadBuffer((PFILEINFO)&info->file, (u8 *)cached_pattern_name, 20);
+  status |= SEQ_FILE_ReadBuffer((u8 *)cached_pattern_name, 20);
   cached_pattern_name[20] = 0;
+
+  // close file (so that it can be re-opened)
+  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
 
   // fill category with "-----" if it is empty
   int i;

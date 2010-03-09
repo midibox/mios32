@@ -39,7 +39,7 @@
 
 // same for measuring with the stopwatch
 // value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
+#define STOPWATCH_PERFORMANCE_MEASURING 1
 
 
 /////////////////////////////////////////////////////////////////////////////

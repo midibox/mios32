@@ -741,8 +741,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	  // get filename
-	  memcpy((char *)dir_name, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-	  dir_name[8] = 0;
+	  int i;
+	  char *p = (char *)&dir_name[0];
+	  for(i=0; i<8; ++i) {
+	    char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+	    if( c != ' ' )
+	      *p++ = c;
+	  }
+	  *p++ = 0;
 	  // switch to import page
 	  ui_selected_item = 0;
 	  pr_dialog = PR_DIALOG_IMPORT;
@@ -936,15 +942,15 @@ static s32 LCD_Handler(u8 high_prio)
   //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx G1T1     NEW PRESET                 EXIT
 
   // Import selections:
-  // Importing /presets/xxxxx.V4T to G1T1    Name Chn. Maps Cfg. Steps
+  // Importing /PRESETS/xxxxx.V4T to G1T1    Name Chn. Maps Cfg. Steps
   // Please select track sections:           yes  yes  yes  yes   yes     IMPORT EXIT
 
   // "Save as new preset"
-  // Please enter Filename:                  /presets/<xxxxxxxx>.V4T                 
+  // Please enter Filename:                  /PRESETS/<xxxxxxxx>.V4T                 
   // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins   SAVE EXIT
 
   // File exists
-  //                                         File '/presets/xxx.V4T' already exists     
+  //                                         File '/PRESETS/xxx.V4T' already exists     
   //                                         Overwrite? YES  NO                  EXIT
 
 
@@ -1027,11 +1033,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
 	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
-	  SEQ_LCD_PrintString("/presets directory not found on SD Card!");
+	  SEQ_LCD_PrintString("/PRESETS directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
       } else if( dir_num_items == 0 ) {
-	SEQ_LCD_PrintFormattedString("No files found under /presets!");
+	SEQ_LCD_PrintFormattedString("No files found under /PRESETS!");
       } else {
 	SEQ_LCD_PrintFormattedString("Select Preset File (%d files found)", dir_num_items);
       }
@@ -1054,7 +1060,7 @@ static s32 LCD_Handler(u8 high_prio)
     case PR_DIALOG_IMPORT: {
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
-      SEQ_LCD_PrintFormattedString("Importing /presets/%s.V4T to ", dir_name);
+      SEQ_LCD_PrintFormattedString("Importing /PRESETS/%s.V4T to ", dir_name);
       SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
       SEQ_LCD_PrintSpaces(10);
 
@@ -1113,7 +1119,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString("Please enter Filename:");
       SEQ_LCD_PrintSpaces(18);
 
-      SEQ_LCD_PrintString("/presets/<");
+      SEQ_LCD_PrintString("/PRESETS/<");
       for(i=0; i<8; ++i)
 	SEQ_LCD_PrintChar(dir_name[i]);
       SEQ_LCD_PrintString(">.V4T");
@@ -1134,7 +1140,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
 
-      SEQ_LCD_PrintFormattedString("File '/presets/%s.V4T' already exists!", dir_name);
+      SEQ_LCD_PrintFormattedString("File '/PRESETS/%s.V4T' already exists!", dir_name);
       SEQ_LCD_PrintSpaces(10);
 
       SEQ_LCD_CursorSet(0, 1);
@@ -1463,7 +1469,7 @@ static s32 SEQ_UI_TRKEVNT_UpdateDirList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetFiles("presets/", "V4T", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = SEQ_FILE_GetFiles("/PRESETS", "V4T", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -1512,7 +1518,7 @@ static s32 DoExport(u8 force_overwrite)
     return -2;
   }
 
-  strcpy(path, "presets/");
+  strcpy(path, "/PRESETS");
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
@@ -1523,12 +1529,20 @@ static s32 DoExport(u8 force_overwrite)
   }
 
   if( status == 0 ) {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/presets directory", "doesn't exist!");
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/PRESETS directory", "doesn't exist!");
     return -4;
   }
 
-  dir_name[8] = 0;
-  sprintf(path, "presets/%s.v4t", dir_name);
+  char v4t_file[20];
+  char *p = (char *)&v4t_file[0];
+  for(i=0; i<8; ++i) {
+    char c = dir_name[i];
+    if( c != ' ' )
+      *p++ = c;
+  }
+  *p++ = 0;
+
+  sprintf(path, "/PRESETS/%s.v4t", v4t_file);
 
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_FileExists(path);
@@ -1574,7 +1588,7 @@ static s32 DoImport(void)
   char path[20];
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
-  sprintf(path, "presets/%s.V4T", dir_name);
+  sprintf(path, "/PRESETS/%s.V4T", dir_name);
 
   // mute track to avoid random effects while loading the file
   MIOS32_IRQ_Disable(); // this operation should be atomic!

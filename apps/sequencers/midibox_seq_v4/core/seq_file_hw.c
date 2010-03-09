@@ -22,7 +22,7 @@
 
 #include <mios32.h>
 
-#include <dosfs.h>
+#include <ff.h>
 #include <string.h>
 #include <aout.h>
 #include <blm.h>
@@ -49,12 +49,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // in which subdirectory of the SD card are the MBSEQ files located?
-// use "" for root
-// use "<dir>/" for a subdirectory in root
-// use "<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
+// use "/" for root
+// use "/<dir>/" for a subdirectory in root
+// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
 
-#define SEQ_FILES_PATH ""
-//#define SEQ_FILES_PATH "MySongs/"
+#define SEQ_FILES_PATH "/"
+//#define SEQ_FILES_PATH "/MySongs/"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -193,7 +193,7 @@ s32 SEQ_FILE_HW_Read(void)
 {
   s32 status = 0;
   seq_file_hw_info_t *info = &seq_file_hw_info;
-  FILEINFO fi;
+  seq_file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -204,25 +204,17 @@ s32 SEQ_FILE_HW_Read(void)
   DEBUG_MSG("[SEQ_FILE_HW] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&fi, filepath)) < 0 ) {
+  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_HW] failed to open file, status: %d\n", status);
 #endif
     return status;
   }
 
-  // change to file header
-  if( (status=SEQ_FILE_Seek(&fi, 0)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_HW] failed to change offset in file, status: %d\n", status);
-#endif
-    return SEQ_FILE_HW_ERR_READ;
-  }
-
   // read config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine(&fi, (u8 *)line_buffer, 80);
+    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 80);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -901,6 +893,7 @@ s32 SEQ_FILE_HW_Read(void)
 
   } while( status >= 1 );
 
+  SEQ_FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

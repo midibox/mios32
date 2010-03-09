@@ -17,13 +17,13 @@
 
 #include <mios32.h>
 
+#include <ff.h>
 #include <string.h>
 
 #include "tasks.h"
 
 #include <seq_midi_out.h>
 #include <mid_parser.h>
-#include <dosfs.h>
 
 #include "seq_midimp.h"
 #include "seq_core.h"

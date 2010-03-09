@@ -150,8 +150,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
     if( dir_name[0] == 0 && dir_num_items >= 0 ) {
       // Select MIDI Device
-      memcpy((char *)dir_name, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-      dir_name[8] = 0;
+      int i;
+      char *p = (char *)&dir_name[0];
+      for(i=0; i<8; ++i) {
+	char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+	if( c != ' ' )
+	  *p++ = c;
+      }
+      *p++ = 0;
       ui_selected_item = 0;
       dir_view_offset = 0;
       SEQ_UI_SYSEX_UpdateDirList();
@@ -169,10 +175,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
           if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	    // Send SysEx Dump
 	    char syx_file[20];
-	    memcpy((char *)syx_file, (char *)&ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item], 8);
-	    memcpy((char *)syx_file+8, ".syx", 5);
+	    int i;
+	    char *p = (char *)&syx_file[0];
+	    for(i=0; i<8; ++i) {
+	      char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+	      if( c != ' ' )
+		*p++ = c;
+	    }
+	    *p++ = 0;
+
 	    char path[40];
-	    sprintf(path, "sysex/%s/%s", dir_name, syx_file);
+	    sprintf(path, "/SYSEX/%s/%s.SYX", dir_name, syx_file);
 	    SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, "Sending:", syx_file);
 	    MUTEX_SDCARD_TAKE;
 	    MUTEX_MIDIOUT_TAKE;
@@ -221,11 +234,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Select MIDI Device with GP Button:      2 Devices found under /sysex            
+  // Select MIDI Device with GP Button:      2 Devices found under /SYSEX            
   //   MBSID     MBFM  ....
 
 
-  // Select MIDI Device with GP Button:      10 Devices found under /sysex           
+  // Select MIDI Device with GP Button:      10 Devices found under /SYSEX           
   //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx>
 
 
@@ -237,25 +250,25 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(0, 0);
   if( dir_num_items < 0 ) {
     if( dir_name[0] != 0 && dir_num_items == SEQ_FILE_ERR_NO_DIR )
-      SEQ_LCD_PrintFormattedString("/sysex/%s directory not found on SD Card!", dir_name);
+      SEQ_LCD_PrintFormattedString("/SYSEX/%s directory not found on SD Card!", dir_name);
     else if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
-      SEQ_LCD_PrintString("/sysex directory not found on SD Card!");
+      SEQ_LCD_PrintString("/SYSEX directory not found on SD Card!");
     else
       SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
   } else if( dir_num_items == 0 ) {
     if( dir_name[0] != 0 )
-      SEQ_LCD_PrintFormattedString("No .syx files found under /sysex/%s!", dir_name);
+      SEQ_LCD_PrintFormattedString("No .SYX files found under /SYSEX/%s!", dir_name);
     else
-      SEQ_LCD_PrintString("No subdirectories found in /sysex directory on SD Card!");
+      SEQ_LCD_PrintString("No subdirectories found in /SYSEX directory on SD Card!");
   } else {
     if( dir_name[0] != 0 ) {
-      SEQ_LCD_PrintString("Select .syx file with GP Button:");
+      SEQ_LCD_PrintString("Select .SYX file with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintFormattedString("%d files found under /sysex/%s", dir_num_items, dir_name);
+      SEQ_LCD_PrintFormattedString("%d files found under /SYSEX/%s", dir_num_items, dir_name);
     } else {
       SEQ_LCD_PrintString("Select MIDI Device with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintFormattedString("%d Devices found under /sysex", dir_num_items);
+      SEQ_LCD_PrintFormattedString("%d Devices found under /SYSEX", dir_num_items);
     }
   }
 
@@ -314,11 +327,11 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
 #else
   MUTEX_SDCARD_TAKE;
   if( !dir_name[0] ) {
-    dir_num_items = SEQ_FILE_GetDirs("sysex/", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+    dir_num_items = SEQ_FILE_GetDirs("/SYSEX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   } else {
     char path[25];
-    sprintf(path, "sysex/%s/", dir_name);
-    dir_num_items = SEQ_FILE_GetFiles(path, "syx", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
+    sprintf(path, "/SYSEX/%s", dir_name);
+    dir_num_items = SEQ_FILE_GetFiles(path, "SYX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
   }
   MUTEX_SDCARD_GIVE;
 
