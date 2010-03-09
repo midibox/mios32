@@ -254,10 +254,12 @@ void UploadWindow::timerCallback(const int timerId)
 
             if( miosStudio->uploadHandler->hexFileLoader.hexDumpAddressBlocks.size() < 1 ) {
                 uploadStatus->addEntry(Colours::red, T("ERROR: no blocks found"));
+                uploadStop();
             } else {
                 // display and check ranges
                 if( !miosStudio->uploadHandler->checkAndDisplayRanges(uploadStatus) ) {
                     uploadStatus->addEntry(Colours::red, T("ERROR: Range check failed!"));
+                    uploadStop();
                 } else if( timerId == TIMER_LOAD_HEXFILE_AND_UPLOAD ) {
                     // start upload of first block
                     stopButton->setEnabled(true);
@@ -272,6 +274,7 @@ void UploadWindow::timerCallback(const int timerId)
             }
         } else {
             uploadStatus->addEntry(Colours::red, T("ERROR: ") + statusMessage);
+            uploadStop();
         }
     } else if( timerId == TIMER_UPLOAD ) {
         progress = (double)miosStudio->uploadHandler->currentBlock / (double)miosStudio->uploadHandler->totalBlocks;
