@@ -14,9 +14,6 @@
  * so that no directory access is required to find the first sector of the
  * file (again).
  *
- * Write operations are buffered in a local write_buffer (512 bytes) to speed
- * up functions which write a lot of bytes/hwords/words into a file.
- *
  * NOTE: before accessing the SD Card, the upper level function should
  * synchronize with the SD Card semaphore!
  *   MUTEX_SDCARD_TAKE; // to take the semaphore
@@ -121,9 +118,9 @@ static u8 sdcard_available;
 static u8 volume_available;
 static u32 volume_free_bytes;
 
-// write buffer
-static s32 write_filepos;
-static u8 write_buffer[SECTOR_SIZE];
+// buffer for copy operations and SysEx sender
+#define TMP_BUFFER_SIZE _MAX_SS
+static u8 tmp_buffer[TMP_BUFFER_SIZE];
 
 static u8 status_msg_ctr;
 
@@ -593,9 +590,6 @@ s32 SEQ_FILE_WriteOpen(char *filepath, u8 create)
     return SEQ_FILE_ERR_OPEN_WRITE_WITHOUT_CLOSE;
   }
 
-  // reset filepos
-  write_filepos = 0;
-
   if( (seq_file_dfs_errno=f_open(&seq_file_write, filepath, (create ? FA_CREATE_ALWAYS : FA_OPEN_EXISTING) | FA_WRITE)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE] error opening file '%s' for writing!\n", filepath);
@@ -618,29 +612,6 @@ s32 SEQ_FILE_WriteClose(void)
 {
   s32 status = 0;
   UINT successcount;
-
-  // don't write if filepos < 0 -> this indicates that an error has happened during previous write operation
-  if( write_filepos < 0 ) {
-    status = SEQ_FILE_ERR_WRITECLOSE; // skipped due to previous error
-  } else {
-    u32 len = (write_filepos % SECTOR_SIZE);
-
-    if( len && (seq_file_dfs_errno=f_write(&seq_file_write, write_buffer, len, &successcount)) != FR_OK ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-      DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", write_filepos-SECTOR_SIZE, seq_file_dfs_errno);
-#endif
-
-      status = SEQ_FILE_ERR_WRITE; // write error
-    } else {
-      if( successcount != len ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-		DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos-SECTOR_SIZE, successcount);
-#endif
-	
-	status = SEQ_FILE_ERR_WRITECOUNT; // not all bytes written
-      }
-    }
-  }
 
   // close file
   f_close(&seq_file_write);
@@ -685,46 +656,18 @@ s32 SEQ_FILE_WriteBuffer(u8 *buffer, u32 len)
   if( !volume_available )
     return SEQ_FILE_ERR_NO_VOLUME;
 
-  // exit if filepos < 0 -> this indicates that an error has happened during previous write operation
-  if( write_filepos < 0 )
-    return write_filepos; // skipped due to previous error
-
-  // will sector boundary be reached? Then we have to write the sector
-  while( ((write_filepos % SECTOR_SIZE) + len) >= SECTOR_SIZE ) {
-    // fill up the write buffer
-    u32 bytes_to_add = SECTOR_SIZE - (write_filepos % SECTOR_SIZE);
-    memcpy(write_buffer+(write_filepos % SECTOR_SIZE), buffer, bytes_to_add);
-
-    // write sector
-    UINT successcount;
-    if( (seq_file_dfs_errno=f_write(&seq_file_write, write_buffer, SECTOR_SIZE, &successcount)) != FR_OK ) {
+  UINT successcount;
+  if( (seq_file_dfs_errno=f_write(&seq_file_write, buffer, len, &successcount)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
-      DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", write_filepos, seq_file_dfs_errno);
+    DEBUG_MSG("[SEQ_FILE] Failed to write buffer, status: %u\n", seq_file_dfs_errno);
 #endif
-      write_filepos = -1; // ensure that next writes will be skipped
-      return SEQ_FILE_ERR_WRITE;
-    }
-    if( successcount != SECTOR_SIZE ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-      DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing to position 0x%08x (count: %d)\n", write_filepos, successcount);
-#endif
-      write_filepos = -2; // ensure that next writes will be skipped
-      return SEQ_FILE_ERR_WRITECOUNT;
-    }
-
-    write_filepos += bytes_to_add;
-    len -= bytes_to_add;
-    buffer += bytes_to_add;
-    // we loop until the remaining bytes are less than sector size
+    return SEQ_FILE_ERR_WRITE;
   }
-
-  // still something to add?
-  if( len ) {
-    if( len == 1 )
-      write_buffer[write_filepos % SECTOR_SIZE] = *buffer; // should be faster than memcpy
-    else
-      memcpy(write_buffer+(write_filepos % SECTOR_SIZE), buffer, len); // usually assembly optimized...
-    write_filepos += len;
+  if( successcount != len ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
+    DEBUG_MSG("[SEQ_FILE] Wrong successcount while writing buffer (count: %d)\n", successcount);
+#endif
+    return SEQ_FILE_ERR_WRITECOUNT;
   }
 
   return 0; // no error
@@ -1021,7 +964,7 @@ s32 SEQ_FILE_Format(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function copies a file
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
+s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *tmp_buffer)
 {
   s32 status = 0;
 
@@ -1067,13 +1010,13 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *write_buffer)
     UINT successcount_wr;
     u32 num_bytes = 0;
     do {
-      if( (seq_file_dfs_errno=f_read(&seq_file_read, write_buffer, SECTOR_SIZE, &successcount)) != FR_OK ) {
+      if( (seq_file_dfs_errno=f_read(&seq_file_read, tmp_buffer, TMP_BUFFER_SIZE, &successcount)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", seq_file_read.fptr, seq_file_dfs_errno);
 #endif
 	successcount = 0;
 	status = SEQ_FILE_ERR_READ;
-      } else if( successcount && f_write(&seq_file_write, write_buffer, successcount, &successcount_wr) != FR_OK ) {
+      } else if( successcount && f_write(&seq_file_write, tmp_buffer, successcount, &successcount_wr) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", seq_file_write.fptr, seq_file_dfs_errno);
 #endif
@@ -1141,7 +1084,7 @@ s32 SEQ_FILE_CreateBackup(void)
 #define COPY_FILE_MACRO(name) if( status >= 0 ) { \
 	  sprintf(filepath, "%s/%s/%s", SEQ_FILE_BACKUP_PATH, de.fname, name); \
 	  seq_file_backup_notification = filepath; \
-	  status = SEQ_FILE_Copy(name, filepath, write_buffer); \
+	  status = SEQ_FILE_Copy(name, filepath, tmp_buffer); \
 	  if( status == SEQ_FILE_ERR_COPY_NO_FILE ) status = 0; \
 	  ++seq_file_backup_file;				\
 	  seq_file_backup_percentage = (u8)(((u32)100 * (u32)seq_file_backup_file) / seq_file_backup_files); \
@@ -1346,7 +1289,7 @@ s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
   u32 num_bytes = 0;
   u8 buffer[10];
   do {
-    if( (seq_file_dfs_errno=f_read(&seq_file_read, write_buffer, SECTOR_SIZE, &successcount)) != FR_OK ) {
+    if( (seq_file_dfs_errno=f_read(&seq_file_read, tmp_buffer, TMP_BUFFER_SIZE, &successcount)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", seq_file_read.fptr, seq_file_dfs_errno);
 #endif
@@ -1354,9 +1297,9 @@ s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
       status = SEQ_FILE_ERR_SYSEX_READ;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      MIOS32_MIDI_SendDebugHexDump(write_buffer, successcount);
+      MIOS32_MIDI_SendDebugHexDump(tmp_buffer, successcount);
 #endif
-      MIOS32_MIDI_SendSysEx(port, write_buffer, successcount);
+      MIOS32_MIDI_SendSysEx(port, tmp_buffer, successcount);
       num_bytes += successcount;
     }
   } while( status == 0 && successcount > 0 );
