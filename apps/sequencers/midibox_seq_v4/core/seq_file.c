@@ -543,36 +543,24 @@ s32 SEQ_FILE_ReadLine(u8 *buffer, u32 max_len)
 
 s32 SEQ_FILE_ReadByte(u8 *byte)
 {
-  SEQ_FILE_ReadBuffer(byte, 1);
+  return SEQ_FILE_ReadBuffer(byte, 1);
 }
 
 s32 SEQ_FILE_ReadHWord(u16 *hword)
 {
-  s32 status = 0;
-  // ensure little endian coding, therefore 2 reads
-  *hword = 0x0000;
-  u8 tmp;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *hword |= (u16)tmp << 0;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *hword |= (u16)tmp << 8;
+  // ensure little endian coding
+  u8 tmp[2];
+  s32 status = SEQ_FILE_ReadBuffer(tmp, 2);
+  *hword = ((u16)tmp[0] << 0) | ((u16)tmp[1] << 8);
   return status;
 }
 
 s32 SEQ_FILE_ReadWord(u32 *word)
 {
-  s32 status = 0;
-  // ensure little endian coding, therefore 4 reads
-  *word = 0x00000000;
-  u8 tmp;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *word |= (u16)tmp << 0;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *word |= (u16)tmp << 8;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *word |= (u16)tmp << 16;
-  status |= SEQ_FILE_ReadBuffer(&tmp, 1);
-  *word |= (u16)tmp << 24;
+  // ensure little endian coding
+  u8 tmp[4];
+  s32 status = SEQ_FILE_ReadBuffer(tmp, 4);
+  *word = ((u16)tmp[0] << 0) | ((u16)tmp[1] << 8) | ((u16)tmp[2] << 16) | ((u16)tmp[3] << 24);
   return status;
 }
 
@@ -611,10 +599,10 @@ s32 SEQ_FILE_WriteOpen(char *filepath, u8 create)
 s32 SEQ_FILE_WriteClose(void)
 {
   s32 status = 0;
-  UINT successcount;
 
   // close file
-  f_close(&seq_file_write);
+  if( (seq_file_dfs_errno=f_close(&seq_file_write)) != FR_OK )
+    status = SEQ_FILE_ERR_WRITECLOSE;
 
   seq_file_write_is_open = 0;
 
@@ -681,29 +669,23 @@ s32 SEQ_FILE_WriteByte(u8 byte)
 s32 SEQ_FILE_WriteHWord(u16 hword)
 {
   s32 status = 0;
-  // ensure little endian coding, therefore 2 writes
-  u8 tmp;
-  tmp = (u8)(hword >> 0);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  tmp = (u8)(hword >> 8);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  return status;
+  // ensure little endian coding
+  u8 tmp[2];
+  tmp[0] = (u8)(hword >> 0);
+  tmp[1] = (u8)(hword >> 8);
+  return SEQ_FILE_WriteBuffer(tmp, 2);
 }
 
 s32 SEQ_FILE_WriteWord(u32 word)
 {
   s32 status = 0;
-  // ensure little endian coding, therefore 4 writes
-  u8 tmp;
-  tmp = (u8)(word >> 0);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  tmp = (u8)(word >> 8);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  tmp = (u8)(word >> 16);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  tmp = (u8)(word >> 24);
-  status |= SEQ_FILE_WriteBuffer(&tmp, 1);
-  return status;
+  // ensure little endian coding
+  u8 tmp[4];
+  tmp[0] = (u8)(word >> 0);
+  tmp[1] = (u8)(word >> 8);
+  tmp[2] = (u8)(word >> 16);
+  tmp[3] = (u8)(word >> 24);
+  return SEQ_FILE_WriteBuffer(tmp, 4);
 }
 
 
