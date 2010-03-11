@@ -514,7 +514,7 @@ static s32 LCD_Handler(u8 high_prio)
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
     // <--------------------------------------><-------------------------------------->
-    // Open Session (10 found)                 Current Session: /SESSION/xxxxxxxx
+    // Open Session (10 found)                 Current Session: /SESSION/xxxxxxxx      
     //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx                                     EXIT
 
     SEQ_LCD_CursorSet(0, 0);
@@ -881,7 +881,13 @@ static s32 OpenSession(void)
     return -3;
   }
 
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Changed to Session:", seq_file_session_name);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Changed to Session:", seq_file_session_name);
+
+  // store session name
+  MUTEX_SDCARD_TAKE;
+  status |= SEQ_FILE_StoreSessionName();
+  MUTEX_SDCARD_GIVE;
+
   return 0; // no error
 }
 
@@ -892,11 +898,19 @@ static s32 StoreCurrentSession(void)
 {
   s32 status = 0;
 
-  // store all patterns
   MUTEX_SDCARD_TAKE;
+
+  // store all patterns
   int group;
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
     status |= SEQ_FILE_B_PatternWrite(seq_pattern[group].bank, seq_pattern[group].pattern, group);
+
+  // store config (e.g. to store current song/mixermap/pattern numbers
+  SEQ_FILE_C_Write();
+
+  // store session name
+  status |= SEQ_FILE_StoreSessionName();
+
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {

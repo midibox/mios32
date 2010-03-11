@@ -414,8 +414,12 @@ void SEQ_TASK_Period1S(void)
     // note: request should be cleared at the end of this process to avoid double-triggers!
     if( (status = SEQ_FILE_Format()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
-    else
+    else {
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files created", "successfully!");
+
+      // store session name
+      status |= SEQ_FILE_StoreSessionName();
+    }
 
     // request to load content of SD card
     load_sd_content = 1;
@@ -436,8 +440,12 @@ void SEQ_TASK_Period1S(void)
       else
 	SEQ_UI_SDCardErrMsg(2000, status);
     }
-    else
+    else {
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files copied", "successfully!");
+
+      // store session name
+      status |= SEQ_FILE_StoreSessionName();
+    }
 
     // finally clear request
     seq_ui_backup_req = 0;

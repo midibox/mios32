@@ -26,13 +26,17 @@
 
 #include "seq_file.h"
 #include "seq_file_c.h"
+#include "seq_file_b.h"
 
 
 #include "seq_ui.h"
 #include "seq_bpm.h"
+#include "seq_song.h"
+#include "seq_mixer.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
 #include "seq_midi_blm.h"
+#include "seq_pattern.h"
 #include "seq_core.h"
 
 
@@ -234,6 +238,50 @@ s32 SEQ_FILE_C_Read(void)
 	    SEQ_BPM_ModeSet(value);
 	  } else if( strcmp(parameter, "BPM_DINSyncDiv") == 0 ) {
 	    seq_core_bpm_din_sync_div = value;
+	  } else if( strcmp(parameter, "LastSong") == 0 ) {
+	    SEQ_SONG_NumSet(value);
+	  } else if( strcmp(parameter, "LastMixerMap") == 0 ) {
+	    SEQ_MIXER_NumSet(value);
+	  } else if( strcmp(parameter, "LastPattern") == 0 ) {
+	    int group = value;
+
+	    if( group < 1 || group > SEQ_CORE_NUM_GROUPS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: wrong group %d\n", group);
+#endif
+	    } else {
+	      group -= 1; // 0..3
+
+	      // expected format: "LastPattern %d %d:%c%d"
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( word == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: missing second parameter!\n");
+#endif
+	      } else if( strlen(word) != 4 || word[1] != ':' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: invalid format for second parameter!\n");
+#endif
+	      } else {
+		int bank = word[0] - '1';
+		int pgroup = word[2] - 'A';
+		int num = word[3] - '0';
+
+		if( bank < 0 || bank >= SEQ_FILE_B_NUM_BANKS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: invalid bank!\n");
+#endif
+		} else if( pgroup < 0 || pgroup >= 8 || num < 0 || num >= 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: invalid pattern!\n");
+#endif
+		} else {
+		  seq_pattern[group].num = num;
+		  seq_pattern[group].group = pgroup;
+		  seq_pattern[group].bank = bank;
+		}
+	      }
+	    }
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
 	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
@@ -413,6 +461,18 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
   FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LastMixerMap %d\n", SEQ_MIXER_NumGet());
+  FLUSH_BUFFER;
+
+  int group;
+  for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+    sprintf(line_buffer, "LastPattern %d %d:%c%d\n", group+1, seq_pattern[group].bank+1, 'A'+seq_pattern[group].group, seq_pattern[group].num+1);
+    FLUSH_BUFFER;
+  }
 
   sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
   FLUSH_BUFFER;

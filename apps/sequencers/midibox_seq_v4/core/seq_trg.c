@@ -61,7 +61,7 @@ s32 SEQ_TRG_Init(u32 mode)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 
-    SEQ_TRG_TrackInit(track, 64, 8, 1); // track, steps, trigger layers, instruments
+    SEQ_TRG_TrackInit(track, 256, 8, 1); // track, steps, trigger layers, instruments
 
     // special init value for first track: set gates on each beat
     if( track == 0 )

@@ -50,6 +50,7 @@
 #define SEQ_FILE_ERR_NO_FILE          -21 // SEQ_FILE_GetFiles() failed because of missing directory
 #define SEQ_FILE_ERR_SYSEX_READ       -22 // error while reading .syx file
 #define SEQ_FILE_ERR_MKDIR            -23 // SEQ_FILE_MakeDir() failed
+#define SEQ_FILE_ERR_INVALID_SESSION_NAME -24 // SEQ_FILE_LoadSessionName()
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number
@@ -142,6 +143,8 @@ extern s32 SEQ_FILE_UpdateFreeBytes(void);
 extern s32 SEQ_FILE_LoadAllFiles(u8 including_hw);
 extern s32 SEQ_FILE_UnloadAllFiles(void);
 
+extern s32 SEQ_FILE_StoreSessionName(void);
+extern s32 SEQ_FILE_LoadSessionName(void);
 
 extern s32 SEQ_FILE_ReadOpen(seq_file_t* file, char *filepath);
 extern s32 SEQ_FILE_ReadReOpen(seq_file_t* file);
