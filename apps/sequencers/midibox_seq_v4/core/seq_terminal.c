@@ -103,6 +103,10 @@ static s32 get_dec(char *word)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 {
+  // temporary change debug port (will be restored at the end of this function)
+  mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
+  MIOS32_MIDI_DebugPortSet(port);
+
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
@@ -171,6 +175,9 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
     line_buffer[line_ix++] = byte;
     line_buffer[line_ix] = 0;
   }
+
+  // restore debug port
+  MIOS32_MIDI_DebugPortSet(prev_debug_port);
 
   return 0; // no error
 }

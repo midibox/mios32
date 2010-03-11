@@ -1885,9 +1885,9 @@ s32 SEQ_UI_LCD_Handler(void)
     //                     <-------------------------------------->
     //                     0123456789012345678901234567890123456789
     if( seq_ui_backup_req )
-      SEQ_LCD_PrintString("Creating File Backup - be patient!!!");
+      SEQ_LCD_PrintString("Copy Files - be patient!!!");
     else if( seq_ui_format_req )
-      SEQ_LCD_PrintString("Formatting Files - be patient!!!");
+      SEQ_LCD_PrintString("Creating Files - be patient!!!");
     else
       SEQ_LCD_PrintString("Don't know what I'm doing! :-/");
 
@@ -1895,7 +1895,7 @@ s32 SEQ_UI_LCD_Handler(void)
       int i;
 
       SEQ_LCD_CursorSet(0, 1);
-      SEQ_LCD_PrintFormattedString("Creating '%s'", seq_file_backup_notification);
+      SEQ_LCD_PrintFormattedString("Creating %s", seq_file_backup_notification);
 
       SEQ_LCD_CursorSet(40+3, 0);
       SEQ_LCD_PrintString("Total: [");

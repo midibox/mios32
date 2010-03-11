@@ -40,19 +40,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-// in which subdirectory of the SD card are the MBSEQ files located?
-// use "/" for root
-// use "/<dir>/" for a subdirectory in root
-// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
-
-#define SEQ_FILES_PATH "/"
-//#define SEQ_FILES_PATH "/MySongs/"
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -224,7 +211,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Creating new bank file '%s'\n", filepath);
@@ -268,6 +255,8 @@ s32 SEQ_FILE_B_Create(u8 bank)
     num_tracks * (sizeof(seq_file_b_track_t) + num_p_instruments*num_p_layers*p_layer_size + num_t_instruments*num_t_layers*t_layer_size);
   status |= SEQ_FILE_WriteHWord(info->header.pattern_size);
 
+  // not required anymore with FatFs (was required with DOSFS)
+#if 0
   // create empty pattern slots
   u32 pattern;
   for(pattern=0; pattern<info->header.num_patterns; ++pattern) {
@@ -275,6 +264,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
     for(pos=0; pos<info->header.pattern_size; ++pos)
       status |= SEQ_FILE_WriteByte(0x00);
   }
+#endif
 
   // close file
   status |= SEQ_FILE_WriteClose();
@@ -306,7 +296,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s'\n", filepath);
@@ -574,7 +564,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
   }
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_B%d.V4", SEQ_FILES_PATH, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s' for writing\n", filepath);

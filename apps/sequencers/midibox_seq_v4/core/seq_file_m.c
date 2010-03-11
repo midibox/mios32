@@ -37,19 +37,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-// in which subdirectory of the SD card are the MBSEQ files located?
-// use "/" for root
-// use "/<dir>/" for a subdirectory in root
-// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
-
-#define SEQ_FILES_PATH "/"
-//#define SEQ_FILES_PATH "/MySongs/"
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -175,7 +162,7 @@ s32 SEQ_FILE_M_Create(void)
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Creating new bank file '%s'\n", filepath);
@@ -213,6 +200,9 @@ s32 SEQ_FILE_M_Create(void)
   info->header.map_size = sizeof(seq_file_m_map_header_t) + num_chn * num_par;
   status |= SEQ_FILE_WriteHWord(info->header.map_size);
 
+
+  // not required anymore with FatFs (was required with DOSFS)
+#if 0
   // create empty map slots
   u32 map;
   for(map=0; map<info->header.num_maps; ++map) {
@@ -220,6 +210,7 @@ s32 SEQ_FILE_M_Create(void)
     for(pos=0; pos<info->header.map_size; ++pos)
       status |= SEQ_FILE_WriteByte(0x00);
   }
+#endif
 
   // close file
   status |= SEQ_FILE_WriteClose();
@@ -248,7 +239,7 @@ s32 SEQ_FILE_M_Open(void)
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s'\n", filepath);
@@ -415,7 +406,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
   }
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_M.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s' for writing\n", filepath);

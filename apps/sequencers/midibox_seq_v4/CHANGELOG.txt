@@ -6,6 +6,36 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta17
+~~~~~~~~~~~~~~~~~~~~~
+
+   o implemented "Sessions" concept. Now you can change between different setups
+     stored on a single SD Card
+
+   o Sessions can be opened/saved/created in the main menu (press EXIT button)
+
+   o your old session isn't lost, it's just at the wrong place.
+     To take over this session:
+       - enter MSD mode (UTILITY->DISK)
+       - create a backup of all *.V4 files on your PC (recommented for Beta17!!!)
+       - create a /SESSIONS directory if it doesn't exist yet
+       - create a session subdirectory (8 characters maximum)
+       - copy following files:
+         MBSEQ_B1.V4, MBSEQ_B2.V4, MBSEQ_B3.V4, MBSEQ_B4.V4, 
+         MBSEQ_S.V4, MBSEQ_G.V4, MBSEQ_C.V4
+       - create a second session subdirectory
+       - copy following files:
+         MBSEQ_B5.V4, MBSEQ_B6.V4, MBSEQ_B7.V4, MBSEQ_B8.V4, 
+         MBSEQ_S.V4, MBSEQ_G.V4, MBSEQ_C.V4
+       - rename these files to MBSEQ_B1.V4 to MBSEQ_B4.V4
+       - don't copy MBSEQ_HW.V4 (always read from root directory)
+       - remove the copied *.V4 files from root directory, or move
+         them to another directory for backup
+       - unmount the SD Card on your computer
+       - wait until MSD mode is disabled!
+       - press EXIT, thereafter OPEN the session by pressing GP button 9
+
+
 MIDIboxSEQ V4.0beta16
 ~~~~~~~~~~~~~~~~~~~~~
 

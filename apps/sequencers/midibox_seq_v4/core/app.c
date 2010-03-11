@@ -415,7 +415,7 @@ void SEQ_TASK_Period1S(void)
     if( (status = SEQ_FILE_Format()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     else
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files formatted", "successfully!");
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files created", "successfully!");
 
     // request to load content of SD card
     load_sd_content = 1;
@@ -431,29 +431,13 @@ void SEQ_TASK_Period1S(void)
     status = SEQ_FILE_CreateBackup();
       
     if( status < 0 ) {
-      switch( status ) {
-        case SEQ_FILE_ERR_NO_BACKUP_DIR:
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create", "backup/ dirs!");
-	  break;
-
-        case SEQ_FILE_ERR_NO_BACKUP_SUBDIR:
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create", "backup/ subdirs!");
-	  break;
-
-        case SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS:
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please create more", "backup/ subdirs!");
-	  break;
-
-        case SEQ_FILE_ERR_COPY:
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "COPY FAILED!", "ERROR :-(");
-	  break;
-
-        default:
-	  SEQ_UI_SDCardErrMsg(2000, status);
-      }
+      if( status == SEQ_FILE_ERR_COPY )
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "COPY FAILED!", "ERROR :-(");
+      else
+	SEQ_UI_SDCardErrMsg(2000, status);
     }
     else
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Backup created", "successfully!");
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files copied", "successfully!");
 
     // finally clear request
     seq_ui_backup_req = 0;

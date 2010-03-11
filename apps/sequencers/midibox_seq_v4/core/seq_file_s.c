@@ -37,19 +37,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-// in which subdirectory of the SD card are the MBSEQ files located?
-// use "/" for root
-// use "/<dir>/" for a subdirectory in root
-// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
-
-#define SEQ_FILES_PATH "/"
-//#define SEQ_FILES_PATH "/MySongs/"
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -173,7 +160,7 @@ s32 SEQ_FILE_S_Create(void)
   info->valid = 0; // set to invalid so long we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_S.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_S] Creating new bank file '%s'\n", filepath);
@@ -208,6 +195,8 @@ s32 SEQ_FILE_S_Create(void)
   info->header.song_size = sizeof(seq_file_s_song_header_t) + sizeof(seq_song_step_t) * SEQ_SONG_NUM_STEPS;
   status |= SEQ_FILE_WriteHWord(info->header.song_size);
 
+  // not required anymore with FatFs (was required with DOSFS)
+#if 0
   // create empty song slots
   u32 song;
   for(song=0; song<info->header.num_songs; ++song) {
@@ -215,6 +204,7 @@ s32 SEQ_FILE_S_Create(void)
     for(pos=0; pos<info->header.song_size; ++pos)
       status |= SEQ_FILE_WriteByte(0x00);
   }
+#endif
 
   // close file
   status |= SEQ_FILE_WriteClose();
@@ -243,7 +233,7 @@ s32 SEQ_FILE_S_Open(void)
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_S.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_S] Open bank file '%s'\n", filepath);
@@ -403,7 +393,7 @@ s32 SEQ_FILE_S_SongWrite(u8 song)
   }
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_S.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_S] Open bank file '%s' for writing\n", filepath);

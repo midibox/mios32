@@ -38,12 +38,11 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           5
-#define ITEM_BACKUP            0
-#define ITEM_ENABLE_MSD        1
-#define ITEM_MF_IMPORT         2
-#define ITEM_MF_EXPORT         3
-#define ITEM_MF_PLAY           4
+#define NUM_OF_ITEMS           4
+#define ITEM_ENABLE_MSD        0
+#define ITEM_MF_IMPORT         1
+#define ITEM_MF_EXPORT         2
+#define ITEM_MF_PLAY           3
 
 #define EXPORT_NUM_OF_ITEMS    6
 #define EXPORT_ITEM_MODE       0
@@ -72,8 +71,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void BackupReq(u32 dummy);
-static void FormatReq(u32 dummy);
 static void MSD_EnableReq(u32 enable);
 
 static s32 SEQ_UI_DISK_UpdateDirList(void);
@@ -140,12 +137,6 @@ static s32 LED_Handler(u16 *gp_leds)
 
     default:
       switch( ui_selected_item ) {
-        case ITEM_BACKUP:
-          if( SEQ_FILE_FormattingRequired() )
-	    *gp_leds |= 0x00ff;
-	  else
-	    *gp_leds |= 0x0003;
-	  break;
         case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
         case ITEM_MF_IMPORT: *gp_leds |= 0x1000; break;
         case ITEM_MF_EXPORT: *gp_leds |= 0x6000; break;
@@ -491,20 +482,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP1:
         case SEQ_UI_ENCODER_GP2:
-          ui_selected_item = ITEM_BACKUP;
-          break;
-    
         case SEQ_UI_ENCODER_GP3:
         case SEQ_UI_ENCODER_GP4:
         case SEQ_UI_ENCODER_GP5:
         case SEQ_UI_ENCODER_GP6:
         case SEQ_UI_ENCODER_GP7:
         case SEQ_UI_ENCODER_GP8:
-          if( SEQ_FILE_FormattingRequired() )
-	    ui_selected_item = ITEM_BACKUP;
-          else
-	    return -1; // not used (yet)
-          break;
+	  return -1; // not used (yet)
     
         case SEQ_UI_ENCODER_GP9:
         case SEQ_UI_ENCODER_GP10:
@@ -532,14 +516,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     
       // for GP encoders and Datawheel
       switch( ui_selected_item ) {
-        case ITEM_BACKUP: {
-          if( SEQ_FILE_FormattingRequired() )
-	    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Use GP Button", "to start FORMAT!");
-          else
-	    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Use GP Button", "to start Backup!");
-          return 1;
-        };
-    
         case ITEM_ENABLE_MSD:
           SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Please use", "GP Button!");
           return 1;
@@ -732,30 +708,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( button <= SEQ_UI_BUTTON_GP16 ) {
         s32 incrementer = 0;
     
-        // GP1-8 to start formatting
-        if( SEQ_FILE_FormattingRequired() ) {
-          if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP8 ) {
-	    if( depressed )
-	      SEQ_UI_UnInstallDelayedActionCallback(FormatReq);
-	    else {
-	      SEQ_UI_InstallDelayedActionCallback(FormatReq, 5000, 0);
-	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 5001, "", "to FORMAT Files!");
-	    }
-	    return 1;
-          }
-        } else {
-          // GP1/2 start backup
-          if( button == SEQ_UI_BUTTON_GP1 || button == SEQ_UI_BUTTON_GP2 ) {
-	    if( depressed )
-	      SEQ_UI_UnInstallDelayedActionCallback(BackupReq);
-	    else {
-	      SEQ_UI_InstallDelayedActionCallback(BackupReq, 5000, 0);
-	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 5001, "", "to start Backup");
-	    }
-	    return 1;
-          }
-        }
-    
         // GP9/10 toggles MSD enable/disable
         if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 ) {
 	  u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
@@ -821,11 +773,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // ---------------> FORMAT <---------------  MSD USB
-  // ---------------> FILES! <--------------- disabled
-
-  //   Create                                  MSD USB                MIDI Files     
-  //   Backup                                 disabled           Import  Export  Play
+  //                                           MSD USB                MIDI Files     
+  //                                          disabled           Import  Export  Play
 
   //                                           MSD USB (UMRW)         MIDI Files    
   //                                           enabled           Import  Export  Play
@@ -1110,23 +1059,9 @@ static s32 LCD_Handler(u8 high_prio)
     default:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
-      if( SEQ_FILE_FormattingRequired() ) {
-        SEQ_LCD_PrintString("---------------> ");
-        if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
-          SEQ_LCD_PrintSpaces(6);
-        } else {
-          SEQ_LCD_PrintString("FORMAT");
-        }
-        SEQ_LCD_PrintString(" <---------------");
-      } else {
-        if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
-          SEQ_LCD_PrintSpaces(8);
-        } else {
-          SEQ_LCD_PrintString("  Create");
-        }
-        SEQ_LCD_PrintSpaces(32);
-      }
+      SEQ_LCD_PrintSpaces(40);
     
+      ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_PrintString("  MSD USB ");
       if( TASK_MSD_EnableGet() == 1 ) {
         char str[5];
@@ -1139,25 +1074,9 @@ static s32 LCD_Handler(u8 high_prio)
     
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
-      if( SEQ_FILE_FormattingRequired() ) {
-        SEQ_LCD_PrintString("---------------> ");
-        if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
-          SEQ_LCD_PrintSpaces(6);
-        } else {
-          SEQ_LCD_PrintString("FILES!");
-        }
-        SEQ_LCD_PrintString(" <---------------");
-      } else {
-        if( ui_selected_item == ITEM_BACKUP && ui_cursor_flash ) {
-          SEQ_LCD_PrintSpaces(8);
-        } else {
-          SEQ_LCD_PrintString("  Backup");
-        }
-        SEQ_LCD_PrintSpaces(32);
-      }
+      SEQ_LCD_PrintSpaces(40);
     
-      ///////////////////////////////////////////////////////////////////////////
-    
+      ///////////////////////////////////////////////////////////////////////////    
       if( ui_selected_item == ITEM_ENABLE_MSD && ui_cursor_flash ) {
         SEQ_LCD_PrintSpaces(14);
       } else {
@@ -1207,26 +1126,6 @@ static void MSD_EnableReq(u32 enable)
   SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Mass Storage via USB", enable ? "enabled!" : "disabled!");
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// help function for Backup button function
-/////////////////////////////////////////////////////////////////////////////
-static void BackupReq(u32 dummy)
-{
-  // backup handled by low-priority task in app.c
-  // messages print in seq_ui.c so long request is active
-  seq_ui_backup_req = 1;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// help function for Format button function
-/////////////////////////////////////////////////////////////////////////////
-void FormatReq(u32 dummy)
-{
-  // formatting handled by low-priority task in app.c
-  // messages print in seq_ui.c so long request is active
-  seq_ui_format_req = 1;
-}
 
 
 
