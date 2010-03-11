@@ -11,6 +11,7 @@ MIDIboxSEQ V4.0beta17
 
    o implemented "Sessions" concept. Now you can change between different setups
      stored on a single SD Card
+     See this page for more informations: http://www.ucapps.de/midibox_seq_manual_sessions.html
 
    o Sessions can be opened/saved/created in the main menu (press EXIT button)
 
