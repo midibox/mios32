@@ -712,19 +712,37 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
   csd->RdBlockMisalign = (csd_buffer[6] & 0x20) >> 5;
   csd->DSRImpl = (csd_buffer[6] & 0x10) >> 4;
   csd->Reserved2 = 0; /* Reserved */
-  csd->DeviceSize = (csd_buffer[6] & 0x03) << 10;
-  /* Byte 7 */
-  csd->DeviceSize |= (csd_buffer[7]) << 2;
-  /* Byte 8 */
-  csd->DeviceSize |= (csd_buffer[8] & 0xC0) >> 6;
-  csd->MaxRdCurrentVDDMin = (csd_buffer[8] & 0x38) >> 3;
-  csd->MaxRdCurrentVDDMax = (csd_buffer[8] & 0x07);
-  /* Byte 9 */
-  csd->MaxWrCurrentVDDMin = (csd_buffer[9] & 0xE0) >> 5;
-  csd->MaxWrCurrentVDDMax = (csd_buffer[9] & 0x1C) >> 2;
-  csd->DeviceSizeMul = (csd_buffer[9] & 0x03) << 1;
-  /* Byte 10 */
-  csd->DeviceSizeMul |= (csd_buffer[10] & 0x80) >> 7;
+  
+  if (csd->CSDStruct == 0) { //SD V1
+	csd->DeviceSize = (csd_buffer[6] & 0x03) << 10;
+	/* Byte 7 */
+	csd->DeviceSize |= (csd_buffer[7]) << 2;
+	/* Byte 8 */
+	csd->DeviceSize |= (csd_buffer[8] & 0xC0) >> 6;
+	csd->MaxRdCurrentVDDMin = (csd_buffer[8] & 0x38) >> 3;
+	csd->MaxRdCurrentVDDMax = (csd_buffer[8] & 0x07);
+    /* Byte 9 */
+    csd->MaxWrCurrentVDDMin = (csd_buffer[9] & 0xE0) >> 5;
+    csd->MaxWrCurrentVDDMax = (csd_buffer[9] & 0x1C) >> 2;
+    csd->DeviceSizeMul = (csd_buffer[9] & 0x03) << 1;
+    /* Byte 10 */
+    csd->DeviceSizeMul |= (csd_buffer[10] & 0x80) >> 7;
+  } else { // SD V2
+	/* Byte 7 */
+    csd->DeviceSize = (csd_buffer[7] & 0x03)<<16;
+	/* Byte 8 */
+    csd->DeviceSize |= (csd_buffer[8] & 0xff)<<8;
+    /* Byte 9 */
+    csd->DeviceSize |= csd_buffer[9] & 0xff;
+	// These are not supported/required on v2 cards.
+	csd->MaxRdCurrentVDDMin=0; 
+	csd->MaxRdCurrentVDDMax=0;
+	csd->MaxWrCurrentVDDMin=0;
+	csd->MaxWrCurrentVDDMax=0;
+	csd->DeviceSizeMul= (csd_buffer[10]) << 4 ;
+  }
+   
+  /* Byte 10 continued */
   csd->EraseGrSize = (csd_buffer[10] & 0x7C) >> 2;
   csd->EraseGrMul = (csd_buffer[10] & 0x03) << 3;
   /* Byte 11 */
