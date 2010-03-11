@@ -239,9 +239,11 @@ s32 SEQ_FILE_C_Read(void)
 	  } else if( strcmp(parameter, "BPM_DINSyncDiv") == 0 ) {
 	    seq_core_bpm_din_sync_div = value;
 	  } else if( strcmp(parameter, "LastSong") == 0 ) {
-	    SEQ_SONG_NumSet(value);
+	    if( value )
+	      SEQ_SONG_NumSet(value-1);
 	  } else if( strcmp(parameter, "LastMixerMap") == 0 ) {
-	    SEQ_MIXER_NumSet(value);
+	    if( value )
+	      SEQ_MIXER_NumSet(value-1);
 	  } else if( strcmp(parameter, "LastPattern") == 0 ) {
 	    int group = value;
 
@@ -462,10 +464,10 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet());
+  sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet()+1);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "LastMixerMap %d\n", SEQ_MIXER_NumGet());
+  sprintf(line_buffer, "LastMixerMap %d\n", SEQ_MIXER_NumGet()+1);
   FLUSH_BUFFER;
 
   int group;
