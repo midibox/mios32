@@ -36,6 +36,9 @@ MIDIboxSEQ V4.0beta17
        - wait until MSD mode is disabled!
        - press EXIT, thereafter OPEN the session by pressing GP button 9
 
+  o changed default track configuration to 256 steps/4 parameter layers
+    since it's more useful in most cases
+
 
 MIDIboxSEQ V4.0beta16
 ~~~~~~~~~~~~~~~~~~~~~

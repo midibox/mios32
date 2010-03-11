@@ -52,6 +52,10 @@
 #include "seq_file_t.h"
 #include "seq_file_hw.h"
 
+#include "seq_mixer.h"
+#include "seq_pattern.h"
+#include "seq_song.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -192,6 +196,9 @@ s32 SEQ_FILE_CheckSDCard(void)
 
       return error; // break here!
     }
+
+    // load last selected session name
+    SEQ_FILE_LoadSessionName();
 
     // load all file infos
     SEQ_FILE_LoadAllFiles(1); // including HW info
@@ -363,9 +370,22 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   status |= SEQ_FILE_M_LoadAllBanks();
   status |= SEQ_FILE_S_LoadAllBanks();
   status |= SEQ_FILE_G_Load();
-  status |= SEQ_FILE_C_Load();
   if( including_hw )
     status |= SEQ_FILE_HW_Load();
+
+  if( SEQ_FILE_C_Load() >= 0 ) {
+    // change mixer map to the one stored in MBSEQ_C.V4
+    SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+
+    // change patterns to the ones stored in MBSEQ_C.V4
+    int group;
+    for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
+      SEQ_PATTERN_Change(group, seq_pattern[group]);
+
+    // change song to the one stored in MBSEQ_C.V4
+    SEQ_SONG_Load(SEQ_SONG_NumGet());
+  }
+
   return status;
 }
 
@@ -385,6 +405,62 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   return status;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Stores the current name of the session in a file (/SESSIONS/LAST_ONE.V4), so 
+// that it can be restored after startup
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_StoreSessionName(void)
+{
+  s32 status;
+  char filepath[30];
+
+  sprintf(filepath, "%s/LAST_ONE.V4", SEQ_FILE_SESSION_PATH);
+  status=SEQ_FILE_WriteOpen(filepath, 1);
+  if( status >= 0 ) {
+    status = SEQ_FILE_WriteBuffer(seq_file_session_name, strlen(seq_file_session_name));
+    if( status >= 0 )
+      status = SEQ_FILE_WriteByte('\n');
+    SEQ_FILE_WriteClose();
+  }
+
+  if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_StoreSessionName] ERROR: failed to store last session name (status: %d)\n", status);
+#endif
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Restores the last session from the file /SESSIONS/LAST_ONE.V4
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_LoadSessionName(void)
+{
+  s32 status;
+  char filepath[30];
+  seq_file_t file;
+
+  sprintf(filepath, "%s/LAST_ONE.V4", SEQ_FILE_SESSION_PATH);
+  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) >= 0 ) {
+    char linebuffer[20];
+    status = SEQ_FILE_ReadLine((char *)&linebuffer, 20);
+    if( status < 0 || strlen(linebuffer) > 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_FILE_LoadSessionName] ERROR: invalid session name '%s'\n", linebuffer);
+#endif
+      status = SEQ_FILE_ERR_INVALID_SESSION_NAME;
+    } else {
+      // take over session name
+      strcpy(seq_file_session_name, linebuffer);
+    }
+
+    SEQ_FILE_ReadClose(&file);
+  }
+  return status;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -466,6 +542,9 @@ s32 SEQ_FILE_ReadReOpen(seq_file_t* file)
   seq_file_read.dsect = file->dsect;
   seq_file_read.dir_sect = file->dir_sect;
   seq_file_read.dir_ptr = file->dir_ptr;
+
+  // ensure that the right sector is in cache again
+  disk_read(seq_file_read.fs->drive, seq_file_read.buf, seq_file_read.dsect, 1);
 
   // file is opened (again)
   seq_file_read_is_open = 1;
