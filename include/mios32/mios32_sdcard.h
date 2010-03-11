@@ -52,7 +52,7 @@ typedef struct
   u8  RdBlockMisalign;      /* Read block misalignment */
   u8  DSRImpl;              /* DSR implemented */
   u8  Reserved2;            /* Reserved */
-  u16 DeviceSize;           /* Device Size */
+  u32 DeviceSize;           /* Device Size */
   u8  MaxRdCurrentVDDMin;   /* Max. read current @ VDD min */
   u8  MaxRdCurrentVDDMax;   /* Max. read current @ VDD max */
   u8  MaxWrCurrentVDDMin;   /* Max. write current @ VDD min */
