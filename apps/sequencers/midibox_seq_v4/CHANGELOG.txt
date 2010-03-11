@@ -20,6 +20,7 @@ MIDIboxSEQ V4.0beta17
        - create a backup of all *.V4 files on your PC (recommented for Beta17!!!)
        - create a /SESSIONS directory if it doesn't exist yet
        - create a session subdirectory (8 characters maximum)
+         if you name it "DEFAULT", it will be loaded after startup!
        - copy following files:
          MBSEQ_B1.V4, MBSEQ_B2.V4, MBSEQ_B3.V4, MBSEQ_B4.V4, 
          MBSEQ_S.V4, MBSEQ_G.V4, MBSEQ_C.V4

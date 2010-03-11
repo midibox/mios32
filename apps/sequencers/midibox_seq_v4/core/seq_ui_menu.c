@@ -415,9 +415,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	// try to open session
 	OpenSession();
 
+	// stay in menu...
+#if 0
 	// switch to main page
 	SEQ_UI_MENU_UpdatePageList();
 	menu_dialog = MENU_DIALOG_NONE;
+#endif
 	return 1;
       }
     }
