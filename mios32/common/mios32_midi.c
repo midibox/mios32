@@ -1604,8 +1604,12 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
 	// send acknowledge
 	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
-	if( debug_req == 0 && debug_command_callback_func == NULL )
+	if( debug_req == 0 && debug_command_callback_func == NULL ) {
+	  mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
+	  MIOS32_MIDI_DebugPortSet(port);
 	  MIOS32_MIDI_SendDebugMessage("[MIOS32_MIDI_SYSEX_Cmd_Debug] command handler not implemented by application\n", port);
+	  MIOS32_MIDI_DebugPortSet(prev_debug_port);
+	}
 
       } else {
 	// send disacknowledge

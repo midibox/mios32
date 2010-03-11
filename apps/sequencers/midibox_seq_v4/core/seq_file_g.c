@@ -39,19 +39,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-// in which subdirectory of the SD card are the MBSEQ files located?
-// use "/" for root
-// use "/<dir>/" for a subdirectory in root
-// use "/<dir>/<subdir>/" to reach a subdirectory in <dir>, etc..
-
-#define SEQ_FILES_PATH "/"
-//#define SEQ_FILES_PATH "/MySongs/"
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -159,7 +146,7 @@ s32 SEQ_FILE_G_Read(void)
   info->valid = 0; // will be set to valid if file content has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_G.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_G] Open config file '%s'\n", filepath);
@@ -320,7 +307,7 @@ s32 SEQ_FILE_G_Write(void)
   seq_file_g_info_t *info = &seq_file_g_info;
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_G.V4", SEQ_FILES_PATH);
+  sprintf(filepath, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_G] Open config file '%s' for writing\n", filepath);

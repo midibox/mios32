@@ -63,19 +63,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-// in which subdirectory of the SD card are backup directories located?
-// recommented: "backup/"
-// backup subdirs (backup/1, backup/2, backup/3, ..." have to be manually
-// created, since DosFS doesn't support the creation of new dirs
-#define SEQ_FILE_BACKUP_PATH "/BACKUP"
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
+
+// name/directory of session
+char seq_file_session_name[13];
+char seq_file_new_session_name[13];
 
 // last error status returned by DFS
 // can be used as additional debugging help if SEQ_FILE_*ERR returned by function
@@ -130,6 +123,9 @@ static u8 status_msg_ctr;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_Init(u32 mode)
 {
+  strcpy(seq_file_session_name, "DEFAULT");
+  seq_file_new_session_name[0] = 0; // invalidate
+  
   seq_file_read_is_open = 0;
   seq_file_write_is_open = 0;
   sdcard_available = 0;
@@ -198,12 +194,7 @@ s32 SEQ_FILE_CheckSDCard(void)
     }
 
     // load all file infos
-    SEQ_FILE_B_LoadAllBanks();
-    SEQ_FILE_M_LoadAllBanks();
-    SEQ_FILE_S_LoadAllBanks();
-    SEQ_FILE_G_Load();
-    SEQ_FILE_C_Load();
-    SEQ_FILE_HW_Load();
+    SEQ_FILE_LoadAllFiles(1); // including HW info
 
     // status message after 3 seconds
     status_msg_ctr = 3;
@@ -217,12 +208,11 @@ s32 SEQ_FILE_CheckSDCard(void)
     volume_available = 0;
 
     // invalidate all file infos
-    SEQ_FILE_B_UnloadAllBanks();
-    SEQ_FILE_M_UnloadAllBanks();
-    SEQ_FILE_S_UnloadAllBanks();
-    SEQ_FILE_G_Unload();
-    SEQ_FILE_C_Unload();
-    SEQ_FILE_HW_Unload();
+    SEQ_FILE_UnloadAllFiles();
+
+    // invalidate session
+    strcpy(seq_file_session_name, "DEFAULT");
+    seq_file_new_session_name[0] = 0; // invalidate
 
     return 2; // SD card has been disconnected
   }
@@ -361,6 +351,40 @@ char *SEQ_FILE_VolumeLabel(void)
   return "TODO";
 #endif
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Loads all files
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
+{
+  s32 status = 0;
+  status |= SEQ_FILE_B_LoadAllBanks();
+  status |= SEQ_FILE_M_LoadAllBanks();
+  status |= SEQ_FILE_S_LoadAllBanks();
+  status |= SEQ_FILE_G_Load();
+  status |= SEQ_FILE_C_Load();
+  if( including_hw )
+    status |= SEQ_FILE_HW_Load();
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// invalidate all file infos
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_UnloadAllFiles(void)
+{
+  s32 status = 0;
+  status |= SEQ_FILE_B_UnloadAllBanks();
+  status |= SEQ_FILE_M_UnloadAllBanks();
+  status |= SEQ_FILE_S_UnloadAllBanks();
+  status |= SEQ_FILE_G_Unload();
+  status |= SEQ_FILE_C_Unload();
+  status |= SEQ_FILE_HW_Unload();
+  return status;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -560,7 +584,7 @@ s32 SEQ_FILE_ReadWord(u32 *word)
   // ensure little endian coding
   u8 tmp[4];
   s32 status = SEQ_FILE_ReadBuffer(tmp, 4);
-  *word = ((u16)tmp[0] << 0) | ((u16)tmp[1] << 8) | ((u16)tmp[2] << 16) | ((u16)tmp[3] << 24);
+  *word = ((u32)tmp[0] << 0) | ((u32)tmp[1] << 8) | ((u32)tmp[2] << 16) | ((u32)tmp[3] << 24);
   return status;
 }
 
@@ -690,10 +714,38 @@ s32 SEQ_FILE_WriteWord(u32 word)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Creates a directory
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_MakeDir(char *path)
+{
+  // exit if volume not available
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_MakeDir] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  if( (seq_file_dfs_errno=f_mkdir(path)) != FR_OK )
+    return SEQ_FILE_ERR_MKDIR;
+
+  return 0; // directory created
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns 1 if file exists, 0 if it doesn't exist, < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_FileExists(char *filepath)
 {
+  // exit if volume not available
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_FileExists] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
   if( f_open(&seq_file_read, filepath, FA_OPEN_EXISTING | FA_READ) != FR_OK )
     return 0; // file doesn't exist
   f_close(&seq_file_read);
@@ -841,7 +893,7 @@ s32 SEQ_FILE_PrintSDCardInfos(void)
 s32 SEQ_FILE_FormattingRequired(void)
 {
   u8 bank;
-  for(bank=0; bank<8; ++bank)
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank)
     if( !SEQ_FILE_B_NumPatterns(bank) )
       return 1;
 
@@ -860,84 +912,132 @@ s32 SEQ_FILE_FormattingRequired(void)
 s32 SEQ_FILE_Format(void)
 {
   s32 status = 0;
-  u8 num_operations = 8 + 1 + 1;
-  char filename_buffer[20];
+
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_Format] ERROR: volume doesn't exist!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  if( seq_file_new_session_name[0] == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] ERROR: no new session specified!\n");
+#endif
+    return SEQ_FILE_ERR_NO_VOLUME;
+  }
+
+  // switch to new session name, store old name for the case that we have to switch back
+  char prev_session_name[13];
+  strcpy(prev_session_name, seq_file_session_name);
+  strcpy(seq_file_session_name, seq_file_new_session_name); 
+
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ_FILE_Format] Creating Session %s (previous was %s)\n", seq_file_session_name, prev_session_name);
+#endif
+
+  u8 num_operations = SEQ_FILE_B_NUM_BANKS + 1 + 1 + 1 + 1;
+  char filename_buffer[30];
   seq_file_backup_notification = filename_buffer;
 
   seq_file_copy_percentage = 0; // for percentage display
 
-  // create non-existing banks if required
+  // create banks
   u8 bank;
-  for(bank=0; bank<8; ++bank) {
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     seq_file_backup_percentage = (u8)(((u32)100 * (u32)bank) / num_operations);
+    sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name, bank+1);
 
-    if( !SEQ_FILE_B_NumPatterns(bank) ) {
-      // create bank
-      sprintf(seq_file_backup_notification, "MBSEQ_B%d.V4", bank+1);
+    if( (status=SEQ_FILE_B_Create(bank)) < 0 )
+      goto SEQ_FILE_Format_failed;
 
-      if( (status=SEQ_FILE_B_Create(bank)) < 0 )
-	return status;
+    // fill patterns with useful data
+    int pattern;
+    int num_patterns = SEQ_FILE_B_NumPatterns(bank);
+    for(pattern=0; pattern<num_patterns; ++pattern) {
+      seq_file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
+      u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
 
-      // fill patterns with useful data
-      int pattern;
-      int num_patterns = SEQ_FILE_B_NumPatterns(bank);
-      for(pattern=0; pattern<num_patterns; ++pattern) {
-	seq_file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
-	u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
-
-	if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group)) < 0 )
-	  return status;
-      }
-
-      // open bank
-      if( (status=SEQ_FILE_B_Open(bank)) < 0 )
-	return status;
+      if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group)) < 0 )
+	goto SEQ_FILE_Format_failed;
     }
+
+    // open bank
+    if( (status=SEQ_FILE_B_Open(bank)) < 0 )
+      goto SEQ_FILE_Format_failed;
   }
 
 
-  // create non-existing mixer maps if required
-  if( !SEQ_FILE_M_NumMaps() ) {
-    seq_file_backup_percentage = (u8)(((u32)100 * (u32)8) / num_operations);
-
-    // create maps
-    sprintf(seq_file_backup_notification, "MBSEQ_M.V4");
-
-    if( (status=SEQ_FILE_M_Create()) >= 0 ) {
-      int map;
-      int num_maps = SEQ_FILE_M_NumMaps();
-      for(map=0; map<num_maps; ++map) {
-	seq_file_copy_percentage = (u8)(((u32)100 * (u32)map) / num_maps); // for percentage display
-	if( (status = SEQ_FILE_M_MapWrite(map)) < 0 )
-	  return status;
-      }
-
-      if( (status=SEQ_FILE_M_Open()) < 0 )
-	return status;
+  // create mixer maps
+  seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+0)) / num_operations);
+  sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
+  if( (status=SEQ_FILE_M_Create()) >= 0 ) {
+    int map;
+    int num_maps = SEQ_FILE_M_NumMaps();
+    for(map=0; map<num_maps; ++map) {
+      seq_file_copy_percentage = (u8)(((u32)100 * (u32)map) / num_maps); // for percentage display
+      if( (status = SEQ_FILE_M_MapWrite(map)) < 0 )
+	goto SEQ_FILE_Format_failed;
     }
+
+    if( (status=SEQ_FILE_M_Open()) < 0 )
+      goto SEQ_FILE_Format_failed;
   }
 
-  // create non-existing song slots if required
-  if( !SEQ_FILE_S_NumSongs() ) {
-    seq_file_backup_percentage = (u8)(((u32)100 * (u32)9) / num_operations);
-
-    sprintf(seq_file_backup_notification, "MBSEQ_S.V4");
-
-    // create songs
-    if( (status=SEQ_FILE_S_Create()) >= 0 ) {
-      int song;
-      int num_songs = SEQ_FILE_S_NumSongs();
-      for(song=0; song<num_songs; ++song) {
-	seq_file_copy_percentage = (u8)(((u32)100 * (u32)song) / num_songs); // for percentage display
-	if( (status = SEQ_FILE_S_SongWrite(song)) )
-	  return status;
-      }
-
-      if( (status=SEQ_FILE_S_Open()) < 0 )
-	return status;
+  // create song
+  seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+1)) / num_operations);
+  sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
+  if( (status=SEQ_FILE_S_Create()) >= 0 ) {
+    int song;
+    int num_songs = SEQ_FILE_S_NumSongs();
+    for(song=0; song<num_songs; ++song) {
+      seq_file_copy_percentage = (u8)(((u32)100 * (u32)song) / num_songs); // for percentage display
+      if( (status = SEQ_FILE_S_SongWrite(song)) )
+	goto SEQ_FILE_Format_failed;
     }
+
+    if( (status=SEQ_FILE_S_Open()) < 0 )
+      goto SEQ_FILE_Format_failed;
   }
-      
+
+
+  // create grooves
+  seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+2)) / num_operations);
+  sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
+  if( (status=SEQ_FILE_G_Write()) < 0 )
+    goto SEQ_FILE_Format_failed;
+
+
+  // create config
+  seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
+  sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
+  if( (status=SEQ_FILE_C_Write()) < 0 )
+    goto SEQ_FILE_Format_failed;
+
+
+SEQ_FILE_Format_failed:
+  if( status >= 0 ) {
+    // we were successfull
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_Format] Session %s created successfully!\n", seq_file_session_name);
+#endif
+
+    // reload setup
+    SEQ_FILE_LoadAllFiles(0); // excluding HW info
+  } else {
+    // we were not successfull!
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_Format] Session %s failed with status %d!\n", seq_file_session_name, status);
+#endif
+
+    // switch back to old session name
+    strcpy(seq_file_session_name, prev_session_name); 
+  }
+
+  // in any case invalidate new session name
+  seq_file_new_session_name[0] = 0;
+
   // no need to check for existing config file (will be created once config data is stored)
   return status;
 }
@@ -994,13 +1094,13 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *tmp_buffer)
     do {
       if( (seq_file_dfs_errno=f_read(&seq_file_read, tmp_buffer, TMP_BUFFER_SIZE, &successcount)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ_FILE] Failed to read sector at position 0x%08x, status: %u\n", seq_file_read.fptr, seq_file_dfs_errno);
+	DEBUG_MSG("[SEQ_FILE_Copy] Failed to read sector at position 0x%08x, status: %u\n", seq_file_read.fptr, seq_file_dfs_errno);
 #endif
 	successcount = 0;
 	status = SEQ_FILE_ERR_READ;
       } else if( successcount && f_write(&seq_file_write, tmp_buffer, successcount, &successcount_wr) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ_FILE] Failed to write sector at position 0x%08x, status: %u\n", seq_file_write.fptr, seq_file_dfs_errno);
+	DEBUG_MSG("[SEQ_FILE_Copy] Failed to write sector at position 0x%08x, status: %u\n", seq_file_write.fptr, seq_file_dfs_errno);
 #endif
 	status = SEQ_FILE_ERR_WRITE;
       } else {
@@ -1023,13 +1123,12 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *tmp_buffer)
 
 /////////////////////////////////////////////////////////////////////////////
 // This function creates a backup of all MBSEQ files
+// Source: seq_file_session_name
+// Destination: seq_file_new_session_name
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_CreateBackup(void)
 {
-  // TODO
   s32 status = 0;
-  DIR di;
-  FILINFO de;
 
   if( !volume_available ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -1038,87 +1137,69 @@ s32 SEQ_FILE_CreateBackup(void)
     return SEQ_FILE_ERR_NO_VOLUME;
   }
 
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE_CreateBackup] Content of %s directory:\n", SEQ_FILE_BACKUP_PATH);
+  if( seq_file_new_session_name[0] == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_CreateBackup] ERROR: no new session specified!\n");
 #endif
-
-  if( f_opendir(&di, SEQ_FILE_BACKUP_PATH) != FR_OK ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_CreateBackup] ERROR: opening %s directory - please create it!\n", SEQ_FILE_BACKUP_PATH);
-#endif
-    status = SEQ_FILE_ERR_NO_BACKUP_DIR;
+    return SEQ_FILE_ERR_NO_VOLUME;
   }
 
-  int num_files = 0;
-  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
-    if( de.fname[0] && de.fname[0] != '.' ) {
-      ++num_files;
+  char src_path[20];
+  sprintf(src_path, "%s/%s", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  char dst_path[20];
+  sprintf(dst_path, "%s/%s", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-      char filepath[MAX_PATH];
-      sprintf(filepath, "%s/%s/MBSEQ_S.V4", SEQ_FILE_BACKUP_PATH, de.fname);
+  char src_file[30];
+  char dst_file[30];
+  // We assume that session directory already has been created in seq_ui_menu.c
 
-      if( !SEQ_FILE_FileExists(filepath) ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ_FILE_CreateBackup] %s doesn't exist - taking this dir!\n", filepath);
-#endif
-
-	// directory found - start to copy files
 #define COPY_FILE_MACRO(name) if( status >= 0 ) { \
-	  sprintf(filepath, "%s/%s/%s", SEQ_FILE_BACKUP_PATH, de.fname, name); \
-	  seq_file_backup_notification = filepath; \
-	  status = SEQ_FILE_Copy(name, filepath, tmp_buffer); \
-	  if( status == SEQ_FILE_ERR_COPY_NO_FILE ) status = 0; \
-	  ++seq_file_backup_file;				\
-	  seq_file_backup_percentage = (u8)(((u32)100 * (u32)seq_file_backup_file) / seq_file_backup_files); \
-	}
-
-	// this approach saves some stack - we don't want to allocate more memory by using
-	// temporary variables to create src_file and dst_file from an array...
-	seq_file_backup_percentage = 0;
-	u8 seq_file_backup_files = 13; // for percentage display
-	u8 seq_file_backup_file = 0;
-	COPY_FILE_MACRO("MBSEQ_HW.V4");
-	COPY_FILE_MACRO("MBSEQ_B1.V4");
-	COPY_FILE_MACRO("MBSEQ_B2.V4");
-	COPY_FILE_MACRO("MBSEQ_B3.V4");
-	COPY_FILE_MACRO("MBSEQ_B4.V4");
-	COPY_FILE_MACRO("MBSEQ_B5.V4");
-	COPY_FILE_MACRO("MBSEQ_B6.V4");
-	COPY_FILE_MACRO("MBSEQ_B7.V4");
-	COPY_FILE_MACRO("MBSEQ_B8.V4");
-	COPY_FILE_MACRO("MBSEQ_G.V4");
-	COPY_FILE_MACRO("MBSEQ_M.V4");
-	COPY_FILE_MACRO("MBSEQ_C.V4");
-	COPY_FILE_MACRO("MBSEQ_S.V4"); // important: should be the last file to notify that backup is complete!
-
-	// stop printing the special message
-	seq_file_backup_notification = NULL;
-
-	// stop directory scan
-	if( status >= 0 )
-	  status = 1; // we were successfull!
-      } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ_FILE_CreateBackup] %s already exists\n", filepath);
-#endif
-      }
-    }
+    sprintf(src_file, "%s/%s", src_path, name);   \
+    sprintf(dst_file, "%s/%s", dst_path, name);   \
+    seq_file_backup_notification = dst_file;      \
+    status = SEQ_FILE_Copy(src_file, dst_file, tmp_buffer); \
+    if( status == SEQ_FILE_ERR_COPY_NO_FILE ) status = 0;   \
+    ++seq_file_backup_file;				    \
+    seq_file_backup_percentage = (u8)(((u32)100 * (u32)seq_file_backup_file) / seq_file_backup_files); \
   }
 
-  if( status != 0 ) // either successful copy operations or errors!
-    return status;
+  // this approach saves some stack - we don't want to allocate more memory by using
+  // temporary variables to create src_file and dst_file from an array...
+  seq_file_backup_percentage = 0;
+  u8 seq_file_backup_files = 13; // for percentage display
+  u8 seq_file_backup_file = 0;
+  COPY_FILE_MACRO("MBSEQ_B1.V4");
+  COPY_FILE_MACRO("MBSEQ_B2.V4");
+  COPY_FILE_MACRO("MBSEQ_B3.V4");
+  COPY_FILE_MACRO("MBSEQ_B4.V4");
+  COPY_FILE_MACRO("MBSEQ_G.V4");
+  COPY_FILE_MACRO("MBSEQ_M.V4");
+  COPY_FILE_MACRO("MBSEQ_C.V4");
+  COPY_FILE_MACRO("MBSEQ_S.V4"); // important: should be the last file to notify that backup is complete!
 
-  if( !num_files ) {
+  // stop printing the special message
+  seq_file_backup_notification = NULL;
+
+  if( status >= 0 ) {
+    // we were successfull!
+    status = 1;
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_CreateBackup] no backup subdir exists - please create some!\n");
+    DEBUG_MSG("[SEQ_FILE_CreateBackup] backup of %s passed, new name: %s\n", seq_file_session_name, seq_file_new_session_name);
 #endif
-    return SEQ_FILE_ERR_NO_BACKUP_SUBDIR;
+
+    // take over session name
+    strcpy(seq_file_session_name, seq_file_new_session_name); 
+  } else if( status < 0 ) { // found errors!
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_CreateBackup] backup of %s failed, status %d\n", seq_file_new_session_name, status);
+#endif
+    status = SEQ_FILE_ERR_COPY;
   }
 
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE_CreateBackup] no free backup subdir - please add some!\n");
-#endif
-  return SEQ_FILE_ERR_NEED_MORE_BACKUP_SUBDIRS;
+  // in any case invalidate new session name
+  seq_file_new_session_name[0] = 0;
+
+  return status;
 }
 
 

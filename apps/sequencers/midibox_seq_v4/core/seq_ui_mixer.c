@@ -357,14 +357,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //    No Mixer Maps available so long Fileson SD Card haven't been created!        
-  //                             Please go toUTILITY->DISK Page!                     
+  //      No Mixer Maps available so long theSession hasn't been created!            
+  //            Please press EXIT and create a new Session!                          
 
   if( SEQ_FILE_FormattingRequired() ) {
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("   No Mixer Maps available so long Fileson SD Card haven't been created!        ");
+    SEQ_LCD_PrintString("     No Mixer Maps available so long theSession hasn't been created!            ");
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString("                            Please go toUTILITY->DISK Page!                     ");
+    SEQ_LCD_PrintString("           Please press EXIT and create a new Session!                          ");
     return 0;
   }
 

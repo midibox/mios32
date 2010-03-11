@@ -1520,6 +1520,7 @@ static s32 DoExport(u8 force_overwrite)
 
   strcpy(path, "/PRESETS");
   MUTEX_SDCARD_TAKE;
+  status = SEQ_FILE_MakeDir(path); // create directory if it doesn't exist
   status = SEQ_FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
@@ -1529,7 +1530,7 @@ static s32 DoExport(u8 force_overwrite)
   }
 
   if( status == 0 ) {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/PRESETS directory", "doesn't exist!");
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "/PRESETS directory", "cannot be created!");
     return -4;
   }
 
