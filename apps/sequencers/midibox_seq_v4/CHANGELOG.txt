@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta18
+~~~~~~~~~~~~~~~~~~~~~
+
+  o the current patterns/mixer map/song/groove templates will be cleared before 
+    a new session is created.
+
+  o last patterns now correctly selected after startup
+
+
+
 MIDIboxSEQ V4.0beta17
 ~~~~~~~~~~~~~~~~~~~~~
 

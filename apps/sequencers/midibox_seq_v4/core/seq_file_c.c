@@ -267,7 +267,7 @@ s32 SEQ_FILE_C_Read(void)
 	      } else {
 		int bank = word[0] - '1';
 		int pgroup = word[2] - 'A';
-		int num = word[3] - '0';
+		int num = word[3] - '1';
 
 		if( bank < 0 || bank >= SEQ_FILE_B_NUM_BANKS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

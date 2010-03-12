@@ -1245,7 +1245,7 @@ s32 SEQ_FILE_CreateBackup(void)
   // this approach saves some stack - we don't want to allocate more memory by using
   // temporary variables to create src_file and dst_file from an array...
   seq_file_backup_percentage = 0;
-  u8 seq_file_backup_files = 13; // for percentage display
+  u8 seq_file_backup_files = SEQ_FILE_B_NUM_BANKS+4; // for percentage display
   u8 seq_file_backup_file = 0;
   COPY_FILE_MACRO("MBSEQ_B1.V4");
   COPY_FILE_MACRO("MBSEQ_B2.V4");
