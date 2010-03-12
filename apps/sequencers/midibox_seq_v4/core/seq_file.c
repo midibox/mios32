@@ -586,7 +586,13 @@ s32 SEQ_FILE_ReadClose(seq_file_t *file)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_ReadSeek(u32 offset)
 {
-  return (f_lseek(&seq_file_read, offset) == FR_OK) ? 0 : SEQ_FILE_ERR_SEEK;
+  if( (seq_file_dfs_errno=f_lseek(&seq_file_read, offset)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_ReadSeek] ERROR: seek to offset %u failed (FatFs status: %d)\n", offset, seq_file_dfs_errno);
+#endif
+    return SEQ_FILE_ERR_SEEK;
+  }
+  return 0; // no error
 }
 
 
@@ -720,7 +726,13 @@ s32 SEQ_FILE_WriteClose(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_WriteSeek(u32 offset)
 {
-  return (f_lseek(&seq_file_write, offset) == FR_OK) ? 0 : SEQ_FILE_ERR_SEEK;
+  if( (seq_file_dfs_errno=f_lseek(&seq_file_write, offset)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ_FILE_ReadSeek] ERROR: seek to offset %u failed (FatFs status: %d)\n", offset, seq_file_dfs_errno);
+#endif
+    return SEQ_FILE_ERR_SEEK;
+  }
+  return 0; // no error
 }
 
 
@@ -827,7 +839,7 @@ s32 SEQ_FILE_FileExists(char *filepath)
 
   if( f_open(&seq_file_read, filepath, FA_OPEN_EXISTING | FA_READ) != FR_OK )
     return 0; // file doesn't exist
-  f_close(&seq_file_read);
+  //f_close(&seq_file_read); // never close read files to avoid "invalid object"
   return 1; // file exists
 }
 
@@ -1151,7 +1163,7 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *tmp_buffer)
       DEBUG_MSG("[SEQ_FILE_Copy] wasn't able to create %s - exit!\n", dst_file);
 #endif
       status = SEQ_FILE_ERR_COPY;
-      f_close(&seq_file_read);
+      //f_close(&seq_file_read); // never close read files to avoid "invalid object"
     }
   }
 
@@ -1192,7 +1204,7 @@ s32 SEQ_FILE_Copy(char *src_file, char *dst_file, u8 *tmp_buffer)
     DEBUG_MSG("[SEQ_FILE_Copy] Finished copy operation (%d bytes)!\n", num_bytes);
 #endif
 
-    f_close(&seq_file_read);
+    //f_close(&seq_file_read); // never close read files to avoid "invalid object"
     f_close(&seq_file_write);
   }
 
