@@ -533,6 +533,8 @@ s32 SEQ_FILE_ReadReOpen(seq_file_t* file)
   }
 
   // restore file variables from seq_file_t
+  seq_file_read.fs = &fs;
+  seq_file_read.id = fs.id;
   seq_file_read.flag = file->flag;
   seq_file_read.csect = file->csect;
   seq_file_read.fptr = file->fptr;
