@@ -797,6 +797,19 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   seq_file_copy_percentage = 0; // for percentage display
 
   if( new_session ) {
+    // stop sequencer if it is still running
+    if( SEQ_BPM_IsRunning() )
+      SEQ_BPM_Stop();
+    SEQ_SONG_Reset();
+    SEQ_CORE_Reset();
+    SEQ_MIDPLY_Reset();
+
+    // clear all patterns/etc.. to have a clean start
+    SEQ_CORE_Init(0);
+    SEQ_GROOVE_Init();
+    SEQ_SONG_Init();
+    SEQ_MIXER_Init();
+
     // formatting handled by low-priority task in app.c
     // messages print in seq_ui.c so long request is active
     seq_ui_format_req = 1;
