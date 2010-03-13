@@ -1,6 +1,6 @@
 $Id$
 
-SD Card Info
+SD Card Tools
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -27,5 +27,7 @@ if a SD Card is connected.
 
 In addition, the CSD and CSI informations are read out and print on
 the MIOS Studio Terminal.
+
+A Simple console is provided with various commands, help shows a list 
 
 ===============================================================================

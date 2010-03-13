@@ -178,13 +178,14 @@ DRESULT disk_ioctl (
       //*(DWORD*)buff = sdcard_sector_count;
 	  MIOS32_SDCARD_CSDRead(&csd);
 	  u32 sectors;
-	  if (csd.CSDStruct)// SD V2
-		sectors = (DWORD)(csd.DeviceSize+1)<<10;
+	  if (csd.CSDStruct==1) // SD V2 
+  	    sectors = (DWORD)(csd.DeviceSize+1)<<10;
       else // V1 or MMC
 		sectors = (DWORD)(csd.DeviceSize+1) << (csd.RdBlockLen + csd.DeviceSizeMul - 7);
+	
 	  *(DWORD*)buff=sectors;
       res= RES_OK;
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
       MIOS32_MIDI_SendDebugMessage("[GET_SECTOR_COUNT] Count is %d\n", sectors);
 #endif
 	  break;
@@ -193,7 +194,7 @@ DRESULT disk_ioctl (
       // This command is not required in single sector size configuration, _MAX_SS is 512.
 #if _MAX_SS
       *(DWORD*)buff = 512; // only single size supported by MIOS32
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
       MIOS32_MIDI_SendDebugMessage("[GET_SECTOR_SIZE] Sector Size is %d\n", 512);
 #endif
 
@@ -209,16 +210,16 @@ DRESULT disk_ioctl (
       // return 1. This command is used in only f_mkfs function.
 	  MIOS32_SDCARD_CSDRead(&csd);
 	  u32 size;
-	  if (csd.CSDStruct)  // SD V2
+	  if (csd.CSDStruct==1)  // SD V2
 		size = 16UL << (csd.DeviceSizeMul);
-	  else 					// SDv1 or MMC
-	    size = (csd.EraseGrSize+1)*(csd.MaxWrBlockLen);
+	  else // SD v1
+	    size = (DWORD)(csd.EraseGrSize+1)*(csd.MaxWrBlockLen);
 		
 	  res=RES_OK;
 		
 	  *(DWORD*)buff = size;
 	  
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
       MIOS32_MIDI_SendDebugMessage("[GET_BLOCK_SIZE] Block Size is %d\n", size);
 #endif
 	  break;
