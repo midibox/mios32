@@ -29,16 +29,16 @@
 /////////////////////////////////////////////////////////////////////////////
 #define DEBUG_VERBOSE_LEVEL 1
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
-
+#define MAX_PATH 100
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 // FatFs variables
-static FATFS fs[1]; // Work area (file system object) for logical drives
+static FATFS fs; // Work area (file system object) for logical drives
 static u8 line_buffer[100];
-static u8 dir_path[100];
+static u8 dir_path[MAX_PATH];
 static u16 line_ix;
 static u8 disk_label[12];
 
@@ -87,7 +87,7 @@ s32 SDCARD_Mount(void)
   FRESULT res;
   DIR dir;
   DEBUG_MSG("Mounting SD Card...\n");
-  if( (res=f_mount(0, &fs[0])) != FR_OK ) {
+  if( (res=f_mount(0, &fs)) != FR_OK ) {
     DEBUG_MSG("Failed to mount SD Card - error status: %d\n", res);
     return -1; // error
   }
@@ -320,8 +320,7 @@ void SDCARD_Format(void)
 {
 #if _USE_MKFS && !_FS_READONLY
   DEBUG_MSG("Formatting SDCARD....\n");
-  FRESULT res=f_mkfs(0,0,0);
-  SDCARD_Messages(res);
+  SDCARD_Messages(f_mkfs(0,0,0));
 #else
   DEBUG_MSG("Please set _MKFS=1 and _FS_READONLY=0 in ffconf.h\n"); 
 #endif
@@ -402,11 +401,9 @@ void SDCARD_Dir(void)
     fn = fno.fname;
 #endif
     char date[10];
-	char *ptr=date;
-	ShowFatDate(fno.fdate,ptr);
+	ShowFatDate(fno.fdate,(char*)&date);
 	char time[12];
-	ptr=time;
-	ShowFatTime(fno.ftime,ptr);
+	ShowFatTime(fno.ftime,(char*)&time);
 	DEBUG_MSG("[%s%s%s%s%s%s%s] %s  %s   %s %u %s\n",
 		(fno.fattrib & AM_RDO ) ? "r" : ".",
 		(fno.fattrib & AM_HID ) ? "h" : ".",
@@ -424,8 +421,8 @@ void SDCARD_Dir(void)
 	DEBUG_MSG("f_getfree() failed...\n");
 	return;
   }
-  DEBUG_MSG("%u KB total disk space.\n",(DWORD)(fs->max_clust-2)*fs->csize/2);
-  DEBUG_MSG("%u KB available on the disk.\n\n",free_clust*fs->csize/2);
+  DEBUG_MSG("%u KB total disk space.\n",(DWORD)(fs.max_clust-2)*fs.csize/2);
+  DEBUG_MSG("%u KB available on the disk.\n\n",free_clust*fs.csize/2);
   return; 
 }
 
@@ -455,18 +452,23 @@ void SDCARD_FileSystem(void)
 
 }
 
+void fullpath(char *source, char*dest)
+{
+  if (source[0]=='/') {
+    strcpy(dest, source);
+  } else {	
+    strcpy(dest,dir_path);
+	if (dest[1]!='\0')
+	  strcat(dest,"/");
+    strcat(dest,source);
+  }
+}
+
 void SDCARD_CD(char *directory)
 {
-  char new_path[100];
+  u8 new_path[MAX_PATH];
   DIR dir;
-  if (directory[0]=='/') {
-    strcpy(new_path, directory);
-  } else {	
-    strcpy(new_path,dir_path);
-	if (new_path[1]!='\0')
-	  strcat(new_path,"/");
-    strcat(new_path,directory);
-  }
+  fullpath(directory,(char *)&new_path);
   if((f_opendir(&dir, new_path)) != FR_OK ) {
     DEBUG_MSG("The system cannot find the path specified");
   } else {
@@ -477,15 +479,8 @@ void SDCARD_CD(char *directory)
 
 void SDCARD_Mkdir(char *directory)
 {
-  char new_path[100];
-  if (directory[0]=='/') {
-    strcpy(new_path, directory);
-  } else {	
-    strcpy(new_path,dir_path);
-	if (new_path[1]!='\0')
-	  strcat(new_path,"/");
-    strcat(new_path,directory);
-  }
+  u8 new_path[MAX_PATH];
+  fullpath(directory,(char *)&new_path);
   SDCARD_Messages(f_mkdir(new_path));
   return;
 }
@@ -499,28 +494,67 @@ void SDCARD_Pwd(void)
 
 void SDCARD_Rename(char* source, char* dest)
 {  
-  char new_source[100];
-  char new_dest[100];
+  u8 new_source[MAX_PATH];
+  u8 new_dest[MAX_PATH];
 
-  if (source[0]!='/') {
-    strcpy(new_source, dir_path);
-	strcat(new_source,"/");
-	strcat(new_source,source);
-  } else {	
-    strcpy(new_source,source);
-  }
+  fullpath(source,(char *)&new_source);
+  fullpath(dest,(char *)&new_dest);
 
-  if (dest[0]!='/') {
-    strcpy(new_dest, dir_path);
-	strcat(new_dest,"/");
-	strcat(new_dest,dest);
-  } else {	
-    strcpy(new_dest,dest);
-  }
   DEBUG_MSG("Renaming/Moving from: %s to %s",new_source,new_dest);
   SDCARD_Messages(f_rename(new_source,new_dest));
   return;
 }
+
+
+SDCARD_Copy(char* source, char* dest)
+{
+  DEBUG_MSG("Not working yet!\n");
+  return;
+  FRESULT res;
+  FIL fsrc,fdst;
+  s32 status = 0;
+  u8 tmp_buffer[_MAX_SS];
+  u8 new_source[MAX_PATH];
+  u8 new_dest[MAX_PATH];
+  
+  fullpath(source,(char *)&new_source);
+  fullpath(dest,(char *)&new_dest);
+
+  if( (res=f_open(&fsrc, new_source, FA_OPEN_EXISTING | FA_READ)) != FR_OK ) {
+    DEBUG_MSG("%s doesn't exist!\n", source);
+  } else {
+    if( (res=f_open(&fdst, new_dest, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK ) {
+      DEBUG_MSG("Cannot create %s - file exists or invalid path\n", dest);
+	  return;
+    }
+  }
+  DEBUG_MSG("Copying %s to %s\n",new_source,new_dest);
+
+  mios32_sys_time_t t=MIOS32_SYS_TimeGet();
+  u32 seconds=t.seconds;
+
+  UINT successcount;
+  UINT successcount_wr;
+  u32 num_bytes = 0;
+  do {
+    if( (res=f_read(&fsrc, tmp_buffer, _MAX_SS, &successcount)) != FR_OK ) {
+	  DEBUG_MSG("Failed to read sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
+	  successcount=0;
+	  status=-1;
+    } else if( f_write(&fdst, tmp_buffer, successcount, &successcount_wr) != FR_OK ) {
+	  DEBUG_MSG("Failed to write sector at position 0x%08x, status: %u\n", fdst.fptr, res);
+	  status=-1;
+    } else {
+	num_bytes += successcount_wr;
+    }
+  } while( status==0 && successcount > 0 );
+  t = MIOS32_SYS_TimeGet();
+  
+  DEBUG_MSG("Copied %d bytes in %d seconds!\n", num_bytes,t.seconds-seconds);
+
+  f_close(&fdst);
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -581,6 +615,11 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	      SDCARD_Rename(parameter[1],parameter[2]);
 	    else
 	      DEBUG_MSG("rename: <source> and <destination> filenames required");
+      } else if( strncmp(parameter[0], "copy", 4) == 0 ) {
+	    if(parameter[1] && parameter[2]) 
+	      SDCARD_Copy(parameter[1],parameter[2]);
+	    else
+	      DEBUG_MSG("copy: <source> and <destination> filenames required");
       } else {
 	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
       }
