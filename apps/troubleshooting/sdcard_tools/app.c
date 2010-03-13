@@ -39,8 +39,10 @@
 static FATFS fs; // Work area (file system object) for logical drives
 static u8 line_buffer[100];
 static u8 dir_path[MAX_PATH];
+static u8 tmp_buffer[_MAX_SS];
 static u16 line_ix;
 static u8 disk_label[12];
+static FIL fsrc, fdst; // File handles for copy routine.
 
 xSemaphoreHandle xSDCardSemaphore;
 # define MUTEX_SDCARD_TAKE { while( xSemaphoreTakeRecursive(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
@@ -508,12 +510,9 @@ void SDCARD_Rename(char* source, char* dest)
 
 SDCARD_Copy(char* source, char* dest)
 {
-  DEBUG_MSG("Not working yet!\n");
-  return;
+
   FRESULT res;
-  FIL fsrc,fdst;
   s32 status = 0;
-  u8 tmp_buffer[_MAX_SS];
   u8 new_source[MAX_PATH];
   u8 new_dest[MAX_PATH];
   
@@ -550,7 +549,7 @@ SDCARD_Copy(char* source, char* dest)
   } while( status==0 && successcount > 0 );
   t = MIOS32_SYS_TimeGet();
   
-  DEBUG_MSG("Copied %d bytes in %d seconds!\n", num_bytes,t.seconds-seconds);
+  DEBUG_MSG("Copied %d bytes in %d seconds (%d KB/s)!\n", num_bytes,t.seconds-seconds,(num_bytes/1024)/(t.seconds-seconds));
 
   f_close(&fdst);
 }
