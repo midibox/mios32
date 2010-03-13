@@ -11,8 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "SD Card Info"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "SD Card Tools"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2010 T.Klose and P.Taylor"
 
 // FatFs configuration: support long filenames
 #define FATFS_USE_LFN 1
