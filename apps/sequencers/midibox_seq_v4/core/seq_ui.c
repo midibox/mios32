@@ -1348,6 +1348,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Fwd(pin_value);
   if( pin == seq_hwcfg_button.loop )
     return SEQ_UI_Button_Loop(pin_value);
+  if( pin == seq_hwcfg_button.follow )
+    return SEQ_UI_Button_Follow(pin_value);
 
   if( pin == seq_hwcfg_button.utility )
     return SEQ_UI_Button_Utility(pin_value);
