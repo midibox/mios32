@@ -570,7 +570,7 @@ SDCARD_Copy(char* source, char* dest)
 }
 
 
-void SDCARD_Benchmark(void)
+void SDCARD_Benchmark(num_sectors)
 {
 
   FRESULT res;
@@ -601,7 +601,7 @@ void SDCARD_Benchmark(void)
 
   MIOS32_SYS_TimeSet(t);
 
-  for (f=0;f<2048;f++) {
+  for (f=0;f<num_sectors;f++) {
     if( f_write(&fsrc, tmp_buffer, _MAX_SS, &successcount_wr) != FR_OK ) {
 	  DEBUG_MSG("Failed to write sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
 	  status=-1;
@@ -615,7 +615,7 @@ void SDCARD_Benchmark(void)
   mios32_sys_time_t t1=MIOS32_SYS_TimeGet();
 
   DEBUG_MSG("Write: %d bytes in %d.%d seconds (%d KB/s)\n", (num_bytes), t1.seconds,t1.fraction_ms,
-		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+		(long long)((((long long)num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
   
 
   if( (res=f_open(&fsrc, source, FA_OPEN_EXISTING | FA_READ)) != FR_OK ) {
@@ -638,7 +638,7 @@ void SDCARD_Benchmark(void)
   t1 = MIOS32_SYS_TimeGet();
   
   DEBUG_MSG("Read: %d bytes in %d.%d seconds (%d KB/s)\n",num_bytes,t1.seconds,t1.fraction_ms,
-		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+		(long long)((((long long)num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
 
   f_close(&fsrc);
 
@@ -670,7 +670,7 @@ void SDCARD_Benchmark(void)
   t1 = MIOS32_SYS_TimeGet();
   
   DEBUG_MSG("Copy: %d bytes in %d.%d seconds (%d KB/s)\n",num_bytes,t1.seconds,t1.fraction_ms,
-		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+		(long long)((((long long)num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
 
   f_close(&fdst);
   f_unlink(source);
@@ -704,17 +704,17 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
       MUTEX_SDCARD_TAKE
       if( strncmp(parameter[0], "help", 4) == 0 ) {
 	DEBUG_MSG("Following commands are available:");
-	DEBUG_MSG("  cid:         Display CID structure\n");
-	DEBUG_MSG("  csd:         Display CSD structure\n");
-	DEBUG_MSG("  filesys:     Display filesystem info\n");
-	DEBUG_MSG("  dir:         Display files in current directory\n");
-	DEBUG_MSG("  cd:          Print or Change current directory\n");
-	DEBUG_MSG("  mkdir:       Create new directory\n");
-	DEBUG_MSG("  rename:      Rename/Move file or directory\n");
-	DEBUG_MSG("  copy:        Copy file\n");
-	DEBUG_MSG("  delete:      Delete file or directory\n");
-	DEBUG_MSG("  benchmark:   benchmark (read/write/copy 1MB file)\n");
-	DEBUG_MSG("  format:      Format sdcard *destroys all contents of card*\n");
+	DEBUG_MSG("  cid:                  Display CID structure\n");
+	DEBUG_MSG("  csd:                  Display CSD structure\n");
+	DEBUG_MSG("  filesys:              Display filesystem info\n");
+	DEBUG_MSG("  dir:                  Display files in current directory\n");
+	DEBUG_MSG("  cd <dir>:             Print or Change current directory\n");
+	DEBUG_MSG("  mkdir <dir>:          Create new directory\n");
+	DEBUG_MSG("  rename <src> <dest>:  Rename/Move file or directory\n");
+	DEBUG_MSG("  copy <src> <dest>:    Copy file\n");
+	DEBUG_MSG("  delete <file/dir>:    Delete file or directory\n");
+	DEBUG_MSG("  benchmark <x>:        Benchmark (read/write/copy xMB file)\n");
+	DEBUG_MSG("  format <yes>:         Format sdcard *destroys all contents of card*\n");
       } else if( strncmp(parameter[0], "format", 6) == 0 ) {
 		  if( strncmp(parameter[1], "yes", 3) == 0 ) 
 			SDCARD_Format();
@@ -754,7 +754,10 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	    else
 	      DEBUG_MSG("copy: <source> and <destination> filenames required");
       } else if( strncmp(parameter[0], "benchmark", 9) == 0 ) {
-		SDCARD_Benchmark();
+		int bench=strtol(parameter[1],&parameter[2],0);
+		if (bench<1)
+	      bench=1;
+		SDCARD_Benchmark(bench*2048);
       } else {
 	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
       }
