@@ -39,7 +39,7 @@
 static FATFS fs; // Work area (file system object) for logical drives
 static u8 line_buffer[100];
 static u8 dir_path[MAX_PATH];
-static u8 tmp_buffer[_MAX_SS];
+static u8 tmp_buffer[_MAX_SS]; //_MAX_SS
 static u16 line_ix;
 static u8 disk_label[12];
 static FIL fsrc, fdst; // File handles for copy routine.
@@ -479,6 +479,18 @@ void SDCARD_CD(char *directory)
   return;
 }
 
+void SDCARD_Delete(char *directory)
+{
+  u8 new_path[MAX_PATH];
+  fullpath(directory,(char *)&new_path);
+  if((f_unlink(new_path)) != FR_OK ) {
+    DEBUG_MSG("The system cannot find the file/dir specified");
+  } else {
+    DEBUG_MSG("File or Directory deleted.");
+  }
+  return;
+}
+
 void SDCARD_Mkdir(char *directory)
 {
   u8 new_path[MAX_PATH];
@@ -507,7 +519,6 @@ void SDCARD_Rename(char* source, char* dest)
   return;
 }
 
-
 SDCARD_Copy(char* source, char* dest)
 {
 
@@ -524,17 +535,125 @@ SDCARD_Copy(char* source, char* dest)
   } else {
     if( (res=f_open(&fdst, new_dest, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK ) {
       DEBUG_MSG("Cannot create %s - file exists or invalid path\n", dest);
-	  return;
+          return;
     }
   }
   DEBUG_MSG("Copying %s to %s\n",new_source,new_dest);
 
-  mios32_sys_time_t t=MIOS32_SYS_TimeGet();
-  u32 seconds=t.seconds;
+  mios32_sys_time_t t;
+  t.seconds=0;
+  t.fraction_ms=0;
+
+  MIOS32_SYS_TimeSet(t);
 
   UINT successcount;
   UINT successcount_wr;
   u32 num_bytes = 0;
+  do {
+    if( (res=f_read(&fsrc, tmp_buffer, _MAX_SS, &successcount)) != FR_OK ) {
+          DEBUG_MSG("Failed to read sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
+          successcount=0;
+          status=-1;
+    } else if( f_write(&fdst, tmp_buffer, successcount, &successcount_wr) != FR_OK ) {
+          DEBUG_MSG("Failed to write sector at position 0x%08x, status: %u\n", fdst.fptr, res);
+          status=-1;
+    } else {
+        num_bytes += successcount_wr;
+    }
+  } while( status==0 && successcount > 0 );
+  mios32_sys_time_t t1=MIOS32_SYS_TimeGet();
+  
+  DEBUG_MSG("Copied: %d bytes in %d.%d seconds (%d KB/s)\n",num_bytes,t1.seconds,t1.fraction_ms,
+		(long long)((((long long)num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+
+  f_close(&fdst);
+}
+
+
+void SDCARD_Benchmark(void)
+{
+
+  FRESULT res;
+  s32 status = 0;
+  u8 source[MAX_PATH];
+  u8 dest[MAX_PATH];
+  strcpy(source,"/benchmrk.tmp");
+  strcpy(dest,"/benchmrk.cpy");
+  int f;
+
+  for(f=0;f<_MAX_SS;f++)
+	tmp_buffer[f]='X';
+
+  DEBUG_MSG("benchmark: Starting\n");
+
+  mios32_sys_time_t t;
+  t.seconds=0;
+  t.fraction_ms=0;
+  
+  if( (res=f_open(&fsrc, source, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK ) {
+    DEBUG_MSG("benchmark: Cannot create %s - file exists or invalid path\n", source);
+	return;
+  }
+
+  UINT successcount;
+  UINT successcount_wr;
+  u32 num_bytes = 0;
+
+  MIOS32_SYS_TimeSet(t);
+
+  for (f=0;f<2048;f++) {
+    if( f_write(&fsrc, tmp_buffer, _MAX_SS, &successcount_wr) != FR_OK ) {
+	  DEBUG_MSG("Failed to write sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
+	  status=-1;
+	  break;
+	} else {
+		num_bytes += successcount_wr;
+	}
+  }
+  f_close(&fsrc);
+
+  mios32_sys_time_t t1=MIOS32_SYS_TimeGet();
+
+  DEBUG_MSG("Write: %d bytes in %d.%d seconds (%d KB/s)\n", (num_bytes), t1.seconds,t1.fraction_ms,
+		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+  
+
+  if( (res=f_open(&fsrc, source, FA_OPEN_EXISTING | FA_READ)) != FR_OK ) {
+    DEBUG_MSG("%s doesn't exist!\n", source);
+	return;
+  }
+
+  num_bytes = 0;
+
+  MIOS32_SYS_TimeSet(t);
+
+  do {
+    if( (res=f_read(&fsrc, tmp_buffer, _MAX_SS, &successcount)) != FR_OK ) {
+	  DEBUG_MSG("Failed to read sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
+	} else {
+	num_bytes += successcount;
+    }
+  } while( successcount > 0 );
+
+  t1 = MIOS32_SYS_TimeGet();
+  
+  DEBUG_MSG("Read: %d bytes in %d.%d seconds (%d KB/s)\n",num_bytes,t1.seconds,t1.fraction_ms,
+		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
+
+  f_close(&fsrc);
+
+  if( (res=f_open(&fsrc, source, FA_OPEN_EXISTING | FA_READ)) != FR_OK ) {
+    DEBUG_MSG("%s doesn't exist!\n", source);
+  } else {
+    if( (res=f_open(&fdst, dest, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK ) {
+      DEBUG_MSG("Cannot create %s - file exists or invalid path\n", dest);
+	  return;
+    }
+  }
+
+  MIOS32_SYS_TimeSet(t);
+
+  num_bytes = 0;
   do {
     if( (res=f_read(&fsrc, tmp_buffer, _MAX_SS, &successcount)) != FR_OK ) {
 	  DEBUG_MSG("Failed to read sector at position 0x%08x, status: %u\n", fsrc.fptr, res);
@@ -547,11 +666,15 @@ SDCARD_Copy(char* source, char* dest)
 	num_bytes += successcount_wr;
     }
   } while( status==0 && successcount > 0 );
-  t = MIOS32_SYS_TimeGet();
+
+  t1 = MIOS32_SYS_TimeGet();
   
-  DEBUG_MSG("Copied %d bytes in %d seconds (%d KB/s)!\n", num_bytes,t.seconds-seconds,(num_bytes/1024)/(t.seconds-seconds));
+  DEBUG_MSG("Copy: %d bytes in %d.%d seconds (%d KB/s)\n",num_bytes,t1.seconds,t1.fraction_ms,
+		(u32)(((num_bytes*1000)/((t1.seconds*1000)+t1.fraction_ms))/1000));
 
   f_close(&fdst);
+  f_unlink(source);
+  f_unlink(dest);
 }
 
 
@@ -584,13 +707,19 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	DEBUG_MSG("  cid:         Display CID structure\n");
 	DEBUG_MSG("  csd:         Display CSD structure\n");
 	DEBUG_MSG("  filesys:     Display filesystem info\n");
-	DEBUG_MSG("  dir:     	  Display files in current directory\n");
-	DEBUG_MSG("  cd:    	  Print or Change current directory\n");
+	DEBUG_MSG("  dir:         Display files in current directory\n");
+	DEBUG_MSG("  cd:          Print or Change current directory\n");
 	DEBUG_MSG("  mkdir:       Create new directory\n");
-	DEBUG_MSG("  rename:	  Rename/Move file or directory\n");
+	DEBUG_MSG("  rename:      Rename/Move file or directory\n");
+	DEBUG_MSG("  copy:        Copy file\n");
+	DEBUG_MSG("  delete:      Delete file or directory\n");
+	DEBUG_MSG("  benchmark:   benchmark (read/write/copy 1MB file)\n");
 	DEBUG_MSG("  format:      Format sdcard *destroys all contents of card*\n");
       } else if( strncmp(parameter[0], "format", 6) == 0 ) {
-		SDCARD_Format();
+		  if( strncmp(parameter[1], "yes", 3) == 0 ) 
+			SDCARD_Format();
+		  else
+		    DEBUG_MSG("Please type \"format yes\" to format sd/mmc card");
       } else if( strncmp(parameter[0], "cid", 3) == 0 ) {
 		SDCARD_Read_CID();
       } else if( strncmp(parameter[0], "csd", 3) == 0 ) {
@@ -609,6 +738,11 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	      SDCARD_Mkdir(parameter[1]);
 	    else
 	      DEBUG_MSG("mkdir: No directory specified");
+      } else if( strncmp(parameter[0], "delete", 6) == 0 ) {
+	    if(parameter[1]) 
+	      SDCARD_Delete(parameter[1]);
+	    else
+	      DEBUG_MSG("delete: No file/directory specified");
       } else if( strncmp(parameter[0], "rename", 6) == 0 ) {
 	    if(parameter[1] && parameter[2]) 
 	      SDCARD_Rename(parameter[1],parameter[2]);
@@ -619,6 +753,8 @@ void APP_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	      SDCARD_Copy(parameter[1],parameter[2]);
 	    else
 	      DEBUG_MSG("copy: <source> and <destination> filenames required");
+      } else if( strncmp(parameter[0], "benchmark", 9) == 0 ) {
+		SDCARD_Benchmark();
       } else {
 	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
       }
