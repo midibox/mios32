@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <seq_midi_out.h>
+#include <ff.h>
 
 #include "tasks.h"
 
@@ -394,8 +395,55 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void)
 }
 
 
+
+
+///////////////////////////////////////////////////////////////////
+// These time and date functions and other bits of following code were adapted from 
+// Rickey's world of Microelectronics under the creative commons 2.5 license.
+// http://www.8051projects.net/mmc-sd-interface-fat16/final-code.php
+static void ShowFatTime(u32 ThisTime, char* msg)
+{
+   u8 AM = 1;
+
+   int Hour, Minute, Second;
+
+   Hour = ThisTime >> 11;        // bits 15 through 11 hold Hour...
+   Minute = ThisTime & 0x07E0;   // bits 10 through 5 hold Minute... 0000 0111 1110 0000
+   Minute = Minute >> 5;
+   Second = ThisTime & 0x001F;   //bits 4 through 0 hold Second...   0000 0000 0001 1111
+   
+   if( Hour > 11 )
+   {
+      AM = 0;
+      if( Hour > 12 )
+         Hour -= 12;
+   }
+     
+   sprintf( msg, "%02d:%02d:%02d %s", Hour, Minute, Second*2,
+         (AM)?"AM":"PM");
+   return;
+}
+
+static void ShowFatDate(u32 ThisDate, char* msg)
+{
+
+   int Year, Month, Day;
+
+   Year = ThisDate >> 9;         // bits 15 through 9 hold year...
+   Month = ThisDate & 0x01E0;    // bits 8 through 5 hold month... 0000 0001 1110 0000
+   Month = Month >> 5;
+   Day = ThisDate & 0x001F;      //bits 4 through 0 hold day...    0000 0000 0001 1111
+   sprintf( msg, "%02d/%02d/%02d", Month, Day, Year-20);
+   return;
+}
+
 s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 {
+  FRESULT res;
+  FILINFO fno;
+  DIR dir;
+  int i;
+  char *fn;
   char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
@@ -414,8 +462,8 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   MUTEX_SDCARD_GIVE;
 
   DEBUG_MSG("\n");
-  DEBUG_MSG("Checking SD Card at application layer\n");
-  DEBUG_MSG("=====================================\n");
+  DEBUG_MSG("Reading Root Directory\n");
+  DEBUG_MSG("======================\n");
 
   taskYIELD();
 
@@ -439,7 +487,49 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   DEBUG_MSG("SD Card: %s\n", str_buffer);
 
   taskYIELD();
+
+#if _USE_LFN
+  static char lfn[_MAX_LFN * (_DF1S ? 2 : 1) + 1];
+  fno.lfname = lfn;
+  fno.lfsize = sizeof(lfn);
 #endif
+
+  MUTEX_SDCARD_TAKE;
+  if( (res=f_opendir(&dir, "/")) != FR_OK ) {
+    DEBUG_MSG("Failed to open root directory - error status: %d\n", res);
+  } else {
+    while( (f_readdir(&dir, &fno) == FR_OK) && fno.fname[0] ) {
+#if _USE_LFN
+      fn = *fno.lfname ? fno.lfname : fno.fname;
+#else
+      fn = fno.fname;
+#endif
+      char date[10];
+      ShowFatDate(fno.fdate,(char*)&date);
+      char time[12];
+      ShowFatTime(fno.ftime,(char*)&time);
+      DEBUG_MSG("[%s%s%s%s%s%s%s] %s  %s   %s %u %s\n",
+		(fno.fattrib & AM_RDO ) ? "r" : ".",
+		(fno.fattrib & AM_HID ) ? "h" : ".",
+		(fno.fattrib & AM_SYS ) ? "s" : ".",
+		(fno.fattrib & AM_VOL ) ? "v" : ".",
+		(fno.fattrib & AM_LFN ) ? "l" : ".",
+		(fno.fattrib & AM_DIR ) ? "d" : ".",
+		(fno.fattrib & AM_ARC ) ? "a" : ".",
+		date,time,
+		(fno.fattrib & AM_DIR) ? "<DIR>" : " ",
+		fno.fsize,fn);
+    }
+  }
+  MUTEX_SDCARD_GIVE;
+  taskYIELD();
+
+#endif
+
+  DEBUG_MSG("\n");
+  DEBUG_MSG("Checking SD Card at application layer\n");
+  DEBUG_MSG("=====================================\n");
+
 
   {
     u8 bank;

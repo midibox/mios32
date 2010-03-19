@@ -104,6 +104,9 @@ static s32 SEQ_FILE_MountFS(void);
 // Work area (file system object) for logical drives
 static FATFS fs;
 
+// disk label
+static char disk_label[12];
+
 // complete file structure for read/write accesses
 static FIL seq_file_read;
 static u8 seq_file_read_is_open; // only for safety purposes
@@ -240,6 +243,7 @@ s32 SEQ_FILE_CheckSDCard(void)
 static s32 SEQ_FILE_MountFS(void)
 {
   FRESULT res;
+  DIR dir;
 
   seq_file_read_is_open = 0;
   seq_file_write_is_open = 0;
@@ -249,13 +253,13 @@ static s32 SEQ_FILE_MountFS(void)
     return -1; // error
   }
 
-  char path[10];
-  strcpy(path, "/");
-  static DIR dir;
-  if( (res=f_opendir(&dir, path)) != FR_OK ) {
+  if( (res=f_opendir(&dir, "/")) != FR_OK ) {
     DEBUG_MSG("[SEQ_FILE] Failed to open root directory - error status: %d\n", res);
     return -2; // error
   }
+
+  // TODO: read from master sector
+  disk_label[0] = 0;
 
   volume_available = 1;
 
@@ -270,35 +274,23 @@ static s32 SEQ_FILE_MountFS(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_FILE_UpdateFreeBytes(void)
 {
-  volume_free_bytes = 0xffffffff;
+  FRESULT res;
+  DIR dir;
+  DWORD free_clust;
 
-#if 0
-  // takes very long! (e.g. my SD card has ca. 2000 clusters, 
-  // it takes ca. 3 seconds to determine free clusters)
-  // exit if volume not available
-  if( !volume_available ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-    DEBUG_MSG("[SEQ_FILE] UpdateFreeBytes stopped - no volume!\n");
-#endif
-    return SEQ_FILE_ERR_NO_VOLUME;
+  if( (res=f_opendir(&dir, "/")) != FR_OK ) {
+    DEBUG_MSG("[SEQ_FILE_UpdateFreeBytes] f_opendir failed with status %d!\n", res);
+    return SEQ_FILE_ERR_UPDATE_FREE;
   }
 
-  u32 scratchcache = 0;
-  u32 i;
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE] Starting UpdateFreeBytes, scan for %u clusters\n", vi.numclusters);
+  if( (res=f_getfree("/", &free_clust, &dir.fs)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_UpdateFreeBytes] f_getfree failed with status %d!\n", res);
 #endif
-
-  for(i=2; i<vi.numclusters; ++i) {
-    if( !DFS_GetFAT(&vi, sector, &scratchcache, i) )
-      volume_free_bytes += vi.secperclus * SECTOR_SIZE;
+    return SEQ_FILE_ERR_UPDATE_FREE;
   }
 
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE] Finished UpdateFreeBytes: %u\n", volume_free_bytes);
-#endif
-#endif
+  volume_free_bytes = free_clust * fs.csize * 512;
 
   return 0; // no error
 }
@@ -327,7 +319,6 @@ s32 SEQ_FILE_VolumeAvailable(void)
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_FILE_VolumeBytesFree(void)
 {
-  // TODO
   return volume_free_bytes;
 }
 
@@ -337,12 +328,7 @@ u32 SEQ_FILE_VolumeBytesFree(void)
 /////////////////////////////////////////////////////////////////////////////
 u32 SEQ_FILE_VolumeBytesTotal(void)
 {
-#if 0
-  return vi.numclusters * vi.secperclus * SECTOR_SIZE;
-#else
-  // TODO
-  return 1;
-#endif
+  return (fs.max_clust-2)*fs.csize * 512;
 }
 
 
@@ -351,12 +337,7 @@ u32 SEQ_FILE_VolumeBytesTotal(void)
 /////////////////////////////////////////////////////////////////////////////
 char *SEQ_FILE_VolumeLabel(void)
 {
-#if 0
-  return vi.label;
-#else
-  // TODO
-  return "TODO";
-#endif
+  return disk_label;
 }
 
 
@@ -941,39 +922,6 @@ s32 SEQ_FILE_PrintSDCardInfos(void)
     DEBUG_MSG("- Reserved4: %u\n", csd.Reserved4);
     DEBUG_MSG("--------------------\n");
   }
-  
-  // note: we have to open a directory to update the disk informations (not done by f_mount)
-  char path[100];
-  strcpy(path, "/");
-  if( (res=f_opendir(&dir, path)) != FR_OK ) {
-    DEBUG_MSG("Failed to open root directory - error status: %d\n", res);
-  } else {
-    DEBUG_MSG("Content of root directory:\n");
-    for (;;) {
-      res = f_readdir(&dir, &fileinfo);
-      if (res != FR_OK || fileinfo.fname[0] == 0) break;
-      if (fileinfo.fname[0] == '.') continue;
-      char *fn;
-#if _USE_LFN
-      fn = *fileinfo.lfname ? fileinfo.lfname : fileinfo.fname;
-#else
-      fn = fileinfo.fname;
-#endif
-
-      if (fileinfo.fattrib & AM_DIR) {
-	if( path[0] == '/' && path[1] == 0 )
-	  DEBUG_MSG("%s/\n", fn);
-	else
-	  DEBUG_MSG("%s/\n", path, fn);
-      } else {
-	if( path[0] == '/' && path[1] == 0 )
-	  DEBUG_MSG("%s\n", fn);
-	else
-	  DEBUG_MSG("%s\n", path, fn);
-      }
-    }
-  }
-
 
   return 0; // no error
 }
@@ -1237,13 +1185,13 @@ s32 SEQ_FILE_CreateBackup(void)
     return SEQ_FILE_ERR_NO_VOLUME;
   }
 
-  char src_path[20];
+  char src_path[40];
   sprintf(src_path, "%s/%s", SEQ_FILE_SESSION_PATH, seq_file_session_name);
-  char dst_path[20];
+  char dst_path[40];
   sprintf(dst_path, "%s/%s", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-  char src_file[30];
-  char dst_file[30];
+  char src_file[50];
+  char dst_file[50];
   // We assume that session directory already has been created in seq_ui_menu.c
 
 #define COPY_FILE_MACRO(name) if( status >= 0 ) { \

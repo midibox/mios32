@@ -94,6 +94,7 @@ u8 seq_ui_remote_force_led_update;
 
 u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
+u8 seq_ui_saveall_req;
 
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
@@ -174,6 +175,7 @@ s32 SEQ_UI_Init(u32 mode)
   // misc
   seq_ui_backup_req = 0;
   seq_ui_format_req = 0;
+  seq_ui_saveall_req = 0;
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
