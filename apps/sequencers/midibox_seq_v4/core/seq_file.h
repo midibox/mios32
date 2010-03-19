@@ -51,6 +51,7 @@
 #define SEQ_FILE_ERR_SYSEX_READ       -22 // error while reading .syx file
 #define SEQ_FILE_ERR_MKDIR            -23 // SEQ_FILE_MakeDir() failed
 #define SEQ_FILE_ERR_INVALID_SESSION_NAME -24 // SEQ_FILE_LoadSessionName()
+#define SEQ_FILE_ERR_UPDATE_FREE      -25 // SEQ_FILE_UpdateFreeBytes()
 
 // used by seq_file_b.c
 #define SEQ_FILE_B_ERR_INVALID_BANK    -128 // invalid bank number

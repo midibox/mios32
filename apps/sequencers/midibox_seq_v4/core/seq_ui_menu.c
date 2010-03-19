@@ -77,7 +77,6 @@ static s32 SEQ_UI_MENU_UpdateSessionList(void);
 static s32 DoSessionSave(u8 force_overwrite);
 static s32 DoSessionNew(u8 force_overwrite);
 static s32 OpenSession(void);
-static s32 StoreCurrentSession(void);
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -347,8 +346,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( SEQ_FILE_FormattingRequired() )
 	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "No valid session!", "Create NEW one!");
       else {
-	if( StoreCurrentSession() >= 0 )
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
+	// "save all" done in app.c as background task
+	seq_ui_saveall_req = 1;
+
+	// print message immediately for better "look&feel"
+	// otherwise we could think that the button isn't working
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
       }
       return 1;
 
@@ -356,15 +359,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( SEQ_FILE_FormattingRequired() )
 	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "No valid session!", "Create NEW one!");
       else {
-	if( StoreCurrentSession() >= 0 ) {
-	  // initialize keypad editor
-	  SEQ_UI_KeyPad_Init();
-	  int i;
-	  for(i=0; i<8; ++i)
-	    dir_name[i] = ' ';
-	  ui_selected_item = 0;
-	  menu_dialog = MENU_DIALOG_SAVE_AS;
-	}
+	// "save all" done in app.c as background task
+	seq_ui_saveall_req = 1;
+
+	// enter keypad editor anyhow
+	// initialize keypad editor
+	SEQ_UI_KeyPad_Init();
+	int i;
+	for(i=0; i<8; ++i)
+	  dir_name[i] = ' ';
+	ui_selected_item = 0;
+	menu_dialog = MENU_DIALOG_SAVE_AS;
       }
       return 1;
     }
@@ -900,36 +905,6 @@ static s32 OpenSession(void)
   MUTEX_SDCARD_TAKE;
   status |= SEQ_FILE_StoreSessionName();
   MUTEX_SDCARD_GIVE;
-
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Stores the current session
-/////////////////////////////////////////////////////////////////////////////
-static s32 StoreCurrentSession(void)
-{
-  s32 status = 0;
-
-  MUTEX_SDCARD_TAKE;
-
-  // store all patterns
-  int group;
-  for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
-    status |= SEQ_FILE_B_PatternWrite(seq_pattern[group].bank, seq_pattern[group].pattern, group);
-
-  // store config (e.g. to store current song/mixermap/pattern numbers
-  SEQ_FILE_C_Write();
-
-  // store session name
-  status |= SEQ_FILE_StoreSessionName();
-
-  MUTEX_SDCARD_GIVE;
-
-  if( status < 0 ) {
-    SEQ_UI_SDCardErrMsg(2000, status);
-    return status;
-  }
 
   return 0; // no error
 }

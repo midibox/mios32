@@ -290,6 +290,7 @@ extern u8 seq_ui_remote_force_led_update;
 
 extern u8 seq_ui_backup_req;
 extern u8 seq_ui_format_req;
+extern u8 seq_ui_saveall_req;
 
 extern u8 seq_ui_blm_scalar_force_update;
 
