@@ -746,7 +746,10 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 	  MIOS32_SPI2_SET_SCLK_0;
 	  break;
 
-        case MIOS32_SPI_MODE_CLK0_PHASE1:
+// This is TK's original implementation which doesn't quite work
+// with the microvga device.
+#if 0
+	    case MIOS32_SPI_MODE_CLK0_PHASE1:
 	  // not tested on real HW yet!
 	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
 	  MIOS32_SPI2_SET_SCLK_1;
@@ -781,6 +784,44 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_0;
 	  break;
+	  
+// modified to support microvga, needs testing with other h/w
+#else
+        case MIOS32_SPI_MODE_CLK0_PHASE1:	
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
+	  MIOS32_SPI2_SET_SCLK_0;
+	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  break;
+#endif
 
         case MIOS32_SPI_MODE_CLK1_PHASE0:
 	  // not tested on real HW yet!
