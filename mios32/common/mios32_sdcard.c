@@ -713,7 +713,7 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
   csd->DSRImpl = (csd_buffer[6] & 0x10) >> 4;
   csd->Reserved2 = 0; /* Reserved */
   
-  if (csd->CSDStruct == 0) { //SD V1
+  if (csd->CSDStruct != 1) { //SD V1
 	csd->DeviceSize = (csd_buffer[6] & 0x03) << 10;
 	/* Byte 7 */
 	csd->DeviceSize |= (csd_buffer[7]) << 2;
