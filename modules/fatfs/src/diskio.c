@@ -19,7 +19,7 @@
 
 // Note: verbose level 1 is default - it prints error messages
 // and useful info messages during backups
-#define DEBUG_VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 2
 
 
 /*-----------------------------------------------------------------------*/
@@ -179,10 +179,10 @@ DRESULT disk_ioctl (
 	  MIOS32_SDCARD_CSDRead(&csd);
 	  u32 sectors;
 	  if (csd.CSDStruct==1) // SD V2 
-  	    sectors = (DWORD)(csd.DeviceSize+1)<<10;
-      else // V1 or MMC
-		sectors = (DWORD)(csd.DeviceSize+1) << (csd.RdBlockLen + csd.DeviceSizeMul - 7);
-	
+  	    sectors = (DWORD)(csd.DeviceSize + 1) << 10;
+      else { // V1 and MMC cards use the same (size << multiplier) scheme.
+		sectors = (DWORD)(csd.DeviceSize + 1) << (csd.DeviceSizeMul + 2);
+	  }
 	  *(DWORD*)buff=sectors;
       res= RES_OK;
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -210,11 +210,15 @@ DRESULT disk_ioctl (
       // return 1. This command is used in only f_mkfs function.
 	  MIOS32_SDCARD_CSDRead(&csd);
 	  u32 size;
-	  if (csd.CSDStruct==1)  // SD V2
-		size = 16UL << (csd.DeviceSizeMul);
-	  else // SD v1
-	    size = (DWORD)(csd.EraseGrSize+1)*(csd.MaxWrBlockLen);
-		
+	  if (csd.CSDStruct==1){  // SD V2
+		// Some SDHC cards seem to report block size differently.
+		// Try one way, if result is too small, try another! 
+		size = 16UL << (csd.DeviceSizeMul >> 4);
+		if (size<2)
+			size = 16UL << (csd.DeviceSizeMul);
+	  } else { // SD v1
+	    size = (DWORD)(csd.EraseGrSize)*(csd.MaxWrBlockLen);
+	  }
 	  res=RES_OK;
 		
 	  *(DWORD*)buff = size;
