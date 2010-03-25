@@ -20,7 +20,8 @@ typedef enum UW_Type
     UW_ICON			= 5,
     UW_LISTBOX		= 6,
 	UW_FADER		= 100,
-	UW_POT			= 101
+	UW_POT			= 101,
+	UW_ENVELOPE		= 102
 } UW_Type;
 
 typedef	struct 
