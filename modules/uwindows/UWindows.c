@@ -633,7 +633,7 @@ static void UW_DrawCircle(s32 xpos, s32 ypos, s32 r, u16 color)
 
 
 
-static void UW_DrawLine(s32 x1, s32 y1, s32 x2, s32 y2,u16 color)
+void UW_DrawLine(s32 x1, s32 y1, s32 x2, s32 y2,u16 color)
 {
 	u8 x, y;
 	signed int a, c;
@@ -1105,6 +1105,31 @@ static void UW_DrawItem(UW_Window * pstrItem)
 	{
 			UW_DrawCircle(pstrItem->Absx,pstrItem->Absy,pstrItem->length,BLACK); 
 			UW_DrawLine(pstrItem->Absx,pstrItem->Absy, pstrItem->Absx+(pstrItem->length>>1), pstrItem->Absy+(pstrItem->length>>1),BLACK);
+	}		
+	else if (pstrItem->type == UW_ENVELOPE)
+	{
+	  UW_DrawRect(pstrItem->Absx, pstrItem->Absy, pstrItem->length, pstrItem->height, BLACK);
+
+	  int offsetX = pstrItem->Absx + (pstrItem->length-4*2*16)/2;
+	  int offsetY = pstrItem->Absy + (pstrItem->height-2*16)/2;
+	  int envA = (pstrItem->value >>  0) & 0xf;
+	  int envD = (pstrItem->value >>  4) & 0xf;
+	  int envS = (pstrItem->value >>  8) & 0xf;
+	  int envR = (pstrItem->value >> 12) & 0xf;
+
+	  int aOffsetX = offsetX + envA*2;
+	  int aOffsetY = offsetY + 16*2;
+	  int dOffsetX = aOffsetX + envD*2;
+	  int dOffsetY = offsetY + envS*2;
+	  int sOffsetX = dOffsetX + 2*16;
+	  int sOffsetY = dOffsetY;
+	  int rOffsetX = sOffsetX + envR*2;
+	  int rOffsetY = offsetY;
+
+	  UW_DrawLine(offsetX, offsetY, aOffsetX, aOffsetY, BLUE);
+	  UW_DrawLine(aOffsetX, aOffsetY, dOffsetX, dOffsetY, BLUE);
+	  UW_DrawLine(dOffsetX, dOffsetY, sOffsetX, sOffsetY, BLUE);
+	  UW_DrawLine(sOffsetX, sOffsetY, rOffsetX, rOffsetY, BLUE);
 	}		
 	
 	list_for_each(pos, &pstrItem->items)
