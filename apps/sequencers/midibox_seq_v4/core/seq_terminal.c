@@ -460,6 +460,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   MUTEX_SDCARD_TAKE;
   SEQ_FILE_PrintSDCardInfos();
   MUTEX_SDCARD_GIVE;
+#endif
 
   DEBUG_MSG("\n");
   DEBUG_MSG("Reading Root Directory\n");
@@ -522,9 +523,8 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
     }
   }
   MUTEX_SDCARD_GIVE;
-  taskYIELD();
 
-#endif
+  taskYIELD();
 
   DEBUG_MSG("\n");
   DEBUG_MSG("Checking SD Card at application layer\n");
