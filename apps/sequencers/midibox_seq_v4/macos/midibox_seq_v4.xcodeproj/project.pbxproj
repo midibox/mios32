@@ -38,7 +38,6 @@
 		523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */; };
 		5240A23E0FD0857E00681363 /* seq_ui_disk.c in Sources */ = {isa = PBXBuildFile; fileRef = 5240A23D0FD0857E00681363 /* seq_ui_disk.c */; };
 		52417A630FB6DECF00D84E75 /* seq_ui_bpm_presets.c in Sources */ = {isa = PBXBuildFile; fileRef = 52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */; };
-		524682C20F3F15FC006D2FBE /* DOSFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */; };
 		524A6FF90FB63949006134D1 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 524A6FF70FB63949006134D1 /* aout.c */; };
 		524A700A0FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */; };
 		524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */ = {isa = PBXBuildFile; fileRef = 524AE14C0F8696BF008C64B8 /* seq_record.c */; };
@@ -56,6 +55,8 @@
 		526B84EE0EF6C1CE0092E5B3 /* seq_pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 526B84EB0EF6C1CE0092E5B3 /* seq_pattern.c */; };
 		526B84EF0EF6C1CE0092E5B3 /* seq_ui_mute.c in Sources */ = {isa = PBXBuildFile; fileRef = 526B84EC0EF6C1CE0092E5B3 /* seq_ui_mute.c */; };
 		526B84F00EF6C1CE0092E5B3 /* seq_ui_pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 526B84ED0EF6C1CE0092E5B3 /* seq_ui_pattern.c */; };
+		526C0065116136F600AE9208 /* FATFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 526C0064116136F600AE9208 /* FATFS_Wrapper.m */; };
+		526C00A811624A4A00AE9208 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 526C00A711624A4A00AE9208 /* FATFS_Wrapper_Dir.c */; };
 		526DA2D20F12C93A00ED244D /* seq_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 526DA2D00F12C93A00ED244D /* seq_file.c */; };
 		526DA2D30F12C93A00ED244D /* seq_file_b.c in Sources */ = {isa = PBXBuildFile; fileRef = 526DA2D10F12C93A00ED244D /* seq_file_b.c */; };
 		526F87CF0EEA126A00441997 /* Bugs.html in Resources */ = {isa = PBXBuildFile; fileRef = 526F879C0EEA126A00441997 /* Bugs.html */; };
@@ -230,8 +231,6 @@
 		523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_stepsel.c; path = ../core/seq_ui_stepsel.c; sourceTree = SOURCE_ROOT; };
 		5240A23D0FD0857E00681363 /* seq_ui_disk.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_disk.c; path = ../core/seq_ui_disk.c; sourceTree = SOURCE_ROOT; };
 		52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bpm_presets.c; path = ../core/seq_ui_bpm_presets.c; sourceTree = SOURCE_ROOT; };
-		524682C00F3F15FC006D2FBE /* DOSFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOSFS_Wrapper.h; sourceTree = "<group>"; };
-		524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOSFS_Wrapper.m; sourceTree = "<group>"; };
 		524A6FF70FB63949006134D1 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
 		524A6FF80FB63949006134D1 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
 		524A70080FB63AF5006134D1 /* MIOS32_SPI_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SPI_Wrapper.h; sourceTree = "<group>"; };
@@ -260,6 +259,9 @@
 		526B84EB0EF6C1CE0092E5B3 /* seq_pattern.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_pattern.c; path = ../core/seq_pattern.c; sourceTree = SOURCE_ROOT; };
 		526B84EC0EF6C1CE0092E5B3 /* seq_ui_mute.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_mute.c; path = ../core/seq_ui_mute.c; sourceTree = SOURCE_ROOT; };
 		526B84ED0EF6C1CE0092E5B3 /* seq_ui_pattern.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_pattern.c; path = ../core/seq_ui_pattern.c; sourceTree = SOURCE_ROOT; };
+		526C0063116136F600AE9208 /* FATFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FATFS_Wrapper.h; sourceTree = "<group>"; };
+		526C0064116136F600AE9208 /* FATFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FATFS_Wrapper.m; sourceTree = "<group>"; };
+		526C00A711624A4A00AE9208 /* FATFS_Wrapper_Dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FATFS_Wrapper_Dir.c; sourceTree = "<group>"; };
 		526DA2D00F12C93A00ED244D /* seq_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file.c; path = ../core/seq_file.c; sourceTree = SOURCE_ROOT; };
 		526DA2D10F12C93A00ED244D /* seq_file_b.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_b.c; path = ../core/seq_file_b.c; sourceTree = SOURCE_ROOT; };
 		526DA2E10F12C9D300ED244D /* dosfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dosfs.h; path = ../../../../modules/dosfs/dosfs.h; sourceTree = SOURCE_ROOT; };
@@ -449,6 +451,9 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				526C00A711624A4A00AE9208 /* FATFS_Wrapper_Dir.c */,
+				526C0063116136F600AE9208 /* FATFS_Wrapper.h */,
+				526C0064116136F600AE9208 /* FATFS_Wrapper.m */,
 				524A70080FB63AF5006134D1 /* MIOS32_SPI_Wrapper.h */,
 				524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */,
 				522A0DB60E8FE5B90084B1EE /* UI.h */,
@@ -485,8 +490,6 @@
 				52BBD94B0F12CD1F00C76C61 /* MIOS32_SDCARD_Wrapper.m */,
 				5282AE070F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.h */,
 				5282AE080F18BB7200901181 /* MIOS32_STOPWATCH_Wrapper.m */,
-				524682C00F3F15FC006D2FBE /* DOSFS_Wrapper.h */,
-				524682C10F3F15FC006D2FBE /* DOSFS_Wrapper.m */,
 				525250530FFA81CA006A6EAE /* Tasks.h */,
 				525250540FFA81CA006A6EAE /* Tasks.m */,
 			);
@@ -967,7 +970,6 @@
 				52077B620F3113AB002E2E55 /* seq_ui_trgsel.c in Sources */,
 				525E4C570F3B996400B29461 /* seq_groove.c in Sources */,
 				525E4C580F3B996400B29461 /* seq_ui_trkgrv.c in Sources */,
-				524682C20F3F15FC006D2FBE /* DOSFS_Wrapper.m in Sources */,
 				525B4B690F3F86A40077C87B /* seq_humanize.c in Sources */,
 				5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */,
 				52ECBDCC0F76DD1F00576C54 /* seq_file_s.c in Sources */,
@@ -1014,6 +1016,8 @@
 				52ACD11B10B8E4E30004F46F /* seq_midi_blm.c in Sources */,
 				52D90E821141CFA10054119B /* seq_statistics.c in Sources */,
 				52D90E831141CFA10054119B /* seq_terminal.c in Sources */,
+				526C0065116136F600AE9208 /* FATFS_Wrapper.m in Sources */,
+				526C00A811624A4A00AE9208 /* FATFS_Wrapper_Dir.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1084,6 +1088,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/fatfs/src,
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
 					../../../../include/mios32,
@@ -1112,6 +1117,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/fatfs/src,
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
 					../../../../include/mios32,
