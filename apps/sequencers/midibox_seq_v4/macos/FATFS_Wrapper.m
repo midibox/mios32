@@ -95,7 +95,7 @@ FRESULT f_open (
     char fullPathC[1024];
     [fullPath getCString:fullPathC];
 
-	NSLog(@"Opening '%s'\n", fullPathC);
+	//NSLog(@"Opening '%s'\n", fullPathC);
 	FILE *f = NULL;
 	if( mode & FA_WRITE ) {
         if( (mode & FA_CREATE_NEW) ) {
@@ -121,7 +121,7 @@ FRESULT f_open (
 	rewind(f);
 	fp->fptr = 0;
 
-	NSLog(@"Len: %d\n", fp->fsize);
+	//NSLog(@"Len: %d\n", fp->fsize);
 
 	// mis-use pointer to dir entry to store file reference
     fp->dir_ptr = (FATFS*)f;

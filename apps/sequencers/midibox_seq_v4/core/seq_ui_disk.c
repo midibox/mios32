@@ -52,7 +52,6 @@
 #define EXPORT_ITEM_MEASURES   4
 #define EXPORT_ITEM_STEPS_P_M  5
 
-
 // MIDI File dialog screens
 #define MF_DIALOG_NONE          0
 #define MF_DIALOG_PLAY          1
@@ -103,7 +102,7 @@ static s32 LED_Handler(u16 *gp_leds)
       break;
 
     case MF_DIALOG_IMPORT:
-      // no LED functions yet
+      *gp_leds = (3 << (2*ui_selected_item));
       break;
 
     case MF_DIALOG_EXPORT:
@@ -163,7 +162,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9: {
 	  // select Play/Stop
-	  u8 value = SEQ_MIDPLY_RunModeGet();;
+	  u8 value = SEQ_MIDPLY_RunModeGet();
 	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
 	    SEQ_MIDPLY_RunModeSet(value, 1);
 	    if( value ) {
@@ -196,7 +195,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case SEQ_UI_ENCODER_GP11:
         case SEQ_UI_ENCODER_GP12: {
 	  // select exclusive/parallel
-	  u8 value = SEQ_MIDPLY_ModeGet();;
+	  u8 value = SEQ_MIDPLY_ModeGet();
 	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
 	    SEQ_MIDPLY_ModeSet(value);
 	    return 1;
@@ -236,7 +235,84 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     ///////////////////////////////////////////////////////////////////////////
     case MF_DIALOG_IMPORT:
-      // no encoder functions yet
+      switch( encoder ) {
+        case SEQ_UI_ENCODER_GP9: {
+	  u8 value = SEQ_MIDIMP_ModeGet();
+
+	  if( incrementer == 0 ) // toggle function via button
+	    if( value >= 1 )
+	      incrementer = -value;
+	    else
+	      incrementer = 1;
+
+	  if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
+	    SEQ_MIDIMP_ModeSet(value);
+	    return 1;
+	  }
+	  return 0;
+	} break;
+
+        case SEQ_UI_ENCODER_GP10:
+        case SEQ_UI_ENCODER_GP11: {
+	  // select number of layers (4/8/16)
+	  u8 value = SEQ_MIDIMP_NumLayersGet();
+	  u8 selection = 0;
+	  if( value == 8 )
+	    selection = 1;
+	  if( value == 16 )
+	    selection = 2;
+
+	  if( incrementer == 0 ) // toggle function via button
+	    if( selection >= 2 )
+	      incrementer = -selection;
+	    else
+	      incrementer = 1;
+
+	  if( SEQ_UI_Var8_Inc(&selection, 0, 2, incrementer) ) {
+	    u8 num_layers = 4;
+	    if( selection == 1 )
+	      num_layers = 8;
+	    else if( selection == 2 )
+	      num_layers = 16;
+	    SEQ_MIDIMP_NumLayersSet(num_layers);
+	    return 1;
+	  }
+	  return 0;
+	} break;
+
+        case SEQ_UI_ENCODER_GP12:
+        case SEQ_UI_ENCODER_GP13: {
+	  u8 value = SEQ_MIDIMP_ResolutionGet();
+
+	  if( incrementer == 0 ) // toggle function via button
+	    if( value >= 2 )
+	      incrementer = -value;
+	    else
+	      incrementer = 1;
+
+	  if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
+	    SEQ_MIDIMP_ResolutionSet(value);
+	    return 1;
+	  }
+	  return 0;
+	} break;
+
+        case SEQ_UI_ENCODER_GP14:
+        case SEQ_UI_ENCODER_GP15:
+	  return -1; // not mapped (yet)
+
+        case SEQ_UI_ENCODER_GP16:
+	  // EXIT only via button
+	  if( incrementer == 0 ) {
+	    ui_selected_item = 0;
+	    mf_dialog = MF_DIALOG_NONE;
+	  }
+	  return 1;
+
+        default:
+	  if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
+	    SEQ_UI_DISK_UpdateDirList();
+      }
       break;
 
 
@@ -521,14 +597,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
           return 1;
     
         case ITEM_MF_IMPORT:
-#if 0
           // switch to MIDI File Import Dialog screen
 	  ui_selected_item = 0;
           mf_dialog = MF_DIALOG_IMPORT;
           SEQ_UI_DISK_UpdateDirList();
-#else
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Not implemented", "yet!");
-#endif
           return 1;
     
         case ITEM_MF_EXPORT:
@@ -653,8 +725,39 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case MF_DIALOG_IMPORT:
       if( depressed ) return 0; // ignore when button depressed
     
-      // no button functions yet
-      break;
+      if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
+
+	if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 )
+	    return Encoder_Handler(button, 0);
+	else {
+	  if( button != SEQ_UI_BUTTON_Select )
+	    ui_selected_item = button / 2;
+
+	  if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
+	    // Import MIDI File
+	    char mid_file[20];
+	    int i;
+	    char *p = (char *)&mid_file[0];
+	    for(i=0; i<8; ++i) {
+	      char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+	      if( c != ' ' )
+		*p++ = c;
+	    }
+	    *p++ = 0;
+
+	    char path[40];
+	    sprintf(path, "/MIDI/%s.MID", mid_file);
+
+	    s32 status = SEQ_MIDIMP_ReadFile(path, 1);
+
+	    if( status >= 0 )
+	      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Imported:", path);
+	    else
+	      SEQ_UI_SDCardErrMsg(2000, status);
+	  }
+	}
+      }
+      return 1;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -780,6 +883,11 @@ static s32 LCD_Handler(u8 high_prio)
   //                                           enabled           Import  Export  Play
 
 
+  // MIDI Files Import dialog:
+  // Select MIDI File (10 files found)       Mode Max.Layers Resolution              
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Note      8        16th   (8 Bars)  EXIT
+
+
   // MIDI Files Play dialog:
   // Select MIDI File (10 files found)       Start Loop Playmode  Port               
   //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Play   on  exclusive Def.           EXIT
@@ -867,6 +975,58 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(11);
       SEQ_LCD_PrintString("EXIT");
       break;
+
+
+    case MF_DIALOG_IMPORT: {
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 0);
+      SEQ_LCD_PrintSpaces(40);
+
+      SEQ_LCD_CursorSet(0, 0);
+      if( dir_num_items < 0 ) {
+	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	  SEQ_LCD_PrintString("/MIDI directory not found on SD Card!");
+	else
+	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
+      } else if( dir_num_items == 0 ) {
+	SEQ_LCD_PrintFormattedString("No MIDI files found under /MIDI!");
+      } else {
+	SEQ_LCD_PrintFormattedString("Select MIDI File (%d files found)", dir_num_items);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("Mode Max.Layers Resolution              ");
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 1);
+
+      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
+
+      if( SEQ_MIDIMP_ModeGet() == SEQ_MIDIMP_MODE_AllDrums )
+	SEQ_LCD_PrintString("Drum ");
+      else
+	SEQ_LCD_PrintString("Note ");
+
+      u8 step_resolution;
+      switch( SEQ_MIDIMP_ResolutionGet() ) {
+      case 1: step_resolution = 32; break;
+      case 2: step_resolution = 64; break;
+      default: step_resolution = 16;
+      }
+      SEQ_LCD_PrintSpaces(4);
+      SEQ_LCD_PrintFormattedString("%2d", SEQ_MIDIMP_NumLayersGet());
+      SEQ_LCD_PrintSpaces(4+1+3);
+
+      SEQ_LCD_PrintFormattedString("%2dth", step_resolution);
+      SEQ_LCD_PrintSpaces(3);
+
+      int max_bars = SEQ_MIDIMP_MaxBarsGet();
+      SEQ_LCD_PrintFormattedString("(%d Bar%s)  ", max_bars, max_bars == 1 ? "" : "s");
+      SEQ_LCD_CursorSet(80-5, 1);
+      SEQ_LCD_PrintString(" EXIT");
+    } break;
+
 
     case MF_DIALOG_EXPORT: {
       seq_midexp_mode_t midexp_mode = SEQ_MIDEXP_ModeGet();
@@ -1198,8 +1358,16 @@ static s32 DoExport(u8 force_overwrite)
     return -4;
   }
 
-  dir_name[8] = 0;
-  sprintf(path, "/MIDI/%s.MID", dir_name);
+  char mid_file[20];
+  char *p = (char *)&mid_file[0];
+  for(i=0; i<8; ++i) {
+    char c = dir_name[i];
+    if( c != ' ' )
+      *p++ = c;
+  }
+  *p++ = 0;
+
+  sprintf(path, "/MIDI/%s.MID", mid_file);
 
   MUTEX_SDCARD_TAKE;
   status = SEQ_FILE_FileExists(path);

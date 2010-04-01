@@ -56,23 +56,24 @@ static const char preset_labels[][16] = {
 };
 
 
+// order must match with seq_layer_preset_table_drum_notes in seq_layer.c
 static const char preset_drum[][6] = {
   " BD  ",
   " SD  ",
+  " CH  ",
+  " PH  ",
+  " OH  ",
+  " MA  ",
+  " CP  ",
+  " CY  ",
   " LT  ",
   " MT  ",
   " HT  ",
-  " CP  ",
-  " MA  ",
   " RS  ",
   " CB  ",
-  " CY  ",
-  " OH  ",
-  " CH  ",
   "Smp1 ",
   "Smp2 ",
-  "Smp3 ",
-  "Smp4 "
+  "Smp3 "
 };
 
 

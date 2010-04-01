@@ -116,10 +116,6 @@ s32 SEQ_MIDPLY_Init(u32 mode)
   // init MIDI parser module
   MID_PARSER_Init(0);
 
-  // install callback functions
-  MID_PARSER_InstallFileCallbacks(&SEQ_MIDPLY_read, &SEQ_MIDPLY_eof, &SEQ_MIDPLY_seek);
-  MID_PARSER_InstallEventCallbacks(&SEQ_MIDPLY_PlayEvent, &SEQ_MIDPLY_PlayMeta);
-
   // no unplayed note off events
   int chn, i;
   for(chn=0; chn<UNPLAYED_NOTE_OFF_CHN_NUM; ++chn)
@@ -246,6 +242,12 @@ u32 SEQ_MIDPLY_SynchTickGet(void)
 s32 SEQ_MIDPLY_ReadFile(char *path)
 {
   s32 status;
+
+  // install callback functions
+  MIOS32_IRQ_Disable();
+  MID_PARSER_InstallFileCallbacks(&SEQ_MIDPLY_read, &SEQ_MIDPLY_eof, &SEQ_MIDPLY_seek);
+  MID_PARSER_InstallEventCallbacks(&SEQ_MIDPLY_PlayEvent, &SEQ_MIDPLY_PlayMeta);
+  MIOS32_IRQ_Enable();
 
   // ensure exclusive access to parser (this routine could be interrupted by sequencer handler)
   MUTEX_MIDIOUT_TAKE;
@@ -552,7 +554,7 @@ s32 SEQ_MIDPLY_Tick(u32 bpm_tick)
 // reads <len> bytes from the .mid file into <buffer>
 // returns number of read bytes
 /////////////////////////////////////////////////////////////////////////////
-u32 SEQ_MIDPLY_read(void *buffer, u32 len)
+static u32 SEQ_MIDPLY_read(void *buffer, u32 len)
 {
   s32 status;
 

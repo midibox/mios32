@@ -6,6 +6,60 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta19
+~~~~~~~~~~~~~~~~~~~~~
+
+  o changed order of instruments in initial drum map
+    (HiHats now at position 3, 4 and 5)
+
+  o implemented MIDI file import function (UTILITY->DISK->IMPORT)
+
+    MIDI files have to be copied into the /midi directory of the SD Card.
+
+    All tracks are imported at once (up to 16) in the same order they are stored
+    in the .mid file. Accordingly, track assignments can be done within the
+    .mid file before it is imported (e.g. edit the .mid file with your DAW)
+
+    Currently only MIDI Notes and drums are supported (no CCs, no Pitchbender).
+
+    To import drum tracks, change the import mode from "Note" to "Drum". This
+    mode especially allows to control the velocity of each step separately.
+    Currently drum instruments are only mapped to a pre-selection of 4/8/16
+    notes - this map cannot be customized yet!
+
+    Since MIDIbox SEQ is a step sequencer, notes will be quantised with a
+    selectable resolution (16th, 32th or 64th).
+
+    Also the number of layers/drum instruments is selectable (4, 8 or 16). 
+    Than more layers are available, than more notes can be played at the 
+    same step. In "Note" mode, all notes share the same velocity and length 
+    value, in "Drum" mode each step and instrument has a dedicated velocity
+    value.
+
+    If the imported track contains different velocity or length values for
+    polyphonic played notes, and this characteristic is important, it is 
+    recommented to split the track into multiple pieces (e.g. for long and
+    for short notes) and to import them into separate MBSEQ tracks.
+
+    Another hint: if notes of the imported track don't start exactly at the
+    16th/32th/64th note position (e.g. because they have a "swing" feel), it
+    is recommented to quantize the notes in a DAW before the import.
+    The swing feel can be added again after the import (GROOVE page).
+
+    All tracks will be initialized depending on the selected resolution and
+    layers before the import is started. Than higher the resolution, or than more
+    layers are selected, than less bars can be imported (number of bars is displayed
+    on screen).
+
+    The MIDI port will always be set to DEFAULT during import. The MIDI channel will
+    be set to the channel of the first played note (for each track separately).
+
+    MIDI Files can be imported while the sequencer is running. This allows you to
+    search for a certain file, but also to try different parameters during runtime.
+
+  o some minor bugfixes
+
+
 MIDIboxSEQ V4.0beta18
 ~~~~~~~~~~~~~~~~~~~~~
 

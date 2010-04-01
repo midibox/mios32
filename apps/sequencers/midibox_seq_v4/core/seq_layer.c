@@ -91,24 +91,24 @@ static const u8 seq_layer_preset_table_static[][2] = {
 };
 
 
-// initial drum notes
+// initial drum notes (order must match with preset_dum in seq_label.c)
 static const u8 seq_layer_preset_table_drum_notes[16] = {
-  0x24,
-  0x26,
-  0x29,
-  0x2b,
-  0x2f,
-  0x27,
-  0x46,
-  0x4b,
-  0x38,
-  0x31,
-  0x2e,
-  0x2a,
-  0x2c,
-  0x3c,
-  0x3d,
-  0x4c
+  0x24, // BD
+  0x26, // SD
+  0x2a, // CH
+  0x2c, // PH
+  0x2e, // OH
+  0x46, // MA
+  0x27, // CP
+  0x37, // CY
+  0x29, // LT
+  0x2b, // MT
+  0x2f, // HT
+  0x4b, // RS
+  0x38, // CB
+  0x2c, // Smp1
+  0x3c, // Smp2
+  0x3d  // Smp3
 };
 
 
@@ -617,6 +617,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
+	  for(i=4; i<16; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Note);
 
 	  for(i=0; i<16; ++i)
 	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
@@ -645,8 +647,11 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	  if( SEQ_PAR_NumLayersGet(track) > 1 ) {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
-	  } else {
+	  } else if( SEQ_TRG_NumLayersGet(track) > 1 ) {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Roll);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
+	  } else {
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
 	  }
 

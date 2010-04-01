@@ -489,6 +489,17 @@ s32 SEQ_FILE_ReadOpen(seq_file_t* file, char *filepath)
   DEBUG_MSG("[SEQ_FILE] found '%s' of length %u\n", filepath, seq_file_read.fsize);
 #endif
 
+  // store current file variables in seq_file_t
+  file->flag = seq_file_read.flag;
+  file->csect = seq_file_read.csect;
+  file->fptr = seq_file_read.fptr;
+  file->fsize = seq_file_read.fsize;
+  file->org_clust = seq_file_read.org_clust;
+  file->curr_clust = seq_file_read.curr_clust;
+  file->dsect = seq_file_read.dsect;
+  file->dir_sect = seq_file_read.dir_sect;
+  file->dir_ptr = seq_file_read.dir_ptr;
+
   // file is opened
   seq_file_read_is_open = 1;
 
