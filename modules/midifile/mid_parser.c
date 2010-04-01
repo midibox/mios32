@@ -63,6 +63,8 @@ static u16 midifile_ppqn;
 static u8 midi_tracks_num;
 static midi_track_t midi_tracks[MID_PARSER_MAX_TRACKS];
 
+static u8 meta_buffer[MID_PARSER_META_BUFFER_SIZE];
+
 // callback functions
 static u32 (*mid_parser_read_callback)(void *buffer, u32 len);
 static s32 (*mid_parser_eof_callback)(void);
@@ -306,32 +308,36 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	mt->file_pos += mid_parser_read_callback(&meta, 1);
 	u32 length = (u32)MID_PARSER_ReadVarLen(&mt->file_pos);
 
-	// try to allocate memory for the temporary buffer
-	u8 *buffer;
-	if( mid_parser_playmeta_callback != NULL && (buffer=(u8 *)pvPortMalloc(length+1)) != NULL ) {
-#if DEBUG_VERBOSE_LEVEL >= 3
-	  DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes\n\r", track, mt->tick, meta, length);
+	if( mid_parser_playmeta_callback != NULL ) {
+	  u32 buflen = length;
+	  if( buflen > (MID_PARSER_META_BUFFER_SIZE-1) ) {
+	    buflen = MID_PARSER_META_BUFFER_SIZE - 1;
+#if DEBUG_VERBOSE_LEVEL >= 2
+	    DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes - cut at %u bytes!\n\r", track, mt->tick, meta, length, buflen);
 #endif
-	  if( length ) {
-	    // copy bytes into buffer
-	    mt->file_pos += mid_parser_read_callback(buffer, length);
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 3
+	    DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes\n\r", track, mt->tick, meta, buflen);
+#endif
 	  }
-	  buffer[length] = 0; // terminate with 0 for the case that a string has been transfered
+
+	  if( buflen ) {
+	    // copy bytes into buffer
+	    mt->file_pos += mid_parser_read_callback(meta_buffer, buflen);
+
+	    if( length > buflen ) {
+	      // no free memory: dummy reads
+	      int i;
+	      u8 dummy;
+	      for(i=buflen; i<length; ++i)
+		mt->file_pos += mid_parser_read_callback(&dummy, 1);
+	    }
+	  }
+
+	  meta_buffer[buflen] = 0; // terminate with 0 for the case that a string has been transfered
 	  
 	  // -> forward to callback function
-	  mid_parser_playmeta_callback(track, meta, length, buffer, mt->tick);
-
-	  // free buffer
-	  vPortFree(buffer);
-	} else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes - ERROR: couldn't allocate memory\n\r", track, mt->tick, meta, length);
-#endif
-	  // no free memory: dummy reads
-	  int i;
-	  u8 dummy;
-	  for(i=0; i<length; ++i)
-	    mt->file_pos += mid_parser_read_callback(&dummy, 1);
+	  mid_parser_playmeta_callback(track, meta, buflen, meta_buffer, mt->tick);
 	}
       } else { // common MIDI event
 	mios32_midi_package_t midi_package;

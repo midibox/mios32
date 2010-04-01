@@ -19,10 +19,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-  SEQ_MIDIMP_MODE_Track,
-  SEQ_MIDIMP_MODE_Group,
-  SEQ_MIDIMP_MODE_All,
-  SEQ_MIDIMP_MODE_Song
+  SEQ_MIDIMP_MODE_AllNotes,
+  SEQ_MIDIMP_MODE_AllDrums
 } seq_midimp_mode_t;
 
 
@@ -36,6 +34,16 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_MIDIMP_Init(u32 mode);
+
+extern seq_midimp_mode_t SEQ_MIDIMP_ModeGet(void);
+extern s32 SEQ_MIDIMP_ModeSet(seq_midimp_mode_t mode);
+extern s32 SEQ_MIDIMP_ResolutionGet(void);
+extern s32 SEQ_MIDIMP_ResolutionSet(u8 resolution);
+extern s32 SEQ_MIDIMP_NumLayersGet(void);
+extern s32 SEQ_MIDIMP_NumLayersSet(u8 num_layers);
+extern s32 SEQ_MIDIMP_MaxBarsGet(void);
+
+extern s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze);
 
 
 /////////////////////////////////////////////////////////////////////////////

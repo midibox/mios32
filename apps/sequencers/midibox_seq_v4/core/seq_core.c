@@ -848,6 +848,15 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 		t->vu_meter = p->velocity;
 
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+
+		// apply Post-FX
+		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+		  u8 local_gatelength = 95; // echo only with reduced gatelength
+		  if( tcc->echo_repeats )
+		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		}
+
+		// Note Off
 		p->velocity = 0;
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
@@ -858,6 +867,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 		  // store glide note number in 128 bit array for later checks
 		  t->glide_notes[p->note / 32] |= (1 << (p->note % 32));
 		}
+
 	      } else if( gen_on_events ) {
 		// for visualisation in mute menu
 		t->vu_meter = p->velocity;

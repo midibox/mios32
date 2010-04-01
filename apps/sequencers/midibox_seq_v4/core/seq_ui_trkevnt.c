@@ -24,6 +24,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_par.h"
+#include "seq_trg.h"
 #include "seq_layer.h"
 #include "seq_midi_port.h"
 #include "seq_label.h"
@@ -132,7 +133,10 @@ static const layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_Drum,     1,          64,        2,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     2,          32,        1,         128,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        2,         128,      8 },
-  { SEQ_EVENT_MODE_Drum,     2,          64,        1,         256,      8 }
+  { SEQ_EVENT_MODE_Drum,     2,          64,        1,         256,      8 },
+  { SEQ_EVENT_MODE_Drum,     1,          64,        1,          64,     16 },
+  { SEQ_EVENT_MODE_Drum,     1,         128,        1,         128,      8 },
+  { SEQ_EVENT_MODE_Drum,     1,         256,        1,         256,      4 }
 };
 
 

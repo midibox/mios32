@@ -836,7 +836,8 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   }
 
   // release all button states
-  seq_ui_button_state.ALL = 0;
+  // seq_ui_button_state.ALL = 0;
+  // clashes with SOLO/ALL/etc.
 
   // enter menu page if we were not there before
   if( prev_ui_page != SEQ_UI_PAGE_MENU )

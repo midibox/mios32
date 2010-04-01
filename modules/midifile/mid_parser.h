@@ -23,6 +23,9 @@
 #define MID_PARSER_MAX_TRACKS 32
 #endif
 
+#ifndef MID_PARSER_META_BUFFER_SIZE
+#define MID_PARSER_META_BUFFER_SIZE 256
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
