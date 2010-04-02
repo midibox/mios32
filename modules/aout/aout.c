@@ -246,7 +246,7 @@ s32 AOUT_IF_Init(u32 mode)
 #endif
 
     // init SPI port for fast frequency access
-    status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
+    status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
   }
 
   switch( aout_config.if_type ) {
