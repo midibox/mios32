@@ -49,6 +49,9 @@ extern u8 seq_midi_in_channel;
 extern mios32_midi_port_t seq_midi_in_port;
 extern u8 seq_midi_in_ta_split_note;
 
+extern u8 seq_midi_in_rec_channel;
+extern mios32_midi_port_t seq_midi_in_rec_port;
+
 extern u8 seq_midi_in_sect_channel;
 extern mios32_midi_port_t seq_midi_in_sect_port;
 extern mios32_midi_port_t seq_midi_in_sect_fwd_port;

@@ -748,7 +748,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    char path[40];
 	    sprintf(path, "/MIDI/%s.MID", mid_file);
 
-	    s32 status = SEQ_MIDIMP_ReadFile(path, 1);
+	    s32 status = SEQ_MIDIMP_ReadFile(path);
 
 	    if( status >= 0 )
 	      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Imported:", path);

@@ -1333,7 +1333,7 @@ static s32 LCD_Handler(u8 high_prio)
 	      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	      u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
 	      u8 edit_value = ui_selected_item == ITEM_LAYER_PAR ? edit_cc_number : current_value;
-	      SEQ_LCD_PrintFormattedString("%03d%c(%s)     ", 
+	      SEQ_LCD_PrintFormattedString("%03d%c(%s) ", 
 					   edit_value,
 					   (current_value != edit_value) ? '!' : ' ',
 					   SEQ_CC_LABELS_Get(port, edit_value));

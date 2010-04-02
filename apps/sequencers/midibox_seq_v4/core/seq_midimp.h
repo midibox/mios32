@@ -43,7 +43,7 @@ extern s32 SEQ_MIDIMP_NumLayersGet(void);
 extern s32 SEQ_MIDIMP_NumLayersSet(u8 num_layers);
 extern s32 SEQ_MIDIMP_MaxBarsGet(void);
 
-extern s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze);
+extern s32 SEQ_MIDIMP_ReadFile(char *path);
 
 
 /////////////////////////////////////////////////////////////////////////////

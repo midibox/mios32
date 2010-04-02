@@ -654,7 +654,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 		  if( button <= SEQ_UI_BUTTON_GP8 )
 		    val_pattern = (val_pattern & 0x07) | ((u8)button << 3);
 		  else
-		    val_pattern = (val_pattern & 0xf8) | ((u8)button & 0x7);
+		    val_pattern = (val_pattern & 0x38) | ((u8)button & 0x7);
 		  switch( ui_selected_item - ITEM_G1 ) {
   		    case 0: s.pattern_g1 = val_pattern; break;
   		    case 1: s.pattern_g2 = val_pattern; break;

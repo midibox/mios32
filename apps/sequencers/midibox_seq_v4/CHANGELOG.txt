@@ -6,6 +6,29 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta20
+~~~~~~~~~~~~~~~~~~~~~
+
+  o taken over track/layer button/LED usage of MBSEQ V3 (important if you are
+    using the old frontpanel):
+    - pattern page: track buttons have the same function like group buttons.
+      They allow to quickly jump between groups to select a new pattern
+    - song page: track/group and parameter layer buttons can be used to 
+      set the cursor position while editing a song entry
+
+  o AOUT driver working again (was not working in beta19)
+
+  o there is now a separate port/channel setting for recording, it can be
+    directly changed in the UTILITY->RECORD page
+
+  o the MIDI file import function now starts with the first track that contains
+    MIDI events to ensure that MIDI file tracks are aligned properly to MBSEQ tracks.
+
+    This is a workaround if the DAW uses the first track as a "master track" to 
+    store tempo informations. Previously this always resulted into an empty 
+    G1T1 track, and sequences started at G1T2.
+
+
 MIDIboxSEQ V4.0beta19
 ~~~~~~~~~~~~~~~~~~~~~
 
