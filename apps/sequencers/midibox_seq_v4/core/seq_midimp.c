@@ -53,6 +53,9 @@ static s32 SEQ_MIDIMP_seek(u32 pos);
 static s32 SEQ_MIDIMP_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick);
 static s32 SEQ_MIDIMP_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
 
+static s32 SEQ_MIDIMP_PlayEventAnalyze(u8 track, mios32_midi_package_t midi_package, u32 tick);
+static s32 SEQ_MIDIMP_PlayMetaAnalyze(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,6 +78,9 @@ static seq_file_t midifile_fi;
 static u16 last_step[SEQ_CORE_NUM_TRACKS];
 static u32 last_tick[SEQ_CORE_NUM_TRACKS];
 static u16 midi_channel_set;
+
+static s8 first_track_with_events;
+static u8 track_offset;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -165,11 +171,10 @@ s32 SEQ_MIDIMP_MaxBarsGet(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Imports a MIDI file based on selected parameters
-// if "analyze" flag is set, midi file will only be validated
 // returns 0 on success
 // returns < 0 on misc error (see MIOS terminal)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze)
+s32 SEQ_MIDIMP_ReadFile(char *path)
 {
   // stop MIDI play function (if running)
   SEQ_MIDPLY_RunModeSet(0, 0);
@@ -177,7 +182,7 @@ s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze)
   // install callback functions
   MIOS32_IRQ_Disable();
   MID_PARSER_InstallFileCallbacks(&SEQ_MIDIMP_read, &SEQ_MIDIMP_eof, &SEQ_MIDIMP_seek);
-  MID_PARSER_InstallEventCallbacks(&SEQ_MIDIMP_PlayEvent, &SEQ_MIDIMP_PlayMeta);
+  MID_PARSER_InstallEventCallbacks(&SEQ_MIDIMP_PlayEventAnalyze, &SEQ_MIDIMP_PlayMetaAnalyze);
   MIOS32_IRQ_Enable();
 
   MUTEX_SDCARD_TAKE;
@@ -261,6 +266,12 @@ s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze)
     }
     midi_channel_set = 0;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // analyze file - check for first track
+    MID_PARSER_InstallEventCallbacks(&SEQ_MIDIMP_PlayEventAnalyze, &SEQ_MIDIMP_PlayMetaAnalyze);
+    track_offset = 0;
+    first_track_with_events = -1;
+
     // read midifile
     MID_PARSER_Read();
 
@@ -268,6 +279,23 @@ s32 SEQ_MIDIMP_ReadFile(char *path, u8 analyze)
     u32 tick;
     s32 fetch_status;
     u32 max_ticks = ((1024 / seq_midimp_num_layers) * 96 * MIDI_PARSER_PPQN_Get()) / 384;
+    for(tick=0, fetch_status=1; tick < max_ticks && fetch_status > 0; ++tick)
+      fetch_status = MID_PARSER_FetchEvents(tick, 1);
+
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_MIDIMP_ReadFile] analyze step determined first track with events: %d\n", first_track_with_events);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // now read again to import events
+    MID_PARSER_InstallEventCallbacks(&SEQ_MIDIMP_PlayEvent, &SEQ_MIDIMP_PlayMeta);
+    track_offset = (first_track_with_events >= 0) ? first_track_with_events : 0;
+
+    // read midifile
+    MID_PARSER_Read();
+
+    // fetch all events
     for(tick=0, fetch_status=1; tick < max_ticks && fetch_status > 0; ++tick)
       fetch_status = MID_PARSER_FetchEvents(tick, 1);
   }
@@ -337,6 +365,11 @@ static s32 SEQ_MIDIMP_seek(u32 pos)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDIMP_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick)
 {
+  // remove offset determined during analyze step
+  if( track < track_offset )
+    return 0;
+  track-= track_offset;
+
   // check for track selection (TODO: select dedicated track)
   if( track >= SEQ_CORE_NUM_TRACKS )
     return 0;
@@ -492,4 +525,30 @@ static s32 SEQ_MIDIMP_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called when a MIDI event should be played at a given tick
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDIMP_PlayEventAnalyze(u8 track, mios32_midi_package_t midi_package, u32 tick)
+{
+  // check for track selection (TODO: select dedicated track)
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return 0;
+
+  if( first_track_with_events == -1 || track < first_track_with_events )
+    first_track_with_events = track;
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called when a Meta event should be played/processed at a given tick
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDIMP_PlayMetaAnalyze(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
+{
+  // nothing to do during analyze phase
+  return 0;
 }

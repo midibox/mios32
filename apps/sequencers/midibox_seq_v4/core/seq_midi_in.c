@@ -89,6 +89,13 @@ mios32_midi_port_t seq_midi_in_port;
 u8 seq_midi_in_ta_split_note;
 
 
+// For Record function:
+// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
+u8 seq_midi_in_rec_channel;
+// which IN port should be used? (0: All)
+mios32_midi_port_t seq_midi_in_rec_port;
+
+
 // for Sections:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_sect_channel;
@@ -132,6 +139,9 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_port = DEFAULT; // All ports
   seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
+
+  seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
+  seq_midi_in_rec_port = DEFAULT; // All ports
 
   seq_midi_in_sect_channel = 0; // disabled by default
   seq_midi_in_sect_port = DEFAULT; // All ports
@@ -241,7 +251,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
   // filter MIDI port (if 0: no filter, listen to all ports)
   // Loopback port not filtered!
-  if( loopback_port || (seq_midi_in_port && port == seq_midi_in_port) ) {
+  if( loopback_port || !seq_midi_in_port || (seq_midi_in_port && port == seq_midi_in_port) ) {
     if( loopback_port || midi_package.chn == (seq_midi_in_channel-1) ) {
       switch( midi_package.event ) {
 
@@ -289,15 +299,20 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	  MUTEX_MIDIIN_GIVE;
 	  break;
       }
-    } else {
-      // if not loopback, no remote and MIDI channel matching: forward to record function in record page
-      if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC )
-	return SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
     }
   }
 
+  // record function
+  if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC &&
+      ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
+       midi_package.chn == (seq_midi_in_rec_channel-1)) ) {
+    SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
+  }
+
   // Section Changer
-  if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
+  if( !loopback_port && !remote_active &&
+      (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
+       midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
     u8 forward_event = 1;
 
     switch( midi_package.event ) {
@@ -326,7 +341,9 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 #if 0
   // Patch Changer (currently assigned to channel+1)
   // Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
-  if( !loopback_port && (seq_midi_in_sect_port && port == seq_midi_in_sect_port && midi_package.chn == (seq_midi_in_sect_channel)) ) {
+  if( !loopback_port && !remote_active &&
+      (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
+       midi_package.chn == (seq_midi_in_sect_channel)) ) {
     u8 forward_event = 1;
 
     switch( midi_package.event ) {

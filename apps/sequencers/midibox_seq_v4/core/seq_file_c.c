@@ -319,6 +319,10 @@ s32 SEQ_FILE_C_Read(void)
 	      seq_midi_in_ta_split_note &= ~0x80;
 	  } else if( strcmp(parameter, "MIDI_IN_TA_SplitNote") == 0 ) {
 	    seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
+	  } else if( strcmp(parameter, "MIDI_IN_RecChannel") == 0 ) {
+	    seq_midi_in_rec_channel = value;
+	  } else if( strcmp(parameter, "MIDI_IN_RecPort") == 0 ) {
+	    seq_midi_in_rec_port = (mios32_midi_port_t)value;
 	  } else if( strcmp(parameter, "MIDI_IN_SectChannel") == 0 ) {
 	    seq_midi_in_sect_channel = value;
 	  } else if( strcmp(parameter, "MIDI_IN_SectPort") == 0 ) {
@@ -522,6 +526,12 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_RecChannel %d\n", seq_midi_in_rec_channel);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_RecPort %d\n", (u8)seq_midi_in_rec_port);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_IN_SectChannel %d\n", seq_midi_in_sect_channel);

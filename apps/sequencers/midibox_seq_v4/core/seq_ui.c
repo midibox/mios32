@@ -990,6 +990,36 @@ static s32 SEQ_UI_Button_TrackSel(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  if( group >= 4 ) return -2; // max. 4 group buttons
+
+  // in song page: track and group buttons are used to select the cursor position
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    ui_selected_item = 3 + group;
+    return 0;
+  }
+
+  // if group has changed:
+  if( group != ui_selected_group ) {
+    // get current track selection
+    u16 old_tracks = ui_selected_tracks >> (4*ui_selected_group);
+
+    // select new group
+    ui_selected_group = group;
+
+    // take over old track selection
+    ui_selected_tracks = old_tracks << (4*ui_selected_group);
+  }
+
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
 {
   static u8 button_state = 0x0f; // all 4 buttons depressed
@@ -1003,36 +1033,17 @@ static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
 
   button_state &= ~(1 << track_button);
 
+  // in pattern and song page: use track buttons as group buttons
+  if( ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) {
+    return SEQ_UI_Button_Group(depressed, track_button);
+  }
+
   if( button_state == (~(1 << track_button) & 0xf) ) {
     // if only one select button pressed: radio-button function (1 of 4)
     ui_selected_tracks = 1 << (track_button + 4*ui_selected_group);
   } else {
     // if more than one select button pressed: toggle function (4 of 4)
     ui_selected_tracks ^= 1 << (track_button + 4*ui_selected_group);
-  }
-
-  // set/clear encoder fast function if required
-  SEQ_UI_InitEncSpeed(1); // auto config
-
-  return 0; // no error
-}
-
-static s32 SEQ_UI_Button_Group(s32 depressed, u32 group)
-{
-  if( depressed ) return -1; // ignore when button depressed
-
-  if( group >= 4 ) return -2; // max. 4 group buttons
-
-  // if group has changed:
-  if( group != ui_selected_group ) {
-    // get current track selection
-    u16 old_tracks = ui_selected_tracks >> (4*ui_selected_group);
-
-    // select new group
-    ui_selected_group = group;
-
-    // take over old track selection
-    ui_selected_tracks = old_tracks << (4*ui_selected_group);
   }
 
   // set/clear encoder fast function if required
@@ -1074,6 +1085,12 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
   static layer_c_pressed = 0;
 
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
+
+  // in song page: parameter layer buttons are used to select the cursor position
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    ui_selected_item = par_layer;
+    return 0;
+  }
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
@@ -2102,24 +2119,54 @@ s32 SEQ_UI_LED_Handler(void)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // track LEDs
-  u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);
-  SEQ_LED_PinSet(seq_hwcfg_led.track[0], (selected_tracks & (1 << 0)));
-  SEQ_LED_PinSet(seq_hwcfg_led.track[1], (selected_tracks & (1 << 1)));
-  SEQ_LED_PinSet(seq_hwcfg_led.track[2], (selected_tracks & (1 << 2)));
-  SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
+  // in pattern page: track buttons are used as group buttons
+  if( ui_page == SEQ_UI_PAGE_PATTERN ) {
+    SEQ_LED_PinSet(seq_hwcfg_led.track[0], (ui_selected_group == 0));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[1], (ui_selected_group == 1));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[2], (ui_selected_group == 2));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[3], (ui_selected_group == 3));
+  } else if( ui_page == SEQ_UI_PAGE_SONG ) {
+    // in song page: track and group buttons are used to select the cursor position
+    SEQ_LED_PinSet(seq_hwcfg_led.track[0], (ui_selected_item == 3));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[1], (ui_selected_item == 4));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[2], (ui_selected_item == 5));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[3], (ui_selected_item == 6));
+  } else {
+    u8 selected_tracks = ui_selected_tracks >> (4*ui_selected_group);
+    SEQ_LED_PinSet(seq_hwcfg_led.track[0], (selected_tracks & (1 << 0)));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[1], (selected_tracks & (1 << 1)));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[2], (selected_tracks & (1 << 2)));
+    SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
+  }
+
   SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL);
   
   // parameter layer LEDs
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], (ui_selected_par_layer == 0));
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
+  // in song page: layer buttons are used to select the cursor position
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], ui_selected_item == 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], ui_selected_item == 1);
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], ui_selected_item == 2);
+  } else {
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], (ui_selected_par_layer == 0));
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
+    SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
+  }
   SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL);
   
   // group LEDs
-  SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_group == 0));
-  SEQ_LED_PinSet(seq_hwcfg_led.group[1], (ui_selected_group == 1));
-  SEQ_LED_PinSet(seq_hwcfg_led.group[2], (ui_selected_group == 2));
-  SEQ_LED_PinSet(seq_hwcfg_led.group[3], (ui_selected_group == 3));
+  // in song page: track and group buttons are used to select the cursor position
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_item == 3));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[1], (ui_selected_item == 4));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[2], (ui_selected_item == 5));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[3], (ui_selected_item == 6));
+  } else {
+    SEQ_LED_PinSet(seq_hwcfg_led.group[0], (ui_selected_group == 0));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[1], (ui_selected_group == 1));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[2], (ui_selected_group == 2));
+    SEQ_LED_PinSet(seq_hwcfg_led.group[3], (ui_selected_group == 3));
+  }
   
   // trigger layer LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));

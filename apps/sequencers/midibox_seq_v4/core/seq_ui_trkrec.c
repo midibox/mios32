@@ -16,10 +16,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_trg.h"
+#include "seq_midi_port.h"
+#include "seq_midi_in.h"
 #include "seq_record.h"
 
 
@@ -27,13 +31,21 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       6
+#define NUM_OF_ITEMS       8
 #define ITEM_GXTY          0
 #define ITEM_STEP_MODE     1
 #define ITEM_POLY_MODE     2
 #define ITEM_AUTO_START    3
 #define ITEM_RECORD_STEP   4
 #define ITEM_TOGGLE_GATE   5
+#define ITEM_REC_PORT      6
+#define ITEM_REC_CHN       7
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+static u8 store_file_required;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +67,8 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_AUTO_START: *gp_leds = 0x0018; break;
     case ITEM_RECORD_STEP: *gp_leds = 0x0020; break;
     case ITEM_TOGGLE_GATE: *gp_leds = 0x00c0; break;
+    case ITEM_REC_PORT: *gp_leds = 0x0100; break;
+    case ITEM_REC_CHN: *gp_leds = 0x0200; break;
   }
 
   return 0; // no error
@@ -103,7 +117,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = ITEM_REC_PORT;
+      break;
+
     case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = ITEM_REC_CHN;
+      break;
+
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
@@ -188,6 +208,24 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       return 1;
     }
+
+    case ITEM_REC_PORT: {
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_in_rec_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_REC_CHN:
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_rec_channel, 0, 16, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+
   }
 
   return -1; // invalid or unsupported encoder
@@ -256,13 +294,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Record Mode  AStart  Step  TglGate 
-  // G1T1 Live  Poly    on      16           
+  // Trk. Record Mode  AStart  Step  TglGate Port Chn.
+  // G1T1 Live  Poly    on      16           IN1  # 1
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate ");
-  SEQ_LCD_PrintSpaces(40);
+  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate Port Chn.");
+  SEQ_LCD_PrintSpaces(31);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -307,10 +345,51 @@ static s32 LCD_Handler(u8 high_prio)
   }
   SEQ_LCD_PrintSpaces(11);
 
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_REC_PORT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    if( seq_midi_in_rec_port )
+      SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port)));
+    else
+      SEQ_LCD_PrintString(" All");
+  }
+  SEQ_LCD_PrintSpaces(1);
+
+
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_REC_CHN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    if( seq_midi_in_rec_channel )
+      SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_rec_channel);
+    else
+      SEQ_LCD_PrintString("---");
+  }
+
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(40);
+  SEQ_LCD_PrintSpaces(32);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local exit function
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  s32 status = 0;
+
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    if( (status=SEQ_FILE_C_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+  }
+
+  return status;
 }
 
 
@@ -324,6 +403,9 @@ s32 SEQ_UI_TRKREC_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
+
+  store_file_required = 0;
 
   return 0; // no error
 }
