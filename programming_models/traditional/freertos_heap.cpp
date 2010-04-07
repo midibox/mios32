@@ -29,13 +29,14 @@ extern "C" void *calloc(size_t count, size_t size)
 }
 
 //............................................................................
+#if 0 // Commented out as umm_malloc has a dedicated realloc function.
 extern "C" void *realloc(void *p, size_t size)
 {
   vPortFree(p);
   p = pvPortMalloc(size);
   return p;
 }
-
+#endif
 //............................................................................
 extern "C" void free(void *p)
 {
