@@ -438,7 +438,7 @@ s32 MIOS32_BOARD_J5_Get(void)
 
   return
     (((GPIOC->IDR & 0x000f) <<  0) |
-     ((GPIOA->IDR & 0x00f0) <<  4) |
+     ((GPIOA->IDR & 0x000f) <<  4) |
      ((GPIOC->IDR & 0x0030) <<  4) |
      ((GPIOB->IDR & 0x0003) << 10)) & j5_enable_mask;
 # else
