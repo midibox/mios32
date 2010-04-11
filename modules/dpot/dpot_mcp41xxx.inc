@@ -110,7 +110,7 @@ static s32 DPOT_Device_Init(u32 mode)
 #endif
 
     // init SPI port for fast frequency access
-    status |= MIOS32_SPI_TransferModeInit(DPOT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
+    status |= MIOS32_SPI_TransferModeInit(DPOT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
 
     // ensure that CS is released
     status |= MIOS32_SPI_RC_PinSet(DPOT_SPI, DPOT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
