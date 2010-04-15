@@ -29,24 +29,24 @@
 typedef union {
   unsigned long long ALL;
   struct {
-    unsigned act1:1;		// current status of pin 1
-    unsigned act2:1;		// current status of pin 2
-    unsigned last1:1;		// last status of pin 1
-    unsigned last2:1;		// last status of pin 2
-    unsigned decinc:1;		// 1 if last action was decrement, 0 if increment
-    signed   incrementer:8;	// the incrementer
-    unsigned accelerator:8;	// the accelerator for encoder speed detetion
-    unsigned prev_state_dec:4;	// last INC state
-    unsigned prev_state_inc:4;	// last DEC state	
-    unsigned prev_acc:8;	// last acceleration value, for smoothing out sudden acceleration changes
-    unsigned predivider:4;	// predivider for SLOW mode
+    u8 act1:1;		 // current status of pin 1
+    u8 act2:1;		 // current status of pin 2
+    u8 last1:1;		 // last status of pin 1
+    u8 last2:1;		 // last status of pin 2
+    u8 decinc:1;	 // 1 if last action was decrement, 0 if increment
+    s8 incrementer:8;	 // the incrementer
+    u8 accelerator:8;	 // the accelerator for encoder speed detetion
+    u8 prev_state_dec:4; // last INC state
+    u8 prev_state_inc:4; // last DEC state	
+    u8 prev_acc:8;	 // last acceleration value, for smoothing out sudden acceleration changes
+    u8 predivider:4;	 // predivider for SLOW mode
   };
   struct {
-    unsigned act12:2;       // combines act1/act2
-    unsigned last12:2;      // combines last1/last2
+    u8 act12:2;  // combines act1/act2
+    u8 last12:2; // combines last1/last2
   };
   struct {
-    unsigned state:4;      // combines act1/act2/last1/last2
+    u8 state:4;  // combines act1/act2/last1/last2
   };
 } enc_state_t;
 
@@ -99,21 +99,16 @@ s32 MIOS32_ENC_Init(u32 mode)
 //!   <LI>enc_config.cfg.type: encoder type (DISABLED/NON_DETENTED/DETENTED1..3)<BR>
 //!   <LI>enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)<BR>
 //!   <LI>enc_config.cfg.speed_par speed parameter (0-7)<BR>
-//!   <LI>enc_config.cfg.sr shift register (1-16)<BR>
+//!   <LI>enc_config.cfg.sr shift register (1-16) or application control (0) for the case that encoders are directly connected to GPIO pins<BR>
 //!   <LI>enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)<BR>
 //! </UL>
 //! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 {
-  // no SRIOs?
-#if MIOS32_SRIO_NUM_SR == 0
-  return -1; // no SRIO
-#endif
-
   // encoder number valid?
   if( encoder >= MIOS32_ENC_NUM_MAX )
-    return -2; // invalid number
+    return -1; // invalid number
 
   // take over new configuration
   enc_config[encoder] = config;
@@ -128,7 +123,7 @@ s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 //! \return enc_config.cfg.type encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
 //! \return enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)
 //! \return enc_config.cfg.speed_par speed parameter (0-7)
-//! \return enc_config.cfg.sr shift register (1-16)
+//! \return enc_config.cfg.sr shift register (1-16) or application control (0) for the case that encoders are directly connected to GPIO pins<BR>
 //! \return enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)
 /////////////////////////////////////////////////////////////////////////////
 mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
@@ -144,17 +139,57 @@ mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function can be called from an application to update the state of
+//! an encoder that isn't connected to the SRIO chain (in this case, the
+//! appr. enc_config.cfg.sr field has to be set to 0!)
+//!
+//! Usage examples can be found in following tutorials: 014b_enc_j5_relative
+//! and 015b_enc_j5_absolute
+//! \param[in] encoder encoder number (0..MIOS32_ENC_NUM_MAX-1)
+//! \param[in] new_state two bits with the new encoder pin values
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_ENC_StateSet(u32 encoder, u8 new_state)
+{
+  // encoder number valid?
+  if( encoder >= MIOS32_ENC_NUM_MAX )
+    return -1; // invalid number
+
+  // this operation should be atomic
+  MIOS32_IRQ_Disable();
+  enc_state_t *enc_state_ptr = &enc_state[encoder];
+  enc_state_ptr->last12 = enc_state_ptr->act12;
+  enc_state_ptr->act12 = new_state;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function is only intented for debugging purposes - it returns
+//! the current state of the given encoder.
+//! \param[in] encoder encoder number (0..MIOS32_ENC_NUM_MAX-1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_ENC_StateGet(u32 encoder)
+{
+  // encoder number valid?
+  if( encoder >= MIOS32_ENC_NUM_MAX )
+    return -1; // invalid number
+
+  // return current state
+  return enc_state[encoder].act12;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function has to be called after a SRIO scan to update encoder states
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC_UpdateStates(void)
 {
   u8 enc;
-
-  // no SRIOs?
-#if MIOS32_SRIO_NUM_SR == 0
-  return -1; // no SRIO
-#endif
 
   // check all encoders
   // Note: scanning of 64 encoders takes ca. 30 uS @ 72 MHz :-)
@@ -171,14 +206,21 @@ s32 MIOS32_ENC_UpdateStates(void)
     if( enc_state_ptr->accelerator )
       --enc_state_ptr->accelerator;
 
-    // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
-    u8 sr = enc_config_ptr->cfg.sr-1;
-    u8 pos = enc_config_ptr->cfg.pos;
-    u8 changed_mask = 3 << pos; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
-    if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) ) {
-      mios32_enc_type_t enc_type = enc_config_ptr->cfg.type;
+    // take over encoder state from SRIO handler if SR != 0
+    // (if SR configured with 0 we expect that the state is controlled from application, e.g. by scanning GPIOs)
+    if( enc_config_ptr->cfg.sr != 0 ) {
+      // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
+      u8 sr = enc_config_ptr->cfg.sr-1;
+      u8 pos = enc_config_ptr->cfg.pos;
+      u8 changed_mask = 3 << pos; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
       enc_state_ptr->last12 = enc_state_ptr->act12;
-      enc_state_ptr->act12 = (MIOS32_DIN_SRGet(sr) >> pos) & 3;
+      if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) )
+	enc_state_ptr->act12 = (MIOS32_DIN_SRGet(sr) >> pos) & 3;
+    }
+
+    // new encoder state?
+    if( enc_state_ptr->last12 != enc_state_ptr->act12 ) {
+      mios32_enc_type_t enc_type = enc_config_ptr->cfg.type;
       s32 predivider;
       s32 acc;
 
@@ -313,11 +355,6 @@ s32 MIOS32_ENC_Handler(void *_callback)
   u8 enc;
   s32 incrementer;
   void (*callback)(u32 pin, u32 value) = _callback;
-
-  // no SRIOs?
-#if MIOS32_SRIO_NUM_SR == 0
-  return -1; // no SRIO
-#endif
 
   // no callback function?
   if( _callback == NULL )

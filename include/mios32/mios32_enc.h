@@ -52,8 +52,8 @@ typedef union {
     mios32_enc_type_t   type:8;
     mios32_enc_speed_t  speed:2;
     u8                  speed_par:3;
-    u8                  sr:4;
     u8                  pos:3;
+    u8                  sr;
   } cfg;
 } mios32_enc_config_t;
 
@@ -66,6 +66,9 @@ extern s32 MIOS32_ENC_Init(u32 mode);
 
 extern s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config);
 extern mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder);
+
+extern s32 MIOS32_ENC_StateSet(u32 encoder, u8 new_state);
+extern s32 MIOS32_ENC_StateGet(u32 encoder);
 
 extern s32 MIOS32_ENC_UpdateStates(void);
 extern s32 MIOS32_ENC_Handler(void *callback);
