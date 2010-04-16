@@ -184,7 +184,18 @@ extern "C" s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 extern "C" s32 APP_LCD_BColourSet(u32 rgb)
 {
-    return -1; // n.a.
+    // check if if display already has been disabled
+    if( !(display_available & (1 << mios32_lcd_device)) )
+        return -1;
+
+	if( cLcd[mios32_lcd_device] == 0 ) {
+		// display hasn't been created yet - disable it
+		display_available &= ~(1 << mios32_lcd_device);
+		return -1; // display not available (anymore)    
+	} else {    // forward to LCD emulation
+	    cLcd[mios32_lcd_device]->setLcdBColor((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, (rgb >> 0) & 0xff);
+	}
+    return 0; // no error
 }
 
 
@@ -196,7 +207,18 @@ extern "C" s32 APP_LCD_BColourSet(u32 rgb)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" s32 APP_LCD_FColourSet(u32 rgb)
 {
-    return -1; // n.a.
+    // check if if display already has been disabled
+    if( !(display_available & (1 << mios32_lcd_device)) )
+        return -1;
+
+	if( cLcd[mios32_lcd_device] == 0 ) {
+		// display hasn't been created yet - disable it
+		display_available &= ~(1 << mios32_lcd_device);
+		return -1; // display not available (anymore)    
+	} else {    // forward to LCD emulation
+	    cLcd[mios32_lcd_device]->setLcdFColor((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, (rgb >> 0) & 0xff);
+	}
+    return 0; // no error
 }
 
 
