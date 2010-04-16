@@ -543,6 +543,16 @@ extern "C" s32 TASKS_Init(u32 mode)
 
 
 //////////////////////////////////////////////////////////////////////////////
+// periodic LCD update
+//////////////////////////////////////////////////////////////////////////////
+- (void)lcdUpdate:(id)anObject
+{
+    [cLcdLeft periodicUpdate];
+    [cLcdRight periodicUpdate];
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // init local variables
 //////////////////////////////////////////////////////////////////////////////
 - (void) awakeFromNib
@@ -646,8 +656,12 @@ extern "C" s32 TASKS_Init(u32 mode)
 		ledState[i] = 0;
 
 	// init application after ca. 1 mS (this ensures that all objects have been initialized)
-	NSTimer *init_timer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
-	[[NSRunLoop currentRunLoop] addTimer: init_timer forMode: NSDefaultRunLoopMode];
+	NSTimer *initTimer = [NSTimer timerWithTimeInterval:0.001 target:self selector:@selector(delayedAPP_Init:) userInfo:nil repeats:NO];
+	[[NSRunLoop currentRunLoop] addTimer: initTimer forMode: NSDefaultRunLoopMode];
+
+	// periodic LCD update
+	NSTimer *lcdTimer = [NSTimer timerWithTimeInterval:0.010 target:self selector:@selector(lcdUpdate:) userInfo:nil repeats:YES];
+	[[NSRunLoop currentRunLoop] addTimer: lcdTimer forMode: NSDefaultRunLoopMode];
 }
 
 @end
