@@ -53,6 +53,14 @@
     MIOS32_LCD_DeviceSet(1);
     MIOS32_LCD_Clear();
 
+    MIOS32_LCD_DeviceSet(0);
+    MIOS32_LCD_CursorSet(0, 0);
+    MIOS32_LCD_PrintFormattedString("Hello World (Left)!\n");
+
+    MIOS32_LCD_DeviceSet(1);
+    MIOS32_LCD_CursorSet(0, 0);
+    MIOS32_LCD_PrintFormattedString("Hello World (Right)!\n");
+
 	// install background task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.01 target:self selector:@selector(backgroundTask:) userInfo:nil repeats:YES];
 	[[NSRunLoop currentRunLoop] addTimer: timer1 forMode: NSDefaultRunLoopMode];
@@ -67,15 +75,6 @@
 {
 	// -> forward to application
 	//APP_Background();
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_CursorSet(0, 0);
-    MIOS32_LCD_PrintFormattedString("Hello World (Left)!\n");
-
-    MIOS32_LCD_DeviceSet(1);
-    MIOS32_LCD_CursorSet(0, 0);
-    MIOS32_LCD_PrintFormattedString("Hello World (Right)!\n");
-
-
     [cLcdLeft periodicUpdate];
     [cLcdRight periodicUpdate];
 }
