@@ -18,6 +18,7 @@
 #define _TASKS_H
 
 
+
 #ifndef MIOS32_FAMILY_EMULATION
 # include <FreeRTOS.h>
 # include <portmacro.h>
@@ -30,6 +31,10 @@
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // this mutex should be used by all tasks which are accessing the SD Card
 #ifdef MIOS32_FAMILY_EMULATION
@@ -113,5 +118,8 @@ extern s32 TASK_MSD_FlagStrGet(char str[5]);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _TASKS_H */

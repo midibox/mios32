@@ -8,7 +8,6 @@
 //
 
 #import "SEQEncoder.h"
-#import "UI.h"
 
 @implementation SEQEncoder
 

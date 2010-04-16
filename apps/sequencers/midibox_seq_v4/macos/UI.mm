@@ -1,3 +1,4 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 //
 //  UI.m
@@ -8,9 +9,12 @@
 //
 
 #import "UI.h"
+#import "MIOS32_SDCARD_Wrapper.h"
 
 #include <mios32.h>
 #include <app.h>
+#include <app_lcd.h>
+#include <tasks.h>
 
 @implementation UI
 
@@ -98,7 +102,7 @@ static NSButton *_buttonDown;
 //////////////////////////////////////////////////////////////////////////////
 // Emulation specific LED access functions
 //////////////////////////////////////////////////////////////////////////////
-s32 EMU_DOUT_PinSet(u32 pin, u32 value)
+extern "C" s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 {
 	int gp_led = -1;
 	
@@ -226,7 +230,7 @@ s32 EMU_DOUT_PinSet(u32 pin, u32 value)
 	return 0;
 }
 
-s32 EMU_DOUT_SRSet(u32 sr, u8 value)
+extern "C" s32 EMU_DOUT_SRSet(u32 sr, u8 value)
 {
 	int i;
 
@@ -251,7 +255,7 @@ s32 EMU_DOUT_SRSet(u32 sr, u8 value)
 //////////////////////////////////////////////////////////////////////////////
 // Emulation specific button event forwarding function
 //////////////////////////////////////////////////////////////////////////////
-s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
+extern "C" s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 {
 //	APP_DIN_NotifyToggle(pin, value);
 
@@ -276,7 +280,7 @@ s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 // printf compatible function to output debug messages
 // referenced in mios32_config.h (DEBUG_MSG macro)
 //////////////////////////////////////////////////////////////////////////////
-s32 UI_printf(char *format, ...)
+extern "C" s32 UI_printf(char *format, ...)
 {
   char buffer[1024];
   va_list args;
@@ -293,7 +297,7 @@ s32 UI_printf(char *format, ...)
 // Tasks
 //////////////////////////////////////////////////////////////////////////////
 
-void SRIO_ServiceFinish(void)
+extern "C" void SRIO_ServiceFinish(void)
 {
 #ifndef MIOS32_DONT_USE_SRIO
 
@@ -314,7 +318,7 @@ void SRIO_ServiceFinish(void)
 
 	// start next SRIO scan - IRQ notification to SRIO_ServiceFinish()
 	MIOS32_IRQ_Disable(); // since no IRQs with higher priority are emulated, we have to use a lock in the MIOS32 IRQ Wrapper
-	MIOS32_SRIO_ScanStart(SRIO_ServiceFinish);
+	MIOS32_SRIO_ScanStart((void *)&SRIO_ServiceFinish);
 
 	// emulation: transfer new DOUT SR values to GUI LED elements
 	int sr;
@@ -325,7 +329,7 @@ void SRIO_ServiceFinish(void)
 
 #ifndef MIOS32_DONT_USE_DIN
 	// check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
-	MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
+	MIOS32_DIN_Handler((void *)&APP_DIN_NotifyToggle);
 #endif
 }
 
@@ -336,7 +340,7 @@ void SRIO_ServiceFinish(void)
 	while (YES) {
 		// TODO: find better more FreeRTOS/MIOS32 compliant solution
 		// check for incoming MIDI messages and call hooks
-		MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
+		MIOS32_MIDI_Receive_Handler((void *)&APP_MIDI_NotifyPackage);
 
 		// -> forward to application
 		SEQ_TASK_MIDI();
@@ -367,6 +371,10 @@ void SRIO_ServiceFinish(void)
 	
 	while (YES) {		
 		SEQ_TASK_Period1mS_LowPrio();
+
+        [cLcdLeft periodicUpdate];
+        [cLcdRight periodicUpdate];
+
         [NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.001]];
     }
 	
@@ -391,7 +399,7 @@ void SRIO_ServiceFinish(void)
 // This task is triggered from SEQ_PATTERN_Change to transport the new patch
 // into RAM
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Pattern(void *pvParameters)
+extern "C" void TASK_Pattern(void *pvParameters)
 {
 #if 0
   do {
@@ -404,7 +412,7 @@ static void TASK_Pattern(void *pvParameters)
 }
 
 // use this function to resume the task
-void SEQ_TASK_PatternResume(void)
+extern "C" void SEQ_TASK_PatternResume(void)
 {
 //    vTaskResume(xPatternHandle);
 
@@ -418,17 +426,17 @@ void SEQ_TASK_PatternResume(void)
 // MSD access not supported by Emulation
 //////////////////////////////////////////////////////////////////////////////
 
-s32 TASK_MSD_EnableSet(u8 enable)
+extern "C" s32 TASK_MSD_EnableSet(u8 enable)
 {
 	return -1; // not supported
 }
 
-s32 TASK_MSD_EnableGet()
+extern "C" s32 TASK_MSD_EnableGet()
 {
 	return -1; // not supported
 }
 
-s32 TASK_MSD_FlagStrGet(char str[5])
+extern "C" s32 TASK_MSD_FlagStrGet(char str[5])
 {
 	str[0] = '-';
 	str[1] = '-';
@@ -444,7 +452,7 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 // initialisation hook for OS specific tasks
 // (called from APP_Init() after everything has been prepared)
 //////////////////////////////////////////////////////////////////////////////
-s32 TASKS_Init(u32 mode)
+extern "C" s32 TASKS_Init(u32 mode)
 {
 	// install SRIO task
 	NSTimer *timer1 = [NSTimer timerWithTimeInterval:0.001 target:_self selector:@selector(periodicSRIOTask:) userInfo:nil repeats:YES];
@@ -487,6 +495,15 @@ s32 TASKS_Init(u32 mode)
 //  MIOS32_COM_Init(0);
 #endif
 #ifndef MIOS32_DONT_USE_LCD
+    CLcd* cLcd0 = APP_LCD_GetComponentPtr(0);
+    cLcd0->setLcdColumns(40);
+    cLcd0->setLcdLines(2);
+    [cLcdLeft setCLcd:cLcd0];
+
+    CLcd* cLcd1 = APP_LCD_GetComponentPtr(1);
+    cLcd1->setLcdColumns(40);
+    cLcd1->setLcdLines(2);
+    [cLcdRight setCLcd:cLcd1];
 	MIOS32_LCD_Init(0);
 #endif
 
