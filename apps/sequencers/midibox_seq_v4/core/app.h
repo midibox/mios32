@@ -14,6 +14,10 @@
 #ifndef _APP_H
 #define _APP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -43,5 +47,8 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _APP_H */

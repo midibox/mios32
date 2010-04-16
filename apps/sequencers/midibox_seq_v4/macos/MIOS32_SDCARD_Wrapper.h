@@ -12,7 +12,15 @@
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void SDCARD_Wrapper_setDir(NSString *_dirName);
 extern NSString *SDCARD_Wrapper_getDir(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 @end

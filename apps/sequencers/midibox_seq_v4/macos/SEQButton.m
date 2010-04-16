@@ -8,7 +8,6 @@
 //
 
 #import "SEQButton.h"
-#import "UI.h"
 
 @implementation SEQButton
 

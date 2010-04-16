@@ -15,11 +15,11 @@
 
 // increase if required in your mios32_config.h file
 #ifndef LCD_MAX_COLUMNS
-#define LCD_MAX_COLUMNS 80
+#define LCD_MAX_COLUMNS 40
 #endif
 
 #ifndef LCD_MAX_LINES
-#define LCD_MAX_LINES    8
+#define LCD_MAX_LINES    2
 #endif
 
 class CLcdView : public Component

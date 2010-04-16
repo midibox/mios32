@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		5200751E0F0E39760042E730 /* MIOS32_SYS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */; };
 		5203A4400EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */; };
+		52051071117788A100B60101 /* app_lcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5205106D117788A100B60101 /* app_lcd.cpp */; };
+		5205108C1177936F00B60101 /* CLcdView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5205108B1177936F00B60101 /* CLcdView.mm */; };
+		520510CF11779C4800B60101 /* UI.mm in Sources */ = {isa = PBXBuildFile; fileRef = 520510CE11779C4800B60101 /* UI.mm */; };
+		520511C11177ADFA00B60101 /* CLcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 520511C01177ADFA00B60101 /* CLcd.cpp */; };
 		52077B610F3113AB002E2E55 /* seq_ui_parsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 52077B5F0F3113AB002E2E55 /* seq_ui_parsel.c */; };
 		52077B620F3113AB002E2E55 /* seq_ui_trgsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 52077B600F3113AB002E2E55 /* seq_ui_trgsel.c */; };
 		520C95B60F2D1A890021C202 /* jsw_rand.c in Sources */ = {isa = PBXBuildFile; fileRef = 520C95B40F2D1A890021C202 /* jsw_rand.c */; };
@@ -21,9 +25,6 @@
 		521A79110EEB66520016F43B /* seq_ui_todo.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790E0EEB66520016F43B /* seq_ui_todo.c */; };
 		521A79120EEB66520016F43B /* seq_ui_trkdir.c in Sources */ = {isa = PBXBuildFile; fileRef = 521A790F0EEB66520016F43B /* seq_ui_trkdir.c */; };
 		5223419A0FF6B8DC0001D7E7 /* seq_midi_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */; };
-		522A0DB40E8FE5AB0084B1EE /* CLCDView.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB20E8FE5AB0084B1EE /* CLCDView.m */; };
-		522A0DB50E8FE5AB0084B1EE /* CLCDView_charset.inc in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */; };
-		522A0DB80E8FE5B90084B1EE /* UI.m in Sources */ = {isa = PBXBuildFile; fileRef = 522A0DB70E8FE5B90084B1EE /* UI.m */; };
 		522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 522A10F50E910BCA0084B1EE /* seq_lcd.c */; };
 		522C2BB510936B9700EC1349 /* seq_midimp.c in Sources */ = {isa = PBXBuildFile; fileRef = 522C2BB310936B9700EC1349 /* seq_midimp.c */; };
 		522C2BB810936BA700EC1349 /* seq_midexp.c in Sources */ = {isa = PBXBuildFile; fileRef = 522C2BB610936BA700EC1349 /* seq_midexp.c */; };
@@ -166,7 +167,6 @@
 		52FB46770EE9BE1C0024489C /* mios32_uart_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 52FB46750EE9BE1C0024489C /* mios32_uart_midi.c */; };
 		52FB46BA0EE9C8CB0024489C /* MIOS32_MIDI_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 52FB46B90EE9C8CB0024489C /* MIOS32_MIDI_Wrapper.m */; };
 		52FB47360EE9D38D0024489C /* MIOS32_TIMER_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 52FB47350EE9D38D0024489C /* MIOS32_TIMER_Wrapper.m */; };
-		52FB47760EE9D7CD0024489C /* MIOS32_LCD_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 52FB47750EE9D7CD0024489C /* MIOS32_LCD_Wrapper.m */; };
 		52FB47B30EE9DB4D0024489C /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 52FB47B20EE9DB4D0024489C /* mios32_lcd.c */; };
 		8D11072A0486CEB800E47090 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 29B97318FDCFA39411CA2CEA /* MainMenu.nib */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
@@ -187,6 +187,13 @@
 		5200751D0F0E39760042E730 /* MIOS32_SYS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SYS_Wrapper.m; sourceTree = "<group>"; };
 		5203A43E0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_DELAY_Wrapper.h; sourceTree = "<group>"; };
 		5203A43F0EF6F47C00236209 /* MIOS32_DELAY_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_DELAY_Wrapper.m; sourceTree = "<group>"; };
+		5205106D117788A100B60101 /* app_lcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app_lcd.cpp; path = ../../../../modules/app_lcd/macos/app_lcd.cpp; sourceTree = SOURCE_ROOT; };
+		5205106E117788A100B60101 /* app_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app_lcd.h; path = ../../../../modules/app_lcd/macos/app_lcd.h; sourceTree = SOURCE_ROOT; };
+		5205107611778F8300B60101 /* CLcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLcd.h; path = ../../../../modules/app_lcd/macos/CLcd.h; sourceTree = SOURCE_ROOT; };
+		5205108A1177936F00B60101 /* CLcdView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLcdView.h; path = ../../../../modules/app_lcd/macos/CLcdView.h; sourceTree = SOURCE_ROOT; };
+		5205108B1177936F00B60101 /* CLcdView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CLcdView.mm; path = ../../../../modules/app_lcd/macos/CLcdView.mm; sourceTree = SOURCE_ROOT; };
+		520510CE11779C4800B60101 /* UI.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = UI.mm; sourceTree = "<group>"; };
+		520511C01177ADFA00B60101 /* CLcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CLcd.cpp; path = ../../../../modules/app_lcd/macos/CLcd.cpp; sourceTree = SOURCE_ROOT; };
 		52077B5F0F3113AB002E2E55 /* seq_ui_parsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_parsel.c; path = ../core/seq_ui_parsel.c; sourceTree = SOURCE_ROOT; };
 		52077B600F3113AB002E2E55 /* seq_ui_trgsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trgsel.c; path = ../core/seq_ui_trgsel.c; sourceTree = SOURCE_ROOT; };
 		520C95B40F2D1A890021C202 /* jsw_rand.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsw_rand.c; path = ../../../../modules/random/jsw_rand.c; sourceTree = SOURCE_ROOT; };
@@ -203,11 +210,7 @@
 		521A790F0EEB66520016F43B /* seq_ui_trkdir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdir.c; path = ../core/seq_ui_trkdir.c; sourceTree = SOURCE_ROOT; };
 		522341980FF6B8DC0001D7E7 /* seq_midi_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_sysex.c; path = ../core/seq_midi_sysex.c; sourceTree = SOURCE_ROOT; };
 		522341990FF6B8DC0001D7E7 /* seq_midi_sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_sysex.h; path = ../core/seq_midi_sysex.h; sourceTree = SOURCE_ROOT; };
-		522A0DB10E8FE5AB0084B1EE /* CLCDView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CLCDView.h; sourceTree = "<group>"; };
-		522A0DB20E8FE5AB0084B1EE /* CLCDView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLCDView.m; sourceTree = "<group>"; };
-		522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = CLCDView_charset.inc; sourceTree = "<group>"; };
 		522A0DB60E8FE5B90084B1EE /* UI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UI.h; sourceTree = "<group>"; };
-		522A0DB70E8FE5B90084B1EE /* UI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UI.m; sourceTree = "<group>"; };
 		522A10F50E910BCA0084B1EE /* seq_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd.c; path = ../core/seq_lcd.c; sourceTree = SOURCE_ROOT; };
 		522A10F60E910BCA0084B1EE /* seq_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lcd.h; path = ../core/seq_lcd.h; sourceTree = SOURCE_ROOT; };
 		522C2BB310936B9700EC1349 /* seq_midimp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midimp.c; path = ../core/seq_midimp.c; sourceTree = SOURCE_ROOT; };
@@ -427,10 +430,7 @@
 		52FB46B90EE9C8CB0024489C /* MIOS32_MIDI_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_MIDI_Wrapper.m; sourceTree = "<group>"; };
 		52FB47340EE9D38D0024489C /* MIOS32_TIMER_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_TIMER_Wrapper.h; sourceTree = "<group>"; };
 		52FB47350EE9D38D0024489C /* MIOS32_TIMER_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_TIMER_Wrapper.m; sourceTree = "<group>"; };
-		52FB47740EE9D7CD0024489C /* MIOS32_LCD_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_LCD_Wrapper.h; sourceTree = "<group>"; };
-		52FB47750EE9D7CD0024489C /* MIOS32_LCD_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_LCD_Wrapper.m; sourceTree = "<group>"; };
 		52FB47B20EE9DB4D0024489C /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
-		52FB47B50EE9DBA40024489C /* app_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = app_lcd.h; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* midibox_seq_v4.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = midibox_seq_v4.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -451,15 +451,19 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				5205108A1177936F00B60101 /* CLcdView.h */,
+				5205108B1177936F00B60101 /* CLcdView.mm */,
+				520511C01177ADFA00B60101 /* CLcd.cpp */,
+				5205107611778F8300B60101 /* CLcd.h */,
+				5205106D117788A100B60101 /* app_lcd.cpp */,
+				5205106E117788A100B60101 /* app_lcd.h */,
 				526C00A711624A4A00AE9208 /* FATFS_Wrapper_Dir.c */,
 				526C0063116136F600AE9208 /* FATFS_Wrapper.h */,
 				526C0064116136F600AE9208 /* FATFS_Wrapper.m */,
 				524A70080FB63AF5006134D1 /* MIOS32_SPI_Wrapper.h */,
 				524A70090FB63AF5006134D1 /* MIOS32_SPI_Wrapper.m */,
 				522A0DB60E8FE5B90084B1EE /* UI.h */,
-				522A0DB70E8FE5B90084B1EE /* UI.m */,
-				522A0DB10E8FE5AB0084B1EE /* CLCDView.h */,
-				522A0DB20E8FE5AB0084B1EE /* CLCDView.m */,
+				520510CE11779C4800B60101 /* UI.mm */,
 				52A74F180E92701800D65394 /* SEQButton.h */,
 				52A74F190E92701800D65394 /* SEQButton.m */,
 				52A74FE70E92858600D65394 /* SEQEncoder.h */,
@@ -468,8 +472,6 @@
 				52FB46B90EE9C8CB0024489C /* MIOS32_MIDI_Wrapper.m */,
 				52FB47340EE9D38D0024489C /* MIOS32_TIMER_Wrapper.h */,
 				52FB47350EE9D38D0024489C /* MIOS32_TIMER_Wrapper.m */,
-				52FB47740EE9D7CD0024489C /* MIOS32_LCD_Wrapper.h */,
-				52FB47750EE9D7CD0024489C /* MIOS32_LCD_Wrapper.m */,
 				523E37490EE9E75C00E79FF4 /* FreeRTOS_Wrapper.h */,
 				523E374A0EE9E75C00E79FF4 /* FreeRTOS_Wrapper.m */,
 				523E37580EE9E81C00E79FF4 /* MIOS32_IRQ_Wrapper.h */,
@@ -674,7 +676,6 @@
 				521A790F0EEB66520016F43B /* seq_ui_trkdir.c */,
 				523E38080EE9FEF600E79FF4 /* mios32_dout.c */,
 				523E38060EE9FEDD00E79FF4 /* mios32_din.c */,
-				52FB47B50EE9DBA40024489C /* app_lcd.h */,
 				52FB47B20EE9DB4D0024489C /* mios32_lcd.c */,
 				52FB46740EE9BE1C0024489C /* mios32_midi.c */,
 				52FB46750EE9BE1C0024489C /* mios32_uart_midi.c */,
@@ -692,7 +693,6 @@
 				52D682280EE1E7AF0050D856 /* seq_trg.h */,
 				52D682290EE1E7AF0050D856 /* seq_ui.c */,
 				52D6822A0EE1E7AF0050D856 /* seq_ui.h */,
-				522A0DB30E8FE5AB0084B1EE /* CLCDView_charset.inc */,
 				522A10F50E910BCA0084B1EE /* seq_lcd.c */,
 				522A10F60E910BCA0084B1EE /* seq_lcd.h */,
 				32CA4F630368D1EE00C91783 /* midibox_seq_v4_Prefix.pch */,
@@ -884,9 +884,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
-				522A0DB40E8FE5AB0084B1EE /* CLCDView.m in Sources */,
-				522A0DB50E8FE5AB0084B1EE /* CLCDView_charset.inc in Sources */,
-				522A0DB80E8FE5B90084B1EE /* UI.m in Sources */,
 				522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */,
 				52A74F1A0E92701800D65394 /* SEQButton.m in Sources */,
 				52A74FE90E92858600D65394 /* SEQEncoder.m in Sources */,
@@ -900,7 +897,6 @@
 				52FB46770EE9BE1C0024489C /* mios32_uart_midi.c in Sources */,
 				52FB46BA0EE9C8CB0024489C /* MIOS32_MIDI_Wrapper.m in Sources */,
 				52FB47360EE9D38D0024489C /* MIOS32_TIMER_Wrapper.m in Sources */,
-				52FB47760EE9D7CD0024489C /* MIOS32_LCD_Wrapper.m in Sources */,
 				52FB47B30EE9DB4D0024489C /* mios32_lcd.c in Sources */,
 				523E374B0EE9E75C00E79FF4 /* FreeRTOS_Wrapper.m in Sources */,
 				523E375A0EE9E81C00E79FF4 /* MIOS32_IRQ_Wrapper.m in Sources */,
@@ -1018,6 +1014,10 @@
 				52D90E831141CFA10054119B /* seq_terminal.c in Sources */,
 				526C0065116136F600AE9208 /* FATFS_Wrapper.m in Sources */,
 				526C00A811624A4A00AE9208 /* FATFS_Wrapper_Dir.c in Sources */,
+				52051071117788A100B60101 /* app_lcd.cpp in Sources */,
+				5205108C1177936F00B60101 /* CLcdView.mm in Sources */,
+				520510CF11779C4800B60101 /* UI.mm in Sources */,
+				520511C11177ADFA00B60101 /* CLcd.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1088,6 +1088,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/app_lcd/macos,
 					../../../../modules/fatfs/src,
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
@@ -1117,6 +1118,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/app_lcd/macos,
 					../../../../modules/fatfs/src,
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
