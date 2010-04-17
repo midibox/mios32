@@ -1950,7 +1950,7 @@
 						<string key="NSFrame">{{77, 328}, {50, 20}}</string>
 						<reference key="NSSuperview" ref="766721923"/>
 						<bool key="IBUIOpaque">NO</bool>
-						<int key="IBUITag">49</int>
+						<int key="IBUITag">28</int>
 						<string key="targetRuntimeIdentifier">IBIPadFramework</string>
 						<int key="IBUIContentHorizontalAlignment">0</int>
 						<int key="IBUIContentVerticalAlignment">0</int>
@@ -1969,7 +1969,7 @@
 						<string key="NSFrame">{{139, 328}, {50, 20}}</string>
 						<reference key="NSSuperview" ref="766721923"/>
 						<bool key="IBUIOpaque">NO</bool>
-						<int key="IBUITag">28</int>
+						<int key="IBUITag">29</int>
 						<string key="targetRuntimeIdentifier">IBIPadFramework</string>
 						<int key="IBUIContentHorizontalAlignment">0</int>
 						<int key="IBUIContentVerticalAlignment">0</int>
@@ -1988,7 +1988,7 @@
 						<string key="NSFrame">{{201, 328}, {50, 20}}</string>
 						<reference key="NSSuperview" ref="766721923"/>
 						<bool key="IBUIOpaque">NO</bool>
-						<int key="IBUITag">29</int>
+						<int key="IBUITag">30</int>
 						<string key="targetRuntimeIdentifier">IBIPadFramework</string>
 						<int key="IBUIContentHorizontalAlignment">0</int>
 						<int key="IBUIContentVerticalAlignment">0</int>
@@ -2007,7 +2007,7 @@
 						<string key="NSFrame">{{263, 328}, {50, 20}}</string>
 						<reference key="NSSuperview" ref="766721923"/>
 						<bool key="IBUIOpaque">NO</bool>
-						<int key="IBUITag">30</int>
+						<int key="IBUITag">13</int>
 						<string key="targetRuntimeIdentifier">IBIPadFramework</string>
 						<int key="IBUIContentHorizontalAlignment">0</int>
 						<int key="IBUIContentVerticalAlignment">0</int>
