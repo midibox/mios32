@@ -163,7 +163,7 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .metronome = 1,
   .loop = 1,
   .follow = 1,
-#ifdef MIOS32_FAMILY_EMULATION
+#if defined(MIOS32_FAMILY_EMULATION) && !defined(MIOS32_BOARD_IPAD)
   .scrub = 1,
   .menu = 1,
   .step_view = 1,
