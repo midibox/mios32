@@ -9,8 +9,14 @@
 //
 
 #import "SeqEncoder.h"
+#include <mios32.h>
 
 @implementation SeqEncoder
+
+int lastAngle;
+
+// located in app.c
+extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -20,8 +26,8 @@
 {
     [super awakeFromNib];
     // events for touchDown/touchUp already created in SeqButton
-    // define additional event for encoder movements
-    [super addTarget:self action:@selector(moveEncoder:) forControlEvents:UIControlEventTouchDragInside];
+
+    lastAngle = -1;
 }
 
 
@@ -68,18 +74,70 @@
 //////////////////////////////////////////////////////////////////////////////
 - (void)touchDown:(UIEvent*)event
 {
+#if 0
     [self setLedState:2];
+#endif
+    lastAngle = -1;
 }
 
 - (void)touchUp:(UIEvent*)event
 {
+#if 0
     [self setLedState:0];
+#endif
 }
 
-- (void)moveEncoder:(UIEvent*)event
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
+#if 0
     [self setLedState:3];
-}
+#endif
 
+	UITouch *touch = [touches anyObject];
+	if( [touch view] == self ) {
+		CGPoint location = [touch locationInView:self];
+        CGFloat width = CGRectGetWidth(self.frame);
+        CGFloat height = CGRectGetHeight(self.frame);
+        CGFloat relX = location.x - width/2;
+        CGFloat relY = height/2 - location.y;
+        CGFloat angle;
+
+        // from my beloved "Mathematische Formelsammlung" by Lothar Papula :)
+        if( relX == 0 ) {
+            if( relY == 0 )
+                angle = 0;
+            else
+                angle = (relY > 0 ) ? M_PI/2 : (3*M_PI/2);
+        } else {
+            angle = atan(relY/relX);
+            if( relX < 0 )
+                angle += M_PI;
+            else if( relY < 0 )
+                angle += 2*M_PI;
+        }
+
+        angle = 180 * angle / M_PI;
+
+#if 0
+        NSLog(@"Touched %d: %f %f %f", [self tag], relX, relY, angle);
+#endif
+        if( lastAngle >= 0 ) {
+            CGFloat delta = lastAngle - angle;
+            if( delta > 300 ) // we assume a transition from >360°
+                delta -= 360;
+            else if( delta < -300 )
+                delta += 360;
+
+#if 0
+            NSLog(@"Delta: %f", delta);
+#endif
+
+            // notify application
+            APP_ENC_NotifyChange([self tag], (delta >= 0) ? 1 : -1);
+        }
+
+        lastAngle = angle;
+	}
+}
 
 @end

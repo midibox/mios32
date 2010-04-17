@@ -2929,7 +2929,6 @@
 						<string key="NSFrame">{{463, 255}, {100, 100}}</string>
 						<reference key="NSSuperview" ref="766721923"/>
 						<bool key="IBUIOpaque">NO</bool>
-						<int key="IBUITag">8</int>
 						<string key="targetRuntimeIdentifier">IBIPadFramework</string>
 						<int key="IBUIContentHorizontalAlignment">0</int>
 						<int key="IBUIContentVerticalAlignment">0</int>
@@ -3438,30 +3437,6 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">buttonTLayerA</string>
-						<reference key="source" ref="841351856"/>
-						<reference key="destination" ref="570529120"/>
-					</object>
-					<int key="connectionID">259</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">buttonTLayerB</string>
-						<reference key="source" ref="841351856"/>
-						<reference key="destination" ref="887675147"/>
-					</object>
-					<int key="connectionID">260</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">buttonTLayerC</string>
-						<reference key="source" ref="841351856"/>
-						<reference key="destination" ref="792594458"/>
-					</object>
-					<int key="connectionID">261</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBCocoaTouchOutletConnection" key="connection">
 						<string key="label">buttonUtility</string>
 						<reference key="source" ref="841351856"/>
 						<reference key="destination" ref="961161075"/>
@@ -3635,6 +3610,30 @@
 						<reference key="destination" ref="768167922"/>
 					</object>
 					<int key="connectionID">287</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBCocoaTouchOutletConnection" key="connection">
+						<string key="label">buttonTLayerA</string>
+						<reference key="source" ref="841351856"/>
+						<reference key="destination" ref="416793124"/>
+					</object>
+					<int key="connectionID">288</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBCocoaTouchOutletConnection" key="connection">
+						<string key="label">buttonTLayerB</string>
+						<reference key="source" ref="841351856"/>
+						<reference key="destination" ref="320747060"/>
+					</object>
+					<int key="connectionID">289</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBCocoaTouchOutletConnection" key="connection">
+						<string key="label">buttonTLayerC</string>
+						<reference key="source" ref="841351856"/>
+						<reference key="destination" ref="920042419"/>
+					</object>
+					<int key="connectionID">290</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -5137,7 +5136,7 @@
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">287</int>
+			<int key="maxID">290</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
