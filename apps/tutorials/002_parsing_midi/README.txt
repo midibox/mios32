@@ -45,7 +45,7 @@ interface which can be changed by the user during runtime.
 DEFAULT usually points to the "USB0" port.
 
 DEBUG is used to transmit/receive debug messages (see 003_debug_messages)
-DEFAULT usually points to the "USB0" port as well.
+DEBUG usually points to the "USB0" port as well.
 
 More USB ports can be optionally added (see later tutorials).
 IIC ports require additional hardware (see later tutorials).
