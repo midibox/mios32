@@ -41,12 +41,19 @@ static mios32_osc_search_tree_t parse_root[];
 static u8 *osc_send_packet;
 static u32 osc_send_len;
 
+static u32 osc_remote_ip = OSC_REMOTE_IP;
+static u16 osc_remote_port = OSC_SERVER_PORT;
+
+static u8 running_sysex;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the OSC daemon
 /////////////////////////////////////////////////////////////////////////////
 s32 OSC_SERVER_Init(u32 mode)
 {
+  // disable sysex status
+  running_sysex = 0;
+
   // disable send packet
   osc_send_packet = NULL;
 
@@ -58,13 +65,13 @@ s32 OSC_SERVER_Init(u32 mode)
   // create new connection
   uip_ipaddr_t ripaddr;
   uip_ipaddr(ripaddr,
-	     ((OSC_REMOTE_IP)>>24) & 0xff,
-	     ((OSC_REMOTE_IP)>>16) & 0xff,
-	     ((OSC_REMOTE_IP)>> 8) & 0xff,
-	     ((OSC_REMOTE_IP)>> 0) & 0xff);
+	     ((osc_remote_ip)>>24) & 0xff,
+	     ((osc_remote_ip)>>16) & 0xff,
+	     ((osc_remote_ip)>> 8) & 0xff,
+	     ((osc_remote_ip)>> 0) & 0xff);
 
-  if( (osc_conn=uip_udp_new(&ripaddr, HTONS(OSC_SERVER_PORT))) != NULL ) {
-    uip_udp_bind(osc_conn, HTONS(OSC_SERVER_PORT));
+  if( (osc_conn=uip_udp_new(&ripaddr, HTONS(osc_remote_port))) != NULL ) {
+    uip_udp_bind(osc_conn, HTONS(osc_remote_port));
 #if DEBUG_VERBOSE_LEVEL >= 1
     MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] listen to %d.%d.%d.%d:%d\n", 
 				 (osc_conn->ripaddr[0] >> 0) & 0xff,
@@ -77,9 +84,37 @@ s32 OSC_SERVER_Init(u32 mode)
 #if DEBUG_VERBOSE_LEVEL >= 1
     MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] FAILED to create connection (no free ports)\n");
 #endif
+    return -1;
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Get/Set functions
+/////////////////////////////////////////////////////////////////////////////
+s32 OSC_SERVER_RemoteIP_Set(u32 ip)
+{
+  osc_remote_ip = ip;
+  return OSC_SERVER_Init(0);
+}
+
+u32 OSC_SERVER_RemoteIP_Get(void)
+{
+  return osc_remote_ip;
+}
+
+
+s32 OSC_SERVER_RemotePortSet(u16 port)
+{
+  osc_remote_port = port;
+  return OSC_SERVER_Init(0);
+}
+
+u16 OSC_SERVER_RemotePortGet(void)
+{
+  return osc_remote_port;
 }
 
 
@@ -197,6 +232,34 @@ static s32 OSC_SERVER_Method_SendMIDI(mios32_osc_args_t *osc_args, u32 method_ar
 
   mios32_midi_package_t p = MIOS32_OSC_GetMIDI(osc_args->arg_ptr[0]);
 
+  // extra treatment for SysEx messages
+  if( p.evnt0 >= 0xf0 || p.evnt0 < 0x80 ) {
+    if( p.evnt0 >= 0xf8 )
+      p.cin = 0xf; // realtime
+    if( p.evnt0 == 0xf7 ) {
+      p.cin = 5; // SysEx ends with single byte
+      running_sysex = 0;
+    } else if( p.evnt1 == 0xf7 ) {
+      p.cin = 6; // SysEx ends with two bytes
+      running_sysex = 0;
+    } else if( p.evnt2 == 0xf7 ) {
+      p.cin = 7; // SysEx ends with three bytes
+      running_sysex = 0;
+    } else if( p.evnt0 == 0xf0 ) {
+      p.cin = 4; // SysEx starts or continues
+      running_sysex = 1;
+    } else {
+      running_sysex = 0;
+      if( p.evnt0 == 0xf1 || p.evnt0 == 0xf3 )
+	p.cin = 2; // two byte system common message
+      else
+	p.cin = 3; // three byte system common message
+    }
+  } else {
+    p.cin = p.evnt0 >> 4;
+    running_sysex = 0;
+  }
+
   // port is located in method argument
   MIOS32_MIDI_SendPackage(method_arg, p);
 
@@ -214,13 +277,9 @@ static mios32_osc_search_tree_t parse_root[] = {
 
   { "midi_usb0", NULL, &OSC_SERVER_Method_SendMIDI, USB0 },
   { "midi_usb1", NULL, &OSC_SERVER_Method_SendMIDI, USB1 },
-  { "midi_usb2", NULL, &OSC_SERVER_Method_SendMIDI, USB2 },
-  { "midi_usb3", NULL, &OSC_SERVER_Method_SendMIDI, USB3 },
 
   { "midi_uart0", NULL, &OSC_SERVER_Method_SendMIDI, UART0 },
   { "midi_uart1", NULL, &OSC_SERVER_Method_SendMIDI, UART1 },
-  { "midi_uart2", NULL, &OSC_SERVER_Method_SendMIDI, UART2 },
-  { "midi_uart3", NULL, &OSC_SERVER_Method_SendMIDI, UART3 },
 
   { NULL, NULL, NULL, 0 } // terminator
 };

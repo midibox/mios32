@@ -430,12 +430,23 @@ s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6])
       for(i=0; i<6; ++i)
 	mac_addr[i] = i;
     } else {
+#if 0     
       for(i=0; i<6; ++i) {
 	// convert hex string to dec
 	char digitl = serial[len-i*2 - 1];
 	char digith = serial[len-i*2 - 2];
 	mac_addr[i] = ((digitl >= 'A') ? (digitl-'A'+10) : (digitl-'0')) |
 	  (((digith >= 'A') ? (digith-'A'+10) : (digith-'0')) << 4);
+#else
+      // TK: for some reasons, my Fritzbox router doesn't accept MACs that are not starting with 0x00
+      mac_addr[0] = 0x00;
+      for(i=1; i<6; ++i) {
+	// convert hex string to dec
+	char digitl = serial[len-(i-1)*2 - 1];
+	char digith = serial[len-(i-1)*2 - 2];
+	mac_addr[i] = ((digitl >= 'A') ? (digitl-'A'+10) : (digitl-'0')) |
+	  (((digith >= 'A') ? (digith-'A'+10) : (digith-'0')) << 4);
+#endif
       }
     }
   }
@@ -483,21 +494,21 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
   // re-init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
   if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) 
-	goto error;
+    goto error;
 	
   // wait until a new package can be transmitted
   int timeout_ctr = 1000;
   while( --timeout_ctr > 0 ) {
     status = MIOS32_ENC28J60_ReadETHReg(ECON1);
     if( status < 0 ) 
-	  goto error;
+      goto error;
     if( !(status & ECON1_TXRTS) )
       break;
   }
 
   if( timeout_ctr == 0 ) {
     status=-16;
-	goto error;
+    goto error;
   }
   // Set the SPI write pointer to the beginning of the transmit buffer
   status |= MIOS32_ENC28J60_BankSel(EWRPTL);
@@ -505,7 +516,7 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
   status |= MIOS32_ENC28J60_WriteReg(EWRPTH, (TXSTART >> 8) & 0xff);
 
   if( status < 0 ) 
-	goto error;
+    goto error;
   
   // Calculate where to put the TXND pointer
   u16 end_addr = TXSTART + len + len2; // package control byte has already been considered in this calculation (+1 .. -1)
@@ -539,7 +550,7 @@ s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
 
   // This one is a bit pointless but we may add special rev code below!
   if( status < 0 ) 
-	goto error;
+    goto error;
 	
   // Revision B5 and B7 silicon errata workaround
   if( rev_id == 0x05 || rev_id == 0x06 ) {
@@ -586,12 +597,13 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
 	
   if( package_count <= 0 ) {
     status=package_count;
-	goto error;
+    goto error;
   }
   // Make absolutely certain that any previous packet was discarded
   if( !WasDiscarded ) {
     status = MIOS32_ENC28J60_MACDiscardRx();
     status = (status < 0) ? status : 0;
+    goto error;
   }
 
   // Set the SPI read pointer to the beginning of the next unprocessed packet
@@ -613,18 +625,18 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   if( header.NextPacketPointer > RXSTOP ||
       (header.NextPacketPointer & 1) ||
       header.StatusVector.bits.Zero ||
-      header.StatusVector.bits.ByteCount > 1518u ) {
+      header.StatusVector.bits.ByteCount > MIOS32_ENC28J60_MAX_FRAME_SIZE ) {
 
-    MIOS32_MIDI_SendDebugMessage("[MIOS32_ENC28J60_PackageReceive] glitch detected - Ptr: %04x, Status: %04x %02x%02x\n",
+    MIOS32_MIDI_SendDebugMessage("[MIOS32_ENC28J60_PackageReceive] glitch detected - Ptr: %04x, Status: %04x (max: %04x) %02x%02x\n",
 				 header.NextPacketPointer,
 				 header.StatusVector.bits.ByteCount,
+				 MIOS32_ENC28J60_MAX_FRAME_SIZE,
 				 header.StatusVector.v[3], header.StatusVector.v[2]);
     // Reset device (must keep mutex)
     MIOS32_ENC28J60_PowerOn();
     // no packet received
     status=-16;
-	goto error;
-
+    goto error;
   }
 
   // Save the location where the hardware will write the next packet to
@@ -638,7 +650,7 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   if( !packet_len || header.StatusVector.bits.CRCError || !header.StatusVector.bits.ReceiveOk ) {
     status = MIOS32_ENC28J60_MACDiscardRx(); // discard package immediately
     status = (status < 0) ? status : 0;
-	goto error;
+    goto error;
   }
 
   // ensure that we don't read more bytes than the buffer can store

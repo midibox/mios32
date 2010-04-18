@@ -55,7 +55,7 @@ typedef u16 uip_stats_t;
  *
  * \hideinitializer
  */
-#define UIP_CONF_BUFFER_SIZE     420
+#define UIP_CONF_BUFFER_SIZE     MIOS32_ENC28J60_MAX_FRAME_SIZE
 
 /**
  * CPU byte order.

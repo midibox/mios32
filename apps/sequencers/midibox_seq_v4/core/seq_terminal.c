@@ -171,7 +171,6 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 
     line_ix = 0;
 
-    MUTEX_MIDIOUT_GIVE;
   } else if( line_ix < (STRING_MAX-1) ) {
     line_buffer[line_ix++] = byte;
     line_buffer[line_ix] = 0;
