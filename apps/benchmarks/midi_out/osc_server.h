@@ -45,6 +45,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 OSC_SERVER_Init(u32 mode);
+
+extern s32 OSC_SERVER_RemoteIP_Set(u32 ip);
+extern u32 OSC_SERVER_RemoteIP_Get(void);
+extern s32 OSC_SERVER_RemotePortSet(u16 port);
+extern u16 OSC_SERVER_RemotePortGet(void);
+
 extern s32 OSC_SERVER_AppCall(void);
 extern s32 OSC_SERVER_SendPacket(u8 *packet, u32 len);
 

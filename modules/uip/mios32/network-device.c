@@ -81,6 +81,12 @@ int network_device_read(void)
   }
 #endif
 
+#if DEBUG_VERBOSE_LEVEL >= 3
+  if( status ) {
+    MIOS32_MIDI_SendDebugHexDump((u8 *)uip_buf, status);
+  }
+#endif
+
   return status;
 }
 

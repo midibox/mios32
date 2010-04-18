@@ -1119,7 +1119,10 @@ uip_process(u8_t flag)
       goto udp_found;
     }
   }
+#if 0
+  // TK: messages sometimes cannot be avoided... disable it!
   UIP_LOG("udp: no matching connection found");
+#endif
   goto drop;
   
  udp_found:

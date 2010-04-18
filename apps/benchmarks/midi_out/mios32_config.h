@@ -20,7 +20,7 @@
 
 // ENC28J60 settings
 #define MIOS32_ENC28J60_FULL_DUPLEX 1
-#define MIOS32_ENC28J60_MAX_FRAME_SIZE 420
+#define MIOS32_ENC28J60_MAX_FRAME_SIZE 1504
 
 // a unique MAC address in your network (6 bytes are required)
 // If all bytes are 0, the serial number of STM32 will be taken instead,
@@ -38,7 +38,7 @@
 
 // #define DONT_USE_DHCP
 
-#ifndef DONT_USE_DHCP
+#ifdef DONT_USE_DHCP
 // Ethernet configuration:
 //                      192        .  168        .    2       .  100
 # define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
