@@ -1463,6 +1463,11 @@ extern AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 //==============================================================================
 static AEffect* pluginEntryPoint (audioMasterCallback audioMaster)
 {
+#ifdef WIN32
+	// As WIN32 doesn't have stderr redirection for non console apps.
+	// Remove when we have finished debugging!
+	freopen( "c:/stderr.log", "a+", stderr ); 
+#endif
     initialiseJuce_GUI();
 
     try

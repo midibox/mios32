@@ -85,7 +85,11 @@ StandaloneFilterWindow::StandaloneFilterWindow (const String& title,
             const int y = globalSettings->getIntValue (T("windowY"), -100);
 
             if (x != -100 && y != -100)
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
                 setBoundsConstrained (x, y, getWidth(), getHeight());
+#else
+				setBoundsConstrained (Rectangle <int>(x, y, getWidth(), getHeight()));
+#endif
             else
                 centreWithSize (getWidth(), getHeight());
 

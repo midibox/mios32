@@ -50,8 +50,11 @@ void Knob::paint(Graphics& g)
                     imageOffset, 0, singleImageWidth, singleImageHeight,
                     false);
     }
-
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
     g.setFont(Font(Typeface::defaultTypefaceNameSans, 13.0, 0));
+#else
+    g.setFont(Font(Font::getDefaultSansSerifFontName(), 13.0, 0));
+#endif
     g.setColour(Colours::white);
     g.drawText(getName(), 0, singleImageHeight-16, singleImageWidth, 16, Justification::verticallyCentred | Justification::horizontallyCentred, true);
 

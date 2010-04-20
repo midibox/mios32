@@ -62,6 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				IgnoreDefaultLibraryNames="libcmtd"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -355,6 +356,14 @@
 						RelativePath="..\..\..\..\..\..\modules\aout\aout.c"
 						>
 						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="2"
+							/>
+						</FileConfiguration>
+						<FileConfiguration
 							Name="Release|Win32"
 							>
 							<Tool
@@ -366,6 +375,14 @@
 					<File
 						RelativePath="..\..\..\..\..\..\modules\random\jsw_rand.c"
 						>
+						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="2"
+							/>
+						</FileConfiguration>
 						<FileConfiguration
 							Name="Release|Win32"
 							>
@@ -379,6 +396,14 @@
 						RelativePath="..\..\..\..\..\..\modules\notestack\notestack.c"
 						>
 						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="2"
+							/>
+						</FileConfiguration>
+						<FileConfiguration
 							Name="Release|Win32"
 							>
 							<Tool
@@ -390,6 +415,14 @@
 					<File
 						RelativePath="..\..\..\..\..\..\modules\sid\sid.c"
 						>
+						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="2"
+							/>
+						</FileConfiguration>
 						<FileConfiguration
 							Name="Release|Win32"
 							>
@@ -511,12 +544,12 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
+			<Filter
+				Name="Resource Files"
+				Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+				UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+				>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>
