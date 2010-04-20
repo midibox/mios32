@@ -46,7 +46,6 @@
 
 #define JUCE_QUICKTIME  0
 #define JUCE_SUPPORT_CARBON 1
-
 //#define JUCE_PLUGINHOST_VST  1
 //#define JUCE_PLUGINHOST_AU  1
 //#define JUCE_ONLY_BUILD_CORE_LIBRARY   1
@@ -57,7 +56,7 @@
 //#define JUCE_OPENGL  1
 //#define JUCE_USE_FLAC  1
 //#define JUCE_USE_OGGVORBIS  1
-//#define JUCE_USE_CDBURNER  1
+#define JUCE_USE_CDBURNER  0
 //#define JUCE_ENABLE_REPAINT_DEBUGGING  1
 //#define JUCE_USE_XINERAMA  1
 //#define JUCE_USE_XSHM  1
