@@ -23,6 +23,7 @@
 #include "MiosTerminal.h"
 #include "MidiKeyboard.h"
 #include "SysexTool.h"
+#include "OscTool.h"
 #include "Midio128Tool.h"
 #include "MbCvTool.h"
 #include "../UploadHandler.h"
@@ -38,8 +39,9 @@ public:
     enum CommandIDs {
         rescanDevices              = 0x1000,
         showSysexTool              = 0x2000,
-        showMidio128Tool           = 0x2001,
-        showMbCvTool               = 0x2002,
+        showOscTool                = 0x2001,
+        showMidio128Tool           = 0x2002,
+        showMbCvTool               = 0x2003,
         showMiosStudioPage         = 0x3000,
         showTroubleshootingPage    = 0x3001,
     };
@@ -80,6 +82,7 @@ public:
 
     // Windows opened by Tools button in Upload Window
     SysexToolWindow *sysexToolWindow;
+    OscToolWindow *oscToolWindow;
     Midio128ToolWindow *midio128ToolWindow;
     MbCvToolWindow *mbCvToolWindow;
 

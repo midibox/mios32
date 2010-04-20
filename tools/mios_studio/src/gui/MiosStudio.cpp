@@ -33,6 +33,7 @@ MiosStudio::MiosStudio()
 
     // tools are made visible via tools button in Upload Window
     sysexToolWindow = new SysexToolWindow(this);
+    oscToolWindow = new OscToolWindow(this);
     midio128ToolWindow = new Midio128ToolWindow(this);
     mbCvToolWindow = new MbCvToolWindow(this);
 
@@ -78,6 +79,7 @@ MiosStudio::~MiosStudio()
 {
 	deleteAndZero(uploadHandler);
 	deleteAndZero(sysexToolWindow);
+	deleteAndZero(oscToolWindow);
 	deleteAndZero(midio128ToolWindow);
 	deleteAndZero(mbCvToolWindow);
     deleteAllChildren();
@@ -338,6 +340,7 @@ const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String&
     } else if( topLevelMenuIndex == 1 ) {
         // "Tools" menu
         menu.addCommandItem(commandManager, showSysexTool);
+        menu.addCommandItem(commandManager, showOscTool);
         menu.addCommandItem(commandManager, showMidio128Tool);
         menu.addCommandItem(commandManager, showMbCvTool);
     } else if( topLevelMenuIndex == 2 ) {
@@ -370,6 +373,7 @@ void MiosStudio::getAllCommands(Array <CommandID>& commands)
 {
     // this returns the set of all commands that this target can perform..
     const CommandID ids[] = { showSysexTool,
+                              showOscTool,
                               showMidio128Tool,
                               showMbCvTool,
                               rescanDevices,
@@ -397,6 +401,12 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
     case showSysexTool:
         result.setInfo(T("SysEx Tool"), T("Allows to send and receive SysEx dumps"), toolsCategory, 0);
         result.setTicked(sysexToolWindow->isVisible());
+        result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showOscTool:
+        result.setInfo(T("OSC Tool"), T("Allows to send and receive OSC messages"), toolsCategory, 0);
+        result.setTicked(oscToolWindow->isVisible());
         result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
@@ -436,6 +446,11 @@ bool MiosStudio::perform(const InvocationInfo& info)
     case showSysexTool:
         sysexToolWindow->setVisible(true);
         sysexToolWindow->toFront(true);
+        break;
+
+    case showOscTool:
+        oscToolWindow->setVisible(true);
+        oscToolWindow->toFront(true);
         break;
 
     case showMidio128Tool:
