@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		520A3F3F117E2CFE00D93C28 /* UdpSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 520A3F3D117E2CFE00D93C28 /* UdpSocket.cpp */; };
 		521D8E3F1120CDB00013F929 /* UploadHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521D8E3D1120CDB00013F929 /* UploadHandler.cpp */; };
+		5224B2B4117E469A00CFB9D3 /* OscMonitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5224B2B2117E469A00CFB9D3 /* OscMonitor.cpp */; };
+		5224B2D4117E4A4800CFB9D3 /* OscTextEditor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5224B2D2117E4A4800CFB9D3 /* OscTextEditor.cpp */; };
+		5224B2FD117E4F9400CFB9D3 /* OscHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5224B2FB117E4F9400CFB9D3 /* OscHelper.cpp */; };
 		526D2C5A1135BEE8004A1521 /* Midio128Tool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D2C581135BEE8004A1521 /* Midio128Tool.cpp */; };
 		526D2D87113871BA004A1521 /* ConfigTableComponents.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D2D85113871BA004A1521 /* ConfigTableComponents.cpp */; };
 		526D317A1139CC9B004A1521 /* MbCvTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D31781139CC9B004A1521 /* MbCvTool.cpp */; };
@@ -23,6 +27,7 @@
 		52B714FA111DE709000B8F5A /* MiosTerminal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B714F8111DE709000B8F5A /* MiosTerminal.cpp */; };
 		52B71527111DEB9F000B8F5A /* MidiKeyboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71525111DEB9F000B8F5A /* MidiKeyboard.cpp */; };
 		52B71594111DF8B6000B8F5A /* MidiSlider.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71592111DF8B6000B8F5A /* MidiSlider.cpp */; };
+		52C01556117CF0AA00562B7C /* OscTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C01554117CF0AA00562B7C /* OscTool.cpp */; };
 		52C4601F111EF90D00F179A8 /* HexFileLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */; };
 		52E2183911404AE40030AD40 /* MIOS_Studio.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52E2183811404AE40030AD40 /* MIOS_Studio.icns */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
@@ -43,8 +48,16 @@
 		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		4A9504C8FFE6A3BC11CA0CBA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = /System/Library/Frameworks/ApplicationServices.framework; sourceTree = "<absolute>"; };
 		4A9504CAFFE6A41611CA0CBA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		520A3F3D117E2CFE00D93C28 /* UdpSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UdpSocket.cpp; path = ../../src/UdpSocket.cpp; sourceTree = SOURCE_ROOT; };
+		520A3F3E117E2CFE00D93C28 /* UdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UdpSocket.h; path = ../../src/UdpSocket.h; sourceTree = SOURCE_ROOT; };
 		521D8E3D1120CDB00013F929 /* UploadHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UploadHandler.cpp; path = ../../src/UploadHandler.cpp; sourceTree = SOURCE_ROOT; };
 		521D8E3E1120CDB00013F929 /* UploadHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UploadHandler.h; path = ../../src/UploadHandler.h; sourceTree = SOURCE_ROOT; };
+		5224B2B2117E469A00CFB9D3 /* OscMonitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscMonitor.cpp; path = ../../src/gui/OscMonitor.cpp; sourceTree = SOURCE_ROOT; };
+		5224B2B3117E469A00CFB9D3 /* OscMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscMonitor.h; path = ../../src/gui/OscMonitor.h; sourceTree = SOURCE_ROOT; };
+		5224B2D2117E4A4800CFB9D3 /* OscTextEditor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscTextEditor.cpp; path = ../../src/gui/OscTextEditor.cpp; sourceTree = SOURCE_ROOT; };
+		5224B2D3117E4A4800CFB9D3 /* OscTextEditor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscTextEditor.h; path = ../../src/gui/OscTextEditor.h; sourceTree = SOURCE_ROOT; };
+		5224B2FB117E4F9400CFB9D3 /* OscHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscHelper.cpp; path = ../../src/OscHelper.cpp; sourceTree = SOURCE_ROOT; };
+		5224B2FC117E4F9400CFB9D3 /* OscHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscHelper.h; path = ../../src/OscHelper.h; sourceTree = SOURCE_ROOT; };
 		526D2C581135BEE8004A1521 /* Midio128Tool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Midio128Tool.cpp; path = ../../src/gui/Midio128Tool.cpp; sourceTree = SOURCE_ROOT; };
 		526D2C591135BEE8004A1521 /* Midio128Tool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Midio128Tool.h; path = ../../src/gui/Midio128Tool.h; sourceTree = SOURCE_ROOT; };
 		526D2D85113871BA004A1521 /* ConfigTableComponents.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConfigTableComponents.cpp; path = ../../src/gui/ConfigTableComponents.cpp; sourceTree = SOURCE_ROOT; };
@@ -76,6 +89,8 @@
 		52B71526111DEB9F000B8F5A /* MidiKeyboard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiKeyboard.h; path = ../../src/gui/MidiKeyboard.h; sourceTree = SOURCE_ROOT; };
 		52B71592111DF8B6000B8F5A /* MidiSlider.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiSlider.cpp; path = ../../src/gui/MidiSlider.cpp; sourceTree = SOURCE_ROOT; };
 		52B71593111DF8B6000B8F5A /* MidiSlider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiSlider.h; path = ../../src/gui/MidiSlider.h; sourceTree = SOURCE_ROOT; };
+		52C01554117CF0AA00562B7C /* OscTool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscTool.cpp; path = ../../src/gui/OscTool.cpp; sourceTree = SOURCE_ROOT; };
+		52C01555117CF0AA00562B7C /* OscTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscTool.h; path = ../../src/gui/OscTool.h; sourceTree = SOURCE_ROOT; };
 		52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HexFileLoader.cpp; path = ../../src/HexFileLoader.cpp; sourceTree = SOURCE_ROOT; };
 		52C4601E111EF90D00F179A8 /* HexFileLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HexFileLoader.h; path = ../../src/HexFileLoader.h; sourceTree = SOURCE_ROOT; };
 		52E2183811404AE40030AD40 /* MIOS_Studio.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = MIOS_Studio.icns; path = ../../icon/MIOS_Studio.icns; sourceTree = SOURCE_ROOT; };
@@ -185,6 +200,16 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				5224B2FB117E4F9400CFB9D3 /* OscHelper.cpp */,
+				5224B2FC117E4F9400CFB9D3 /* OscHelper.h */,
+				5224B2D2117E4A4800CFB9D3 /* OscTextEditor.cpp */,
+				5224B2D3117E4A4800CFB9D3 /* OscTextEditor.h */,
+				5224B2B2117E469A00CFB9D3 /* OscMonitor.cpp */,
+				5224B2B3117E469A00CFB9D3 /* OscMonitor.h */,
+				520A3F3D117E2CFE00D93C28 /* UdpSocket.cpp */,
+				520A3F3E117E2CFE00D93C28 /* UdpSocket.h */,
+				52C01554117CF0AA00562B7C /* OscTool.cpp */,
+				52C01555117CF0AA00562B7C /* OscTool.h */,
 				527DEE55113AD42600226EF2 /* version.h */,
 				526D31781139CC9B004A1521 /* MbCvTool.cpp */,
 				526D31791139CC9B004A1521 /* MbCvTool.h */,
@@ -295,6 +320,11 @@
 				526D2C5A1135BEE8004A1521 /* Midio128Tool.cpp in Sources */,
 				526D2D87113871BA004A1521 /* ConfigTableComponents.cpp in Sources */,
 				526D317A1139CC9B004A1521 /* MbCvTool.cpp in Sources */,
+				52C01556117CF0AA00562B7C /* OscTool.cpp in Sources */,
+				520A3F3F117E2CFE00D93C28 /* UdpSocket.cpp in Sources */,
+				5224B2B4117E469A00CFB9D3 /* OscMonitor.cpp in Sources */,
+				5224B2D4117E4A4800CFB9D3 /* OscTextEditor.cpp in Sources */,
+				5224B2FD117E4F9400CFB9D3 /* OscHelper.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,6 +383,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
+				HEADER_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
@@ -363,6 +394,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
 				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				HEADER_SEARCH_PATHS = "";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
 			name = Release;
