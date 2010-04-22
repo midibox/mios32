@@ -16,13 +16,17 @@
  * ==========================================================================
  */
 
-#include "UdpSocket.h"
 
 // Unix headers for socket connections - add option for Windows here
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+#ifdef WIN32
+  #include <winsock2.h>
+#else
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <netdb.h>
+#endif
+#include "UdpSocket.h"
 #include <fcntl.h>
 
 
@@ -49,9 +53,21 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
 
     portNumber = _portNumber;
 
+#ifdef WIN32
+	WSADATA wsaData;
+	// Initialize Winsock
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData)!=0) {
+		return false;
+    }
+#endif
+
+
     // make a socket
     if( (oscServerSocket=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0 ) {
         oscServerSocket = -1;
+#ifdef WIN32
+		WSACleanup();
+#endif
         return false;
     }
 
@@ -62,7 +78,16 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
     remoteHostInfo = gethostbyname(remoteHost.toCString());
 #endif
 
-    // fill address struct
+#ifdef WIN32
+	// This looks to be required in windows as remoteHostInfo is null if the host is not found
+	// and that will cause an exception in the memcpy() below
+	if (remoteHostInfo == NULL) {
+		WSACleanup();
+		return false;
+	}
+#endif
+
+	// fill address struct
     memcpy(&remoteAddress, remoteHostInfo->h_addr, remoteHostInfo->h_length);
 
     hostAddressInfo.sin_addr.s_addr=INADDR_ANY;
@@ -71,10 +96,20 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
 
     if( bind(oscServerSocket, (struct sockaddr*)&hostAddressInfo, sizeof(hostAddressInfo)) < 0 ) {
         disconnect();
+#ifdef WIN32
+		WSACleanup();
+#endif
         return false;
     }
 
     // make it non-blocking
+#ifdef WIN32
+	u_long iMode = 1; 
+	if (ioctlsocket(oscServerSocket, FIONBIO, &iMode)!=0) {
+		WSACleanup();
+		return false; // error setting socket status
+	}
+#else
     int status;
     if( fcntl(oscServerSocket, F_GETFL) < 0 ) {
         disconnect();
@@ -87,6 +122,7 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
         disconnect();
         return false; // error while setting socket status
     }
+#endif
 
     return true;
 }
@@ -94,7 +130,12 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
 //==============================================================================
 void UdpSocket::disconnect(void)
 {
+#ifdef WIN32
+    closesocket(oscServerSocket);
+	WSACleanup();
+#else
     close(oscServerSocket);
+#endif
     oscServerSocket = -1;
 }
 
@@ -110,7 +151,7 @@ unsigned UdpSocket::write(unsigned char *datagram, unsigned len)
     remoteAddressInfo.sin_family      = AF_INET;
 
     const struct sockaddr* remoteAddressInfoPtr = (sockaddr *)&remoteAddressInfo; // the sendto function expects a sockaddr parameter...
-    return sendto(oscServerSocket, datagram, len, 0, remoteAddressInfoPtr, sizeof(remoteAddressInfo));
+    return sendto(oscServerSocket, (const char*)datagram, len, 0, remoteAddressInfoPtr, sizeof(remoteAddressInfo));
 }
 
 
@@ -120,7 +161,7 @@ unsigned UdpSocket::read(unsigned char *datagram, unsigned maxLen)
     if( oscServerSocket < 0 )
         return 0;
 
-    int len = recv(oscServerSocket, datagram, maxLen, 0);
+    int len = recv(oscServerSocket,(char*) datagram, maxLen, 0);
 
     return (len < 0) ? 0 : len;
 }
