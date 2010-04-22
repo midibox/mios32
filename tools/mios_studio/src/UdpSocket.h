@@ -35,6 +35,7 @@ public:
 
 
 protected:
+
     int oscServerSocket;
     long remoteAddress;
     unsigned portNumber;

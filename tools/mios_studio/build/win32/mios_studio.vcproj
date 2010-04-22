@@ -196,7 +196,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\OscHelper.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\SysexHelper.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\UdpSocket.cpp"
 				>
 			</File>
 			<File
@@ -247,6 +255,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\gui\OscMonitor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\OscTextEditor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\gui\OscTool.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\gui\SysexTool.cpp"
 					>
 				</File>
@@ -274,11 +294,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\OscHelper.h"
+				>
+			</File>
+			<File
 				RelativePath=".\resource.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\src\SysexHelper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\UdpSocket.h"
 				>
 			</File>
 			<File

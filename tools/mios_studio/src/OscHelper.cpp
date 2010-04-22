@@ -17,6 +17,7 @@
 #include "OscHelper.h"
 #include <string.h>
 
+
 //==============================================================================
 OscHelper::OscHelper()
 {
@@ -38,6 +39,12 @@ static size_t my_strnlen(char *str, size_t max_len)
 
   return len;
 }
+
+//==============================================================================
+// stpcpy is not available in windows, therefore we use a local solution here
+#ifdef WIN32
+static char *stpcpy(char *dest, const char *src){strcpy(dest,src);return dest +strlen(dest);}
+#endif
 
 //==============================================================================
 /////////////////////////////////////////////////////////////////////////////
