@@ -14,6 +14,7 @@
 
 #include "OscTextEditor.h"
 
+#define OSC_BUFFER_MAX 8192
 
 //==============================================================================
 OscTextEditor::OscTextEditor(Label *_statusLabel)
@@ -91,7 +92,28 @@ void OscTextEditor::textEditorFocusLost(TextEditor &editor)
 Array<uint8> OscTextEditor::getBinary(void)
 {
     String oscStr = getText();
-    Array<uint8> retArray;
 
+    // send dummy message for testing only!
+    uint8 packet[OSC_BUFFER_MAX];
+    uint8 *endPtr = packet;
+    uint8 *insertLenPtr;
+
+    OscHelper::OscTimetagT timetag;
+    timetag.seconds = 0;
+    timetag.fraction = 0;
+
+    endPtr = OscHelper::putString(endPtr, "#bundle");
+    endPtr = OscHelper::putTimetag(endPtr, timetag);
+    insertLenPtr = endPtr; // remember this address - we will insert the length later
+    endPtr += 4;
+    endPtr = OscHelper::putString(endPtr, "/foo/bar/xxx/yyy");
+    endPtr = OscHelper::putString(endPtr, ",fisTF");
+    endPtr = OscHelper::putFloat(endPtr, 0.123f);
+    endPtr = OscHelper::putInt(endPtr, 42);
+    endPtr = OscHelper::putString(endPtr, "Hi!");
+    OscHelper::putWord(insertLenPtr, (unsigned)(endPtr-insertLenPtr-4));
+    size_t len = (size_t)(endPtr-packet);
+
+    Array<uint8> retArray(packet, len);
     return retArray;
 }

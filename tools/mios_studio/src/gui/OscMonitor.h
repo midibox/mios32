@@ -16,7 +16,7 @@
 #define _OSC_MONITOR_H
 
 #include "../includes.h"
-#include "../SysexHelper.h"
+#include "../OscHelper.h"
 #include "LogBox.h"
 
 class MiosStudio; // forward declaration
@@ -24,6 +24,7 @@ class MiosStudio; // forward declaration
 class OscMonitor
     : public Component
     , public ComboBoxListener
+    , public OscListener
 {
 public:
     //==============================================================================
@@ -37,6 +38,9 @@ public:
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged);
 
     //==============================================================================
+    void parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const unsigned& methodArg);
+
+    //==============================================================================
     void handleIncomingOscMessage(const unsigned char *message, unsigned size);
 
 protected:
@@ -44,6 +48,8 @@ protected:
     Label* displayOptionsLabel;
     ComboBox* displayOptionsComboBox;
     LogBox* monitorLogBox;
+
+    String oscString;
 
     //==============================================================================
     MiosStudio *miosStudio;

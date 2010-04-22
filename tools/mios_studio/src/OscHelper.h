@@ -35,6 +35,10 @@
 #endif
 
 
+/////////////////////////////////////////////////////////////////////////////
+class OscListener; // forward declaration
+
+/////////////////////////////////////////////////////////////////////////////
 class OscHelper
 {
 public:
@@ -46,12 +50,19 @@ public:
 
     typedef struct {
         OscTimetagT timetag; // the timetag (seconds and fraction)
-        String path;
+        unsigned char numPathParts; // number of address parts
+        char *pathPart[MIOS32_OSC_MAX_PATH_PARTS]; // an array of address paths without wildcards (!) - this allows the method to reconstruct the complete path, e.g. to send parameters to different targets
         unsigned char numArgs; // number of arguments
         char          argType[MIOS32_OSC_MAX_ARGS]; // array of argument tags
         unsigned char *argPtr[MIOS32_OSC_MAX_ARGS]; // pointer to arguments (have to be fetched with MIOS32_OSC_Get*() functions)
     } OscArgsT;
 
+    typedef struct OscSearchTreeT {
+        const char *address;    // OSC address part or NULL if there are no more address parts/methods in the "OSC container"
+        struct OscSearchTreeT *next; // link to the next address part or NULL if the leaf has been reached (method reached)
+        OscListener *oscListener; // if leaf: object that dispatches the addressed OSC method (no function pointers possible in C++... unfortunately)
+        unsigned methodArg;  // optional argument for methods (32bit)
+    } OscSearchTreeT;
 
     //==============================================================================
     OscHelper(void);
@@ -80,8 +91,21 @@ public:
     static unsigned getMIDI(unsigned char *buffer);
     static unsigned char *putMIDI(unsigned char *buffer, unsigned p);
 
-protected:
+    static int parsePacket(unsigned char *packet, const unsigned& len, OscSearchTreeT *searchTree);
 
+    static String element2String(const OscArgsT& oscArgs);
+
+protected:
+    static int searchElement(unsigned char *buffer, const unsigned& len, OscArgsT *oscArgs, OscSearchTreeT *searchTree);
+    static int searchPath(char *path, OscArgsT *oscArgs, const unsigned& methodArg, OscSearchTreeT *searchTree);
+
+};
+
+/////////////////////////////////////////////////////////////////////////////
+class OscListener
+{
+public:
+    virtual void parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const unsigned& methodArg) = 0;
 };
 
 #endif /* _OSC_HELPER_H */

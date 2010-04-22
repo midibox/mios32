@@ -72,11 +72,51 @@ void OscMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 }
 
 //==============================================================================
+void OscMonitor::parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const unsigned& methodArg)
+{
+    if( oscString == String::empty )
+        oscString = T("@") + String::formatted(T("%d.%d "), oscArgs.timetag.seconds, oscArgs.timetag.fraction);
+    else
+        oscString += " ";
+
+    oscString += OscHelper::element2String(oscArgs);
+}
+
+
+//==============================================================================
 void OscMonitor::handleIncomingOscMessage(const unsigned char *message, unsigned size)
 {
     double timeStamp = ((double)Time::getMillisecondCounter() / 1000.0);
     String timeStampStr = String::formatted(T("%8.3f"), timeStamp);
 
-    String hexStr = String::toHexString(message, size);
-    monitorLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + hexStr);
+    unsigned displayOption = displayOptionsComboBox->getSelectedId();
+
+    if( displayOption >= 2 ) {
+        String hexStr = String::toHexString(message, size);
+        monitorLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + hexStr);
+    }
+
+    if( displayOption == 1 || displayOption == 3 ) {
+        oscString = String::empty;
+        OscHelper::OscSearchTreeT searchTree[] = {
+            //{ "midi", NULL, this, 0x00000000 },
+            { NULL, NULL, this, 0 } // terminator - will receive all messages that haven't been parsed
+        };
+
+        int status = OscHelper::parsePacket((unsigned char *)message, size, searchTree);
+        if( status == -1 )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received packet with invalid format!");
+        else if( status == -2 )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received packet with invalid element format!");
+        else if( status == -3 )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received packet with unsupported format!");
+        else if( status == -4 )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] MIOS32_OSC_MAX_PATH_PARTS has been exceeded!");
+        else if( status == -5 )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received erroneous packet with status " + String(status));
+        else if( oscString == String::empty )
+            monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received empty OSC packet (check hex view!)");
+        else
+            monitorLogBox->addEntry(Colours::blue, "[" + timeStampStr + "] " + oscString);
+    }
 }

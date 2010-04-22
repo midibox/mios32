@@ -613,7 +613,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
   u32 arg;
   for(arg=0; arg<num_args; ++arg) {
     // check that argument is at valid position
-    if( arg_pos >= len )
+    if( arg_pos > len ) // TK: use > instead of >= to cover non-value parameters like T/F/I/...
       return -2; // invalid element format
 
     // store type and pointer to argument

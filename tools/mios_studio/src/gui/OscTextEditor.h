@@ -16,6 +16,7 @@
 #define _OSC_TEXT_EDITOR_H
 
 #include "../includes.h"
+#include "../OscHelper.h"
 
 
 class OscTextEditor
