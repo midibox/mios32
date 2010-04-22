@@ -43,7 +43,7 @@ UdpSocket::~UdpSocket()
 
 
 //==============================================================================
-bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
+bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumberRead, const unsigned& _portNumberWrite)
 {
     struct sockaddr_in hostAddressInfo;
     struct hostent *remoteHostInfo;
@@ -51,7 +51,7 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
     if( oscServerSocket != -1 )
         return false;
 
-    portNumber = _portNumber;
+    portNumberWrite = _portNumberWrite;
 
 #ifdef WIN32
 	WSADATA wsaData;
@@ -91,7 +91,7 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumber)
     memcpy(&remoteAddress, remoteHostInfo->h_addr, remoteHostInfo->h_length);
 
     hostAddressInfo.sin_addr.s_addr=INADDR_ANY;
-    hostAddressInfo.sin_port=htons(portNumber);
+    hostAddressInfo.sin_port=htons(_portNumberRead);
     hostAddressInfo.sin_family=AF_INET;
 
     if( bind(oscServerSocket, (struct sockaddr*)&hostAddressInfo, sizeof(hostAddressInfo)) < 0 ) {
@@ -147,7 +147,7 @@ unsigned UdpSocket::write(unsigned char *datagram, unsigned len)
 
     struct sockaddr_in remoteAddressInfo;
     remoteAddressInfo.sin_addr.s_addr = remoteAddress;
-    remoteAddressInfo.sin_port        = htons(portNumber);
+    remoteAddressInfo.sin_port        = htons(portNumberWrite);
     remoteAddressInfo.sin_family      = AF_INET;
 
     const struct sockaddr* remoteAddressInfoPtr = (sockaddr *)&remoteAddressInfo; // the sendto function expects a sockaddr parameter...

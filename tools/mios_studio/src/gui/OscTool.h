@@ -42,16 +42,19 @@ public:
     //==============================================================================
     void timerCallback();
 
+    //==============================================================================
+    UdpSocket* udpSocket;
+
 protected:
     //==============================================================================
     Label* remoteHostLabel;
     TextEditor* remoteHostLine;
-    Label* portNumberLabel;
-    TextEditor* portNumberLine;
+    Label* portNumberReadLabel;
+    TextEditor* portNumberReadLine;
+    Label* portNumberWriteLabel;
+    TextEditor* portNumberWriteLine;
     Button* connectButton;
     Button* disconnectButton;
-
-    UdpSocket* udpSocket;
 
     //==============================================================================
     MiosStudio *miosStudio;
@@ -70,7 +73,7 @@ class OscToolSend
 {
 public:
     //==============================================================================
-    OscToolSend(MiosStudio *_miosStudio);
+    OscToolSend(MiosStudio *_miosStudio, OscToolConnect* _oscToolConnect);
     ~OscToolSend();
 
     //==============================================================================
@@ -88,7 +91,8 @@ protected:
     Button* sendClearButton;
 
     //==============================================================================
-    MiosStudio *miosStudio;
+    MiosStudio* miosStudio;
+    OscToolConnect* oscToolConnect;
 
     //==============================================================================
     Array<uint8> sendData;

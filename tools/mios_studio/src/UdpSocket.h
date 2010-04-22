@@ -28,7 +28,7 @@ public:
 
     //==============================================================================
 
-    bool connect(const String& remoteHost, const unsigned& portNumber);
+    bool connect(const String& remoteHost, const unsigned& _portNumberRead, const unsigned& _portNumberWrite);
     void disconnect(void);
     unsigned write(unsigned char *datagram, unsigned len);
     unsigned read(unsigned char *datagram, unsigned maxLen);
@@ -38,7 +38,7 @@ protected:
 
     int oscServerSocket;
     long remoteAddress;
-    unsigned portNumber;
+    unsigned portNumberWrite;
 };
 
 #endif /* _UDP_SOCKET_H */
