@@ -101,10 +101,10 @@ void OscToolConnect::resized()
     int buttonX = getWidth() - 2*buttonWidth - 10-4;
     remoteHostLabel->setBounds(10, buttonY, 75, 24);
     remoteHostLine->setBounds(10+75+4, buttonY, 200, 24);
-    portNumberWriteLabel->setBounds(10+75+4+200+10, buttonY, 50, 24);
-    portNumberWriteLine->setBounds(10+75+4+200+10+50+4, buttonY, 50, 24);
-    portNumberReadLabel->setBounds(10+75+4+200+10+50+4+50+4, buttonY, 75, 24);
-    portNumberReadLine->setBounds(10+75+4+200+10+50+4+50+4+75+4, buttonY, 50, 24);
+    portNumberWriteLabel->setBounds(10+75+4+200+10, buttonY, 100, 24);
+    portNumberWriteLine->setBounds(10+75+4+200+10+100+4, buttonY, 50, 24);
+    portNumberReadLabel->setBounds(10+75+4+200+10+100+4+50+4, buttonY, 75, 24);
+    portNumberReadLine->setBounds(10+75+4+200+10+100+4+50+4+75+4, buttonY, 50, 24);
     connectButton->setBounds(buttonX, buttonY, buttonWidth, 24);
     disconnectButton->setBounds(buttonX + buttonWidth + 10, buttonY, buttonWidth, 24);
 }
@@ -216,7 +216,7 @@ void OscToolSend::resized()
     int sendButtonWidth = 72;
     sendStartButton->setBounds(10 + 0*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
     sendClearButton->setBounds(10 + 1*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
-    statusLabel->setBounds(getWidth()-10-150, sendButtonY, 150, 24);
+    statusLabel->setBounds(getWidth()-10-500, sendButtonY, 500, 24);
 
     sendBox->setBounds(4, 32, getWidth()-8, getHeight()-32);
 }
@@ -230,7 +230,17 @@ void OscToolSend::buttonClicked(Button* buttonThatWasClicked)
 
             if( packet.size() ) {
                 oscToolConnect->udpSocket->write((unsigned char*)&packet.getReference(0), packet.size());
+            } else {
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("Invalid OSC packet"),
+                                            T("The entered packet is invalid (or empty) - check syntax!"),
+                                            String::empty);
             }
+        } else {
+            AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                        T("No connection to remote host"),
+                                        T("Please press the connect button to establish connection!"),
+                                        String::empty);
         }
     } else if( buttonThatWasClicked == sendClearButton ) {
         sendBox->clear();
@@ -259,7 +269,7 @@ OscTool::OscTool(MiosStudio *_miosStudio)
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(750, 500);
+    setSize(850, 500);
 }
 
 OscTool::~OscTool()

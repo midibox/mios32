@@ -131,7 +131,6 @@
 		529FA9E31179107800293622 /* mios32_dout.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DC1179107800293622 /* mios32_dout.c */; };
 		529FA9E51179107800293622 /* mios32_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DE1179107800293622 /* mios32_midi.c */; };
 		529FA9E61179107800293622 /* mios32_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DF1179107800293622 /* mios32_osc.c */; };
-		529FA9E81179107800293622 /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9E11179107800293622 /* printf-stdarg.c */; };
 		529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F3117911CE00293622 /* mios32_uart_midi.c */; };
 		529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */; };
 		529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F91179121300293622 /* FATFS_Wrapper.m */; };
@@ -336,7 +335,6 @@
 		529FA9DC1179107800293622 /* mios32_dout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_dout.c; path = ../../../../mios32/common/mios32_dout.c; sourceTree = SOURCE_ROOT; };
 		529FA9DE1179107800293622 /* mios32_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_midi.c; path = ../../../../mios32/common/mios32_midi.c; sourceTree = SOURCE_ROOT; };
 		529FA9DF1179107800293622 /* mios32_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_osc.c; path = ../../../../mios32/common/mios32_osc.c; sourceTree = SOURCE_ROOT; };
-		529FA9E11179107800293622 /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "printf-stdarg.c"; path = "../../../../mios32/common/printf-stdarg.c"; sourceTree = SOURCE_ROOT; };
 		529FA9F3117911CE00293622 /* mios32_uart_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_uart_midi.c; path = ../../../../mios32/common/mios32_uart_midi.c; sourceTree = SOURCE_ROOT; };
 		529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FATFS_Wrapper_Dir.c; sourceTree = "<group>"; };
 		529FA9F81179121300293622 /* FATFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FATFS_Wrapper.h; sourceTree = "<group>"; };
@@ -628,7 +626,6 @@
 				529FA9DE1179107800293622 /* mios32_midi.c */,
 				529FA9DF1179107800293622 /* mios32_osc.c */,
 				520512981177C21900B60101 /* mios32_lcd.c */,
-				529FA9E11179107800293622 /* printf-stdarg.c */,
 			);
 			name = MIOS32;
 			sourceTree = "<group>";
@@ -806,7 +803,6 @@
 				529FA9E31179107800293622 /* mios32_dout.c in Sources */,
 				529FA9E51179107800293622 /* mios32_midi.c in Sources */,
 				529FA9E61179107800293622 /* mios32_osc.c in Sources */,
-				529FA9E81179107800293622 /* printf-stdarg.c in Sources */,
 				529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */,
 				529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */,
 				529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */,

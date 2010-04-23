@@ -316,7 +316,7 @@ u8 *MIOS32_OSC_PutString(u8 *buffer, char *str)
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS32_OSC_GetBlobLength(u8 *buffer)
 {
-  return *buffer;
+  return MIOS32_OSC_GetWord(buffer);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -351,8 +351,10 @@ u8 *MIOS32_OSC_PutBlob(u8 *buffer, u8 *data, u32 len)
     *buffer++ = *data++;
 
   // pad with zeroes
-  while( i % 4 )
+  while( i % 4 ) {
     *buffer++ = 0;
+    ++i;
+  }
 
   return buffer;
 }
@@ -526,7 +528,7 @@ s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search
   } else {
     // no timetag
     osc_args.timetag.seconds = 0;
-    osc_args.timetag.fraction = 0;
+    osc_args.timetag.fraction = 1;
 
     // get element size
     u32 elem_size = MIOS32_OSC_GetWord(packet);

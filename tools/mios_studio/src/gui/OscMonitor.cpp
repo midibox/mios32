@@ -27,6 +27,7 @@ OscMonitor::OscMonitor(MiosStudio *_miosStudio)
     displayOptionsComboBox->addItem(T("Hex dump only"), 2);
     displayOptionsComboBox->addItem(T("Decoded Text and Hex Dump"), 3);
     displayOptionsComboBox->setSelectedId(1, true);
+    displayOptionsComboBox->addListener(this);
 
     addAndMakeVisible(monitorLogBox = new LogBox(T("Osc Monitor")));
     monitorLogBox->addEntry(Colours::grey, T("OSC Monitor ready."));

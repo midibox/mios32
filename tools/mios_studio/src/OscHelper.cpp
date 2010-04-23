@@ -18,6 +18,9 @@
 #include <string.h>
 
 
+#define OSC_BUFFER_MAX 2048
+
+
 //==============================================================================
 OscHelper::OscHelper()
 {
@@ -76,6 +79,17 @@ unsigned char *OscHelper::putWord(unsigned char *buffer, unsigned word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Creates a word
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createWord(const unsigned& word)
+{
+    unsigned char buffer[4];
+    putWord(buffer, word);
+    return Array<uint8>(buffer, 4);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Gets a timetag (8 bytes) from buffer
 // \param[in] buffer pointer to OSC message buffer 
 // \return timetag (seconds and fraction part)
@@ -102,6 +116,17 @@ unsigned char *OscHelper::putTimetag(unsigned char *buffer, OscTimetagT timetag)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Creates a timetag
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createTimetag(const OscTimetagT& timetag)
+{
+    unsigned char buffer[8];
+    putTimetag(buffer, timetag);
+    return Array<uint8>(buffer, 8);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Gets a word (4 bytes) from buffer and converts it to a 32bit signed integer.
 // \param[in] buffer pointer to OSC message buffer 
 // \return 32bit signed integer
@@ -121,6 +146,17 @@ unsigned char *OscHelper::putInt(unsigned char *buffer, int value)
 {
   return putWord(buffer, (unsigned)value);
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a 32bit signed integer
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createInt(const int& value)
+{
+    unsigned char buffer[4];
+    putInt(buffer, value);
+    return Array<uint8>(buffer, 4);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Gets a word (4 bytes) from buffer and converts it to a float with 
@@ -159,6 +195,17 @@ unsigned char *OscHelper::putFloat(unsigned char *buffer, float value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Creates a float with normal precission
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createFloat(const float& value)
+{
+    unsigned char buffer[4];
+    putFloat(buffer, value);
+    return Array<uint8>(buffer, 4);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns pointer to a string in message buffer
 // \param[in] buffer pointer to OSC message buffer 
 // \return zero-terminated string
@@ -174,7 +221,7 @@ char *OscHelper::getString(unsigned char *buffer)
 // \param[in] value the string which should be inserted
 // \return buffer pointer behind the inserted entry
 /////////////////////////////////////////////////////////////////////////////
-unsigned char *OscHelper::putString(unsigned char *buffer, char *str)
+unsigned char *OscHelper::putString(unsigned char *buffer, const char *str)
 {
   unsigned char *buffer_start = buffer;
 
@@ -189,13 +236,27 @@ unsigned char *OscHelper::putString(unsigned char *buffer, char *str)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Creates a string and pads with 0 until word boundary has been reached
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createString(const String &str)
+{
+    unsigned char *buffer = new unsigned char(str.length() + 4);
+    unsigned char *endPtr = buffer;
+    endPtr = putString(buffer, (const char *)str);
+    Array<uint8> tmp = Array<uint8>(buffer, endPtr-buffer);
+    delete buffer;
+    return tmp;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns the length of a Blob
 // \param[in] buffer pointer to OSC message buffer 
 // \return blob length
 /////////////////////////////////////////////////////////////////////////////
 unsigned OscHelper::getBlobLength(unsigned char *buffer)
 {
-  return *buffer;
+  return getWord(buffer);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -207,7 +268,6 @@ unsigned char *OscHelper::getBlobData(unsigned char *buffer)
 {
   return buffer+4;
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Puts an OSC-Blob into buffer and pads with 0 until word boundary has been reached
@@ -230,11 +290,27 @@ unsigned char *OscHelper::putBlob(unsigned char *buffer, unsigned char *data, un
     *buffer++ = *data++;
 
   // pad with zeroes
-  while( i % 4 )
+  while( i % 4 ) {
     *buffer++ = 0;
+    ++i;
+  }
 
   return buffer;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates an OSC-Blob and pads with 0 until word boundary has been reached
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createBlob(unsigned char *data, const unsigned& len)
+{
+    unsigned char *buffer = new unsigned char(len+4);
+    unsigned char *endPtr = buffer;
+    endPtr = putBlob(buffer, data, len);
+    Array<uint8> tmp = Array<uint8>(buffer, endPtr-buffer);
+    delete buffer;
+    return tmp;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -258,6 +334,16 @@ unsigned char *OscHelper::putLongLong(unsigned char *buffer, long long value)
   buffer = putWord(buffer, (unsigned)(value >> 32));
   buffer = putWord(buffer, (unsigned)value);
   return buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a 64bit signed integer
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createLongLong(const long long &value)
+{
+    unsigned char buffer[8];
+    putLongLong(buffer, value);
+    return Array<uint8>(buffer, 8);
 }
 
 
@@ -296,6 +382,16 @@ unsigned char *OscHelper::putDouble(unsigned char *buffer, double value)
   return putLongLong(buffer, converted.word);
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Creates a float with double precission
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createDouble(const double& value)
+{
+    unsigned char buffer[8];
+    putDouble(buffer, value);
+    return Array<uint8>(buffer, 8);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns a character
@@ -318,6 +414,15 @@ unsigned char *OscHelper::putChar(unsigned char *buffer, char c)
   return putWord(buffer, (unsigned)c);
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Creates a character and pads with 3 zeros
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createChar(const char& value)
+{
+    unsigned char buffer[4];
+    putChar(buffer, value);
+    return Array<uint8>(buffer, 4);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -341,6 +446,16 @@ unsigned char *OscHelper::putMIDI(unsigned char *buffer, unsigned p)
 {
     // note: no extra conversion to MIOS32 MIDI package format
     return putWord(buffer, p);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a MIDI package
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createMIDI(const unsigned& p)
+{
+    unsigned char buffer[4];
+    putMIDI(buffer, p);
+    return Array<uint8>(buffer, 4);
 }
 
 
@@ -398,7 +513,7 @@ int OscHelper::parsePacket(unsigned char *packet, const unsigned& len, OscHelper
     } else {
         // no timetag
         oscArgs.timetag.seconds = 0;
-        oscArgs.timetag.fraction = 0;
+        oscArgs.timetag.fraction = 1;
 
         // get element size
         unsigned elemSize = getWord(packet);
@@ -673,7 +788,7 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
             break;
 
         case 'f': // float32
-            str += String::formatted(T("%05.3f"), getFloat(oscArgs.argPtr[i]));
+            str += String::formatted(T("%g"), getFloat(oscArgs.argPtr[i]));
             break;
 
         case 's': // string
@@ -681,9 +796,11 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
             str += String(getString(oscArgs.argPtr[i]));
             break;
 
-        case 'b': // blob
-            str += String(T("(blob with length ") + String(getWord(oscArgs.argPtr[i])) + ")");
-            break;
+        case 'b': { // blob
+            unsigned len = getBlobLength(oscArgs.argPtr[i]);
+            unsigned char *data = getBlobData(oscArgs.argPtr[i]);
+            str += String(len) + T(":0x") + String::toHexString(data, len);
+        } break;
 
         case 'h': // int64
             str += String(getLongLong(oscArgs.argPtr[i]));
@@ -695,7 +812,7 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
         } break;
 
         case 'd': // float64 (double)
-            str += String::formatted(T("%05.3f"), getDouble(oscArgs.argPtr[i]));
+            str += String::formatted(T("%g"), getDouble(oscArgs.argPtr[i]));
             break;
 
         case 'c': // ASCII character
@@ -724,4 +841,275 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
     }
 
     return str;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local help function to create an element
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::createElement(const Array<uint8>& oscPath, const String& oscArgsString, const Array<uint8>& oscArgs)
+{
+    // what looks better - the original MIOS32 based method, or this C++ like approach?
+
+    Array<uint8> tmp;
+    tmp.addArray(oscPath);
+    tmp.addArray(createString(oscArgsString));
+    tmp.addArray(oscArgs);
+
+    Array<uint8> tmp2;
+    tmp2.addArray(createWord(tmp.size()));
+    tmp2.addArray(tmp);
+
+    return tmp2;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Converts a String into a complete OSC packet
+// \return an empty Array<uint8> on errors
+/////////////////////////////////////////////////////////////////////////////
+Array<uint8> OscHelper::string2Packet(const String& oscString, String& statusMessage)
+{
+    StringArray words;
+
+    statusMessage = T("ERROR: internal error!");
+
+    // split string into words
+    int wordBegin = 0;
+    while( wordBegin < oscString.length() ) {
+        int wordEnd=oscString.indexOfChar(wordBegin, ' ');
+
+        if( wordEnd < 0 ) {
+            String lastWord = oscString.substring(wordBegin);
+            if( lastWord != String::empty )
+                words.add(lastWord);
+            break;
+        } else if( wordEnd == wordBegin )
+            ++wordBegin;
+        else {
+            words.add(oscString.substring(wordBegin, wordEnd));
+            wordBegin = wordEnd+1;
+        }
+    }
+
+    // empty packet?
+    if( !words.size() ) {
+        statusMessage = String::empty;
+        return Array<uint8>();
+    }
+
+
+    // prepare timetag
+    OscTimetagT timetag;
+    timetag.seconds = 0;
+    timetag.fraction = 1;
+    bool gotTimetag = 0;
+
+    // parse elements
+    int numElements = 0;
+    Array<uint8> oscElements;
+    Array<uint8> oscPath;
+    String oscArgsString(",");
+    Array<uint8> oscArgs;
+
+    for(int i=0; i<words.size(); ++i) {
+        String word = words[i];
+        String arg = String::formatted(T("%c"), word[0]);
+
+        switch( word[0] ) {
+        case '@': {
+            if( gotTimetag ) {
+                statusMessage = T("ERROR: more than one timetag!");
+                return Array<uint8>();
+            } else if( i != 0 ) {
+                statusMessage = T("ERROR: timetag expected as first argument!");
+                return Array<uint8>();
+            } else {
+                unsigned seconds;
+                unsigned fraction;
+                if( sscanf((const char*)word, "@%u.%u", &seconds, &fraction) != 2 ) {
+                    statusMessage = T("syntax: <seconds>.<fraction>");
+                    return Array<uint8>();
+                } else {
+                    timetag.seconds = seconds;
+                    timetag.fraction = fraction;
+                    gotTimetag = 1;
+                }
+            }
+        } break;
+
+        case '/': {
+            if( oscPath.size() != 0 ) {
+                ++numElements;
+                oscElements.addArray(createElement(oscPath, oscArgsString, oscArgs));
+            }
+
+            oscPath = createString(word);
+            oscArgsString = ",";
+            oscArgs.clear();
+        } break;
+
+        case 'i': // int32
+            if( word.length() == 1 ) {
+                statusMessage = T("please add integer value");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createInt(word.substring(1).getIntValue()));
+            }
+            break;
+
+        case 'f': // float32
+            if( word.length() == 1 ) {
+                statusMessage = T("please add float value");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createFloat(word.substring(1).getFloatValue()));
+            }
+            break;
+
+        case 's': // string
+        case 'S': // alternate string
+            if( word.length() == 1 ) {
+                statusMessage = T("please add string");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createString(word.substring(1)));
+            }
+            break;
+
+        case 'b': { // blob
+            int len;
+            unsigned value;
+            if( sscanf((const char*)word.substring(1), "%d:%x", &len, &value) != 2 ) {
+                statusMessage = T("please enter blob length and hex value (syntax: <len>:<data>)");
+                return Array<uint8>();
+            } else if( len != 4 ) {
+                statusMessage = T(":-/ only 4 byte blobs supported yet! :-/");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                unsigned char buffer[4];
+                putWord(buffer, value);
+                oscArgs.addArray(createBlob(buffer, len));
+            }
+        } break;
+
+        case 'h': // int64
+            if( word.length() == 1 ) {
+                statusMessage = T("please enter large integer value");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createLongLong(word.substring(1).getLargeIntValue()));
+            }
+            break;
+
+        case 't': // timetag
+            if( word.length() == 1 ) {
+                statusMessage = T("please enter timetag value");
+                return Array<uint8>();
+            } else {
+                unsigned seconds;
+                unsigned fraction;
+                if( sscanf((const char*)word.substring(1), "%u.%u", &seconds, &fraction) != 2 ) {
+                    statusMessage = T("syntax: <seconds>.<fraction>");
+                    return Array<uint8>();
+                } else {
+                    oscArgsString += arg;
+                    timetag.seconds = seconds;
+                    timetag.fraction = fraction;
+                    oscArgs.addArray(createTimetag(timetag));
+                }
+            }
+            break;
+
+        case 'd': // float64 (double)
+            if( word.length() == 1 ) {
+                statusMessage = T("please enter double precission float value");
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createDouble(word.substring(1).getDoubleValue()));
+            }
+            break;
+
+        case 'c': // ASCII character
+            if( word.length() == 1 ) {
+                statusMessage = T("please enter character");
+                return Array<uint8>();
+            } else if( word.length() > 2 ) {
+                statusMessage = String(T("ERROR: expecting only a single character for '") + arg + T("' argument!"));
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+                oscArgs.addArray(createChar(word[1]));
+            }
+            break;
+
+        case 'r': // 32 bit RGBA color
+        case 'm': { // MIDI message
+            if( word.length() == 1 ) {
+                statusMessage = T("please enter hex value");
+                return Array<uint8>();
+            } else {
+                unsigned value;
+                if( sscanf((const char*)word.substring(1), "%x", &value) != 1 ) {
+                    statusMessage = String(T("ERROR: expecting hex value for '") + arg + T("' argument!"));
+                    return Array<uint8>();
+                } else {
+                    oscArgsString += arg;
+                    oscArgs.addArray(createWord(value));
+                }
+            }
+        } break;
+
+        case 'T': // TRUE
+        case 'F': // FALSE
+        case 'N': // NIL
+        case 'I': // Infinitum
+        case '[': // beginning of array
+        case ']': // end of array
+
+            if( word.length() > 1 ) {
+                statusMessage = String(T("ERROR: unexpected value after '") + arg + T("' argument!"));
+                return Array<uint8>();
+            } else {
+                oscArgsString += arg;
+            }
+            break;
+
+        default:
+            statusMessage = String(T("ERROR: unknown argument type '") + arg + T("'!"));
+            return Array<uint8>();
+        }
+    }
+
+    // no path detected: empty packet!
+    if( oscPath.size() == 0 ) {
+        statusMessage = String::empty;
+        return Array<uint8>();
+    }
+
+    // packet too large?
+    if( oscElements.size() > (OSC_BUFFER_MAX-20) ) {
+        statusMessage = T("ERROR: OSC packet too large!");
+        return Array<uint8>();
+    }
+
+    // add last element
+    ++numElements;
+    oscElements.addArray(createElement(oscPath, oscArgsString, oscArgs));
+
+    // finally create packet
+    Array<uint8>tmp;
+    tmp.addArray(createString("#bundle"));
+    tmp.addArray(createTimetag(timetag));
+    tmp.addArray(oscElements);
+
+    statusMessage = String(T("valid OSC packet with ") + String(numElements) + T(" element"));
+    if( numElements > 1 ) statusMessage += T("s");
+    return tmp;
 }

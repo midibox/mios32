@@ -71,33 +71,55 @@ public:
     //==============================================================================
     static unsigned getWord(unsigned char *buffer);
     static unsigned char *putWord(unsigned char *buffer, unsigned word);
+    static Array<uint8> createWord(const unsigned& word);
+
     static OscTimetagT getTimetag(unsigned char *buffer);
     static unsigned char *putTimetag(unsigned char *buffer, OscTimetagT timetag);
+    static Array<uint8> createTimetag(const OscTimetagT& timetag);
+
     static int getInt(unsigned char *buffer);
     static unsigned char *putInt(unsigned char *buffer, int value);
+    static Array<uint8> createInt(const int& value);
+
     static float getFloat(unsigned char *buffer);
     static unsigned char *putFloat(unsigned char *buffer, float value);
+    static Array<uint8> createFloat(const float& value);
+
     static char *getString(unsigned char *buffer);
-    static unsigned char *putString(unsigned char *buffer, char *str);
+    static unsigned char *putString(unsigned char *buffer, const char *str);
+    static Array<uint8> createString(const String& str);
+    
     static unsigned getBlobLength(unsigned char *buffer);
     static unsigned char *getBlobData(unsigned char *buffer);
     static unsigned char *putBlob(unsigned char *buffer, unsigned char *data, unsigned len);
+    static Array<uint8> createBlob( unsigned char *data, const unsigned& len);
+
     static long long getLongLong(unsigned char *buffer);
     static unsigned char *putLongLong(unsigned char *buffer, long long value);
+    static Array<uint8> createLongLong(const long long& value);
+
     static double getDouble(unsigned char *buffer);
     static unsigned char *putDouble(unsigned char *buffer, double value);
+    static Array<uint8> createDouble(const double& value);
+
     static char getChar(unsigned char *buffer);
     static unsigned char *putChar(unsigned char *buffer, char c);
+    static Array<uint8> createChar(const char& c);
+
     static unsigned getMIDI(unsigned char *buffer);
     static unsigned char *putMIDI(unsigned char *buffer, unsigned p);
+    static Array<uint8> createMIDI(const unsigned& p);
 
     static int parsePacket(unsigned char *packet, const unsigned& len, OscSearchTreeT *searchTree);
 
     static String element2String(const OscArgsT& oscArgs);
+    static Array<uint8> string2Packet(const String& oscString, String& statusMessage);
 
 protected:
     static int searchElement(unsigned char *buffer, const unsigned& len, OscArgsT *oscArgs, OscSearchTreeT *searchTree);
     static int searchPath(char *path, OscArgsT *oscArgs, const unsigned& methodArg, OscSearchTreeT *searchTree);
+
+    static Array<uint8> createElement(const Array<uint8>& oscPath, const String& oscArgsString, const Array<uint8>& oscArgs);
 
 };
 
