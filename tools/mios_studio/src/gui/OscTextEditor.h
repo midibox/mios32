@@ -41,7 +41,7 @@ public:
     Array<uint8> getBinary(void);
 
 protected:
-    String bufferedText;
+    Array<uint8> currentBinary;
 
     //==============================================================================
     // note: this status label has to be placed into the window via setBounds() 

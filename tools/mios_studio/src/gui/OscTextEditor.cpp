@@ -20,7 +20,6 @@
 OscTextEditor::OscTextEditor(Label *_statusLabel)
     : TextEditor(String::empty)
     , statusLabel(_statusLabel)
-    , bufferedText(String::empty)
 {
     setMultiLine(true);
     setReturnKeyStartsNewLine(true);
@@ -43,6 +42,7 @@ OscTextEditor::OscTextEditor(Label *_statusLabel)
 #endif
 #endif
 	addListener(this);
+    setTextToShowWhenEmpty(T("Syntax: [@<seconds>.<fraction>] <osc-path> [<arg1>] [<arg2>] ... [<osc-path] [<arg1>] [<arg2>]..."), Colours::grey);
 
     setSize(600, 200);
 }
@@ -54,25 +54,15 @@ OscTextEditor::~OscTextEditor()
 //==============================================================================
 void OscTextEditor::clear()
 {
-    bufferedText = String::empty;
     TextEditor::clear();
 }
 
 //==============================================================================
 void OscTextEditor::textEditorTextChanged(TextEditor &editor)
 {
-    String oscStr = getText();
-    bool invalidSyntax = false;
-    int numParameters = 0;
-
-    if( invalidSyntax )
-        statusLabel->setText(T("Invalid Syntax!"), true);
-    else if( numParameters == 0 )
-        statusLabel->setText(String::empty, true);
-    else if( numParameters == 1 )
-        statusLabel->setText(T("1 parameter"), true);
-    else
-        statusLabel->setText(String(numParameters) + T(" parameters"), true);
+    String statusMessage;
+    currentBinary = OscHelper::string2Packet(getText(), statusMessage);
+    statusLabel->setText(statusMessage, true);
 }
 
 void OscTextEditor::textEditorReturnKeyPressed(TextEditor &editor)
@@ -91,9 +81,12 @@ void OscTextEditor::textEditorFocusLost(TextEditor &editor)
 //==============================================================================
 Array<uint8> OscTextEditor::getBinary(void)
 {
+#if 1
+    return currentBinary;
+#else
+    // send dummy message for testing only!
     String oscStr = getText();
 
-    // send dummy message for testing only!
     uint8 packet[OSC_BUFFER_MAX];
     uint8 *endPtr = packet;
     uint8 *insertLenPtr;
@@ -116,4 +109,5 @@ Array<uint8> OscTextEditor::getBinary(void)
 
     Array<uint8> retArray(packet, len);
     return retArray;
+#endif
 }
