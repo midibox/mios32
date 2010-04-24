@@ -18,9 +18,6 @@
 #include <string.h>
 
 
-#define OSC_BUFFER_MAX 2048
-
-
 //==============================================================================
 OscHelper::OscHelper()
 {
@@ -1090,12 +1087,6 @@ Array<uint8> OscHelper::string2Packet(const String& oscString, String& statusMes
     // no path detected: empty packet!
     if( oscPath.size() == 0 ) {
         statusMessage = String::empty;
-        return Array<uint8>();
-    }
-
-    // packet too large?
-    if( oscElements.size() > (OSC_BUFFER_MAX-20) ) {
-        statusMessage = T("ERROR: OSC packet too large!");
         return Array<uint8>();
     }
 
