@@ -1,0 +1,97 @@
+// $Id$
+/*
+ * MIOS32 Application Template
+ *
+ * ==========================================================================
+ *
+ *  Copyright (C) <year> <your name> (<your email address>)
+ *  Licensed for personal non-commercial use only.
+ *  All other rights reserved.
+ * 
+ * ==========================================================================
+ */
+
+/////////////////////////////////////////////////////////////////////////////
+// Include files
+/////////////////////////////////////////////////////////////////////////////
+
+#include <mios32.h>
+#include "app.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called after startup to initialize the application
+// It's delcared as "extern C" so that the MIOS32 programming model can
+// access this function - you can safely write your own functions in C++
+// In other words: there is no need to add "extern C" to your own functions!
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_Init(void)
+{
+  // initialize all LEDs
+  MIOS32_BOARD_LED_Init(0xffffffff);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is running endless in background
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_Background(void)
+{
+  // endless loop
+  while( 1 ) {
+    // toggle the state of all LEDs (allows to measure the execution speed with a scope)
+    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when a MIDI package has been received
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called before the shift register chain is scanned
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_SRIO_ServicePrepare(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called after the shift register chain has been scanned
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_SRIO_ServiceFinish(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when a button has been toggled
+// pin_value is 1 when button released, and 0 when button pressed
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when an encoder has been moved
+// incrementer is positive when encoder has been turned clockwise, else
+// it is negative
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when a pot has been moved
+/////////////////////////////////////////////////////////////////////////////
+extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
+{
+}
