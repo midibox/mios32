@@ -49,7 +49,7 @@ AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
 CFLAGS += $(C_DEFINES) $(C_INCLUDE)
 
 # define CPP flags (will be added to CFLAGS)
-CPPFLAGS += -fno-rtti -fno-exceptions
+CPPFLAGS += -fno-rtti -fno-exceptions -Wno-write-strings
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
