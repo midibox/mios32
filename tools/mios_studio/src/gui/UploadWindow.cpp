@@ -332,7 +332,7 @@ void UploadWindow::timerCallback(const int timerId)
                 String str;
                 uploadQuery->clear();
                 if( !(str=miosStudio->uploadHandler->coreOperatingSystem).isEmpty() )
-                    uploadQuery->addEntry(Colours::black, "Operating Systen: " + str);
+                    uploadQuery->addEntry(Colours::black, "Operating System: " + str);
                 if( !(str=miosStudio->uploadHandler->coreBoard).isEmpty() )
                     uploadQuery->addEntry(Colours::black, "Board: " + str);
                 if( !(str=miosStudio->uploadHandler->coreFamily).isEmpty() )
