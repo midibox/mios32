@@ -73,8 +73,12 @@ public:
 
     ApplicationCommandTarget* getNextCommandTarget();
     void getAllCommands(Array <CommandID>& commands);
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
     void getCommandInfo(const CommandID commandID, ApplicationCommandInfo& result);
-    bool perform(const InvocationInfo& info);
+#else
+    void getCommandInfo(CommandID commandID, ApplicationCommandInfo& result);
+#endif
+	bool perform(const InvocationInfo& info);
 
     AudioDeviceManager audioDeviceManager;
 

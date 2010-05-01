@@ -54,9 +54,11 @@ public:
     void uploadStop(void);
 
     //==============================================================================
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
     void timerCallback(const int timerId);
-
-
+#else
+    void timerCallback(int timerId);
+#endif
 protected:
     //==============================================================================
     FilenameComponent* fileChooser;
