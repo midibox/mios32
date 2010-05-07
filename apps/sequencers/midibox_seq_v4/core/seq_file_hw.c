@@ -400,6 +400,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.paste = din_value;
 	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_button.clear = din_value;
+	  } else if( strcmp(parameter, "UNDO") == 0 ) {
+	    seq_hwcfg_button.undo = din_value;
 	  } else if( strcmp(parameter, "MORPH") == 0 ) {
 	    seq_hwcfg_button.morph = din_value;
 	  } else if( strcmp(parameter, "MIXER") == 0 ) {
@@ -503,6 +505,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.paste = dout_value;
 	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_led.clear = dout_value;
+	  } else if( strcmp(parameter, "UNDO") == 0 ) {
+	    seq_hwcfg_led.undo = dout_value;
 	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_led.step_view = dout_value;
 	  } else if( strcmp(parameter, "TRG_LAYER_SEL") == 0 ) {

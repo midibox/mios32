@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta21
+~~~~~~~~~~~~~~~~~~~~~
+
+  o added optional button/LED function for UNDO
+
+
 MIDIboxSEQ V4.0beta20
 ~~~~~~~~~~~~~~~~~~~~~
 

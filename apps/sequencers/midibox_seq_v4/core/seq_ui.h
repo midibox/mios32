@@ -69,6 +69,7 @@ typedef union {
     u8 COPY:1;
     u8 PASTE:1;
     u8 CLEAR:1;
+    u8 UNDO:1;
     u8 TAP_TEMPO:1;
     u8 UP:1;
     u8 DOWN:1;
@@ -223,7 +224,7 @@ extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
 extern s32 SEQ_UI_MIXER_Copy(void);
 extern s32 SEQ_UI_MIXER_Paste(void);
 extern s32 SEQ_UI_MIXER_Clear(void);
-extern s32 SEQ_UI_MIXER_Undo(u8 mixer_map);
+extern s32 SEQ_UI_MIXER_Undo(void);
 extern s32 SEQ_UI_MIXER_UndoUpdate(void);
 
 extern s32 SEQ_UI_SONG_Copy(void);

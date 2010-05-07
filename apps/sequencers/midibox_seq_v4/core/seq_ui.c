@@ -787,6 +787,38 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
   }
 }
 
+
+static s32 SEQ_UI_Button_Undo(s32 depressed)
+{
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  seq_ui_button_state.UNDO = depressed ? 0 : 1;
+
+  if( ui_page == SEQ_UI_PAGE_MIXER ) {
+    if( depressed ) return -1;
+    SEQ_UI_MIXER_Undo();
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "Undo applied");
+    return 1;
+  } else {
+    if( !depressed ) {
+      prev_page = ui_page;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+    }
+
+    s32 status = SEQ_UI_UTIL_UndoButton(depressed);
+
+    if( depressed ) {
+      if( prev_page != SEQ_UI_PAGE_UTIL )
+	SEQ_UI_PageSet(prev_page);
+
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "Undo applied");
+    }
+
+    return status;
+  }
+}
+
+
 static s32 SEQ_UI_Button_Menu(s32 depressed)
 {
   if( seq_hwcfg_button_beh.menu ) {
@@ -1379,6 +1411,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Paste(pin_value);
   if( pin == seq_hwcfg_button.clear )
     return SEQ_UI_Button_Clear(pin_value);
+  if( pin == seq_hwcfg_button.undo )
+    return SEQ_UI_Button_Undo(pin_value);
 
   if( pin == seq_hwcfg_button.menu )
     return SEQ_UI_Button_Menu(pin_value);
@@ -2221,6 +2255,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
   SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
   SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
   SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
 
   SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, seq_ui_button_state.TAP_TEMPO);

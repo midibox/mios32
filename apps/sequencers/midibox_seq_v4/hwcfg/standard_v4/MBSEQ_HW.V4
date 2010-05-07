@@ -211,6 +211,7 @@ LED_UTILITY     0   0
 LED_COPY        0   0
 LED_PASTE       0   0
 LED_CLEAR       0   0
+LED_UNDO        0   0
 
 #                  SR  Pin
 LED_STEP_VIEW       0   0
@@ -343,6 +344,7 @@ BUTTON_EXT_RESTART   0   0
 BUTTON_COPY      0   0
 BUTTON_PASTE     0   0
 BUTTON_CLEAR     0   0
+BUTTON_UNDO      0   0
 
 
 #                SR  Pin
