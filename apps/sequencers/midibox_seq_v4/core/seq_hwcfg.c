@@ -123,6 +123,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .copy    = (((14   -1)<<3)+    2),
   .paste   = (((14   -1)<<3)+    3),
   .clear   = (((14   -1)<<3)+    4),
+  .undo    = ((( 0   -1)<<3)+    0),
 #else
   //                  SR   ignore    Pin
   .utility       = ((( 2   -1)<<3)+    1),
@@ -142,6 +143,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .copy    = ((( 0   -1)<<3)+    0),
   .paste   = ((( 0   -1)<<3)+    0),
   .clear   = ((( 0   -1)<<3)+    0),
+  .undo    = ((( 0   -1)<<3)+    0),
 #endif
 
   //            SR   ignore    Pin
@@ -254,6 +256,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .copy      = (((13   -1)<<3)+    4),
   .paste     = (((13   -1)<<3)+    5),
   .clear     = (((13   -1)<<3)+    6),
+  .undo      = ((( 0   -1)<<3)+    0),
   .record    = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
@@ -293,6 +296,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .copy      = ((( 0   -1)<<3)+    0),
   .paste     = ((( 0   -1)<<3)+    0),
   .clear     = ((( 0   -1)<<3)+    0),
+  .undo      = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
   .step_view     = ((( 0   -1)<<3)+    0),

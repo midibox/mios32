@@ -92,6 +92,7 @@ typedef struct {
   u8 copy;
   u8 paste;
   u8 clear;
+  u8 undo;
 
   u8 morph;
   u8 mixer;
@@ -160,6 +161,7 @@ typedef struct {
   u8 copy;
   u8 paste;
   u8 clear;
+  u8 undo;
 
   u8 record;
 

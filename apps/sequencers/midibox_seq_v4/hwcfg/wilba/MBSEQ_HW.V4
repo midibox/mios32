@@ -211,6 +211,7 @@ LED_UTILITY     0   0
 LED_COPY        0   0
 LED_PASTE       0   0
 LED_CLEAR       0   0
+LED_UNDO        0   0
 
 #                  SR  Pin
 LED_STEP_VIEW      19   1
@@ -337,6 +338,7 @@ BUTTON_UTILITY  19   2
 BUTTON_COPY     23   3
 BUTTON_PASTE    24   2
 BUTTON_CLEAR    24   3
+BUTTON_UNDO      0   0
 
 #                 SR  Pin
 BUTTON_STEP_VIEW  21   5
