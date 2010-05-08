@@ -792,9 +792,7 @@ static s32 SCROLL_Track(u8 track, u16 first_step, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_UTIL_MuteAllTracks(void)
 {
-  int track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    seq_core_trk[track].state.MUTED = 1;
+  seq_core_trk_muted = 0xffff;
 
   return 0; // no error
 }
@@ -804,9 +802,7 @@ static s32 SEQ_UI_UTIL_MuteAllTracks(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_UTIL_UnMuteAllTracks(void)
 {
-  int track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    seq_core_trk[track].state.MUTED = 0;
+  seq_core_trk_muted = 0x0000;
 
   return 0; // no error
 }

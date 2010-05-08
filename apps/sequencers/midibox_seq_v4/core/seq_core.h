@@ -57,7 +57,6 @@ typedef union {
   u16 ALL;
   struct {
     u8 DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
-    u8 MUTED:1;       // track is muted
     u8 POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
     u8 BACKWARD:1;    // if set, the track will be played in backward direction
     u8 FIRST_CLK:1;   // don't increment on the first clock event
@@ -204,6 +203,8 @@ extern s32 SEQ_CORE_Scrub(s32 incrementer);
 extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
 extern u8 seq_core_steps_per_pattern;
+
+extern u16 seq_core_trk_muted;
 
 extern u8 seq_core_step_update_req;
 

@@ -1597,9 +1597,9 @@ static s32 DoImport(void)
 
   // mute track to avoid random effects while loading the file
   MIOS32_IRQ_Disable(); // this operation should be atomic!
-  u8 muted = seq_core_trk[visible_track].state.MUTED;
+  u8 muted = seq_core_trk_muted & (1 << visible_track);
   if( !muted )
-    seq_core_trk[visible_track].state.MUTED = 1;
+    seq_core_trk_muted |= (1 << visible_track);
   MIOS32_IRQ_Enable();
 
   // read file
@@ -1610,7 +1610,7 @@ static s32 DoImport(void)
   // unmute track if it wasn't muted before
   MIOS32_IRQ_Disable(); // this operation should be atomic!
   if( !muted )
-    seq_core_trk[visible_track].state.MUTED = 0;
+    seq_core_trk_muted &= ~(1 << visible_track);
   MIOS32_IRQ_Enable();
 
   if( status < 0 ) {

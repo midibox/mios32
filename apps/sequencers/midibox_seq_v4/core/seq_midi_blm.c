@@ -96,7 +96,7 @@ u8 seq_midi_blm_num_steps;
 u8 seq_midi_blm_num_tracks;
 u8 seq_midi_blm_num_colours;
 u8 seq_midi_blm_force_update;
-
+u8 seq_midi_blm_shift_active;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -131,6 +131,7 @@ s32 SEQ_MIDI_BLM_Init(u32 mode)
   seq_midi_blm_num_tracks = 16;
   seq_midi_blm_num_colours = 2;
   seq_midi_blm_force_update = 0;
+  seq_midi_blm_shift_active = 0;
 
   sysex_device_id = 0; // only device 0 supported yet
 

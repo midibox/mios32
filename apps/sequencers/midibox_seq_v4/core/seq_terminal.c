@@ -284,7 +284,7 @@ s32 SEQ_TERMINAL_PrintTracks(void)
 	    SEQ_MIDI_PORT_OutCheckAvailable(midi_port) ? ' ' : '*',
 	    midi_chn);
 
-    if( seq_core_trk[track].state.MUTED )
+    if( seq_core_trk_muted & (1 << track) )
       sprintf((char *)(str_buffer + strlen(str_buffer)), "  yes  |\n");
     else if( seq_core_trk[track].layer_muted )
       sprintf((char *)(str_buffer + strlen(str_buffer)), " layer |\n");

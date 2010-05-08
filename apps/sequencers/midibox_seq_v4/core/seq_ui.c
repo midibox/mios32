@@ -118,6 +118,12 @@ static u16 ui_gp_leds;
 static u8 ui_blm_leds[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
 static u8 ui_blm_sent_leds_green[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
 static u8 ui_blm_sent_leds_red[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
+static u16 ui_blm_sent_extracolumn_green;
+static u16 ui_blm_sent_extracolumn_red;
+static u16 ui_blm_sent_extrarow_green;
+static u16 ui_blm_sent_extrarow_red;
+static u8 ui_blm_sent_extra_green;
+static u8 ui_blm_sent_extra_red;
 
 #define UI_MSG_MAX_CHAR 21
 static char ui_msg[2][UI_MSG_MAX_CHAR];
@@ -1623,88 +1629,89 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
     midi_package.velocity = 0;
   }
 
-  if( midi_package.event == NoteOn && midi_package.note < seq_midi_blm_num_steps ) {
+  if( midi_package.event == NoteOn ) {
 
-    u8 gp_button = midi_package.note % 16;
+    if( midi_package.note < seq_midi_blm_num_steps ) {
+      u8 gp_button = midi_package.note % 16;
 
-    // change display view if required
-    if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-      if( seq_midi_blm_num_steps <= 16 ) {
-	// don't change view
-      } else if( seq_midi_blm_num_steps <= 32 ) {
-	ui_selected_step_view = (ui_selected_step_view & 0xfe) + ((midi_package.note/16) & 0x01);
-      } else if( seq_midi_blm_num_steps <= 64 ) {
-	ui_selected_step_view = (ui_selected_step_view & 0xfc) + ((midi_package.note/16) & 0x03);
-      } else if( seq_midi_blm_num_steps <= 128 ) {
-	ui_selected_step_view = (ui_selected_step_view & 0xf8) + ((midi_package.note/16) & 0x07);
-      } else {
-	ui_selected_step_view = (midi_package.note>>8) & 0x0f;
+      // change display view if required
+      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
+	if( seq_midi_blm_num_steps <= 16 ) {
+	  // don't change view
+	} else if( seq_midi_blm_num_steps <= 32 ) {
+	  ui_selected_step_view = (ui_selected_step_view & 0xfe) + ((midi_package.note/16) & 0x01);
+	} else if( seq_midi_blm_num_steps <= 64 ) {
+	  ui_selected_step_view = (ui_selected_step_view & 0xfc) + ((midi_package.note/16) & 0x03);
+	} else if( seq_midi_blm_num_steps <= 128 ) {
+	  ui_selected_step_view = (ui_selected_step_view & 0xf8) + ((midi_package.note/16) & 0x07);
+	} else {
+	  ui_selected_step_view = (midi_package.note>>8) & 0x0f;
+	}
       }
-    }
 
-    // change track if required
-    if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_PATTERNS ) {
-      if( seq_midi_blm_num_tracks <= 4 ) {
-	if( midi_package.chn >= 4 )
-	  return 0; // invalid channel
-      } else if( seq_midi_blm_num_tracks <= 8 ) {
-	if( midi_package.chn >= 8 )
-	  return 0; // invalid channel
-	ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
-      } else {
-	ui_selected_group = (midi_package.chn / 4);
-      }
-      if( seq_midi_blm_mode != SEQ_MIDI_BLM_MODE_PATTERNS )
-	ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
-    }
-
-    // change trigger layer/instrument if required
-    if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-      u8 visible_track = SEQ_UI_VisibleTrackGet();
-      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
-
-	if( midi_package.chn >= num_instruments )
-	  return 0;
-
+      // change track if required
+      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_PATTERNS ) {
 	if( seq_midi_blm_num_tracks <= 4 ) {
 	  if( midi_package.chn >= 4 )
 	    return 0; // invalid channel
-	  ui_selected_instrument = (ui_selected_instrument & 0xfc) + midi_package.chn;
 	} else if( seq_midi_blm_num_tracks <= 8 ) {
 	  if( midi_package.chn >= 8 )
 	    return 0; // invalid channel
-	  ui_selected_instrument = (ui_selected_instrument & 0xf8) + midi_package.chn;
+	  ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
 	} else {
-	  ui_selected_instrument = midi_package.chn;
+	  ui_selected_group = (midi_package.chn / 4);
 	}
-      } else {
-	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
+	if( seq_midi_blm_mode != SEQ_MIDI_BLM_MODE_PATTERNS )
+	  ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
+      }
 
-	if( midi_package.chn >= num_layers )
-	  return 0;
+      // change trigger layer/instrument if required
+      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
+	u8 visible_track = SEQ_UI_VisibleTrackGet();
+	u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
 
-	if( seq_midi_blm_num_tracks <= 4 ) {
-	  if( midi_package.chn >= 4 )
-	    return 0; // invalid channel
-	  ui_selected_trg_layer = (ui_selected_trg_layer & 0xfc) + midi_package.chn;
-	} else if( seq_midi_blm_num_tracks <= 8 ) {
-	  if( midi_package.chn >= 8 )
-	    return 0; // invalid channel
-	  ui_selected_trg_layer = (ui_selected_trg_layer & 0xf8) + midi_package.chn;
+	  if( midi_package.chn >= num_instruments )
+	    return 0;
+
+	  if( seq_midi_blm_num_tracks <= 4 ) {
+	    if( midi_package.chn >= 4 )
+	      return 0; // invalid channel
+	    ui_selected_instrument = (ui_selected_instrument & 0xfc) + midi_package.chn;
+	  } else if( seq_midi_blm_num_tracks <= 8 ) {
+	    if( midi_package.chn >= 8 )
+	      return 0; // invalid channel
+	    ui_selected_instrument = (ui_selected_instrument & 0xf8) + midi_package.chn;
+	  } else {
+	    ui_selected_instrument = midi_package.chn;
+	  }
 	} else {
-	  ui_selected_trg_layer = midi_package.chn;
+	  u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
+
+	  if( midi_package.chn >= num_layers )
+	    return 0;
+
+	  if( seq_midi_blm_num_tracks <= 4 ) {
+	    if( midi_package.chn >= 4 )
+	      return 0; // invalid channel
+	    ui_selected_trg_layer = (ui_selected_trg_layer & 0xfc) + midi_package.chn;
+	  } else if( seq_midi_blm_num_tracks <= 8 ) {
+	    if( midi_package.chn >= 8 )
+	      return 0; // invalid channel
+	    ui_selected_trg_layer = (ui_selected_trg_layer & 0xf8) + midi_package.chn;
+	  } else {
+	    ui_selected_trg_layer = midi_package.chn;
+	  }
 	}
       }
-    }
 
-    // request display update
-    seq_ui_display_update_req = 1;
-    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+      // request display update
+      seq_ui_display_update_req = 1;
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
 
-    // call button handler
-    switch( seq_midi_blm_mode ) {
+      // call button handler
+      switch( seq_midi_blm_mode ) {
       case SEQ_MIDI_BLM_MODE_PATTERNS: {
 	if( midi_package.note >= 16 )
 	  return 0; // only key 0..15 supported
@@ -1717,29 +1724,73 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
       case SEQ_MIDI_BLM_MODE_TRIGGERS:
       default: // SEQ_MIDI_BLM_MODE_TRACKS
 	SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
+      }
+
+      return 1; // MIDI event has been taken
+
+    } else if( midi_package.note == 0x40 ) {
+      // Extra Column
+      if( !seq_midi_blm_shift_active ) {
+	if( midi_package.velocity > 0 ) {
+	  u8 track_mask = 1 << midi_package.chn;
+
+	  if( ui_selected_tracks == track_mask ) // track already selected: mute it
+	    seq_core_trk_muted ^= track_mask;
+	  else { // track not selected yet: select it now
+	    ui_selected_tracks = track_mask;
+
+	    // set/clear encoder fast function if required
+	    SEQ_UI_InitEncSpeed(1); // auto config
+	  }
+	}
+	return 1; // MIDI event has been taken
+      } else {
+	switch( midi_package.chn ) {
+	case 0x0:
+	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRIGGERS;
+	  seq_midi_blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+
+	case 0x1:
+	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRACKS;
+	  seq_midi_blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+
+	case 0x2:
+	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_PATTERNS;
+	  seq_midi_blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+	}
+      }
+    } else if( midi_package.chn == Chn1 && midi_package.note >= 0x60 && midi_package.note <= 0x6f ) {
+      // extra row
+      u8 button = midi_package.note - 0x60;
+
+      if( !seq_midi_blm_shift_active ) {
+	if( midi_package.velocity > 0 ) {
+	  u8 visible_track = SEQ_UI_VisibleTrackGet();
+	  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+	  // select new step view
+	  ui_selected_step_view = (button * (num_steps/16)) / 16;
+	  // select step within view
+	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	}
+	return 1; // MIDI event has been taken
+      } else {
+	// no function yet
+	return 1; // MIDI event has been taken
+      }
+    } else if( midi_package.chn == Chn16 && midi_package.note == 0x60 ) {
+      // shift button
+      seq_midi_blm_shift_active = (midi_package.velocity > 0) ? 1 : 0;
+      seq_midi_blm_force_update = 1;	
+      return 1; // MIDI event has been taken
     }
 
-
-    return 1; // MIDI event has been taken
-  }
-
-  if( midi_package.event == CC && midi_package.chn == Chn1 ) {
-    switch( midi_package.cc_number ) {
-      case 0x40:
-	seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRIGGERS;
-	seq_midi_blm_force_update = 1;	
-	return 1; // MIDI event has been taken
-
-      case 0x41:
-	seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRACKS;
-	seq_midi_blm_force_update = 1;	
-	return 1; // MIDI event has been taken
-
-      case 0x42:
-	seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_PATTERNS;
-	seq_midi_blm_force_update = 1;	
-	return 1; // MIDI event has been taken
-    }
+  } else if( midi_package.event == CC && midi_package.chn < 8 ) {
+    // Fader Event
+    // TODO: map it to customized port/channel/CC
   }
 
   return 0; // MIDI event has not been taken
@@ -2357,18 +2408,82 @@ s32 SEQ_UI_LED_Handler(void)
   // send LED changes to BLM_SCALAR
   if( seq_midi_blm_port ) {
     u8 sequencer_running = SEQ_BPM_IsRunning();
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
     MIOS32_IRQ_Disable();
     u8 force_update = seq_midi_blm_force_update;
     seq_midi_blm_force_update = 0;
     MIOS32_IRQ_Enable();
 
-    if( force_update ) {
-      MUTEX_MIDIOUT_TAKE;
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, 0x40, seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ? 0x7f : 0x00);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, 0x41, seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS ? 0x7f : 0x00);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, 0x42, seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_PATTERNS ? 0x7f : 0x00);
-      MUTEX_MIDIOUT_GIVE;
+    u16 extracolumn_green;
+    u16 extracolumn_red;
+    u16 extrarow_green;
+    u16 extrarow_red;
+
+    if( !seq_midi_blm_shift_active ) {
+      extracolumn_green = ui_selected_tracks;
+      extracolumn_red = seq_core_trk_muted;
+
+      int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+      if( num_steps > 128 )
+	extrarow_green = 1 << ui_selected_step_view;
+      else if( num_steps > 64 )
+	extrarow_green = 3 << (2*ui_selected_step_view);
+      else
+	extrarow_green = 15 << (4*ui_selected_step_view);
+
+      u8 played_step_view = (seq_core_trk[visible_track].step / 16);
+      if( num_steps > 128 )
+	extrarow_red = 1 << played_step_view;
+      else if( num_steps > 64 )
+	extrarow_red = 3 << (2*played_step_view);
+      else
+	extrarow_red = 15 << (4*played_step_view);
+    } else {
+      extracolumn_green = 0x0000;
+      extracolumn_red = 1 << seq_midi_blm_mode;
+      extrarow_green = 0x0000;
+      extrarow_red = 0x0000;
     }
+
+    u8 extra_green = (sequencer_running && ((seq_core_state.ref_step & 3) == 0)) ? 0x01 : 0x00;
+    u8 extra_red = seq_midi_blm_shift_active ? 0x01 : 0x00;
+
+    MUTEX_MIDIOUT_TAKE;
+    if( force_update || extra_green != ui_blm_sent_extra_green ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 15, 0x60, extra_green);
+      ui_blm_sent_extra_green = extra_green;
+    }
+
+    if( force_update || extra_red != ui_blm_sent_extra_red ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 15, 0x68, extra_red);
+      ui_blm_sent_extra_red = extra_red;
+    }
+
+    if( force_update || extracolumn_green != ui_blm_sent_extracolumn_green ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_green & 0x0080) ? 0x41 : 0x40, (extracolumn_green >> 0) & 0x7f);
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_green & 0x8000) ? 0x43 : 0x42, (extracolumn_green >> 8) & 0x7f);
+      ui_blm_sent_extracolumn_green = extracolumn_green;
+    }
+
+    if( force_update || extracolumn_red != ui_blm_sent_extracolumn_red ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_red & 0x0080) ? 0x49 : 0x48, (extracolumn_red >> 0) & 0x7f);
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_red & 0x8000) ? 0x4b : 0x4a, (extracolumn_red >> 8) & 0x7f);
+      ui_blm_sent_extracolumn_red = extracolumn_red;
+    }
+
+    if( force_update || extrarow_green != ui_blm_sent_extrarow_green ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_green & 0x0080) ? 0x61 : 0x60, (extrarow_green >> 0) & 0x7f);
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_green & 0x8000) ? 0x63 : 0x62, (extrarow_green >> 8) & 0x7f);
+      ui_blm_sent_extrarow_green = extrarow_green;
+    }
+
+    if( force_update || extrarow_red != ui_blm_sent_extrarow_red ) {
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_red & 0x0080) ? 0x69 : 0x68, (extrarow_red >> 0) & 0x7f);
+      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_red & 0x8000) ? 0x6b : 0x6a, (extrarow_red >> 8) & 0x7f);
+      ui_blm_sent_extrarow_red = extrarow_red;
+    }
+    MUTEX_MIDIOUT_GIVE;
+
 
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
     for(i=0; i<seq_midi_blm_num_tracks; ++i) {
