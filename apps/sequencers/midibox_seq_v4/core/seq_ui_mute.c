@@ -48,9 +48,7 @@ static s32 LED_Handler(u16 *gp_leds)
       track = SEQ_UI_VisibleTrackGet();
       *gp_leds = seq_core_trk[track].layer_muted;
     } else {
-      for(track=0; track<16; ++track)
-	if( seq_core_trk[track].state.MUTED )
-	  *gp_leds |= (1 << track);
+      *gp_leds = seq_core_trk_muted;
     }
   }
 
@@ -85,21 +83,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       // access to seq_core_trk[] must be atomic!
       portENTER_CRITICAL();
 
-      if( seq_ui_button_state.MUTE_PRESSED ) {
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
-	u16 mask = 1 << encoder;
-	if( incrementer > 0 )
-	  seq_core_trk[visible_track].layer_muted |= mask;
-	else if( incrementer < 0 )
-	  seq_core_trk[visible_track].layer_muted &= ~mask;
-	else
-	  seq_core_trk[visible_track].layer_muted ^= mask;
-      } else {
-	if( incrementer )
-	  seq_core_trk[encoder].state.MUTED = incrementer >= 0;
-	else
-	  seq_core_trk[encoder].state.MUTED ^= 1;
-      }
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      u16 mask = 1 << encoder;
+      u16 *muted = seq_ui_button_state.MUTE_PRESSED ? (u16 *)&seq_core_trk[visible_track].layer_muted : (u16 *)&seq_core_trk_muted;
+
+      if( incrementer > 0 )
+	*muted |= mask;
+      else if( incrementer < 0 )
+	*muted &= ~mask;
+      else
+	*muted ^= mask;
 
       portEXIT_CRITICAL();
     }
@@ -141,9 +134,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  u8 visible_track = SEQ_UI_VisibleTrackGet();
 	  seq_core_trk[visible_track].layer_muted = latched_mute;
 	} else {
-	  u8 track;
-	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	    seq_core_trk[track].state.MUTED = (latched_mute & (1 << track)) ? 1 : 0;
+	  seq_core_trk_muted = latched_mute;
 	}
       } else {
 	// select pressed: init latched mutes which will be taken over once SELECT button released
@@ -152,10 +143,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  latched_mute = seq_core_trk[visible_track].layer_muted;
 	} else {
 	  u8 track;
-	  latched_mute = 0;
-	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	    if( seq_core_trk[track].state.MUTED )
-	      latched_mute |= (1 << track);
+	  latched_mute = seq_core_trk_muted;
 	}
       }
 
@@ -196,9 +184,7 @@ static s32 LCD_Handler(u8 high_prio)
 	mute_flags = seq_core_trk[visible_track].layer_muted;
       } else {
 	seq_core_trk_t *t = &seq_core_trk[0];
-	for(track=0; track<16; ++t, ++track)
-	  if( seq_core_trk[track].state.MUTED )
-	    mute_flags |= (1 << track);
+	mute_flags = seq_core_trk_muted;
       }
     }
 

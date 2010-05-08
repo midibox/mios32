@@ -150,7 +150,7 @@ static s32 LCD_Handler(u8 high_prio)
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
     for(track=0; track<16; ++t, ++track) {
-      if( seq_core_trk[track].state.MUTED )
+      if( seq_core_trk_muted & (1 << track) )
 	SEQ_LCD_PrintString("Mute ");
       else
 	SEQ_LCD_PrintHBar(t->vu_meter >> 3);

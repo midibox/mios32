@@ -298,11 +298,11 @@ s32 SEQ_SONG_FetchPos(void)
 	// access to seq_core_trk[] must be atomic!
 	portENTER_CRITICAL();
 
-	u8 track = 0;
-	do { seq_core_trk[track].state.MUTED = (s->pattern_g1 & (1 << (track&3))) ? 1 : 0; } while( ++track < 4 );
-	do { seq_core_trk[track].state.MUTED = (s->pattern_g2 & (1 << (track&3))) ? 1 : 0; } while( ++track < 8 );
-	do { seq_core_trk[track].state.MUTED = (s->pattern_g3 & (1 << (track&3))) ? 1 : 0; } while( ++track < 12 );
-	do { seq_core_trk[track].state.MUTED = (s->pattern_g4 & (1 << (track&3))) ? 1 : 0; } while( ++track < 16 );
+	seq_core_trk_muted =
+	  ((s->pattern_g1 & 0x0f) <<  0) |
+	  ((s->pattern_g2 & 0x0f) <<  4) |
+	  ((s->pattern_g3 & 0x0f) <<  8) |
+	  ((s->pattern_g4 & 0x0f) << 12);
 
 	portEXIT_CRITICAL();
 

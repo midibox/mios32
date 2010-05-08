@@ -52,5 +52,6 @@ extern u8 seq_midi_blm_num_steps;
 extern u8 seq_midi_blm_num_tracks;
 extern u8 seq_midi_blm_num_colours;
 extern u8 seq_midi_blm_force_update;
+extern u8 seq_midi_blm_shift_active;
 
 #endif /* _SEQ_MIDI_BLM_H */

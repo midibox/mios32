@@ -255,7 +255,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( !(track % 4) )
 	SEQ_LCD_CursorSet(15 + 20*(track>>2), 1);
 
-      if( seq_core_trk[track].state.MUTED )
+      if( seq_core_trk_muted & (1 << track) )
 	SEQ_LCD_PrintVBar('M');
       else
 	SEQ_LCD_PrintVBar(t->vu_meter >> 4);

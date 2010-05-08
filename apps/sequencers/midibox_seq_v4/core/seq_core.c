@@ -79,6 +79,8 @@ seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
 
+u16 seq_core_trk_muted;
+
 u8 seq_core_step_update_req;
 
 u8 seq_core_global_scale;
@@ -125,6 +127,7 @@ s32 SEQ_CORE_Init(u32 mode)
 {
   int i;
 
+  seq_core_trk_muted = 0;
   seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
@@ -384,9 +387,7 @@ s32 SEQ_CORE_Reset(void)
   seq_core_trk_t *t = &seq_core_trk[0];
   seq_cc_trk_t *tcc = &seq_cc_trk[0];
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
-    u8 muted = t->state.MUTED; // save muted flag
     t->state.ALL = 0;
-    t->state.MUTED = muted; // restore muted flag
     SEQ_CORE_ResetTrkPos(track, t, tcc);
     SEQ_RECORD_Reset(track);
   }
@@ -643,7 +644,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
         // track disabled
 	// MIDI player in exclusive mode
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
-	    t->state.MUTED || // Track Mute function
+	    (seq_core_trk_muted & (1 << track)) || // Track Mute function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
 	    midply_solo ) { // MIDI player in exclusive mode
