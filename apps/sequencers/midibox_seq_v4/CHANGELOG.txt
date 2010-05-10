@@ -10,6 +10,8 @@ MIDIboxSEQ V4.0beta21
 ~~~~~~~~~~~~~~~~~~~~~
 
   o added optional button/LED function for UNDO
+  o ongoing preparation work for BLM16x16
+    TODO: describe new modes here
 
 
 MIDIboxSEQ V4.0beta20
