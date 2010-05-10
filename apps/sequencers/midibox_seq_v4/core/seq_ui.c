@@ -1738,6 +1738,8 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
 	    seq_core_trk_muted ^= track_mask;
 	  else { // track not selected yet: select it now
 	    ui_selected_tracks = track_mask;
+	    ui_selected_group = (midi_package.chn / 4);
+	    seq_midi_blm_force_update = 1;	
 
 	    // set/clear encoder fast function if required
 	    SEQ_UI_InitEncSpeed(1); // auto config
@@ -2365,6 +2367,9 @@ s32 SEQ_UI_LED_Handler(void)
   if( num_blm_led_arrays > NUM_BLM_LED_ARRAYS )
     num_blm_led_arrays = NUM_BLM_LED_ARRAYS;
 
+  // set this to 1 to use rotated view
+  u8 rotate_view = 0;
+
   switch( seq_midi_blm_mode ) {
     case SEQ_MIDI_BLM_MODE_TRIGGERS: {
       u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -2381,6 +2386,7 @@ s32 SEQ_UI_LED_Handler(void)
 	  ++i;
 	}
       } else {
+#if 0
 	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
 	for(i=0; i<num_layers; ++i) {
 	  int array;
@@ -2391,6 +2397,14 @@ s32 SEQ_UI_LED_Handler(void)
 	  memset((u8 *)&ui_blm_leds[i*NUM_BLM_LED_ARRAYS], 0, num_blm_led_arrays);
 	  ++i;
 	}
+#else
+	rotate_view = 1;
+	for(i=0; i<num_blm_led_arrays*8; ++i) {
+	  int x = 1 << i;
+	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 0] = x;
+	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 1] = x >> 8;
+	}
+#endif
       }
     } break;
 
@@ -2539,8 +2553,19 @@ s32 SEQ_UI_LED_Handler(void)
 
 	  if( sequencer_running ) {
 	    u8 played_step = seq_core_trk[(seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ? visible_track : track)].step;
-	    if( (played_step >> 3) == (visible_sr0+array) )
-	      red_pattern = 1 << (played_step % 8);
+	    if( rotate_view ) {
+	      if( played_step == (8*visible_sr0+led_row) ) {
+		red_pattern = 0xff;
+		// turn off green LED to improve visibility of the position marker
+		green_pattern = 0x00;
+	      }
+	    } else {
+	      if( (played_step >> 3) == (visible_sr0+array) ) {
+		red_pattern = 1 << (played_step % 8);
+		// turn off green LED to improve visibility of the position marker
+		green_pattern &= ~red_pattern;
+	      }
+	    }
 	  }
 	}
 
@@ -2549,7 +2574,7 @@ s32 SEQ_UI_LED_Handler(void)
 	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
 	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
 			     led_row, // Channel (== LED Row)
-			     (2*array) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
+			     8*rotate_view + (2*array) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
 			     green_pattern & 0x7f); // remaining 7 LEDs
 
 	  MUTEX_MIDIOUT_GIVE;
@@ -2561,7 +2586,7 @@ s32 SEQ_UI_LED_Handler(void)
 	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
 	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
 			     led_row, // Channel (== LED Row)
-			     (2*array) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
+			     8*rotate_view + (2*array) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
 			     red_pattern & 0x7f); // remaining 7 LEDs
 
 	  MUTEX_MIDIOUT_GIVE;
