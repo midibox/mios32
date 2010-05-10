@@ -490,7 +490,6 @@ Short list of changes:
 Wishlist for future features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  o MIDI File import and export
   o SysEx librarian, recording and dumping function for external Synths or 
     other MIDI gear
   o support for MBHP_ETH module for sending OSC packets without the need 
@@ -515,3 +514,186 @@ Wishlist for future features
   o now where infos are sent to MIOS terminal, we could also provide a
     console input to control MBSEQ from a terminal (this would even allow
     to create sequences from a computer)
+
+
+
+
+Additional input from vcfool:
+
+>> Roll Parameter
+>> 
+>> [quote name='TK.' date='22 November 2009 - 21:46' timestamp='1258922761' post='121280']
+>> No, it doesn't have an effect on Roll. The gatelengths are predefined:
+>> [code]
+>>                     // force gatelength depending on number of triggers
+>>                     if( triggers < 4 ) {
+>>                       //   number of triggers:    2   3   4   5
+>>                       const u8 gatelength_tab[4] = { 48, 32, 36, 32 };
+>>                       // strategy:
+>>                       // 2 triggers: played within 1 step at 0 and 48
+>>                       // 3 triggers: played within 1 step at 0, 32 and 64
+>>                       // 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
+>>                       // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
+>> 
+>>                       // in addition, scale length (0..95) over next clock counter to consider the selected clock divider
+>>                       gatelength = (gatelength_tab[triggers-2] * t->step_length) / 96;
+>>                     }
+>> [/code]
+>> [/quote]
+>> 
+>> I can see the comments in the code. I can somehow understand that the Roll re-triggers will happen at the ticks specified, but I do not understand the last part. And I feel like I probably wouldn't even if you explained it to me in plain words :)
+>> 
+>> I have been trying to understand why the length has an effect when 4 or 5 is selected. It does in my machine.
+>> 
+>> For what I see, now we can't change the ticks between repeats. I'm gonna miss this. I use the repeat to say insert a Triplet into a normal 16th note pattern. Something I can only imagine doing now by creating a really complex Groove.
+
+
+TK: I like the current Roll implementation, but of course there were some possibilities
+with the previous one known from V3 that are not available anymore.
+Solution would be an alternative Roll option, let's call it Roll2, which works like multi-gate triggers on V3
+
+---------------------------------------------------------
+
+>> Grooves to DIN Sync
+>> 
+>> [quote name='TK.' date='22 November 2009 - 21:46' timestamp='1258922761' post='121280']
+>> You could simply trigger your drummachine from a J5.A0..A7 gate, controlled from a dedicated track which plays 16 notes at the desired clock rate. The clock rate is defined by the clock divider value and normal/triplet mode.
+>> Now activate a groove style for this track -> done. :)
+>> [/quote]
+>> 
+>> Yes, I know I can do it like this, but...
+>> Would loose one track of the MB-SEQ.
+>> Would use one Gate on the AOUT and it's associated CV (ok, i have 8, ok)
+>> Then I have to make a special cable to route that Gate output to a DIN5 (ok, i already have the cable, ok).
+>> But most important it makes the Clock output useless in most situations if you use grooves (and I do love grooves).
+>> I use the Clock output not only for the DIN-Machines but also on my modular too. So I'd love to have this implemented. I don't know how much coding this implies. I feel a little bad asking for things ......... of course ultra-low priority if any.
+
+TK: low priority
+
+---------------------------------------------------------
+
+>> About CC Parameter Layers
+>> 
+>> -They don't seem to work when the Track is transposed (when the Track is in Transpose mode and transposing from the MIDI Keyboard, not from the Transpose page). They only seem to work when transposed down in octave intervals.
+>> 
+>> -LFO to CC doesn't seem to work either. Directly routing an LFO to the ExtraCC# works, but routing the LFO to CC Layers doesn't seem to do anything.
+>> 
+>> -And then a suggestion: I'd really love to be able to remove the steps on CC Layers (moving the encoder below "0" to "---"), so that only the needed CC steps are actually sent.
+>> 
+
+TK: to be checked, seems that I forgot to finish the implementation of some things before releasing a new version ;)
+
+---------------------------------------------------------
+
+>> Keyboard to selected track:
+>> 
+>> -When creating a new Track I am constantly going to the MIDI Router Page to assign that track's Port/Chn and test some notes on the keyboard before actually editing (or recording onto) the track. So may I ask for an extra mode where the keyboard is auto assigned to the selected track? Maybe it could be done by adding an extra Target available on the MIDI Router assignments (like "Selected Track" or "Edit Track" or whatever). I am sure you can come out with an optimal way to handle this.
+
+TK: Will be available soon in conjunction with a special "BLM16x16 keyboard mode"
+Side effect of this mode: it will require a new menu page where such a forwarding option could be defined as well
+
+---------------------------------------------------------
+
+>> Session Save (4 Patterns)
+>> 
+>> -When saving the Session on 4 empty patterns these will still show "Empty" on the name after saving. This is confusing later when saving other patterns on the same Banks. So, when saving on an empty (not already named) pattern would it be possible to change the pattern names to "Pattern XX" or some other default?
+
+TK: to be checked
+
+---------------------------------------------------------
+
+>> MENU BEH = 1
+>> 
+>> -I changed the Behavior of the MENU button to 1 in the HW file. Sometimes when you navigate away from the MENU page, the LCD will show the new page but you are still in the Menu. It seems to happen when you navigate away to the same page you were when you entered the MENU.
+>> 
+>> To reproduce this:
+>> 
+>> 1.- Press EDIT (or any other mode: Mute, Pattern, Song, Utility. I mapped F1 to the Mixer page and F2 to Transpose and it happens too. I think that this will happen on any page that you can actually access directly without the need of the MENU shortcuts).
+>> 
+>> 2.- Press MENU.
+>> 
+>> 3.- Press EDIT (or the other mode) again. LCDs show EDIT but GP LEDs won't. And GP Buttons/Encoders don't EDIT, they all work as if you are still in the MENU.
+>> 
+>> 4.- Pressing MENU again will do nothing on the LCDs but will actually exit the Menu and the GP LEDs/Buttons/Encoders should work.
+
+TK: to be checked
+
+---------------------------------------------------------
+
+>> -When in Scroll or Move (while holding the Button), pressing any other GP button will still make the function on Utility page: Paste and specially Clear (which here doesn't have the 2sec wait-time) can ruin your track, if you don't press UNDO immediately :) If you press a GP button that leads to a another page (Random, PortMute...), and then return back to Utility, you will be locked on "Move mode" until you press Move/Scroll again. Similar to the previous Menu issue.
+
+TK: to be checked
+
+---------------------------------------------------------
+
+>> -Mixer Map pages 09-12 don't show the correct selected CC# number when moving the Encoder. (As selected on the assignement pages 13-16).
+
+TK: to be checked
+
+---------------------------------------------------------
+
+>> -Importing the Presets I had made in Beta15, causes Beta18 to completely freeze if after importing the Preset I don't do anything and just leave EVENT page there. I had few of them and I created them again. But I can attach them and give more details if you are interested in finding what the problem was.
+
+TK: to be checked for improving robustness of parser (however, nobody can expect a final format in a beta version)
+
+---------------------------------------------------------
+
+>> -When working on a track with several Note Layers, removing/inserting gates/notes on steps that containing other notes on other layers, will remove also these other notes on other Layers (As they share the same Gate Trigger Layer). Confusing. But I am not sure how but polyphonic editing needs improving. (Different Lenght-Vel, MacrosÀ?)
+
+TK: Not possible anyhow with the concept of a singe length and velocity for the whole track.
+With a special BLM16x16 mode I'm planning to simplify the editing of poly tracks (to be demonstrated in a video)
+But it will only work so comfortable with this hardware
+
+---------------------------------------------------------
+
+>> -I don't know if this is the intended behaviour, but Mutes don't mute the LFOs ExtraCC#. Makes sense for me that the Echo FX is not killed by the Mute, but not sure about the LFOs.
+
+TK: to be checked
+
+---------------------------------------------------------
+
+>> -Silly thing but again... Muting with the encoders: I would rather prefer: Turning clockwise (increase volume...) would UN-MUTE and turning anti-clockwise (like decreasing volume) would MUTE. I can help my brain to get used to the way it is working now; when rappidily muting and  un-muting a track, my brain auto-switches to the usual mode on every other mixer or gear.
+
+TK: to be inverted
+
+---------------------------------------------------------
+
+>> -AOUT Gates do not make "Legato" correctly. --> Needed to detail...
+
+TK: TODO... (will be some work that hasn't been done yet)
+
+---------------------------------------------------------
+
+>> -Changing ALL Length is odd ... more explaining to do ....
+
+TK: waiting for explanation
+
+----------------------------------------------------------
+
+>> SYSEX Files
+>> 
+>> -Problems dumping big files (64k of AKAI S612 sample data) over IIC Outs, works fine one the Core OUTs, but LCDs show nothing and SEQ seems frozen. Tried with the SEQ playing, just for fun: it will Stop, and then Continue when the Dump is sent. 
+>> 
+>> -Sending the same file from a computer (MIDI-OX) to the MB-SEQ USB1 IN, and routing it to a Core or IIC out, would not work correctly (MIDI TimeOut Protocol). --> GM-5 will work flawlessly here, not a PC problem.
+>> 
+>> -Also tried real (not-USB) MIDI, using a SySex editor on the ATARI ST. ATARI OUT -> SEQ IN2 -> routed to OUT2 -> S612. This won't work either.
+>> 
+>> -Would be nice if the OUT used to send the files for 'each' Sysex folder could be remembered by the SEQ. For a really intrument-ready folder.
+>> 
+>> -Scolling through the .SYX files with the DataWheel, makes the PAUSE LED to turn ON (when reaching the ends of the page). Trigger Layer C LED blinks too. This also happens when browsing .MID files in the MIDI folder.
+>> 
+>> -Note: I never experienced a problem with smaller files (6 bytes of FX data to a GM module) doesn't cause any trouble, and are sent with the SEQ running and no hicupps whatsoever... and using both Core and IIC outs caused no problem at all.
+>> 
+>> -I can send the files if you want to test on them.
+
+TK: I know the reasons. Some can be solved, some others not (like that the sequencer is stalled on large SysEx dumps)
+Technical answer: there is only one Mutex for all MIDI output ports.
+Multiple Mutex (semaphores) will decrease the general performance
+
+----------------------------------------------------------
+
+
+>> -Run out of MIDI Router assignements. Is it possible to have more than 8? Or perhaps if each one could have different OUTS for the same IN... then I wouldn't have to use 2 different assignements to route, say, "IN1 chn10" to "OUT1 chn10" and also to "OUT2 chn10".
+
+TK: check if more router nodes significantly lead to a worse performance
+alternatively check if there is still place in the menu page to edit the requested configuration (probably not...)
