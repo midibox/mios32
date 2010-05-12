@@ -1623,6 +1623,8 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   // for easier parsing: convert Note Off -> Note On with velocity 0
   if( midi_package.event == NoteOff ) {
     midi_package.event = NoteOn;
@@ -1667,7 +1669,6 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
 
       // change trigger layer/instrument if required
       if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 	if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	  u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
@@ -1687,6 +1688,7 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
 	    ui_selected_instrument = midi_package.chn;
 	  }
 	} else {
+#if 0
 	  u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
 
 	  if( midi_package.chn >= num_layers )
@@ -1703,7 +1705,10 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
 	  } else {
 	    ui_selected_trg_layer = midi_package.chn;
 	  }
+#else
+	  ui_selected_trg_layer = 0;
 	}
+#endif
       }
 
       // request display update
@@ -1721,7 +1726,102 @@ s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_
 	SEQ_PATTERN_Change(ui_selected_group, new_pattern);
       } break;
 
-      case SEQ_MIDI_BLM_MODE_TRIGGERS:
+      case SEQ_MIDI_BLM_MODE_TRIGGERS: {
+	u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
+	} else {
+	  if( midi_package.velocity == 0 )
+	    return 0; // key has been depressed
+
+	  u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+	  u8 scale, root_selection, root;
+	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	  root = 0; // force root to C
+
+	  u8 note_start;
+	  u8 note_next;
+	  if( use_scale ) {
+	    // determine matching note range in scale
+	    note_start = 0x30; // C-2
+	    note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+	    int i;
+	    for(i=0; i<(15-midi_package.chn); ++i) {
+	      note_start = note_next;
+	      note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+	    }
+	  } else {
+	    note_start = 0x3c-8 + 15-midi_package.chn; // E-2 ..
+	    note_next = note_start;
+	  }
+
+
+	  u8 instrument = 0;
+	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+	  u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
+	  int step = 16*ui_selected_step_view + midi_package.note;
+	  if( !SEQ_TRG_GateGet(visible_track, step, instrument) ) {
+	    // set note on first layer
+	    int par_layer = 0;
+	    SEQ_PAR_Set(visible_track, step, par_layer, instrument, note_start);
+	    ui_selected_par_layer = par_layer;
+
+	    // clear remaining layers assigned to note
+	    for(par_layer=1; par_layer<num_p_layers; ++par_layer) {
+	      seq_par_layer_type_t par_type = layer_type[par_layer];
+	      if( par_type == SEQ_PAR_Type_Note )
+		SEQ_PAR_Set(visible_track, step, par_layer, instrument, 0x00);
+	    }
+
+	    // enable gate
+	    SEQ_TRG_GateSet(visible_track, step, instrument, 1);
+	  } else {
+	    // search all layers for matching note. if found, clear this note
+	    // otherwise use layer where no note has been assigned yet
+	    // if all layers allocated, use first layer
+	    // TODO: should we cycle the layer that is used if no free layer has been found?
+	    int par_layer;
+	    int unused_layer = -1;
+	    int used_layer = -1;
+	    int num_used_layers = 0;
+	    int found_note_in_layer = -1;
+	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+	      seq_par_layer_type_t par_type = layer_type[par_layer];
+	      if( par_type == SEQ_PAR_Type_Note ) {
+		u8 par_value = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
+		if( !par_value ) {
+		  if( unused_layer < 0 )
+		    unused_layer = par_layer;
+		} else {
+		  ++num_used_layers;
+		  if( par_value >= note_start && par_value < note_next ) {
+		    if( found_note_in_layer >= 0 )
+		      SEQ_PAR_Set(visible_track, step, par_layer, instrument, 0x00); // clear redundant note
+		    else
+		      found_note_in_layer = par_layer; // unassigned note in scale
+		  }
+		}
+	      }
+	    }
+
+	    if( found_note_in_layer >= 0 ) {
+	      if( num_used_layers < 2 ) {
+		// only one note: clear gate
+		SEQ_TRG_GateSet(visible_track, step, instrument, 0);
+	      } else {
+		// clear note
+		SEQ_PAR_Set(visible_track, step, found_note_in_layer, instrument, 0x00);
+	      }
+	    } else {
+	      if( unused_layer < 0 )
+		unused_layer = 0;
+	      SEQ_PAR_Set(visible_track, step, unused_layer, instrument, note_start);
+	      ui_selected_par_layer = unused_layer;
+	    }
+	  }
+	}
+      } break;
+
       default: // SEQ_MIDI_BLM_MODE_TRACKS
 	SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
       }
@@ -2399,10 +2499,52 @@ s32 SEQ_UI_LED_Handler(void)
 	}
 #else
 	rotate_view = 1;
-	for(i=0; i<num_blm_led_arrays*8; ++i) {
-	  int x = 1 << i;
-	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 0] = x;
-	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 1] = x >> 8;
+	u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+	u8 scale, root_selection, root;
+	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	root = 0; // force root to C
+
+	u8 instrument = 0;
+	int step = 8*visible_sr0;
+	int num_leds = num_blm_led_arrays*8;
+	for(i=0; i<num_leds; ++i, ++step) {
+	  u16 pattern = 0;
+	  if( SEQ_TRG_GateGet(visible_track, step, 0) ) {
+	    int note;
+	    if( use_scale )
+	      note = 0x30; // C-2
+	    else
+	      note = 0x3c-8; // E-2
+
+	    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+	    u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
+	    int note_ix;
+	    for(note_ix=0; note_ix<16; ++note_ix) {
+	      u8 next_note;
+	      if( use_scale )
+		next_note = SEQ_SCALE_NextNoteInScale(note, scale, root);
+	      else
+		next_note = note + 1;
+
+	      int par_layer;
+	      for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+		seq_par_layer_type_t par_type = layer_type[par_layer];
+		if( (par_type == SEQ_PAR_Type_Note) ) {
+		  u8 stored_note = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
+		  if( stored_note >= note && stored_note < next_note )
+		    pattern |= (1 << num_leds-1-note_ix);
+		}
+	      }
+
+	      if( use_scale )
+		note = next_note;
+	      else
+		++note;
+	    }
+	  }
+
+	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 0] = pattern;
+	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 1] = pattern >> 8;
 	}
 #endif
       }

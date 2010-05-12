@@ -39,6 +39,7 @@ extern s32 SEQ_TERMINAL_PrintTrack(u8 track);
 extern s32 SEQ_TERMINAL_PrintCurrentMixerMap(void);
 extern s32 SEQ_TERMINAL_PrintCurrentSong(void);
 extern s32 SEQ_TERMINAL_PrintGrooveTemplates(void);
+extern s32 SEQ_TERMINAL_PrintMemoryInfo(void);
 extern s32 SEQ_TERMINAL_PrintSdCardInfo(void);
 
 

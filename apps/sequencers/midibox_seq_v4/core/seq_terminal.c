@@ -46,6 +46,8 @@
 
 #include "seq_statistics.h"
 
+#include "umm_malloc.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -128,6 +130,7 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	DEBUG_MSG("  mixer:          print current mixer map\n");
 	DEBUG_MSG("  song:           print current song info\n");
 	DEBUG_MSG("  grooves:        print groove templates\n");
+	DEBUG_MSG("  memory:         print memory allocation info\n");
 	DEBUG_MSG("  sdcard:         print SD Card info\n");
 	DEBUG_MSG("  help:           this page\n");
 	MUTEX_MIDIOUT_GIVE;
@@ -160,6 +163,8 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	SEQ_TERMINAL_PrintCurrentSong();
       } else if( strncmp(parameter, "grooves", 7) == 0 ) {
 	SEQ_TERMINAL_PrintGrooveTemplates();
+      } else if( strncmp(parameter, "memory", 6) == 0 ) {
+	SEQ_TERMINAL_PrintMemoryInfo();
       } else if( strncmp(parameter, "sdcard", 6) == 0 ) {
 	SEQ_TERMINAL_PrintSdCardInfo();
       } else {
@@ -393,7 +398,13 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void)
   return 0; // no error
 }
 
+extern void * ptr_array[256];
+s32 SEQ_TERMINAL_PrintMemoryInfo(void)
+{
+  umm_info( NULL, 1 );
 
+  return 0; // no error
+}
 
 
 ///////////////////////////////////////////////////////////////////
@@ -435,6 +446,7 @@ static void ShowFatDate(u32 ThisDate, char* msg)
    sprintf( msg, "%02d/%02d/%02d", Month, Day, Year-20);
    return;
 }
+
 
 s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 {
