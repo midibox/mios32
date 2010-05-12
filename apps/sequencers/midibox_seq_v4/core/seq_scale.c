@@ -313,3 +313,39 @@ s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the next note in scale
+// IN: note: the current note
+//     scale: within the range 0..SEQ_SCALE_GetNum()-1
+//     root: the root note (0..11)
+// returns next note in scale
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SCALE_NextNoteInScale(u8 current_note, u8 scale, u8 root)
+{
+  u8 next_note = current_note + 1;
+
+  do {
+    // normalize note and determine octave
+    int note_number = next_note - root;
+    if( note_number < 0 ) note_number += 12;
+    u8 octave = note_number / 12;
+    note_number = note_number % 12;
+
+    // get scaled value from table
+    u8 tmp = seq_scale_table[scale].notes[note_number>>1];
+    u8 note_scaled = (note_number & 1) ? (tmp >> 4) : (tmp & 0xf);
+
+    // add octave and root note
+    note_scaled += 12*octave + root;
+
+    if( note_scaled != current_note ) {
+      next_note = note_scaled;
+      break;
+    }
+  } while( ++next_note < 127 ); // set limit
+
+  return next_note;
+}
