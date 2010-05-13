@@ -45,7 +45,7 @@
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
-#include "seq_midi_blm.h"
+#include "seq_blm.h"
 #include "seq_terminal.h"
 #include "seq_statistics.h"
 
@@ -97,7 +97,7 @@ void APP_Init(void)
   SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_SYSEX_Init(0);
-  SEQ_MIDI_BLM_Init(0);
+  SEQ_BLM_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
   SEQ_TERMINAL_Init(0);
@@ -160,8 +160,8 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
-    if( port == seq_midi_blm_port ) {
-      SEQ_UI_BLM_SCALAR_MIDI_Receive(port, midi_package);
+    if( port == seq_blm_port ) {
+      SEQ_BLM_MIDI_Receive(port, midi_package);
     } else {
       // returns > 0 if byte has been used for remote function
       if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
@@ -367,6 +367,10 @@ void SEQ_TASK_Period1S(void)
     return;
   }
 
+  // BLM timeout counter
+  if( blm_timeout_ctr )
+    --blm_timeout_ctr;
+
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
 
@@ -481,17 +485,14 @@ void SEQ_TASK_Period1S(void)
   if( load_sd_content && !SEQ_FILE_FormattingRequired() ) {
     // send layout request to MBHP_BLM_SCALAR
     MUTEX_MIDIOUT_TAKE;
-    SEQ_MIDI_BLM_SYSEX_SendRequest(0x00);
+    SEQ_BLM_SYSEX_SendRequest(0x00);
     MUTEX_MIDIOUT_GIVE;
 
     // TODO: should we load the patterns when SD Card has been detected?
     // disadvantage: current edit patterns are destroyed - this could be fatal during a live session if there is a bad contact!
 
-    if( SEQ_MIXER_Load(SEQ_MIXER_NumGet()) < 0 ) // function prints error message on error
-      return;
-
-    if( SEQ_SONG_Load(SEQ_SONG_NumGet()) < 0 ) // function prints error message on error
-      return;
+    SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+    SEQ_SONG_Load(SEQ_SONG_NumGet());
   }
 }
 
@@ -593,5 +594,3 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 
   return 0;
 }
-
-

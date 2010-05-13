@@ -67,6 +67,7 @@ extern s32 SEQ_TRG_AssignmentGet(u8 track, u8 trg_num);
 
 extern s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer, u8 trg_instrument);
 extern s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument);
+extern s32 SEQ_TRG_Get16(u8 track, u8 step16, u8 trg_layer, u8 trg_instrument);
 
 extern s32 SEQ_TRG_GateGet(u8 track, u16 step, u8 trg_instrument);
 extern s32 SEQ_TRG_AccentGet(u8 track, u16 step, u8 trg_instrument);

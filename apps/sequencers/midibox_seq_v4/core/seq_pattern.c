@@ -111,6 +111,12 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
 
   // change immediately if sequencer not running
   if( !SEQ_BPM_IsRunning() || ui_seq_pause ) {
+    // store requested pattern
+    portENTER_CRITICAL();
+    pattern.REQ = 0; // request not required - we load the pattern immediately
+    seq_pattern_req[group] = pattern;
+    portEXIT_CRITICAL();
+
 #if LED_PERFORMANCE_MEASURING
     MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
