@@ -58,7 +58,6 @@
 		529FA91B11790B6700293622 /* seq_led.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85A11790B6700293622 /* seq_led.c */; };
 		529FA91D11790B6700293622 /* seq_lfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85D11790B6700293622 /* seq_lfo.c */; };
 		529FA91F11790B6700293622 /* seq_midexp.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86011790B6700293622 /* seq_midexp.c */; };
-		529FA92111790B6700293622 /* seq_midi_blm.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86311790B6700293622 /* seq_midi_blm.c */; };
 		529FA92311790B6700293622 /* seq_midi_in.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86611790B6700293622 /* seq_midi_in.c */; };
 		529FA92511790B6700293622 /* seq_midi_port.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86911790B6700293622 /* seq_midi_port.c */; };
 		529FA92711790B6700293622 /* seq_midi_router.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86C11790B6700293622 /* seq_midi_router.c */; };
@@ -134,6 +133,7 @@
 		529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F3117911CE00293622 /* mios32_uart_midi.c */; };
 		529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */; };
 		529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F91179121300293622 /* FATFS_Wrapper.m */; };
+		52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F15C40119C9D0900E40C6C /* seq_blm.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -234,8 +234,6 @@
 		529FA85E11790B6700293622 /* seq_lfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lfo.h; path = ../core/seq_lfo.h; sourceTree = SOURCE_ROOT; };
 		529FA86011790B6700293622 /* seq_midexp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midexp.c; path = ../core/seq_midexp.c; sourceTree = SOURCE_ROOT; };
 		529FA86111790B6700293622 /* seq_midexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midexp.h; path = ../core/seq_midexp.h; sourceTree = SOURCE_ROOT; };
-		529FA86311790B6700293622 /* seq_midi_blm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_blm.c; path = ../core/seq_midi_blm.c; sourceTree = SOURCE_ROOT; };
-		529FA86411790B6700293622 /* seq_midi_blm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_blm.h; path = ../core/seq_midi_blm.h; sourceTree = SOURCE_ROOT; };
 		529FA86611790B6700293622 /* seq_midi_in.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_in.c; path = ../core/seq_midi_in.c; sourceTree = SOURCE_ROOT; };
 		529FA86711790B6700293622 /* seq_midi_in.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_in.h; path = ../core/seq_midi_in.h; sourceTree = SOURCE_ROOT; };
 		529FA86911790B6700293622 /* seq_midi_port.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_port.c; path = ../core/seq_midi_port.c; sourceTree = SOURCE_ROOT; };
@@ -339,6 +337,8 @@
 		529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FATFS_Wrapper_Dir.c; sourceTree = "<group>"; };
 		529FA9F81179121300293622 /* FATFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FATFS_Wrapper.h; sourceTree = "<group>"; };
 		529FA9F91179121300293622 /* FATFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FATFS_Wrapper.m; sourceTree = "<group>"; };
+		52F15C40119C9D0900E40C6C /* seq_blm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_blm.c; path = ../core/seq_blm.c; sourceTree = SOURCE_ROOT; };
+		52F15C41119C9D0900E40C6C /* seq_blm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_blm.h; path = ../core/seq_blm.h; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* MbSeq-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "MbSeq-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -461,6 +461,8 @@
 		529FA81C11790B5600293622 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52F15C40119C9D0900E40C6C /* seq_blm.c */,
+				52F15C41119C9D0900E40C6C /* seq_blm.h */,
 				529FA81D11790B6700293622 /* app.c */,
 				529FA81E11790B6700293622 /* app.h */,
 				529FA82011790B6700293622 /* seq_cc_labels.c */,
@@ -507,8 +509,6 @@
 				529FA85E11790B6700293622 /* seq_lfo.h */,
 				529FA86011790B6700293622 /* seq_midexp.c */,
 				529FA86111790B6700293622 /* seq_midexp.h */,
-				529FA86311790B6700293622 /* seq_midi_blm.c */,
-				529FA86411790B6700293622 /* seq_midi_blm.h */,
 				529FA86611790B6700293622 /* seq_midi_in.c */,
 				529FA86711790B6700293622 /* seq_midi_in.h */,
 				529FA86911790B6700293622 /* seq_midi_port.c */,
@@ -730,7 +730,6 @@
 				529FA91B11790B6700293622 /* seq_led.c in Sources */,
 				529FA91D11790B6700293622 /* seq_lfo.c in Sources */,
 				529FA91F11790B6700293622 /* seq_midexp.c in Sources */,
-				529FA92111790B6700293622 /* seq_midi_blm.c in Sources */,
 				529FA92311790B6700293622 /* seq_midi_in.c in Sources */,
 				529FA92511790B6700293622 /* seq_midi_port.c in Sources */,
 				529FA92711790B6700293622 /* seq_midi_router.c in Sources */,
@@ -806,6 +805,7 @@
 				529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */,
 				529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */,
 				529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */,
+				52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

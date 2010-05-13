@@ -46,7 +46,9 @@
 
 #include "seq_statistics.h"
 
+#if !defined(MIOS32_FAMILY_EMULATION)
 #include "umm_malloc.h"
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -401,7 +403,9 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void)
 extern void * ptr_array[256];
 s32 SEQ_TERMINAL_PrintMemoryInfo(void)
 {
+#if !defined(MIOS32_FAMILY_EMULATION)
   umm_info( NULL, 1 );
+#endif
 
   return 0; // no error
 }

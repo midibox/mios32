@@ -39,7 +39,7 @@
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_midi_sysex.h"
-#include "seq_midi_blm.h"
+#include "seq_blm.h"
 #include "seq_file.h"
 #include "seq_file_hw.h"
 
@@ -113,17 +113,6 @@ static s32 (*ui_delayed_action_callback)(u32 parameter);
 static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
-
-#define NUM_BLM_LED_ARRAYS 16
-static u8 ui_blm_leds[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
-static u8 ui_blm_sent_leds_green[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
-static u8 ui_blm_sent_leds_red[NUM_BLM_LED_ARRAYS*SEQ_CORE_NUM_TRACKS];
-static u16 ui_blm_sent_extracolumn_green;
-static u16 ui_blm_sent_extracolumn_red;
-static u16 ui_blm_sent_extrarow_green;
-static u16 ui_blm_sent_extrarow_red;
-static u8 ui_blm_sent_extra_green;
-static u8 ui_blm_sent_extra_red;
 
 #define UI_MSG_MAX_CHAR 21
 static char ui_msg[2][UI_MSG_MAX_CHAR];
@@ -1618,288 +1607,6 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c) if port
-// matches with seq_midi_blm_port
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_BLM_SCALAR_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-{
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
-  // for easier parsing: convert Note Off -> Note On with velocity 0
-  if( midi_package.event == NoteOff ) {
-    midi_package.event = NoteOn;
-    midi_package.velocity = 0;
-  }
-
-  if( midi_package.event == NoteOn ) {
-
-    if( midi_package.note < seq_midi_blm_num_steps ) {
-      u8 gp_button = midi_package.note % 16;
-
-      // change display view if required
-      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-	if( seq_midi_blm_num_steps <= 16 ) {
-	  // don't change view
-	} else if( seq_midi_blm_num_steps <= 32 ) {
-	  ui_selected_step_view = (ui_selected_step_view & 0xfe) + ((midi_package.note/16) & 0x01);
-	} else if( seq_midi_blm_num_steps <= 64 ) {
-	  ui_selected_step_view = (ui_selected_step_view & 0xfc) + ((midi_package.note/16) & 0x03);
-	} else if( seq_midi_blm_num_steps <= 128 ) {
-	  ui_selected_step_view = (ui_selected_step_view & 0xf8) + ((midi_package.note/16) & 0x07);
-	} else {
-	  ui_selected_step_view = (midi_package.note>>8) & 0x0f;
-	}
-      }
-
-      // change track if required
-      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRACKS || seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_PATTERNS ) {
-	if( seq_midi_blm_num_tracks <= 4 ) {
-	  if( midi_package.chn >= 4 )
-	    return 0; // invalid channel
-	} else if( seq_midi_blm_num_tracks <= 8 ) {
-	  if( midi_package.chn >= 8 )
-	    return 0; // invalid channel
-	  ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
-	} else {
-	  ui_selected_group = (midi_package.chn / 4);
-	}
-	if( seq_midi_blm_mode != SEQ_MIDI_BLM_MODE_PATTERNS )
-	  ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
-      }
-
-      // change trigger layer/instrument if required
-      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-	u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-	if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	  u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
-
-	  if( midi_package.chn >= num_instruments )
-	    return 0;
-
-	  if( seq_midi_blm_num_tracks <= 4 ) {
-	    if( midi_package.chn >= 4 )
-	      return 0; // invalid channel
-	    ui_selected_instrument = (ui_selected_instrument & 0xfc) + midi_package.chn;
-	  } else if( seq_midi_blm_num_tracks <= 8 ) {
-	    if( midi_package.chn >= 8 )
-	      return 0; // invalid channel
-	    ui_selected_instrument = (ui_selected_instrument & 0xf8) + midi_package.chn;
-	  } else {
-	    ui_selected_instrument = midi_package.chn;
-	  }
-	} else {
-#if 0
-	  u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
-
-	  if( midi_package.chn >= num_layers )
-	    return 0;
-
-	  if( seq_midi_blm_num_tracks <= 4 ) {
-	    if( midi_package.chn >= 4 )
-	      return 0; // invalid channel
-	    ui_selected_trg_layer = (ui_selected_trg_layer & 0xfc) + midi_package.chn;
-	  } else if( seq_midi_blm_num_tracks <= 8 ) {
-	    if( midi_package.chn >= 8 )
-	      return 0; // invalid channel
-	    ui_selected_trg_layer = (ui_selected_trg_layer & 0xf8) + midi_package.chn;
-	  } else {
-	    ui_selected_trg_layer = midi_package.chn;
-	  }
-#else
-	  ui_selected_trg_layer = 0;
-	}
-#endif
-      }
-
-      // request display update
-      seq_ui_display_update_req = 1;
-      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
-
-      // call button handler
-      switch( seq_midi_blm_mode ) {
-      case SEQ_MIDI_BLM_MODE_PATTERNS: {
-	if( midi_package.note >= 16 )
-	  return 0; // only key 0..15 supported
-
-	seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
-	new_pattern.pattern = ((midi_package.chn&0x3) << 4) | gp_button;
-	SEQ_PATTERN_Change(ui_selected_group, new_pattern);
-      } break;
-
-      case SEQ_MIDI_BLM_MODE_TRIGGERS: {
-	u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-	if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	  SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
-	} else {
-	  if( midi_package.velocity == 0 )
-	    return 0; // key has been depressed
-
-	  u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
-	  u8 scale, root_selection, root;
-	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-	  root = 0; // force root to C
-
-	  u8 note_start;
-	  u8 note_next;
-	  if( use_scale ) {
-	    // determine matching note range in scale
-	    note_start = 0x30; // C-2
-	    note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
-	    int i;
-	    for(i=0; i<(15-midi_package.chn); ++i) {
-	      note_start = note_next;
-	      note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
-	    }
-	  } else {
-	    note_start = 0x3c-8 + 15-midi_package.chn; // E-2 ..
-	    note_next = note_start;
-	  }
-
-
-	  u8 instrument = 0;
-	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-	  u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
-	  int step = 16*ui_selected_step_view + midi_package.note;
-	  if( !SEQ_TRG_GateGet(visible_track, step, instrument) ) {
-	    // set note on first layer
-	    int par_layer = 0;
-	    SEQ_PAR_Set(visible_track, step, par_layer, instrument, note_start);
-	    ui_selected_par_layer = par_layer;
-
-	    // clear remaining layers assigned to note
-	    for(par_layer=1; par_layer<num_p_layers; ++par_layer) {
-	      seq_par_layer_type_t par_type = layer_type[par_layer];
-	      if( par_type == SEQ_PAR_Type_Note )
-		SEQ_PAR_Set(visible_track, step, par_layer, instrument, 0x00);
-	    }
-
-	    // enable gate
-	    SEQ_TRG_GateSet(visible_track, step, instrument, 1);
-	  } else {
-	    // search all layers for matching note. if found, clear this note
-	    // otherwise use layer where no note has been assigned yet
-	    // if all layers allocated, use first layer
-	    // TODO: should we cycle the layer that is used if no free layer has been found?
-	    int par_layer;
-	    int unused_layer = -1;
-	    int used_layer = -1;
-	    int num_used_layers = 0;
-	    int found_note_in_layer = -1;
-	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-	      seq_par_layer_type_t par_type = layer_type[par_layer];
-	      if( par_type == SEQ_PAR_Type_Note ) {
-		u8 par_value = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
-		if( !par_value ) {
-		  if( unused_layer < 0 )
-		    unused_layer = par_layer;
-		} else {
-		  ++num_used_layers;
-		  if( par_value >= note_start && par_value < note_next ) {
-		    if( found_note_in_layer >= 0 )
-		      SEQ_PAR_Set(visible_track, step, par_layer, instrument, 0x00); // clear redundant note
-		    else
-		      found_note_in_layer = par_layer; // unassigned note in scale
-		  }
-		}
-	      }
-	    }
-
-	    if( found_note_in_layer >= 0 ) {
-	      if( num_used_layers < 2 ) {
-		// only one note: clear gate
-		SEQ_TRG_GateSet(visible_track, step, instrument, 0);
-	      } else {
-		// clear note
-		SEQ_PAR_Set(visible_track, step, found_note_in_layer, instrument, 0x00);
-	      }
-	    } else {
-	      if( unused_layer < 0 )
-		unused_layer = 0;
-	      SEQ_PAR_Set(visible_track, step, unused_layer, instrument, note_start);
-	      ui_selected_par_layer = unused_layer;
-	    }
-	  }
-	}
-      } break;
-
-      default: // SEQ_MIDI_BLM_MODE_TRACKS
-	SEQ_UI_EDIT_Button_Handler(gp_button, midi_package.velocity ? 0x00 : 0x7f);
-      }
-
-      return 1; // MIDI event has been taken
-
-    } else if( midi_package.note == 0x40 ) {
-      // Extra Column
-      if( !seq_midi_blm_shift_active ) {
-	if( midi_package.velocity > 0 ) {
-	  u8 track_mask = 1 << midi_package.chn;
-
-	  if( ui_selected_tracks == track_mask ) // track already selected: mute it
-	    seq_core_trk_muted ^= track_mask;
-	  else { // track not selected yet: select it now
-	    ui_selected_tracks = track_mask;
-	    ui_selected_group = (midi_package.chn / 4);
-	    seq_midi_blm_force_update = 1;	
-
-	    // set/clear encoder fast function if required
-	    SEQ_UI_InitEncSpeed(1); // auto config
-	  }
-	}
-	return 1; // MIDI event has been taken
-      } else {
-	switch( midi_package.chn ) {
-	case 0x0:
-	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRIGGERS;
-	  seq_midi_blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
-
-	case 0x1:
-	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_TRACKS;
-	  seq_midi_blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
-
-	case 0x2:
-	  seq_midi_blm_mode = SEQ_MIDI_BLM_MODE_PATTERNS;
-	  seq_midi_blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
-	}
-      }
-    } else if( midi_package.chn == Chn1 && midi_package.note >= 0x60 && midi_package.note <= 0x6f ) {
-      // extra row
-      u8 button = midi_package.note - 0x60;
-
-      if( !seq_midi_blm_shift_active ) {
-	if( midi_package.velocity > 0 ) {
-	  u8 visible_track = SEQ_UI_VisibleTrackGet();
-	  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
-
-	  // select new step view
-	  ui_selected_step_view = (button * (num_steps/16)) / 16;
-	  // select step within view
-	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
-	}
-	return 1; // MIDI event has been taken
-      } else {
-	// no function yet
-	return 1; // MIDI event has been taken
-      }
-    } else if( midi_package.chn == Chn16 && midi_package.note == 0x60 ) {
-      // shift button
-      seq_midi_blm_shift_active = (midi_package.velocity > 0) ? 1 : 0;
-      seq_midi_blm_force_update = 1;	
-      return 1; // MIDI event has been taken
-    }
-
-  } else if( midi_package.event == CC && midi_package.chn < 8 ) {
-    // Fader Event
-    // TODO: map it to customized port/channel/CC
-  }
-
-  return 0; // MIDI event has not been taken
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // MIDI Remote Keyboard Function (called from SEQ_MIDI_IN)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
@@ -2445,299 +2152,8 @@ s32 SEQ_UI_LED_Handler(void)
     ui_gp_leds = new_ui_gp_leds;
   }
 
-
-  // BLM LEDs
-  // MEMO: issue with using seq_midi_blm_num_steps: if somebody would ever use a directly
-  // connected BLM together with a MIDI accessed BLM_SCALAR, and if he would use a BLM_SCALAR
-  // with smaller size (very unlikely), this update wouldn't be complete!
-  u8 visible_sr0;
-  if( seq_midi_blm_num_steps <= 16 ) {
-    visible_sr0  = 2*ui_selected_step_view;
-  } else if( seq_midi_blm_num_steps <= 32 ) {
-    visible_sr0  = 4*(ui_selected_step_view >> 1);
-  } else if( seq_midi_blm_num_steps <= 64 ) {
-    visible_sr0  = 8*(ui_selected_step_view >> 2);
-  } else if( seq_midi_blm_num_steps <= 128 ) {
-    visible_sr0  = 16*(ui_selected_step_view >> 3);
-  } else {
-    visible_sr0 = 0;
-  }
-
-  u8 num_blm_led_arrays = seq_midi_blm_num_steps/8;
-  if( num_blm_led_arrays > NUM_BLM_LED_ARRAYS )
-    num_blm_led_arrays = NUM_BLM_LED_ARRAYS;
-
-  // set this to 1 to use rotated view
-  u8 rotate_view = 0;
-
-  switch( seq_midi_blm_mode ) {
-    case SEQ_MIDI_BLM_MODE_TRIGGERS: {
-      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
-	for(i=0; i<num_instruments; ++i) {
-	  // TODO: how about using red LEDs for accent?
-	  int array;
-	  for(array=0; array<num_blm_led_arrays; ++array)
-	    ui_blm_leds[i*NUM_BLM_LED_ARRAYS+array] = SEQ_TRG_Get8(visible_track, visible_sr0+array, ui_selected_trg_layer, i);
-	}
-	while( i < SEQ_CORE_NUM_TRACKS ) {
-	  memset((u8 *)&ui_blm_leds[i*NUM_BLM_LED_ARRAYS], 0, num_blm_led_arrays);
-	  ++i;
-	}
-      } else {
-#if 0
-	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
-	for(i=0; i<num_layers; ++i) {
-	  int array;
-	  for(array=0; array<num_blm_led_arrays; ++array)
-	    ui_blm_leds[i*NUM_BLM_LED_ARRAYS+array] = SEQ_TRG_Get8(visible_track, visible_sr0+array, i, 0);
-	}
-	while( i < SEQ_CORE_NUM_TRACKS ) {
-	  memset((u8 *)&ui_blm_leds[i*NUM_BLM_LED_ARRAYS], 0, num_blm_led_arrays);
-	  ++i;
-	}
-#else
-	rotate_view = 1;
-	u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
-	u8 scale, root_selection, root;
-	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-	root = 0; // force root to C
-
-	u8 instrument = 0;
-	int step = 8*visible_sr0;
-	int num_leds = num_blm_led_arrays*8;
-	for(i=0; i<num_leds; ++i, ++step) {
-	  u16 pattern = 0;
-	  if( SEQ_TRG_GateGet(visible_track, step, 0) ) {
-	    int note;
-	    if( use_scale )
-	      note = 0x30; // C-2
-	    else
-	      note = 0x3c-8; // E-2
-
-	    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-	    u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
-	    int note_ix;
-	    for(note_ix=0; note_ix<16; ++note_ix) {
-	      u8 next_note;
-	      if( use_scale )
-		next_note = SEQ_SCALE_NextNoteInScale(note, scale, root);
-	      else
-		next_note = note + 1;
-
-	      int par_layer;
-	      for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-		seq_par_layer_type_t par_type = layer_type[par_layer];
-		if( (par_type == SEQ_PAR_Type_Note) ) {
-		  u8 stored_note = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
-		  if( stored_note >= note && stored_note < next_note )
-		    pattern |= (1 << num_leds-1-note_ix);
-		}
-	      }
-
-	      if( use_scale )
-		note = next_note;
-	      else
-		++note;
-	    }
-	  }
-
-	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 0] = pattern;
-	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS + 1] = pattern >> 8;
-	}
-#endif
-      }
-    } break;
-
-    case SEQ_MIDI_BLM_MODE_PATTERNS:
-      break; // nothing to do here
-
-    default: // SEQ_MIDI_BLM_MODE_TRACKS
-      for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i) {
-	int array;
-	for(array=0; array<num_blm_led_arrays; ++array)
-	  ui_blm_leds[i*NUM_BLM_LED_ARRAYS+array] = SEQ_TRG_Get8(i, visible_sr0+array, ui_selected_trg_layer, ui_selected_instrument);
-      }
-  }
-
-  // send LED changes to BLM_SCALAR
-  if( seq_midi_blm_port ) {
-    u8 sequencer_running = SEQ_BPM_IsRunning();
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    MIOS32_IRQ_Disable();
-    u8 force_update = seq_midi_blm_force_update;
-    seq_midi_blm_force_update = 0;
-    MIOS32_IRQ_Enable();
-
-    u16 extracolumn_green;
-    u16 extracolumn_red;
-    u16 extrarow_green;
-    u16 extrarow_red;
-
-    if( !seq_midi_blm_shift_active ) {
-      extracolumn_green = ui_selected_tracks;
-      extracolumn_red = seq_core_trk_muted;
-
-      int num_steps = SEQ_TRG_NumStepsGet(visible_track);
-      if( num_steps > 128 )
-	extrarow_green = 1 << ui_selected_step_view;
-      else if( num_steps > 64 )
-	extrarow_green = 3 << (2*ui_selected_step_view);
-      else
-	extrarow_green = 15 << (4*ui_selected_step_view);
-
-      u8 played_step_view = (seq_core_trk[visible_track].step / 16);
-      if( num_steps > 128 )
-	extrarow_red = 1 << played_step_view;
-      else if( num_steps > 64 )
-	extrarow_red = 3 << (2*played_step_view);
-      else
-	extrarow_red = 15 << (4*played_step_view);
-    } else {
-      extracolumn_green = 0x0000;
-      extracolumn_red = 1 << seq_midi_blm_mode;
-      extrarow_green = 0x0000;
-      extrarow_red = 0x0000;
-    }
-
-    u8 extra_green = (sequencer_running && ((seq_core_state.ref_step & 3) == 0)) ? 0x01 : 0x00;
-    u8 extra_red = seq_midi_blm_shift_active ? 0x01 : 0x00;
-
-    MUTEX_MIDIOUT_TAKE;
-    if( force_update || extra_green != ui_blm_sent_extra_green ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 15, 0x60, extra_green);
-      ui_blm_sent_extra_green = extra_green;
-    }
-
-    if( force_update || extra_red != ui_blm_sent_extra_red ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 15, 0x68, extra_red);
-      ui_blm_sent_extra_red = extra_red;
-    }
-
-    if( force_update || extracolumn_green != ui_blm_sent_extracolumn_green ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_green & 0x0080) ? 0x41 : 0x40, (extracolumn_green >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_green & 0x8000) ? 0x43 : 0x42, (extracolumn_green >> 8) & 0x7f);
-      ui_blm_sent_extracolumn_green = extracolumn_green;
-    }
-
-    if( force_update || extracolumn_red != ui_blm_sent_extracolumn_red ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_red & 0x0080) ? 0x49 : 0x48, (extracolumn_red >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extracolumn_red & 0x8000) ? 0x4b : 0x4a, (extracolumn_red >> 8) & 0x7f);
-      ui_blm_sent_extracolumn_red = extracolumn_red;
-    }
-
-    if( force_update || extrarow_green != ui_blm_sent_extrarow_green ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_green & 0x0080) ? 0x61 : 0x60, (extrarow_green >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_green & 0x8000) ? 0x63 : 0x62, (extrarow_green >> 8) & 0x7f);
-      ui_blm_sent_extrarow_green = extrarow_green;
-    }
-
-    if( force_update || extrarow_red != ui_blm_sent_extrarow_red ) {
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_red & 0x0080) ? 0x69 : 0x68, (extrarow_red >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_midi_blm_port, 0, (extrarow_red & 0x8000) ? 0x6b : 0x6a, (extrarow_red >> 8) & 0x7f);
-      ui_blm_sent_extrarow_red = extrarow_red;
-    }
-    MUTEX_MIDIOUT_GIVE;
-
-
-    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-    for(i=0; i<seq_midi_blm_num_tracks; ++i) {
-      u8 track;
-      u8 led_row = i;
-      if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ) {
-	if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	  if( seq_midi_blm_num_tracks <= 4 )
-	    track = (ui_selected_instrument & 0xfc) + led_row;
-	  else if( seq_midi_blm_num_tracks <= 8 )
-	    track = (ui_selected_instrument & 0xf8) + led_row;
-	  else
-	    track = i;
-	} else {
-	  if( seq_midi_blm_num_tracks <= 4 )
-	    track = (ui_selected_trg_layer & 0xfc) + led_row;
-	  else if( seq_midi_blm_num_tracks <= 8 )
-	    track = (ui_selected_trg_layer & 0xf8) + led_row;
-	  else
-	    track = i;
-	}
-      } else {
-	if( seq_midi_blm_num_tracks <= 4 )
-	  track = 4*ui_selected_group + led_row;
-	else if( seq_midi_blm_num_tracks <= 8 )
-	  track = 8*(ui_selected_group>>1) + led_row;
-	else
-	  track = i;
-      }
-
-      int array;
-      for(array=0; array<num_blm_led_arrays; ++array) {
-	u8 blm_ix = track*NUM_BLM_LED_ARRAYS + array;
-	u8 blm_sent_ix = i*NUM_BLM_LED_ARRAYS + array;
-	u8 green_pattern = 0x00;
-	u8 red_pattern = 0x00;
-
-	if( seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_PATTERNS ) {
-	  u8 group = track / SEQ_CORE_NUM_TRACKS_PER_GROUP;
-	  u8 pnum = seq_pattern_req[group].pattern;
-	  int x = pnum & 0xf;
-	  int y = (pnum >> 4) & 0xf;
-	  if( (i&3) == y && (array == (x >> 3)) )
-	    green_pattern = 1 << (x & 0x7);
-
-	  pnum = seq_pattern[group].pattern;
-	  x = pnum & 0xf;
-	  y = (pnum >> 4) & 0x3;
-	  if( (i&3) == y && (array == (x >> 3)) )
-	    red_pattern = 1 << (x & 0x7);
-	} else {
-	  green_pattern = ui_blm_leds[blm_ix];
-
-	  if( sequencer_running ) {
-	    u8 played_step = seq_core_trk[(seq_midi_blm_mode == SEQ_MIDI_BLM_MODE_TRIGGERS ? visible_track : track)].step;
-	    if( rotate_view ) {
-	      if( played_step == (8*visible_sr0+led_row) ) {
-		red_pattern = 0xff;
-		// turn off green LED to improve visibility of the position marker
-		green_pattern = 0x00;
-	      }
-	    } else {
-	      if( (played_step >> 3) == (visible_sr0+array) ) {
-		red_pattern = 1 << (played_step % 8);
-		// turn off green LED to improve visibility of the position marker
-		green_pattern &= ~red_pattern;
-	      }
-	    }
-	  }
-	}
-
-	if( force_update || green_pattern != ui_blm_sent_leds_green[blm_sent_ix] ) {
-	  MUTEX_MIDIOUT_TAKE;
-	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
-	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*rotate_view + (2*array) + ((green_pattern & (1 << 7)) ? 17 : 16), // CC number + MSB LED
-			     green_pattern & 0x7f); // remaining 7 LEDs
-
-	  MUTEX_MIDIOUT_GIVE;
-	  ui_blm_sent_leds_green[blm_sent_ix] = green_pattern;
-	}
-
-	if( force_update || red_pattern != ui_blm_sent_leds_red[blm_sent_ix] ) {
-	  MUTEX_MIDIOUT_TAKE;
-	  // Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
-	  MIOS32_MIDI_SendCC(seq_midi_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*rotate_view + (2*array) + ((red_pattern & (1 << 7)) ? 33 : 32), // CC number + MSB LED
-			     red_pattern & 0x7f); // remaining 7 LEDs
-
-	  MUTEX_MIDIOUT_GIVE;
-	  ui_blm_sent_leds_red[blm_sent_ix] = red_pattern;
-	}
-      }
-    }
-  }
-
+  // update BLM LEDs
+  SEQ_BLM_LED_Update();
 
   // send LED changes in remote server mode
   if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER ) {
@@ -2856,6 +2272,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
     int track_ix;
     for(track_ix=0; track_ix<4; ++track_ix) {
       u8 track = 4*ui_selected_group + track_ix;
+
+      // determine position marker
       u16 pos_marker_mask = 0x0000;
       if( sequencer_running ) {
 	u8 played_step = seq_core_trk[track].step;
@@ -2864,32 +2282,26 @@ s32 SEQ_UI_LED_Handler_Periodic()
       }
 
       // Prepare Green LEDs (triggers)
-      u8 green_l = ui_blm_leds[track*NUM_BLM_LED_ARRAYS + 0];
-      u8 green_r = ui_blm_leds[track*NUM_BLM_LED_ARRAYS + 1];
+      // re-used from BLM_SCALAR code
+      u16 green_pattern = SEQ_BLM_PatternGreenGet(track);
 
       // Red LEDs (position marker)
       if( seq_hwcfg_blm.dout_duocolour ) {
-	BLM_DOUT_SRSet(1, 2*track_ix+0, pos_marker_mask & 0xff);
-	BLM_DOUT_SRSet(1, 2*track_ix+1, (pos_marker_mask >> 8) & 0xff);
+	BLM_DOUT_SRSet(1, 2*track_ix+0, pos_marker_mask);
+	BLM_DOUT_SRSet(1, 2*track_ix+1, pos_marker_mask >> 8);
 
 	if( seq_hwcfg_blm.dout_duocolour == 2 ) {
 	  // Colour Mode 2: clear green LED, so that only one LED is lit
-	  if( pos_marker_mask & 0x00ff )
-	    green_l &= ~pos_marker_mask;
-	  else if( pos_marker_mask & 0xff00 )
-	    green_r &= ~(pos_marker_mask >> 8);
+	  green_pattern &= ~pos_marker_mask;
 	}
       } else {
 	// If Duo-LEDs not enabled: invert Green LEDs
-	if( pos_marker_mask & 0x00ff )
-	  green_l ^= pos_marker_mask;
-	else if( pos_marker_mask & 0xff00 )
-	  green_r ^= (pos_marker_mask >> 8);
+	green_pattern &= ~pos_marker_mask;
       }
 
       // Set Green LEDs
-      BLM_DOUT_SRSet(0, 2*track_ix+0, green_l);
-      BLM_DOUT_SRSet(0, 2*track_ix+1, green_r);
+      BLM_DOUT_SRSet(0, 2*track_ix+0, green_pattern);
+      BLM_DOUT_SRSet(0, 2*track_ix+1, green_pattern >> 8);
     }
   }
 

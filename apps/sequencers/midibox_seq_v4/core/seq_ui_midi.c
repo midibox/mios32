@@ -27,7 +27,7 @@
 #include "seq_midi_router.h"
 #include "seq_midi_port.h"
 #include "seq_bpm.h"
-#include "seq_midi_blm.h"
+#include "seq_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -489,12 +489,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
     case ITEM_BLM_SCALAR_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_blm_port);
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_blm_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	seq_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
 	MUTEX_MIDIOUT_TAKE;
-	SEQ_MIDI_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
+	SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	MUTEX_MIDIOUT_GIVE;
+	blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 	store_file_required = 1;
 	return 1; // value changed
       }
@@ -575,8 +576,8 @@ static s32 LCD_Handler(u8 high_prio)
   // Transposer  Section    MIDI             Node IN P/Chn  OUT P/Chn     DefaultPort
   //  and Arp.   Control   Router    Misc.    #1  Def. All  Def. # 1         USB1    
 
-  // Transposer  Section    MIDI             BLM_SCALAR                       MIDI   
-  //  and Arp.   Control   Router    Misc.   Port: USB4                      Monitor 
+  // Transposer  Section    MIDI             BLM_SCALAR connected            MIDI   
+  //  and Arp.   Control   Router    Misc.   Port: OUT2                     Monitor 
 
 
   seq_midi_router_node_t *n = &seq_midi_router_node[selected_router_node];
@@ -806,7 +807,9 @@ static s32 LCD_Handler(u8 high_prio)
 
     case SUBPAGE_MISC: {
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("BLM_SCALAR                       MIDI   ");
+      SEQ_LCD_PrintString("BLM_SCALAR ");
+      SEQ_LCD_PrintString(blm_timeout_ctr ? "connected    " : "not found    ");
+      SEQ_LCD_PrintString("         MIDI   ");
       SEQ_LCD_CursorSet(40, 1);
 
       ///////////////////////////////////////////////////////////////////////
@@ -814,10 +817,10 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_selected_item == ITEM_BLM_SCALAR_PORT && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	if( !seq_midi_blm_port )
+	if( !seq_blm_port )
 	  SEQ_LCD_PrintString(" off");
 	else
-	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_OutIxGet(seq_midi_blm_port)));
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_OutIxGet(seq_blm_port)));
       }
       SEQ_LCD_PrintSpaces(22);
 
