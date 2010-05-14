@@ -189,7 +189,7 @@ s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
 
   u32 port_mask = 0x00000001;
   for(i=0; i<24; ++i, port_mask<<=1) { // OSC not used yet
-    if( seq_midi_router_mclk_out & port_mask ) {
+    if( seq_midi_router_mclk_out & port_mask & 0xffffff0f ) { // filter USB5..USB8 to avoid unwanted clock events to non-existent ports
       // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
       mios32_midi_port_t port = (USB0 + ((i&0x18) << 1)) | (i&7);
 

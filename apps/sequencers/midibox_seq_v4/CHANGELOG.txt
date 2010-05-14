@@ -12,6 +12,7 @@ MIDIboxSEQ V4.0beta21
   o added optional button/LED function for UNDO
   o ongoing preparation work for BLM16x16
     TODO: describe new modes here
+  o fixed MIDI clock issue sent to USB5..USB8 (resulted into multiplied tempo values in some DAWs)
 
 
 MIDIboxSEQ V4.0beta20

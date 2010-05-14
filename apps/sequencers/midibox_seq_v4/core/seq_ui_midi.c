@@ -493,9 +493,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
 	MUTEX_MIDIOUT_TAKE;
+	blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 	SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	MUTEX_MIDIOUT_GIVE;
-	blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 	store_file_required = 1;
 	return 1; // value changed
       }
