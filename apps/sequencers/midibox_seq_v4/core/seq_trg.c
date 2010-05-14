@@ -145,6 +145,7 @@ s32 SEQ_TRG_Get(u8 track, u16 step, u8 trg_layer, u8 trg_instrument)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns 8 steps of a given trigger layer
+// step8 is 0 for step [7:0], 1 for step [15:8], 2 for step [23:9], etc,.
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument)
 {
@@ -160,17 +161,21 @@ s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns 16 steps of a given trigger layer
+// step8 is 0 for step [15:0], 1 for step [31:16], 3 for step [47:32], etc,.
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Get16(u8 track, u8 step16, u8 trg_layer, u8 trg_instrument)
 {
   u8 num_t_layers = trg_layer_num_layers[track];
   u8 num_t_steps8 = trg_layer_num_steps8[track];
-  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + step16;
+  u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8) + 2*step16;
   if( step_ix >= SEQ_TRG_MAX_BYTES )
     return 0; // invalid step position: return 0 (trigger not set)
 
   u8 *values = (u8 *)&seq_trg_layer_value[track][step_ix];
-  return *values++ | (*values << 8);
+  u16 ret = *values;
+  ++values;
+  ret |= ((u16)*values << 8);
+  return ret;
 }
 
 

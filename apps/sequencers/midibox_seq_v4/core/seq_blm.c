@@ -26,6 +26,7 @@
 #include "seq_trg.h"
 #include "seq_pattern.h"
 #include "seq_scale.h"
+#include "seq_midi_in.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,14 @@
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
 /////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+  BLM_MODE_GRID,
+  BLM_MODE_TRACKS,
+  BLM_MODE_PATTERNS,
+  BLM_MODE_KEYBOARD,
+} blm_mode_t;
+
 
 // command states
 typedef enum {
@@ -98,7 +107,6 @@ typedef union {
 /////////////////////////////////////////////////////////////////////////////
 
 mios32_midi_port_t seq_blm_port;
-seq_blm_mode_t seq_blm_mode;
 
 // will be decremented each second by SEQ_TASK_Period1S()
 u8 blm_timeout_ctr;
@@ -121,6 +129,8 @@ static s32 SEQ_BLM_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_ar
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static blm_mode_t blm_mode;
+
 static const u8 seq_blm_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4e }; // Header of MBHP_BLM_SCALAR
 
 static sysex_state_t sysex_state;
@@ -131,6 +141,11 @@ static u16 blm_leds_green[SEQ_BLM_NUM_ROWS];
 static u16 blm_leds_green_sent[SEQ_BLM_NUM_ROWS];
 static u16 blm_leds_red[SEQ_BLM_NUM_ROWS];
 static u16 blm_leds_red_sent[SEQ_BLM_NUM_ROWS];
+
+static mios32_midi_port_t blm_keyboard_port[SEQ_BLM_NUM_ROWS];
+static u8 blm_keyboard_chn[SEQ_BLM_NUM_ROWS];
+static u8 blm_keyboard_note[SEQ_BLM_NUM_ROWS];
+static u8 blm_keyboard_velocity[SEQ_BLM_NUM_ROWS];
 
 static u16 blm_leds_extracolumn_green;
 static u16 blm_leds_extracolumn_green_sent;
@@ -155,14 +170,13 @@ static u8 blm_force_update;
 static u8 blm_shift_active;
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BLM_Init(u32 mode)
 {
   seq_blm_port = 0; // disabled
-  seq_blm_mode = SEQ_BLM_MODE_TRACKS;
+  blm_mode = BLM_MODE_TRACKS;
   blm_num_columns = 16;
   blm_num_rows = 16;
   blm_num_colours = 2;
@@ -459,7 +473,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
     if( num_instruments > SEQ_BLM_NUM_ROWS )
       num_instruments = SEQ_BLM_NUM_ROWS;
-    u16 step16 = 16*ui_selected_step_view;
+    u16 step16 = ui_selected_step_view;
     int i;
     for(i=0; i<num_instruments; ++i) {
       // TODO: how about using red LEDs for accent?
@@ -604,7 +618,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << seq_blm_mode;
+    blm_leds_extracolumn_red = 1 << blm_mode;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -806,7 +820,7 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << seq_blm_mode;
+    blm_leds_extracolumn_red = 1 << blm_mode;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -882,7 +896,7 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << seq_blm_mode;
+    blm_leds_extracolumn_red = 1 << blm_mode;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -898,6 +912,136 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
   seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
   new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
   SEQ_PATTERN_Change(ui_selected_group, new_pattern);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// LED Update/Button Handler for Keyboard Mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
+{
+  int i;
+  u8 sequencer_running = SEQ_BPM_IsRunning();
+
+  ///////////////////////////////////////////////////////////////////////////
+  // green/red LEDs: display played note and velocity
+  ///////////////////////////////////////////////////////////////////////////
+
+  blm_leds_rotate_view = 1;
+
+  for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i) {
+    if( blm_keyboard_velocity[i] ) {
+      u8 par = (blm_keyboard_velocity[i] >> 3) & 0x0f;
+      blm_leds_green[i] = (0xffff8000 >> par) & 0xfff8;
+      blm_leds_red[i] = (0xffff8000 >> par) & 0x00ff;
+    } else {
+      blm_leds_green[i] = 0x0000;
+      blm_leds_red[i] = 0x0000;
+    }
+  }
+
+  if( sequencer_running ) {
+    int played_step = seq_core_state.ref_step % 16;
+    blm_leds_red[played_step] = 0xffff; // set all red LEDs
+    blm_leds_green[played_step] = 0x0000; // disable green LEDs
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // extra LEDs
+  ///////////////////////////////////////////////////////////////////////////
+  if( !blm_shift_active ) {
+    blm_leds_extracolumn_green = ui_selected_tracks;
+    blm_leds_extracolumn_red = seq_core_trk_muted;
+    u8 transposer_note = SEQ_MIDI_IN_TransposerNoteGet(1); // hold mode
+    if( transposer_note >= 0x3c && transposer_note <= 0x4b )
+      blm_leds_extrarow_green = 1 << (transposer_note - 0x3c);
+    else
+      blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
+    blm_leds_extracolumn_green = 0x0000;
+    blm_leds_extracolumn_red = 1 << blm_mode;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  }
+
+  return 0; // no error
+}
+
+
+static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 depressed)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 play_note = 0;
+
+  if( depressed ) {
+    if( blm_keyboard_velocity[button_column] ) {
+      blm_keyboard_velocity[button_column] = 0;
+      play_note = 1;
+    }
+  } else {
+    u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+    u8 scale, root_selection, root;
+    SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+
+    u8 note_start;
+    u8 note_next;
+    if( use_scale ) {
+      // determine matching note range in scale
+      note_start = SEQ_MIDI_IN_TransposerNoteGet(1); // hold mode
+      note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+      int i;
+      for(i=0; i<button_column; ++i) {
+	note_start = note_next;
+	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+      }
+    } else {
+      note_start = 0x3c-8 + 15-button_column; // E-2 ..
+      note_next = note_start;
+    }
+    
+    blm_keyboard_port[button_column] = seq_cc_trk[visible_track].midi_port;
+    blm_keyboard_chn[button_column] = seq_cc_trk[visible_track].midi_chn;
+    blm_keyboard_note[button_column] = note_start;
+    blm_keyboard_velocity[button_column] = 8*(15-button_row) + 4;
+    play_note = 1;
+  }
+
+  if( play_note ) {
+    MUTEX_MIDIOUT_TAKE;
+    MIOS32_MIDI_SendNoteOn(blm_keyboard_port[button_column],
+			   blm_keyboard_chn[button_column],
+			   blm_keyboard_note[button_column],
+			   blm_keyboard_velocity[button_column]);
+    MUTEX_MIDIOUT_GIVE;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// All notes off for all keyboard notes
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_BLM_KeyboardAllNotesOff(void)
+{
+  int i;
+
+  for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i) {
+    if( blm_keyboard_velocity[i] ) {
+      blm_keyboard_velocity[i] = 0;
+
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendNoteOn(blm_keyboard_port[i],
+			     blm_keyboard_chn[i],
+			     blm_keyboard_note[i],
+			     blm_keyboard_velocity[i]);
+      MUTEX_MIDIOUT_GIVE;
+    }
+  }
 
   return 0; // no error
 }
@@ -922,16 +1066,20 @@ s32 SEQ_BLM_LED_Update(void)
   // row offset is used if BLM supports less than 16 rows
   blm_led_row_offset = 0;
 
-  switch( seq_blm_mode ) {
-    case SEQ_BLM_MODE_GRID:
+  switch( blm_mode ) {
+    case BLM_MODE_GRID:
       SEQ_BLM_LED_UpdateGridMode();
       break;
 
-    case SEQ_BLM_MODE_PATTERNS:
+    case BLM_MODE_PATTERNS:
       SEQ_BLM_LED_UpdatePatternMode();
-      break; // nothing to do here
+      break;
 
-    default: // SEQ_BLM_MODE_TRACKS
+    case BLM_MODE_KEYBOARD:
+      SEQ_BLM_LED_UpdateKeyboardMode();
+      break;
+
+    default: // BLM_MODE_TRACKS
       SEQ_BLM_LED_UpdateTrackMode();
   }
 
@@ -1079,7 +1227,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
     if( midi_package.note < SEQ_BLM_NUM_COLUMNS ) {
       // change display view if required
-      if( seq_blm_mode == SEQ_BLM_MODE_TRACKS || seq_blm_mode == SEQ_BLM_MODE_GRID ) {
+      if( blm_mode == BLM_MODE_TRACKS || blm_mode == BLM_MODE_GRID ) {
 	if( blm_num_columns <= 16 ) {
 	  // don't change view
 	} else if( blm_num_columns <= 32 ) {
@@ -1094,7 +1242,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       }
 
       // change track if required
-      if( seq_blm_mode == SEQ_BLM_MODE_TRACKS || seq_blm_mode == SEQ_BLM_MODE_PATTERNS ) {
+      if( blm_mode == BLM_MODE_TRACKS || blm_mode == BLM_MODE_PATTERNS ) {
 	if( blm_num_rows <= 4 ) {
 	  if( midi_package.chn >= 4 )
 	    return 0; // invalid channel
@@ -1105,7 +1253,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	} else {
 	  ui_selected_group = (midi_package.chn / 4);
 	}
-	if( seq_blm_mode != SEQ_BLM_MODE_PATTERNS )
+	if( blm_mode != BLM_MODE_PATTERNS )
 	  ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
       }
 
@@ -1114,26 +1262,36 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
 
       // call button handler
-      switch( seq_blm_mode ) {
-      case SEQ_BLM_MODE_PATTERNS:
+      switch( blm_mode ) {
+      case BLM_MODE_PATTERNS:
 	SEQ_BLM_BUTTON_GP_PatternMode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
 	break;
 
-      case SEQ_BLM_MODE_GRID:
+      case BLM_MODE_GRID:
 	SEQ_BLM_BUTTON_GP_GridMode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
 	break;
 
-      default: // SEQ_BLM_MODE_TRACKS
+      case BLM_MODE_KEYBOARD:
+	SEQ_BLM_BUTTON_GP_KeyboardMode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
+	break;
+
+      default: // BLM_MODE_TRACKS
 	SEQ_BLM_BUTTON_GP_TrackMode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
       }
 
       return 1; // MIDI event has been taken
 
     } else if( midi_package.note == 0x40 ) {
+
+      if( midi_package.velocity > 0 ) {
+	// disable all keyboard notes (important when switching between modes or tracks!)
+	SEQ_BLM_KeyboardAllNotesOff();
+      }
+
       // Extra Column
       if( !blm_shift_active ) {
 	if( midi_package.velocity > 0 ) {
-	  u8 track_mask = 1 << midi_package.chn;
+	  u16 track_mask = 1 << midi_package.chn;
 
 	  if( ui_selected_tracks == track_mask ) // track already selected: mute it
 	    seq_core_trk_muted ^= track_mask;
@@ -1148,20 +1306,27 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	}
 	return 1; // MIDI event has been taken
       } else {
+
 	switch( midi_package.chn ) {
 	case 0x0:
-	  seq_blm_mode = SEQ_BLM_MODE_GRID;
+	  blm_mode = BLM_MODE_GRID;
 	  blm_force_update = 1;	
 	  return 1; // MIDI event has been taken
 
 	case 0x1:
-	  seq_blm_mode = SEQ_BLM_MODE_TRACKS;
+	  blm_mode = BLM_MODE_TRACKS;
 	  blm_force_update = 1;	
 	  return 1; // MIDI event has been taken
 
 	case 0x2:
-	  seq_blm_mode = SEQ_BLM_MODE_PATTERNS;
+	  blm_mode = BLM_MODE_PATTERNS;
 	  blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+
+	case 0x3:
+	  blm_mode = BLM_MODE_KEYBOARD;
+	  blm_force_update = 1;	
+
 	  return 1; // MIDI event has been taken
 	}
       }
@@ -1170,14 +1335,25 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       u8 button = midi_package.note - 0x60;
 
       if( !blm_shift_active ) {
-	if( midi_package.velocity > 0 ) {
-	  u8 visible_track = SEQ_UI_VisibleTrackGet();
-	  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
-
-	  // select new step view
-	  ui_selected_step_view = (button * (num_steps/16)) / 16;
-	  // select step within view
-	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	if( blm_mode == BLM_MODE_KEYBOARD ) {
+	  // forward to loopback port
+	  mios32_midi_package_t p;
+	  p.type = NoteOn;
+	  p.event = NoteOn;
+	  p.chn = Chn1;
+	  p.note = button + 0x3c;
+	  p.velocity = midi_package.velocity;
+	  SEQ_MIDI_IN_Receive(0xf0, p);
+	} else {
+	  if( midi_package.velocity > 0 ) {
+	    u8 visible_track = SEQ_UI_VisibleTrackGet();
+	    int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+	   
+	    // select new step view
+	    ui_selected_step_view = (button * (num_steps/16)) / 16;
+	    // select step within view
+	    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	  }
 	}
 	return 1; // MIDI event has been taken
       } else {

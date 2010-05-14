@@ -32,12 +32,6 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-  SEQ_BLM_MODE_GRID,
-  SEQ_BLM_MODE_TRACKS,
-  SEQ_BLM_MODE_PATTERNS,
-} seq_blm_mode_t;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -61,7 +55,6 @@ extern s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t m
 /////////////////////////////////////////////////////////////////////////////
 
 extern mios32_midi_port_t seq_blm_port;
-extern seq_blm_mode_t seq_blm_mode;
 extern u8 blm_timeout_ctr;
 
 #endif /* _SEQ_MIDI_BLM_H */
