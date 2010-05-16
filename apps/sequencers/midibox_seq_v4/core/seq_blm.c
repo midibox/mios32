@@ -20,7 +20,10 @@
 
 #include "seq_blm.h"
 #include "seq_ui.h"
+#include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_song.h"
+#include "seq_midply.h"
 #include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_trg.h"
@@ -618,7 +621,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << blm_mode;
+    blm_leds_extracolumn_red = (1 << blm_mode) | (SEQ_BPM_IsRunning() ? 0x8000 : 0x4000);
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -820,7 +823,7 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << blm_mode;
+    blm_leds_extracolumn_red = (1 << blm_mode) | (SEQ_BPM_IsRunning() ? 0x8000 : 0x4000);
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -896,7 +899,7 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << blm_mode;
+    blm_leds_extracolumn_red = (1 << blm_mode) | (SEQ_BPM_IsRunning() ? 0x8000 : 0x4000);
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -963,7 +966,7 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
     blm_leds_extrarow_red = 0x0000;
   } else {
     blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = 1 << blm_mode;
+    blm_leds_extracolumn_red = (1 << blm_mode) | (SEQ_BPM_IsRunning() ? 0x8000 : 0x4000);
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -976,9 +979,11 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 play_note = 0;
+  u8 velocity = 8*(15-button_row) + 4;
 
   if( depressed ) {
-    if( blm_keyboard_velocity[button_column] ) {
+    // play off event - but only if depressed button matches with last one that played the note
+    if( blm_keyboard_velocity[button_column] == velocity ) {
       blm_keyboard_velocity[button_column] = 0;
       play_note = 1;
     }
@@ -1002,11 +1007,22 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
       note_start = 0x3c-8 + 15-button_column; // E-2 ..
       note_next = note_start;
     }
+
+    // play off event if note still active (e.g. different velocity of same note played)
+    if( blm_keyboard_velocity[button_column] ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendNoteOn(blm_keyboard_port[button_column],
+			     blm_keyboard_chn[button_column],
+			     blm_keyboard_note[button_column],
+			     0x00);
+      MUTEX_MIDIOUT_GIVE;
+    }
     
+    // set new port/channel/note/velocity
     blm_keyboard_port[button_column] = seq_cc_trk[visible_track].midi_port;
     blm_keyboard_chn[button_column] = seq_cc_trk[visible_track].midi_chn;
     blm_keyboard_note[button_column] = note_start;
-    blm_keyboard_velocity[button_column] = 8*(15-button_row) + 4;
+    blm_keyboard_velocity[button_column] = velocity;
     play_note = 1;
   }
 
@@ -1307,27 +1323,81 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	return 1; // MIDI event has been taken
       } else {
 
-	switch( midi_package.chn ) {
-	case 0x0:
-	  blm_mode = BLM_MODE_GRID;
-	  blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
+	if( midi_package.velocity > 0 ) {
+	  switch( midi_package.chn ) {
+	  case 0x0:
+	    blm_mode = BLM_MODE_GRID;
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
 
-	case 0x1:
-	  blm_mode = BLM_MODE_TRACKS;
-	  blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
+	  case 0x1:
+	    blm_mode = BLM_MODE_TRACKS;
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
 
-	case 0x2:
-	  blm_mode = BLM_MODE_PATTERNS;
-	  blm_force_update = 1;	
-	  return 1; // MIDI event has been taken
+	  case 0x2:
+	    blm_mode = BLM_MODE_PATTERNS;
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
 
-	case 0x3:
-	  blm_mode = BLM_MODE_KEYBOARD;
-	  blm_force_update = 1;	
+	  case 0x3:
+	    blm_mode = BLM_MODE_KEYBOARD;
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
 
-	  return 1; // MIDI event has been taken
+#if 1
+	  case 0x0c: {
+	    // tmp. for the show ;-)
+	    u8 visible_track = SEQ_UI_VisibleTrackGet();
+	    if( SEQ_CC_Get(visible_track, SEQ_CC_STEPS_FORWARD) ) {
+	      SEQ_CC_Set(visible_track, SEQ_CC_STEPS_FORWARD, 0);
+	      SEQ_CC_Set(visible_track, SEQ_CC_STEPS_JMPBCK, 0);
+	      MIOS32_IRQ_Disable();
+	      seq_core_trk[visible_track].state.SYNC_MEASURE = 1;
+	      MIOS32_IRQ_Enable();
+	    } else {
+	      SEQ_CC_Set(visible_track, SEQ_CC_STEPS_FORWARD, 5-1);
+	      SEQ_CC_Set(visible_track, SEQ_CC_STEPS_JMPBCK, 3);
+	    }
+	    
+	    return 1; // MIDI event has been taken
+	  } break;
+
+	  case 0x0d: {
+	    // tmp. for the show ;-)
+	    u8 visible_track = SEQ_UI_VisibleTrackGet();
+	    if( SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) ) {
+	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_REPEATS, 0);
+	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_NOTE, 24);
+	    } else {
+	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_REPEATS, 3);
+	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_NOTE, 24+3);
+	    }
+	    
+	    return 1; // MIDI event has been taken
+	  } break;
+#endif
+
+	  case 0x0e:
+	    // if sequencer running: stop it
+	    // if sequencer already stopped: reset song position
+	    if( SEQ_BPM_IsRunning() )
+	      SEQ_BPM_Stop();
+	    else {
+	      SEQ_SONG_Reset();
+	      SEQ_CORE_Reset();
+	      SEQ_MIDPLY_Reset();
+	    }
+	    return 1; // MIDI event has been taken
+
+	  case 0x0f:
+	    // if in auto mode and BPM generator is clocked in slave mode:
+	    // change to master mode
+	    SEQ_BPM_CheckAutoMaster();
+	    // always restart sequencer
+	    SEQ_BPM_Start();
+	    return 1; // MIDI event has been taken
+	  }
 	}
       }
     } else if( midi_package.chn == Chn1 && midi_package.note >= 0x60 && midi_package.note <= 0x6f ) {
