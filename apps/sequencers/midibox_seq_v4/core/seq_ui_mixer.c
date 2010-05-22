@@ -406,7 +406,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("Page%2d  ", mixer_par+1);
 
     if( mixer_par < SEQ_MIXER_PAR_CC1_NUM ) {
-      if( mixer_par < 8 ) {
+      if( mixer_par < SEQ_MIXER_PAR_CC1 ) {
 	const char page_name[8][13] = {
 	  "MIDI Port   ",
 	  "MIDI Channel",
@@ -421,7 +421,7 @@ static s32 LCD_Handler(u8 high_prio)
       } else {
 	SEQ_LCD_PrintFormattedString("CC%d #%3d    ", 
 				     mixer_par-SEQ_MIXER_PAR_CC1+1, 
-				     SEQ_MIXER_Get(ui_selected_item, mixer_par-SEQ_MIXER_PAR_CC1_NUM));
+				     SEQ_MIXER_Get(ui_selected_item, mixer_par-SEQ_MIXER_PAR_CC1+SEQ_MIXER_PAR_CC1_NUM));
       }
       SEQ_LCD_PrintSpaces(7);
     } else {

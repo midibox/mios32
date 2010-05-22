@@ -41,35 +41,37 @@
 
 
 
-#define NUM_OF_ITEMS       20
+#define NUM_OF_ITEMS       22
 
 // Transpose
-#define ITEM_IN_PORT       0
-#define ITEM_IN_CHN        1
-#define ITEM_TA_SPLIT      2
-#define ITEM_TA_SPLIT_NOTE 3
-#define ITEM_RESET_STACKS  4
+#define ITEM_IN_BUS        0
+#define ITEM_IN_PORT       1
+#define ITEM_IN_CHN        2
+#define ITEM_IN_LOWER      3
+#define ITEM_IN_UPPER      4
+#define ITEM_IN_MODE       5
+#define ITEM_RESET_STACKS  6
 
 // Sections
-#define ITEM_S_PORT        5
-#define ITEM_S_CHN         6
-#define ITEM_S_OCT_G1      7
-#define ITEM_S_OCT_G2      8
-#define ITEM_S_OCT_G3      9
-#define ITEM_S_OCT_G4      10
-#define ITEM_S_FWD_PORT    11
-#define ITEM_S_RESET_STACKS 12
+#define ITEM_S_PORT        7
+#define ITEM_S_CHN         8
+#define ITEM_S_OCT_G1      9
+#define ITEM_S_OCT_G2      10
+#define ITEM_S_OCT_G3      11
+#define ITEM_S_OCT_G4      12
+#define ITEM_S_FWD_PORT    13
+#define ITEM_S_RESET_STACKS 14
 
 // MIDI Router
-#define ITEM_R_NODE        13
-#define ITEM_R_SRC_PORT    14
-#define ITEM_R_SRC_CHN     15
-#define ITEM_R_DST_PORT    16
-#define ITEM_R_DST_CHN     17
-#define ITEM_DEF_PORT      18
+#define ITEM_R_NODE        15
+#define ITEM_R_SRC_PORT    16
+#define ITEM_R_SRC_CHN     17
+#define ITEM_R_DST_PORT    18
+#define ITEM_R_DST_CHN     19
+#define ITEM_DEF_PORT      20
 
 // Misc
-#define ITEM_BLM_SCALAR_PORT 19
+#define ITEM_BLM_SCALAR_PORT 21
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -79,6 +81,7 @@
 static u8 store_file_required;
 static u8 selected_subpage = SUBPAGE_TRANSPOSE;
 static u8 selected_router_node = 0;
+static u8 selected_bus = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,10 +97,12 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( selected_subpage ) {
     case SUBPAGE_TRANSPOSE:
       switch( ui_selected_item ) {
-        case ITEM_IN_PORT: *gp_leds |= 0x0100; break;
-        case ITEM_IN_CHN: *gp_leds |= 0x0200; break;
-        case ITEM_TA_SPLIT: *gp_leds |= 0x0c00; break;
-        case ITEM_TA_SPLIT_NOTE: *gp_leds |= 0x3000; break;
+        case ITEM_IN_BUS: *gp_leds |= 0x0100; break;
+        case ITEM_IN_PORT: *gp_leds |= 0x0200; break;
+        case ITEM_IN_CHN: *gp_leds |= 0x0400; break;
+        case ITEM_IN_LOWER: *gp_leds |= 0x0800; break;
+        case ITEM_IN_UPPER: *gp_leds |= 0x1000; break;
+        case ITEM_IN_MODE: *gp_leds |= 0x2000; break;
         case ITEM_RESET_STACKS: *gp_leds |= 0x8000; break;
       }
       break;
@@ -171,7 +176,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     selected_subpage = encoder/2;
     switch( selected_subpage ) {
       case SUBPAGE_TRANSPOSE:
-	ui_selected_item = ITEM_IN_PORT;
+	ui_selected_item = ITEM_IN_BUS;
 	break;
 
       case SUBPAGE_SECTIONS:
@@ -193,21 +198,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SUBPAGE_TRANSPOSE:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9:
-	  ui_selected_item = ITEM_IN_PORT;
+	  ui_selected_item = ITEM_IN_BUS;
 	  break;
 
         case SEQ_UI_ENCODER_GP10:
-	  ui_selected_item = ITEM_IN_CHN;
+	  ui_selected_item = ITEM_IN_PORT;
 	  break;
 
         case SEQ_UI_ENCODER_GP11:
+	  ui_selected_item = ITEM_IN_CHN;
+	  break;
+
         case SEQ_UI_ENCODER_GP12:
-	  ui_selected_item = ITEM_TA_SPLIT;
+	  ui_selected_item = ITEM_IN_LOWER;
 	  break;
 
         case SEQ_UI_ENCODER_GP13:
+	  ui_selected_item = ITEM_IN_UPPER;
+	  break;
+
         case SEQ_UI_ENCODER_GP14:
-	  ui_selected_item = ITEM_TA_SPLIT_NOTE;
+	  ui_selected_item = ITEM_IN_MODE;
 	  break;
 
         case SEQ_UI_ENCODER_GP15:
@@ -314,10 +325,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
+    case ITEM_IN_BUS: {
+      if( SEQ_UI_Var8_Inc(&selected_bus, 0, SEQ_MIDI_IN_NUM_BUSSES-1, incrementer) >= 0 ) {
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
     case ITEM_IN_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_in_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port[selected_bus]);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1-4, incrementer) >= 0 ) { // don't allow selection of Bus1..Bus4
+	seq_midi_in_port[selected_bus] = SEQ_MIDI_PORT_InPortGet(port_ix);
 	store_file_required = 1;
 	return 1; // value changed
       }
@@ -325,32 +343,35 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_IN_CHN:
-      if( SEQ_UI_Var8_Inc(&seq_midi_in_channel, 0, 16, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 16, incrementer) >= 0 ) {
 	store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
-    case ITEM_TA_SPLIT:
-      if( incrementer > 0 )
-	seq_midi_in_ta_split_note |= 0x80;
-      else if( incrementer < 0 )
-	seq_midi_in_ta_split_note &= ~0x80;
-      else
-	seq_midi_in_ta_split_note ^= 0x80;
-      store_file_required = 1;
-      return 1; // value changed
+    case ITEM_IN_LOWER:
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_lower[selected_bus], 0, 127, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
 
-    case ITEM_TA_SPLIT_NOTE: {
-      u8 note = seq_midi_in_ta_split_note & 0x7f;
-      if( SEQ_UI_Var8_Inc(&note, 0, 127, incrementer) >= 0 ) {
-	seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | note;
+    case ITEM_IN_UPPER:
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_upper[selected_bus], 0, 127, incrementer) >= 0 ) {
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+
+    case ITEM_IN_MODE: {
+      u8 fwd = seq_midi_in_options[selected_bus].MODE_PLAY;
+      if( SEQ_UI_Var8_Inc(&fwd, 0, 1, incrementer) >= 0 ) {
+	seq_midi_in_options[selected_bus].MODE_PLAY = fwd;
 	store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
     } break;
-
 
     case ITEM_RESET_STACKS: {
       SEQ_MIDI_IN_ResetTransArpStacks();
@@ -567,8 +588,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Transposer  Section    MIDI             Port Chn. T/A Split Midd.Note      Reset
-  //  and Arp.   Control   Router    Misc.   IN1  #16     off       C-3        Stacks
+  // Transposer  Section    MIDI              Bus Port Chn. Lower/Upper Mode   Reset 
+  //  and Arp.   Control   Router    Misc.     1  IN1  #16   ---   ---  T&A    Stacks
 
   // Transposer  Section    MIDI             Port Chn.  G1   G2   G3   G4  Fwd  Reset
   //  and Arp.   Control   Router    Misc.   Def. #16  C-1  C-2  C-3  C-4  USB1 Stcks
@@ -613,15 +634,22 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
     case SUBPAGE_TRANSPOSE: {
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("Port Chn. T/A Split Midd.Note      Reset");
+      SEQ_LCD_PrintString(" Bus Port Chn. Lower/Upper Mode   Reset ");
       SEQ_LCD_CursorSet(40, 1);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_IN_BUS && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(5);
+      } else {
+	SEQ_LCD_PrintFormattedString("  %d  ", selected_bus+1);
+      }
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_IN_PORT && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	if( seq_midi_in_port )
-	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_port)));
+	if( seq_midi_in_port[selected_bus] )
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_port[selected_bus])));
 	else
 	  SEQ_LCD_PrintString(" All");
       }
@@ -632,31 +660,41 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_selected_item == ITEM_IN_CHN && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(3);
       } else {
-	if( seq_midi_in_channel )
-	  SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_channel);
+	if( seq_midi_in_channel[selected_bus] )
+	  SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_channel[selected_bus]);
 	else
 	  SEQ_LCD_PrintString("---");
       }
-      SEQ_LCD_PrintSpaces(5);
+      SEQ_LCD_PrintSpaces(3);
 
 
       ///////////////////////////////////////////////////////////////////////
-      if( ui_selected_item == ITEM_TA_SPLIT && ui_cursor_flash ) {
+      if( ui_selected_item == ITEM_IN_LOWER && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(3);
       } else {
-	SEQ_LCD_PrintString((seq_midi_in_ta_split_note & 0x80) ? "on " : "off");
+	SEQ_LCD_PrintNote(seq_midi_in_lower[selected_bus]);
       }
-      SEQ_LCD_PrintSpaces(7);
+      SEQ_LCD_PrintSpaces(3);
 
 
       ///////////////////////////////////////////////////////////////////////
-      if( ui_selected_item == ITEM_TA_SPLIT_NOTE && ui_cursor_flash ) {
+      if( ui_selected_item == ITEM_IN_UPPER && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(3);
       } else {
-	SEQ_LCD_PrintNote(seq_midi_in_ta_split_note & 0x7f);
+	SEQ_LCD_PrintNote(seq_midi_in_upper[selected_bus]);
       }
+      SEQ_LCD_PrintSpaces(2);
 
-      SEQ_LCD_PrintSpaces(8);
+
+      ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_IN_MODE && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintString(seq_midi_in_options[selected_bus].MODE_PLAY ? "Play" : "T&A ");
+      }
+      SEQ_LCD_PrintSpaces(3);
+
+
       SEQ_LCD_PrintString("Stacks");
     } break;
 

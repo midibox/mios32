@@ -1501,7 +1501,7 @@ static s32 DoExport(u8 force_overwrite)
 {
   s32 status;
   int i;
-  char path[20];
+  char path[30];
 
   // if an error is detected, we jump back to FNAME page
   ui_selected_item = 0;
@@ -1538,7 +1538,7 @@ static s32 DoExport(u8 force_overwrite)
     return -4;
   }
 
-  char v4t_file[20];
+  char v4t_file[30];
   char *p = (char *)&v4t_file[0];
   for(i=0; i<8; ++i) {
     char c = dir_name[i];
@@ -1590,7 +1590,7 @@ static s32 DoExport(u8 force_overwrite)
 static s32 DoImport(void)
 {
   s32 status;
-  char path[20];
+  char path[30];
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   sprintf(path, "/PRESETS/%s.V4T", dir_name);

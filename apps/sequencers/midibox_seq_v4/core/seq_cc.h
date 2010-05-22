@@ -97,7 +97,7 @@
 #define SEQ_CC_LIMIT_LOWER      0x43
 #define SEQ_CC_LIMIT_UPPER      0x44
 
-//#define SEQ_CC_MIDI_EVNT_CONST3	0x45 // obsolete
+#define SEQ_CC_BUSASG           0x45
 #define SEQ_CC_MIDI_CHANNEL	0x46
 #define SEQ_CC_MIDI_PORT	0x47
 
@@ -158,7 +158,8 @@ typedef struct {
 
   seq_core_shared_t shared;   // shared mode parameters (each track holds another value)
   seq_core_trkmode_flags_t mode; // track mode and flags
-  seq_event_mode_t event_mode;  // event mode
+  seq_event_mode_t event_mode:4;  // event mode
+  seq_core_busasg_t busasg;     // T&A bus port (0..3)
   mios32_midi_port_t midi_port; // MIDI port
   mios32_midi_chn_t midi_chn:4; // MIDI channel
   u8       dir_mode:4;        // track direction mode (limited to 4 bits, see also seq_cc_trk_dir_t)

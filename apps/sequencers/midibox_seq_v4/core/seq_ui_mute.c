@@ -74,7 +74,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( seq_ui_button_state.SELECT_PRESSED ) {
       // select button pressed: indirect MUTED flag modification (taken over when select button depressed)
       u16 mask = 1 << encoder;
-      if( incrementer > 0 || (incrementer == 0 && !(latched_mute & mask)) )
+      if( incrementer < 0 || (incrementer == 0 && !(latched_mute & mask)) )
 	latched_mute |= mask;
       else
 	latched_mute &= ~mask;
@@ -87,9 +87,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 mask = 1 << encoder;
       u16 *muted = seq_ui_button_state.MUTE_PRESSED ? (u16 *)&seq_core_trk[visible_track].layer_muted : (u16 *)&seq_core_trk_muted;
 
-      if( incrementer > 0 )
+      if( incrementer < 0 )
 	*muted |= mask;
-      else if( incrementer < 0 )
+      else if( incrementer > 0 )
 	*muted &= ~mask;
       else
 	*muted ^= mask;

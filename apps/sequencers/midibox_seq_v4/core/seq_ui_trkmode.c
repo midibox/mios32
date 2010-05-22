@@ -25,14 +25,15 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       7
+#define NUM_OF_ITEMS       8
 #define ITEM_GXTY          0
 #define ITEM_MODE          1
-#define ITEM_HOLD          2
-#define ITEM_SORT          3
-#define ITEM_RESTART       4
-#define ITEM_FORCE_SCALE   5
-#define ITEM_SUSTAIN       6
+#define ITEM_BUS           2
+#define ITEM_HOLD          3
+#define ITEM_SORT          4
+#define ITEM_RESTART       5
+#define ITEM_FORCE_SCALE   6
+#define ITEM_SUSTAIN       7
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -50,6 +51,7 @@ static s32 LED_Handler(u16 *gp_leds)
       *gp_leds = (1 << (selected_mode+1));
       }
       break;
+    case ITEM_BUS:         *gp_leds = 0x0080; break;
     case ITEM_HOLD:        *gp_leds = 0x0100; break;
     case ITEM_SORT:        *gp_leds = 0x0200; break;
     case ITEM_RESTART:     *gp_leds = 0x0c00; break;
@@ -70,6 +72,8 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
@@ -85,8 +89,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP6:
     case SEQ_UI_ENCODER_GP7:
-    case SEQ_UI_ENCODER_GP8:
       return -1; // not mapped
+
+    case SEQ_UI_ENCODER_GP8:
+      ui_selected_item = ITEM_BUS;
+      break;
 
     case SEQ_UI_ENCODER_GP9:
       ui_selected_item = ITEM_HOLD;
@@ -114,13 +121,39 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_MODE:          return SEQ_UI_CC_Inc(SEQ_CC_MODE, 0, 3, incrementer);
-    case ITEM_HOLD:          return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
-    case ITEM_SORT:          return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<0), (incrementer >= 0) ? 0 : (1<<0)); // SORT is inverted!
-    case ITEM_RESTART:       return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<2), (incrementer >= 0) ? (1<<2) : 0);
-    case ITEM_FORCE_SCALE:   return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<3), (incrementer >= 0) ? (1<<3) : 0);
-    case ITEM_SUSTAIN:       return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<4), (incrementer >= 0) ? (1<<4) : 0);
+    case ITEM_GXTY:
+      return SEQ_UI_GxTyInc(incrementer);
+
+    case ITEM_MODE:
+      return SEQ_UI_CC_Inc(SEQ_CC_MODE, 0, 3, incrementer);
+
+    case ITEM_BUS:
+      return SEQ_UI_CC_Inc(SEQ_CC_BUSASG, 0, 3, incrementer);
+
+    case ITEM_HOLD:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<1)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
+
+    case ITEM_SORT:
+      if( !incrementer ) // toggle flag - SORT is inverted!
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<0)) ? 1 : -1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<0), (incrementer >= 0) ? 0 : (1<<0)); // SORT is inverted!
+
+    case ITEM_RESTART:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<2)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<2), (incrementer >= 0) ? (1<<2) : 0);
+
+    case ITEM_FORCE_SCALE:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<3)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<3), (incrementer >= 0) ? (1<<3) : 0);
+
+    case ITEM_SUSTAIN:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<4)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<4), (incrementer >= 0) ? (1<<4) : 0);
   }
 
   return -1; // invalid or unsupported encoder
@@ -138,44 +171,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  if( button <= SEQ_UI_BUTTON_GP16 ) {
+    // -> forward to encoder handler
+    return Encoder_Handler((int)button, 0);
+  }
 
   switch( button ) {
-    case SEQ_UI_BUTTON_GP1:
-      ui_selected_item = ITEM_GXTY;
-      return 0; // value hasn't been changed
-
-    case SEQ_UI_BUTTON_GP2:
-    case SEQ_UI_BUTTON_GP3:
-    case SEQ_UI_BUTTON_GP4:
-    case SEQ_UI_BUTTON_GP5:
-      ui_selected_item = ITEM_MODE;
-      SEQ_UI_CC_Set(SEQ_CC_MODE, button-1);
-      return 1; // value changed
-
-    case SEQ_UI_BUTTON_GP6:
-    case SEQ_UI_BUTTON_GP7:
-    case SEQ_UI_BUTTON_GP8:
-      return -1; // not mapped
-
-    case SEQ_UI_BUTTON_GP9:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<1)) ? -1 : 1); // toggle flag
-
-    case SEQ_UI_BUTTON_GP10:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<0)) ? 1 : -1); // toggle flag - SORT is inverted!
-
-    case SEQ_UI_BUTTON_GP11:
-    case SEQ_UI_BUTTON_GP12:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<2)) ? -1 : 1); // toggle flag
-
-    case SEQ_UI_BUTTON_GP13:
-    case SEQ_UI_BUTTON_GP14:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<3)) ? -1 : 1); // toggle flag
-
-    case SEQ_UI_BUTTON_GP15:
-    case SEQ_UI_BUTTON_GP16:
-      return Encoder_Handler((int)button, (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<4)) ? -1 : 1); // toggle flag
-
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
       if( ++ui_selected_item >= NUM_OF_ITEMS )
@@ -211,8 +212,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. off     Transpose                  Hold Sort  Restart  ForceScale  Sustain 
-  // G1T1   >Normal<  Arpeggiator             on   on     on        on         on   
+  // Trk. off     Transpose              Bus Hold Sort  Restart  ForceScale  Sustain 
+  // G1T1   >Normal<  Arpeggiator         1   on   on     on        on         on   
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -248,7 +249,7 @@ static s32 LCD_Handler(u8 high_prio)
     for(j=0; j<13; ++j) {
       u8 c = mode_names[i][j];
 
-      if( ++x > 40 ) // don't print more than 40 characters per line
+      if( ++x > 35 ) // don't print more than 35 characters per line
 	break;
 
       if( c == '>' || c == '<' ) {
@@ -269,10 +270,17 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(8);
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_CursorSet(40, 0);
-  SEQ_LCD_PrintString("Hold Sort  Restart  ForceScale  Sustain ");
-  SEQ_LCD_CursorSet(40, 1);
-  SEQ_LCD_PrintSpaces(1);
+  SEQ_LCD_CursorSet(35, 0);
+  SEQ_LCD_PrintString(" Bus Hold Sort  Restart  ForceScale  Sustain ");
+  SEQ_LCD_CursorSet(35, 1);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_BUS && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintFormattedString("  %d", SEQ_CC_Get(visible_track, SEQ_CC_BUSASG) + 1);
+  }
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HOLD && ui_cursor_flash ) {

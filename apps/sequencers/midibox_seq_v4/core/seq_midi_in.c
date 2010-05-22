@@ -51,28 +51,33 @@
 
 
 // number of notestacks and assignments
-#define NOTESTACK_NUM             11
-#define NOTESTACK_TRANSPOSER      0
-#define NOTESTACK_ARP_SORTED      1
-#define NOTESTACK_ARP_UNSORTED    2
-#define NOTESTACK_SECTION_CHANGER_G1 3
-#define NOTESTACK_SECTION_CHANGER_G2 4
-#define NOTESTACK_SECTION_CHANGER_G3 5
-#define NOTESTACK_SECTION_CHANGER_G4 6
-#define NOTESTACK_PATCH_CHANGER_G1 7
-#define NOTESTACK_PATCH_CHANGER_G2 8
-#define NOTESTACK_PATCH_CHANGER_G3 9
-#define NOTESTACK_PATCH_CHANGER_G4 10
+#define BUS_NOTESTACK_NUM             3
+#define BUS_NOTESTACK_TRANSPOSER      0
+#define BUS_NOTESTACK_ARP_SORTED      1
+#define BUS_NOTESTACK_ARP_UNSORTED    2
+
+// additional notestacks for section and patch changer
+#define SECTION_CHANGER_NOTESTACK_NUM  4
+#define SECTION_CHANGER_NOTESTACK_G1   0
+#define SECTION_CHANGER_NOTESTACK_G2   1
+#define SECTION_CHANGER_NOTESTACK_G3   2
+#define SECTION_CHANGER_NOTESTACK_G4   3
+
+#define PATCH_CHANGER_NOTESTACK_NUM    4
+#define PATCH_CHANGER_NOTESTACK_G1     0
+#define PATCH_CHANGER_NOTESTACK_G2     1
+#define PATCH_CHANGER_NOTESTACK_G3     2
+#define PATCH_CHANGER_NOTESTACK_G4     3
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity);
+static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity);
+static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value);
 static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity);
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity);
-static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,13 +86,16 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value);
 
 // For Transposer/Arpeggiator:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
-u8 seq_midi_in_channel;
+u8 seq_midi_in_channel[SEQ_MIDI_IN_NUM_BUSSES];
 // which IN port should be used? (0: All)
-mios32_midi_port_t seq_midi_in_port;
-// Transposer/Arpeggiator split note
-// (bit 7 enables/disables split)
-u8 seq_midi_in_ta_split_note;
+mios32_midi_port_t seq_midi_in_port[SEQ_MIDI_IN_NUM_BUSSES];
 
+// lower/upper note of bus range
+u8 seq_midi_in_lower[SEQ_MIDI_IN_NUM_BUSSES];
+u8 seq_midi_in_upper[SEQ_MIDI_IN_NUM_BUSSES];
+
+// options
+seq_midi_in_options_t seq_midi_in_options[SEQ_MIDI_IN_NUM_BUSSES];
 
 // For Record function:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
@@ -111,16 +119,22 @@ u8 seq_midi_in_sect_note[4];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-// we have three notestacks: one for transposer, two other for arpeggiator
-static notestack_t notestack[NOTESTACK_NUM];
-static notestack_item_t notestack_items[NOTESTACK_NUM][SEQ_MIDI_IN_NOTESTACK_SIZE];
+// we have three notestacks per bus: one for transposer, two other for arpeggiator
+static notestack_t bus_notestack[SEQ_MIDI_IN_NUM_BUSSES][BUS_NOTESTACK_NUM];
+static notestack_item_t bus_notestack_items[SEQ_MIDI_IN_NUM_BUSSES][BUS_NOTESTACK_NUM][SEQ_MIDI_IN_NOTESTACK_SIZE];
+
+static notestack_t section_changer_notestack[SECTION_CHANGER_NOTESTACK_NUM];
+static notestack_item_t section_changer_notestack_items[SECTION_CHANGER_NOTESTACK_NUM][SEQ_MIDI_IN_NOTESTACK_SIZE];
+
+static notestack_t patch_changer_notestack[SECTION_CHANGER_NOTESTACK_NUM];
+static notestack_item_t patch_changer_notestack_items[SECTION_CHANGER_NOTESTACK_NUM][SEQ_MIDI_IN_NOTESTACK_SIZE];
 
 // last note which has been played
-static u8 transposer_hold_note;
+static u8 transposer_hold_note[SEQ_MIDI_IN_NUM_BUSSES];
 
 // last arp notes which have been played
-static notestack_item_t arp_sorted_hold[4];
-static notestack_item_t arp_unsorted_hold[4];
+static notestack_item_t arp_sorted_hold[SEQ_MIDI_IN_NUM_BUSSES][4];
+static notestack_item_t arp_unsorted_hold[SEQ_MIDI_IN_NUM_BUSSES][4];
 
 // for MIDI remote keyboard function
 static u8 remote_active;
@@ -131,14 +145,18 @@ static u8 remote_active;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_Init(u32 mode)
 {
-  int i;
+  int bus;
 
   SEQ_MIDI_IN_ResetAllStacks();
 
   // stored in global config:
-  seq_midi_in_channel = 1; // Channel #1 (0 disables MIDI IN)
-  seq_midi_in_port = DEFAULT; // All ports
-  seq_midi_in_ta_split_note = 0x3c; // C-3, bit #7 = 0 (split disabled!)
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    seq_midi_in_channel[bus] = bus+1; // Channel #1 (0 disables MIDI IN)
+    seq_midi_in_port[bus] = DEFAULT; // All ports
+    seq_midi_in_lower[bus] = 0x00; // lowest note
+    seq_midi_in_upper[bus] = 0x7f; // highest note
+    seq_midi_in_options[bus].ALL = 0; // disable all options
+  }
 
   seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_rec_port = DEFAULT; // All ports
@@ -146,6 +164,8 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_sect_channel = 0; // disabled by default
   seq_midi_in_sect_port = DEFAULT; // All ports
   seq_midi_in_sect_fwd_port = DEFAULT; // 0 = disable
+
+  int i;
   for(i=0; i<4; ++i)
     seq_midi_in_sect_note[i] = 0x30 + 12*i;
 
@@ -160,34 +180,35 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_IN_ResetTransArpStacks(void)
 {
-  int i;
+  int bus;
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER],
+		   NOTESTACK_MODE_PUSH_TOP,
+		   &bus_notestack_items[bus][BUS_NOTESTACK_TRANSPOSER][0],
+		   SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-  NOTESTACK_Init(&notestack[NOTESTACK_TRANSPOSER],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_TRANSPOSER][0],
-		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED],
+		   NOTESTACK_MODE_SORT,
+		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_SORTED][0],
+		   SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-  NOTESTACK_Init(&notestack[NOTESTACK_ARP_SORTED],
-		 NOTESTACK_MODE_SORT,
-		 &notestack_items[NOTESTACK_ARP_SORTED][0],
-		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED],
+		   NOTESTACK_MODE_PUSH_TOP,
+		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
+		   SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-  NOTESTACK_Init(&notestack[NOTESTACK_ARP_UNSORTED],
-		 NOTESTACK_MODE_PUSH_TOP,
-		 &notestack_items[NOTESTACK_ARP_UNSORTED][0],
-		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+    transposer_hold_note[bus] = 0x3c; // C-3
 
-  // initial hold notes
-  transposer_hold_note = 0x3c; // C-3
+    int i;
+    for(i=0; i<4; ++i)
+      arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
 
-  for(i=0; i<4; ++i)
-    arp_sorted_hold[0].ALL = arp_unsorted_hold[0].ALL = 0;
-
-  arp_sorted_hold[0].note = arp_unsorted_hold[0].note = 0x3c; // C-3
-  arp_sorted_hold[1].note = arp_unsorted_hold[1].note = 0x40; // E-3
-  arp_sorted_hold[2].note = arp_unsorted_hold[2].note = 0x43; // G-3
-  arp_sorted_hold[3].note = arp_unsorted_hold[3].note = 0x48; // C-4
-
+    arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
+    arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
+    arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
+    arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
+  }
+    
   return 0; // no error
 }
 
@@ -199,17 +220,17 @@ s32 SEQ_MIDI_IN_ResetChangerStacks(void)
 {
   int i;
 
-  for(i=0; i<4; ++i) {
-    NOTESTACK_Init(&notestack[NOTESTACK_SECTION_CHANGER_G1 + i],
+  for(i=0; i<SECTION_CHANGER_NOTESTACK_NUM; ++i)
+    NOTESTACK_Init(&section_changer_notestack[i],
 		   NOTESTACK_MODE_PUSH_TOP,
-		   &notestack_items[NOTESTACK_SECTION_CHANGER_G1 + i][0],
+		   &section_changer_notestack_items[i][0],
 		   SEQ_MIDI_IN_SECTION_CHANGER_NOTESTACK_SIZE);
 
-    NOTESTACK_Init(&notestack[NOTESTACK_PATCH_CHANGER_G1 + i],
+  for(i=0; i<PATCH_CHANGER_NOTESTACK_NUM; ++i)
+    NOTESTACK_Init(&patch_changer_notestack[i],
 		   NOTESTACK_MODE_PUSH_TOP,
-		   &notestack_items[NOTESTACK_PATCH_CHANGER_G1 + i][0],
+		   &patch_changer_notestack_items[i][0],
 		   SEQ_MIDI_IN_PATCH_CHANGER_NOTESTACK_SIZE);
-  }
 
   // following operation should be atomic!
   u8 track;
@@ -242,75 +263,131 @@ s32 SEQ_MIDI_IN_ResetAllStacks(void)
 s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   s32 status = 0;
-  u8 loopback_port = port == 0xf0;
 
-  // Access to MIDI IN functions controlled by Mutex, since this function is access
-  // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
-  // SEQ_CORE_* for loopbacks)
+  // check if we should record this event
+  u8 should_be_recorded =
+    ui_page == SEQ_UI_PAGE_TRKREC &&
+    ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
+     midi_package.chn == (seq_midi_in_rec_channel-1));
 
+  // search for matching ports
+  // status[0] set if at least one port matched
+  // status[1] set if remote function active
+  int bus;
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    // filter MIDI port (if 0: no filter, listen to all ports)
+    if( (!seq_midi_in_port[bus] || port == seq_midi_in_port[bus]) &&
+	midi_package.chn == (seq_midi_in_channel[bus]-1) ) {
 
-  // filter MIDI port (if 0: no filter, listen to all ports)
-  // Loopback port not filtered!
-  if( loopback_port || !seq_midi_in_port || (seq_midi_in_port && port == seq_midi_in_port) ) {
-    if( loopback_port || midi_package.chn == (seq_midi_in_channel-1) ) {
       switch( midi_package.event ) {
+      case NoteOff: 
+	if( remote_active ) {
+	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    remote_active = 0;
 
-        case NoteOff: 
-	  if( !loopback_port && remote_active ) {
-	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	      int i;
-
-	      remote_active = 0;
-	      // send "button depressed" state to all remote functions
-	      for(i=0; i<128; ++i)
-		SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
-
-	      status = 1;
-	    } else
-	      status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
+	    // send "button depressed" state to all remote functions
+	    int i;
+	    for(i=0; i<128; ++i)
+	      SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
 	  } else {
-	    MUTEX_MIDIIN_TAKE;
-	    status = SEQ_MIDI_IN_Receive_Note(midi_package.note, 0x00);
-	    MUTEX_MIDIIN_GIVE;
+	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
 	  }
-	  break;
-
-        case NoteOn:
-	  if( !loopback_port && remote_active )
-	    status = SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
-	  else {
-	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	      remote_active = 1;
-	      status = 1;
+	  status |= 2;
+	} else {
+	  if( !should_be_recorded &&
+	      midi_package.note >= seq_midi_in_lower[bus] &&
+	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+	    if( seq_midi_in_options[bus].MODE_PLAY ) {
+	      MUTEX_MIDIOUT_TAKE;
+	      SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
+	      MUTEX_MIDIOUT_GIVE;
 	    } else {
-	      MUTEX_MIDIIN_TAKE;
-	      status = SEQ_MIDI_IN_Receive_Note(midi_package.note, midi_package.velocity);
-	      MUTEX_MIDIIN_GIVE;
+#if 0
+	      // octave normalisation - too complicated for normal users...
+	      mios32_midi_package_t p = midi_package;
+	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		while( normalized_note > 127 ) normalized_note -= 12;
+		while( normalized_note < 0 ) normalized_note += 12;
+		p.note = normalized_note;
+	      }
+	      SEQ_MIDI_IN_BusReceive(0xf0+bus, p, 0);
+#else
+	      SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+#endif
+	    }
+	    status |= 1;
+	  }
+	}
+	break;
+
+      case NoteOn:
+	if( remote_active )
+	  SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
+	else {
+	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    remote_active = 1;
+	    status |= 2;
+	  } else {
+	    if( !should_be_recorded &&
+		midi_package.note >= seq_midi_in_lower[bus] &&
+		(!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+	      if( seq_midi_in_options[bus].MODE_PLAY ) {
+		MUTEX_MIDIOUT_TAKE;
+		SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
+		MUTEX_MIDIOUT_GIVE;
+	      } else {
+#if 0
+		// octave normalisation - too complicated for normal users...
+		mios32_midi_package_t p = midi_package;
+		if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		  int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		  while( normalized_note > 127 ) normalized_note -= 12;
+		  while( normalized_note < 0 ) normalized_note += 12;
+		  p.note = normalized_note;
+		}
+		SEQ_MIDI_IN_BusReceive(0xf0+bus, p, 0);
+#else
+		SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+#endif
+	      }
+	      status |= 1;
 	    }
 	  }
-	  break;
+	}
+	break;
 
-        case CC:
-	  MUTEX_MIDIIN_TAKE;
-	  if( loopback_port )
-	    status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
-	  else
-	    status = SEQ_MIDI_IN_Receive_CC(midi_package.cc_number, midi_package.value);
-	  MUTEX_MIDIIN_GIVE;
-	  break;
+      case CC:
+	if( !should_be_recorded ) {
+	  if( seq_midi_in_options[bus].MODE_PLAY ) {
+	    MUTEX_MIDIOUT_TAKE;
+	    SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
+	    MUTEX_MIDIOUT_GIVE;
+	  } else {
+	    SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+	  }
+	}
+	status |= 1;
+	break;
+
+      default:
+	if( seq_midi_in_options[bus].MODE_PLAY ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
     }
   }
 
+
   // record function
-  if( !loopback_port && !remote_active && ui_page == SEQ_UI_PAGE_TRKREC &&
-      ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
-       midi_package.chn == (seq_midi_in_rec_channel-1)) ) {
+  if( !(status & 2) && should_be_recorded ) {
     SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
   }
 
   // Section Changer
-  if( !loopback_port && !remote_active &&
+  if( !(status & 2) &&
       (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
        midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
     u8 forward_event = 1;
@@ -341,7 +418,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 #if 0
   // Patch Changer (currently assigned to channel+1)
   // Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
-  if( !loopback_port && !remote_active &&
+  if( !(status & 2) &&
       (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
        midi_package.chn == (seq_midi_in_sect_channel)) ) {
     u8 forward_event = 1;
@@ -375,86 +452,118 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Receives a MIDI package from a loopback port (Bus1..Bus4)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_IN_BusReceive(mios32_midi_port_t port, mios32_midi_package_t midi_package, u8 from_loopback_port)
+{
+  s32 status = 0;
+  u8 bus = (port >= 0xf0) ? (port-0xf0) : 0xf0;
+
+  // Access to MIDI IN functions controlled by Mutex, since this function is access
+  // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
+  // SEQ_CORE_* for loopbacks)
+  MUTEX_MIDIIN_TAKE;
+
+  switch( midi_package.event ) {
+  case NoteOff: 
+    status = SEQ_MIDI_IN_Receive_Note(bus, midi_package.note, 0x00);
+    break;
+
+  case NoteOn:
+    status = SEQ_MIDI_IN_Receive_Note(bus, midi_package.note, midi_package.velocity);
+    break;
+
+  case CC:
+    if( from_loopback_port )
+      status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
+    else
+      status = SEQ_MIDI_IN_Receive_CC(bus, midi_package.cc_number, midi_package.value);
+    break;
+  }
+
+  MUTEX_MIDIIN_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // If velocity == 0, Note Off event has been received, otherwise Note On event
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDI_IN_Receive_Note(u8 note, u8 velocity)
+static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
 {
   notestack_t *n;
 
-  u8 ta_split_enabled = seq_midi_in_ta_split_note & 0x80;
-  u8 ta_split_note = seq_midi_in_ta_split_note & 0x7f;
-
+  if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
+    return -1;
 
   ///////////////////////////////////////////////////////////////////////////
   // Transposer
   ///////////////////////////////////////////////////////////////////////////
 
-  if( !ta_split_enabled || (note < ta_split_note) ) {
-    n = &notestack[NOTESTACK_TRANSPOSER];
-    if( velocity ) { // Note On
-      NOTESTACK_Push(n, note, velocity);
-      transposer_hold_note = n->note_items[0].note;
+  n = &bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER];
+  if( velocity ) { // Note On
+    NOTESTACK_Push(n, note, velocity);
+    transposer_hold_note[bus] = n->note_items[0].note;
 
-      // will only be used if enabled in OPT menu
+    // will only be used for Bus1 and if enabled in OPT menu
+    if( bus == 0 )
       seq_core_keyb_scale_root = note % 12;
-    } else { // Note Off
-      if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
-	transposer_hold_note = n->note_items[0].note;
-      }
+  } else { // Note Off
+    if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
+      transposer_hold_note[bus] = n->note_items[0].note;
     }
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("NOTESTACK_TRANSPOSER:\n");
-    NOTESTACK_SendDebugMessage(&notestack[NOTESTACK_TRANSPOSER]);
-#endif
   }
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("NOTESTACK_TRANSPOSER[%d]:\n", bus);
+  NOTESTACK_SendDebugMessage(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER]);
+#endif
 
 
   ///////////////////////////////////////////////////////////////////////////
   // Arpeggiator
   ///////////////////////////////////////////////////////////////////////////
 
-  if( !ta_split_enabled || (note >= ta_split_note) ) {
-    if( velocity ) { // Note On
-      // if no note in note stack anymore, reset position of all tracks with RESTART flag set
-      if( !notestack[NOTESTACK_ARP_UNSORTED].len ) {
-        u8 track;
-        for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	  if( seq_cc_trk[track].mode.RESTART ) {
-	    portENTER_CRITICAL();
-	    seq_core_trk[track].state.POS_RESET = 1;
-	    portEXIT_CRITICAL();
-	  }
+  if( velocity ) { // Note On
+    // if no note in note stack anymore, reset position of all tracks with RESTART flag set
+    if( !bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED].len ) {
+      u8 track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+	if( seq_cc_trk[track].mode.RESTART ) {
+	  portENTER_CRITICAL();
+	  seq_core_trk[track].state.POS_RESET = 1;
+	  portEXIT_CRITICAL();
+	}
 
-	// and invalidate hold stacks
-	int i;
-	for(i=0; i<4; ++i)
-	  arp_sorted_hold[i].ALL = arp_unsorted_hold[i].ALL = 0;
-      }
-
-      // add to stacks
-      NOTESTACK_Push(&notestack[NOTESTACK_ARP_SORTED], note, velocity);
-      NOTESTACK_Push(&notestack[NOTESTACK_ARP_UNSORTED], note, velocity);
-
-      // copy to hold stack
+      // and invalidate hold stacks
       int i;
-      for(i=0; i<4; ++i) {
-	arp_unsorted_hold[i].ALL = (i < notestack[NOTESTACK_ARP_UNSORTED].len) ? notestack[NOTESTACK_ARP_UNSORTED].note_items[i].ALL : 0;
-	arp_sorted_hold[i].ALL = (i < notestack[NOTESTACK_ARP_SORTED].len) ? notestack[NOTESTACK_ARP_SORTED].note_items[i].ALL : 0;
-      }
-
-    } else { // Note Off
-      // remove note from sorted/unsorted stack (not hold stacks)
-      NOTESTACK_Pop(&notestack[NOTESTACK_ARP_SORTED], note);
-      NOTESTACK_Pop(&notestack[NOTESTACK_ARP_UNSORTED], note);
+      for(i=0; i<4; ++i)
+	arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
     }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("NOTESTACK_ARP_SORTED:\n");
-    NOTESTACK_SendDebugMessage(&notestack[NOTESTACK_ARP_SORTED]);
-    DEBUG_MSG("NOTESTACK_ARP_UNSORTED:\n");
-    NOTESTACK_SendDebugMessage(&notestack[NOTESTACK_ARP_UNSORTED]);
-#endif
+    // add to stacks
+    NOTESTACK_Push(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED], note, velocity);
+    NOTESTACK_Push(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED], note, velocity);
+
+    // copy to hold stack
+    int i;
+    for(i=0; i<4; ++i) {
+      arp_unsorted_hold[bus][i].ALL = (i < bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED].len) ? bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED].note_items[i].ALL : 0;
+      arp_sorted_hold[bus][i].ALL = (i < bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED].len) ? bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED].note_items[i].ALL : 0;
+    }
+
+  } else { // Note Off
+    // remove note from sorted/unsorted stack (not hold stacks)
+    NOTESTACK_Pop(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED], note);
+    NOTESTACK_Pop(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED], note);
   }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("NOTESTACK_ARP_SORTED[%d]:\n", bus);
+  NOTESTACK_SendDebugMessage(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED]);
+  DEBUG_MSG("NOTESTACK_ARP_UNSORTED[%d]:\n", bus);
+  NOTESTACK_SendDebugMessage(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED]);
+#endif
 
   return 0; // no error
 }
@@ -474,7 +583,7 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
   for(group=0; group<4; ++group) {
     if( octave == (seq_midi_in_sect_note[group] / 12) ) {
       octave_taken = 1;
-      notestack_t *n = &notestack[NOTESTACK_SECTION_CHANGER_G1 + group];
+      notestack_t *n = &section_changer_notestack[group];
 
       int section = -1;
       if( velocity ) { // Note On
@@ -525,7 +634,7 @@ static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
   for(group=0; group<4; ++group) {
     if( octave == (seq_midi_in_sect_note[group] / 12) ) {
       octave_taken = 1;
-      notestack_t *n = &notestack[NOTESTACK_PATCH_CHANGER_G1 + group];
+      notestack_t *n = &patch_changer_notestack[group];
 
       int patch = -1;
       if( velocity ) { // Note On
@@ -562,10 +671,13 @@ static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 /////////////////////////////////////////////////////////////////////////////
 // CC has been received over selected port and channel
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
+static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
 {
   static nrpn_lsb = 0;
   static nrpn_msb = 0;
+
+  if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
+    return -1;
 
   // MIDI Remote Function?
   if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == cc ) {
@@ -636,12 +748,12 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 cc, u8 value)
 // Returns the note for transpose mode
 // if -1, the stack is empty
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_IN_TransposerNoteGet(u8 hold)
+s32 SEQ_MIDI_IN_TransposerNoteGet(u8 bus, u8 hold)
 {
   if( hold )
-    return transposer_hold_note;
+    return transposer_hold_note[bus];
 
-  return notestack[NOTESTACK_TRANSPOSER].len ? notestack[NOTESTACK_TRANSPOSER].note_items[0].note : -1;
+  return bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].len ? bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].note_items[0].note : -1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -649,14 +761,14 @@ s32 SEQ_MIDI_IN_TransposerNoteGet(u8 hold)
 // if -1, the stack is empty
 // if bit 7 is set, the last key of the stack has been played
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_IN_ArpNoteGet(u8 hold, u8 sorted, u8 key_num)
+s32 SEQ_MIDI_IN_ArpNoteGet(u8 bus, u8 hold, u8 sorted, u8 key_num)
 {
   notestack_item_t *note_ptr;
 
   if( sorted )
-    note_ptr = hold ? arp_sorted_hold : notestack[NOTESTACK_ARP_SORTED].note_items;
+    note_ptr = hold ? arp_sorted_hold[bus] : bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED].note_items;
   else
-    note_ptr = hold ? arp_unsorted_hold : notestack[NOTESTACK_ARP_UNSORTED].note_items;
+    note_ptr = hold ? arp_unsorted_hold[bus] : bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED].note_items;
 
   // arp note selection is based on following algorithm:
   // 1 note is played, return
@@ -690,7 +802,7 @@ s32 SEQ_MIDI_IN_ArpNoteGet(u8 hold, u8 sorted, u8 key_num)
       if( !note_ptr[num_notes].note )
 	break;
   } else
-    num_notes = notestack[NOTESTACK_ARP_SORTED].len;
+    num_notes = bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED].len;
 
   // btw.: compare with lines of code in PIC based solution! :)
   return note_ptr[key_num % num_notes].note | ((!num_notes || key_num >= (num_notes-1)) ? 0x80 : 0);
