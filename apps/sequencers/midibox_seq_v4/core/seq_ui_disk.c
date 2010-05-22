@@ -676,7 +676,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	    if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	      // Play MIDI File
-	      char mid_file[20];
+	      char mid_file[30];
 	      int i;
 	      char *p = (char *)&mid_file[0];
 	      for(i=0; i<8; ++i) {
@@ -735,7 +735,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	  if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	    // Import MIDI File
-	    char mid_file[20];
+	    char mid_file[30];
 	    int i;
 	    char *p = (char *)&mid_file[0];
 	    for(i=0; i<8; ++i) {
@@ -1322,7 +1322,7 @@ static s32 DoExport(u8 force_overwrite)
 {
   s32 status;
   int i;
-  char path[20];
+  char path[30];
 
   // if an error is detected, we jump back to FNAME page
   ui_selected_item = 0;
@@ -1358,7 +1358,7 @@ static s32 DoExport(u8 force_overwrite)
     return -4;
   }
 
-  char mid_file[20];
+  char mid_file[30];
   char *p = (char *)&mid_file[0];
   for(i=0; i<8; ++i) {
     char c = dir_name[i];

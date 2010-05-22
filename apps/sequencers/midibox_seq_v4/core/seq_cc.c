@@ -85,6 +85,8 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_MIDI_CHANNEL: tcc->midi_chn = value; break;
       case SEQ_CC_MIDI_PORT: tcc->midi_port = value; break;
 
+      case SEQ_CC_BUSASG: tcc->busasg.bus = value; break;
+
       case SEQ_CC_LIMIT_LOWER: tcc->limit_lower = value; break;
       case SEQ_CC_LIMIT_UPPER: tcc->limit_upper = value; break;
     
@@ -225,6 +227,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_MIDI_EVENT_MODE: return tcc->event_mode;
     case SEQ_CC_MIDI_CHANNEL: return tcc->midi_chn;
     case SEQ_CC_MIDI_PORT: return tcc->midi_port;
+    case SEQ_CC_BUSASG: return tcc->busasg.bus;
 
     case SEQ_CC_LIMIT_LOWER: return tcc->limit_lower;
     case SEQ_CC_LIMIT_UPPER: return tcc->limit_upper;

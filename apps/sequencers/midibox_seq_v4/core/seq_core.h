@@ -37,7 +37,6 @@ typedef union {
   };
 } seq_core_options_t;
 
-
 typedef union {
   u32 ALL;
   struct {
@@ -99,6 +98,12 @@ typedef enum {
   SEQ_CORE_TRKMODE_Arpeggiator
 } seq_core_trk_playmode_t;
 
+typedef union {
+  u8 ALL;
+  struct {
+    u8 bus:2;
+  };
+} seq_core_busasg_t;
 
 typedef enum {
   SEQ_CORE_TRKDIR_Forward,
@@ -194,6 +199,8 @@ extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
 extern s32 SEQ_CORE_BPM_SweepHandler(void);
 
 extern s32 SEQ_CORE_Scrub(s32 incrementer);
+
+extern s32 SEQ_CORE_PlayLive(u8 track, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////

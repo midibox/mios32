@@ -307,19 +307,26 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_glb_loop_steps = value-1;
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
 	    MIOS32_MIDI_DefaultPortSet(value);
-	  } else if( strcmp(parameter, "MIDI_IN_Channel") == 0 ) {
-	    seq_midi_in_channel = value;
-	  } else if( strcmp(parameter, "MIDI_IN_Port") == 0 ) {
-	    seq_midi_in_port = (mios32_midi_port_t)value;
+	  } else if( strncmp(parameter, "MIDI_BUS", 8) == 0 ) {
+	    int bus = value;
+	    if( bus >= 0 && bus < SEQ_MIDI_IN_NUM_BUSSES ) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      int v = get_dec(word);
+	      if( v >= 0 ) {
+		if( strcmp(parameter+8, "_Channel") == 0 )
+		  seq_midi_in_channel[bus] = v;
+		else if( strcmp(parameter, "_Port") == 0 )
+		  seq_midi_in_port[bus] = v;
+		else if( strcmp(parameter, "_Lower") == 0 )
+		  seq_midi_in_lower[bus] = v;
+		else if( strcmp(parameter, "_Upper") == 0 )
+		  seq_midi_in_upper[bus] = v;
+		else if( strcmp(parameter, "_Options") == 0 )
+		  seq_midi_in_options[bus].ALL = v;
+	      }
+	    }
 	  } else if( strcmp(parameter, "MIDI_IN_MClock_Ports") == 0 ) {
 	    seq_midi_router_mclk_in = value;
-	  } else if( strcmp(parameter, "MIDI_IN_TA_Split") == 0 ) {
-	    if( value )
-	      seq_midi_in_ta_split_note |= 0x80;
-	    else
-	      seq_midi_in_ta_split_note &= ~0x80;
-	  } else if( strcmp(parameter, "MIDI_IN_TA_SplitNote") == 0 ) {
-	    seq_midi_in_ta_split_note = (seq_midi_in_ta_split_note & 0x80) | (value & 0x7f);
 	  } else if( strcmp(parameter, "MIDI_IN_RecChannel") == 0 ) {
 	    seq_midi_in_rec_channel = value;
 	  } else if( strcmp(parameter, "MIDI_IN_RecPort") == 0 ) {
@@ -519,19 +526,25 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_IN_Channel %d\n", seq_midi_in_channel);
-  FLUSH_BUFFER;
+  u8 bus;
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    sprintf(line_buffer, "MIDI_BUS_Channel %d %d\n", bus, seq_midi_in_channel[bus]);
+    FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_IN_Port %d\n", (u8)seq_midi_in_port);
-  FLUSH_BUFFER;
+    sprintf(line_buffer, "MIDI_BUS_Port %d %d\n", bus, (u8)seq_midi_in_port[bus]);
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "MIDI_BUS_Lower %d %d\n", bus, seq_midi_in_lower[bus]);
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "MIDI_BUS_Upper %d %d\n", bus, seq_midi_in_upper[bus]);
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "MIDI_BUS_Options %d 0x%02x\n", bus, (u8)seq_midi_in_options[bus].ALL);
+    FLUSH_BUFFER;
+  }
 
   sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_in);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MIDI_IN_TA_Split %d\n", (seq_midi_in_ta_split_note & 0x80) ? 1 : 0);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MIDI_IN_TA_SplitNote %d\n", seq_midi_in_ta_split_note & 0x7f);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_IN_RecChannel %d\n", seq_midi_in_rec_channel);

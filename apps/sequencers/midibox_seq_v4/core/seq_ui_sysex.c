@@ -140,7 +140,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       ui_selected_item = button / 2;
 
 #if TEST_LIST
-    char buffer[20];
+    char buffer[30];
     int i;
     for(i=0; i<LIST_ENTRY_WIDTH; ++i)
       buffer[i] = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
@@ -174,7 +174,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
         default:
           if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
 	    // Send SysEx Dump
-	    char syx_file[20];
+	    char syx_file[30];
 	    int i;
 	    char *p = (char *)&syx_file[0];
 	    for(i=0; i<8; ++i) {

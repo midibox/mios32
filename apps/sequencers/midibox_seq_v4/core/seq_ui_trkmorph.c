@@ -203,7 +203,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Mode  Dst.Range               ValueMorphing controlled by CC#  1 at USB0#01
+  // Trk. Mode  Dst.Range               ValueMorphing controlled by CC#  1 at Bus1..4
   // G1T1  on    17..32                  100    <######################          >
 
 
@@ -212,21 +212,8 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintFormattedString("Trk. Mode  Dst.Range               ValueMorphing controlled by CC#%3d at ",
+  SEQ_LCD_PrintFormattedString("Trk. Mode  Dst.Range               ValueMorphing controlled by CC#%3d at Bus1..4",
 			       1); // always ModWheel
-
-  if( seq_midi_in_port )
-    SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_port)));
-  else
-    SEQ_LCD_PrintString(" All");
-
-  SEQ_LCD_PrintChar('#');
-
-  if( seq_midi_in_channel )
-    SEQ_LCD_PrintFormattedString("%02d", seq_midi_in_channel);
-  else
-    SEQ_LCD_PrintString("--");
-
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);

@@ -9,10 +9,43 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta21
 ~~~~~~~~~~~~~~~~~~~~~
 
-  o added optional button/LED function for UNDO
   o ongoing preparation work for BLM16x16
-    TODO: describe new modes here
-  o fixed MIDI clock issue sent to USB5..USB8 (resulted into multiplied tempo values in some DAWs)
+    Features will be described in the MBSEQ manual soon
+
+  o the simple Transpose/Arpeggiator MIDI split function has been replaced by 
+    a new bus routing.
+
+    There are 4 busses that can be configured in the MIDI page.
+    Each bus provides a dedicated MIDI port, channel and lower/upper MIDI note
+    to define a keyboard range.
+
+  o the bus can either be routed to the transpose/arpeggiator function ("T&A Mode"),
+    or it can be used to play the currently selected track "live" ("Play Mode")
+
+  o Track Mode page: now allows to select the bus over that the transpose/arpeggiator
+    function should be controlled
+
+  o Record function: whenever active, the MIDI port and channel used for recording
+    won't be routed to Transpose/Arpeggiator/Play bus.
+
+  o the "Roll" trigger now selects a 2D10 roll instead of 3D08 since it's more
+    useful in most cases.
+    In order to select a customized roll value, please use the roll function of
+    the parameter layer.
+
+  o added optional button/LED function for UNDO
+
+  o fixed MIDI clock issue sent to USB5..USB8 (resulted into multiplied tempo 
+    values in some DAWs)
+
+  o CC assignment displayed correctly in mixer page
+
+  o LFO CC not sent anymore if track is muted
+
+  o fixed crash if preset name is longer than 7 characters
+
+  o inverted encoder behaviour in mute page: moving clockwise will unmute,
+    moving counter clockwise will activate mute
 
 
 MIDIboxSEQ V4.0beta20
@@ -588,15 +621,6 @@ TK: to be checked, seems that I forgot to finish the implementation of some thin
 
 ---------------------------------------------------------
 
->> Keyboard to selected track:
->> 
->> -When creating a new Track I am constantly going to the MIDI Router Page to assign that track's Port/Chn and test some notes on the keyboard before actually editing (or recording onto) the track. So may I ask for an extra mode where the keyboard is auto assigned to the selected track? Maybe it could be done by adding an extra Target available on the MIDI Router assignments (like "Selected Track" or "Edit Track" or whatever). I am sure you can come out with an optimal way to handle this.
-
-TK: Will be available soon in conjunction with a special "BLM16x16 keyboard mode"
-Side effect of this mode: it will require a new menu page where such a forwarding option could be defined as well
-
----------------------------------------------------------
-
 >> Session Save (4 Patterns)
 >> 
 >> -When saving the Session on 4 empty patterns these will still show "Empty" on the name after saving. This is confusing later when saving other patterns on the same Banks. So, when saving on an empty (not already named) pattern would it be possible to change the pattern names to "Pattern XX" or some other default?
@@ -629,35 +653,11 @@ TK: to be checked
 
 ---------------------------------------------------------
 
->> -Mixer Map pages 09-12 don't show the correct selected CC# number when moving the Encoder. (As selected on the assignement pages 13-16).
-
-TK: to be checked
-
----------------------------------------------------------
-
->> -Importing the Presets I had made in Beta15, causes Beta18 to completely freeze if after importing the Preset I don't do anything and just leave EVENT page there. I had few of them and I created them again. But I can attach them and give more details if you are interested in finding what the problem was.
-
-TK: to be checked for improving robustness of parser (however, nobody can expect a final format in a beta version)
-
----------------------------------------------------------
-
 >> -When working on a track with several Note Layers, removing/inserting gates/notes on steps that containing other notes on other layers, will remove also these other notes on other Layers (As they share the same Gate Trigger Layer). Confusing. But I am not sure how but polyphonic editing needs improving. (Different Lenght-Vel, MacrosÀ?)
 
 TK: Not possible anyhow with the concept of a singe length and velocity for the whole track.
 With a special BLM16x16 mode I'm planning to simplify the editing of poly tracks (to be demonstrated in a video)
 But it will only work so comfortable with this hardware
-
----------------------------------------------------------
-
->> -I don't know if this is the intended behaviour, but Mutes don't mute the LFOs ExtraCC#. Makes sense for me that the Echo FX is not killed by the Mute, but not sure about the LFOs.
-
-TK: to be checked
-
----------------------------------------------------------
-
->> -Silly thing but again... Muting with the encoders: I would rather prefer: Turning clockwise (increase volume...) would UN-MUTE and turning anti-clockwise (like decreasing volume) would MUTE. I can help my brain to get used to the way it is working now; when rappidily muting and  un-muting a track, my brain auto-switches to the usual mode on every other mixer or gear.
-
-TK: to be inverted
 
 ---------------------------------------------------------
 

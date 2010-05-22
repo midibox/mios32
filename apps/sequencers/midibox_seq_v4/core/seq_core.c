@@ -487,7 +487,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++tcc, ++track) {
 
       // round 0: loopback port Bus1, round 1: remaining ports
-      u8 loopback_port = tcc->midi_port == 0xf0;
+      u8 loopback_port = (tcc->midi_port & 0xf0) == 0xf0;
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;
 
@@ -499,11 +499,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
       SEQ_LFO_HandleTrk(track, bpm_tick);
 
       // send LFO CC (if enabled)
-      {
+      if( !(seq_core_trk_muted & (1 << track)) ) {
 	mios32_midi_package_t p;
 	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
 	  if( loopback_port )
-	    SEQ_MIDI_IN_Receive(tcc->midi_port, p); // forward to MIDI IN handler immediately
+	    SEQ_MIDI_IN_BusReceive(tcc->midi_port, p, 1); // forward to MIDI IN handler immediately
 	  else
 	    SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 	}
@@ -831,7 +831,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 	    if( p->type != NoteOn ) {
 	      // e.g. CC or PitchBend
 	      if( loopback_port )
-		SEQ_MIDI_IN_Receive(tcc->midi_port, *p); // forward to MIDI IN handler immediately
+		SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1); // forward to MIDI IN handler immediately
 	      else
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
@@ -875,7 +875,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
 		if( loopback_port ) {
 		  // forward to MIDI IN handler immediately
-		  SEQ_MIDI_IN_Receive(tcc->midi_port, *p);
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1);
 		  // multi triggers, but also echo not possible on loopback ports
 		} else {
 		  u16 gatelength = e->len;
@@ -886,7 +886,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 		  u8 roll_mode=SEQ_PAR_RollModeGet(track, t->step, instrument);
 		  // with less priority (parameter == 0): force roll mode if Roll trigger is set
 		  if( !roll_mode && SEQ_TRG_RollGet(track, t->step, instrument) )
-		    roll_mode = 0x16; // 3D06
+		    roll_mode = 0x0a; // 2D10
 		  // if roll mode != 0: increase number of triggers
 		  if( roll_mode )
 		    triggers = ((roll_mode & 0x30)>>4) + 2;
@@ -1170,7 +1170,7 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
 
   // in transpose or arp playmode we allow to transpose notes and CCs
   if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ) {
-    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->mode.HOLD);
+    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD);
 
     if( tr_note < 0 ) {
       p->velocity = 0; // disable note and exit
@@ -1190,7 +1190,7 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
       inc_oct += arp_oct - 4;
     }
 
-    int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->mode.HOLD, !tcc->mode.UNSORTED, key_num);
+    int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->busasg.bus, tcc->mode.HOLD, !tcc->mode.UNSORTED, key_num);
 
     if( arp_note & 0x80 ) {
       t->arp_pos = 0;
@@ -1583,4 +1583,15 @@ s32 SEQ_CORE_Scrub(s32 incrementer)
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Plays the packet "live" with port/channel parameters of the given track
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_PlayLive(u8 track, mios32_midi_package_t midi_package)
+{
+  midi_package.chn = seq_cc_trk[track].midi_chn;
+  s32 status = MIOS32_MIDI_SendPackage(seq_cc_trk[track].midi_port, midi_package);
+  return status;
+}
+
 
