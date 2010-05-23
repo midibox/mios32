@@ -685,7 +685,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	}
       } else {
 	switch( ui_selected_item ) {
-	  case ITEM_LAYER_SELECT:  return SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, 15, incrementer);
+	  case ITEM_LAYER_SELECT:  return SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, SEQ_PAR_NumLayersGet(visible_track)-1, incrementer);
 	  case ITEM_LAYER_PAR:
 	    if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	      return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, 0, 127, incrementer);

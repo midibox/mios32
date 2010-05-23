@@ -306,14 +306,13 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_delayed_action_callback = NULL;
     portEXIT_CRITICAL();
 
-    if( seq_hwcfg_button_beh.menu )
-      seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
-
     // request display initialisation
     seq_ui_display_init_req = 1;
   }
 
   // for MENU button:
+  if( seq_hwcfg_button_beh.menu )
+    seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
   // first page has been selected - display new screen
   seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 1;
 

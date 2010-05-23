@@ -260,13 +260,14 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     // get velocity and length from first parameter layer which holds it
     // if not assigned, we will get back a default value
     
+    u8 gate = SEQ_TRG_GateGet(track, step, instrument);
     u8 velocity = 100; // default velocity
     if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
-      velocity = SEQ_TRG_GateGet(track, step, instrument) ? SEQ_PAR_Get(track, step, par_layer, instrument) : 0;
+      velocity = gate ? SEQ_PAR_Get(track, step, par_layer, instrument) : 0;
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = velocity | 0x80;
     } else {
-      if( !SEQ_TRG_GateGet(track, step, instrument) )
+      if( !gate )
 	velocity = 0;
     }
 
@@ -387,7 +388,8 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
 
-	  if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
 	    p->type     = CC;
 	    p->cable    = track;
 	    p->event    = CC;
@@ -413,7 +415,8 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  mios32_midi_package_t *p = &e->midi_package;
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
-	  if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
 	    p->type     = PitchBend;
 	    p->cable    = track;
 	    p->event    = PitchBend;
@@ -631,7 +634,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
 
 	  // Parameter Layer Assignments
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, SEQ_PAR_Type_CC);
+	  for(i=0; i<16; ++i)
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_CC);
 
 	  for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
 	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));

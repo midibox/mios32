@@ -669,6 +669,11 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	ui_selected_step = 16*ui_selected_step_view + button_column;
 	u8 par = (((15-button_row) << 3) + 4) & 0x7f;
 	SEQ_PAR_Set(visible_track, ui_selected_step, ui_selected_par_layer, instrument, par);
+
+	if( seq_cc_trk[visible_track].event_mode == SEQ_EVENT_MODE_CC ) {
+	  // enable gate in any case (or should we disable it if CC value is 0 or button pressed twice?)
+	  SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 1);
+	}
       }
     } else {
       u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)

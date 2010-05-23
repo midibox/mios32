@@ -153,7 +153,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 1; // value changed
 	}
       } else {
-	if( SEQ_UI_Var8_Inc(&copypaste_end, copypaste_begin, SEQ_CC_Get(visible_track, SEQ_CC_LENGTH), incrementer) ) {
+	int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+	if( SEQ_UI_Var8_Inc(&copypaste_end, copypaste_begin, num_steps-1, incrementer) ) {
 	  SEQ_UI_SelectedStepSet(copypaste_end); // set new visible step/view
 	  return 1; // value changed
 	}
@@ -245,12 +246,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP2: // Copy
       if( depressed ) {
+	if( in_menu_msg != MSG_COPY )
+	  return 0; // ignore if no copy message
 	// turn message inactive and hold it for 1 second
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 1000;
 	// copy steps
 	COPY_Track(visible_track);
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// print message
 	in_menu_msg = MSG_COPY;
 	// select first step in section
@@ -265,12 +271,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP3: // Paste
       if( depressed ) {
+	if( in_menu_msg != MSG_PASTE )
+	  return 0; // ignore if no paste message
 	// turn message inactive and hold it for 1 second
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 1000;
 	// paste steps
 	PASTE_Track(visible_track);
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
 	// print message
@@ -282,10 +293,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP4: // Clear
       if( depressed ) {
+	if( in_menu_msg != MSG_CLEAR )
+	  return 0; // ignore if no clear message
 	// turn message inactive and hold it for 1 second
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 1000;
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
 	// clear steps
@@ -298,10 +314,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_GP5: // Move
       move_enc = -1; // disable move encoder
       if( depressed ) {
+	if( in_menu_msg != MSG_MOVE )
+	  return 0; // ignore if no move message
 	// turn message inactive and hold it for 0.5 second
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 500;
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
 	// print message
@@ -311,10 +332,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP6: // Scroll
       if( depressed ) {
+	if( in_menu_msg != MSG_SCROLL )
+	  return 0; // ignore if no scroll message
 	// turn message inactive and hold it for 0.5 second
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 500;
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
 	// print message
@@ -326,15 +352,24 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP7: // select Random Page
       if( depressed ) return -1;
+
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long other message is displayed
+
       SEQ_UI_PageSet(SEQ_UI_PAGE_TRKRND);
       return 0;
       
     case SEQ_UI_BUTTON_GP8: // Undo
       if( depressed ) {
 	// turn message inactive and hold it for 1 second
+	if( in_menu_msg != MSG_UNDO )
+	  return 0; // ignore if no undo message
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 1000;
       } else {
+	if( in_menu_msg & 0x80 )
+	  return 0; // ignore so long other message is displayed
+
 	// undo last change
 	UNDO_Track();
 	// print message
@@ -344,36 +379,52 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP9: // select Save Page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_SAVE);
 
     case SEQ_UI_BUTTON_GP10: // select Record Page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
 
     case SEQ_UI_BUTTON_GP11: // select Mixer Page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_MIXER);
 
     case SEQ_UI_BUTTON_GP12: // select Options Page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_OPT);
 
     case SEQ_UI_BUTTON_GP13: // select Port Mute page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_PMUTE);
 
     case SEQ_UI_BUTTON_GP14: // Disk Page
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_DISK);
 
     case SEQ_UI_BUTTON_GP15: // mute all tracks
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       SEQ_UI_UTIL_MuteAllTracks();
       SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
       return 1;
 
     case SEQ_UI_BUTTON_GP16: // unmute all tracks
       if( depressed ) return -1;
+      if( in_menu_msg & 0x80 )
+	return 0; // ignore so long message is displayed
       SEQ_UI_UTIL_UnMuteAllTracks();
       SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
       return 1;

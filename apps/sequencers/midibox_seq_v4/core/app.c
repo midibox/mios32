@@ -465,7 +465,7 @@ void SEQ_TASK_Period1S(void)
     // store all patterns
     int group;
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
-      status |= SEQ_FILE_B_PatternWrite(seq_pattern[group].bank, seq_pattern[group].pattern, group);
+      status |= SEQ_FILE_B_PatternWrite(seq_pattern[group].bank, seq_pattern[group].pattern, group, 1);
 
     // store config (e.g. to store current song/mixermap/pattern numbers
     SEQ_FILE_C_Write();
@@ -505,8 +505,8 @@ void SEQ_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_MIDI(void)
 {
-  static u8 last_gates = 0;
-  static u8 last_start_stop = 0;
+  static u8 last_gates = 0xff; // to force an update
+  static u8 last_start_stop = 0xff; // to force an update
 
   MUTEX_MIDIOUT_TAKE;
 
