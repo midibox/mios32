@@ -38,8 +38,8 @@ extern s32 SEQ_FILE_S_NumSongs(void);
 extern s32 SEQ_FILE_S_Create(void);
 extern s32 SEQ_FILE_S_Open(void);
 
-extern s32 SEQ_FILE_S_SongRead(u8 map);
-extern s32 SEQ_FILE_S_SongWrite(u8 map);
+extern s32 SEQ_FILE_S_SongRead(u8 song);
+extern s32 SEQ_FILE_S_SongWrite(u8 song, u8 rename_if_empty_name);
 
 
 /////////////////////////////////////////////////////////////////////////////

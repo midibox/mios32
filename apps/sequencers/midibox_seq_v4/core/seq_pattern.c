@@ -225,7 +225,7 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   SEQ_STATISTICS_StopwatchReset();
 #endif
 
-  status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group);
+  status = SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group, 1);
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   SEQ_STATISTICS_StopwatchCapture();
@@ -289,7 +289,7 @@ s32 SEQ_PATTERN_Fix(u8 group, seq_pattern_t pattern)
     }
 
     MIOS32_MIDI_SendDebugMessage("Saving bank #%d pattern %d\n", pattern.bank+1, pattern.pattern+1);
-    if( (status=SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group)) < 0 ) {
+    if( (status=SEQ_FILE_B_PatternWrite(pattern.bank, pattern.pattern, group, 1)) < 0 ) {
       SEQ_UI_SDCardErrMsg(2000, status);
       MIOS32_MIDI_SendDebugMessage("Write failed with status: %d\n", status);
     }

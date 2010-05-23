@@ -154,7 +154,7 @@ s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e)
       e->len = value;
     }
   } else if( e->midi_package.type == CC ) {
-    if( tcc->lfo_enable_flags.CC && (tcc->lfo_cc == 0 || e->midi_package.cc_number == tcc->lfo_cc) ) {
+    if( tcc->lfo_enable_flags.CC ) {
       s16 value = e->midi_package.value + lfo_value;
       if( value < 0 )
 	value = 0;

@@ -1011,7 +1011,7 @@ s32 SEQ_FILE_Format(void)
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
       u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
 
-      if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group)) < 0 )
+      if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
     }
 
@@ -1029,7 +1029,7 @@ s32 SEQ_FILE_Format(void)
     int num_maps = SEQ_FILE_M_NumMaps();
     for(map=0; map<num_maps; ++map) {
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)map) / num_maps); // for percentage display
-      if( (status = SEQ_FILE_M_MapWrite(map)) < 0 )
+      if( (status = SEQ_FILE_M_MapWrite(map, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
     }
 
@@ -1045,7 +1045,7 @@ s32 SEQ_FILE_Format(void)
     int num_songs = SEQ_FILE_S_NumSongs();
     for(song=0; song<num_songs; ++song) {
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)song) / num_songs); // for percentage display
-      if( (status = SEQ_FILE_S_SongWrite(song)) )
+      if( (status = SEQ_FILE_S_SongWrite(song, 0)) )
 	goto SEQ_FILE_Format_failed;
     }
 

@@ -10,10 +10,10 @@ MIDIboxSEQ V4.0beta21
 ~~~~~~~~~~~~~~~~~~~~~
 
   o ongoing preparation work for BLM16x16
-    Features will be described in the MBSEQ manual soon
+    Features will be described under http://www.ucapps.de/midibox_seq_manual_blm.html
 
   o the simple Transpose/Arpeggiator MIDI split function has been replaced by 
-    a new bus routing.
+    a new bus routing concept.
 
     There are 4 busses that can be configured in the MIDI page.
     Each bus provides a dedicated MIDI port, channel and lower/upper MIDI note
@@ -30,8 +30,12 @@ MIDIboxSEQ V4.0beta21
 
   o the "Roll" trigger now selects a 2D10 roll instead of 3D08 since it's more
     useful in most cases.
-    In order to select a customized roll value, please use the roll function of
-    the parameter layer.
+    In order to apply customized roll values, please use the roll function of
+    the parameter layer instead of the Roll trigger.
+
+  o implemented "Roll2" parameter layer function.
+    This alternative solution to "Roll" allows to define the number of step repeats,
+    and the distance between them.
 
   o added optional button/LED function for UNDO
 
@@ -44,8 +48,29 @@ MIDIboxSEQ V4.0beta21
 
   o fixed crash if preset name is longer than 7 characters
 
+  o fixed step selection of copy function
+
   o inverted encoder behaviour in mute page: moving clockwise will unmute,
     moving counter clockwise will activate mute
+
+  o if a previously "empty" pattern/map/song is stored without name, it will be
+    labled with "unnamed" now.
+
+  o LFO effect now works on CC parameters as intended
+
+  o If a track is in CC mode, a CC/Pitchbender value will only be sent if
+    the gate trigger is set.
+    CCs/Pitchbender events are sent for each step regardless of the gate
+    as before if the track is in Note or Chord mode.
+
+  o transpose now works correctly on CC and Pitchbender values, but only if the
+    track is configured for CC mode.
+    Transpose will be ignored for CC/Pitchbender events if track is in
+    Note or Chord mode.
+
+  o AOUT gates now 0V after power-on
+
+  o some minor bugfixes
 
 
 MIDIboxSEQ V4.0beta20
@@ -556,38 +581,6 @@ Wishlist for future features
 
 Additional input from vcfool:
 
->> Roll Parameter
->> 
->> [quote name='TK.' date='22 November 2009 - 21:46' timestamp='1258922761' post='121280']
->> No, it doesn't have an effect on Roll. The gatelengths are predefined:
->> [code]
->>                     // force gatelength depending on number of triggers
->>                     if( triggers < 4 ) {
->>                       //   number of triggers:    2   3   4   5
->>                       const u8 gatelength_tab[4] = { 48, 32, 36, 32 };
->>                       // strategy:
->>                       // 2 triggers: played within 1 step at 0 and 48
->>                       // 3 triggers: played within 1 step at 0, 32 and 64
->>                       // 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
->>                       // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
->> 
->>                       // in addition, scale length (0..95) over next clock counter to consider the selected clock divider
->>                       gatelength = (gatelength_tab[triggers-2] * t->step_length) / 96;
->>                     }
->> [/code]
->> [/quote]
->> 
->> I can see the comments in the code. I can somehow understand that the Roll re-triggers will happen at the ticks specified, but I do not understand the last part. And I feel like I probably wouldn't even if you explained it to me in plain words :)
->> 
->> I have been trying to understand why the length has an effect when 4 or 5 is selected. It does in my machine.
->> 
->> For what I see, now we can't change the ticks between repeats. I'm gonna miss this. I use the repeat to say insert a Triplet into a normal 16th note pattern. Something I can only imagine doing now by creating a really complex Groove.
-
-
-TK: I like the current Roll implementation, but of course there were some possibilities
-with the previous one known from V3 that are not available anymore.
-Solution would be an alternative Roll option, let's call it Roll2, which works like multi-gate triggers on V3
-
 ---------------------------------------------------------
 
 >> Grooves to DIN Sync
@@ -608,59 +601,6 @@ TK: low priority
 
 ---------------------------------------------------------
 
->> About CC Parameter Layers
->> 
->> -They don't seem to work when the Track is transposed (when the Track is in Transpose mode and transposing from the MIDI Keyboard, not from the Transpose page). They only seem to work when transposed down in octave intervals.
->> 
->> -LFO to CC doesn't seem to work either. Directly routing an LFO to the ExtraCC# works, but routing the LFO to CC Layers doesn't seem to do anything.
->> 
->> -And then a suggestion: I'd really love to be able to remove the steps on CC Layers (moving the encoder below "0" to "---"), so that only the needed CC steps are actually sent.
->> 
-
-TK: to be checked, seems that I forgot to finish the implementation of some things before releasing a new version ;)
-
----------------------------------------------------------
-
->> Session Save (4 Patterns)
->> 
->> -When saving the Session on 4 empty patterns these will still show "Empty" on the name after saving. This is confusing later when saving other patterns on the same Banks. So, when saving on an empty (not already named) pattern would it be possible to change the pattern names to "Pattern XX" or some other default?
-
-TK: to be checked
-
----------------------------------------------------------
-
->> MENU BEH = 1
->> 
->> -I changed the Behavior of the MENU button to 1 in the HW file. Sometimes when you navigate away from the MENU page, the LCD will show the new page but you are still in the Menu. It seems to happen when you navigate away to the same page you were when you entered the MENU.
->> 
->> To reproduce this:
->> 
->> 1.- Press EDIT (or any other mode: Mute, Pattern, Song, Utility. I mapped F1 to the Mixer page and F2 to Transpose and it happens too. I think that this will happen on any page that you can actually access directly without the need of the MENU shortcuts).
->> 
->> 2.- Press MENU.
->> 
->> 3.- Press EDIT (or the other mode) again. LCDs show EDIT but GP LEDs won't. And GP Buttons/Encoders don't EDIT, they all work as if you are still in the MENU.
->> 
->> 4.- Pressing MENU again will do nothing on the LCDs but will actually exit the Menu and the GP LEDs/Buttons/Encoders should work.
-
-TK: to be checked
-
----------------------------------------------------------
-
->> -When in Scroll or Move (while holding the Button), pressing any other GP button will still make the function on Utility page: Paste and specially Clear (which here doesn't have the 2sec wait-time) can ruin your track, if you don't press UNDO immediately :) If you press a GP button that leads to a another page (Random, PortMute...), and then return back to Utility, you will be locked on "Move mode" until you press Move/Scroll again. Similar to the previous Menu issue.
-
-TK: to be checked
-
----------------------------------------------------------
-
->> -When working on a track with several Note Layers, removing/inserting gates/notes on steps that containing other notes on other layers, will remove also these other notes on other Layers (As they share the same Gate Trigger Layer). Confusing. But I am not sure how but polyphonic editing needs improving. (Different Lenght-Vel, MacrosÀ?)
-
-TK: Not possible anyhow with the concept of a singe length and velocity for the whole track.
-With a special BLM16x16 mode I'm planning to simplify the editing of poly tracks (to be demonstrated in a video)
-But it will only work so comfortable with this hardware
-
----------------------------------------------------------
-
 >> -AOUT Gates do not make "Legato" correctly. --> Needed to detail...
 
 TK: TODO... (will be some work that hasn't been done yet)
@@ -669,7 +609,15 @@ TK: TODO... (will be some work that hasn't been done yet)
 
 >> -Changing ALL Length is odd ... more explaining to do ....
 
-TK: waiting for explanation
+>> -When changing the Length value of ALL notes it would be nice that only the actual inserted (Gate ON) Notes would chnage it's value. The issue I find is like this:
+>> 
+>> INIT a track to get C3 quarter notes at steps 1,5,9,13. We can use this as an example. Press ALL. Increase the Length value. Once it has reached the first 16th note, first Glide, all the notes will be togheter as the empty notes also got the Length increased.
+>> 
+>> I would like to be able to continue increasing the Length of the second 16th note (steps 2,6,10,14) to reach for a 8th note duration, and so on.
+>> 
+>> -If I am making myself clear...  with the actual ALL concept, I know this would probably be hard to code, like the Fast button-changing Octaves suggestion I made sometime before.
+>> 
+>> -Also, I found myself several times wanting to change the Length and Vel. and moving the Encoder won't do anything. I needed to go to Event page and moving the Parameter Layer Assignement (Vel. -> Whatever -> back to Vel.) would make it possible to edit again. I still haven't found the exact things causing this, to know how reproduce it.
 
 ----------------------------------------------------------
 
@@ -692,6 +640,21 @@ TK: waiting for explanation
 TK: I know the reasons. Some can be solved, some others not (like that the sequencer is stalled on large SysEx dumps)
 Technical answer: there is only one Mutex for all MIDI output ports.
 Multiple Mutex (semaphores) will decrease the general performance
+
+>> About SysEx Files:
+>> Let me make myself clearer.
+>> 
+>> -I don't expect the SEQ to be playing while sending those big sample data files. All the mentioned tests were done with the SEQ stopped. Only tried once while playing, just to see what happened.
+>> 
+>> -I just remarked the fact that, with the SEQ stopped, sending the file won't work on IIC OUTs. Only works on the CORE OUTs.
+>> 
+>> -The LCD could show "Sending..." or something, so you know the SEQ hasn't crashed or anything.
+>> 
+>> -The actual "xxx bytes Sent" message appears correctly at the end. And BTW, it would be nice that it would not appear over the files, because it takes so long to disappear and when sending small .SYX files (while the SEQ is playing, jamming with synth values on-the-fly) there's this time when you won't see the files in there. So maybe using only the upper LCD lines...
+>> 
+>> -Then I imagine it would be nice somehow not having to repatch the MIDI cables (S612 <-> Computer, phisically removing the SEQ) when using the computer SysEx editors (SEQ stopped used only as a MIDI Interface/Router). But I can live with that... or with an external router/patchbay :)
+>> (NOTE: I can use the SEQ to send the data to the S612, but not to retrieve it. I need a computer to get the data drom the sampler, to handle the handshacking, etc... and then converting the files to the correct .SYX format.)
+>> 
 
 ----------------------------------------------------------
 

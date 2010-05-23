@@ -39,7 +39,7 @@ extern s32 SEQ_FILE_M_Create(void);
 extern s32 SEQ_FILE_M_Open(void);
 
 extern s32 SEQ_FILE_M_MapRead(u8 map);
-extern s32 SEQ_FILE_M_MapWrite(u8 map);
+extern s32 SEQ_FILE_M_MapWrite(u8 map, u8 rename_if_empty_name);
 
 
 /////////////////////////////////////////////////////////////////////////////

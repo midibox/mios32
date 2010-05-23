@@ -596,9 +596,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 	  case SEQ_PAR_Type_CC:
 	  case SEQ_PAR_Type_PitchBend: {
-	    u8 value = layer_event.midi_package.value;
-	    SEQ_LCD_PrintFormattedString("%3d", value);
-	    SEQ_LCD_PrintVBar(value >> 4);
+	    if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(visible_track, step, ui_selected_instrument) ) {
+	      SEQ_LCD_PrintString("----");
+	    } else {
+	      u8 value = layer_event.midi_package.value;
+	      SEQ_LCD_PrintFormattedString("%3d", value);
+	      SEQ_LCD_PrintVBar(value >> 4);
+	    }
 	  } break;
 
 	  case SEQ_PAR_Type_Probability:
@@ -611,6 +615,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 	  case SEQ_PAR_Type_Roll:
 	    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(visible_track, visible_step, ui_selected_instrument));
+	    break;
+
+	  case SEQ_PAR_Type_Roll2:
+	    SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(visible_track, visible_step, ui_selected_instrument));
 	    break;
 
           default:

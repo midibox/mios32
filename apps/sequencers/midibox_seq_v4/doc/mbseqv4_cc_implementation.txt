@@ -135,7 +135,7 @@ NRPN LSB|   Range   | Default | Description
 0x23/ 35|   0 - 127 |       0 | Limit Fx: Lower Note Number (0=off)
 0x24/ 36|   0 - 127 |       0 | Limit Fx: Upper Note Number (0=off)
 --------+-----------+---------+------------------------------------------------
-0x25/ 37| -         |    -    | reserved
+0x25/ 37|   0 -   3 |       0 | Transposer/Arpeggiator Bus assignment (Bus1..Bus4)
 --------+-----------+---------+------------------------------------------------
 0x26/ 38|   0 - 15  |       0 | MIDI Channel of Track
 --------+-----------+---------+------------------------------------------------

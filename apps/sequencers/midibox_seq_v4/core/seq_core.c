@@ -748,7 +748,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
 
             if( p->type != NoteOn ) {
-	      // CC/Pitchbend will be handled in second pass
+	      // apply Pre-FX
+	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+		SEQ_LFO_Event(track, e);
+	      }
+
             } else if( p->note && p->velocity && (e->len >= 0) ) {
 	      // Note Event
 
@@ -883,50 +887,72 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
 		  // roll/flam?
 		  // get roll mode from parameter layer
-		  u8 roll_mode=SEQ_PAR_RollModeGet(track, t->step, instrument);
+		  u8 roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument);
+		  u8 roll2_mode = 0; // taken if roll1 not assigned
 		  // with less priority (parameter == 0): force roll mode if Roll trigger is set
 		  if( !roll_mode && SEQ_TRG_RollGet(track, t->step, instrument) )
 		    roll_mode = 0x0a; // 2D10
 		  // if roll mode != 0: increase number of triggers
-		  if( roll_mode )
+		  if( roll_mode ) {
 		    triggers = ((roll_mode & 0x30)>>4) + 2;
+		  } else {
+		    roll2_mode = SEQ_PAR_Roll2ModeGet(track, t->step, instrument);
+		    if( roll2_mode )
+		      triggers = (roll2_mode >> 5) + 2;
+		  }
+
 
 		  if( triggers > 1 ) {
-		    int i;
-#if 1
-		    // force gatelength depending on number of triggers
-		    if( triggers < 4 ) {
-		      //   number of triggers:    2   3   4   5
-		      const u8 gatelength_tab[4] = { 48, 32, 36, 32 };
-		      // strategy:
-		      // 2 triggers: played within 1 step at 0 and 48
-		      // 3 triggers: played within 1 step at 0, 32 and 64
-		      // 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
-		      // 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
+		    if( roll2_mode ) {
+		      // force gatelength depending on roll2 value
+		      gatelength = (8 - 2*(roll2_mode >> 5)) * ((roll2_mode&0x1f)+1);
 
-		      // in addition, scale length (0..95) over next clock counter to consider the selected clock divider
-		      gatelength = (gatelength_tab[triggers-2] * t->step_length) / 96;
-		    }
-#endif
+		      // scale length (0..95) over next clock counter to consider the selected clock divider
+		      int gatelength = (4 - (roll2_mode >> 5)) * ((roll2_mode&0x1f)+1);
 
-		    u32 half_gatelength = gatelength/2;
-		    if( !half_gatelength )
-		      half_gatelength = 1;
+		      u32 half_gatelength = gatelength/2;
+		      if( !half_gatelength )
+			half_gatelength = 1;
       	      
-		    mios32_midi_package_t p_multi = *p;
-		    u16 roll_attenuation = 256 - (2 * triggers * (16 - (roll_mode & 0x0f))); // magic formula for nice effects
-		    if( roll_mode & 0x40 ) { // upwards
-		      for(i=triggers-1; i>=0; --i) {
-			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
-			u16 velocity = roll_attenuation * p_multi.velocity;
-			p_multi.velocity = velocity >> 8;
+		      int i;
+		      for(i=triggers-1; i>=0; --i)
+			SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
+		    } else {
+		      // force gatelength depending on number of triggers
+		      if( triggers < 6 ) {
+			//       number of triggers:    2   3   4   5
+			const u8 gatelength_tab[4] = { 48, 32, 36, 32 };
+			// strategy:
+			// 2 triggers: played within 1 step at 0 and 48
+			// 3 triggers: played within 1 step at 0, 32 and 64
+			// 4 triggers: played within 1.5 steps at 0, 36, 72 and 108
+			// 5 triggers: played within 1.5 steps at 0, 32, 64, 96 and 128
+
+			// in addition, scale length (0..95) over next clock counter to consider the selected clock divider
+			gatelength = (gatelength_tab[triggers-2] * t->step_length) / 96;
 		      }
-		    } else { // downwards
-		      for(i=0; i<triggers; ++i) {
-			SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
-			if( roll_mode ) {
+
+		      u32 half_gatelength = gatelength/2;
+		      if( !half_gatelength )
+			half_gatelength = 1;
+      	      
+		      mios32_midi_package_t p_multi = *p;
+		      u16 roll_attenuation = 256 - (2 * triggers * (16 - (roll_mode & 0x0f))); // magic formula for nice effects
+		      if( roll_mode & 0x40 ) { // upwards
+			int i;
+			for(i=triggers-1; i>=0; --i) {
+			  SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 			  u16 velocity = roll_attenuation * p_multi.velocity;
 			  p_multi.velocity = velocity >> 8;
+			}
+		      } else { // downwards
+			int i;
+			for(i=0; i<triggers; ++i) {
+			  SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
+			  if( roll_mode ) {
+			    u16 velocity = roll_attenuation * p_multi.velocity;
+			    p_multi.velocity = velocity >> 8;
+			  }
 			}
 		      }
 		    }
@@ -1158,7 +1184,12 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
 {
-  int note = p->note;
+  u8 is_cc = p->type != NoteOn && p->type != NoteOff; // CC or Pitchbender
+
+  if( is_cc && tcc->event_mode != SEQ_EVENT_MODE_CC ) // only transpose CC/Pitchbender in CC mode
+    return -1;
+
+  int note = is_cc ? p->value : p->note;
 
   int inc_oct = tcc->transpose_oct;
   if( inc_oct >= 8 )
@@ -1210,13 +1241,7 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     }
   }
 
-#if 0
   // apply transpose octave/semitones parameter
-  if( p->type != NoteOn && p->type != NoteOff )
-    return -1; // no note event
-  // TODO: what about tracks which play transposed/arp events + CC?
-#endif
-
   if( inc_oct ) {
     note += 12 * inc_oct;
     if( inc_oct < 0 ) {
@@ -1239,7 +1264,10 @@ static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_
     }
   }
 
-  p->note = note;
+  if( is_cc ) // if CC and Pitchbender
+    p->value = note;
+  else
+    p->note = note;
 
   return 0; // no error
 }

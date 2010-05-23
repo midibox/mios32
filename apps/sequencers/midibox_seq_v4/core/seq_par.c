@@ -51,6 +51,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Prob.", // 7
   "Delay", // 8
   "Roll ", // 9
+  "Roll2", // 10
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -64,6 +65,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Probability (reversed: 100%)
   0,    // Delay
   0,    // Roll
+  0,    // Roll2
 };
 
 
@@ -315,6 +317,27 @@ s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument)
   }
 
   return 0; // no roll
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the roll2 mode if assigned to any parameter layer
+//   0:      none
+//   1.. 31: 2x..
+//  32.. 63: 3x..
+//  64.. 95: 4x..
+//  96..127: 5x..
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  s8 par_layer;
+
+  if( (par_layer=tcc->link_par_layer_roll2) >= 0 ) {
+    return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
+
+  return 0; // no roll2
 }
 
 

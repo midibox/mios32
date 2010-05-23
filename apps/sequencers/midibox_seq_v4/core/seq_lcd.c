@@ -585,6 +585,24 @@ s32 SEQ_LCD_PrintRollMode(u8 roll_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints the roll2 mode (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintRoll2Mode(u8 roll2_mode)
+{
+  if( roll2_mode == 0 )
+    return SEQ_LCD_PrintString("----");
+
+  int gatelength = (4 - (roll2_mode >> 5)) * ((roll2_mode&0x1f)+1);
+
+  if( gatelength > 96 ) {
+    return SEQ_LCD_PrintFormattedString("%dx++", (roll2_mode>>5) + 2);
+  }
+
+  return SEQ_LCD_PrintFormattedString("%dx%02d", (roll2_mode>>5) + 2, gatelength);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints event type of MIDI package with given number of chars
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)

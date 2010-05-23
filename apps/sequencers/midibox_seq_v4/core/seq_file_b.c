@@ -516,7 +516,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 // writes a pattern of a given group into bank
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
+s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
     return SEQ_FILE_B_ERR_INVALID_BANK;
@@ -587,6 +587,21 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group)
 #endif
     SEQ_FILE_WriteClose(); // important to free memory given by malloc
     return status;
+  }
+
+  // rename pattern if name is empty
+  if( rename_if_empty_name ) {
+    int i;
+    u8 found_char = 0;
+    u8 *label = (u8 *)&seq_pattern_name[source_group][5];
+    for(i=0; i<15; ++i)
+      if( label[i] != ' ' ) {
+	found_char = 1;
+	break;
+      }
+
+    if( !found_char )
+      memcpy(label, "Unnamed        ", 15);
   }
 
   // write pattern name w/o zero terminator

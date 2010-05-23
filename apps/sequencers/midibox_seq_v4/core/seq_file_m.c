@@ -379,7 +379,7 @@ s32 SEQ_FILE_M_MapRead(u8 map)
 // writes a map into bank
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_M_MapWrite(u8 map)
+s32 SEQ_FILE_M_MapWrite(u8 map, u8 rename_if_empty_name)
 {
   seq_file_m_info_t *info = &seq_file_m_info;
 
@@ -429,6 +429,20 @@ s32 SEQ_FILE_M_MapWrite(u8 map)
 #endif
     SEQ_FILE_WriteClose(); // important to free memory given by malloc
     return status;
+  }
+
+  // rename map if name is empty
+  if( rename_if_empty_name ) {
+    int i;
+    u8 found_char = 0;
+    for(i=0; i<20; ++i)
+      if( seq_mixer_map_name[i] != ' ' ) {
+	found_char = 1;
+	break;
+      }
+
+    if( !found_char )
+      memcpy(seq_mixer_map_name, "Unnamed             ", 20);
   }
 
   // write map name w/o zero terminator
