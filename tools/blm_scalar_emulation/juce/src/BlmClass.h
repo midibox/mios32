@@ -55,9 +55,12 @@ public:
 	void mouseDrag(const MouseEvent &e);
 
     bool keyPressed(const KeyPress& key, Component *originatingComponent);
-    bool keyStateChanged(const bool isKeyDown, Component *originatingComponent);
-
-    AudioDeviceManager audioDeviceManager;
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51 
+	bool keyStateChanged(const bool isKeyDown, Component *originatingComponent);
+#else
+	virtual bool keyStateChanged(bool isKeyDown, Component *originatingComponent);
+#endif
+	AudioDeviceManager audioDeviceManager;
 
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded

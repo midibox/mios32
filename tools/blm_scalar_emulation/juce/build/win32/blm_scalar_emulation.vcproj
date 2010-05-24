@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="blm_scalar_emulation"
+	Name="BLM16x16+X Emulation"
 	ProjectGUID="{45167F62-3CDD-4798-98DA-AB127F26CB5F}"
 	RootNamespace="blm_scalar_emulation"
 	Keyword="Win32Proj"
@@ -192,6 +192,10 @@
 				RelativePath="..\..\src\MainComponent.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\MidiClass.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -212,6 +216,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\MainComponent.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\MidiClass.h"
 				>
 			</File>
 		</Filter>
