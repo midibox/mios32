@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta22
+~~~~~~~~~~~~~~~~~~~~~
+
+  o running status optimisation can now be optionally disabled in
+    the MBSEQ_HW.V4 file for MIDI devices that don't fully comply
+    to the MIDI specification.
+    Search for "RS_OPTIMISATION" in the MBSEQ_HW.V4 templates for
+    further informations.
+
+
 MIDIboxSEQ V4.0beta21
 ~~~~~~~~~~~~~~~~~~~~~
 
