@@ -21,6 +21,22 @@ MIDI_REMOTE_CC 0
 
 
 ##################################################
+# Running status optimisation
+# Enabled by default, should be disabled if a MIDI
+# device connected to a MIDI port doesn't fully
+# comply to the MIDI specification.
+# Expects two parameters: port number and 0/1 to
+# disable/enable the optimisation.
+##################################################
+
+# OUT1 (MIDI1 port of MBHP_CORE_STM32 module)
+RS_OPTIMISATION 0x20 1
+
+# OUT2 (MIDI2 port of MBHP_CORE_STM32 module)
+RS_OPTIMISATION 0x21 1
+
+
+##################################################
 # Shift Register Setup
 ##################################################
 

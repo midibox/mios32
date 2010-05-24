@@ -801,6 +801,33 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_midi_remote.cc = cc;
 
+	} else if( strcmp(parameter, "RS_OPTIMISATION") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 port = get_dec(word);
+
+	  if( port < 0 || port >= 0x100 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid port number '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  word = strtok_r(NULL, separators, &brkt);
+	  s32 enable = get_dec(word);
+	  if( enable != 0 && enable != 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid enable flag '%s', expecting 1 or 0!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  s32 status;
+	  if( (status=MIOS32_MIDI_RS_OptimisationSet(port, enable)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] RS_OPTIMISATION 0x%02x %d failed with status %d!", port, enable, status);
+#endif
+	  }
+
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 aout_type = get_dec(word);
