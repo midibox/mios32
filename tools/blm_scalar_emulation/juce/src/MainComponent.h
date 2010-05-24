@@ -1,3 +1,5 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
+// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
 /*
   ==============================================================================
 
@@ -37,9 +39,10 @@
     Describe your class and how it works here!
                                                                     //[/Comments]
 */
-class MainComponent  : public Component,
-                       public ButtonListener,
-                       public ComboBoxListener
+class MainComponent
+    : public Component
+    , public ComboBoxListener
+    , public Timer
 {
 public:
     //==============================================================================
@@ -48,17 +51,17 @@ public:
 
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
-	void toggleTriggersButton(bool value) {triggersButton->setToggleState(value,false);}
-	void toggleTracksButton(bool value) {tracksButton->setToggleState(value,false);}
-	void togglePatternsButton(bool value) {patternsButton->setToggleState(value,false);}
-	int getBlmSize(void) {return blmSize->getSelectedId();}
 	int getMidiInput(void) {return midiInput->getSelectedId();}
 	int getMidiOutput(void) {return midiOutput->getSelectedId();}
+
+    void scanMidiInDevices();
+    void scanMidiOutDevices();
+
+    void timerCallback();
     //[/UserMethods]
 
     void paint (Graphics& g);
     void resized();
-    void buttonClicked (Button* buttonThatWasClicked);
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged);
 
 
@@ -70,17 +73,13 @@ private:
     //[/UserVariables]
 
     //==============================================================================
-    ResizableBorderComponent* resizer;
-    TextButton* triggersButton;
-    TextButton* tracksButton;
-    TextButton* patternsButton;
     BlmClass* blmClass;
     ComboBox* midiInput;
     ComboBox* midiOutput;
-    ComboBox* blmSize;
     Label* label;
     Label* label2;
-    Label* label3;
+
+    int initialMidiScanCounter;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

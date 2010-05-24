@@ -1,3 +1,5 @@
+/* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
+// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
 /*
   ==============================================================================
 
@@ -20,18 +22,25 @@ class HelloWorldWindow  : public DocumentWindow
 public:
     //==============================================================================
     HelloWorldWindow()
-        : DocumentWindow (T("MIDIbox blm_scalar_emulation!"),
+        : DocumentWindow (T("MIDIbox BLM16x16+X Emulation"),
                           Colours::lightgrey,
                           DocumentWindow::allButtons,
                           true)
     {
+        // initialise our settings file..
+        ApplicationProperties::getInstance()->setStorageParameters(T("MIDIbox_BLM16x16"),
+                                                                   T(".xml"),
+                                                                   String::empty,
+                                                                   1000,
+                                                                   PropertiesFile::storeAsXML);
+
         // Create an instance of our main content component, and add it
         // to our window.
 
         MainComponent* const contentComponent = new MainComponent();
 
         setContentComponent (contentComponent, true, true);
-
+        setUsingNativeTitleBar(true);
         centreWithSize (getWidth(), getHeight());
 
         setVisible (true);
@@ -106,6 +115,8 @@ public:
 
     void shutdown()
     {
+        ApplicationProperties::getInstance()->closeFiles();
+
         // clear up..
 
         if (helloWorldWindow != 0)
@@ -115,7 +126,7 @@ public:
     //==============================================================================
     const String getApplicationName()
     {
-        return T("Hello World for JUCE");
+        return T("MIDIbox BLM16x16+X Emulation");
     }
 
     const String getApplicationVersion()
