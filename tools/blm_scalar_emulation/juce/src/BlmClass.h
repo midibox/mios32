@@ -15,14 +15,18 @@
 
 class BlmClass : public Component,
 				 public MidiInputCallback,
-				 public Timer,
+				 public MultiTimer,
 				 public KeyListener
 {
 public:
 	BlmClass(int cols, int rows);
 	~BlmClass();
 
-    void timerCallback();
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
+    void timerCallback(const int timerId);
+#else
+    void timerCallback(int timerId);
+#endif
 
 	int getBlmColumns(void) { return blmColumns; }	
 	int getBlmRows(void) { return blmRows; }
@@ -78,7 +82,6 @@ private:
 
     SelectedItemSet <Component*> selected;
 
-    int sysexRequestTimer;
     bool midiDataReceived;
 
     int rowLabelsWidth;
