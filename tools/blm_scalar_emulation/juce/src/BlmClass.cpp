@@ -547,8 +547,8 @@ void BlmClass::mouseUp(const MouseEvent &e)
 	fprintf(stderr,"In MouseUp: [%d,%d]\n",x,y);
 	fflush(stderr);
 #endif
-	if (lastButtonX>-1){
-		sendNoteEvent(midiChannel, midiNote, 0x00);
+    if( lastMidiChannel >= 0 ) {
+        sendNoteEvent(lastMidiChannel, lastMidiNote, 0x00);
         lastMidiChannel = -1;
         lastMidiNote = -1;
 		lastButtonX=-1;
