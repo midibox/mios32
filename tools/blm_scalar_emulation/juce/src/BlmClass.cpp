@@ -8,10 +8,13 @@
 #include "includes.h"
 //#include "BlmClass.h"
 #include "MainComponent.h"
+
+#define TIMER_CHECK_MIDI  1
+#define TIMER_SEND_PING   2
+
 BlmClass::BlmClass(int cols,int rows)
     : ledSize(32)
     , ledColours(2)
-    , sysexRequestTimer(0)
     , midiDataReceived(false)
     , lastButtonX(-1)
     , lastButtonY(-1)
@@ -51,7 +54,9 @@ BlmClass::BlmClass(int cols,int rows)
 
 	audioDeviceManager.addMidiInputCallback(String::empty, this);
 
-    Timer::startTimer(1);
+    MultiTimer::startTimer(TIMER_CHECK_MIDI, 1);
+    MultiTimer::startTimer(TIMER_SEND_PING, 5000);
+
 	addMouseListener(this,true); // Add mouse listener for all child components
 	
     // listen on key changes
@@ -64,8 +69,6 @@ BlmClass::BlmClass(int cols,int rows)
 
 BlmClass::~BlmClass()
 {
-    Timer::stopTimer();
-
 	for(int x=0;x<MAX_COLS;x++){
 		for(int y=0;y<MAX_ROWS;y++){
 			deleteAndZero(buttons[x][y]);
@@ -481,22 +484,23 @@ void BlmClass::sendNoteEvent(int chn,int key, int velocity)
 }
 
 //==============================================================================
-void BlmClass::timerCallback()
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
+void BlmClass::timerCallback(const int timerId)
+#else
+void BlmClass::timerCallback(int timerId)
+#endif
 {
-    // parse incoming MIDI events
-    while( !midiQueue.empty() ) {
-        MidiMessage &message = midiQueue.front();
-        midiQueue.pop();
+    if( timerId == TIMER_CHECK_MIDI ) {
+        // parse incoming MIDI events
+        while( !midiQueue.empty() ) {
+            MidiMessage &message = midiQueue.front();
+            midiQueue.pop();
 
-        // propagate incoming event to MIDI components
-		if (message.getRawData()[0]<0xf8)
-	        BLMIncomingMidiMessage(message, runningStatus);
-    }
-
-    // send layout/acknowledge each 5 seconds
-    if( ++sysexRequestTimer >= 4000 ) { // TK: timer not accurate, therefore changed to 4 seconds
-        sysexRequestTimer = 0;
-
+            // propagate incoming event to MIDI components
+            if (message.getRawData()[0]<0xf8)
+                BLMIncomingMidiMessage(message, runningStatus);
+        }
+    } else if( timerId == TIMER_SEND_PING ) {
         if( midiDataReceived )
             sendAck();
         else
