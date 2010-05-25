@@ -314,15 +314,6 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
 	uint8 evnt1 = data[1];
 	uint8 evnt2 = data[2];
 
-	int LED_State;
-	if( evnt2 == 0 )
-		LED_State = 0;
-	else if( evnt2 < 0x40 )
-		LED_State = 1;
-	else if( evnt2 < 0x60 )
-		LED_State = 2;
-	else
-		LED_State = 3;
 #if 0
 	fprintf(stderr,"Got Event... Chn: 0x%02x, event_type: 0x%02x, evnt1: 0x%02x, evnt2: 0x%02x\n",chn,event_type,evnt1,evnt2);
     fflush(stderr);
@@ -332,14 +323,31 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
 	switch( event_type ) {
     case 0x8: // Note Off
         evnt2 = 0; // handle like Note On with velocity 0
-    case 0x9:
+    case 0x9: {
+        int LED_State;
+        if( evnt2 == 0 )
+            LED_State = 0;
+        else if( evnt2 < 0x40 )
+            LED_State = 1;
+        else if( evnt2 < 0x60 )
+            LED_State = 2;
+        else
+            LED_State = 3;
+
         if( evnt1 < blmColumns) {
             int row = chn;
             int column = evnt1;
             setButtonState(column,row,LED_State);
+        } else if( evnt1 == 0x40 ) {
+            setButtonState(blmColumns, chn, LED_State);
+        } else if( chn == 0 && evnt1 >= 0x60 && evnt1 <= 0x6f ) {
+            setButtonState(evnt1-0x60, blmRows, LED_State);
+        } else if( chn == 15 && evnt1 == 0x60 ) {
+            setButtonState(blmColumns, blmRows, LED_State);
         }
+
         midiDataReceived = true;
-        break;
+    } break;
 
     case 0xb: {
         unsigned char pattern = evnt2;
@@ -534,6 +542,8 @@ void BlmClass::mouseUp(const MouseEvent &e)
 #endif
 	if (lastButtonX>-1){
 		sendNoteEvent(midiChannel, midiNote, 0x00);
+        lastMidiChannel = -1;
+        lastMidiNote = -1;
 		lastButtonX=-1;
 		lastButtonY=-1;
 	}
