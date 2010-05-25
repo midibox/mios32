@@ -120,7 +120,7 @@ void BlmClass::resized()
         int yOffset = buttonExtraColumnY + y*ledSize;
         if( y == blmRows )
             yOffset = buttonShiftY;
-        int greenWidth = 20;
+        int greenWidth = 25;
         rowLabelsGreen[y]->setBounds(rowLabelsWidth-greenWidth, yOffset, greenWidth, ledSize);
         rowLabelsRed[y]->setBounds(0, yOffset, rowLabelsWidth-greenWidth, ledSize);
     }
