@@ -76,6 +76,7 @@ void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     if (comboBoxThatHasChanged == midiInput)
     {
 		blmClass->setMidiInput(midiInput->getText());
+        blmClass->sendBLMLayout();
         PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiIn"), midiInput->getText());
@@ -83,6 +84,7 @@ void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     else if (comboBoxThatHasChanged == midiOutput)
     {
 		blmClass->setMidiOutput(midiOutput->getText());
+        blmClass->sendBLMLayout();
         PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiOut"), midiOutput->getText());
