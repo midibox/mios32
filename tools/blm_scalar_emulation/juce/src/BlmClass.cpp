@@ -423,7 +423,7 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
 
 void BlmClass::sendBLMLayout(void)
 {
-	unsigned char sysex[11];
+	unsigned char sysex[14];
 	sysex[0] = 0xf0;
 	sysex[1] = 0x00;
 	sysex[2] = 0x00;
@@ -431,11 +431,14 @@ void BlmClass::sendBLMLayout(void)
 	sysex[4] = 0x4e; // MBHP_BLM_SCALAR ID
 	sysex[5] = 0x00; // Device ID 00
 	sysex[6] = 0x01; // Command #1 (Layout Info)
-	sysex[7] = blmColumns & 0x7f;
-	sysex[8] = blmRows;
-	sysex[9] = ledColours;
-	sysex[10] = 0xf7;
-	MidiMessage message(sysex,11);
+	sysex[7] = blmColumns & 0x7f; // number of columns
+	sysex[8] = blmRows & 0x7f; // number of rows
+	sysex[9] = ledColours & 0x7f; // number of LED colours
+	sysex[10] = 1; // number of extra rows
+	sysex[11] = 1; // number of extra columns
+	sysex[12] = 1; // number of extra buttons (e.g. shift)
+	sysex[13] = 0xf7;
+	MidiMessage message(sysex,14);
     MidiOutput *out = audioDeviceManager.getDefaultMidiOutput();
     if( out )
         out->sendMessageNow(message);
@@ -443,7 +446,7 @@ void BlmClass::sendBLMLayout(void)
 
 void BlmClass::sendAck(void)
 {
-	unsigned char sysex[11];
+	unsigned char sysex[9];
 	sysex[0] = 0xf0;
 	sysex[1] = 0x00;
 	sysex[2] = 0x00;
