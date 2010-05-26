@@ -175,17 +175,17 @@ s32 MIOS32_UART_Init(u32 mode)
 //! sets the baudrate of a UART port
 //! \param[in] uart UART number (0..1)
 //! \param[in] baudrate the baudrate
-//! \return 1: uart available
-//! \return 0: uart not available
-//! \return -1: function not prepared for this UART
+//! \return 0: baudrate has been changed
+//! \return -1: uart not available
+//! \return -2: function not prepared for this UART
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 {
 #if MIOS32_UART_NUM == 0
-  return 0; // no UART available
+  return -1; // no UART available
 #else
   if( uart >= MIOS32_UART_NUM )
-    return 0;
+    return -1;
 
   // USART configuration
   USART_InitTypeDef USART_InitStructure;
@@ -203,13 +203,13 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
   case 1: USART_Init(MIOS32_UART1, &USART_InitStructure); break;
 #endif
   default:
-    return -1; // not prepared
+    return -2; // not prepared
   }
 
   // store baudrate in array
   uart_baudrate[uart] = baudrate;
 
-  return 1;
+  return 0;
 #endif
 }
 
