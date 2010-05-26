@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>juce_application</string>
+	<string>MIDIbox_BLM_Emulation</string>
 	<key>CFBundleIconFile</key>
-	<string></string>
+	<string>blm.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.apple.myCarbonApp</string>
 	<key>CFBundleInfoDictionaryVersion</key>
