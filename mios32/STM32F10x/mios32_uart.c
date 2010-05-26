@@ -53,6 +53,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if MIOS32_UART_NUM >= 1
+static u32 uart_baudrate[MIOS32_UART_NUM];
+
 static u8 rx_buffer[MIOS32_UART_NUM][MIOS32_UART_RX_BUFFER_SIZE];
 static volatile u8 rx_buffer_tail[MIOS32_UART_NUM];
 static volatile u8 rx_buffer_head[MIOS32_UART_NUM];
@@ -127,18 +129,9 @@ s32 MIOS32_UART_Init(u32 mode)
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 | RCC_APB1Periph_USART3, ENABLE);
 
   // USART configuration
-  USART_InitTypeDef USART_InitStructure;
-  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure.USART_StopBits = USART_StopBits_1;
-  USART_InitStructure.USART_Parity = USART_Parity_No;
-  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-
-  USART_InitStructure.USART_BaudRate = MIOS32_UART0_BAUDRATE;
-  USART_Init(MIOS32_UART0, &USART_InitStructure);
+  MIOS32_UART_BaudrateSet(0, MIOS32_UART0_BAUDRATE);
 #if MIOS32_UART_NUM >=2
-  USART_InitStructure.USART_BaudRate = MIOS32_UART1_BAUDRATE;
-  USART_Init(MIOS32_UART1, &USART_InitStructure);
+  MIOS32_UART_BaudrateSet(1, MIOS32_UART1_BAUDRATE);
 #endif
 
   // configure and enable UART interrupts
@@ -174,6 +167,67 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 
   return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the baudrate of a UART port
+//! \param[in] uart UART number (0..1)
+//! \param[in] baudrate the baudrate
+//! \return 1: uart available
+//! \return 0: uart not available
+//! \return -1: function not prepared for this UART
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
+{
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
+  if( uart >= MIOS32_UART_NUM )
+    return 0;
+
+  // USART configuration
+  USART_InitTypeDef USART_InitStructure;
+  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  USART_InitStructure.USART_Parity = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+
+  USART_InitStructure.USART_BaudRate = baudrate;
+
+  switch( uart ) {
+  case 0: USART_Init(MIOS32_UART0, &USART_InitStructure); break;
+#if MIOS32_UART_NUM >= 2
+  case 1: USART_Init(MIOS32_UART1, &USART_InitStructure); break;
+#endif
+  default:
+    return -1; // not prepared
+  }
+
+  // store baudrate in array
+  uart_baudrate[uart] = baudrate;
+
+  return 1;
+#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! returns the current baudrate of a UART port
+//! \param[in] uart UART number (0..1)
+//! \return 0: uart not available
+//! \return all other values: the current baudrate
+/////////////////////////////////////////////////////////////////////////////
+u32 MIOS32_UART_BaudrateGet(u8 uart)
+{
+#if MIOS32_UART_NUM == 0
+  return 0; // no UART available
+#else
+  if( uart >= MIOS32_UART_NUM )
+    return 0;
+  else
+    return uart_baudrate[uart];
 #endif
 }
 

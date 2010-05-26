@@ -90,6 +90,9 @@
 
 extern s32 MIOS32_UART_Init(u32 mode);
 
+extern s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate);
+extern u32 MIOS32_UART_BaudrateGett(u8 uart);
+
 extern s32 MIOS32_UART_RxBufferFree(u8 uart);
 extern s32 MIOS32_UART_RxBufferUsed(u8 uart);
 extern s32 MIOS32_UART_RxBufferGet(u8 uart);
