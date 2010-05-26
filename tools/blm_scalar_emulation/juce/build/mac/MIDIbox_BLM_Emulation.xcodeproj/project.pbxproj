@@ -10,6 +10,7 @@
 		521044E6111F267D006CF032 /* BlmClass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E4111F267D006CF032 /* BlmClass.cpp */; };
 		521044ED111F268B006CF032 /* MainComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E7111F268B006CF032 /* MainComponent.cpp */; };
 		521044EE111F268B006CF032 /* MidiClass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E9111F268B006CF032 /* MidiClass.cpp */; };
+		52665EDC11ADC6B60095613A /* blm.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52665EDB11ADC6B60095613A /* blm.icns */; };
 		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
@@ -36,6 +37,7 @@
 		521044E8111F268B006CF032 /* MainComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MainComponent.h; path = ../../src/MainComponent.h; sourceTree = SOURCE_ROOT; };
 		521044E9111F268B006CF032 /* MidiClass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MidiClass.cpp; path = ../../src/MidiClass.cpp; sourceTree = SOURCE_ROOT; };
 		521044EA111F268B006CF032 /* MidiClass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiClass.h; path = ../../src/MidiClass.h; sourceTree = SOURCE_ROOT; };
+		52665EDB11ADC6B60095613A /* blm.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = blm.icns; path = ../../icon/blm.icns; sourceTree = SOURCE_ROOT; };
 		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
 		529C75CB111DAB1200DFE267 /* juce_AppConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AppConfig.h; path = ../../src/juce_AppConfig.h; sourceTree = SOURCE_ROOT; };
 		529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_LibrarySource.mm; path = ../../src/juce_LibrarySource.mm; sourceTree = SOURCE_ROOT; };
@@ -52,7 +54,7 @@
 		84FBB8870E06CCE900B52196 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84FBB88C0E06CD0100B52196 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = /System/Library/Frameworks/WebKit.framework; sourceTree = "<absolute>"; };
 		8D0C4E960486CD37000505A6 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		8D0C4E970486CD37000505A6 /* juce_application.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = juce_application.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D0C4E970486CD37000505A6 /* MIDIbox_BLM_Emulation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MIDIbox_BLM_Emulation.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,7 +82,7 @@
 		195DF8CFFE9D517E11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D0C4E970486CD37000505A6 /* juce_application.app */,
+				8D0C4E970486CD37000505A6 /* MIDIbox_BLM_Emulation.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +120,7 @@
 		20286C2CFDCF999611CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				52665EDB11ADC6B60095613A /* blm.icns */,
 				8D0C4E960486CD37000505A6 /* Info.plist */,
 				0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */,
 			);
@@ -161,9 +164,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8D0C4E890486CD37000505A6 /* juce_application */ = {
+		8D0C4E890486CD37000505A6 /* MIDIbox_BLM_Emulation */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "juce_application" */;
+			buildConfigurationList = 84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIDIbox_BLM_Emulation" */;
 			buildPhases = (
 				8D0C4E8C0486CD37000505A6 /* Resources */,
 				8D0C4E8F0486CD37000505A6 /* Sources */,
@@ -173,10 +176,10 @@
 			);
 			dependencies = (
 			);
-			name = juce_application;
+			name = MIDIbox_BLM_Emulation;
 			productInstallPath = "$(HOME)/Applications";
 			productName = juce_application;
-			productReference = 8D0C4E970486CD37000505A6 /* juce_application.app */;
+			productReference = 8D0C4E970486CD37000505A6 /* MIDIbox_BLM_Emulation.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -184,14 +187,14 @@
 /* Begin PBXProject section */
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "juce_application" */;
+			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIDIbox_BLM_Emulation" */;
 			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* juce_application */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8D0C4E890486CD37000505A6 /* juce_application */,
+				8D0C4E890486CD37000505A6 /* MIDIbox_BLM_Emulation */,
 			);
 		};
 /* End PBXProject section */
@@ -202,6 +205,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */,
+				52665EDC11ADC6B60095613A /* blm.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +252,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
 				PREBINDING = NO;
-				PRODUCT_NAME = juce_application;
+				PRODUCT_NAME = MIDIbox_BLM_Emulation;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -265,7 +269,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = ../../../../juce/bin;
 				PREBINDING = NO;
-				PRODUCT_NAME = juce_application;
+				PRODUCT_NAME = MIDIbox_BLM_Emulation;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = NO;
 			};
@@ -286,7 +290,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "juce_application" */ = {
+		84F30CBF08FEAA620087E26C /* Build configuration list for PBXNativeTarget "MIDIbox_BLM_Emulation" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				84F30CC008FEAA620087E26C /* Debug */,
@@ -295,7 +299,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "juce_application" */ = {
+		84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIDIbox_BLM_Emulation" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				84F30CC408FEAA620087E26C /* Debug */,
