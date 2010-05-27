@@ -307,21 +307,21 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_glb_loop_steps = value-1;
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
 	    MIOS32_MIDI_DefaultPortSet(value);
-	  } else if( strncmp(parameter, "MIDI_BUS", 8) == 0 ) {
+	  } else if( strncmp(parameter, "MIDI_BUS_", 9) == 0 ) {
 	    int bus = value;
 	    if( bus >= 0 && bus < SEQ_MIDI_IN_NUM_BUSSES ) {
 	      word = strtok_r(NULL, separators, &brkt);
 	      int v = get_dec(word);
 	      if( v >= 0 ) {
-		if( strcmp(parameter+8, "_Channel") == 0 )
+		if( strcmp(parameter+9, "Channel") == 0 )
 		  seq_midi_in_channel[bus] = v;
-		else if( strcmp(parameter, "_Port") == 0 )
+		else if( strcmp(parameter+9, "Port") == 0 )
 		  seq_midi_in_port[bus] = v;
-		else if( strcmp(parameter, "_Lower") == 0 )
+		else if( strcmp(parameter+9, "Lower") == 0 )
 		  seq_midi_in_lower[bus] = v;
-		else if( strcmp(parameter, "_Upper") == 0 )
+		else if( strcmp(parameter+9, "Upper") == 0 )
 		  seq_midi_in_upper[bus] = v;
-		else if( strcmp(parameter, "_Options") == 0 )
+		else if( strcmp(parameter+9, "Options") == 0 )
 		  seq_midi_in_options[bus].ALL = v;
 	      }
 	    }
