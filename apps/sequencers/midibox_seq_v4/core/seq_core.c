@@ -730,7 +730,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
   
             // glide trigger
-            if( e->len > 0 ) {
+            if( e->len > 0 && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
 		e->len = 96; // Glide
             }

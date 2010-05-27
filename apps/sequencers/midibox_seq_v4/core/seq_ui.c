@@ -114,7 +114,7 @@ static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
-#define UI_MSG_MAX_CHAR 21
+#define UI_MSG_MAX_CHAR 31
 static char ui_msg[2][UI_MSG_MAX_CHAR];
 static u16 ui_msg_ctr;
 static seq_ui_msg_type_t ui_msg_type;
@@ -2295,7 +2295,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	}
       } else {
 	// If Duo-LEDs not enabled: invert Green LEDs
-	green_pattern &= ~pos_marker_mask;
+	green_pattern ^= pos_marker_mask;
       }
 
       // Set Green LEDs
@@ -2673,8 +2673,8 @@ s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *line2)
 {
   ui_msg_type = msg_type;
   ui_msg_ctr = delay;
-  strncpy((char *)ui_msg[0], line1, UI_MSG_MAX_CHAR);
-  strncpy((char *)ui_msg[1], line2, UI_MSG_MAX_CHAR);
+  strncpy((char *)ui_msg[0], line1, UI_MSG_MAX_CHAR-1);
+  strncpy((char *)ui_msg[1], line2, UI_MSG_MAX_CHAR-1);
 
   return 0; // no error
 }

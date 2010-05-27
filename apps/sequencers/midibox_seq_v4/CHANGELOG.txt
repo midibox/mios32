@@ -15,6 +15,15 @@ MIDIboxSEQ V4.0beta22
     Search for "RS_OPTIMISATION" in the MBSEQ_HW.V4 templates for
     further informations.
 
+  o chaselight issue for mono colour 4x16 BLM fixed
+
+  o trigger assignment page now works as intended in drum mode
+
+  o new MIDI Bus parameters now loaded correctly after session change
+
+  o another fix for crash if preset name is longer than 7 characters
+
+
 
 MIDIboxSEQ V4.0beta21
 ~~~~~~~~~~~~~~~~~~~~~
