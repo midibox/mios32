@@ -70,6 +70,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
@@ -121,14 +124,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:         return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_GATE:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_GATE, 0, 8, incrementer);
-    case ITEM_ACCENT:       return SEQ_UI_CC_Inc(SEQ_CC_ASG_ACCENT, 0, 8, incrementer);
-    case ITEM_ROLL:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_ROLL, 0, 8, incrementer);
-    case ITEM_GLIDE:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_GLIDE, 0, 8, incrementer);
-    case ITEM_SKIP:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_SKIP, 0, 8, incrementer);
-    case ITEM_RANDOM_GATE:  return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_GATE, 0, 8, incrementer);
-    case ITEM_RANDOM_VALUE: return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_VALUE, 0, 8, incrementer);
-    case ITEM_NO_FX:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_NO_FX, 0, 8, incrementer);
+    case ITEM_GATE:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_GATE, 0, num_t_layers, incrementer);
+    case ITEM_ACCENT:       return SEQ_UI_CC_Inc(SEQ_CC_ASG_ACCENT, 0, num_t_layers, incrementer);
+    case ITEM_ROLL:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_ROLL, 0, num_t_layers, incrementer);
+    case ITEM_GLIDE:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_GLIDE, 0, num_t_layers, incrementer);
+    case ITEM_SKIP:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_SKIP, 0, num_t_layers, incrementer);
+    case ITEM_RANDOM_GATE:  return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_GATE, 0, num_t_layers, incrementer);
+    case ITEM_RANDOM_VALUE: return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_VALUE, 0, num_t_layers, incrementer);
+    case ITEM_NO_FX:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_NO_FX, 0, num_t_layers, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -249,10 +252,6 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_TRGASG_Init(u32 mode)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-
-  // in drum mode: use trigger selection page instead!
-  if( SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE) == SEQ_EVENT_MODE_Drum )
-    return SEQ_UI_TRGSEL_Init(mode);
 
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);

@@ -184,9 +184,6 @@ s32 SEQ_TRG_Get16(u8 track, u8 step16, u8 trg_layer, u8 trg_instrument)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_GateGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return SEQ_TRG_Get(track, step, 0, trg_instrument);
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.gate;
   // gate always set if not assigned
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 1;
@@ -194,63 +191,42 @@ s32 SEQ_TRG_GateGet(u8 track, u16 step, u8 trg_instrument)
 
 s32 SEQ_TRG_AccentGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return (trg_layer_num_layers[track] >= 2) ? SEQ_TRG_Get(track, step, 1, trg_instrument) : 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.accent;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_RollGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_GlideGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.glide;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_SkipGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.skip;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_RandomGateGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_gate;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_RandomValueGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.random_value;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
 s32 SEQ_TRG_NoFxGet(u8 track, u16 step, u8 trg_instrument)
 {
-  if( seq_cc_trk[track].event_mode == SEQ_EVENT_MODE_Drum )
-    return 0;
-
   u8 trg_assignment = seq_cc_trk[track].trg_assignments.no_fx;
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
