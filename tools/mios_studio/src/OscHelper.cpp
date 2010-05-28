@@ -516,19 +516,9 @@ int OscHelper::parsePacket(unsigned char *packet, const unsigned& len, OscHelper
         oscArgs.timetag.seconds = 0;
         oscArgs.timetag.fraction = 1;
 
-        // get element size
-        unsigned elemSize = getWord(packet);
-
-        // invalid packet if elemSize exceeds packet length
-        if( elemSize > len )
-            return -1; // invalid packet
-
-        // parse element if size > 0
-        if( elemSize ) {
-            int status = searchElement((unsigned char *)(packet+4), elemSize, &oscArgs, searchTree);
-            if( status < 0 )
-                return status;
-        }
+		int status = searchElement(packet, len, &oscArgs, searchTree);
+		if( status < 0 )
+			return status;
     }
 
     return 0; // no error
@@ -869,11 +859,14 @@ Array<uint8> OscHelper::createElement(const Array<uint8>& oscPath, const String&
 // Converts a String into a complete OSC packet
 // \return an empty Array<uint8> on errors
 /////////////////////////////////////////////////////////////////////////////
-Array<uint8> OscHelper::string2Packet(const String& oscString, String& statusMessage)
+Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMessage)
 {
     StringArray words;
 
     statusMessage = T("ERROR: internal error!");
+
+    // replace CRs by spaces
+    String oscString(_oscString.replaceCharacters(T("\n"), T(" ")));
 
     // split string into words
     int wordBegin = 0;
