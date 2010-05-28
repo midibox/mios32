@@ -530,19 +530,9 @@ s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search
     osc_args.timetag.seconds = 0;
     osc_args.timetag.fraction = 1;
 
-    // get element size
-    u32 elem_size = MIOS32_OSC_GetWord(packet);
-
-    // invalid packet if elem_size exceeds packet length
-    if( elem_size > len )
-      return -1; // invalid packet
-
-    // parse element if size > 0
-    if( elem_size ) {
-      s32 status = MIOS32_OSC_SearchElement((u8 *)(packet+4), elem_size, &osc_args, search_tree);
-      if( status < 0 )
-	return status;
-    }
+    s32 status = MIOS32_OSC_SearchElement(packet, len, &osc_args, search_tree);
+    if( status < 0 )
+      return status;
   }
 
   return 0; // no error

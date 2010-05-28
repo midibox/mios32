@@ -1192,6 +1192,10 @@ void *umm_realloc( void *ptr, size_t size ) {
 
 // ----------------------------------------------------------------------------
 
+
+// TK: make this optional to save memory
+#ifndef UMM_INCLUDE_MEMORY_STRESS
+
 void * ptr_array[256];
 
 #ifdef UMM_TEST_MAIN
@@ -1256,3 +1260,4 @@ void memory_stress(void) {
 
 }
 
+#endif /* UMM_INCLUDE_MEMORY_STRESS */
