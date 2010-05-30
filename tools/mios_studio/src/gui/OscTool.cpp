@@ -14,7 +14,6 @@
 
 #include "OscTool.h"
 #include "MiosStudio.h"
-#include "UdpSocket.h"
 
 #define OSC_BUFFER_SIZE 2000
 

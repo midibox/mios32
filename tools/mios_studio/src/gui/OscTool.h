@@ -18,7 +18,7 @@
 #include "../includes.h"
 #include "OscTextEditor.h"
 #include "OscMonitor.h"
-#include "UdpSocket.h"
+#include "../UdpSocket.h"
 
 class MiosStudio; // forward declaration
 
