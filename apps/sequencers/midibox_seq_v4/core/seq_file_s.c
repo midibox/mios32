@@ -157,7 +157,7 @@ s32 SEQ_FILE_S_NumSongs(void)
 s32 SEQ_FILE_S_Create(void)
 {
   seq_file_s_info_t *info = &seq_file_s_info;
-  info->valid = 0; // set to invalid so long we are not sure if file can be accessed
+  info->valid = 0; // set to invalid as long as we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);

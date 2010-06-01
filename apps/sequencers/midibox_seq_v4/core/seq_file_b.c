@@ -69,7 +69,7 @@
 // The overall loading time is ca. 7 mS - pretty good for such a large bulk of data!!!
 // If more steps are desired, just reduce the number of parameter layers
 // e.g. 256 steps, 4 parameter layers will result into 1024 bytes as well
-// this has the advantage, that a single bank can store different parameter layer configurations so long the size is equal
+// this has the advantage, that a single bank can store different parameter layer configurations as long as the size is equal
 
 // not defined as structure: 
 // file_type[10] will contain "MBSEQV4_B" + 0 (zero-terminated string)
@@ -208,7 +208,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
     return SEQ_FILE_B_ERR_INVALID_BANK;
 
   seq_file_b_info_t *info = &seq_file_b_info[bank];
-  info->valid = 0; // set to invalid so long we are not sure if file can be accessed
+  info->valid = 0; // set to invalid as long as we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
   sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);

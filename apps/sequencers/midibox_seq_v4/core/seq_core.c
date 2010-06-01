@@ -250,7 +250,7 @@ s32 SEQ_CORE_Handler(void)
     ++num_loops;
 
     // note: don't remove any request check - clocks won't be propagated
-    // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
+    // as long as any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
@@ -1325,11 +1325,11 @@ static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
   // apply limit
   s32 note = p->note; // we need a signed value
   if( tcc->limit_lower )
-    while( (note-12) < tcc->limit_lower )
+    while( (note-12) < lower )
       note += 12;
 
   if( tcc->limit_upper )
-    while( (note+12) > tcc->limit_upper )
+    while( (note+12) > upper )
       note -= 12;
 
   p->note = note;

@@ -341,7 +341,7 @@ char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
-  // in MENU page: overrule GP buttons so long MENU button is pressed/active
+  // in MENU page: overrule GP buttons as long as MENU button is pressed/active
   if( seq_ui_button_state.MENU_PRESSED ) {
     if( depressed ) return -1;
     SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
@@ -1316,7 +1316,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendButton(pin, pin_value);
 
-  // ignore so long hardware config hasn't been read
+  // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
@@ -1471,7 +1471,7 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_Send_BLM_Button(row, pin, pin_value);
 
-  // ignore so long hardware config hasn't been read
+  // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
@@ -1514,7 +1514,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendEncoder(encoder, incrementer);
 
-  // ignore so long hardware config hasn't been read
+  // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
@@ -1776,7 +1776,7 @@ s32 SEQ_UI_LCD_Handler(void)
     seq_ui_display_update_req = 1;
   }
 
-  // print boot screen so long hardware config hasn't been read
+  // print boot screen as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() ) {
     if( boot_animation_lcd_pos < (40-3) ) {
       if( ++boot_animation_wait_ctr >= 75 ) {
@@ -2005,7 +2005,7 @@ s32 SEQ_UI_LED_Handler(void)
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
-  // ignore so long hardware config hasn't been read
+  // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
@@ -2125,7 +2125,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
 
 
-  // in MENU page: overrule GP LEDs so long MENU button is pressed/active
+  // in MENU page: overrule GP LEDs as long as MENU button is pressed/active
   if( seq_ui_button_state.MENU_PRESSED ) {
     if( ui_cursor_flash ) // if flashing flag active: no LED flag set
       ui_gp_leds = 0x0000;
@@ -2196,7 +2196,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
 
-  // ignore so long hardware config hasn't been read
+  // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
@@ -2209,7 +2209,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
 
   // don't continue if no new step has been generated and GP LEDs haven't changed
-  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds && sequencer_running ) // sequencer running check: workaround - so long sequencer not running, we won't get an step update request!
+  if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds && sequencer_running ) // sequencer running check: workaround - as long as sequencer not running, we won't get an step update request!
     return 0;
   seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
   prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern

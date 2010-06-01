@@ -353,7 +353,7 @@ void SEQ_TASK_Period1S(void)
   if( TASK_MSD_EnableGet() > 0 )
     return;
 
-  // poll for IIC modules so long HW config hasn't been locked (read from SD card)
+  // poll for IIC modules as long as HW config hasn't been locked (read from SD card)
   // TODO: use proper mutex handling here
 #ifndef MIOS32_FAMILY_EMULATION
   if( !SEQ_FILE_HW_ConfigLocked() ) {

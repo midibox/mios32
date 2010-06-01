@@ -101,39 +101,47 @@
     if( !cLcd )
         return;
 
-	// calculate X/Y dimensions of LCD
-	unsigned lcd_size_x = [self getLcdSizeX];
-	unsigned lcd_size_y = [self getLcdSizeY];
+	unsigned lcdSizeX = [self getLcdSizeX];
+	unsigned lcdSizeY = [self getLcdSizeY];
 
-	
-	NSBezierPath *BP = [NSBezierPath bezierPathWithRect: [self bounds]];
-	[[NSColor colorWithDeviceRed:cLcd->bColorR/255.0 green:cLcd->bColorG/255.0 blue:cLcd->bColorB/255.0 alpha:1.] set];
-	[BP fill];
-    BP = [NSBezierPath bezierPathWithRect: NSMakeRect(0, 0, lcd_size_x, lcd_size_y)];
+    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
 
-	// print each character
-	// TODO: optimized version, which buffers characters during printChar() to avoid that complete bitmap has to be re-created on each redraw
+    CGContextSetRGBFillColor(context, cLcd->bColorR/255.0, cLcd->bColorG/255.0, cLcd->bColorB/255.0, 1.0);
+    CGContextFillRect(context, CGRectMake(0, 0, lcdSizeX, lcdSizeY));
+
+    CGLayerRef layer0 = CGLayerCreateWithContext(context, CGSizeMake(lcdPixelX, lcdPixelY), NULL);
+    CGContextRef layerContext0 = CGLayerGetContext(layer0);
+    CGContextSetRGBFillColor(layerContext0, cLcd->bColorR/255.0, cLcd->bColorG/255.0, cLcd->bColorB/255.0, 1.0);
+    CGContextFillRect(layerContext0, CGRectMake(0, 0, lcdPixelX, lcdPixelY));
+
+    CGLayerRef layer1 = CGLayerCreateWithContext(context, CGSizeMake(lcdPixelX, lcdPixelY), NULL);
+    CGContextRef layerContext1 = CGLayerGetContext(layer1);
+    CGContextSetRGBFillColor(layerContext1, cLcd->fColorR/255.0, cLcd->fColorG/255.0, cLcd->fColorB/255.0, 1.0);
+    CGContextFillRect(layerContext1, CGRectMake(0, 0, lcdPixelX, lcdPixelY));
+
+	// print characters that have been modified
 	for(int line=0; line<cLcd->lcdLines; ++line) {
 		for(int column=0; column<cLcd->lcdColumns; ++column) {
             unsigned char c = cLcd->lcdScreen[line][column];
-			unsigned char *chr = c < 8 ? cLcd->customCharset[c] : charset[c];
+            unsigned char *chr = (c < 8) ? cLcd->customCharset[c] : charset[c];
 	
-			for(int y=0; y<lcdCharHeight; ++y) {
-				for(int x=0; x<lcdCharWidth; ++x) {
-					if( chr[y] & (1 << (lcdCharWidth-x-1)) ) {
-						[[NSColor colorWithDeviceRed:cLcd->fColorR/255.0 green:cLcd->fColorG/255.0 blue:cLcd->fColorB/255.0 alpha:1.] set];
-					} else {
-						[[NSColor colorWithDeviceRed:cLcd->bColorR/255.0 green:cLcd->bColorG/255.0 blue:cLcd->bColorB/255.0 alpha:1.] set];
-					}
-					[BP fill];
-                    BP = [NSBezierPath bezierPathWithRect: NSMakeRect(
-                       lcdBorderX + lcdPixelX*(column*lcdCharWidth+x) + column*lcdOffsetColumns,
-                       lcd_size_y - lcdBorderY - lcdPixelY*(y+line*(lcdCharHeight+lcdOffsetLines)), 
-                       lcdPixelX, lcdPixelY)]; 
-				}
-			}
-		}
+            unsigned rectY = lcdSizeY - lcdBorderY - lcdPixelY*line*(lcdCharHeight+lcdOffsetLines);
+            for(int y=0; y<lcdCharHeight; ++y, rectY-=lcdPixelY) {
+                unsigned rectX = lcdBorderX + lcdPixelX*column*lcdCharWidth + column*lcdOffsetColumns;
+                unsigned mask = (1 << (lcdCharWidth-1));
+                for(int x=0; x<lcdCharWidth; ++x, rectX+=lcdPixelX, mask>>=1) {
+                    CGPoint p = CGPointMake(rectX, rectY);
+                    if( chr[y] & mask )
+                        CGContextDrawLayerAtPoint (context, p, layer1);
+                    else
+                        CGContextDrawLayerAtPoint (context, p, layer0);
+                }
+            }
+        }
 	}
+
+    CGLayerRelease(layer0);
+    CGLayerRelease(layer1);
 
     cLcd->updateDone();
 }

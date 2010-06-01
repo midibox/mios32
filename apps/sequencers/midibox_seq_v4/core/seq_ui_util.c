@@ -255,7 +255,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	COPY_Track(visible_track);
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// print message
 	in_menu_msg = MSG_COPY;
@@ -280,7 +280,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	PASTE_Track(visible_track);
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
@@ -300,7 +300,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	ui_hold_msg_ctr = 1000;
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
@@ -321,7 +321,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	ui_hold_msg_ctr = 500;
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
@@ -339,7 +339,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	ui_hold_msg_ctr = 500;
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
@@ -354,7 +354,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( depressed ) return -1;
 
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long other message is displayed
+	return 0; // ignore as long as other message is displayed
 
       SEQ_UI_PageSet(SEQ_UI_PAGE_TRKRND);
       return 0;
@@ -368,7 +368,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	ui_hold_msg_ctr = 1000;
       } else {
 	if( in_menu_msg & 0x80 )
-	  return 0; // ignore so long other message is displayed
+	  return 0; // ignore as long as other message is displayed
 
 	// undo last change
 	UNDO_Track();
@@ -380,43 +380,43 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_GP9: // select Save Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_SAVE);
 
     case SEQ_UI_BUTTON_GP10: // select Record Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
 
     case SEQ_UI_BUTTON_GP11: // select Mixer Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_MIXER);
 
     case SEQ_UI_BUTTON_GP12: // select Options Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_OPT);
 
     case SEQ_UI_BUTTON_GP13: // select Port Mute page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_PMUTE);
 
     case SEQ_UI_BUTTON_GP14: // Disk Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_DISK);
 
     case SEQ_UI_BUTTON_GP15: // mute all tracks
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       SEQ_UI_UTIL_MuteAllTracks();
       SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
       return 1;
@@ -424,7 +424,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_GP16: // unmute all tracks
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
-	return 0; // ignore so long message is displayed
+	return 0; // ignore as long as message is displayed
       SEQ_UI_UTIL_UnMuteAllTracks();
       SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
       return 1;

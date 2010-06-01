@@ -816,11 +816,11 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     SEQ_MIXER_Init();
 
     // formatting handled by low-priority task in app.c
-    // messages print in seq_ui.c so long request is active
+    // messages print in seq_ui.c as long as request is active
     seq_ui_format_req = 1;
   } else {
     // Copy operation handled by low-priority task in app.c
-    // messages print in seq_ui.c so long request is active
+    // messages print in seq_ui.c as long as request is active
     seq_ui_backup_req = 1;
   }
 

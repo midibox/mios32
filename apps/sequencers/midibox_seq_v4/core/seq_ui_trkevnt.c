@@ -519,7 +519,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       if( encoder >= SEQ_UI_ENCODER_GP9 && encoder <= SEQ_UI_ENCODER_GP16 ) {
 	if( selected_layer_config != GetLayerConfig(visible_track) ) {
-	  // ENC function disabled so long pattern hasn't been initialized
+	  // ENC function disabled as long as pattern hasn't been initialized
 	  return -1;
 	}
 
