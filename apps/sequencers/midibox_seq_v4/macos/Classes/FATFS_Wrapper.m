@@ -94,6 +94,7 @@ FRESULT f_open (
     NSString *fullPath = [[NSString alloc] initWithFormat:@"%@/%s", SDCARD_Wrapper_getDir(), path];
     char fullPathC[1024];
     [fullPath getCString:fullPathC];
+	[fullPath release];
 
 	//NSLog(@"Opening '%s'\n", fullPathC);
 	FILE *f = NULL;
@@ -226,6 +227,7 @@ FRESULT f_opendir (
     NSString *fullPath = [[NSString alloc] initWithFormat:@"%@/%s", SDCARD_Wrapper_getDir(), path];
     char fullPathC[1024];
     [fullPath getCString:fullPathC];
+	[fullPath release];
 
     if( f_opendir_hlp(fullPathC) < 0 )
         return FR_NO_PATH;
@@ -278,6 +280,7 @@ FRESULT f_mkdir (
     NSString *fullPath = [[NSString alloc] initWithFormat:@"%@/%s", SDCARD_Wrapper_getDir(), path];
     char fullPathC[1024];
     [fullPath getCString:fullPathC];
+	[fullPath release];
 
     if( mkdir(fullPathC, 0755) < 0 )
         return FR_EXIST; // or no permission - not checked in this simplified version

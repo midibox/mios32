@@ -304,7 +304,7 @@ s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
   // add octave and root note
   note_scaled += 12*octave + root;
 
-  // decrement octave so long note number outside allowed range
+  // decrement octave as long as note number outside allowed range
   while( note_scaled >= 128 )
     note_scaled -= 12;
 

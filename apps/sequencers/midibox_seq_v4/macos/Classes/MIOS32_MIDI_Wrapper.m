@@ -45,12 +45,14 @@ PYMIDIVirtualSource *virtualMIDI_OUT[NUM_MIDI_OUT];
 		[portName appendFormat:@"vMBSEQ IN%d", i+1];
 		virtualMIDI_IN[i] = [[PYMIDIVirtualDestination alloc] initWithName:portName];
 		[virtualMIDI_IN[i] addReceiver:self];
+		[portName release];
 	}
 
 	for(i=0; i<NUM_MIDI_OUT; ++i) {
 		NSMutableString *portName = [[NSMutableString alloc] init];
 		[portName appendFormat:@"vMBSEQ OUT%d", i+1];
 		virtualMIDI_OUT[i] = [[PYMIDIVirtualSource alloc] initWithName:portName];
+		[portName release];
 	}
 }
 

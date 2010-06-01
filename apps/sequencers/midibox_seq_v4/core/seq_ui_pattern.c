@@ -48,7 +48,7 @@ static seq_pattern_t selected_pattern[SEQ_CORE_NUM_GROUPS];
 static s32 LED_Handler(u16 *gp_leds)
 {
   if( SEQ_FILE_FormattingRequired() )
-    return 0; // no LED action so long files not available
+    return 0; // no LED action as long as files not available
 
   seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + ui_selected_group) && ui_cursor_flash) 
     ? seq_pattern[ui_selected_group] : selected_pattern[ui_selected_group];
@@ -69,7 +69,7 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   if( SEQ_FILE_FormattingRequired() )
-    return 0; // no encoder action so long files not available
+    return 0; // no encoder action as long as files not available
 
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
@@ -154,7 +154,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( depressed ) return 0; // ignore when button depressed
 
   if( SEQ_FILE_FormattingRequired() )
-    return 0; // no button action so long files not available
+    return 0; // no button action as long as files not available
 
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -232,7 +232,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //        No Patterns available so long theSession hasn't been created!            
+  //     No Patterns available as long as theSession hasn't been created!            
   //                   Please press EXIT and create a new Session!                   
 
   if( SEQ_FILE_FormattingRequired() ) {
@@ -240,7 +240,7 @@ static s32 LCD_Handler(u8 high_prio)
       return 0;
 
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("       No Patterns available so long theSession hasn't been created!            ");
+    SEQ_LCD_PrintString("    No Patterns available as long as theSession hasn't been created!            ");
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString("                  Please press EXIT and create a new Session!                   ");
     return 0;
