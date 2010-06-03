@@ -88,7 +88,16 @@ typedef enum {
   IIC4 = 0x34,
   IIC5 = 0x35,
   IIC6 = 0x36,
-  IIC7 = 0x37
+  IIC7 = 0x37,
+
+  OSC0 = 0x40,
+  OSC1 = 0x41,
+  OSC2 = 0x42,
+  OSC3 = 0x43,
+  OSC4 = 0x44,
+  OSC5 = 0x45,
+  OSC6 = 0x46,
+  OSC7 = 0x47
 } mios32_midi_port_t;
 
 

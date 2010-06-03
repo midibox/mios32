@@ -22,6 +22,7 @@
 #include "seq_hwcfg.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
+#include "seq_midi_osc.h"
 #include "seq_core.h"
 
 
@@ -40,7 +41,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 // has to be kept in synch with SEQ_MIDI_PORT_InIxGet() !!!
-#define NUM_IN_PORTS 13
+#define NUM_IN_PORTS 17
 static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
@@ -52,6 +53,10 @@ static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
   { UART1,   "IN2 " },
   { UART2,   "IN3 " },
   { UART3,   "IN4 " },
+  { OSC0,    "OSC1" },
+  { OSC1,    "OSC2" },
+  { OSC2,    "OSC3" },
+  { OSC3,    "OSC4" },
   { 0xf0,    "Bus1" },
   { 0xf1,    "Bus2" },
   { 0xf2,    "Bus3" },
@@ -59,7 +64,7 @@ static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
 };
 
 // has to be kept in synch with SEQ_MIDI_PORT_OutIxGet() !!!
-#define NUM_OUT_PORTS 18
+#define NUM_OUT_PORTS 22
 static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
@@ -75,6 +80,10 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   { IIC1,    "IIC2" },
   { IIC2,    "IIC3" },
   { IIC3,    "IIC4" },
+  { OSC0,    "OSC1" },
+  { OSC1,    "OSC2" },
+  { OSC2,    "OSC3" },
+  { OSC3,    "OSC4" },
   { 0x80,    "AOUT" },
   { 0xf0,    "Bus1" },
   { 0xf1,    "Bus2" },
@@ -83,7 +92,7 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // MEMO: SEQ_MIDI_PORT_OutMuteGet() has to be changed whenever ports are added/removed!
 };
 
-#define NUM_CLK_PORTS 12
+#define NUM_CLK_PORTS 16
 static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   // port ID  Name
   { USB0,    "USB1" },
@@ -98,6 +107,10 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   { IIC1,    "IIC2" },
   { IIC2,    "IIC3" },
   { IIC3,    "IIC4" },
+  { OSC0,    "OSC1" },
+  { OSC1,    "OSC2" },
+  { OSC2,    "OSC3" },
+  { OSC3,    "OSC4" },
 };
 
 
@@ -240,7 +253,8 @@ u8 SEQ_MIDI_PORT_InIxGet(mios32_midi_port_t port)
     case DEFAULT: return 0;
     case USB0:  return (port & 0x0f) + 1;
     case UART0: return (port & 0x0f) + 5;
-    case 0xf0:  return (port & 0x0f) + 9; // Bus
+    case OSC0:  return (port & 0x0f) + 9;
+    case 0xf0:  return (port & 0x0f) + 13; // Bus
   }
 #endif
 
@@ -266,8 +280,9 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
     case USB0:  return (port & 0x0f) + 1;
     case UART0: return (port & 0x0f) + 5;
     case IIC0:  return (port & 0x0f) + 9;
-    case 0x80:  return (port & 0x0f) + 13; // AOUT
-    case 0xf0:  return (port & 0x0f) + 14; // Bus
+    case OSC0:  return (port & 0x0f) + 13;
+    case 0x80:  return (port & 0x0f) + 17; // AOUT
+    case 0xf0:  return (port & 0x0f) + 18; // Bus
   }
 #endif
 
@@ -501,8 +516,10 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
   }
 
   // TODO: Add also Bus handlers here
-
-  if( port == 0x80 ) { // AOUT port
+  if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
+    if( SEQ_MIDI_OSC_SendPackage(port & 0xf, package) >= 0 )
+      return 1; // filter package
+  } else if( port == 0x80 ) { // AOUT port
     // Note Off -> Note On with velocity 0
     if( package.event == NoteOff ) {
       package.event = NoteOn;

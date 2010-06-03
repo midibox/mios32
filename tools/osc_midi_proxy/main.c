@@ -101,6 +101,7 @@ static s32 OSC_SERVER_Method_MIDI(mios32_osc_args_t *osc_args, u32 method_arg)
 
 static mios32_osc_search_tree_t parse_root[] = {
   { "midi", NULL, &OSC_SERVER_Method_MIDI, 0x00000000 },
+  { "midi1", NULL, &OSC_SERVER_Method_MIDI, 0x00000000},
   { NULL, NULL, NULL, 0 } // terminator
 };
 
