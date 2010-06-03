@@ -387,7 +387,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     s32 status = SEQ_MIDI_ROUTER_MIDIClockInGet(selected_mclk_port);
 
-    if( !MIOS32_MIDI_CheckAvailable(selected_mclk_port) )
+    if( !SEQ_MIDI_PORT_ClkCheckAvailable(selected_mclk_port) )
       status = -1; // MIDI In port not available
 
     switch( status ) {
@@ -405,7 +405,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     s32 status = SEQ_MIDI_ROUTER_MIDIClockOutGet(selected_mclk_port);
 
-    if( !MIOS32_MIDI_CheckAvailable(selected_mclk_port) )
+    if( !SEQ_MIDI_PORT_ClkCheckAvailable(selected_mclk_port) )
       status = -1; // MIDI Out port not available
 
     switch( status ) {

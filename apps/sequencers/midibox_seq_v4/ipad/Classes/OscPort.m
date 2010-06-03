@@ -14,7 +14,7 @@
 
 // 1: errors and important messages
 // 2: more debug messages
-#define VERBOSE_LEVEL 1
+#define DEBUG_VERBOSE_LEVEL 1
 
 @implementation OscPort
 
@@ -217,7 +217,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     #pragma unused(echo)
     assert(data != nil);
     assert(addr != nil);
-#if VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 2
     NSLog(@"[OscPort] received %@ from %@", DisplayStringFromData(data), DisplayAddressForAddress(addr));
 #endif
 
@@ -232,7 +232,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     assert(echo == self.echo);
     #pragma unused(echo)
     assert(error != nil);
-#if VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 1
     NSLog(@"[OscPort] received error: %@", DisplayErrorFromError(error));
 #endif
 }
@@ -244,7 +244,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     #pragma unused(echo)
     assert(data != nil);
     assert(addr != nil);
-#if VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 2
     NSLog(@"[OscPort] sent %@ to   %@", DisplayStringFromData(data), DisplayAddressForAddress(addr));
 #endif
 }
@@ -257,7 +257,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     assert(data != nil);
     assert(addr != nil);
     assert(error != nil);
-#if VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 2
     NSLog(@"[OscPort] sending %@ to   %@, error: %@", DisplayStringFromData(data), DisplayAddressForAddress(addr), DisplayErrorFromError(error));
 #endif
 }
@@ -269,7 +269,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     #pragma unused(echo)
     assert(address != nil);
     
-#if VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 1
     if (self.echo.isServer) {
         NSLog(@"[OscPort] receiving on %@", DisplayAddressForAddress(address));
     } else {
@@ -284,7 +284,7 @@ static NSString * DisplayErrorFromError(NSError *error)
     assert(echo == self.echo);
     #pragma unused(echo)
     assert(error != nil);
-#if VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 1
     NSLog(@"[OscPort] failed with error: %@", DisplayErrorFromError(error));
 #endif
     self.echo = nil;

@@ -252,7 +252,7 @@ static void proxy_handler(void)
 
 int usage(char *program_name)
 {
-  printf("SYNTAX: %s <remote-host> <port> [--in <in-port-number>] [--out <out-port-number>]\n", program_name);
+  printf("SYNTAX: %s <remote-host> <remote-port> [<local-port>] [--in <in-port-number>] [--out <out-port-number>]\n", program_name);
   return 1;
 }
 
@@ -268,7 +268,8 @@ int main(int argc, char* argv[])
   char *program_name = argv[0];
     
   struct sockaddr_in host_address_info;
-  int host_port;
+  int remote_port;
+  int local_port;
   int status;
   struct hostent *remote_host_info;
   long remote_address;
@@ -296,11 +297,12 @@ int main(int argc, char* argv[])
   argc -= optind;
   argv += optind;
 
-  if(argc != 2) {
+  if(argc < 2) {
     return usage(program_name);
   } else {
     remote_host_name = argv[0];
-    host_port = atoi(argv[1]);
+    remote_port = atoi(argv[1]);
+    local_port = (argc >= 3) ? atoi(argv[2]) : remote_port;
   }
 
   // make a socket
@@ -315,19 +317,20 @@ int main(int argc, char* argv[])
   // fill address struct
   memcpy(&remote_address, remote_host_info->h_addr, remote_host_info->h_length);
   remote_address_info.sin_addr.s_addr = remote_address;
-  remote_address_info.sin_port        = htons(host_port);
+  remote_address_info.sin_port        = htons(remote_port);
   remote_address_info.sin_family      = AF_INET;
 
-  printf("Connecting to %s on port %d\n", remote_host_name, host_port);
+  printf("Connecting to %s on port %d\n", remote_host_name, remote_port);
 
   host_address_info.sin_addr.s_addr=INADDR_ANY;
-  host_address_info.sin_port=htons(host_port);
+  host_address_info.sin_port=htons(local_port);
   host_address_info.sin_family=AF_INET;
 
   if( (status=bind(osc_server_socket, (struct sockaddr*)&host_address_info, sizeof(host_address_info))) < 0 ) {
     printf("ERROR: couldn't connect to host (status %d) - try another port!\n", status);
     return 1;
   }
+  printf("Receiving on port %d\n", local_port);
 
   // list device information
   default_in = Pm_GetDefaultInputDeviceID();
