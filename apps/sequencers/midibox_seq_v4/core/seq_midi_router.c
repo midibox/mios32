@@ -48,8 +48,8 @@ s32 SEQ_MIDI_ROUTER_Init(u32 mode)
     n->dst_chn  = 0; // disabled
   }
 
-  //                         USB0 only     UART0..3       IIC0..3     reserved for OSC
-  seq_midi_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x00 << 24);
+  //                         USB0 only     UART0..3       IIC0..3      OSC0..3
+  seq_midi_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
   //                        all ports
   seq_midi_router_mclk_out = 0xffffffff;
 
@@ -188,7 +188,7 @@ s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
   p.evnt0 = evnt0;
 
   u32 port_mask = 0x00000001;
-  for(i=0; i<24; ++i, port_mask<<=1) { // OSC not used yet
+  for(i=0; i<32; ++i, port_mask<<=1) {
     if( seq_midi_router_mclk_out & port_mask & 0xffffff0f ) { // filter USB5..USB8 to avoid unwanted clock events to non-existent ports
       // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
       mios32_midi_port_t port = (USB0 + ((i&0x18) << 1)) | (i&7);
