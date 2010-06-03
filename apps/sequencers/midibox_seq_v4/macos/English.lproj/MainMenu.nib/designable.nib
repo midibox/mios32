@@ -3681,9 +3681,6 @@
 			<object class="NSCustomObject" id="1040534292">
 				<string key="NSClassName">MIOS32_TIMER_Wrapper</string>
 			</object>
-			<object class="NSCustomObject" id="425616082">
-				<string key="NSClassName">MIOS32_LCD_Wrapper</string>
-			</object>
 			<object class="NSCustomObject" id="321294524">
 				<string key="NSClassName">MIOS32_BOARD_Wrapper</string>
 			</object>
@@ -3698,6 +3695,9 @@
 			</object>
 			<object class="NSCustomObject" id="694955583">
 				<string key="NSClassName">MIOS32_COM_Wrapper</string>
+			</object>
+			<object class="NSCustomObject" id="937071460">
+				<string key="NSClassName">OscServer_Wrapper</string>
 			</object>
 		</object>
 		<object class="IBObjectContainer" key="IBDocument.Objects">
@@ -4494,22 +4494,6 @@
 						<reference key="destination" ref="470257979"/>
 					</object>
 					<int key="connectionID">1009</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">lcdView1</string>
-						<reference key="source" ref="425616082"/>
-						<reference key="destination" ref="299282206"/>
-					</object>
-					<int key="connectionID">1013</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">lcdView2</string>
-						<reference key="source" ref="425616082"/>
-						<reference key="destination" ref="762494749"/>
-					</object>
-					<int key="connectionID">1014</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -7290,11 +7274,6 @@
 						<reference key="parent" ref="0"/>
 					</object>
 					<object class="IBObjectRecord">
-						<int key="objectID">1012</int>
-						<reference key="object" ref="425616082"/>
-						<reference key="parent" ref="0"/>
-					</object>
-					<object class="IBObjectRecord">
 						<int key="objectID">1015</int>
 						<reference key="object" ref="321294524"/>
 						<reference key="parent" ref="0"/>
@@ -7319,6 +7298,11 @@
 						<reference key="object" ref="694955583"/>
 						<reference key="parent" ref="0"/>
 					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">1024</int>
+						<reference key="object" ref="937071460"/>
+						<reference key="parent" ref="0"/>
+					</object>
 				</object>
 			</object>
 			<object class="NSMutableDictionary" key="flattenedProperties">
@@ -7326,6 +7310,7 @@
 				<object class="NSArray" key="dict.sortedKeys">
 					<bool key="EncodedWithXMLCoder">YES</bool>
 					<string>-3.IBPluginDependency</string>
+					<string>1024.IBPluginDependency</string>
 					<string>103.IBPluginDependency</string>
 					<string>103.ImportedFromIB2</string>
 					<string>106.IBPluginDependency</string>
@@ -7837,6 +7822,7 @@
 				</object>
 				<object class="NSMutableArray" key="dict.values">
 					<bool key="EncodedWithXMLCoder">YES</bool>
+					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<integer value="1"/>
@@ -8392,7 +8378,7 @@
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">1023</int>
+			<int key="maxID">1024</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -8410,7 +8396,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">FreeRTOS_Wrapper.h</string>
+						<string key="minorKey">Classes/FreeRTOS_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8418,7 +8404,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_BOARD_Wrapper.h</string>
+						<string key="minorKey">Classes/MIOS32_BOARD_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8434,7 +8420,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_COM_Wrapper.h</string>
+						<string key="minorKey">Classes/MIOS32_COM_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8442,15 +8428,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_IRQ_Wrapper.h</string>
-					</object>
-				</object>
-				<object class="IBPartialClassDescription">
-					<string key="className">MIOS32_LCD_Wrapper</string>
-					<string key="superclassName">NSObject</string>
-					<object class="IBClassDescriptionSource" key="sourceIdentifier">
-						<string key="majorKey">IBUserSource</string>
-						<string key="minorKey"/>
+						<string key="minorKey">Classes/MIOS32_IRQ_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8458,7 +8436,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_MIDI_Wrapper.h</string>
+						<string key="minorKey">Classes/MIOS32_MIDI_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8472,168 +8450,9 @@
 				<object class="IBPartialClassDescription">
 					<string key="className">MIOS32_SRIO_Wrapper</string>
 					<string key="superclassName">NSObject</string>
-					<object class="NSMutableDictionary" key="outlets">
-						<bool key="EncodedWithXMLCoder">YES</bool>
-						<object class="NSArray" key="dict.sortedKeys">
-							<bool key="EncodedWithXMLCoder">YES</bool>
-							<string>LED1</string>
-							<string>LED10</string>
-							<string>LED11</string>
-							<string>LED12</string>
-							<string>LED13</string>
-							<string>LED14</string>
-							<string>LED15</string>
-							<string>LED16</string>
-							<string>LED2</string>
-							<string>LED3</string>
-							<string>LED4</string>
-							<string>LED5</string>
-							<string>LED6</string>
-							<string>LED7</string>
-							<string>LED8</string>
-							<string>LED9</string>
-							<string>LEDBeat</string>
-							<string>buttonAll</string>
-							<string>buttonClear</string>
-							<string>buttonCopy</string>
-							<string>buttonEdit</string>
-							<string>buttonExit</string>
-							<string>buttonF1</string>
-							<string>buttonF2</string>
-							<string>buttonF3</string>
-							<string>buttonF4</string>
-							<string>buttonFast</string>
-							<string>buttonFwd</string>
-							<string>buttonGP1</string>
-							<string>buttonGP10</string>
-							<string>buttonGP11</string>
-							<string>buttonGP12</string>
-							<string>buttonGP13</string>
-							<string>buttonGP14</string>
-							<string>buttonGP15</string>
-							<string>buttonGP16</string>
-							<string>buttonGP2</string>
-							<string>buttonGP3</string>
-							<string>buttonGP4</string>
-							<string>buttonGP5</string>
-							<string>buttonGP6</string>
-							<string>buttonGP7</string>
-							<string>buttonGP8</string>
-							<string>buttonGP9</string>
-							<string>buttonGroup1</string>
-							<string>buttonGroup2</string>
-							<string>buttonGroup3</string>
-							<string>buttonGroup4</string>
-							<string>buttonLeft</string>
-							<string>buttonMenu</string>
-							<string>buttonMetronome</string>
-							<string>buttonMute</string>
-							<string>buttonPLayerA</string>
-							<string>buttonPLayerB</string>
-							<string>buttonPLayerC</string>
-							<string>buttonPaste</string>
-							<string>buttonPattern</string>
-							<string>buttonPause</string>
-							<string>buttonPlay</string>
-							<string>buttonRew</string>
-							<string>buttonRight</string>
-							<string>buttonScrub</string>
-							<string>buttonSelect</string>
-							<string>buttonSolo</string>
-							<string>buttonSong</string>
-							<string>buttonStepView</string>
-							<string>buttonStop</string>
-							<string>buttonTLayerA</string>
-							<string>buttonTLayerB</string>
-							<string>buttonTLayerC</string>
-							<string>buttonTrack1</string>
-							<string>buttonTrack2</string>
-							<string>buttonTrack3</string>
-							<string>buttonTrack4</string>
-							<string>buttonUtility</string>
-						</object>
-						<object class="NSMutableArray" key="dict.values">
-							<bool key="EncodedWithXMLCoder">YES</bool>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSColorWell</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-							<string>NSButton</string>
-						</object>
-					</object>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_SRIO_Wrapper.h</string>
+						<string key="minorKey">Classes/MIOS32_SRIO_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8641,7 +8460,7 @@
 					<string key="superclassName">NSObject</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">MIOS32_TIMER_Wrapper.h</string>
+						<string key="minorKey">Classes/MIOS32_TIMER_Wrapper.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8661,11 +8480,19 @@
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
+					<string key="className">OscServer_Wrapper</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">Classes/OscServer_Wrapper.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
 					<string key="className">SEQButton</string>
 					<string key="superclassName">NSButton</string>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">SEQButton.h</string>
+						<string key="minorKey">Classes/SEQButton.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8685,7 +8512,7 @@
 					</object>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">SEQEncoder.h</string>
+						<string key="minorKey">Classes/SEQEncoder.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
@@ -8856,7 +8683,7 @@
 					</object>
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">UI.h</string>
+						<string key="minorKey">Classes/UI.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">

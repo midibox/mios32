@@ -59,7 +59,7 @@
 //!   <LI>'S': alternate type represented as an OSC-string (for example, for systems that differentiate "symbols" from "strings")
 //!   <LI>'c': an ascii character, sent as 32 bits
 //!   <LI>'r': 32 bit RGBA color
-//!   <LI>'m': 4 byte MIDI message (can be converted to mios32_midi_package_t)
+//!   <LI>'m': 4 byte MIDI message
 //!   <LI>'T': TRUE
 //!   <LI>'F': FALSE
 //!   <LI>'N': NIL
@@ -445,6 +445,7 @@ u8 *MIOS32_OSC_PutChar(u8 *buffer, char c)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a MIDI package
+//! \note doesn't work with SysEx streams - they have to be handled separately
 //! \param[in] buffer pointer to OSC message buffer 
 //! \return a MIOS32 compliant MIDI package
 /////////////////////////////////////////////////////////////////////////////
@@ -452,24 +453,24 @@ mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer)
 {
   mios32_midi_package_t p;
 
-  // I find it great that the OSC spec matches with the common MIOS32 package format... :-)
-  p.cable = *buffer; // only first 4 bits taken
-  p.type = *(buffer+1) >> 4;
-  p.evnt0 = *(buffer+1);
-  p.evnt1 = *(buffer+2);
-  p.evnt2 = *(buffer+3);
+  p.cable = 0;
+  p.type = *(buffer+0) >> 4;
+  p.evnt0 = *(buffer+0);
+  p.evnt1 = *(buffer+1);
+  p.evnt2 = *(buffer+2);
   return p;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 //! Puts a MIDI package into buffer
+//! \note doesn't work with SysEx streams - they have to be handled separately
 //! \param[in] buffer pointer to OSC message buffer 
 //! \param[in] p the MIDI package which should be inserted
 //! \return buffer pointer behind the inserted entry
 /////////////////////////////////////////////////////////////////////////////
 u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p)
 {
-  u32 word = (p.cable << 24) | (p.evnt0 << 16) | (p.evnt1 << 8) | (p.evnt2 << 0);
+  u32 word = (p.evnt0 << 24) | (p.evnt1 << 16) | (p.evnt2 << 8);
   return MIOS32_OSC_PutWord(buffer, word);
 }
 

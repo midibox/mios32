@@ -19,6 +19,7 @@
 
 #include <aout.h>
 #include <seq_midi_out.h>
+#include <seq_midi_osc.h>
 #include <seq_bpm.h>
 #include <blm.h>
 #include <blm_x.h>
@@ -100,6 +101,7 @@ void APP_Init(void)
   SEQ_BLM_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
+  SEQ_MIDI_OSC_Init(0);
   SEQ_TERMINAL_Init(0);
 
   // init mixer page

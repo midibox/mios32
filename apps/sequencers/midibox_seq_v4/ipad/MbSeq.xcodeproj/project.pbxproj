@@ -20,6 +20,11 @@
 		520512991177C21900B60101 /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 520512981177C21900B60101 /* mios32_lcd.c */; };
 		520512AC1177C3BF00B60101 /* MbSeqViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 520512AB1177C3BF00B60101 /* MbSeqViewController.mm */; };
 		522E380711B478C70078410E /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83211790B6700293622 /* seq_file_g.c */; };
+		527779BC11B72BF6009D9083 /* OscPort.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779B911B72BF6009D9083 /* OscPort.m */; };
+		527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */; };
+		527779C011B72C00009D9083 /* UDPEcho.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BF11B72C00009D9083 /* UDPEcho.m */; };
+		527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 527779E011B72F2F009D9083 /* seq_midi_osc.c */; };
+		527779EE11B72F5D009D9083 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527779ED11B72F5D009D9083 /* CFNetwork.framework */; };
 		529FA6701178CC8C00293622 /* SeqButton.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529FA66F1178CC8C00293622 /* SeqButton.mm */; };
 		529FA74E1178EF1F00293622 /* SeqEncoder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529FA74D1178EF1F00293622 /* SeqEncoder.mm */; };
 		529FA7F6117909A400293622 /* FreeRTOS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7DB117909A400293622 /* FreeRTOS_Wrapper.m */; };
@@ -156,6 +161,15 @@
 		520512551177BDCC00B60101 /* CLcdView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CLcdView.mm; path = ../../../../modules/app_lcd/ipad/CLcdView.mm; sourceTree = SOURCE_ROOT; };
 		520512981177C21900B60101 /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
 		520512AB1177C3BF00B60101 /* MbSeqViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MbSeqViewController.mm; sourceTree = "<group>"; };
+		527779B811B72BF6009D9083 /* OscPort.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscPort.h; sourceTree = "<group>"; };
+		527779B911B72BF6009D9083 /* OscPort.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OscPort.m; sourceTree = "<group>"; };
+		527779BA11B72BF6009D9083 /* OscServer_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscServer_Wrapper.h; sourceTree = "<group>"; };
+		527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OscServer_Wrapper.m; sourceTree = "<group>"; };
+		527779BE11B72C00009D9083 /* UDPEcho.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UDPEcho.h; sourceTree = "<group>"; };
+		527779BF11B72C00009D9083 /* UDPEcho.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UDPEcho.m; sourceTree = "<group>"; };
+		527779E011B72F2F009D9083 /* seq_midi_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_osc.c; path = ../core/seq_midi_osc.c; sourceTree = SOURCE_ROOT; };
+		527779E111B72F2F009D9083 /* seq_midi_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_osc.h; path = ../core/seq_midi_osc.h; sourceTree = SOURCE_ROOT; };
+		527779ED11B72F5D009D9083 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		529FA66E1178CC8C00293622 /* SeqButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeqButton.h; sourceTree = "<group>"; };
 		529FA66F1178CC8C00293622 /* SeqButton.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SeqButton.mm; sourceTree = "<group>"; };
 		529FA74C1178EF1F00293622 /* SeqEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeqEncoder.h; sourceTree = "<group>"; };
@@ -350,6 +364,7 @@
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
 				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
 				288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */,
+				527779EE11B72F5D009D9083 /* CFNetwork.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,6 +374,12 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				527779BE11B72C00009D9083 /* UDPEcho.h */,
+				527779BF11B72C00009D9083 /* UDPEcho.m */,
+				527779B811B72BF6009D9083 /* OscPort.h */,
+				527779B911B72BF6009D9083 /* OscPort.m */,
+				527779BA11B72BF6009D9083 /* OscServer_Wrapper.h */,
+				527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */,
 				529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */,
 				529FA9F81179121300293622 /* FATFS_Wrapper.h */,
 				529FA9F91179121300293622 /* FATFS_Wrapper.m */,
@@ -454,6 +475,7 @@
 				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
 				1D30AB110D05D00D00671497 /* Foundation.framework */,
 				288765A40DF7441C002DB57D /* CoreGraphics.framework */,
+				527779ED11B72F5D009D9083 /* CFNetwork.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -461,6 +483,8 @@
 		529FA81C11790B5600293622 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				527779E011B72F2F009D9083 /* seq_midi_osc.c */,
+				527779E111B72F2F009D9083 /* seq_midi_osc.h */,
 				52F15C40119C9D0900E40C6C /* seq_blm.c */,
 				52F15C41119C9D0900E40C6C /* seq_blm.h */,
 				529FA81D11790B6700293622 /* app.c */,
@@ -806,6 +830,10 @@
 				529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */,
 				52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */,
 				522E380711B478C70078410E /* seq_file_g.c in Sources */,
+				527779BC11B72BF6009D9083 /* OscPort.m in Sources */,
+				527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */,
+				527779C011B72C00009D9083 /* UDPEcho.m in Sources */,
+				527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
