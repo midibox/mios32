@@ -503,6 +503,7 @@ extern "C" s32 TASKS_Init(u32 mode)
 #ifndef MIOS32_DONT_USE_MIDI
 	MIOS32_MIDI_Init(0);
 #endif
+    MIOS32_MIDI_DefaultPortSet(OSC0);
 #ifndef MIOS32_DONT_USE_COM
 //  MIOS32_COM_Init(0);
 #endif
