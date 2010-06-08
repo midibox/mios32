@@ -6,6 +6,15 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta23
+~~~~~~~~~~~~~~~~~~~~~
+
+  o "external restart" sends FA at the right moment now
+
+  o track transpose page now always starts with "semitones" item instead
+    of "octave" item
+
+
 MIDIboxSEQ V4.0beta22
 ~~~~~~~~~~~~~~~~~~~~~
 

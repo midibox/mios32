@@ -432,6 +432,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
   // if no export:
   if( export_track == -1 ) {
+    // send FA if external restart has been requested
+    if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
+      seq_core_state.EXT_RESTART_REQ = 0; // remove request
+      seq_ui_display_update_req = 1; // request display update
+      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
+    }
+
     // send MIDI clock on each 16th tick (since we are working at 384ppqn)
     if( (bpm_tick % 16) == 0 )
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
@@ -466,13 +473,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
       if( p.note )
 	SEQ_MIDI_OUT_Send(seq_core_metronome_port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
-    }
-
-    // send FA if external restart has been requested
-    if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
-      seq_core_state.EXT_RESTART_REQ = 0; // remove request
-      seq_ui_display_update_req = 1; // request display update
-      SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, bpm_tick);
     }
   }
 
