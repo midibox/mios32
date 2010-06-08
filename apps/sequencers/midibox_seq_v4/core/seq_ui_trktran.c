@@ -26,9 +26,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define NUM_OF_ITEMS       3
-#define ITEM_OCTAVE        0
-#define ITEM_SEMITONE      1
-#define ITEM_GXTY          2
+#define ITEM_SEMITONE      0
+#define ITEM_GXTY          1
+#define ITEM_OCTAVE        2
 
 
 /////////////////////////////////////////////////////////////////////////////

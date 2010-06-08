@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "tasks.h"
 
 #include "seq_midi_osc.h"
