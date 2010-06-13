@@ -76,6 +76,7 @@ protected:
 
     //==============================================================================
     double progress;
+    bool waitUploadRequestMessagePrint;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)

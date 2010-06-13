@@ -230,41 +230,43 @@ void MiosStudio::timerCallback()
             break;
         }
     } else {
-        // important: only broadcast one message per timer tick to avoid GUI hangups when
+        // important: only broadcast 1..5 messages per timer tick to avoid GUI hangups when
         // a large bulk of data is received
 
-        if( !midiInQueue.empty() ) {
-            const ScopedLock sl(midiInQueueLock); // lock will be released at end of this scope
+        for(int checkLoop=0; checkLoop<5; ++checkLoop) {
+            if( !midiInQueue.empty() ) {
+                const ScopedLock sl(midiInQueueLock); // lock will be released at end of this scope
 
-            MidiMessage &message = midiInQueue.front();
+                MidiMessage &message = midiInQueue.front();
 
-            uint8 *data = message.getRawData();
-            if( data[0] >= 0x80 && data[0] < 0xf8 )
-                runningStatus = data[0];
+                uint8 *data = message.getRawData();
+                if( data[0] >= 0x80 && data[0] < 0xf8 )
+                    runningStatus = data[0];
 
-            // propagate incoming event to MIDI components
-            midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
+                // propagate incoming event to MIDI components
+                midiInMonitor->handleIncomingMidiMessage(message, runningStatus);
 
-            // filter runtime events for following components to improve performance
-            if( data[0] < 0xf8 ) {
-                sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                miosTerminal->handleIncomingMidiMessage(message, runningStatus);
-                midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
+                // filter runtime events for following components to improve performance
+                if( data[0] < 0xf8 ) {
+                    sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    miosTerminal->handleIncomingMidiMessage(message, runningStatus);
+                    midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
+                }
+
+                midiInQueue.pop();
             }
 
-            midiInQueue.pop();
-        }
+            if( !midiOutQueue.empty() ) {
+                const ScopedLock sl(midiOutQueueLock); // lock will be released at end of this scope
 
-        if( !midiOutQueue.empty() ) {
-            const ScopedLock sl(midiOutQueueLock); // lock will be released at end of this scope
+                MidiMessage &message = midiOutQueue.front();
 
-            MidiMessage &message = midiOutQueue.front();
+                midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
 
-            midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
-
-            midiOutQueue.pop();
+                midiOutQueue.pop();
+            }
         }
     }
 }

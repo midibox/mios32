@@ -43,6 +43,9 @@ public:
     // error status message from run() thread
     String errorStatusMessage;
 
+    // set when no response from core - we wait for upload request
+    bool autoStartOnUploadRequest;
+
     uint8 deviceId; // taken over from upload handler to ensure that upload always accesses the firstly selected one
 
     volatile bool detectedMios8FeedbackLoop;
@@ -93,7 +96,7 @@ public:
     void clearCoreInfo(void);
 
     //==============================================================================
-    bool busy(void);
+    int busy(void);
     bool startQuery(void);
     bool startUpload(void);
 

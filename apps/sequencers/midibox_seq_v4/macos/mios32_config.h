@@ -17,6 +17,7 @@
 
 // function used to output debug messages (must be printf compatible!)
 #define DEBUG_MSG UI_printf
+extern s32 UI_printf(char *format, ...);
 
 
 // not supported by MacOS emulation:
