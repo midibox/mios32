@@ -80,9 +80,15 @@ void UploadHandler::setDeviceId(uint8 id)
 
 
 //==============================================================================
-bool UploadHandler::busy(void)
+int UploadHandler::busy(void)
 {
-    return uploadHandlerThread && uploadHandlerThread->isThreadRunning();
+    // return 0 if thread not running
+    // return 1 if thread is running
+    // return 2 if thread waits for upload request
+    if( uploadHandlerThread && uploadHandlerThread->isThreadRunning() )
+        return (uploadHandlerThread->autoStartOnUploadRequest) ? 2 : 1;
+
+    return 0;
 }
 
 
@@ -345,6 +351,7 @@ UploadHandlerThread::UploadHandlerThread(MiosStudio *_miosStudio, UploadHandler 
     , mios8RebootRequest(0)
     , mios32RebootRequest(0)
     , uploadErrorCode(-1)
+    , autoStartOnUploadRequest(0)
 {
     // update status variables of caller
     uploadHandler->excludedBlocks = 0;
@@ -468,6 +475,7 @@ void UploadHandlerThread::run()
     // 2) if no response is received after 100 mS, send an invalid MIOS8 upload block request
     //    (block with 9 bytes, wrong checksum to prohibited address 0x0000)
     // 2a) if a MIOS8 upload request is received again, select MIOS8 for the whole thread
+    // 3) if still no response, wait for upload request (autoStartOnUploadRequest set)
 
 
     // variables changed during detection procedure
@@ -535,12 +543,42 @@ void UploadHandlerThread::run()
         }
 
         if( !detectedMios8UploadRequest ) {
-            errorStatusMessage = "No response from MIOS8 or MIOS32 core!";
-            return;
+            if( queryOnly ) {
+                errorStatusMessage = "No response from MIOS8 or MIOS32 core!";
+                return;
+            } else {
+                autoStartOnUploadRequest = 1;
+            }
         }
 
         forMios32 = false;
         viaBootloader = true;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    // Step 3) if still no response, wait for upload request (autoStartOnUploadRequest set)
+    //////////////////////////////////////////////////////////////////////////////////////
+    if( autoStartOnUploadRequest ) {
+        do {
+            if( threadShouldExit() )
+                return;
+
+            wait(10);
+        } while( detectedMios32UploadRequest == 0 && detectedMios8UploadRequest == 0 );
+
+        if( detectedMios8UploadRequest ) {
+            forMios32 = false;
+            viaBootloader = true;
+        } else if( detectedMios32UploadRequest ) {
+            forMios32 = true;
+            viaBootloader = true;
+        } else {
+            errorStatusMessage = "Unexpected error!";
+            return;
+        }
+
+        autoStartOnUploadRequest = 0;
     }
 
 
@@ -751,7 +789,11 @@ void UploadHandlerThread::run()
     } else {
         // application will reboot automatically (unfortunately... this was a bad decition 10 years ago!)
         // we wait for up to 300*10 mS (for the case that multiple replies are received)
-        for(int i=0; i<300; ++i)
+        for(int i=0; i<300; ++i) {
+            if( threadShouldExit() )
+                return;
+
             wait(10);
+        }
     }
 }

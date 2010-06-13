@@ -29,6 +29,7 @@
 UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
     , progress(0)
+    , waitUploadRequestMessagePrint(0)
 {
 	addAndMakeVisible(fileChooser = new FilenameComponent (T("hexfile"),
                                                            File::nonexistent,
@@ -188,7 +189,8 @@ void UploadWindow::midiPortChanged(void)
 
     uploadQuery->clear();
     uploadQuery->addEntry(Colours::red, T("No response from a core yet..."));
-    uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections!"));
+    uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections"));
+    uploadQuery->addEntry(Colours::red, T("and Device ID!"));
     uploadStatus->clear();
     queryCore();
 }
@@ -213,6 +215,7 @@ void UploadWindow::queryCore(void)
 void UploadWindow::uploadStart(void)
 {
     progress = 0;
+    waitUploadRequestMessagePrint = 0;
 
     startButton->setEnabled(false); // will be enabled again if file is valid
     queryButton->setEnabled(false);
@@ -279,7 +282,18 @@ void UploadWindow::timerCallback(const int timerId)
     } else if( timerId == TIMER_UPLOAD ) {
         progress = (double)miosStudio->uploadHandler->currentBlock / (double)miosStudio->uploadHandler->totalBlocks;
 
-        if( miosStudio->uploadHandler->busy() ) {
+        int busyState;
+        if( (busyState=miosStudio->uploadHandler->busy()) > 0 ) {
+            if( busyState == 2 && !waitUploadRequestMessagePrint ) {
+                uploadStatus->addEntry(Colours::brown, T("WARNING: no response from core"));
+                uploadStatus->addEntry(Colours::brown, T("Please reboot the core (e.g. turning off/on power)!"));
+                uploadStatus->addEntry(Colours::brown, T("Waiting for upload request..."));
+                waitUploadRequestMessagePrint = true;
+            } else if( busyState == 1 && waitUploadRequestMessagePrint ) {
+                uploadStatus->addEntry(Colours::brown, T("Received upload request!"));
+                waitUploadRequestMessagePrint = false;
+            }
+
             // wait again for 10 mS - the uploader provides an own timeout mechanism
             MultiTimer::startTimer(TIMER_UPLOAD, 10);
         } else {
@@ -327,7 +341,8 @@ void UploadWindow::timerCallback(const int timerId)
             if( errorMessage != String::empty ) {
                 uploadQuery->clear();
                 uploadQuery->addEntry(Colours::red, errorMessage);
-                uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections!"));
+                uploadQuery->addEntry(Colours::red, T("Check MIDI IN/OUT connections"));
+                uploadQuery->addEntry(Colours::red, T("and Device ID!"));
             } else {
                 String str;
                 uploadQuery->clear();
