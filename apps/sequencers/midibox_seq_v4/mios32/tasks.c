@@ -19,6 +19,7 @@
 #include <mios32.h>
 
 #include <msd.h>
+#include "uip_task.h"
 
 #include "tasks.h"
 
@@ -39,6 +40,9 @@ xSemaphoreHandle xMIDIOUTSemaphore;
 
 // Mutex for LCD access
 xSemaphoreHandle xLCDSemaphore;
+
+// Mutex for J16 access (SDCard/Ethernet)
+xSemaphoreHandle xJ16Semaphore;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +67,8 @@ typedef enum {
 #define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PATTERN            ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 3 )
+
+// priority of uIP task defined in uip_task.c (-> using 3)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -107,7 +113,11 @@ s32 TASKS_Init(u32 mode)
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
   xLCDSemaphore = xSemaphoreCreateRecursiveMutex();
+  xJ16Semaphore = xSemaphoreCreateRecursiveMutex();
   // TODO: here we could check for NULL and bring MBSEQ into halt state
+
+  // finally init the uIP task
+  UIP_TASK_Init(0);
 
   return 0; // no error
 }
@@ -304,4 +314,21 @@ s32 TASK_MSD_FlagStrGet(char str[5])
   str[4] = 0;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// functions to access J16 semaphore
+// see also mios32_config.h
+/////////////////////////////////////////////////////////////////////////////
+void TASKS_J16SemaphoreTake(void)
+{
+  if( xJ16Semaphore != NULL )
+    while( xSemaphoreTakeRecursive(xJ16Semaphore, (portTickType)1) != pdTRUE );
+}
+
+void TASKS_J16SemaphoreGive(void)
+{
+  if( xJ16Semaphore != NULL )
+    xSemaphoreGiveRecursive(xJ16Semaphore);
 }

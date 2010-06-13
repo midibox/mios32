@@ -48,6 +48,9 @@
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "umm_malloc.h"
+#include "uip.h"
+#include "uip_task.h"
+#include "osc_server.h"
 #endif
 
 
@@ -121,29 +124,15 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
     char *parameter;
 
     if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
-      if( strncmp(parameter, "help", 4) == 0 ) {
-	MUTEX_MIDIOUT_TAKE;
-	DEBUG_MSG("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
-	DEBUG_MSG("Following commands are available:");
-	DEBUG_MSG("  system:         print system info\n");
-	DEBUG_MSG("  global:         print global settings\n");
-	DEBUG_MSG("  tracks:         print overview of all tracks\n");
-	DEBUG_MSG("  track <track>:  print info about a specific track\n");
-	DEBUG_MSG("  mixer:          print current mixer map\n");
-	DEBUG_MSG("  song:           print current song info\n");
-	DEBUG_MSG("  grooves:        print groove templates\n");
-	DEBUG_MSG("  memory:         print memory allocation info\n");
-	DEBUG_MSG("  sdcard:         print SD Card info\n");
-	DEBUG_MSG("  help:           this page\n");
-	MUTEX_MIDIOUT_GIVE;
-      } else if( strncmp(parameter, "system", 6) == 0 ) {
-	SEQ_TERMINAL_PrintSystem();
-      } else if( strncmp(parameter, "global", 6) == 0 ) {
-	SEQ_TERMINAL_PrintGlobals();
-      } else if( strncmp(parameter, "tracks", 6) == 0 ) {
-	SEQ_TERMINAL_PrintTracks();
-      } else if( strncmp(parameter, "track", 5) == 0 ) {
-	  parameter += 5;
+      if( strcmp(parameter, "help") == 0 ) {
+	SEQ_TERMINAL_PrintHelp(DEBUG_MSG);
+      } else if( strcmp(parameter, "system") == 0 ) {
+	SEQ_TERMINAL_PrintSystem(DEBUG_MSG);
+      } else if( strcmp(parameter, "global") == 0 ) {
+	SEQ_TERMINAL_PrintGlobals(DEBUG_MSG);
+      } else if( strcmp(parameter, "tracks") == 0 ) {
+	SEQ_TERMINAL_PrintTracks(DEBUG_MSG);
+      } else if( strcmp(parameter, "track") == 0 ) {
 	  char *arg;
 	  if( (arg = strtok_r(NULL, separators, &brkt)) ) {
 	    int track = get_dec(arg);
@@ -152,23 +141,25 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	      DEBUG_MSG("Wrong track number %d - expected track 1..%d\n", track, SEQ_CORE_NUM_TRACKS);
 	      MUTEX_MIDIOUT_GIVE;
 	    } else {
-	      SEQ_TERMINAL_PrintTrack(track-1);
+	      SEQ_TERMINAL_PrintTrack(DEBUG_MSG, track-1);
 	    }
 	  } else {
 	    MUTEX_MIDIOUT_TAKE;
 	    DEBUG_MSG("Please specify track, e.g. \"track 1\"\n");
 	    MUTEX_MIDIOUT_GIVE;
 	  }
-      } else if( strncmp(parameter, "mixer", 5) == 0 ) {
-	SEQ_TERMINAL_PrintCurrentMixerMap();
-      } else if( strncmp(parameter, "song", 6) == 0 ) {
-	SEQ_TERMINAL_PrintCurrentSong();
-      } else if( strncmp(parameter, "grooves", 7) == 0 ) {
-	SEQ_TERMINAL_PrintGrooveTemplates();
-      } else if( strncmp(parameter, "memory", 6) == 0 ) {
-	SEQ_TERMINAL_PrintMemoryInfo();
-      } else if( strncmp(parameter, "sdcard", 6) == 0 ) {
-	SEQ_TERMINAL_PrintSdCardInfo();
+      } else if( strcmp(parameter, "mixer") == 0 ) {
+	SEQ_TERMINAL_PrintCurrentMixerMap(DEBUG_MSG);
+      } else if( strcmp(parameter, "song") == 0 ) {
+	SEQ_TERMINAL_PrintCurrentSong(DEBUG_MSG);
+      } else if( strcmp(parameter, "grooves") == 0 ) {
+	SEQ_TERMINAL_PrintGrooveTemplates(DEBUG_MSG);
+      } else if( strcmp(parameter, "memory") == 0 ) {
+	SEQ_TERMINAL_PrintMemoryInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "network") == 0 ) {
+	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "sdcard") == 0 ) {
+	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
       } else {
 	MUTEX_MIDIOUT_TAKE;
 	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
@@ -190,82 +181,110 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 }
 
 
-s32 SEQ_TERMINAL_PrintSystem(void)
+s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
+
+  MUTEX_MIDIOUT_TAKE;
+  out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
+  out("Following commands are available:");
+  out("  system:         print system info\n");
+  out("  global:         print global settings\n");
+  out("  tracks:         print overview of all tracks\n");
+  out("  track <track>:  print info about a specific track\n");
+  out("  mixer:          print current mixer map\n");
+  out("  song:           print current song info\n");
+  out("  grooves:        print groove templates\n");
+  out("  memory:         print memory allocation info\n");
+  out("  sdcard:         print SD Card info\n");
+  out("  network:        print ethernet network info\n");
+  out("  help:           this page\n");
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+
+s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
   char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
 
-  DEBUG_MSG("System Informations:\n");
-  DEBUG_MSG("====================\n");
-  DEBUG_MSG(MIOS32_LCD_BOOT_MSG_LINE1 " " MIOS32_LCD_BOOT_MSG_LINE2 "\n");
+  out("System Informations:\n");
+  out("====================\n");
+  out(MIOS32_LCD_BOOT_MSG_LINE1 " " MIOS32_LCD_BOOT_MSG_LINE2 "\n");
 
   mios32_sys_time_t t = MIOS32_SYS_TimeGet();
   int hours = (t.seconds / 3600) % 24;
   int minutes = (t.seconds % 3600) / 60;
   int seconds = (t.seconds % 3600) % 60;
 
-  DEBUG_MSG("Operating System: MIOS32\n");
-  DEBUG_MSG("Board: " MIOS32_BOARD_STR "\n");
-  DEBUG_MSG("Chip Family: " MIOS32_FAMILY_STR "\n");
+  out("Operating System: MIOS32\n");
+  out("Board: " MIOS32_BOARD_STR "\n");
+  out("Chip Family: " MIOS32_FAMILY_STR "\n");
   if( MIOS32_SYS_SerialNumberGet((char *)str_buffer) >= 0 )
-    DEBUG_MSG("Serial Number: %s\n", str_buffer);
+    out("Serial Number: %s\n", str_buffer);
   else
-    DEBUG_MSG("Serial Number: ?\n");
-  DEBUG_MSG("Flash Memory Size: %d bytes\n", MIOS32_SYS_FlashSizeGet());
-  DEBUG_MSG("RAM Size: %d bytes\n", MIOS32_SYS_RAMSizeGet());
+    out("Serial Number: ?\n");
+  out("Flash Memory Size: %d bytes\n", MIOS32_SYS_FlashSizeGet());
+  out("RAM Size: %d bytes\n", MIOS32_SYS_RAMSizeGet());
 
-  DEBUG_MSG("Systime: %02d:%02d:%02d\n", hours, minutes, seconds);
-  DEBUG_MSG("CPU Load: %02d%%\n", SEQ_STATISTICS_CurrentCPULoad());
-  DEBUG_MSG("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
+  out("Systime: %02d:%02d:%02d\n", hours, minutes, seconds);
+  out("CPU Load: %02d%%\n", SEQ_STATISTICS_CurrentCPULoad());
+  out("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
 	    seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
 
   u32 stopwatch_value_max = SEQ_STATISTICS_StopwatchGetValueMax();
   u32 stopwatch_value = SEQ_STATISTICS_StopwatchGetValue();
   if( stopwatch_value_max == 0xffffffff ) {
-    DEBUG_MSG("Stopwatch: Overrun!\n");
+    out("Stopwatch: Overrun!\n");
   } else if( !stopwatch_value_max ) {
-    DEBUG_MSG("Stopwatch: no result yet\n");
+    out("Stopwatch: no result yet\n");
   } else {
-    DEBUG_MSG("Stopwatch: %d/%d uS\n", stopwatch_value, stopwatch_value_max);
+    out("Stopwatch: %d/%d uS\n", stopwatch_value, stopwatch_value_max);
   }
 
 #if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
   // send Run Time Stats to MIOS terminal
-  DEBUG_MSG("FreeRTOS Task RunTime Stats:\n");
+  out("FreeRTOS Task RunTime Stats:\n");
   FREERTOS_UTILS_RunTimeStats();
 #endif
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
 
-s32 SEQ_TERMINAL_PrintGlobals(void)
+s32 SEQ_TERMINAL_PrintGlobals(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
+
   MUTEX_MIDIOUT_TAKE;
-  DEBUG_MSG("Global Settings:\n");
-  DEBUG_MSG("================\n");
+  out("Global Settings:\n");
+  out("================\n");
   SEQ_FILE_C_Debug();
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
-s32 SEQ_TERMINAL_PrintTracks(void)
+s32 SEQ_TERMINAL_PrintTracks(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
   char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
-  DEBUG_MSG("Track Overview:\n");
-  DEBUG_MSG("===============\n");
+  out("Track Overview:\n");
+  out("===============\n");
 
-  DEBUG_MSG("| Track | Mode  | Layer P/T/I | Steps P/T | Length | Port  | Chn. | Muted |\n");
-  DEBUG_MSG("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
+  out("| Track | Mode  | Layer P/T/I | Steps P/T | Length | Port  | Chn. | Muted |\n");
+  out("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
 
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
@@ -298,45 +317,48 @@ s32 SEQ_TERMINAL_PrintTracks(void)
     else
       sprintf((char *)(str_buffer + strlen(str_buffer)), "  no   |\n");
 
-    DEBUG_MSG(str_buffer);
+    out(str_buffer);
   }
 
-  DEBUG_MSG("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
+  out("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
-s32 SEQ_TERMINAL_PrintTrack(u8 track)
+s32 SEQ_TERMINAL_PrintTrack(void *_output_function, u8 track)
 {
+  void (*out)(char *format, ...) = _output_function;
+
   MUTEX_MIDIOUT_TAKE;
 
-  DEBUG_MSG("Track Parameters of G%dT%d", (track/4)+1, (track%4)+1);
-  DEBUG_MSG("========================\n");
+  out("Track Parameters of G%dT%d", (track/4)+1, (track%4)+1);
+  out("========================\n");
 
   SEQ_FILE_T_Debug(track);
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
-s32 SEQ_TERMINAL_PrintCurrentMixerMap(void)
+s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
   char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
   u8 map = SEQ_MIXER_NumGet();
   int i;
 
-  DEBUG_MSG("Mixer Map #%3d\n", map+1);
-  DEBUG_MSG("==============\n");
+  out("Mixer Map #%3d\n", map+1);
+  out("==============\n");
 
-  DEBUG_MSG("|Num|Port|Chn|Prg|Vol|Pan|Rev|Cho|Mod|CC1|CC2|CC3|CC4|C1A|C2A|C3A|C4A|\n");
-  DEBUG_MSG("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
+  out("|Num|Port|Chn|Prg|Vol|Pan|Rev|Cho|Mod|CC1|CC2|CC3|CC4|C1A|C2A|C3A|C4A|\n");
+  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
 
   for(i=0; i<16; ++i) {
     sprintf(str_buffer, "|%3d|%s|", i, SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(SEQ_MIXER_Get(i, SEQ_MIXER_PAR_PORT))));
@@ -357,52 +379,58 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void)
     for(par=12; par<16; ++par)
       sprintf((char *)(str_buffer + strlen(str_buffer)), "%3d|", SEQ_MIXER_Get(i, par));
 
-    DEBUG_MSG("%s\n", str_buffer);
+    out("%s\n", str_buffer);
   }
 
-  DEBUG_MSG("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
-  DEBUG_MSG("done.\n");
+  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
 
-s32 SEQ_TERMINAL_PrintCurrentSong(void)
+s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
   u8 song = SEQ_SONG_NumGet();
 
   MUTEX_MIDIOUT_TAKE;
   int i;
 
-  DEBUG_MSG("Song #%2d\n", song+1);
-  DEBUG_MSG("========\n");
+  out("Song #%2d\n", song+1);
+  out("========\n");
 
-  DEBUG_MSG("Name: '%s'\n", seq_song_name);
+  out("Name: '%s'\n", seq_song_name);
   MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_song_steps[0], SEQ_SONG_NUM_STEPS*sizeof(seq_song_step_t));
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
-s32 SEQ_TERMINAL_PrintGrooveTemplates(void)
+s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
+
   MUTEX_MIDIOUT_TAKE;
-  DEBUG_MSG("Groove Templates:\n");
-  DEBUG_MSG("=================\n");
+  out("Groove Templates:\n");
+  out("=================\n");
   SEQ_FILE_G_Debug();
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
 
 extern void * ptr_array[256];
-s32 SEQ_TERMINAL_PrintMemoryInfo(void)
+s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
+  // TODO: umm_info doesn't allow to define output function
+
 #if !defined(MIOS32_FAMILY_EMULATION)
   umm_info( NULL, 1 );
 #endif
@@ -452,8 +480,10 @@ static void ShowFatDate(u32 ThisDate, char* msg)
 }
 
 
-s32 SEQ_TERMINAL_PrintSdCardInfo(void)
+s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 {
+  void (*out)(char *format, ...) = _output_function;
+
   FRESULT res;
   FILINFO fno;
   DIR dir;
@@ -463,8 +493,8 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 
   MUTEX_MIDIOUT_TAKE;
 
-  DEBUG_MSG("SD Card Informations\n");
-  DEBUG_MSG("====================\n");
+  out("SD Card Informations\n");
+  out("====================\n");
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   // this yield ensures, that Debug Messages are sent before we continue the execution
@@ -477,9 +507,9 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   MUTEX_SDCARD_GIVE;
 #endif
 
-  DEBUG_MSG("\n");
-  DEBUG_MSG("Reading Root Directory\n");
-  DEBUG_MSG("======================\n");
+  out("\n");
+  out("Reading Root Directory\n");
+  out("======================\n");
 
   taskYIELD();
 
@@ -488,7 +518,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
   } else if( !SEQ_FILE_VolumeAvailable() ) {
     sprintf(str_buffer, "Invalid FAT");
   } else {
-    DEBUG_MSG("Retrieving SD Card informations - please wait!\n");
+    out("Retrieving SD Card informations - please wait!\n");
     MUTEX_MIDIOUT_GIVE;
     MUTEX_SDCARD_TAKE;
     SEQ_FILE_UpdateFreeBytes();
@@ -500,7 +530,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 	    (unsigned int)(SEQ_FILE_VolumeBytesFree()/1000000),
 	    (unsigned int)(SEQ_FILE_VolumeBytesTotal()/1000000));
   }
-  DEBUG_MSG("SD Card: %s\n", str_buffer);
+  out("SD Card: %s\n", str_buffer);
 
   taskYIELD();
 
@@ -512,7 +542,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 
   MUTEX_SDCARD_TAKE;
   if( (res=f_opendir(&dir, "/")) != FR_OK ) {
-    DEBUG_MSG("Failed to open root directory - error status: %d\n", res);
+    out("Failed to open root directory - error status: %d\n", res);
   } else {
     while( (f_readdir(&dir, &fno) == FR_OK) && fno.fname[0] ) {
 #if _USE_LFN
@@ -524,7 +554,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
       ShowFatDate(fno.fdate,(char*)&date);
       char time[12];
       ShowFatTime(fno.ftime,(char*)&time);
-      DEBUG_MSG("[%s%s%s%s%s%s%s] %s  %s   %s %u %s\n",
+      out("[%s%s%s%s%s%s%s] %s  %s   %s %u %s\n",
 		(fno.fattrib & AM_RDO ) ? "r" : ".",
 		(fno.fattrib & AM_HID ) ? "h" : ".",
 		(fno.fattrib & AM_SYS ) ? "s" : ".",
@@ -541,9 +571,9 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
 
   taskYIELD();
 
-  DEBUG_MSG("\n");
-  DEBUG_MSG("Checking SD Card at application layer\n");
-  DEBUG_MSG("=====================================\n");
+  out("\n");
+  out("Checking SD Card at application layer\n");
+  out("=====================================\n");
 
 
   {
@@ -551,40 +581,95 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void)
     for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
       int num_patterns = SEQ_FILE_B_NumPatterns(bank);
       if( num_patterns )
-	DEBUG_MSG("File MBSEQ_B%d.V4: valid (%d patterns)\n", bank+1, num_patterns);
+	out("File MBSEQ_B%d.V4: valid (%d patterns)\n", bank+1, num_patterns);
       else
-	DEBUG_MSG("File MBSEQ_B%d.V4: doesn't exist\n", bank+1, num_patterns);
+	out("File MBSEQ_B%d.V4: doesn't exist\n", bank+1, num_patterns);
     }
 
     int num_maps = SEQ_FILE_M_NumMaps();
     if( num_maps )
-      DEBUG_MSG("File MBSEQ_M.V4: valid (%d mixer maps)\n", num_maps);
+      out("File MBSEQ_M.V4: valid (%d mixer maps)\n", num_maps);
     else
-      DEBUG_MSG("File MBSEQ_M.V4: doesn't exist\n");
+      out("File MBSEQ_M.V4: doesn't exist\n");
     
     int num_songs = SEQ_FILE_S_NumSongs();
     if( num_songs )
-      DEBUG_MSG("File MBSEQ_S.V4: valid (%d songs)\n", num_songs);
+      out("File MBSEQ_S.V4: valid (%d songs)\n", num_songs);
     else
-      DEBUG_MSG("File MBSEQ_S.V4: doesn't exist\n");
+      out("File MBSEQ_S.V4: doesn't exist\n");
 
     if( SEQ_FILE_G_Valid() )
-      DEBUG_MSG("File MBSEQ_G.V4: valid\n");
+      out("File MBSEQ_G.V4: valid\n");
     else
-      DEBUG_MSG("File MBSEQ_G.V4: doesn't exist\n");
+      out("File MBSEQ_G.V4: doesn't exist\n");
     
     if( SEQ_FILE_C_Valid() )
-      DEBUG_MSG("File MBSEQ_C.V4: valid\n");
+      out("File MBSEQ_C.V4: valid\n");
     else
-      DEBUG_MSG("File MBSEQ_C.V4: doesn't exist\n");
+      out("File MBSEQ_C.V4: doesn't exist\n");
     
     if( SEQ_FILE_HW_Valid() )
-      DEBUG_MSG("File MBSEQ_HW.V4: valid\n");
+      out("File MBSEQ_HW.V4: valid\n");
     else
-      DEBUG_MSG("File MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
+      out("File MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
   }
 
-  DEBUG_MSG("done.\n");
+  out("done.\n");
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+
+s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  MUTEX_MIDIOUT_TAKE;
+
+#if defined(MIOS32_FAMILY_EMULATION)
+  out("No network informations available in emulation!");
+#else
+
+  out("MBHP_ETH module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
+  if( !UIP_TASK_NetworkDeviceAvailable() ) {
+    out("Please reboot your MIDIbox SEQ to restart module detection!");
+  } else {
+    out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
+    out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
+
+    if( UIP_TASK_DHCP_EnableGet() && !UIP_TASK_ServicesRunning() ) {
+      out("IP address: not available yet");
+      out("Netmask: not available yet");
+      out("Default Router (Gateway): not available yet");
+    } else {
+      uip_ipaddr_t ipaddr;
+      uip_gethostaddr(&ipaddr);
+      out("IP address: %d.%d.%d.%d",
+	  uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
+	  uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
+
+      uip_ipaddr_t netmask;
+      uip_getnetmask(&netmask);
+      out("Netmask: %d.%d.%d.%d",
+	  uip_ipaddr1(netmask), uip_ipaddr2(netmask),
+	  uip_ipaddr3(netmask), uip_ipaddr4(netmask));
+
+      uip_ipaddr_t draddr;
+      uip_getdraddr(&draddr);
+      out("Default Router (Gateway): %d.%d.%d.%d",
+	  uip_ipaddr1(draddr), uip_ipaddr2(draddr),
+	  uip_ipaddr3(draddr), uip_ipaddr4(draddr));
+    }
+
+    u32 osc_remote_ip = OSC_SERVER_RemoteIP_Get();
+    out("OSC Remote address: %d.%d.%d.%d",
+	(osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
+	(osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
+    out("OSC Remote port: %d", OSC_SERVER_RemotePortGet());
+    out("OSC Local port: %d", OSC_SERVER_LocalPortGet());
+  }
+#endif
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error

@@ -39,7 +39,8 @@
 
 #define PRESETS_ADDR_OSC_REMOTE01  0x20
 #define PRESETS_ADDR_OSC_REMOTE23  0x21
-#define PRESETS_ADDR_OSC_PORT      0x22
+#define PRESETS_ADDR_OSC_REMOTE_PORT 0x22
+#define PRESETS_ADDR_OSC_LOCAL_PORT 0x23
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

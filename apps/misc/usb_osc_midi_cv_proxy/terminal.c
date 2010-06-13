@@ -177,7 +177,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set netmask <mask>:          changes netmask");
       out("  set gateway <address>:       changes gateway address");
       out("  set osc_remote <address>:    changes OSC Remote Address");
-      out("  set osc_port <port>:         changes OSC Remote Port (1024..65535)");
+      out("  set osc_remote_port <port>:  changes OSC Remote Port (1024..65535)");
+      out("  set osc_local_port <port>:   changes OSC Local Port (1024..65535)");
       out("  set midimon <on|off>:        enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>: enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:  enables/disables the tempo display");
@@ -290,7 +291,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 		out("ERROR: failed to set OSC Remote address!");
 	    }
 	  }
-	} else if( strcmp(parameter, "osc_port") == 0 ) {
+	} else if( strcmp(parameter, "osc_remote_port") == 0 ) {
 	  if( !UIP_TASK_ServicesRunning() ) {
 	    out("ERROR: Ethernet services not running yet!");
 	  } else {
@@ -304,6 +305,22 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 		out("Set OSC Remote port to %d", value);
 	      else
 		out("ERROR: failed to set OSC remote port!");
+	    }
+	  }
+	} else if( strcmp(parameter, "osc_local_port") == 0 ) {
+	  if( !UIP_TASK_ServicesRunning() ) {
+	    out("ERROR: Ethernet services not running yet!");
+	  } else {
+	    s32 value = -1;
+	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	      value = get_dec(parameter);
+	    if( value < 1024 || value >= 65535) {
+	      out("Expecting OSC local port value in range 1024..65535");
+	    } else {
+	      if( OSC_SERVER_LocalPortSet(value) >= 0 )
+		out("Set OSC Local port to %d", value);
+	      else
+		out("ERROR: failed to set OSC local port!");
 	    }
 	  }
 	} else if( strcmp(parameter, "midimon") == 0 ) {
@@ -363,8 +380,9 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
 
   out("Application: " MIOS32_LCD_BOOT_MSG_LINE1);
 
-  out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
+  out("MBHP_ETH module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
   out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
+  out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
 
   if( UIP_TASK_DHCP_EnableGet() && !UIP_TASK_ServicesRunning() ) {
     out("IP address: not available yet");
@@ -379,6 +397,7 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
       (osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
       (osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
   out("OSC Remote port: %d", OSC_SERVER_RemotePortGet());
+  out("OSC Local port: %d", OSC_SERVER_LocalPortGet());
 
   out("MIDI Monitor: %s", MIDIMON_ActiveGet() ? "enabled" : "disabled");
   out("MIDI Monitor Filters: %s", MIDIMON_FilterActiveGet() ? "enabled" : "disabled");

@@ -57,7 +57,7 @@
 
 
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         8
+#define NUM_LIST_ITEMS         9
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_TRACKS       2
@@ -66,6 +66,7 @@
 #define LIST_ITEM_SONG         5
 #define LIST_ITEM_GROOVES      6
 #define LIST_ITEM_SD_CARD      7
+#define LIST_ITEM_NETWORK      8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,7 +83,8 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
   "Mixer Map"
   "Song     "
   "Grooves  "
-  "SD Card  ";
+  "SD Card  "
+  "Network  ";
 
 static u8 list_view_offset = 0; // only changed once after startup
 
@@ -155,42 +157,47 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_SYSTEM:
-	SEQ_TERMINAL_PrintSystem();
+	SEQ_TERMINAL_PrintSystem(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_GLOBALS:
-	SEQ_TERMINAL_PrintGlobals();
+	SEQ_TERMINAL_PrintGlobals(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_TRACKS:
-	SEQ_TERMINAL_PrintTracks();
+	SEQ_TERMINAL_PrintTracks(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_TRACK_INFO:
-	SEQ_TERMINAL_PrintTrack(SEQ_UI_VisibleTrackGet());
+	SEQ_TERMINAL_PrintTrack(DEBUG_MSG, SEQ_UI_VisibleTrackGet());
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_MIXER_MAP:
-	SEQ_TERMINAL_PrintCurrentMixerMap();
+	SEQ_TERMINAL_PrintCurrentMixerMap(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_SONG:
-	SEQ_TERMINAL_PrintCurrentSong();
+	SEQ_TERMINAL_PrintCurrentSong(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_GROOVES:
-	SEQ_TERMINAL_PrintGrooveTemplates();
+	SEQ_TERMINAL_PrintGrooveTemplates(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_SD_CARD:
-	SEQ_TERMINAL_PrintSdCardInfo();
+	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
+	break;
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      case LIST_ITEM_NETWORK:
+	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
