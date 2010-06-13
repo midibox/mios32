@@ -16,6 +16,9 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = ../core/app.c \
 		../mios32/tasks.c \
+		../mios32/uip_task.c \
+		../mios32/dhcpc.c \
+		../mios32/osc_server.c \
 		../core/seq_hwcfg.c  \
 		../core/seq_ui.c  \
 		../core/seq_ui_todo.c \
@@ -167,6 +170,9 @@ include $(MIOS32_PATH)/modules/msd/msd.mk
 
 # For performance measurings
 include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
+
+# UIP driver
+include $(MIOS32_PATH)/modules/uip/uip.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

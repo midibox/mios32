@@ -69,6 +69,8 @@ extern s32 UIP_TASK_InitFromPresets(u8 _dhcp_enabled, u32 _my_ip_address, u32 _m
 extern s32 UIP_TASK_NetworkDeviceAvailable(void);
 extern s32 UIP_TASK_ServicesRunning(void);
 
+extern s32 UIP_TASK_AppCall(void);
+
 extern s32 UIP_TASK_UDP_AppCall(void);
 
 extern s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled);

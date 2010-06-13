@@ -30,7 +30,6 @@
 #include "uip_task.h"
 
 #include "osc_server.h"
-#include "osc_client.h"
 #include "dhcpc.h"
 
 
@@ -38,8 +37,7 @@
 // Task Priorities
 /////////////////////////////////////////////////////////////////////////////
 
-// lower priority than MIOS32 hooks
-#define PRIORITY_TASK_UIP		( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_UIP		( tskIDLE_PRIORITY + 3 )
 
 
 // for mutual exclusive access to uIP functions
@@ -153,7 +151,9 @@ static void UIP_TASK_Handler(void *pvParameters)
 
     if( !(clock_time_tick() % 100) ) {
       // each 100 mS: check availablility of network device
-      network_device_check();
+      //network_device_check();
+      // TK: no auto-detection for MBSEQ for best performance if no MBHP_ETH module connected
+      // the user has to reboot MBSEQ to restart module detection
     }
 
     if( network_device_available() ) {
@@ -229,6 +229,15 @@ void uip_log(char *msg)
   MIOS32_MIDI_SendDebugMessage(msg);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Called by UDP handler of uIP
+/////////////////////////////////////////////////////////////////////////////
+s32 UIP_TASK_AppCall(void)
+{
+  // no TCP service used yet...
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Prints current IP settings
@@ -394,11 +403,7 @@ static s32 UIP_TASK_StartServices(void)
   // print IP settings
   UIP_TASK_SendDebugMessage_IP();
 
-  // start telnet daemon
-  telnetd_init();
-
-  // start OSC daemon and client
-  OSC_CLIENT_Init(0);
+  // start OSC daemon
   OSC_SERVER_Init(0);
 
   // services available now
@@ -448,7 +453,7 @@ s32 UIP_TASK_UDP_AppCall(void)
     dhcpc_appcall();
 
   // OSC Server
-  } else if( uip_udp_conn->rport == HTONS(OSC_SERVER_RemotePortGet()) || uip_udp_conn->rport == HTONS(OSC_SERVER_LocalPortGet()) ) {
+  } else if( uip_udp_conn->rport == HTONS(OSC_SERVER_RemotePortGet()) || uip_udp_conn->lport == HTONS(OSC_SERVER_LocalPortGet()) ) {
     OSC_SERVER_AppCall();
   }
 

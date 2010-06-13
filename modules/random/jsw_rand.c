@@ -12,7 +12,8 @@
 #include <time.h>
 #include "jsw_rand.h"
 
-#define N 624
+//#define N 624
+#define N 17 // TK: reduce number of entries to save RAM and to speed up re-calculation of random values
 #define M 397
 #define A 0x9908b0dfUL
 #define U 0x80000000UL

@@ -52,15 +52,6 @@ s32 SEQ_MIDI_OSC_Init(u32 mode)
 }
 
 
-// tmp. stumb for future extension
-#ifndef MIOS32_FAMILY_EMULATION
-s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
-{
-  return 0;
-}
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////
 // sends a MIDI packet as OSC datagram
 /////////////////////////////////////////////////////////////////////////////

@@ -21,6 +21,7 @@
 #include "uip_task.h"
 
 #include "osc_server.h"
+#include "app.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -161,7 +162,7 @@ s32 OSC_SERVER_AppCall(void)
 
   if( uip_newdata() ) {
     // new UDP package has been received
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 3
     MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
 				 (uip_udp_conn->ripaddr[0] >> 0) & 0xff,
 				 (uip_udp_conn->ripaddr[0] >> 8) & 0xff,
@@ -285,8 +286,10 @@ static s32 OSC_SERVER_Method_SendMIDI(mios32_osc_args_t *osc_args, u32 method_ar
     running_sysex = 0;
   }
 
+  // propagate to application
   // port is located in method argument
-  MIOS32_MIDI_SendPackage(method_arg, p);
+  MIOS32_MIDI_SendPackageToRxCallback(method_arg, p);
+  APP_MIDI_NotifyPackage(method_arg, p);
 
   return 0; // no error
 }
@@ -299,13 +302,11 @@ static s32 OSC_SERVER_Method_SendMIDI(mios32_osc_args_t *osc_args, u32 method_ar
 
 static mios32_osc_search_tree_t parse_root[] = {
   //{ "midi", NULL, &OSC_SERVER_Method_SendMIDI, 0x00000000 },
-  { "midi", NULL, &OSC_SERVER_Method_SendMIDI, UART0 },
-
-  { "midi_usb0", NULL, &OSC_SERVER_Method_SendMIDI, USB0 },
-  { "midi_usb1", NULL, &OSC_SERVER_Method_SendMIDI, USB1 },
-
-  { "midi_uart0", NULL, &OSC_SERVER_Method_SendMIDI, UART0 },
-  { "midi_uart1", NULL, &OSC_SERVER_Method_SendMIDI, UART1 },
+  { "midi",  NULL, &OSC_SERVER_Method_SendMIDI, OSC0 },
+  { "midi1", NULL, &OSC_SERVER_Method_SendMIDI, OSC0 },
+  { "midi2", NULL, &OSC_SERVER_Method_SendMIDI, OSC1 },
+  { "midi3", NULL, &OSC_SERVER_Method_SendMIDI, OSC2 },
+  { "midi4", NULL, &OSC_SERVER_Method_SendMIDI, OSC3 },
 
   { NULL, NULL, NULL, 0 } // terminator
 };

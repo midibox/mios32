@@ -131,8 +131,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // USB1 USB2 USB3 USB4 IN1  IN2  IN3  IN4                           Bus1 Bus2 Bus3 
-  // USB1 USB2 USB3 USB4 OUT1 OUT2 OUT3 OUT4 IIC1 IIC2 IIC3 IIC4 AOUT Bus1 Bus2 Bus3 
+  // USB1 USB2 USB3 USB4 IN1  IN2  IN3  IN4                      OSC1 OSC2 OSC3 OSC4
+  // USB1 USB2 USB3 USB4 OUT1 OUT2 OUT3 OUT4 IIC1 IIC2 IIC3 IIC4 OSC1 OSC2 OSC3 OSC4
 
 
   //   Filter               Filter
@@ -174,11 +174,11 @@ static s32 LCD_Handler(u8 high_prio)
     for(port_ix=1; port_ix<port_num; ++port_ix) {
 
       SEQ_LCD_CursorSet(5*(port_ix-1), 0);
-      // dirty! but only way to ensure that Bus1..3 are aligned
-      if( port_ix >= 9 && port_ix <= 13 ) {
+      // dirty! but only way to ensure that OSC1..OSC4 are aligned
+      if( port_ix >= 9 && port_ix <= 12 ) {
 	SEQ_LCD_PrintSpaces(5);
       } else {
-	u8 port_ix_midi_in = (port_ix >= 9) ? (port_ix - 5) : port_ix;
+	u8 port_ix_midi_in = (port_ix >= 9) ? (port_ix - 4) : port_ix;
 
 	mios32_midi_port_t port = SEQ_MIDI_PORT_InPortGet(port_ix_midi_in);
 	mios32_midi_package_t package = SEQ_MIDI_PORT_InPackageGet(port);

@@ -67,7 +67,8 @@ s32 PRESETS_Init(u32 mode)
 				       PRESETS_Read32(PRESETS_ADDR_UIP_GATEWAY01));
 
     status |= OSC_SERVER_InitFromPresets(PRESETS_Read32(PRESETS_ADDR_OSC_REMOTE01),
-					 PRESETS_Read16(PRESETS_ADDR_OSC_PORT));
+					 PRESETS_Read16(PRESETS_ADDR_OSC_REMOTE_PORT),
+					 PRESETS_Read16(PRESETS_ADDR_OSC_LOCAL_PORT));
   }
 
   return 0; // no error
@@ -124,7 +125,8 @@ s32 PRESETS_StoreAll(void)
 
   // write OSC data
   status |= PRESETS_Write32(PRESETS_ADDR_OSC_REMOTE01, OSC_SERVER_RemoteIP_Get());
-  status |= PRESETS_Write16(PRESETS_ADDR_OSC_PORT, OSC_SERVER_RemotePortGet());
+  status |= PRESETS_Write16(PRESETS_ADDR_OSC_REMOTE_PORT, OSC_SERVER_RemotePortGet());
+  status |= PRESETS_Write16(PRESETS_ADDR_OSC_LOCAL_PORT, OSC_SERVER_LocalPortGet());
 
   return 0; // no error
 }
