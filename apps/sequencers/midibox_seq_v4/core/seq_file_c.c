@@ -393,31 +393,10 @@ s32 SEQ_FILE_C_Read(void)
 		n->dst_chn = values[4];
 	      }
 	    }
-	  } else if( strcmp(parameter, "MetronomePort") == 0 ) {
-	    seq_core_metronome_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "MetronomeChannel") == 0 ) {
-	    seq_core_metronome_chn = value;
-	  } else if( strcmp(parameter, "MetronomeNoteM") == 0 ) {
-	    seq_core_metronome_note_m = value;
-	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
-	    seq_core_metronome_note_b = value;
-	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
-	    seq_ui_remote_mode = (value > 2) ? 0 : value;
-	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
-	    seq_ui_remote_port = value;
-	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
-	    seq_ui_remote_id = (value > 128) ? 0 : value;
-
-	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
-	    seq_blm_port = value;
-
-	    MUTEX_MIDIOUT_TAKE;
-	    SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
-	    MUTEX_MIDIOUT_GIVE;
-	    blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
-
 	  } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
+	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
+	    // on file format changes
 	    DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
 #endif
 	  }
@@ -574,30 +553,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
     FLUSH_BUFFER;
   }
-
-  sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MetronomeChannel %d\n", (u8)seq_core_metronome_chn);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MetronomeNoteM %d\n", (u8)seq_core_metronome_note_m);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_ui_remote_mode);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "RemotePort %d\n", (u8)seq_ui_remote_port);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);
-  FLUSH_BUFFER;
 
   return status;
 }

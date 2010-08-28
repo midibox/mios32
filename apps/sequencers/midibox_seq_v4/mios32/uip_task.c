@@ -22,6 +22,10 @@
 #include <task.h>
 #include <queue.h>
 
+#include "app.h"
+#include <seq_file.h>
+#include <seq_file_hw.h>
+
 #include "uip.h"
 #include "uip_arp.h"
 #include "network-device.h"
@@ -142,9 +146,16 @@ static void UIP_TASK_Handler(void *pvParameters)
   // release exclusive access to UIP functions
   MUTEX_UIP_GIVE;
 
+  // wait until HW config has been loaded
+  do {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+  } while( !SEQ_FILE_HW_ConfigLocked() );
+
   // endless loop
   while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+    do {
+      vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+    } while( TASK_MSD_EnableGet() ); // don't service ethernet if MSD mode enabled for faster transfer speed
 
     // take over exclusive access to UIP functions
     MUTEX_UIP_TAKE;

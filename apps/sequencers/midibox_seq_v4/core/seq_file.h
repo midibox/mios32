@@ -99,12 +99,18 @@
 #define SEQ_FILE_HW_ERR_WRITE          -210 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_HW_ERR_NO_FILE        -211 // no or invalid config file
 
-// used by seq_file_c.c
+// used by seq_file_t.c
 #define SEQ_FILE_T_ERR_FORMAT          -224 // invalid file format
 #define SEQ_FILE_T_ERR_READ            -225 // error while reading file (exact error status cannot be determined anymore)
 #define SEQ_FILE_T_ERR_WRITE           -226 // error while writing file (exact error status cannot be determined anymore)
 #define SEQ_FILE_T_ERR_NO_FILE         -227 // no or invalid file
 #define SEQ_FILE_T_ERR_TRACK           -228 // invalid track number
+
+// used by seq_file_gc.c
+#define SEQ_FILE_GC_ERR_FORMAT         -140 // invalid config file format
+#define SEQ_FILE_GC_ERR_READ           -141 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_GC_ERR_WRITE          -142 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_GC_ERR_NO_FILE        -143 // no or invalid config file
 
 
 

@@ -42,6 +42,7 @@
 #include "seq_file_m.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 #include "seq_file_hw.h"
 
 #include "seq_statistics.h"
@@ -129,7 +130,9 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
       } else if( strcmp(parameter, "system") == 0 ) {
 	SEQ_TERMINAL_PrintSystem(DEBUG_MSG);
       } else if( strcmp(parameter, "global") == 0 ) {
-	SEQ_TERMINAL_PrintGlobals(DEBUG_MSG);
+	SEQ_TERMINAL_PrintGlobalConfig(DEBUG_MSG);
+      } else if( strcmp(parameter, "config") == 0 ) {
+	SEQ_TERMINAL_PrintSessionConfig(DEBUG_MSG);
       } else if( strcmp(parameter, "tracks") == 0 ) {
 	SEQ_TERMINAL_PrintTracks(DEBUG_MSG);
       } else if( strcmp(parameter, "track") == 0 ) {
@@ -160,6 +163,8 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
       } else if( strcmp(parameter, "sdcard") == 0 ) {
 	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "reset") == 0 ) {
+	MIOS32_SYS_Reset();
       } else {
 	MUTEX_MIDIOUT_TAKE;
 	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
@@ -189,7 +194,8 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
   out("Following commands are available:");
   out("  system:         print system info\n");
-  out("  global:         print global settings\n");
+  out("  global:         print global configuration\n");
+  out("  config:         print local session configuration\n");
   out("  tracks:         print overview of all tracks\n");
   out("  track <track>:  print info about a specific track\n");
   out("  mixer:          print current mixer map\n");
@@ -198,6 +204,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
   out("  network:        print ethernet network info\n");
+  out("  reset:          resets the MIDIbox SEQ (!)\n");
   out("  help:           this page\n");
   MUTEX_MIDIOUT_GIVE;
 
@@ -259,13 +266,28 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
 }
 
 
-s32 SEQ_TERMINAL_PrintGlobals(void *_output_function)
+s32 SEQ_TERMINAL_PrintGlobalConfig(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Global Settings:\n");
-  out("================\n");
+  out("Global Configuration:\n");
+  out("=====================\n");
+  SEQ_FILE_GC_Debug();
+
+  out("done.\n");
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+s32 SEQ_TERMINAL_PrintSessionConfig(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  MUTEX_MIDIOUT_TAKE;
+  out("Session Configuration:\n");
+  out("======================\n");
   SEQ_FILE_C_Debug();
 
   out("done.\n");

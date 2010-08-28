@@ -20,6 +20,8 @@
 		520512991177C21900B60101 /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 520512981177C21900B60101 /* mios32_lcd.c */; };
 		520512AC1177C3BF00B60101 /* MbSeqViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 520512AB1177C3BF00B60101 /* MbSeqViewController.mm */; };
 		522E380711B478C70078410E /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83211790B6700293622 /* seq_file_g.c */; };
+		524324701229B27E003B950B /* seq_file_gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5243246E1229B27E003B950B /* seq_file_gc.c */; };
+		524324721229B29B003B950B /* seq_ui_eth.c in Sources */ = {isa = PBXBuildFile; fileRef = 524324711229B29B003B950B /* seq_ui_eth.c */; };
 		527779BC11B72BF6009D9083 /* OscPort.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779B911B72BF6009D9083 /* OscPort.m */; };
 		527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */; };
 		527779C011B72C00009D9083 /* UDPEcho.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BF11B72C00009D9083 /* UDPEcho.m */; };
@@ -161,6 +163,9 @@
 		520512551177BDCC00B60101 /* CLcdView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CLcdView.mm; path = ../../../../modules/app_lcd/ipad/CLcdView.mm; sourceTree = SOURCE_ROOT; };
 		520512981177C21900B60101 /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
 		520512AB1177C3BF00B60101 /* MbSeqViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MbSeqViewController.mm; sourceTree = "<group>"; };
+		5243246E1229B27E003B950B /* seq_file_gc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_gc.c; path = ../core/seq_file_gc.c; sourceTree = SOURCE_ROOT; };
+		5243246F1229B27E003B950B /* seq_file_gc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_gc.h; path = ../core/seq_file_gc.h; sourceTree = SOURCE_ROOT; };
+		524324711229B29B003B950B /* seq_ui_eth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_eth.c; path = ../core/seq_ui_eth.c; sourceTree = SOURCE_ROOT; };
 		527779B811B72BF6009D9083 /* OscPort.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscPort.h; sourceTree = "<group>"; };
 		527779B911B72BF6009D9083 /* OscPort.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OscPort.m; sourceTree = "<group>"; };
 		527779BA11B72BF6009D9083 /* OscServer_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscServer_Wrapper.h; sourceTree = "<group>"; };
@@ -483,6 +488,9 @@
 		529FA81C11790B5600293622 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				524324711229B29B003B950B /* seq_ui_eth.c */,
+				5243246E1229B27E003B950B /* seq_file_gc.c */,
+				5243246F1229B27E003B950B /* seq_file_gc.h */,
 				527779E011B72F2F009D9083 /* seq_midi_osc.c */,
 				527779E111B72F2F009D9083 /* seq_midi_osc.h */,
 				52F15C40119C9D0900E40C6C /* seq_blm.c */,
@@ -834,6 +842,8 @@
 				527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */,
 				527779C011B72C00009D9083 /* UDPEcho.m in Sources */,
 				527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */,
+				524324701229B27E003B950B /* seq_file_gc.c in Sources */,
+				524324721229B29B003B950B /* seq_ui_eth.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

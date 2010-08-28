@@ -49,6 +49,7 @@
 #include "seq_file_s.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 #include "seq_file_t.h"
 #include "seq_file_hw.h"
 
@@ -154,6 +155,7 @@ s32 SEQ_FILE_Init(u32 mode)
 
   // init:
   SEQ_FILE_HW_Init(0); // hardware config file access
+  SEQ_FILE_GC_Init(0); // global config file access
   SEQ_FILE_C_Init(0); // config file access
   SEQ_FILE_G_Init(0); // groove file access
   SEQ_FILE_B_Init(0); // pattern file access
@@ -351,8 +353,10 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   status |= SEQ_FILE_M_LoadAllBanks();
   status |= SEQ_FILE_S_LoadAllBanks();
   status |= SEQ_FILE_G_Load();
-  if( including_hw )
+  status |= SEQ_FILE_GC_Load();
+  if( including_hw ) {
     status |= SEQ_FILE_HW_Load();
+  }
 
   if( SEQ_FILE_C_Load() >= 0 ) {
     // change mixer map to the one stored in MBSEQ_C.V4
@@ -382,6 +386,7 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   status |= SEQ_FILE_S_UnloadAllBanks();
   status |= SEQ_FILE_G_Unload();
   status |= SEQ_FILE_C_Unload();
+  status |= SEQ_FILE_GC_Unload();
   status |= SEQ_FILE_HW_Unload();
   return status;
 }
