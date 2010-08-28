@@ -113,6 +113,8 @@
 		5297A0921177E728000F82E2 /* Tasks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5297A07D1177E728000F82E2 /* Tasks.m */; };
 		5297A0931177E728000F82E2 /* UI.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5297A07F1177E728000F82E2 /* UI.mm */; };
 		52988C2F0F1A84680046F70C /* seq_chord.c in Sources */ = {isa = PBXBuildFile; fileRef = 52988C2D0F1A84680046F70C /* seq_chord.c */; };
+		5299B5D0122973B700D38C38 /* seq_ui_eth.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299B5CF122973B700D38C38 /* seq_ui_eth.c */; };
+		5299B61F1229953900D38C38 /* seq_file_gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299B61D1229953900D38C38 /* seq_file_gc.c */; };
 		5299E3EE1094879C0037F37A /* seq_ui_midimon.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299E3ED1094879C0037F37A /* seq_ui_midimon.c */; };
 		529B498911B6FD4100F0D319 /* seq_midi_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529B498711B6FD4100F0D319 /* seq_midi_osc.c */; };
 		529B499D11B7007E00F0D319 /* mios32_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529B499C11B7007E00F0D319 /* mios32_osc.c */; };
@@ -348,6 +350,9 @@
 		5297A07F1177E728000F82E2 /* UI.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = UI.mm; path = Classes/UI.mm; sourceTree = "<group>"; };
 		52988C2D0F1A84680046F70C /* seq_chord.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_chord.c; path = ../core/seq_chord.c; sourceTree = SOURCE_ROOT; };
 		52988C2E0F1A84680046F70C /* seq_chord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_chord.h; path = ../core/seq_chord.h; sourceTree = SOURCE_ROOT; };
+		5299B5CF122973B700D38C38 /* seq_ui_eth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_eth.c; path = ../core/seq_ui_eth.c; sourceTree = SOURCE_ROOT; };
+		5299B61D1229953900D38C38 /* seq_file_gc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_gc.c; path = ../core/seq_file_gc.c; sourceTree = SOURCE_ROOT; };
+		5299B61E1229953900D38C38 /* seq_file_gc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_gc.h; path = ../core/seq_file_gc.h; sourceTree = SOURCE_ROOT; };
 		5299E3ED1094879C0037F37A /* seq_ui_midimon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_midimon.c; path = ../core/seq_ui_midimon.c; sourceTree = SOURCE_ROOT; };
 		529B498711B6FD4100F0D319 /* seq_midi_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_osc.c; path = ../core/seq_midi_osc.c; sourceTree = SOURCE_ROOT; };
 		529B498811B6FD4100F0D319 /* seq_midi_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_osc.h; path = ../core/seq_midi_osc.h; sourceTree = SOURCE_ROOT; };
@@ -461,6 +466,9 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				5299B61D1229953900D38C38 /* seq_file_gc.c */,
+				5299B61E1229953900D38C38 /* seq_file_gc.h */,
+				5299B5CF122973B700D38C38 /* seq_ui_eth.c */,
 				529B49CC11B70C2500F0D319 /* OscPort.h */,
 				529B49CD11B70C2500F0D319 /* OscPort.m */,
 				529B49B711B7080200F0D319 /* UDPEcho.h */,
@@ -1038,6 +1046,8 @@
 				529B49A511B7041C00F0D319 /* OscServer_Wrapper.m in Sources */,
 				529B49B911B7080200F0D319 /* UDPEcho.m in Sources */,
 				529B49CE11B70C2500F0D319 /* OscPort.m in Sources */,
+				5299B5D0122973B700D38C38 /* seq_ui_eth.c in Sources */,
+				5299B61F1229953900D38C38 /* seq_file_gc.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

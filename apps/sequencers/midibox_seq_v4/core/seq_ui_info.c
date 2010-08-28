@@ -42,6 +42,7 @@
 #include "seq_file_m.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 #include "seq_file_hw.h"
 
 
@@ -57,16 +58,17 @@
 
 
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         9
+#define NUM_LIST_ITEMS         10
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
-#define LIST_ITEM_TRACKS       2
-#define LIST_ITEM_TRACK_INFO   3
-#define LIST_ITEM_MIXER_MAP    4
-#define LIST_ITEM_SONG         5
-#define LIST_ITEM_GROOVES      6
-#define LIST_ITEM_SD_CARD      7
-#define LIST_ITEM_NETWORK      8
+#define LIST_ITEM_CONFIG       2
+#define LIST_ITEM_TRACKS       3
+#define LIST_ITEM_TRACK_INFO   4
+#define LIST_ITEM_MIXER_MAP    5
+#define LIST_ITEM_SONG         6
+#define LIST_ITEM_GROOVES      7
+#define LIST_ITEM_SD_CARD      8
+#define LIST_ITEM_NETWORK      9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -78,6 +80,7 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
 //<--------->
   "System   "
   "Globals  "
+  "Config   "
   "Tracks   "
   "TrackInfo"
   "Mixer Map"
@@ -162,7 +165,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_GLOBALS:
-	SEQ_TERMINAL_PrintGlobals(DEBUG_MSG);
+	SEQ_TERMINAL_PrintGlobalConfig(DEBUG_MSG);
+	break;
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      case LIST_ITEM_CONFIG:
+	SEQ_TERMINAL_PrintSessionConfig(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////

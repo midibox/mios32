@@ -674,7 +674,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
 // returns >= 0 if new value has been set (value change)
 // returns < 0 if no change
 /////////////////////////////////////////////////////////////////////////////
-  static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate)
+static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate)
 {
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -689,6 +689,13 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
       !SEQ_TRG_GateGet(track, trg_step, ui_selected_instrument) )
     return -1;
 #endif
+
+  if( layer_type == SEQ_PAR_Type_Probability ) {
+    // due to another issue reported by Gridracer:
+    // invert incrementer so that clockwise move increases probability
+    incrementer = -incrementer;
+  }
+
 
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   if( event_mode == SEQ_EVENT_MODE_Drum ) {

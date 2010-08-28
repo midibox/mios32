@@ -22,6 +22,7 @@
 #include "seq_ui.h"
 
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
@@ -880,9 +881,14 @@ static s32 EXIT_Handler(void)
   s32 status = 0;
 
   if( store_file_required ) {
-    // write config file
+    // write config files
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    MUTEX_SDCARD_TAKE;
+    if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
   }

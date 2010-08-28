@@ -54,6 +54,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_ui_midi.c \
 		../core/seq_ui_sysex.c \
 		../core/seq_ui_disk.c \
+		../core/seq_ui_eth.c \
 		../core/seq_ui_metronome.c \
 		../core/seq_ui_midimon.c \
 		../core/seq_ui_mixer.c \
@@ -88,6 +89,7 @@ THUMB_SOURCE    = ../core/app.c \
 		../core/seq_file_s.c \
 		../core/seq_file_g.c \
 		../core/seq_file_c.c \
+		../core/seq_file_gc.c \
 		../core/seq_file_t.c \
 		../core/seq_file_hw.c \
 		../core/seq_layer.c \

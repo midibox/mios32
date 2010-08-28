@@ -56,6 +56,7 @@
 #include "seq_file_s.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 #include "seq_file_hw.h"
 
 
@@ -394,19 +395,20 @@ void SEQ_TASK_Period1S(void)
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
       SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
-      char str1[21];
+      char str1[30];
       sprintf(str1, "Banks: ........");
       u8 bank;
       for(bank=0; bank<8; ++bank)
 	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
-      char str2[21];
+      char str2[30];
       sprintf(str2, 
-	      "M:%d S:%d G:%d C:%d HW:%d", 
-	      SEQ_FILE_M_NumMaps() ? 1 : 0, 
-	      SEQ_FILE_S_NumSongs() ? 1 : 0, 
-	      SEQ_FILE_G_Valid(),
-	      SEQ_FILE_C_Valid(),
-	      SEQ_FILE_HW_Valid());
+	      "M:%c S:%c G:%c C:%c%c HW:%c", 
+	      SEQ_FILE_M_NumMaps() ? '*':'-',
+	      SEQ_FILE_S_NumSongs() ? '*':'-',
+	      SEQ_FILE_G_Valid() ? '*':'-',
+	      SEQ_FILE_C_Valid() ? 'S':'-',
+	      SEQ_FILE_GC_Valid() ? 'G':'-',
+	      SEQ_FILE_HW_Valid() ? '*':'-');
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
 
       // request to load content of SD card

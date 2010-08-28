@@ -57,6 +57,7 @@ typedef enum {
   SEQ_UI_PAGE_MIDIMON,
   SEQ_UI_PAGE_SYSEX,
   SEQ_UI_PAGE_DISK,
+  SEQ_UI_PAGE_ETH,
   SEQ_UI_PAGE_INFO,
 } seq_ui_page_t;
 
@@ -108,6 +109,7 @@ extern s32 SEQ_UI_MIDI_Init(u32 mode);
 extern s32 SEQ_UI_MIDIMON_Init(u32 mode);
 extern s32 SEQ_UI_SYSEX_Init(u32 mode);
 extern s32 SEQ_UI_DISK_Init(u32 mode);
+extern s32 SEQ_UI_ETH_Init(u32 mode);
 extern s32 SEQ_UI_INFO_Init(u32 mode);
 
 
@@ -163,6 +165,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "MIDI Monitor      ", (void *)&SEQ_UI_MIDIMON_Init },
   { "SysEx             ", (void *)&SEQ_UI_SYSEX_Init },
   { "Disk (SD Card)    ", (void *)&SEQ_UI_DISK_Init },
+  { "Ethernet (OSC)    ", (void *)&SEQ_UI_ETH_Init },
   { "About this MIDIbox", (void *)&SEQ_UI_INFO_Init },
 };
 
