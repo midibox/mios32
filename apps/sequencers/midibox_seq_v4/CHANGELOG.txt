@@ -43,6 +43,11 @@ MIDIboxSEQ V4.0beta24
 
   o probability parameter now incremented correctly in edit page
 
+  o if the track plays multiple notes, gate is only cleared if
+    all notes are set to "---"
+
+  o BLM: triggers now displayed correctly in all stepviews
+
 
 MIDIboxSEQ V4.0beta23
 ~~~~~~~~~~~~~~~~~~~~~
@@ -732,22 +737,6 @@ alternatively check if there is still place in the menu page to edit the request
 
 ----------------------------------------------------------
 
-Gridracer:
->> I would like to propose some improvement of the handling in the case when you have assigned more than one layer to"NOTE":
-
->> At the moment, when you have assigened several layers to "Note" 
->> and you have assigend note numbers on the same step on those layers, 
->> (Which is really great for programming chords)
->> it occures that when you decrease the note number on ONE layer to "___" in order to deactivate that note, 
->> the WHOLE STEP will be deactivated, with all the remaining notes on the other layers. 
->> Ok, you can bring them back in by turning the encoder forth and back one dent on those layers.
-
->> But it would be really nice if the step would stay activated as long as ANY Layer contains a valid (note) value. 
->> That would be a great wish from my side as i use multiple note layers a lot   
-
-
-
-
 >> I have a question regarding the arpeggiator (and transposer)
 >> 
 >> I noticed that the arpeggiator (and transposer) behave different when they are contorlled from external eg. keyboard or from an internal track:
@@ -755,11 +744,18 @@ Gridracer:
 >> - If the contorl notes come from external, the settings HOLD and RESTART work as they are described in the manual
 >> - If the contorl notes come from an internal track, the arpeggiator (and transposer) always behaves like if HOLD is ON and RESTART is OFF,
 >> no matter to which value they are actual set.
->> 
->> 
->> Sorry to disturb again,
->> 
->> but I noticed anotehr issue with beta22 and the 4x16BLM:
->> 
->> onyl on step 1-16 the LEDs for active steps get lit, on step pages 17-32 and higher the LEDs stay off
->> whether the step is active or not. Chaselight and buttons work correct, also the GP LEDs
+
+
+TK: the handling of loopback tracks differs from normal tracks. MIDI Events are sent
+immediately to the transpose/arpeggiator function instead of using the scheduler, so that
+note changes take place immediately and independent from the track number before new
+MIDI events are scheduled.
+Disadvantage of this method: note off events won't be generated, accordingly the gatelength
+won't be considered and HOLD/RESTART of transposed tracks won't work as expected.
+
+Possible solution: gatelength counter for note off events, only used for loopbacked tracks.
+Problem: how should polyphonic loopback tracks be handled?
+It could be sufficient to call SEQ_MIDI_IN_ResetTransArpStacks(<bus-number>) depending on
+the gatelength
+
+----------------------------------------------------------

@@ -237,7 +237,9 @@ static void UIP_TASK_Handler(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 void uip_log(char *msg)
 {
+#if 0
   MIOS32_MIDI_SendDebugMessage(msg);
+#endif
 }
 
 

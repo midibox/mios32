@@ -779,7 +779,7 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
   // red LEDs: display position marker
   ///////////////////////////////////////////////////////////////////////////
   for(i=0; i<SEQ_BLM_NUM_ROWS; ++i) {
-    blm_leds_green[i] = SEQ_TRG_Get16(i, 16*ui_selected_step_view, ui_selected_trg_layer, ui_selected_instrument);
+    blm_leds_green[i] = SEQ_TRG_Get16(i, ui_selected_step_view, ui_selected_trg_layer, ui_selected_instrument);
     blm_leds_red[i] = 0x0000;
 
     if( sequencer_running ) {
