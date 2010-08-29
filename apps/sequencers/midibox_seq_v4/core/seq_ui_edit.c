@@ -720,8 +720,24 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
     // (de)activate gate depending on value
     if( new_value )
       SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
-    else
-      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 0);
+    else {
+      // due to another issue reported by Gridracer:
+      // if the track plays multiple notes, only clear gate if all notes are 0
+      u8 num_layers = SEQ_PAR_NumLayersGet(visible_track);
+      u8 allNotesZero = 1;
+      int i;
+      for(i=0; i<num_layers; ++i) {
+	seq_par_layer_type_t localLayerType = SEQ_PAR_AssignmentGet(track, i);
+	if( (localLayerType == SEQ_PAR_Type_Note || localLayerType == SEQ_PAR_Type_Chord) &&
+	    SEQ_PAR_Get(track, par_step, i, ui_selected_instrument) > 0 ) {
+	  allNotesZero = 0;
+	  break;
+	}
+      }
+
+      if( allNotesZero )
+	SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 0);
+    }
   }
 
   return new_value;

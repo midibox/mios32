@@ -161,7 +161,7 @@ s32 SEQ_TRG_Get8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument)
 
 /////////////////////////////////////////////////////////////////////////////
 // returns 16 steps of a given trigger layer
-// step8 is 0 for step [15:0], 1 for step [31:16], 3 for step [47:32], etc,.
+// step16 is 0 for step [15:0], 1 for step [31:16], 3 for step [47:32], etc,.
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Get16(u8 track, u8 step16, u8 trg_layer, u8 trg_instrument)
 {
