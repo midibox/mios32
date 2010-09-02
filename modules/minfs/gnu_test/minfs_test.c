@@ -1,50 +1,103 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../minfs.h"
 
- 
+#define data_len 255
  
 MINFS_fs_t fs;
 MINFS_file_t f;
-char data[255];
+char data[data_len];
+int32_t status;
 
+
+
+// ------- local prototypes -------
+static uint32_t fs_init(void);
+static uint32_t file_open(uint16_t file_i);
+static uint32_t file_write(void);
+static uint32_t file_read(void);
+
+
+// ------- main -------
 int main(void){
-  int32_t status;
-  // format file-system
+  strcpy(data, "This is the content of file 1! This is the content of file 1!");
+  
+  fs_init();
+
+  file_open(1);
+  
+  file_write();
+
+  strcpy(data, "Das ist der content von zweiten file. Das ist der content von zweiten file. Das ist der content von zweiten file. ");
+
+  file_open(2);
+
+  file_write();
+
+  file_open(1);
+  
+  file_read();
+
+  file_open(2);
+
+  file_read();
+
+
+  exit(0);
+}
+
+// ------- helper functions -------
+static uint32_t fs_init(void){
+  // format f-system
   fs.info.block_size = 6;
-  fs.info.num_blocks = 128;
+  fs.info.num_blocks = 64;
   fs.info.flags = 0;
   fs.info.os_flags = 0;
   fs.fs_id = 0;
   if( status = MINFS_Format(&fs, NULL) ){
-  	printf("Error on Format: %d\n", status);
-  	return 0;
+    printf("Error on FS-format: %d\n", status);
+    exit(0);
   }
-  printf("FS Formated!\n");
   // open filesystem
   if( status = MINFS_FSOpen(&fs, NULL) ){
-  	printf("Error on Open Filesystem: %d\n", status);
-  	return 0;
+    printf("Error on FS-open: %d\n", status);
+    exit(0);
   }
-  printf("FS Opened!\n");
-  // open file...
-  if( status = MINFS_FileOpen(&fs, 1, &f, NULL) ){
-  	printf("Error on Open File: %d\n", status);
-  	return 0;
-  }
-  printf("File Opened!\n");
-  // ...and write
-  uint32_t data_len = 255;
-  strcpy(data, "This is a long test string. This is the second sentence of the Test-String. This is the third.\
-    This is the fourth. And the fifth! This is the last!"
-  );
-  MINFS_FileWrite(&f, data, data_len, NULL);
-  printf("Write to file success!\n");
-  // seek to 0 and read
-  MINFS_FileSeek(&f, 0, NULL);
-  MINFS_FileRead(&f, data, &data_len, NULL);
-  printf("Read from file success!\n");
-  printf("\n%s\n", data);
+  printf("FS formated and opened!\n");
   return 0;
 }
 
+static uint32_t file_open(uint16_t file_i){
+  // open file...
+  if( status = MINFS_FileOpen(&fs, file_i, &f, NULL) ){
+    printf("Error on open file: %d\n", status);
+    exit(0);
+  }
+  printf("file openened: %d!\n", file_i);
+  return 0;
+}
+
+static uint32_t file_write(void){
+  if( (status  = MINFS_FileWrite(&f, &(data[0]), data_len, NULL)) && status != MINFS_STATUS_EOF ){
+    printf("Error on file write: %d\n", status);
+    exit(0);
+  }
+  printf("Write to file :%d!\n", f.file_id);
+  return 0;
+}
+
+static uint32_t file_read(void){
+  if( status = MINFS_FileSeek(&f, 0, NULL) ){
+    printf("Error on file-seek: %d\n", status);
+  }
+  strcpy(data, ""); // empty the string buffer
+  uint32_t len = data_len;
+  if( (status = MINFS_FileRead(&f, &(data[0]), &len, NULL)) && status != MINFS_STATUS_EOF ){
+    printf("Error on file-read: %d\n", status);
+    exit(0);
+  }
+  printf("Read from file %d!\n", f.file_id);
+  printf("\n%s\n\n", data);
+  return 0;
+}
