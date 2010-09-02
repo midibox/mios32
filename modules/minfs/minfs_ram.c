@@ -29,7 +29,7 @@
 
 typedef uint8_t databuf_t[64];
 
-databuf_t buffers[128];
+databuf_t buffers[64];
 MINFS_block_buf_t block_buf;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,6 +47,9 @@ int32_t MINFS_Write(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf, uint16_t d
 
 int32_t MINFS_GetBlockBuffer(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_buf, uint32_t block_n, uint32_t file_id){
   (*pp_block_buf) = &block_buf;
-  block_buf.p_buf = buffers[block_n];	
+  block_buf.p_buf = buffers[block_n];
+  block_buf.block_n = block_n;
+  block_buf.flags.populated = 1;
+  block_buf.flags.changed = 0;
   return 0;
 }
