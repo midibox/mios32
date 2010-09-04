@@ -21,7 +21,7 @@ static uint32_t file_read(void);
 
 // ------- main -------
 int main(void){
-  strcpy(data, "This is the content of file 1! This is the content of file 1!");
+  strcpy(data, "MINFS is a minimal filesystem.\nIt features numbered files, PEC, Block caching interface,\nsupport for random data r/w form or to the storage unit (in this case without PEC).");
   
   fs_init();
 
@@ -29,7 +29,7 @@ int main(void){
   
   file_write();
 
-  strcpy(data, "Das ist der content von zweiten file. Das ist der content von zweiten file. Das ist der content von zweiten file. ");
+  strcpy(data, "Block size and the number of blocks are configurable at format time\nand will be stored in the fs-header at the beginning of the first block.\nMaximal number of files is limited by the number of blocks.");
 
   file_open(2);
 
@@ -91,7 +91,7 @@ static uint32_t file_read(void){
   if( status = MINFS_FileSeek(&f, 0, NULL) ){
     printf("Error on file-seek: %d\n", status);
   }
-  strcpy(data, ""); // empty the string buffer
+  memset(data, 0, data_len); // empty the string buffer
   uint32_t len = data_len;
   if( (status = MINFS_FileRead(&f, &(data[0]), &len, NULL)) && status != MINFS_STATUS_EOF ){
     printf("Error on file-read: %d\n", status);
