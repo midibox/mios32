@@ -1036,10 +1036,17 @@ static int32_t File_SetSize(MINFS_file_t *p_file, uint32_t new_size, MINFS_block
       if( (file_last_block_n = BlockChain_Seek(p_file->p_fs, p_file->current_block_n, MINFS_SEEK_END, pp_block_buf)) < 0 )
         return file_last_block_n; // return error status
       // pop free blocks
+      /*
       uint32_t add_blocks_count = ( new_size + sizeof(MINFS_file_header_t)) / p_file->p_fs->calc.block_data_len
         + ( ( new_size + sizeof(MINFS_file_header_t)) % p_file->p_fs->calc.block_data_len ) ? 1 : 0
         - ( p_file->info.size + sizeof(MINFS_file_header_t)) / p_file->p_fs->calc.block_data_len
         - ( ( p_file->info.size + sizeof(MINFS_file_header_t)) % p_file->p_fs->calc.block_data_len ) ? 1 : 0;
+      */
+      uint32_t add_bytes_count = (new_size - p_file->info.size);
+      uint32_t last_block_bytes_left = (p_file->p_fs->calc.block_data_len -(sizeof(MINFS_file_header_t) + p_file->info.size) % p_file->p_fs->calc.block_data_len);
+      uint32_t add_block_bytes_count = (add_bytes_count - last_block_bytes_left );
+      uint32_t add_blocks_count = add_block_bytes_count / p_file->p_fs->calc.block_data_len + 1;
+
       int32_t add_blocks_first_n;
       if( (add_blocks_first_n = BlockChain_PopFree(p_file->p_fs, add_blocks_count, pp_block_buf)) < 0)
         return add_blocks_first_n; // return error status
@@ -1099,7 +1106,7 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
         if(p_buf == NULL) // fill with 0-bytes
           memset( (uint8_t*)( (*pp_block_buf)->p_buf ) + p_file->data_ptr_block_offset, 0, delta );
         else // copy data from p_buf
-          memcpy( (uint8_t*)( (*pp_block_buf)->p_buf) + p_file->data_ptr_block_offset, p_buf, delta);
+          memcpy( (uint8_t*)( (*pp_block_buf)->p_buf) + p_file->data_ptr_block_offset, (uint8_t*)p_buf + *p_len, delta);
         // write data
         if( status = BlockBuffer_Write(p_file->p_fs, *pp_block_buf, p_file->data_ptr_block_offset, delta) )
           return status; // return error status
@@ -1108,12 +1115,12 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
         if( status = BlockBuffer_Read(p_file->p_fs, *pp_block_buf, p_file->data_ptr_block_offset, delta) )
           return status; // return error status
         // copy data
-        memcpy(p_buf, (uint8_t*)( (*pp_block_buf)->p_buf) + p_file->data_ptr_block_offset, delta);
+        memcpy((uint8_t*)p_buf + *p_len, (uint8_t*)( (*pp_block_buf)->p_buf) + p_file->data_ptr_block_offset, delta);
       }
     }
     remain -= delta;
     // switch current block?
-    if( (p_file->data_ptr_block_offset >=  p_file->p_fs->calc.block_data_len) && remain ){
+    if( ( (p_file->data_ptr_block_offset + delta) >=  p_file->p_fs->calc.block_data_len) && remain ){
       int32_t new_current_block_n;
       if( (new_current_block_n = BlockChain_Seek(p_file->p_fs, p_file->current_block_n, 1, pp_block_buf)) < 0 )
         return new_current_block_n; // return error status
@@ -1122,8 +1129,9 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
       // set new current block, and data_ptr offset to block start
       p_file->current_block_n = new_current_block_n;
       p_file->data_ptr_block_offset = 0;
-    } else 
+    } else {
       p_file->data_ptr_block_offset += delta; // just increment data_ptr offset
+    }
     // update variables
     *p_len += delta;
     p_file->data_ptr += delta; 
