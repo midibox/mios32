@@ -684,12 +684,16 @@ s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
 	  uip_ipaddr3(draddr), uip_ipaddr4(draddr));
     }
 
-    u32 osc_remote_ip = OSC_SERVER_RemoteIP_Get();
-    out("OSC Remote address: %d.%d.%d.%d",
-	(osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
-	(osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
-    out("OSC Remote port: %d", OSC_SERVER_RemotePortGet());
-    out("OSC Local port: %d", OSC_SERVER_LocalPortGet());
+    int con;
+    for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+      u32 osc_remote_ip = OSC_SERVER_RemoteIP_Get(con);
+      out("OSC%d Remote address: %d.%d.%d.%d",
+	  con+1,
+	  (osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
+	  (osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
+      out("OSC%d Remote port: %d", con+1, OSC_SERVER_RemotePortGet(con));
+      out("OSC%d Local port: %d", con+1, OSC_SERVER_LocalPortGet(con));
+    }
   }
 #endif
   MUTEX_MIDIOUT_GIVE;

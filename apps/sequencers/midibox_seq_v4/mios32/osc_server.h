@@ -19,6 +19,9 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// for 4 independent OSC ports
+#define OSC_SERVER_NUM_CONNECTIONS 4
+
 // can be overruled in mios32_config.h
 #ifndef OSC_REMOTE_IP
 //                      10        .    0        .    0       .    2
@@ -49,17 +52,20 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 OSC_SERVER_Init(u32 mode);
-extern s32 OSC_SERVER_InitFromPresets(u32 _osc_remote_ip, u16 _osc_remote_port, u16 _osc_local_port);
+extern s32 OSC_SERVER_InitFromPresets(u8 con, u32 _osc_remote_ip, u16 _osc_remote_port, u16 _osc_local_port);
 
-extern s32 OSC_SERVER_RemoteIP_Set(u32 ip);
-extern u32 OSC_SERVER_RemoteIP_Get(void);
-extern s32 OSC_SERVER_RemotePortSet(u16 port);
-extern u16 OSC_SERVER_RemotePortGet(void);
-extern s32 OSC_SERVER_LocalPortSet(u16 port);
-extern u16 OSC_SERVER_LocalPortGet(void);
+extern s32 OSC_SERVER_RemoteIP_Set(u8 con, u32 ip);
+extern u32 OSC_SERVER_RemoteIP_Get(u8 con);
+extern s32 OSC_SERVER_RemotePortSet(u8 con, u16 port);
+extern u16 OSC_SERVER_RemotePortGet(u8 con);
+extern s32 OSC_SERVER_LocalPortSet(u8 con, u16 port);
+extern u16 OSC_SERVER_LocalPortGet(u8 con);
+
+extern s32 OSC_SERVER_IsRemotePort(u16 port);
+extern s32 OSC_SERVER_IsLocalPort(u16 port);
 
 extern s32 OSC_SERVER_AppCall(void);
-extern s32 OSC_SERVER_SendPacket(u8 *packet, u32 len);
+extern s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len);
 
 
 /////////////////////////////////////////////////////////////////////////////

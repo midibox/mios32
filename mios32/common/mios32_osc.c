@@ -843,9 +843,10 @@ s32 MIOS32_OSC_SendDebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %08X (RGBA color)\n", path, i, MIOS32_OSC_GetWord(osc_args->arg_ptr[i]));
 	  break;
 
-        case 'm': // MIDI message
-	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %08X (MIDI)\n", path, i, MIOS32_OSC_GetMIDI(osc_args->arg_ptr[i]).ALL);
-	  break;
+        case 'm': { // MIDI message
+	  mios32_midi_package_t p = MIOS32_OSC_GetMIDI(osc_args->arg_ptr[i]);
+	  MIOS32_OSC_DEBUG_MSG("[%s] %d: %02X %02X %02X (MIDI)\n", path, i, p.evnt0, p.evnt1, p.evnt2);
+	} break;
 
         case 'T': // TRUE
 	  MIOS32_OSC_DEBUG_MSG("[%s] %d: TRUE\n", path, i);
