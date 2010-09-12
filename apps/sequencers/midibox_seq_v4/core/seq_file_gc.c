@@ -36,6 +36,7 @@
 #include "seq_mixer.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
+#include "seq_midi_osc.h"
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
@@ -263,16 +264,6 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else {
 	    UIP_TASK_GatewaySet(value);
 	  }
-	} else if( strcmp(parameter, "OSC_RemoteIp") == 0 ) {
-	  u32 value;
-	  if( !(value=get_ip(brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid IP format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    OSC_SERVER_RemoteIP_Set(value);
-	  }
-#endif
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -307,10 +298,57 @@ s32 SEQ_FILE_GC_Read(void)
 #if !defined(MIOS32_FAMILY_EMULATION)
 	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
 	    UIP_TASK_DHCP_EnableSet((value >= 1) ? 1 : 0);
+	  } else if( strcmp(parameter, "OSC_RemoteIp") == 0 ) {
+	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid connection number for parameter '%s'\n", parameter);
+	    } else {
+	      u8 con = value;
+	      u32 ip;
+	      if( !(ip=get_ip(brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid IP format for parameter '%s'\n", parameter);
+#endif
+	      } else {
+		OSC_SERVER_RemoteIP_Set(con, ip);
+	      }
+#endif
+	    }
 	  } else if( strcmp(parameter, "OSC_RemotePort") == 0 ) {
-	    OSC_SERVER_RemotePortSet(value);
+	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid connection number for parameter '%s'\n", parameter);
+	    } else {
+	      u8 con = value;
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( (value=get_dec(word)) < 0 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid port number for parameter '%s'\n", parameter);
+	      } else {
+		OSC_SERVER_RemotePortSet(con, value);
+	      }
+	    }
 	  } else if( strcmp(parameter, "OSC_LocalPort") == 0 ) {
-	    OSC_SERVER_LocalPortSet(value);
+	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid connection number for parameter '%s'\n", parameter);
+	    } else {
+	      u8 con = value;
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( (value=get_dec(word)) < 0 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid port number for parameter '%s'\n", parameter);
+	      } else {
+		OSC_SERVER_LocalPortSet(con, value);
+	      }
+	    }
+	  } else if( strcmp(parameter, "OSC_TransferMode") == 0 ) {
+	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid connection number for parameter '%s'\n", parameter);
+	    } else {
+	      u8 con = value;
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( (value=get_dec(word)) < 0 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid transfer mode number for parameter '%s'\n", parameter);
+	      } else {
+		SEQ_MIDI_OSC_TransferModeSet(con, value);
+	      }
+	    }
 #endif
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -331,6 +369,11 @@ s32 SEQ_FILE_GC_Read(void)
 
   // close file
   status |= SEQ_FILE_ReadClose(&file);
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+  // OSC_SERVER_Init(0) has to be called after all settings have been done!
+  OSC_SERVER_Init(0);
+#endif
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -419,21 +462,26 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "ETH_Dhcp %d\n", UIP_TASK_DHCP_EnableGet());
   FLUSH_BUFFER;
 
-  {
-    u32 value = OSC_SERVER_RemoteIP_Get();
-    sprintf(line_buffer, "OSC_RemoteIp %d.%d.%d.%d\n",
+  int con;
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+    u32 value = OSC_SERVER_RemoteIP_Get(con);
+    sprintf(line_buffer, "OSC_RemoteIp %d %d.%d.%d.%d\n",
+	    con,
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
 	    (value >>  0) & 0xff);
     FLUSH_BUFFER;
+
+    sprintf(line_buffer, "OSC_RemotePort %d %d\n", con, OSC_SERVER_RemotePortGet(con));
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, SEQ_MIDI_OSC_TransferModeGet(con));
+    FLUSH_BUFFER;
   }
-
-  sprintf(line_buffer, "OSC_RemotePort %d\n", OSC_SERVER_RemotePortGet());
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "OSC_LocalPort %d\n", OSC_SERVER_LocalPortGet());
-  FLUSH_BUFFER;
 
 #endif
 

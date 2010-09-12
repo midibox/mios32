@@ -1116,7 +1116,24 @@ uip_process(u8_t flag)
        (uip_ipaddr_cmp(uip_udp_conn->ripaddr, all_zeroes_addr) ||
 	uip_ipaddr_cmp(uip_udp_conn->ripaddr, all_ones_addr) ||
 	uip_ipaddr_cmp(BUF->srcipaddr, uip_udp_conn->ripaddr))) {
+#if 0
+      // TK: for more informative messages
+      MIOS32_MIDI_SendDebugMessage("destport=%d, srcport=%d, srcipaddr=%d.%d.%d.%d - match: lport=%d, rport=%d, ripaddr=%d.%d.%d.%d\n",
+				   HTONS(UDPBUF->destport), HTONS(UDPBUF->srcport),
+				   (BUF->srcipaddr[0]>>0)&0xff, (BUF->srcipaddr[0]>>8)&0xff, (BUF->srcipaddr[1]>>0)&0xff, (BUF->srcipaddr[1]>>8)&0xff,
+				   HTONS(uip_udp_conn->lport), HTONS(uip_udp_conn->rport),
+				   (uip_udp_conn->ripaddr[0]>>0)&0xff, (uip_udp_conn->ripaddr[0]>>8)&0xff, (uip_udp_conn->ripaddr[1]>>0)&0xff, (uip_udp_conn->ripaddr[1]>>8)&0xff);
+#endif
       goto udp_found;
+    } else {
+#if 0
+      // TK: for more informative message
+      MIOS32_MIDI_SendDebugMessage("destport=%d, srcport=%d, srcipaddr=%d.%d.%d.%d - no match: lport=%d, rport=%d, ripaddr=%d.%d.%d.%d\n",
+				   HTONS(UDPBUF->destport), HTONS(UDPBUF->srcport),
+				   (BUF->srcipaddr[0]>>0)&0xff, (BUF->srcipaddr[0]>>8)&0xff, (BUF->srcipaddr[1]>>0)&0xff, (BUF->srcipaddr[1]>>8)&0xff,
+				   HTONS(uip_udp_conn->lport), HTONS(uip_udp_conn->rport),
+				   (uip_udp_conn->ripaddr[0]>>0)&0xff, (uip_udp_conn->ripaddr[0]>>8)&0xff, (uip_udp_conn->ripaddr[1]>>0)&0xff, (uip_udp_conn->ripaddr[1]>>8)&0xff);
+#endif
     }
   }
 #if 0

@@ -26,6 +26,8 @@
 #include "seq_file.h"
 #include "seq_file_gc.h"
 
+#include "seq_midi_osc.h"
+
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -38,18 +40,19 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           11
+#define NUM_OF_ITEMS           12
 #define ITEM_DHCP              0
 #define ITEM_NETWORK_CFG       1
 #define ITEM_NETWORK_1         2
 #define ITEM_NETWORK_2         3
 #define ITEM_NETWORK_3         4
 #define ITEM_NETWORK_4         5
-#define ITEM_OSC_CFG           6
-#define ITEM_OSC_1             7
-#define ITEM_OSC_2             8
-#define ITEM_OSC_3             9
-#define ITEM_OSC_4             10
+#define ITEM_OSC_PORT          6
+#define ITEM_OSC_CFG           7
+#define ITEM_OSC_1             8
+#define ITEM_OSC_2             9
+#define ITEM_OSC_3             10
+#define ITEM_OSC_4             11
 
 // Network configuration pages
 #define NCFG_NUM_OF_ITEMS       3
@@ -57,15 +60,18 @@
 #define NCFG_NETMASK            1
 #define NCFG_GATEWAY            2
 
-#define OCFG_NUM_OF_ITEMS       3
+#define OCFG_NUM_OF_ITEMS       4
 #define OCFG_REMOTE_IP          0
 #define OCFG_REMOTE_PORT        1
 #define OCFG_LOCAL_PORT         2
+#define OCFG_TRANSFER_MODE      3
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
+
+static u8 selected_osc_con = 0;
 
 static u8  ncfg_item = 0;
 static u8  ncfg_value_changed;
@@ -73,7 +79,6 @@ static u32 ncfg_value;
 static u8  ocfg_item = 0;
 static u8  ocfg_value_changed;
 static u32 ocfg_value;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -99,7 +104,8 @@ static s32 LED_Handler(u16 *gp_leds)
   case ITEM_NETWORK_2:   *gp_leds = 0x0010; break;
   case ITEM_NETWORK_3:   *gp_leds = 0x0020; break;
   case ITEM_NETWORK_4:   *gp_leds = 0x0040; break;
-  case ITEM_OSC_CFG:     *gp_leds = 0x0700; break;
+  case ITEM_OSC_PORT:    *gp_leds = 0x0100; break;
+  case ITEM_OSC_CFG:     *gp_leds = 0x0600; break;
   case ITEM_OSC_1:       *gp_leds = (ocfg_item == OCFG_REMOTE_IP) ? 0x0800 : 0x7800; break;
   case ITEM_OSC_2:       *gp_leds = (ocfg_item == OCFG_REMOTE_IP) ? 0x1000 : 0x7800; break;
   case ITEM_OSC_3:       *gp_leds = (ocfg_item == OCFG_REMOTE_IP) ? 0x2000 : 0x7800; break;
@@ -166,6 +172,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     return 1;
 
   case SEQ_UI_ENCODER_GP9:
+    ui_selected_item = ITEM_OSC_PORT;
+    break;
+
   case SEQ_UI_ENCODER_GP10:
   case SEQ_UI_ENCODER_GP11:
     ui_selected_item = ITEM_OSC_CFG;
@@ -246,6 +255,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     return 0; // value not changed
   } break;
 
+  case ITEM_OSC_PORT:
+    if( SEQ_UI_Var8_Inc(&selected_osc_con, 0, OSC_SERVER_NUM_CONNECTIONS-1, incrementer) ) {
+      SEQ_UI_ETH_UpdateOCfg();
+      return 1; // value changed
+    }
+    return 0; // value not changed
+
   case ITEM_OSC_CFG:
     if( SEQ_UI_Var8_Inc(&ocfg_item, 0, OCFG_NUM_OF_ITEMS-1, incrementer) ) {
       SEQ_UI_ETH_UpdateOCfg();
@@ -263,6 +279,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) ) {
 	ocfg_value &= ~(0xff << bitPos);
 	ocfg_value |= (u32)value << bitPos;
+	ocfg_value_changed = 1;
+	return 1; // value changed
+      }
+      return 0; // value not changed
+    } else if( ocfg_item == OCFG_TRANSFER_MODE ) {
+      u8 value = ocfg_value;
+      if( SEQ_UI_Var8_Inc(&value, 0, SEQ_MIDI_OSC_NUM_TRANSFER_MODES-1, incrementer) ) {
+	ocfg_value = value;
 	ocfg_value_changed = 1;
 	return 1; // value changed
       }
@@ -349,11 +373,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // DHCP      Network Configuration                     OSC Configuration           
-  //  on   Local IP: 123. 123. 123. 123 Enter     Remote IP: 123. 123. 123. 123 Enter
+  // DHCP      Network Configuration         Port        OSC Configuration           
+  //  on   Local IP: 123. 123. 123. 123 EnterOSC1 Remote IP: 123. 123. 123. 123 Enter
 
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("DHCP      Network Configuration                     OSC Configuration           ");
+  SEQ_LCD_PrintString("DHCP      Network Configuration         Port        OSC Configuration           ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -420,13 +444,21 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_OSC_CFG && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(15);
+  if( ui_selected_item == ITEM_OSC_PORT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    const char ocfg_str[OCFG_NUM_OF_ITEMS][16] = {
-      "     Remote IP:",
-      "   Remote Port:",
-      "    Local Port:",
+    SEQ_LCD_PrintFormattedString("OSC%d ", selected_osc_con+1);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_OSC_CFG && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(10);
+  } else {
+    const char ocfg_str[OCFG_NUM_OF_ITEMS][11] = {
+      "Remote IP:",
+      "Rem. Port:",
+      "LocalPort:",
+      "  Tx Mode:",
     };
 
     SEQ_LCD_PrintString((char *)ocfg_str[ocfg_item]);
@@ -452,6 +484,20 @@ static s32 LCD_Handler(u8 high_prio)
     } else {
       SEQ_LCD_PrintFormattedString(" %5d", ocfg_value);
       SEQ_LCD_PrintSpaces(14);
+    }
+    break;
+
+  case OCFG_TRANSFER_MODE:
+    if( ui_selected_item >= ITEM_OSC_1 && ui_selected_item <= ITEM_OSC_4 && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(20);
+    } else {
+      const char txmode_str[SEQ_MIDI_OSC_NUM_TRANSFER_MODES][21] = {
+	" MIDI Messages      ",
+	" Text Msg (Integer) ",
+	" Text Msg (Float)   ",
+      };
+
+      SEQ_LCD_PrintString((char *)txmode_str[ocfg_value]);
     }
     break;
   }
@@ -560,9 +606,10 @@ static s32 SEQ_UI_ETH_UpdateOCfg(void)
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   switch( ocfg_item ) {
-  case OCFG_REMOTE_IP:   ocfg_value = OSC_SERVER_RemoteIP_Get(); break;
-  case OCFG_REMOTE_PORT: ocfg_value = OSC_SERVER_RemotePortGet(); break;
-  case OCFG_LOCAL_PORT:  ocfg_value = OSC_SERVER_LocalPortGet(); break;
+  case OCFG_REMOTE_IP:     ocfg_value = OSC_SERVER_RemoteIP_Get(selected_osc_con); break;
+  case OCFG_REMOTE_PORT:   ocfg_value = OSC_SERVER_RemotePortGet(selected_osc_con); break;
+  case OCFG_LOCAL_PORT:    ocfg_value = OSC_SERVER_LocalPortGet(selected_osc_con); break;
+  case OCFG_TRANSFER_MODE: ocfg_value = SEQ_MIDI_OSC_TransferModeGet(selected_osc_con); break;
   }
 #endif
 
@@ -596,10 +643,14 @@ static s32 SEQ_UI_ETH_StoreOCfg(void)
 {
 #if !defined(MIOS32_FAMILY_EMULATION)
   switch( ocfg_item ) {
-  case OCFG_REMOTE_IP:   OSC_SERVER_RemoteIP_Set(ocfg_value); break;
-  case OCFG_REMOTE_PORT: OSC_SERVER_RemotePortSet(ocfg_value); break;
-  case OCFG_LOCAL_PORT:  OSC_SERVER_LocalPortSet(ocfg_value); break;
+  case OCFG_REMOTE_IP:     OSC_SERVER_RemoteIP_Set(selected_osc_con, ocfg_value); break;
+  case OCFG_REMOTE_PORT:   OSC_SERVER_RemotePortSet(selected_osc_con, ocfg_value); break;
+  case OCFG_LOCAL_PORT:    OSC_SERVER_LocalPortSet(selected_osc_con, ocfg_value); break;
+  case OCFG_TRANSFER_MODE: SEQ_MIDI_OSC_TransferModeSet(selected_osc_con, ocfg_value); break;
   }
+
+  // OSC_SERVER_Init(0) has to be called after any setting has been changed
+  OSC_SERVER_Init(0);
 #endif
 
   // store configuration file

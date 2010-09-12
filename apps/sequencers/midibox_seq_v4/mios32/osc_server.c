@@ -35,16 +35,17 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static struct uip_udp_conn *osc_conn = NULL;
+static struct uip_udp_conn *osc_conn[OSC_SERVER_NUM_CONNECTIONS];
 
 static mios32_osc_search_tree_t parse_root[];
 
 static u8 *osc_send_packet;
 static u32 osc_send_len;
 
-static u32 osc_remote_ip = OSC_REMOTE_IP;
-static u16 osc_remote_port = OSC_REMOTE_PORT;
-static u16 osc_local_port = OSC_LOCAL_PORT;
+// TODO: variable initialisation contains hardcoded dependency to OSC_SERVER_NUM_CONNECTIONS!
+static u32 osc_remote_ip[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_IP, OSC_REMOTE_IP, OSC_REMOTE_IP, OSC_REMOTE_IP };
+static u16 osc_remote_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT };
+static u16 osc_local_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT };
 
 static u8 running_sysex;
 
@@ -53,40 +54,45 @@ static u8 running_sysex;
 /////////////////////////////////////////////////////////////////////////////
 s32 OSC_SERVER_Init(u32 mode)
 {
+  int con;
+
   // disable sysex status
   running_sysex = 0;
 
   // disable send packet
   osc_send_packet = NULL;
 
-  // remove open connection
-  if(osc_conn != NULL) {
-    uip_udp_remove(osc_conn);
-  }
+  // remove open connections
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
+    if( osc_conn[con] != NULL )
+      uip_udp_remove(osc_conn[con]);
 
-  // create new connection
-  uip_ipaddr_t ripaddr;
-  uip_ipaddr(ripaddr,
-	     ((osc_remote_ip)>>24) & 0xff,
-	     ((osc_remote_ip)>>16) & 0xff,
-	     ((osc_remote_ip)>> 8) & 0xff,
-	     ((osc_remote_ip)>> 0) & 0xff);
+  // create new connections
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+    uip_ipaddr_t ripaddr;
+    uip_ipaddr(ripaddr,
+	       ((osc_remote_ip[con])>>24) & 0xff,
+	       ((osc_remote_ip[con])>>16) & 0xff,
+	       ((osc_remote_ip[con])>> 8) & 0xff,
+	       ((osc_remote_ip[con])>> 0) & 0xff);
 
-  if( (osc_conn=uip_udp_new(&ripaddr, HTONS(osc_remote_port))) != NULL ) {
-    uip_udp_bind(osc_conn, HTONS(osc_local_port));
+    if( (osc_conn[con]=uip_udp_new(&ripaddr, HTONS(osc_remote_port[con]))) != NULL ) {
+      uip_udp_bind(osc_conn[con], HTONS(osc_local_port[con]));
 #if DEBUG_VERBOSE_LEVEL >= 2
-    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] sending to %d.%d.%d.%d:%d\n", 
-				 (osc_conn->ripaddr[0] >> 0) & 0xff,
-				 (osc_conn->ripaddr[0] >> 8) & 0xff,
-				 (osc_conn->ripaddr[1] >> 0) & 0xff,
-				 (osc_conn->ripaddr[1] >> 8) & 0xff,
-				 HTONS(osc_conn->rport));
+      MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] #%d sends to %d.%d.%d.%d:%d\n", 
+				   con,
+				   (osc_conn[con]->ripaddr[0] >> 0) & 0xff,
+				   (osc_conn[con]->ripaddr[0] >> 8) & 0xff,
+				   (osc_conn[con]->ripaddr[1] >> 0) & 0xff,
+				   (osc_conn[con]->ripaddr[1] >> 8) & 0xff,
+				   HTONS(osc_conn[con]->rport));
 #endif
-  } else {
+    } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] FAILED to create connection (no free ports)\n");
+      MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] FAILED to create connection #%d (no free ports)\n", con);
 #endif
-    return -1;
+      return -1;
+    }
   }
 
   return 0; // no error
@@ -96,11 +102,14 @@ s32 OSC_SERVER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Init function for presets (read before OSC_SERVER_Init()
 /////////////////////////////////////////////////////////////////////////////
-s32 OSC_SERVER_InitFromPresets(u32 _osc_remote_ip, u16 _osc_remote_port, u16 _osc_local_port)
+s32 OSC_SERVER_InitFromPresets(u8 con, u32 _osc_remote_ip, u16 _osc_remote_port, u16 _osc_local_port)
 {
-  osc_remote_ip = _osc_remote_ip;
-  osc_remote_port = _osc_remote_port;
-  osc_local_port = _osc_local_port;
+  if( con >= OSC_SERVER_NUM_CONNECTIONS )
+    return -1; // invalid connection
+
+  osc_remote_ip[con] = _osc_remote_ip;
+  osc_remote_port[con] = _osc_remote_port;
+  osc_local_port[con] = _osc_local_port;
 
   return 0; // no error
 }
@@ -109,38 +118,88 @@ s32 OSC_SERVER_InitFromPresets(u32 _osc_remote_ip, u16 _osc_remote_port, u16 _os
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set functions
 /////////////////////////////////////////////////////////////////////////////
-s32 OSC_SERVER_RemoteIP_Set(u32 ip)
+s32 OSC_SERVER_RemoteIP_Set(u8 con, u32 ip)
 {
-  osc_remote_ip = ip;
+  if( con >= OSC_SERVER_NUM_CONNECTIONS )
+    return -1; // invalid connection
+
+  osc_remote_ip[con] = ip;
+#if 0
   return OSC_SERVER_Init(0);
+#else
+  return 0; // OSC_SERVER_Init(0) has to be called after all settings have been done
+#endif
 }
 
-u32 OSC_SERVER_RemoteIP_Get(void)
+u32 OSC_SERVER_RemoteIP_Get(u8 con)
 {
-  return osc_remote_ip;
+  return osc_remote_ip[con];
 }
 
 
-s32 OSC_SERVER_RemotePortSet(u16 port)
+s32 OSC_SERVER_RemotePortSet(u8 con, u16 port)
 {
-  osc_remote_port = port;
-  return 0; // no error
-}
+  if( con >= OSC_SERVER_NUM_CONNECTIONS )
+    return -1; // invalid connection
 
-u16 OSC_SERVER_RemotePortGet(void)
-{
-  return osc_remote_port;
-}
-
-s32 OSC_SERVER_LocalPortSet(u16 port)
-{
-  osc_local_port = port;
+  osc_remote_port[con] = port;
+#if 0
   return OSC_SERVER_Init(0);
+#else
+  return 0; // OSC_SERVER_Init(0) has to be called after all settings have been done
+#endif
 }
 
-u16 OSC_SERVER_LocalPortGet(void)
+u16 OSC_SERVER_RemotePortGet(u8 con)
 {
-  return osc_local_port;
+  return osc_remote_port[con];
+}
+
+s32 OSC_SERVER_LocalPortSet(u8 con, u16 port)
+{
+  if( con >= OSC_SERVER_NUM_CONNECTIONS )
+    return -1; // invalid connection
+
+  osc_local_port[con] = port;
+#if 0
+  return OSC_SERVER_Init(0);
+#else
+  return 0; // OSC_SERVER_Init(0) has to be called after all settings have been done
+#endif
+}
+
+u16 OSC_SERVER_LocalPortGet(u8 con)
+{
+  return osc_local_port[con];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns >= 0 if given port is a remote port of any connection
+// Returns -1 if no connection asigned to the port
+/////////////////////////////////////////////////////////////////////////////
+s32 OSC_SERVER_IsRemotePort(u16 port)
+{
+  int con;
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
+    if( osc_remote_port[con] == port )
+      return con;
+
+  return -1; // port not assigned
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns >= 0 if given port is a local port of any connection
+// Returns -1 if no connection asigned to the port
+/////////////////////////////////////////////////////////////////////////////
+s32 OSC_SERVER_IsLocalPort(u16 port)
+{
+  int con;
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
+    if( osc_local_port[con] == port )
+      return con;
+
+  return -1; // port not assigned
 }
 
 
@@ -186,28 +245,29 @@ s32 OSC_SERVER_AppCall(void)
 // Called by OSC client to send an UDP datagram
 // To ensure proper mutex handling, functions inside the server have to
 /////////////////////////////////////////////////////////////////////////////
-s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
+s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
 {
   // exit immediately if length == 0
   if( len == 0 )
     return 0;
 
   // exit immediately if connection not ready
-  if( osc_conn == NULL ) {
+  if( osc_conn[con] == NULL ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] dropped SendPacket due to missing connection\n");
+    MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] dropped SendPacket due to invalid connection #%d\n", con);
 #endif
     return -1; // connection not established
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Send Datagram to %d.%d.%d.%d:%d (%d bytes)\n", 
-			       (osc_conn->ripaddr[0] >> 0) & 0xff,
-			       (osc_conn->ripaddr[0] >> 8) & 0xff,
-			       (osc_conn->ripaddr[1] >> 0) & 0xff,
-			       (osc_conn->ripaddr[1] >> 8) & 0xff,
-			       HTONS(osc_conn->rport),
-			       len);
+  MIOS32_MIDI_SendDebugMessage("[OSC_SERVER] Send Datagram to %d.%d.%d.%d:%d (%d bytes) via #%d\n", 
+			       (osc_conn[con]->ripaddr[0] >> 0) & 0xff,
+			       (osc_conn[con]->ripaddr[0] >> 8) & 0xff,
+			       (osc_conn[con]->ripaddr[1] >> 0) & 0xff,
+			       (osc_conn[con]->ripaddr[1] >> 8) & 0xff,
+			       HTONS(osc_conn[con]->rport),
+			       len,
+			       con);
   MIOS32_MIDI_SendDebugHexDump(packet, len);
 #endif
 
@@ -221,7 +281,7 @@ s32 OSC_SERVER_SendPacket(u8 *packet, u32 len)
   // force processing for a connection
   // this will call OSC_SERVER_AppCall() with uip_poll() set
   // note: the packet cannot be send directly from here, we have to use the uIP framework!
-  uip_udp_periodic_conn(osc_conn);
+  uip_udp_periodic_conn(osc_conn[con]);
 
   // send packet immediately
   if(uip_len > 0) {

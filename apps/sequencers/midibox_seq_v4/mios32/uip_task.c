@@ -237,7 +237,7 @@ static void UIP_TASK_Handler(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 void uip_log(char *msg)
 {
-#if 0
+#if 1
   MIOS32_MIDI_SendDebugMessage(msg);
 #endif
 }
@@ -466,7 +466,7 @@ s32 UIP_TASK_UDP_AppCall(void)
     dhcpc_appcall();
 
   // OSC Server
-  } else if( uip_udp_conn->rport == HTONS(OSC_SERVER_RemotePortGet()) || uip_udp_conn->lport == HTONS(OSC_SERVER_LocalPortGet()) ) {
+  } else if( OSC_SERVER_IsRemotePort(HTONS(uip_udp_conn->rport)) >= 0 || OSC_SERVER_IsLocalPort(HTONS(uip_udp_conn->lport)) >= 0 ) {
     OSC_SERVER_AppCall();
   }
 

@@ -21,6 +21,15 @@
 
 #define SEQ_MIDI_OSC_NUM_PORTS 4
 
+
+// transfer modes
+#define SEQ_MIDI_OSC_NUM_TRANSFER_MODES 3
+
+#define SEQ_MIDI_OSC_TRANSFER_MODE_MIDI  0
+#define SEQ_MIDI_OSC_TRANSFER_MODE_INT   1
+#define SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT 2
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -31,6 +40,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_MIDI_OSC_Init(u32 mode);
+
+extern s32 SEQ_MIDI_OSC_TransferModeSet(u8 osc_port, u8 mode);
+extern u8 SEQ_MIDI_OSC_TransferModeGet(u8 osc_port);
 
 extern s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package);
 
