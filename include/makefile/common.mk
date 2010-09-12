@@ -38,18 +38,18 @@ OBJDUMP = $(MIOS32_GCC_PREFIX)-objdump
 NM      = $(MIOS32_GCC_PREFIX)-nm
 SIZE    = $(MIOS32_GCC_PREFIX)-size
 
+# where should the output files be located
+PROJECT_OUT ?= $(PROJECT)_build
+
 # default linker flags
-#LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
-LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -o$(PROJECT).elf -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -lstdc++
+#LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
+LDFLAGS += -T $(LD_FILE) -mthumb -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT_OUT)/$(PROJECT).map -lstdc++
 
 # default assembler flags
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
 
 # define C flags
 CFLAGS += $(C_DEFINES) $(C_INCLUDE)
-
-# define CPP flags (will be added to CFLAGS)
-CPPFLAGS += -fno-rtti -fno-exceptions -Wno-write-strings
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
@@ -59,6 +59,9 @@ endif
 ifeq ($(FAMILY),STR9x)
 CFLAGS += -mcpu=arm7tdmi -D PACK_STRUCT_END=__attribute\(\(packed\)\) -D ALIGN_STRUCT_END=__attribute\(\(aligned\(4\)\)\) -fomit-frame-pointer -ffunction-sections -mthumb-interwork
 endif
+
+# define CPP flags
+CPPFLAGS += $(CFLAGS) -fno-rtti -fno-exceptions -Wno-write-strings
 
 
 # convert .c/.s -> .o
@@ -73,14 +76,21 @@ ARM_AS_OBJS = $(ARM_AS_SOURCE:.s=.o)
 THUMB_AS_LST = $(THUMB_AS_SOURCE:.s=.lst)
 ARM_AS_LST = $(ARM_AS_SOURCE:.s=.lst)
 
+# list of all objects
+ALL_OBJS = $(addprefix $(PROJECT_OUT)/, $(THUMB_OBJS) $(THUMB_CPP_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_CPP_OBJS) $(ARM_AS_OBJS))
+
+# list of all dependency files
+ALL_DFILES = $(ALL_OBJS:.o=.d)
+
+# which directories contain source files?
+DIRS = $(dir $(THUMB_OBJS) $(THUMB_CPP_OBJS) $(THUMB_AS_OBJS) $(ARM_OBJS) $(ARM_CPP_OBJS) $(ARM_AS_OBJS))
+
 # add files for distribution
 DIST += $(MIOS32_PATH)/include/makefile/common.mk $(MIOS32_PATH)/include/c
 DIST += $(LD_FILE)
 
 # default rule
-# note: currently we always require a "cleanall", since dependencies (e.g. on .h files) are not properly declared
-# later we could try it w/o "cleanall", and propose the usage of this step to the user
-all: cleanall $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym projectinfo
+all: dirs $(PROJECT).hex $(PROJECT_OUT)/$(PROJECT).bin $(PROJECT_OUT)/$(PROJECT).lss $(PROJECT_OUT)/$(PROJECT).sym projectinfo
 
 # define debug/release target for easier use in codeblocks
 debug: all
@@ -88,23 +98,31 @@ Debug: all
 release: all
 Release: all
 
+# create the output directories
+dirs:
+	@-if [ ! -e $(PROJECT_OUT) ]; then mkdir $(PROJECT_OUT); fi;
+	@-$(foreach DIR,$(DIRS), if [ ! -e $(PROJECT_OUT)/$(DIR) ]; \
+	 then mkdir -p $(PROJECT_OUT)/$(DIR); fi; )
+
+
 # rule to create a .hex and .bin file
-%.bin : $(PROJECT).elf
-	$(OBJCOPY) $< -O binary $@
-%.hex : $(PROJECT).elf
-	$(OBJCOPY) $< -O ihex $@
+%.bin : $(PROJECT_OUT)/$(PROJECT).elf
+	@$(OBJCOPY) $< -O binary $@
+%.hex : $(PROJECT_OUT)/$(PROJECT).elf
+	@$(OBJCOPY) $< -O ihex $@
 
 # rule to create a listing file from .elf
-%.lss: $(PROJECT).elf
-	$(OBJDUMP) -h -S -C $< > $@
+%.lss: $(PROJECT_OUT)/$(PROJECT).elf
+	@$(OBJDUMP) -h -S -C $< > $@
 
 # rule to create a symbol table from .elf
-%.sym: $(PROJECT).elf
-	$(NM) -n $< > $@
+%.sym: $(PROJECT_OUT)/$(PROJECT).elf
+	@$(NM) -n $< > $@
 
 # rule to create .elf file
-$(PROJECT).elf: $(THUMB_CPP_OBJS) $(THUMB_OBJS) $(THUMB_AS_OBJS) $(ARM_CPP_OBJS) $(ARM_OBJS) $(ARM_AS_OBJS)
-	$(CC) $(CFLAGS) $(ARM_OBJS) $(THUMB_OBJS) $(ARM_AS_OBJS) $(THUMB_CPP_OBJS) $(ARM_CPP_OBJS) $(THUMB_AS_OBJS) $(LIBS) $(LDFLAGS) 
+$(PROJECT_OUT)/$(PROJECT).elf: $(ALL_OBJS)
+	@$(CC) $(CFLAGS) $(ALL_OBJS) $(LIBS) $(LDFLAGS) -o$@
+
 
 # rule to output project informations
 projectinfo:
@@ -115,37 +133,54 @@ projectinfo:
 	@echo "Board:     $(BOARD)"
 	@echo "LCD:       $(LCD)"
 	@echo "-------------------------------------------------------------------------------"
-	$(SIZE) $(PROJECT).elf
+	$(SIZE) $(PROJECT_OUT)/$(PROJECT).elf
 
 # default rule for compiling .c programs
-$(THUMB_OBJS) : %.o : %.c
-	$(CC) -c $(CFLAGS) -mthumb $< -o $@
+# inspired from the "super makefile" published at http://gpwiki.org/index.php/Make
+# Rule for creating object file and .d file, the sed magic is to add
+# the object path at the start of the file because the files gcc
+# outputs assume it will be in the same dir as the source file.
+$(PROJECT_OUT)/%.o: %.c
+	@echo Creating object file for $(notdir $<)
+	@$(CC) -Wp,-MMD,$(PROJECT_OUT)/$*.dd $(CFLAGS) -mthumb -c $< -o $@
+	@sed -e '1s/^\(.*\)$$/$(subst /,\/,$(dir $@))\1/' $(PROJECT_OUT)/$*.dd > $(PROJECT_OUT)/$*.d
+	@rm -f $(PROJECT_OUT)/$*.dd
 
-$(ARM_OBJS) : %.o : %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+$(PROJECT_OUT)/%.o: %.cpp
+	@echo Creating object file for $(notdir $<)
+	@$(CC) -Wp,-MMD,$(PROJECT_OUT)/$*.dd $(CPPFLAGS) -mthumb -c $< -o $@
+	@sed -e '1s/^\(.*\)$$/$(subst /,\/,$(dir $@))\1/' $(PROJECT_OUT)/$*.dd > $(PROJECT_OUT)/$*.d
+	@rm -f $(PROJECT_OUT)/$*.dd
 
-# default rule for compiling .cpp programs
-$(THUMB_CPP_OBJS) : %.o : %.cpp
-	$(CPP) -c $(CFLAGS) $(CPPFLAGS) -mthumb $< -o $@
+$(PROJECT_OUT)/%.o: %.s
+	@echo Creating object file for $(notdir $<)
+	@$(CC) -Wp,-MMD,$(PROJECT_OUT)/$*.dd $(ASFLAGS) -mthumb -c $< -o $@
+	@sed -e '1s/^\(.*\)$$/$(subst /,\/,$(dir $@))\1/' $(PROJECT_OUT)/$*.dd > $(PROJECT_OUT)/$*.d
+	@rm -f $(PROJECT_OUT)/$*.dd
 
-$(ARM_CPP_OBJS) : %.o : %.cpp
-	$(CPP) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+# Includes the .d files so it knows the exact dependencies for every
+# source.
+-include $(ALL_DFILES)
 
-# default rule for compiling assembly programs
-$(THUMB_AS_OBJS) : %.o : %.s
-	$(CC) -c $(AFLAGS) -mthumb $< -o $@
+# TODO: solution to differ between THUMB and ARM objects!
+# we could search in the ARM*OBJS list and prevent the usage of -mthumb in this case
+#$(ARM_OBJS) : %.o : %.c
+#	$(CC) -c $(CFLAGS) $< -o $@
 
-$(ARM_AS_OBJS) : %.o : %.s
-	$(CC) -c $(AFLAGS) $< -o $@
+#$(ARM_CPP_OBJS) : %.o : %.cpp
+#	$(CPP) -c $(CPPFLAGS) $< -o $@
+
+#$(ARM_AS_OBJS) : %.o : %.s
+#	$(CC) -c $(AFLAGS) $< -o $@
+
 
 # clean temporary files
 clean:
-	rm -f *.lss $(PROJECT).sym $(PROJECT).map $(PROJECT).elf
-	rm -f $(THUMB_OBJS) $(THUMB_CPP_OBJS) $(THUMB_CS_OBJS) $(THUMB_AS_LST) $(ARM_OBJS) $(ARM_CPP_OBJS) $(ARM_AS_OBJS)  $(ARM_AS_LST)
+	rm -rf $(PROJECT_OUT)
 
 # clean temporary files + project image
 cleanall: clean
-	rm -f $(PROJECT).hex $(PROJECT).bin
+	rm $(PROJECT).hex
 
 
 # for use with graphviz and egypt
@@ -179,6 +214,3 @@ callgraph_all: callgraph callgraph_convert
 
 callgraph_clean: 
 	@rm -fR egypt
-
-# shortcut for impatient coders. If you don't know what this is don't use it!
-notall: $(PROJECT).hex $(PROJECT).bin $(PROJECT).lss $(PROJECT).sym projectinfo
