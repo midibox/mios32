@@ -14,38 +14,40 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = ../mios32/tasks.c
+APP_DIR = $(MIOS32_PATH)/apps/synthesizers/midibox_sid_v3
 
-THUMB_CPP_SOURCE = ../core/app.cpp \
-		   ../core/components/MbSidClock.cpp \
-		   ../core/components/MbSidRandomGen.cpp \
-		   ../core/components/MbSidVoiceQueue.cpp \
-		   ../core/components/MbSidLfo.cpp \
-		   ../core/components/MbSidEnv.cpp \
-		   ../core/components/MbSidEnvLead.cpp \
-		   ../core/components/MbSidWt.cpp \
-		   ../core/components/MbSidWtDrum.cpp \
-		   ../core/components/MbSidMod.cpp \
-		   ../core/components/MbSidArp.cpp \
-		   ../core/components/MbSidSeq.cpp \
-		   ../core/components/MbSidSeqBassline.cpp \
-		   ../core/components/MbSidSeqDrum.cpp \
-		   ../core/components/MbSidFilter.cpp \
-		   ../core/components/MbSidMidiVoice.cpp \
-		   ../core/components/MbSidVoice.cpp \
-		   ../core/components/MbSidVoiceDrum.cpp \
-		   ../core/components/MbSidDrum.cpp \
-		   ../core/MbSidEnvironment.cpp \
-		   ../core/MbSidSysEx.cpp \
-		   ../core/MbSidAsid.cpp \
-		   ../core/MbSidTables.cpp \
-		   ../core/MbSid.cpp \
-		   ../core/MbSidPatch.cpp \
-		   ../core/MbSidSe.cpp \
-		   ../core/MbSidSeBassline.cpp \
-		   ../core/MbSidSeDrum.cpp \
-		   ../core/MbSidSeMulti.cpp \
-		   ../core/MbSidSeLead.cpp \
+THUMB_SOURCE    = $(APP_DIR)/mios32/tasks.c
+
+THUMB_CPP_SOURCE = $(APP_DIR)/core/app.cpp \
+		   $(APP_DIR)/core/components/MbSidClock.cpp \
+		   $(APP_DIR)/core/components/MbSidRandomGen.cpp \
+		   $(APP_DIR)/core/components/MbSidVoiceQueue.cpp \
+		   $(APP_DIR)/core/components/MbSidLfo.cpp \
+		   $(APP_DIR)/core/components/MbSidEnv.cpp \
+		   $(APP_DIR)/core/components/MbSidEnvLead.cpp \
+		   $(APP_DIR)/core/components/MbSidWt.cpp \
+		   $(APP_DIR)/core/components/MbSidWtDrum.cpp \
+		   $(APP_DIR)/core/components/MbSidMod.cpp \
+		   $(APP_DIR)/core/components/MbSidArp.cpp \
+		   $(APP_DIR)/core/components/MbSidSeq.cpp \
+		   $(APP_DIR)/core/components/MbSidSeqBassline.cpp \
+		   $(APP_DIR)/core/components/MbSidSeqDrum.cpp \
+		   $(APP_DIR)/core/components/MbSidFilter.cpp \
+		   $(APP_DIR)/core/components/MbSidMidiVoice.cpp \
+		   $(APP_DIR)/core/components/MbSidVoice.cpp \
+		   $(APP_DIR)/core/components/MbSidVoiceDrum.cpp \
+		   $(APP_DIR)/core/components/MbSidDrum.cpp \
+		   $(APP_DIR)/core/MbSidEnvironment.cpp \
+		   $(APP_DIR)/core/MbSidSysEx.cpp \
+		   $(APP_DIR)/core/MbSidAsid.cpp \
+		   $(APP_DIR)/core/MbSidTables.cpp \
+		   $(APP_DIR)/core/MbSid.cpp \
+		   $(APP_DIR)/core/MbSidPatch.cpp \
+		   $(APP_DIR)/core/MbSidSe.cpp \
+		   $(APP_DIR)/core/MbSidSeBassline.cpp \
+		   $(APP_DIR)/core/MbSidSeDrum.cpp \
+		   $(APP_DIR)/core/MbSidSeMulti.cpp \
+		   $(APP_DIR)/core/MbSidSeLead.cpp \
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -54,8 +56,8 @@ ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
 C_INCLUDE = 	-I . \
-		-I ../core \
-		-I ../core/components
+		-I $(APP_DIR)/core \
+		-I $(APP_DIR)/core/components
 
 A_INCLUDE = 	-I .
 
