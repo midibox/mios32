@@ -28,9 +28,9 @@ MIDIboxSEQ V4.0beta25
       - Poly Pressure Events: /<chn>/polypressure <note> <pressure>
         Integer: note and pressure in range 0 .. 127
         Float: note still as integer, pressure in range 0.0 .. 1.0
-      - CC Events: /<chn>/cc/<cc-number> <value>
+      - CC Events: /<chn>/cc <cc-number> <value>
         Integer: value in range 0 .. 127
-        Float: value in range 0.0 .. 1.0
+        Float: cc-number still as integer, value in range 0.0 .. 1.0
       - Program Change Events: /<chn>/programchange/<value>
         Integer: value in range 0 .. 127
         Float: value in range 0.0 .. 1.0
@@ -42,6 +42,19 @@ MIDIboxSEQ V4.0beta25
         Float: value in range -1.0 .. 1.0
 
     <chn> range: 1..16
+
+  o OSC option now supports SysEx transfers (SysEx stream is embedded into blobs)
+
+  o it's now possible to route USB/MIDI/IIC/AOUT ports to the OSC ports in 
+    the MIDI Router page.
+
+  o SysEx streams will now be forwarded by the MIDI Router as well.
+    The Chn setting has to be set to "All" for source and destination port.
+
+    This allows you to access the SysEx functions of your synth - it's even
+    possible to upload a new firmware to a MIDIbox which is connected 
+    to a MIDI port of MBSEQ now.
+
 
 
 
@@ -761,9 +774,6 @@ Multiple Mutex (semaphores) will decrease the general performance
 >> -The LCD could show "Sending..." or something, so you know the SEQ hasn't crashed or anything.
 >> 
 >> -The actual "xxx bytes Sent" message appears correctly at the end. And BTW, it would be nice that it would not appear over the files, because it takes so long to disappear and when sending small .SYX files (while the SEQ is playing, jamming with synth values on-the-fly) there's this time when you won't see the files in there. So maybe using only the upper LCD lines...
->> 
->> -Then I imagine it would be nice somehow not having to repatch the MIDI cables (S612 <-> Computer, phisically removing the SEQ) when using the computer SysEx editors (SEQ stopped used only as a MIDI Interface/Router). But I can live with that... or with an external router/patchbay :)
->> (NOTE: I can use the SEQ to send the data to the S612, but not to retrieve it. I need a computer to get the data drom the sampler, to handle the handshacking, etc... and then converting the files to the correct .SYX format.)
 >> 
 
 ----------------------------------------------------------

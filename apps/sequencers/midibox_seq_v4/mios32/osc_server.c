@@ -47,7 +47,7 @@ static u32 osc_remote_ip[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_IP, OSC_REMO
 static u16 osc_remote_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT };
 static u16 osc_local_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT };
 
-static u8 running_sysex;
+static u8 running_sysex[OSC_SERVER_NUM_CONNECTIONS];
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the OSC daemon
@@ -57,7 +57,8 @@ s32 OSC_SERVER_Init(u32 mode)
   int con;
 
   // disable sysex status
-  running_sysex = 0;
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
+    running_sysex[con] = 0;
 
   // disable send packet
   osc_send_packet = NULL;
@@ -308,48 +309,54 @@ static s32 OSC_SERVER_Method_SendMIDI(mios32_osc_args_t *osc_args, u32 method_ar
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
 #endif
 
+  // check osc port
+  u8 con = method_arg & 0xf;
+  if( con > OSC_SERVER_NUM_CONNECTIONS )
+    return -1; // wrong port
+
   // we expect at least 1 argument
   if( osc_args->num_args < 1 )
-    return -1; // wrong number of arguments
+    return -2; // wrong number of arguments
 
   // check for MIDI event
-  if( osc_args->arg_type[0] != 'm' )
-    return -2; // wrong argument type for first parameter
+  if( osc_args->arg_type[0] == 'm' ) {
+    mios32_midi_package_t p = MIOS32_OSC_GetMIDI(osc_args->arg_ptr[0]);
 
-  mios32_midi_package_t p = MIOS32_OSC_GetMIDI(osc_args->arg_ptr[0]);
-
-  // extra treatment for SysEx messages
-  if( p.evnt0 >= 0xf0 || p.evnt0 < 0x80 ) {
-    if( p.evnt0 >= 0xf8 )
-      p.cin = 0xf; // realtime
-    if( p.evnt0 == 0xf7 ) {
-      p.cin = 5; // SysEx ends with single byte
-      running_sysex = 0;
-    } else if( p.evnt1 == 0xf7 ) {
-      p.cin = 6; // SysEx ends with two bytes
-      running_sysex = 0;
-    } else if( p.evnt2 == 0xf7 ) {
-      p.cin = 7; // SysEx ends with three bytes
-      running_sysex = 0;
-    } else if( p.evnt0 == 0xf0 ) {
-      p.cin = 4; // SysEx starts or continues
-      running_sysex = 1;
-    } else {
-      running_sysex = 0;
+    // extra treatment for SysEx messages
+    // Note: SysEx streams will be sent as blobs and therefore don't need to be considered here
+    if( p.evnt0 >= 0xf0 || p.evnt0 < 0x80 ) {
+      if( p.evnt0 >= 0xf8 )
+	p.cin = 0xf; // realtime
       if( p.evnt0 == 0xf1 || p.evnt0 == 0xf3 )
 	p.cin = 2; // two byte system common message
       else
 	p.cin = 3; // three byte system common message
+    } else {
+      p.cin = p.evnt0 >> 4;
+      running_sysex[con] = 0;
     }
-  } else {
-    p.cin = p.evnt0 >> 4;
-    running_sysex = 0;
-  }
 
-  // propagate to application
-  // port is located in method argument
-  MIOS32_MIDI_SendPackageToRxCallback(method_arg, p);
-  APP_MIDI_NotifyPackage(method_arg, p);
+    // propagate to application
+    // port is located in method argument
+    MIOS32_MIDI_SendPackageToRxCallback(method_arg, p);
+    APP_MIDI_NotifyPackage(method_arg, p);
+
+  } else  if( osc_args->arg_type[0] == 'b' ) {
+    // SysEx stream is embedded into blob
+    u32 len = MIOS32_OSC_GetBlobLength(osc_args->arg_ptr[0]);
+    u8 *blob = MIOS32_OSC_GetBlobData(osc_args->arg_ptr[0]);
+
+    // propagate to application
+    // port is located in method argument
+    int i;
+    for(i=0; i<len; ++i, blob++) {
+      SEQ_MIDI_SYSEX_Parser(method_arg, *blob);
+      if( *blob == 0xf7 )
+	break;
+    }
+  } else
+    return -2; // wrong argument type for first parameter
+
 
   return 0; // no error
 }

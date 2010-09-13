@@ -95,6 +95,37 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Receives a SysEx byte from SEQ_MIDI_SYSEX_Parser (-> seq_midi_sysex.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
+{
+  u8 node;
+
+  mios32_midi_port_t def_port = MIOS32_MIDI_DefaultPortGet();
+
+  seq_midi_router_node_t *n = &seq_midi_router_node[0];
+  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+    // SysEx, only forwarded if source and destination channel set to "All"
+    if( n->src_chn >= 17 && n->dst_chn >= 17 &&
+	(n->src_port == port || (n->src_port == DEFAULT && port == def_port)) ) {
+
+      // forward as single byte
+      // TODO: optimize this by collecting up to 3 data words and put it into package
+      MUTEX_MIDIOUT_TAKE;
+      mios32_midi_package_t midi_package;
+      midi_package.ALL = 0x00000000;
+      midi_package.type = 0xf; // single byte
+      midi_package.evnt0 = midi_in;
+      MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
+      MUTEX_MIDIOUT_GIVE;
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns 1 if given port receives MIDI Clock
 // Returns 0 if MIDI Clock In disabled
 // Returns -1 if port not supported
@@ -193,6 +224,7 @@ s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
       // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
       mios32_midi_port_t port = (USB0 + ((i&0x18) << 1)) | (i&7);
 
+      // TODO: special check for OSC, since MIOS32_MIDI_CheckAvailable() won't work here
       if( MIOS32_MIDI_CheckAvailable(port) ) {
 	if( bpm_tick )
 	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);

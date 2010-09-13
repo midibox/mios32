@@ -22,6 +22,7 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midi_sysex.h"
+#include "seq_midi_router.h"
 #include "seq_blm.h"
 
 
@@ -161,6 +162,9 @@ s32 SEQ_MIDI_SYSEX_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
+  // forward event to MIDI router
+  SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
+
   // forward event to BLM as well
   SEQ_BLM_SYSEX_Parser(port, midi_in);
 

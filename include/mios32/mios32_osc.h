@@ -104,6 +104,8 @@ extern u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p);
 
 extern s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search_tree);
 
+extern s32 MIOS32_OSC_SendDebugMessage(mios32_osc_args_t *osc_args, u32 method_arg);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

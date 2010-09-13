@@ -697,7 +697,7 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 me
     size_t sep_pos = 0;
 
     while( *str1 != 0 && *str1 != '/' ) {
-      if( *str1 == '*' ) {
+      if( *str1 == '*' || *str2 == '*' ) {
 	// '*' wildcard: continue to end of address part
 	while( *str1 != 0 && *str1 != '/' ) {
 	  ++sep_pos;
@@ -708,7 +708,7 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 me
       } else {
 	// no wildcard: check for matching characters
 	++sep_pos;
-	if( *str2 == 0 || (*str2 != *str1 && *str1 != '?') ) {
+	if( *str2 == 0 || (*str2 != *str1 && *str1 != '?' && *str2 != '?') ) {
 	  match = 0;
 	  break;
 	}

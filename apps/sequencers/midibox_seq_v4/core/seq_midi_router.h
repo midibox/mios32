@@ -53,6 +53,7 @@ extern s32 SEQ_MIDI_ROUTER_MIDIClockOutSet(mios32_midi_port_t port, u8 enable);
 extern s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick);
 
 extern s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 SEQ_MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 
 
 /////////////////////////////////////////////////////////////////////////////
