@@ -44,12 +44,22 @@
 
 static u16 osc_transfer_mode[SEQ_MIDI_OSC_NUM_PORTS];
 
+// small SysEx buffer for optimized blobs
+#define SEQ_MIDI_OSC_SYSEX_BUFFER_SIZE 16
+static u8 sysex_buffer[SEQ_MIDI_OSC_NUM_PORTS][SEQ_MIDI_OSC_SYSEX_BUFFER_SIZE];
+static u8 sysex_buffer_len[SEQ_MIDI_OSC_NUM_PORTS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_OSC_Init(u32 mode)
 {
+  int i;
+
+  for(i=0; i<SEQ_MIDI_OSC_NUM_PORTS; ++i)
+    sysex_buffer_len[i] = 0;
+
   return 0; // no error
 }
 
@@ -119,13 +129,15 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
       break;
 
     case CC:
-      sprintf(event_path, "/%d/cc/%d", package.chn+1, package.cc_number);
+      sprintf(event_path, "/%d/cc", package.chn+1);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       if( osc_transfer_mode[osc_port] == SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT ) {
-	end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+	end_ptr = MIOS32_OSC_PutString(end_ptr, ",if");
+	end_ptr = MIOS32_OSC_PutInt(end_ptr, package.cc_number);
 	end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.value/127.0);
       } else {
-	end_ptr = MIOS32_OSC_PutString(end_ptr, ",i");
+	end_ptr = MIOS32_OSC_PutString(end_ptr, ",ii");
+	end_ptr = MIOS32_OSC_PutInt(end_ptr, package.cc_number);
 	end_ptr = MIOS32_OSC_PutInt(end_ptr, package.value);
       }
       break;
@@ -175,12 +187,60 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
       break;
     }
   } else {
-    char midi_path[8];
-    strcpy(midi_path, "/midiX");
-    midi_path[5] = '1' + osc_port;
-    end_ptr = MIOS32_OSC_PutString(end_ptr, midi_path);
-    end_ptr = MIOS32_OSC_PutString(end_ptr, ",m");
-    end_ptr = MIOS32_OSC_PutMIDI(end_ptr, package);
+    // SysEx streams are embedded into blobs
+    if( package.evnt0 == 0xf0 )
+      sysex_buffer_len[osc_port] = 0;
+
+    int sysex_len = 0;
+    if( package.type == 0xf && package.evnt0 < 0xf8 )
+      sysex_len = 1;
+    else if( package.type == 0x4 || package.type == 0x7 )
+      sysex_len = 3;
+    else if( package.type == 0x5 )
+      sysex_len = 1;
+    else if( package.type == 0x6 )
+      sysex_len = 2;
+
+    if( sysex_len ) {
+      u8 send_sysex = 0;
+      u8 *buffer = (u8 *)&sysex_buffer[osc_port];
+      u8 *buffer_len = (u8 *)&sysex_buffer_len[osc_port];
+      int i;
+      for(i=0; i<sysex_len; ++i) {
+	// avoid usage of array access in package.* to avoid endianess issues
+	u8 evnt;
+	if( i == 0 )
+	  evnt = package.evnt0;
+	else if( i == 1 )
+	  evnt = package.evnt1;
+	else
+	  evnt = package.evnt2;
+
+	buffer[*buffer_len] = evnt;
+	*buffer_len += 1;
+
+	if( evnt == 0xf7 || *buffer_len >= SEQ_MIDI_OSC_SYSEX_BUFFER_SIZE ) {
+	  char midi_path[8];
+	  strcpy(midi_path, "/midiX");
+	  midi_path[5] = '1' + osc_port;
+	  end_ptr = MIOS32_OSC_PutString(end_ptr, midi_path);
+	  end_ptr = MIOS32_OSC_PutString(end_ptr, ",b");
+	  end_ptr = MIOS32_OSC_PutBlob(end_ptr, buffer, *buffer_len);
+	  *buffer_len = 0;
+	  send_sysex = 1;
+	}
+      }
+
+      if( !send_sysex )
+	return 0; // wait until sysex stream is terminated (or buffer is full)
+    } else {
+      char midi_path[8];
+      strcpy(midi_path, "/midiX");
+      midi_path[5] = '1' + osc_port;
+      end_ptr = MIOS32_OSC_PutString(end_ptr, midi_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",m");
+      end_ptr = MIOS32_OSC_PutMIDI(end_ptr, package);
+    }
   }
 
   // send packet and exit

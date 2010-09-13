@@ -2,7 +2,7 @@
 # It is assumed, that portmidi already has been installed (usually under /usr/local)
 # -> see $MIOS32_PATH/drivers/gnustep/portmidi/pm_mac/README_MAC.txt
 
-VFLAGS = -g
+VFLAGS = -g -Wall -Wno-format -Wno-switch
 
 MIOS32FLAGS = -I $(MIOS32_PATH)/include/mios32 -I . -D MIOS32_FAMILY_EMULATION
 
