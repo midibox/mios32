@@ -90,7 +90,7 @@ DIST += $(MIOS32_PATH)/include/makefile/common.mk $(MIOS32_PATH)/include/c
 DIST += $(LD_FILE)
 
 # default rule
-all: dirs $(PROJECT).hex $(PROJECT_OUT)/$(PROJECT).bin $(PROJECT_OUT)/$(PROJECT).lss $(PROJECT_OUT)/$(PROJECT).sym projectinfo
+all: dirs cleanhex $(PROJECT).hex $(PROJECT_OUT)/$(PROJECT).bin $(PROJECT_OUT)/$(PROJECT).lss $(PROJECT_OUT)/$(PROJECT).sym projectinfo
 
 # define debug/release target for easier use in codeblocks
 debug: all
@@ -178,9 +178,12 @@ $(PROJECT_OUT)/%.o: %.s
 clean:
 	rm -rf $(PROJECT_OUT)
 
+# clean project image
+cleanhex:
+	rm -f $(PROJECT).hex
+
 # clean temporary files + project image
-cleanall: clean
-	rm $(PROJECT).hex
+cleanall: clean cleanhex
 
 
 # for use with graphviz and egypt
