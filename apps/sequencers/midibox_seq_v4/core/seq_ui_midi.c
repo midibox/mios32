@@ -859,7 +859,7 @@ static s32 LCD_Handler(u8 high_prio)
 	if( !seq_blm_port )
 	  SEQ_LCD_PrintString(" off");
 	else
-	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_OutIxGet(seq_blm_port)));
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
       }
       SEQ_LCD_PrintSpaces(22);
 

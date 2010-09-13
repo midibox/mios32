@@ -55,6 +55,7 @@ MIDIboxSEQ V4.0beta25
     possible to upload a new firmware to a MIDIbox which is connected 
     to a MIDI port of MBSEQ now.
 
+  o MIDI->Misc menu: BLM can now be assigned to an OSC port
 
 
 
