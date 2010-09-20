@@ -113,7 +113,6 @@ int main(void)
   ///////////////////////////////////////////////////////////////////////////
   // initialize USB only if already done (-> not after Power On) or Hold mode enabled
   ///////////////////////////////////////////////////////////////////////////
-
   if( MIOS32_USB_IsInitialized() || BSL_HOLD_STATE ) {
     // if initialized, this function will only set some variables - it won't re-init the peripheral.
     // if hold mode activated via external pin, force re-initialisation by resetting USB
@@ -141,7 +140,9 @@ int main(void)
   ///////////////////////////////////////////////////////////////////////////
   // send upload request to USB and UART MIDI
   ///////////////////////////////////////////////////////////////////////////
+#if !defined(MIOS32_DONT_USE_UART_MIDI)
   BSL_SYSEX_SendUploadReq(UART0);    
+#endif
   BSL_SYSEX_SendUploadReq(USB0);
 
 
@@ -200,8 +201,13 @@ int main(void)
       RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
     } else {
       // no hold mode: ensure that USB interrupts won't be triggered while jumping into application
+#ifdef STM32F10X_CL
+      if( MIOS32_USB_IsInitialized() )
+	OTGD_FS_DisableGlobalInt();
+#else
       _SetCNTR(0); // clear interrupt mask
       _SetISTR(0); // clear all requests
+#endif
     }
 
     // change stack pointer

@@ -104,8 +104,13 @@ void WEAK DMA1_Channel5_IRQHandler(void);
 void WEAK DMA1_Channel6_IRQHandler(void);
 void WEAK DMA1_Channel7_IRQHandler(void);
 void WEAK ADC1_2_IRQHandler(void);
+#ifdef STM32F10X_CL
+void WEAK CAN1_TX_IRQHandler(void);
+void WEAK CAN1_RX0_IRQHandler(void);
+#else
 void WEAK USB_HP_CAN1_TX_IRQHandler(void);
 void WEAK USB_LP_CAN1_RX0_IRQHandler(void);
+#endif
 void WEAK CAN1_RX1_IRQHandler(void);
 void WEAK CAN1_SCE_IRQHandler(void);
 void WEAK EXTI9_5_IRQHandler(void);
@@ -144,7 +149,17 @@ void WEAK TIM7_IRQHandler(void);
 void WEAK DMA2_Channel1_IRQHandler(void);
 void WEAK DMA2_Channel2_IRQHandler(void);
 void WEAK DMA2_Channel3_IRQHandler(void);
-void WEAK DMA2_Channel4_5_IRQHandler(void);
+void WEAK DMA2_Channel4_IRQHandler(void);
+void WEAK DMA2_Channel5_IRQHandler(void);
+#ifdef STM32F10X_CL
+void WEAK ETH_IRQHandler(void); // for STM32F107x
+void WEAK ETH_WKUP_IRQHandler(void); // for STM32F107x
+void WEAK CAN2_TX_IRQHandler(void); // for STM32F105x
+void WEAK CAN2_RX0_IRQHandler(void); // for STM32F105x
+void WEAK CAN2_RX1_IRQHandler(void); // for STM32F105x
+void WEAK CAN2_SCE_IRQHandler(void); // for STM32F105x
+void WEAK OTG_FS_IRQHandler(void); // for STM32F105x
+#endif
 
 /* Private functions ---------------------------------------------------------*/
 /******************************************************************************
@@ -209,8 +224,13 @@ void (* const g_pfnVectors[])(void) =
     DMA1_Channel6_IRQHandler,   /* DMA1 Channel 6 */
     DMA1_Channel7_IRQHandler,   /* DMA1 Channel 7 */
     ADC1_2_IRQHandler,          /* ADC1 & ADC2 */
+#ifdef STM32F10X_CL
+    CAN1_TX_IRQHandler,  /* CAN1 TX */
+    CAN1_RX0_IRQHandler, /* CAN1 RX0 */
+#else
     USB_HP_CAN1_TX_IRQHandler,  /* USB High Priority or CAN1 TX */
     USB_LP_CAN1_RX0_IRQHandler, /* USB Low  Priority or CAN1 RX0 */
+#endif
     CAN1_RX1_IRQHandler,        /* CAN1 RX1 */
     CAN1_SCE_IRQHandler,        /* CAN1 SCE */
     EXTI9_5_IRQHandler,         /* EXTI Line 9..5 */
@@ -249,8 +269,19 @@ void (* const g_pfnVectors[])(void) =
     DMA2_Channel1_IRQHandler,   /* DMA2 Channel 1 */ 
     DMA2_Channel2_IRQHandler,   /* DMA2 Channel 2 */ 
     DMA2_Channel3_IRQHandler,   /* DMA2 Channel 3 */ 
-    DMA2_Channel4_5_IRQHandler, /* DMA2 Channel 4 and Channel 5 */ 
-    0,0,0,0,0,0,0,0,            /* @0x130 */ 
+    DMA2_Channel4_IRQHandler,   /* DMA2 Channel 4 */ 
+    DMA2_Channel5_IRQHandler,   /* DMA2 Channel 5 */ 
+#ifdef STM32F10X_CL
+    ETH_IRQHandler, // for STM32F107x
+    ETH_WKUP_IRQHandler, // for STM32F107x
+    CAN2_TX_IRQHandler, // for STM32F105x
+    CAN2_RX0_IRQHandler, // for STM32F105x
+    CAN2_RX1_IRQHandler, // for STM32F105x
+    CAN2_SCE_IRQHandler, // for STM32F105x
+    OTG_FS_IRQHandler, // for STM32F105x
+#else
+    0,0,0,0,0,0,0,            /* @0x134 */
+#endif
     0,0,0,0,0,0,0,0,            /* @0x150 */
     0,0,0,0,0,0,0,0,            /* @0x170 */
     0,0,0,0,0,0,0,0,            /* @0x190 */
@@ -335,8 +366,15 @@ void Reset_Handler(void)
 #pragma weak DMA1_Channel6_IRQHandler = Default_Handler
 #pragma weak DMA1_Channel7_IRQHandler = Default_Handler
 #pragma weak ADC1_2_IRQHandler = Default_Handler
+
+#ifdef STM32F10X_CL
+#pragma weak CAN1_TX_IRQHandler = Default_Handler
+#pragma weak CAN1_RX0_IRQHandler = Default_Handler
+#else
 #pragma weak USB_HP_CAN1_TX_IRQHandler = Default_Handler
 #pragma weak USB_LP_CAN1_RX0_IRQHandler = Default_Handler
+#endif
+
 #pragma weak CAN1_RX1_IRQHandler = Default_Handler
 #pragma weak CAN1_SCE_IRQHandler = Default_Handler
 #pragma weak EXTI9_5_IRQHandler = Default_Handler
@@ -375,7 +413,18 @@ void Reset_Handler(void)
 #pragma weak DMA2_Channel1_IRQHandler = Default_Handler
 #pragma weak DMA2_Channel2_IRQHandler = Default_Handler
 #pragma weak DMA2_Channel3_IRQHandler = Default_Handler
-#pragma weak DMA2_Channel4_5_IRQHandler = Default_Handler
+#pragma weak DMA2_Channel4_IRQHandler = Default_Handler
+#pragma weak DMA2_Channel5_IRQHandler = Default_Handler
+
+#ifdef STM32F10X_CL
+#pragma weak ETH_IRQHandler = Default_Handler
+#pragma weak ETH_WKUP_IRQHandler = Default_Handler
+#pragma weak CAN2_TX_IRQHandler = Default_Handler
+#pragma weak CAN2_RX0_IRQHandler = Default_Handler
+#pragma weak CAN2_RX1_IRQHandler = Default_Handler
+#pragma weak CAN2_SCE_IRQHandler = Default_Handler
+#pragma weak OTG_FS_IRQHandler = Default_Handler
+#endif
 
 /**
  * @brief  This is the code that gets called when the processor receives an 

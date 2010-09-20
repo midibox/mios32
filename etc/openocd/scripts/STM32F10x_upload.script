@@ -1,5 +1,6 @@
 # $Id$
 
+reset_config srst_only
 reset halt
 wait_halt
 poll
