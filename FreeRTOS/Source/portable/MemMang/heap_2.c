@@ -1,48 +1,54 @@
 /*
-	FreeRTOS V5.4.2 - Copyright (C) 2009 Real Time Engineers Ltd.
+    FreeRTOS V6.0.5 - Copyright (C) 2010 Real Time Engineers Ltd.
 
-	This file is part of the FreeRTOS distribution.
+    ***************************************************************************
+    *                                                                         *
+    * If you are:                                                             *
+    *                                                                         *
+    *    + New to FreeRTOS,                                                   *
+    *    + Wanting to learn FreeRTOS or multitasking in general quickly       *
+    *    + Looking for basic training,                                        *
+    *    + Wanting to improve your FreeRTOS skills and productivity           *
+    *                                                                         *
+    * then take a look at the FreeRTOS eBook                                  *
+    *                                                                         *
+    *        "Using the FreeRTOS Real Time Kernel - a Practical Guide"        *
+    *                  http://www.FreeRTOS.org/Documentation                  *
+    *                                                                         *
+    * A pdf reference manual is also available.  Both are usually delivered   *
+    * to your inbox within 20 minutes to two hours when purchased between 8am *
+    * and 8pm GMT (although please allow up to 24 hours in case of            *
+    * exceptional circumstances).  Thank you for your support!                *
+    *                                                                         *
+    ***************************************************************************
 
-	FreeRTOS is free software; you can redistribute it and/or modify it	under 
-	the terms of the GNU General Public License (version 2) as published by the 
-	Free Software Foundation and modified by the FreeRTOS exception.
-	**NOTE** The exception to the GPL is included to allow you to distribute a
-	combined work that includes FreeRTOS without being obliged to provide the 
-	source code for proprietary components outside of the FreeRTOS kernel.  
-	Alternative commercial license and support terms are also available upon 
-	request.  See the licensing section of http://www.FreeRTOS.org for full 
-	license details.
+    This file is part of the FreeRTOS distribution.
 
-	FreeRTOS is distributed in the hope that it will be useful,	but WITHOUT
-	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-	more details.
+    FreeRTOS is free software; you can redistribute it and/or modify it under
+    the terms of the GNU General Public License (version 2) as published by the
+    Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
+    ***NOTE*** The exception to the GPL is included to allow you to distribute
+    a combined work that includes FreeRTOS without being obliged to provide the
+    source code for proprietary components outside of the FreeRTOS kernel.
+    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details. You should have received a copy of the GNU General Public 
+    License and the FreeRTOS license exception along with FreeRTOS; if not it 
+    can be viewed here: http://www.freertos.org/a00114.html and also obtained 
+    by writing to Richard Barry, contact details for whom are available on the
+    FreeRTOS WEB site.
 
-	You should have received a copy of the GNU General Public License along
-	with FreeRTOS; if not, write to the Free Software Foundation, Inc., 59
-	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+    1 tab == 4 spaces!
 
+    http://www.FreeRTOS.org - Documentation, latest information, license and
+    contact details.
 
-	***************************************************************************
-	*                                                                         *
-	* Looking for a quick start?  Then check out the FreeRTOS eBook!          *
-	* See http://www.FreeRTOS.org/Documentation for details                   *
-	*                                                                         *
-	***************************************************************************
+    http://www.SafeRTOS.com - A version that is certified for use in safety
+    critical systems.
 
-	1 tab == 4 spaces!
-
-	Please ensure to read the configuration and relevant port sections of the
-	online documentation.
-
-	http://www.FreeRTOS.org - Documentation, latest information, license and
-	contact details.
-
-	http://www.SafeRTOS.com - A version that is certified for use in safety
-	critical systems.
-
-	http://www.OpenRTOS.com - Commercial support, development, porting,
-	licensing and training services.
+    http://www.OpenRTOS.com - Commercial support, development, porting,
+    licensing and training services.
 */
 
 /*
@@ -55,30 +61,15 @@
  */
 #include <stdlib.h>
 
+/* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
+all the API functions to use the MPU wrappers.  That should only be done when
+task.h is included from an application file. */
+#define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* Setup the correct byte alignment mask for the defined byte alignment. */
-
-#if portBYTE_ALIGNMENT == 8
-	#define heapBYTE_ALIGNMENT_MASK ( ( size_t ) 0x0007 )
-#endif
-
-#if portBYTE_ALIGNMENT == 4
-	#define heapBYTE_ALIGNMENT_MASK	( ( size_t ) 0x0003 )
-#endif
-
-#if portBYTE_ALIGNMENT == 2
-	#define heapBYTE_ALIGNMENT_MASK	( ( size_t ) 0x0001 )
-#endif
-
-#if portBYTE_ALIGNMENT == 1
-	#define heapBYTE_ALIGNMENT_MASK	( ( size_t ) 0x0000 )
-#endif
-
-#ifndef heapBYTE_ALIGNMENT_MASK
-	#error "Invalid portBYTE_ALIGNMENT definition"
-#endif
+#undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
 /* Allocate the memory for the heap.  The struct is used to force byte
 alignment without using any non-portable code. */
@@ -87,9 +78,9 @@ static union xRTOS_HEAP
 	#if portBYTE_ALIGNMENT == 8
 		volatile portDOUBLE dDummy;
 	#else
-		volatile unsigned portLONG ulDummy;
-	#endif	
-	unsigned portCHAR ucHeap[ configTOTAL_HEAP_SIZE ];
+		volatile unsigned long ulDummy;
+	#endif
+	unsigned char ucHeap[ configTOTAL_HEAP_SIZE ];
 } xHeap;
 
 /* Define the linked list structure.  This is used to link free blocks in order
@@ -101,11 +92,15 @@ typedef struct A_BLOCK_LINK
 } xBlockLink;
 
 
-static const unsigned portSHORT  heapSTRUCT_SIZE	= ( sizeof( xBlockLink ) + portBYTE_ALIGNMENT - ( sizeof( xBlockLink ) % portBYTE_ALIGNMENT ) );
+static const unsigned short  heapSTRUCT_SIZE	= ( sizeof( xBlockLink ) + portBYTE_ALIGNMENT - ( sizeof( xBlockLink ) % portBYTE_ALIGNMENT ) );
 #define heapMINIMUM_BLOCK_SIZE	( ( size_t ) ( heapSTRUCT_SIZE * 2 ) )
 
 /* Create a couple of list links to mark the start and end of the list. */
 static xBlockLink xStart, xEnd;
+
+/* Keeps track of the number of free bytes remaining, but says nothing about
+fragmentation. */
+static size_t xFreeBytesRemaining = configTOTAL_HEAP_SIZE;
 
 /* STATIC FUNCTIONS ARE DEFINED AS MACROS TO MINIMIZE THE FUNCTION CALL DEPTH. */
 
@@ -179,10 +174,10 @@ void *pvReturn = NULL;
 			xWantedSize += heapSTRUCT_SIZE;
 
 			/* Ensure that blocks are always aligned to the required number of bytes. */
-			if( xWantedSize & heapBYTE_ALIGNMENT_MASK )
+			if( xWantedSize & portBYTE_ALIGNMENT_MASK )
 			{
 				/* Byte alignment required. */
-				xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & heapBYTE_ALIGNMENT_MASK ) );
+				xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
 			}
 		}
 
@@ -203,7 +198,7 @@ void *pvReturn = NULL;
 			{
 				/* Return the memory space - jumping over the xBlockLink structure
 				at its start. */
-				pvReturn = ( void * ) ( ( ( unsigned portCHAR * ) pxPreviousBlock->pxNextFreeBlock ) + heapSTRUCT_SIZE );
+				pvReturn = ( void * ) ( ( ( unsigned char * ) pxPreviousBlock->pxNextFreeBlock ) + heapSTRUCT_SIZE );
 
 				/* This block is being returned for use so must be taken our of the
 				list of free blocks. */
@@ -215,16 +210,18 @@ void *pvReturn = NULL;
 					/* This block is to be split into two.  Create a new block
 					following the number of bytes requested. The void cast is
 					used to prevent byte alignment warnings from the compiler. */
-					pxNewBlockLink = ( void * ) ( ( ( unsigned portCHAR * ) pxBlock ) + xWantedSize );
-					
+					pxNewBlockLink = ( void * ) ( ( ( unsigned char * ) pxBlock ) + xWantedSize );
+
 					/* Calculate the sizes of two blocks split from the single
 					block. */
-					pxNewBlockLink->xBlockSize = pxBlock->xBlockSize - xWantedSize;	
-					pxBlock->xBlockSize = xWantedSize;			
-					
+					pxNewBlockLink->xBlockSize = pxBlock->xBlockSize - xWantedSize;
+					pxBlock->xBlockSize = xWantedSize;
+
 					/* Insert the new block into the list of free blocks. */
 					prvInsertBlockIntoFreeList( ( pxNewBlockLink ) );
 				}
+				
+				xFreeBytesRemaining -= xWantedSize;
 			}
 		}
 	}
@@ -239,14 +236,14 @@ void *pvReturn = NULL;
 		}
 	}
 	#endif
-	
+
 	return pvReturn;
 }
 /*-----------------------------------------------------------*/
 
 void vPortFree( void *pv )
 {
-unsigned portCHAR *puc = ( unsigned portCHAR * ) pv;
+unsigned char *puc = ( unsigned char * ) pv;
 xBlockLink *pxLink;
 
 	if( pv )
@@ -259,12 +256,23 @@ xBlockLink *pxLink;
 		pxLink = ( void * ) puc;
 
 		vTaskSuspendAll();
-		{				
+		{
 			/* Add this block to the list of free blocks. */
 			prvInsertBlockIntoFreeList( ( ( xBlockLink * ) pxLink ) );
+			xFreeBytesRemaining += pxLink->xBlockSize;
 		}
 		xTaskResumeAll();
 	}
 }
 /*-----------------------------------------------------------*/
 
+size_t xPortGetFreeHeapSize( void )
+{
+	return xFreeBytesRemaining;
+}
+/*-----------------------------------------------------------*/
+
+void vPortInitialiseBlocks( void )
+{
+	/* This just exists to keep the linker quiet. */
+}

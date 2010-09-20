@@ -1,55 +1,69 @@
 /*
-	FreeRTOS V5.4.2 - Copyright (C) 2009 Real Time Engineers Ltd.
+    FreeRTOS V6.0.5 - Copyright (C) 2010 Real Time Engineers Ltd.
 
-	This file is part of the FreeRTOS distribution.
+    ***************************************************************************
+    *                                                                         *
+    * If you are:                                                             *
+    *                                                                         *
+    *    + New to FreeRTOS,                                                   *
+    *    + Wanting to learn FreeRTOS or multitasking in general quickly       *
+    *    + Looking for basic training,                                        *
+    *    + Wanting to improve your FreeRTOS skills and productivity           *
+    *                                                                         *
+    * then take a look at the FreeRTOS eBook                                  *
+    *                                                                         *
+    *        "Using the FreeRTOS Real Time Kernel - a Practical Guide"        *
+    *                  http://www.FreeRTOS.org/Documentation                  *
+    *                                                                         *
+    * A pdf reference manual is also available.  Both are usually delivered   *
+    * to your inbox within 20 minutes to two hours when purchased between 8am *
+    * and 8pm GMT (although please allow up to 24 hours in case of            *
+    * exceptional circumstances).  Thank you for your support!                *
+    *                                                                         *
+    ***************************************************************************
 
-	FreeRTOS is free software; you can redistribute it and/or modify it	under 
-	the terms of the GNU General Public License (version 2) as published by the 
-	Free Software Foundation and modified by the FreeRTOS exception.
-	**NOTE** The exception to the GPL is included to allow you to distribute a
-	combined work that includes FreeRTOS without being obliged to provide the 
-	source code for proprietary components outside of the FreeRTOS kernel.  
-	Alternative commercial license and support terms are also available upon 
-	request.  See the licensing section of http://www.FreeRTOS.org for full 
-	license details.
+    This file is part of the FreeRTOS distribution.
 
-	FreeRTOS is distributed in the hope that it will be useful,	but WITHOUT
-	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-	more details.
+    FreeRTOS is free software; you can redistribute it and/or modify it under
+    the terms of the GNU General Public License (version 2) as published by the
+    Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
+    ***NOTE*** The exception to the GPL is included to allow you to distribute
+    a combined work that includes FreeRTOS without being obliged to provide the
+    source code for proprietary components outside of the FreeRTOS kernel.
+    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details. You should have received a copy of the GNU General Public 
+    License and the FreeRTOS license exception along with FreeRTOS; if not it 
+    can be viewed here: http://www.freertos.org/a00114.html and also obtained 
+    by writing to Richard Barry, contact details for whom are available on the
+    FreeRTOS WEB site.
 
-	You should have received a copy of the GNU General Public License along
-	with FreeRTOS; if not, write to the Free Software Foundation, Inc., 59
-	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+    1 tab == 4 spaces!
 
+    http://www.FreeRTOS.org - Documentation, latest information, license and
+    contact details.
 
-	***************************************************************************
-	*                                                                         *
-	* Looking for a quick start?  Then check out the FreeRTOS eBook!          *
-	* See http://www.FreeRTOS.org/Documentation for details                   *
-	*                                                                         *
-	***************************************************************************
+    http://www.SafeRTOS.com - A version that is certified for use in safety
+    critical systems.
 
-	1 tab == 4 spaces!
-
-	Please ensure to read the configuration and relevant port sections of the
-	online documentation.
-
-	http://www.FreeRTOS.org - Documentation, latest information, license and
-	contact details.
-
-	http://www.SafeRTOS.com - A version that is certified for use in safety
-	critical systems.
-
-	http://www.OpenRTOS.com - Commercial support, development, porting,
-	licensing and training services.
+    http://www.OpenRTOS.com - Commercial support, development, porting,
+    licensing and training services.
 */
 
 #include <stdlib.h>
 #include <string.h>
+
+/* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
+all the API functions to use the MPU wrappers.  That should only be done when
+task.h is included from an application file. */
+#define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "croutine.h"
+
+#undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
 /*-----------------------------------------------------------
  * PUBLIC LIST API documented in list.h
@@ -83,11 +97,11 @@ zero. */
  */
 typedef struct QueueDefinition
 {
-	signed portCHAR *pcHead;				/*< Points to the beginning of the queue storage area. */
-	signed portCHAR *pcTail;				/*< Points to the byte at the end of the queue storage area.  Once more byte is allocated than necessary to store the queue items, this is used as a marker. */
+	signed char *pcHead;				/*< Points to the beginning of the queue storage area. */
+	signed char *pcTail;				/*< Points to the byte at the end of the queue storage area.  Once more byte is allocated than necessary to store the queue items, this is used as a marker. */
 
-	signed portCHAR *pcWriteTo;				/*< Points to the free next place in the storage area. */
-	signed portCHAR *pcReadFrom;			/*< Points to the last place that a queued item was read from. */
+	signed char *pcWriteTo;				/*< Points to the free next place in the storage area. */
+	signed char *pcReadFrom;			/*< Points to the last place that a queued item was read from. */
 
 	xList xTasksWaitingToSend;				/*< List of tasks that are blocked waiting to post onto this queue.  Stored in priority order. */
 	xList xTasksWaitingToReceive;			/*< List of tasks that are blocked waiting to read from this queue.  Stored in priority order. */
@@ -114,32 +128,32 @@ typedef xQUEUE * xQueueHandle;
  * include the API header file (as it defines xQueueHandle differently).  These
  * functions are documented in the API header file.
  */
-xQueueHandle xQueueCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize );
-signed portBASE_TYPE xQueueGenericSend( xQueueHandle xQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition );
-unsigned portBASE_TYPE uxQueueMessagesWaiting( const xQueueHandle pxQueue );
-void vQueueDelete( xQueueHandle xQueue );
-signed portBASE_TYPE xQueueGenericSendFromISR( xQueueHandle pxQueue, const void * const pvItemToQueue, signed portBASE_TYPE *pxHigherPriorityTaskWoken, portBASE_TYPE xCopyPosition );
-signed portBASE_TYPE xQueueGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking );
-signed portBASE_TYPE xQueueReceiveFromISR( xQueueHandle pxQueue, void * const pvBuffer, signed portBASE_TYPE *pxTaskWoken );
-xQueueHandle xQueueCreateMutex( void );
-xQueueHandle xQueueCreateCountingSemaphore( unsigned portBASE_TYPE uxCountValue, unsigned portBASE_TYPE uxInitialCount );
-portBASE_TYPE xQueueTakeMutexRecursive( xQueueHandle xMutex, portTickType xBlockTime );
-portBASE_TYPE xQueueGiveMutexRecursive( xQueueHandle xMutex );
-signed portBASE_TYPE xQueueAltGenericSend( xQueueHandle pxQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition );
-signed portBASE_TYPE xQueueAltGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking );
-signed portBASE_TYPE xQueueIsQueueEmptyFromISR( const xQueueHandle pxQueue );
-signed portBASE_TYPE xQueueIsQueueFullFromISR( const xQueueHandle pxQueue );
-unsigned portBASE_TYPE uxQueueMessagesWaitingFromISR( const xQueueHandle pxQueue );
+xQueueHandle xQueueCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueGenericSend( xQueueHandle xQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition ) PRIVILEGED_FUNCTION;
+unsigned portBASE_TYPE uxQueueMessagesWaiting( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
+void vQueueDelete( xQueueHandle xQueue ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueGenericSendFromISR( xQueueHandle pxQueue, const void * const pvItemToQueue, signed portBASE_TYPE *pxHigherPriorityTaskWoken, portBASE_TYPE xCopyPosition ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueReceiveFromISR( xQueueHandle pxQueue, void * const pvBuffer, signed portBASE_TYPE *pxTaskWoken ) PRIVILEGED_FUNCTION;
+xQueueHandle xQueueCreateMutex( void ) PRIVILEGED_FUNCTION;
+xQueueHandle xQueueCreateCountingSemaphore( unsigned portBASE_TYPE uxCountValue, unsigned portBASE_TYPE uxInitialCount ) PRIVILEGED_FUNCTION;
+portBASE_TYPE xQueueTakeMutexRecursive( xQueueHandle xMutex, portTickType xBlockTime ) PRIVILEGED_FUNCTION;
+portBASE_TYPE xQueueGiveMutexRecursive( xQueueHandle xMutex ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueAltGenericSend( xQueueHandle pxQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueAltGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueIsQueueEmptyFromISR( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
+signed portBASE_TYPE xQueueIsQueueFullFromISR( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
+unsigned portBASE_TYPE uxQueueMessagesWaitingFromISR( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
 
 /*
  * Co-routine queue functions differ from task queue functions.  Co-routines are
  * an optional component.
  */
 #if configUSE_CO_ROUTINES == 1
-	signed portBASE_TYPE xQueueCRSendFromISR( xQueueHandle pxQueue, const void *pvItemToQueue, signed portBASE_TYPE xCoRoutinePreviouslyWoken );
-	signed portBASE_TYPE xQueueCRReceiveFromISR( xQueueHandle pxQueue, void *pvBuffer, signed portBASE_TYPE *pxTaskWoken );
-	signed portBASE_TYPE xQueueCRSend( xQueueHandle pxQueue, const void *pvItemToQueue, portTickType xTicksToWait );
-	signed portBASE_TYPE xQueueCRReceive( xQueueHandle pxQueue, void *pvBuffer, portTickType xTicksToWait );
+	signed portBASE_TYPE xQueueCRSendFromISR( xQueueHandle pxQueue, const void *pvItemToQueue, signed portBASE_TYPE xCoRoutinePreviouslyWoken ) PRIVILEGED_FUNCTION;
+	signed portBASE_TYPE xQueueCRReceiveFromISR( xQueueHandle pxQueue, void *pvBuffer, signed portBASE_TYPE *pxTaskWoken ) PRIVILEGED_FUNCTION;
+	signed portBASE_TYPE xQueueCRSend( xQueueHandle pxQueue, const void *pvItemToQueue, portTickType xTicksToWait ) PRIVILEGED_FUNCTION;
+	signed portBASE_TYPE xQueueCRReceive( xQueueHandle pxQueue, void *pvBuffer, portTickType xTicksToWait ) PRIVILEGED_FUNCTION;
 #endif
 
 /*
@@ -153,7 +167,7 @@ unsigned portBASE_TYPE uxQueueMessagesWaitingFromISR( const xQueueHandle pxQueue
 	more user friendly. */
 	typedef struct QUEUE_REGISTRY_ITEM
 	{
-		signed portCHAR *pcQueueName;
+		signed char *pcQueueName;
 		xQueueHandle xHandle;
 	} xQueueRegistryItem;
 
@@ -164,8 +178,8 @@ unsigned portBASE_TYPE uxQueueMessagesWaitingFromISR( const xQueueHandle pxQueue
 
 	/* Removes a queue from the registry by simply setting the pcQueueName
 	member to NULL. */
-	static void vQueueUnregisterQueue( xQueueHandle xQueue );
-	void vQueueAddToRegistry( xQueueHandle xQueue, signed portCHAR *pcQueueName );
+	static void vQueueUnregisterQueue( xQueueHandle xQueue ) PRIVILEGED_FUNCTION;
+	void vQueueAddToRegistry( xQueueHandle xQueue, signed char *pcQueueName ) PRIVILEGED_FUNCTION;
 #endif
 
 /*
@@ -176,32 +190,32 @@ unsigned portBASE_TYPE uxQueueMessagesWaitingFromISR( const xQueueHandle pxQueue
  * to indicate that a task may require unblocking.  When the queue in unlocked
  * these lock counts are inspected, and the appropriate action taken.
  */
-static void prvUnlockQueue( xQueueHandle pxQueue );
+static void prvUnlockQueue( xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
 
 /*
  * Uses a critical section to determine if there is any data in a queue.
  *
  * @return pdTRUE if the queue contains no items, otherwise pdFALSE.
  */
-static signed portBASE_TYPE prvIsQueueEmpty( const xQueueHandle pxQueue );
+static signed portBASE_TYPE prvIsQueueEmpty( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
 
 /*
  * Uses a critical section to determine if there is any space in a queue.
  *
  * @return pdTRUE if there is no space, otherwise pdFALSE;
  */
-static signed portBASE_TYPE prvIsQueueFull( const xQueueHandle pxQueue );
+static signed portBASE_TYPE prvIsQueueFull( const xQueueHandle pxQueue ) PRIVILEGED_FUNCTION;
 
 /*
  * Copies an item into the queue, either at the front of the queue or the
  * back of the queue.
  */
-static void prvCopyDataToQueue( xQUEUE *pxQueue, const void *pvItemToQueue, portBASE_TYPE xPosition );
+static void prvCopyDataToQueue( xQUEUE *pxQueue, const void *pvItemToQueue, portBASE_TYPE xPosition ) PRIVILEGED_FUNCTION;
 
 /*
  * Copies an item out of a queue.
  */
-static void prvCopyDataFromQueue( xQUEUE * const pxQueue, const void *pvBuffer );
+static void prvCopyDataFromQueue( xQUEUE * const pxQueue, const void *pvBuffer ) PRIVILEGED_FUNCTION;
 /*-----------------------------------------------------------*/
 
 /*
@@ -245,7 +259,7 @@ size_t xQueueSizeInBytes;
 			longer than asked for to make wrap checking easier/faster. */
 			xQueueSizeInBytes = ( size_t ) ( uxQueueLength * uxItemSize ) + ( size_t ) 1;
 
-			pxNewQueue->pcHead = ( signed portCHAR * ) pvPortMalloc( xQueueSizeInBytes );
+			pxNewQueue->pcHead = ( signed char * ) pvPortMalloc( xQueueSizeInBytes );
 			if( pxNewQueue->pcHead != NULL )
 			{
 				/* Initialise the queue members as described above where the
@@ -264,7 +278,6 @@ size_t xQueueSizeInBytes;
 				vListInitialise( &( pxNewQueue->xTasksWaitingToReceive ) );
 
 				traceQUEUE_CREATE( pxNewQueue );
-
 				return  pxNewQueue;
 			}
 			else
@@ -357,7 +370,7 @@ size_t xQueueSizeInBytes;
 			{
 				/* Return the mutex.  This will automatically unblock any other
 				task that might be waiting to access the mutex. */
-                xQueueGenericSend( pxMutex, NULL, queueMUTEX_GIVE_BLOCK_TIME, queueSEND_TO_BACK );
+				xQueueGenericSend( pxMutex, NULL, queueMUTEX_GIVE_BLOCK_TIME, queueSEND_TO_BACK );
 			}
 
 			xReturn = pdPASS;
@@ -394,7 +407,7 @@ size_t xQueueSizeInBytes;
 		}
 		else
 		{
-            xReturn = xQueueGenericReceive( pxMutex, NULL, xBlockTime, pdFALSE );
+			xReturn = xQueueGenericReceive( pxMutex, NULL, xBlockTime, pdFALSE );
 
 			/* pdPASS will only be returned if we successfully obtained the mutex,
 			we may have blocked to reach here. */
@@ -443,13 +456,12 @@ xTimeOutType xTimeOut;
 	/* This function relaxes the coding standard somewhat to allow return
 	statements within the function itself.  This is done in the interest
 	of execution time efficiency. */
-
 	for( ;; )
 	{
 		taskENTER_CRITICAL();
 		{
-  			/* Is there room on the queue now?  To be running we must be
-  			the highest priority task wanting to access the queue. */
+			/* Is there room on the queue now?  To be running we must be
+			the highest priority task wanting to access the queue. */
 			if( pxQueue->uxMessagesWaiting < pxQueue->uxLength )
 			{
 				traceQUEUE_SEND( pxQueue );
@@ -465,11 +477,14 @@ xTimeOutType xTimeOut;
 						our own so yield immediately.  Yes it is ok to do
 						this from within the critical section - the kernel
 						takes care of that. */
-						taskYIELD();
+						portYIELD_WITHIN_API();
 					}
 				}
 
 				taskEXIT_CRITICAL();
+
+				/* Return to the original privilege level before exiting the
+				function. */
 				return pdPASS;
 			}
 			else
@@ -479,6 +494,9 @@ xTimeOutType xTimeOut;
 					/* The queue was full and no block time is specified (or
 					the block time has expired) so leave now. */
 					taskEXIT_CRITICAL();
+
+					/* Return to the original privilege level before exiting
+					the function. */
 					traceQUEUE_SEND_FAILED( pxQueue );
 					return errQUEUE_FULL;
 				}
@@ -521,7 +539,7 @@ xTimeOutType xTimeOut;
 				is also a higher priority task in the pending ready list. */
 				if( !xTaskResumeAll() )
 				{
-					taskYIELD();
+					portYIELD_WITHIN_API();
 				}
 			}
 			else
@@ -536,6 +554,9 @@ xTimeOutType xTimeOut;
 			/* The timeout has expired. */
 			prvUnlockQueue( pxQueue );
 			( void ) xTaskResumeAll();
+
+			/* Return to the original privilege level before exiting the
+			function. */
 			traceQUEUE_SEND_FAILED( pxQueue );
 			return errQUEUE_FULL;
 		}
@@ -554,8 +575,8 @@ xTimeOutType xTimeOut;
 		{
 			taskENTER_CRITICAL();
 			{
-  				/* Is there room on the queue now?  To be running we must be
-  				the highest priority task wanting to access the queue. */
+				/* Is there room on the queue now?  To be running we must be
+				the highest priority task wanting to access the queue. */
 				if( pxQueue->uxMessagesWaiting < pxQueue->uxLength )
 				{
 					traceQUEUE_SEND( pxQueue );
@@ -569,7 +590,7 @@ xTimeOutType xTimeOut;
 						{
 							/* The unblocked task has a priority higher than
 							our own so yield immediately. */
-							taskYIELD();
+							portYIELD_WITHIN_API();
 						}
 					}
 
@@ -600,7 +621,7 @@ xTimeOutType xTimeOut;
 					{
 						traceBLOCKING_ON_QUEUE_SEND( pxQueue );
 						vTaskPlaceOnEventList( &( pxQueue->xTasksWaitingToSend ), xTicksToWait );
-						taskYIELD();
+						portYIELD_WITHIN_API();
 					}
 				}
 				else
@@ -623,7 +644,7 @@ xTimeOutType xTimeOut;
 	{
 	signed portBASE_TYPE xEntryTimeSet = pdFALSE;
 	xTimeOutType xTimeOut;
-	signed portCHAR *pcOriginalReadPosition;
+	signed char *pcOriginalReadPosition;
 
 		for( ;; )
 		{
@@ -658,7 +679,7 @@ xTimeOutType xTimeOut;
 						{
 							if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToSend ) ) == pdTRUE )
 							{
-								taskYIELD();
+								portYIELD_WITHIN_API();
 							}
 						}
 					}
@@ -679,7 +700,7 @@ xTimeOutType xTimeOut;
 							if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToReceive ) ) != pdFALSE )
 							{
 								/* The task waiting has a higher priority than this task. */
-								taskYIELD();
+								portYIELD_WITHIN_API();
 							}
 						}
 
@@ -725,7 +746,7 @@ xTimeOutType xTimeOut;
 						#endif
 
 						vTaskPlaceOnEventList( &( pxQueue->xTasksWaitingToReceive ), xTicksToWait );
-						taskYIELD();
+						portYIELD_WITHIN_API();
 					}
 				}
 				else
@@ -800,7 +821,7 @@ signed portBASE_TYPE xQueueGenericReceive( xQueueHandle pxQueue, void * const pv
 {
 signed portBASE_TYPE xEntryTimeSet = pdFALSE;
 xTimeOutType xTimeOut;
-signed portCHAR *pcOriginalReadPosition;
+signed char *pcOriginalReadPosition;
 
 	/* This function relaxes the coding standard somewhat to allow return
 	statements within the function itself.  This is done in the interest
@@ -810,8 +831,8 @@ signed portCHAR *pcOriginalReadPosition;
 	{
 		taskENTER_CRITICAL();
 		{
-  			/* Is there data in the queue now?  To be running we must be
-  			the highest priority task wanting to access the queue. */
+			/* Is there data in the queue now?  To be running we must be
+			the highest priority task wanting to access the queue. */
 			if( pxQueue->uxMessagesWaiting > ( unsigned portBASE_TYPE ) 0 )
 			{
 				/* Remember our read position in case we are just peeking. */
@@ -841,7 +862,7 @@ signed portCHAR *pcOriginalReadPosition;
 					{
 						if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToSend ) ) == pdTRUE )
 						{
-							taskYIELD();
+							portYIELD_WITHIN_API();
 						}
 					}
 				}
@@ -862,7 +883,7 @@ signed portCHAR *pcOriginalReadPosition;
 						if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToReceive ) ) != pdFALSE )
 						{
 							/* The task waiting has a higher priority than this task. */
-							taskYIELD();
+							portYIELD_WITHIN_API();
 						}
 					}
 
@@ -922,7 +943,7 @@ signed portCHAR *pcOriginalReadPosition;
 				prvUnlockQueue( pxQueue );
 				if( !xTaskResumeAll() )
 				{
-					taskYIELD();
+					portYIELD_WITHIN_API();
 				}
 			}
 			else
@@ -1035,7 +1056,7 @@ static void prvCopyDataToQueue( xQUEUE *pxQueue, const void *pvItemToQueue, port
 			{
 				/* The mutex is no longer being held. */
 				vTaskPriorityDisinherit( ( void * ) pxQueue->pxMutexHolder );
-                pxQueue->pxMutexHolder = NULL;
+				pxQueue->pxMutexHolder = NULL;
 			}
 		}
 		#endif
@@ -1399,7 +1420,7 @@ signed portBASE_TYPE xReturn;
 
 #if configQUEUE_REGISTRY_SIZE > 0
 
-	void vQueueAddToRegistry( xQueueHandle xQueue, signed portCHAR *pcQueueName )
+	void vQueueAddToRegistry( xQueueHandle xQueue, signed char *pcQueueName )
 	{
 	unsigned portBASE_TYPE ux;
 
@@ -1437,6 +1458,7 @@ signed portBASE_TYPE xReturn;
 				break;
 			}
 		}
+
 	}
 
 #endif
