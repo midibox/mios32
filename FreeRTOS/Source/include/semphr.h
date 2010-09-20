@@ -1,48 +1,54 @@
 /*
-	FreeRTOS V5.4.2 - Copyright (C) 2009 Real Time Engineers Ltd.
+    FreeRTOS V6.0.5 - Copyright (C) 2010 Real Time Engineers Ltd.
 
-	This file is part of the FreeRTOS distribution.
+    ***************************************************************************
+    *                                                                         *
+    * If you are:                                                             *
+    *                                                                         *
+    *    + New to FreeRTOS,                                                   *
+    *    + Wanting to learn FreeRTOS or multitasking in general quickly       *
+    *    + Looking for basic training,                                        *
+    *    + Wanting to improve your FreeRTOS skills and productivity           *
+    *                                                                         *
+    * then take a look at the FreeRTOS eBook                                  *
+    *                                                                         *
+    *        "Using the FreeRTOS Real Time Kernel - a Practical Guide"        *
+    *                  http://www.FreeRTOS.org/Documentation                  *
+    *                                                                         *
+    * A pdf reference manual is also available.  Both are usually delivered   *
+    * to your inbox within 20 minutes to two hours when purchased between 8am *
+    * and 8pm GMT (although please allow up to 24 hours in case of            *
+    * exceptional circumstances).  Thank you for your support!                *
+    *                                                                         *
+    ***************************************************************************
 
-	FreeRTOS is free software; you can redistribute it and/or modify it	under 
-	the terms of the GNU General Public License (version 2) as published by the 
-	Free Software Foundation and modified by the FreeRTOS exception.
-	**NOTE** The exception to the GPL is included to allow you to distribute a
-	combined work that includes FreeRTOS without being obliged to provide the 
-	source code for proprietary components outside of the FreeRTOS kernel.  
-	Alternative commercial license and support terms are also available upon 
-	request.  See the licensing section of http://www.FreeRTOS.org for full 
-	license details.
+    This file is part of the FreeRTOS distribution.
 
-	FreeRTOS is distributed in the hope that it will be useful,	but WITHOUT
-	ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-	FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-	more details.
+    FreeRTOS is free software; you can redistribute it and/or modify it under
+    the terms of the GNU General Public License (version 2) as published by the
+    Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
+    ***NOTE*** The exception to the GPL is included to allow you to distribute
+    a combined work that includes FreeRTOS without being obliged to provide the
+    source code for proprietary components outside of the FreeRTOS kernel.
+    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details. You should have received a copy of the GNU General Public 
+    License and the FreeRTOS license exception along with FreeRTOS; if not it 
+    can be viewed here: http://www.freertos.org/a00114.html and also obtained 
+    by writing to Richard Barry, contact details for whom are available on the
+    FreeRTOS WEB site.
 
-	You should have received a copy of the GNU General Public License along
-	with FreeRTOS; if not, write to the Free Software Foundation, Inc., 59
-	Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+    1 tab == 4 spaces!
 
+    http://www.FreeRTOS.org - Documentation, latest information, license and
+    contact details.
 
-	***************************************************************************
-	*                                                                         *
-	* Looking for a quick start?  Then check out the FreeRTOS eBook!          *
-	* See http://www.FreeRTOS.org/Documentation for details                   *
-	*                                                                         *
-	***************************************************************************
+    http://www.SafeRTOS.com - A version that is certified for use in safety
+    critical systems.
 
-	1 tab == 4 spaces!
-
-	Please ensure to read the configuration and relevant port sections of the
-	online documentation.
-
-	http://www.FreeRTOS.org - Documentation, latest information, license and
-	contact details.
-
-	http://www.SafeRTOS.com - A version that is certified for use in safety
-	critical systems.
-
-	http://www.OpenRTOS.com - Commercial support, development, porting,
-	licensing and training services.
+    http://www.OpenRTOS.com - Commercial support, development, porting,
+    licensing and training services.
 */
 
 #ifndef INC_FREERTOS_H
@@ -56,8 +62,8 @@
 
 typedef xQueueHandle xSemaphoreHandle;
 
-#define semBINARY_SEMAPHORE_QUEUE_LENGTH	( ( unsigned portCHAR ) 1 )
-#define semSEMAPHORE_QUEUE_ITEM_LENGTH		( ( unsigned portCHAR ) 0 )
+#define semBINARY_SEMAPHORE_QUEUE_LENGTH	( ( unsigned char ) 1 )
+#define semSEMAPHORE_QUEUE_ITEM_LENGTH		( ( unsigned char ) 0 )
 #define semGIVE_BLOCK_TIME					( ( portTickType ) 0 )
 
 
@@ -109,7 +115,7 @@ typedef xQueueHandle xSemaphoreHandle;
 
 /**
  * semphr. h
- * xSemaphoreTake( 
+ * <pre>xSemaphoreTake( 
  *                   xSemaphoreHandle xSemaphore, 
  *                   portTickType xBlockTime 
  *               )</pre>
@@ -448,7 +454,7 @@ typedef xQueueHandle xSemaphoreHandle;
  * <pre>
  xSemaphoreGiveFromISR( 
                           xSemaphoreHandle xSemaphore, 
-                          portBASE_TYPE *pxHigherPriorityTaskWoken
+                          signed portBASE_TYPE *pxHigherPriorityTaskWoken
                       )</pre>
  *
  * <i>Macro</i> to  release a semaphore.  The semaphore must have previously been
@@ -472,8 +478,8 @@ typedef xQueueHandle xSemaphoreHandle;
  *
  * Example usage:
  <pre>
- #define LONG_TIME 0xffff
- #define TICKS_TO_WAIT	10
+ \#define LONG_TIME 0xffff
+ \#define TICKS_TO_WAIT	10
  xSemaphoreHandle xSemaphore = NULL;
 
  // Repetitive task.
@@ -502,8 +508,8 @@ typedef xQueueHandle xSemaphoreHandle;
  // Timer ISR
  void vTimerISR( void * pvParameters )
  {
- static unsigned portCHAR ucLocalTickCount = 0;
- static portBASE_TYPE xHigherPriorityTaskWoken;
+ static unsigned char ucLocalTickCount = 0;
+ static signed portBASE_TYPE xHigherPriorityTaskWoken;
 
     // A timer tick has occurred.
 
