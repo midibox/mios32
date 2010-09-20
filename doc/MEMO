@@ -73,6 +73,14 @@ export MIOS32_BOARD=MBHP_CORE_STM32
 export MIOS32_LCD=clcd
 
 
+MBHP_CORE_STM32 with STM32F105RC (communication line):
+export MIOS32_GCC_PREFIX=arm-none-eabi
+export MIOS32_FAMILY=STM32F10x
+export MIOS32_PROCESSOR=STM32F105RC
+export MIOS32_BOARD=MBHP_CORE_STM32
+export MIOS32_LCD=clcd
+
+
 STM32 Primer:
 export MIOS32_GCC_PREFIX=arm-none-eabi
 export MIOS32_FAMILY=STM32F10x

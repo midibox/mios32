@@ -26,7 +26,11 @@
 
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
 // full supported BSL
-# include "mios32_bsl_MBHP_CORE_STM32.inc"
+# ifdef STM32F10X_CL
+#  include "mios32_bsl_MBHP_CORE_STM32_CL.inc"
+# else
+#  include "mios32_bsl_MBHP_CORE_STM32.inc"
+# endif
 #elif defined(MIOS32_BOARD_STM32_PRIMER)
 // BSL not really required, therefore this is a special "dummy" which
 // directly branches to the application.

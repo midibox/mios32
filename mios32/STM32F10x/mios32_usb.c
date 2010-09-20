@@ -823,9 +823,12 @@ s32 MIOS32_USB_Init(u32 mode)
     return -1; // unsupported mode
 
   // clear all USB interrupt requests
+#ifdef STM32F10X_CL
+#else
   MIOS32_IRQ_Disable();
   _SetCNTR(0); // Interrupt Mask
   MIOS32_IRQ_Enable();
+#endif
 
   // if mode != 2: install MIOS32 hooks
   // a local driver can install it's own hooks and call MIOS32_USB_Init(2) to force re-enumeration
@@ -856,10 +859,6 @@ s32 MIOS32_USB_Init(u32 mode)
   MIOS32_USB_COM_ChangeConnectionState(0);
 #endif
 
-#if 0
-  // remaining initialisation done in STM32 USB driver
-  USB_Init();
-#else
   // we don't use USB_Init() anymore for more flexibility
   // e.g. changing USB driver during runtime via MIOS32_USB_Init(2)
 
@@ -869,10 +868,22 @@ s32 MIOS32_USB_Init(u32 mode)
   // if mode == 0: don't initialize USB if not required (important for BSL)
   if( mode == 0 && MIOS32_USB_IsInitialized() ) {
 
+#ifdef STM32F10X_CL
+    // Perform OTG Device initialization procedure (including EP0 init) again
+    // this is unfortunately required since the OTG driver has to initialize internal variables after reset
+    OTG_DEV_Init();
+
+    // Init EP1 IN again
+    OTG_DEV_EP_Init(EP1_IN, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_IN_SIZE);
+  
+    // Init EP1 OUT again
+    OTG_DEV_EP_Init(EP1_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
+#else
 #ifndef MIOS32_DONT_USE_USB_MIDI
     // release ENDP1 Rx/Tx
     SetEPTxStatus(ENDP1, EP_TX_NAK);
     SetEPRxValid(ENDP1);
+#endif
 #endif
 
     pInformation->Current_Feature = MIOS32_USB_ConfigDescriptor[7];
@@ -880,6 +891,25 @@ s32 MIOS32_USB_Init(u32 mode)
     pUser_Standard_Requests->User_SetConfiguration();
 
   } else {
+#ifdef STM32F10X_CL
+    // Select USBCLK source
+    RCC_OTGFSCLKConfig(RCC_OTGFSCLKSource_PLLVCO_Div3);
+
+    // Enable the USB clock
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_OTG_FS, ENABLE) ;
+
+    // Perform OTG Device initialization procedure (including EP0 init)
+    OTG_DEV_Init();
+
+    // dissconnect device
+    USB_DevDisconnect();
+
+    // wait 50 mS
+    USB_OTG_BSP_uDelay(50000);
+    
+    // connect device
+    USB_DevConnect();
+#else
     // force USB reset and power-down (this will also release the USB pins for direct GPIO control)
     _SetCNTR(CNTR_FRES | CNTR_PDWN);
 
@@ -927,19 +957,34 @@ s32 MIOS32_USB_Init(u32 mode)
     RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
     // Enable USB clock
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
+#endif /* STM32F10X_CL */
+
   }
 
   // don't set interrupt mask on custom driver installation
   if( mode != 2 ) {
+#ifdef STM32F10X_CL
+    OTGD_FS_EnableGlobalInt();
+#else
     // clear pending interrupts (again)
     _SetISTR(0);
 
     // set interrupts mask
     _SetCNTR(IMR_MSK); // Interrupt mask
+#endif
   }
 
   bDeviceState = UNCONNECTED;
 
+#ifdef STM32F10X_CL
+  // Enable the USB interrupts
+  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_InitStructure.NVIC_IRQChannel = OTG_FS_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);   
+#else
   // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
   NVIC_InitTypeDef NVIC_InitStructure;
   NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
@@ -957,6 +1002,210 @@ s32 MIOS32_USB_Init(u32 mode)
 //! Interrupt handler for USB
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
+#ifdef STM32F10X_CL
+u32 OTG_FS_IRQHandler(void)
+{
+  // based on STM example code
+  USB_OTG_GINTSTS_TypeDef gintr_status;
+  u32 retval = 0;
+
+  if (USBD_FS_IsDeviceMode()) /* ensure that we are in device mode */
+  {
+    gintr_status.d32 = OTGD_FS_ReadCoreItr();
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    
+    /* If there is no interrupt pending exit the interrupt routine */
+    if (!gintr_status.d32)
+    {
+      return 0;
+    }
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Early Suspend interrupt */ 
+#ifdef INTR_ERLYSUSPEND
+    if (gintr_status.b.erlysuspend)
+    {
+      retval |= OTGD_FS_Handle_EarlySuspend_ISR();
+    }
+#endif /* INTR_ERLYSUSPEND */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* End of Periodic Frame interrupt */
+#ifdef INTR_EOPFRAME    
+    if (gintr_status.b.eopframe)
+    {
+      retval |= OTGD_FS_Handle_EOPF_ISR();
+    }
+#endif /* INTR_EOPFRAME */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Non Periodic Tx FIFO Emty interrupt */
+#ifdef INTR_NPTXFEMPTY    
+    if (gintr_status.b.nptxfempty)
+    {
+      retval |= OTGD_FS_Handle_NPTxFE_ISR();
+    }
+#endif /* INTR_NPTXFEMPTY */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Wakeup or RemoteWakeup interrupt */
+#ifdef INTR_WKUPINTR    
+    if (gintr_status.b.wkupintr)
+    {   
+      retval |= OTGD_FS_Handle_Wakeup_ISR();
+    }
+#endif /* INTR_WKUPINTR */   
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Suspend interrupt */
+#ifdef INTR_USBSUSPEND
+    if (gintr_status.b.usbsuspend)
+    { 
+#if 0
+      /* check if SUSPEND is possible */
+      if (fSuspendEnabled)
+      {
+        Suspend();
+      }
+      else
+      {
+        /* if not possible then resume after xx ms */
+        Resume(RESUME_LATER); /* This case shouldn't happen in OTG Device mode because 
+        there's no ESOF interrupt to increment the ResumeS.bESOFcnt in the Resume state machine */
+      }
+#endif
+            
+      retval |= OTGD_FS_Handle_USBSuspend_ISR();
+    }
+#endif /* INTR_USBSUSPEND */
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Start of Frame interrupt */
+#ifdef INTR_SOFINTR    
+    if (gintr_status.b.sofintr)
+    {
+#if 0
+      /* Update the frame number variable */
+      bIntPackSOF++;
+#endif
+      
+      retval |= OTGD_FS_Handle_Sof_ISR();
+    }
+#endif /* INTR_SOFINTR */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Receive FIFO Queue Status Level interrupt */
+#ifdef INTR_RXSTSQLVL
+    if (gintr_status.b.rxstsqlvl)
+    {
+      retval |= OTGD_FS_Handle_RxStatusQueueLevel_ISR();
+    }
+#endif /* INTR_RXSTSQLVL */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Enumeration Done interrupt */
+#ifdef INTR_ENUMDONE
+    if (gintr_status.b.enumdone)
+    {
+      retval |= OTGD_FS_Handle_EnumDone_ISR();
+    }
+#endif /* INTR_ENUMDONE */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* Reset interrutp */
+#ifdef INTR_USBRESET
+    if (gintr_status.b.usbreset)
+    {
+      retval |= OTGD_FS_Handle_UsbReset_ISR();
+    }    
+#endif /* INTR_USBRESET */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+    /* IN Endpoint interrupt */
+#ifdef INTR_INEPINTR
+    if (gintr_status.b.inepint)
+    {
+      retval |= OTGD_FS_Handle_InEP_ISR();
+    }
+#endif /* INTR_INEPINTR */
+    
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* OUT Endpoint interrupt */
+#ifdef INTR_OUTEPINTR
+    if (gintr_status.b.outepintr)
+    {
+      retval |= OTGD_FS_Handle_OutEP_ISR();
+    }
+#endif /* INTR_OUTEPINTR */    
+ 
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Mode Mismatch interrupt */
+#ifdef INTR_MODEMISMATCH
+    if (gintr_status.b.modemismatch)
+    {
+      retval |= OTGD_FS_Handle_ModeMismatch_ISR();
+    }
+#endif /* INTR_MODEMISMATCH */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Global IN Endpoints NAK Effective interrupt */
+#ifdef INTR_GINNAKEFF
+    if (gintr_status.b.ginnakeff)
+    {
+      retval |= OTGD_FS_Handle_GInNakEff_ISR();
+    }
+#endif /* INTR_GINNAKEFF */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Global OUT Endpoints NAK effective interrupt */
+#ifdef INTR_GOUTNAKEFF
+    if (gintr_status.b.goutnakeff)
+    {
+      retval |= OTGD_FS_Handle_GOutNakEff_ISR();
+    }
+#endif /* INTR_GOUTNAKEFF */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Isochrounous Out packet Dropped interrupt */
+#ifdef INTR_ISOOUTDROP
+    if (gintr_status.b.isooutdrop)
+    {
+      retval |= OTGD_FS_Handle_IsoOutDrop_ISR();
+    }
+#endif /* INTR_ISOOUTDROP */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Endpoint Mismatch error interrupt */
+#ifdef INTR_EPMISMATCH
+    if (gintr_status.b.epmismatch)
+    {
+      retval |= OTGD_FS_Handle_EPMismatch_ISR();
+    }
+#endif /* INTR_EPMISMATCH */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Incomplete Isochrous IN tranfer error interrupt */
+#ifdef INTR_INCOMPLISOIN
+    if (gintr_status.b.incomplisoin)
+    {
+      retval |= OTGD_FS_Handle_IncomplIsoIn_ISR();
+    }
+#endif /* INTR_INCOMPLISOIN */  
+
+   /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/    
+    /* Incomplete Isochrous OUT tranfer error interrupt */
+#ifdef INTR_INCOMPLISOOUT
+    if (gintr_status.b.outepintr)
+    {
+      retval |= OTGD_FS_Handle_IncomplIsoOut_ISR();
+    }
+#endif /* INTR_INCOMPLISOOUT */  
+  
+  }
+  return retval;
+}
+#else
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
   u16 wIstr = _GetISTR();
@@ -976,6 +1225,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
     CTR_LP();
   }
 }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -986,8 +1236,14 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_IsInitialized(void)
 {
+#ifdef STM32F10X_CL
+  // we assume that initialisation has been done when B-Session valid flag is set
+  __IO USB_OTG_GREGS *GREGS = (USB_OTG_GREGS *)(USB_OTG_FS_BASE_ADDR + USB_OTG_CORE_GLOBAL_REGS_OFFSET);
+  return (GREGS->GOTGCTL & (1 << 19));
+#else
   // we assume that initialisation has been done when endpoint 0 contains a value
   return GetEPType(ENDP0) ? 1 : 0;
+#endif
 }
 
 
@@ -1007,6 +1263,10 @@ static void MIOS32_USB_CB_Reset(void)
 
   // Set MIOS32 Device with the default Interface
   pInformation->Current_Interface = 0;
+
+#ifdef STM32F10X_CL   
+  // EP0 is already configured in DFU_Init() by USB_SIL_Init() function
+#else 
   SetBTABLE(MIOS32_USB_BTABLE_ADDRESS);
 
   // Initialize Endpoint 0
@@ -1017,8 +1277,17 @@ static void MIOS32_USB_CB_Reset(void)
   Clear_Status_Out(ENDP0);
   SetEPRxCount(ENDP0, pProperty->MaxPacketSize);
   SetEPRxValid(ENDP0);
+#endif
+  
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
+# ifdef STM32F10X_CL   
+  // Init EP1 IN
+  OTG_DEV_EP_Init(EP1_IN, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_IN_SIZE);
+  
+  // Init EP1 OUT
+  OTG_DEV_EP_Init(EP1_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
+# else
   // Initialize Endpoint 1
   SetEPType(ENDP1, EP_BULK);
 
@@ -1029,10 +1298,14 @@ static void MIOS32_USB_CB_Reset(void)
   SetEPRxAddr(ENDP1, MIOS32_USB_ENDP1_RXADDR);
   SetEPRxCount(ENDP1, MIOS32_USB_MIDI_DATA_IN_SIZE);
   SetEPRxValid(ENDP1);
+# endif
 #endif
 
 
 #ifdef MIOS32_USE_USB_COM
+# ifdef STM32F10X_CL   
+  // TODO...
+# else
   // Initialize Endpoint 2
   SetEPType(ENDP2, EP_INTERRUPT);
   SetEPTxAddr(ENDP2, MIOS32_USB_ENDP2_TXADDR);
@@ -1051,10 +1324,13 @@ static void MIOS32_USB_CB_Reset(void)
   SetEPTxAddr(ENDP4, MIOS32_USB_ENDP4_TXADDR);
   SetEPTxStatus(ENDP4, EP_TX_NAK);
   SetEPRxStatus(ENDP4, EP_RX_DIS);
+# endif
 #endif
 
   // Set this device to response on default address
+#ifndef STM32F10X_CL   
   SetDeviceAddress(0);
+#endif
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
   // propagate connection state to USB MIDI driver
@@ -1206,6 +1482,26 @@ static RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSett
 
   return USB_SUCCESS;
 }
+
+
+#ifdef STM32F10X_CL
+/*******************************************************************************
+* Function Name  : USB_OTG_BSP_uDelay.
+* Description    : provide delay (usec).
+* Input          : None.
+* Output         : None.
+* Return         : None.
+*******************************************************************************/
+void USB_OTG_BSP_uDelay (const uint32_t usec)
+{
+#if defined(MIOS32_DONT_USE_DELAY)
+# error "MIOS32_DELAY must be enabled for this derivative"
+#else
+  MIOS32_DELAY_Wait_uS(usec);
+#endif  
+}
+#endif
+
 
 //! \}
 

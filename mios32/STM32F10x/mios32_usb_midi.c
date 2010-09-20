@@ -26,6 +26,9 @@
 
 #include <usb_lib.h>
 
+#ifdef STM32F10X_CL
+extern USB_OTG_CORE_REGS USB_OTG_FS_regs;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -249,6 +252,47 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 
   // atomic operation to avoid conflict with other interrupts
   MIOS32_IRQ_Disable();
+#ifdef STM32F10X_CL
+  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
+    u32 ep_num = EP1_IN & 0x7f;
+    s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
+
+    USB_OTG_DSTS_TypeDef dsts;  
+    USB_OTG_Status status = USB_OTG_OK;
+
+    // Set transfer size
+    OTG_FS_DEPTSIZx_TypeDef deptsiz;
+    deptsiz.d32 = 0;
+    deptsiz.b.xfersize = count * 4;
+    deptsiz.b.pktcnt = 1;
+    USB_OTG_WRITE_REG32(&USB_OTG_FS_regs.DINEPS[ep_num]->DIEPTSIZx, deptsiz.d32);
+
+    // Enable the Tx FIFO Empty Interrupt for this EP
+    uint32_t fifoemptymsk = 1 << ep_num;
+    USB_OTG_MODIFY_REG32(&USB_OTG_FS_regs.DEV->DIEPEMPMSK, 0, fifoemptymsk);
+
+    /* EP enable, IN data in FIFO */
+    USB_OTG_DEPCTLx_TypeDef depctl;
+    depctl.d32 = USB_OTG_READ_REG32(&(USB_OTG_FS_regs.DINEPS[ep_num]->DIEPCTLx));
+    depctl.b.cnak = 1;
+    depctl.b.epena = 1;
+    USB_OTG_WRITE_REG32(&USB_OTG_FS_regs.DINEPS[ep_num]->DIEPCTLx, depctl.d32); 
+
+    // notify that new package is sent
+    tx_buffer_busy = 1;
+
+    // send to IN pipe
+    tx_buffer_size -= count;
+
+    // copy into EP FIFO
+    __IO uint32_t *fifo = USB_OTG_FS_regs.FIFO[ep_num];
+    do {
+      USB_OTG_WRITE_REG32(fifo, tx_buffer[tx_buffer_tail]);
+      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+	tx_buffer_tail = 0;
+    } while( --count );
+  }
+#else
   if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
     u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP1_TXADDR<<1));
     s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
@@ -272,6 +316,7 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
     // send buffer
     SetEPTxValid(ENDP1);
   }
+#endif
   MIOS32_IRQ_Enable();
 }
 
@@ -285,7 +330,43 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
   // atomic operation to avoid conflict with other interrupts
   MIOS32_IRQ_Disable();
+
   // check if we can receive new data and get packages to be received from OUT pipe
+#ifdef STM32F10X_CL
+  USB_OTG_EP *ep = PCD_GetOutEP(EP1_OUT & 0x7f);
+  if( rx_buffer_new_data && (count=ep->xfer_len>>2) ) {
+    // check if buffer is free
+    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
+      u32 *buf_addr = (u32 *)&ep->xfer_buff[0];
+
+      // copy received packages into receive buffer
+      // this operation should be atomic
+      do {
+	mios32_midi_package_t package;
+	package.ALL = *buf_addr++;
+
+	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
+	  rx_buffer[rx_buffer_head] = package.ALL;
+
+	  if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+	    rx_buffer_head = 0;
+	  ++rx_buffer_size;
+	}
+      } while( --count > 0 );
+
+      // notify, that data has been put into buffer
+      rx_buffer_new_data = 0;
+
+      // configuration for next transfer
+      ep->xfer_len = 0; // OTGD_FS_EPStartXfer will set maximum size in this case
+      ep->xfer_count = 0; // clear counter to ensure that it will be set by LLD again
+      ep->is_in = 0; // out endpoint
+      ep->num = EP1_OUT & 0x7F;
+
+      OTGD_FS_EPStartXfer(ep);
+    }
+  }
+#else
   if( rx_buffer_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
 
     // check if buffer is free
@@ -316,6 +397,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       SetEPRxValid(ENDP1);
     }
   }
+#endif
   MIOS32_IRQ_Enable();
 }
 

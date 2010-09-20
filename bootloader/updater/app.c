@@ -21,7 +21,11 @@
 
 
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#ifdef STM32F10X_CL
+# include "bsl_image_MBHP_CORE_STM32_CL.inc"
+#else
 # include "bsl_image_MBHP_CORE_STM32.inc"
+#endif
 #else
 # error "BSL update not supported for the selected MIOS32_BOARD"
 #endif

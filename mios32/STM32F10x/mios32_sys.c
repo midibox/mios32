@@ -127,8 +127,24 @@ s32 MIOS32_SYS_Init(u32 mode)
       // ADCCLK = PCLK2/6
       RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
+#ifdef STM32F10X_CL
+      // PLL2 configuration: PLL2CLK = (HSE / 3) * 10 = 40 MHz
+      RCC_PREDIV2Config(RCC_PREDIV2_Div3);
+      RCC_PLL2Config(RCC_PLL2Mul_10);
+
+      // Enable PLL2
+      RCC_PLL2Cmd(ENABLE);
+
+      // Wait till PLL2 is ready
+      while (RCC_GetFlagStatus(RCC_FLAG_PLL2RDY) == RESET);
+
+      // PLL configuration: PLLCLK = (PLL2 / 5) * 9 = 72 MHz
+      RCC_PREDIV1Config(RCC_PREDIV1_Source_PLL2, RCC_PREDIV1_Div5);
+      RCC_PLLConfig(RCC_PLLSource_PREDIV1, RCC_PLLMul_9);
+#else
       // PLLCLK = 12MHz * 6 = 72 MHz
       RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6);
+#endif
 
       // Enable PLL
       RCC_PLLCmd(ENABLE);
@@ -227,10 +243,16 @@ s32 MIOS32_SYS_Reset(void)
   RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
 
 #if 0
+  // v2.0.1
   NVIC_GenerateCoreReset();
-#else
+#endif
+#if 0
   // not available in v3.0.0 library anymore? - copy from v2.0.1
   SCB->AIRCR = NVIC_AIRCR_VECTKEY | (1 << NVIC_VECTRESET);
+#endif
+#if 1
+  // and this is the code for v3.3.0
+  SCB->AIRCR = (0x5fa << SCB_AIRCR_VECTKEY_Pos) | (1 << SCB_AIRCR_VECTRESET_Pos);
 #endif
 
 #endif

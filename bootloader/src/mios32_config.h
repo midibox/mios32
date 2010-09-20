@@ -31,8 +31,15 @@
 //#define MIOS32_DONT_USE_USB
 //#define MIOS32_DONT_USE_USB_MIDI
 //#define MIOS32_USE_USB_COM
-//#define MIOS32_DONT_USE_UART
-//#define MIOS32_DONT_USE_UART_MIDI
+
+#ifdef STM32F10X_CL
+// UART disabled for STM32F105x due to higher memory consumption of the USB driver
+// UART doesn't make much sense anyhow, since PA9 is used for VBUS detection,
+// and since STM32F105x chip contains an internal USB bootloader as fallback solution
+# define MIOS32_DONT_USE_UART
+# define MIOS32_DONT_USE_UART_MIDI
+#endif
+
 #define MIOS32_DONT_USE_IIC
 #define MIOS32_DONT_USE_IIC_MIDI
 //#define MIOS32_USE_I2S
