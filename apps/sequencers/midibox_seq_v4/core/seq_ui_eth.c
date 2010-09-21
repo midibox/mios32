@@ -495,6 +495,7 @@ static s32 LCD_Handler(u8 high_prio)
 	" MIDI Messages      ",
 	" Text Msg (Integer) ",
 	" Text Msg (Float)   ",
+	" Pianist Pro (iPad) ",
       };
 
       SEQ_LCD_PrintString((char *)txmode_str[ocfg_value]);

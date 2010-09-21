@@ -23,11 +23,12 @@
 
 
 // transfer modes
-#define SEQ_MIDI_OSC_NUM_TRANSFER_MODES 3
+#define SEQ_MIDI_OSC_NUM_TRANSFER_MODES 4
 
 #define SEQ_MIDI_OSC_TRANSFER_MODE_MIDI  0
 #define SEQ_MIDI_OSC_TRANSFER_MODE_INT   1
 #define SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT 2
+#define SEQ_MIDI_OSC_TRANSFER_MODE_MCMPP 3
 
 
 /////////////////////////////////////////////////////////////////////////////

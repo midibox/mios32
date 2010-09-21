@@ -58,6 +58,7 @@ typedef struct {
 
   u8                   num_path_parts; // number of address parts
   const char           *path_part[MIOS32_OSC_MAX_PATH_PARTS]; // an array of address paths without wildcards (!) - this allows the method to reconstruct the complete path, e.g. to send parameters to different targets
+  const char           *original_path; // pointer to original path sent by remote host - this allows to extract informations from the path, e.g. values which are part of the path
 
   u8                   num_args; // number of arguments
   char                 arg_type[MIOS32_OSC_MAX_ARGS]; // array of argument tags

@@ -183,7 +183,7 @@ typedef struct {
 } seq_hwcfg_led_t;
 
 
-typedef union {
+typedef struct {
   u8 datawheel_fast_speed;
   u8 gp_fast_speed;
   u8 auto_fast;
