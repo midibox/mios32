@@ -40,6 +40,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for optional debugging messages via MIOS32_MIDI_SendDebug*
+/////////////////////////////////////////////////////////////////////////////
+
+#define DEBUG_VERBOSE_LEVEL 1
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Task Priorities
 /////////////////////////////////////////////////////////////////////////////
 
@@ -239,8 +246,10 @@ static void UIP_TASK_Handler(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 void uip_log(char *msg)
 {
-#if 0
-  MIOS32_MIDI_SendDebugMessage(msg);
+#if DEBUG_VERBOSE_LEVEL >= 2
+  MUTEX_MIDIOUT_TAKE;
+  DEBUG_MSG(msg);
+  MUTEX_MIDIOUT_GIVE;
 #endif
 }
 
@@ -262,21 +271,25 @@ static s32 UIP_TASK_SendDebugMessage_IP(void)
   uip_ipaddr_t ipaddr;
   uip_gethostaddr(&ipaddr);
 
-  MIOS32_MIDI_SendDebugMessage("[UIP_TASK] IP address: %d.%d.%d.%d\n",
-			       uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-			       uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
+#if DEBUG_VERBOSE_LEVEL >= 1
+  MUTEX_MIDIOUT_TAKE;
+  DEBUG_MSG("[UIP_TASK] IP address: %d.%d.%d.%d\n",
+	    uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
+	    uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
 
   uip_ipaddr_t netmask;
   uip_getnetmask(&netmask);
-  MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Netmask: %d.%d.%d.%d\n",
-			       uip_ipaddr1(netmask), uip_ipaddr2(netmask),
-			       uip_ipaddr3(netmask), uip_ipaddr4(netmask));
+  DEBUG_MSG("[UIP_TASK] Netmask: %d.%d.%d.%d\n",
+	    uip_ipaddr1(netmask), uip_ipaddr2(netmask),
+	    uip_ipaddr3(netmask), uip_ipaddr4(netmask));
 
   uip_ipaddr_t draddr;
   uip_getdraddr(&draddr);
-  MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Default Router (Gateway): %d.%d.%d.%d\n",
-			       uip_ipaddr1(draddr), uip_ipaddr2(draddr),
-			       uip_ipaddr3(draddr), uip_ipaddr4(draddr));
+  DEBUG_MSG("[UIP_TASK] Default Router (Gateway): %d.%d.%d.%d\n",
+	    uip_ipaddr1(draddr), uip_ipaddr2(draddr),
+	    uip_ipaddr3(draddr), uip_ipaddr4(draddr));
+  MUTEX_MIDIOUT_GIVE;
+#endif
 
   return 0; // no error
 }
@@ -303,9 +316,11 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
     uip_setdraddr(ipaddr);
 
     dhcpc_init(uip_ethaddr.addr, sizeof(uip_ethaddr.addr));
+#if DEBUG_VERBOSE_LEVEL >= 1
     MUTEX_MIDIOUT_TAKE;
-    MIOS32_MIDI_SendDebugMessage("[UIP_TASK] DHCP Client requests the IP settings...\n");
+    DEBUG_MSG("[UIP_TASK] DHCP Client requests the IP settings...\n");
     MUTEX_MIDIOUT_GIVE;
+#endif
   } else {
     // set my IP address
     uip_ipaddr(ipaddr,
@@ -331,9 +346,11 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
 	       ((my_gateway)>> 0) & 0xff);
     uip_setdraddr(ipaddr);
 
+#if DEBUG_VERBOSE_LEVEL >= 1
     MUTEX_MIDIOUT_TAKE;
-    MIOS32_MIDI_SendDebugMessage("[UIP_TASK] IP Address statically set:\n");
+    DEBUG_MSG("[UIP_TASK] IP Address statically set:\n");
     MUTEX_MIDIOUT_GIVE;
+#endif
 
     // start services immediately
     UIP_TASK_StartServices();
@@ -473,8 +490,8 @@ s32 UIP_TASK_UDP_AppCall(void)
   if( uip_udp_conn->rport == HTONS(DHCPC_SERVER_PORT) || uip_udp_conn->rport == HTONS(DHCPC_CLIENT_PORT) ) {
     dhcpc_appcall();
 
-  // OSC Server
-  } else if( OSC_SERVER_IsRemotePort(HTONS(uip_udp_conn->rport)) >= 0 || OSC_SERVER_IsLocalPort(HTONS(uip_udp_conn->lport)) >= 0 ) {
+  // OSC Server checks for IP/port locally
+  } else {
     OSC_SERVER_AppCall();
   }
 
@@ -496,11 +513,13 @@ void dhcpc_configured(const struct dhcpc_state *s)
   UIP_TASK_StartServices();
 
   // print unused settings
+#if DEBUG_VERBOSE_LEVEL >= 1
   MUTEX_MIDIOUT_TAKE;
-  MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Got DNS server %d.%d.%d.%d\n",
-			       uip_ipaddr1(s->dnsaddr), uip_ipaddr2(s->dnsaddr),
-			       uip_ipaddr3(s->dnsaddr), uip_ipaddr4(s->dnsaddr));
-  MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Lease expires in %d hours\n",
-			       (ntohs(s->lease_time[0])*65536ul + ntohs(s->lease_time[1]))/3600);
+  DEBUG_MSG("[UIP_TASK] Got DNS server %d.%d.%d.%d\n",
+	    uip_ipaddr1(s->dnsaddr), uip_ipaddr2(s->dnsaddr),
+	    uip_ipaddr3(s->dnsaddr), uip_ipaddr4(s->dnsaddr));
+  DEBUG_MSG("[UIP_TASK] Lease expires in %d hours\n",
+	    (ntohs(s->lease_time[0])*65536ul + ntohs(s->lease_time[1]))/3600);
   MUTEX_MIDIOUT_GIVE;
+#endif
 }

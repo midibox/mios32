@@ -570,6 +570,9 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
   if( *path != '/' )
     return -2; // invalid element format
 
+  // store pointer to path (so that the called method can parse it)
+  osc_args->original_path = (char *)path;
+
   // tags are starting at word aligned offset
   // add +1 to path_len, since \0 terminator is counted as well
   size_t tags_pos = (path_len+1 + 3) & 0xfffffc;

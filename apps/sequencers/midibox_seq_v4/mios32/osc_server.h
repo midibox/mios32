@@ -61,9 +61,6 @@ extern u16 OSC_SERVER_RemotePortGet(u8 con);
 extern s32 OSC_SERVER_LocalPortSet(u8 con, u16 port);
 extern u16 OSC_SERVER_LocalPortGet(u8 con);
 
-extern s32 OSC_SERVER_IsRemotePort(u16 port);
-extern s32 OSC_SERVER_IsLocalPort(u16 port);
-
 extern s32 OSC_SERVER_AppCall(void);
 extern s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len);
 

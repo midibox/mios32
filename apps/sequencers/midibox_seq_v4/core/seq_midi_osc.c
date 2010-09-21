@@ -93,7 +93,62 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
   if( osc_port >= SEQ_MIDI_OSC_NUM_PORTS )
     return -1; // invalid port
 
-  if( osc_transfer_mode[osc_port] != SEQ_MIDI_OSC_TRANSFER_MODE_MIDI &&
+  if( osc_transfer_mode[osc_port] == SEQ_MIDI_OSC_TRANSFER_MODE_MCMPP &&
+      package.type >= NoteOff && package.type <= PitchBend ) {
+    char event_path[30];
+    switch( package.type ) {
+    case NoteOff:
+      package.velocity = 0;
+      // fall through
+    case NoteOn:
+      sprintf(event_path, "/mcmpp/key/%d/%d", package.note, package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case PolyPressure:
+      sprintf(event_path, "/mcmpp/polypressure/%d/%d", package.note, package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case CC:
+      sprintf(event_path, "/mcmpp/cc/%d/%d", package.cc_number, package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.value/127.0);
+      break;
+
+    case ProgramChange:
+      sprintf(event_path, "/mcmpp/programchange/%d/%d", package.program_change, package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      break;
+
+    case Aftertouch:
+      sprintf(event_path, "/mcmpp/aftertouch/%d", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case PitchBend: {
+      sprintf(event_path, "/mcmpp/pitch/%d", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      int value = ((package.evnt1 & 0x7f) | (int)((package.evnt2 & 0x7f) << 7)) - 8192;
+      if( value >= 0 && value <= 127 )
+	value = 0;
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)value/8191.0);
+    } break;
+
+    default:
+      sprintf(event_path, "/mcmpp/invalid/%d", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      break;
+    }
+  } else if( osc_transfer_mode[osc_port] != SEQ_MIDI_OSC_TRANSFER_MODE_MIDI &&
       package.type >= NoteOff && package.type <= PitchBend ) {
     char event_path[30];
     switch( package.type ) {
@@ -159,10 +214,10 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       if( osc_transfer_mode[osc_port] == SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT ) {
 	end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
-	end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.note/127.0);
+	end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
       } else {
 	end_ptr = MIOS32_OSC_PutString(end_ptr, ",i");
-	end_ptr = MIOS32_OSC_PutInt(end_ptr, package.note);
+	end_ptr = MIOS32_OSC_PutInt(end_ptr, package.velocity);
       }
       break;
 

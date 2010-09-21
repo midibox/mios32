@@ -137,6 +137,95 @@ static s32 OSC_SERVER_Method_MIDI(mios32_osc_args_t *osc_args, u32 method_arg)
 }
 
 
+static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+  int i;
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
+  printf("Original Path: %s\n", osc_args->original_path);
+#endif
+
+  // we expect at least 1 argument
+  if( osc_args->num_args < 1 )
+    return -1; // wrong number of arguments
+
+  // extract value and channel from original path
+  // format: /mcmpp/name/<value>/<channel>
+  // /mcmpp and /name have already been parsed, we only need the values
+  char *path_values = (char *)osc_args->original_path;
+  for(i=0; i<2; ++i)
+    if( (path_values = strchr(path_values+1, '/')) == NULL )
+      return -2; // invalid format
+  ++path_values;
+
+  printf(">>>%s\n", path_values);
+
+  int note = 0;
+  if( method_arg < 0xc0 ) {
+      // (key) value not transmitted for 0xc0 (program change), 0xd0 (aftertouch), 0xe0 (pitch)
+
+    // get value
+    note = atoi(path_values);
+
+    // next slash
+    if( (path_values = strchr(path_values+1, '/')) == NULL )
+      return -2; // invalid format
+    ++path_values;
+  }
+
+  // get channel
+  int chn = atoi(path_values) - 1;
+  if( chn < 0 || chn >= 15 )
+    return -3; // invalid channel
+
+  // get status nibble and merge with channel
+  int evnt0 = (method_arg & 0xf0) | chn;
+
+  PmEvent e;
+  e.timestamp = 0;
+
+  // pitch bender?
+  if( (evnt0 & 0xf0) == 0xe0 ) {
+    // get velocity resp. CC value
+    int pitch = 8192;
+    if( osc_args->arg_type[0] == 'i' )
+      pitch = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+    else if( osc_args->arg_type[0] == 'f' )
+      pitch = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 8191.0);
+    pitch += 8192;
+    if( pitch < 0 ) pitch = 0; else if( pitch > 16383 ) pitch = 16383;
+    e.message = Pm_Message(evnt0, pitch & 0x7f, (pitch >> 7) & 0x7f);
+#if DEBUG_VERBOSE_LEVEL >= 2
+      printf("[MIDI_OUT] %02X %02X %02X\n", (unsigned)(e.message>>0)&0xff, (unsigned)(e.message>>8)&0xff, (unsigned)(e.message>>16)&0xff);
+#endif
+  } else {
+    // get velocity resp. CC value
+    int velocity = 127;
+    if( osc_args->arg_type[0] == 'i' )
+      velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+    else if( osc_args->arg_type[0] == 'f' )
+      velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
+    if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
+
+    if( (evnt0 & 0xf0) == 0xc0 || (evnt0 & 0xf0) == 0xd0 ) {
+      e.message = Pm_Message(evnt0, note, 0);
+#if DEBUG_VERBOSE_LEVEL >= 2
+      printf("[MIDI_OUT] %02X %02X\n", (unsigned)(e.message>>0)&0xff, (unsigned)(e.message>>8)&0xff);
+#endif
+    } else {
+      e.message = Pm_Message(evnt0, note, velocity);
+#if DEBUG_VERBOSE_LEVEL >= 2
+      printf("[MIDI_OUT] %02X %02X %02X\n", (unsigned)(e.message>>0)&0xff, (unsigned)(e.message>>8)&0xff, (unsigned)(e.message>>16)&0xff);
+#endif
+    }
+  }
+  Pm_Write(midi_out, &e, 1);
+
+  return 0; // no error
+}
+
+
 static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -220,6 +309,24 @@ static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg
 }
 
 
+static mios32_osc_search_tree_t parse_mcmpp_value[] = {
+  { "*", NULL, &OSC_SERVER_Method_MCMPP, 0x00000000 },
+
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+static mios32_osc_search_tree_t parse_mcmpp[] = {
+  { "key",           parse_mcmpp_value, NULL, 0x00000090 }, // bit [7:4] contains status byte
+  { "polypressure",  parse_mcmpp_value, NULL, 0x000000a0 }, // bit [7:4] contains status byte
+  { "cc",            parse_mcmpp_value, NULL, 0x000000b0 }, // bit [7:4] contains status byte
+  { "programchange", parse_mcmpp_value, NULL, 0x000000c0 }, // bit [7:4] contains status byte
+  { "aftertouch",    parse_mcmpp_value, NULL, 0x000000d0 }, // bit [7:4] contains status byte
+  { "pitch",         parse_mcmpp_value, NULL, 0x000000e0 }, // bit [7:4] contains status byte
+
+  { NULL, NULL, NULL, 0 } // terminator
+};
+
+
 static mios32_osc_search_tree_t parse_event[] = {
   { "note",          NULL, &OSC_SERVER_Method_Event,   0x00000090 }, // bit [7:4] contains status byte
   { "polypressure",  NULL, &OSC_SERVER_Method_Event,   0x000000a0 }, // bit [7:4] contains status byte
@@ -227,6 +334,8 @@ static mios32_osc_search_tree_t parse_event[] = {
   { "programchange", NULL, &OSC_SERVER_Method_Event,   0x000000c0 }, // bit [7:4] contains status byte
   { "aftertouch",    NULL, &OSC_SERVER_Method_Event,   0x000000b0 }, // bit [7:4] contains status byte
   { "pitchbend",     NULL, &OSC_SERVER_Method_EventPB, 0x000000e0 }, // bit [7:4] contains status byte
+
+  { NULL, NULL, NULL, 0 } // terminator
 };
 
 static mios32_osc_search_tree_t parse_root[] = {
@@ -235,6 +344,8 @@ static mios32_osc_search_tree_t parse_root[] = {
   { "midi2", NULL, &OSC_SERVER_Method_MIDI, 0x00000000},
   { "midi3", NULL, &OSC_SERVER_Method_MIDI, 0x00000000},
   { "midi4", NULL, &OSC_SERVER_Method_MIDI, 0x00000000},
+
+  { "mcmpp", parse_mcmpp, NULL, 0x00000000}, // pianist pro format
 
   { "1",  parse_event, NULL, 0x00000000}, // bit [0:3] selects MIDI channel
   { "2",  parse_event, NULL, 0x00000001}, // bit [0:3] selects MIDI channel
@@ -252,6 +363,7 @@ static mios32_osc_search_tree_t parse_root[] = {
   { "14", parse_event, NULL, 0x0000000d}, // bit [0:3] selects MIDI channel
   { "15", parse_event, NULL, 0x0000000e}, // bit [0:3] selects MIDI channel
   { "16", parse_event, NULL, 0x0000000f}, // bit [0:3] selects MIDI channel
+
   { NULL, NULL, NULL, 0 } // terminator
 };
 

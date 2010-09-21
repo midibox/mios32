@@ -16,6 +16,12 @@ MIDIboxSEQ V4.0beta26
 
   o the status LED of the core module flashes on each beat now
 
+  o bugfix for FAST button
+
+  o OSC support for "Pianist Pro" format (an iPhone/iPad application)
+    Now you can send notes and pitch changes from Pianist Pro to your
+    MBSEQ, and convert them into MIDI events
+
 
 MIDIboxSEQ V4.0beta25
 ~~~~~~~~~~~~~~~~~~~~~

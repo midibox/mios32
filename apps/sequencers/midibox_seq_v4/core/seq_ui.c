@@ -2551,6 +2551,10 @@ s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
   int new_value = *value;
   int prev_value = new_value;
 
+  // extra: in fast mode increment 16bit values faster!
+  if( max > 0x100 && seq_ui_button_state.FAST_ENCODERS )
+    incrementer *= 10;
+
   if( incrementer >= 0 ) {
     if( (new_value += incrementer) >= max )
       new_value = max;
