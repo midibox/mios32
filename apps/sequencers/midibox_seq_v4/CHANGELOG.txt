@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta26
+~~~~~~~~~~~~~~~~~~~~~
+
+  o SD Card error messages will be sent to MIOS terminal
+
+  o added MIOS terminal commands "play" and "stop", so that the sequencer can also be
+    started/stopped from MIOS Studio
+
+  o the status LED of the core module flashes on each beat now
+
+
 MIDIboxSEQ V4.0beta25
 ~~~~~~~~~~~~~~~~~~~~~
 

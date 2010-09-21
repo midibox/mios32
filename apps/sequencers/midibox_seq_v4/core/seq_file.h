@@ -27,6 +27,8 @@
 
 
 // error codes
+// NOTE: SEQ_FILE_SendErrorMessage() should be extended whenever new codes have been added!
+
 #define SEQ_FILE_ERR_SD_CARD           -1 // failed to access SD card
 #define SEQ_FILE_ERR_NO_PARTITION      -2 // DFS_GetPtnStart failed to find partition
 #define SEQ_FILE_ERR_NO_VOLUME         -3 // DFS_GetVolInfo failed to find volume information
@@ -188,6 +190,8 @@ extern s32 SEQ_FILE_CreateBackup(void);
 extern s32 SEQ_FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset);
 extern s32 SEQ_FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items, u8 dir_offset);
 extern s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port);
+
+extern s32 SEQ_FILE_SendErrorMessage(s32 error_status);
 
 
 /////////////////////////////////////////////////////////////////////////////

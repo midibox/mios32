@@ -404,7 +404,7 @@ static s32 SEQ_UI_Button_Up(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Stop(s32 depressed)
+s32 SEQ_UI_Button_Stop(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
@@ -441,7 +441,7 @@ static s32 SEQ_UI_Button_Pause(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Play(s32 depressed)
+s32 SEQ_UI_Button_Play(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
@@ -2205,7 +2205,11 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // beat LED
   u8 sequencer_running = SEQ_BPM_IsRunning();
-  SEQ_LED_PinSet(seq_hwcfg_led.beat, sequencer_running && ((seq_core_state.ref_step & 3) == 0));
+  u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step & 3) == 0);
+  SEQ_LED_PinSet(seq_hwcfg_led.beat, beat_led_on);
+
+  // mirror to status LED (inverted, so that LED is normaly on)
+  MIOS32_BOARD_LED_Set(0xffffffff, beat_led_on ? 0 : 1);
 
 
   // don't continue if no new step has been generated and GP LEDs haven't changed
@@ -2696,7 +2700,12 @@ s32 SEQ_UI_MsgStop(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
 {
-  // TODO: add more verbose error messages, they are clearly defined in seq_file.h)
+  // send error message to MIOS terminal
+  MUTEX_MIDIOUT_TAKE;
+  SEQ_FILE_SendErrorMessage(status);
+  MUTEX_MIDIOUT_GIVE;
+
+  // print on LCD
   char str[21];
   sprintf(str, "E%3d (FatFs: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
   return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
