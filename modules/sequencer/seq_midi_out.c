@@ -31,7 +31,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 1
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -298,8 +298,8 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     new_item->next = NULL;
   }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
-#if DEBUG_VERBOSE_LEVEL == 1
+#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL == 2
   if( event_type != SEQ_MIDI_OUT_ClkEvent )
 #endif
   DEBUG_MSG("[SEQ_MIDI_OUT_Send:%u] (tag %d) %02x %02x %02x len:%u\n", timestamp, midi_package.cable, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
@@ -380,7 +380,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
   }
 
   // display queue
-#if DEBUG_VERBOSE_LEVEL >= 3
+#if DEBUG_VERBOSE_LEVEL >= 4
   DEBUG_MSG("--- vvv ---\n");
   item=midi_queue;
   while( item != NULL ) {
@@ -442,7 +442,7 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
 	prev_item->next = item;
       }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] (tag %d) %02x %02x %02x\n", timestamp, copy.package.cable, copy.package.evnt0, copy.package.evnt1, copy.package.evnt2);
 #endif
 
@@ -463,7 +463,7 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
 	}
 
 	if( prev_item == NULL ) {
-#if DEBUG_VERBOSE_LEVEL >= 0
+#if DEBUG_VERBOSE_LEVEL >= 1
 	  // (always print out - this condition should never happen!)
 	  DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] Malfunction - prev_item not found anymore!\n", timestamp);
 #endif
@@ -557,8 +557,8 @@ s32 SEQ_MIDI_OUT_Handler(void)
 
   seq_midi_out_queue_item_t *item;
   while( (item=midi_queue) != NULL && item->timestamp <= callback_bpm_tick_get() ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-#if DEBUG_VERBOSE_LEVEL == 1
+#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL == 2
     if( item->event_type != SEQ_MIDI_OUT_ClkEvent )
 #endif
     DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%u] (tag %d) %02x %02x %02x\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2);
@@ -574,7 +574,18 @@ s32 SEQ_MIDI_OUT_Handler(void)
     // schedule Off event if requested
     if( item->event_type == SEQ_MIDI_OUT_OnOffEvent && item->len ) {
       // ensure that we get a free memory slot by releasing the current item before queuing the off item
+#if 0
       seq_midi_out_queue_item_t copy = *item;
+#else
+      // ???
+      seq_midi_out_queue_item_t copy;
+      copy.port = item->port;
+      copy.event_type = item->event_type;
+      copy.len = item->len;
+      copy.package.ALL = item->package.ALL;
+      copy.timestamp = item->timestamp;
+      copy.next = item->next;
+#endif
       copy.package.velocity = 0; // ensure that velocity is 0
 
       // remove item from queue
@@ -691,6 +702,9 @@ static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
       }
 
       // we should never reach this point! (can be checked by setting a breakpoint or printf to this location)
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_MIDI_OUT_SlotMalloc] Malfunction case #1\n");
+#endif
 #if SEQ_MIDI_OUT_MALLOC_ANALYSIS
     ++seq_midi_out_dropouts;
 #endif
@@ -704,6 +718,9 @@ static seq_midi_out_queue_item_t *SEQ_MIDI_OUT_SlotMalloc(void)
 
   if( new_pos == -1 ) {
     // should never happen! (can be checked by setting a breakpoint or printf to this location)
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_MIDI_OUT_SlotMalloc] Malfunction case #2\n");
+#endif
 #if SEQ_MIDI_OUT_MALLOC_ANALYSIS
     ++seq_midi_out_dropouts;
 #endif
@@ -752,10 +769,16 @@ static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item)
 	--seq_midi_out_allocated;
     } else {
       // should never happen! (can be checked by setting a breakpoint or ptintf to this location)
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_MIDI_OUT_SlotFree] Malfunction case #2\n");
+#endif
       return;
     }
   } else {
     // should never happen! (can be checked by setting a breakpoint or printf to this location)
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_MIDI_OUT_SlotFree] Malfunction case #1\n");
+#endif
     return;
   }
 #endif
