@@ -45,6 +45,8 @@
 #include "seq_file_gc.h"
 #include "seq_file_hw.h"
 
+#include "seq_ui.h"
+
 #include "seq_statistics.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -163,6 +165,16 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
       } else if( strcmp(parameter, "sdcard") == 0 ) {
 	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "play") == 0 ) {
+	SEQ_UI_Button_Play(0);
+	MUTEX_MIDIOUT_TAKE;
+	DEBUG_MSG("Sequencer started...\n");
+	MUTEX_MIDIOUT_GIVE;
+      } else if( strcmp(parameter, "stop") == 0 ) {
+	SEQ_UI_Button_Stop(0);
+	MUTEX_MIDIOUT_TAKE;
+	DEBUG_MSG("Sequencer stopped...\n");
+	MUTEX_MIDIOUT_GIVE;
       } else if( strcmp(parameter, "reset") == 0 ) {
 	MIOS32_SYS_Reset();
       } else {
@@ -204,6 +216,8 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
   out("  network:        print ethernet network info\n");
+  out("  play:           emulates the PLAY button\n");
+  out("  stop:           emulates the STOP button\n");
   out("  reset:          resets the MIDIbox SEQ (!)\n");
   out("  help:           this page\n");
   MUTEX_MIDIOUT_GIVE;

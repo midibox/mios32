@@ -22,6 +22,8 @@
 #include <task.h>
 #include <queue.h>
 
+#include "tasks.h"
+
 #include "app.h"
 #include <seq_file.h>
 #include <seq_file_hw.h>
@@ -301,7 +303,9 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
     uip_setdraddr(ipaddr);
 
     dhcpc_init(uip_ethaddr.addr, sizeof(uip_ethaddr.addr));
+    MUTEX_MIDIOUT_TAKE;
     MIOS32_MIDI_SendDebugMessage("[UIP_TASK] DHCP Client requests the IP settings...\n");
+    MUTEX_MIDIOUT_GIVE;
   } else {
     // set my IP address
     uip_ipaddr(ipaddr,
@@ -327,7 +331,9 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
 	       ((my_gateway)>> 0) & 0xff);
     uip_setdraddr(ipaddr);
 
+    MUTEX_MIDIOUT_TAKE;
     MIOS32_MIDI_SendDebugMessage("[UIP_TASK] IP Address statically set:\n");
+    MUTEX_MIDIOUT_GIVE;
 
     // start services immediately
     UIP_TASK_StartServices();
@@ -414,7 +420,9 @@ s32 UIP_TASK_GatewayGet(void)
 static s32 UIP_TASK_StartServices(void)
 {
   // print IP settings
+  MUTEX_MIDIOUT_TAKE;
   UIP_TASK_SendDebugMessage_IP();
+  MUTEX_MIDIOUT_GIVE;
 
   // start OSC daemon
   OSC_SERVER_Init(0);
@@ -488,9 +496,11 @@ void dhcpc_configured(const struct dhcpc_state *s)
   UIP_TASK_StartServices();
 
   // print unused settings
+  MUTEX_MIDIOUT_TAKE;
   MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Got DNS server %d.%d.%d.%d\n",
 			       uip_ipaddr1(s->dnsaddr), uip_ipaddr2(s->dnsaddr),
 			       uip_ipaddr3(s->dnsaddr), uip_ipaddr4(s->dnsaddr));
   MIOS32_MIDI_SendDebugMessage("[UIP_TASK] Lease expires in %d hours\n",
 			       (ntohs(s->lease_time[0])*65536ul + ntohs(s->lease_time[1]))/3600);
+  MUTEX_MIDIOUT_GIVE;
 }

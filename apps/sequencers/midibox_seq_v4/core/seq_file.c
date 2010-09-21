@@ -1441,3 +1441,48 @@ s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
   return num_bytes;
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Send a verbose error message to MIOS terminal
+// Used by SEQ_UI_SDCardErrMsg
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_SendErrorMessage(s32 error_status)
+{
+#if DEBUG_VERBOSE_LEVEL >= 1
+  switch( error_status ) {
+  case SEQ_FILE_ERR_SD_CARD: DEBUG_MSG("[SDCARD_ERROR:%d] failed to access SD card\n", error_status); break;
+  case SEQ_FILE_ERR_NO_PARTITION: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_GetPtnStart failed to find partition\n", error_status); break;
+  case SEQ_FILE_ERR_NO_VOLUME: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_GetVolInfo failed to find volume information\n", error_status); break;
+  case SEQ_FILE_ERR_UNKNOWN_FS: DEBUG_MSG("[SDCARD_ERROR:%d] unknown filesystem (only FAT12/16/32 supported)\n", error_status); break;
+  case SEQ_FILE_ERR_OPEN_READ: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_OpenFile(..DFS_READ..) failed, e.g. file not found\n", error_status); break;
+  case SEQ_FILE_ERR_OPEN_READ_WITHOUT_CLOSE: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_ReadOpen() has been called while previous file hasn't been closed\n", error_status); break;
+  case SEQ_FILE_ERR_READ: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_ReadFile failed\n", error_status); break;
+  case SEQ_FILE_ERR_READCOUNT: DEBUG_MSG("[SDCARD_ERROR:%d] less bytes read than expected\n", error_status); break;
+  case SEQ_FILE_ERR_READCLOSE: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_ReadClose aborted due to previous error\n", error_status); break;
+  case SEQ_FILE_ERR_WRITE_MALLOC: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_WriteOpen failed to allocate memory for write buffer\n", error_status); break;
+  case SEQ_FILE_ERR_OPEN_WRITE: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_OpenFile(..DFS_WRITE..) failed\n", error_status); break;
+  case SEQ_FILE_ERR_OPEN_WRITE_WITHOUT_CLOSE: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_WriteOpen() has been called while previous file hasn't been closed\n", error_status); break;
+  case SEQ_FILE_ERR_WRITE: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_WriteFile failed\n", error_status); break;
+  case SEQ_FILE_ERR_WRITECOUNT: DEBUG_MSG("[SDCARD_ERROR:%d] less bytes written than expected\n", error_status); break;
+  case SEQ_FILE_ERR_WRITECLOSE: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_WriteClose aborted due to previous error\n", error_status); break;
+  case SEQ_FILE_ERR_SEEK: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_Seek() failed\n", error_status); break;
+  case SEQ_FILE_ERR_OPEN_DIR: DEBUG_MSG("[SDCARD_ERROR:%d] DFS_OpenDir(..DFS_READ..) failed, e.g. directory not found\n", error_status); break;
+  case SEQ_FILE_ERR_COPY: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_Copy() failed\n", error_status); break;
+  case SEQ_FILE_ERR_COPY_NO_FILE: DEBUG_MSG("[SDCARD_ERROR:%d] source file doesn't exist\n", error_status); break;
+  case SEQ_FILE_ERR_NO_DIR: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_GetDirs() or SEQ_FILE_GetFiles() failed because of missing directory\n", error_status); break;
+  case SEQ_FILE_ERR_NO_FILE: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_GetFiles() failed because of missing directory\n", error_status); break;
+  case SEQ_FILE_ERR_SYSEX_READ: DEBUG_MSG("[SDCARD_ERROR:%d] error while reading .syx file\n", error_status); break;
+  case SEQ_FILE_ERR_MKDIR: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_MakeDir() failed\n", error_status); break;
+  case SEQ_FILE_ERR_INVALID_SESSION_NAME: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_LoadSessionName()\n", error_status); break;
+  case SEQ_FILE_ERR_UPDATE_FREE: DEBUG_MSG("[SDCARD_ERROR:%d] SEQ_FILE_UpdateFreeBytes()\n", error_status); break;
+
+  default:
+    // remaining errors just print the number
+    DEBUG_MSG("[SDCARD_ERROR:%d] see seq_file.h for description\n", error_status);
+  }
+#endif
+
+  return 0; // no error
+}
+
