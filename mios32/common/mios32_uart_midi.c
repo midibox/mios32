@@ -104,7 +104,7 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
     MIOS32_UART_MIDI_RS_Reset(i);
 
   // if any MIDI assignment:
-#if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1
+#if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1 || MIOS32_UART2_ASSIGNMENT == 1
   // initialize U(S)ART interface
   if( MIOS32_UART_Init(0) < 0 )
     return -1; // initialisation of U(S)ART Interface failed
@@ -117,7 +117,7 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function can be used to determine, if a UART interface is available
-//! \param[in] uart_port UART number (0..1)
+//! \param[in] uart_port UART number (0..2)
 //! \return 1: interface available
 //! \return 0: interface not available
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
@@ -149,7 +149,7 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 //! MIDI OUT port to improve bandwidth if MIDI events with the same
 //! status byte are sent back-to-back.<BR>
 //! Note that the optimisation is enabled by default.
-//! \param[in] uart_port UART number (0..1)
+//! \param[in] uart_port UART number (0..2)
 //! \param[in] enable 0=optimisation disabled, 1=optimisation enabled
 //! \return -1 if port not available
 //! \return 0 on success
@@ -176,7 +176,7 @@ s32 MIOS32_UART_MIDI_RS_OptimisationSet(u8 uart_port, u8 enable)
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the running status optimisation enable/disable flag
 //! for the given MIDI OUT port.
-//! \param[in] uart_port UART number (0..1)
+//! \param[in] uart_port UART number (0..2)
 //! \return -1 if port not available
 //! \return 0 if optimisation disabled
 //! \return 1 if optimisation enabled
@@ -198,7 +198,7 @@ s32 MIOS32_UART_MIDI_RS_OptimisationGet(u8 uart_port)
 /////////////////////////////////////////////////////////////////////////////
 //! This function resets the current running status, so that it will be sent
 //! again with the next MIDI Out package.
-//! \param[in] uart_port UART number (0..1)
+//! \param[in] uart_port UART number (0..2)
 //! \return -1 if port not available
 //! \return < 0 on errors
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
@@ -261,7 +261,7 @@ s32 MIOS32_UART_MIDI_Periodic_mS(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sends a new MIDI package to the selected UART_MIDI port
-//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[in] uart_port UART_MIDI module number (0..2)
 //! \param[in] package MIDI package
 //! \return 0: no error
 //! \return -1: UART_MIDI device not available
@@ -330,7 +330,7 @@ s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t
 /////////////////////////////////////////////////////////////////////////////
 //! This function sends a new MIDI package to the selected UART_MIDI port
 //! (blocking function)
-//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[in] uart_port UART_MIDI module number (0..2)
 //! \param[in] package MIDI package
 //! \return 0: no error
 //! \return -1: UART_MIDI device not available
@@ -348,7 +348,7 @@ s32 MIOS32_UART_MIDI_PackageSend(u8 uart_port, mios32_midi_package_t package)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function checks for a new package
-//! \param[in] uart_port UART_MIDI module number (0..1)
+//! \param[in] uart_port UART_MIDI module number (0..2)
 //! \param[out] package pointer to MIDI package (received package will be put into the given variable
 //! \return 0: no error
 //! \return -1: no package in buffer

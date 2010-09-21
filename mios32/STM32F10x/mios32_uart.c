@@ -47,6 +47,15 @@
 #define MIOS32_UART1_IRQHANDLER_FUNC void USART3_IRQHandler(void)
 #define MIOS32_UART1_REMAP_FUNC  { GPIO_PinRemapConfig(GPIO_PartialRemap_USART3, ENABLE); }
 
+#define MIOS32_UART2_TX_PORT     GPIOA
+#define MIOS32_UART2_TX_PIN      GPIO_Pin_2
+#define MIOS32_UART2_RX_PORT     GPIOA
+#define MIOS32_UART2_RX_PIN      GPIO_Pin_3
+#define MIOS32_UART2             USART2
+#define MIOS32_UART2_IRQ_CHANNEL USART2_IRQn
+#define MIOS32_UART2_IRQHANDLER_FUNC void USART2_IRQHandler(void)
+#define MIOS32_UART2_REMAP_FUNC  {}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -90,6 +99,9 @@ s32 MIOS32_UART_Init(u32 mode)
 #if MIOS32_UART_NUM >= 2
   MIOS32_UART1_REMAP_FUNC;
 #endif
+#if MIOS32_UART_NUM >= 3
+  MIOS32_UART2_REMAP_FUNC;
+#endif
 
   // configure UART pins
   GPIO_StructInit(&GPIO_InitStructure);
@@ -114,6 +126,16 @@ s32 MIOS32_UART_Init(u32 mode)
   GPIO_Init(MIOS32_UART1_TX_PORT, &GPIO_InitStructure);
 #endif
 
+#if MIOS32_UART_NUM >= 3
+  GPIO_InitStructure.GPIO_Pin = MIOS32_UART2_TX_PIN;
+#if MIOS32_UART2_TX_OD
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+#else
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+#endif
+  GPIO_Init(MIOS32_UART2_TX_PORT, &GPIO_InitStructure);
+#endif
+
   // inputs with internal pull-up
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
   GPIO_InitStructure.GPIO_Pin = MIOS32_UART0_RX_PIN;
@@ -121,6 +143,10 @@ s32 MIOS32_UART_Init(u32 mode)
 #if MIOS32_UART_NUM >= 2
   GPIO_InitStructure.GPIO_Pin = MIOS32_UART1_RX_PIN;
   GPIO_Init(MIOS32_UART1_RX_PORT, &GPIO_InitStructure);
+#endif
+#if MIOS32_UART_NUM >= 3
+  GPIO_InitStructure.GPIO_Pin = MIOS32_UART2_RX_PIN;
+  GPIO_Init(MIOS32_UART2_RX_PORT, &GPIO_InitStructure);
 #endif
 
   // enable all USART clocks
@@ -132,6 +158,9 @@ s32 MIOS32_UART_Init(u32 mode)
   MIOS32_UART_BaudrateSet(0, MIOS32_UART0_BAUDRATE);
 #if MIOS32_UART_NUM >=2
   MIOS32_UART_BaudrateSet(1, MIOS32_UART1_BAUDRATE);
+#endif
+#if MIOS32_UART_NUM >=3
+  MIOS32_UART_BaudrateSet(2, MIOS32_UART2_BAUDRATE);
 #endif
 
   // configure and enable UART interrupts
@@ -153,6 +182,15 @@ s32 MIOS32_UART_Init(u32 mode)
   USART_ITConfig(MIOS32_UART1, USART_IT_RXNE, ENABLE);
 #endif
 
+#if MIOS32_UART_NUM >= 3
+  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART2_IRQ_CHANNEL;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+  USART_ITConfig(MIOS32_UART2, USART_IT_RXNE, ENABLE);
+#endif
+
   // clear buffer counters
   int i;
   for(i=0; i<MIOS32_UART_NUM; ++i) {
@@ -165,6 +203,9 @@ s32 MIOS32_UART_Init(u32 mode)
 #if MIOS32_UART_NUM >= 2
   USART_Cmd(MIOS32_UART1, ENABLE);
 #endif
+#if MIOS32_UART_NUM >= 3
+  USART_Cmd(MIOS32_UART2, ENABLE);
+#endif
 
   return 0; // no error
 #endif
@@ -173,7 +214,7 @@ s32 MIOS32_UART_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! sets the baudrate of a UART port
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] baudrate the baudrate
 //! \return 0: baudrate has been changed
 //! \return -1: uart not available
@@ -202,6 +243,9 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 #if MIOS32_UART_NUM >= 2
   case 1: USART_Init(MIOS32_UART1, &USART_InitStructure); break;
 #endif
+#if MIOS32_UART_NUM >= 3
+  case 2: USART_Init(MIOS32_UART2, &USART_InitStructure); break;
+#endif
   default:
     return -2; // not prepared
   }
@@ -215,7 +259,7 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns the current baudrate of a UART port
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return 0: uart not available
 //! \return all other values: the current baudrate
 /////////////////////////////////////////////////////////////////////////////
@@ -234,7 +278,7 @@ u32 MIOS32_UART_BaudrateGet(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns number of free bytes in receive buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return uart number of free bytes
 //! \return 1: uart available
 //! \return 0: uart not available
@@ -254,7 +298,7 @@ s32 MIOS32_UART_RxBufferFree(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns number of used bytes in receive buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return > 0: number of used bytes
 //! \return 0 if uart not available
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
@@ -274,7 +318,7 @@ s32 MIOS32_UART_RxBufferUsed(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! gets a byte from the receive buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return -1 if UART not available
 //! \return -2 if no new byte available
 //! \return >= 0: number of received bytes
@@ -306,7 +350,7 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns the next byte of the receive buffer without taking it
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return -1 if UART not available
 //! \return -2 if no new byte available
 //! \return >= 0: number of received bytes
@@ -335,7 +379,7 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! puts a byte onto the receive buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] b byte which should be put into Rx buffer
 //! \return 0 if no error
 //! \return -1 if UART not available
@@ -369,7 +413,7 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns number of free bytes in transmit buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return number of free bytes
 //! \return 0 if uart not available
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
@@ -389,7 +433,7 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! returns number of used bytes in transmit buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return number of used bytes
 //! \return 0 if uart not available
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
@@ -409,7 +453,7 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! gets a byte from the transmit buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \return -1 if UART not available
 //! \return -2 if no new byte available
 //! \return >= 0: transmitted byte
@@ -441,7 +485,7 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
 
 /////////////////////////////////////////////////////////////////////////////
 //! puts more than one byte onto the transmit buffer (used for atomic sends)
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] *buffer pointer to buffer to be sent
 //! \param[in] len number of bytes to be sent
 //! \return 0 if no error
@@ -477,6 +521,7 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
       switch( uart ) {
         case 0: MIOS32_UART0->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         case 1: MIOS32_UART1->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
+        case 2: MIOS32_UART2->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         default: MIOS32_IRQ_Enable(); return -3; // uart not supported by routine (yet)
       }
     }
@@ -491,7 +536,7 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 /////////////////////////////////////////////////////////////////////////////
 //! puts more than one byte onto the transmit buffer (used for atomic sends)<BR>
 //! (blocking function)
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] *buffer pointer to buffer to be sent
 //! \param[in] len number of bytes to be sent
 //! \return 0 if no error
@@ -511,7 +556,7 @@ s32 MIOS32_UART_TxBufferPutMore(u8 uart, u8 *buffer, u16 len)
 
 /////////////////////////////////////////////////////////////////////////////
 //! puts a byte onto the transmit buffer
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] b byte which should be put into Tx buffer
 //! \return 0 if no error
 //! \return -1 if UART not available
@@ -530,7 +575,7 @@ s32 MIOS32_UART_TxBufferPut_NonBlocking(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 //! puts a byte onto the transmit buffer<BR>
 //! (blocking function)
-//! \param[in] uart UART number (0..1)
+//! \param[in] uart UART number (0..2)
 //! \param[in] b byte which should be put into Tx buffer
 //! \return 0 if no error
 //! \return -1 if UART not available
@@ -615,6 +660,43 @@ MIOS32_UART1_IRQHANDLER_FUNC
       }
     } else {
       MIOS32_UART1->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
+    }
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for third UART
+/////////////////////////////////////////////////////////////////////////////
+#if MIOS32_UART_NUM >= 2
+MIOS32_UART2_IRQHANDLER_FUNC
+{
+  if( MIOS32_UART2->SR & (1 << 5) ) { // check if RXNE flag is set
+    u8 b = MIOS32_UART2->DR;
+
+#if MIOS32_UART2_ASSIGNMENT == 1
+    s32 status = MIOS32_MIDI_SendByteToRxCallback(UART2, b);
+#else
+    s32 status = 0;
+#endif
+
+    if( status == 0 && MIOS32_UART_RxBufferPut(2, b) < 0 ) {
+      // here we could add some error handling
+    }
+  }
+  
+  if( MIOS32_UART2->SR & (1 << 7) ) { // check if TXE flag is set
+    if( MIOS32_UART_TxBufferUsed(2) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(2);
+      if( b < 0 ) {
+	// here we could add some error handling
+	MIOS32_UART2->DR = 0xff;
+      } else {
+	MIOS32_UART2->DR = b;
+      }
+    } else {
+      MIOS32_UART2->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
     }
   }
 }

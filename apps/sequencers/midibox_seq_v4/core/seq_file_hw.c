@@ -878,8 +878,17 @@ s32 SEQ_FILE_HW_Read(void)
 	  if( j5_enabled == 2 )
 	    pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_OD;
 
-	  for(i=0; i<12; ++i)
+	  for(i=0; i<6; ++i) {
+	    MIOS32_BOARD_J5_PinSet(i, 0);
 	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	  }
+
+	  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
+
+	  for(i=8; i<12; ++i) {
+	    MIOS32_BOARD_J5_PinSet(i, 0);
+	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	  }
 
 	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);

@@ -22,6 +22,17 @@ MIDIboxSEQ V4.0beta26
     Now you can send notes and pitch changes from Pianist Pro to your
     MBSEQ, and convert them into MIDI events
 
+  o support for a third MIDI IN/OUT port.
+    The digital MIDI OUT signal (open drain!) is available at J5B.A6
+    The digital MIDI IN signal is available at J5B.A7
+    Note that the MIDI IO circuit (220 Ohm Resistors, optocoupler, etc.) is not
+    part of the MBHP_CORE_STM32 module and has to be added externally.
+    This IO port can especially be used for a dedicated BLM connection (this will
+    be my personal usecase)
+
+  o Gate #7 and #8, which were previously available at J5B.A6 and J5B.A7, are
+    now available at J5C.A10 and J5C.A11
+
 
 MIDIboxSEQ V4.0beta25
 ~~~~~~~~~~~~~~~~~~~~~

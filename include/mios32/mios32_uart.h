@@ -23,7 +23,7 @@
 #define MIOS32_UART_NUM 0
 #endif
 
-// number of UART interfaces (0..2)
+// number of UART interfaces (0..3)
 #ifndef MIOS32_UART_NUM
 #define MIOS32_UART_NUM 2
 #endif
@@ -58,6 +58,16 @@
 #define MIOS32_UART1_TX_OD 1
 #endif
 
+// Baudrate of UART third interface
+#ifndef MIOS32_UART2_BAUDRATE
+#define MIOS32_UART2_BAUDRATE 31250
+#endif
+
+// should UART1 Tx pin configured for open drain (default) or push-pull mode?
+#ifndef MIOS32_UART2_TX_OD
+#define MIOS32_UART2_TX_OD 1
+#endif
+
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #ifndef MIOS32_UART0_ASSIGNMENT
 #define MIOS32_UART0_ASSIGNMENT 1
@@ -70,12 +80,12 @@
 
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #ifndef MIOS32_UART2_ASSIGNMENT
-#define MIOS32_UART2_ASSIGNMENT 0
+#define MIOS32_UART2_ASSIGNMENT 1
 #endif
 
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #ifndef MIOS32_UART3_ASSIGNMENT
-#define MIOS32_UART3_ASSIGNMENT 0
+#define MIOS32_UART3_ASSIGNMENT 1
 #endif
 
 

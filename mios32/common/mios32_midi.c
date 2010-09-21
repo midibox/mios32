@@ -235,7 +235,7 @@ s32 MIOS32_MIDI_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function checks the availability of a MIDI port
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return 1: port available
 //! \return 0: port not available
 /////////////////////////////////////////////////////////////////////////////
@@ -280,7 +280,7 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 //! status byte are sent back-to-back.<BR>
 //! The optimisation is currently only used for UART based port (enabled by
 //! default), IIC: TODO, USB: not required).
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] enable 0=optimisation disabled, 1=optimisation enabled
 //! \return -1 if port not available or if it doesn't support running status
 //! \return 0 on success
@@ -319,7 +319,7 @@ s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable)
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the running status optimisation enable/disable flag
 //! for the given MIDI OUT port.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return -1 if port not available or if it doesn't support running status
 //! \return 0 if optimisation disabled
 //! \return 1 if optimisation enabled
@@ -358,7 +358,7 @@ s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 //! This function resets the current running status, so that it will be sent
 //! again with the next MIDI Out package.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return -1 if port not available or if it doesn't support running status
 //! \return 0 if optimisation disabled
 //! \return 1 if optimisation enabled
@@ -403,7 +403,7 @@ s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port)
 //! Before the package is forwarded, an optional Tx Callback function will be called
 //! which allows to filter/monitor/route the package, or extend the MIDI transmitter
 //! by custom MIDI Output ports (e.g. for internal busses, OSC, AOUT, etc.)
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] package MIDI package
 //! \return -1 if port not available
 //! \return -2 buffer is full
@@ -464,7 +464,7 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 //! This is a low level function - use the remaining MIOS32_MIDI_Send* functions
 //! to send specific MIDI events
 //! (blocking function)
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] package MIDI package
 //! \return -1 if port not available
 //! \return 0 on success
@@ -527,7 +527,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 //!    o MIOS32_MIDI_ChannelAftertouch(port, chn, val)
 //!    o MIOS32_MIDI_PitchBend(port, chn, val)
 //!
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] evnt0 first MIDI byte
 //! \param[in] evnt1 second MIDI byte
 //! \param[in] evnt2 third MIDI byte
@@ -587,7 +587,7 @@ s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u1
 //!    o MIOS32_MIDI_SendActiveSense()
 //!    o MIOS32_MIDI_SendReset()
 //!
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] type the event type
 //! \param[in] evnt0 first MIDI byte
 //! \param[in] evnt1 second MIDI byte
@@ -645,7 +645,7 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 //! Sends a SysEx Stream
 //!
 //! This function is provided for a more comfortable use model
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] stream pointer to SysEx stream
 //! \param[in] count number of bytes
 //! \return -1 if port not available
@@ -907,45 +907,50 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 #else
       case 2: status = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 3: status = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART2_ASSIGNMENT == 1
+      case 3: status = MIOS32_UART_MIDI_PackageReceive(2, &package); port = UART2; break;
 #else
       case 3: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 4: status = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
+      case 4: status = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
 #else
       case 4: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 5: status = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
+      case 5: status = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
 #else
       case 5: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 6: status = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
+      case 6: status = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
 #else
       case 6: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 7: status = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
+      case 7: status = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
 #else
       case 7: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 8: status = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
+      case 8: status = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
 #else
       case 8: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 9: status = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
+      case 9: status = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
 #else
       case 9: status = -1; break;
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 10: status = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+      case 10: status = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
 #else
       case 10: status = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
+      case 11: status = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
+#else
+      case 11: status = -1; break;
 #endif
       default:
 	// allow 10 forwards maximum to yield some CPU time for other tasks
@@ -1123,7 +1128,6 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 //! Not for use in an application - this function is called by
 //! by a task in the programming model!
 //! 
-//! \param[in] uart_port UART number (0..1)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Periodic_mS(void)
@@ -1228,7 +1232,7 @@ s32 MIOS32_MIDI_DirectRxCallback_Init(void *callback_rx)
 //! MIDI bytes to the Rx Callback routine.
 //!
 //! It shouldn't be used by applications.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] midi_byte received MIDI byte
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1245,7 +1249,7 @@ s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 //! MIDI packages to the Rx Callback routine (byte by byte)
 //!
 //! It shouldn't be used by applications.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \param[in] midi_package received MIDI package
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1269,7 +1273,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEFAULT_PORT <port>".<BR>
 //! It's set to USB0 so long not overruled in mios32_config.h
-//! \param[in] port MIDI port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_DefaultPortSet(mios32_midi_port_t port)
@@ -1297,7 +1301,7 @@ mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void)
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEBUG_PORT <port>".<BR>
 //! It's set to USB0 so long not overruled in mios32_config.h
-//! \param[in] port MIDI port (USB0..USB7, UART0..UART1, IIC0..IIC7)
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_DebugPortSet(mios32_midi_port_t port)
