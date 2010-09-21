@@ -546,10 +546,15 @@ void SEQ_TASK_MIDI(void)
     int i;
 
     last_gates = gates;
-    for(i=0; i<8; ++i) {
+    for(i=0; i<6; ++i) {
       MIOS32_BOARD_J5_PinSet(i, gates & 1);
       gates >>= 1;
     }
+    // J5B.A6 and J5B.A7 allocated by MIDI OUT3
+    // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
+    MIOS32_BOARD_J5_PinSet(10, gates & 1);
+    gates >>= 1;
+    MIOS32_BOARD_J5_PinSet(11, gates & 1);
   }
 
   MUTEX_MIDIOUT_GIVE;

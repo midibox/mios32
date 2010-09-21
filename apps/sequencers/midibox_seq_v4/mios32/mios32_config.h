@@ -72,6 +72,9 @@
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
 
+// enable third UART
+#define MIOS32_UART_NUM 3
+
 
 // configure IIC_MIDI
 #define MIOS32_IIC_MIDI_NUM 4

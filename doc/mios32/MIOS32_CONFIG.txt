@@ -210,7 +210,7 @@ into your local mios32_config.h file
 #define MIOS32_IIC_BS7_SIZE    65536
 
 
-// number of UART interfaces (1 or 2) - to disable UART at all, use "MIOS32_DONT_USE_UART" instead!
+// number of UART interfaces (1..3) - to disable UART at all, use "MIOS32_DONT_USE_UART" instead!
 #define MIOS32_UART_NUM 2
 
 // Tx buffer size (1..256)
@@ -228,8 +228,14 @@ into your local mios32_config.h file
 // Baudrate of UART second interface
 #define MIOS32_UART1_BAUDRATE 31250
 
-// should UART0 Tx pin configured for open drain (default) or push-pull mode?
+// should UART1 Tx pin configured for open drain (default) or push-pull mode?
 #define MIOS32_UART1_TX_OD 1
+
+// Baudrate of UART third interface
+#define MIOS32_UART2_BAUDRATE 31250
+
+// should UART2 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART2_TX_OD 1
 
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #define MIOS32_UART0_ASSIGNMENT 1
