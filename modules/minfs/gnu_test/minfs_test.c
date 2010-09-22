@@ -3,12 +3,13 @@
 #include <string.h>
 #include "../minfs.h"
 
-#define data_len 255
+#define DATA_LEN 255
  
-MINFS_fs_t fs;
-MINFS_file_t f;
-char data[data_len];
-int32_t status;
+static MINFS_file_t f;
+char data[DATA_LEN];
+static int32_t status;
+
+static MINFS_fs_t fs;
 
 
 
@@ -49,12 +50,14 @@ int main(void){
 
 // ------- helper functions -------
 static uint32_t fs_init(void){
-  // format f-system
+  // initialize buffers
+  MINFS_RAM_Init();
+  // format file-system
   fs.info.block_size = 6;
   fs.info.num_blocks = 64;
-  fs.info.flags = 0;
+  fs.info.flags = MINFS_FLAGS_NOPEC;
   fs.info.os_flags = 0;
-  fs.fs_id = 0;
+  fs.fs_id = 1;
   if( status = MINFS_Format(&fs, NULL) ){
     printf("Error on FS-format: %d\n", status);
     exit(0);
@@ -79,7 +82,7 @@ static uint32_t file_open(uint16_t file_i){
 }
 
 static uint32_t file_write(void){
-  if( (status  = MINFS_FileWrite(&f, &(data[0]), data_len, NULL)) && status != MINFS_STATUS_EOF ){
+  if( (status  = MINFS_FileWrite(&f, &(data[0]), DATA_LEN, NULL)) && status != MINFS_STATUS_EOF ){
     printf("Error on file write: %d\n", status);
     exit(0);
   }
@@ -91,8 +94,8 @@ static uint32_t file_read(void){
   if( status = MINFS_FileSeek(&f, 0, NULL) ){
     printf("Error on file-seek: %d\n", status);
   }
-  memset(data, 0, data_len); // empty the string buffer
-  uint32_t len = data_len;
+  memset(data, 0, DATA_LEN); // empty the string buffer
+  uint32_t len = DATA_LEN;
   if( (status = MINFS_FileRead(&f, &(data[0]), &len, NULL)) && status != MINFS_STATUS_EOF ){
     printf("Error on file-read: %d\n", status);
     exit(0);
