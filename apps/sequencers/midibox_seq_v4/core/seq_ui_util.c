@@ -65,6 +65,7 @@ static u8 copypaste_begin;
 static u8 copypaste_end;
 
 static u8 copypaste_buffer_filled = 0;
+static u8 copypaste_track = 0;
 static u8 copypaste_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 copypaste_trg_layer[SEQ_TRG_MAX_BYTES];
 static u8 copypaste_cc[128];
@@ -75,7 +76,7 @@ static u16 copypaste_trg_steps;
 static u8 copypaste_num_instruments;
 
 static u8 undo_buffer_filled = 0;
-static u8 undo_track;
+static u8 undo_track = 0;
 static u8 undo_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 undo_trg_layer[SEQ_TRG_MAX_BYTES];
 static u8 undo_cc[128];
@@ -562,6 +563,7 @@ static s32 COPY_Track(u8 track)
 
   // notify that copy&paste buffer is filled
   copypaste_buffer_filled = 1;
+  copypaste_track = track;
 
   return 0; // no error
 }
@@ -593,10 +595,8 @@ static s32 PASTE_Track(u8 track)
   if( seq_core_options.PASTE_CLR_ALL ) {
     int i;
 
-    for(i=0; i<128; ++i) {
-      if( i != SEQ_CC_MIDI_CHANNEL && i != SEQ_CC_MIDI_PORT )
+    for(i=0; i<128; ++i)
 	SEQ_CC_Set(track, i, copypaste_cc[i]);
-    }
   } else {
     int i;
     seq_event_mode_t event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
@@ -692,10 +692,8 @@ static s32 UNDO_Track(void)
   if( seq_core_options.PASTE_CLR_ALL ) {
     int i;
 
-    for(i=0; i<128; ++i) {
-      if( i != SEQ_CC_MIDI_CHANNEL && i != SEQ_CC_MIDI_PORT )
+    for(i=0; i<128; ++i)
 	SEQ_CC_Set(undo_track, i, undo_cc[i]);
-    }
   }
 
   return 0; // no error

@@ -287,8 +287,6 @@ s32 SEQ_FILE_C_Read(void)
 	    }
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
 	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
-	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
-	    seq_core_options.PASTE_CLR_ALL = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
 	    seq_core_steps_per_measure = value;
 	  } else if( strcmp(parameter, "StepsPerPattern") == 0 ) {
@@ -473,9 +471,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "StepsPerMeasure %d\n", seq_core_steps_per_measure);

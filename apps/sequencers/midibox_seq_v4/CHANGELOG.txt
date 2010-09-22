@@ -15,6 +15,14 @@ MIDIboxSEQ V4.0beta27
 
   o BLM keyboard mode takes octave/semitones transpose values into account
 
+  o copy/paste function: if Paste/Clr track is activated in options menu, channel and
+    port setting will be copied as well.
+    This allows to copy&paste a complete track from one pattern to another.
+
+  o Paste/Clr steps/track setting in options menu is now a global setting and will
+    be written into MBSEQ_GC.V4 instead of (the session specific) MBSEQ_C.V4 file.
+    In future versions it might be a good idea to move global settings into a separate menu page.
+
 
 MIDIboxSEQ V4.0beta26
 ~~~~~~~~~~~~~~~~~~~~~
