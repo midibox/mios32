@@ -89,6 +89,12 @@ static const uint32_t BECV = 1; // dummy value to check endianes
     (uint8_t)dst = *((uint8_t*)p_src); \
 }
 
+// calculates the PEC-value for a data-buffer
+#define CALC_PEC(p_buf, data_len, pec_val_inttype, pec_val ){\
+  pec_val_inttype * p_val;\
+  for( p_val = (pec_val_inttype*) p_buf ; (uint8_t*)p_val < ( (uint8_t*)p_buf + data_len); p_val++ )\
+    pec_val ^= *p_val;\
+}
 
 //------------------------------------------------------------------------------
 //------------------------------- Local definitions ----------------------------
@@ -307,15 +313,14 @@ int32_t MINFS_Format(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf){
     // calculate block pointer and write it to the buffer. first_datablock_n is file-index-start (file 0),
     // free blocks chain: [num_blocks (virtual block)] -> [first_datablock_n+1] -> [first_datablock_n+2] -> ..
     // -> [num_blocks - 1] -> EOC
-    if ( i > p_fs->calc.first_datablock_n && i < p_fs->info.num_blocks - 1 ) // chain next block in free blocks chain
+    if ( (i > p_fs->calc.first_datablock_n) && (i < p_fs->info.num_blocks - 1) ) // chain next block in free blocks chain
       block_map_entry = i + 1;
     else if( i == p_fs->info.num_blocks )// start of free blocks chain (virtual block)
       block_map_entry = p_fs->calc.first_datablock_n + 1; // first free physical block in free-blocks chain
     else
       block_map_entry = MINFS_BLOCK_EOC; // EOC (end of freeblocks-chain or end of file-index-file file 0)
     // convert to little-endian and copy to buffer
-    BE_SWAP_32(block_map_entry);
-    *( (uint32_t*)( (uint8_t*)(p_block_buf->p_buf) + buf_i) ) = block_map_entry;
+    LE_SET( (uint8_t*)(p_block_buf->p_buf) + buf_i, block_map_entry, p_fs->calc.bp_size );
     // increment buf_i pointer
     buf_i += p_fs->calc.bp_size;
   }
@@ -722,7 +727,21 @@ static int32_t CalcFSParams(MINFS_fs_t *p_fs){
 /////////////////////////////////////////////////////////////////////////////
 static uint32_t GetPECValue(MINFS_fs_t *p_fs, void *p_buf, uint16_t data_len){
   // PEC value generation: the PEC of valid data incl. PEC must be zero.
-  return 0;
+  uint32_t x = 0;
+  /*
+  switch (p_fs->calc.pec_width){
+    case 1:
+      CALC_PEC(p_buf, data_len, uint8_t, x);
+      break;
+    case 2:
+      CALC_PEC(p_buf, data_len, uint16_t, x);
+      break;
+    case 4:
+      CALC_PEC(p_buf, data_len, uint32_t, x);
+      break;
+  }
+  */
+  return x;
 }
 
 
@@ -1153,7 +1172,7 @@ static int32_t File_ReadWrite(MINFS_file_t *p_file, void *p_buf, uint32_t *p_len
 static int32_t File_HeaderWrite(MINFS_fs_t *p_fs, uint32_t block_n, uint32_t file_id, uint32_t file_size, MINFS_block_buf_t **pp_block_buf){
   int32_t status;
   // get a buffer
-  if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_n, file_id, 0) )
+  if( status = BlockBuffer_Get(p_fs, pp_block_buf, block_n, file_id, 1) )
     return status; // return error status
   // map file-header struct to buffer and set file-signature and size
   MINFS_file_header_t *p_file_header = (MINFS_file_header_t*)( (*pp_block_buf)->p_buf );
@@ -1352,7 +1371,7 @@ static int32_t BlockBuffer_Get(MINFS_fs_t *p_fs, MINFS_block_buf_t **pp_block_bu
    }
   // if the buffer was not used for block_n, flush the current buffer content, reset flags and set block_n
   if( block_n != (*pp_block_buf)->block_n ){
-	// flush the block-buffer if (*p_block_buf)->flags.changed )
+    // flush the block-buffer if (*p_block_buf)->flags.changed )
     if( status = BlockBuffer_Flush(p_fs, *pp_block_buf) )
       return status; // return error status
     (*pp_block_buf)->flags.ALL = 0;
@@ -1383,8 +1402,6 @@ static int32_t BlockBuffer_Flush(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_bu
   // check if buffer has changed -> write whole buffer
   // NOTE: MINFS_Write has to reset the changed flag!
   if( p_block_buf->flags.changed ){
-    if( !p_block_buf->flags.populated )
-      return MINFS_ERROR_FLUSH_BNP; // buffer was not populated
     int32_t status;
     if( status = BlockBuffer_Write(p_fs, p_block_buf, 0, 0) )
       return status; // return error status
@@ -1449,15 +1466,17 @@ static int32_t BlockBuffer_Read(MINFS_fs_t *p_fs, MINFS_block_buf_t *p_block_buf
   if( p_block_buf->flags.populated )
     return 0;
   // If PEC is enabled, only reads of a whole block are valid (populate)
-  if( p_fs->info.flags & MINFS_FLAGMASK_PEC )
+  if( p_fs->info.flags & MINFS_FLAGMASK_PEC ){
     data_len = 0;
+    data_offset = 0;
+  }
   // NOTE: MINFS_Read has to set the populated - flag after a whole-block was read!
   int32_t status;
   if( status = MINFS_Read(p_fs, p_block_buf, data_offset, data_len) )
     return status; // return error status
-  // if PEC is enabled, a populate-request must not be ignored
-  if( (p_fs->info.flags & MINFS_FLAGMASK_PEC) && !p_block_buf->flags.populated )
-    return MINFS_ERROR_READ_BNP;
+  // Buffer is not populated, or the flag was not set by MINFS_Read - Hook
+  if( !data_len && !p_block_buf->flags.populated )
+    return MINFS_ERROR_BNP;
   // check PEC value if PEC is enabled
   if( p_fs->info.flags & MINFS_FLAGMASK_PEC ){
     if ( GetPECValue(p_fs, p_block_buf->p_buf, p_fs->calc.block_data_len + p_fs->calc.pec_width) )
