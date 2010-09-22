@@ -517,7 +517,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
 
   // DIN Sync Event (0xf9 sent over port 0xff)
   if( port == 0xff && package.evnt0 == 0xf9 ) {
-    seq_core_din_sync_pulse_ctr = 1 + seq_hwcfg_din_sync_clk_pulsewidth; // to generate a pulse with configurable length (+1 for 1->0 transition)
+    seq_core_din_sync_pulse_ctr = 2 + seq_hwcfg_din_sync_clk_pulsewidth; // to generate a pulse with configurable length (+1 for 1->0 transition, +1 to compensate jitter)
     return 1; // filter package
   }
 
