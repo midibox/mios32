@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta27
+~~~~~~~~~~~~~~~~~~~~~
+
+  o fixed a crash on rescheduled notes (caused by a gcc bug) - this bug only exists in beta26
+
+  o BLM keyboard mode: now inverted (lowest button row plays highest velocity)
+
+  o BLM keyboard mode takes octave/semitones transpose values into account
+
+
 MIDIboxSEQ V4.0beta26
 ~~~~~~~~~~~~~~~~~~~~~
 

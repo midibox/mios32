@@ -39,6 +39,15 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Variants
+/////////////////////////////////////////////////////////////////////////////
+
+// inverted velocity (piano like)
+#define SEQ_BLM_KEYBOARD_INVERTED 1
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -126,6 +135,8 @@ static s32 SEQ_BLM_SYSEX_Cmd(mios32_midi_port_t port, sysex_cmd_state_t cmd_stat
 static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 SEQ_BLM_SYSEX_Cmd_Ping(mios32_midi_port_t port, sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 SEQ_BLM_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
+
+static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -448,7 +459,6 @@ s32 SEQ_BLM_SYSEX_SendRequest(u8 req)
 
   return status;
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -941,9 +951,31 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 
   for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i) {
     if( blm_keyboard_velocity[i] ) {
-      u8 par = (blm_keyboard_velocity[i] >> 3) & 0x0f;
-      blm_leds_green[i] = (0xffff8000 >> par) & 0xfff8;
-      blm_leds_red[i] = (0xffff8000 >> par) & 0x00ff;
+      u8 vel4 = (blm_keyboard_velocity[i] >> 3) & 0x0f;
+#if SEQ_BLM_KEYBOARD_INVERTED
+      // inverted velocity (piano like)
+      // 0: 0x0001
+      // 1: 0x0003
+      // 2: 0x0007
+      // 3: 0x000f
+      // ..
+      // 15: 0xffff
+      u32 pattern = (0x1ffff << vel4) >> 16;
+
+      blm_leds_green[i] = pattern & 0x1fff;
+      blm_leds_red[i] = pattern & 0xff00;
+#else
+      // 0: 0x8000
+      // 1: 0xc000
+      // 2: 0xe000
+      // 3: 0xf000
+      // ..
+      // 15: 0xffff
+      u32 pattern = 0xffff8000 >> vel4;
+
+      blm_leds_green[i] = pattern & 0xfff8;
+      blm_leds_red[i] = pattern & 0x00ff;
+#endif
     } else {
       blm_leds_green[i] = 0x0000;
       blm_leds_red[i] = 0x0000;
@@ -984,7 +1016,12 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 play_note = 0;
+#if SEQ_BLM_KEYBOARD_INVERTED
+  // inverted velocity (piano like)
+  u8 velocity = 8*button_row + 4;
+#else
   u8 velocity = 8*(15-button_row) + 4;
+#endif
 
   if( depressed ) {
     // play off event - but only if depressed button matches with last one that played the note
@@ -1001,7 +1038,8 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
     u8 note_next;
     if( use_scale ) {
       // determine matching note range in scale
-      note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+      note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode      
+      note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
       note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
       int i;
       for(i=0; i<button_column; ++i) {
@@ -1010,6 +1048,7 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
       }
     } else {
       note_start = 0x3c-8 + 15-button_column; // E-2 ..
+      note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
       note_next = note_start;
     }
 
@@ -1448,4 +1487,47 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
   }
 
   return 0; // MIDI event has not been taken
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to transpose a note based settings of given track
+/////////////////////////////////////////////////////////////////////////////
+static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note)
+{
+  int tr_note = note;
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  int inc_oct = tcc->transpose_oct;
+  if( inc_oct >= 8 )
+    inc_oct -= 16;
+
+  int inc_semi = tcc->transpose_semi;
+  if( inc_semi >= 8 )
+    inc_semi -= 16;
+
+  // apply transpose octave/semitones parameter
+  if( inc_oct ) {
+    tr_note += 12 * inc_oct;
+    if( inc_oct < 0 ) {
+      while( tr_note < 0 )
+	tr_note += 12;
+    } else {
+      while( tr_note >= 128 )
+	tr_note -= 12;
+    }
+  }
+
+  if( inc_semi ) {
+    tr_note += inc_semi;
+    if( inc_semi < 0 ) {
+      while( tr_note < 0 )
+	tr_note += 12;
+    } else {
+      while( tr_note >= 128 )
+	tr_note -= 12;
+    }
+  }
+
+  return tr_note;
 }
