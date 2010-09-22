@@ -428,7 +428,18 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
     if( (item->event_type == event_type) && (item->package.cable == tag) && (item->timestamp > timestamp) ) {
 
       // ensure that we get a free memory slot by releasing the current item before queuing the off item
+#if 0
       seq_midi_out_queue_item_t copy = *item;
+#else
+      // ???
+      seq_midi_out_queue_item_t copy;
+      copy.port = item->port;
+      copy.event_type = item->event_type;
+      copy.len = item->len;
+      copy.package.ALL = item->package.ALL;
+      copy.timestamp = item->timestamp;
+      copy.next = item->next;
+#endif
 
       // remove item from queue
       seq_midi_out_queue_item_t *next_item = item->next;
