@@ -855,3 +855,5 @@ It could be sufficient to call SEQ_MIDI_IN_ResetTransArpStacks(<bus-number>) dep
 the gatelength
 
 ----------------------------------------------------------
+
+add a possibility to copy patterns from one to another session
