@@ -79,8 +79,21 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
+  int i;
+
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // initialize J5 pins
+  // they will be enabled after MBSEQ_HW.V4 has been read
+  // as long as this hasn't been done, activate pull-downs
+  for(i=0; i<6; ++i)
+    MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+
+  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
+
+  for(i=8; i<12; ++i)
+    MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
 
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
