@@ -13,14 +13,21 @@
 #define MAX_ROWS (16+1)
 #define MAX_COLS (16+1)
 
+// forward declaration
+class MainComponent;
+
 class BlmClass : public Component,
 				 public MidiInputCallback,
 				 public MultiTimer,
 				 public KeyListener
 {
 public:
-	BlmClass(int cols, int rows);
+	BlmClass(MainComponent *_mainComponent, int cols, int rows);
 	~BlmClass();
+
+
+    // reference to main component (to send MIDI)
+    MainComponent *mainComponent;
 
 #if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
     void timerCallback(const int timerId);
@@ -36,8 +43,6 @@ public:
 	void resized();
     bool searchButtonIndex(const int& x, const int& y, int& buttonX, int& buttonY, int& midiChannel, int& midiNote);
 
-	void setMidiOutput(const String &port);
-	void setMidiInput(const String &port);
 	void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 	void BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningStatus);
 	void closeMidiPorts(void);
@@ -64,7 +69,6 @@ public:
 #else
 	virtual bool keyStateChanged(bool isKeyDown, Component *originatingComponent);
 #endif
-	AudioDeviceManager audioDeviceManager;
 
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
