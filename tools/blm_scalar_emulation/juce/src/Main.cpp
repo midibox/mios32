@@ -45,7 +45,7 @@ public:
         // fullscreen with no titlebars - it's and iPad app afterall!
         MainComponent* const contentComponent = new MainComponent();
         setContentComponent (contentComponent, true, true);
-        setBounds(0, 0, 700, 800);
+        setBounds(0, 0, 768, 1024);
 #else
         MainComponent* const contentComponent = new MainComponent();
         setContentComponent (contentComponent, true, true);

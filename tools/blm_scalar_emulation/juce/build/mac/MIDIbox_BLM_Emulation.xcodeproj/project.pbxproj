@@ -16,6 +16,8 @@
 		521044EE111F268B006CF032 /* MidiClass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 521044E9111F268B006CF032 /* MidiClass.cpp */; };
 		52665EDC11ADC6B60095613A /* blm.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52665EDB11ADC6B60095613A /* blm.icns */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
+		52E398CE124D3323006B96C9 /* OscHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52E398CA124D3323006B96C9 /* OscHelper.cpp */; };
+		52E398CF124D3323006B96C9 /* UdpSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52E398CC124D3323006B96C9 /* UdpSocket.cpp */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
 		841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8411369F0D0480DE0054B790 /* OpenGL.framework */; };
 		84204DA50FDEFA3800FA4ABC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84204DA40FDEFA3800FA4ABC /* Carbon.framework */; };
@@ -48,6 +50,10 @@
 		521044EA111F268B006CF032 /* MidiClass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MidiClass.h; path = ../../src/MidiClass.h; sourceTree = SOURCE_ROOT; };
 		52665EDB11ADC6B60095613A /* blm.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = blm.icns; path = ../../icon/blm.icns; sourceTree = SOURCE_ROOT; };
 		529C75CE111DAB1200DFE267 /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../src/Main.cpp; sourceTree = SOURCE_ROOT; };
+		52E398CA124D3323006B96C9 /* OscHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscHelper.cpp; path = ../../src/OscHelper.cpp; sourceTree = SOURCE_ROOT; };
+		52E398CB124D3323006B96C9 /* OscHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscHelper.h; path = ../../src/OscHelper.h; sourceTree = SOURCE_ROOT; };
+		52E398CC124D3323006B96C9 /* UdpSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UdpSocket.cpp; path = ../../src/UdpSocket.cpp; sourceTree = SOURCE_ROOT; };
+		52E398CD124D3323006B96C9 /* UdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UdpSocket.h; path = ../../src/UdpSocket.h; sourceTree = SOURCE_ROOT; };
 		8407902A09E6B5BD004E7BCD /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		8411369F0D0480DE0054B790 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		84204DA40FDEFA3800FA4ABC /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -154,6 +160,10 @@
 		52090EE7124CFDFD00512756 /* LibrarySource */ = {
 			isa = PBXGroup;
 			children = (
+				52E398CA124D3323006B96C9 /* OscHelper.cpp */,
+				52E398CB124D3323006B96C9 /* OscHelper.h */,
+				52E398CC124D3323006B96C9 /* UdpSocket.cpp */,
+				52E398CD124D3323006B96C9 /* UdpSocket.h */,
 				52090EE8124CFE1900512756 /* AppConfig.h */,
 				52090EE9124CFE1900512756 /* JuceHeader.h */,
 				52090EEB124CFE1900512756 /* JuceLibraryCode1.mm */,
@@ -248,6 +258,8 @@
 				52090EF5124CFE1900512756 /* JuceLibraryCode2.mm in Sources */,
 				52090EF7124CFE1900512756 /* JuceLibraryCode3.mm in Sources */,
 				52090EF9124CFE1900512756 /* JuceLibraryCode4.mm in Sources */,
+				52E398CE124D3323006B96C9 /* OscHelper.cpp in Sources */,
+				52E398CF124D3323006B96C9 /* UdpSocket.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

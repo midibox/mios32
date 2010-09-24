@@ -16,6 +16,8 @@
 		52316686124CDD6100A44C69 /* JuceLibraryCode2.mm in Sources */ = {isa = PBXBuildFile; fileRef = 52316682124CDD6100A44C69 /* JuceLibraryCode2.mm */; };
 		52316687124CDD6100A44C69 /* JuceLibraryCode3.mm in Sources */ = {isa = PBXBuildFile; fileRef = 52316683124CDD6100A44C69 /* JuceLibraryCode3.mm */; };
 		52316688124CDD6100A44C69 /* JuceLibraryCode4.mm in Sources */ = {isa = PBXBuildFile; fileRef = 52316684124CDD6100A44C69 /* JuceLibraryCode4.mm */; };
+		5273B432124D0CD700510742 /* UdpSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5273B430124D0CD700510742 /* UdpSocket.cpp */; };
+		5273B4BF124D1A8C00510742 /* OscHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5273B4BD124D1A8C00510742 /* OscHelper.cpp */; };
 		9EA4F1C0E2356AB5C07CE95E /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6809DE026C8BEAB082B3DEB /* QuartzCore.framework */; };
 		BAEB975FAD8A99FA884DC593 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B236CD90C0803738D7B5235 /* UIKit.framework */; };
 		C37934E8A18A3A82637C1445 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 541D7BED72093B09E01E3FD1 /* OpenGLES.framework */; };
@@ -39,6 +41,10 @@
 		52316682124CDD6100A44C69 /* JuceLibraryCode2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = JuceLibraryCode2.mm; path = ../../JuceLibraryCode/JuceLibraryCode2.mm; sourceTree = SOURCE_ROOT; };
 		52316683124CDD6100A44C69 /* JuceLibraryCode3.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = JuceLibraryCode3.mm; path = ../../JuceLibraryCode/JuceLibraryCode3.mm; sourceTree = SOURCE_ROOT; };
 		52316684124CDD6100A44C69 /* JuceLibraryCode4.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = JuceLibraryCode4.mm; path = ../../JuceLibraryCode/JuceLibraryCode4.mm; sourceTree = SOURCE_ROOT; };
+		5273B430124D0CD700510742 /* UdpSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UdpSocket.cpp; path = ../../src/UdpSocket.cpp; sourceTree = SOURCE_ROOT; };
+		5273B431124D0CD700510742 /* UdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UdpSocket.h; path = ../../src/UdpSocket.h; sourceTree = SOURCE_ROOT; };
+		5273B4BD124D1A8C00510742 /* OscHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscHelper.cpp; path = ../../src/OscHelper.cpp; sourceTree = SOURCE_ROOT; };
+		5273B4BE124D1A8C00510742 /* OscHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscHelper.h; path = ../../src/OscHelper.h; sourceTree = SOURCE_ROOT; };
 		541D7BED72093B09E01E3FD1 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		6B236CD90C0803738D7B5235 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		AA21728A979A53287A0DEFED /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -79,6 +85,10 @@
 		A0C5DD7F69DC35BF462718E4 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				5273B4BD124D1A8C00510742 /* OscHelper.cpp */,
+				5273B4BE124D1A8C00510742 /* OscHelper.h */,
+				5273B430124D0CD700510742 /* UdpSocket.cpp */,
+				5273B431124D0CD700510742 /* UdpSocket.h */,
 				52316667124CDC3F00A44C69 /* BlmClass.cpp */,
 				52316668124CDC3F00A44C69 /* BlmClass.h */,
 				5231666D124CDC3F00A44C69 /* Main.cpp */,
@@ -200,6 +210,8 @@
 				52316686124CDD6100A44C69 /* JuceLibraryCode2.mm in Sources */,
 				52316687124CDD6100A44C69 /* JuceLibraryCode3.mm in Sources */,
 				52316688124CDD6100A44C69 /* JuceLibraryCode4.mm in Sources */,
+				5273B432124D0CD700510742 /* UdpSocket.cpp in Sources */,
+				5273B4BF124D1A8C00510742 /* OscHelper.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

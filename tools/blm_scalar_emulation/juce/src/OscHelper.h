@@ -17,7 +17,7 @@
 #ifndef _OSC_HELPER_H
 #define _OSC_HELPER_H
 
-#include "includes.h"
+#include "JuceHeader.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

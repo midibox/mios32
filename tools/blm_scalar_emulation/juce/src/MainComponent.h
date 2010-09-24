@@ -27,6 +27,8 @@
 //[Headers]     -- You can add your own extra header files here --
 #include "JuceHeader.h"
 #include "BlmClass.h"
+#include "UdpSocket.h"
+#include "OscHelper.h"
 //[/Headers]
 
 
@@ -42,6 +44,8 @@
 class MainComponent
     : public Component
     , public ComboBoxListener
+    , public ButtonListener
+    , public OscListener
     , public Timer
 {
 public:
@@ -57,12 +61,24 @@ public:
     void scanMidiInDevices();
     void scanMidiOutDevices();
 
+	void setMidiOutput(const String &port);
+	void setMidiInput(const String &port);
+    void sendMidiMessage(const MidiMessage& message);
+
     void timerCallback();
+
+    UdpSocket* udpSocket;
     //[/UserMethods]
 
     void paint (Graphics& g);
     void resized();
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged);
+    void buttonClicked (Button* buttonThatWasClicked);
+
+    void parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const unsigned& methodArg);
+
+	AudioDeviceManager audioDeviceManager;
+
 
 
     //==============================================================================
@@ -78,6 +94,17 @@ private:
     ComboBox* midiOutput;
     Label* label;
     Label* label2;
+
+    Label* remoteHostLabel;
+    TextEditor* remoteHostLine;
+    Label* portNumberReadLabel;
+    TextEditor* portNumberReadLine;
+    Label* portNumberWriteLabel;
+    TextEditor* portNumberWriteLine;
+    Button* connectButton;
+    Button* disconnectButton;
+
+    unsigned oscPort;
 
     int initialMidiScanCounter;
 
