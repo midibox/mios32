@@ -30,6 +30,9 @@ MainComponent::MainComponent ()
     midiInput->addListener(this);
 
     addAndMakeVisible(label = new Label(T(""), T("MIDI IN: ")));
+#if JUCE_IOS
+    label->setColour(Label::textColourId, Colours::white);
+#endif
     label->attachToComponent(midiInput, true);
 
     addAndMakeVisible (midiOutput = new ComboBox (T("MIDI Output")));
@@ -41,10 +44,16 @@ MainComponent::MainComponent ()
     midiOutput->addListener(this);
 
     addAndMakeVisible(label = new Label(T(""), T("MIDI OUT: ")));
+#if JUCE_IOS
+    label->setColour(Label::textColourId, Colours::white);
+#endif
     label->attachToComponent(midiOutput, true);
 
 
     addAndMakeVisible(remoteHostLabel = new Label(T("Remote Host:"), T("Remote Host:")));
+#if JUCE_IOS
+    remoteHostLabel->setColour(Label::textColourId, Colours::white);
+#endif
     remoteHostLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(remoteHostLine = new TextEditor(String::empty));
@@ -57,6 +66,9 @@ MainComponent::MainComponent ()
     remoteHostLine->setTextToShowWhenEmpty(T("(hostname)"), Colours::grey);
 
     addAndMakeVisible(portNumberWriteLabel = new Label(T("Port:"), T("Remote Port:")));
+#if JUCE_IOS
+    portNumberWriteLabel->setColour(Label::textColourId, Colours::white);
+#endif
     portNumberWriteLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(portNumberWriteLine = new TextEditor(String::empty));
@@ -70,6 +82,9 @@ MainComponent::MainComponent ()
     portNumberWriteLine->setInputRestrictions(1000000, T("0123456789"));
 
     addAndMakeVisible(portNumberReadLabel = new Label(T("Port:"), T("Local Port:")));
+#if JUCE_IOS
+    portNumberReadLabel->setColour(Label::textColourId, Colours::white);
+#endif
     portNumberReadLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(portNumberReadLine = new TextEditor(String::empty));
@@ -126,7 +141,11 @@ void MainComponent::paint (Graphics& g)
         getPeer()->handleScreenSizeChange();
 #endif
 
+#if JUCE_IOS
+    g.fillAll(Colour(0xff000000));
+#else
     g.fillAll(Colour(0xffd0d0d0));
+#endif
 }
 
 void MainComponent::resized()

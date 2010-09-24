@@ -14,7 +14,7 @@
 
 BlmClass::BlmClass(MainComponent *_mainComponent, int cols,int rows)
     : mainComponent(_mainComponent)
-    , ledSize(32)
+    , ledSize(40)
     , ledColours(2)
     , midiDataReceived(false)
     , lastButtonX(-1)
@@ -25,9 +25,9 @@ BlmClass::BlmClass(MainComponent *_mainComponent, int cols,int rows)
 {
 	for(int x=0;x<MAX_COLS;x++){
 		for(int y=0;y<MAX_ROWS;y++){
-			addAndMakeVisible (buttons[x][y] = new TextButton (String::empty));
-			buttons[x][y]->setColour (TextButton::buttonColourId, Colours::azure);
-			buttons[x][y]->setColour (TextButton::buttonOnColourId, Colours::blue);
+			addAndMakeVisible (buttons[x][y] = new BlmButton (String::empty));
+			buttons[x][y]->setColour (BlmButton::buttonColourId, Colours::azure);
+			buttons[x][y]->setColour (BlmButton::buttonOnColourId, Colours::blue);
 			//buttons[x][y]->addButtonListener(this);
 			buttons[x][y]->setInterceptsMouseClicks(false, false);
 		}
@@ -92,7 +92,11 @@ void BlmClass::setBlmDimensions(int col,int row)
     blmRows=row;
 
     // set global layout variables
+#if JUCE_IOS
+    rowLabelsWidth = 35;
+#else
     rowLabelsWidth = 100;
+#endif
 
     buttonArray16x16X = rowLabelsWidth + 1.25 * ledSize;
     buttonArray16x16Y = 0;
@@ -155,10 +159,10 @@ void BlmClass::resized()
 
             if( xOffset >= 0 && yOffset >= 0 ) {
                 buttons[x][y]->setVisible(true);
-                buttons[x][y]->setSize(ledSize-4, ledSize-4);
+                buttons[x][y]->setSize(ledSize, ledSize);
                 buttons[x][y]->setTopLeftPosition(xOffset, yOffset);
                 buttons[x][y]->setToggleState(false,false);
-                buttons[x][y]->setColour(TextButton::buttonOnColourId, Colours::blue);
+                buttons[x][y]->setColour(BlmButton::buttonOnColourId, Colours::blue);
             } else {
 				buttons[x][y]->setVisible(false);
 			}
@@ -169,7 +173,7 @@ void BlmClass::resized()
 	sendBLMLayout();
 
     // set frame size of this component
-    setSize(buttonArray16x16X + buttonArray16x16Width, buttonExtraRowY + buttonExtraRowHeight);
+    setSize(buttonArray16x16X + buttonArray16x16Width + 2, buttonExtraRowY + buttonExtraRowHeight + 2);
 }
 
 
@@ -217,6 +221,7 @@ bool BlmClass::searchButtonIndex(const int& x, const int& y, int& buttonX, int& 
 //==============================================================================
 void BlmClass::setButtonState(int col, int row, int state)
 {
+#if 0
 	Colour LED_State;
 	switch (state) {
 	case 1: LED_State= Colours::green; break;
@@ -224,7 +229,10 @@ void BlmClass::setButtonState(int col, int row, int state)
 	case 3: LED_State= Colours::yellow; break;
 	default: LED_State= Colours::blue; break;
 	}
-	buttons[col][row]->setColour(TextButton::buttonOnColourId,LED_State);
+	buttons[col][row]->setColour(BlmButton::buttonOnColourId,LED_State);
+#else
+	buttons[col][row]->setButtonState(state);
+#endif
 
     if( !state )
         buttons[col][row]->setToggleState(false, false);
@@ -234,9 +242,10 @@ void BlmClass::setButtonState(int col, int row, int state)
 
 int BlmClass::getButtonState(int col, int row)
 {
+#if 0
 	// Use the current colour property to determine the button state.
 	int LED_State;
-	Colour current=buttons[col][row]->findColour(TextButton::buttonOnColourId);
+	Colour current=buttons[col][row]->findColour(BlmButton::buttonOnColourId);
 	if (current==Colours::green) 
 		LED_State=1;
 	else if (current==Colours::red)
@@ -247,6 +256,9 @@ int BlmClass::getButtonState(int col, int row)
 		LED_State=0;
 	
 	return LED_State;
+#else
+    return buttons[col][row]->getButtonState();
+#endif
 }
 
 void BlmClass::setLed(const int& col, const int& row, const int& colourIx, const int& enabled)
