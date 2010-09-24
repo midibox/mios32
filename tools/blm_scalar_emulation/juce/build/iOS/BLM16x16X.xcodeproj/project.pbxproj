@@ -18,6 +18,10 @@
 		52316688124CDD6100A44C69 /* JuceLibraryCode4.mm in Sources */ = {isa = PBXBuildFile; fileRef = 52316684124CDD6100A44C69 /* JuceLibraryCode4.mm */; };
 		5273B432124D0CD700510742 /* UdpSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5273B430124D0CD700510742 /* UdpSocket.cpp */; };
 		5273B4BF124D1A8C00510742 /* OscHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5273B4BD124D1A8C00510742 /* OscHelper.cpp */; };
+		52B4F012124D583900E16240 /* BlmButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B4F010124D583900E16240 /* BlmButton.cpp */; };
+		52E73241124D62D6009B0160 /* blm-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 52E7323E124D62D6009B0160 /* blm-72.png */; };
+		52E73242124D62D6009B0160 /* blm-128.png in Resources */ = {isa = PBXBuildFile; fileRef = 52E7323F124D62D6009B0160 /* blm-128.png */; };
+		52E73243124D62D6009B0160 /* blm.png in Resources */ = {isa = PBXBuildFile; fileRef = 52E73240124D62D6009B0160 /* blm.png */; };
 		9EA4F1C0E2356AB5C07CE95E /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6809DE026C8BEAB082B3DEB /* QuartzCore.framework */; };
 		BAEB975FAD8A99FA884DC593 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B236CD90C0803738D7B5235 /* UIKit.framework */; };
 		C37934E8A18A3A82637C1445 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 541D7BED72093B09E01E3FD1 /* OpenGLES.framework */; };
@@ -45,6 +49,11 @@
 		5273B431124D0CD700510742 /* UdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UdpSocket.h; path = ../../src/UdpSocket.h; sourceTree = SOURCE_ROOT; };
 		5273B4BD124D1A8C00510742 /* OscHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OscHelper.cpp; path = ../../src/OscHelper.cpp; sourceTree = SOURCE_ROOT; };
 		5273B4BE124D1A8C00510742 /* OscHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscHelper.h; path = ../../src/OscHelper.h; sourceTree = SOURCE_ROOT; };
+		52B4F010124D583900E16240 /* BlmButton.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BlmButton.cpp; path = ../../src/BlmButton.cpp; sourceTree = SOURCE_ROOT; };
+		52B4F011124D583900E16240 /* BlmButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BlmButton.h; path = ../../src/BlmButton.h; sourceTree = SOURCE_ROOT; };
+		52E7323E124D62D6009B0160 /* blm-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "blm-72.png"; path = "../../icon/blm-72.png"; sourceTree = SOURCE_ROOT; };
+		52E7323F124D62D6009B0160 /* blm-128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "blm-128.png"; path = "../../icon/blm-128.png"; sourceTree = SOURCE_ROOT; };
+		52E73240124D62D6009B0160 /* blm.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = blm.png; path = ../../icon/blm.png; sourceTree = SOURCE_ROOT; };
 		541D7BED72093B09E01E3FD1 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		6B236CD90C0803738D7B5235 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		AA21728A979A53287A0DEFED /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -85,6 +94,8 @@
 		A0C5DD7F69DC35BF462718E4 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				52B4F010124D583900E16240 /* BlmButton.cpp */,
+				52B4F011124D583900E16240 /* BlmButton.h */,
 				5273B4BD124D1A8C00510742 /* OscHelper.cpp */,
 				5273B4BE124D1A8C00510742 /* OscHelper.h */,
 				5273B430124D0CD700510742 /* UdpSocket.cpp */,
@@ -103,6 +114,9 @@
 		AE86EC0712AA99EF212AD4AE /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				52E7323E124D62D6009B0160 /* blm-72.png */,
+				52E7323F124D62D6009B0160 /* blm-128.png */,
+				52E73240124D62D6009B0160 /* blm.png */,
 				B786F246076E6F5D363A6A2C /* Info.plist */,
 			);
 			name = Resources;
@@ -192,6 +206,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52E73241124D62D6009B0160 /* blm-72.png in Resources */,
+				52E73242124D62D6009B0160 /* blm-128.png in Resources */,
+				52E73243124D62D6009B0160 /* blm.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -212,6 +229,7 @@
 				52316688124CDD6100A44C69 /* JuceLibraryCode4.mm in Sources */,
 				5273B432124D0CD700510742 /* UdpSocket.cpp in Sources */,
 				5273B4BF124D1A8C00510742 /* OscHelper.cpp in Sources */,
+				52B4F012124D583900E16240 /* BlmButton.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

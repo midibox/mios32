@@ -7,6 +7,8 @@
 //
 #ifndef _BLM_CLASS_H
 
+#include "JuceHeader.h"
+#include "BlmButton.h"
 #include <queue>
 
 // 16x16 + extra row/column
@@ -80,7 +82,7 @@ private:
 	int blmColumns,blmRows,ledColours,inputPort,outputPort;
 	int lastButtonX,lastButtonY, lastMidiChannel, lastMidiNote;
 	int ledSize;
-	TextButton  *buttons[MAX_COLS][MAX_ROWS]; // Not ideal but saves dynamic memory alloc later.
+	BlmButton  *buttons[MAX_COLS][MAX_ROWS]; // Not ideal but saves dynamic memory alloc later.
     Label* rowLabelsGreen[MAX_ROWS];
     Label* rowLabelsRed[MAX_ROWS];
 
