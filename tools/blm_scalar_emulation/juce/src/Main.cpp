@@ -37,11 +37,21 @@ public:
         // Create an instance of our main content component, and add it
         // to our window.
 
-        MainComponent* const contentComponent = new MainComponent();
+#if JUCE_IOS
+        setFullScreen(true);
+        //setTitleBarHeight(0);
 
+        // for iPad
+        // fullscreen with no titlebars - it's and iPad app afterall!
+        MainComponent* const contentComponent = new MainComponent();
+        setContentComponent (contentComponent, true, true);
+        setBounds(0, 0, 700, 800);
+#else
+        MainComponent* const contentComponent = new MainComponent();
         setContentComponent (contentComponent, true, true);
         setUsingNativeTitleBar(true);
         centreWithSize (getWidth(), getHeight());
+#endif
 
         setVisible (true);
     }

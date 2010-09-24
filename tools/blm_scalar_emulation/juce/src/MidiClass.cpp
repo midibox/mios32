@@ -5,7 +5,7 @@
 //
 // Created by Phil Taylor 2010
 
-#include "includes.h"
+#include "JuceHeader.h"
 #include "MidiClass.h"
 
 
