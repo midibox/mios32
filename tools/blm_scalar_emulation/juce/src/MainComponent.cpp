@@ -57,6 +57,14 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::paint (Graphics& g)
 {
+#if JUCE_IOS
+    // resize when orientation has been changed
+    Rectangle<int> iPadBounds = getPeer()->getBounds();
+
+    if  ( (iPadBounds.getWidth()!=getWidth()) && (iPadBounds.getHeight()!=getHeight()) )
+        getPeer()->handleScreenSizeChange();
+#endif
+
     g.fillAll(Colour(0xffd0d0d0));
 }
 

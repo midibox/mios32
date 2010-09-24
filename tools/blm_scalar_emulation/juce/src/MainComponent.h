@@ -25,7 +25,7 @@
 #define __JUCER_HEADER_MAINCOMPONENT_MAINCOMPONENT_4DFCBE01__
 
 //[Headers]     -- You can add your own extra header files here --
-#include "includes.h"
+#include "JuceHeader.h"
 #include "BlmClass.h"
 //[/Headers]
 
