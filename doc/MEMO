@@ -58,8 +58,8 @@ Unix (we assume, that the repository has been dowloaded into ~/svn)
 
 
 DOS: (we assume, that the repository has been downloaded to D:\)
-  set MIOS32_PATH=D:\mios32\trunk
-  set MIOS32_BIN_PATH=D:\mios32\trunk\bin
+  set MIOS32_PATH=/D/mios32/trunk
+  set MIOS32_BIN_PATH=/D/mios32/trunk/bin
 
 
 Additional environment variables to configure the environment:
@@ -190,8 +190,8 @@ like used for the PIC based MIOS environment, see also:
 
 
 a) set your environment variables to:
-     set MIOS32_PATH=D:\mios32\trunk
-     set MIOS32_BIN_PATH=D:\mios32\trunk\bin
+     set MIOS32_PATH=/D/mios32/trunk
+     set MIOS32_BIN_PATH=/D/mios32/trunk/bin
      set MIOS32_FAMILY=STM32F10x
      set MIOS32_PROCESSOR=STM32F103RB
      set MIOS32_BOARD=STM32_PRIMER
@@ -201,7 +201,7 @@ a) set your environment variables to:
 
 
 b) go into an application directory, e.g.
-     cd %MIOS32_PATH%\apps\examples\app_lcd\st7637
+     apps/examples/app_lcd/st7637
 
 
 c) build the project with
@@ -244,8 +244,8 @@ integrated into gcc), you have to adapt your MIOS32_GCC_PREFIX setting, e.g.
 from "arm-none-eabi" to the common "arm-elf"
 
 a) set your environment variables to:
-     set MIOS32_PATH=D:\mios32\trunk
-     set MIOS32_BIN_PATH=D:\mios32\trunk\bin
+     set MIOS32_PATH=/D/mios32/trunk
+     set MIOS32_BIN_PATH=/D/mios32/trunk/bin
      set MIOS32_FAMILY=STM32F10x
      set MIOS32_PROCESSOR=STM32F103RE
      set MIOS32_BOARD=MBHP_CORE_STM32
@@ -255,7 +255,7 @@ a) set your environment variables to:
 
 
 b) go into an application directory, e.g.
-     cd %MIOS32_PATH%\apps\proto\mios32_srio
+     apps/tutorial/007_mios32_timer
 
 
 c) build the project with
