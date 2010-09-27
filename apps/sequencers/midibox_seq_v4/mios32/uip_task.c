@@ -124,9 +124,6 @@ static void UIP_TASK_Handler(void *pvParameters)
   int i;
   struct timer periodic_timer, arp_timer;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  portTickType xLastExecutionTime = xTaskGetTickCount();
-
   // take over exclusive access to UIP functions
   MUTEX_UIP_TAKE;
 
@@ -157,8 +154,11 @@ static void UIP_TASK_Handler(void *pvParameters)
 
   // wait until HW config has been loaded
   do {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+    vTaskDelay(1 / portTICK_RATE_MS);
   } while( !SEQ_FILE_HW_ConfigLocked() );
+
+  // Initialise the xLastExecutionTime variable on task entry
+  portTickType xLastExecutionTime = xTaskGetTickCount();
 
   // endless loop
   while( 1 ) {
@@ -317,9 +317,11 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
 
     dhcpc_init(uip_ethaddr.addr, sizeof(uip_ethaddr.addr));
 #if DEBUG_VERBOSE_LEVEL >= 1
-    MUTEX_MIDIOUT_TAKE;
-    DEBUG_MSG("[UIP_TASK] DHCP Client requests the IP settings...\n");
-    MUTEX_MIDIOUT_GIVE;
+    if( network_device_available() ) { // don't print message if ethernet device is not available, the message could confuse "normal users"
+      MUTEX_MIDIOUT_TAKE;
+      DEBUG_MSG("[UIP_TASK] DHCP Client requests the IP settings...\n");
+      MUTEX_MIDIOUT_GIVE;
+    }
 #endif
   } else {
     // set my IP address
@@ -347,9 +349,11 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
     uip_setdraddr(ipaddr);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-    MUTEX_MIDIOUT_TAKE;
-    DEBUG_MSG("[UIP_TASK] IP Address statically set:\n");
-    MUTEX_MIDIOUT_GIVE;
+    if( network_device_available() ) { // don't print message if ethernet device is not available, the message could confuse "normal users"
+      MUTEX_MIDIOUT_TAKE;
+      DEBUG_MSG("[UIP_TASK] IP Address statically set:\n");
+      MUTEX_MIDIOUT_GIVE;
+    }
 #endif
 
     // start services immediately
