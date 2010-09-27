@@ -1452,10 +1452,12 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 
   // always print debugging message
 #if 1
-  MIOS32_MIDI_SendDebugMessage("[SEQ_UI_Button_Handler] Button SR:%d, Pin:%d not mapped, it has been %s.\n", 
-			       (pin >> 3) + 1,
-			       pin & 7,
-			       pin_value ? "depressed" : "pressed");
+  MUTEX_MIDIOUT_TAKE;
+  DEBUG_MSG("[SEQ_UI_Button_Handler] Button SR:%d, Pin:%d not mapped, it has been %s.\n", 
+	    (pin >> 3) + 1,
+	    pin & 7,
+	    pin_value ? "depressed" : "pressed");
+  MUTEX_MIDIOUT_GIVE;
 #endif
 
   return -1; // button not mapped

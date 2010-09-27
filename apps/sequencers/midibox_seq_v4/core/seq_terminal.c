@@ -611,43 +611,44 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   out("Checking SD Card at application layer\n");
   out("=====================================\n");
 
+  out("Current session: /SESSIONS/%s\n", seq_file_session_name);
 
   {
     u8 bank;
     for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
       int num_patterns = SEQ_FILE_B_NumPatterns(bank);
       if( num_patterns )
-	out("File MBSEQ_B%d.V4: valid (%d patterns)\n", bank+1, num_patterns);
+	out("File /SESSIONS/%s/MBSEQ_B%d.V4: valid (%d patterns)\n", seq_file_session_name, bank+1, num_patterns);
       else
-	out("File MBSEQ_B%d.V4: doesn't exist\n", bank+1, num_patterns);
+	out("File /SESSIONS/%s/MBSEQ_B%d.V4: doesn't exist\n", seq_file_session_name, bank+1, num_patterns);
     }
 
     int num_maps = SEQ_FILE_M_NumMaps();
     if( num_maps )
-      out("File MBSEQ_M.V4: valid (%d mixer maps)\n", num_maps);
+      out("File /SESSIONS/%sMBSEQ_M.V4: valid (%d mixer maps)\n", seq_file_session_name, num_maps);
     else
-      out("File MBSEQ_M.V4: doesn't exist\n");
+      out("File /SESSIONS/%s/MBSEQ_M.V4: doesn't exist\n", seq_file_session_name);
     
     int num_songs = SEQ_FILE_S_NumSongs();
     if( num_songs )
-      out("File MBSEQ_S.V4: valid (%d songs)\n", num_songs);
+      out("File /SESSIONS/%s/MBSEQ_S.V4: valid (%d songs)\n", seq_file_session_name, num_songs);
     else
-      out("File MBSEQ_S.V4: doesn't exist\n");
+      out("File /SESSIONS/%s/MBSEQ_S.V4: doesn't exist\n", seq_file_session_name);
 
     if( SEQ_FILE_G_Valid() )
-      out("File MBSEQ_G.V4: valid\n");
+      out("File /SESSIONS/%s/MBSEQ_G.V4: valid\n", seq_file_session_name);
     else
-      out("File MBSEQ_G.V4: doesn't exist\n");
+      out("File /SESSIONS/%s/MBSEQ_G.V4: doesn't exist\n", seq_file_session_name);
     
     if( SEQ_FILE_C_Valid() )
-      out("File MBSEQ_C.V4: valid\n");
+      out("File /SESSIONS/%s/MBSEQ_C.V4: valid\n", seq_file_session_name);
     else
-      out("File MBSEQ_C.V4: doesn't exist\n");
+      out("File /SESSIONS/%s/MBSEQ_C.V4: doesn't exist\n", seq_file_session_name);
     
     if( SEQ_FILE_HW_Valid() )
-      out("File MBSEQ_HW.V4: valid\n");
+      out("File /SESSIONS/%s/MBSEQ_HW.V4: valid\n", seq_file_session_name);
     else
-      out("File MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
+      out("File /SESSIONS/%s/MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n", seq_file_session_name);
   }
 
   out("done.\n");
@@ -669,7 +670,7 @@ s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
 
   out("MBHP_ETH module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
   if( !UIP_TASK_NetworkDeviceAvailable() ) {
-    out("Please reboot your MIDIbox SEQ to restart module detection!");
+    out("Please reboot your MIDIbox SEQ to restart module detection! (or just type \"reset\")");
   } else {
     out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
     out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
