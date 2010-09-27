@@ -53,8 +53,11 @@ void BlmButton::paintButton(Graphics& g, bool isMouseOverButton, bool isButtonDo
 //==============================================================================
 void BlmButton::setButtonState(const unsigned& newState)
 {
-    buttonState = newState;
-    repaint();
+	// only repaint if button state has changed
+	if( buttonState != newState ) {
+		buttonState = newState;
+		repaint();
+	}
 }
 
 
