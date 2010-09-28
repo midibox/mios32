@@ -353,10 +353,12 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   status |= SEQ_FILE_M_LoadAllBanks();
   status |= SEQ_FILE_S_LoadAllBanks();
   status |= SEQ_FILE_G_Load();
-  status |= SEQ_FILE_GC_Load();
   if( including_hw ) {
     status |= SEQ_FILE_HW_Load();
   }
+
+  // ignore status if global setup file doesn't exist
+  SEQ_FILE_GC_Load();
 
   if( SEQ_FILE_C_Load() >= 0 ) {
     // change mixer map to the one stored in MBSEQ_C.V4
