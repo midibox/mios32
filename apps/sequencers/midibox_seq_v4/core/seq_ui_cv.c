@@ -303,13 +303,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  CV  Curve SlewRate PRng  Gate  Calibr.                                  Module 
+  //  CV  Curve SlewRate PRng  Gate  Calibr.     DIN Sync Output              Module 
   //   1  V/Oct    0 mS    2   Pos.    off   PPQN:  24 Width:   1 mS          AOUT_NG
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" CV  Curve SlewRate PRng  Gate  Calibr.                                  Module ");
+  SEQ_LCD_PrintString(" CV  Curve SlewRate PRng  Gate  Calibr.     DIN Sync Output              Module ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
