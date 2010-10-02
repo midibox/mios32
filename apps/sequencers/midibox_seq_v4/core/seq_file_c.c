@@ -237,8 +237,6 @@ s32 SEQ_FILE_C_Read(void)
 	    seq_core_bpm_preset_num = value;
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	    SEQ_BPM_ModeSet(value);
-	  } else if( strcmp(parameter, "BPM_DINSyncDiv") == 0 ) {
-	    seq_core_bpm_din_sync_div = value;
 	  } else if( strcmp(parameter, "LastSong") == 0 ) {
 	    if( value )
 	      SEQ_SONG_NumSet(value-1);
@@ -453,9 +451,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "BPM_DINSyncDiv %d\n", seq_core_bpm_din_sync_div);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet()+1);

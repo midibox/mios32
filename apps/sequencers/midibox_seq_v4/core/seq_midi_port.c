@@ -17,12 +17,11 @@
 
 #include <mios32.h>
 
-#include <aout.h>
-
 #include "seq_hwcfg.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 #include "seq_midi_osc.h"
+#include "seq_cv.h"
 #include "seq_core.h"
 
 
@@ -325,10 +324,7 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
   for(ix=0; ix<NUM_OUT_PORTS; ++ix) {
     if( out_ports[ix].port == port ) {
       if( port == 0x80 ) {
-	// check if AOUT configured
-	aout_config_t config;
-	config = AOUT_ConfigGet();
-	return config.if_type ? 1 : 0;
+	return SEQ_CV_IfGet() ? 1 : 0;
       } else if ( port >= 0xf0 )
 	return 1; // Bus is always available
       else if( (port & 0xf0) == OSC0 )
@@ -517,7 +513,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
 
   // DIN Sync Event (0xf9 sent over port 0xff)
   if( port == 0xff && package.evnt0 == 0xf9 ) {
-    seq_core_din_sync_pulse_ctr = 2 + seq_hwcfg_din_sync_clk_pulsewidth; // to generate a pulse with configurable length (+1 for 1->0 transition, +1 to compensate jitter)
+    seq_core_din_sync_pulse_ctr = 2 + SEQ_CV_ClkPulseWidthGet(); // to generate a pulse with configurable length (+1 for 1->0 transition, +1 to compensate jitter)
     return 1; // filter package
   }
 
@@ -526,89 +522,8 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     if( SEQ_MIDI_OSC_SendPackage(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( port == 0x80 ) { // AOUT port
-    // Note Off -> Note On with velocity 0
-    if( package.event == NoteOff ) {
-      package.event = NoteOn;
-      package.velocity = 0;
-    }
-
-    if( package.event == NoteOn ) {
-      // if channel 1..8: set only note value on CV OUT #1..8, triggers Gate #1..8
-      // if channel 9..12: set note/velocity on each pin pair (CV OUT #1/2, #3/4, #5/6, #7/8), triggers Gate #1+2, #3+4, #5+6, #7+8
-      // if channel 13..15: set velocity/note on each pin pair (CV OUT #1/2, #3/4, #5/6), triggers Gate #1+2, #3+4, #5+6
-      // if channel 16: trigger the extension pins (DOUT)
-
-      if( package.chn == Chn16 ) {
-	int gate_pin = package.note - 0x24; // C-1 is the base note
-	if( gate_pin >= 0 ) {
-	  u8 dout_sr = gate_pin / 8;
-	  u8 dout_pin = gate_pin % 8;
-
-	  if( dout_sr < SEQ_HWCFG_NUM_SR_DOUT_GATES && seq_hwcfg_dout_gate_sr[dout_sr] )
-	    MIOS32_DOUT_PinSet((seq_hwcfg_dout_gate_sr[dout_sr]-1)*8 + dout_pin, package.velocity ? 1 : 0);
-	}
-      } else {
-	int aout_chn_note, aout_chn_vel, gate_pin;
-
-	if( package.chn <= Chn8 ) {
-	  aout_chn_note = package.chn;
-	  aout_chn_vel = -1;
-	  gate_pin = package.chn;
-	} else if( package.chn <= Chn12 ) {
-	  aout_chn_note = ((package.chn & 3) << 1);
-	  aout_chn_vel = aout_chn_note + 1;
-	  gate_pin = package.chn & 3;
-	} else { // Chn <= 15
-	  aout_chn_vel = ((package.chn & 3) << 1);
-	  aout_chn_note = aout_chn_vel + 1;
-	  gate_pin = package.chn & 3;
-	}
-
-	// update Note/Velocity CV if velocity > 0
-	if( package.velocity ) {
-	  if( aout_chn_note >= 0 )
-	    AOUT_PinSet(aout_chn_note, package.note << 9);
-
-	  if( aout_chn_vel >= 0 )
-	    AOUT_PinSet(aout_chn_vel, package.velocity << 9);
-	}
-
-	// set gate pin
-	if( gate_pin >= 0 ) {
-	  AOUT_DigitalPinSet(gate_pin, package.velocity ? 1 : 0);
-#if 0
-	  // not here - all pins are updated at once after AOUT_Update() (see SEQ_TASK_MIDI() in app.c)
-	  MIOS32_BOARD_J5_PinSet(gate_pin, package.velocity ? 1 : 0);
-#endif
-	}
-      }
-    } else if( package.event == CC ) {
-      // if channel 1..8: sets CV Out #1..8 depending on CC number (16 = #1, 17 = #2, ...) - channel has no effect
-      // if channel 9..16: sets CV Out #1..8 depending on channel, always sets Gate #1..8
-
-      int aout_chn, gate_pin;
-      if( package.chn <= Chn8 ) {
-	aout_chn = package.cc_number - 16;
-	gate_pin = aout_chn;
-      } else {
-	aout_chn = package.chn & 0x7;
-	gate_pin = aout_chn;
-      }
-
-      // aout_chn could be >= 8, but this doesn't matter... AOUT_PinSet() checks for number of available channels
-      // this could be useful for future extensions (e.g. higher number of AOUT Channels)
-      if( aout_chn >= 0 )
-	AOUT_PinSet(aout_chn, package.value << 9);
-
-      // Gate is always set (useful for controlling pitch of an analog synth where gate is connected as well)
-      AOUT_DigitalPinSet(gate_pin, 1);
-#if 0
-      // not here - all pins are updated at once after AOUT_Update() (see SEQ_TASK_MIDI() in app.c)
-      MIOS32_BOARD_J5_PinSet(gate_pin, 1);
-#endif
-    }
-
-    return 1; // filter package
+    if( SEQ_CV_SendPackage(port & 0xf, package) )
+      return 1; // filter package
   }
 
   return 0; // don't filter package

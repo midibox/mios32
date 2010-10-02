@@ -52,10 +52,6 @@
 static u8 store_file_required;
 static u8 selected_mclk_port = USB0;
 
-const u16 din_sync_div_presets[] =
-  // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn
-  { 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1 };
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -215,25 +211,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0; // no change
     } break;
-
-    case ITEM_SYNC_PPQN: {
-      int i;
-      u8 din_sync_div_ix = 0;
-
-      for(i=0; i<sizeof(din_sync_div_presets)/sizeof(u16); ++i)
-	if( seq_core_bpm_din_sync_div == din_sync_div_presets[i] ) {
-	  din_sync_div_ix = i;
-	  break;
-	}
-
-      if( SEQ_UI_Var8_Inc(&din_sync_div_ix, 0, (sizeof(din_sync_div_presets)/sizeof(u16))-1, incrementer) ) {
-	seq_core_bpm_din_sync_div = din_sync_div_presets[din_sync_div_ix];
-	store_file_required = 1;
-	return 1; // value has been changed
-      } else
-	return 0; // value hasn't been changed
-    } break;
-
   }
 
   return -1; // invalid or unsupported encoder
@@ -323,12 +300,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out   DIN PPQN   Ext.    Tap 
-  // Master   1   140.0   1s    Preset  Page USB1 I:on O:off   24      Restart Tempo
+  //  Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out              Ext.    Tap 
+  // Master   1   140.0   1s    Preset  Page USB1 I:on O:off           Restart Tempo
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out     DIN PPQN  ");
+  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out               ");
   SEQ_LCD_PrintString(seq_core_state.EXT_RESTART_REQ ? "Ongoing" : " Ext.  ");
   SEQ_LCD_PrintString(" Tap ");
 
@@ -416,13 +393,8 @@ static s32 LCD_Handler(u8 high_prio)
   }
   SEQ_LCD_PrintSpaces(3);
 
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_SYNC_PPQN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintFormattedString("%3d", 384 / seq_core_bpm_din_sync_div);
-  }
-  SEQ_LCD_PrintSpaces(4);
+  // DIN Sync moved to CV configuration
+  SEQ_LCD_PrintSpaces(3+4);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintString("Restart Tempo");

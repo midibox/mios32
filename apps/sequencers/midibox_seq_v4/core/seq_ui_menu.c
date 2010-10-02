@@ -22,6 +22,8 @@
 
 #include "seq_lcd.h"
 #include "seq_ui.h"
+#include "seq_cv.h"
+#include "seq_midi_in.h"
 #include "seq_file.h"
 
 
@@ -416,6 +418,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    *p++ = c;
 	}
 	*p++ = 0;
+
+	// reset CV channels (makes sense here to have a proper start)
+	SEQ_CV_ResetAllChannels();
+
+	// reset MIDI IN stacks as well
+	SEQ_MIDI_IN_ResetAllStacks();
 
 	// try to open session
 	OpenSession();

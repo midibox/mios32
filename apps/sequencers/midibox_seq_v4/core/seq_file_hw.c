@@ -829,6 +829,9 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
+	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
+	  // can be removed once most users switched to beta28 and later!
+
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 aout_type = get_dec(word);
 	  if( aout_type < 0 || aout_type >= 4 ) {
@@ -891,6 +894,9 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
+	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
+	  // can be removed once most users switched to beta28 and later!
+
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 pulsewidth = get_dec(word);
 	  if( pulsewidth < 1 || pulsewidth > 250 ) {
@@ -900,7 +906,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  seq_hwcfg_din_sync_clk_pulsewidth = pulsewidth;
+	  SEQ_CV_ClkPulseWidthGet(pulsewidth);
 
 	} else if( strcmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 

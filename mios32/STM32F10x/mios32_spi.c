@@ -714,40 +714,48 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_1;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_0;
@@ -792,40 +800,48 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
 	  MIOS32_SPI2_SET_SCLK_0;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;
 	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
 	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
+	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0;
 	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
 	  MIOS32_SPI2_SET_SCLK_1;

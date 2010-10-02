@@ -40,6 +40,7 @@
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
+#include "seq_cv.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -264,6 +265,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else {
 	    UIP_TASK_GatewaySet(value);
 	  }
+#endif /* !defined(MIOS32_FAMILY_EMULATION) */
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -288,7 +290,39 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_ui_remote_port = value;
 	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
 	    seq_ui_remote_id = (value > 128) ? 0 : value;
+	  } else if( strcmp(parameter, "CV_AOUT_Type") == 0 ) {
+	    SEQ_CV_IfSet(value);
+	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
+	    u32 cv = value;
+	    if( cv >= SEQ_CV_NUM ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong CV channel %u for parameter '%s'\n", value);
+	    } else {
+	      word = strtok_r(NULL, separators, &brkt);
+	      u32 curve = get_dec(word);
+	      if( curve >= SEQ_CV_NUM_CURVES ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong curve %u for parameter '%s', CV channel %u\n", curve, cv);
+	      } else {
+		word = strtok_r(NULL, separators, &brkt);
+		u32 slewrate = get_dec(word);
+		if( slewrate >= 256 ) // saturate
+		  slewrate = 255;
 
+		word = strtok_r(NULL, separators, &brkt);
+		u32 range = get_dec(word);
+		if( range >= 127 ) // saturate
+		  range = 2; // default value
+
+		SEQ_CV_CurveSet(cv, curve);
+		SEQ_CV_SlewRateSet(cv, slewrate);
+		SEQ_CV_PitchRangeSet(cv, range);
+	      }
+	    }
+	  } else if( strcmp(parameter, "CV_GateInv") == 0 ) {
+	    SEQ_CV_GateInversionAllSet(value);
+	  } else if( strcmp(parameter, "CV_ClkPulsewidth") == 0 ) {
+	    SEQ_CV_ClkPulseWidthSet(value);
+	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
+	    SEQ_CV_ClkDividerSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
 	    seq_blm_port = value;
 
@@ -313,7 +347,6 @@ s32 SEQ_FILE_GC_Read(void)
 	      } else {
 		OSC_SERVER_RemoteIP_Set(con, ip);
 	      }
-#endif
 	    }
 	  } else if( strcmp(parameter, "OSC_RemotePort") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
@@ -428,6 +461,24 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RemoteID %d\n", (u8)seq_ui_remote_id);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "CV_AOUT_Type %d\n", (u8)SEQ_CV_IfGet());
+  FLUSH_BUFFER;
+
+  int cv;
+  for(cv=0; cv<SEQ_CV_NUM; ++cv) {
+    sprintf(line_buffer, "CV_PinMode %d %d %d %d\n", cv, SEQ_CV_CurveGet(cv), (int)SEQ_CV_SlewRateGet(cv), (int)SEQ_CV_PitchRangeGet(cv));
+    FLUSH_BUFFER;
+  }
+
+  sprintf(line_buffer, "CV_GateInv 0x%02x\n", (u8)SEQ_CV_GateInversionAllGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "CV_ClkPulsewidth %d\n", SEQ_CV_ClkPulseWidthGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "CV_ClkDivider %d\n", SEQ_CV_ClkDividerGet());
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);
