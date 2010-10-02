@@ -145,18 +145,47 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+  u16  value;
+  u16  original_value;
+  u16  target_value;
+  s32  incrementer;
+  s16  pitch;
+  u8   slewrate;
+  u8   pitchrange;
+} aout_channel_t;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static aout_config_t aout_config;
 
-static u16 aout_value[AOUT_NUM_CHANNELS];
+static aout_channel_t aout_channel[AOUT_NUM_CHANNELS];
+
 static u32 aout_update_req;
 static u8  aout_num_devices;
 
 static u32 aout_dig_value;
 static u32 aout_dig_update_req;
 
+static aout_cali_mode_t cali_mode;
+static u8 cali_pin;
+
+
+// include generate file which declares hz_v_table[128]
+#include "aout_hz_v_table.inc"
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static u16 caliValue(u8 pin);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -182,15 +211,30 @@ s32 AOUT_Init(u32 mode)
   // disable inversion
   aout_config.chn_inverted = 0;
 
+  // disable Hz/V option
+  aout_config.chn_hz_v = 0;
+
   // number of devices is 0 (changed during re-configuration)
   aout_num_devices = 0;
 
   // set all AOUT pins to 0
-  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin)
-    aout_value[pin] = 0;
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
+  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin, ++c) {
+    c->value = 0;
+    c->original_value = 0;
+    c->target_value = 0;
+    c->incrementer = 0;
+    c->slewrate = 0;
+    c->pitchrange = 2; // semitones
+    c->pitch = 0; // pitch offset
+  }
 
   // set all digital outputs to 0
   aout_dig_value = 0;
+
+  // disable calibration mode
+  cali_mode = AOUT_CALI_MODE_OFF;
+  cali_pin = 0;
 
   // init hardware
   // (not required, since no interface is selected by default!)
@@ -317,6 +361,26 @@ s32 AOUT_IF_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// \return the interface name (8 chars)
+/////////////////////////////////////////////////////////////////////////////
+const char* AOUT_IfNameGet(aout_if_t if_type)
+{
+  const char if_name[AOUT_NUM_IF][9] = {
+    "  none  ",
+    "  AOUT  ",
+    "AOUT_LC ",
+    "AOUT_NG ",
+    " INTDAC ",
+  };
+
+  if( if_type >= AOUT_NUM_IF )
+    if_type = 0; // select "none"
+
+  return if_name[if_type];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Configures the AOUT driver.
 //!
 //! It is recommented to call AOUT_IF_Init() if a different AOUT interface type
@@ -337,6 +401,17 @@ s32 AOUT_ConfigSet(aout_config_t config)
   // ensure that update is atomic
   MIOS32_IRQ_Disable();
   aout_config = config;
+  aout_update_req = 0xffffffff;
+
+  // set values again to ensure that they will be updated depending on curve parameter
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
+  int pin;
+  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin, ++c) {
+    u16 original_value = c->original_value;
+    c->original_value ^= 0xffff; // force update
+    AOUT_PinSet(pin, original_value);
+  }
+
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -356,6 +431,102 @@ aout_config_t AOUT_ConfigGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function enables calibration mode for a given pin
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \param[in] mode the calibration mode
+//! \return -1 if pin not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_CaliModeSet(u8 pin, aout_cali_mode_t mode)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  if( mode >= AOUT_NUM_CALI_MODES )
+    return -2; // invalid mode selected
+
+  MIOS32_IRQ_Disable();
+  aout_update_req |= 1 << cali_pin; // ensure that previous pin will be updated (if pin changes)
+  cali_pin = pin; // switch to new pin
+  cali_mode = mode; // and new mode
+  aout_update_req |= 1 << pin; // update (new) pin
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the current calibration mode
+//! \return the calibration mode
+/////////////////////////////////////////////////////////////////////////////
+aout_cali_mode_t AOUT_CaliModeGet(void)
+{
+  return cali_mode;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the pin which is selected for calibration mode
+//! \return the selected pin
+/////////////////////////////////////////////////////////////////////////////
+u8 AOUT_CaliPinGet(void)
+{
+  return cali_pin;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the name of a given calibration mode
+//!
+//! \param[in] mode the calibration mode
+//! \return 6 characters
+/////////////////////////////////////////////////////////////////////////////
+const char* AOUT_CaliNameGet(aout_cali_mode_t mode)
+{
+  const char cali_desc[AOUT_NUM_CALI_MODES][7] = {
+    " off  ",
+    " Min. ",
+    "Middle",
+    " Max. ",
+    " 1.00V",
+    " 2.00V",
+    " 4.00V",
+    " 8.00V",
+  };
+
+  if( mode >= AOUT_NUM_CALI_MODES )
+    mode = AOUT_CALI_MODE_OFF;
+
+  return cali_desc[(u8)mode];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 16bit calibration value depending on current mode
+/////////////////////////////////////////////////////////////////////////////
+static u16 caliValue(u8 pin)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return 0x0000; // pin not available
+
+  u8 hz_v = aout_config.chn_hz_v & (1 << pin);
+
+  switch( cali_mode ) {
+  case AOUT_CALI_MODE_OFF: return 0x0000;
+  case AOUT_CALI_MODE_MIN: return 0x0000;
+  case AOUT_CALI_MODE_MIDDLE: return 0x8000;
+  case AOUT_CALI_MODE_MAX: return 0xffff;
+  case AOUT_CALI_MODE_1V: return hz_v ? (hz_v_table[0x24] << 4) : (0x0c << 9);
+  case AOUT_CALI_MODE_2V: return hz_v ? (hz_v_table[0x30] << 4) : (0x18 << 9);
+  case AOUT_CALI_MODE_4V: return hz_v ? (hz_v_table[0x3c] << 4) : (0x30 << 9);
+  case AOUT_CALI_MODE_8V: return hz_v ? (hz_v_table[0x48] << 4) : (0x60 << 9);
+  }
+
+  return 0x0000;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function sets an output channel to a given 16-bit value.
 //!
 //! The output value won't be transfered to the module immediately, but will 
@@ -371,16 +542,66 @@ s32 AOUT_PinSet(u8 pin, u16 value)
   if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
     return -1; // pin not available
 
-  if( value != aout_value[pin] ) {
-    aout_value[pin] = value;
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[pin];
+  if( value != c->original_value ) {
+    MIOS32_IRQ_Disable();
+    c->original_value = value;
+
+    // calculate pitch and consider Hz/V option
+    if( aout_config.chn_hz_v & (1 << pin) ) {
+      u8 ix = value >> 9; // 0..127
+
+      if( c->pitch == 0 )
+	value = hz_v_table[ix];
+      else {
+	if( c->pitch > 0 ) {
+	  int uix = ix + c->pitchrange;
+	  if( uix > 127 )
+	    uix = 127;
+
+	  int lvalue = hz_v_table[ix];
+	  int uvalue = hz_v_table[uix];
+	  value = lvalue + (((int)c->pitch * (uvalue-lvalue)) / 8191); 
+	} else {
+	  int lix = ix - c->pitchrange;
+	  if( lix < 0 )
+	    lix = 0;
+
+	  int lvalue = hz_v_table[lix];
+	  int uvalue = hz_v_table[ix];
+	  value = uvalue + (((int)c->pitch * (uvalue-lvalue)) / 8192);
+	}
+      }
+    } else {
+      if( c->pitch > 0 ) {
+	int newvalue = value + (((int)c->pitch * ((int)c->pitchrange << 9)) / 8191); 
+	value = (newvalue > 0xffff) ? 0xffff : newvalue;
+      } else if( c->pitch < 0 ) {
+	int newvalue = value + (((int)c->pitch * ((int)c->pitchrange << 9)) / 8192); 
+	value = (newvalue < 0) ? 0 : newvalue;
+      }
+    }
+
+    c->target_value = value;
+
+    if( c->slewrate == 0 || value == c->value ) {
+      c->incrementer = 0;
+      c->value = value;
+    } else {
+      c->incrementer = (value - c->value) / c->slewrate;
+      if( c->incrementer == 0 )
+	c->incrementer = 1;
+    }
+
     aout_update_req |= 1 << pin;
+    MIOS32_IRQ_Enable();
   }
 
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! This function returns the current output value of an output channel.
+//! This function returns the current (target) output value of an output channel.
 //! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
 //! \return -1 if pin not available
 //! \return >= 0 if pin available (16bit output value)
@@ -390,7 +611,150 @@ s32 AOUT_PinGet(u8 pin)
   if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
     return -1; // pin not available
 
-  return aout_value[pin];
+  return aout_channel[pin].value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This internal function returns the actual output value which can change dynamically
+// e.g. depending on slew rate, pitch/pitch range and calibration mode
+// \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1) --- NO CHECK FOR RANGE TO IMPROVE RUNTIME
+// \return -1 if pin not available
+// \return >= 0 if pin available (16bit output value)
+/////////////////////////////////////////////////////////////////////////////
+static s32 currentValueGet(u8 pin)
+{
+#if 0
+  // no check to improve runtime
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+#endif
+
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[pin];
+  u16 value = c->value;
+  if( cali_mode != AOUT_CALI_MODE_OFF && pin == cali_pin )
+    value = caliValue(pin);
+  else {
+    if( aout_config.chn_inverted & (1 << pin) )
+      value ^= 0xffff;
+  }
+
+  return value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets the slew rate for an output channel
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \param[in] value the slew rate (0..255 mS)
+//! \return -1 if pin not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinSlewRateSet(u8 pin, u8 value)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  aout_channel[pin].slewrate = value;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the slew rate of an output channel.
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \return -1 if pin not available
+//! \return >= 0 if pin available (8bit output value)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinSlewRateGet(u8 pin)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  return aout_channel[pin].slewrate;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets the pitch range for an output channel
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \param[in] value the pitch range (0..127) - only values between 2..12 are really useful
+//! \return -1 if pin not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinPitchRangeSet(u8 pin, u8 value)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[pin];
+  if( c->pitchrange != value ) {
+    MIOS32_IRQ_Disable();
+    c->pitchrange = value;
+    u16 original_value = c->original_value;
+    c->original_value ^= 0xffff; // force update
+    AOUT_PinSet(pin, original_value);
+    MIOS32_IRQ_Enable();
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the pitch range of an output channel.
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \return -1 if pin not available
+//! \return >= 0 if pin available (8bit output value)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinPitchRangeGet(u8 pin)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  return aout_channel[pin].pitchrange;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets the pitch offset for an output channel
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \param[in] value the pitch (-0x8000..+0x7fff)
+//! \return -1 if pin not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinPitchSet(u8 pin, s16 value)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[pin];
+  if( c->pitch != value ) {
+    MIOS32_IRQ_Disable();
+    c->pitch = value;
+    u16 original_value = c->original_value;
+    c->original_value ^= 0xffff; // force update
+    AOUT_PinSet(pin, original_value);
+    MIOS32_IRQ_Enable();
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the pitch offset of an output channel.
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \return -1 if pin not available
+//! \return >= 0 if pin available (signed 16bit output value)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinPitchGet(u8 pin)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  return aout_channel[pin].pitch;
 }
 
 
@@ -488,6 +852,26 @@ s32 AOUT_Update(void)
   if( !aout_num_devices )
     return -1; // no device available
 
+  // handle slew rate
+  aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
+  int pin;
+  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin, ++c) {
+    MIOS32_IRQ_Disable();
+    s32 inc = c->incrementer;
+    if( inc ) {
+      s32 new_value = c->value + inc;
+      if( (inc > 0 && new_value >= c->target_value) ||
+	  (inc < 0 && new_value <= c->target_value) ) {
+	new_value = c->target_value;
+	c->incrementer = 0;
+      }
+      c->value = new_value;
+      aout_update_req |= 1 << pin;
+    }
+    MIOS32_IRQ_Enable();
+  }
+
+
   // check for AOUT channel update requests
   MIOS32_IRQ_Disable();
   u32 req = aout_update_req;
@@ -515,9 +899,7 @@ s32 AOUT_Update(void)
 
 	      // build command:
 	      u8 chn_ix = 4*dev + chn;
-	      u16 dac_value = aout_value[chn_ix] >> 4; // 16bit -> 12bit
-	      if( aout_config.chn_inverted & (1 << chn_ix) )
-		dac_value ^= 0xfff;
+	      u16 dac_value = currentValueGet(chn_ix) >> 4; // 16bit -> 12bit
 
 	      // A[10]: channel number, C1=1, C0=1
 	      u16 hword = (chn << 14) | (1 << 13) | (1 << 12) | dac_value;
@@ -546,21 +928,13 @@ s32 AOUT_Update(void)
 	  
 	  if( mode ) {
 	    // 8/8 configuration
-	    u16 dac0_value = aout_value[chn_ix+0] >> 8; // 16bit -> 8bit
-	    if( aout_config.chn_inverted & (1 << chn_ix) )
-	      dac0_value ^= 0xff;
-	    u16 dac1_value = aout_value[chn_ix+1] >> 8; // 16bit -> 8bit
-	    if( aout_config.chn_inverted & (1 << chn_ix) )
-	      dac1_value ^= 0xff;
+	    u16 dac0_value = currentValueGet(chn_ix+0) >> 8; // 16bit -> 8bit
+	    u16 dac1_value = currentValueGet(chn_ix+1) >> 8; // 16bit -> 8bit
 	    hword = (dac1_value << 8) | dac0_value;
 	  } else {
 	    // 12/4 configuration
-	    u16 dac0_value = aout_value[chn_ix+0] >> 4; // 16bit -> 12bit
-	    if( aout_config.chn_inverted & (1 << chn_ix) )
-	      dac0_value ^= 0xfff;
-	    u16 dac1_value = aout_value[chn_ix+1] >> 12; // 16bit -> 4bit
-	    if( aout_config.chn_inverted & (1 << chn_ix) )
-	      dac1_value ^= 0xf;
+	    u16 dac0_value = currentValueGet(chn_ix+0) >> 4; // 16bit -> 12bit
+	    u16 dac1_value = currentValueGet(chn_ix+1) >> 12; // 16bit -> 4bit
 	    hword = (dac1_value << 12) | dac0_value;
 	  }
 
@@ -590,16 +964,16 @@ s32 AOUT_Update(void)
 
 	      // build command:
 	      u8 chn_ix = 8*dev + chn;
-	      u16 dac_value = aout_value[chn_ix] >> 4; // 16bit -> 12bit
-	      if( aout_config.chn_inverted & (1 << chn_ix) )
-		dac_value ^= 0xfff;
+	      u16 dac_value = currentValueGet(chn_ix) >> 4; // 16bit -> 12bit
 
 	      // [15]=0, [14:12] channel number, [11:0] DAC value
 	      u16 hword = (chn << 12) | dac_value;
 
 	      // transfer word
+	      MIOS32_IRQ_Disable();
 	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
 	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	      MIOS32_IRQ_Enable();
 	    }
 
 	    // deactivate chip select
@@ -614,8 +988,11 @@ s32 AOUT_Update(void)
 	for(chn=0; chn<2; ++chn) {
 
 	  // set new value if requested
-	  if( req & (1 << chn) )
-	    MIOS32_BOARD_DAC_PinSet(chn, aout_value[chn]);
+	  u8 chn_mask = (1 << chn);
+	  if( req & chn_mask ) {
+	    u16 dac_value = currentValueGet(chn);
+	    MIOS32_BOARD_DAC_PinSet(chn, dac_value);
+	  }
 	}
       } break;
 
@@ -672,5 +1049,6 @@ s32 AOUT_Update(void)
 
   return status ? -4 : 0; // SPI transfer error?
 }
+
 
 //! \}

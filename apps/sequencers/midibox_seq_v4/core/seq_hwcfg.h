@@ -229,6 +229,5 @@ extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 extern u8 seq_hwcfg_dout_gate_1ms;
-extern u8 seq_hwcfg_din_sync_clk_pulsewidth;
 
 #endif /* _SEQ_HWCFG_H */

@@ -189,6 +189,8 @@ u16 OSC_SERVER_LocalPortGet(u8 con)
 /////////////////////////////////////////////////////////////////////////////
 s32 OSC_SERVER_AppCall(void)
 {
+  u8 udp_monitor_level = UIP_TASK_UDP_MonitorLevelGet();
+
   if( uip_poll() ) {
     // called each second or on request (-> uip_udp_periodic_conn)
 
@@ -209,13 +211,17 @@ s32 OSC_SERVER_AppCall(void)
       // send datagram
       uip_send(osc_send_packet, osc_send_len);
       osc_send_packet = NULL;
+
+      if( udp_monitor_level >= UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND )
+	UIP_TASK_UDP_MonitorPacket(UDP_MONITOR_SEND, "OSC_SEND");
     }
   }
 
-  if( uip_newdata() ) {
+  if( uip_newdata() ) {    
     // check for matching port
     int con;
     u16 search_port = HTONS(uip_udp_conn->lport); // (no error: use lport instead of rport, since UIP inserts it there)
+    DEBUG_MSG("%d", search_port);
     u8 port_ok = 0;
     for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
       if( osc_local_port[con] == search_port ) {
@@ -223,7 +229,16 @@ s32 OSC_SERVER_AppCall(void)
 	break;
       }
 
-    if( port_ok ) {
+    if( !port_ok ) {
+      // forward to monitor
+      if( udp_monitor_level >= UDP_MONITOR_LEVEL_4_ALL ||
+	  (udp_monitor_level >= UDP_MONITOR_LEVEL_3_ALL_GEQ_1024 && search_port >= 1024) )
+	UIP_TASK_UDP_MonitorPacket(UDP_MONITOR_RECEIVED, "UNMATCHED_PORT");
+    } else {
+      // forward to monitor
+      if( udp_monitor_level >= UDP_MONITOR_LEVEL_1_OSC_REC )
+	UIP_TASK_UDP_MonitorPacket(UDP_MONITOR_RECEIVED, "OSC_RECEIVED");
+
       // new UDP package has been received
 #if DEBUG_VERBOSE_LEVEL >= 3
       MUTEX_MIDIOUT_TAKE;

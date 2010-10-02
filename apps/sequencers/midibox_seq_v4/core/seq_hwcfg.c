@@ -349,7 +349,6 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
 
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
-u8 seq_hwcfg_din_sync_clk_pulsewidth = 1; // mS
 
 
 /////////////////////////////////////////////////////////////////////////////

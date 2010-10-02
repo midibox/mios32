@@ -6,6 +6,30 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta28
+~~~~~~~~~~~~~~~~~~~~~
+
+  o fixed bug in session load function which happened when no MBSEQ_GC.V4 file exists on SD Card
+
+  o added new "udpmon <0..4>" terminal command which allows to monitor incoming and outgoing
+    UDP packets, e.g. to debug OSC settings and/or to determine the the port of incoming OSC
+    packets.
+    In MIOS Terminal, use "udpmon 3" to display all packets with port number >= 1024
+
+  o now we have a special CV configuration page which allows to:
+    - configure to select V/Oct, Hz/V and Inverse curve for each CV channel
+    - the slew rate 0..255 mV for each CV channel
+    - the pitch range (for pitchbend events)
+    - the gate polarity for each CV channel
+    - calibrate each channel
+    - set the DIN Sync Clock PPQN Divider and Pulse Width
+    - AOUT Module Type (previously hard-configured in MBSEQ_HW.V4 file)
+
+  o each CV channel has now an own notestack.
+    This is especially nice if AOUT channels are controlled through the MIDI Router
+    from an external MIDI keyboard (live)
+
+
 MIDIboxSEQ V4.0beta27
 ~~~~~~~~~~~~~~~~~~~~~
 

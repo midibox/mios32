@@ -140,6 +140,8 @@
 		529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F3117911CE00293622 /* mios32_uart_midi.c */; };
 		529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */; };
 		529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F91179121300293622 /* FATFS_Wrapper.m */; };
+		52E114421256BD41001E6E43 /* seq_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 52E1143F1256BD41001E6E43 /* seq_cv.c */; };
+		52E114431256BD41001E6E43 /* seq_ui_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 52E114411256BD41001E6E43 /* seq_ui_cv.c */; };
 		52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F15C40119C9D0900E40C6C /* seq_blm.c */; };
 /* End PBXBuildFile section */
 
@@ -356,6 +358,9 @@
 		529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FATFS_Wrapper_Dir.c; sourceTree = "<group>"; };
 		529FA9F81179121300293622 /* FATFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FATFS_Wrapper.h; sourceTree = "<group>"; };
 		529FA9F91179121300293622 /* FATFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FATFS_Wrapper.m; sourceTree = "<group>"; };
+		52E1143F1256BD41001E6E43 /* seq_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cv.c; path = ../core/seq_cv.c; sourceTree = SOURCE_ROOT; };
+		52E114401256BD41001E6E43 /* seq_cv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cv.h; path = ../core/seq_cv.h; sourceTree = SOURCE_ROOT; };
+		52E114411256BD41001E6E43 /* seq_ui_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_cv.c; path = ../core/seq_ui_cv.c; sourceTree = SOURCE_ROOT; };
 		52F15C40119C9D0900E40C6C /* seq_blm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_blm.c; path = ../core/seq_blm.c; sourceTree = SOURCE_ROOT; };
 		52F15C41119C9D0900E40C6C /* seq_blm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_blm.h; path = ../core/seq_blm.h; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* MbSeq-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "MbSeq-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
@@ -488,6 +493,9 @@
 		529FA81C11790B5600293622 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				52E1143F1256BD41001E6E43 /* seq_cv.c */,
+				52E114401256BD41001E6E43 /* seq_cv.h */,
+				52E114411256BD41001E6E43 /* seq_ui_cv.c */,
 				524324711229B29B003B950B /* seq_ui_eth.c */,
 				5243246E1229B27E003B950B /* seq_file_gc.c */,
 				5243246F1229B27E003B950B /* seq_file_gc.h */,
@@ -851,6 +859,8 @@
 				527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */,
 				524324701229B27E003B950B /* seq_file_gc.c in Sources */,
 				524324721229B29B003B950B /* seq_ui_eth.c in Sources */,
+				52E114421256BD41001E6E43 /* seq_cv.c in Sources */,
+				52E114431256BD41001E6E43 /* seq_ui_cv.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

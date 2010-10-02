@@ -29,3 +29,6 @@ Modifications:
       known bugs page on the uIP website
   - apps/dhcpc/dhcpc.c: m->secs ("Seconds elapsed") set to value > 3
     This seems to be required for Mac based DHCP server
+  - uip/uip.c: added UIP_UDP_DROPPED_PACKET_APPCALL option
+    This hook is called whenever a packet IP/ports didn't match with
+    active UDP connections

@@ -18,10 +18,11 @@
 #include <mios32.h>
 #include "tasks.h"
 
-#include "notestack.h"
+#include <notestack.h>
 
 #include "seq_ui.h"
 #include "seq_midi_in.h"
+#include "seq_cv.h"
 #include "seq_cc.h"
 #include "seq_pattern.h"
 #include "seq_morph.h"
@@ -735,8 +736,10 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
       break;
 
     case 0x7b: // all notes off (transposer, arpeggiator, patch changer)
-      if( value == 0 )
+      if( value == 0 ) {
 	SEQ_MIDI_IN_ResetAllStacks();
+	SEQ_CV_ResetAllChannels();
+      }
       break;
   }
 

@@ -161,8 +161,42 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	SEQ_TERMINAL_PrintGrooveTemplates(DEBUG_MSG);
       } else if( strcmp(parameter, "memory") == 0 ) {
 	SEQ_TERMINAL_PrintMemoryInfo(DEBUG_MSG);
+#if !defined(MIOS32_FAMILY_EMULATION)
       } else if( strcmp(parameter, "network") == 0 ) {
 	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "udpmon") == 0 ) {
+	MUTEX_MIDIOUT_TAKE;
+	char *arg;
+	if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	  int level = get_dec(arg);
+	  switch( level ) {
+	  case UDP_MONITOR_LEVEL_0_OFF:
+	    DEBUG_MSG("Set UDP monitor level to %d (off)\n", level);
+	    break;
+	  case UDP_MONITOR_LEVEL_1_OSC_REC:
+	    DEBUG_MSG("Set UDP monitor level to %d (received packets assigned to a OSC1..4 port)\n", level);
+	    break;
+	  case UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND:
+	    DEBUG_MSG("Set UDP monitor level to %d (received and sent packets assigned to a OSC1..4 port)\n", level);
+	    break;
+	  case UDP_MONITOR_LEVEL_3_ALL_GEQ_1024:
+	    DEBUG_MSG("Set UDP monitor level to %d (all received and sent packets with port number >= 1024)\n", level);
+	    break;
+	  case UDP_MONITOR_LEVEL_4_ALL:
+	    DEBUG_MSG("Set UDP monitor level to %d (all received and sent packets)\n", level);
+	    break;
+	  default:
+	    DEBUG_MSG("Invalid level %d - please specify monitor level 0..4\n", level);
+	    level = -1; // invalidate level for next if() check
+	  }
+
+	  if( level >= 0 )
+	    UIP_TASK_UDP_MonitorLevelSet(level);
+	} else {
+	  DEBUG_MSG("Please specify monitor level (0..4)\n");
+	}
+	MUTEX_MIDIOUT_GIVE;
+#endif
       } else if( strcmp(parameter, "sdcard") == 0 ) {
 	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
       } else if( strcmp(parameter, "play") == 0 ) {
@@ -215,7 +249,10 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  grooves:        print groove templates\n");
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
+#if !defined(MIOS32_FAMILY_EMULATION)
   out("  network:        print ethernet network info\n");
+  out("  udpmon <0..4>:  enables UDP monitor to check OSC packets (current: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
+#endif
   out("  play:           emulates the PLAY button\n");
   out("  stop:           emulates the STOP button\n");
   out("  reset:          resets the MIDIbox SEQ (!)\n");

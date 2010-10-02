@@ -33,6 +33,8 @@
 #include "uip.h"
 #include "uip_task.h"
 #include "osc_server.h"
+#else
+#define OSC_SERVER_NUM_CONNECTIONS 4
 #endif
 
 

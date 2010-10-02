@@ -1136,18 +1136,24 @@ uip_process(u8_t flag)
 #endif
     }
   }
+
+#if !defined(UIP_UDP_PASS_ALL_PACKETS) || UIP_UDP_PASS_ALL_PACKETS == 0 // TK: added this special option for simplified UDP receive handling and monitoring
 #if 0
   // TK: messages sometimes cannot be avoided... disable it!
   UIP_LOG("udp: no matching connection found");
 #endif
   goto drop;
-  
+#endif /* !defined(UIP_UDP_PASS_ALL_PACKETS) || UIP_UDP_PASS_ALL_PACKETS == 0 */
+
+
  udp_found:
   uip_conn = NULL;
   uip_flags = UIP_NEWDATA;
   uip_sappdata = uip_appdata = &uip_buf[UIP_LLH_LEN + UIP_IPUDPH_LEN];
   uip_slen = 0;
+
   UIP_UDP_APPCALL();
+
  udp_send:
   if(uip_slen == 0) {
     goto drop;

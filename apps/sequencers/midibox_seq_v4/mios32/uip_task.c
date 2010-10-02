@@ -79,6 +79,7 @@ static s32 UIP_TASK_SendDebugMessage_IP(void);
 /////////////////////////////////////////////////////////////////////////////
 static u8 services_running;
 static u8 dhcp_enabled = 1;
+static u8 udp_monitor_level;
 static u32 my_ip_address = MY_IP_ADDRESS;
 static u32 my_netmask = MY_NETMASK;
 static u32 my_gateway = MY_GATEWAY;
@@ -97,6 +98,8 @@ s32 UIP_TASK_Init(u32 mode)
   xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
 
   services_running = 0;
+
+  udp_monitor_level = UDP_MONITOR_LEVEL_0_OFF;
 
   return 0; // no error
 }
@@ -494,12 +497,66 @@ s32 UIP_TASK_UDP_AppCall(void)
   if( uip_udp_conn->rport == HTONS(DHCPC_SERVER_PORT) || uip_udp_conn->rport == HTONS(DHCPC_CLIENT_PORT) ) {
     dhcpc_appcall();
 
-  // OSC Server checks for IP/port locally
+    // monitor option
+    if( udp_monitor_level >= UDP_MONITOR_LEVEL_4_ALL )
+      UIP_TASK_UDP_MonitorPacket(UDP_MONITOR_RECEIVED, "DHCP"); // should we differ between send/receive?
+
   } else {
+    // OSC Server checks for IP/port locally
     OSC_SERVER_AppCall();
+
+    // MonitorPacket called from OSC_SERVER
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function optionally outputs the current UDP packet to the MIOS terminal
+/////////////////////////////////////////////////////////////////////////////
+extern u16_t uip_slen; // allows to access a variable which is part of uip.c
+#define TCPIPBUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+#define UDPBUF ((struct uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
+s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix)
+{
+  MUTEX_MIDIOUT_TAKE;
+  int len;
+  if( received ) {
+    len = uip_len;
+
+    DEBUG_MSG("[UDP:%s] from %d.%d.%d.%d:%d to port %d (%d bytes)\n", 
+	      prefix,
+	      (TCPIPBUF->srcipaddr[0]>>0)&0xff, (TCPIPBUF->srcipaddr[0]>>8)&0xff, (TCPIPBUF->srcipaddr[1]>>0)&0xff, (TCPIPBUF->srcipaddr[1]>>8)&0xff,
+	      HTONS(UDPBUF->srcport), HTONS(UDPBUF->destport),
+	      len);
+  } else {
+    len = uip_slen;
+
+    DEBUG_MSG("[UDP:%s] to %d.%d.%d.%d:%d from port %d (%d bytes)\n", 
+	      prefix,
+	      (TCPIPBUF->srcipaddr[0]>>0)&0xff, (TCPIPBUF->srcipaddr[0]>>8)&0xff, (TCPIPBUF->srcipaddr[1]>>0)&0xff, (TCPIPBUF->srcipaddr[1]>>8)&0xff,
+	      HTONS(UDPBUF->destport), HTONS(UDPBUF->srcport),
+	      len);
+  }
+  MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, len);
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets/Returns the UDP/OSC monitor level
+/////////////////////////////////////////////////////////////////////////////
+s32 UIP_TASK_UDP_MonitorLevelSet(u8 level)
+{
+  udp_monitor_level = level;
+  return 0; // no error
+}
+
+s32 UIP_TASK_UDP_MonitorLevelGet(void)
+{
+  return udp_monitor_level;
 }
 
 

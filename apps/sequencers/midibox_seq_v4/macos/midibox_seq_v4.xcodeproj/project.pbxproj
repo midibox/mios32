@@ -91,6 +91,9 @@
 		527828F40FB0ADCB009822EB /* seq_morph.c in Sources */ = {isa = PBXBuildFile; fileRef = 527828F20FB0ADCB009822EB /* seq_morph.c */; };
 		527828F60FB0ADD9009822EB /* seq_ui_trkmorph.c in Sources */ = {isa = PBXBuildFile; fileRef = 527828F50FB0ADD9009822EB /* seq_ui_trkmorph.c */; };
 		5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */ = {isa = PBXBuildFile; fileRef = 5278A3290F44B6FD00DF885C /* seq_file_c.c */; };
+		527CE3761256B9990097C2BB /* seq_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 527CE3721256B9990097C2BB /* seq_cv.c */; };
+		527CE3771256B9990097C2BB /* seq_lcd_logo.inc in Sources */ = {isa = PBXBuildFile; fileRef = 527CE3741256B9990097C2BB /* seq_lcd_logo.inc */; };
+		527CE3781256B9990097C2BB /* seq_ui_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 527CE3751256B9990097C2BB /* seq_ui_cv.c */; };
 		5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 5282AE180F18C4AF00901181 /* seq_ui_menu.c */; };
 		528F03901024889E009439A6 /* notestack.c in Sources */ = {isa = PBXBuildFile; fileRef = 528F038E1024889E009439A6 /* notestack.c */; };
 		5297A0801177E728000F82E2 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 5297A05A1177E728000F82E2 /* FATFS_Wrapper_Dir.c */; };
@@ -308,6 +311,10 @@
 		527828F70FB0ADEC009822EB /* seq_record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_record.h; path = ../core/seq_record.h; sourceTree = SOURCE_ROOT; };
 		5278A3290F44B6FD00DF885C /* seq_file_c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_c.c; path = ../core/seq_file_c.c; sourceTree = SOURCE_ROOT; };
 		5278A32A0F44B6FD00DF885C /* seq_file_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_c.h; path = ../core/seq_file_c.h; sourceTree = SOURCE_ROOT; };
+		527CE3721256B9990097C2BB /* seq_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cv.c; path = ../core/seq_cv.c; sourceTree = SOURCE_ROOT; };
+		527CE3731256B9990097C2BB /* seq_cv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cv.h; path = ../core/seq_cv.h; sourceTree = SOURCE_ROOT; };
+		527CE3741256B9990097C2BB /* seq_lcd_logo.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; name = seq_lcd_logo.inc; path = ../core/seq_lcd_logo.inc; sourceTree = SOURCE_ROOT; };
+		527CE3751256B9990097C2BB /* seq_ui_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_cv.c; path = ../core/seq_ui_cv.c; sourceTree = SOURCE_ROOT; };
 		5282AE180F18C4AF00901181 /* seq_ui_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_menu.c; path = ../core/seq_ui_menu.c; sourceTree = SOURCE_ROOT; };
 		528F038E1024889E009439A6 /* notestack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = notestack.c; path = ../../../../modules/notestack/notestack.c; sourceTree = SOURCE_ROOT; };
 		528F038F1024889E009439A6 /* notestack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = notestack.h; path = ../../../../modules/notestack/notestack.h; sourceTree = SOURCE_ROOT; };
@@ -564,6 +571,10 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				527CE3721256B9990097C2BB /* seq_cv.c */,
+				527CE3731256B9990097C2BB /* seq_cv.h */,
+				527CE3741256B9990097C2BB /* seq_lcd_logo.inc */,
+				527CE3751256B9990097C2BB /* seq_ui_cv.c */,
 				529B499C11B7007E00F0D319 /* mios32_osc.c */,
 				529B498711B6FD4100F0D319 /* seq_midi_osc.c */,
 				529B498811B6FD4100F0D319 /* seq_midi_osc.h */,
@@ -855,7 +866,14 @@
 			isa = PBXProject;
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "midibox_seq_v4" */;
 			compatibilityVersion = "Xcode 3.0";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* midibox_seq_v4 */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1048,6 +1066,9 @@
 				529B49CE11B70C2500F0D319 /* OscPort.m in Sources */,
 				5299B5D0122973B700D38C38 /* seq_ui_eth.c in Sources */,
 				5299B61F1229953900D38C38 /* seq_file_gc.c in Sources */,
+				527CE3761256B9990097C2BB /* seq_cv.c in Sources */,
+				527CE3771256B9990097C2BB /* seq_lcd_logo.inc in Sources */,
+				527CE3781256B9990097C2BB /* seq_ui_cv.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -41,6 +41,7 @@
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
+#include "seq_cv.h"
 #include "seq_statistics.h"
 #include "seq_ui.h"
 
@@ -93,7 +94,6 @@ u8 seq_core_bpm_preset_num;
 float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
 float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
 
-u16 seq_core_bpm_din_sync_div;
 u8 seq_core_din_sync_pulse_ctr;
 
 mios32_midi_port_t seq_core_metronome_port;
@@ -135,7 +135,6 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
-  seq_core_bpm_din_sync_div = 16; // 24 ppqn
   seq_core_din_sync_pulse_ctr = 0; // used to generate a 1 mS pulse
 
   seq_core_metronome_port = DEFAULT;
@@ -445,7 +444,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 
     // trigger DIN Sync clock with a special event (0xf9 normaly used for "MIDI tick")
     // SEQ_MIDI_PORT_NotifyMIDITx filters it before it will be forwarded to physical ports
-    if( (bpm_tick % seq_core_bpm_din_sync_div) == 0 ) {
+    if( (bpm_tick % SEQ_CV_ClkDividerGet()) == 0 ) {
       mios32_midi_package_t p;
       p.ALL = 0;
       p.type = 0x5; // Single-byte system common message

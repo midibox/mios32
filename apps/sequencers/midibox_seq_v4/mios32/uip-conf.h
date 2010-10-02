@@ -83,7 +83,7 @@ typedef u16 uip_stats_t;
  *
  * \hideinitializer
  */
-#define UIP_CONF_UDP_CHECKSUMS   1
+#define UIP_CONF_UDP_CHECKSUMS   0
 
 /**
  * uIP statistics on or off
@@ -131,5 +131,7 @@ typedef struct uip_tcp_appstate_t {
 #define UIP_APPCALL UIP_TASK_AppCall
 #define UIP_UDP_APPCALL UIP_TASK_UDP_AppCall
 
+// TK: special define for "modified uip lib"
+#define UIP_UDP_PASS_ALL_PACKETS 1
 
 #endif /* __UIP_CONF_H__ */
