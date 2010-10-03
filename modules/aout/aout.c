@@ -515,10 +515,10 @@ static u16 caliValue(u8 pin)
   case AOUT_CALI_MODE_MIN: return 0x0000;
   case AOUT_CALI_MODE_MIDDLE: return 0x8000;
   case AOUT_CALI_MODE_MAX: return 0xffff;
-  case AOUT_CALI_MODE_1V: return hz_v ? (hz_v_table[0x24] << 4) : (0x0c << 9);
-  case AOUT_CALI_MODE_2V: return hz_v ? (hz_v_table[0x30] << 4) : (0x18 << 9);
-  case AOUT_CALI_MODE_4V: return hz_v ? (hz_v_table[0x3c] << 4) : (0x30 << 9);
-  case AOUT_CALI_MODE_8V: return hz_v ? (hz_v_table[0x48] << 4) : (0x60 << 9);
+  case AOUT_CALI_MODE_1V: return hz_v ? hz_v_table[0x24] : (0x0c << 9);
+  case AOUT_CALI_MODE_2V: return hz_v ? hz_v_table[0x30] : (0x18 << 9);
+  case AOUT_CALI_MODE_4V: return hz_v ? hz_v_table[0x3c] : (0x30 << 9);
+  case AOUT_CALI_MODE_8V: return hz_v ? hz_v_table[0x48] : (0x60 << 9);
   }
 
   return 0x0000;
