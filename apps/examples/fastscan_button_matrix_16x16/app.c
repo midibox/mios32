@@ -156,8 +156,6 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value)
 
 static void TASK_MatrixScan(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
-
   while( 1 ) {
     // wait for next timesplice (1 mS)
     vTaskDelay(1 / portTICK_RATE_MS);
