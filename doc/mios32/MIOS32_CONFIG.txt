@@ -78,6 +78,11 @@ into your local mios32_config.h file
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #define MIOS32_SRIO_OUTPUTS_OD 1
 
+
+// disables the default SRIO scan routine in programming_models/traditional/main.c
+// allows to implement an own handler
+#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
+
 // maximal number of rotary encoders
 #define MIOS32_ENC_NUM_MAX 64
 

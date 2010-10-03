@@ -146,7 +146,7 @@ void SRIO_ServiceFinish(void)
 
 void vApplicationTickHook(void)
 {
-#ifndef MIOS32_DONT_USE_SRIO
+#if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN)
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();
 
