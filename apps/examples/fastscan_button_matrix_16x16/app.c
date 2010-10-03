@@ -192,7 +192,7 @@ static void TASK_MatrixScan(void *pvParameters)
       // combine to 16bit value
       u16 din_pattern = (din1 << 8) | din0;
 
-      // check if values has been changed via XOR combination with previously scanned value
+      // check if values have been changed via XOR combination with previously scanned value
       u16 changed = din_pattern ^ din_value[row];
       if( changed ) {
 	// store changed value
