@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta29
+~~~~~~~~~~~~~~~~~~~~~
+
+  o implemented tap tempo function.
+    It can be accessed in the BPM menu page (rightmost GP button), or with MENU+PLAY
+
+
 MIDIboxSEQ V4.0beta28
 ~~~~~~~~~~~~~~~~~~~~~
 

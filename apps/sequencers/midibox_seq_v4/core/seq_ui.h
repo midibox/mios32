@@ -236,6 +236,8 @@ extern s32 SEQ_UI_SONG_Insert(void);
 extern s32 SEQ_UI_SONG_Delete(void);
 extern s32 SEQ_UI_SONG_EditPosSet(u8 new_edit_pos);
 
+extern s32 SEQ_UI_BPM_TapTempo(void);
+
 extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 
 extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
