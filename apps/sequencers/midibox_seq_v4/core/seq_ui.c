@@ -445,6 +445,10 @@ s32 SEQ_UI_Button_Play(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // if MENU button pressed -> tap tempo
+  if( seq_ui_button_state.MENU_PRESSED )
+    return SEQ_UI_BPM_TapTempo();
+
   // if in auto mode and BPM generator is clocked in slave mode:
   // change to master mode
   SEQ_BPM_CheckAutoMaster();
