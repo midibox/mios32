@@ -53,7 +53,9 @@ static u8 selected_mclk_port = USB0;
 
 
 static u32 tap_tempo_last_timestamp;
-static u16 tap_tempo_accumulated_delay;
+#define TAP_DELAY_STORAGE_SIZE 4
+static u16 tap_tempo_delay[TAP_DELAY_STORAGE_SIZE];
+static u8 tap_tempo_beat_ix;
 static u8 tap_tempo_beat_ctr;
 
 
@@ -61,8 +63,13 @@ static u8 tap_tempo_beat_ctr;
 static s32 resetTapTempo(void)
 {
   tap_tempo_last_timestamp = 0;
+  tap_tempo_beat_ix = 0;
   tap_tempo_beat_ctr = 0;
-  tap_tempo_accumulated_delay = 0;
+
+  int tap;
+  for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap)
+    tap_tempo_delay[tap] = 0;
+
   return 0; // no error
 }
 
@@ -491,23 +498,33 @@ s32 SEQ_UI_BPM_TapTempo(void)
   // reset counter if last timestamp zero (first tap) or difference between timestamps > 2 seconds (< 30 BPM...)
   if( !tap_tempo_last_timestamp || delay > 2000 ) {
     resetTapTempo();
-  } else {
-    // accumulate measured delay
-    tap_tempo_accumulated_delay += delay;
+  } else {    
+    // store measured delay
+    tap_tempo_delay[tap_tempo_beat_ix] = delay;
+
+    // increment index, wrap at number of stored tap delays
+    tap_tempo_beat_ix = (tap_tempo_beat_ix + 1) % TAP_DELAY_STORAGE_SIZE;
   }
 
+  // store timestamp
+  tap_tempo_last_timestamp = timestamp;
+
   // take over BPM and start sequencer once we reached the 5th tap
-  if( tap_tempo_beat_ctr >= 4 ) {
+  if( tap_tempo_beat_ctr >= TAP_DELAY_STORAGE_SIZE ) {
+    // hold counter at delay storage size + 1 (for display)
+    tap_tempo_beat_ctr = TAP_DELAY_STORAGE_SIZE + 1;
+
     // determine BPM
-    u32 bpm = 60000000 / (tap_tempo_accumulated_delay / tap_tempo_beat_ctr);
+    int tap;
+    int accumulated_delay = 0;
+    for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap)
+      accumulated_delay += tap_tempo_delay[tap];
+    u32 bpm = 60000000 / (accumulated_delay / tap_tempo_beat_ctr);
 
     // set BPM
     float bpmF = bpm / 1000.0;
     seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = bpmF;
     SEQ_BPM_Set(bpmF);
-
-    // reset timestamp, counter and accumulated delay
-    resetTapTempo();
 
     // if in auto mode and BPM generator is clocked in slave mode:
     // change to master mode
@@ -518,30 +535,26 @@ s32 SEQ_UI_BPM_TapTempo(void)
       SEQ_BPM_Start();
 
   } else {
-    // store timestamp
-    tap_tempo_last_timestamp = timestamp;
-
     // increment counter
     ++tap_tempo_beat_ctr;
   }
 
   // print message
   char buffer1[30];
-  float bpm = SEQ_BPM_Get();
-  sprintf(buffer1, "Tap Tempo: %3d.%d", (int)bpm, (int)(10*bpm)%10);
-  if( tap_tempo_beat_ctr ) {
-    char buffer2[30];
-    int i;
-    for(i=0; i<(tap_tempo_beat_ctr*4); ++i)
-      buffer2[i] = '>';
-    for(; i<16; ++i)
-      buffer2[i] = ' ';
-    buffer2[i] = 0;
+  if( tap_tempo_beat_ctr > TAP_DELAY_STORAGE_SIZE ) {
+    float bpm = SEQ_BPM_Get();
+    sprintf(buffer1, "Tap Tempo: %3d.%d", (int)bpm, (int)(10*bpm)%10);
+  } else
+    sprintf(buffer1, "Tap Tempo: ???.?");
 
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, buffer1, buffer2);
-  } else {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, buffer1, "****************");
-  }
+  char buffer2[30];
+  int i;
+  for(i=0; i<((tap_tempo_beat_ix+1)*4); ++i)
+    buffer2[i] = '>';
+  for(; i<16; ++i)
+    buffer2[i] = ' ';
+  buffer2[i] = 0;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, buffer1, buffer2);
 
   return 0; // no error
 }
