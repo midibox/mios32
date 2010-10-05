@@ -1,0 +1,176 @@
+row:1  col:0  ->  pin:  1
+row:2  col:0  ->  pin:  2
+row:3  col:0  ->  pin: 17
+row:4  col:0  ->  pin: 18
+row:5  col:0  ->  pin: 33
+row:6  col:0  ->  pin: 34
+row:7  col:0  ->  pin: 49
+row:8  col:0  ->  pin: 50
+row:9  col:0  ->  pin: 65
+row:A  col:0  ->  pin: 66
+row:1  col:1  ->  pin:  3
+row:2  col:1  ->  pin:  4
+row:3  col:1  ->  pin: 19
+row:4  col:1  ->  pin: 20
+row:5  col:1  ->  pin: 35
+row:6  col:1  ->  pin: 36
+row:7  col:1  ->  pin: 51
+row:8  col:1  ->  pin: 52
+row:9  col:1  ->  pin: 67
+row:A  col:1  ->  pin: 68
+row:1  col:2  ->  pin:  5
+row:2  col:2  ->  pin:  6
+row:3  col:2  ->  pin: 21
+row:4  col:2  ->  pin: 22
+row:5  col:2  ->  pin: 37
+row:6  col:2  ->  pin: 38
+row:7  col:2  ->  pin: 53
+row:8  col:2  ->  pin: 54
+row:9  col:2  ->  pin: 69
+row:A  col:2  ->  pin: 70
+row:1  col:3  ->  pin:  7
+row:2  col:3  ->  pin:  8
+row:3  col:3  ->  pin: 23
+row:4  col:3  ->  pin: 24
+row:5  col:3  ->  pin: 39
+row:6  col:3  ->  pin: 40
+row:7  col:3  ->  pin: 55
+row:8  col:3  ->  pin: 56
+row:9  col:3  ->  pin: 71
+row:A  col:3  ->  pin: 72
+row:1  col:4  ->  pin:  9
+row:2  col:4  ->  pin: 10
+row:3  col:4  ->  pin: 25
+row:4  col:4  ->  pin: 26
+row:5  col:4  ->  pin: 41
+row:6  col:4  ->  pin: 42
+row:7  col:4  ->  pin: 57
+row:8  col:4  ->  pin: 58
+row:9  col:4  ->  pin: 73
+row:A  col:4  ->  pin: 74
+row:1  col:5  ->  pin: 11
+row:2  col:5  ->  pin: 12
+row:3  col:5  ->  pin: 27
+row:4  col:5  ->  pin: 28
+row:5  col:5  ->  pin: 43
+row:6  col:5  ->  pin: 44
+row:7  col:5  ->  pin: 59
+row:8  col:5  ->  pin: 60
+row:9  col:5  ->  pin: 75
+row:A  col:5  ->  pin: 76
+row:1  col:6  ->  pin: 13
+row:2  col:6  ->  pin: 14
+row:3  col:6  ->  pin: 29
+row:4  col:6  ->  pin: 30
+row:5  col:6  ->  pin: 45
+row:6  col:6  ->  pin: 46
+row:7  col:6  ->  pin: 61
+row:8  col:6  ->  pin: 62
+row:9  col:6  ->  pin: 77
+row:A  col:6  ->  pin: 78
+row:1  col:7  ->  pin: 15
+row:2  col:7  ->  pin: 16
+row:3  col:7  ->  pin: 31
+row:4  col:7  ->  pin: 32
+row:5  col:7  ->  pin: 47
+row:6  col:7  ->  pin: 48
+row:7  col:7  ->  pin: 63
+row:8  col:7  ->  pin: 64
+row:9  col:7  ->  pin: 79
+row:A  col:7  ->  pin: 80
+row:1  col:8  ->  pin: 81
+row:2  col:8  ->  pin: 82
+row:3  col:8  ->  pin: 97
+row:4  col:8  ->  pin: 98
+row:5  col:8  ->  pin:113
+row:6  col:8  ->  pin:114
+row:7  col:8  ->  pin:129
+row:8  col:8  ->  pin:130
+row:9  col:8  ->  pin:145
+row:A  col:8  ->  pin:146
+row:B  col:8  ->  pin:161
+row:C  col:8  ->  pin:162
+row:1  col:9  ->  pin: 83
+row:2  col:9  ->  pin: 84
+row:3  col:9  ->  pin: 99
+row:4  col:9  ->  pin:100
+row:5  col:9  ->  pin:115
+row:6  col:9  ->  pin:116
+row:7  col:9  ->  pin:131
+row:8  col:9  ->  pin:132
+row:9  col:9  ->  pin:147
+row:A  col:9  ->  pin:148
+row:B  col:9  ->  pin:163
+row:C  col:9  ->  pin:164
+row:1  col:A  ->  pin: 85
+row:2  col:A  ->  pin: 86
+row:3  col:A  ->  pin:101
+row:4  col:A  ->  pin:102
+row:5  col:A  ->  pin:117
+row:6  col:A  ->  pin:118
+row:7  col:A  ->  pin:133
+row:8  col:A  ->  pin:134
+row:9  col:A  ->  pin:149
+row:A  col:A  ->  pin:150
+row:B  col:A  ->  pin:165
+row:C  col:A  ->  pin:166
+row:1  col:B  ->  pin: 87
+row:2  col:B  ->  pin: 88
+row:3  col:B  ->  pin:103
+row:4  col:B  ->  pin:104
+row:5  col:B  ->  pin:119
+row:6  col:B  ->  pin:120
+row:7  col:B  ->  pin:135
+row:8  col:B  ->  pin:136
+row:9  col:B  ->  pin:151
+row:A  col:B  ->  pin:152
+row:B  col:B  ->  pin:167
+row:C  col:B  ->  pin:168
+row:1  col:C  ->  pin: 89
+row:2  col:C  ->  pin: 90
+row:3  col:C  ->  pin:105
+row:4  col:C  ->  pin:106
+row:5  col:C  ->  pin:121
+row:6  col:C  ->  pin:122
+row:7  col:C  ->  pin:137
+row:8  col:C  ->  pin:138
+row:9  col:C  ->  pin:153
+row:A  col:C  ->  pin:154
+row:B  col:C  ->  pin:169
+row:C  col:C  ->  pin:170
+row:1  col:D  ->  pin: 91
+row:2  col:D  ->  pin: 92
+row:3  col:D  ->  pin:107
+row:4  col:D  ->  pin:108
+row:5  col:D  ->  pin:123
+row:6  col:D  ->  pin:124
+row:7  col:D  ->  pin:139
+row:8  col:D  ->  pin:140
+row:9  col:D  ->  pin:155
+row:A  col:D  ->  pin:156
+row:B  col:D  ->  pin:171
+row:C  col:D  ->  pin:172
+row:1  col:E  ->  pin: 93
+row:2  col:E  ->  pin: 94
+row:3  col:E  ->  pin:109
+row:4  col:E  ->  pin:110
+row:5  col:E  ->  pin:125
+row:6  col:E  ->  pin:126
+row:7  col:E  ->  pin:141
+row:8  col:E  ->  pin:142
+row:9  col:E  ->  pin:157
+row:A  col:E  ->  pin:158
+row:B  col:E  ->  pin:173
+row:C  col:E  ->  pin:174
+row:1  col:F  ->  pin: 95
+row:2  col:F  ->  pin: 96
+row:3  col:F  ->  pin:111
+row:4  col:F  ->  pin:112
+row:5  col:F  ->  pin:127
+row:6  col:F  ->  pin:128
+row:7  col:F  ->  pin:143
+row:8  col:F  ->  pin:144
+row:9  col:F  ->  pin:159
+row:A  col:F  ->  pin:160
+row:B  col:F  ->  pin:175
+row:C  col:F  ->  pin:176
