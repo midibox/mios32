@@ -39,6 +39,9 @@
 // scan 16 rows
 #define MATRIX_NUM_ROWS 16
 
+// maximum number of supported keys (rowsxcolumns = 16*16)
+#define KEYBOARD_NUM_PINS (16*16)
+
 // sink drivers used? (no for Fatar keyboard)
 #define MATRIX_DOUT_HAS_SINK_DRIVERS 0
 
@@ -55,6 +58,8 @@ static void TASK_MatrixScan(void *pvParameters);
 
 u16 din_value[MATRIX_NUM_ROWS];
 
+u32 last_timestamp[KEYBOARD_NUM_PINS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -70,6 +75,11 @@ void APP_Init(void)
     din_value[row] = 0xffff; // default state: buttons depressed
   }
 
+  // initialize timestamps
+  int i;
+  for(i=0; i<KEYBOARD_NUM_PINS; ++i) {
+    last_timestamp[i] = 0;
+  }
 
   // start matrix scan task
   xTaskCreate(TASK_MatrixScan, (signed portCHAR *)"MatrixScan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
@@ -147,18 +157,69 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 
 // will be called on BLM pin changes (see TASK_BLM_Check)
-void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value)
+void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 {
+  // determine pin number based on row/column
+  // based on pin map for fadar keyboard provided by Robin
+  // (pin number counted from 1, not 0, to match with the table)
+  // tested with utils/test_pinmap.pl
+
+  int pin = -1;
+
+  // pin number (counted from 0) consists of:
+  //   bit #0 if row-1 -> pin bit #0
+  int bit0 = (row-1) & 1;
+  //   bit #3..1 of row-1 -> pin bit #6..4
+  int bit6to4 = ((row-1) & 0xe) >> 1;
+  //   bit #2..0 of column -> pin bit #2..1
+  int bit3to1 = column & 0x7;
+
+  // combine to pin value
+  if( column < 8 ) {
+    // left half
+    if( row >= 1 && row <= 0xa ) {
+      pin = bit0 | (bit6to4 << 4) | (bit3to1 << 1);
+    }
+  } else {
+    // right half
+    if( row >= 1 && row <= 0xc ) {
+      pin = 80 + (bit0 | (bit6to4 << 4) | (bit3to1 << 1));
+    }
+  }
+
+  // calculate delay between last event
+  int delay = -1;
+  if( pin < KEYBOARD_NUM_PINS ) { // ensure that we never access the array outside the allocated range
+    if( !last_timestamp[pin] )
+      delay = 0; // very first key event - no timestamp has been stored yet
+    else
+      delay = timestamp - last_timestamp[pin];
+  }
+
+  // pin value = 0 -> we are starting to press the key
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d\n", row, column, pin_value);
+  DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%d, delay=%d\n",
+	    row, column, pin_value,
+	    pin + 1, // +1 to match with Robin's table
+	    timestamp,
+	    delay);
 #endif
+
+  // store timestamp
+  if( pin < KEYBOARD_NUM_PINS )
+    last_timestamp[pin] = timestamp;
 }
+
 
 static void TASK_MatrixScan(void *pvParameters)
 {
   while( 1 ) {
     // wait for next timesplice (1 mS)
     vTaskDelay(1 / portTICK_RATE_MS);
+
+    // determine timestamp (we need it for delay measurements)
+    mios32_sys_time_t t = MIOS32_SYS_TimeGet();
+    u32 timestamp = 1000*t.seconds + t.fraction_ms;
 
     // select first row
     u16 select_row_pattern = ~(1 << 0);
@@ -185,7 +246,6 @@ static void TASK_MatrixScan(void *pvParameters)
 #endif
 
       // read DIN, write DOUT
-      s32 status = 0;
       u8 din0 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
       u8 din1 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
 
@@ -203,7 +263,7 @@ static void TASK_MatrixScan(void *pvParameters)
 	for(column=0; column<16; ++column) {
 	  u16 mask = 1 << column;
 	  if( changed & mask )
-	    BUTTON_NotifyToggle(row, column, (din_pattern & mask) ? 1 : 0);
+	    BUTTON_NotifyToggle(row, column, (din_pattern & mask) ? 1 : 0, timestamp);
 	}
       }
     }
