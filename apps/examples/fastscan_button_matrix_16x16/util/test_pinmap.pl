@@ -10,10 +10,10 @@ for($column=0; $column<16; ++$column) {
     # pin number (counted from 0) consists of:
     #   bit #0 if row-1 -> pin bit #0
     my $bit0 = ($row-1) & 1;
+    #  bit #2..0 of column -> pin bit #3..1
+    my $bit3to1 = $column & 0x7;
     #   bit #3..1 of row-1 -> pin bit #6..4
     my $bit6to4 = (($row-1) & 0xe) >> 1;
-    #  bit #2..0 of column -> pin bit #2..1
-    my $bit3to1 = $column & 0x7;
 
     # combine to pin value
     if( $column < 8 ) {
