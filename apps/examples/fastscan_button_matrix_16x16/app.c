@@ -169,10 +169,10 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   // pin number (counted from 0) consists of:
   //   bit #0 if row-1 -> pin bit #0
   int bit0 = (row-1) & 1;
+  //   bit #2..0 of column -> pin bit #3..1
+  int bit3to1 = column & 0x7;
   //   bit #3..1 of row-1 -> pin bit #6..4
   int bit6to4 = ((row-1) & 0xe) >> 1;
-  //   bit #2..0 of column -> pin bit #2..1
-  int bit3to1 = column & 0x7;
 
   // combine to pin value
   if( column < 8 ) {
