@@ -189,7 +189,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 
   // calculate delay between last event
   int delay = -1;
-  if( pin < KEYBOARD_NUM_PINS ) { // ensure that we never access the array outside the allocated range
+  if( pin >= 0 && pin < KEYBOARD_NUM_PINS ) { // ensure that we never access the array outside the allocated range
     if( !last_timestamp[pin] )
       delay = 0; // very first key event - no timestamp has been stored yet
     else
@@ -206,7 +206,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 #endif
 
   // store timestamp
-  if( pin < KEYBOARD_NUM_PINS )
+  if( pin >= 0 && pin < KEYBOARD_NUM_PINS )
     last_timestamp[pin] = timestamp;
 }
 
