@@ -244,7 +244,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   } else {
     if( second_switch == 0 ) { // first switch
       last_timestamp[key_ix] = 0;
-	send_note_off = 0;
+      send_note_off = 1;
     }
   }
 
