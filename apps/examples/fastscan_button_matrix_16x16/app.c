@@ -236,13 +236,13 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
       last_timestamp[pin & 0xfe] = timestamp;
     } else { // second switch
       if( last_timestamp[pin & 0xfe] ) {
-	delay = timestamp - last_timestamp[pin];
+	delay = timestamp - last_timestamp[pin & 0xfe];
 	send_note_on = 1;
       }
     }
   } else {
     if( second_switch == 0 ) { // first switch
-      last_timestamp[pin] = 0;
+      last_timestamp[pin & 0xfe] = 0;
 	send_note_off = 0;
     }
   }
