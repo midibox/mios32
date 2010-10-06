@@ -231,6 +231,9 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   u8 send_note_on = 0;
   u8 send_note_off = 0;
 
+  DEBUG_MSG("[BUTTON_NotifyToggle] XXX %u %d %d %d\n",
+	    timestamp, pin, pin_value, second_switch);
+
   if( pin_value == 0 ) {
     if( second_switch == 0 ) { // first switch
       last_timestamp[pin & 0xfe] = timestamp;
