@@ -198,7 +198,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   // following check ensures that we never continue with an unexpected/invalid pin number.
   // e.g. this could address a memory location outside the last_timestamp[] array!
   // print a warning message in this case for analysis purposes
-  if( pin >= 0 && pin < KEYBOARD_NUM_PINS ) {
+  if( pin < 0 || pin >= KEYBOARD_NUM_PINS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[BUTTON_NotifyToggle] WARNING: row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d NOT MAPPED!\n",
 	      row, column, pin_value,
