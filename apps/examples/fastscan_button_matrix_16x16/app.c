@@ -39,11 +39,19 @@
 // scan 16 rows
 #define MATRIX_NUM_ROWS 16
 
+// sink drivers used? (no for Fatar keyboard)
+#define MATRIX_DOUT_HAS_SINK_DRIVERS 0
+
 // maximum number of supported keys (rowsxcolumns = 16*16)
 #define KEYBOARD_NUM_PINS (16*16)
 
-// sink drivers used? (no for Fatar keyboard)
-#define MATRIX_DOUT_HAS_SINK_DRIVERS 0
+// used MIDI port and channel (DEFAULT, USB0, UART0 or UART1)
+#define KEYBOARD_MIDI_PORT DEFAULT
+#define KEYBOARD_MIDI_CHN  Chn1
+
+// minimum/maximum delay to calculate velocity
+#define KEYBOARD_DELAY_FASTEST 3
+#define KEYBOARD_DELAY_SLOWEST 100
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -187,27 +195,99 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
     }
   }
 
-  // calculate delay between last event
-  int delay = -1;
-  if( pin >= 0 && pin < KEYBOARD_NUM_PINS ) { // ensure that we never access the array outside the allocated range
-    if( !last_timestamp[pin] )
-      delay = 0; // very first key event - no timestamp has been stored yet
-    else
-      delay = timestamp - last_timestamp[pin];
+  // following check ensures that we never continue with an unexpected/invalid pin number.
+  // e.g. this could address a memory location outside the last_timestamp[] array!
+  // print a warning message in this case for analysis purposes
+  if( pin >= 0 && pin < KEYBOARD_NUM_PINS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[BUTTON_NotifyToggle] WARNING: row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d NOT MAPPED!\n",
+	      row, column, pin_value,
+	      pin + 1); // +1 to match with Robin's table
+#endif
+    return;
   }
 
-  // pin value = 0 -> we are starting to press the key
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%d, delay=%d\n",
-	    row, column, pin_value,
-	    pin + 1, // +1 to match with Robin's table
-	    timestamp,
-	    delay);
-#endif
+  // first or second switch if a key?
+  u8 second_switch = (pin & 1); // 0 if first switch, 1 if second switch
 
-  // store timestamp
-  if( pin >= 0 && pin < KEYBOARD_NUM_PINS )
-    last_timestamp[pin] = timestamp;
+  // the note number (starting from A-0 = 0x21)
+  int note_number = 0x21 + (pin >> 1);
+  if( note_number > 127 ) // just another check to ensure that no invalid note will be sent
+    note_number = 127;
+
+  // we have three transitions which are for interest:
+  // a) first switch changes from 1->0 (pin_value == 0):
+  //    - store the current timestamp
+  // b) second switch changes from 1->0 (pin_value == 0):
+  //    - calculate delay between current timestamp and timestamp captured during a)
+  //    - do this only if the captured timestamp is != 0 (see also c)
+  //    - calculate velocity depending on the delay
+  //    - send Note On event
+  // c) first switch changes from 0->1 (pin_value == 1): 
+  //    - send Note Off event (resp. Note On with velocity 0)
+  //    - clear captured timestamp (allows to check for valid delay on next transition)
+
+  int delay = -1;
+  u8 send_note_on = 0;
+  u8 send_note_off = 0;
+
+  if( pin_value == 0 ) {
+    if( second_switch == 0 ) { // first switch
+      last_timestamp[pin] = timestamp;
+    } else { // second switch
+      if( last_timestamp[pin] ) {
+	delay = timestamp - last_timestamp[pin];
+	send_note_on = 1;
+      }
+    }
+  } else {
+    if( second_switch == 0 ) { // first switch
+      last_timestamp[pin] = 0;
+	send_note_off = 0;
+    }
+  }
+
+
+  // now we know:
+  // - if a note on or off event should be sent
+  // - the measured delay (note on only)
+
+  if( send_note_on ) {
+    // determine velocity depending on delay
+    int velocity = 127 - (((delay-KEYBOARD_DELAY_FASTEST) * 127) / (KEYBOARD_DELAY_SLOWEST-KEYBOARD_DELAY_FASTEST));
+    // saturate to ensure that range 1..127 won't be exceeded
+    if( velocity < 1 )
+      velocity = 1;
+    if( velocity > 127 )
+      velocity = 127;
+
+    MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, velocity);
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE ON (delay=%d); velocity=%d\n",
+	      row, column, pin_value,
+	      pin + 1, // +1 to match with Robin's table
+	      timestamp,
+	      delay,
+	      velocity);
+#endif
+  } else if( send_note_off ) {
+    // send Note On with velocity 0
+    MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, 0x00);
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE OFF\n",
+	      row, column, pin_value,
+	      pin + 1, // +1 to match with Robin's table
+	      timestamp);
+#endif
+  } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> IGNORE\n",
+	      row, column, pin_value,
+	      pin + 1, // +1 to match with Robin's table
+	      timestamp);
+#endif
+  }
 }
 
 
