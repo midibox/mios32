@@ -200,7 +200,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   // print a warning message in this case for analysis purposes
   if( pin < 0 || pin >= KEYBOARD_NUM_PINS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[BUTTON_NotifyToggle] WARNING: row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d NOT MAPPED!\n",
+    DEBUG_MSG("WARNING: row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d NOT MAPPED!\n",
 	      row, column, pin_value,
 	      pin + 1); // +1 to match with Robin's table
 #endif
@@ -227,25 +227,23 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   //    - send Note Off event (resp. Note On with velocity 0)
   //    - clear captured timestamp (allows to check for valid delay on next transition)
 
+  unsigned key_ix = pin & 0xfffffffe;
   int delay = -1;
   u8 send_note_on = 0;
   u8 send_note_off = 0;
 
-  DEBUG_MSG("[BUTTON_NotifyToggle] XXX %u %d %d %d\n",
-	    timestamp, pin, pin_value, second_switch);
-
   if( pin_value == 0 ) {
     if( second_switch == 0 ) { // first switch
-      last_timestamp[pin & 0xfe] = timestamp;
+      last_timestamp[key_ix] = timestamp;
     } else { // second switch
-      if( last_timestamp[pin & 0xfe] ) {
-	delay = timestamp - last_timestamp[pin & 0xfe];
+      if( last_timestamp[key_ix] ) {
+	delay = timestamp - last_timestamp[key_ix];
 	send_note_on = 1;
       }
     }
   } else {
     if( second_switch == 0 ) { // first switch
-      last_timestamp[pin & 0xfe] = 0;
+      last_timestamp[key_ix] = 0;
 	send_note_off = 0;
     }
   }
@@ -266,7 +264,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 
     MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, velocity);
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE ON (delay=%d); velocity=%d\n",
+    DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE ON (delay=%d); velocity=%d\n",
 	      row, column, pin_value,
 	      pin + 1, // +1 to match with Robin's table
 	      timestamp,
@@ -278,14 +276,14 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
     MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, 0x00);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE OFF\n",
+    DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE OFF\n",
 	      row, column, pin_value,
 	      pin + 1, // +1 to match with Robin's table
 	      timestamp);
 #endif
   } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[BUTTON_NotifyToggle] row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> IGNORE\n",
+    DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> IGNORE\n",
 	      row, column, pin_value,
 	      pin + 1, // +1 to match with Robin's table
 	      timestamp);
