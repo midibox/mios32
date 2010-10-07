@@ -89,6 +89,8 @@ void APP_Init(void)
     last_timestamp[i] = 0;
   }
 
+  
+
   // start matrix scan task
   xTaskCreate(TASK_MatrixScan, (signed portCHAR *)"MatrixScan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
 }
@@ -168,29 +170,28 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 {
   // determine pin number based on row/column
-  // based on pin map for fadar keyboard provided by Robin
-  // (pin number counted from 1, not 0, to match with the table)
+  // based on pin map for fadar keyboard provided by Robin (see doc/ directory)
   // tested with utils/test_pinmap.pl
 
   int pin = -1;
 
   // pin number (counted from 0) consists of:
-  //   bit #0 if row-1 -> pin bit #0
-  int bit0 = (row-1) & 1;
+  //   bit #0 if row -> pin bit #0
+  int bit0 = row & 1;
   //   bit #2..0 of column -> pin bit #3..1
   int bit3to1 = column & 0x7;
-  //   bit #3..1 of row-1 -> pin bit #6..4
-  int bit6to4 = ((row-1) & 0xe) >> 1;
+  //   bit #3..1 of row -> pin bit #6..4
+  int bit6to4 = (row & 0xe) >> 1;
 
   // combine to pin value
   if( column < 8 ) {
     // left half
-    if( row >= 1 && row <= 0xa ) {
+    if( row >= 0 && row <= 0x9 ) {
       pin = bit0 | (bit6to4 << 4) | (bit3to1 << 1);
     }
   } else {
     // right half
-    if( row >= 1 && row <= 0xc ) {
+    if( row >= 0 && row <= 0xa ) {
       pin = 80 + (bit0 | (bit6to4 << 4) | (bit3to1 << 1));
     }
   }
@@ -201,8 +202,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   if( pin < 0 || pin >= KEYBOARD_NUM_PINS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("WARNING: row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d NOT MAPPED!\n",
-	      row, column, pin_value,
-	      pin + 1); // +1 to match with Robin's table
+	      row, column, pin_value, pin);
 #endif
     return;
   }
@@ -210,8 +210,8 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   // first or second switch if a key?
   u8 second_switch = (pin & 1); // 0 if first switch, 1 if second switch
 
-  // the note number (starting from A-0 = 0x21)
-  int note_number = 0x21 + (pin >> 1);
+  // the note number (starting from A-0 = 0x15)
+  int note_number = 0x15 + (pin >> 1);
   if( note_number > 127 ) // just another check to ensure that no invalid note will be sent
     note_number = 127;
 
@@ -265,11 +265,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
     MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, velocity);
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE ON (delay=%d); velocity=%d\n",
-	      row, column, pin_value,
-	      pin + 1, // +1 to match with Robin's table
-	      timestamp,
-	      delay,
-	      velocity);
+	      row, column, pin_value, pin, timestamp, delay, velocity);
 #endif
   } else if( send_note_off ) {
     // send Note On with velocity 0
@@ -277,16 +273,12 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> NOTE OFF\n",
-	      row, column, pin_value,
-	      pin + 1, // +1 to match with Robin's table
-	      timestamp);
+	      row, column, pin_value, pin, timestamp);
 #endif
   } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d -> pin=%d, timestamp=%u -> IGNORE\n",
-	      row, column, pin_value,
-	      pin + 1, // +1 to match with Robin's table
-	      timestamp);
+	      row, column, pin_value, pin, timestamp);
 #endif
   }
 }
