@@ -191,7 +191,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
     }
   } else {
     // right half
-    if( row >= 0 && row <= 0xa ) {
+    if( row >= 0 && row <= 0xb ) {
       pin = 80 + (bit0 | (bit6to4 << 4) | (bit3to1 << 1));
     }
   }
