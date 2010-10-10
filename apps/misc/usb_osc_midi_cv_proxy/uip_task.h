@@ -45,6 +45,18 @@
 #endif
 
 
+// UDP monitor levels
+// we assign names to the numbers for better readablilty
+#define UDP_MONITOR_LEVEL_0_OFF              0
+#define UDP_MONITOR_LEVEL_1_OSC_REC          1
+#define UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND 2
+#define UDP_MONITOR_LEVEL_3_ALL_GEQ_1024     3
+#define UDP_MONITOR_LEVEL_4_ALL              4
+
+
+#define UDP_MONITOR_SEND                     0
+#define UDP_MONITOR_RECEIVED                 1
+
 
 #include <FreeRTOS.h>
 #include <semphr.h>
@@ -69,7 +81,12 @@ extern s32 UIP_TASK_InitFromPresets(u8 _dhcp_enabled, u32 _my_ip_address, u32 _m
 extern s32 UIP_TASK_NetworkDeviceAvailable(void);
 extern s32 UIP_TASK_ServicesRunning(void);
 
+extern s32 UIP_TASK_AppCall(void);
+
 extern s32 UIP_TASK_UDP_AppCall(void);
+extern s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix);
+extern s32 UIP_TASK_UDP_MonitorLevelSet(u8 level);
+extern s32 UIP_TASK_UDP_MonitorLevelGet(void);
 
 extern s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled);
 extern s32 UIP_TASK_DHCP_EnableGet(void);
