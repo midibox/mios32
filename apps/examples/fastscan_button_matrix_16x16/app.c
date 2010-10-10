@@ -328,6 +328,11 @@ static void TASK_MatrixScan(void *pvParameters)
       u8 din0 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
       u8 din1 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
 
+      // latch DOUT values (so that the next row is already selected before DIN values will be latched with the next iteration)
+      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      MIOS32_DELAY_Wait_uS(1);
+      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
       // combine to 16bit value
       u16 din_pattern = (din1 << 8) | din0;
 
