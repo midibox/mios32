@@ -47,3 +47,11 @@ are not displayed by the MIDI monitor to avoid data corruption (the SysEx
 stream would interfere with monitor messages)
 
 ===============================================================================
+
+OSC Port mapping:
+   USB0 <-> OSC /midi1
+   USB1 <-> OSC /midi2
+   UART0 <-> OSC /midi3
+   UART1 <-> OSC /midi4
+
+===============================================================================

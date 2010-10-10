@@ -66,9 +66,14 @@ s32 PRESETS_Init(u32 mode)
 				       PRESETS_Read32(PRESETS_ADDR_UIP_NETMASK01),
 				       PRESETS_Read32(PRESETS_ADDR_UIP_GATEWAY01));
 
-    status |= OSC_SERVER_InitFromPresets(PRESETS_Read32(PRESETS_ADDR_OSC_REMOTE01),
-					 PRESETS_Read16(PRESETS_ADDR_OSC_REMOTE_PORT),
-					 PRESETS_Read16(PRESETS_ADDR_OSC_LOCAL_PORT));
+    u8 con = 0;
+    for(con=0; con<PRESETS_NUM_OSC_RECORDS; ++con) {
+      int offset = con*PRESETS_OFFSET_BETWEEN_OSC_RECORDS;
+      status |= OSC_SERVER_InitFromPresets(con,
+					   PRESETS_Read32(PRESETS_ADDR_OSC0_REMOTE01 + offset),
+					   PRESETS_Read16(PRESETS_ADDR_OSC0_REMOTE_PORT + offset),
+					   PRESETS_Read16(PRESETS_ADDR_OSC0_LOCAL_PORT + offset));
+    }
   }
 
   return 0; // no error
@@ -124,9 +129,13 @@ s32 PRESETS_StoreAll(void)
   status |= PRESETS_Write32(PRESETS_ADDR_UIP_GATEWAY01, UIP_TASK_GatewayGet());
 
   // write OSC data
-  status |= PRESETS_Write32(PRESETS_ADDR_OSC_REMOTE01, OSC_SERVER_RemoteIP_Get());
-  status |= PRESETS_Write16(PRESETS_ADDR_OSC_REMOTE_PORT, OSC_SERVER_RemotePortGet());
-  status |= PRESETS_Write16(PRESETS_ADDR_OSC_LOCAL_PORT, OSC_SERVER_LocalPortGet());
+  u8 con = 0;
+  for(con=0; con<PRESETS_NUM_OSC_RECORDS; ++con) {
+    int offset = con*PRESETS_OFFSET_BETWEEN_OSC_RECORDS;
+    status |= PRESETS_Write32(PRESETS_ADDR_OSC0_REMOTE01 + offset, OSC_SERVER_RemoteIP_Get(con));
+    status |= PRESETS_Write16(PRESETS_ADDR_OSC0_REMOTE_PORT + offset, OSC_SERVER_RemotePortGet(con));
+    status |= PRESETS_Write16(PRESETS_ADDR_OSC0_LOCAL_PORT + offset, OSC_SERVER_LocalPortGet(con));
+  }
 
   return 0; // no error
 }
