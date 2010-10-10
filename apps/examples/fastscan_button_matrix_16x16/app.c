@@ -294,29 +294,20 @@ static void TASK_MatrixScan(void *pvParameters)
     mios32_sys_time_t t = MIOS32_SYS_TimeGet();
     u32 timestamp = 1000*t.seconds + t.fraction_ms;
 
-    // select first row
-    u16 select_row_pattern = ~(1 << 0);
-#if MATRIX_DOUT_HAS_SINK_DRIVERS
-    select_row_pattern ^= 0xffff; // invert selection pattern if sink drivers are connected to DOUT pins
-#endif
-
-    MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
-    MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
-
-    // latch DOUT values (so that first row is selected before DIN values are latched)
-    MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-    MIOS32_DELAY_Wait_uS(1);
-    MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-    MIOS32_DELAY_Wait_uS(1);
-
-    // now read the two DIN registers
-    // while doing this, write the selection pattern for the next row to DOUT registers
+    // loop:
+    //   - latch DIN/DOUT values
+    //   - shift selection pattern for *next* row to DOUT registers
+    //   - read DIN values of previously selected row
+    // since we need to select the first row before the first DIN values are latched, we loop from -1
+    // to handle the initial state
     int row;
-    for(row=0; row<MATRIX_NUM_ROWS; ++row) {
-      // latch DIN values
-      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      MIOS32_DELAY_Wait_uS(1);
-      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    for(row=-1; row<MATRIX_NUM_ROWS; ++row) {
+      if( row >= 0 ) { // not required for initial scan
+	// latch DIN and DOUT values
+	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	MIOS32_DELAY_Wait_uS(1);
+	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      }
 
       // determine selection mask for next row (written into DOUT registers while reading DIN registers)
       u16 select_row_pattern = ~(1 << (row+1));
@@ -328,26 +319,28 @@ static void TASK_MatrixScan(void *pvParameters)
       u8 din0 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
       u8 din1 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
 
-      // latch DOUT values (so that the next row is already selected before DIN values will be latched with the next iteration)
-      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      MIOS32_DELAY_Wait_uS(1);
-      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      if( row == -1 ) {
+	// latch initial DOUT values
+	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	MIOS32_DELAY_Wait_uS(1);
+	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      } else {
+	// combine to 16bit value
+	u16 din_pattern = (din1 << 8) | din0;
 
-      // combine to 16bit value
-      u16 din_pattern = (din1 << 8) | din0;
+	// check if values have been changed via XOR combination with previously scanned value
+	u16 changed = din_pattern ^ din_value[row];
+	if( changed ) {
+	  // store changed value
+	  din_value[row] = din_pattern;
 
-      // check if values have been changed via XOR combination with previously scanned value
-      u16 changed = din_pattern ^ din_value[row];
-      if( changed ) {
-	// store changed value
-	din_value[row] = din_pattern;
-
-	// notify changed value
-	int column;
-	for(column=0; column<16; ++column) {
-	  u16 mask = 1 << column;
-	  if( changed & mask )
-	    BUTTON_NotifyToggle(row, column, (din_pattern & mask) ? 1 : 0, timestamp);
+	  // notify changed value
+	  int column;
+	  for(column=0; column<16; ++column) {
+	    u16 mask = 1 << column;
+	    if( changed & mask )
+	      BUTTON_NotifyToggle(row, column, (din_pattern & mask) ? 1 : 0, timestamp);
+	  }
 	}
       }
     }
