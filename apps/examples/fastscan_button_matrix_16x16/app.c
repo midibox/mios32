@@ -166,7 +166,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 // This task is called each mS to scan the button matrix
 /////////////////////////////////////////////////////////////////////////////
 
-// will be called on BLM pin changes (see TASK_BLM_Check)
+// will be called on button pin changes (see TASK_BLM_Check)
 void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 {
   // determine pin number based on row/column
@@ -302,6 +302,12 @@ static void TASK_MatrixScan(void *pvParameters)
 
     MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
     MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
+
+    // latch DOUT values (so that first row is selected before DIN values are latched)
+    MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+    MIOS32_DELAY_Wait_uS(1);
+    MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+    MIOS32_DELAY_Wait_uS(1);
 
     // now read the two DIN registers
     // while doing this, write the selection pattern for the next row to DOUT registers
