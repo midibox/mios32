@@ -27,7 +27,10 @@
 // for optional debugging messages
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 2
+// level >= 1: print warnings (recommented default value)
+// level >= 2: print debug messages for Robin's Fatar Keyboard
+// level >= 3: print row/column messages in addition for initial testing of matrix scan for other usecases
+#define DEBUG_VERBOSE_LEVEL 1
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,9 +52,10 @@
 #define KEYBOARD_MIDI_PORT DEFAULT
 #define KEYBOARD_MIDI_CHN  Chn1
 
-// minimum/maximum delay to calculate velocity
-#define KEYBOARD_DELAY_FASTEST 3
-#define KEYBOARD_DELAY_SLOWEST 100
+// initial minimum/maximum delay to calculate velocity
+// (will be copied into variables, so that values could be changed during runtime)
+#define INITIAL_KEYBOARD_DELAY_FASTEST 4
+#define INITIAL_KEYBOARD_DELAY_SLOWEST 200
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -64,10 +68,12 @@ static void TASK_MatrixScan(void *pvParameters);
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-u16 din_value[MATRIX_NUM_ROWS];
+static u16 din_value[MATRIX_NUM_ROWS];
 
-u32 last_timestamp[KEYBOARD_NUM_PINS];
+static u32 last_timestamp[KEYBOARD_NUM_PINS];
 
+static u32 keyboard_delay_fastest;
+static u32 keyboard_delay_slowest;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -89,7 +95,9 @@ void APP_Init(void)
     last_timestamp[i] = 0;
   }
 
-  
+  // initialize keyboard delay values
+  keyboard_delay_fastest = INITIAL_KEYBOARD_DELAY_FASTEST;
+  keyboard_delay_slowest = INITIAL_KEYBOARD_DELAY_SLOWEST;
 
   // start matrix scan task
   xTaskCreate(TASK_MatrixScan, (signed portCHAR *)"MatrixScan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
@@ -173,6 +181,11 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
   // based on pin map for fadar keyboard provided by Robin (see doc/ directory)
   // tested with utils/test_pinmap.pl
 
+#if DEBUG_VERBOSE_LEVEL >= 3
+    DEBUG_MSG("row=0x%02x, column=0x%02x, pin_value=%d\n",
+	      row, column, pin_value);
+#endif
+
   int pin = -1;
 
   // pin number (counted from 0) consists of:
@@ -255,7 +268,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value, u32 timestamp)
 
   if( send_note_on ) {
     // determine velocity depending on delay
-    int velocity = 127 - (((delay-KEYBOARD_DELAY_FASTEST) * 127) / (KEYBOARD_DELAY_SLOWEST-KEYBOARD_DELAY_FASTEST));
+    int velocity = 127 - (((delay-keyboard_delay_fastest) * 127) / (keyboard_delay_slowest-keyboard_delay_fastest));
     // saturate to ensure that range 1..127 won't be exceeded
     if( velocity < 1 )
       velocity = 1;
@@ -303,7 +316,7 @@ static void TASK_MatrixScan(void *pvParameters)
     int row;
     for(row=-1; row<MATRIX_NUM_ROWS; ++row) {
       if( row >= 0 ) { // not required for initial scan
-	// latch DIN and DOUT values
+	// latch DIN values
 	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 	MIOS32_DELAY_Wait_uS(1);
 	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
@@ -319,13 +332,13 @@ static void TASK_MatrixScan(void *pvParameters)
       u8 din0 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 8) & 0xff);
       u8 din1 = MIOS32_SPI_TransferByte(MIOS32_SRIO_SPI, (select_row_pattern >> 0) & 0xff);
 
-      if( row == -1 ) {
-	// latch initial DOUT values
-	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-	MIOS32_DELAY_Wait_uS(1);
-	MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-      } else {
-	// combine to 16bit value
+      // latch new DOUT value
+      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      MIOS32_DELAY_Wait_uS(1);
+      MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+      if( row >= 0 ) {
+	// combine read DIN bytes to 16bit value
 	u16 din_pattern = (din1 << 8) | din0;
 
 	// check if values have been changed via XOR combination with previously scanned value
