@@ -243,13 +243,55 @@ static void TASK_Hooks(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// enabled in FreeRTOSConfig.h
+// This function aborts any operations, but keeps MIDI alive (for uploading
+// a new firmware)
+// If MIDI isn't enabled, the status LED will be flashed
 /////////////////////////////////////////////////////////////////////////////
-void vApplicationMallocFailedHook(void)
+void _abort(void)
 {
   // stop other tasks from running
   portENTER_CRITICAL();
 
+#ifndef MIOS32_DONT_USE_MIDI
+  // keep MIDI alive, so that program code can be updated
+  u32 delay_ctr = 0;
+  while( 1 ) {
+    if( ++delay_ctr >= 100 ) {
+      delay_ctr = 0; // not really mS accurate, but better than nothing
+
+      // handle timeout/expire counters and USB packages
+      MIOS32_MIDI_Periodic_mS();
+    }
+
+    // check for incoming MIDI packages and call hook
+    MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
+
+    // toggle board LED
+    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+  }
+#else
+  u32 delay_ctr = 0;
+  while( 1 ) {
+    // error indication via LED
+    if( ++delay_ctr >= 1000 ) {
+      delay_ctr = 0;
+
+      // toggle board LED
+      MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+    }
+  }
+#endif
+
+  // only pro-forma - will never be reached
+  portEXIT_CRITICAL();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// enabled in FreeRTOSConfig.h
+/////////////////////////////////////////////////////////////////////////////
+void vApplicationMallocFailedHook(void)
+{
 #ifndef MIOS32_DONT_USE_LCD
   // TODO: here we should select the normal font - but only if available!
   // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
@@ -267,37 +309,35 @@ void vApplicationMallocFailedHook(void)
 #ifndef MIOS32_DONT_USE_MIDI
   // Note: message won't be sent if MIDI task cannot be created!
   MIOS32_MIDI_SendDebugMessage("FATAL: FreeRTOS Malloc Error!!!\n");
-
-  // keep MIDI alive, so that program code can be updated
-  u32 delay_ctr = 0;
-  while( 1 ) {
-    if( ++delay_ctr >= 100 ) {
-      delay_ctr = 0; // not really mS accurate, but better than nothing
-
-      // handle timeout/expire counters and USB packages
-      MIOS32_MIDI_Periodic_mS();
-    }
-
-    // check for incoming MIDI packages and call hook
-    MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
-
-    // toggle board LED
-    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
-  }
-
-#else
-  u32 delay_ctr = 0;
-  while( 1 ) {
-    // error indication via LED
-    if( ++delay_ctr >= 1000 ) {
-      delay_ctr = 0;
-
-      // toggle board LED
-      MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
-    }
-  }
 #endif
 
-  // only pro-forma - will never be reached
-  portEXIT_CRITICAL();
+  _abort();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// _exit() for newer newlib versions
+/////////////////////////////////////////////////////////////////////////////
+void _exit(int par)
+{
+#ifndef MIOS32_DONT_USE_LCD
+  // TODO: here we should select the normal font - but only if available!
+  // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  MIOS32_LCD_BColourSet(0xffffff);
+  MIOS32_LCD_FColourSet(0x000000);
+
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_Clear();
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("Goodbye!");
+#endif
+
+#ifndef MIOS32_DONT_USE_MIDI
+  // Note: message won't be sent if MIDI task cannot be created!
+  MIOS32_MIDI_SendDebugMessage("Goodbye!\n");
+#endif
+
+  // pro forma: since this is a noreturn function, loop endless and call _abort (which will never exit)
+  while( 1 )
+    _abort();
 }
