@@ -910,6 +910,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/notestack,
 					../core,
 					../../../../modules/midifile,
 					../../../../modules/random,
@@ -944,6 +945,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
+					../../../../modules/notestack,
 					../core,
 					../../../../modules/midifile,
 					../../../../modules/random,
