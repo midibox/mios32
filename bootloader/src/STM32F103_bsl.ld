@@ -194,6 +194,8 @@ SECTIONS
     
     PROVIDE ( end = _ebss );
     PROVIDE ( _end = _ebss );
+    PROVIDE ( __bss_start__ = _sbss );
+    PROVIDE ( __bss_end__ = _ebss );
     
     /* This is the user stack section 
     This is just to check that there is enough RAM left for the User mode stack
