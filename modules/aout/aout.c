@@ -363,16 +363,16 @@ s32 AOUT_IF_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // \return the interface name (8 chars)
 /////////////////////////////////////////////////////////////////////////////
+// located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
+static const char if_name[AOUT_NUM_IF][9] = {
+  "  none  ",
+  "  AOUT  ",
+  "AOUT_LC ",
+  "AOUT_NG ",
+  " INTDAC ",
+};
 const char* AOUT_IfNameGet(aout_if_t if_type)
 {
-  const char if_name[AOUT_NUM_IF][9] = {
-    "  none  ",
-    "  AOUT  ",
-    "AOUT_LC ",
-    "AOUT_NG ",
-    " INTDAC ",
-  };
-
   if( if_type >= AOUT_NUM_IF )
     if_type = 0; // select "none"
 
@@ -480,19 +480,19 @@ u8 AOUT_CaliPinGet(void)
 //! \param[in] mode the calibration mode
 //! \return 6 characters
 /////////////////////////////////////////////////////////////////////////////
+// located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
+static const char cali_desc[AOUT_NUM_CALI_MODES][7] = {
+  " off  ",
+  " Min. ",
+  "Middle",
+  " Max. ",
+  " 1.00V",
+  " 2.00V",
+  " 4.00V",
+  " 8.00V",
+};
 const char* AOUT_CaliNameGet(aout_cali_mode_t mode)
 {
-  const char cali_desc[AOUT_NUM_CALI_MODES][7] = {
-    " off  ",
-    " Min. ",
-    "Middle",
-    " Max. ",
-    " 1.00V",
-    " 2.00V",
-    " 4.00V",
-    " 8.00V",
-  };
-
   if( mode >= AOUT_NUM_CALI_MODES )
     mode = AOUT_CALI_MODE_OFF;
 

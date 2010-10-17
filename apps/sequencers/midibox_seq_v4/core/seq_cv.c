@@ -154,13 +154,14 @@ u8 SEQ_CV_CurveGet(u8 cv)
 }
 
 // will return 6 characters
+// located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
+static const char curve_desc[3][7] = {
+  "V/Oct ",
+  "Hz/V  ",
+  "Inv.  ",
+};
 const char* SEQ_CV_CurveNameGet(u8 cv)
 {
-  const char curve_desc[3][7] = {
-    "V/Oct ",
-    "Hz/V  ",
-    "Inv.  ",
-  };
 
   if( cv >= SEQ_CV_NUM )
     return "------";
