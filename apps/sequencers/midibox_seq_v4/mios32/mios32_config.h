@@ -40,7 +40,7 @@
 #define MIOS32_MINIMAL_STACK_SIZE 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 20*1024
+#define MIOS32_HEAP_SIZE 16*1024
 
 
 // optional performance measuring
@@ -66,7 +66,7 @@
 // max number of scheduled events which will allocate memory
 // each event allocates 12 bytes
 // MAX_EVENTS must be a power of two! (e.g. 64, 128, 256, 512, ...)
-#define SEQ_MIDI_OUT_MAX_EVENTS 512
+#define SEQ_MIDI_OUT_MAX_EVENTS 256
 
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
