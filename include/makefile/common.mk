@@ -42,8 +42,7 @@ SIZE    = $(MIOS32_GCC_PREFIX)-size
 PROJECT_OUT ?= $(PROJECT)_build
 
 # default linker flags
-#LDFLAGS += -T $(LD_FILE) -mthumb -Xlinker -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT).map -nostartfiles
-LDFLAGS += -T $(LD_FILE) -mthumb -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT_OUT)/$(PROJECT).map -lstdc++
+LDFLAGS += -T $(LD_FILE) -mthumb -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT_OUT)/$(PROJECT).map  -nostartfiles -lstdc++
 
 # default assembler flags
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
@@ -53,7 +52,7 @@ CFLAGS += $(C_DEFINES) $(C_INCLUDE)
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
-CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fpack-struct
 endif
 
 ifeq ($(FAMILY),STR9x)
