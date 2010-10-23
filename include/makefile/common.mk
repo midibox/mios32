@@ -52,7 +52,7 @@ CFLAGS += $(C_DEFINES) $(C_INCLUDE)
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
-CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
 endif
 
 ifeq ($(FAMILY),STR9x)
@@ -112,7 +112,7 @@ dirs:
 
 # rule to create a listing file from .elf
 %.lss: $(PROJECT_OUT)/$(PROJECT).elf
-	@$(OBJDUMP) -h -S -C $< > $@
+	@$(OBJDUMP) -w -h -S -C $< > $@
 
 # rule to create a symbol table from .elf
 %.sym: $(PROJECT_OUT)/$(PROJECT).elf
