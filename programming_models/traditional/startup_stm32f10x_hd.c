@@ -331,6 +331,10 @@ void Reset_Handler(void)
   while( 1 );
 }
 
+// dummy for newer gcc versions
+void _init()
+{
+}
 
 /*******************************************************************************
 *

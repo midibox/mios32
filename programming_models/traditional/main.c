@@ -318,7 +318,7 @@ void vApplicationMallocFailedHook(void)
 /////////////////////////////////////////////////////////////////////////////
 // _exit() for newer newlib versions
 /////////////////////////////////////////////////////////////////////////////
-void _exit(int par)
+void exit(int par)
 {
 #ifndef MIOS32_DONT_USE_LCD
   // TODO: here we should select the normal font - but only if available!
