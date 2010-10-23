@@ -52,7 +52,7 @@ CFLAGS += $(C_DEFINES) $(C_INCLUDE)
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)
-CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fpack-struct
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections
 endif
 
 ifeq ($(FAMILY),STR9x)
