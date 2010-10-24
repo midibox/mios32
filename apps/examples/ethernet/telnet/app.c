@@ -43,8 +43,6 @@ struct telnet_state *telnet_client_state;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
@@ -69,8 +67,6 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  int i;
-
   // clear LCD screen
   MIOS32_LCD_Clear();
 

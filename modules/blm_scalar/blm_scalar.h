@@ -57,6 +57,7 @@ extern s32 BLM_SCALAR_DIN_PinGet(u32 pin);
 extern u8  BLM_SCALAR_DIN_SRGet(u32 sr);
 
 extern s32 BLM_SCALAR_PinSet(u32 colour, u32 pin, u32 value);
+extern s32 BLM_SCALAR_DOUT_PinSet(u32 colour, u32 pin, u32 value);
 extern s32 BLM_SCALAR_DOUT_PinGet(u32 colour, u32 pin);
 extern s32 BLM_SCALAR_DOUT_SRSet(u32 colour, u32 sr, u8 value);
 extern u8  BLM_SCALAR_DOUT_SRGet(u32 colour, u32 sr);

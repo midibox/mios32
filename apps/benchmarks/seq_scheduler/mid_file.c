@@ -31,7 +31,7 @@
 // the file position and length
 static u32 midifile_pos;
 static u32 midifile_len;
-static u8  midifile_name[13];
+static char midifile_name[13];
 
 // including the .mid file (located in internal flash)
 #include "mb_midifile_demo.inc"

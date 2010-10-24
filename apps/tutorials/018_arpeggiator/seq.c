@@ -217,8 +217,6 @@ s32 SEQ_NotifyNoteOn(u8 note, u8 velocity)
     // push note into note stack
     NOTESTACK_Push(&notestack, note, velocity);
   else {
-    s32 status;
-
     // remove note from note stack
     // function returns 2 if no note played anymore (all keys depressed)
     if( NOTESTACK_Pop(&notestack, note) == 2 )

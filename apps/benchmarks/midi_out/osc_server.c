@@ -19,6 +19,8 @@
 
 #include "uip.h"
 #include "uip_task.h"
+#include "network-device.h"
+#include "uip_arp.h"
 
 #include "osc_server.h"
 
@@ -153,6 +155,8 @@ s32 OSC_SERVER_AppCall(void)
 #endif
     }
   }
+
+  return 0; // no error
 }
 
 

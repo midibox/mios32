@@ -119,7 +119,7 @@ s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 
 {
   char pre_str[32];
   u8 display_midi_clk = 0;
-  u8 display_mtc = 0;
+  //u8 display_mtc = 0;
 
   if( !JUMPER_MIDIMON_ACTIVE )
     return 0; // MIDImon mode not selected via jumper

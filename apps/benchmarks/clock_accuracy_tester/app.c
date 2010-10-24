@@ -66,7 +66,7 @@ static u32 midi_clock_ctr;
 
 static volatile u8 print_message; // notifier
 
-static u8 line_buffer[STRING_MAX];
+static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,8 +74,6 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
@@ -122,7 +120,6 @@ void APP_Background(void)
       u32 c_midi_clock_ctr = midi_clock_ctr;
       delay_t c_d_tick = d_tick;
       delay_t c_d_beat = d_beat;
-      delay_t c_d_measure = d_measure;
       print_message = 0;
       MIOS32_IRQ_Enable();
 
@@ -207,7 +204,7 @@ s32 CONSOLE_Parse(mios32_midi_port_t port, u8 byte)
     char *brkt;
     char *parameter;
 
-    if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
+    if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
       if( strcmp(parameter, "help") == 0 ) {
 	MIOS32_MIDI_SendDebugMessage("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
 	MIOS32_MIDI_SendDebugMessage("Following commands are available:");

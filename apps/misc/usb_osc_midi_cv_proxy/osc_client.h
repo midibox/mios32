@@ -42,8 +42,8 @@
 
 extern s32 OSC_CLIENT_Init(u32 mode);
 
-extern s32 SEQ_MIDI_OSC_TransferModeSet(u8 osc_port, u8 mode);
-extern u8 SEQ_MIDI_OSC_TransferModeGet(u8 osc_port);
+extern s32 OSC_CLIENT_TransferModeSet(u8 osc_port, u8 mode);
+extern u8 OSC_CLIENT_TransferModeGet(u8 osc_port);
 
 extern s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t p);
 extern s32 OSC_CLIENT_SendSysEx(u8 osc_port, u8 *stream, u32 count);

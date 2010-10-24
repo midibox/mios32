@@ -2,13 +2,13 @@
 // Include files
 /////////////////////////////////////////////////////////////////////////////
 
-#import <mios32.h>
-#import "stm32f10x_dbgmcu.h"
-#import "externalheaders.h"
-#import "sysex.h"
-#import "app.h"
-#import "display.h"
-#import "control.h"
+#include <mios32.h>
+#include "stm32f10x_dbgmcu.h"
+#include "externalheaders.h"
+#include "sysex.h"
+#include "app.h"
+#include "display.h"
+#include "control.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
