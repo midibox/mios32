@@ -38,7 +38,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 line_buffer[STRING_MAX];
+static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
 
@@ -115,7 +115,7 @@ static u32 get_ip(char *word)
 
   int i;
   for(i=0; i<4; ++i) {
-    if( word = strtok_r((i == 0) ? word : NULL, ".", &brkt) ) {
+    if( (word = strtok_r((i == 0) ? word : NULL, ".", &brkt)) ) {
       s32 value = get_dec(word);
       if( value >= 0 && value <= 255 )
 	ip[i] = value;
@@ -170,7 +170,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
   char *brkt;
   char *parameter;
 
-  if( parameter = strtok_r(input, separators, &brkt) ) {
+  if( (parameter = strtok_r(input, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
       out("Following commands are available:");
@@ -207,10 +207,10 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	out("ERROR: failed to restore presets from internal EEPROM (status %d)!", status);
       }
     } else if( strcmp(parameter, "set") == 0 ) {
-      if( parameter = strtok_r(NULL, separators, &brkt) ) {
+      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "dhcp") == 0 ) {
 	  s32 on_off = -1;
-	  if( parameter = strtok_r(NULL, separators, &brkt) )
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	    on_off = get_on_off(parameter);
 
 	  if( on_off < 0 ) {
@@ -229,7 +229,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
 	  } else {
 	    u32 ip = 0;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      ip = get_ip(parameter);
 	    if( !ip ) {
 	      out("Expecting IP address in format a.b.c.d!");
@@ -247,7 +247,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
 	  } else {
 	    u32 ip = 0;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      ip = get_ip(parameter);
 	    if( !ip ) {
 	      out("Expecting netmask in format a.b.c.d!");
@@ -265,7 +265,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
 	  } else {
 	    u32 ip = 0;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      ip = get_ip(parameter);
 	    if( !ip ) {
 	      out("Expecting gateway address in format a.b.c.d!");
@@ -283,7 +283,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: Ethernet services not running yet!");
 	  } else {
 	    s32 con = -1;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      con = get_dec(parameter);
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
@@ -291,7 +291,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      con+=1; // the user counts from 1
 
 	      u32 ip = 0;
-	      if( parameter = strtok_r(NULL, separators, &brkt) )
+	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
 		ip = get_ip(parameter);
 	      if( !ip ) {
 		out("Expecting OSC connection <1..%d> and remote address in format a.b.c.d!", OSC_SERVER_NUM_CONNECTIONS);
@@ -309,7 +309,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: Ethernet services not running yet!");
 	  } else {
 	    s32 con = -1;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      con = get_dec(parameter);
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
@@ -317,7 +317,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      con+=1; // the user counts from 1
 
 	      s32 value = -1;
-	      if( parameter = strtok_r(NULL, separators, &brkt) )
+	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
 		value = get_dec(parameter);
 	      if( value < 1024 || value >= 65535) {
 		out("Expecting OSC connection (1..%d) and remote port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
@@ -334,7 +334,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: Ethernet services not running yet!");
 	  } else {
 	    s32 con = -1;
-	    if( parameter = strtok_r(NULL, separators, &brkt) )
+	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	      con = get_dec(parameter);
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
@@ -342,7 +342,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      con+=1; // the user counts from 1
 
 	      s32 value = -1;
-	      if( parameter = strtok_r(NULL, separators, &brkt) )
+	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
 		value = get_dec(parameter);
 	      if( value < 1024 || value >= 65535) {
 		out("Expecting OSC connection (1..%d) and local port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
@@ -386,7 +386,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  }
 	} else if( strcmp(parameter, "midimon") == 0 ) {
 	  s32 on_off = -1;
-	  if( parameter = strtok_r(NULL, separators, &brkt) )
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	    on_off = get_on_off(parameter);
 
 	  if( on_off < 0 ) {
@@ -397,7 +397,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  }
 	} else if( strcmp(parameter, "midimon_filter") == 0 ) {
 	  s32 on_off = -1;
-	  if( parameter = strtok_r(NULL, separators, &brkt) )
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	    on_off = get_on_off(parameter);
 
 	  if( on_off < 0 ) {
@@ -408,7 +408,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  }
 	} else if( strcmp(parameter, "midimon_tempo") == 0 ) {
 	  s32 on_off = -1;
-	  if( parameter = strtok_r(NULL, separators, &brkt) )
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	    on_off = get_on_off(parameter);
 
 	  if( on_off < 0 ) {

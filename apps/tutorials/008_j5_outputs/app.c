@@ -63,8 +63,8 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // 2) the LED should be turned off whenever a Note Off Event or a Note On
   // event with velocity == 0 has been received (the MIDI spec says, that velocity 0
   // should be handled like Note Off)
-  else if( midi_package.type == NoteOff ||
-	   midi_package.type == NoteOn && midi_package.velocity == 0 ) {
+  else if( (midi_package.type == NoteOff) ||
+	   (midi_package.type == NoteOn && midi_package.velocity == 0) ) {
     // determine LED number (one of 12, each octave)
     u8 led = midi_package.note % 12;
     // turn off LED

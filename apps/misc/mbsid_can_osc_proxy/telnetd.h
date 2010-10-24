@@ -37,6 +37,7 @@
 
 #include "uipopt.h"
 
+void telnetd_init(void);
 void telnetd_appcall(void);
 
 #ifndef TELNETD_CONF_LINELEN

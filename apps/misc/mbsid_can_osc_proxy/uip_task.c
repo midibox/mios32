@@ -31,6 +31,7 @@
 
 #include "osc_server.h"
 #include "osc_client.h"
+#include "telnetd.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,8 +85,10 @@ static void UIP_TASK_Handler(void *pvParameters)
   uip_ipaddr_t ipaddr;
   struct timer periodic_timer, arp_timer;
 
+#if 0
   // Initialise the xLastExecutionTime variable on task entry
   portTickType xLastExecutionTime = xTaskGetTickCount();
+#endif
 
   // take over exclusive access to UIP functions
   MUTEX_UIP_TAKE;

@@ -49,7 +49,7 @@ void MbSidSeqBassline::init(void)
 void MbSidSeqBassline::tick(MbSidVoice *v, MbSidSe *se)
 {
     // always bypass the notestack when triggering instruments
-    bool bypassNotestack = true;
+    //bool bypassNotestack = true;
 
     // clear gate and deselect sequence if MIDI clock stop requested
     if( seqStopReq ) {

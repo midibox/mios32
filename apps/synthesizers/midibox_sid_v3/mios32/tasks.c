@@ -87,7 +87,7 @@ static xTaskHandle xMSDHandle;
 s32 TASKS_Init(u32 mode)
 {
   // disable MSD by default (has to be enabled in SID_UI_FILE menu)
-  msd_state = DISABLED;
+  msd_state = MSD_DISABLED;
 
   // start tasks
   xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
@@ -180,14 +180,14 @@ static void TASK_MSD(void *pvParameters)
 
 
     // MSD driver handling
-    if( msd_state != DISABLED ) {
+    if( msd_state != MSD_DISABLED ) {
       MUTEX_SDCARD_TAKE;
 
       switch( msd_state ) {
         case MSD_SHUTDOWN:
 	  // switch back to USB MIDI
 	  MIOS32_USB_Init(1);
-	  msd_state = DISABLED;
+	  msd_state = MSD_DISABLED;
 	  MUTEX_SDCARD_GIVE;
 	  vTaskSuspend(NULL); // will be resumed from TASK_MSD_EnableSet()
 	  MUTEX_SDCARD_TAKE;

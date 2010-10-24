@@ -1,5 +1,5 @@
-#import "externalheaders.h"
-#import "display.h"
+#include "externalheaders.h"
+#include "display.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions

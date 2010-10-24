@@ -45,8 +45,6 @@ static u32 benchmark_cycles;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 

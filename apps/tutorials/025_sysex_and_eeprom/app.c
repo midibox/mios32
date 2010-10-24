@@ -41,8 +41,6 @@ volatile u8 print_msg;
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 

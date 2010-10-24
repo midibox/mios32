@@ -38,6 +38,9 @@ extern s32 SEQ_Handler(void);
 
 extern s32 SEQ_NotifyNewNote(notestack_t *n);
 
+extern s32 SEQ_NotifyNoteOn(u8 note, u8 velocity);
+extern s32 SEQ_NotifyNoteOff(u8 note);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

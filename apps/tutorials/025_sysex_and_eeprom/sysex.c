@@ -149,8 +149,6 @@ s32 SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 {
   int i;
   int sysex_buffer_ix = 0;
-  u8 checksum;
-  u8 c;
 
   // send header
   for(i=0; i<sizeof(sysex_header); ++i)
@@ -395,7 +393,7 @@ s32 SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
       } else {
 	// write patch
 	s32 error;
-	if( error = PATCH_Store(sysex_bank, sysex_patch) ) {
+	if( (error = PATCH_Store(sysex_bank, sysex_patch)) ) {
 	  // write failed (bankstick not available)
 	  SYSEX_SendAck(sysex_port, SYSEX_DISACK, SYSEX_DISACK_BS_NOT_AVAILABLE);
 	} else {

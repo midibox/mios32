@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "app.h"
+#include "check.h"
 
 
 // include everything FreeRTOS related we don't understand yet ;)

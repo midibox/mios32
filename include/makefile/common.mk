@@ -48,7 +48,7 @@ LDFLAGS += -T $(LD_FILE) -mthumb -u _start -Wl,--gc-section  -Xlinker -M -Xlinke
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
 
 # define C flags
-CFLAGS += $(C_DEFINES) $(C_INCLUDE)
+CFLAGS += $(C_DEFINES) $(C_INCLUDE) -Wall -Wno-format -Wno-switch -Wno-strict-aliasing
 
 # add family specific arguments
 ifeq ($(FAMILY),STM32F10x)

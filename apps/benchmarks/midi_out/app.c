@@ -55,8 +55,6 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  s32 i;
-
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 

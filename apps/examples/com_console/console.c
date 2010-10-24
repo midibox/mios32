@@ -33,7 +33,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 line_buffer[STRING_MAX];
+static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ s32 CONSOLE_Parse(mios32_com_port_t port, u8 byte)
     char *brkt;
     char *parameter;
 
-    if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
+    if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
       if( strncmp(parameter, "cmd1", 4) == 0 ) {
 	  parameter += 4;
 

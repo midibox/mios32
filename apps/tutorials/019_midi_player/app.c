@@ -25,6 +25,7 @@
 #include <seq_midi_out.h>
 
 #include "seq.h"
+#include "mid_file.h"
 #include "app.h"
 
 

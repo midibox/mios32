@@ -83,7 +83,6 @@ s32 UIP_TASK_Init(u32 mode)
 static void UIP_TASK_Handler(void *pvParameters)
 {
   int i;
-  uip_ipaddr_t ipaddr;
   struct timer periodic_timer, arp_timer;
 
   // Initialise the xLastExecutionTime variable on task entry
@@ -112,6 +111,7 @@ static void UIP_TASK_Handler(void *pvParameters)
   dhcpc_init(uip_ethaddr.addr, sizeof(uip_ethaddr.addr));
   MIOS32_MIDI_SendDebugMessage("[UIP_TASK] DHCP Client requests the IP settings...\n");
 #else
+  uip_ipaddr_t ipaddr;
   // set my IP address
   uip_ipaddr(ipaddr,
 	     ((MY_IP_ADDRESS)>>24) & 0xff,

@@ -54,7 +54,7 @@
 // the file position and length
 static u32 midifile_pos;
 static u32 midifile_len;
-static u8  ui_midifile_name[13];
+static char ui_midifile_name[13];
 
 // DOS FS variables
 static u8 sector[SECTOR_SIZE];
@@ -171,7 +171,7 @@ char *MID_FILE_FindNext(char *filename)
 #endif
 
   di.scratch = sector;
-  if( DFS_OpenDir(&vi, MID_FILES_PATH, &di) ) {
+  if( DFS_OpenDir(&vi, (uint8_t *)MID_FILES_PATH, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MID_FILE] Error opening directory - try mounting the partition again\n");
 #endif
@@ -185,7 +185,7 @@ char *MID_FILE_FindNext(char *filename)
       return NULL; // directory not found
     }
 
-    if( DFS_OpenDir(&vi, MID_FILES_PATH, &di) ) {
+    if( DFS_OpenDir(&vi, (uint8_t *)MID_FILES_PATH, &di) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MID_FILE] Error opening directory again - giving up!\n");
 #endif
@@ -195,7 +195,7 @@ char *MID_FILE_FindNext(char *filename)
   }
 
   u8 take_next;
-  u8 *search_file[13];
+  char search_file[13];
   if( filename == NULL ) {
     take_next = 1;
   } else {
@@ -205,17 +205,17 @@ char *MID_FILE_FindNext(char *filename)
 
   while( !DFS_GetNext(&vi, &di, &de) ) {
     if( de.name[0] ) {
-      DFS_DirToCanonical(ui_midifile_name, de.name);
+      DFS_DirToCanonical((uint8_t *)ui_midifile_name, de.name);
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[MID_FILE] file: '%s'\n", ui_midifile_name);
 #endif
-      if( strncasecmp(&de.name[8], "mid", 3) == 0 ) {
+      if( strncasecmp((char *)&de.name[8], "mid", 3) == 0 ) {
 	if( take_next ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	  DEBUG_MSG("[MID_FILE] return it as next file\n");
 #endif
 	  return ui_midifile_name;
-	} else if( strncasecmp(&de.name[0], (char *)search_file, 8) == 0 ) {
+	} else if( strncasecmp((char *)&de.name[0], (char *)search_file, 8) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	  DEBUG_MSG("[MID_FILE] found file: '%s', searching for next\n", ui_midifile_name);
 #endif
@@ -239,7 +239,7 @@ s32 MID_FILE_open(char *filename)
   strncpy(filepath, MID_FILES_PATH, MAX_PATH);
   strncat(filepath, filename, MAX_PATH);
   
-  if( DFS_OpenFile(&vi, filepath, DFS_READ, sector, &fi)) {
+  if( DFS_OpenFile(&vi, (uint8_t *)filepath, DFS_READ, sector, &fi)) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MID_FILE] error opening file '%s'!\n", filepath);
 #endif

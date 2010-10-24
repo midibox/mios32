@@ -128,6 +128,7 @@ s32 MIDIMON_InitFromPresets(u8 _midimon_active, u8 _filter_active, u8 _tempo_act
 s32 MIDIMON_ActiveSet(u8 active)
 {
   midimon_active = active;
+  return 0; // no error
 }
 
 s32 MIDIMON_ActiveGet(void)
@@ -139,6 +140,7 @@ s32 MIDIMON_ActiveGet(void)
 s32 MIDIMON_FilterActiveSet(u8 active)
 {
   filter_active = active;
+  return 0; // no error
 }
 
 s32 MIDIMON_FilterActiveGet(void)
@@ -150,6 +152,7 @@ s32 MIDIMON_FilterActiveGet(void)
 s32 MIDIMON_TempoActiveSet(u8 active)
 {
   tempo_active = active;
+  return 0; // no error
 }
 
 s32 MIDIMON_TempoActiveGet(void)
@@ -165,7 +168,7 @@ s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 
 {
   char pre_str[32];
   u8 display_midi_clk = 0;
-  u8 display_mtc = 0;
+  //u8 display_mtc = 0;
 
   if( !midimon_active )
     return 0; // MIDImon mode not enabled

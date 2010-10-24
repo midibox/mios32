@@ -576,7 +576,7 @@ void MbSidSeMulti::parSet(u8 par, u16 value, u8 sidlr, u8 ins, bool scaleFrom16b
     default: insSel = 3; voiceSel = 0x09; break; // both voices
     }
 
-    MbSidVoice *v = mbSidVoice.first();
+    //MbSidVoice *v = mbSidVoice.first();
 
     if( par <= 0x07 ) {
         switch( par ) {

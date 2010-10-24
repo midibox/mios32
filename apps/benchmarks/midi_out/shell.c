@@ -57,6 +57,7 @@ parse(register char *str, struct ptentry *t)
   p->pfunc(str);
 }
 /*---------------------------------------------------------------------------*/
+#if 0
 static void
 inttostr(register char *str, unsigned int i)
 {
@@ -72,6 +73,7 @@ inttostr(register char *str, unsigned int i)
   str[3] = ' ';
   str[4] = 0;
 }
+#endif
 /*---------------------------------------------------------------------------*/
 static void
 help(char *str)
