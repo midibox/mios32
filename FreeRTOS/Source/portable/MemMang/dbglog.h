@@ -45,6 +45,7 @@
 #undef DBG_LOG_FORCE
 
 // Add MIOS32 Debugging
+extern int MIOS32_MIDI_SendDebugMessage(char *format, ...);
 #ifndef DEBUG_MSG
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 #endif

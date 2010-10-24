@@ -22,6 +22,7 @@
 
 #include "seq_cv.h"
 #include "seq_hwcfg.h"
+#include "seq_bpm.h"
 #include "seq_core.h"
 
 

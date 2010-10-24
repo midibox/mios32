@@ -28,6 +28,8 @@
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
+#include "seq_midi_port.h"
+#include "seq_bpm.h"
 
 #include "seq_core.h"
 #include "seq_pattern.h"
@@ -239,11 +241,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case SEQ_UI_ENCODER_GP9: {
 	  u8 value = SEQ_MIDIMP_ModeGet();
 
-	  if( incrementer == 0 ) // toggle function via button
+	  if( incrementer == 0 ) { // toggle function via button
 	    if( value >= 1 )
 	      incrementer = -value;
 	    else
 	      incrementer = 1;
+	  }
 
 	  if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
 	    SEQ_MIDIMP_ModeSet(value);
@@ -262,11 +265,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  if( value == 16 )
 	    selection = 2;
 
-	  if( incrementer == 0 ) // toggle function via button
+	  if( incrementer == 0 ) { // toggle function via button
 	    if( selection >= 2 )
 	      incrementer = -selection;
 	    else
 	      incrementer = 1;
+	  }
 
 	  if( SEQ_UI_Var8_Inc(&selection, 0, 2, incrementer) ) {
 	    u8 num_layers = 4;
@@ -284,11 +288,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case SEQ_UI_ENCODER_GP13: {
 	  u8 value = SEQ_MIDIMP_ResolutionGet();
 
-	  if( incrementer == 0 ) // toggle function via button
+	  if( incrementer == 0 ) { // toggle function via button
 	    if( value >= 2 )
 	      incrementer = -value;
 	    else
 	      incrementer = 1;
+	  }
 
 	  if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
 	    SEQ_MIDIMP_ResolutionSet(value);
@@ -440,7 +445,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	  // always switch unsynched
 	  pattern->SYNCHED = 0;
-	  SEQ_PATTERN_Change(ui_selected_group, *pattern);
+	  SEQ_PATTERN_Change(ui_selected_group, *pattern, 0);
 	  return 1;
         }
     
@@ -471,8 +476,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case MF_DIALOG_EXPORT_FNAME: {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP15: {
-	  int i;
-
 	  // SAVE only via button
 	  if( incrementer != 0 )
 	    return 0;

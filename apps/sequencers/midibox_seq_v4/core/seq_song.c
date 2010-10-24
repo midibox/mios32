@@ -187,7 +187,7 @@ s32 SEQ_SONG_PosGet(void)
 s32 SEQ_SONG_PosSet(u32 pos)
 {
   song_pos = pos % SEQ_SONG_NUM_STEPS;
-  return SEQ_SONG_FetchPos();
+  return SEQ_SONG_FetchPos(0);
 }
 
 
@@ -217,7 +217,7 @@ s32 SEQ_SONG_Reset(void)
 
   // if not in phrase mode: fetch new entries
   if( song_active ) {
-    if( SEQ_SONG_FetchPos() < 0 ) { // returns -1 if recursion counter reached max position
+    if( SEQ_SONG_FetchPos(1) < 0 ) { // returns -1 if recursion counter reached max position
       // reset song positions and loop counters again
       song_pos = 0;
       song_loop_ctr = 0;
@@ -233,7 +233,7 @@ s32 SEQ_SONG_Reset(void)
 // fetches the pos entries of a song
 // returns -1 if recursion counter reached max position
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_SONG_FetchPos(void)
+s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 {
   int recursion_ctr = 0;
 
@@ -323,28 +323,28 @@ s32 SEQ_SONG_FetchPos(void)
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g1;
 	    p.bank = s->bank_g1;
-	    SEQ_PATTERN_Change(0, p);
+	    SEQ_PATTERN_Change(0, p, force_immediate_change);
 	  }
 
 	  if( s->pattern_g2 < 0x80 ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g2;
 	    p.bank = s->bank_g2;
-	    SEQ_PATTERN_Change(1, p);
+	    SEQ_PATTERN_Change(1, p, force_immediate_change);
 	  }
 
 	  if( s->pattern_g3 < 0x80 ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g3;
 	    p.bank = s->bank_g3;
-	    SEQ_PATTERN_Change(2, p);
+	    SEQ_PATTERN_Change(2, p, force_immediate_change);
 	  }
 
 	  if( s->pattern_g4 < 0x80 ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g4;
 	    p.bank = s->bank_g4;
-	    SEQ_PATTERN_Change(3, p);
+	    SEQ_PATTERN_Change(3, p, force_immediate_change);
 	  }
 	}
     }
@@ -365,7 +365,7 @@ s32 SEQ_SONG_NextPos(void)
   else {
     ++song_pos;
 
-    SEQ_SONG_FetchPos();
+    SEQ_SONG_FetchPos(0);
 
     // correct the song position if follow mode is active
     if( seq_core_state.FOLLOW && SEQ_SONG_ActiveGet() )
@@ -403,7 +403,7 @@ s32 SEQ_SONG_PrevPos(void)
     } else if( !song_loop_ctr )
       reinit_loop_ctr = 0; // don't re-init loop counter if we reached the very first song step
 
-    SEQ_SONG_FetchPos();
+    SEQ_SONG_FetchPos(0);
 
     if( reinit_loop_ctr )
       song_loop_ctr = song_loop_ctr_max;

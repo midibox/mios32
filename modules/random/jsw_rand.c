@@ -55,7 +55,7 @@ unsigned long jsw_rand ( void )
 
     y = ( x[N - 1] & U ) | (x[0] & L);
     a = ( y & 0x1UL ) ? A : 0x0UL;
-    x[N - 1] = x[M - 1] ^ ( y >> 1 ) ^ a;
+    x[N - 1] = x[(M - 1) % N] ^ ( y >> 1 ) ^ a;
   }
 
   y = x[next++];

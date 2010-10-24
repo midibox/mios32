@@ -136,8 +136,8 @@ s32 BLM_X_PrepareRow(void){
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_GetRow(void){
 #if (BLM_X_BTN_FIRST_DIN_SR > 0)
-  u8 sr_value,pin_mask;
-  u32 sr,pin,scanned_row;
+  u8 sr_value;
+  u32 sr,scanned_row;
   //since the row set in BLM_PrepareRow will only take effect after the DIN's are already scanned,
   //the button-row read here is one step back to the current row
   scanned_row = current_row ? (current_row -1) : (BLM_X_NUM_ROWS - 1);
@@ -175,12 +175,13 @@ s32 BLM_X_GetRow(void){
   for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++){
     sr_value = MIOS32_DIN_SRGet(blm_x_config.btn_first_din_sr - 1 + sr);
     //walk the 8 DIN pins of the SR
+    u8 pin;
     for(pin = 0;pin < 8; pin++){
       //debounce-handling for individual buttons
       if(debounce_ctr[scanned_row][sr*8 + pin])
         debounce_ctr[scanned_row][sr*8 + pin]--;
       else{
-        pin_mask = 1 << pin;
+        u8 pin_mask = 1 << pin;
         //*** set change notification and new value. should not be interrupted ***
         MIOS32_IRQ_Disable();
         // set change-notification-bit. if a second change happens before the last change was notified (clear

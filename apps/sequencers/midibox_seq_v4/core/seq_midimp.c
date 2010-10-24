@@ -31,6 +31,7 @@
 #include "seq_file.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
+#include "seq_label.h"
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_layer.h"
@@ -68,7 +69,7 @@ static u8 seq_midimp_num_layers;
 
 // filename
 #define MIDIFILE_PATH_LEN_MAX 20
-static u8 midifile_path[MIDIFILE_PATH_LEN_MAX];
+static char midifile_path[MIDIFILE_PATH_LEN_MAX];
 
 static u32 midifile_pos;
 static u32 midifile_len;

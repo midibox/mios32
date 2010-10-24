@@ -42,6 +42,8 @@ extern s32 SEQ_BLM_Init(u32 mode);
 extern u16 SEQ_BLM_PatternGreenGet(u8 row);
 extern u16 SEQ_BLM_PatternRedGet(u8 row);
 
+extern s32 SEQ_BLM_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+
 extern s32 SEQ_BLM_Parser(mios32_midi_port_t port, u8 midi_in);
 extern s32 SEQ_BLM_TimeOut(mios32_midi_port_t port);
 extern s32 SEQ_BLM_SYSEX_SendRequest(u8 req);

@@ -12,6 +12,10 @@ MIDIboxSEQ V4.0beta29
   o implemented tap tempo function.
     It can be accessed in the BPM menu page (rightmost GP button), or with MENU+PLAY
 
+  o fixed "accent on stretched notes" issue
+
+  o fixed pattern synchronisation issue at very first played pattern in song mode
+
 
 MIDIboxSEQ V4.0beta28
 ~~~~~~~~~~~~~~~~~~~~~

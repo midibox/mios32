@@ -20,6 +20,7 @@
 #include "seq_ui.h"
 
 #include "seq_mixer.h"
+#include "seq_file.h"
 #include "seq_file_m.h"
 #include "seq_midi_port.h"
 

@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include <string.h>
 #include <seq_midi_out.h>
+#include <seq_bpm.h>
 #include "tasks.h"
 
 #include "seq_lcd.h"
@@ -25,6 +26,11 @@
 #include "seq_cv.h"
 #include "seq_midi_in.h"
 #include "seq_file.h"
+#include "seq_core.h"
+#include "seq_song.h"
+#include "seq_midply.h"
+#include "seq_groove.h"
+#include "seq_mixer.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -819,9 +825,9 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
 
     // clear all patterns/etc.. to have a clean start
     SEQ_CORE_Init(0);
-    SEQ_GROOVE_Init();
-    SEQ_SONG_Init();
-    SEQ_MIXER_Init();
+    SEQ_GROOVE_Init(0);
+    SEQ_SONG_Init(0);
+    SEQ_MIXER_Init(0);
 
     // formatting handled by low-priority task in app.c
     // messages print in seq_ui.c as long as request is active

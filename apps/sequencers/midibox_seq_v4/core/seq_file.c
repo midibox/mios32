@@ -35,6 +35,7 @@
 #include <mios32.h>
 
 #include <ff.h>
+#include <diskio.h>
 #include <string.h>
 
 #include "tasks.h"
@@ -164,7 +165,7 @@ s32 SEQ_FILE_Init(u32 mode)
   SEQ_FILE_T_Init(0); // track preset file access
 
 
-  return 0; // no error
+  return error;
 }
 
 
@@ -367,7 +368,7 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
     // change patterns to the ones stored in MBSEQ_C.V4
     int group;
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
-      SEQ_PATTERN_Change(group, seq_pattern[group]);
+      SEQ_PATTERN_Change(group, seq_pattern[group], 0);
 
     // change song to the one stored in MBSEQ_C.V4
     SEQ_SONG_Load(SEQ_SONG_NumGet());
@@ -406,7 +407,7 @@ s32 SEQ_FILE_StoreSessionName(void)
   sprintf(filepath, "%s/LAST_ONE.V4", SEQ_FILE_SESSION_PATH);
   status=SEQ_FILE_WriteOpen(filepath, 1);
   if( status >= 0 ) {
-    status = SEQ_FILE_WriteBuffer(seq_file_session_name, strlen(seq_file_session_name));
+    status = SEQ_FILE_WriteBuffer((u8 *)seq_file_session_name, strlen(seq_file_session_name));
     if( status >= 0 )
       status = SEQ_FILE_WriteByte('\n');
     SEQ_FILE_WriteClose();
@@ -434,7 +435,7 @@ s32 SEQ_FILE_LoadSessionName(void)
   sprintf(filepath, "%s/LAST_ONE.V4", SEQ_FILE_SESSION_PATH);
   if( (status=SEQ_FILE_ReadOpen(&file, filepath)) >= 0 ) {
     char linebuffer[20];
-    status = SEQ_FILE_ReadLine((char *)&linebuffer, 20);
+    status = SEQ_FILE_ReadLine((u8 *)&linebuffer, 20);
     if( status < 0 || strlen(linebuffer) > 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SEQ_FILE_LoadSessionName] ERROR: invalid session name '%s'\n", linebuffer);
@@ -784,7 +785,6 @@ s32 SEQ_FILE_WriteByte(u8 byte)
 
 s32 SEQ_FILE_WriteHWord(u16 hword)
 {
-  s32 status = 0;
   // ensure little endian coding
   u8 tmp[2];
   tmp[0] = (u8)(hword >> 0);
@@ -794,7 +794,6 @@ s32 SEQ_FILE_WriteHWord(u16 hword)
 
 s32 SEQ_FILE_WriteWord(u32 word)
 {
-  s32 status = 0;
   // ensure little endian coding
   u8 tmp[4];
   tmp[0] = (u8)(word >> 0);
@@ -869,9 +868,6 @@ s32 SEQ_FILE_DirExists(char *path)
 s32 SEQ_FILE_PrintSDCardInfos(void)
 {
   int status = 0;
-  FRESULT res;
-  DIR dir;
-  FILINFO fileinfo;
 
   // read CID data
   mios32_sdcard_cid_t cid;
@@ -1348,11 +1344,9 @@ s32 SEQ_FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_it
 
       char *p = (char *)&de.fname[0];
       int i;
-      for(i=0; i<9; ++i) {
+      for(i=0; i<9; ++i, p++) {
 	if( *p == '.' )
 	  break;
-	else
-	  *p++;
       }
 
       if( *p++ != '.' )
@@ -1409,7 +1403,6 @@ s32 SEQ_FILE_SendSyxDump(char *path, mios32_midi_port_t port)
   // stream SysEx to MIDI port
   UINT successcount;
   u32 num_bytes = 0;
-  u8 buffer[10];
   do {
     if( (seq_file_dfs_errno=f_read(&seq_file_read, tmp_buffer, TMP_BUFFER_SIZE, &successcount)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2

@@ -21,6 +21,7 @@
 
 #include "tasks.h"
 
+#include <seq_bpm.h>
 #include <seq_midi_out.h>
 #include <mid_parser.h>
 
@@ -30,6 +31,7 @@
 #include "seq_pattern.h"
 #include "seq_song.h"
 #include "seq_midi_port.h"
+#include "seq_midi_router.h"
 #include "seq_file.h"
 #include "seq_ui.h"
 
@@ -279,7 +281,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 
   // write file header
   u32 header_size = 6;
-  status |= SEQ_FILE_WriteBuffer("MThd", 4);
+  status |= SEQ_FILE_WriteBuffer((u8*)"MThd", 4);
   status |= SEQ_MIDEXP_WriteWord(header_size, 4);
   status |= SEQ_MIDEXP_WriteWord(1, 2); // MIDI File Format
   status |= SEQ_MIDEXP_WriteWord(last_track-first_track+1, 2); // Number of Tracks
@@ -313,7 +315,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   for(export_track=first_track; export_track<=last_track; ++export_track) {
 
     // print message on screen
-    u8 str_buffer[21];
+    char str_buffer[21];
     sprintf(str_buffer, "Exporting G%dT%d to",
 	    (export_track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
 	    (export_track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
@@ -346,12 +348,12 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     status |= SEQ_FILE_WriteSeek(track_header_filepos);
     export_trk_size = 0;
     export_trk_tick = 0;
-    status |= SEQ_FILE_WriteBuffer("MTrk", 4);
+    status |= SEQ_FILE_WriteBuffer((u8*)"MTrk", 4);
     status |= SEQ_MIDEXP_WriteWord(export_trk_size, 4); // Placeholder
 
     // add track name as meta event
     {
-      u8 buffer[20];
+      char buffer[20];
 
       export_trk_size += SEQ_MIDEXP_WriteVarLen(0);
       buffer[0] = 0xff; // Meta
@@ -362,7 +364,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
       sprintf(buffer, "G%dT%d",
 	      (export_track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
 	      (export_track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
-      status |= SEQ_FILE_WriteBuffer(buffer, 4);
+      status |= SEQ_FILE_WriteBuffer((u8*)buffer, 4);
       export_trk_size += 4;
     }
 

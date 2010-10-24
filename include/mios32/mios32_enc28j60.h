@@ -74,7 +74,7 @@ extern s32 MIOS32_ENC28J60_LinkAvailable(void);
 extern s32 MIOS32_ENC28J60_RevIDGet(void);
 
 extern s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6]);
-extern u8 MIOS32_ENC28J60_MAC_AddrGetSet(void);
+extern u8 *MIOS32_ENC28J60_MAC_AddrGet(void);
 
 extern s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2);
 extern s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size);

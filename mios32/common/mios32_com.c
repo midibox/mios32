@@ -415,7 +415,7 @@ s32 MIOS32_COM_ReceiveCallback_Init(void *callback_receive)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_DefaultPortSet(mios32_com_port_t port)
 {
-  if( port == DEFAULT ) // avoid recursion
+  if( port == (mios32_com_port_t)DEFAULT ) // avoid recursion
     return -1;
 
   default_port = port;

@@ -176,7 +176,7 @@ static u32 get_ip(char *brkt)
 
   int i;
   for(i=0; i<4; ++i) {
-    if( word = strtok_r(NULL, ".", &brkt) ) {
+    if( (word=strtok_r(NULL, ".", &brkt)) ) {
       s32 value = get_dec(word);
       if( value >= 0 && value <= 255 )
 	ip[i] = value;

@@ -42,6 +42,7 @@
 #include "seq_file_m.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_t.h"
 #include "seq_file_gc.h"
 #include "seq_file_hw.h"
 
@@ -68,7 +69,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 line_buffer[STRING_MAX];
+static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
 
@@ -126,7 +127,7 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
     char *brkt;
     char *parameter;
 
-    if( parameter = strtok_r(line_buffer, separators, &brkt) ) {
+    if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
       if( strcmp(parameter, "help") == 0 ) {
 	SEQ_TERMINAL_PrintHelp(DEBUG_MSG);
       } else if( strcmp(parameter, "system") == 0 ) {
@@ -469,7 +470,6 @@ s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
   u8 song = SEQ_SONG_NumGet();
 
   MUTEX_MIDIOUT_TAKE;
-  int i;
 
   out("Song #%2d\n", song+1);
   out("========\n");
@@ -501,7 +501,7 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
 extern void * ptr_array[256];
 s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function)
 {
-  void (*out)(char *format, ...) = _output_function;
+  //void (*out)(char *format, ...) = _output_function;
   // TODO: umm_info doesn't allow to define output function
 
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -560,7 +560,6 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   FRESULT res;
   FILINFO fno;
   DIR dir;
-  int i;
   char *fn;
   char str_buffer[128];
 

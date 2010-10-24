@@ -74,6 +74,7 @@ extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument);
 extern s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument);
 extern s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument);
 extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument);
 
 extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
 extern char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer);

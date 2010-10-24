@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <seq_midi_out.h>
+#include "seq_statistics.h"
 
 #include "tasks.h"
 

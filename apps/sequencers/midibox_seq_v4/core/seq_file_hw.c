@@ -25,6 +25,7 @@
 #include <ff.h>
 #include <string.h>
 #include <aout.h>
+#include <seq_cv.h>
 #include <blm.h>
 #include <blm_x.h>
 
@@ -906,7 +907,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  SEQ_CV_ClkPulseWidthGet(pulsewidth);
+	  SEQ_CV_ClkPulseWidthSet(pulsewidth);
 
 	} else if( strcmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 

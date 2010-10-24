@@ -128,8 +128,7 @@ LIBS =
 LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
-DEBUG     =	-g
-#DEBUG     =	-g -Wall -Wno-format -Wno-switch
+DEBUG     =	-g -Wall -Wno-format -Wno-switch -Wno-strict-aliasing
 OPTIMIZE  =	-Os
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)

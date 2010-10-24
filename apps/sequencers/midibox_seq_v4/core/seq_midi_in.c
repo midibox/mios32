@@ -42,6 +42,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
+#define PATCH_CHANGER_ENABLED 0
+
 // the notestack size (can be overruled in mios32_config.h)
 #ifndef SEQ_MIDI_IN_NOTESTACK_SIZE
 #define SEQ_MIDI_IN_NOTESTACK_SIZE 10
@@ -78,8 +81,9 @@
 static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity);
 static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value);
 static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity);
+#if PATCH_CHANGER_ENABLED
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity);
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -416,9 +420,8 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     }
   }
 
-#if 0
+#if PATCH_CHANGER_ENABLED
   // Patch Changer (currently assigned to channel+1)
-  // Too complicated for the world? Pattern has to be stored before this feature is used to avoid data loss
   if( !(status & 2) &&
       (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
        midi_package.chn == (seq_midi_in_sect_channel)) ) {
@@ -626,6 +629,7 @@ static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity)
 // For Patch Changes (assigned to different MIDI channel)
 // If velocity == 0, Note Off event has been received, otherwise Note On event
 /////////////////////////////////////////////////////////////////////////////
+#if PATCH_CHANGER_ENABLED
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 {
   int octave = note / 12;
@@ -667,15 +671,15 @@ static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 
   return octave_taken; // return 1 if octave has been taken, otherwise 0
 }
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CC has been received over selected port and channel
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
 {
-  static nrpn_lsb = 0;
-  static nrpn_msb = 0;
+  static u8 nrpn_lsb = 0;
+  static u8 nrpn_msb = 0;
 
   if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
     return -1;
@@ -702,7 +706,7 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
 	pattern.pattern = value;
 	pattern.DISABLED = 0;
 	pattern.SYNCHED = 0;
-	SEQ_PATTERN_Change(group, pattern);
+	SEQ_PATTERN_Change(group, pattern, 0);
       }
       return 1;
     } break;
@@ -717,7 +721,7 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
 	pattern.bank = value;
 	pattern.DISABLED = 0;
 	pattern.SYNCHED = 0;
-	SEQ_PATTERN_Change(group, pattern);
+	SEQ_PATTERN_Change(group, pattern, 0);
       }
       return 1;
     } break;

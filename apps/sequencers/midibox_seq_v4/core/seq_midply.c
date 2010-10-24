@@ -96,7 +96,7 @@ static u32 unplayed_note_off[UNPLAYED_NOTE_OFF_CHN_NUM][128/32];
 
 // filename
 #define MIDIFILE_PATH_LEN_MAX 20
-static u8 midifile_path[MIDIFILE_PATH_LEN_MAX];
+static char midifile_path[MIDIFILE_PATH_LEN_MAX];
 
 static seq_file_t midifile_fi;
 
@@ -746,11 +746,11 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
       break;
 
     case 0x51: // Set Tempo
+      // tempo handled by SEQ_CORE !
       if( len == 3 ) {
+#if 0
 	u32 tempo_us = (*buffer++ << 16) | (*buffer++ << 8) | *buffer;
 	float bpm = 60.0 * (1E6 / (float)tempo_us);
-#if 0
-	// tempo handled by SEQ_CORE !
 	SEQ_BPM_PPQN_Set(MIDI_PARSER_PPQN_Get());
 
 	// set tempo immediately on first tick
@@ -762,10 +762,10 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	  tempo_package.ALL = (u32)bpm;
 	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick, 0);
 	}
-#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SEQ_MIDPLY:%d:%u] Meta - Tempo to %u uS -> %u BPM\n", track, tick, tempo_us, (u32)bpm);
+#endif
 #endif
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
