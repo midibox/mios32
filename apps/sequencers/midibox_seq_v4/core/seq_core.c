@@ -780,6 +780,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 		SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
 	      }
 
+	      // force velocity to 0x7f (drum mode: selectable value) if accent flag set
+	      if( SEQ_TRG_AccentGet(track, t->step, instrument) ) {
+		if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
+		  p->velocity = tcc->lay_const[2*16 + i];
+		else
+		  p->velocity = 0x7f;
+	      }
+
 	      // sustained or stretched note: play off event of previous step
 	      if( t->state.SUSTAINED )
 		gen_off_events = 1;
@@ -789,14 +797,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 	      else {
 		// generate common On event with given length
 		gen_on_events = 1;
-
-		// force velocity to 0x7f (drum mode: selectable value) if accent flag set
-		if( SEQ_TRG_AccentGet(track, t->step, instrument) ) {
-		  if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
-		    p->velocity = tcc->lay_const[2*16 + i];
-		  else
-		    p->velocity = 0x7f;
-		}
 	      }
 	    } else if( t->state.STRETCHED_GL && t->state.SUSTAINED && (e->len < 96) ) {
 	      // stretched note, length < 96: queue off events

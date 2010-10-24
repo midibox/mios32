@@ -136,7 +136,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     pattern->bank = tmp;
   }
 
-  SEQ_PATTERN_Change(ui_selected_group, *pattern);
+  SEQ_PATTERN_Change(ui_selected_group, *pattern, 0);
 
   return 1; // value as been changed
 }
@@ -176,7 +176,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 ) {
     selected_pattern[ui_selected_group].num = button-8;
-    SEQ_PATTERN_Change(ui_selected_group, selected_pattern[ui_selected_group]);
+    SEQ_PATTERN_Change(ui_selected_group, selected_pattern[ui_selected_group], 0);
 
     return 1; // value always changed
   }

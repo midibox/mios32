@@ -36,7 +36,7 @@ static u32 stopwatch_value_max;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_STATISTICS_Init(u32 mode)
 {
-  SEQ_STATISTICS_Reset();
+  return SEQ_STATISTICS_Reset();
 }
 
 
@@ -48,6 +48,7 @@ s32 SEQ_STATISTICS_Reset(void)
   cpu_load_in_percent = 0;
   stopwatch_value = 0;
   stopwatch_value_max = 0;
+  return 0; // no error;
 }
 
 

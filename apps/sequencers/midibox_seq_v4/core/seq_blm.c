@@ -568,7 +568,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 	      if( (par_type == SEQ_PAR_Type_Note) ) {
 		u8 stored_note = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
 		if( stored_note >= note && stored_note < next_note )
-		  pattern |= (1 << SEQ_BLM_NUM_COLUMNS-1-note_ix);
+		  pattern |= (1 << (SEQ_BLM_NUM_COLUMNS-1-note_ix));
 	      }
 	    }
 
@@ -929,7 +929,7 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
 
   seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
   new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
-  SEQ_PATTERN_Change(ui_selected_group, new_pattern);
+  SEQ_PATTERN_Change(ui_selected_group, new_pattern, 0);
 
   return 0; // no error
 }

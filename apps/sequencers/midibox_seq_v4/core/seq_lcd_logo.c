@@ -19,6 +19,7 @@
 #include <mios32.h>
 
 #include "tasks.h"
+#include "seq_ui.h"
 #include "seq_lcd.h"
 #include "seq_lcd_logo.h"
 

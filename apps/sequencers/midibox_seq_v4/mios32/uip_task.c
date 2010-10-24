@@ -183,7 +183,7 @@ static void UIP_TASK_Handler(void *pvParameters)
       uip_len = network_device_read();
 
       if( uip_len > 0 ) {
-	if(BUF->type == htons(UIP_ETHTYPE_IP) ) {
+	if(BUF->type == HTONS(UIP_ETHTYPE_IP) ) {
 	  uip_arp_ipin();
 	  uip_input();
 	
@@ -194,7 +194,7 @@ static void UIP_TASK_Handler(void *pvParameters)
 	    uip_arp_out();
 	    network_device_send();
 	  }
-	} else if(BUF->type == htons(UIP_ETHTYPE_ARP)) {
+	} else if(BUF->type == HTONS(UIP_ETHTYPE_ARP)) {
 	  uip_arp_arpin();
 	  /* If the above function invocation resulted in data that
 	     should be sent out on the network, the global variable

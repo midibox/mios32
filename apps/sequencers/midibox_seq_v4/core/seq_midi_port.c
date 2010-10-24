@@ -340,12 +340,13 @@ s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port)
 {
   u8 ix;
   for(ix=0; ix<NUM_CLK_PORTS; ++ix) {
-    if( clk_ports[ix].port == port )
+    if( clk_ports[ix].port == port ) {
       // only up to 80 ports (0x00..0x4f = USB, UART, IIC, OSC) supported
       if( port < 0x40 )
 	return MIOS32_MIDI_CheckAvailable(port);
       else if( (port & 0xf0) == OSC0 )
 	return 1; // TODO: check for ethernet connection here
+    }
   }
   return 0; // port not available
 }

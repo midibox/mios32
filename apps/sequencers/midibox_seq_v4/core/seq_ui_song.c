@@ -327,7 +327,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos();
+	      SEQ_SONG_FetchPos(0);
 	    return 1; // value has been changed
 	  }
 	  return 0; // no change
@@ -342,7 +342,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      SEQ_SONG_StepEntrySet(edit_pos, s);
 	      // in phrase mode and no song pos selected: fetch patterns immediately
 	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos();
+		SEQ_SONG_FetchPos(0);
 	      return 1; // value has been changed
 	    }
 	  } else {
@@ -353,7 +353,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      SEQ_SONG_StepEntrySet(edit_pos, s);
 	      // in phrase mode and no song pos selected: fetch patterns immediately
 	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos();
+		SEQ_SONG_FetchPos(0);
 	      return 1; // value has been changed
 	    }
 	  }
@@ -382,7 +382,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    SEQ_SONG_StepEntrySet(edit_pos, s);
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos();
+	      SEQ_SONG_FetchPos(0);
 	    return 1; // value has been changed
 	  }
 	  return 0; // no change
@@ -563,7 +563,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  // in phrase mode: set song position and fetch patterns
 	  if( !SEQ_SONG_ActiveGet() ) {
 	    SEQ_SONG_PosSet(edit_pos);
-	    SEQ_SONG_FetchPos();
+	    SEQ_SONG_FetchPos(0);
 	  }
 	  return 1;
   
@@ -586,7 +586,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      
 	      // in phrase mode and no song pos selected: fetch patterns immediately
 	      if( !SEQ_SONG_ActiveGet() && s.action != SEQ_SONG_ACTION_JmpSong )
-		SEQ_SONG_FetchPos();
+		SEQ_SONG_FetchPos(0);
 	      return 1; // value has been changed
 	      
   	    case SEQ_SONG_ACTION_Tempo:
@@ -595,7 +595,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   
 	      // in phrase mode and no song pos selected: fetch patterns immediately
 	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos();
+		SEQ_SONG_FetchPos(0);
 	      return 1; // value has been changed
 	      
   	    case SEQ_SONG_ACTION_Mutes:
@@ -613,7 +613,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   
 	      // in phrase mode and no song pos selected: fetch patterns immediately
 	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos();
+		SEQ_SONG_FetchPos(1);
 	      return 1; // value has been changed
   
 	    default:
@@ -1196,7 +1196,7 @@ static s32 CheckChangePattern(u8 group, u8 bank, u8 pattern)
     p.ALL = 0;
     p.pattern = pattern;
     p.bank = bank;
-    return SEQ_PATTERN_Change(group, p);
+    return SEQ_PATTERN_Change(group, p, 0);
   }
 
   return 0; // no error

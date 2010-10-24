@@ -142,7 +142,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  u8 visible_track = SEQ_UI_VisibleTrackGet();
 	  latched_mute = seq_core_trk[visible_track].layer_muted;
 	} else {
-	  u8 track;
 	  latched_mute = seq_core_trk_muted;
 	}
       }
@@ -183,7 +182,6 @@ static s32 LCD_Handler(u8 high_prio)
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	mute_flags = seq_core_trk[visible_track].layer_muted;
       } else {
-	seq_core_trk_t *t = &seq_core_trk[0];
 	mute_flags = seq_core_trk_muted;
       }
     }

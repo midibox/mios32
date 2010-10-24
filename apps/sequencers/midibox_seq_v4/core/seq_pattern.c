@@ -27,6 +27,7 @@
 #include "seq_ui.h"
 #include "seq_file_b.h"
 #include "seq_statistics.h"
+#include "seq_song.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -104,13 +105,13 @@ char *SEQ_PATTERN_NameGet(u8 group)
 /////////////////////////////////////////////////////////////////////////////
 // Requests a pattern change
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
+s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_change)
 {
   if( group >= SEQ_CORE_NUM_GROUPS )
     return -1; // invalid group
 
   // change immediately if sequencer not running
-  if( !SEQ_BPM_IsRunning() || ui_seq_pause ) {
+  if( force_immediate_change || !SEQ_BPM_IsRunning() || SEQ_BPM_TickGet() == 0 || ui_seq_pause ) {
     // store requested pattern
     portENTER_CRITICAL();
     pattern.REQ = 0; // request not required - we load the pattern immediately
@@ -144,8 +145,8 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern)
       // (won't be generated again if there is already an ongoing request)
       MUTEX_MIDIOUT_TAKE;
       if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
-		// resume low-prio pattern handler
-		SEQ_TASK_PatternResume();
+	// resume low-prio pattern handler
+	SEQ_TASK_PatternResume();
       }
       MUTEX_MIDIOUT_GIVE;
     }

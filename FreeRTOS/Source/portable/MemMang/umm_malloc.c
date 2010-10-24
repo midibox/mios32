@@ -790,7 +790,7 @@ static void umm_disconnect_from_free_list( unsigned short int c ) {
 
 // ----------------------------------------------------------------------------
 
-static int foo = 0;
+// static int foo = 0;
 
 static void umm_assimilate_up( unsigned short int c ) {
 
@@ -908,7 +908,7 @@ void umm_free( void *ptr ) {
 void *umm_malloc( size_t size ) {
 
   unsigned short int blocks;
-  unsigned short int blockSize;
+  unsigned short int blockSize = 0;
 
   unsigned short int bestSize;
   unsigned short int bestBlock;
@@ -1176,7 +1176,7 @@ void *umm_realloc( void *ptr, size_t size ) {
     // Now umm_malloc() a new/ one, copy the old data to the new block, and
     // free up the old block, but only if the malloc was sucessful!
 
-    if( ptr = umm_malloc( size ) ) {
+    if( (ptr = umm_malloc( size )) ) {
        memcpy( ptr, oldptr, curSize );
     }
 

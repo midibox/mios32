@@ -442,8 +442,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case PR_DIALOG_EXPORT_FNAME: {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP15: {
-	  int i;
-
 	  // SAVE only via button
 	  if( incrementer != 0 )
 	    return 0;
@@ -720,7 +718,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   u8 event_mode = layer_config[selected_layer_config].event_mode;
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   switch( pr_dialog ) {
     ///////////////////////////////////////////////////////////////////////////

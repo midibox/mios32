@@ -25,6 +25,7 @@
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 #include "seq_record.h"
+#include "seq_file_c.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -1112,7 +1112,7 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 
 static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 {
-  static layer_c_pressed = 0;
+  static u8 layer_c_pressed = 0;
 
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
 
@@ -1206,7 +1206,7 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
 
 static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 {
-  static layer_c_pressed = 0;
+  static u8 layer_c_pressed = 0;
 
   if( trg_layer >= 3 ) return -2; // max. 3 trglayer buttons
 
@@ -1867,6 +1867,19 @@ s32 SEQ_UI_LCD_Handler(void)
 // Called from SEQ_UI_LCD_Handler(), but optionally also from other tasks
 // to update the LCD screen immediately
 /////////////////////////////////////////////////////////////////////////////
+// for newer GCC versions it's important to declare constant arrays outside a function
+//                                             00112233
+static const char animation_l_arrows[2*4+1] = "   >>>> ";
+//                                             00112233
+static const char animation_r_arrows[2*4+1] = "  < << <";
+//                                               00112233
+static const char animation_l_brackets[2*4+1] = "   )))) ";
+//                                               00112233
+static const char animation_r_brackets[2*4+1] = "  ( (( (";
+//                                            00112233
+static const char animation_l_stars[2*4+1] = "   **** ";
+//                                            00112233
+static const char animation_r_stars[2*4+1] = "  * ** *";
 s32 SEQ_UI_LCD_Update(void)
 {
   // special handling in remote client mode
@@ -1888,24 +1901,16 @@ s32 SEQ_UI_LCD_Update(void)
 
     switch( ui_msg_type ) {
       case SEQ_UI_MSG_SDCARD: {
-	//                               00112233
-	const char animation_l[2*4+1] = "   >>>> ";
-	//                               00112233
-	const char animation_r[2*4+1] = "  < << <";
-	animation_l_ptr = (char *)animation_l;
-	animation_r_ptr = (char *)animation_r;
+	animation_l_ptr = (char *)animation_l_arrows;
+	animation_r_ptr = (char *)animation_r_arrows;
 	msg_x = 0; // MEMO: print such important information at first LCD for the case the user hasn't connected the second LCD yet
 	right_aligned = 0;
       } break;
 
       case SEQ_UI_MSG_DELAYED_ACTION:
       case SEQ_UI_MSG_DELAYED_ACTION_R: {
-	//                               00112233
-	const char animation_l[2*4+1] = "   )))) ";
-	//                               00112233
-	const char animation_r[2*4+1] = "  ( (( (";
-	animation_l_ptr = (char *)animation_l;
-	animation_r_ptr = (char *)animation_r;
+	animation_l_ptr = (char *)animation_l_brackets;
+	animation_r_ptr = (char *)animation_r_brackets;
 	if( ui_msg_type == SEQ_UI_MSG_DELAYED_ACTION_R ) {
 	  msg_x = 40; // right LCD
 	  right_aligned = 0;
@@ -1926,23 +1931,15 @@ s32 SEQ_UI_LCD_Update(void)
       } break;
 
       case SEQ_UI_MSG_USER_R: {
-	//                               00112233
-	const char animation_l[2*4+1] = "   **** ";
-	//                               00112233
-	const char animation_r[2*4+1] = "  * ** *";
-	animation_l_ptr = (char *)animation_l;
-	animation_r_ptr = (char *)animation_r;
+	animation_l_ptr = (char *)animation_l_stars;
+	animation_r_ptr = (char *)animation_r_stars;
 	msg_x = 40; // right display
 	right_aligned = 0;
       } break;
 
       default: {
-	//                               00112233
-	const char animation_l[2*4+1] = "   **** ";
-	//                               00112233
-	const char animation_r[2*4+1] = "  * ** *";
-	animation_l_ptr = (char *)animation_l;
-	animation_r_ptr = (char *)animation_r;
+	animation_l_ptr = (char *)animation_l_stars;
+	animation_r_ptr = (char *)animation_r_stars;
 	msg_x = 39;
 	right_aligned = 1;
       } break;
@@ -2005,8 +2002,6 @@ s32 SEQ_UI_LED_Handler(void)
 {
   static u8 remote_led_sr[SEQ_LED_NUM_SR];
 
-  int i;
-
   // ignore in remote client mode
   if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
     return 0; // no error
@@ -2014,8 +2009,6 @@ s32 SEQ_UI_LED_Handler(void)
   // ignore as long as hardware config hasn't been read
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
-
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // track LEDs
   // in pattern page: track buttons are used as group buttons
@@ -2826,6 +2819,7 @@ s32 SEQ_UI_KeyPad_Init(void)
 {
   ui_keypad_select_charset_lower = 0;
   ui_edit_name_cursor = 0;
+  return 0; // no error
 }
 
 // called by delayed action (after 0.75 second) to increment cursor after keypad entry
@@ -2837,6 +2831,8 @@ static s32 SEQ_UI_KeyPad_IncCursor(u32 len)
   ui_keypad_select_charset_lower = 1;
 
   ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+
+  return 0; // no error
 }
 
 // handles the 16 GP buttons/encoders
