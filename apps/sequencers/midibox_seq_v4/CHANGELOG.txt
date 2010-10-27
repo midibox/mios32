@@ -10,7 +10,8 @@ MIDIboxSEQ V4.0beta30
 ~~~~~~~~~~~~~~~~~~~~~
 
   o added LED and BUTTON functions for TRACK_MODE, TRACK_GROOVE, TRACK_LENGTH,
-    TRACK_DIRECTION page. MORPH and TRANSPOSE renamed to TRACK_MORPH and TRACK_TRANSPOSE
+    TRACK_DIRECTION page to MBSEQ_HW.V4 file
+    MORPH and TRANSPOSE renamed to TRACK_MORPH and TRACK_TRANSPOSE
 
 
 MIDIboxSEQ V4.0beta29
