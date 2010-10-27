@@ -403,12 +403,20 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.clear = din_value;
 	  } else if( strcmp(parameter, "UNDO") == 0 ) {
 	    seq_hwcfg_button.undo = din_value;
-	  } else if( strcmp(parameter, "MORPH") == 0 ) {
-	    seq_hwcfg_button.morph = din_value;
 	  } else if( strcmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_button.mixer = din_value;
-	  } else if( strcmp(parameter, "TRANSPOSE") == 0 ) {
-	    seq_hwcfg_button.transpose = din_value;
+	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
+	    seq_hwcfg_button.track_mode = din_value;
+	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {
+	    seq_hwcfg_button.track_groove = din_value;
+	  } else if( strcmp(parameter, "TRACK_LENGTH") == 0 ) {
+	    seq_hwcfg_button.track_length = din_value;
+	  } else if( strcmp(parameter, "TRACK_DIRECTION") == 0 ) {
+	    seq_hwcfg_button.track_direction = din_value;
+	  } else if( strcmp(parameter, "MORPH") == 0 || strcmp(parameter, "TRACK_MORPH") == 0 ) {
+	    seq_hwcfg_button.track_morph = din_value;
+	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
+	    seq_hwcfg_button.track_transpose = din_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button function 'BUTTON_%s'!", parameter);
@@ -526,12 +534,20 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.down = dout_value;
 	  } else if( strcmp(parameter, "UP") == 0 ) {
 	    seq_hwcfg_led.up = dout_value;
-	  } else if( strcmp(parameter, "MORPH") == 0 ) {
-	    seq_hwcfg_led.morph = dout_value;
 	  } else if( strcmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_led.mixer = dout_value;
-	  } else if( strcmp(parameter, "TRANSPOSE") == 0 ) {
-	    seq_hwcfg_led.transpose = dout_value;
+	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
+	    seq_hwcfg_led.track_mode = dout_value;
+	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {
+	    seq_hwcfg_led.track_groove = dout_value;
+	  } else if( strcmp(parameter, "TRACK_LENGTH") == 0 ) {
+	    seq_hwcfg_led.track_length = dout_value;
+	  } else if( strcmp(parameter, "TRACK_DIRECTION") == 0 ) {
+	    seq_hwcfg_led.track_direction = dout_value;
+	  } else if( strcmp(parameter, "MORPH") == 0 || strcmp(parameter, "TRACK_MORPH") == 0 ) {
+	    seq_hwcfg_led.track_morph = dout_value;
+	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
+	    seq_hwcfg_led.track_transpose = dout_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED function 'LED_%s'!", parameter);

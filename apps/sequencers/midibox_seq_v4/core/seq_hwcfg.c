@@ -151,9 +151,14 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .follow  = ((( 0   -1)<<3)+    0),
 
   //              SR   ignore    Pin
-  .morph     = ((( 0   -1)<<3)+    0),
   .mixer     = ((( 0   -1)<<3)+    0),
-  .transpose = ((( 0   -1)<<3)+    0),
+
+  .track_mode      = ((( 0   -1)<<3)+    0),
+  .track_groove    = ((( 0   -1)<<3)+    0),
+  .track_length    = ((( 0   -1)<<3)+    0),
+  .track_direction = ((( 0   -1)<<3)+    0),
+  .track_morph     = ((( 0   -1)<<3)+    0),
+  .track_transpose = ((( 0   -1)<<3)+    0),
 };
 
 
@@ -275,9 +280,15 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .up   = (((14   -1)<<3)+    7),
 
   //         SR    ignore    Pin
-  .morph =     ((( 0   -1)<<3)+    0),
   .mixer =     ((( 0   -1)<<3)+    0),
-  .transpose = ((( 0   -1)<<3)+    0),
+
+  //         SR    ignore    Pin
+  .track_mode      = ((( 0   -1)<<3)+    0),
+  .track_groove    = ((( 0   -1)<<3)+    0),
+  .track_length    = ((( 0   -1)<<3)+    0),
+  .track_direction = ((( 0   -1)<<3)+    0),
+  .track_morph     = ((( 0   -1)<<3)+    0),
+  .track_transpose = ((( 0   -1)<<3)+    0),
 #else
   //          SR    ignore    Pin
   .play  = ((( 0   -1)<<3)+    0),
@@ -314,9 +325,15 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .up   = ((( 0   -1)<<3)+    0),
 
   //         SR    ignore    Pin
-  .morph =     ((( 0   -1)<<3)+    0),
   .mixer =     ((( 0   -1)<<3)+    0),
-  .transpose = ((( 0   -1)<<3)+    0),
+
+  //         SR    ignore    Pin
+  .track_mode      = ((( 0   -1)<<3)+    0),
+  .track_groove    = ((( 0   -1)<<3)+    0),
+  .track_length    = ((( 0   -1)<<3)+    0),
+  .track_direction = ((( 0   -1)<<3)+    0),
+  .track_morph     = ((( 0   -1)<<3)+    0),
+  .track_transpose = ((( 0   -1)<<3)+    0),
 #endif
 };
 

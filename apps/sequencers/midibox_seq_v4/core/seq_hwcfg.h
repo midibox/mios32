@@ -94,9 +94,14 @@ typedef struct {
   u8 clear;
   u8 undo;
 
-  u8 morph;
   u8 mixer;
-  u8 transpose;
+
+  u8 track_mode;
+  u8 track_groove;
+  u8 track_length;
+  u8 track_direction;
+  u8 track_morph;
+  u8 track_transpose;
 } seq_hwcfg_button_t;
 
 
@@ -177,9 +182,14 @@ typedef struct {
   u8 down;
   u8 up;
 
-  u8 morph;
   u8 mixer;
-  u8 transpose;
+
+  u8 track_mode;
+  u8 track_groove;
+  u8 track_length;
+  u8 track_direction;
+  u8 track_transpose;
+  u8 track_morph;
 } seq_hwcfg_led_t;
 
 
