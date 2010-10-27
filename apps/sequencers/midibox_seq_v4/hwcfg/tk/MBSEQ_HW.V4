@@ -239,9 +239,15 @@ LED_DOWN   0   0
 LED_UP     0   0
 
 #             SR  Pin
-LED_MORPH      0   0
 LED_MIXER      0   0
-LED_TRANSPOSE  0   0
+
+#                   SR  Pin
+LED_TRACK_MODE       0   0
+LED_TRACK_GROOVE     0   0
+LED_TRACK_LENGTH     0   0
+LED_TRACK_DIRECTION  0   0
+LED_TRACK_MORPH      0   0
+LED_TRACK_TRANSPOSE  0   0
 
 
 ##################################################
@@ -356,9 +362,15 @@ BUTTON_CLEAR     0   0
 BUTTON_UNDO      0   0
 
 #                SR  Pin
-BUTTON_MORPH      0   0
 BUTTON_MIXER      0   0
-BUTTON_TRANSPOSE  0   0
+
+#                      SR  Pin
+BUTTON_TRACK_MODE       0   0
+BUTTON_TRACK_GROOVE     0   0
+BUTTON_TRACK_LENGTH     0   0
+BUTTON_TRACK_DIRECTION  0   0
+BUTTON_TRACK_MORPH      0   0
+BUTTON_TRACK_TRANSPOSE  0   0
 
 
 ##################################################

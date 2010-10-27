@@ -1267,15 +1267,6 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
 }
 
 
-static s32 SEQ_UI_Button_Morph(s32 depressed)
-{
-  if( depressed ) return -1; // ignore when button depressed
-
-  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKMORPH);
-
-  return 0; // no error
-}
-
 static s32 SEQ_UI_Button_Mixer(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
@@ -1285,7 +1276,52 @@ static s32 SEQ_UI_Button_Mixer(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Transpose(s32 depressed)
+static s32 SEQ_UI_Button_TrackMode(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKMODE);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrackGroove(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKGRV);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrackLength(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKLEN);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrackDirection(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKDIR);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrackMorph(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKMORPH);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
@@ -1447,12 +1483,21 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( pin == seq_hwcfg_button.tap_tempo )
     return SEQ_UI_Button_TapTempo(pin_value);
 
-  if( pin == seq_hwcfg_button.morph )
-    return SEQ_UI_Button_Morph(pin_value);
   if( pin == seq_hwcfg_button.mixer )
     return SEQ_UI_Button_Mixer(pin_value);
-  if( pin == seq_hwcfg_button.transpose )
-    return SEQ_UI_Button_Transpose(pin_value);
+
+  if( pin == seq_hwcfg_button.track_mode )
+    return SEQ_UI_Button_TrackMode(pin_value);
+  if( pin == seq_hwcfg_button.track_groove )
+    return SEQ_UI_Button_TrackGroove(pin_value);
+  if( pin == seq_hwcfg_button.track_length )
+    return SEQ_UI_Button_TrackLength(pin_value);
+  if( pin == seq_hwcfg_button.track_direction )
+    return SEQ_UI_Button_TrackDirection(pin_value);
+  if( pin == seq_hwcfg_button.track_morph )
+    return SEQ_UI_Button_TrackMorph(pin_value);
+  if( pin == seq_hwcfg_button.track_transpose )
+    return SEQ_UI_Button_TrackTranspose(pin_value);
 
   // always print debugging message
 #if 1
@@ -2074,9 +2119,14 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
   else
     SEQ_LED_PinSet(seq_hwcfg_led.song, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
-  SEQ_LED_PinSet(seq_hwcfg_led.morph, ui_page == SEQ_UI_PAGE_TRKMORPH);
   SEQ_LED_PinSet(seq_hwcfg_led.mixer, ui_page == SEQ_UI_PAGE_MIXER);
-  SEQ_LED_PinSet(seq_hwcfg_led.transpose, ui_page == SEQ_UI_PAGE_TRKTRAN);
+
+  SEQ_LED_PinSet(seq_hwcfg_led.track_mode, ui_page == SEQ_UI_PAGE_TRKMODE);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_groove, ui_page == SEQ_UI_PAGE_TRKGRV);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_length, ui_page == SEQ_UI_PAGE_TRKLEN);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_direction, ui_page == SEQ_UI_PAGE_TRKDIR);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_morph, ui_page == SEQ_UI_PAGE_TRKMORPH);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_transpose, ui_page == SEQ_UI_PAGE_TRKTRAN);
   
   SEQ_LED_PinSet(seq_hwcfg_led.solo, seq_ui_button_state.SOLO);
   SEQ_LED_PinSet(seq_hwcfg_led.fast, seq_ui_button_state.FAST_ENCODERS);
