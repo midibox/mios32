@@ -217,7 +217,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
   int enc;
   for(enc=0; enc<17; ++enc) {
     enc_config = MIOS32_ENC_ConfigGet(enc);
-    enc_config.cfg.speed = seq_ui_button_state.FAST_ENCODERS ? FAST : NORMAL;
+    enc_config.cfg.speed = (seq_ui_button_state.FAST_ENCODERS || seq_ui_button_state.FAST2_ENCODERS) ? FAST : NORMAL;
     enc_config.cfg.speed_par = (enc == 0) ? seq_hwcfg_enc.datawheel_fast_speed : seq_hwcfg_enc.gp_fast_speed;
     MIOS32_ENC_ConfigSet(enc, enc_config);
   }
@@ -954,6 +954,22 @@ static s32 SEQ_UI_Button_Fast(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Fast2(s32 depressed)
+{
+  if( seq_hwcfg_button_beh.fast2 ) {
+    // toggle mode
+    if( depressed ) return -1; // ignore when button depressed
+    seq_ui_button_state.FAST2_ENCODERS ^= 1;
+  } else {
+    // set mode
+    seq_ui_button_state.FAST2_ENCODERS = depressed ? 0 : 1;
+  }
+
+  SEQ_UI_InitEncSpeed(0); // no auto config
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_All(s32 depressed)
 {
   seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE = depressed ? 0 : 1;
@@ -1475,6 +1491,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Solo(pin_value);
   if( pin == seq_hwcfg_button.fast )
     return SEQ_UI_Button_Fast(pin_value);
+  if( pin == seq_hwcfg_button.fast2 )
+    return SEQ_UI_Button_Fast2(pin_value);
   if( pin == seq_hwcfg_button.all )
     return SEQ_UI_Button_All(pin_value);
 
@@ -2130,6 +2148,7 @@ s32 SEQ_UI_LED_Handler(void)
   
   SEQ_LED_PinSet(seq_hwcfg_led.solo, seq_ui_button_state.SOLO);
   SEQ_LED_PinSet(seq_hwcfg_led.fast, seq_ui_button_state.FAST_ENCODERS);
+  SEQ_LED_PinSet(seq_hwcfg_led.fast2, seq_ui_button_state.FAST2_ENCODERS);
   SEQ_LED_PinSet(seq_hwcfg_led.all, seq_ui_button_state.CHANGE_ALL_STEPS);
   
   SEQ_LED_PinSet(seq_hwcfg_led.play, SEQ_BPM_IsRunning());
@@ -2601,7 +2620,7 @@ s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
   int prev_value = new_value;
 
   // extra: in fast mode increment 16bit values faster!
-  if( max > 0x100 && seq_ui_button_state.FAST_ENCODERS )
+  if( max > 0x100 && (seq_ui_button_state.FAST_ENCODERS || seq_ui_button_state.FAST2_ENCODERS) )
     incrementer *= 10;
 
   if( incrementer >= 0 ) {

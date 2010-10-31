@@ -71,6 +71,7 @@ typedef struct {
 
   u8 solo;
   u8 fast;
+  u8 fast2;
   u8 all;
 
   u8 gp[SEQ_HWCFG_NUM_GP];
@@ -107,6 +108,7 @@ typedef struct {
 
 typedef struct {
   u8 fast:1;
+  u8 fast2:1;
   u8 all:1;
   u8 all_with_triggers:1;
   u8 solo:1;
@@ -142,6 +144,7 @@ typedef struct {
 
   u8 solo;
   u8 fast;
+  u8 fast2;
   u8 all;
 
   u8 group[SEQ_HWCFG_NUM_GROUP];

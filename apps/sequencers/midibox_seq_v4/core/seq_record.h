@@ -29,6 +29,7 @@ typedef union {
     u8 STEP_RECORD:1;
     u8 POLY_RECORD:1;
     u8 AUTO_START:1;
+    u8 FWD_MIDI:1;
   };
 } seq_record_options_t;
 
@@ -63,5 +64,6 @@ extern seq_record_options_t seq_record_options;
 extern seq_record_state_t seq_record_state;
 
 extern u8 seq_record_step;
+extern u8 seq_record_quantize;
 
 #endif /* _SEQ_RECORD_H */

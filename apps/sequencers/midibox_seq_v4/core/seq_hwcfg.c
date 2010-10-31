@@ -72,9 +72,10 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .song    = ((( 4  -1)<<3)+    3),
 
   //         SR   ignore    Pin
-  .solo = ((( 4   -1)<<3)+    4),
-  .fast = ((( 4   -1)<<3)+    5),
-  .all  = ((( 4   -1)<<3)+    6),
+  .solo  = ((( 4   -1)<<3)+    4),
+  .fast  = ((( 4   -1)<<3)+    5),
+  .fast2 = ((( 0   -1)<<3)+    0),
+  .all   = ((( 4   -1)<<3)+    6),
 
   //           SR   ignore    Pin
   .gp[ 0] = ((( 7   -1)<<3)+    0),
@@ -164,6 +165,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
 
 seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .fast = 1,
+  .fast2 = 0,
   .all = 1,
   .all_with_triggers = 0,
   .solo = 1,
@@ -226,9 +228,10 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .song    = ((( 2   -1)<<3)+    3),
 
   //         SR    ignore    Pin
-  .solo = ((( 2   -1)<<3)+    4),
-  .fast = ((( 2   -1)<<3)+    5),
-  .all  = ((( 2   -1)<<3)+    6),
+  .solo  = ((( 2   -1)<<3)+    4),
+  .fast  = ((( 2   -1)<<3)+    5),
+  .fast2 = ((( 0   -1)<<3)+    0),
+  .all   = ((( 2   -1)<<3)+    6),
 
   //             SR    ignore    Pin
   .group[0] = (((11   -1)<<3)+    0),

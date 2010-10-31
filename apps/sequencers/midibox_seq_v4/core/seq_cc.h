@@ -185,8 +185,8 @@ typedef struct {
   u8       par_assignment_drum[2]; // only used in drum mode
 
   // new in MBSEQ V4
-  u8       echo_repeats:4;    // repeats (0..15)
-  u8       echo_delay:4;      // delay between echoed notes (different predefined lengths + Rnd1/2)
+  u8       echo_repeats;      // repeats (0..15)
+  u8       echo_delay;        // delay between echoed notes (different predefined lengths + Rnd1/2)
   u8       echo_velocity;     // initial velocity 0%..200%, 5 step resolution (41 values)
   u8       echo_fb_velocity;   // feedbacked velocity (41 values)
   u8       echo_fb_note;      // feedbacked note (-24..24 + random = 50 values)

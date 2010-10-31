@@ -68,6 +68,8 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
     case SEQ_UI_ENCODER_GP2:
@@ -112,14 +114,25 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_REPEATS:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_REPEATS, 0, 15, incrementer);
-    case ITEM_DELAY:         return SEQ_UI_CC_Inc(SEQ_CC_ECHO_DELAY, 0, 15, incrementer);
-    case ITEM_VELOCITY:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_VELOCITY, 0, 40, incrementer);
-    case ITEM_FB_VELOCITY:   return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_VELOCITY, 0, 40, incrementer);
-    case ITEM_FB_NOTE:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_NOTE, 0, 49, incrementer);
-    case ITEM_FB_GATELENGTH: return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_GATELENGTH, 0, 40, incrementer);
-    case ITEM_FB_TICKS:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_TICKS, 0, 40, incrementer);
+  case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
+  case ITEM_REPEATS:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_REPEATS, 0, 15, incrementer);
+  case ITEM_DELAY: {
+    // for compatibility with older patches pre Beta30
+    u8 value = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY);
+    value = SEQ_CORE_Echo_MapInternalToUser(value);
+    if( SEQ_UI_Var8_Inc(&value, 0, 21, incrementer) ) {
+      value = SEQ_CORE_Echo_MapUserToInternal(value);
+      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_DELAY, value);
+      return 1;
+    }
+    return 0;
+  } break;
+
+  case ITEM_VELOCITY:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_VELOCITY, 0, 40, incrementer);
+  case ITEM_FB_VELOCITY:   return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_VELOCITY, 0, 40, incrementer);
+  case ITEM_FB_NOTE:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_NOTE, 0, 49, incrementer);
+  case ITEM_FB_GATELENGTH: return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_GATELENGTH, 0, 40, incrementer);
+  case ITEM_FB_TICKS:      return SEQ_UI_CC_Inc(SEQ_CC_ECHO_FB_TICKS, 0, 40, incrementer);
   }
 
   return -1; // invalid or unsupported encoder

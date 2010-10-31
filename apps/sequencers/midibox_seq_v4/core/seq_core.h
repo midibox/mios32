@@ -53,7 +53,7 @@ typedef union {
 
 
 typedef union {
-  u16 ALL;
+  u32 ALL;
   struct {
     u8 DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
     u8 POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
@@ -189,6 +189,8 @@ extern s32 SEQ_CORE_Handler(void);
 extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root);
 
 extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
+extern u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value);
+extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(void);

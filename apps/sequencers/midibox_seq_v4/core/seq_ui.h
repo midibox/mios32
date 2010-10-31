@@ -62,6 +62,7 @@ typedef union {
     u8 PATTERN_PRESSED:1;
     u8 SONG_PRESSED:1;
     u8 FAST_ENCODERS:1;
+    u8 FAST2_ENCODERS:1;
     u8 SOLO:1;
     u8 SCRUB:1;
     u8 REW:1;
