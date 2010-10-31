@@ -18,7 +18,7 @@ MIDIboxSEQ V4.0beta30
     behaviour is configured for push (and not for toggle) mode.
     The intended usecase is to use this function with push-button encoders.
 
-  o Echo function: support for "dottet delays": 32d 16d 8d 4d 2d
+  o Echo function: support for "dotted delays": 32d 16d 8d 4d 2d
     In order to keep existing patterns compatible, they are mapped to parameter
     value 16..21, but displayed/selected in the right order in the Fx->Echo page.
     Please note that it isn't a bug that 32d is displayed *after* 16T, 16d *after*
