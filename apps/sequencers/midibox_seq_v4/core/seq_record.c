@@ -45,7 +45,7 @@ seq_record_options_t seq_record_options;
 seq_record_state_t seq_record_state;
 
 u8 seq_record_step;
-
+u8 seq_record_quantize;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -62,6 +62,8 @@ s32 SEQ_RECORD_Init(u32 mode)
 {
   seq_record_options.ALL = 0;
   seq_record_options.AUTO_START = 1;
+  seq_record_options.FWD_MIDI = 1;
+  seq_record_quantize = 20;
 
   seq_record_state.ALL = 0;
 
@@ -235,7 +237,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  shift_event = 1;
 	else {
 	  s32 diff = (s32)t->timestamp_next_step_ref - (s32)timestamp;
-	  u32 tolerance = (t->step_length * 20) / 100; // usually 20% of 96 ticks -> 19 ticks
+	  u32 tolerance = (t->step_length * seq_record_quantize) / 100; // usually 20% of 96 ticks -> 19 ticks
 	  // TODO: we could vary the tolerance depending on the BPM rate: than slower the clock, than lower the tolerance
 	  // as a simple replacement for constant time measuring
 	  if( diff < tolerance)
@@ -286,7 +288,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	SEQ_BPM_Start();
       }
 
-      if( !dont_play_step_now ) {
+      if( seq_record_options.FWD_MIDI && !dont_play_step_now ) {
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = SEQ_LAYER_GetEvents(track, seq_record_step, layer_events, 0);
         if( number_of_events > 0 ) {
@@ -320,7 +322,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
   } else { // !rec_event
     // forward event directly if it hasn't been recorded
-    MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
+    if( seq_record_options.FWD_MIDI )
+      MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
   }
 
   // give MIDI Out/Sequencer semaphore

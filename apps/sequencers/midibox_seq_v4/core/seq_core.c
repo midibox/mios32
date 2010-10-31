@@ -525,6 +525,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
       if( synch_to_measure_req && (tcc->clkdiv.SYNCH_TO_MEASURE || t->state.SYNC_MEASURE) )
         SEQ_CORE_ResetTrkPos(track, t, tcc);
   
+      u8 skip_this_step = 0;
       if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
 	// calculate step length
 	u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
@@ -631,6 +632,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
+	  skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 
@@ -642,11 +644,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
         // mute function
         // track disabled
 	// MIDI player in exclusive mode
+	// Record Mode, new step and FWD_MIDI off
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
 	    (seq_core_trk_muted & (1 << track)) || // Track Mute function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
-	    midply_solo ) { // MIDI player in exclusive mode
+	    midply_solo || // MIDI player in exclusive mode
+	    skip_this_step ) { // Record Mode, new step and FWD_MIDI off
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
 	    int i;
@@ -685,7 +689,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 	u32 last_glide_notes[4];
 	memcpy(last_glide_notes, t->glide_notes, 4*4);
 
-        // fetch MIDI events which should be played
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
         if( number_of_events > 0 ) {
@@ -1343,7 +1346,9 @@ static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
 /////////////////////////////////////////////////////////////////////////////
 // Note: newer gcc versions don't allow to return a "const" parameter, therefore
 // this array is declared outside the SEQ_CORE_Echo_GetDelayModeName() function
-static const char delay_str[16+1][5] = {
+
+#define NUM_DELAY_VALUES 22
+static const char delay_str[NUM_DELAY_VALUES+1][5] = {
     " 64T",
     " 64 ",
     " 32T",
@@ -1360,15 +1365,69 @@ static const char delay_str[16+1][5] = {
     "  1 ",
     "Rnd1",
     "Rnd2",
+    " 64d", // new with Beta30
+    " 32d", // new with Beta30
+    " 16d", // new with Beta30
+    "  8d", // new with Beta30
+    "  4d", // new with Beta30
+    "  2d", // new with Beta30
     "????",
   };
 
 const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
 {
-  if( delay_mode < 16 )
+  if( delay_mode < NUM_DELAY_VALUES )
     return delay_str[delay_mode];
 
-  return delay_str[16];
+  return delay_str[NUM_DELAY_VALUES];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Maps delay values from old to new format
+// Used to keep pattern binaries compatible to enhanced delay entries
+/////////////////////////////////////////////////////////////////////////////
+static const u8 delay_value_map[NUM_DELAY_VALUES] = {
+  0,  //" 64T",
+  1,  //" 64 ",
+  2,  //" 32T",
+  16, //" 64d",
+  3,  //" 32 ",
+  4,  //" 16T",
+  17, //" 32d",
+  5,  //" 16 ",
+  6,  //"  8T",
+  18, //" 16d",
+  7,  //"  8 ",
+  8,  //"  4T",
+  19, //"  8d",
+  9,  //"  4 ",
+  10, //"  2T",
+  20, //"  4d",
+  11, //"  2 ",
+  12, //"  1T",
+  21, //"  2d",
+  13, //"  1 ",
+  14, //"Rnd1",
+  15, //"Rnd2",
+};
+
+u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value)
+{
+  if( user_value < NUM_DELAY_VALUES )
+    return delay_value_map[user_value];
+
+  return 0;
+}
+
+u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value)
+{
+  int i;
+  for(i=0; i<NUM_DELAY_VALUES; ++i)
+    if( delay_value_map[i] == internal_value )
+      return i;
+
+  return 0;
 }
 
 
@@ -1379,11 +1438,16 @@ static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 {
   // thanks to MIDI queuing mechanism, this is a no-brainer :)
 
-  // 64T, 64, 32T, 32, 16T, 16, ... 1, Rnd1 and Rnd2
+  // 64T, 64, 32T, 32, 16T, 16, ... 1, Rnd1 and Rnd2, 64d..2d (new)
+  s32 fb_ticks;
   s32 echo_delay = tcc->echo_delay;
-  if( tcc->echo_delay >= 14 ) // Rnd1 and Rnd2
-    echo_delay = SEQ_RANDOM_Gen_Range(0, 7); // between 64T and 8
-  s32 fb_ticks = ((tcc->echo_delay & 1) ? 24 : 16) * (1 << (echo_delay>>1));
+  if( echo_delay >= 16 ) // new dotted delays
+    fb_ticks = 36 * (1 << (echo_delay-16));
+  else {
+    if( echo_delay >= 14 ) // Rnd1 and Rnd2
+      echo_delay = SEQ_RANDOM_Gen_Range(3, 7); // between 32 and 8
+    fb_ticks = ((tcc->echo_delay & 1) ? 24 : 16) * (1 << (echo_delay>>1));
+  }
 
   s32 fb_note = p.note;
   s32 fb_note_base = fb_note; // for random function

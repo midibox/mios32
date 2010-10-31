@@ -32,7 +32,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
+#define NUM_OF_ITEMS      10
 #define ITEM_GXTY          0
 #define ITEM_STEP_MODE     1
 #define ITEM_POLY_MODE     2
@@ -41,6 +41,8 @@
 #define ITEM_TOGGLE_GATE   5
 #define ITEM_REC_PORT      6
 #define ITEM_REC_CHN       7
+#define ITEM_FWD_MIDI      8
+#define ITEM_QUANTIZE      9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,6 +72,8 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_TOGGLE_GATE: *gp_leds = 0x00c0; break;
     case ITEM_REC_PORT: *gp_leds = 0x0100; break;
     case ITEM_REC_CHN: *gp_leds = 0x0200; break;
+    case ITEM_FWD_MIDI: *gp_leds = 0x0c00; break;
+    case ITEM_QUANTIZE: *gp_leds = 0x3000; break;
   }
 
   return 0; // no error
@@ -127,8 +131,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = ITEM_FWD_MIDI;
+      break;
+
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_QUANTIZE;
+      break;
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
       return 0; // not mapped yet
@@ -227,6 +237,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0; // no change
 
+    case ITEM_FWD_MIDI:
+      if( incrementer )
+	seq_record_options.FWD_MIDI = incrementer > 0 ? 1 : 0;
+      else
+	seq_record_options.FWD_MIDI ^= 1;
+      return 1;
+
+    case ITEM_QUANTIZE:
+      if( SEQ_UI_Var8_Inc(&seq_record_quantize, 0, 99, incrementer) >= 0 ) {
+	return 1; // value changed
+      }
+      return 0; // no change
   }
 
   return -1; // invalid or unsupported encoder
@@ -295,13 +317,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Record Mode  AStart  Step  TglGate Port Chn.
-  // G1T1 Live  Poly    on      16           IN1  # 1
+  // Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi Quantize            
+  // G1T1 Live  Poly     on     16           IN1  # 1      on       20%
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate Port Chn.");
-  SEQ_LCD_PrintSpaces(31);
+  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi Quantize            ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -334,7 +355,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_AUTO_START && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString(seq_record_options.AUTO_START ? "on " : "off");
+    SEQ_LCD_PrintString(seq_record_options.AUTO_START ? " on" : "off");
   }
   SEQ_LCD_PrintSpaces(4);
 
@@ -367,9 +388,23 @@ static s32 LCD_Handler(u8 high_prio)
     else
       SEQ_LCD_PrintString("---");
   }
+  SEQ_LCD_PrintSpaces(5);
 
-  ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(32);
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_FWD_MIDI && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString(seq_record_options.FWD_MIDI ? " on" : "off");
+  }
+  SEQ_LCD_PrintSpaces(6);
+
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_QUANTIZE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    SEQ_LCD_PrintFormattedString("%3d%%", seq_record_quantize);
+  }
+  SEQ_LCD_PrintSpaces(14);
 
   return 0; // no error
 }

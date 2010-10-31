@@ -13,6 +13,27 @@ MIDIboxSEQ V4.0beta30
     TRACK_DIRECTION page to MBSEQ_HW.V4 file
     MORPH and TRANSPOSE renamed to TRACK_MORPH and TRACK_TRANSPOSE
 
+  o added LED and BUTTON function for FAST2, which is a second "fast" button with
+    dedicated button behaviour. In distance to the common FAST button, the button
+    behaviour is configured for push (and not for toggle) mode.
+    The intended usecase is to use this function with push-button encoders.
+
+  o Echo function: support for "dottet delays": 32d 16d 8d 4d 2d
+    In order to keep existing patterns compatible, they are mapped to parameter
+    value 16..21, but displayed/selected in the right order in the Fx->Echo page.
+    Please note that it isn't a bug that 32d is displayed *after* 16T, 16d *after*
+    8T etc - the entries are ordered by the resulting delay length!
+
+  o a "Forward MIDI" option has been added to the record page.
+    Previously events played by an external keyboard were always immediately 
+    forwarded to the MIDI output. Now it's possible to disable this function for 
+    keyboards w/o a "local off" function.
+
+  o the quantization of recorded MIDI events is now freely configurable in the
+    Record page.
+    Than lower the percentage value, than lower the quantization (-> events not
+    shifted to the next step)
+
 
 MIDIboxSEQ V4.0beta29
 ~~~~~~~~~~~~~~~~~~~~~

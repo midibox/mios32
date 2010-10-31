@@ -188,6 +188,7 @@ LED_SONG     2   3
 #           SR  Pin
 LED_SOLO     2   4
 LED_FAST     2   5
+LED_FAST2    0   0
 LED_ALL      2   6
 
 #           SR  Pin
@@ -302,6 +303,7 @@ BUTTON_SONG      4   3
 #            SR  Pin
 BUTTON_SOLO   4   4
 BUTTON_FAST   4   5
+BUTTON_FAST2  0   0
 BUTTON_ALL    4   6
 
 #            SR  Pin
@@ -375,11 +377,12 @@ BUTTON_TRACK_TRANSPOSE  0   0
 
 ##################################################
 # Button behaviour
-# 0: active mode so long button pressed
+# 0: active mode as long as button pressed
 # 1: pressing button toggles the mode
 ##################################################
 
 BUTTON_BEH_FAST         1
+BUTTON_BEH_FAST2        0
 BUTTON_BEH_ALL          1
 BUTTON_BEH_SOLO         1
 BUTTON_BEH_METRONOME    1

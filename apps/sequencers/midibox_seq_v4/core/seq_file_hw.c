@@ -251,7 +251,9 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  if( strcmp(parameter, "FAST") == 0 ) {
+	  if( strcmp(parameter, "FAST2") == 0 ) {
+	    seq_hwcfg_button_beh.fast2 = flag;
+	  } else if( strcmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_button_beh.fast = flag;
 	  } else if( strcmp(parameter, "ALL") == 0 ) {
 	    seq_hwcfg_button_beh.all = flag;
@@ -366,6 +368,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.song = din_value;
 	  } else if( strcmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_button.solo = din_value;
+	  } else if( strcmp(parameter, "FAST2") == 0 ) {
+	    seq_hwcfg_button.fast2 = din_value;
 	  } else if( strcmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_button.fast = din_value;
 	  } else if( strcmp(parameter, "ALL") == 0 ) {
@@ -470,6 +474,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.song = dout_value;
 	  } else if( strcmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_led.solo = dout_value;
+	  } else if( strcmp(parameter, "FAST2") == 0 ) {
+	    seq_hwcfg_led.fast2 = dout_value;
 	  } else if( strcmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_led.fast = dout_value;
 	  } else if( strcmp(parameter, "ALL") == 0 ) {
