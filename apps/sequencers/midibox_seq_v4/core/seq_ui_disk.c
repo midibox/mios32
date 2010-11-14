@@ -757,6 +757,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_S_IMPORT:
           // switch to Session Import Dialog screen
 	  dir_selected_item = 0;
+	  dir_view_offset = 0;
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_S_IMPORT;
           SEQ_UI_DISK_UpdateSessionDirList();
@@ -765,6 +766,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_S_EXPORT:
           // switch to Session Import Dialog screen
 	  dir_selected_item = 0;
+	  dir_view_offset = 0;
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_S_EXPORT;
           SEQ_UI_DISK_UpdateSessionDirList();
@@ -773,6 +775,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_MF_IMPORT:
           // switch to MIDI File Import Dialog screen
 	  dir_selected_item = 0;
+	  dir_view_offset = 0;
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_MF_IMPORT;
           SEQ_UI_DISK_UpdateMfDirList();
@@ -781,6 +784,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_MF_EXPORT:
           // switch to MIDI File Export Dialog screen
 	  dir_selected_item = 0;
+	  dir_view_offset = 0;
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_MF_EXPORT;
           return 1;
@@ -788,6 +792,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_MF_PLAY:
           // switch to MIDI File Play Dialog screen
 	  dir_selected_item = 0;
+	  dir_view_offset = 0;
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_MF_PLAY;
           SEQ_UI_DISK_UpdateMfDirList();
