@@ -66,7 +66,6 @@ typedef enum {
 #define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PATTERN            ( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 3 )
 
 // priority of uIP task defined in uip_task.c (-> using 3)
 
@@ -79,7 +78,6 @@ static void TASK_Period1mS(void *pvParameters);
 static void TASK_Period1mS_LowPrio(void *pvParameters);
 static void TASK_Period1S(void *pvParameters);
 static void TASK_Pattern(void *pvParameters);
-static void TASK_MSD(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -89,7 +87,6 @@ static void TASK_MSD(void *pvParameters);
 static xTaskHandle xPatternHandle;
 
 static msd_state_t msd_state;
-static xTaskHandle xMSDHandle;
 
  
 /////////////////////////////////////////////////////////////////////////////
@@ -114,7 +111,6 @@ s32 TASKS_Init(u32 mode)
   xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
   xTaskCreate(TASK_Period1S,          (signed portCHAR *)"Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
   xTaskCreate(TASK_Pattern,           (signed portCHAR *)"Pattern",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
-  xTaskCreate(TASK_MSD,               (signed portCHAR *)"MSD",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
 
   // finally init the uIP task
   UIP_TASK_Init(0);
@@ -130,6 +126,7 @@ s32 TASKS_Init(u32 mode)
 static void TASK_MIDI(void *pvParameters)
 {
   portTickType xLastExecutionTime;
+  u8 lun_available = 0;
 
   // Initialise the xLastExecutionTime variable on task entry
   xLastExecutionTime = xTaskGetTickCount();
@@ -143,8 +140,47 @@ static void TASK_MIDI(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-    // continue in application hook
-    SEQ_TASK_MIDI();
+    // MSD driver handling overrules MIDI
+    if( msd_state == MSD_DISABLED ) {
+      // continue in application hook
+      SEQ_TASK_MIDI();
+    } else {
+      MUTEX_SDCARD_TAKE;
+
+      switch( msd_state ) {
+      case MSD_SHUTDOWN:
+	// switch back to USB MIDI
+	MIOS32_USB_Init(1);
+	msd_state = MSD_DISABLED;
+	break;
+
+      case MSD_INIT:
+	// LUN not mounted yet
+	lun_available = 0;
+
+	// enable MSD USB driver
+	MUTEX_J16_TAKE;
+	if( MSD_Init(0) >= 0 )
+	  msd_state = MSD_READY;
+	else
+	  msd_state = MSD_SHUTDOWN;
+	MUTEX_J16_GIVE;
+	break;
+
+      case MSD_READY:
+	// service MSD USB driver
+	MSD_Periodic_mS();
+
+	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
+	if( lun_available && !MSD_LUN_AvailableGet(0) )
+	  msd_state = MSD_SHUTDOWN;
+	else if( !lun_available && MSD_LUN_AvailableGet(0) )
+	  lun_available = 1;
+	break;
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
   }
 }
 
@@ -230,69 +266,13 @@ void SEQ_TASK_PatternResume(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS when USB MSD access is enabled
-/////////////////////////////////////////////////////////////////////////////
-static void TASK_MSD(void *pvParameters)
-{
-  u8 lun_available = 0;
-
-  while( 1 ) {
-    // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
-    // isn't required, and this task could be invoked too often if it was blocked
-    // for a long time
-    vTaskDelay(1 / portTICK_RATE_MS);
-
-
-    // MSD driver handling
-    if( msd_state != MSD_DISABLED ) {
-      MUTEX_SDCARD_TAKE;
-
-      switch( msd_state ) {
-        case MSD_SHUTDOWN:
-	  // switch back to USB MIDI
-	  MIOS32_USB_Init(1);
-	  msd_state = MSD_DISABLED;
-	  MUTEX_SDCARD_GIVE;
-	  vTaskSuspend(NULL); // will be resumed from TASK_MSD_EnableSet()
-	  MUTEX_SDCARD_TAKE;
-	  break;
-
-        case MSD_INIT:
-	  // LUN not mounted yet
-	  lun_available = 0;
-
-	  // enable MSD USB driver
-	  if( MSD_Init(0) >= 0 )
-	    msd_state = MSD_READY;
-	  else
-	    msd_state = MSD_SHUTDOWN;
-	  break;
-
-        case MSD_READY:
-	  // service MSD USB driver
-	  MSD_Periodic_mS();
-
-	  // this mechanism shuts down the MSD driver if SD card has been unmounted by OS
-	  if( lun_available && !MSD_LUN_AvailableGet(0) )
-	    msd_state = MSD_SHUTDOWN;
-	  else if( !lun_available && MSD_LUN_AvailableGet(0) )
-	    lun_available = 1;
-	  break;
-      }
-
-      MUTEX_SDCARD_GIVE;
-    }
-  }
-}
-
-
 // MSD access functions
+/////////////////////////////////////////////////////////////////////////////
 s32 TASK_MSD_EnableSet(u8 enable)
 {
   MIOS32_IRQ_Disable();
   if( msd_state == MSD_DISABLED && enable ) {
     msd_state = MSD_INIT;
-    vTaskResume(xMSDHandle);
   } else if( msd_state == MSD_READY && !enable )
     msd_state = MSD_SHUTDOWN;
   MIOS32_IRQ_Enable();
@@ -323,12 +303,12 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 /////////////////////////////////////////////////////////////////////////////
 void TASKS_J16SemaphoreTake(void)
 {
-  if( xJ16Semaphore != NULL )
-    while( xSemaphoreTakeRecursive(xJ16Semaphore, (portTickType)1) != pdTRUE );
+  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+    MUTEX_J16_TAKE;
 }
 
 void TASKS_J16SemaphoreGive(void)
 {
-  if( xJ16Semaphore != NULL )
-    xSemaphoreGiveRecursive(xJ16Semaphore);
+  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+    MUTEX_J16_GIVE;
 }

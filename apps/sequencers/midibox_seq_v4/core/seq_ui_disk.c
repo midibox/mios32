@@ -40,11 +40,13 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           4
-#define ITEM_ENABLE_MSD        0
-#define ITEM_MF_IMPORT         1
-#define ITEM_MF_EXPORT         2
-#define ITEM_MF_PLAY           3
+#define NUM_OF_ITEMS           6
+#define ITEM_S_IMPORT          0
+#define ITEM_S_EXPORT          1
+#define ITEM_MF_IMPORT         2
+#define ITEM_MF_EXPORT         3
+#define ITEM_MF_PLAY           4
+#define ITEM_ENABLE_MSD        5
 
 #define EXPORT_NUM_OF_ITEMS    6
 #define EXPORT_ITEM_MODE       0
@@ -54,14 +56,21 @@
 #define EXPORT_ITEM_MEASURES   4
 #define EXPORT_ITEM_STEPS_P_M  5
 
-// MIDI File dialog screens
-#define MF_DIALOG_NONE          0
-#define MF_DIALOG_PLAY          1
-#define MF_DIALOG_IMPORT        2
-#define MF_DIALOG_EXPORT        3
-#define MF_DIALOG_EXPORT_FNAME  4
-#define MF_DIALOG_EXPORT_FEXISTS 5
-#define MF_DIALOG_EXPORT_PROGRESS 6
+#define SESSION_NUM_OF_ITEMS    3
+#define SESSION_ITEM_PATTERN_B    0
+#define SESSION_ITEM_PATTERN_E    1
+#define SESSION_ITEM_PATTERN_D    2
+
+// Session and MIDI File dialog screens
+#define DIALOG_NONE               0
+#define DIALOG_S_IMPORT           1
+#define DIALOG_S_EXPORT           2
+#define DIALOG_MF_PLAY            3
+#define DIALOG_MF_IMPORT          4
+#define DIALOG_MF_EXPORT          5
+#define DIALOG_MF_EXPORT_FNAME    6
+#define DIALOG_MF_EXPORT_FEXISTS  7
+#define DIALOG_MF_EXPORT_PROGRESS 8
 
 
 #define NUM_LIST_DISPLAYED_ITEMS 4
@@ -74,20 +83,28 @@
 /////////////////////////////////////////////////////////////////////////////
 static void MSD_EnableReq(u32 enable);
 
-static s32 SEQ_UI_DISK_UpdateDirList(void);
+static s32 SEQ_UI_DISK_UpdateSessionDirList(void);
+static s32 SEQ_UI_DISK_UpdateMfDirList(void);
 
-static s32 DoExport(u8 force_overwrite);
+static s32 DoMfExport(u8 force_overwrite);
+static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 mf_dialog;
+static u8 menu_dialog;
 
 static s32 dir_num_items; // contains SEQ_FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
+static u8 dir_selected_item = 0; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
+
+#define MAX_SESSION_PATTERNS SEQ_FILE_B_NUM_BANKS*64
+static u16 source_pattern_begin = 0; // only changed once after startup
+static u16 source_pattern_end = 0;   // only changed once after startup
+static u16 destination_pattern = 0;  // only changed once after startup
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -98,51 +115,76 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  switch( mf_dialog ) {
-    case MF_DIALOG_PLAY:
-      *gp_leds = (3 << (2*ui_selected_item));
+  switch( menu_dialog ) {
+  case DIALOG_S_IMPORT:
+  case DIALOG_S_EXPORT:
+    *gp_leds = (3 << (2*dir_selected_item));
+    switch( ui_selected_item ) {
+    case SESSION_ITEM_PATTERN_B:
+      *gp_leds |= 0x0100;
       break;
-
-    case MF_DIALOG_IMPORT:
-      *gp_leds = (3 << (2*ui_selected_item));
+    case SESSION_ITEM_PATTERN_E:
+      *gp_leds |= 0x0200;
       break;
-
-    case MF_DIALOG_EXPORT:
-      switch( ui_selected_item ) {
-        case EXPORT_ITEM_MODE:
-	  *gp_leds |= 0x0001;
-	  break;
-        case EXPORT_ITEM_VAL:
-	  *gp_leds |= 0x0002;
-	  break;
-        case EXPORT_ITEM_BANK:
-	  *gp_leds |= 0x0004;
-	  break;
-        case EXPORT_ITEM_PATTERN:
-	  *gp_leds |= 0x0008;
-	  break;
-        case EXPORT_ITEM_MEASURES:
-	  *gp_leds |= 0x0030;
-	  break;
-        case EXPORT_ITEM_STEPS_P_M:
-	  *gp_leds |= 0x00c0;
-	  break;
-      }
+    case SESSION_ITEM_PATTERN_D:
+      *gp_leds |= 0x0c00;
       break;
+    }
+    break;
 
-    case MF_DIALOG_EXPORT_FNAME:
-    case MF_DIALOG_EXPORT_FEXISTS:
-    case MF_DIALOG_EXPORT_PROGRESS:
-      // no LED functions
+  case DIALOG_MF_PLAY:
+    *gp_leds = (3 << (2*dir_selected_item));
+    break;
+
+  case DIALOG_MF_IMPORT:
+    *gp_leds = (3 << (2*dir_selected_item));
+    break;
+
+  case DIALOG_MF_EXPORT:
+    switch( ui_selected_item ) {
+    case EXPORT_ITEM_MODE:
+      *gp_leds |= 0x0001;
       break;
+    case EXPORT_ITEM_VAL:
+      *gp_leds |= 0x0002;
+      break;
+    case EXPORT_ITEM_BANK:
+      *gp_leds |= 0x0004;
+      break;
+    case EXPORT_ITEM_PATTERN:
+      *gp_leds |= 0x0008;
+      break;
+    case EXPORT_ITEM_MEASURES:
+      *gp_leds |= 0x0030;
+      break;
+    case EXPORT_ITEM_STEPS_P_M:
+      *gp_leds |= 0x00c0;
+      break;
+    }
+    break;
 
-    default:
-      switch( ui_selected_item ) {
-        case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
-        case ITEM_MF_IMPORT: *gp_leds |= 0x1000; break;
-        case ITEM_MF_EXPORT: *gp_leds |= 0x6000; break;
-        case ITEM_MF_PLAY: *gp_leds |= 0x8000; break;
-      }
+  case DIALOG_MF_EXPORT_FNAME:
+  case DIALOG_MF_EXPORT_FEXISTS:
+  case DIALOG_MF_EXPORT_PROGRESS:
+    // no LED functions
+    break;
+
+  default: {
+#if 0
+    switch( ui_selected_item ) {
+    case ITEM_S_IMPORT: *gp_leds |= 0x0001; break;
+    case ITEM_S_EXPORT: *gp_leds |= 0x0006; break;
+    case ITEM_MF_IMPORT: *gp_leds |= 0x0010; break;
+    case ITEM_MF_EXPORT: *gp_leds |= 0x0060; break;
+    case ITEM_MF_PLAY: *gp_leds |= 0x0080; break;
+    case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
+    }
+#else
+    s32 status = TASK_MSD_EnableGet();
+    if( status == 1 )
+      *gp_leds |= 0x0300;
+#endif
+  }
   }
 
   return 0; // no error
@@ -158,9 +200,119 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  switch( mf_dialog ) {
+  switch( menu_dialog ) {
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_PLAY:
+    case DIALOG_S_IMPORT:
+    case DIALOG_S_EXPORT:
+      if( encoder <= SEQ_UI_ENCODER_GP8 ) {
+	if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &dir_selected_item, &dir_view_offset) )
+	  SEQ_UI_DISK_UpdateSessionDirList();
+	return 1;
+      }
+
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9:
+	ui_selected_item = SESSION_ITEM_PATTERN_B;
+	break;
+
+      case SEQ_UI_ENCODER_GP10:
+	ui_selected_item = SESSION_ITEM_PATTERN_E;
+	break;
+
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12:
+	ui_selected_item = SESSION_ITEM_PATTERN_D;
+	break;
+
+      case SEQ_UI_ENCODER_GP13:
+	return -1; // not mapped (yet)
+
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP15:
+	// IMPORT/EXPORT only via button
+	if( incrementer == 0 ) {
+
+	  if( dir_num_items >= 1 && (dir_selected_item+dir_view_offset) < dir_num_items ) {
+
+	    // just to ensure
+	    int num_patterns = source_pattern_end - source_pattern_begin + 1;
+	    if( destination_pattern + num_patterns >= MAX_SESSION_PATTERNS )
+	      num_patterns = MAX_SESSION_PATTERNS - destination_pattern;
+
+	    if( num_patterns < 1 ) {
+	      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Invalid End Pattern", "selected!");
+	    } else {
+	      // Import/Export file
+	      char session_dir[30];
+	      int i;
+	      char *p = (char *)&session_dir[0];
+	      for(i=0; i<8; ++i) {
+		char c = ui_global_dir_list[LIST_ENTRY_WIDTH*dir_selected_item + i];
+		if( c != ' ' )
+		  *p++ = c;
+	      }
+	      *p++ = 0;
+
+	      MUTEX_SDCARD_TAKE;
+	      if( menu_dialog == DIALOG_S_IMPORT ) {
+		DoSessionCopy(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+	      } else {
+		DoSessionCopy(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+	      }
+	      MUTEX_SDCARD_GIVE;
+
+#if 0
+	      // we want to stay in this menu
+	      ui_selected_item = 0;
+	      menu_dialog = DIALOG_NONE;
+#endif
+	    }
+	  } else {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Invalid directory", "selected!");
+	  }
+	}
+	return 1;
+
+      case SEQ_UI_ENCODER_GP16:
+	// EXIT only via button
+	if( incrementer == 0 ) {
+	  ui_selected_item = 0;
+	  menu_dialog = DIALOG_NONE;
+	}
+	return 1;
+      }
+
+
+      switch( ui_selected_item ) {
+      case SESSION_ITEM_PATTERN_B: {
+	int old_offset = source_pattern_end-source_pattern_begin;
+	if( old_offset < 0 )
+	  old_offset = 0;
+	if( SEQ_UI_Var16_Inc(&source_pattern_begin, 0, MAX_SESSION_PATTERNS-1, incrementer) ) {
+	  source_pattern_end = source_pattern_begin + old_offset;
+	  if( source_pattern_end >= MAX_SESSION_PATTERNS )
+	    source_pattern_end = MAX_SESSION_PATTERNS - 1;
+	  return 1;
+	}
+      }	return 0;
+
+      case SESSION_ITEM_PATTERN_E:
+	if( SEQ_UI_Var16_Inc(&source_pattern_end, source_pattern_begin, MAX_SESSION_PATTERNS-1, incrementer) ) {
+	  return 1;
+	}
+	return 0;
+
+      case SESSION_ITEM_PATTERN_D:
+	if( SEQ_UI_Var16_Inc(&destination_pattern, 0, MAX_SESSION_PATTERNS-1, incrementer) ) {
+	  return 1;
+	}
+	return 0;
+      }
+
+      return -1; // encoder not mapped
+
+    ///////////////////////////////////////////////////////////////////////////
+    case DIALOG_MF_PLAY:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9: {
 	  // select Play/Stop
@@ -224,19 +376,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  // EXIT only via button
 	  if( incrementer == 0 ) {
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    menu_dialog = DIALOG_NONE;
 	  }
 	  return 1;
 
         default:
-	  if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
-	    SEQ_UI_DISK_UpdateDirList();
+	  if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &dir_selected_item, &dir_view_offset) )
+	    SEQ_UI_DISK_UpdateMfDirList();
       }
-      break;
+      return 0;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_IMPORT:
+    case DIALOG_MF_IMPORT:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP9: {
 	  u8 value = SEQ_MIDIMP_ModeGet();
@@ -310,19 +462,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  // EXIT only via button
 	  if( incrementer == 0 ) {
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    menu_dialog = DIALOG_NONE;
 	  }
 	  return 1;
 
         default:
-	  if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
-	    SEQ_UI_DISK_UpdateDirList();
+	  if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &dir_selected_item, &dir_view_offset) )
+	    SEQ_UI_DISK_UpdateMfDirList();
       }
-      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT: {
+    case DIALOG_MF_EXPORT: {
       seq_midexp_mode_t midexp_mode = SEQ_MIDEXP_ModeGet();
 
       switch( encoder ) {
@@ -364,7 +515,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      dir_name[i] = ' ';
 
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_EXPORT_FNAME;
+	    menu_dialog = DIALOG_MF_EXPORT_FNAME;
 	  }
 	  return 1;
 
@@ -379,7 +530,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  // EXIT only via button
 	  if( incrementer == 0 ) {
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    menu_dialog = DIALOG_NONE;
 	  }
 	  return 1;
       }
@@ -473,17 +624,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_FNAME: {
+    case DIALOG_MF_EXPORT_FNAME: {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP15: {
 	  // SAVE only via button
 	  if( incrementer != 0 )
 	    return 0;
 
-	  if( DoExport(0) == 0 ) { // don't force overwrite
+	  if( DoMfExport(0) == 0 ) { // don't force overwrite
 	    // exit keypad editor
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    menu_dialog = DIALOG_NONE;
 	  }
 
 	  return 1;
@@ -496,17 +647,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	  // exit keypad editor
 	  ui_selected_item = 0;
-	  mf_dialog = MF_DIALOG_NONE;
+	  menu_dialog = DIALOG_NONE;
 	  return 1;
 	} break;
       }
 
       return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&dir_name[0], 8);
     }
+    return 0;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_FEXISTS: {
+    case DIALOG_MF_EXPORT_FEXISTS: {
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP11: {
 	  // YES only via button
@@ -514,10 +666,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    return 0;
 
 	  // YES: overwrite file
-	  if( DoExport(1) == 0 ) { // force overwrite
+	  if( DoMfExport(1) == 0 ) { // force overwrite
 	    // exit keypad editor
 	    ui_selected_item = 0;
-	    mf_dialog = MF_DIALOG_NONE;
+	    menu_dialog = DIALOG_NONE;
 	  }
 	  return 1;
 	} break;
@@ -530,7 +682,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  // NO: don't overwrite file - back to filename entry
 
 	  ui_selected_item = 0;
-	  mf_dialog = MF_DIALOG_EXPORT_FNAME;
+	  menu_dialog = DIALOG_MF_EXPORT_FNAME;
 	  return 1;
 	} break;
 
@@ -541,7 +693,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	  // exit keypad editor
 	  ui_selected_item = 0;
-	  mf_dialog = MF_DIALOG_NONE;
+	  menu_dialog = DIALOG_NONE;
 	  return 1;
 	} break;
       }
@@ -551,7 +703,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_PROGRESS:
+    case DIALOG_MF_EXPORT_PROGRESS:
       // no encoder functions!
       return -1;
 
@@ -560,15 +712,31 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     default:
       switch( encoder ) {
         case SEQ_UI_ENCODER_GP1:
+          ui_selected_item = ITEM_S_IMPORT;
+          break;
+    
         case SEQ_UI_ENCODER_GP2:
         case SEQ_UI_ENCODER_GP3:
+          ui_selected_item = ITEM_S_EXPORT;
+	  break;
+
         case SEQ_UI_ENCODER_GP4:
+          return -1; // not used (yet)
+	  break;
+
         case SEQ_UI_ENCODER_GP5:
+          ui_selected_item = ITEM_MF_IMPORT;
+          break;
+    
         case SEQ_UI_ENCODER_GP6:
         case SEQ_UI_ENCODER_GP7:
-        case SEQ_UI_ENCODER_GP8:
-	  return -1; // not used (yet)
+          ui_selected_item = ITEM_MF_EXPORT;
+          break;
     
+        case SEQ_UI_ENCODER_GP8:
+          ui_selected_item = ITEM_MF_PLAY;
+          break;
+
         case SEQ_UI_ENCODER_GP9:
         case SEQ_UI_ENCODER_GP10:
           ui_selected_item = ITEM_ENABLE_MSD;
@@ -576,47 +744,57 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     
         case SEQ_UI_ENCODER_GP11:
         case SEQ_UI_ENCODER_GP12:
-          return -1; // not used (yet)
-    
         case SEQ_UI_ENCODER_GP13:
-          ui_selected_item = ITEM_MF_IMPORT;
-          break;
-    
         case SEQ_UI_ENCODER_GP14:
         case SEQ_UI_ENCODER_GP15:
-          ui_selected_item = ITEM_MF_EXPORT;
-          break;
-    
         case SEQ_UI_ENCODER_GP16:
-          ui_selected_item = ITEM_MF_PLAY;
-          break;
-    
+          return -1; // not used (yet)
+        
       }
     
       // for GP encoders and Datawheel
       switch( ui_selected_item ) {
-        case ITEM_ENABLE_MSD:
-          SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Please use", "GP Button!");
+        case ITEM_S_IMPORT:
+          // switch to Session Import Dialog screen
+	  dir_selected_item = 0;
+	  ui_selected_item = 0;
+          menu_dialog = DIALOG_S_IMPORT;
+          SEQ_UI_DISK_UpdateSessionDirList();
           return 1;
     
+        case ITEM_S_EXPORT:
+          // switch to Session Import Dialog screen
+	  dir_selected_item = 0;
+	  ui_selected_item = 0;
+          menu_dialog = DIALOG_S_EXPORT;
+          SEQ_UI_DISK_UpdateSessionDirList();
+          return 1;
+
         case ITEM_MF_IMPORT:
           // switch to MIDI File Import Dialog screen
+	  dir_selected_item = 0;
 	  ui_selected_item = 0;
-          mf_dialog = MF_DIALOG_IMPORT;
-          SEQ_UI_DISK_UpdateDirList();
+          menu_dialog = DIALOG_MF_IMPORT;
+          SEQ_UI_DISK_UpdateMfDirList();
           return 1;
     
         case ITEM_MF_EXPORT:
           // switch to MIDI File Export Dialog screen
+	  dir_selected_item = 0;
 	  ui_selected_item = 0;
-          mf_dialog = MF_DIALOG_EXPORT;
+          menu_dialog = DIALOG_MF_EXPORT;
           return 1;
 
         case ITEM_MF_PLAY:
           // switch to MIDI File Play Dialog screen
+	  dir_selected_item = 0;
 	  ui_selected_item = 0;
-          mf_dialog = MF_DIALOG_PLAY;
-          SEQ_UI_DISK_UpdateDirList();
+          menu_dialog = DIALOG_MF_PLAY;
+          SEQ_UI_DISK_UpdateMfDirList();
+          return 1;    
+
+        case ITEM_ENABLE_MSD:
+          SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Please use", "GP Button!");
           return 1;    
       }
   }
@@ -634,9 +812,26 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  switch( mf_dialog ) {
+  switch( menu_dialog ) {
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_PLAY:
+    case DIALOG_S_IMPORT:
+    case DIALOG_S_EXPORT:
+      if( depressed ) return 0; // ignore when button depressed
+    
+      if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
+
+	if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 )
+	  return Encoder_Handler(button, 0);
+	else {
+	  if( button != SEQ_UI_BUTTON_Select )
+	    dir_selected_item = button / 2;
+	}
+	return 1;
+      }
+      break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case DIALOG_MF_PLAY:
       if( depressed ) return 0; // ignore when button depressed
     
       if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
@@ -675,15 +870,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
           default:
 	    if( button != SEQ_UI_BUTTON_Select )
-	      ui_selected_item = button / 2;
+	      dir_selected_item = button / 2;
 
-	    if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
+	    if( dir_num_items >= 1 && (dir_selected_item+dir_view_offset) < dir_num_items ) {
 	      // Play MIDI File
 	      char mid_file[30];
 	      int i;
 	      char *p = (char *)&mid_file[0];
 	      for(i=0; i<8; ++i) {
-		char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+		char c = ui_global_dir_list[LIST_ENTRY_WIDTH*dir_selected_item + i];
 		if( c != ' ' )
 		  *p++ = c;
 	      }
@@ -720,12 +915,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 		SEQ_UI_SDCardErrMsg(2000, status);
 	    }
 	}
+	return 1;
       }
-      return 1;
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_IMPORT:
+    case DIALOG_MF_IMPORT:
       if( depressed ) return 0; // ignore when button depressed
     
       if( button <= SEQ_UI_BUTTON_GP16 || button == SEQ_UI_BUTTON_Select ) {
@@ -734,15 +930,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    return Encoder_Handler(button, 0);
 	else {
 	  if( button != SEQ_UI_BUTTON_Select )
-	    ui_selected_item = button / 2;
+	    dir_selected_item = button / 2;
 
-	  if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
+	  if( dir_num_items >= 1 && (dir_selected_item+dir_view_offset) < dir_num_items ) {
 	    // Import MIDI File
 	    char mid_file[30];
 	    int i;
 	    char *p = (char *)&mid_file[0];
 	    for(i=0; i<8; ++i) {
-	      char c = ui_global_dir_list[LIST_ENTRY_WIDTH*ui_selected_item + i];
+	      char c = ui_global_dir_list[LIST_ENTRY_WIDTH*dir_selected_item + i];
 	      if( c != ' ' )
 		*p++ = c;
 	    }
@@ -759,12 +955,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      SEQ_UI_SDCardErrMsg(2000, status);
 	  }
 	}
+	return 1;
       }
-      return 1;
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT:
+    case DIALOG_MF_EXPORT:
       if( depressed ) return 0; // ignore when button depressed
     
       if( button <= SEQ_UI_BUTTON_GP16 )
@@ -790,23 +987,25 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
         case SEQ_UI_BUTTON_Down:
           return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
       }
-
-      return -1; // invalid or unsupported button
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_FNAME:
-    case MF_DIALOG_EXPORT_FEXISTS: {
-      if( depressed ) return 0; // ignore when button depressed
-
-      return Encoder_Handler((seq_ui_encoder_t)button, 0);
-    }
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_PROGRESS:
-      // no button functions!
-      return -1;
+    case DIALOG_MF_EXPORT_FNAME:
+    case DIALOG_MF_EXPORT_FEXISTS:
+      if( button <= SEQ_UI_BUTTON_GP16 ) {
+	if( depressed ) return 0; // ignore when button depressed
+	return Encoder_Handler((seq_ui_encoder_t)button, 0);
+      }
+      break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case DIALOG_MF_EXPORT_PROGRESS:
+      // no GP button functions!
+      if( button <= SEQ_UI_BUTTON_GP16 )
+	return -1;
+
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -838,28 +1037,37 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	return Encoder_Handler(button, incrementer);
       }
     
-      if( depressed ) return 0; // ignore when button depressed
+  }
+
+  if( depressed )
+    return 0; // ignore when button depressed
     
-      switch( button ) {
-        case SEQ_UI_BUTTON_Select:
-        case SEQ_UI_BUTTON_Right:
-          if( ++ui_selected_item >= NUM_OF_ITEMS )
-	    ui_selected_item = 0;
+  switch( button ) {
+  case SEQ_UI_BUTTON_Select:
+  case SEQ_UI_BUTTON_Right:
+    if( ++ui_selected_item >= NUM_OF_ITEMS )
+      ui_selected_item = 0;
+    return 1; // value always changed
     
-          return 1; // value always changed
+  case SEQ_UI_BUTTON_Left:
+    if( ui_selected_item == 0 )
+      ui_selected_item = NUM_OF_ITEMS-1;
+    return 1; // value always changed
     
-        case SEQ_UI_BUTTON_Left:
-          if( ui_selected_item == 0 )
-	    ui_selected_item = NUM_OF_ITEMS-1;
+  case SEQ_UI_BUTTON_Up:
+    return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
     
-          return 1; // value always changed
-    
-        case SEQ_UI_BUTTON_Up:
-          return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
-    
-        case SEQ_UI_BUTTON_Down:
-          return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
-      }
+  case SEQ_UI_BUTTON_Down:
+    return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+
+  case SEQ_UI_BUTTON_Exit:
+    if( menu_dialog != DIALOG_NONE ) {
+      // switch to main dialog
+      menu_dialog = DIALOG_NONE;
+      ui_selected_item = 0;
+      return 1;
+    }
+    break;
   }
     
   return -1; // invalid or unsupported button
@@ -879,11 +1087,23 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //                                           MSD USB                MIDI Files     
-  //                                          disabled           Import  Export  Play
+  //    Sessions              MIDI Files      MSD USB (UMRW)                         
+  // Import  Export      Import  Export  Play enabled                                
 
-  //                                           MSD USB (UMRW)         MIDI Files    
-  //                                           enabled           Import  Export  Play
+
+  // Session Import dialog:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  // Select Source Session (10 found)          Source  Destination                   
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  1:A1-1:A8 1:A1-1:A8         IMPORT EXIT
+
+  // Session Export dialog:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  // Select Destination Session (10 found)     Source  Destination                   
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  1:A1-1:A8 1:A1-1:A8         EXPORT EXIT
 
 
   // MIDI Files Import dialog:
@@ -918,8 +1138,89 @@ static s32 LCD_Handler(u8 high_prio)
   //                                         Overwrite? YES  NO                  EXIT
 
 
-  switch( mf_dialog ) {
-    case MF_DIALOG_PLAY:
+  switch( menu_dialog ) {
+    case DIALOG_S_IMPORT:
+    case DIALOG_S_EXPORT: {
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 0);
+      SEQ_LCD_PrintSpaces(40);
+
+      SEQ_LCD_CursorSet(0, 0);
+      if( dir_num_items < 0 ) {
+	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	  SEQ_LCD_PrintString("/SESSIONS directory not found on SD Card!");
+	else
+	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
+      } else if( dir_num_items == 0 ) {
+	SEQ_LCD_PrintFormattedString("No files found under /SESSIONS!");
+      } else {
+	if( menu_dialog == DIALOG_S_IMPORT )
+	  SEQ_LCD_PrintFormattedString("Select Source Session (%d found)", dir_num_items);
+	else
+	  SEQ_LCD_PrintFormattedString("Select Destination Session (%d found)", dir_num_items);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(40, 0);
+      SEQ_LCD_PrintString("  Source  Destination                   ");
+
+      ///////////////////////////////////////////////////////////////////////////
+      SEQ_LCD_CursorSet(0, 1);
+
+      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, dir_selected_item, dir_view_offset);
+
+      SEQ_LCD_PrintChar(' ');
+
+      if( ui_selected_item == SESSION_ITEM_PATTERN_B && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintFormattedString("%d:%c%d",
+				     1 + (source_pattern_begin >> 6),
+				     'A' + ((source_pattern_begin >> 3) & 0x7),
+				     1 + (source_pattern_begin & 7));
+      }
+
+      SEQ_LCD_PrintChar('-');
+
+      if( ui_selected_item == SESSION_ITEM_PATTERN_E && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	SEQ_LCD_PrintFormattedString("%d:%c%d",
+				     1 + (source_pattern_end >> 6),
+				     'A' + ((source_pattern_end >> 3) & 0x7),
+				     1 + (source_pattern_end & 7));
+      }
+
+      SEQ_LCD_PrintChar(' ');
+
+      if( ui_selected_item == SESSION_ITEM_PATTERN_D && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(9);
+      } else {
+	u16 destination_pattern_end = destination_pattern + (source_pattern_end-source_pattern_begin);
+	if( destination_pattern_end >= MAX_SESSION_PATTERNS )
+	  destination_pattern_end = MAX_SESSION_PATTERNS-1;
+
+	SEQ_LCD_PrintFormattedString("%d:%c%d-%d:%c%d",
+				     1 + (destination_pattern >> 6),
+				     'A' + ((destination_pattern >> 3) & 0x7),
+				     1 + (destination_pattern & 7),
+				     1 + (destination_pattern_end >> 6),
+				     'A' + ((destination_pattern_end >> 3) & 0x7),
+				     1 + (destination_pattern_end & 7));
+      }
+
+      SEQ_LCD_PrintSpaces(9);
+
+      if( menu_dialog == DIALOG_S_IMPORT )
+	SEQ_LCD_PrintString("IMPORT");
+      else
+	SEQ_LCD_PrintString("EXPORT");
+
+      SEQ_LCD_PrintString(" EXIT");
+    } break;
+
+
+    case DIALOG_MF_PLAY:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
@@ -950,7 +1251,7 @@ static s32 LCD_Handler(u8 high_prio)
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
 
-      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
+      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, dir_selected_item, dir_view_offset);
 
       if( SEQ_MIDPLY_RunModeGet() ) {
 	SEQ_LCD_PrintString("STOP  ");
@@ -980,7 +1281,7 @@ static s32 LCD_Handler(u8 high_prio)
       break;
 
 
-    case MF_DIALOG_IMPORT: {
+    case DIALOG_MF_IMPORT: {
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
@@ -1004,7 +1305,7 @@ static s32 LCD_Handler(u8 high_prio)
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
 
-      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
+      SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, dir_selected_item, dir_view_offset);
 
       if( SEQ_MIDIMP_ModeGet() == SEQ_MIDIMP_MODE_AllDrums )
 	SEQ_LCD_PrintString("Drum ");
@@ -1031,7 +1332,7 @@ static s32 LCD_Handler(u8 high_prio)
     } break;
 
 
-    case MF_DIALOG_EXPORT: {
+    case DIALOG_MF_EXPORT: {
       seq_midexp_mode_t midexp_mode = SEQ_MIDEXP_ModeGet();
 
       ///////////////////////////////////////////////////////////////////////////
@@ -1172,7 +1473,7 @@ static s32 LCD_Handler(u8 high_prio)
     } break;
 
 
-    case MF_DIALOG_EXPORT_FNAME: {
+    case DIALOG_MF_EXPORT_FNAME: {
       int i;
 
       SEQ_LCD_CursorSet(0, 0);
@@ -1196,7 +1497,7 @@ static s32 LCD_Handler(u8 high_prio)
     } break;
 
 
-    case MF_DIALOG_EXPORT_FEXISTS: {
+    case DIALOG_MF_EXPORT_FEXISTS: {
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintSpaces(40);
 
@@ -1213,7 +1514,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 
     ///////////////////////////////////////////////////////////////////////////
-    case MF_DIALOG_EXPORT_PROGRESS:
+    case DIALOG_MF_EXPORT_PROGRESS:
       SEQ_LCD_Clear(); // remove artifacts
       // (message print by SEQ_MIDEXP_GenerateFile())
       return 0;
@@ -1222,24 +1523,20 @@ static s32 LCD_Handler(u8 high_prio)
     default:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
-      SEQ_LCD_PrintSpaces(40);
-    
-      ///////////////////////////////////////////////////////////////////////////
-      SEQ_LCD_PrintString("  MSD USB ");
+      SEQ_LCD_PrintString("   Sessions              MIDI Files      MSD USB ");
       if( TASK_MSD_EnableGet() == 1 ) {
-        char str[5];
-        TASK_MSD_FlagStrGet(str);
-        SEQ_LCD_PrintFormattedString("(%s)", str);
+	char str[5];
+	TASK_MSD_FlagStrGet(str);
+	SEQ_LCD_PrintFormattedString("(%s)", str);
       } else {
         SEQ_LCD_PrintSpaces(6);
       }
-      SEQ_LCD_PrintString("         MIDI Files     ");
+      SEQ_LCD_PrintSpaces(40-15);
     
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
-      SEQ_LCD_PrintSpaces(40);
-    
-      ///////////////////////////////////////////////////////////////////////////    
+      SEQ_LCD_PrintString("Import  Export      Import  Export  Play");
+
       if( ui_selected_item == ITEM_ENABLE_MSD && ui_cursor_flash ) {
         SEQ_LCD_PrintSpaces(14);
       } else {
@@ -1250,9 +1547,7 @@ static s32 LCD_Handler(u8 high_prio)
           default: SEQ_LCD_PrintString(" Not Emulated!"); break;
         }
       }
-      SEQ_LCD_PrintSpaces(6);
-    
-      SEQ_LCD_PrintString("Import  Export  Play");
+      SEQ_LCD_PrintSpaces(40-14);
   }
 
   return 0; // no error
@@ -1274,7 +1569,7 @@ s32 SEQ_UI_DISK_Init(u32 mode)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
 
   dir_name[0] = 0;
-  mf_dialog = 0;
+  menu_dialog = 0;
 
   return 0; // no error
 }
@@ -1292,7 +1587,37 @@ static void MSD_EnableReq(u32 enable)
 
 
 
-static s32 SEQ_UI_DISK_UpdateDirList(void)
+/////////////////////////////////////////////////////////////////////////////
+// Scan files under /SESSIONS
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_DISK_UpdateSessionDirList(void)
+{
+  int item;
+
+  MUTEX_SDCARD_TAKE;
+  dir_num_items = SEQ_FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  MUTEX_SDCARD_GIVE;
+
+  if( dir_num_items < 0 )
+    item = 0;
+  else if( dir_num_items < NUM_LIST_DISPLAYED_ITEMS )
+    item = dir_num_items;
+  else
+    item = NUM_LIST_DISPLAYED_ITEMS;
+
+  while( item < NUM_LIST_DISPLAYED_ITEMS ) {
+    ui_global_dir_list[LIST_ENTRY_WIDTH*item] = 0;
+    ++item;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Scan files under /MIDI
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_DISK_UpdateMfDirList(void)
 {
   int item;
 
@@ -1321,7 +1646,7 @@ static s32 SEQ_UI_DISK_UpdateDirList(void)
 // returns 0 on success
 // returns != 0 on errors (dialog page will be changed accordingly)
 /////////////////////////////////////////////////////////////////////////////
-static s32 DoExport(u8 force_overwrite)
+static s32 DoMfExport(u8 force_overwrite)
 {
   s32 status;
   int i;
@@ -1329,7 +1654,7 @@ static s32 DoExport(u8 force_overwrite)
 
   // if an error is detected, we jump back to FNAME page
   ui_selected_item = 0;
-  mf_dialog = MF_DIALOG_EXPORT_FNAME;
+  menu_dialog = DIALOG_MF_EXPORT_FNAME;
 
   u8 filename_valid = 1;
   for(i=0; i<8; ++i)
@@ -1384,12 +1709,12 @@ static s32 DoExport(u8 force_overwrite)
 
   if( !force_overwrite && status == 1) {
     // file exists - ask if it should be overwritten in a special dialog page
-    mf_dialog = MF_DIALOG_EXPORT_FEXISTS;
+    menu_dialog = DIALOG_MF_EXPORT_FEXISTS;
     return 1;
   }
 
   // select empty dialog page --- messages are print by SEQ_MIDEXP_GenerateFile()
-  mf_dialog = MF_DIALOG_EXPORT_PROGRESS;
+  menu_dialog = DIALOG_MF_EXPORT_PROGRESS;
   SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Exporting", path);
 
   if( (status=SEQ_MIDEXP_GenerateFile(path)) < 0 ) {
@@ -1398,6 +1723,109 @@ static s32 DoExport(u8 force_overwrite)
   }
 
   SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Export", "successfull!");
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy a session
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+  int i;
+
+  // since we need pattern memory as temporary storage:
+  // store all patterns
+  int group;
+  for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+    status = SEQ_FILE_B_PatternWrite(seq_file_session_name, seq_pattern[group].bank, seq_pattern[group].pattern, group, 1);
+    if( status < 0 ) {
+      SEQ_UI_SDCardErrMsg(2000, status);
+      return status;
+    }
+  }
+
+  for(i=0; i<num_patterns; ++i) {
+    u8 s_bank = (from_pattern+i) >> 6;
+    u8 s_pattern = (from_pattern+i) & 0x3f;
+    u8 d_bank = (to_pattern+i) >> 6;
+    u8 d_pattern = (to_pattern+i) & 0x3f;
+
+    char msg_u[20];
+    sprintf(msg_u, "Copy %-8s %d:%c%c",
+	    from_session,
+	    1 + s_bank,
+	    'A' + (s_pattern >> 3),
+	    '1' + (s_pattern & 7));
+
+    char msg_l[20];
+    sprintf(msg_l, "---> %-8s %d:%c%c",
+	    to_session,
+	    1 + d_bank,
+	    'A' + (d_pattern >> 3),
+	    '1' + (d_pattern & 7));
+
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, msg_u, msg_l);
+
+    // switch to source session
+    status = SEQ_FILE_B_Open(from_session, s_bank);
+    if( status < 0 )
+      break;
+
+    // read pattern
+    group = 0;
+    status = SEQ_FILE_B_PatternRead(s_bank, s_pattern, group);
+
+    // switch to destination session
+    status = SEQ_FILE_B_Open(to_session, d_bank);
+    if( status < 0 )
+      break;
+
+    // store pattern
+    group = 0;
+    status = SEQ_FILE_B_PatternWrite(to_session, d_bank, d_pattern, group, 0);
+    if( status < 0 )
+      break;
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operations", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open all banks
+  status = SEQ_FILE_B_LoadAllBanks(seq_file_session_name);
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // reload patterns of all groups
+  for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+    status = SEQ_FILE_B_PatternRead(seq_pattern[group].bank, seq_pattern[group].pattern, group);
+    if( status < 0 )
+      break;
+  }
+
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
 
   return 0; // no error
 }

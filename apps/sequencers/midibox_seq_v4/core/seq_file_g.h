@@ -30,13 +30,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_G_Init(u32 mode);
-extern s32 SEQ_FILE_G_Load(void);
+extern s32 SEQ_FILE_G_Load(char *session);
 extern s32 SEQ_FILE_G_Unload(void);
 
 extern s32 SEQ_FILE_G_Valid(void);
 
-extern s32 SEQ_FILE_G_Read(void);
-extern s32 SEQ_FILE_G_Write(void);
+extern s32 SEQ_FILE_G_Read(char *session);
+extern s32 SEQ_FILE_G_Write(char *session);
 extern s32 SEQ_FILE_G_Debug(void);
 
 

@@ -20,6 +20,7 @@
 
 #include "seq_ui.h"
 #include "seq_mixer.h"
+#include "seq_file.h"
 #include "seq_file_m.h"
 
 
@@ -233,7 +234,7 @@ s32 SEQ_MIXER_Save(u8 map)
     return -1; // invalid map number
 
   MUTEX_SDCARD_TAKE;
-  if( (status=SEQ_FILE_M_MapWrite(map, 1)) < 0 )
+  if( (status=SEQ_FILE_M_MapWrite(seq_file_session_name, map, 1)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
 

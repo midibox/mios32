@@ -727,7 +727,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( button <= SEQ_UI_BUTTON_GP16 )
 	return Encoder_Handler(button, 0); // re-use encoder handler
 
-      return -1; // button not mapped
+      break;
 
 
     case PR_DIALOG_PRESETS:
@@ -754,8 +754,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  ui_selected_item = 0;
 	  pr_dialog = PR_DIALOG_IMPORT;
 	}
+
+	return 1;
       }
-      return 1;
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -785,8 +787,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
         case SEQ_UI_BUTTON_Down:
           return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
       }
-
-      return -1; // invalid or unsupported button
+      break;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -794,8 +795,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case PR_DIALOG_EXPORT_FEXISTS: {
       if( depressed ) return 0; // ignore when button depressed
 
-      return Encoder_Handler((seq_ui_encoder_t)button, 0);
-    }
+      if( button <= SEQ_UI_BUTTON_GP16 )
+	return Encoder_Handler(button, 0); // re-use encoder handler
+    } break;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -844,6 +846,20 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
         case SEQ_UI_BUTTON_Down:
 	  return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
       }
+  }
+
+  if( depressed )
+    return 0; // ignore when button depressed
+
+  switch( button ) {
+  case SEQ_UI_BUTTON_Exit:
+    if( pr_dialog != PR_DIALOG_NONE ) {
+      // switch to main dialog
+      pr_dialog = PR_DIALOG_NONE;
+      ui_selected_item = 0;
+      return 1;
+    }
+    break;
   }
 
   return -1; // invalid or unsupported button

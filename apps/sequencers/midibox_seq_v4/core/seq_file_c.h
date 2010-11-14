@@ -30,13 +30,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_C_Init(u32 mode);
-extern s32 SEQ_FILE_C_Load(void);
+extern s32 SEQ_FILE_C_Load(char *session);
 extern s32 SEQ_FILE_C_Unload(void);
 
 extern s32 SEQ_FILE_C_Valid(void);
 
-extern s32 SEQ_FILE_C_Read(void);
-extern s32 SEQ_FILE_C_Write(void);
+extern s32 SEQ_FILE_C_Read(char *session);
+extern s32 SEQ_FILE_C_Write(char *session);
 extern s32 SEQ_FILE_C_Debug(void);
 
 

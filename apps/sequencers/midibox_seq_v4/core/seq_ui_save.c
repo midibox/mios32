@@ -296,6 +296,18 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Down:
       if( depressed ) return -1;
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+
+    case SEQ_UI_BUTTON_Exit:
+      if( depressed )
+	return 0; // ignore when button depressed
+
+      if( edit_label_mode ) {
+      // switch to main dialog
+	edit_label_mode = 0;
+	ui_selected_item = 0;
+	return 1;
+      }
+      break;
   }
 
   return -1; // invalid or unsupported button
