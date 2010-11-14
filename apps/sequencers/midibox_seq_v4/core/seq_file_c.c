@@ -88,10 +88,10 @@ s32 SEQ_FILE_C_Init(u32 mode)
 // Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_C_Load(void)
+s32 SEQ_FILE_C_Load(char *session)
 {
   s32 error;
-  error = SEQ_FILE_C_Read();
+  error = SEQ_FILE_C_Read(session);
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Tried to open config file, status: %d\n", error);
 #endif
@@ -148,7 +148,7 @@ static s32 get_dec(char *word)
 // reads the config file content (again)
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_C_Read(void)
+s32 SEQ_FILE_C_Read(char *session)
 {
   s32 status = 0;
   seq_file_c_info_t *info = &seq_file_c_info;
@@ -157,7 +157,7 @@ s32 SEQ_FILE_C_Read(void)
   info->valid = 0; // will be set to valid if file content has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  sprintf(filepath, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s'\n", filepath);
@@ -552,12 +552,12 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 // writes data into config file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_C_Write(void)
+s32 SEQ_FILE_C_Write(char *session)
 {
   seq_file_c_info_t *info = &seq_file_c_info;
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  sprintf(filepath, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s' for writing\n", filepath);

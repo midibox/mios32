@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta31
+~~~~~~~~~~~~~~~~~~~~~
+
+  o a powerful session import/export function has been added.
+    It allows you to copy one or multiple patterns to any session location.
+    Both functions are available in the Utility->Disk page
+
+  o "Save as.." shows the current session name as default name
+
+
 MIDIboxSEQ V4.0beta30
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -918,6 +928,3 @@ Problem: how should polyphonic loopback tracks be handled?
 It could be sufficient to call SEQ_MIDI_IN_ResetTransArpStacks(<bus-number>) depending on
 the gatelength
 
-----------------------------------------------------------
-
-add a possibility to copy patterns from one to another session

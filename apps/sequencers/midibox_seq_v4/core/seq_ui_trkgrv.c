@@ -23,6 +23,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_groove.h"
+#include "seq_file.h"
 #include "seq_file_g.h"
 
 
@@ -389,7 +390,7 @@ static s32 EXIT_Handler(void)
   if( store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
-    if( (status=SEQ_FILE_G_Write()) < 0 )
+    if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 

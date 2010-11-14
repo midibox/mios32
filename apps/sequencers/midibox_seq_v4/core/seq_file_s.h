@@ -30,16 +30,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_S_Init(u32 mode);
-extern s32 SEQ_FILE_S_LoadAllBanks(void);
+extern s32 SEQ_FILE_S_LoadAllBanks(char *session);
 extern s32 SEQ_FILE_S_UnloadAllBanks(void);
 
 extern s32 SEQ_FILE_S_NumSongs(void);
 
-extern s32 SEQ_FILE_S_Create(void);
-extern s32 SEQ_FILE_S_Open(void);
+extern s32 SEQ_FILE_S_Create(char *session);
+extern s32 SEQ_FILE_S_Open(char *session);
 
 extern s32 SEQ_FILE_S_SongRead(u8 song);
-extern s32 SEQ_FILE_S_SongWrite(u8 song, u8 rename_if_empty_name);
+extern s32 SEQ_FILE_S_SongWrite(char *session, u8 song, u8 rename_if_empty_name);
 
 
 /////////////////////////////////////////////////////////////////////////////

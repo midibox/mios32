@@ -350,10 +350,10 @@ char *SEQ_FILE_VolumeLabel(void)
 s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
 {
   s32 status = 0;
-  status |= SEQ_FILE_B_LoadAllBanks();
-  status |= SEQ_FILE_M_LoadAllBanks();
-  status |= SEQ_FILE_S_LoadAllBanks();
-  status |= SEQ_FILE_G_Load();
+  status |= SEQ_FILE_B_LoadAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_M_LoadAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_S_LoadAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_G_Load(seq_file_session_name);
   if( including_hw ) {
     status |= SEQ_FILE_HW_Load();
   }
@@ -361,7 +361,7 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   // ignore status if global setup file doesn't exist
   SEQ_FILE_GC_Load();
 
-  if( SEQ_FILE_C_Load() >= 0 ) {
+  if( SEQ_FILE_C_Load(seq_file_session_name) >= 0 ) {
     // change mixer map to the one stored in MBSEQ_C.V4
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
 
@@ -1004,7 +1004,7 @@ s32 SEQ_FILE_Format(void)
     seq_file_backup_percentage = (u8)(((u32)100 * (u32)bank) / num_operations);
     sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name, bank+1);
 
-    if( (status=SEQ_FILE_B_Create(bank)) < 0 )
+    if( (status=SEQ_FILE_B_Create(seq_file_session_name, bank)) < 0 )
       goto SEQ_FILE_Format_failed;
 
     // fill patterns with useful data
@@ -1014,12 +1014,12 @@ s32 SEQ_FILE_Format(void)
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
       u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
 
-      if( (status=SEQ_FILE_B_PatternWrite(bank, pattern, group, 0)) < 0 )
+      if( (status=SEQ_FILE_B_PatternWrite(seq_file_session_name, bank, pattern, group, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
     }
 
     // open bank
-    if( (status=SEQ_FILE_B_Open(bank)) < 0 )
+    if( (status=SEQ_FILE_B_Open(seq_file_session_name, bank)) < 0 )
       goto SEQ_FILE_Format_failed;
   }
 
@@ -1027,32 +1027,32 @@ s32 SEQ_FILE_Format(void)
   // create mixer maps
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+0)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  if( (status=SEQ_FILE_M_Create()) >= 0 ) {
+  if( (status=SEQ_FILE_M_Create(seq_file_session_name)) >= 0 ) {
     int map;
     int num_maps = SEQ_FILE_M_NumMaps();
     for(map=0; map<num_maps; ++map) {
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)map) / num_maps); // for percentage display
-      if( (status = SEQ_FILE_M_MapWrite(map, 0)) < 0 )
+      if( (status = SEQ_FILE_M_MapWrite(seq_file_session_name, map, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
     }
 
-    if( (status=SEQ_FILE_M_Open()) < 0 )
+    if( (status=SEQ_FILE_M_Open(seq_file_session_name)) < 0 )
       goto SEQ_FILE_Format_failed;
   }
 
   // create song
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+1)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  if( (status=SEQ_FILE_S_Create()) >= 0 ) {
+  if( (status=SEQ_FILE_S_Create(seq_file_session_name)) >= 0 ) {
     int song;
     int num_songs = SEQ_FILE_S_NumSongs();
     for(song=0; song<num_songs; ++song) {
       seq_file_copy_percentage = (u8)(((u32)100 * (u32)song) / num_songs); // for percentage display
-      if( (status = SEQ_FILE_S_SongWrite(song, 0)) )
+      if( (status = SEQ_FILE_S_SongWrite(seq_file_session_name, song, 0)) )
 	goto SEQ_FILE_Format_failed;
     }
 
-    if( (status=SEQ_FILE_S_Open()) < 0 )
+    if( (status=SEQ_FILE_S_Open(seq_file_session_name)) < 0 )
       goto SEQ_FILE_Format_failed;
   }
 
@@ -1060,14 +1060,14 @@ s32 SEQ_FILE_Format(void)
   // create grooves
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+2)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  if( (status=SEQ_FILE_G_Write()) < 0 )
+  if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
     goto SEQ_FILE_Format_failed;
 
 
   // create config
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  if( (status=SEQ_FILE_C_Write()) < 0 )
+  if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
     goto SEQ_FILE_Format_failed;
 
 

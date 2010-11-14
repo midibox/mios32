@@ -32,16 +32,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_B_Init(u32 mode);
-extern s32 SEQ_FILE_B_LoadAllBanks(void);
+extern s32 SEQ_FILE_B_LoadAllBanks(char *session);
 extern s32 SEQ_FILE_B_UnloadAllBanks(void);
 
 extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
 
-extern s32 SEQ_FILE_B_Create(u8 bank);
-extern s32 SEQ_FILE_B_Open(u8 bank);
+extern s32 SEQ_FILE_B_Create(char *session, u8 bank);
+extern s32 SEQ_FILE_B_Open(char *session, u8 bank);
 
 extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
-extern s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name);
+extern s32 SEQ_FILE_B_PatternWrite(char *session, u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name);
 
 extern s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern_name);
 

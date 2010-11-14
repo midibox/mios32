@@ -860,8 +860,9 @@ static s32 SEQ_UI_Button_Exit(s32 depressed)
   u8 prev_ui_page = ui_page;
 
   // forward to menu page
-  if( !seq_ui_button_state.MENU_PRESSED && ui_button_callback != NULL ) {
-    ui_button_callback(SEQ_UI_BUTTON_Exit, depressed);
+  if( ui_button_callback != NULL ) {
+    if( ui_button_callback(SEQ_UI_BUTTON_Exit, depressed) >= 1 )
+      return 1; // page has already handled exit button
     ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
   }
 

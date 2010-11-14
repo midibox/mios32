@@ -469,10 +469,10 @@ void SEQ_TASK_Period1S(void)
     // store all patterns
     int group;
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
-      status |= SEQ_FILE_B_PatternWrite(seq_pattern[group].bank, seq_pattern[group].pattern, group, 1);
+      status |= SEQ_FILE_B_PatternWrite(seq_file_session_name, seq_pattern[group].bank, seq_pattern[group].pattern, group, 1);
 
     // store config (e.g. to store current song/mixermap/pattern numbers
-    SEQ_FILE_C_Write();
+    SEQ_FILE_C_Write(seq_file_session_name);
 
     // store session name
     if( status >= 0 )

@@ -143,20 +143,20 @@ s32 SEQ_FILE_B_Init(u32 mode)
 // Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_LoadAllBanks(void)
+s32 SEQ_FILE_B_LoadAllBanks(char *session)
 {
   s32 status = 0;
 
   // load all banks
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
-    s32 error = SEQ_FILE_B_Open(bank);
+    s32 error = SEQ_FILE_B_Open(session, bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_B] Tried to open bank #%d file, status: %d\n", bank+1, error);
 #endif
 #if 0
     if( error == -2 ) {
-      error = SEQ_FILE_B_Create(bank);
+      error = SEQ_FILE_B_Create(session, bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SEQ_FILE_B] Tried to create bank #%d file, status: %d\n", bank+1, error);
 #endif
@@ -202,7 +202,7 @@ s32 SEQ_FILE_B_NumPatterns(u8 bank)
 // create a complete bank file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_Create(u8 bank)
+s32 SEQ_FILE_B_Create(char *session, u8 bank)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
     return SEQ_FILE_B_ERR_INVALID_BANK;
@@ -211,7 +211,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
   info->valid = 0; // set to invalid as long as we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, session, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Creating new bank file '%s'\n", filepath);
@@ -286,7 +286,7 @@ s32 SEQ_FILE_B_Create(u8 bank)
 // open a bank file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_Open(u8 bank)
+s32 SEQ_FILE_B_Open(char *session, u8 bank)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
     return SEQ_FILE_B_ERR_INVALID_BANK;
@@ -296,7 +296,7 @@ s32 SEQ_FILE_B_Open(u8 bank)
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, session, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s'\n", filepath);
@@ -516,7 +516,7 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
 // writes a pattern of a given group into bank
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name)
+s32 SEQ_FILE_B_PatternWrite(char *session, u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
     return SEQ_FILE_B_ERR_INVALID_BANK;
@@ -564,7 +564,7 @@ s32 SEQ_FILE_B_PatternWrite(u8 bank, u8 pattern, u8 source_group, u8 rename_if_e
   }
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name, bank+1);
+  sprintf(filepath, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, session, bank+1);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_B] Open bank file '%s' for writing\n", filepath);

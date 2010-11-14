@@ -27,6 +27,7 @@
 #include "seq_pattern.h"
 #include "seq_mixer.h"
 
+#include "seq_file.h"
 #include "seq_file_s.h"
 
 
@@ -487,7 +488,7 @@ s32 SEQ_SONG_Save(u32 song)
     return 0; // no store operation required
 
   MUTEX_SDCARD_TAKE;
-  if( (status=SEQ_FILE_S_SongWrite(song, 0)) < 0 )
+  if( (status=SEQ_FILE_S_SongWrite(seq_file_session_name, song, 0)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
   MUTEX_SDCARD_GIVE;
 

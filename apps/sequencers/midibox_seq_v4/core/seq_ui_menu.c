@@ -373,9 +373,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	// enter keypad editor anyhow
 	// initialize keypad editor
 	SEQ_UI_KeyPad_Init();
+
+	// copy current session name into dir_name
 	int i;
-	for(i=0; i<8; ++i)
+	for(i=0; i<8 && seq_file_session_name[i] != 0; ++i)
+	  dir_name[i] = seq_file_session_name[i];
+	ui_edit_name_cursor = i;
+	for(; i<8; ++i)
 	  dir_name[i] = ' ';
+
 	ui_selected_item = 0;
 	menu_dialog = MENU_DIALOG_SAVE_AS;
       }
@@ -451,7 +457,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   case MENU_DIALOG_NEW:
   case MENU_DIALOG_NEW_DEXISTS:
     if( depressed ) return 0; // ignore when button depressed
-    return Encoder_Handler((seq_ui_encoder_t)button, 0);
+    if( button <= SEQ_UI_BUTTON_GP16 )
+      return Encoder_Handler((seq_ui_encoder_t)button, 0);
   }
 
   switch( button ) {
@@ -710,7 +717,7 @@ static s32 SEQ_UI_MENU_UpdateSessionList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-    dir_num_items = SEQ_FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], SESSION_NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = SEQ_FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], SESSION_NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -756,6 +763,17 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Please enter", "Session Name!");
     return -2;
   }
+
+  // if dir_name is identical to current session name, we are done!
+  for(i=0; i<8 && seq_file_session_name[i] != 0; ++i)
+    if( dir_name[i] == seq_file_session_name[i] )
+      dirname_valid = 0;
+
+  if( !dirname_valid ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
+    return 0;
+  }
+
 
   strcpy(path, SEQ_FILE_SESSION_PATH);
   MUTEX_SDCARD_TAKE;

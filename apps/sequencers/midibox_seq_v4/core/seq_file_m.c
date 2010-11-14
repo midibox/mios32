@@ -109,17 +109,17 @@ s32 SEQ_FILE_M_Init(u32 mode)
 // Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_M_LoadAllBanks(void)
+s32 SEQ_FILE_M_LoadAllBanks(char *session)
 {
   // load bank
   s32 error;
-  error = SEQ_FILE_M_Open();
+  error = SEQ_FILE_M_Open(session);
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Tried to open bank file, status: %d\n", error);
 #endif
 #if 0
   if( error == -2 ) {
-    error = SEQ_FILE_M_Create();
+    error = SEQ_FILE_M_Create(session);
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] Tried to create bank file, status: %d\n", error);
 #endif
@@ -156,13 +156,13 @@ s32 SEQ_FILE_M_NumMaps(void)
 // create a complete bank file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_M_Create(void)
+s32 SEQ_FILE_M_Create(char *session)
 {
   seq_file_m_info_t *info = &seq_file_m_info;
   info->valid = 0; // set to invalid as long as we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Creating new bank file '%s'\n", filepath);
@@ -232,14 +232,14 @@ s32 SEQ_FILE_M_Create(void)
 // open a bank file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_M_Open(void)
+s32 SEQ_FILE_M_Open(char *session)
 {
   seq_file_m_info_t *info = &seq_file_m_info;
 
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s'\n", filepath);
@@ -379,7 +379,7 @@ s32 SEQ_FILE_M_MapRead(u8 map)
 // writes a map into bank
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_M_MapWrite(u8 map, u8 rename_if_empty_name)
+s32 SEQ_FILE_M_MapWrite(char *session, u8 map, u8 rename_if_empty_name)
 {
   seq_file_m_info_t *info = &seq_file_m_info;
 
@@ -406,7 +406,7 @@ s32 SEQ_FILE_M_MapWrite(u8 map, u8 rename_if_empty_name)
   }
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+  sprintf(filepath, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Open bank file '%s' for writing\n", filepath);
