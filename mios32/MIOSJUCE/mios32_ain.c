@@ -531,7 +531,7 @@ void DMAChannel1_IRQHandler(void)
   //}
 //#endif
 
-  //// request next conversion so long oversampling/mux counter haven't reached the end
+  //// request next conversion as long as oversampling/mux counter haven't reached the end
   //if( mux_ctr || oversampling_ctr )
     //ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 //}

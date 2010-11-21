@@ -23,7 +23,7 @@
 #if !defined(MIOS32_DONT_USE_IRQ)
 
 
-//// the nesting counter ensures, that interrupts won't be enabled so long
+//// the nesting counter ensures, that interrupts won't be enabled as long as
 //// nested functions disable them
 //static u32 nested_ctr;
 

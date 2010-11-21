@@ -28,7 +28,7 @@
 
 // DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
 // Note that also the bits are in reversed order compared to PIC based MIOS
-// So long the array is accessed via MIOS32_DOUT_* functions, they programmer won't notice a difference!
+// As long as the array is accessed via MIOS32_DOUT_* functions, they programmer won't notice a difference!
 volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
 
 // DIN values of last scan
@@ -135,7 +135,7 @@ u32 MIOS32_SRIO_DebounceGet(void)
 //! Debouncing is realized in the following way: on every button movement 
 //! the debounce preload value will be loaded into the debounce counter 
 //! register. The counter will be decremented on every SRIO update cycle (usually 1 mS)
-//! So long as this counter isn't zero, button changes will still be recorded, 
+//! As long as this counter isn't zero, button changes will still be recorded, 
 //! but they won't trigger the APP_DIN_NotifyToggle hook.
 //!
 //! No (intended) button movement will get lost, but the latency will be 
@@ -251,7 +251,7 @@ static void MIOS32_SRIO_DMA_Callback(void)
   if( srio_scan_finished_hook != NULL )
     srio_scan_finished_hook();
 
-  // so long debounce counter is != 0, clear all "changed" flags to ignore button movements 
+  // As long as debounce counter is != 0, clear all "changed" flags to ignore button movements 
   // at this time. In order to ensure, that a new final state of a button won't get lost, 
   // the DIN values are XORed with the "changed" flags (yes, this idea is ill, but it works! :)
   // Even the encoder handler (or others which are notified by the scan_finished_hook) still
