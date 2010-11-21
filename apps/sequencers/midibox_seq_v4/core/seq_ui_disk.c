@@ -25,6 +25,10 @@
 
 #include "seq_file.h"
 #include "seq_file_b.h"
+#include "seq_file_s.h"
+#include "seq_file_m.h"
+#include "seq_file_g.h"
+#include "seq_file_c.h"
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
@@ -34,6 +38,7 @@
 #include "seq_core.h"
 #include "seq_pattern.h"
 #include "seq_song.h"
+#include "seq_mixer.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -56,10 +61,11 @@
 #define EXPORT_ITEM_MEASURES   4
 #define EXPORT_ITEM_STEPS_P_M  5
 
-#define SESSION_NUM_OF_ITEMS    3
-#define SESSION_ITEM_PATTERN_B    0
-#define SESSION_ITEM_PATTERN_E    1
-#define SESSION_ITEM_PATTERN_D    2
+#define SESSION_NUM_OF_ITEMS      4
+#define SESSION_ITEM_TYPE         0
+#define SESSION_ITEM_PATTERN_B    1
+#define SESSION_ITEM_PATTERN_E    2
+#define SESSION_ITEM_PATTERN_D    3
 
 // Session and MIDI File dialog screens
 #define DIALOG_NONE               0
@@ -77,6 +83,29 @@
 #define LIST_ENTRY_WIDTH 9
 
 
+#define SESSION_COPY_TYPE_NUM       5
+#define SESSION_COPY_TYPE_PATTERNS  0
+#define SESSION_COPY_TYPE_SONGS     1
+#define SESSION_COPY_TYPE_MIXER     2
+#define SESSION_COPY_TYPE_GROOVES   3
+#define SESSION_COPY_TYPE_CONFIG    4
+
+static const char session_copy_names[SESSION_COPY_TYPE_NUM][9] = {
+  "Patterns",
+  "  Songs ",
+  "MixerMap",
+  " Grooves",
+  " Config ",
+};
+
+static const int session_copy_max_items[SESSION_COPY_TYPE_NUM] = {
+  SEQ_FILE_B_NUM_BANKS*64, // for patterns
+  SEQ_SONG_NUM,            // for songs
+  SEQ_MIXER_NUM,           // for mixer maps
+  0,                       // for grooves (always copy all)
+  0,                       // for config (always copy complete)
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -87,7 +116,11 @@ static s32 SEQ_UI_DISK_UpdateSessionDirList(void);
 static s32 SEQ_UI_DISK_UpdateMfDirList(void);
 
 static s32 DoMfExport(u8 force_overwrite);
-static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopyPatterns(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopySongs(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopyMixerMaps(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopyGrooves(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopyConfig(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -101,10 +134,10 @@ static u8 dir_view_offset = 0; // only changed once after startup
 static u8 dir_selected_item = 0; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
 
-#define MAX_SESSION_PATTERNS SEQ_FILE_B_NUM_BANKS*64
 static u16 source_pattern_begin = 0; // only changed once after startup
 static u16 source_pattern_end = 0;   // only changed once after startup
 static u16 destination_pattern = 0;  // only changed once after startup
+static u8 session_copy_type = 0;     // only changed once after startup
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -120,14 +153,20 @@ static s32 LED_Handler(u16 *gp_leds)
   case DIALOG_S_EXPORT:
     *gp_leds = (3 << (2*dir_selected_item));
     switch( ui_selected_item ) {
+    case SESSION_ITEM_TYPE:
+      *gp_leds |= 0x0300;
+      break;
     case SESSION_ITEM_PATTERN_B:
-      *gp_leds |= 0x0100;
+      if( session_copy_type != SESSION_COPY_TYPE_GROOVES && session_copy_type != SESSION_COPY_TYPE_CONFIG )
+	*gp_leds |= 0x0400;
       break;
     case SESSION_ITEM_PATTERN_E:
-      *gp_leds |= 0x0200;
+      if( session_copy_type != SESSION_COPY_TYPE_GROOVES && session_copy_type != SESSION_COPY_TYPE_CONFIG )
+	*gp_leds |= 0x0800;
       break;
     case SESSION_ITEM_PATTERN_D:
-      *gp_leds |= 0x0c00;
+      if( session_copy_type != SESSION_COPY_TYPE_GROOVES && session_copy_type != SESSION_COPY_TYPE_CONFIG )
+	*gp_leds |= 0x3000;
       break;
     }
     break;
@@ -212,22 +251,23 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       switch( encoder ) {
       case SEQ_UI_ENCODER_GP9:
-	ui_selected_item = SESSION_ITEM_PATTERN_B;
-	break;
-
       case SEQ_UI_ENCODER_GP10:
-	ui_selected_item = SESSION_ITEM_PATTERN_E;
+	ui_selected_item = SESSION_ITEM_TYPE;
 	break;
 
       case SEQ_UI_ENCODER_GP11:
+	ui_selected_item = SESSION_ITEM_PATTERN_B;
+	break;
+
       case SEQ_UI_ENCODER_GP12:
-	ui_selected_item = SESSION_ITEM_PATTERN_D;
+	ui_selected_item = SESSION_ITEM_PATTERN_E;
 	break;
 
       case SEQ_UI_ENCODER_GP13:
-	return -1; // not mapped (yet)
-
       case SEQ_UI_ENCODER_GP14:
+	ui_selected_item = SESSION_ITEM_PATTERN_D;
+	break;
+
       case SEQ_UI_ENCODER_GP15:
 	// IMPORT/EXPORT only via button
 	if( incrementer == 0 ) {
@@ -236,10 +276,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	    // just to ensure
 	    int num_patterns = source_pattern_end - source_pattern_begin + 1;
-	    if( destination_pattern + num_patterns >= MAX_SESSION_PATTERNS )
-	      num_patterns = MAX_SESSION_PATTERNS - destination_pattern;
+	    if( destination_pattern + num_patterns >= session_copy_max_items[session_copy_type] )
+	      num_patterns = session_copy_max_items[session_copy_type] - destination_pattern;
 
-	    if( num_patterns < 1 ) {
+	    if( session_copy_max_items[session_copy_type] && num_patterns < 1 ) {
 	      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Invalid End Pattern", "selected!");
 	    } else {
 	      // Import/Export file
@@ -254,11 +294,43 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      *p++ = 0;
 
 	      MUTEX_SDCARD_TAKE;
-	      if( menu_dialog == DIALOG_S_IMPORT ) {
-		DoSessionCopy(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
-	      } else {
-		DoSessionCopy(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+	      switch( session_copy_type ) {
+	      case SESSION_COPY_TYPE_PATTERNS:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopyPatterns(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopyPatterns(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
+
+	      case SESSION_COPY_TYPE_SONGS:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopySongs(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopySongs(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
+
+	      case SESSION_COPY_TYPE_MIXER:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopyMixerMaps(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopyMixerMaps(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
+
+	      case SESSION_COPY_TYPE_GROOVES:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopyGrooves(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopyGrooves(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
+
+	      case SESSION_COPY_TYPE_CONFIG:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopyConfig(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopyConfig(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
 	      }
+
 	      MUTEX_SDCARD_GIVE;
 
 #if 0
@@ -284,29 +356,63 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
       switch( ui_selected_item ) {
+      case SESSION_ITEM_TYPE: {
+	if( SEQ_UI_Var8_Inc(&session_copy_type, 0, SESSION_COPY_TYPE_NUM-1, incrementer) ) {
+	  int max_items = session_copy_max_items[session_copy_type];
+	  if( source_pattern_begin >= max_items ||
+	      source_pattern_end >= max_items ||
+	      destination_pattern >= max_items ) {
+	    source_pattern_begin = source_pattern_end = destination_pattern = 0;
+	  }
+	      
+	  return 1;
+	}
+	return 0;
+      } break;
+
       case SESSION_ITEM_PATTERN_B: {
+	int max_items = session_copy_max_items[session_copy_type];
+	if( !max_items ) {
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Only complete copy", "supported!");
+	  return 0; // some types only allow "All" selection
+	}
+
 	int old_offset = source_pattern_end-source_pattern_begin;
 	if( old_offset < 0 )
 	  old_offset = 0;
-	if( SEQ_UI_Var16_Inc(&source_pattern_begin, 0, MAX_SESSION_PATTERNS-1, incrementer) ) {
+	if( SEQ_UI_Var16_Inc(&source_pattern_begin, 0, max_items-1, incrementer) ) {
 	  source_pattern_end = source_pattern_begin + old_offset;
-	  if( source_pattern_end >= MAX_SESSION_PATTERNS )
-	    source_pattern_end = MAX_SESSION_PATTERNS - 1;
+	  if( source_pattern_end >= session_copy_max_items[session_copy_type] )
+	    source_pattern_end = session_copy_max_items[session_copy_type] - 1;
 	  return 1;
 	}
       }	return 0;
 
-      case SESSION_ITEM_PATTERN_E:
-	if( SEQ_UI_Var16_Inc(&source_pattern_end, source_pattern_begin, MAX_SESSION_PATTERNS-1, incrementer) ) {
-	  return 1;
+      case SESSION_ITEM_PATTERN_E: {
+	int max_items = session_copy_max_items[session_copy_type];
+	if( !max_items ) {
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Only complete copy", "supported!");
+	  return 0; // some types only allow "All" selection
 	}
-	return 0;
 
-      case SESSION_ITEM_PATTERN_D:
-	if( SEQ_UI_Var16_Inc(&destination_pattern, 0, MAX_SESSION_PATTERNS-1, incrementer) ) {
+	if( SEQ_UI_Var16_Inc(&source_pattern_end, source_pattern_begin, max_items-1, incrementer) ) {
 	  return 1;
 	}
 	return 0;
+      } break;
+
+      case SESSION_ITEM_PATTERN_D: {
+	int max_items = session_copy_max_items[session_copy_type];
+	if( !max_items ) {
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Only complete copy", "supported!");
+	  return 0; // some types only allow "All" selection
+	}
+
+	if( SEQ_UI_Var16_Inc(&destination_pattern, 0, max_items-1, incrementer) ) {
+	  return 1;
+	}
+	return 0;
+      } break;
       }
 
       return -1; // encoder not mapped
@@ -1100,15 +1206,15 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Select Source Session (10 found)          Source  Destination                   
-  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  1:A1-1:A8 1:A1-1:A8         IMPORT EXIT
+  // Select Source Session (10 found)          Type   Source  Destination            
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Patterns 1:A1-1:A8 1:A1-1:A8 IMPORT EXIT
 
   // Session Export dialog:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Select Destination Session (10 found)     Source  Destination                   
-  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx  1:A1-1:A8 1:A1-1:A8         EXPORT EXIT
+  // Select Destination Session (10 found)     Type   Source  Destination            
+  //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx Patterns 1:A1-1:A8 1:A1-1:A8 EXPORT EXIT
 
 
   // MIDI Files Import dialog:
@@ -1167,54 +1273,97 @@ static s32 LCD_Handler(u8 high_prio)
 
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("  Source  Destination                   ");
+      SEQ_LCD_PrintString("  Type   Source  Destination            ");
 
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
 
       SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, dir_selected_item, dir_view_offset);
 
-      SEQ_LCD_PrintChar(' ');
-
-      if( ui_selected_item == SESSION_ITEM_PATTERN_B && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(4);
+      if( ui_selected_item == SESSION_ITEM_TYPE && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(8);
       } else {
-	SEQ_LCD_PrintFormattedString("%d:%c%d",
-				     1 + (source_pattern_begin >> 6),
-				     'A' + ((source_pattern_begin >> 3) & 0x7),
-				     1 + (source_pattern_begin & 7));
-      }
-
-      SEQ_LCD_PrintChar('-');
-
-      if( ui_selected_item == SESSION_ITEM_PATTERN_E && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(4);
-      } else {
-	SEQ_LCD_PrintFormattedString("%d:%c%d",
-				     1 + (source_pattern_end >> 6),
-				     'A' + ((source_pattern_end >> 3) & 0x7),
-				     1 + (source_pattern_end & 7));
+	SEQ_LCD_PrintString((char *)session_copy_names[session_copy_type]);
       }
 
       SEQ_LCD_PrintChar(' ');
 
-      if( ui_selected_item == SESSION_ITEM_PATTERN_D && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(9);
-      } else {
-	u16 destination_pattern_end = destination_pattern + (source_pattern_end-source_pattern_begin);
-	if( destination_pattern_end >= MAX_SESSION_PATTERNS )
-	  destination_pattern_end = MAX_SESSION_PATTERNS-1;
+      u16 destination_pattern_end = destination_pattern + (source_pattern_end-source_pattern_begin);
+      if( destination_pattern_end >= session_copy_max_items[session_copy_type] )
+	destination_pattern_end = session_copy_max_items[session_copy_type]-1;
 
-	SEQ_LCD_PrintFormattedString("%d:%c%d-%d:%c%d",
-				     1 + (destination_pattern >> 6),
-				     'A' + ((destination_pattern >> 3) & 0x7),
-				     1 + (destination_pattern & 7),
-				     1 + (destination_pattern_end >> 6),
-				     'A' + ((destination_pattern_end >> 3) & 0x7),
-				     1 + (destination_pattern_end & 7));
+      switch( session_copy_type ) {
+      case SESSION_COPY_TYPE_PATTERNS: {
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_B && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(4);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%d:%c%d",
+				       1 + (source_pattern_begin >> 6),
+				       'A' + ((source_pattern_begin >> 3) & 0x7),
+				       1 + (source_pattern_begin & 7));
+	}
+
+	SEQ_LCD_PrintChar('-');
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_E && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(4);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%d:%c%d",
+				       1 + (source_pattern_end >> 6),
+				       'A' + ((source_pattern_end >> 3) & 0x7),
+				       1 + (source_pattern_end & 7));
+	}
+
+	SEQ_LCD_PrintChar(' ');
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_D && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(9);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%d:%c%d-%d:%c%d",
+				       1 + (destination_pattern >> 6),
+				       'A' + ((destination_pattern >> 3) & 0x7),
+				       1 + (destination_pattern & 7),
+				       1 + (destination_pattern_end >> 6),
+				       'A' + ((destination_pattern_end >> 3) & 0x7),
+				       1 + (destination_pattern_end & 7));
+	}
+      } break;
+
+      case SESSION_COPY_TYPE_SONGS:
+      case SESSION_COPY_TYPE_MIXER: {
+	char id = (session_copy_type == SESSION_COPY_TYPE_SONGS) ? 'S' : 'M';
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_B && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(4);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%c%03d", id, source_pattern_begin+1);
+	}
+
+	SEQ_LCD_PrintChar('-');
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_E && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(4);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%c%03d", id, source_pattern_end+1);
+	}
+
+	SEQ_LCD_PrintChar(' ');
+
+	if( ui_selected_item == SESSION_ITEM_PATTERN_D && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(9);
+	} else {
+	  SEQ_LCD_PrintFormattedString("%c%03d-%c%03d", id, destination_pattern+1, id, destination_pattern_end+1);
+	}
+      } break;
+
+      case SESSION_COPY_TYPE_GROOVES:
+      case SESSION_COPY_TYPE_CONFIG:
+      default:
+	SEQ_LCD_PrintString("  All       All    ");
       }
 
-      SEQ_LCD_PrintSpaces(9);
+      SEQ_LCD_PrintChar(' ');
 
       if( menu_dialog == DIALOG_S_IMPORT )
 	SEQ_LCD_PrintString("IMPORT");
@@ -1734,12 +1883,12 @@ static s32 DoMfExport(u8 force_overwrite)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function to copy a session
+// help function to copy patterns of a session
 // IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
 // returns 0 on success
 // returns != 0 on errors (dialog page will be changed accordingly)
 /////////////////////////////////////////////////////////////////////////////
-static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+static s32 DoSessionCopyPatterns(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
 {
   s32 status = 0;
   int i;
@@ -1755,11 +1904,18 @@ static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session,
     }
   }
 
+  // check if we have to copy from backward direction to ensure that the "to copy" patterns
+  // won't be overwritten during copy process
+  // This would only be an issue if patterns are stored within the same session, but we do
+  // the check independend from this (doesn't hurt)
+  u8 backward_copy = (to_pattern >= from_pattern) && (to_pattern <= (from_pattern+num_patterns-1));
+
   for(i=0; i<num_patterns; ++i) {
-    u8 s_bank = (from_pattern+i) >> 6;
-    u8 s_pattern = (from_pattern+i) & 0x3f;
-    u8 d_bank = (to_pattern+i) >> 6;
-    u8 d_pattern = (to_pattern+i) & 0x3f;
+    int ix = backward_copy ? (num_patterns-i-1) : i;
+    u8 s_bank = (from_pattern+ix) >> 6;
+    u8 s_pattern = (from_pattern+ix) & 0x3f;
+    u8 d_bank = (to_pattern+ix) >> 6;
+    u8 d_pattern = (to_pattern+ix) & 0x3f;
 
     char msg_u[20];
     sprintf(msg_u, "Copy %-8s %d:%c%c",
@@ -1777,6 +1933,14 @@ static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session,
 
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, msg_u, msg_l);
 
+#if 0
+    // fake for testing
+    {
+      int d;
+      for(d=0; d<500; ++d)
+	MIOS32_DELAY_Wait_uS(1000);
+    }
+#else
     // switch to source session
     status = SEQ_FILE_B_Open(from_session, s_bank);
     if( status < 0 )
@@ -1796,6 +1960,7 @@ static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session,
     status = SEQ_FILE_B_PatternWrite(to_session, d_bank, d_pattern, group, 0);
     if( status < 0 )
       break;
+#endif
   }
 
   if( status >= 0 )
@@ -1827,6 +1992,268 @@ static s32 DoSessionCopy(char *from_session, u16 from_pattern, char *to_session,
       break;
   }
 
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy songs of a session
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopySongs(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+  int i;
+
+  // we need song memory as temporary storage.
+  // and we assume that the current song has already been saved
+
+  // check if we have to copy from backward direction to ensure that the "to copy" patterns
+  // won't be overwritten during copy process
+  // This would only be an issue if patterns are stored within the same session, but we do
+  // the check independend from this (doesn't hurt)
+  u8 backward_copy = (to_pattern >= from_pattern) && (to_pattern <= (from_pattern+num_patterns-1));
+
+  for(i=0; i<num_patterns; ++i) {
+    int ix = backward_copy ? (num_patterns-i-1) : i;
+    u8 s_pattern = from_pattern + ix;
+    u8 d_pattern = to_pattern + ix;
+
+    char msg_u[20];
+    sprintf(msg_u, "Copy %-8s S%03d", from_session, s_pattern+1);
+
+    char msg_l[20];
+    sprintf(msg_l, "---> %-8s S%03d", to_session, d_pattern+1);
+
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, msg_u, msg_l);
+
+    // switch to source session
+    status = SEQ_FILE_S_Open(from_session);
+    if( status < 0 )
+      break;
+
+    // read pattern
+    status = SEQ_FILE_S_SongRead(s_pattern);
+
+    // switch to destination session
+    status = SEQ_FILE_S_Open(to_session);
+    if( status < 0 )
+      break;
+
+    // store pattern
+    status = SEQ_FILE_S_SongWrite(to_session, d_pattern, 0);
+    if( status < 0 )
+      break;
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operations", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open previous song
+  status = SEQ_FILE_S_LoadAllBanks(seq_file_session_name);
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // reload current song
+  status = SEQ_FILE_S_SongRead(SEQ_SONG_NumGet());
+
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy mixer maps of a session
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopyMixerMaps(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+  int i;
+
+  // we need mixer map memory as temporary storage.
+  // and we assume that the current map has already been saved
+
+  // check if we have to copy from backward direction to ensure that the "to copy" patterns
+  // won't be overwritten during copy process
+  // This would only be an issue if patterns are stored within the same session, but we do
+  // the check independend from this (doesn't hurt)
+  u8 backward_copy = (to_pattern >= from_pattern) && (to_pattern <= (from_pattern+num_patterns-1));
+
+  for(i=0; i<num_patterns; ++i) {
+    int ix = backward_copy ? (num_patterns-i-1) : i;
+    u8 s_pattern = from_pattern + ix;
+    u8 d_pattern = to_pattern + ix;
+
+    char msg_u[20];
+    sprintf(msg_u, "Copy %-8s M%03d", from_session, s_pattern+1);
+
+    char msg_l[20];
+    sprintf(msg_l, "---> %-8s M%03d", to_session, d_pattern+1);
+
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, msg_u, msg_l);
+
+    // switch to source session
+    status = SEQ_FILE_M_Open(from_session);
+    if( status < 0 )
+      break;
+
+    // read pattern
+    status = SEQ_FILE_M_MapRead(s_pattern);
+
+    // switch to destination session
+    status = SEQ_FILE_M_Open(to_session);
+    if( status < 0 )
+      break;
+
+    // store pattern
+    status = SEQ_FILE_M_MapWrite(to_session, d_pattern, 0);
+    if( status < 0 )
+      break;
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operations", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open previous map
+  status = SEQ_FILE_M_LoadAllBanks(seq_file_session_name);
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // reload current map
+  status = SEQ_FILE_M_MapRead(SEQ_MIXER_NumGet());
+
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy groove templates of a session
+// from_pattern, to_pattern and num_patterns are ignored (only complete copy possible)
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopyGrooves(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+
+  char msg_l[20];
+  sprintf(msg_l, "%s -> %s", from_session, to_session);
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, "Copy Groove Templates", msg_l);
+
+  // load from source session
+  status = SEQ_FILE_G_Load(from_session);
+  if( status >= 0 ) {
+    // store into destination session
+    status = SEQ_FILE_G_Write(to_session);
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operation", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open previous groove templates
+  status = SEQ_FILE_G_Load(seq_file_session_name);
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy config file of a session
+// from_pattern, to_pattern and num_patterns are ignored (only complete copy possible)
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopyConfig(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+
+  char msg_l[20];
+  sprintf(msg_l, "%s -> %s", from_session, to_session);
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, "Copy Local Config", msg_l);
+
+  // load from source session
+  status = SEQ_FILE_C_Load(from_session);
+  if( status >= 0 ) {
+    // store into destination session
+    status = SEQ_FILE_C_Write(to_session);
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operation", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open previous config
+  status = SEQ_FILE_C_Load(seq_file_session_name);
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
     return status;

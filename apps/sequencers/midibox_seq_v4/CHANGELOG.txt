@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta32
+~~~~~~~~~~~~~~~~~~~~~
+
+  o now it's possible to import/export songs/mixer maps/groove templates/local config as well
+
+
 MIDIboxSEQ V4.0beta31
 ~~~~~~~~~~~~~~~~~~~~~
 
