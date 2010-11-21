@@ -409,7 +409,7 @@ s32 MIOS32_COM_ReceiveCallback_Init(void *callback_receive)
 //! This function allows to change the DEFAULT port.<BR>
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_COM_DEFAULT_PORT <port>".<BR>
-//! It's set to USB0 so long not overruled in mios32_config.h
+//! It's set to USB0 as long as not overruled in mios32_config.h
 //! \param[in] port COM port (USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -436,7 +436,7 @@ mios32_com_port_t MIOS32_COM_DefaultPortGet(void)
 //! This function allows to change the COM_DEBUG port.<BR>
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_COM_DEBUG_PORT <port>".<BR>
-//! It's set to USB0 so long not overruled in mios32_config.h
+//! It's set to USB0 as long as not overruled in mios32_config.h
 //! \param[in] port COM port (USB0..USB7, UART0..UART1, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////

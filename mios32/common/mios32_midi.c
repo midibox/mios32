@@ -1272,7 +1272,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
 //! This function allows to change the DEFAULT port.<BR>
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEFAULT_PORT <port>".<BR>
-//! It's set to USB0 so long not overruled in mios32_config.h
+//! It's set to USB0 as long as not overruled in mios32_config.h
 //! \param[in] port MIDI port (USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1300,7 +1300,7 @@ mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void)
 //! This function allows to change the MIDI_DEBUG port.<BR>
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEBUG_PORT <port>".<BR>
-//! It's set to USB0 so long not overruled in mios32_config.h
+//! It's set to USB0 as long as not overruled in mios32_config.h
 //! \param[in] port MIDI port (USB0..USB7, UART0..UART2, IIC0..IIC7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
