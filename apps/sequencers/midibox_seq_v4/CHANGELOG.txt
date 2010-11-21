@@ -11,6 +11,8 @@ MIDIboxSEQ V4.0beta32
 
   o now it's possible to import/export songs/mixer maps/groove templates/local config as well
 
+  o added DEBOUNCE_DELAY to MBSEQ_HW.V4
+
 
 MIDIboxSEQ V4.0beta31
 ~~~~~~~~~~~~~~~~~~~~~

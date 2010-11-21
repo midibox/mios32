@@ -48,6 +48,15 @@ GP_DOUT_R_SR    4
 GP_DOUT_L2_SR  0
 GP_DOUT_R2_SR  0
 
+# sets the debounce delay for low-quality buttons in mS
+# use low values for high quality buttons - this ensures best latency.
+# use higher values for lower quality buttons.
+# Recommended values:
+#   - 0   for high quality buttons (we used it many months w/o complaints)
+#   - 5  is the default
+#   - 20 for low-quality buttons
+DEBOUNCE_DELAY 5
+
 
 ##################################################
 # Optional BLM Matrix

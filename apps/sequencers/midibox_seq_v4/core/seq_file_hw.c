@@ -851,6 +851,18 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	  }
 
+	} else if( strcmp(parameter, "DEBOUNCE_DELAY") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 delay = get_dec(word);
+	  if( delay < 0 || delay >= 128 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid delay value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  MIOS32_SRIO_DebounceSet(delay);
+
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
