@@ -480,7 +480,6 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
       ++par_size_taken;
     }
 
-
     // partitionate trigger layer and clear all steps
     SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers, num_t_instruments);
 
@@ -496,6 +495,10 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
       SEQ_FILE_ReadByte(&dummy);
       ++trg_size_taken;
     }
+
+    // finally update CC links again, because some of them depend on SEQ_PAR_NumLayersGet()!!!
+    SEQ_CC_LinkUpdate(track);
+
   }
 
   // close file (so that it can be re-opened)

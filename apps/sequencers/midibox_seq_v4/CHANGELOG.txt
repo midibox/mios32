@@ -13,6 +13,8 @@ MIDIboxSEQ V4.0beta32
 
   o added DEBOUNCE_DELAY to MBSEQ_HW.V4
 
+  o fixed pattern change on Normal->Drum tracks
+
 
 MIDIboxSEQ V4.0beta31
 ~~~~~~~~~~~~~~~~~~~~~
