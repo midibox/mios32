@@ -50,8 +50,7 @@
 /* IMR_MSK */
 /* mask defining which events has to be handled */
 /* by the device application software */
-//#define MSD_IMR_MSK (CNTR_CTRM  | CNTR_RESETM)
-#define MSD_IMR_MSK (CNTR_RESETM)
+#define MSD_IMR_MSK (CNTR_CTRM  | CNTR_RESETM)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,8 +182,7 @@ s32 MSD_Init(u32 mode)
   _SetISTR(0);
 
   // set interrupts mask
-  // _SetCNTR(CNTR_CTRM | CNTR_RESETM);
-  _SetCNTR(CNTR_RESETM); // CTRM handled by MSD_Periodic_mS()
+  _SetCNTR(MSD_IMR_MSK);
 
   MIOS32_IRQ_Enable();
 
@@ -214,7 +212,8 @@ s32 MSD_Periodic_mS(void)
     ++msd_memory_wr_led_ctr;
 
   // call endpoint handler of STM32 USB driver
-  CTR_LP();
+  //CTR_LP();
+  // now done in USB_LP_CAN1_RX0_IRQHandler(), see mios32_usb.c
 
   return 0; // no error
 }
