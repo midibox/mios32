@@ -765,15 +765,32 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   }
 
   // if dir_name is identical to current session name, we are done!
-  for(i=0; i<8 && seq_file_session_name[i] != 0; ++i)
-    if( dir_name[i] == seq_file_session_name[i] )
-      dirname_valid = 0;
+  // note: dir_name is padded with spaces, whereas for seq_file_session_name the last spaces have been removed
+  // we should also always compare the upper-case (as stored in FAT)
+  u8 dirname_equal = 1;
+  for(i=0; i<8; ++i) {
+    char dir_name_c = dir_name[i];
+    if( dir_name_c >= 'a' && dir_name_c <= 'z' )
+      dir_name_c -= 'a'-'A';
 
-  if( !dirname_valid ) {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
-    return 0;
+    if( dir_name_c == ' ' )
+      break; // end of dir_name reached
+
+    char session_name_c = seq_file_session_name[i];
+    if( session_name_c >= 'a' && session_name_c <= 'z' )
+      session_name_c -= 'a'-'A';
+
+    if( session_name_c == 0 ||
+	dir_name_c != session_name_c ) {
+      dirname_equal = 0; // names not equal
+      break;
+    }
   }
 
+  if( dirname_equal ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Same Name - all", "4 patterns stored!");
+    return 0;
+  }
 
   strcpy(path, SEQ_FILE_SESSION_PATH);
   MUTEX_SDCARD_TAKE;
