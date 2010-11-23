@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta33
+~~~~~~~~~~~~~~~~~~~~~
+
+  o "SAVE AS.." name check now working as intended:
+    - if filename is identical to current session, only the current 4 patterns will 
+      be stored (like if you would push the SAVE button)
+    - if filename is not identical, the current session will be transfered into
+      a new directory
+      
+
+
 MIDIboxSEQ V4.0beta32
 ~~~~~~~~~~~~~~~~~~~~~
 
