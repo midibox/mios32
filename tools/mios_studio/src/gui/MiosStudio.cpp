@@ -36,6 +36,7 @@ MiosStudio::MiosStudio()
     oscToolWindow = new OscToolWindow(this);
     midio128ToolWindow = new Midio128ToolWindow(this);
     mbCvToolWindow = new MbCvToolWindow(this);
+    mbhpMfToolWindow = new MbhpMfToolWindow(this);
 
     commandManager = new ApplicationCommandManager();
     commandManager->registerAllCommandsForTarget(this);
@@ -82,6 +83,7 @@ MiosStudio::~MiosStudio()
 	deleteAndZero(oscToolWindow);
 	deleteAndZero(midio128ToolWindow);
 	deleteAndZero(mbCvToolWindow);
+	deleteAndZero(mbhpMfToolWindow);
     deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
@@ -251,6 +253,7 @@ void MiosStudio::timerCallback()
                     sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    mbhpMfToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                     midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
                 }
@@ -345,6 +348,7 @@ const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String&
         menu.addCommandItem(commandManager, showOscTool);
         menu.addCommandItem(commandManager, showMidio128Tool);
         menu.addCommandItem(commandManager, showMbCvTool);
+        menu.addCommandItem(commandManager, showMbhpMfTool);
     } else if( topLevelMenuIndex == 2 ) {
         // "Help" menu
         menu.addCommandItem(commandManager, showMiosStudioPage);
@@ -378,6 +382,7 @@ void MiosStudio::getAllCommands(Array <CommandID>& commands)
                               showOscTool,
                               showMidio128Tool,
                               showMbCvTool,
+                              showMbhpMfTool,
                               rescanDevices,
                               showMiosStudioPage,
                               showTroubleshootingPage
@@ -424,6 +429,12 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
+    case showMbhpMfTool:
+        result.setInfo(T("MBHP_MF V3 Tool"), T("Allows to configure the MBHP_MF firmware"), toolsCategory, 0);
+        result.setTicked(mbhpMfToolWindow->isVisible());
+        result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
     case showMiosStudioPage:
         result.setInfo(T("MIOS Studio Page (Web)"), T("Opens the MIOS Studio page on uCApps.de"), helpCategory, 0);
         result.addDefaultKeypress (T('H'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
@@ -463,6 +474,11 @@ bool MiosStudio::perform(const InvocationInfo& info)
     case showMbCvTool:
         mbCvToolWindow->setVisible(true);
         mbCvToolWindow->toFront(true);
+        break;
+
+    case showMbhpMfTool:
+        mbhpMfToolWindow->setVisible(true);
+        mbhpMfToolWindow->toFront(true);
         break;
 
     case showMiosStudioPage: {

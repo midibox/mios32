@@ -68,14 +68,14 @@ void MbCvToolConfigGlobals::resized()
     int controlWidth = getWidth()-labelWidth-40-2*labelX;
     int controlHeight = labelHeight;
 
-    mergerLabel->setBounds(labelX, labelY0 + 0*labelYOffset, labelWidth, labelHeight);
-    mergerComboBox->setBounds(controlX, controlY0 + 0*controlYOffset, controlWidth, controlHeight);
+    nameLabel->setBounds(labelX, labelY0 + 0*labelYOffset, labelWidth, labelHeight);
+    nameEditor->setBounds(controlX, controlY0 + 0*controlYOffset, controlWidth, controlHeight);
 
-    clockDividerLabel->setBounds(labelX, labelY0 + 1*labelYOffset, labelWidth, labelHeight);
-    clockDividerComboBox->setBounds(controlX, controlY0 + 1*controlYOffset, controlWidth, controlHeight);
+    mergerLabel->setBounds(labelX, labelY0 + 1*labelYOffset, labelWidth, labelHeight);
+    mergerComboBox->setBounds(controlX, controlY0 + 1*controlYOffset, controlWidth, controlHeight);
 
-    nameLabel->setBounds(labelX, labelY0 + 2*labelYOffset, labelWidth, labelHeight);
-    nameEditor->setBounds(controlX, controlY0 + 2*controlYOffset, controlWidth, controlHeight);
+    clockDividerLabel->setBounds(labelX, labelY0 + 2*labelYOffset, labelWidth, labelHeight);
+    clockDividerComboBox->setBounds(controlX, controlY0 + 2*controlYOffset, controlWidth, controlHeight);
 }
 
 
@@ -470,12 +470,10 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     , checksumError(false)
     , dumpSent(false)
 {
-    addAndMakeVisible(loadButton = new TextButton(T("Load Button")));
-    loadButton->setButtonText(T("Load"));
+    addAndMakeVisible(loadButton = new TextButton(T("Load")));
     loadButton->addButtonListener(this);
 
-    addAndMakeVisible(saveButton = new TextButton(T("Save Button")));
-    saveButton->setButtonText(T("Save"));
+    addAndMakeVisible(saveButton = new TextButton(T("Save")));
     saveButton->addButtonListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
@@ -484,7 +482,7 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     addAndMakeVisible(deviceIdSlider = new Slider(T("Device ID")));
     deviceIdSlider->setRange(0, 127, 1);
     deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
-    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
+    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
     deviceIdSlider->setDoubleClickReturnValue(true, 0);
 
     addAndMakeVisible(patchLabel = new Label(T("Patch"), T("Patch:")));
@@ -493,15 +491,13 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     addAndMakeVisible(patchSlider = new Slider(T("Patch")));
     patchSlider->setRange(1, 128, 1);
     patchSlider->setSliderStyle(Slider::IncDecButtons);
-    patchSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
+    patchSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
     patchSlider->setDoubleClickReturnValue(true, 0);
 
-    addAndMakeVisible(receiveButton = new TextButton(T("Receive Button")));
-    receiveButton->setButtonText(T("Receive"));
+    addAndMakeVisible(receiveButton = new TextButton(T("Receive")));
     receiveButton->addButtonListener(this);
 
-    addAndMakeVisible(sendButton = new TextButton(T("Send Button")));
-    sendButton->setButtonText(T("Send"));
+    addAndMakeVisible(sendButton = new TextButton(T("Send")));
     sendButton->addButtonListener(this);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));

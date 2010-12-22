@@ -713,12 +713,10 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     , dumpReceived(false)
     , checksumError(false)
 {
-    addAndMakeVisible(loadButton = new TextButton(T("Load Button")));
-    loadButton->setButtonText(T("Load"));
+    addAndMakeVisible(loadButton = new TextButton(T("Load")));
     loadButton->addButtonListener(this);
 
-    addAndMakeVisible(saveButton = new TextButton(T("Save Button")));
-    saveButton->setButtonText(T("Save"));
+    addAndMakeVisible(saveButton = new TextButton(T("Save")));
     saveButton->addButtonListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
@@ -727,15 +725,13 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     addAndMakeVisible(deviceIdSlider = new Slider(T("Device ID")));
     deviceIdSlider->setRange(0, 7, 1);
     deviceIdSlider->setSliderStyle(Slider::IncDecButtons);
-    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
+    deviceIdSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
     deviceIdSlider->setDoubleClickReturnValue(true, 0);
 
-    addAndMakeVisible(receiveButton = new TextButton(T("Receive Button")));
-    receiveButton->setButtonText(T("Receive"));
+    addAndMakeVisible(receiveButton = new TextButton(T("Receive")));
     receiveButton->addButtonListener(this);
 
-    addAndMakeVisible(sendButton = new TextButton(T("Send Button")));
-    sendButton->setButtonText(T("Send"));
+    addAndMakeVisible(sendButton = new TextButton(T("Send")));
     sendButton->addButtonListener(this);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));
