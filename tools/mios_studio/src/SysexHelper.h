@@ -90,6 +90,26 @@ public:
     static bool isValidMbCvAcknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
     static Array<uint8> createMbCvPing(const uint8 &deviceId);
 
+    //==============================================================================
+    static bool isValidMbhpMfHeader(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfHeader(const int &deviceId);
+    static bool isValidMbhpMfReadPatch(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfReadPatch(const uint8 &deviceId, const uint8 &patch);
+    static bool isValidMbhpMfWritePatch(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfWritePatch(const uint8 &deviceId, const uint8 &patch, const uint8 *data);
+    static bool isValidMbhpMfWriteDirect(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfWriteDirect(const uint8 &deviceId, const uint8 &addr, const uint8 *data, const uint32 &size);
+    static bool isValidMbhpMfFadersGet(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfFadersGet(const uint8 &deviceId, const uint8& startFader);
+    static bool isValidMbhpMfFadersSet(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfFadersSet(const uint8 &deviceId, const uint8& startFader, const Array<uint16> mfValues);
+    static bool isValidMbhpMfTraceRequest(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfTraceRequest(const uint8 &deviceId, const uint8 &traceFader, const uint8 &traceScale);
+    static bool isValidMbhpMfTraceDump(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfTraceDump(const uint8 &deviceId, const Array<uint16> dump);
+    static bool isValidMbhpMfAcknowledge(const uint8 *data, const uint32 &size, const int &deviceId);
+    static Array<uint8> createMbhpMfPing(const uint8 &deviceId);
+
 
 protected:
 };
