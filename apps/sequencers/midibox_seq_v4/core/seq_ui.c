@@ -1499,8 +1499,6 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 
   if( pin == seq_hwcfg_button.step_view )
     return SEQ_UI_Button_StepView(pin_value);
-  if( pin == seq_hwcfg_button.tap_tempo )
-    return SEQ_UI_Button_TapTempo(pin_value);
 
   if( pin == seq_hwcfg_button.mixer )
     return SEQ_UI_Button_Mixer(pin_value);
