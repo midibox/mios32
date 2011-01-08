@@ -3,6 +3,9 @@
  * MIDIbox LC V2
  * Motorfader Handler
  *
+ * NOT USED ANYMORE AND DISABLED IN mios32_config.h
+ * Fader Events are sent by MBHP_MF_V3 module which is connected to MIDI IN/OUT 3 (Port J5B.A6 and A7)
+ *
  * ==========================================================================
  *
  *  Copyright (C) 2009 Thorsten Klose (tk@midibox.org)

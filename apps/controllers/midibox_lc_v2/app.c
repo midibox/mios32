@@ -117,14 +117,26 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 
     // forward MIDI event to GPC handler
     LC_GPC_Received(midi_package);
+
+    // pitchbend events are also forwarded to MBHP_MF_V3 module
+    if( midi_package.type == PitchBend )
+      MIOS32_MIDI_SendPackage(UART2, midi_package);
   }
 
-  // forward packages USB1<->UART0 and USB2<->UART1
+  // forward packages USB1<->UART0, USB2<->UART1 and USB3<->UART2
   switch( port ) {
-    case USB1:  MIOS32_MIDI_SendPackage(UART0, midi_package); break;
-    case USB2:  MIOS32_MIDI_SendPackage(UART1, midi_package); break;
-    case UART0: MIOS32_MIDI_SendPackage(USB1, midi_package); break;
-    case UART1: MIOS32_MIDI_SendPackage(USB2, midi_package); break;
+  case USB1:  MIOS32_MIDI_SendPackage(UART0, midi_package); break;
+  case USB2:  MIOS32_MIDI_SendPackage(UART1, midi_package); break;
+  case USB3:  MIOS32_MIDI_SendPackage(UART2, midi_package); break;
+  case UART0: MIOS32_MIDI_SendPackage(USB1, midi_package); break;
+  case UART1: MIOS32_MIDI_SendPackage(USB2, midi_package); break;
+  case UART2: {
+    MIOS32_MIDI_SendPackage(USB3, midi_package);
+
+    // extra for MBHP_MF_V3: PitchBend and Note Events are also forwarded to default port
+    if( midi_package.type == NoteOff || midi_package.type == NoteOn || midi_package.type == PitchBend )
+      MIOS32_MIDI_SendPackage(USB0, midi_package);
+  } break;
   }
 }
 
