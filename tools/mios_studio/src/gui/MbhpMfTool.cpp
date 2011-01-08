@@ -44,12 +44,13 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     operationModeComboBox->addItem(T("CC#07 Chn#1..#8"), 3);
     operationModeComboBox->addItem(T("CC#07 Chn#9..#16"), 4);
     operationModeComboBox->addItem(T("CC#16..#23 Chn#1"), 5);
-    operationModeComboBox->addItem(T("CC#23..#31 Chn#1"), 6);
+    operationModeComboBox->addItem(T("CC#24..#31 Chn#1"), 6);
     operationModeComboBox->addItem(T("Faked Logic Control"), 7);
     operationModeComboBox->addItem(T("Faked Logic Control Extension"), 8);
     operationModeComboBox->addItem(T("Faked Mackie Control"), 9);
     operationModeComboBox->addItem(T("Faked Mackie Control Extension"), 10);
     operationModeComboBox->setSelectedId(1, true);
+    operationModeComboBox->addListener(this);
 
     addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
     mergerLabel->setJustificationType(Justification::right);
@@ -60,6 +61,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     mergerComboBox->addItem(T("MIDIbox Link Forwarding Point (core in a MIDIbox chain)"), 3);
     mergerComboBox->addItem(T("MIDIbox Link Endpoint (last core in the MIDIbox chain)"), 4);
     mergerComboBox->setSelectedId(1, true);
+    mergerComboBox->addListener(this);
 
     addAndMakeVisible(pwmStepsLabel = new Label(String::empty, T("PWM Steps:")));
     pwmStepsLabel->setJustificationType(Justification::right);
@@ -100,6 +102,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     touchSensorModeComboBox->addItem(T("Like previous, but additionally motors will be suspended"), 3);
     touchSensorModeComboBox->addItem(T("Like previous, but additionally no fader event as long as sensor not pressed"), 4);
     touchSensorModeComboBox->setSelectedId(2, true);
+    touchSensorModeComboBox->addListener(this);
 
     addAndMakeVisible(touchSensorSensitivityLabel = new Label(String::empty, T("Touchsensor Sensitivity:")));
     touchSensorSensitivityLabel->setJustificationType(Justification::right);
@@ -170,7 +173,19 @@ void MbhpMfToolConfigGlobals::sliderValueChanged(Slider* slider)
     if( slider == pwmStepsSlider ) {
         pwmStepsLabel->setText(String::formatted(T("PWM Steps (resulting period: %4.2f mS):"), (float)(slider->getValue()*0.05)), true);
     }
+
+    // request SysEx update
+    if( mbhpMfTool->mbhpMfToolControl != NULL )
+        mbhpMfTool->mbhpMfToolControl->sysexUpdateRequest();
 }
+
+void MbhpMfToolConfigGlobals::comboBoxChanged(ComboBox*)
+{
+    // request SysEx update
+    if( mbhpMfTool->mbhpMfToolControl != NULL )
+        mbhpMfTool->mbhpMfToolControl->sysexUpdateRequest();
+}
+
 
 //==============================================================================
 void MbhpMfToolConfigGlobals::getDump(Array<uint8> &syxDump)
@@ -242,10 +257,12 @@ MbhpMfToolCalibrationTable::MbhpMfToolCalibrationTable(MbhpMfTool* _mbhpMfTool)
 {
     for(int fader=0; fader<numRows; ++fader) {
         mfMode.add(0x01); // enabled and not inverted
-        mfMinValue.add(0); // Default Min Value
-        mfMaxValue.add(1023); // Default Max Value
-        mfMinDuty.add(48); // Default Min Duty
-        mfMaxDuty.add(64); // Default Max Duty
+        mfMinValue.add(20); // Default Min Value
+        mfMaxValue.add(1000); // Default Max Value
+        mfMinDutyUp.add(48); // Default Min Duty Upward Direction
+        mfMaxDutyUp.add(64); // Default Max Duty Upward Direction
+        mfMinDutyDown.add(48); // Default Min Duty Upward Direction
+        mfMaxDutyDown.add(64); // Default Max Duty Upward Direction
     }
 
     addAndMakeVisible(table = new TableListBox(T("Motorfader Table"), this));
@@ -254,14 +271,16 @@ MbhpMfToolCalibrationTable::MbhpMfToolCalibrationTable(MbhpMfTool* _mbhpMfTool)
 
     TableHeaderComponent *tableHeader = table->getHeader();
     tableHeader->addColumn(T("MF"), 1, 25);
-    tableHeader->addColumn(T("Use"), 2, 25);
+    tableHeader->addColumn(T("Use"), 2, 40);
     tableHeader->addColumn(T("InvM"), 3, 40);
     tableHeader->addColumn(T("MinValue"), 4, 80);
     tableHeader->addColumn(T("MaxValue"), 5, 80);
-    tableHeader->addColumn(T("MinDuty"), 6, 60);
-    tableHeader->addColumn(T("MaxDuty"), 7, 60);
+    tableHeader->addColumn(T("MinDutyUp"), 6, 80);
+    tableHeader->addColumn(T("MaxDutyUp"), 7, 80);
+    tableHeader->addColumn(T("MinDutyDn"), 8, 80);
+    tableHeader->addColumn(T("MaxDutyDn"), 9, 80);
 
-    setSize(335, 200);
+    setSize(400, 200);
 }
 
 MbhpMfToolCalibrationTable::~MbhpMfToolCalibrationTable()
@@ -312,13 +331,24 @@ Component* MbhpMfToolCalibrationTable::refreshComponentForCell(int rowNumber, in
         return toggleButton;
     } break;
 
-    case 4:
+    case 4: {
+        ConfigTableSlider *slider = (ConfigTableSlider *)existingComponentToUpdate;
+
+        if( slider == 0 ) {
+            slider = new ConfigTableSlider(*this);
+            slider->setRange(0, 255);
+        }
+
+        slider->setRowAndColumn(rowNumber, columnId);
+        return slider;
+    } break;
+
     case 5: {
         ConfigTableSlider *slider = (ConfigTableSlider *)existingComponentToUpdate;
 
         if( slider == 0 ) {
             slider = new ConfigTableSlider(*this);
-            slider->setRange(0, 1023);
+            slider->setRange(768, 1023);
         }
 
         slider->setRowAndColumn(rowNumber, columnId);
@@ -326,7 +356,9 @@ Component* MbhpMfToolCalibrationTable::refreshComponentForCell(int rowNumber, in
     } break;
 
     case 6:
-    case 7: {
+    case 7:
+    case 8:
+    case 9: {
         ConfigTableSlider *slider = (ConfigTableSlider *)existingComponentToUpdate;
 
         if( slider == 0 ) {
@@ -355,12 +387,15 @@ void MbhpMfToolCalibrationTable::resized()
 int MbhpMfToolCalibrationTable::getTableValue(const int rowNumber, const int columnId)
 {
     switch( columnId ) {
+    case 1: return rowNumber + 1; // doesn't work! :-/
     case 2: return (mfMode[rowNumber] & 1) ? 1 : 0;
     case 3: return (mfMode[rowNumber] & 2) ? 1 : 0;
     case 4: return mfMinValue[rowNumber];
     case 5: return mfMaxValue[rowNumber];
-    case 6: return mfMinDuty[rowNumber];
-    case 7: return mfMaxDuty[rowNumber];
+    case 6: return mfMinDutyUp[rowNumber];
+    case 7: return mfMaxDutyUp[rowNumber];
+    case 8: return mfMinDutyDown[rowNumber];
+    case 9: return mfMaxDutyDown[rowNumber];
     }
     return 0;
 }
@@ -372,8 +407,10 @@ void MbhpMfToolCalibrationTable::setTableValue(const int rowNumber, const int co
     case 3: mfMode.set(rowNumber, (mfMode[rowNumber] & 0xfd) | (newValue ? 2 : 0)); break;
     case 4: mfMinValue.set(rowNumber, newValue); break;
     case 5: mfMaxValue.set(rowNumber, newValue); break;
-    case 6: mfMinDuty.set(rowNumber, newValue); break;
-    case 7: mfMaxDuty.set(rowNumber, newValue); break;
+    case 6: mfMinDutyUp.set(rowNumber, newValue); break;
+    case 7: mfMaxDutyUp.set(rowNumber, newValue); break;
+    case 8: mfMinDutyDown.set(rowNumber, newValue); break;
+    case 9: mfMaxDutyDown.set(rowNumber, newValue); break;
     }
 
     // request SysEx update
@@ -493,7 +530,7 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     traceSlider->setRange(1, 8, 1);
     traceSlider->setValue(1);
     traceSlider->setSliderStyle(Slider::IncDecButtons);
-    traceSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
+    traceSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 50, 20);
     traceSlider->setDoubleClickReturnValue(true, 0);
     traceSlider->addListener(this);
 
@@ -504,9 +541,20 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     traceScaleSlider->setRange(1, 10, 1);
     traceScaleSlider->setValue(1);
     traceScaleSlider->setSliderStyle(Slider::IncDecButtons);
-    traceScaleSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
+    traceScaleSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 50, 20);
     traceScaleSlider->setDoubleClickReturnValue(true, 0);
     traceScaleSlider->addListener(this);
+
+    addAndMakeVisible(directMoveSliderLabel = new Label(String::empty, T("Direct Move:")));
+    directMoveSliderLabel->setJustificationType(Justification::left);
+
+    addAndMakeVisible(directMoveSlider = new Slider(T("DirectMove Fader")));
+    directMoveSlider->setRange(0, 1023, 1);
+    directMoveSlider->setValue(512);
+    directMoveSlider->setSliderStyle(Slider::IncDecButtons);
+    directMoveSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 50, 20);
+    directMoveSlider->setDoubleClickReturnValue(true, 0);
+    directMoveSlider->addListener(this);
 
     addAndMakeVisible(upperButton = new TextButton(T("Upper")));
     upperButton->addButtonListener(this);
@@ -577,24 +625,28 @@ void MbhpMfToolCalibration::resized()
 
     int tableX0 = 0;
     int tableY0 = 0;
-    int tableWidth = 390;
+    int tableWidth = 700;
     int tableHeight = 230;
 
     calibrationTable->setBounds(tableX0, tableY0, tableWidth, tableHeight);
-    traceSliderLabel->setBounds(tableX0+10, tableY0+tableHeight, tableWidth-buttonWidth-10, buttonHeight);
-    traceSlider->setBounds(tableX0 + tableWidth-buttonWidth - 10, tableY0+tableHeight, buttonWidth, buttonHeight);
-    traceScaleSliderLabel->setBounds(tableX0+10, tableY0+tableHeight+buttonHeight, tableWidth-buttonWidth-10, buttonHeight);
-    traceScaleSlider->setBounds(tableX0 + tableWidth-buttonWidth - 10, tableY0+tableHeight+buttonHeight, buttonWidth, buttonHeight);
 
-    int curveX0 = 400;
-    int curveY0 = 4;
+    int curveX0 = 8;
+    int curveY0 = tableY0 + tableHeight;
     int curveWidth = 256;
     int curveHeight = 256;
     calibrationCurve->setBounds(curveX0, curveY0, curveWidth, curveHeight);
     calibrationCurveLabel->setBounds(curveX0, curveY0+curveHeight, curveWidth, buttonHeight);
 
-    int buttonY0 = 30;
-    int buttonX0 = curveX0 + curveWidth + 15;
+    int traceSliderWidth = 90;
+    traceSliderLabel->setBounds(curveX0, curveY0+curveHeight+1*buttonHeight, curveWidth-traceSliderWidth-10, buttonHeight);
+    traceSlider->setBounds(curveX0 + curveWidth-traceSliderWidth, curveY0+curveHeight+1*buttonHeight, traceSliderWidth, buttonHeight);
+    traceScaleSliderLabel->setBounds(curveX0, curveY0+curveHeight+2*buttonHeight, curveWidth-traceSliderWidth-10, buttonHeight);
+    traceScaleSlider->setBounds(curveX0 + curveWidth-traceSliderWidth, curveY0+curveHeight+2*buttonHeight, traceSliderWidth, buttonHeight);
+    directMoveSliderLabel->setBounds(curveX0, curveY0+curveHeight+3*buttonHeight, curveWidth-traceSliderWidth-10, buttonHeight);
+    directMoveSlider->setBounds(curveX0 + curveWidth-traceSliderWidth, curveY0+curveHeight+3*buttonHeight, traceSliderWidth, buttonHeight);
+
+    int buttonX0 = curveX0 + curveWidth + 10;
+    int buttonY0 = curveY0 + 10;
     int buttonYd = buttonHeight + 4;
 
     upperButton->setBounds(buttonX0, buttonY0 + 0*buttonYd, buttonWidth, buttonHeight);
@@ -626,6 +678,33 @@ formatted(T("x=%d mS per unit, y=256 steps per unit"), (unsigned)traceScaleSlide
     } else if( slider == traceSlider ) {
         Array<uint16> emptyTrace;
         calibrationCurve->setTrace(emptyTrace);
+    } else if( slider == directMoveSlider ) {
+        uint8 traceFader = traceSlider->getValue() - 1;
+        uint8 traceFaderScale = traceScaleSlider->getValue();
+
+        // request trace update
+        {
+
+            Array<uint16> emptyTrace;
+            calibrationCurve->setTrace(emptyTrace);
+
+            // request values
+            Array<uint8> requestTraceSyx = SysexHelper::createMbhpMfTraceRequest((uint8)mbhpMfTool->mbhpMfToolControl->deviceIdSlider->getValue(),
+                                                                                 traceFader,
+                                                                                 traceFaderScale);
+            MidiMessage message = SysexHelper::createMidiMessage(requestTraceSyx);
+            mbhpMfTool->miosStudio->sendMidiMessage(message);
+        }
+
+        // send new fader pos
+        Array<uint16> faderValue;
+        faderValue.add(directMoveSlider->getValue());
+
+        Array<uint8> faderSnapshotSyx = SysexHelper::createMbhpMfFadersSet((uint8)mbhpMfTool->mbhpMfToolControl->deviceIdSlider->getValue(),
+                                                                           traceFader,
+                                                                           faderValue);
+        MidiMessage message = SysexHelper::createMidiMessage(faderSnapshotSyx);
+        mbhpMfTool->miosStudio->sendMidiMessage(message);
     }
 }
 
@@ -709,11 +788,16 @@ void MbhpMfToolCalibration::buttonClicked(Button* buttonThatWasClicked)
             startTimer(1);
         }
     }
+
+    // update "direct move" slider
+    directMoveSlider->setValue(currentMfValues[traceFader]);
 }
 
 //==============================================================================
 void MbhpMfToolCalibration::timerCallback()
 {
+    uint8 traceFader = traceSlider->getValue() - 1;
+
     stopTimer(); // will be restarted if required
     bool targetReached = true;
 
@@ -766,6 +850,9 @@ void MbhpMfToolCalibration::timerCallback()
     MidiMessage message = SysexHelper::createMidiMessage(faderSnapshotSyx);
     mbhpMfTool->miosStudio->sendMidiMessage(message);
 
+    // update "direct move" slider
+    directMoveSlider->setValue(currentMfValues[traceFader]);
+
     // restart timer?
     if( !targetReached ) {
         int delay = delaySlider->getValue();
@@ -779,12 +866,12 @@ void MbhpMfToolCalibration::getDump(Array<uint8> &syxDump)
 {
     for(int mf=0; mf<8; ++mf) {
         syxDump.set(0x20 + 0*8+mf, calibrationTable->mfMode[mf]);
-        syxDump.set(0x20 + 1*8+mf, (calibrationTable->mfMinValue[mf] >> 0) & 0xff);
-        syxDump.set(0x20 + 2*8+mf, (calibrationTable->mfMinValue[mf] >> 8) & 0xff);
-        syxDump.set(0x20 + 3*8+mf, (calibrationTable->mfMaxValue[mf] >> 0) & 0xff);
-        syxDump.set(0x20 + 4*8+mf, (calibrationTable->mfMaxValue[mf] >> 8) & 0xff);
-        syxDump.set(0x20 + 5*8+mf, calibrationTable->mfMinDuty[mf]);
-        syxDump.set(0x20 + 6*8+mf, calibrationTable->mfMaxDuty[mf]);
+        syxDump.set(0x20 + 1*8+mf, calibrationTable->mfMinValue[mf] & 0xff); // only low-byte will be stored (0..255)
+        syxDump.set(0x20 + 2*8+mf, calibrationTable->mfMaxValue[mf] & 0xff); // only low-byte will be stored (768..1023)
+        syxDump.set(0x20 + 3*8+mf, calibrationTable->mfMinDutyUp[mf]);
+        syxDump.set(0x20 + 4*8+mf, calibrationTable->mfMaxDutyUp[mf]);
+        syxDump.set(0x20 + 5*8+mf, calibrationTable->mfMinDutyDown[mf]);
+        syxDump.set(0x20 + 6*8+mf, calibrationTable->mfMaxDutyDown[mf]);
     }
 }
 
@@ -792,12 +879,14 @@ void MbhpMfToolCalibration::setDump(const Array<uint8> &syxDump)
 {
     for(int mf=0; mf<8; ++mf) {
         calibrationTable->mfMode.set(mf, syxDump[0x20 + 0*8+mf]);
-        unsigned minValue = syxDump[0x20 + 1*8+mf] | ((unsigned)syxDump[0x20 + 2*8+mf] << 8);
+        unsigned minValue = syxDump[0x20 + 1*8+mf]; // only low-byte will be stored (0..255)
         calibrationTable->mfMinValue.set(mf, minValue);
-        unsigned maxValue = syxDump[0x20 + 3*8+mf] | ((unsigned)syxDump[0x20 + 4*8+mf] << 8);
+        unsigned maxValue = syxDump[0x20 + 2*8+mf] + 768; // only low-byte will be stored (768..1023)
         calibrationTable->mfMaxValue.set(mf, maxValue);
-        calibrationTable->mfMinDuty.set(mf, syxDump[0x20 + 5*8+mf]);
-        calibrationTable->mfMaxDuty.set(mf, syxDump[0x20 + 6*8+mf]);
+        calibrationTable->mfMinDutyUp.set(mf, syxDump[0x20 + 3*8+mf]);
+        calibrationTable->mfMaxDutyUp.set(mf, syxDump[0x20 + 4*8+mf]);
+        calibrationTable->mfMinDutyDown.set(mf, syxDump[0x20 + 5*8+mf]);
+        calibrationTable->mfMaxDutyDown.set(mf, syxDump[0x20 + 6*8+mf]);
     }
     calibrationTable->table->updateContent();
 }
@@ -848,12 +937,12 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
     , mbhpMfToolConfig(_mbhpMfToolConfig)
     , progress(0)
     , receiveDump(false)
-    , sendDump(false)
+    , sendCompleteDump(false)
+    , sendChangedDump(false)
     , dumpRequested(false)
     , dumpReceived(false)
     , checksumError(false)
     , dumpSent(false)
-    , configurationReceivedOnce(false)
 {
     addAndMakeVisible(loadButton = new TextButton(T("Load")));
     loadButton->addButtonListener(this);
@@ -930,11 +1019,16 @@ void MbhpMfToolControl::resized()
     deviceIdLabel->setBounds(buttonX0 + 20+2*buttonXOffset, buttonY, buttonWidth, buttonHeight);
     deviceIdSlider->setBounds(buttonX0 + 20+3*buttonXOffset, buttonY, buttonWidth, buttonHeight);
 
+#if 0
     patchLabel->setBounds(buttonX0 + 20+4*buttonXOffset, buttonY, buttonWidth, buttonHeight);
     patchSlider->setBounds(buttonX0 + 20+5*buttonXOffset, buttonY, buttonWidth, buttonHeight);
 
     receiveButton->setBounds(buttonX0 + 40+6*buttonXOffset, buttonY, buttonWidth, buttonHeight);
     sendButton->setBounds(buttonX0 + 40+7*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+#else
+    receiveButton->setBounds(buttonX0 + 40+4*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+    sendButton->setBounds(buttonX0 + 40+5*buttonXOffset, buttonY, buttonWidth, buttonHeight);
+#endif
 
     int progressBarX = sendButton->getX() + buttonWidth + 20;
     progressBar->setBounds(progressBarX, buttonY, getWidth()-progressBarX-buttonX0, buttonHeight);
@@ -977,11 +1071,13 @@ void MbhpMfToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( buttonThatWasClicked == receiveButton ) {
             dumpRequested = false;
             receiveDump = true;
-            sendDump = false;
+            sendCompleteDump = false;
+            sendChangedDump = false;
             currentSyxDump.clear();
         } else {
             receiveDump = false;
-            sendDump = true;
+            sendCompleteDump = true;
+            sendChangedDump = false;
             dumpSent = false;
         }
         startTimer(1);
@@ -1008,17 +1104,18 @@ void MbhpMfToolControl::sliderValueChanged(Slider* slider)
 //==============================================================================
 void MbhpMfToolControl::sysexUpdateRequest(void)
 {
-    // send dump within 10 mS
+    // get initial dump
+    // this will already happen after startup of MIOS Studio, the function is called
+    // from MbhpMfTool constructor as well!
+    if( !currentSyxDump.size() )
+        mbhpMfToolConfig->getDump(currentSyxDump);
+
+    // send changed dump values within 10 mS
     // can be called whenever a configuration value has been changed
-
-    // to ensure that an existing dump won't be overwritten by fault, we expect
-    // that the user has requested the dump (via receive button) at least once
-
-    // sorry for that... it would be more clever to update parameters individually
-    // via "direct write" SysEx command, but this results into more programming effort...
-    if( configurationReceivedOnce && sendButton->isEnabled() ) {
+    if( sendButton->isEnabled() ) {
         receiveDump = false;
-        sendDump = true;
+        sendCompleteDump = false;
+        sendChangedDump = true;
         dumpSent = false;
         loadButton->setEnabled(false);
         saveButton->setEnabled(false);
@@ -1052,7 +1149,6 @@ void MbhpMfToolControl::timerCallback()
             } else {
                 mbhpMfToolConfig->setDump(currentSyxDump);
                 transferFinished = true;
-                configurationReceivedOnce = true; // allow parameter updates
             }
         } else {
             dumpReceived = false;
@@ -1066,21 +1162,51 @@ void MbhpMfToolControl::timerCallback()
             progress = 1.0;
             startTimer(1000);
         }
-    } else if( sendDump ) {
+    } else if( sendCompleteDump || sendChangedDump ) {
         if( dumpSent ) {
             transferFinished = true;
-            sendDump = false;
+            sendCompleteDump = false;
+            sendChangedDump = false;
         } else {
-            mbhpMfToolConfig->getDump(currentSyxDump);
-            Array<uint8> data = SysexHelper::createMbhpMfWritePatch((uint8)deviceIdSlider->getValue(),
-                                                                  (int)patchSlider->getValue()-1,
-                                                                  &currentSyxDump.getReference(0));
-            MidiMessage message = SysexHelper::createMidiMessage(data);
-            miosStudio->sendMidiMessage(message);
+            bool anyValueChanged = false;
 
-            dumpSent = true;
-            progress = 1.0;
-            startTimer(1000);
+            if( sendCompleteDump ) {
+                mbhpMfToolConfig->getDump(currentSyxDump);
+                anyValueChanged = true;
+                Array<uint8> data = SysexHelper::createMbhpMfWritePatch((uint8)deviceIdSlider->getValue(),
+                                                                        (int)patchSlider->getValue()-1,
+                                                                        &currentSyxDump.getReference(0));
+                MidiMessage message = SysexHelper::createMidiMessage(data);
+                miosStudio->sendMidiMessage(message);
+            } else if( sendChangedDump ) {
+                Array<uint8> lastSyxDump(currentSyxDump);
+                mbhpMfToolConfig->getDump(currentSyxDump);
+
+                // send only changes via direct write
+                for(int addr=0; addr<lastSyxDump.size(); ++addr) {
+                    if( currentSyxDump[addr] != lastSyxDump[addr] ) {
+                        anyValueChanged = true;
+
+                        uint8 value = currentSyxDump[addr];
+                        Array<uint8> data = SysexHelper::createMbhpMfWriteDirect((uint8)deviceIdSlider->getValue(),
+                                                                                 addr,
+                                                                                 &value,
+                                                                                 1);
+                        MidiMessage message = SysexHelper::createMidiMessage(data);
+                        miosStudio->sendMidiMessage(message);
+                    }
+                }
+            }
+
+            if( anyValueChanged ) {
+                dumpSent = true;
+                progress = 1.0;
+                startTimer(1000);
+            } else {
+                transferFinished = true;
+                sendCompleteDump = false;
+                sendChangedDump = false;
+            }
         }
     }
 
@@ -1266,10 +1392,13 @@ MbhpMfTool::MbhpMfTool(MiosStudio *_miosStudio)
     addAndMakeVisible(mbhpMfToolConfig = new MbhpMfToolConfig(this));
     addAndMakeVisible(mbhpMfToolControl = new MbhpMfToolControl(miosStudio, mbhpMfToolConfig));
 
+    // get initial dump
+    mbhpMfToolControl->sysexUpdateRequest();
+
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(840, 330);
+    setSize(700, 630);
 }
 
 MbhpMfTool::~MbhpMfTool()

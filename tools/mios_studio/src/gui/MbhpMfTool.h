@@ -25,6 +25,7 @@ class MbhpMfTool; // forward declaration
 class MbhpMfToolConfigGlobals
     : public Component
     , public SliderListener
+    , public ComboBoxListener
 {
 public:
     //==============================================================================
@@ -34,6 +35,7 @@ public:
     //==============================================================================
     void resized();
     void sliderValueChanged(Slider* slider);
+    void comboBoxChanged(ComboBox*);
 
     //==============================================================================
     void getDump(Array<uint8> &syxDump);
@@ -91,8 +93,10 @@ public:
     Array<uint8> mfMode;
     Array<uint16> mfMinValue;
     Array<uint16> mfMaxValue;
-    Array<uint8> mfMinDuty;
-    Array<uint8> mfMaxDuty;
+    Array<uint8> mfMinDutyUp;
+    Array<uint8> mfMaxDutyUp;
+    Array<uint8> mfMinDutyDown;
+    Array<uint8> mfMaxDutyDown;
 
     int numRows;
 
@@ -165,6 +169,8 @@ protected:
     Slider*                     traceSlider;
     Label*                      traceScaleSliderLabel;
     Slider*                     traceScaleSlider;
+    Label*                      directMoveSliderLabel;
+    Slider*                     directMoveSlider;
 
     TextButton* upperButton;
     TextButton* lowerButton;
@@ -269,12 +275,13 @@ public:
     //==============================================================================
     File syxFile;
     bool receiveDump;
-    bool sendDump;
+    bool sendCompleteDump;
+    bool sendChangedDump;
     bool dumpRequested;
     bool dumpReceived;
     bool checksumError;
     bool dumpSent;
-    bool configurationReceivedOnce;
+
     Array<uint8> currentSyxDump;
 
     //==============================================================================
