@@ -82,10 +82,16 @@ s32 LC_DIO_ButtonHandler(u8 button, u8 pin_value)
 #endif
 
   // send button event
+#if 0
   if( pin_value )
     return MIOS32_MIDI_SendNoteOff(DEFAULT, Chn1, button_id, 0x00);
   else
     return MIOS32_MIDI_SendNoteOn(DEFAULT, Chn1, button_id, 0x7f);
+#else
+  // Interesting: Logic Pro 9 totally runs crazy if some buttons are sent with NoteOff Event!!! 
+  // Use Note On with Velocity 0 instead (and send 0x7f for Note On as usual)
+  return MIOS32_MIDI_SendNoteOn(DEFAULT, Chn1, button_id, pin_value ? 0x00 : 0x7f);
+#endif
 }
 
 
