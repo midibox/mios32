@@ -24,8 +24,8 @@ Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
     mergerComboBox->setWantsKeyboardFocus(true);
     mergerComboBox->addItem(T("Disabled"), 1);
     mergerComboBox->addItem(T("Enabled (received MIDI events forwarded to MIDI Out)"), 2);
-    mergerComboBox->addItem(T("MIDIbox Link Forwarding Point (core in a MIDIbox chain)"), 3);
-    mergerComboBox->addItem(T("MIDIbox Link Endpoint (last core in the MIDIbox chain)"), 4);
+    mergerComboBox->addItem(T("MIDIbox Link Endpoint (last core in the MIDIbox chain)"), 3);
+    mergerComboBox->addItem(T("MIDIbox Link Forwarding Point (core in a MIDIbox chain)"), 4);
     mergerComboBox->setSelectedId(1, true);
 
     addAndMakeVisible(debounceLabel = new Label(String::empty, T("DIN Debouncing (mS):")));
