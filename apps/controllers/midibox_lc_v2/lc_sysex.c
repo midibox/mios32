@@ -74,7 +74,7 @@ s32 LC_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
   // only listen to default port
   if( sysex_state.MY_SYSEX && port != MIOS32_MIDI_DefaultPortGet() )
-    return 1; // don't forward package to APP_MIDI_NotifyPackage()
+    return 0; // forward package to APP_MIDI_NotifyPackage()
 
   // branch depending on state
   if( !sysex_state.MY_SYSEX ) {
