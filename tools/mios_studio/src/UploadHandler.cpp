@@ -164,8 +164,13 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
     String rangeName;
 
     if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_BL_END ) {
-        rangeName = T("PIC Bootloader (ERROR!)");
-        checkOk = false;
+        if( hexFileLoader.HEX_RANGE_MIOS8_BL_CHECK == 0 ) {
+            rangeName = T("PIC Bootloader (ACCEPTED!)");
+            checkOk = true;
+        } else {
+            rangeName = T("PIC Bootloader (ERROR!)");
+            checkOk = false;
+        }
     } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS8_FLASH_START &&
         endAddress <= hexFileLoader.HEX_RANGE_MIOS8_FLASH_END ) {
 
