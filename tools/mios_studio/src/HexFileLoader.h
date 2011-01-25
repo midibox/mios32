@@ -44,7 +44,8 @@ public:
 
     //==============================================================================
     static const uint32 HEX_RANGE_MIOS8_BL_START           = 0x00000000; // Bootloader range
-    static const uint32 HEX_RANGE_MIOS8_BL_END             = 0x000003ff; // Upload not allowed here!
+    static const uint32 HEX_RANGE_MIOS8_BL_END             = 0x000003ff; // Upload usually not allowed here!
+    static const uint32 HEX_RANGE_MIOS8_BL_CHECK           = 1;          // but this check can be optionally disabled (should we change this to an hidden user configurable option?)
     static const uint32 HEX_RANGE_MIOS8_OS_START           = 0x00000000; // MIOS8 range
     static const uint32 HEX_RANGE_MIOS8_OS_END             = 0x00002fff; // allowed flash range, but reboot required
     static const uint32 HEX_RANGE_MIOS8_FLASH_START        = 0x00000400;
