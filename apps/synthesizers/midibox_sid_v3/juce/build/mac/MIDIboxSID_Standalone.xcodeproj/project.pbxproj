@@ -642,7 +642,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIDIboxSID_Standalone" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 20286C29FDCF999611CA2CEA /* juce_application */;
 			projectDirPath = "";
 			projectRoot = "";
