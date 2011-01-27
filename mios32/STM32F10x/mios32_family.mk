@@ -29,6 +29,7 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_rtc.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_bkp.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_pwr.c \
+	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/stm32f10x_exti.c \
 	$(DRIVER_LIB)/STM32F10x_StdPeriph_Driver/src/misc.c \
 	$(DRIVER_LIB)/CMSIS/CM3/CoreSupport/core_cm3.c \
 	$(DRIVER_LIB)/STM32_USB-FS-Device_Driver/src/usb_core.c \

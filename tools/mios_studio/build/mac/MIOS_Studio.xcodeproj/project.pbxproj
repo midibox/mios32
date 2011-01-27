@@ -17,6 +17,7 @@
 		526D317A1139CC9B004A1521 /* MbCvTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D31781139CC9B004A1521 /* MbCvTool.cpp */; };
 		527D1040111F2CDD002A091B /* SysexHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 527D103E111F2CDD002A091B /* SysexHelper.cpp */; };
 		5287EE06113076F50001BFBD /* HexTextEditor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5287EE04113076F50001BFBD /* HexTextEditor.cpp */; };
+		5297D6EF12C0D49800112FC4 /* MbhpMfTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5297D6ED12C0D49800112FC4 /* MbhpMfTool.cpp */; };
 		529C75D2111DAB1200DFE267 /* juce_LibrarySource.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */; };
 		529C75D3111DAB1200DFE267 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529C75CE111DAB1200DFE267 /* Main.cpp */; };
 		529E4B221122041D00784362 /* LogBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529E4B201122041D00784362 /* LogBox.cpp */; };
@@ -69,6 +70,8 @@
 		527DEE55113AD42600226EF2 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../../src/version.h; sourceTree = SOURCE_ROOT; };
 		5287EE04113076F50001BFBD /* HexTextEditor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HexTextEditor.cpp; path = ../../src/gui/HexTextEditor.cpp; sourceTree = SOURCE_ROOT; };
 		5287EE05113076F50001BFBD /* HexTextEditor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HexTextEditor.h; path = ../../src/gui/HexTextEditor.h; sourceTree = SOURCE_ROOT; };
+		5297D6ED12C0D49800112FC4 /* MbhpMfTool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbhpMfTool.cpp; path = ../../src/gui/MbhpMfTool.cpp; sourceTree = SOURCE_ROOT; };
+		5297D6EE12C0D49800112FC4 /* MbhpMfTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbhpMfTool.h; path = ../../src/gui/MbhpMfTool.h; sourceTree = SOURCE_ROOT; };
 		529C75CA111DAB1200DFE267 /* includes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = includes.h; path = ../../src/includes.h; sourceTree = SOURCE_ROOT; };
 		529C75CB111DAB1200DFE267 /* juce_AppConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_AppConfig.h; path = ../../src/juce_AppConfig.h; sourceTree = SOURCE_ROOT; };
 		529C75CD111DAB1200DFE267 /* juce_LibrarySource.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_LibrarySource.mm; path = ../../src/juce_LibrarySource.mm; sourceTree = SOURCE_ROOT; };
@@ -200,6 +203,8 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				5297D6ED12C0D49800112FC4 /* MbhpMfTool.cpp */,
+				5297D6EE12C0D49800112FC4 /* MbhpMfTool.h */,
 				5224B2FB117E4F9400CFB9D3 /* OscHelper.cpp */,
 				5224B2FC117E4F9400CFB9D3 /* OscHelper.h */,
 				5224B2D2117E4A4800CFB9D3 /* OscTextEditor.cpp */,
@@ -276,7 +281,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 84F30CC308FEAA620087E26C /* Build configuration list for PBXProject "MIOS_Studio" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 20286C29FDCF999611CA2CEA /* MIOS_Studio */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -325,6 +337,7 @@
 				5224B2B4117E469A00CFB9D3 /* OscMonitor.cpp in Sources */,
 				5224B2D4117E4A4800CFB9D3 /* OscTextEditor.cpp in Sources */,
 				5224B2FD117E4F9400CFB9D3 /* OscHelper.cpp in Sources */,
+				5297D6EF12C0D49800112FC4 /* MbhpMfTool.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
