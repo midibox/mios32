@@ -125,6 +125,9 @@ extern s32 AOUT_DigitalPinGet(u8 pin);
 extern s32 AOUT_DigitalPinsSet(u32 value);
 extern u32 AOUT_DigitalPinsGet(void);
 
+extern s32 AOUT_SuspendSet(u8 suspend);
+extern s32 AOUT_SuspendGet(void);
+
 extern s32 AOUT_Update(void);
 
 

@@ -176,6 +176,7 @@ static u32 aout_dig_update_req;
 static aout_cali_mode_t cali_mode;
 static u8 cali_pin;
 
+static u8 suspend_mode;
 
 // include generate file which declares hz_v_table[128]
 #include "aout_hz_v_table.inc"
@@ -236,6 +237,9 @@ s32 AOUT_Init(u32 mode)
   cali_mode = AOUT_CALI_MODE_OFF;
   cali_pin = 0;
 
+  // disable suspend mode
+  suspend_mode = 0;
+
   // init hardware
   // (not required, since no interface is selected by default!)
   // AOUT_IF_Init(mode);
@@ -273,6 +277,9 @@ s32 AOUT_IF_Init(u32 mode)
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
+
+  // disable suspend mode
+  suspend_mode = 0;
 
   // init SPI for all interfaces beside of NONE and INTDAC
   if( aout_config.if_type != AOUT_IF_NONE && aout_config.if_type != AOUT_IF_INTDAC ) {
@@ -839,6 +846,30 @@ u32 AOUT_DigitalPinsGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function allows to suspend any updates until suspend will be deactived
+//!
+//! \param[in] suspend if 1: AOUT_Update() has no effect, if 0: module will be
+//!            re-initialized via AOUT_IF_Init(0) and AOUT_Update() works again
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_SuspendSet(u8 suspend)
+{
+  if( suspend )
+    suspend_mode = 1;
+  else {
+    return AOUT_IF_Init(0); // will also clear suspend mode
+  }
+
+  return 0; // no error
+}
+
+s32 AOUT_SuspendGet(void)
+{
+  return suspend_mode;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Updates the output channels of the connected AOUT module
 //!
 //! Should be called, whenever changes have been requested via AOUT_Pin*Set
@@ -851,6 +882,9 @@ s32 AOUT_Update(void)
 
   if( !aout_num_devices )
     return -1; // no device available
+
+  if( suspend_mode )
+    return 0; // ignore in suspend mode
 
   // handle slew rate
   aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
