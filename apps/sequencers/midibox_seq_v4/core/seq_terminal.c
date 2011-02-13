@@ -21,6 +21,8 @@
 #include <seq_midi_out.h>
 #include <ff.h>
 
+#include <aout.h>
+
 #include "tasks.h"
 
 #include "app.h"
@@ -55,6 +57,27 @@
 #include "uip.h"
 #include "uip_task.h"
 #include "osc_server.h"
+#endif
+
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+// for AOUT interface testmode
+// TODO: allow access to these pins via MIOS32_SPI driver
+#define MIOS32_SPI2_RCLK1_PORT GPIOC
+#define MIOS32_SPI2_RCLK1_PIN  GPIO_Pin_13
+#define MIOS32_SPI2_RCLK2_PORT GPIOC
+#define MIOS32_SPI2_RCLK2_PIN  GPIO_Pin_14
+#define MIOS32_SPI2_SCLK_PORT  GPIOB
+#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_SPI2_MISO_PORT  GPIOB
+#define MIOS32_SPI2_MISO_PIN   GPIO_Pin_7
+#define MIOS32_SPI2_MOSI_PORT  GPIOB
+#define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
+
+#define MIOS32_SPI2_SET_MOSI(b) { MIOS32_SPI2_MOSI_PORT->BSRR = (b) ? MIOS32_SPI2_MOSI_PIN : (MIOS32_SPI2_MOSI_PIN << 16); }
+#define MIOS32_SPI2_GET_MISO    ( MIOS32_SPI2_MISO_PORT->IDR & MIOS32_SPI2_MISO_PIN )
+#define MIOS32_SPI2_SET_SCLK_0  { MIOS32_SPI2_SCLK_PORT->BRR  = MIOS32_SPI2_SCLK_PIN; }
+#define MIOS32_SPI2_SET_SCLK_1  { MIOS32_SPI2_SCLK_PORT->BSRR = MIOS32_SPI2_SCLK_PIN; }
 #endif
 
 
@@ -200,6 +223,53 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 #endif
       } else if( strcmp(parameter, "sdcard") == 0 ) {
 	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
+      } else if( strcmp(parameter, "testaoutpin") == 0 ) {
+	char *arg;
+	int pin_number = -1;
+	int level = -1;
+
+	if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	  if( strcmp(arg, "cs") == 0 )
+	    pin_number = 1;
+	  else if( strcmp(arg, "si") == 0 )
+	    pin_number = 2;
+	  else if( strcmp(arg, "sc") == 0 )
+	    pin_number = 3;
+	  else if( strcmp(arg, "reset") == 0 ) {
+	    pin_number = 0;
+	    level = 0; // dummy
+	  }
+	}
+
+	if( pin_number < 0 ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  DEBUG_MSG("Please specifiy valid AOUT pin name: cs, si or sc\n");
+	  MUTEX_MIDIOUT_GIVE;
+	} else {
+	  if( (arg = strtok_r(NULL, separators, &brkt)) )
+	    level = get_dec(arg);
+
+	  if( level != 0 && level != 1 ) {
+	    MUTEX_MIDIOUT_TAKE;
+	    DEBUG_MSG("Please specifiy valid logic level for AOUT pin: 0 or 1\n");
+	    MUTEX_MIDIOUT_GIVE;
+	  }
+	}
+
+	if( pin_number >= 0 && level >= 0 ) {
+	  SEQ_TERMINAL_TestAoutPin(DEBUG_MSG, pin_number, level);
+	} else {
+	  MUTEX_MIDIOUT_TAKE;
+	  DEBUG_MSG("Following commands are supported:\n");
+	  DEBUG_MSG("testaoutpin cs 0  -> sets AOUT:CS to 0.4V");
+	  DEBUG_MSG("testaoutpin cs 1  -> sets AOUT:CS to ca. 4V");
+	  DEBUG_MSG("testaoutpin si 0  -> sets AOUT:SI to ca. 0.4V");
+	  DEBUG_MSG("testaoutpin si 1  -> sets AOUT:SI to ca. 4V");
+	  DEBUG_MSG("testaoutpin sc 0  -> sets AOUT:SC to ca. 0.4V");
+	  DEBUG_MSG("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
+	  DEBUG_MSG("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
+	  MUTEX_MIDIOUT_GIVE;
+	}
       } else if( strcmp(parameter, "play") == 0 ) {
 	SEQ_UI_Button_Play(0);
 	MUTEX_MIDIOUT_TAKE;
@@ -254,6 +324,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  network:        print ethernet network info\n");
   out("  udpmon <0..4>:  enables UDP monitor to check OSC packets (current: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
 #endif
+  out("  testaoutpin:    type this command to get further informations about the testmode.");
   out("  play:           emulates the PLAY button\n");
   out("  stop:           emulates the STOP button\n");
   out("  reset:          resets the MIDIbox SEQ (!)\n");
@@ -751,3 +822,55 @@ s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
 
   return 0; // no error
 }
+
+
+s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
+{
+  void (*out)(char *format, ...) = _output_function;
+  s32 status = 0;
+
+  MUTEX_MIDIOUT_TAKE;
+
+  switch( pin_number ) {
+  case 0:
+    AOUT_SuspendSet(0);
+    out("Module has been re-initialized and can be used again!\n");
+    break;
+
+  case 1:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:CS pin to ca. %dV - please measure now!\n", level ? 4 : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    MIOS32_SPI_RC_PinSet(2, 0, level ? 1 : 0); // spi, rc_pin, pin_value
+#endif
+    break;
+
+  case 2:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:SI pin to ca. %dV - please measure now!\n", level ? 4 : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    MIOS32_SPI2_SET_MOSI(level ? 1 : 0);
+#endif
+    break;
+
+  case 3:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:SC pin to ca. %dV - please measure now!\n", level ? 4 : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    if( level ) {
+      MIOS32_SPI2_SET_SCLK_1;
+    } else {
+      MIOS32_SPI2_SET_SCLK_0;
+    }
+#endif
+    break;
+
+  default:
+    out("ERROR: unsupported pin #%d", pin_number);
+  }
+
+  MUTEX_MIDIOUT_GIVE;
+
+  return status;
+}
+
