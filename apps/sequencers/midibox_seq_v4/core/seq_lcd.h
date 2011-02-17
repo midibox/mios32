@@ -66,6 +66,7 @@ extern s32 SEQ_LCD_PrintStepDelay(s32 delay);
 extern s32 SEQ_LCD_PrintRollMode(u8 roll_mode);
 extern s32 SEQ_LCD_PrintRoll2Mode(u8 roll2_mode);
 extern s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars);
+extern s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 step_view);
 extern s32 SEQ_LCD_PrintGxTy(u8 group, u16 selected_tracks);
 extern s32 SEQ_LCD_PrintPattern(seq_pattern_t pattern);
 extern s32 SEQ_LCD_PrintPatternCategory(seq_pattern_t pattern, char *pattern_name);

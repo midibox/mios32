@@ -151,9 +151,24 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return SEQ_UI_GxTyInc(incrementer);
 
     case ITEM_STEP_MODE:
-      if( incrementer )
-	seq_record_options.STEP_RECORD = incrementer > 0 ? 1 : 0;
-      else
+      if( incrementer ) {
+	u8 tmp;
+	if( seq_record_options.STEP_RECORD )
+	  tmp = seq_record_options.STEPS_PER_KEY + 1;
+	else
+	  tmp = 0;
+
+	if( SEQ_UI_Var8_Inc(&tmp, 0, 16+1, incrementer) > 0 ) {
+	  if( tmp ) {
+	    seq_record_options.STEPS_PER_KEY = tmp - 1;
+	    seq_record_options.STEP_RECORD = 1; // Live->Step Record Mode
+	  } else {
+	    seq_record_options.STEPS_PER_KEY = 0;
+	    seq_record_options.STEP_RECORD = 0; // Step->Live Record Mode
+	  }
+	} else
+	  return 0; // no change
+      } else
 	seq_record_options.STEP_RECORD ^= 1;
       return 1;
 
@@ -206,9 +221,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	SEQ_TRG_GateSet(visible_track, seq_record_step, i, gate);
 
       // increment step
-      int next_step = seq_record_step + 1;
-      if( next_step > SEQ_CC_Get(visible_track, SEQ_CC_LENGTH) )
-	next_step = 0;
+      int next_step = (seq_record_step + seq_record_options.STEPS_PER_KEY) % ((int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
 
       for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)
 	SEQ_RECORD_Reset(i);
@@ -288,6 +301,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Left:
       if( ui_selected_item == 0 )
 	ui_selected_item = NUM_OF_ITEMS-1;
+      else
+	--ui_selected_item;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:
@@ -319,7 +334,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi Quantize            
-  // G1T1 Live  Poly     on     16           IN1  # 1      on       20%
+  // G1T1 Live   Poly    on     16           IN1  # 1      on       20%
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -338,11 +353,18 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_STEP_MODE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
+    SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintString(seq_record_options.STEP_RECORD ? "Step" : "Live");
+    if( seq_record_options.STEP_RECORD ) {
+      if( seq_record_options.STEPS_PER_KEY < 10 )
+	SEQ_LCD_PrintFormattedString("Step+%d", seq_record_options.STEPS_PER_KEY);
+      else
+	SEQ_LCD_PrintFormattedString("Step%d", seq_record_options.STEPS_PER_KEY);
+    } else {
+      SEQ_LCD_PrintString(" Live ");
+    }
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_POLY_MODE && ui_cursor_flash ) {
@@ -350,7 +372,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(seq_record_options.POLY_RECORD ? "Poly" : "Mono");
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_AUTO_START && ui_cursor_flash ) {

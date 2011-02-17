@@ -1243,8 +1243,17 @@ s32 SEQ_FILE_CreateBackup(void)
 #endif
 
     // take over session name
-    strcpy(seq_file_session_name, seq_file_new_session_name); 
-  } else if( status < 0 ) { // found errors!
+    strcpy(seq_file_session_name, seq_file_new_session_name);
+
+    // load files
+    status = SEQ_FILE_LoadAllFiles(0); // excluding HW config
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+    if( status < 0 )
+      DEBUG_MSG("[SEQ_FILE_CreateBackup] failed during LoadAllFiles at %s, status %d\n", seq_file_new_session_name, status);
+#endif
+
+  } else { // found errors!
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_CreateBackup] backup of %s failed, status %d\n", seq_file_new_session_name, status);
 #endif

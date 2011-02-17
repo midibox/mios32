@@ -24,8 +24,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u8 ALL;
+  u16 ALL;
   struct {
+    u8 STEPS_PER_KEY;
     u8 STEP_RECORD:1;
     u8 POLY_RECORD:1;
     u8 AUTO_START:1;

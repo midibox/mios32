@@ -308,9 +308,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       }
 
       if( seq_record_options.STEP_RECORD && !seq_record_options.POLY_RECORD ) {
-	int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
-	if( next_step > tcc->length )
-	  next_step = tcc->loop;
+	int next_step = (seq_record_step + seq_record_options.STEPS_PER_KEY) % ((int)tcc->length+1);
 
 	int i;
 	for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)

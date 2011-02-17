@@ -42,6 +42,8 @@
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
 #include "seq_cc.h"
+#include "seq_par.h"
+#include "seq_layer.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -645,6 +647,111 @@ s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// prints layer event
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 step_view)
+{
+  seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, par_layer);
+  u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+  seq_layer_evnt_t layer_event;
+  SEQ_LAYER_GetEvntOfLayer(track, step, par_layer, instrument, &layer_event);
+
+  switch( layer_type ) {
+  case SEQ_PAR_Type_None:
+    SEQ_LCD_PrintString("None");
+    break;
+
+  case SEQ_PAR_Type_Note:
+  case SEQ_PAR_Type_Velocity:
+
+    if( step_view ) {
+      if( layer_event.midi_package.note &&
+	  layer_event.midi_package.velocity &&
+	  SEQ_TRG_GateGet(track, step, instrument) ) {
+	if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+	  SEQ_LCD_PrintArp(layer_event.midi_package.note);
+	else
+	  SEQ_LCD_PrintNote(layer_event.midi_package.note);
+	SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+      } else {
+	SEQ_LCD_PrintString("----");
+      }
+    } else {
+      if( layer_type == SEQ_PAR_Type_Note ) {
+	if( layer_event.midi_package.note ) {
+	  if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+	    SEQ_LCD_PrintArp(layer_event.midi_package.note);
+	  else
+	    SEQ_LCD_PrintNote(layer_event.midi_package.note);
+	  SEQ_LCD_PrintChar(' ');
+	} else {
+	  SEQ_LCD_PrintString("----");
+	}
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", layer_event.midi_package.velocity);
+	SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+      }
+    }
+    break;
+
+  case SEQ_PAR_Type_Chord:
+    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
+      u8 par_value;
+      // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
+      if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
+	par_value = SEQ_PAR_ChordGet(track, step, instrument);
+      else
+	par_value = SEQ_PAR_Get(track, step, par_layer, instrument);
+      u8 chord_ix = par_value & 0x1f;
+      u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
+      u8 chord_oct = par_value >> 5;
+      SEQ_LCD_PrintFormattedString("%c/%d", chord_char, chord_oct);
+      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+    } else {
+      SEQ_LCD_PrintString("----");
+    }
+    break;
+	  
+  case SEQ_PAR_Type_Length:
+    SEQ_LCD_PrintGatelength(layer_event.len);
+    break;
+
+  case SEQ_PAR_Type_CC:
+  case SEQ_PAR_Type_PitchBend: {
+    if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
+      SEQ_LCD_PrintString("----");
+    } else {
+      u8 value = layer_event.midi_package.value;
+      SEQ_LCD_PrintFormattedString("%3d", value);
+      SEQ_LCD_PrintVBar(value >> 4);
+    }
+  } break;
+
+  case SEQ_PAR_Type_Probability:
+    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(track, step, instrument));
+    break;
+
+  case SEQ_PAR_Type_Delay:
+    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(track, step, instrument));
+    break;
+
+  case SEQ_PAR_Type_Roll:
+    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(track, step, instrument));
+    break;
+
+  case SEQ_PAR_Type_Roll2:
+    SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(track, step, instrument));
+    break;
+
+  default:
+    SEQ_LCD_PrintString("????");
+    break;
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // prints selected group/track (4 characters)
