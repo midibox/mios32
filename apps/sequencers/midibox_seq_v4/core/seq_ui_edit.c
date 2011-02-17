@@ -30,12 +30,24 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Definitions
+/////////////////////////////////////////////////////////////////////////////
+typedef enum {
+  SEQ_UI_EDIT_VIEW_STEPS,
+  SEQ_UI_EDIT_VIEW_TRG,
+  SEQ_UI_EDIT_VIEW_LAYERS,
+  SEQ_UI_EDIT_VIEW_303,
+  SEQ_UI_EDIT_VIEW_STEPSEL,
+} seq_ui_edit_view_t;
+
+/////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 show_step_selection_page;
-static u16 selected_steps = 0xffff; // will only be initialized once after startup
+static u8 show_edit_config_page;
+static seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 
+static u16 selected_steps = 0xffff; // will only be initialized once after startup
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -50,13 +62,68 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
 s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  
+  if( show_edit_config_page ) {
+    switch( seq_ui_edit_view ) {
+    case SEQ_UI_EDIT_VIEW_STEPS: *gp_leds = (1 << 0); break;
+    case SEQ_UI_EDIT_VIEW_TRG: *gp_leds = (1 << 1); break;
+    case SEQ_UI_EDIT_VIEW_LAYERS: *gp_leds = (1 << 2); break;
+    case SEQ_UI_EDIT_VIEW_303: *gp_leds = (1 << 3); break;
+    case SEQ_UI_EDIT_VIEW_STEPSEL: *gp_leds = (1 << 8); break;
+    }
+  } else {
 
-  if( show_step_selection_page )
-    *gp_leds = selected_steps;
-  else
-    *gp_leds =
-      (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
-      (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+      *gp_leds = selected_steps;
+    } else {
+
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+      if( event_mode != SEQ_EVENT_MODE_Drum &&
+	  (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
+
+	if( SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) )
+	  *gp_leds |= (1 << 1);
+	if( SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument) )
+	  *gp_leds |= (1 << 2);
+	if( SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument) )
+	  *gp_leds |= (1 << 3);
+
+	if( ui_selected_par_layer == 0 )
+	  *gp_leds |= (3 << 4);
+	else
+	  *gp_leds |= (1 << (ui_selected_par_layer+5));
+
+      } else if( event_mode != SEQ_EVENT_MODE_Drum &&
+	  (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+
+	u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+	  // maximum 7 parameter layers due to "Step" item!
+	  if( num_t_layers >= 7 )
+	    num_t_layers = 7;
+	} else {
+	  // single trigger layer (gate)
+	  num_t_layers = 1;
+	}
+
+	int i;
+	for(i=0; i<num_t_layers; ++i)
+	  if( SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) )
+	    *gp_leds |= (1 << (i+1));
+
+	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+	  *gp_leds |= (1 << (ui_selected_par_layer+8));
+	} else {
+	  *gp_leds |= (1 << (ui_selected_par_layer+2));
+	}
+      } else {
+	*gp_leds =
+	  (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
+	  (SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
+      }
+    }
+  }
 
   return 0; // no error
 }
@@ -77,7 +144,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 || encoder == SEQ_UI_ENCODER_Datawheel ) {
 #endif
-    if( show_step_selection_page ) {
+
+    if( show_edit_config_page ) {
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP1: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS; break;
+      case SEQ_UI_ENCODER_GP2: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_TRG; break;
+      case SEQ_UI_ENCODER_GP3: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_LAYERS; break;
+      case SEQ_UI_ENCODER_GP4: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_303; break;
+      case SEQ_UI_ENCODER_GP9: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPSEL; break;
+      }
+      show_edit_config_page = 0; // switch back to view
+      return 1; // value changed
+    }
+
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       if( incrementer > 0 )
 	selected_steps |= (1 << encoder);
       else
@@ -85,9 +165,102 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 1; // value changed
     }
 
-    ui_selected_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
-
     u8 visible_track = SEQ_UI_VisibleTrackGet();
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+    if( event_mode != SEQ_EVENT_MODE_Drum &&
+	(seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
+      u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+      if( encoder == SEQ_UI_ENCODER_GP1 ) {
+	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps, incrementer) >= 1 )
+	  return 1;
+	else
+	  return 0;
+      } else if( encoder == SEQ_UI_ENCODER_GP2 ) {
+	SEQ_TRG_GateSet(visible_track, ui_selected_step, ui_selected_instrument, incrementer > 0 ? 1 : 0);
+	return 1;
+      } else if( encoder == SEQ_UI_ENCODER_GP3 ) {
+	SEQ_TRG_AccentSet(visible_track, ui_selected_step, ui_selected_instrument, incrementer > 0 ? 1 : 0);
+	return 1;
+      } else if( encoder == SEQ_UI_ENCODER_GP4 ) {
+	SEQ_TRG_GlideSet(visible_track, ui_selected_step, ui_selected_instrument, incrementer > 0 ? 1 : 0);
+	return 1;
+      } else if( encoder == SEQ_UI_ENCODER_GP5 ) {
+	ui_selected_par_layer = 0;
+	u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+	u8 note_octave = note / 12;
+	u8 note_key = note % 12;
+
+	if( SEQ_UI_Var8_Inc(&note_octave, 0, 9, incrementer) >= 1 ) {
+	  SEQ_PAR_Set(visible_track, ui_selected_step, 0, ui_selected_instrument, 12*note_octave + note_key);
+	  return 1;
+	}
+	return 0;
+      } else if( encoder == SEQ_UI_ENCODER_GP6 ) {
+	ui_selected_par_layer = 0;
+	u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+	u8 note_octave = note / 12;
+	u8 note_key = note % 12;
+
+	if( SEQ_UI_Var8_Inc(&note_key, 0, 11, incrementer) >= 1 ) {
+	  SEQ_PAR_Set(visible_track, ui_selected_step, 0, ui_selected_instrument, 12*note_octave + note_key);
+	  return 1;
+	}
+	return 0;
+      } else if( encoder <= SEQ_UI_ENCODER_GP16 ) {
+	u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+	if( ((int)encoder-5) >= num_p_layers )
+	    return 0; // ignore
+	  ui_selected_par_layer = encoder-5;
+      }
+
+      if( !incrementer ) // button selection only...
+	return 1;
+    }
+
+    if( event_mode != SEQ_EVENT_MODE_Drum &&
+      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+      u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+      if( encoder == SEQ_UI_ENCODER_GP1 ) {
+	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps, incrementer) >= 1 )
+	  return 1;
+	else
+	  return 0;
+      } else if( encoder == SEQ_UI_ENCODER_GP2 ||
+		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && encoder <= SEQ_UI_ENCODER_GP8) ) {
+	u8 sel = (u8)encoder-1;
+	SEQ_TRG_Set(visible_track, ui_selected_step, sel, ui_selected_instrument, incrementer > 0 ? 1 : 0);
+	return 1;
+      } else if( encoder <= SEQ_UI_ENCODER_GP16 ) {
+
+	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+	  if( encoder <= SEQ_UI_ENCODER_GP8 ) {
+	    u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+	    if( ((int)encoder-2) >= num_t_layers )
+	      return 0; // ignore
+	    ui_selected_trg_layer = encoder-2;
+	  } else {
+	    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+	    if( ((int)encoder-8) >= num_p_layers )
+	      return 0; // ignore
+	    ui_selected_par_layer = encoder-8;
+	  }
+	} else {
+	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+	  if( ((int)encoder-2) >= num_p_layers )
+	    return 0; // ignore
+	  ui_selected_par_layer = encoder-2;
+	}
+
+	if( !incrementer ) // button selection only...
+	  return 1;
+      }
+    }
+
+    if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS )
+      ui_selected_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
     s32 value_changed = 0;
     s32 forced_value = -1;
@@ -123,7 +296,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	u16 num_steps = SEQ_PAR_NumStepsGet(track);
 	u16 trg_step = (ui_selected_step & ~(num_steps-1));
-
+	
 	u16 par_step;
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
 	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || par_step == ui_selected_step || (selected_steps & (1 << (par_step % 16))) ) {
@@ -137,7 +310,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	}
       }
     }
-
+    
     return value_changed;
   }
 
@@ -164,12 +337,62 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 #endif
     if( depressed ) return 0; // ignore when button depressed
 
-    if( show_step_selection_page ) {
+    if( show_edit_config_page )
+      return Encoder_Handler(button, 0);
+
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       selected_steps ^= (1 << button);
       return 1; // value changed
     }
 
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+    if( event_mode != SEQ_EVENT_MODE_Drum &&
+	(seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
+
+      if( button == SEQ_UI_BUTTON_GP1 ) {
+	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
+	if( next_step >= (SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1) )
+	  next_step = 0;
+	ui_selected_step = next_step;
+	ui_selected_step_view = ui_selected_step / 16;
+	return 1; // value always changed
+      } else if( button == SEQ_UI_BUTTON_GP2 ) {
+	u8 trg = SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument);
+	return Encoder_Handler(button, trg ? -1 : 1);
+      } else if( button == SEQ_UI_BUTTON_GP3 ) {
+	u8 trg = SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument);
+	return Encoder_Handler(button, trg ? -1 : 1);
+      } else if( button == SEQ_UI_BUTTON_GP4 ) {
+	u8 trg = SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument);
+	return Encoder_Handler(button, trg ? -1 : 1);
+      } else if( button <= SEQ_UI_BUTTON_GP16 ) {
+	return Encoder_Handler(button, 0);
+      }
+    }
+
+
+    if( event_mode != SEQ_EVENT_MODE_Drum &&
+      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+
+      if( button == SEQ_UI_BUTTON_GP1 ) {
+	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
+	if( next_step >= (SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1) )
+	  next_step = 0;
+	ui_selected_step = next_step;
+	ui_selected_step_view = ui_selected_step / 16;
+	return 1; // value always changed
+      } else if( button == SEQ_UI_BUTTON_GP2 ||
+		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && button <= SEQ_UI_BUTTON_GP8) ) {
+	u8 trg = SEQ_TRG_Get(visible_track, ui_selected_step, (u8)button-1, ui_selected_instrument);
+	return Encoder_Handler(button, trg ? -1 : 1);
+      } else if( button <= SEQ_UI_BUTTON_GP16 ) {
+	return Encoder_Handler(button, 0);
+      }
+    }
+
     ui_selected_step = button + ui_selected_step_view*16;
+
     // toggle trigger layer
     // if seq_hwcfg_button_beh.all_with_triggers set, we've three cases:
     // a) ALL function active, but ALL button not pressed: invert complete trigger layer
@@ -180,7 +403,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u16 step = ui_selected_step;
 	u8 new_value = SEQ_TRG_Get(visible_track, step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
-
+	
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
 	  if( SEQ_UI_IsSelectedTrack(track) ) {
@@ -205,7 +428,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     } else {
       // c) ALL function not active: toggle step
       u8 track;
-
+      
       u8 new_value = SEQ_TRG_Get(visible_track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	if( SEQ_UI_IsSelectedTrack(track) ) {
@@ -213,12 +436,13 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 	}
       }
     }
+    
     return 1; // value always changed
 
   } else {
     switch( button ) {
       case SEQ_UI_BUTTON_Select:
-	show_step_selection_page = depressed ? 0 : 1;
+	show_edit_config_page = depressed ? 0 : 1;
 	return 1; // value always changed
 
       case SEQ_UI_BUTTON_Right: {
@@ -237,6 +461,9 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	if( ui_selected_step == 0 )
 	  ui_selected_step = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+	else
+	  --ui_selected_step;
+
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1; // value always changed
 
@@ -277,12 +504,40 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // G1T1 xxxxxxxxxxxxxxx  PA:Vel.   TA:Gate Step  1   G#1_ Vel:127_Len: 75%    xxxxx
   // ....
 
+  // layout edit config
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // Step Trg  Layer 303                     Step                                    
+  // View View View View                     Select                                  
+
+  // layout trigger view
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // Step Gate Acc. Roll Glide Skip R.G  R.V Note Vel. Len. Roll Note Note Note Note 
+  //   1    *    o    o    o    o    o    o  C-3  100   75% ---- E-3  G-3  ---- ---- 
+
+  // layout layer view
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // Step Gate Note Vel. Len. Roll Note Note Note Note Note Note Note Note Note Note 
+  //   1    *  C-3  100   75% ---- E-3  G-3  ---- ---- ---- ---- ---- ---- ---- ---- 
+
+  // layout 303 view
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // Step Gate Acc. Glide Oct, Key Vel. Prob  CC   CC   CC   CC   CC   CC   CC   CC  
+  //   1    *   o     o    3    C  100  100%  64   64   64   64   64   64   64   64  
+
   // layout step selection:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   //        Select the steps which should be  controlled by the ALL function:        
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
-  if( show_step_selection_page ) {
+  if( show_edit_config_page ) {
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("Step Trg  Layer 303                     Step                                    ");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString("View View View View                     Select                                  ");
+    return 0; // no error
+  }
+
+  if( !edit_mode && seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
     int step;
 
     SEQ_LCD_CursorSet(0, 0);
@@ -296,6 +551,109 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+
+  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
+      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
+    // we want to show vertical bars
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+    // maximum 10 parameter layers
+    if( num_p_layers >= 11 )
+      num_p_layers = 11;
+
+    ///////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("Step Gate Acc. Glide Oct. Key ");
+    int i;
+    for(i=1; i<num_p_layers; ++i)
+	SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
+
+    SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
+
+    ///////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintFormattedString("%3d  ", ui_selected_step+1);
+    SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
+    SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
+    SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
+
+    u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+    u8 note_octave = note / 12;
+    u8 note_key = note % 12;
+
+    SEQ_LCD_PrintFormattedString(" %2d  ", (int)note_octave-2);
+    const char note_tab[12][2] = { "C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B " };
+    SEQ_LCD_PrintFormattedString("  %c%c ", note_tab[note_key][0], note_tab[note_key][1]);
+
+    for(i=1; i<num_p_layers; ++i)
+      if( i == ui_selected_par_layer && ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(5);
+      else {
+	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0);
+	SEQ_LCD_PrintChar(' ');
+      }
+
+    SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
+
+    return 0;
+  }
+
+  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
+      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+
+    // we want to show vertical bars
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+
+    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+    u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+      // maximum 7 parameter layers due to "Step" item!
+      if( num_t_layers >= 7 )
+	num_t_layers = 7;
+
+      // maximum 8 parameter layers
+      if( num_p_layers >= 8 )
+	num_p_layers = 8;
+    } else {
+      // single trigger layer (gate)
+      num_t_layers = 1;
+
+      // maximum 14 parameter layers due to "Step" and "Gate" item!
+      if( num_p_layers >= 14 )
+	num_p_layers = 14;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("Step ");
+    int i;
+    for(i=0; i<num_t_layers; ++i)
+	SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, i));
+    for(i=0; i<num_p_layers; ++i)
+	SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
+
+    SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
+
+    ///////////////////////////////////////////////////////////////////////////
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintFormattedString("%3d  ", ui_selected_step+1);
+    for(i=0; i<num_t_layers; ++i)
+      SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) ? '*' : 'o');
+    for(i=0; i<num_p_layers; ++i)
+      if( i == ui_selected_par_layer && ui_cursor_flash )
+	SEQ_LCD_PrintSpaces(5);
+      else {
+	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0);
+	SEQ_LCD_PrintChar(' ');
+      }
+
+    SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
+
+    return 0;
+  }
 
   seq_layer_evnt_t layer_event;
   SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
@@ -540,9 +898,6 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	continue;
       }
 
-      seq_layer_evnt_t layer_event;
-      SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
-
       if( show_drum_triggers ) {
 	u8 gate_accent = SEQ_TRG_Get(visible_track, visible_step, 0, ui_selected_instrument);
 	if( SEQ_TRG_NumLayersGet(visible_track) >= 2 )
@@ -554,77 +909,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {
-	switch( layer_type ) {
-          case SEQ_PAR_Type_None:
-	    SEQ_LCD_PrintString("None");
-	    break;
-
-          case SEQ_PAR_Type_Note:
-          case SEQ_PAR_Type_Velocity:
-	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
-		SEQ_LCD_PrintArp(layer_event.midi_package.note);
-	      else
-		SEQ_LCD_PrintNote(layer_event.midi_package.note);
-	      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
-	    } else {
-	      SEQ_LCD_PrintString("----");
-	    }
-	    break;
-
-	  case SEQ_PAR_Type_Chord:
-	    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-	      u8 par_value;
-	      // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
-	      if( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) == SEQ_PAR_Type_Velocity )
-		par_value = SEQ_PAR_ChordGet(visible_track, visible_step, ui_selected_instrument);
-	      else
-		par_value = SEQ_PAR_Get(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument);
-	      u8 chord_ix = par_value & 0x1f;
-	      u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
-	      u8 chord_oct = par_value >> 5;
-	      SEQ_LCD_PrintFormattedString("%c/%d", chord_char, chord_oct);
-	      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
-	    } else {
-	      SEQ_LCD_PrintString("----");
-	    }
-	    break;
-	  
-	  //case SEQ_PAR_Type_Length:
-	  //break;
-	  // extra handling -- see code above
-
-	  case SEQ_PAR_Type_CC:
-	  case SEQ_PAR_Type_PitchBend: {
-	    if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(visible_track, step, ui_selected_instrument) ) {
-	      SEQ_LCD_PrintString("----");
-	    } else {
-	      u8 value = layer_event.midi_package.value;
-	      SEQ_LCD_PrintFormattedString("%3d", value);
-	      SEQ_LCD_PrintVBar(value >> 4);
-	    }
-	  } break;
-
-	  case SEQ_PAR_Type_Probability:
-	    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(visible_track, visible_step, ui_selected_instrument));
-	    break;
-
-	  case SEQ_PAR_Type_Delay:
-	    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(visible_track, visible_step, ui_selected_instrument));
-	    break;
-
-	  case SEQ_PAR_Type_Roll:
-	    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(visible_track, visible_step, ui_selected_instrument));
-	    break;
-
-	  case SEQ_PAR_Type_Roll2:
-	    SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(visible_track, visible_step, ui_selected_instrument));
-	    break;
-
-          default:
-	    SEQ_LCD_PrintString("????");
-	    break;
-	}
+	SEQ_LCD_PrintLayerEvent(visible_track, step, ui_selected_par_layer, ui_selected_instrument, 1);
       }
 
       if( !show_drum_triggers ) {
@@ -660,7 +945,10 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
-  show_step_selection_page = 0;
+  show_edit_config_page = 0;
+
+  if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL )
+    seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 
   return 0; // no error
 }
@@ -723,10 +1011,10 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
     else {
       // due to another issue reported by Gridracer:
       // if the track plays multiple notes, only clear gate if all notes are 0
-      u8 num_layers = SEQ_PAR_NumLayersGet(visible_track);
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
       u8 allNotesZero = 1;
       int i;
-      for(i=0; i<num_layers; ++i) {
+      for(i=0; i<num_p_layers; ++i) {
 	seq_par_layer_type_t localLayerType = SEQ_PAR_AssignmentGet(track, i);
 	if( (localLayerType == SEQ_PAR_Type_Note || localLayerType == SEQ_PAR_Type_Chord) &&
 	    SEQ_PAR_Get(track, par_step, i, ui_selected_instrument) > 0 ) {

@@ -593,7 +593,7 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
 
   if( depressed ) return -1; // ignore when button depressed
 
-  return 0; // no error
+  return SEQ_UI_BPM_TapTempo();
 }
 
 static s32 SEQ_UI_Button_ExtRestart(s32 depressed)

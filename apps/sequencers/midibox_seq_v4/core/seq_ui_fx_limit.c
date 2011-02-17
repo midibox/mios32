@@ -130,6 +130,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Left:
       if( ui_selected_item == 0 )
 	ui_selected_item = NUM_OF_ITEMS-1;
+      else
+	--ui_selected_item;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:

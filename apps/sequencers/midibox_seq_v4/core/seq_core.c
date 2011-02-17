@@ -721,7 +721,18 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
 
-            // skip if velocity has been cleared by transpose function
+            // glide trigger
+            if( e->len > 0 && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
+	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
+		e->len = 96; // Glide
+            }
+
+	    // if glided note already played: omit new note event by setting velocity to 0
+	    if( t->state.STRETCHED_GL && (last_glide_notes[p->note / 32] & (1 << (p->note % 32))) ) {
+	      p->velocity = 0;
+	    }
+  
+            // skip if velocity has been cleared by transpose or glide function
             // (e.g. no key pressed in transpose mode)
             if( p->type == NoteOn && !p->velocity ) {
 	      // stretched note, length < 96: queue off event
@@ -729,13 +740,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
 		gen_off_events = (t->step_length * e->len) / 96;
 	      continue;
 	    }
-
-  
-            // glide trigger
-            if( e->len > 0 && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
-	      if( SEQ_TRG_GlideGet(track, t->step, instrument) )
-		e->len = 96; // Glide
-            }
 
 	    // get delay of step (0..95)
 	    // note: negative delays stored in step parameters would require to pre-generate bpm_ticks, 

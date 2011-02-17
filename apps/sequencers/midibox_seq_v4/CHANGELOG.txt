@@ -9,8 +9,42 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta34
 ~~~~~~~~~~~~~~~~~~~~~
 
+   o implemented various "Edit Views".
+     Press SELECT button to select the view in EDIT screen.
+     Following views are available:
+     - Step View: you already know it
+     - Trigger View: left page allows to select the step, Gate,
+       Accent, Roll, Glide, Skip, Random Gate and Random Velocity.
+       Right Page allows to edit up to 8 parameter layers.
+     - Layer View: allows to select the step, Gate and up to 14
+       parameter layer. Especially nice for custom chord editing.
+     - 303 View: provides a 303ish interface to select the Step,
+       Gate, Accent, Glide, Octave, Note, Velocity and up to 9
+       additional parameter layers
+     - Step Select: allows to select the steps which are modified
+       by the ALL function
+
+   o glide trigger now handled (much) more 303-like
+
    o added testmode for AOUT interface connections.
      Enter "testaoutpin" in MIOS terminal for further informations
+
+   o step record function now allows to define the step incrementer (+0..16)
+     in "Record Mode" item
+
+   o BLM keyboard mode: each column plays now an assigned drum instrument
+
+   o new BLM entry mode 303:
+     - first row selects accent
+     - second row selects glide
+     - third and fourth row select octave (4 different selections)
+     - remaining rows select key of octave and set/clear gate
+
+   o new session now initialized correctly after "SaveAs..."
+
+   o optional "Tap Tempo" button is working now
+
+   o optional "Left" button is working now in all menu pages
 
 
 MIDIboxSEQ V4.0beta33

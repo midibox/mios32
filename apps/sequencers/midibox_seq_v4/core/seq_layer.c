@@ -263,11 +263,13 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     u8 gate = SEQ_TRG_GateGet(track, step, instrument);
     u8 velocity = 100; // default velocity
     if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
-      velocity = gate ? SEQ_PAR_Get(track, step, par_layer, instrument) : 0;
+      velocity = SEQ_PAR_Get(track, step, par_layer, instrument);
+      if( !insert_empty_notes && !gate )
+	velocity = 0;
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = velocity | 0x80;
     } else {
-      if( !gate )
+      if( !insert_empty_notes && !gate )
 	velocity = 0;
     }
 

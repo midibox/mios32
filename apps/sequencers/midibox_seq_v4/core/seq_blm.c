@@ -74,6 +74,7 @@ typedef enum {
   BLM_MODE_TRACKS,
   BLM_MODE_PATTERNS,
   BLM_MODE_KEYBOARD,
+  BLM_MODE_303,
 } blm_mode_t;
 
 
@@ -1015,6 +1016,7 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 depressed)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 play_note = 0;
 #if SEQ_BLM_KEYBOARD_INVERTED
   // inverted velocity (piano like)
@@ -1030,26 +1032,42 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
       play_note = 1;
     }
   } else {
-    u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
-    u8 scale, root_selection, root;
-    SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-
     u8 note_start;
     u8 note_next;
-    if( use_scale ) {
-      // determine matching note range in scale
-      note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode      
-      note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
-      note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
-      int i;
-      for(i=0; i<button_column; ++i) {
-	note_start = note_next;
-	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      // each instrument assigned to a button
+      u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track); // we assume, that PAR layer has same number of instruments!
+      if( button_column < num_instruments ) {
+	ui_selected_instrument = button_column;
+
+	if( (note_start=SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument)) ) {
+	  play_note = 1;
+	  seq_layer_vu_meter[ui_selected_instrument] = velocity;
+	}
       }
     } else {
-      note_start = 0x3c-8 + 15-button_column; // E-2 ..
-      note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
-      note_next = note_start;
+      u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+      u8 scale, root_selection, root;
+      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+
+      if( use_scale ) {
+	// determine matching note range in scale
+	note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode      
+	note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
+	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+	int i;
+	for(i=0; i<button_column; ++i) {
+	  note_start = note_next;
+	  note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+	}
+      } else {
+	note_start = 0x3c-8 + 15-button_column; // E-2 ..
+	note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
+	note_next = note_start;
+      }
+
+      play_note = 1;
     }
 
     // play off event if note still active (e.g. different velocity of same note played)
@@ -1059,15 +1077,17 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 			     blm_keyboard_chn[button_column],
 			     blm_keyboard_note[button_column],
 			     0x00);
+      blm_keyboard_velocity[button_column] = 0x00; // to notify that note-off has been played
       MUTEX_MIDIOUT_GIVE;
     }
     
     // set new port/channel/note/velocity
-    blm_keyboard_port[button_column] = seq_cc_trk[visible_track].midi_port;
-    blm_keyboard_chn[button_column] = seq_cc_trk[visible_track].midi_chn;
-    blm_keyboard_note[button_column] = note_start;
-    blm_keyboard_velocity[button_column] = velocity;
-    play_note = 1;
+    if( play_note ) {
+      blm_keyboard_port[button_column] = seq_cc_trk[visible_track].midi_port;
+      blm_keyboard_chn[button_column] = seq_cc_trk[visible_track].midi_chn;
+      blm_keyboard_note[button_column] = note_start;
+      blm_keyboard_velocity[button_column] = velocity;
+    }
   }
 
   if( play_note ) {
@@ -1108,6 +1128,174 @@ static s32 SEQ_BLM_KeyboardAllNotesOff(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// LED Update/Button Handler for 303 Mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_BLM_LED_Update303Mode(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+  // drums are handled like in grid mode
+  if( event_mode == SEQ_EVENT_MODE_Drum )
+    return SEQ_BLM_LED_UpdateGridMode();
+
+  ///////////////////////////////////////////////////////////////////////////
+  // green LEDs: display pattern
+  // red LEDs: display accent, slide and octave
+  ///////////////////////////////////////////////////////////////////////////
+  blm_leds_rotate_view = 1;
+
+  u8 instrument = 0;
+  u8 par_layer = 0; // always take from first layer
+  int step = 16*ui_selected_step_view;
+  int i;
+  for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i, ++step) {
+    u16 red_pattern = 0;
+    u16 green_pattern = 0;
+
+    if( SEQ_TRG_AccentGet(visible_track, step, instrument) ) {
+      red_pattern |= (1 << 0);
+    }
+
+    if( SEQ_TRG_GlideGet(visible_track, step, instrument) ) {
+      red_pattern |= (1 << 1);
+    }
+
+    u8 note = SEQ_PAR_Get(visible_track, step, par_layer, instrument);
+    u8 note_octave = note / 12;
+    u8 note_key = note % 12;
+
+    if( note_octave <= 3 )
+      red_pattern |= (0 << 2);
+    else if( note_octave <= 4 )
+      red_pattern |= (2 << 2);
+    else if( note_octave <= 5 )
+      red_pattern |= (1 << 2);
+    else
+      red_pattern |= (3 << 2);
+    
+    if( SEQ_TRG_GateGet(visible_track, step, instrument) ) {
+      green_pattern |= (1 << (SEQ_BLM_NUM_COLUMNS-1-note_key));
+    }
+
+    blm_leds_red[i] = red_pattern;
+    blm_leds_green[i] = green_pattern;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  // red LEDs: display position marker
+  ///////////////////////////////////////////////////////////////////////////
+  u8 sequencer_running = SEQ_BPM_IsRunning();
+  if( sequencer_running ) {
+    int played_step = seq_core_trk[visible_track].step;
+    int step_in_view = played_step % 16;
+    if( (played_step / 16) == ui_selected_step_view ) {
+      if( blm_leds_rotate_view ) {
+	blm_leds_red[step_in_view] = 0xffff;
+	blm_leds_green[step_in_view] = 0x0000; // disable green LEDs
+      } else {
+	u16 mask = 1 << step_in_view;
+	for(i=0; i<SEQ_BLM_NUM_ROWS; ++i) {
+	  blm_leds_red[i] ^= mask;
+	  blm_leds_green[i] &= ~mask; // disable green LEDs
+	}
+      }
+    }
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // extra LEDs
+  ///////////////////////////////////////////////////////////////////////////
+  if( !blm_shift_active ) {
+    blm_leds_extracolumn_green = ui_selected_tracks;
+    blm_leds_extracolumn_red = seq_core_trk_muted;
+
+    int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+    if( num_steps > 128 )
+      blm_leds_extrarow_green = 1 << ui_selected_step_view;
+    else if( num_steps > 64 )
+      blm_leds_extrarow_green = 3 << (2*ui_selected_step_view);
+    else
+      blm_leds_extrarow_green = 15 << (4*ui_selected_step_view);
+
+    u8 played_step_view = (seq_core_trk[visible_track].step / 16);
+    if( num_steps > 128 )
+      blm_leds_extrarow_red = 1 << played_step_view;
+    else if( num_steps > 64 )
+      blm_leds_extrarow_red = 3 << (2*played_step_view);
+    else
+      blm_leds_extrarow_red = 15 << (4*played_step_view);
+  } else {
+    blm_leds_extracolumn_green = 0x0000;
+    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  }
+
+  return 0; // no error
+}
+
+static s32 SEQ_BLM_BUTTON_GP_303Mode(u8 button_row, u8 button_column, u8 depressed)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+  // drums are handled like in grid mode
+  if( event_mode == SEQ_EVENT_MODE_Drum )
+    return SEQ_BLM_BUTTON_GP_GridMode(button_row, button_column, depressed);
+
+  if( depressed ) // ignore depressed key
+    return 0;
+
+  u8 instrument = 0;
+  u8 par_layer = 0; // always take from first layer
+  ui_selected_step = 16*ui_selected_step_view + button_column;
+
+  if( button_row == 0 ) {
+    u8 accent = SEQ_TRG_AccentGet(visible_track, ui_selected_step, instrument);
+    SEQ_TRG_AccentSet(visible_track, ui_selected_step, instrument, accent ? 0 : 1);
+  } else if( button_row == 1 ) {
+    u8 glide = SEQ_TRG_GlideGet(visible_track, ui_selected_step, instrument);
+    SEQ_TRG_GlideSet(visible_track, ui_selected_step, instrument, glide ? 0 : 1);
+  } else if( button_row <= 3 ) {
+    u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, par_layer, instrument);
+    u8 note_key = note % 12;
+    u8 note_octave = note / 12;
+
+    // bit tricks
+    int osel = note_octave - 3;
+    if( osel < 0 ) osel = 0; else if( osel > 3 ) osel = 3;
+    if( button_row == 2 )
+      osel ^= 2;
+    else
+      osel ^= 1;
+
+    note_octave = osel + 3;
+    note = 12*note_octave + note_key;
+    SEQ_PAR_Set(visible_track, ui_selected_step, par_layer, instrument, note);
+  } else {
+    u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, par_layer, instrument);
+    u8 note_key = (16 - 1 - button_row);
+
+    if( SEQ_TRG_GateGet(visible_track, ui_selected_step, instrument) && (note % 12) == note_key ) {
+      // clear gate
+      SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 0);
+    } else {
+      // set gate and note new note
+      SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 1);
+
+      u8 note_octave = note / 12;
+      note = 12*note_octave + note_key;
+      SEQ_PAR_Set(visible_track, ui_selected_step, par_layer, instrument, note);
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // LED update routine of BLM
 // periodically called from low-prio task
 //
@@ -1137,6 +1325,10 @@ s32 SEQ_BLM_LED_Update(void)
 
     case BLM_MODE_KEYBOARD:
       SEQ_BLM_LED_UpdateKeyboardMode();
+      break;
+
+    case BLM_MODE_303:
+      SEQ_BLM_LED_Update303Mode();
       break;
 
     default: // BLM_MODE_TRACKS
@@ -1287,7 +1479,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
     if( midi_package.note < SEQ_BLM_NUM_COLUMNS ) {
       // change display view if required
-      if( blm_mode == BLM_MODE_TRACKS || blm_mode == BLM_MODE_GRID ) {
+      if( blm_mode == BLM_MODE_TRACKS || blm_mode == BLM_MODE_GRID || blm_mode == BLM_MODE_303 ) {
 	if( blm_num_columns <= 16 ) {
 	  // don't change view
 	} else if( blm_num_columns <= 32 ) {
@@ -1333,6 +1525,10 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
       case BLM_MODE_KEYBOARD:
 	SEQ_BLM_BUTTON_GP_KeyboardMode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
+	break;
+
+      case BLM_MODE_303:
+	SEQ_BLM_BUTTON_GP_303Mode(midi_package.chn, midi_package.note, midi_package.velocity ? 0 : 1);
 	break;
 
       default: // BLM_MODE_TRACKS
@@ -1439,6 +1635,11 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
 	  case 0xc:
 	    blm_mode = BLM_MODE_KEYBOARD;
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
+
+	  case 0xb:
+	    blm_mode = BLM_MODE_303;
 	    blm_force_update = 1;	
 	    return 1; // MIDI event has been taken
 	  }
