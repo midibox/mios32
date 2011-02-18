@@ -268,10 +268,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // due to historical reasons (from old times where MBSEQ CS was stuffed with pots): 
     // in arp mode, we increment in steps of 4
+    u8 par_type = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
     if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator &&
-	SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) == SEQ_PAR_Type_Note )
+	par_type == SEQ_PAR_Type_Note )
       incrementer *= 4;
-
 
     // first change the selected value
     if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
@@ -842,8 +842,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       u16 visible_step = step + 16*ui_selected_step_view;
       SEQ_LAYER_GetEvntOfLayer(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
+      u8 gate = SEQ_TRG_GateGet(visible_track, visible_step, ui_selected_instrument);
+
       // muted step? if previous gatelength <= 96, print spaces
-      if( !layer_event.midi_package.velocity && previous_length < 96 ) {
+      if( (!gate || !layer_event.midi_package.velocity) && previous_length < 96 ) {
 	SEQ_LCD_PrintSpaces(5);
       } else {
 	if( layer_event.len >= 96 )
@@ -851,7 +853,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	else
 	  SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/100);
       }
-      previous_length = (layer_event.midi_package.velocity || (previous_length >= 96 && layer_event.len >= 96)) ? layer_event.len : 0;
+      previous_length = ((gate && layer_event.midi_package.velocity) || (previous_length >= 96 && layer_event.len >= 96)) ? layer_event.len : 0;
     }
 
   } else {
@@ -909,7 +911,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {
-	SEQ_LCD_PrintLayerEvent(visible_track, step, ui_selected_par_layer, ui_selected_instrument, 1);
+	SEQ_LCD_PrintLayerEvent(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, 1);
       }
 
       if( !show_drum_triggers ) {
@@ -997,6 +999,12 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   else if( new_value >= 128 )
     new_value = 127;
 	    
+  // extra for more comfortable editing of multi-note tracks:
+  // if assigned parameter layer is Note or Chord, and currently 0, re-start at C-3 resp. A/2
+  // when value is incremented
+  if( incrementer > 0 && forced_value < 0 && old_value == 0x00 && (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord) )
+    new_value = (layer_type == SEQ_PAR_Type_Note && SEQ_CC_Get(track, SEQ_CC_MODE) != SEQ_CORE_TRKMODE_Arpeggiator) ? 0x3c : 0x40;
+
   // take over if changed
   if( new_value == old_value )
     return -1;

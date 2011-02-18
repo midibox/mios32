@@ -346,39 +346,41 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  u8 chord_value = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  int i;
 
-	  seq_layer_evnt_t e_proto;
-	  mios32_midi_package_t *p_proto = &e_proto.midi_package;
-	  p_proto->type     = NoteOn;
-	  p_proto->cable    = track;
-	  p_proto->event    = NoteOn;
-	  p_proto->chn      = tcc->midi_chn;
-	  p_proto->note     = chord_value; // we will determine the note value later
-	  p_proto->velocity = velocity;
-	  e_proto.len      = length;
-	  e_proto.layer_tag = par_layer;
+	  if( chord_value || insert_empty_notes ) {
+	    seq_layer_evnt_t e_proto;
+	    mios32_midi_package_t *p_proto = &e_proto.midi_package;
+	    p_proto->type     = NoteOn;
+	    p_proto->cable    = track;
+	    p_proto->event    = NoteOn;
+	    p_proto->chn      = tcc->midi_chn;
+	    p_proto->note     = chord_value; // we will determine the note value later
+	    p_proto->velocity = velocity;
+	    e_proto.len      = length;
+	    e_proto.layer_tag = par_layer;
 
-	  // morph chord value like a note (-> nice effect!)
-	  if( !insert_empty_notes && velocity && tcc->morph_mode ) {
-	    SEQ_MORPH_EventNote(track, step, &e_proto, instrument, par_layer, tcc->link_par_layer_velocity, tcc->link_par_layer_length);
-	    chord_value = e_proto.midi_package.note; // chord value has been morphed!
-	  }
+	    // morph chord value like a note (-> nice effect!)
+	    if( !insert_empty_notes && velocity && tcc->morph_mode ) {
+	      SEQ_MORPH_EventNote(track, step, &e_proto, instrument, par_layer, tcc->link_par_layer_velocity, tcc->link_par_layer_length);
+	      chord_value = e_proto.midi_package.note; // chord value has been morphed!
+	    }
 
-	  for(i=0; i<4; ++i) {
-	    if( num_events >= 16 )
-	      break;
+	    for(i=0; i<4; ++i) {
+	      if( num_events >= 16 )
+		break;
 
-	    s32 note = SEQ_CHORD_NoteGet(i, chord_value);
+	      s32 note = SEQ_CHORD_NoteGet(i, chord_value);
 
-	    if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
-	      note = 0;
+	      if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
+		note = 0;
 
-	    if( note < 0 )
-	      break;
+	      if( note < 0 )
+		break;
 
-	    seq_layer_evnt_t *e = &layer_events[num_events];
-	    *e = e_proto;
-	    e->midi_package.note = note;
-	    ++num_events;
+	      seq_layer_evnt_t *e = &layer_events[num_events];
+	      *e = e_proto;
+	      e->midi_package.note = note;
+	      ++num_events;
+	    }
 	  }
 
 	  if( handle_vu_meter && velocity )
