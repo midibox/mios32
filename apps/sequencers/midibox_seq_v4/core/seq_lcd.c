@@ -696,14 +696,15 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     }
     break;
 
-  case SEQ_PAR_Type_Chord:
-    if( layer_event.midi_package.note && layer_event.midi_package.velocity ) {
-      u8 par_value;
-      // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
-      if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
-	par_value = SEQ_PAR_ChordGet(track, step, instrument);
-      else
-	par_value = SEQ_PAR_Get(track, step, par_layer, instrument);
+  case SEQ_PAR_Type_Chord: {
+    u8 par_value;
+    // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
+    if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
+      par_value = SEQ_PAR_ChordGet(track, step, instrument);
+    else
+      par_value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+    if( par_value && SEQ_TRG_GateGet(track, step, instrument) ) {
       u8 chord_ix = par_value & 0x1f;
       u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
       u8 chord_oct = par_value >> 5;
@@ -712,7 +713,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     } else {
       SEQ_LCD_PrintString("----");
     }
-    break;
+  } break;
 	  
   case SEQ_PAR_Type_Length:
     SEQ_LCD_PrintGatelength(layer_event.len);

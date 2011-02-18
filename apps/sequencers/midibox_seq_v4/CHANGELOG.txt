@@ -6,6 +6,18 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta35
+~~~~~~~~~~~~~~~~~~~~~
+
+   o bugfix: step view displays steps >= 17 correctly again
+
+   o bugfix: step length displayed correctly again in "step view"
+
+   o new feature for more comfortable editing of multi-note tracks:
+     if assigned parameter layer is Note or Chord, and currently 0, re-start at C-3 resp. A/2
+     when value is incremented
+
+
 MIDIboxSEQ V4.0beta34
 ~~~~~~~~~~~~~~~~~~~~~
 
