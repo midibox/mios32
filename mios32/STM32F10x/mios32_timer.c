@@ -199,7 +199,7 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 //! Interrupt handlers
 //! \note don't call them directly from application
 /////////////////////////////////////////////////////////////////////////////
-TIMER0_IRQ_HANDLER
+__attribute__ ((weak)) TIMER0_IRQ_HANDLER
 {
   if( TIM_GetITStatus(TIMER0_BASE, TIM_IT_Update) != RESET ) {
     TIM_ClearITPendingBit(TIMER0_BASE, TIM_IT_Update);
@@ -207,7 +207,7 @@ TIMER0_IRQ_HANDLER
   }
 }
 
-TIMER1_IRQ_HANDLER
+__attribute__ ((weak)) TIMER1_IRQ_HANDLER
 {
   if( TIM_GetITStatus(TIMER1_BASE, TIM_IT_Update) != RESET ) {
     TIM_ClearITPendingBit(TIMER1_BASE, TIM_IT_Update);
@@ -215,7 +215,7 @@ TIMER1_IRQ_HANDLER
   }
 }
 
-TIMER2_IRQ_HANDLER
+__attribute__ ((weak)) TIMER2_IRQ_HANDLER
 {
   if( TIM_GetITStatus(TIMER2_BASE, TIM_IT_Update) != RESET ) {
     TIM_ClearITPendingBit(TIMER2_BASE, TIM_IT_Update);
