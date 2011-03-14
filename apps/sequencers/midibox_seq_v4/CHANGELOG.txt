@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta36
+~~~~~~~~~~~~~~~~~~~~~
+
+   o The metronome function considers the "steps per measure" correctly now
+
+   o received MIDI song position command sets the track positions correctly
+     now - this is important when MBSEQ is controlled by a clock master.
+     E.g. Logic Studio sends startpoint-1 when the sequencer continues
+     in a loop
+
+
 MIDIboxSEQ V4.0beta35
 ~~~~~~~~~~~~~~~~~~~~~
 

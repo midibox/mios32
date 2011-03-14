@@ -360,6 +360,10 @@ into your local mios32_config.h file
 #define MIOS32_DELAY_TIMER  TIM1
 #define MIOS32_DELAY_TIMER_RCC RCC_APB1Periph_TIM1
 
+// optional to disable timer IRQ handlers in mios32_timer.c
+#define MIOS32_DONT_ALLOCATE_TIM2_IRQn
+#define MIOS32_DONT_ALLOCATE_TIM3_IRQn
+#define MIOS32_DONT_ALLOCATE_TIM5_IRQn
 
 
 // Which SPI peripheral should be used to access SDCard

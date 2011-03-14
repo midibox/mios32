@@ -80,7 +80,7 @@ s32 SEQ_SONG_Init(u32 mode)
   something_has_been_changed = 0;
 
   // reset the song sequencer
-  SEQ_SONG_Reset();
+  SEQ_SONG_Reset(0);
 
   return 0; // no error
 }
@@ -209,8 +209,10 @@ s32 SEQ_SONG_LoopCtrMaxGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // reset the song sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_SONG_Reset(void)
+s32 SEQ_SONG_Reset(u32 bpm_start)
 {
+  // TODO: take bpm_start into account!
+
   // reset song position and loop counter
   song_pos = 0;
   song_loop_ctr = 0;
@@ -424,7 +426,7 @@ s32 SEQ_SONG_Fwd(void)
   u32 measure = bpm_tick / ticks_per_pattern;
   u32 next_bpm_tick = (measure+1) * ticks_per_pattern;
 
-  SEQ_CORE_Reset();
+  SEQ_CORE_Reset(next_bpm_tick);
   SEQ_SONG_NextPos();
   SEQ_BPM_TickSet(next_bpm_tick);
 
@@ -441,7 +443,7 @@ s32 SEQ_SONG_Rew(void)
   u32 measure = bpm_tick / ticks_per_pattern;
   u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_pattern) : 0;
 
-  SEQ_CORE_Reset();
+  SEQ_CORE_Reset(next_bpm_tick);
   SEQ_SONG_PrevPos();
   SEQ_BPM_TickSet(next_bpm_tick);
 

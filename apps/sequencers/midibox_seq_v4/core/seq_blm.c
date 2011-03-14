@@ -1579,8 +1579,8 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	    if( SEQ_BPM_IsRunning() )
 	      SEQ_BPM_Stop();
 	    else {
-	      SEQ_SONG_Reset();
-	      SEQ_CORE_Reset();
+	      SEQ_SONG_Reset(0);
+	      SEQ_CORE_Reset(0);
 	      SEQ_MIDPLY_Reset();
 	    }
 	    return 1; // MIDI event has been taken

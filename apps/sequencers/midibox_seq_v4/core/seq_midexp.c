@@ -298,8 +298,8 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 
   // stop sequencer
   SEQ_BPM_Stop();
-  SEQ_SONG_Reset();
-  SEQ_CORE_Reset();
+  SEQ_SONG_Reset(0);
+  SEQ_CORE_Reset(0);
   SEQ_MIDPLY_Reset();
   SEQ_MIDPLY_DisableFile(); // ensure that MIDI file won't be played in parallel... just disable it
 
@@ -331,8 +331,8 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 #endif
 
     // reset sequencer
-    SEQ_SONG_Reset();
-    SEQ_CORE_Reset();
+    SEQ_SONG_Reset(0);
+    SEQ_CORE_Reset(0);
 
     // open file again
     if( (status=SEQ_FILE_WriteOpen(path, 0)) < 0 ) {
@@ -379,7 +379,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     // start export of selected track
     for(export_tick=0; export_tick < number_ticks; ++export_tick) {
       // propagate tick
-      SEQ_CORE_Tick(export_tick, export_track);
+      SEQ_CORE_Tick(export_tick, export_track, 0);
 
       // load new songpos/pattern if reference step reached measure
       if( seq_core_state.ref_step == seq_core_steps_per_pattern && (export_tick % 96) == 20 ) {

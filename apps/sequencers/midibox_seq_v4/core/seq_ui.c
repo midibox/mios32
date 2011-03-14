@@ -413,8 +413,8 @@ s32 SEQ_UI_Button_Stop(s32 depressed)
   if( SEQ_BPM_IsRunning() )
     SEQ_BPM_Stop();
   else {
-    SEQ_SONG_Reset();
-    SEQ_CORE_Reset();
+    SEQ_SONG_Reset(0);
+    SEQ_CORE_Reset(0);
     SEQ_MIDPLY_Reset();
   }
 

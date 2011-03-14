@@ -417,7 +417,7 @@ s32 SEQ_MIDPLY_SongPos(u16 new_song_pos, u8 from_midi)
   }
 
   // calculate tick based on MIDI file ppqn
-  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
+  u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
   new_tick = (MIDI_PARSER_PPQN_Get() * new_tick) / 384;
 
   if( loop_range )

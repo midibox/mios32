@@ -180,9 +180,9 @@ typedef enum {
 
 extern s32 SEQ_CORE_Init(u32 mode);
 
-extern s32 SEQ_CORE_Reset(void);
+extern s32 SEQ_CORE_Reset(u32 bpm_start);
 extern s32 SEQ_CORE_PlayOffEvents(void);
-extern s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track);
+extern s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks);
 
 extern s32 SEQ_CORE_Handler(void);
 

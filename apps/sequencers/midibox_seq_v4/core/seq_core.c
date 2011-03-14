@@ -216,7 +216,7 @@ s32 SEQ_CORE_Init(u32 mode)
   }
 
   // reset sequencer
-  SEQ_CORE_Reset();
+  SEQ_CORE_Reset(0);
 
   // reset MIDI player
   SEQ_MIDPLY_Reset();
@@ -264,18 +264,28 @@ s32 SEQ_CORE_Handler(void)
 
     if( SEQ_BPM_ChkReqStart() ) {
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
-      SEQ_SONG_Reset();
-      SEQ_CORE_Reset();
+      SEQ_SONG_Reset(0);
+      SEQ_CORE_Reset(0);
       SEQ_MIDPLY_Reset();
     }
 
     u16 new_song_pos;
     if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
-      SEQ_CORE_Reset();
-      SEQ_SONG_Reset();
+      u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
+      SEQ_CORE_Reset(new_tick);
+      SEQ_SONG_Reset(new_tick);
 
-      // TODO: set new song position
-
+#if 0
+      // fast forward to new song position
+      if( new_tick ) {
+	u32 bpm_tick;
+	for(bpm_tick=0; bpm_tick<=new_tick; bpm_tick+=24) {
+	  SEQ_BPM_TickSet(bpm_tick);
+	  SEQ_CORE_Tick(bpm_tick, -1, 1); // mute all non-loopback tracks
+	}
+	SEQ_BPM_TickSet(new_tick);
+      }
+#endif
       SEQ_MIDPLY_SongPos(new_song_pos, 1);
     }
 
@@ -316,7 +326,7 @@ s32 SEQ_CORE_Handler(void)
 #endif
 
 	  // generate MIDI events
-	  SEQ_CORE_Tick(bpm_tick, -1);
+	  SEQ_CORE_Tick(bpm_tick, -1, 0);
 	  SEQ_MIDPLY_Tick(bpm_tick);
 
 #if LED_PERFORMANCE_MEASURING == 1
@@ -377,7 +387,7 @@ s32 SEQ_CORE_PlayOffEvents(void)
 /////////////////////////////////////////////////////////////////////////////
 // Resets song position of sequencer
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Reset(void)
+s32 SEQ_CORE_Reset(u32 bpm_start)
 {
   ui_seq_pause = 0;
   seq_core_state.FIRST_CLK = 1;
@@ -388,6 +398,25 @@ s32 SEQ_CORE_Reset(void)
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
     t->state.ALL = 0;
     SEQ_CORE_ResetTrkPos(track, t, tcc);
+
+    // add track offset depending on start position
+    if( bpm_start ) {
+#if 0
+      u32 step_length = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+#else
+      // leads to bad result with Logic Audio: it starts one step earlier and assumes 16th steps!
+      u32 step_length = 96;
+#endif
+      u8 pos_step = (u8)((bpm_start / step_length) % ((u32)tcc->length+1));
+
+      // next part depends on forward/backward direction
+      if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
+	t->step = tcc->length - pos_step;
+      } else {
+	t->step = pos_step;
+      }
+    }
+
     SEQ_RECORD_Reset(track);
   }
 
@@ -395,8 +424,8 @@ s32 SEQ_CORE_Reset(void)
   // (otherwise they will be played much later...)
   SEQ_CORE_PlayOffEvents();
 
-  // reset BPM tick
-  SEQ_BPM_TickSet(0);
+  // set BPM tick
+  SEQ_BPM_TickSet(bpm_start);
 
   // cancel prefetch requests/counter
   bpm_tick_prefetch_req = 0;
@@ -404,6 +433,9 @@ s32 SEQ_CORE_Reset(void)
 
   // cancel stop request
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
+
+  // reset reference step
+  seq_core_state.ref_step = (u8)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
 
   return 0; // no error
 }
@@ -414,8 +446,10 @@ s32 SEQ_CORE_Reset(void)
 // if "export_track" is -1, all tracks will be played
 // if "export_track" is between 0 and 15, only the given track + all loopback
 //   tracks will be played (for MIDI file export)
+// if "mute_nonloopback_tracks" is set, the "normal" tracks won't be played
+// this option is used for the "fast forward" function on song position changes
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
+s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 {
   // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
   seq_midply_mode_t midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
@@ -425,12 +459,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
   u8 synch_to_measure_req = 0;
   if( (bpm_tick % (384/4)) == 0 &&
       (seq_core_state.FIRST_CLK || ++seq_core_state.ref_step > seq_core_steps_per_measure) ) {
-    seq_core_state.ref_step = 0;
+    if( !seq_core_state.FIRST_CLK )
+      seq_core_state.ref_step = 0;
     synch_to_measure_req = 1;
   }
 
-  // if no export:
-  if( export_track == -1 ) {
+  // if no export and no mute:
+  if( export_track == -1 && !mute_nonloopback_tracks ) {
     // send FA if external restart has been requested
     if( seq_core_state.EXT_RESTART_REQ && synch_to_measure_req ) {
       seq_core_state.EXT_RESTART_REQ = 0; // remove request
@@ -453,7 +488,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
     }
 
     // send metronome tick on each beat if enabled
-    if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 384) == 0 ) {
+    if( seq_core_state.METRONOME && seq_core_metronome_chn && (bpm_tick % 96) == 0 && (seq_core_state.ref_step % 4) == 0 ) {
       mios32_midi_package_t p;
 
       p.type     = NoteOn;
@@ -464,7 +499,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
       p.velocity = 96;
       u16 len = 20; // ca. 25% of a 16th
 
-      if( synch_to_measure_req ) {
+      if( seq_core_state.ref_step == 0 ) {
 	if( seq_core_metronome_note_m )
 	  p.note = seq_core_metronome_note_m; // if this note isn't defined, use B note instead
 	p.velocity = 127;
@@ -643,12 +678,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track)
         // solo function: don't play MIDI event if track not selected
         // mute function
         // track disabled
+	// mute for non-loopback tracks activated
 	// MIDI player in exclusive mode
 	// Record Mode, new step and FWD_MIDI off
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
 	    (seq_core_trk_muted & (1 << track)) || // Track Mute function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
+	    (round && mute_nonloopback_tracks) || // all non-loopback tracks should be muted
 	    midply_solo || // MIDI player in exclusive mode
 	    skip_this_step ) { // Record Mode, new step and FWD_MIDI off
 

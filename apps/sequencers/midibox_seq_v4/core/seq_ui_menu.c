@@ -854,8 +854,8 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     // stop sequencer if it is still running
     if( SEQ_BPM_IsRunning() )
       SEQ_BPM_Stop();
-    SEQ_SONG_Reset();
-    SEQ_CORE_Reset();
+    SEQ_SONG_Reset(0);
+    SEQ_CORE_Reset(0);
     SEQ_MIDPLY_Reset();
 
     // clear all patterns/etc.. to have a clean start
