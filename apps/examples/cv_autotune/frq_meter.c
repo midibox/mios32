@@ -167,7 +167,7 @@ void TIM2_IRQHandler(void)
     u16 cap1 = TIM_GetCapture1(TIM2); // this will clear the CC1 flag
     //u16 cap2 = TIM_GetCapture2(TIM2); // this will clear the CC2 flag
 
-    // overcaptured? (means: register not read early enough, will happen at frequencies > 1 kHz)
+    // overcaptured? (means: register not read early enough, will happen at frequencies > 20 kHz)
     // SR should be read after Capture1 read
     if( TIM2->SR & TIM_FLAG_CC1OF ) {
       TIM2->SR = ~TIM_FLAG_CC1OF;

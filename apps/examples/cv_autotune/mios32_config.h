@@ -14,4 +14,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "CV Autotune"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
+// ensure that TIM2_IRQn handler not allocated by MIOS32 (used in frq_meter.c)
+#define MIOS32_DONT_ALLOCATE_TIM2_IRQn 1
+
 #endif /* _MIOS32_CONFIG_H */
