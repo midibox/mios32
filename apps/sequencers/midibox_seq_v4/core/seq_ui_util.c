@@ -618,10 +618,10 @@ static s32 PASTE_Track(u8 track)
   int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_layers = SEQ_PAR_NumLayersGet(track);
   int num_steps = SEQ_PAR_NumStepsGet(track);
-  for(instrument=0; instrument<num_instruments; ++instrument) {
-    for(layer=0; layer<num_layers; ++layer) {
+  for(instrument=0; instrument<num_instruments && instrument < copypaste_num_instruments; ++instrument) {
+    for(layer=0; layer<num_layers && layer<copypaste_par_layers; ++layer) {
       int step_offset = ui_selected_step;
-      for(step=step_begin; step<=step_end; ++step, ++step_offset) {
+      for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
 	if( step_offset < num_steps ) {
 	  u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + layer * copypaste_par_steps + step;
 	  SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
@@ -633,10 +633,10 @@ static s32 PASTE_Track(u8 track)
   num_instruments = SEQ_TRG_NumInstrumentsGet(track);
   num_layers = SEQ_TRG_NumLayersGet(track);
   num_steps = SEQ_TRG_NumStepsGet(track);
-  for(instrument=0; instrument<num_instruments; ++instrument) {
-    for(layer=0; layer<num_layers; ++layer) {
+  for(instrument=0; instrument<num_instruments && instrument < copypaste_num_instruments; ++instrument) {
+    for(layer=0; layer<num_layers && layer<copypaste_trg_layers; ++layer) {
       int step_offset = ui_selected_step;
-      for(step=step_begin; step<=step_end; ++step, ++step_offset) {
+      for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
 	if( step_offset < num_steps ) {
 	  u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
 	  u8 step_mask = (1 << (step&7));
