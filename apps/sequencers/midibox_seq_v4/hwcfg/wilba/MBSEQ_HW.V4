@@ -48,6 +48,11 @@ GP_DOUT_R_SR    4
 GP_DOUT_L2_SR  0
 GP_DOUT_R2_SR  0
 
+# OPTIONAL: individual track LEDs can optionally be assigned to SRs:
+# they correspond with the BUTTON_DIRECT_TRACK* buttons
+TRACKS_DOUT_L_SR 0
+TRACKS_DOUT_R_SR 0
+
 # sets the debounce delay for low-quality buttons in mS
 # use low values for high quality buttons - this ensures best latency.
 # use higher values for lower quality buttons.
@@ -338,6 +343,26 @@ BUTTON_GROUP1  24   6
 BUTTON_GROUP2  24   7
 BUTTON_GROUP3  22   6
 BUTTON_GROUP4  22   7
+
+# alternative (individual) track selection buttons
+# LEDs have to be assigned to TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR
+#                     SR  Pin
+BUTTON_DIRECT_TRACK1   0   0
+BUTTON_DIRECT_TRACK2   0   0
+BUTTON_DIRECT_TRACK3   0   0
+BUTTON_DIRECT_TRACK4   0   0
+BUTTON_DIRECT_TRACK5   0   0
+BUTTON_DIRECT_TRACK6   0   0
+BUTTON_DIRECT_TRACK7   0   0
+BUTTON_DIRECT_TRACK8   0   0
+BUTTON_DIRECT_TRACK9   0   0
+BUTTON_DIRECT_TRACK10  0   0
+BUTTON_DIRECT_TRACK11  0   0
+BUTTON_DIRECT_TRACK12  0   0
+BUTTON_DIRECT_TRACK13  0   0
+BUTTON_DIRECT_TRACK14  0   0
+BUTTON_DIRECT_TRACK15  0   0
+BUTTON_DIRECT_TRACK16  0   0
 
 #                   SR  Pin
 BUTTON_TRG_LAYER_A  18   6

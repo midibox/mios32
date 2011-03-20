@@ -1099,6 +1099,33 @@ static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 track_button)
+{
+  static u16 button_state = 0xffff; // all 16 buttons depressed
+
+  if( track_button >= 16 ) return -2; // max. 16 direct track buttons
+
+  if( depressed ) {
+    button_state |= (1 << track_button);
+    return 0; // no error
+  }
+
+  button_state &= ~(1 << track_button);
+
+  if( button_state == (~(1 << track_button) & 0xffff) ) {
+    // if only one select button pressed: radio-button function (1 of 16)
+    ui_selected_tracks = 1 << track_button;
+  } else {
+    // if more than one select button pressed: toggle function (16 of 16)
+    ui_selected_tracks ^= 1 << track_button;
+  }
+
+  // set/clear encoder fast function if required
+  SEQ_UI_InitEncSpeed(1); // auto config
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 {
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
@@ -1403,6 +1430,11 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   for(i=0; i<SEQ_HWCFG_NUM_TRACK; ++i)
     if( pin == seq_hwcfg_button.track[i] )
       return SEQ_UI_Button_Track(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_DIRECT_TRACK; ++i)
+    if( pin == seq_hwcfg_button.direct_track[i] )
+      return SEQ_UI_Button_DirectTrack(pin_value, i);
+
   if( pin == seq_hwcfg_button.track_sel )
     return SEQ_UI_Button_TrackSel(pin_value);
 
@@ -2285,12 +2317,6 @@ s32 SEQ_UI_LED_Handler_Periodic()
   seq_core_step_update_req = 0; // requested from SEQ_CORE if any step has been changed
   prev_ui_gp_leds = ui_gp_leds; // take over new GP pattern
 
-  // determine LED patterns for all tracks
-  u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-  }
-
-
   // for song position marker (supports 16 LEDs, check for selected step view)
   u16 pos_marker_mask = 0x0000;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -2336,6 +2362,11 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_hwcfg_led.gp_dout_r2_sr )
     SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r2_sr-1, (pos_marker_mask >> 8) & 0xff);
 
+  // transfer to optional track LEDs
+  if( seq_hwcfg_led.tracks_dout_l_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.tracks_dout_l_sr-1, (ui_selected_tracks >> 0) & 0xff);
+  if( seq_hwcfg_led.tracks_dout_r_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.tracks_dout_r_sr-1, (ui_selected_tracks >> 8) & 0xff);
 
   if( seq_hwcfg_blm.enabled ) {
     // Red LEDs (position marker)

@@ -25,26 +25,28 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       11
+#define NUM_OF_ITEMS       4
 #define ITEM_GXTY          0
 #define ITEM_LENGTH        1
 #define ITEM_LOOP          2
-#define ITEM_LENGTH_4      3
-#define ITEM_LENGTH_8      4
-#define ITEM_LENGTH_16     5
-#define ITEM_LENGTH_24     6
-#define ITEM_LENGTH_32     7
-#define ITEM_LENGTH_64     8
-#define ITEM_LENGTH_128    9
-#define ITEM_LENGTH_256    10
+#define ITEM_QUICKSEL_MODE 3
+
+
+#define QUICKSEL_MODE_LENGTH 0
+#define QUICKSEL_MODE_LOOP   1
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-const char quicksel_str[8][6] = { "  4  ", "  8  ", "  16 ", "  24 ", "  32 ", "  64 ", " 128 ", " 256 " };
-const u8 quicksel_length[8]   = {    3,       7,       15,      23,      31 ,     63,     127,     255   };
+// these values are stored in local config file MBSEQ_C.V4 and can be edited there
+u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS]      = { 3, 7, 15, 23, 31, 63, 127, 255 };
+u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS]   = {  0,  4,  8, 12,  0,  0, 16, 24 };
+u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS] = {  3,  7, 11, 15, 15, 31, 31, 31 };
+
+
+static u8 quicksel_mode = QUICKSEL_MODE_LENGTH;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,13 +54,37 @@ const u8 quicksel_length[8]   = {    3,       7,       15,      23,      31 ,   
 /////////////////////////////////////////////////////////////////////////////
 static s32 QUICKSEL_SearchItem(u8 track)
 {
-  u8 search_pattern = SEQ_CC_Get(track, SEQ_CC_LENGTH);
+  u8 search_pattern_length = SEQ_CC_Get(track, SEQ_CC_LENGTH);
+  u8 search_pattern_loop = SEQ_CC_Get(track, SEQ_CC_LOOP);
   int i;
-  for(i=0; i<8; ++i)
-    if( quicksel_length[i] == search_pattern )
-      return i;
+
+  if( quicksel_mode == QUICKSEL_MODE_LENGTH ) {
+    for(i=0; i<8; ++i)
+      if( ui_quicksel_length[i] == search_pattern_length )
+	return i;
+  } else {
+    for(i=0; i<8; ++i)
+      if( ui_quicksel_loop_length[i] == search_pattern_length && ui_quicksel_loop_loop[i] == search_pattern_loop )
+	return i;
+  }
 
   return -1; // item not found
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Print Length or Loop value
+/////////////////////////////////////////////////////////////////////////////
+static s32 PrintLengthOrLoop(int value)
+{
+  if( value < 10 )
+    SEQ_LCD_PrintFormattedString("  %d  ", value);
+  else if( value < 100 )
+    SEQ_LCD_PrintFormattedString("  %d ", value);
+  else
+    SEQ_LCD_PrintFormattedString(" %d ", value);
+
+  return 0; // no error
 }
 
 
@@ -74,6 +100,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_GXTY: *gp_leds = 0x0001; break;
     case ITEM_LENGTH: *gp_leds = 0x0006; break;
     case ITEM_LOOP: *gp_leds = 0x0018; break;
+    case ITEM_QUICKSEL_MODE: *gp_leds = 0x00c0; break;
   }
 
   s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
@@ -112,9 +139,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP6:
+      return 0; // not mapped
+
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      return 0; // not mapped
+      ui_selected_item = ITEM_QUICKSEL_MODE;
+      break;
 
     case SEQ_UI_ENCODER_GP9:
     case SEQ_UI_ENCODER_GP10:
@@ -123,29 +153,31 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
-    case SEQ_UI_ENCODER_GP16:
-      {
-	int quicksel = encoder - 8;
-	ui_selected_item = ITEM_LENGTH_4 + quicksel;
-	int len = quicksel_length[quicksel];
+    case SEQ_UI_ENCODER_GP16: {
+      int quicksel = encoder - 8;
+      int len = (quicksel_mode == QUICKSEL_MODE_LENGTH) ? ui_quicksel_length[quicksel] : ui_quicksel_loop_length[quicksel];
 
-	if( (len+1) > num_steps ) {
-	  len = num_steps-1;
+      if( (len+1) > num_steps ) {
+	len = num_steps-1;
 
-	  char buffer[20];
-	  sprintf(buffer, "for %d steps", num_steps);
+	char buffer[20];
+	sprintf(buffer, "for %d steps", num_steps);
 
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Track only prepared", buffer);
-	} else if( seq_cc_trk[visible_track].clkdiv.SYNCH_TO_MEASURE && ((int)len > (int)seq_core_steps_per_measure) ) {
-	  char buffer[20];
-	  sprintf(buffer, "active for %d steps", (int)seq_core_steps_per_measure+1);
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Synch-to-Measure is", buffer);
-	}
-
-	SEQ_UI_CC_Set(SEQ_CC_LENGTH, len);
-
-	return 1; // value has been changed
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Track only prepared", buffer);
+      } else if( seq_cc_trk[visible_track].clkdiv.SYNCH_TO_MEASURE && ((int)len > (int)seq_core_steps_per_measure) ) {
+	char buffer[20];
+	sprintf(buffer, "active for %d steps", (int)seq_core_steps_per_measure+1);
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Synch-to-Measure is", buffer);
       }
+
+      SEQ_UI_CC_Set(SEQ_CC_LENGTH, len);
+
+      if( quicksel_mode == QUICKSEL_MODE_LOOP ) {
+	SEQ_UI_CC_Set(SEQ_CC_LOOP, ui_quicksel_loop_loop[quicksel]);
+      }
+
+      return 1; // value has been changed
+    } break;
   }
 
   // for GP encoders and Datawheel
@@ -163,7 +195,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0;
     }
-    case ITEM_LOOP:          return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, num_steps-1, incrementer);
+
+    case ITEM_LOOP:
+      return SEQ_UI_CC_Inc(SEQ_CC_LOOP, 0, num_steps-1, incrementer);
+
+    case ITEM_QUICKSEL_MODE:
+      return SEQ_UI_Var8_Inc(&quicksel_mode, 0, 1, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -197,9 +234,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return 0; // value hasn't been changed
 
     case SEQ_UI_BUTTON_GP6:
+      return 0; // not mapped
+
     case SEQ_UI_BUTTON_GP7:
     case SEQ_UI_BUTTON_GP8:
-      return 0; // not mapped
+      // toggle quicksel mode
+      return Encoder_Handler((int)button, (quicksel_mode == QUICKSEL_MODE_LENGTH) ? 1 : -1);
 
     case SEQ_UI_BUTTON_GP9:
     case SEQ_UI_BUTTON_GP10:
@@ -248,15 +288,32 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.   Length  Loop                             Quick Selection: Length         
-  // G1T1   256/256   1                         4    8   16   24   32   64  128  256
+  // Trk.   Length  Loop             QuickSel        Quick Selection: Length         
+  // G1T1   256/256   1               Length    4    8   16   24   32   64  128  256
+
+  // Trk.   Length  Loop             QuickSel   1    5    9   13    1    1   17   25   33 
+  // G1T1   256/256   1               Loops     4    8   12   16   16   32   32   32
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk.   Length  Loop                     ");
-  SEQ_LCD_PrintString("        Quick Selection: Length         ");
+  SEQ_LCD_PrintString("Trk.   Length  Loop             QuickSel");
+
+  if( quicksel_mode == QUICKSEL_MODE_LENGTH ) {
+    SEQ_LCD_PrintString("        Quick Selection: Length         ");
+  } else {
+    int i;
+    for(i=0; i<8; ++i) {
+      if( quicksel_item == i && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(5);
+      } else {
+	int loop = (int)ui_quicksel_loop_loop[i] + 1;
+	PrintLengthOrLoop(loop);
+      }
+    }
+  }
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -299,21 +356,33 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(21);
+  SEQ_LCD_PrintSpaces(14);
   // free for sale
 
   ///////////////////////////////////////////////////////////////////////////
-  s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
+  if( ui_selected_item == ITEM_QUICKSEL_MODE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(7);
+  } else {
+    if( quicksel_mode == QUICKSEL_MODE_LENGTH ) {
+      SEQ_LCD_PrintString("Length ");
+    } else {
+      SEQ_LCD_PrintString("Loops  ");
+    }
+  }
 
+  ///////////////////////////////////////////////////////////////////////////
   int i;
   for(i=0; i<8; ++i) {
     if( quicksel_item == i && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
-      if( ((int)quicksel_length[i]+1) > SEQ_TRG_NumStepsGet(visible_track) )
+      int length = (int)((quicksel_mode == QUICKSEL_MODE_LENGTH) ? ui_quicksel_length[i] : ui_quicksel_loop_length[i]) + 1;
+
+      if( length > SEQ_TRG_NumStepsGet(visible_track) )
 	SEQ_LCD_PrintString(" --- ");
-      else
-	SEQ_LCD_PrintString((char *)quicksel_str[i]);
+      else {
+	PrintLengthOrLoop(length);
+      }
     }
   }
 

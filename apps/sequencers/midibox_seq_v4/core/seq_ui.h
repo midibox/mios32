@@ -32,6 +32,8 @@
 #define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF 400  // mS
 
 
+#define UI_QUICKSEL_NUM_PRESETS 8
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -285,6 +287,10 @@ extern u8 ui_edit_preset_num_label;
 extern u8 ui_edit_preset_num_drum;
 
 extern u8 ui_seq_pause;
+
+extern u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
+extern u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
+extern u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
 
 extern seq_ui_remote_mode_t seq_ui_remote_mode;
 extern seq_ui_remote_mode_t seq_ui_remote_active_mode;
