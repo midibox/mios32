@@ -301,6 +301,57 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_core_glb_loop_offset = value-1;
 	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
 	    seq_core_glb_loop_steps = value-1;
+	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
+	    int i;
+	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
+	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
+	      int v = get_dec(word);
+	      if( v < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR QuickSelLength: less items than expected (expect %d, got %d)!\n",
+			  UI_QUICKSEL_NUM_PRESETS, i);
+#endif
+		break;
+	      } else {
+		if( --v < 0 ) v = 0;
+		if( v > 255 ) v = 255;
+		ui_quicksel_length[i] = v;
+	      }
+	    }
+	  } else if( strcmp(parameter, "QuickSelLoopLength") == 0 ) {
+	    int i;
+	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
+	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
+	      int v = get_dec(word);
+	      if( v < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR QuickSelLoopLength: less items than expected (expect %d, got %d)!\n",
+			  UI_QUICKSEL_NUM_PRESETS, i);
+#endif
+		break;
+	      } else {
+		if( --v < 0 ) v = 0;
+		if( v > 255 ) v = 255;
+		ui_quicksel_loop_length[i] = v;
+	      }
+	    }
+	  } else if( strcmp(parameter, "QuickSelLoopLoop") == 0 ) {
+	    int i;
+	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
+	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
+	      int v = get_dec(word);
+	      if( v < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR QuickSelLoopLoop: less items than expected (expect %d, got %d)!\n",
+			  UI_QUICKSEL_NUM_PRESETS, i);
+#endif
+		break;
+	      } else {
+		if( --v < 0 ) v = 0;
+		if( v > 255 ) v = 255;
+		ui_quicksel_loop_loop[i] = v;
+	      }
+	    }
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
 	    MIOS32_MIDI_DefaultPortSet(value);
 	  } else if( strncmp(parameter, "MIDI_BUS_", 9) == 0 ) {
@@ -451,6 +502,40 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
+  FLUSH_BUFFER;
+
+  // quick&dirty...
+  sprintf(line_buffer, "QuickSelLength %d %d %d %d %d %d %d %d\n",
+	  (int)ui_quicksel_length[0] + 1,
+	  (int)ui_quicksel_length[1] + 1,
+	  (int)ui_quicksel_length[2] + 1,
+	  (int)ui_quicksel_length[3] + 1,
+	  (int)ui_quicksel_length[4] + 1,
+	  (int)ui_quicksel_length[5] + 1,
+	  (int)ui_quicksel_length[6] + 1,
+	  (int)ui_quicksel_length[7] + 1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "QuickSelLoopLength %d %d %d %d %d %d %d %d\n",
+	  (int)ui_quicksel_loop_length[0] + 1,
+	  (int)ui_quicksel_loop_length[1] + 1,
+	  (int)ui_quicksel_loop_length[2] + 1,
+	  (int)ui_quicksel_loop_length[3] + 1,
+	  (int)ui_quicksel_loop_length[4] + 1,
+	  (int)ui_quicksel_loop_length[5] + 1,
+	  (int)ui_quicksel_loop_length[6] + 1,
+	  (int)ui_quicksel_loop_length[7] + 1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "QuickSelLoopLoop %d %d %d %d %d %d %d %d\n",
+	  (int)ui_quicksel_loop_loop[0] + 1,
+	  (int)ui_quicksel_loop_loop[1] + 1,
+	  (int)ui_quicksel_loop_loop[2] + 1,
+	  (int)ui_quicksel_loop_loop[3] + 1,
+	  (int)ui_quicksel_loop_loop[4] + 1,
+	  (int)ui_quicksel_loop_loop[5] + 1,
+	  (int)ui_quicksel_loop_loop[6] + 1,
+	  (int)ui_quicksel_loop_loop[7] + 1);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet()+1);

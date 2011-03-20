@@ -581,7 +581,7 @@ static s32 PASTE_Track(u8 track)
   if( !copypaste_buffer_filled )
     return CLEAR_Track(track);
 
-  seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+  //seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
 
   // take over mode - but only if it has been changed so that new partitioning is required!
   if( SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE) != copypaste_cc[SEQ_CC_MIDI_EVENT_MODE] ) {
@@ -598,15 +598,10 @@ static s32 PASTE_Track(u8 track)
     for(i=0; i<128; ++i)
 	SEQ_CC_Set(track, i, copypaste_cc[i]);
   } else {
+    // we have to copy the 48 lower CCs to avoid garbage output
     int i;
-    seq_event_mode_t event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
-
-    if( (prev_event_mode == SEQ_EVENT_MODE_Drum && event_mode != SEQ_EVENT_MODE_Drum) ||
-	(prev_event_mode != SEQ_EVENT_MODE_Drum && event_mode == SEQ_EVENT_MODE_Drum) ) {
-      // we have to copy the 48 lower CCs to avoid garbage output
-      for(i=0; i<48; ++i)
-	SEQ_CC_Set(track, i, copypaste_cc[i]);
-    }
+    for(i=0; i<48; ++i)
+      SEQ_CC_Set(track, i, copypaste_cc[i]);
   }
 
   // determine begin/end boundary
@@ -628,7 +623,7 @@ static s32 PASTE_Track(u8 track)
       int step_offset = ui_selected_step;
       for(step=step_begin; step<=step_end; ++step, ++step_offset) {
 	if( step_offset < num_steps ) {
-	  u16 step_ix = (instrument * num_layers * num_steps) + layer * num_steps + step;
+	  u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + layer * copypaste_par_steps + step;
 	  SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
 	}
       }
@@ -643,7 +638,7 @@ static s32 PASTE_Track(u8 track)
       int step_offset = ui_selected_step;
       for(step=step_begin; step<=step_end; ++step, ++step_offset) {
 	if( step_offset < num_steps ) {
-	  u8 step8_ix = (instrument * num_layers * (num_steps/8)) + layer * (num_steps/8) + (step/8);
+	  u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
 	  u8 step_mask = (1 << (step&7));
 	  SEQ_TRG_Set(track, step_offset, layer, instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
 	}

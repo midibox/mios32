@@ -60,6 +60,24 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .track[2] = ((( 3   -1)<<3)+    2),
   .track[3] = ((( 3   -1)<<3)+    3),
 
+  //                     SR   ignore    Pin
+  .direct_track[0]  = ((( 0   -1)<<3)+    0),
+  .direct_track[1]  = ((( 0   -1)<<3)+    0),
+  .direct_track[2]  = ((( 0   -1)<<3)+    0),
+  .direct_track[3]  = ((( 0   -1)<<3)+    0),
+  .direct_track[4]  = ((( 0   -1)<<3)+    0),
+  .direct_track[5]  = ((( 0   -1)<<3)+    0),
+  .direct_track[6]  = ((( 0   -1)<<3)+    0),
+  .direct_track[7]  = ((( 0   -1)<<3)+    0),
+  .direct_track[8]  = ((( 0   -1)<<3)+    0),
+  .direct_track[9]  = ((( 0   -1)<<3)+    0),
+  .direct_track[10] = ((( 0   -1)<<3)+    0),
+  .direct_track[11] = ((( 0   -1)<<3)+    0),
+  .direct_track[12] = ((( 0   -1)<<3)+    0),
+  .direct_track[13] = ((( 0   -1)<<3)+    0),
+  .direct_track[14] = ((( 0   -1)<<3)+    0),
+  .direct_track[15] = ((( 0   -1)<<3)+    0),
+
   //                 SR   ignore    Pin
   .par_layer[0] = ((( 3   -1)<<3)+    4),
   .par_layer[1] = ((( 3   -1)<<3)+    5),
@@ -204,6 +222,9 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .gp_dout_l2_sr = 0,
   .gp_dout_r2_sr = 0,
 #endif
+
+  .tracks_dout_l_sr = 0,
+  .tracks_dout_r_sr = 0,
 
   // DOUT pin assignments
 

@@ -22,11 +22,12 @@
 
 #define SEQ_HWCFG_NUM_ENCODERS  17
 
-#define SEQ_HWCFG_NUM_GP        16
-#define SEQ_HWCFG_NUM_TRACK      4
-#define SEQ_HWCFG_NUM_GROUP      4
-#define SEQ_HWCFG_NUM_PAR_LAYER  3
-#define SEQ_HWCFG_NUM_TRG_LAYER  3
+#define SEQ_HWCFG_NUM_GP           16
+#define SEQ_HWCFG_NUM_TRACK         4
+#define SEQ_HWCFG_NUM_GROUP         4
+#define SEQ_HWCFG_NUM_DIRECT_TRACK 16
+#define SEQ_HWCFG_NUM_PAR_LAYER     3
+#define SEQ_HWCFG_NUM_TRG_LAYER     3
 
 // following constants can be safely changed (therefore documented)
 
@@ -61,6 +62,8 @@ typedef struct {
   u8 exit;
 
   u8 track[SEQ_HWCFG_NUM_TRACK];
+
+  u8 direct_track[SEQ_HWCFG_NUM_DIRECT_TRACK];
 
   u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
 
@@ -130,6 +133,8 @@ typedef struct {
   u8 gp_dout_r_sr;
   u8 gp_dout_l2_sr;
   u8 gp_dout_r2_sr;
+  u8 tracks_dout_l_sr;
+  u8 tracks_dout_r_sr;
 
   u8 track[SEQ_HWCFG_NUM_TRACK];
 

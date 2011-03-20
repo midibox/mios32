@@ -5,6 +5,28 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.0beta37
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Length Page: quick selection now also available for loops.
+
+   o Length Page: length/loop presets are now stored in MBSEQ_C.V4 file (located
+     in session directory) under the name "QuickSelLength", "QuickSelLoopLength" and
+     "QuickSelLoopLoop".
+     They could be edited with a text editor if you would like to have different values.    
+
+   o track transpose page now always starts with "octave" item instead
+     of "semitones" item
+
+   o it's now possible to define 16 individual "direct track selection" buttons
+     in MBSEQ_HW.V4 (search for BUTTON_DIRECT_TRACK*)
+
+   o it's now possible to define 2 shift registers for outputing the current track
+     selection in MBSEQ_HW.V4 (search for TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR)
+
+   o copy function works correctly now if a track is pasted into another track
+     with different partitioning in Paste/Clr = Steps mode (selectable in Utils->Options page)
+
 
 MIDIboxSEQ V4.0beta36
 ~~~~~~~~~~~~~~~~~~~~~
