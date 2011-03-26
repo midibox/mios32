@@ -15,9 +15,7 @@ combination of software components from multiple middleware
 vendors. 
 
 This project contains appropriate files for this MCU family 
-taken from CMSIS. A full copy of the CMSIS files can be found
-within your tools installation directory. More information on
-CMSIS can be found at:
+taken from CMSIS. More information on CMSIS can be found at:
 
   http://www.onarm.com/
   http://www.arm.com/
