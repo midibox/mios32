@@ -17,11 +17,14 @@
 
 //==============================================================================
 HexFileLoader::HexFileLoader()
-    : qualifiedForMios8(0)
+    : checkMios8Ranges(true)
+    , qualifiedForMios8(0)
     , disqualifiedForMios8(0)
     , requiresMios8Reboot(0)
     , qualifiedForMios32_STM32(0)
     , disqualifiedForMios32_STM32(0)
+    , qualifiedForMios32_LPC17(0)
+    , disqualifiedForMios32_LPC17(0)
 {
 }
 
@@ -56,7 +59,7 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
     uint32 lineNumber = 0;
     bool endRead = false;
-    uint32 addressExtension;
+    uint32 addressExtension = 0;
     unsigned totalBytes = 0;
 
     std::vector<uint8> record;
@@ -141,25 +144,36 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
     requiresMios8Reboot = false;
     qualifiedForMios32_STM32 = false;
     disqualifiedForMios32_STM32 = false;
+    qualifiedForMios32_LPC17 = false;
+    disqualifiedForMios32_LPC17 = false;
+
     std::map<uint32, uint32>::iterator it = addressBlocks.begin();
     for(; it!=addressBlocks.end(); ++it) {
         uint32 blockAddress = (*it).first;
         hexDumpAddressBlocks.push_back(blockAddress);
 
-        if( (blockAddress >= HEX_RANGE_MIOS8_FLASH_START && blockAddress <= HEX_RANGE_MIOS8_FLASH_END) ||
+        if( checkMios8Ranges &&
+            (blockAddress >= HEX_RANGE_MIOS8_FLASH_START && blockAddress <= HEX_RANGE_MIOS8_FLASH_END) ||
             (blockAddress >= HEX_RANGE_MIOS8_EEPROM_START && blockAddress <= HEX_RANGE_MIOS8_EEPROM_END) ||
             (blockAddress >= HEX_RANGE_MIOS8_BANKSTICK_START && blockAddress <= HEX_RANGE_MIOS8_BANKSTICK_END) ) {
             qualifiedForMios8 = true;
             disqualifiedForMios32_STM32 = true;
+            disqualifiedForMios32_LPC17 = true;
 
             if( blockAddress >= HEX_RANGE_MIOS8_OS_START && blockAddress <= HEX_RANGE_MIOS8_OS_END )
                 requiresMios8Reboot = true;
         } else if( (blockAddress >= HEX_RANGE_MIOS32_STM32_FLASH_START && blockAddress <= HEX_RANGE_MIOS32_STM32_FLASH_END) ) {
             qualifiedForMios32_STM32 = true; // note: upload to RAM supported by bootloader, but too dangerous, e.g. if used RAM is overwritten!
+            disqualifiedForMios32_LPC17 = true;
+            disqualifiedForMios8 = true;
+        } else if( (blockAddress >= HEX_RANGE_MIOS32_LPC17_FLASH_START && blockAddress <= HEX_RANGE_MIOS32_LPC17_FLASH_END) ) {
+            qualifiedForMios32_LPC17 = true; // note: upload to RAM supported by bootloader, but too dangerous, e.g. if used RAM is overwritten!
+            disqualifiedForMios32_STM32 = true;
             disqualifiedForMios8 = true;
         } else {
             disqualifiedForMios8 = true;
             disqualifiedForMios32_STM32 = true;
+            disqualifiedForMios32_LPC17 = true;
         }
 
         Array<uint8> dataArray;

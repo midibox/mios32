@@ -3,17 +3,10 @@
 //!
 //! USB COM layer for MIOS32
 //! 
-//! Based on driver included in STM32 USB library
-//! Some code copied and modified from Virtual_COM_Port demo
-//! 
-//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM layer functions
-//! 
-//! \note this module can be optionally *ENABLED* in a local mios32_config.h file (included from mios32.h) by adding '#define MIOS32_USE_USB_COM'
-//! it's disabled by default, since Windows doesn't allow to use USB MIDI and CDC in parallel!
 //! \{
 /* ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -29,8 +22,6 @@
 // this module can be optionally *ENABLED* in a local mios32_config.h file (included from mios32.h)
 // it's disabled by default, since Windows doesn't allow to use USB MIDI and CDC in parallel!
 #if defined(MIOS32_USE_USB_COM)
-
-#include <usb_lib.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -211,12 +202,14 @@ s32 MIOS32_USB_COM_RxBufferGet(u8 usb_com)
   // get byte - this operation should be atomic!
   // MIOS32_IRQ_Disable();
 
+#if 0
   // TODO: access buffer directly, so that we don't need to copy into temporary buffer
   u8 buffer_out[MIOS32_USB_COM_DATA_OUT_SIZE];
   PMAToUserBufferCopy(buffer_out, MIOS32_USB_ENDP3_RXADDR, GetEPRxCount(ENDP3));
   u8 b = buffer_out[rx_buffer_ix++];
   if( !--rx_buffer_new_data_ctr )
     SetEPRxValid(ENDP3);
+#endif
   // MIOS32_IRQ_Enable();
 
   return b; // return received byte
@@ -246,9 +239,11 @@ s32 MIOS32_USB_COM_RxBufferPeek(u8 usb_com)
   // get byte - this operation should be atomic!
   // MIOS32_IRQ_Disable();
   // TODO: access buffer directly, so that we don't need to copy into temporary buffer
+#if 0
   u8 buffer_out[MIOS32_USB_COM_DATA_OUT_SIZE];
   PMAToUserBufferCopy(buffer_out, MIOS32_USB_ENDP3_RXADDR, GetEPRxCount(ENDP3));
   u8 b = buffer_out[rx_buffer_ix];
+#endif
   // MIOS32_IRQ_Enable();
 
   return b; // return received byte
@@ -322,6 +317,7 @@ s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len)
   if( tx_buffer_busy )
     return -2; // buffer full (retry)
 
+#if 0
   // copy bytes to be transmitted into transmit buffer
   UserToPMABufferCopy(buffer, MIOS32_USB_ENDP4_TXADDR, len);
 
@@ -329,6 +325,7 @@ s32 MIOS32_USB_COM_TxBufferPutMore_NonBlocking(u8 usb_com, u8 *buffer, u16 len)
   tx_buffer_busy = 1;
   SetEPTxCount(ENDP4, len);
   SetEPTxValid(ENDP4);
+#endif
 
   return 0; // no error
 #endif
@@ -398,9 +395,8 @@ s32 MIOS32_USB_COM_TxBufferPut(u8 usb_com, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 //! Called by STM32 USB driver to check for IN streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
-//! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_COM_EP4_IN_Callback(u8 bEP, u8 bEPStatus)
+void MIOS32_USB_COM_EP4_IN_Callback(void)
 {
   // package has been sent
   tx_buffer_busy = 0;
@@ -409,9 +405,8 @@ void MIOS32_USB_COM_EP4_IN_Callback(u8 bEP, u8 bEPStatus)
 /////////////////////////////////////////////////////////////////////////////
 //! Called by STM32 USB driver to check for OUT streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_COM layer functions
-//! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_COM_EP3_OUT_Callback(u8 bEP, u8 bEPStatus)
+void MIOS32_USB_COM_EP3_OUT_Callback(void)
 {
   // new data has been received - notify this
   rx_buffer_new_data_ctr = GetEPRxCount(ENDP3);
@@ -425,35 +420,42 @@ void MIOS32_USB_COM_EP3_OUT_Callback(u8 bEP, u8 bEPStatus)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_COM_CB_StatusIn(void)
 {
+#if 0
   if( Request == SET_LINE_CODING ) {
     // configure UART here...
     Request = 0;
   }
+#endif
 }
 
 
 // handles the data class specific requests
 static u8 *Virtual_Com_Port_GetLineCoding(u16 Length) {
+#if 0
   if( Length == 0 ) {
     pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
     return NULL;
   }
 
   return(u8 *)&linecoding;
+#endif
 }
 
 u8 *Virtual_Com_Port_SetLineCoding(u16 Length)
 {
+#if 0
   if( Length == 0 ) {
     pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
     return NULL;
   }
 
   return(u8 *)&linecoding;
+#endif
 }
 
 s32 MIOS32_USB_COM_CB_Data_Setup(u8 RequestNo)
 {
+#if 0
   u8 *(*CopyRoutine)(u16) = NULL;
 
   if( RequestNo == GET_LINE_CODING ) {
@@ -476,10 +478,12 @@ s32 MIOS32_USB_COM_CB_Data_Setup(u8 RequestNo)
   (*CopyRoutine)(0);
 
   return USB_SUCCESS;
+#endif
 }
 
 s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo)
 {
+#if 0
   if( Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT) ) {
     if( RequestNo == SET_COMM_FEATURE ) {
       return USB_SUCCESS;
@@ -489,6 +493,7 @@ s32 MIOS32_USB_COM_CB_NoData_Setup(u8 RequestNo)
   }
 
   return USB_UNSUPPORT;
+#endif
 }
 
 //! \}

@@ -6,7 +6,7 @@
 //! \{
 /* ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -22,15 +22,16 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_DELAY)
 
+// RIT clockated at 25 MHz
+#define RIT_PERIPHERAL_FRQ 25000000
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the Timer used by MIOS32_DELAY functions<BR>
 //! This function has to be executed before wait functions are used
 //! (already done in main.c of the programming model)
 //!
-//! Currently TIM1 is allocated by MIOS32_DELAY functions - if this clashes with
-//! your application, just switch to another timer by overriding 
-//! MIOS32_DELAY_TIMER and MIOS32_DELAY_TIMER_RCC in your mios32_config.h file
+//! Currently the freerunning timer (RIT) is allocated by MIOS32_DELAY functions
 //!
 //! \param[in] mode currently only mode 0 supported
 //! \return < 0 if initialisation failed
@@ -41,22 +42,8 @@ s32 MIOS32_DELAY_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // enable timer clock
-  if( MIOS32_DELAY_TIMER_RCC == RCC_APB2Periph_TIM1 || MIOS32_DELAY_TIMER_RCC == RCC_APB2Periph_TIM8 )
-    RCC_APB2PeriphClockCmd(MIOS32_DELAY_TIMER_RCC, ENABLE);
-  else
-    RCC_APB1PeriphClockCmd(MIOS32_DELAY_TIMER_RCC, ENABLE);
-
-  // time base configuration
-  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-  TIM_TimeBaseStructure.TIM_Period = 65535; // maximum value
-  TIM_TimeBaseStructure.TIM_Prescaler = 72-1; // for 1 uS accuracy. TODO: dynamic change depending on system frequency
-  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  TIM_TimeBaseInit(MIOS32_DELAY_TIMER, &TIM_TimeBaseStructure);
-
-  // enable counter
-  TIM_Cmd(MIOS32_DELAY_TIMER, ENABLE);
+  // enable timer
+  LPC_RIT->RICTRL = (1 << 3);
 
   return 0; // no error
 }
@@ -73,10 +60,11 @@ s32 MIOS32_DELAY_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DELAY_Wait_uS(u16 uS)
 {
-  u16 start = MIOS32_DELAY_TIMER->CNT;
+  u32 uS_ticks = uS * (RIT_PERIPHERAL_FRQ / 1000000);
+  u32 start    = LPC_RIT->RICOUNTER;
 
-  // note that this even works on 16bit counter wrap-arounds
-  while( (u16)(MIOS32_DELAY_TIMER->CNT - start) <= uS );
+  // note that this event works on 32bit counter wrap-arounds
+  while( (u16)(LPC_RIT->RICOUNTER - start) <= uS_ticks );
 
   return 0; // no error
 }

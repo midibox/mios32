@@ -55,6 +55,10 @@ ifeq ($(FAMILY),STM32F10x)
 CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
 endif
 
+ifeq ($(FAMILY),LPC17xx)
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
+endif
+
 ifeq ($(FAMILY),STR9x)
 CFLAGS += -mcpu=arm7tdmi -D PACK_STRUCT_END=__attribute\(\(packed\)\) -D ALIGN_STRUCT_END=__attribute\(\(aligned\(4\)\)\) -fomit-frame-pointer -ffunction-sections -mthumb-interwork
 endif

@@ -33,11 +33,11 @@ timings don't falsify the results.
 Different memory allocation methods can be selected in mios32_config.h
 
 Here the results - than lower the value, than faster the handling:
-0: internal static allocation with one byte for each flag     632.8 mS
-1: internal static allocation with 8bit flags                 636.6 mS
-2: internal static allocation with 16bit flags                637.3 mS
-3: internal static allocation with 32bit flags                635.7 mS
-4: FreeRTOS based pvPortMalloc                                655.4 mS
+0: internal static allocation with one byte for each flag     589.3 mS
+1: internal static allocation with 8bit flags                 589.5 mS
+2: internal static allocation with 16bit flags                602.5 mS
+3: internal static allocation with 32bit flags                590.9 mS
+4: FreeRTOS based pvPortMalloc                                619.4 mS
 5: malloc provided by library                                 setup not done for Newlib
 
 
@@ -57,5 +57,16 @@ Possible enhancements:
      randomly allocating and releasing memory
    - play MIDI events over USB interface (requires to remove the *CRITICAL
      functions as well)
+
+===============================================================================
+
+Updates for LPC1768 @ 100 MHz
+0: internal static allocation with one byte for each flag     335.0 mS
+1: internal static allocation with 8bit flags                 343.1 mS
+2: internal static allocation with 16bit flags                339.9 mS
+3: internal static allocation with 32bit flags                337.5 mS
+4: FreeRTOS based pvPortMalloc                                356,5 mS
+5: malloc provided by library                                 setup not done for Newlib
+
 
 ===============================================================================

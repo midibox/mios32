@@ -29,22 +29,83 @@
 #define MEM16(addr) (*((volatile u16 *)(addr)))
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
-// STM32: determine page size (mid density devices: 1k, high density devices: 2k)
-// TODO: find a proper way, as there could be high density devices with less than 256k?)
-#define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
 
-// STM32: flash memory range (16k BSL range excluded)
-#define FLASH_START_ADDR  (0x08000000 + 0x4000)
-#define FLASH_END_ADDR    (0x08000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
+#if defined(MIOS32_FAMILY_STM32F10x)
+  // STM32: determine page size (mid density devices: 1k, high density devices: 2k)
+  // TODO: find a proper way, as there could be high density devices with less than 256k?)
+# define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
+
+  // STM32: flash memory range (16k BSL range excluded)
+# define FLASH_START_ADDR  (0x08000000 + 0x4000)
+# define FLASH_END_ADDR    (0x08000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
 
 
-// STM32: base address of SRAM
-#define SRAM_START_ADDR   (0x20000000)
-#define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
+  // STM32: base address of SRAM
+# define SRAM_START_ADDR   (0x20000000)
+# define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
-// location of device ID (can be overprogrammed... but not erased!)
-// must be 16bit aligned!
-#define BSL_DEVICE_ID_ADDR (0x08003ffe)
+  // location of device ID (can be overprogrammed... but not erased!)
+  // must be 16bit aligned!
+# define BSL_DEVICE_ID_ADDR (0x08003ffe)
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+
+#include <sbl_iap.h>
+#include <sbl_config.h>
+
+# undef  FLASH_BUF_SIZE
+# define FLASH_BUF_SIZE    BSL_SYSEX_BUFFER_SIZE
+# undef  USER_START_SECTOR
+# define USER_START_SECTOR  4
+# define MAX_USER_SECTOR   29
+# define USER_FLASH_START (sector_start_map[USER_START_SECTOR])
+# define USER_FLASH_END   (sector_end_map[MAX_USER_SECTOR])
+# define USER_FLASH_SIZE  ((USER_FLASH_END - USER_FLASH_START) + 1)
+
+  // LPC17xx: sectors have different sizes
+const unsigned sector_start_map[MAX_FLASH_SECTOR] = {SECTOR_0_START,             \
+SECTOR_1_START,SECTOR_2_START,SECTOR_3_START,SECTOR_4_START,SECTOR_5_START,      \
+SECTOR_6_START,SECTOR_7_START,SECTOR_8_START,SECTOR_9_START,SECTOR_10_START,     \
+SECTOR_11_START,SECTOR_12_START,SECTOR_13_START,SECTOR_14_START,SECTOR_15_START, \
+SECTOR_16_START,SECTOR_17_START,SECTOR_18_START,SECTOR_19_START,SECTOR_20_START, \
+SECTOR_21_START,SECTOR_22_START,SECTOR_23_START,SECTOR_24_START,SECTOR_25_START, \
+SECTOR_26_START,SECTOR_27_START,SECTOR_28_START,SECTOR_29_START                  };
+
+const unsigned sector_end_map[MAX_FLASH_SECTOR] = {SECTOR_0_END,SECTOR_1_END,    \
+SECTOR_2_END,SECTOR_3_END,SECTOR_4_END,SECTOR_5_END,SECTOR_6_END,SECTOR_7_END,   \
+SECTOR_8_END,SECTOR_9_END,SECTOR_10_END,SECTOR_11_END,SECTOR_12_END,             \
+SECTOR_13_END,SECTOR_14_END,SECTOR_15_END,SECTOR_16_END,SECTOR_17_END,           \
+SECTOR_18_END,SECTOR_19_END,SECTOR_20_END,SECTOR_21_END,SECTOR_22_END,           \
+SECTOR_23_END,SECTOR_24_END,SECTOR_25_END,SECTOR_26_END,                         \
+SECTOR_27_END,SECTOR_28_END,SECTOR_29_END                                        };
+
+
+  // expected by flash programming routine: system core clock (100 MHz) in kHz
+# define SYSTEM_CORE_CLOCK_KHZ 100000
+
+  // LPC17xx: flash memory range (16k BSL range excluded)
+# define FLASH_START_ADDR  (0x00000000 + 0x4000)
+# define FLASH_END_ADDR    (0x00000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
+
+
+  // STM32: base address of SRAM
+# define SRAM_START_ADDR   (0x10000000)
+# define SRAM_END_ADDR     (0x10000000 + MIOS32_SYS_RAMSizeGet() - 1)
+
+  // location of device ID (can be overprogrammed... but not erased!)
+  // must be 16bit aligned!
+# define BSL_DEVICE_ID_ADDR (0x00003ffe)
+
+static void iap_entry(unsigned param_tab[], unsigned result_tab[]);
+static s32 write_data(unsigned cclk,unsigned flash_address, unsigned *flash_data_buf, unsigned count);
+static s32 find_erase_prepare_sector(unsigned cclk, unsigned flash_address);
+static s32 erase_sector(unsigned start_sector, unsigned end_sector, unsigned cclk);
+static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk);
+
+#else
+# error "BSL not prepared for this family"
+#endif
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -290,7 +351,7 @@ s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_
 
 	// write received data into memory
 	s32 error;
-	if( error = BSL_SYSEX_WriteMem(sysex_addr, sysex_len, sysex_buffer) ) {
+	if( (error = BSL_SYSEX_WriteMem(sysex_addr, sysex_len, sysex_buffer)) ) {
 	  // write failed - return negated error status
 	  BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, -error);
 	} else {
@@ -348,6 +409,7 @@ s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_
 
 	  MIOS32_IRQ_Disable();
 
+#if defined(MIOS32_FAMILY_STM32F10x)
 	  // FLASH_* routines are part of the STM32 code library
 	  FLASH_Unlock();
 
@@ -357,6 +419,10 @@ s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_
 	  }
 
 	  FLASH_Lock();	  
+#elif defined(MIOS32_FAMILY_LPC17xx)
+#else
+# error "Flash Programming not prepared for this family"
+#endif
 
 	  MIOS32_IRQ_Enable();
 	}
@@ -533,6 +599,7 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 
   // check for flash memory range
   if( addr >= FLASH_START_ADDR && addr <= FLASH_END_ADDR ) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     // FLASH_* routines are part of the STM32 code library
     FLASH_Unlock();
 
@@ -557,6 +624,30 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 
       // TODO: verify programmed code
     }
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_IRQ_Disable();
+
+    s32 status;
+    if( (status=find_erase_prepare_sector(SYSTEM_CORE_CLOCK_KHZ, addr)) < 0 ) {
+      MIOS32_IRQ_Enable();
+#if 1
+      MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
+#endif
+      return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
+    } else if( (status=write_data(SYSTEM_CORE_CLOCK_KHZ, addr, (unsigned *)buffer, len)) < 0 ) {
+      MIOS32_IRQ_Enable();
+#if 1
+      MIOS32_MIDI_SendDebugMessage("write_data failed for 0x%08x: code %d\n", addr, status);
+#endif
+
+      return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
+    }
+    MIOS32_IRQ_Enable();
+
+    // TODO: verify programmed code
+#else
+# error "Flash Programming not prepared for this family"
+#endif
 
     return 0; // no error
   }
@@ -574,3 +665,82 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
   return -MIOS32_MIDI_SYSEX_DISACK_WRONG_ADDR_RANGE;
 }
 
+
+
+#if defined(MIOS32_FAMILY_LPC17xx)
+
+// to enter IAP routines
+static void iap_entry(unsigned param_tab[], unsigned result_tab[])
+{
+  void (*iap)(unsigned [],unsigned []);
+
+  iap = (void (*)(unsigned [],unsigned []))IAP_ADDRESS;
+  iap(param_tab,result_tab);
+}
+
+s32 find_erase_prepare_sector(unsigned cclk, unsigned flash_address)
+{
+  unsigned i;
+  s32 result = 0;
+
+  for(i=USER_START_SECTOR; i<=MAX_USER_SECTOR; i++) {
+    if(flash_address < sector_end_map[i]) {
+      if( flash_address == sector_start_map[i]) {
+	if( prepare_sector(i, i, cclk) < 0 )
+	  result = -1;
+	if( erase_sector(i, i ,cclk) < 0 )
+	  result = -2;
+      }
+      if( prepare_sector(i, i, cclk) < 0 )
+	result = -3;
+      break;
+    }
+  }
+
+  return result;
+}
+
+s32 write_data(unsigned cclk, unsigned flash_address, unsigned *flash_data_buf, unsigned count)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = COPY_RAM_TO_FLASH;
+  param_table[1] = flash_address;
+  param_table[2] = (unsigned)flash_data_buf;
+  param_table[3] = count;
+  param_table[4] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+s32 erase_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = ERASE_SECTOR;
+  param_table[1] = start_sector;
+  param_table[2] = end_sector;
+  param_table[3] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = PREPARE_SECTOR_FOR_WRITE;
+  param_table[1] = start_sector;
+  param_table[2] = end_sector;
+  param_table[3] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+#endif

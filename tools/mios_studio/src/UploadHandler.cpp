@@ -163,7 +163,7 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
     bool checkOk = false;
     String rangeName;
 
-    if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_BL_END ) {
+    if( hexFileLoader.checkMios8Ranges && startAddress <= hexFileLoader.HEX_RANGE_MIOS8_BL_END ) {
         if( hexFileLoader.HEX_RANGE_MIOS8_BL_CHECK == 0 ) {
             rangeName = T("PIC Bootloader (ACCEPTED!)");
             checkOk = true;
@@ -171,8 +171,9 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
             rangeName = T("PIC Bootloader (ERROR!)");
             checkOk = false;
         }
-    } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS8_FLASH_START &&
-        endAddress <= hexFileLoader.HEX_RANGE_MIOS8_FLASH_END ) {
+    } else if( hexFileLoader.checkMios8Ranges &&
+               startAddress >= hexFileLoader.HEX_RANGE_MIOS8_FLASH_START &&
+               endAddress <= hexFileLoader.HEX_RANGE_MIOS8_FLASH_END ) {
 
         if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_OS_END ) {
             logbox->addEntry(Colours::black, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - MIOS8 area"),
@@ -184,11 +185,13 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
 
         rangeName = T("PIC Flash");
         checkOk = true;
-    } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS8_EEPROM_START &&
+    } else if( hexFileLoader.checkMios8Ranges &&
+               startAddress >= hexFileLoader.HEX_RANGE_MIOS8_EEPROM_START &&
                endAddress <= hexFileLoader.HEX_RANGE_MIOS8_EEPROM_END ) {
         rangeName = T("PIC EEPROM");
         checkOk = true;
-    } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS8_BANKSTICK_START &&
+    } else if( hexFileLoader.checkMios8Ranges &&
+               startAddress >= hexFileLoader.HEX_RANGE_MIOS8_BANKSTICK_START &&
                endAddress <= hexFileLoader.HEX_RANGE_MIOS8_BANKSTICK_END ) {
         rangeName = T("PIC BankStick");
         checkOk = true;
@@ -204,6 +207,19 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
         }
 
         rangeName = T("STM32 Flash");
+        checkOk = true;
+    } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS32_LPC17_FLASH_START &&
+               endAddress <= hexFileLoader.HEX_RANGE_MIOS32_LPC17_FLASH_END ) {
+
+        if( startAddress <= hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_END ) {
+            logbox->addEntry(Colours::grey, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - BL excluded"),
+                                                              hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_START,
+                                                              hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_END,
+                                                              hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_END-hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_START+1));
+            startAddress = hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_END + 1;
+        }
+
+        rangeName = T("LPC17 Flash");
         checkOk = true;
     } else {
         rangeName = T("(unknown)");
@@ -291,6 +307,11 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
                 for(int i=7; i<size; ++i)
                     if( data[i] != 0xf7 && data[i] != '\n' || size < (i+1) )
                         *out += String::formatted(T("%c"), data[i] & 0x7f);
+            }
+
+            // if LPC17 detected: don't check MIOS8 ranges anymore to allow upload to 0x00000000...
+            if( uploadHandlerThread->mios32QueryRequest == 0x03 ) {
+                hexFileLoader.checkMios8Ranges = coreFamily != T("LPC17xx");
             }
 
             uploadHandlerThread->mios32QueryRequest = 0;
@@ -637,6 +658,8 @@ void UploadHandlerThread::run()
         return;
     }
 
+    bool forMios32_LPC17 = forMios32 && uploadHandler->coreFamily == T("LPC17xx");
+
     if( threadShouldExit() )
         return;
 
@@ -652,14 +675,26 @@ void UploadHandlerThread::run()
     if( forMios32 ) {
         // TODO: check for flash size
 
-        if( uploadHandler->hexFileLoader.disqualifiedForMios32_STM32 ) {
-            errorStatusMessage = "Hex file contains invalid ranges for MIOS32!";
-            return;
-        }
+        if( forMios32_LPC17 ) {
+            if( uploadHandler->hexFileLoader.disqualifiedForMios32_LPC17 ) {
+                errorStatusMessage = "Hex file contains invalid ranges for MIOS32 LPC17!";
+                return;
+            }
 
-        if( !uploadHandler->hexFileLoader.qualifiedForMios32_STM32 ) {
-            errorStatusMessage = "Hex file doesn't contain a valid MIOS32 range!";
-            return;
+            if( !uploadHandler->hexFileLoader.qualifiedForMios32_LPC17 ) {
+                errorStatusMessage = "Hex file doesn't contain a valid MIOS32 LPC17 range!";
+                return;
+            }
+        } else {
+            if( uploadHandler->hexFileLoader.disqualifiedForMios32_STM32 ) {
+                errorStatusMessage = "Hex file contains invalid ranges for MIOS32 STM32!";
+                return;
+            }
+
+            if( !uploadHandler->hexFileLoader.qualifiedForMios32_STM32 ) {
+                errorStatusMessage = "Hex file doesn't contain a valid MIOS32 STM32 range!";
+                return;
+            }
         }
     } else {
         if( uploadHandler->hexFileLoader.disqualifiedForMios8 ) {
@@ -726,11 +761,19 @@ void UploadHandlerThread::run()
 
         uint32 blockAddress = uploadHandler->hexFileLoader.hexDumpAddressBlocks[block];
         if( forMios32 ) {
-            // TODO: check for STM32
-            if( blockAddress >= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START &&
-                blockAddress <= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END ) {
-                ++uploadHandler->excludedBlocks;
-                continue; // skip bootloader range
+            if( forMios32_LPC17 ) {
+                if( blockAddress >= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_START &&
+                    blockAddress <= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_LPC17_BL_END ) {
+                    ++uploadHandler->excludedBlocks;
+                    continue; // skip bootloader range
+                }
+            } else {
+                // TODO: check for STM32
+                if( blockAddress >= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_START &&
+                    blockAddress <= uploadHandler->hexFileLoader.HEX_RANGE_MIOS32_STM32_BL_END ) {
+                    ++uploadHandler->excludedBlocks;
+                    continue; // skip bootloader range
+                }
             }
         }
 
