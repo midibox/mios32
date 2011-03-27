@@ -29,6 +29,9 @@ extern "C" {
   // STM32 drivers currently not enabled for C++ due to typedef conflicts (e.g. "bool")
 #  include <mios32_datatypes.h>
 #  endif
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# include <LPC17xx.h>
+# include <mios32_datatypes.h>
 #elif defined(MIOS32_FAMILY_EMULATION)
 # include <mios32_datatypes.h>
 #elif defined(MIOS32_FAMILY_MIOSJUCE)

@@ -20,7 +20,9 @@
 
 // temporary disabled for STM32 Primer due to pin conflicts
 #if defined(MIOS32_BOARD_STM32_PRIMER)
-#define MIOS32_UART_NUM 0
+# define MIOS32_UART_NUM 0
+#elif defined(MIOS32_BOARD_LPCXPRESSO)
+# define MIOS32_UART_NUM 1
 #endif
 
 // number of UART interfaces (0..3)

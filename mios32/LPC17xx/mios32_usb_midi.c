@@ -3,12 +3,10 @@
 //!
 //! USB MIDI layer for MIOS32
 //! 
-//! Applications shouldn't call these functions directly, instead please use \ref MIOS32_MIDI layer functions
-//! 
 //! \{
 /* ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -24,18 +22,15 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_USB_MIDI)
 
-#include <usb_lib.h>
-
-#ifdef STM32F10X_CL
-extern USB_OTG_CORE_REGS USB_OTG_FS_regs;
-#endif
+#include <usbapi.h>
+#include <usbhw_lpc.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static void MIOS32_USB_MIDI_TxBufferHandler(void);
-static void MIOS32_USB_MIDI_RxBufferHandler(void);
+static void MIOS32_USB_MIDI_TxBufferHandler(u8 bEP);
+static void MIOS32_USB_MIDI_RxBufferHandler(u8 bEP);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,18 +42,37 @@ static u32 rx_buffer[MIOS32_USB_MIDI_RX_BUFFER_SIZE];
 static volatile u16 rx_buffer_tail;
 static volatile u16 rx_buffer_head;
 static volatile u16 rx_buffer_size;
-static volatile u8 rx_buffer_new_data;
 
 // Tx buffer
 static u32 tx_buffer[MIOS32_USB_MIDI_TX_BUFFER_SIZE];
 static volatile u16 tx_buffer_tail;
 static volatile u16 tx_buffer_head;
 static volatile u16 tx_buffer_size;
-static volatile u8 tx_buffer_busy;
 
 // transfer possible?
 static u8 transfer_possible = 0;
 
+/** convert from endpoint address to endpoint index */
+#define EP2IDX(bEP)     ((((bEP)&0xF)<<1)|(((bEP)&0x80)>>7))
+/** convert from endpoint index to endpoint address */
+#define IDX2EP(idx)     ((((idx)<<7)&0x80)|(((idx)>>1)&0xF))
+
+static void Wait4DevInt(U32 dwIntr)
+{
+        // wait for specific interrupt
+        while ((LPC_USB->USBDevIntSt & dwIntr) != dwIntr);
+        // clear the interrupt bits
+        LPC_USB->USBDevIntClr = dwIntr;
+}
+
+static void USBHwCmd(U8 bCmd)
+{
+        // clear CDFULL/CCEMTY
+        LPC_USB->USBDevIntClr = CDFULL | CCEMTY;
+        // write command code
+        LPC_USB->USBCmdCode = 0x00000500 | (bCmd << 16);
+        Wait4DevInt(CCEMTY);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes USB MIDI layer
@@ -87,16 +101,13 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
   // in all cases: re-initialize USB MIDI driver
   // clear buffer counters and busy/wait signals again (e.g., so that no invalid data will be sent out)
   rx_buffer_tail = rx_buffer_head = rx_buffer_size = 0;
-  rx_buffer_new_data = 0; // no data received yet
   tx_buffer_tail = tx_buffer_head = tx_buffer_size = 0;
 
   if( connected ) {
     transfer_possible = 1;
-    tx_buffer_busy = 0; // buffer not busy anymore
   } else {
     // cable disconnected: disable transfers
     transfer_possible = 0;
-    tx_buffer_busy = 1; // buffer busy
   }
 
   return 0; // no error
@@ -133,7 +144,7 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
   if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
     // call USB handler, so that we are able to get the buffer free again on next execution
     // (this call simplifies polling loops!)
-    MIOS32_USB_MIDI_TxBufferHandler();
+    MIOS32_USB_MIDI_TxBufferHandler(0x81);
 
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
@@ -230,10 +241,10 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
   // check for received packages
-  MIOS32_USB_MIDI_RxBufferHandler();
-
+  MIOS32_USB_MIDI_RxBufferHandler(0x01);
+  
   // check for packages which should be transmitted
-  MIOS32_USB_MIDI_TxBufferHandler();
+  MIOS32_USB_MIDI_TxBufferHandler(0x81);
 
   return 0;
 }
@@ -243,7 +254,7 @@ s32 MIOS32_USB_MIDI_Periodic_mS(void)
 // This handler sends the new packages through the IN pipe if the buffer 
 // is not empty
 /////////////////////////////////////////////////////////////////////////////
-static void MIOS32_USB_MIDI_TxBufferHandler(void)
+static void MIOS32_USB_MIDI_TxBufferHandler(u8 bEP)
 {
   // send buffered packages if
   //   - last transfer finished
@@ -252,71 +263,34 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 
   // atomic operation to avoid conflict with other interrupts
   MIOS32_IRQ_Disable();
-#ifdef STM32F10X_CL
-  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
-    u32 ep_num = EP1_IN & 0x7f;
+  if( tx_buffer_size && transfer_possible ) {
     s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
 
-    USB_OTG_DSTS_TypeDef dsts;  
-    USB_OTG_Status status = USB_OTG_OK;
+    // from USBHwEPWrite
+        
+    // set write enable for specific endpoint
+    LPC_USB->USBCtrl = WR_EN | ((bEP & 0xF) << 2);
 
-    // Set transfer size
-    OTG_FS_DEPTSIZx_TypeDef deptsiz;
-    deptsiz.d32 = 0;
-    deptsiz.b.xfersize = count * 4;
-    deptsiz.b.pktcnt = 1;
-    USB_OTG_WRITE_REG32(&USB_OTG_FS_regs.DINEPS[ep_num]->DIEPTSIZx, deptsiz.d32);
-
-    // Enable the Tx FIFO Empty Interrupt for this EP
-    uint32_t fifoemptymsk = 1 << ep_num;
-    USB_OTG_MODIFY_REG32(&USB_OTG_FS_regs.DEV->DIEPEMPMSK, 0, fifoemptymsk);
-
-    /* EP enable, IN data in FIFO */
-    USB_OTG_DEPCTLx_TypeDef depctl;
-    depctl.d32 = USB_OTG_READ_REG32(&(USB_OTG_FS_regs.DINEPS[ep_num]->DIEPCTLx));
-    depctl.b.cnak = 1;
-    depctl.b.epena = 1;
-    USB_OTG_WRITE_REG32(&USB_OTG_FS_regs.DINEPS[ep_num]->DIEPCTLx, depctl.d32); 
-
-    // notify that new package is sent
-    tx_buffer_busy = 1;
-
-    // send to IN pipe
-    tx_buffer_size -= count;
-
-    // copy into EP FIFO
-    __IO uint32_t *fifo = USB_OTG_FS_regs.FIFO[ep_num];
-    do {
-      USB_OTG_WRITE_REG32(fifo, tx_buffer[tx_buffer_tail]);
+    // set packet length
+    LPC_USB->USBTxPLen = 4*count;
+        
+    // write data
+    int real_count = 0;
+    while( count && (LPC_USB->USBCtrl & WR_EN) ) {
+      ++real_count;
+      LPC_USB->USBTxData = tx_buffer[tx_buffer_tail];
       if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
 	tx_buffer_tail = 0;
-    } while( --count );
-  }
-#else
-  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
-    u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP1_TXADDR<<1));
-    s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
-
-    // notify that new package is sent
-    tx_buffer_busy = 1;
+    }
 
     // send to IN pipe
-    SetEPTxCount(ENDP1, 4*count);
+    tx_buffer_size -= real_count;
 
-    tx_buffer_size -= count;
-
-    // copy into PMA buffer (16bit word with, only 32bit addressable)
-    do {
-      *pma_addr++ = tx_buffer[tx_buffer_tail] & 0xffff;
-      *pma_addr++ = (tx_buffer[tx_buffer_tail]>>16) & 0xffff;
-      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
-	tx_buffer_tail = 0;
-    } while( --count );
-
-    // send buffer
-    SetEPTxValid(ENDP1);
+    // select endpoint and validate buffer
+    USBHwCmd(CMD_EP_SELECT | EP2IDX(bEP));
+    USBHwCmd(CMD_EP_VALIDATE_BUFFER);
   }
-#endif
+
   MIOS32_IRQ_Enable();
 }
 
@@ -324,26 +298,35 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 // This handler receives new packages if the Tx buffer is not full
 /////////////////////////////////////////////////////////////////////////////
-static void MIOS32_USB_MIDI_RxBufferHandler(void)
+static void MIOS32_USB_MIDI_RxBufferHandler(u8 bEP)
 {
-  s16 count;
-
   // atomic operation to avoid conflict with other interrupts
   MIOS32_IRQ_Disable();
 
-  // check if we can receive new data and get packages to be received from OUT pipe
-#ifdef STM32F10X_CL
-  USB_OTG_EP *ep = PCD_GetOutEP(EP1_OUT & 0x7f);
-  if( rx_buffer_new_data && (count=ep->xfer_len>>2) ) {
-    // check if buffer is free
-    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
-      u32 *buf_addr = (u32 *)&ep->xfer_buff[0];
+  // from USBHwEPRead
 
-      // copy received packages into receive buffer
-      // this operation should be atomic
-      do {
+  // set read enable bit for specific endpoint
+  LPC_USB->USBCtrl = RD_EN | ((bEP & 0xF) << 2);
+
+  // wait for PKT_RDY
+  u32 dwLen;
+  do {
+    dwLen = LPC_USB->USBRxPLen;
+  } while( (dwLen & PKT_RDY) == 0 );
+        
+  // packet valid?
+  if( dwLen & DV ) {
+
+    // get length
+    s16 count = (dwLen & PKT_LNGTH_MASK) >> 2;
+
+    // check if buffer is free
+    if( count && count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
+
+      while( count-- > 0 ) {
+	// copy received packages into receive buffer
 	mios32_midi_package_t package;
-	package.ALL = *buf_addr++;
+	package.ALL = LPC_USB->USBRxData;
 
 	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
 	  rx_buffer[rx_buffer_head] = package.ALL;
@@ -352,80 +335,42 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 	    rx_buffer_head = 0;
 	  ++rx_buffer_size;
 	}
-      } while( --count > 0 );
+      }
 
-      // notify, that data has been put into buffer
-      rx_buffer_new_data = 0;
+      // make sure RD_EN is clear
+      LPC_USB->USBCtrl = 0;
 
-      // configuration for next transfer
-      ep->xfer_len = 0; // OTGD_FS_EPStartXfer will set maximum size in this case
-      ep->xfer_count = 0; // clear counter to ensure that it will be set by LLD again
-      ep->is_in = 0; // out endpoint
-      ep->num = EP1_OUT & 0x7F;
-
-      OTGD_FS_EPStartXfer(ep);
+      // select endpoint and clear buffer
+      USBHwCmd(CMD_EP_SELECT | EP2IDX(bEP));
+      USBHwCmd(CMD_EP_CLEAR_BUFFER);
     }
   }
-#else
-  if( rx_buffer_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
 
-    // check if buffer is free
-    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
-      u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP1_RXADDR<<1));
+  // make sure RD_EN is clear
+  LPC_USB->USBCtrl = 0;
 
-      // copy received packages into receive buffer
-      // this operation should be atomic
-      do {
-	u16 pl = *pma_addr++;
-	u16 ph = *pma_addr++;
-	mios32_midi_package_t package;
-	package.ALL = (ph << 16) | pl;
-
-	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
-	  rx_buffer[rx_buffer_head] = package.ALL;
-
-	  if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
-	    rx_buffer_head = 0;
-	  ++rx_buffer_size;
-	}
-      } while( --count > 0 );
-
-      // notify, that data has been put into buffer
-      rx_buffer_new_data = 0;
-
-      // release OUT pipe
-      SetEPRxValid(ENDP1);
-    }
-  }
-#endif
   MIOS32_IRQ_Enable();
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Called by STM32 USB driver to check for IN streams
+//! Called by USB driver to check for IN streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
-//! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 {
-  // package has been sent
-  tx_buffer_busy = 0;
-  
   // check for next package
-  MIOS32_USB_MIDI_TxBufferHandler();
+  MIOS32_USB_MIDI_TxBufferHandler(bEP);
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Called by STM32 USB driver to check for OUT streams
+//! Called by USB driver to check for OUT streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
-//! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_OUT_Callback(u8 bEP, u8 bEPStatus)
 {
   // put package into buffer
-  rx_buffer_new_data = 1;
-  MIOS32_USB_MIDI_RxBufferHandler();
+  MIOS32_USB_MIDI_RxBufferHandler(bEP);
 }
 
 //! \}

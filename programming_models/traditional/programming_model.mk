@@ -18,13 +18,19 @@ CFLAGS    +=    -DGCC_ARMCM3
 
 # add modules to thumb sources
 THUMB_SOURCE += \
-		$(MIOS32_PATH)/programming_models/traditional/startup_stm32f10x_hd.c \
 		$(MIOS32_PATH)/programming_models/traditional/main.c \
 		$(FREE_RTOS)/Source/tasks.c \
 		$(FREE_RTOS)/Source/list.c \
 		$(FREE_RTOS)/Source/queue.c \
 		$(FREE_RTOS)/Source/portable/GCC/ARM_CM3/port.c \
 		$(FREE_RTOS)/Source/portable/MemMang/umm_malloc.c 
+
+ifeq ($(FAMILY),STM32F10x)
+THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_stm32f10x_hd.c
+endif
+ifeq ($(FAMILY),LPC17xx)
+THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_LPC17xx.c
+endif
 
 THUMB_CPP_SOURCE += $(MIOS32_PATH)/programming_models/traditional/mini_cpp.cpp \
 		    $(MIOS32_PATH)/programming_models/traditional/freertos_heap.cpp

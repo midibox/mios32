@@ -291,8 +291,8 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk.   Length  Loop             QuickSel        Quick Selection: Length         
   // G1T1   256/256   1               Length    4    8   16   24   32   64  128  256
 
-  // Trk.   Length  Loop             QuickSel   1    5    9   13    1    1   17   25   33 
-  // G1T1   256/256   1               Loops     4    8   12   16   16   32   32   32
+  // Trk.   Length  Loop             QuickSel   1    5    9   13    1    1   17   25 
+  // G1T1   256/256   1               Loops     4    8   12   16   16   32   32   32 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());

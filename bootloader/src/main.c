@@ -18,7 +18,9 @@
 #include <mios32.h>
 #include "bsl_sysex.h"
 
+#if defined(MIOS32_FAMILY_STM32F10x)
 #include <usb_lib.h>
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -33,9 +35,13 @@
 //   o jumper already available (J27)
 //   o pull-up already available
 //   o normaly used in Open Drain mode, so that no short circuit if jumper is stuffed
+#if defined(MIOS32_FAMILY_STM32F10x)
 #define BSL_HOLD_PORT        GPIOB
 #define BSL_HOLD_PIN         GPIO_Pin_2
 #define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
+#else
+#define BSL_HOLD_STATE       0
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,10 +50,12 @@
 
 // note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
 // since these functions access the ports directly
+#if defined(MIOS32_FAMILY_STM32F10x)
 typedef struct {
   GPIO_TypeDef *port;
   u16 pin_mask;
 } srio_pin_t;
+#endif
 
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
 #define SRIO_RESET_SUPPORTED 1
@@ -117,11 +125,18 @@ int main(void)
     // if initialized, this function will only set some variables - it won't re-init the peripheral.
     // if hold mode activated via external pin, force re-initialisation by resetting USB
     if( hold_mode_active_after_reset ) {
+#if defined(MIOS32_FAMILY_STM32F10x)
       RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
       RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
+#endif
     }
 
     MIOS32_USB_Init(0);
+  } else {
+#if defined(MIOS32_FAMILY_LPC17xx)
+    // currently somehow works ok for LPC17xx, but probably only for MacOS!
+    MIOS32_USB_Init(0);
+#endif
   }
 
 
@@ -164,8 +179,9 @@ int main(void)
     MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
 
     // call periodic hook each mS (!!! important - not shorter due to timeout counters which are handled here)
-    if( (cnt % 10) == 0 )
+    if( (cnt % 10) == 0 ) {
       MIOS32_MIDI_Periodic_mS();
+    }
 
     // check for incoming MIDI messages - no hooks are used
     // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
@@ -176,13 +192,17 @@ int main(void)
 	   BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation
 	   (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
 
+
+#if defined(MIOS32_FAMILY_STM32F10x)
   // ensure that flash write access is locked
   FLASH_Lock();
+#endif
 
   // turn of LED
   MIOS32_BOARD_LED_Set(BSL_LED_MASK, 0);
 
   // branch to application if reset vector is valid (should be inside flash range)
+#if defined(MIOS32_FAMILY_STM32F10x)
   u32 *reset_vector = (u32 *)0x08004004;
   if( (*reset_vector >> 24) == 0x08 ) {
     // reset all peripherals
@@ -212,15 +232,23 @@ int main(void)
 
     // change stack pointer
     u32 *stack_pointer = (u32 *)0x08004000;
-#if 0
-    __MSR_MSP(*stack_pointer);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  u32 *reset_vector = (u32 *)0x00004004;
+  if( (*reset_vector >> 24) == 0x00 ) {
+    // reset all peripherals
+
+    // change stack pointer
+    u32 *stack_pointer = (u32 *)0x00004000;
 #else
+# error "please adapt reset sequence for this family"
+#endif
+
+
     u32 stack_pointer_value = *stack_pointer;
     __asm volatile (		       \
 		    "   msr msp, %0\n" \
                     :: "r" (stack_pointer_value) \
                     );
-#endif
 
     // branch to application
     void (*application)(void) = (void *)*reset_vector;
