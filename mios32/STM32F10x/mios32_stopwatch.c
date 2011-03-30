@@ -33,6 +33,9 @@
 #define STOPWATCH_TIMER_BASE                 TIM6
 #define STOPWATCH_TIMER_RCC   RCC_APB1Periph_TIM6
 
+// timers clocked at CPU clock
+#define TIM_PERIPHERAL_FRQ MIOS32_SYS_CPU_FREQUENCY
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the 16bit stopwatch timer with the desired resolution:
@@ -79,7 +82,7 @@ s32 MIOS32_STOPWATCH_Init(u32 resolution)
   // time base configuration
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
   TIM_TimeBaseStructure.TIM_Period = 0xffff; // max period
-  TIM_TimeBaseStructure.TIM_Prescaler = (72 * resolution)-1; // <resolution> uS accuracy @ 72 MHz
+  TIM_TimeBaseStructure.TIM_Prescaler = ((TIM_PERIPHERAL_FRQ/1000000) * resolution)-1; // <resolution> uS accuracy
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(STOPWATCH_TIMER_BASE, &TIM_TimeBaseStructure);

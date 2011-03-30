@@ -25,6 +25,9 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_STOPWATCH)
 
+// timers clocked at CCLK/4 MHz
+#define TIM_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -71,7 +74,7 @@ s32 MIOS32_STOPWATCH_Init(u32 resolution)
 {
   // time base configuration
   STOPWATCH_TIMER_BASE->CTCR = 0x00;               // timer mode
-  STOPWATCH_TIMER_BASE->PR = (25 * resolution)-1;  // <resolution> uS accuracy @ 25 MHz Peripheral Clock
+  STOPWATCH_TIMER_BASE->PR = ((TIM_PERIPHERAL_FRQ/1000000) * resolution)-1;  // <resolution> uS accuracy @ CCLK/4 MHz Peripheral Clock
   STOPWATCH_TIMER_BASE->MR0 = 0xffffffff;          // interrupt event on overrun
   STOPWATCH_TIMER_BASE->MCR = (1 << 1) | (1 << 0); // generate event on match, reset counter on match
   STOPWATCH_TIMER_BASE->IR = ~0;                   // clear all interrupts

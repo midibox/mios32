@@ -22,8 +22,8 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_DELAY)
 
-// RIT clockated at 25 MHz
-#define RIT_PERIPHERAL_FRQ 25000000
+// RIT clocked at CCLK/4 MHz
+#define RIT_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ s32 MIOS32_DELAY_Wait_uS(u16 uS)
   u32 start    = LPC_RIT->RICOUNTER;
 
   // note that this event works on 32bit counter wrap-arounds
-  while( (u16)(LPC_RIT->RICOUNTER - start) <= uS_ticks );
+  while( (LPC_RIT->RICOUNTER - start) <= uS_ticks );
 
   return 0; // no error
 }

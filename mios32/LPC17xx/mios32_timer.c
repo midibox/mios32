@@ -27,6 +27,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// timers clocked at CCLK/4 MHz
+#define TIM_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
+
 #define NUM_TIMERS 3
 
 #define TIMER0_BASE                 LPC_TIM0
@@ -40,7 +43,6 @@
 #define TIMER2_BASE                 LPC_TIM2
 #define TIMER2_IRQ                  TIMER2_IRQn
 #define TIMER2_IRQ_HANDLER     void TIMER2_IRQHandler(void)
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -105,7 +107,7 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
 
   // time base configuration
   tim->CTCR = 0x00;               // timer mode
-  tim->PR = (25 * 1)-1;           // <resolution> uS accuracy @ 25 MHz Peripheral Clock
+  tim->PR = ((TIM_PERIPHERAL_FRQ/1000000) * 1)-1; // <resolution> uS accuracy @ CCLK/4 Peripheral Clock
   tim->MR0 = period;              // interrupt event on overrun
   tim->MCR = (1 << 1) | (1 << 0); // generate event on match, reset counter on match
   tim->IR = ~0;                   // clear all interrupts
@@ -158,7 +160,7 @@ s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
 
   // time base configuration
   tim->CTCR = 0x00;               // timer mode
-  tim->PR = (25 * 1)-1;           // <resolution> uS accuracy @ 25 MHz Peripheral Clock
+  tim->PR = ((TIM_PERIPHERAL_FRQ/1000000) * 1)-1; // <resolution> uS accuracy @ CCLK/4 Peripheral Clock
   tim->MR0 = period;              // interrupt event on overrun
   tim->MCR = (1 << 1) | (1 << 0); // generate event on match, reset counter on match
 
