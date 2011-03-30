@@ -127,6 +127,11 @@ s32 MIOS32_SYS_Init(u32 mode)
       // ADCCLK = PCLK2/6
       RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
+// check consistency with mios32_sys.h
+#if MIOS32_SYS_CPU_FREQUENCY != 72000000ULL
+# error "Please adapt MIOS32_SYS_Init() for the selected MIOS32_SYS_CPU_FREQUENCY!"
+#endif
+
 #ifdef STM32F10X_CL
       // PLL2 configuration: PLL2CLK = (HSE / 3) * 10 = 40 MHz
       RCC_PREDIV2Config(RCC_PREDIV2_Div3);

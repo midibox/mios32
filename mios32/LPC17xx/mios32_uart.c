@@ -35,8 +35,8 @@
 // Pin definitions and UART mappings
 /////////////////////////////////////////////////////////////////////////////
 
-// all peripherals are clocked at 25 MHz
-#define UART_PERIPHERAL_FRQ 25000000
+// all peripherals are clocked at CCLK/4
+#define UART_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4000000)
 
 // TX: P0.2, RX: P0.3
 #define MIOS32_UART0_TX_INIT     { LPC_PINCON->PINSEL0 &= ~(3 << 4); LPC_PINCON->PINSEL0 |= (1 << 4); }

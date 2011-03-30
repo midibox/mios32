@@ -48,6 +48,7 @@ s32 MIOS32_SPI_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+
   return -1; // not supported yet
 }
 

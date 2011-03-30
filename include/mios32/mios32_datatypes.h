@@ -1,7 +1,7 @@
 // $Id$
 /*
  * Defines data types for 32bit processors
- * compatible with stm32f10x_type.h
+ * compatible with stm32f10x.h
  *
  * ==========================================================================
  *
@@ -14,6 +14,9 @@
 
 #ifndef _MIOS32_DATATYPES_H
 #define _MIOS32_DATATYPES_H
+
+// following check to ensure that typedefs won't be declared again from stm32f10x.h
+#ifndef __STM32F10x_H
 
 typedef signed long  s32;
 typedef signed short s16;
@@ -56,6 +59,8 @@ typedef volatile unsigned char  const vuc8;   /* Read Only */
 #define U32_MAX    ((u32)4294967295uL)
 #define S32_MAX    ((s32)2147483647)
 #define S32_MIN    ((s32)-2147483648)
+
+#endif
 
 #endif /* _MIOS32_DATATYPES_H */
 

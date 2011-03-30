@@ -3,7 +3,10 @@
 #define FREERTOS_CONFIG_H
 
 // MIOS32 specific predefines - can be overruled in your local mios32_config.h file
+// don't include complete mios.h, but only relevant parts!
+#include "mios32_datatypes.h"
 #include "mios32_config.h"
+#include "mios32_sys.h"
 
 #ifndef MIOS32_MINIMAL_STACK_SIZE
 #define MIOS32_MINIMAL_STACK_SIZE 1024
@@ -27,6 +30,7 @@
 #define configUSE_PREEMPTION                1
 #define configUSE_IDLE_HOOK                 1
 #define configUSE_TICK_HOOK                 1
+//#define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) MIOS32_SYS_CPU_FREQUENCY )
 #define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) 72000000 )
 #define configTICK_RATE_HZ                  ( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES                ( ( unsigned portBASE_TYPE ) 5 )

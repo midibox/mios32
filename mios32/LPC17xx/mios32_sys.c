@@ -42,12 +42,6 @@ extern u32 mios32_sys_isr_vector;
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
 
-#if 0
-#define EXT_CRYSTAL_FRQ 12000000  // used for MBHP_CORE_STM32, should we define this somewhere else or select via MIOS32_BOARD?
-#define RTC_PREDIVIDER  (EXT_CRYSTAL_FRQ/128)
-#endif
-
-
 // to enter IAP routines
 static void iap_entry(unsigned param_tab[],unsigned result_tab[])
 {
@@ -92,6 +86,11 @@ s32 MIOS32_SYS_Init(u32 mode)
 
   LPC_SC->CLKSRCSEL = 1;                 // select PLL0 as clock source
 
+
+// check consistency with mios32_sys.h
+#if MIOS32_SYS_CPU_FREQUENCY != 100000000ULL
+# error "Please adapt MIOS32_SYS_Init() for the selected MIOS32_SYS_CPU_FREQUENCY!"
+#endif
 
   // PLL0
   LPC_SC->PLL0CFG   = ((6-1)<<16) | (((100-1)<<0)); // PLL config: N=6, M=100 -> 12 MHz * 2 * 100 / 6 -> 400 MHz
@@ -290,50 +289,22 @@ s32 MIOS32_SYS_SerialNumberGet(char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
 {
-#if 0
-  // taken from STM32 example "RTC/Calendar"
-  // adapted to clock RTC via HSE  oscillator
+  // reset CTC
+  LPC_RTC->CCR = (1 << 1);
+  LPC_RTC->CCR = 0;
 
-  // Enable PWR and BKP clocks
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+  // configure time
+  // only 24h are covered, although the LPC_RTC counts even years!
+  // this is to keep it compatible with STM32 implementation
+  //
+  // big drawback of LPC variant: microseconds not available!
+  // and an external 32kHz crystal required
+  LPC_RTC->SEC  = t.seconds % 60;
+  LPC_RTC->MIN  = (t.seconds % 3600) / 60;
+  LPC_RTC->HOUR = (t.seconds % 3600) % 24;
 
-  // Allow access to BKP Domain
-  PWR_BackupAccessCmd(ENABLE);
-
-  // Reset Backup Domain
-  BKP_DeInit();
-
-  // Select HSE (divided by 128) as RTC Clock Source
-  RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div128);
-
-  // Enable RTC Clock
-  RCC_RTCCLKCmd(ENABLE);
-
-  // Wait for RTC registers synchronization
-  RTC_WaitForSynchro();
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-
-  // Enable the RTC Second
-  RTC_ITConfig(RTC_IT_SEC, ENABLE);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-
-  // Set RTC prescaler: set RTC period to 1sec
-  RTC_SetPrescaler(RTC_PREDIVIDER-1);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-
-  // Change the current time
-  // (fraction not taken into account here)
-  RTC_SetCounter(t.seconds);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-#endif
+  // enable CTC
+  LPC_RTC->CCR = (1 << 0);
 
   return 0; // no error
 }
@@ -355,42 +326,22 @@ s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
 /////////////////////////////////////////////////////////////////////////////
 mios32_sys_time_t MIOS32_SYS_TimeGet(void)
 {
-  u32 seconds, divider;
-  u32 last_seconds, last_divider;
+  u32 ctime = LPC_RTC->CTIME0;
 
-#if 0
-  // counter values are changing with a period of 1/(12 MHz / 128) = ca. 11 uS
-  // in order to ensure, that we are reading a consistent counter set, the
-  // accesses have to be repeated until we read two times the same values
-
-  // use direct register accesses instead ofto RTC_GetCounter()/RTC_GetDivider()
-  // to speed up routine
-
-  // note: we could have an issue here if routine is permanently interrupted,
-  // so that we never reach the same values...
-
-  // therefore interrupts are disabled
-  // Disadvantage: bad for interrupt latency...
-  // However, expected execution time is ca. 500 nS for two loops (best case),
-  // and 750 nS for three loops (worst case)
-
-  MIOS32_IRQ_Disable();
-  seconds = divider = 0;
-  do {
-    last_seconds = seconds;
-    last_divider = divider;
-    seconds = ((u32)RTC->CNTH << 16) | RTC->CNTL;
-    divider = ((u32)RTC->DIVH << 16) | RTC->DIVL;
-  } while( seconds != last_seconds && divider != last_divider );
-  MIOS32_IRQ_Enable();
+  // calculate time
+  // only 24h are covered, although the LPC_RTC counts even years!
+  // this is to keep it compatible with STM32 implementation
+  //
+  // big drawback of LPC variant: microseconds not available!
+  // and an external 32kHz crystal required
+  u32 seconds = (ctime & 0xff) + 60*((ctime>>8)&0xff) + 3600*((ctime>>16)&0xff);
 
   mios32_sys_time_t t = {
     .seconds = seconds,
-    .fraction_ms = (1000 * (RTC_PREDIVIDER-1-divider)) / RTC_PREDIVIDER
+    .fraction_ms = 0,
   };
 
   return t;
-#endif
 }
 
 //! \}

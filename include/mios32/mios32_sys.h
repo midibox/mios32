@@ -18,6 +18,25 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+
+// constants which define the CPU frequency
+// please note: changing this constant won't lead to any frequency change, instead
+// timers used by MIOS32 based components (and also FreeRTOS) will be configured
+// wrongly.
+// In order to change the frequency please add a clock option to MIOS32_SYS_Init()
+#ifndef MIOS32_SYS_CPU_FREQUENCY
+#if defined(MIOS32_FAMILY_STM32F10x)
+# define MIOS32_SYS_CPU_FREQUENCY 72000000ULL
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# define MIOS32_SYS_CPU_FREQUENCY 100000000ULL
+#else
+  // dummy
+# define MIOS32_SYS_CPU_FREQUENCY 100000000ULL
+#endif
+#endif
+
+
+// STM32 only:
 // The DBGMCU_CR register allows to suspend peripherals when CPU is in halt
 // state to simplify debugging (e.g. no timer interrupt is triggered each
 // time the program is stepped)
