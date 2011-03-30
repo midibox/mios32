@@ -30,8 +30,7 @@
 #define configUSE_PREEMPTION                1
 #define configUSE_IDLE_HOOK                 1
 #define configUSE_TICK_HOOK                 1
-//#define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) MIOS32_SYS_CPU_FREQUENCY )
-#define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) 72000000 )
+#define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) MIOS32_SYS_CPU_FREQUENCY )
 #define configTICK_RATE_HZ                  ( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES                ( ( unsigned portBASE_TYPE ) 5 )
 #define configMINIMAL_STACK_SIZE            ( ( unsigned portSHORT ) (MIOS32_MINIMAL_STACK_SIZE/4) )
