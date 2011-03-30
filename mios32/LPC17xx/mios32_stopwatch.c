@@ -92,8 +92,8 @@ s32 MIOS32_STOPWATCH_Init(u32 resolution)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_STOPWATCH_Reset(void)
 {
-  STOPWATCH_TIMER_BASE->TCR |= (1 << 1);
-  STOPWATCH_TIMER_BASE->TCR &= ~(1 << 1);
+  // clear timer counter
+  STOPWATCH_TIMER_BASE->TC = 0;
 
   return 0; // no error
 }
