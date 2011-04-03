@@ -967,16 +967,16 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
       // we have 4 cases:
       if( receive_buffer != NULL ) {
 	if( send_buffer != NULL ) {
-	  for(pos=0; pos<len; ++len)
+	  for(pos=0; pos<len; ++pos)
 	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, *send_buffer++);
 	} else {
-	  for(pos=0; pos<len; ++len)
+	  for(pos=0; pos<len; ++pos)
 	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, 0xff);
 	}
       } else {
 	// TODO: we could use an optimized "send only" function to speed up the SW emulation!
 	if( send_buffer != NULL ) {
-	  for(pos=0; pos<len; ++len)
+	  for(pos=0; pos<len; ++pos)
 	    MIOS32_SPI_TransferByte(spi, *send_buffer++);
 	} else {
 	  // nothing to do...
@@ -988,7 +988,7 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
       if( spi_callback[spi] != NULL )
 	spi_callback[spi]();
 
-      return 0;; // END of SW emulation - EXIT here!
+      return 0; // END of SW emulation - EXIT here!
     } break;
 #endif
 
@@ -1039,8 +1039,9 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   // start DMA transfer
   DMA_Cmd(dma_tx_ptr, ENABLE);
 
-  // wait until all bytes have been transmitted/received
-  while( dma_rx_ptr->CNDTR );
+  // if no callback: wait until all bytes have been transmitted/received
+  if( callback == NULL )
+    while( dma_rx_ptr->CNDTR );
 
   return 0; // no error;
 }
