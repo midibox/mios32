@@ -64,6 +64,10 @@
 // all ADC channels have been converted
 #define MIOS32_IRQ_AIN_DMA_PRIORITY     MIOS32_IRQ_PRIO_HIGH
 
+// Shared DMA Channel IRQ used by LTC17xx port for all DMA channels!
+#define MIOS32_IRQ_GLOBAL_DMA_PRIORITY    MIOS32_IRQ_PRIO_HIGH
+
+
 
 // IIC IRQs used by MIOS32_IIC, called rarely on IIC accesses
 // should be very high to overcome peripheral flaws (see header of mios32_iic.c)

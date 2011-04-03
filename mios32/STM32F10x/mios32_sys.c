@@ -443,6 +443,23 @@ mios32_sys_time_t MIOS32_SYS_TimeGet(void)
   return t;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs a DMA callback function which is invoked on DMA interrupts\n
+//! Available for LTC17xx (and not STM32) since it only provides a single DMA
+//! interrupt which is shared by all channels.
+//! \param[in] dma the DMA number (currently always 0)
+//! \param[in] chn the DMA channel (0..7)
+//! \param[in] callback the callback function which will be invoked by DMA ISR
+//! \return -1 if function not implemented for this MIOS32_PROCESSOR
+//! \return -2 if invalid DMA number is selected
+//! \return -2 if invalid DMA channel selected
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_DMA_CallbackSet(u8 dma, u8 chn, void *callback)
+{
+  return -1; // function not implemented for this MIOS32_PROCESSOR
+}
+
 //! \}
 
 #endif /* MIOS32_DONT_USE_SYS */
