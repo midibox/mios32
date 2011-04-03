@@ -74,6 +74,8 @@ extern s32 MIOS32_SYS_SerialNumberGet(char *str);
 extern s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t);
 extern mios32_sys_time_t MIOS32_SYS_TimeGet(void);
 
+extern s32 MIOS32_SYS_DMA_CallbackSet(u8 dma, u8 chn, void *callback);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

@@ -42,7 +42,16 @@ extern u32 mios32_sys_isr_vector;
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+#define NUM_DMA_CHANNELS 8
+static void (*dma_callback[NUM_DMA_CHANNELS])(void);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // to enter IAP routines
+/////////////////////////////////////////////////////////////////////////////
 static void iap_entry(unsigned param_tab[],unsigned result_tab[])
 {
   void (*iap)(unsigned [],unsigned []);
@@ -140,6 +149,24 @@ s32 MIOS32_SYS_Init(u32 mode)
   // initialize system clock
   mios32_sys_time_t t = { .seconds=0, .fraction_ms=0 };
   MIOS32_SYS_TimeSet(t);
+
+  // disable DMA callbacks
+  int i;
+  for(i=0; i<NUM_DMA_CHANNELS; ++i)
+    dma_callback[i] = NULL;
+
+  // enable DMA
+  LPC_GPDMA->DMACConfig = (1 << 0);
+
+  // enable DMA interrupts
+  // TODO: use NVIC_SetPriority; will require some encoding...
+  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
+  u32 tmppre = (4 - tmppriority);
+  tmppriority = MIOS32_IRQ_GLOBAL_DMA_PRIORITY << tmppre;
+  tmppriority = tmppriority << 4;
+  NVIC->IP[DMA_IRQn] = tmppriority;
+
+  NVIC_EnableIRQ(DMA_IRQn);
 
   return 0; // no error
 }
@@ -342,6 +369,56 @@ mios32_sys_time_t MIOS32_SYS_TimeGet(void)
   };
 
   return t;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs a DMA callback function which is invoked on DMA interrupts\n
+//! Available for LTC17xx (and not STM32) since it only provides a single DMA
+//! interrupt which is shared by all channels.
+//! \param[in] dma the DMA number (currently always 0)
+//! \param[in] chn the DMA channel (0..7)
+//! \param[in] callback the callback function which will be invoked by DMA ISR
+//! \return -1 if function not implemented for this MIOS32_PROCESSOR
+//! \return -2 if invalid DMA number is selected
+//! \return -2 if invalid DMA channel selected
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SYS_DMA_CallbackSet(u8 dma, u8 chn, void *callback)
+{
+  if( dma > 0 )
+    return -2; // invalid DMA number selected
+
+  if( chn >= NUM_DMA_CHANNELS )
+    return -3; // invalid DMA channel selected
+
+  dma_callback[chn] = callback;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// The DMA ISR which is shared by all DMA channels
+// (unfortunately... a LPC17xx limitation)
+/////////////////////////////////////////////////////////////////////////////
+void DMA_IRQHandler(void)
+{
+  // this shared handling will cost some cycles... :-/
+  // TODO: check if DMA interrupt really invoked again
+  // if new flags are set after read and while the handler is executed
+  u32 int_stat = LPC_GPDMA->DMACIntStat;
+
+  int chn;
+  u32 mask = 0x0001;
+  for(chn=0; chn<NUM_DMA_CHANNELS; ++chn, mask<<=1) {
+    if( int_stat & mask ) {
+      void (*_callback)(void) = dma_callback[chn];
+      if( _callback != NULL )
+	_callback();
+      LPC_GPDMA->DMACIntTCClear = mask;
+      LPC_GPDMA->DMACIntErrClr = mask;
+    }
+  }
 }
 
 //! \}
