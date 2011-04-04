@@ -3,7 +3,26 @@
 //!
 //! Hardware Abstraction Layer for SPI ports of LPC17xx
 //!
-//! Not adapted to LPC17xx yet
+//! Three ports are provided at J16 (SPI0), J8/9 (SPI1) and J19 (SPI2) of the 
+//! MBHP_CORE_LTC17 module..
+//!
+//! All SPI ports provide two RCLK (alias Chip Select) lines.
+//!
+//! J16 is normaly connected to a SD Card
+//!
+//! J8/9 is normaly connected to the SRIO chain to scan DIN/DOUT modules.
+//!
+//! J19 doesn't support DMA transfers, so that 
+//! MIOS32_SPI_TransferBlock() will consume CPU time (but the callback handling does work).
+//!
+//! If SPI low-level functions should be used to access other peripherals,
+//! please ensure that the appr. MIOS32_* drivers are disabled (e.g.
+//! add '#define MIOS32_DONT_USE_SDCARD' and '#define MIOS32_DONT_USE_ENC28J60'
+//! to your mios_config.h file)
+//!
+//! Note that additional chip select lines can be easily added by using
+//! the remaining free GPIOs of the core module. Shared SPI ports should be
+//! arbitrated with (FreeRTOS based) Mutexes to avoid collisions!
 //!
 //! \{
 /* ==========================================================================
@@ -33,6 +52,45 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// MIOS32_SPI0 uses SSP0
+// Assigned to J16 of MBHP_CORE_LPC17
+/////////////////////////////////////////////////////////////////////////////
+
+#define MIOS32_SPI0_PTR        LPC_SSP0
+
+// RCLK1: P1.22 (used as GPIO)
+#define MIOS32_SPI0_RCLK1_INIT { LPC_PINCON->PINSEL3 &= ~(3 << ((22-16)*2)); LPC_GPIO1->FIODIR |= (1 << 22); }
+#define MIOS32_SPI0_RCLK1_SET(v) { if( v ) LPC_GPIO1->FIOSET = (1 << 22); else LPC_GPIO1->FIOCLR = (1 << 22); }
+
+// RCLK2: P1.21 (used as GPIO)
+#define MIOS32_SPI0_RCLK2_INIT { LPC_PINCON->PINSEL3 &= ~(3 << ((21-16)*2)); LPC_GPIO1->FIODIR |= (1 << 21); }
+#define MIOS32_SPI0_RCLK2_SET(v) { if( v ) LPC_GPIO1->FIOSET = (1 << 21); else LPC_GPIO1->FIOCLR = (1 << 21); }
+
+// SCLK: P1.20 (assigned to SSP0)
+#define MIOS32_SPI0_SCLK_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((20-16)*2)); }
+// MISO: P1.23 (assigned to SSP0)
+#define MIOS32_SPI0_MISO_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((23-16)*2)); }
+// MISO: P1.24 (assigned to SSP0)
+#define MIOS32_SPI0_MOSI_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((24-16)*2)); }
+
+// Push-Pull Config
+#define MIOS32_SPI0_PP_INIT    { LPC_PINCON->PINMODE_OD1 &= ~((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
+// Open-Drain Config
+#define MIOS32_SPI0_OD_INIT    { LPC_PINCON->PINMODE_OD1 |=  ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
+// Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
+#define MIOS32_SPI0_IN_INIT    { LPC_PINCON->PINMODE3 &= ~((3<<((24-16)*2))|(3<<((23-16)*2))|(3<<((22-16)*2))|(3<<((21-16)*2))|(3<<((20-16)*2))); \
+                                 LPC_PINCON->PINMODE3 |=  ((2<<((24-16)*2))|(0<<((23-16)*2))|(2<<((22-16)*2))|(2<<((21-16)*2))|(2<<((20-16)*2))); }
+
+// DMA Request Inputs (DMACSREQ)
+#define MIOS32_SPI0_DMA_TX_REQ  0
+#define MIOS32_SPI0_DMA_RX_REQ  1
+
+// Allocated DMA Channels - they are matching with the request input number, but this is no must!
+#define MIOS32_SPI0_DMA_TX_CHN  0
+#define MIOS32_SPI0_DMA_RX_CHN  1
+
+
+/////////////////////////////////////////////////////////////////////////////
 // MIOS32_SPI1 uses SSP1
 // Assigned to J8/9 of MBHP_CORE_LPC17
 /////////////////////////////////////////////////////////////////////////////
@@ -58,6 +116,9 @@
 #define MIOS32_SPI1_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
 // Open-Drain Config
 #define MIOS32_SPI1_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
+// Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
+#define MIOS32_SPI1_IN_INIT    { LPC_PINCON->PINMODE0 &= ~((3<<(9*2))|(3<<(8*2))|(3<<(7*2))|(3<<(6*2))|(3<<(5*2))); \
+                                 LPC_PINCON->PINMODE0 |=  ((2<<(9*2))|(0<<(8*2))|(2<<(7*2))|(2<<(6*2))|(2<<(5*2))); }
 
 // DMA Request Inputs (DMACSREQ)
 #define MIOS32_SPI1_DMA_TX_REQ  2
@@ -96,6 +157,11 @@
 #define MIOS32_SPI2_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
 // Open-Drain Config
 #define MIOS32_SPI2_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
+// Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
+#define MIOS32_SPI2_IN_INIT    { LPC_PINCON->PINMODE1 &= ~((3<<((21-16)*2))|(3<<((18-16)*2))|(3<<((17-16)*2))|(3<<((16-16)*2))); \
+                                 LPC_PINCON->PINMODE1 |=  ((2<<((21-16)*2))|(3<<((18-16)*2))|(0<<((17-16)*2))|(3<<((16-16)*2))); \
+				 LPC_PINCON->PINMODE0 &= ~((3<<(15*2))); \
+                                 LPC_PINCON->PINMODE0 |=  ((2<<(15*2))); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -114,6 +180,22 @@ s32 MIOS32_SPI_Init(u32 mode)
     return -1; // unsupported mode
 
   ///////////////////////////////////////////////////////////////////////////
+  // SPI0
+  ///////////////////////////////////////////////////////////////////////////
+#ifndef MIOS32_DONT_USE_SPI0
+  // set RC pin(s) to 1
+  MIOS32_SPI_RC_PinSet(0, 0, 1); // spi, rc_pin, pin_value
+  MIOS32_SPI_RC_PinSet(0, 1, 1); // spi, rc_pin, pin_value
+
+  // IO configuration
+  MIOS32_SPI_IO_Init(0, MIOS32_SPI_PIN_DRIVER_WEAK);
+
+  // initial SPI peripheral configuration
+  MIOS32_SPI_TransferModeInit(0, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
+#endif /* MIOS32_DONT_USE_SPI0 */
+
+
+  ///////////////////////////////////////////////////////////////////////////
   // SPI1
   ///////////////////////////////////////////////////////////////////////////
 #ifndef MIOS32_DONT_USE_SPI1
@@ -126,7 +208,7 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(1, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-#endif /* MIOS32_DONT_USE_SPI2 */
+#endif /* MIOS32_DONT_USE_SPI1 */
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -170,20 +252,44 @@ s32 MIOS32_SPI_Init(u32 mode)
 s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 {
   // tmp
-  spi_pin_driver = MIOS32_SPI_PIN_DRIVER_STRONG;
+  //spi_pin_driver = MIOS32_SPI_PIN_DRIVER_STRONG;
 
   switch( spi ) {
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK ) {
+	MIOS32_SPI0_PP_INIT;
+      } else if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG_OD || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK_OD ) {
+	MIOS32_SPI0_OD_INIT;
+      } else {
+	return -3; // unsupported pin driver mode
+      }
+
+      MIOS32_SPI0_IN_INIT;
+
+      MIOS32_SPI0_RCLK1_INIT;
+      MIOS32_SPI0_RCLK2_INIT;
+      MIOS32_SPI0_SCLK_INIT;
+      MIOS32_SPI0_MISO_INIT;
+      MIOS32_SPI0_MOSI_INIT;
+      break;
+#endif
+
     case 1:
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
-      if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG || MIOS32_SPI_PIN_DRIVER_WEAK ) {
+      if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK ) {
 	MIOS32_SPI1_PP_INIT;
-      } else if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG_OD || MIOS32_SPI_PIN_DRIVER_WEAK_OD ) {
+      } else if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG_OD || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK_OD ) {
 	MIOS32_SPI1_OD_INIT;
       } else {
 	return -3; // unsupported pin driver mode
       }
+
+      MIOS32_SPI1_IN_INIT;
 
       MIOS32_SPI1_RCLK1_INIT;
       MIOS32_SPI1_RCLK2_INIT;
@@ -197,13 +303,15 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
-      if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG || MIOS32_SPI_PIN_DRIVER_WEAK ) {
+      if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK ) {
 	MIOS32_SPI2_PP_INIT;
-      } else if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG_OD || MIOS32_SPI_PIN_DRIVER_WEAK_OD ) {
+      } else if( spi_pin_driver == MIOS32_SPI_PIN_DRIVER_STRONG_OD || spi_pin_driver == MIOS32_SPI_PIN_DRIVER_WEAK_OD ) {
 	MIOS32_SPI2_OD_INIT;
       } else {
 	return -3; // unsupported pin driver mode
       }
+
+      MIOS32_SPI2_IN_INIT;
 
       MIOS32_SPI2_RCLK1_INIT;
       MIOS32_SPI2_RCLK2_INIT;
@@ -237,14 +345,14 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 //! </UL>
 //! \param[in] spi_prescaler configures the SPI speed:
 //! <UL>
-//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 27.7~ nS @ 72 MHz (36 MBit/s) (only supported for spi==0, spi1 uses 4 instead)
-//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 55.5~ nS @ 72 MHz (18 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 111.1~ nS @ 72 MHz (9 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 222.2~ nS @ 72 MHz (4.5 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 444.4~ nS @ 72 MHz (2.25 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 888.8~ nS @ 72 MHz (1.125 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_128: sets clock rate 1.7~ nS @ 72 MHz (0.562 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_256: sets clock rate 3.5~ nS @ 72 MHz (0.281 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 0.02 uS @ 100 MHz (50 MBit/s) (only supported for spi==0 and spi==1, spi2 uses 8 instead)
+//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 0.04 uS @ 100 MHz (25 MBit/s) (only supported for spi==0 and spi==1, spi2 uses 8 instead)
+//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 0.08 uS @ 100 MHz (12.5 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 0.16 uS @ 100 MHz (6.25 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 0.32 uS @ 100 MHz (3.125 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 0.64 uS @ 100 MHz (1.563 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_128: sets clock rate 1.28 uS @ 100 MHz (0.781 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_256: sets clock rate 2.56 uS @ 100 MHz (0.391 MBit/s)
 //! </UL>
 //! \return 0 if no error
 //! \return -1 if disabled SPI port selected
@@ -254,6 +362,8 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_prescaler_t spi_prescaler)
 {
+  LPC_SSP_TypeDef *ssp_ptr = NULL;
+
   if( spi_prescaler >= 8 )
     return -3; // invalid spi_prescaler selected
 
@@ -261,41 +371,28 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
     return -4; // invalid spi_mode selected
 
   switch( spi ) {
-    case 1: {
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      ssp_ptr = MIOS32_SPI0_PTR;
+      break;
+#endif
+
+    case 1:
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
-      // LPC17xx provides a finer control over clock than STM32 (7bit resolution)
-      // however, the 2^n prescaler should be sufficient...
-      u32 prescaler = 1 << (spi_prescaler+1);
-      if( prescaler < 2 )
-	prescaler = 2; // requirement according to datasheet (almost redundant, the formula above already ensures this)
-      else if( prescaler >= 0x100 )
-	prescaler = 0xff;
-      MIOS32_SPI1_PTR->CPSR = prescaler;
-
-      // note: CPOL/CPHA swapped on CR0 - strange decition from design team to make SSP incompatible to SPI
-      u16 prev_mode = ((MIOS32_SPI1_PTR->CR0 >> 7) & 1) | ((MIOS32_SPI1_PTR->CR0 >> (6-1)) & 2);
-
-      // SPI frame format, clock/phase according to spi_mode, 8 bits transfered
-      MIOS32_SPI1_PTR->CR0 = ((spi_mode & 1) << 7) | ((spi_mode & 2) << (6-1)) | (7 << 0);
-      MIOS32_SPI1_PTR->CR1 = (1 << 1); // enable SSP
-
-      MIOS32_SPI1_PTR->DMACR = 0x3; // enable Rx/Tx DMA request
-
-      if( prev_mode != spi_mode ) {
-	// clock configuration has been changed - we should send a dummy byte
-	// before the application activates chip select.
-	// this solves a dependency between SDCard and ENC28J60 driver
-	MIOS32_SPI_TransferByte(spi, 0xff);
-      }
+      ssp_ptr = MIOS32_SPI1_PTR;
+      break;
 #endif
-    } break;
 
     case 2: {
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
+      // special treadment for legacy SPI
+
       // LPC17xx provides a finer control over clock than STM32 (7bit resolution)
       // however, the 2^n prescaler should be sufficient...
       u32 prescaler = (1 << (spi_prescaler+1));
@@ -316,11 +413,39 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 	// this solves a dependency between SDCard and ENC28J60 driver
 	MIOS32_SPI_TransferByte(spi, 0xff);
       }
+
+      return 0; // no error
 #endif
     } break;
 
     default:
       return -2; // unsupported SPI port
+  }
+
+
+  // LPC17xx provides a finer control over clock than STM32 (7bit resolution)
+  // however, the 2^n prescaler should be sufficient...
+  u32 prescaler = 1 << (spi_prescaler+1);
+  if( prescaler < 2 )
+    prescaler = 2; // requirement according to datasheet (almost redundant, the formula above already ensures this)
+  else if( prescaler >= 0x100 )
+    prescaler = 0xff;
+  ssp_ptr->CPSR = prescaler;
+
+  // note: CPOL/CPHA swapped on CR0 - strange decition from design team to make SSP incompatible to SPI
+  u16 prev_mode = ((ssp_ptr->CR0 >> 7) & 1) | ((ssp_ptr->CR0 >> (6-1)) & 2);
+
+  // SPI frame format, clock/phase according to spi_mode, 8 bits transfered
+  ssp_ptr->CR0 = ((spi_mode & 1) << 7) | ((spi_mode & 2) << (6-1)) | (7 << 0);
+  ssp_ptr->CR1 = (1 << 1); // enable SSP
+
+  ssp_ptr->DMACR = 0x3; // enable Rx/Tx DMA request
+
+  if( prev_mode != spi_mode ) {
+    // clock configuration has been changed - we should send a dummy byte
+    // before the application activates chip select.
+    // this solves a dependency between SDCard and ENC28J60 driver
+    MIOS32_SPI_TransferByte(spi, 0xff);
   }
 
   return 0; // no error
@@ -340,6 +465,25 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
 {
   switch( spi ) {
+
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      switch( rc_pin ) {
+        case 0:
+	  MIOS32_SPI0_RCLK1_SET(pin_value);
+	  break;
+
+        case 1:
+	  MIOS32_SPI0_RCLK2_SET(pin_value);
+	  break;
+
+        default:
+	  return -3; // unsupported RC pin
+      }
+      break;
+#endif
 
     case 1:
 #ifdef MIOS32_DONT_USE_SPI1
@@ -398,28 +542,31 @@ s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 {
+  LPC_SSP_TypeDef *ssp_ptr = NULL;
+
   switch( spi ) {
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      ssp_ptr = MIOS32_SPI0_PTR;
+      break;
+#endif
+
     case 1:
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
-      // poll TNF flag (transfer FIFO not full)
-      while( !(MIOS32_SPI1_PTR->SR & (1 << 1)) ); // TNF flag
-
-      // send byte
-      MIOS32_SPI1_PTR->DR = b;
-
-      // wait until RNE flag is set (Receive FIFO not empty)
-      while( !(MIOS32_SPI1_PTR->SR & (1 << 2)) ); // RNE Flag
-
-      // return received byte
-      return MIOS32_SPI1_PTR->DR;
+      ssp_ptr = MIOS32_SPI1_PTR;
+      break;
 #endif
 
     case 2:
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
+      // special treadment for legacy SPI
+
       // send byte
       MIOS32_SPI2_PTR->SPDR = b;
 
@@ -434,7 +581,18 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
       return -2; // unsupported SPI port
   }
 
-  return -1; // not supported yet
+
+  // poll TNF flag (transfer FIFO not full)
+  while( !(ssp_ptr->SR & (1 << 1)) ); // TNF flag
+
+  // send byte
+  ssp_ptr->DR = b;
+
+  // wait until RNE flag is set (Receive FIFO not empty)
+  while( !(ssp_ptr->SR & (1 << 2)) ); // RNE Flag
+
+  // return received byte
+  return ssp_ptr->DR;
 }
 
 
@@ -458,21 +616,34 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 len, void *callback)
 {
+  LPC_SSP_TypeDef *ssp_ptr = NULL;
   u8 rx_chn, tx_chn;
   u32 rx_chn_req, tx_chn_req;
-  LPC_SSP_TypeDef *ssp_ptr = NULL;
 
   switch( spi ) {
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI0_PTR;
+      rx_chn = MIOS32_SPI0_DMA_RX_CHN;
+      tx_chn = MIOS32_SPI0_DMA_TX_CHN;
+      rx_chn_req = MIOS32_SPI0_DMA_RX_REQ;
+      tx_chn_req = MIOS32_SPI0_DMA_TX_REQ;
+      break;
+#endif
+
     case 1:
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
       // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI1_PTR;
       rx_chn = MIOS32_SPI1_DMA_RX_CHN;
       tx_chn = MIOS32_SPI1_DMA_TX_CHN;
       rx_chn_req = MIOS32_SPI1_DMA_RX_REQ;
       tx_chn_req = MIOS32_SPI1_DMA_TX_REQ;
-      ssp_ptr = MIOS32_SPI1_PTR;
       break;
 #endif
 
@@ -480,6 +651,7 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
+    // special treadment for legacy SPI
     // no connection to DMA available
     // Software Emulation
     {
