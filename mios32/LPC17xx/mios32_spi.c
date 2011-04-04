@@ -75,7 +75,7 @@
 
 // Push-Pull Config
 #define MIOS32_SPI0_PP_INIT    { LPC_PINCON->PINMODE_OD1 &= ~((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
-// Open-Drain Config
+// Open-Drain Config -- NOTE: unfortunately it has no effect on SCLK and MOSI pin! This isn't documented in the LPC17xx user manual
 #define MIOS32_SPI0_OD_INIT    { LPC_PINCON->PINMODE_OD1 |=  ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
 #define MIOS32_SPI0_IN_INIT    { LPC_PINCON->PINMODE3 &= ~((3<<((24-16)*2))|(3<<((23-16)*2))|(3<<((22-16)*2))|(3<<((21-16)*2))|(3<<((20-16)*2))); \
@@ -114,7 +114,7 @@
 
 // Push-Pull Config
 #define MIOS32_SPI1_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
-// Open-Drain Config
+// Open-Drain Config -- NOTE: unfortunately it has no effect on SCLK and MOSI pin! This isn't documented in the LPC17xx user manual
 #define MIOS32_SPI1_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
 #define MIOS32_SPI1_IN_INIT    { LPC_PINCON->PINMODE0 &= ~((3<<(9*2))|(3<<(8*2))|(3<<(7*2))|(3<<(6*2))|(3<<(5*2))); \
@@ -155,7 +155,8 @@
 
 // Push-Pull Config
 #define MIOS32_SPI2_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
-// Open-Drain Config
+// Open-Drain Config -- NOTE: unfortunately it has no effect on SCLK and MOSI pin! This is documented in chapter 16.6.3
+// "The I/Os for this implementation of SPI are standard CMOS I/Os. The open drain SPI option is not implemented in this design."
 #define MIOS32_SPI2_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
 #define MIOS32_SPI2_IN_INIT    { LPC_PINCON->PINMODE1 &= ~((3<<((21-16)*2))|(3<<((18-16)*2))|(3<<((17-16)*2))|(3<<((16-16)*2))); \
@@ -239,10 +240,12 @@ s32 MIOS32_SPI_Init(u32 mode)
 //! <UL>
 //!   <LI>MIOS32_SPI_PIN_DRIVER_STRONG: configures outputs for up to 50 MHz
 //!   <LI>MIOS32_SPI_PIN_DRIVER_STRONG_OD: configures outputs as open drain 
-//!       for up to 50 MHz (allows voltage shifting via pull-resistors)
+//!       for up to 50 MHz (allows voltage shifting via pull-resistors)\n
+//!       Note: LPC17xx doesn't support Open Drain Mode for SCK and MOSI pin!
 //!   <LI>MIOS32_SPI_PIN_DRIVER_WEAK: configures outputs for up to 2 MHz (better EMC)
 //!   <LI>MIOS32_SPI_PIN_DRIVER_WEAK_OD: configures outputs as open drain for 
-//!       up to 2 MHz (allows voltage shifting via pull-resistors)
+//!       up to 2 MHz (allows voltage shifting via pull-resistors)\n
+//!       Note: LPC17xx doesn't support Open Drain Mode for SCK and MOSI pin!
 //! </UL>
 //! \return 0 if no error
 //! \return -1 if disabled SPI port selected
