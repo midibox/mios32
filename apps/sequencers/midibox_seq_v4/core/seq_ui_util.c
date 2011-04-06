@@ -176,7 +176,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case MSG_MOVE: {
       // if encoder number is different from move_enc, get step, otherwise move step
 
-      if( move_enc != encoder_step ) { // first selection or new encoder is moved
+      if( move_enc != encoder ) { // first selection or new encoder is moved
 
 	// select step
 	SEQ_UI_SelectedStepSet(encoder_step); // this will change ui_selected_step
