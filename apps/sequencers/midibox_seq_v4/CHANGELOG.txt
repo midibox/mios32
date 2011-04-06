@@ -5,6 +5,14 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.0beta38
+~~~~~~~~~~~~~~~~~~~~~
+
+   o CPU load reduced by more than 20%, this especially results into faster SD Card operations!
+
+   o fixed move step function for moves which select the next step view
+
+
 MIDIboxSEQ V4.0beta37
 ~~~~~~~~~~~~~~~~~~~~~
 

@@ -421,6 +421,17 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.track_morph = din_value;
 	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_button.track_transpose = din_value;
+	  } else if( strncmp(parameter, "DIRECT_TRACK", 12) == 0 ) {
+	    parameter += 12;
+
+	    s32 track = get_dec(parameter);
+	    if( track < 1 || track > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_DIRECT_TRACK%s definition: invalid track number '%s'!", parameter, parameter);
+#endif
+	      continue;
+	    }
+	    seq_hwcfg_button.direct_track[track] = din_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button function 'BUTTON_%s'!", parameter);
@@ -646,6 +657,24 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	  }
 
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// TRACKS_DOUT_[LR]_SR
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+	  if( strcmp(parameter, "TRACKS_DOUT_L_SR") == 0 ) {
+	    seq_hwcfg_led.tracks_dout_l_sr = sr;
+	  } else {
+	    seq_hwcfg_led.tracks_dout_r_sr = sr;
+	  }
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// GP_DOUT_
