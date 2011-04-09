@@ -120,6 +120,14 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
             } else if( recordType == 0x01 ) {
                 endRead = true;
+            } else if( recordType == 0x02 ) {
+                if( record.size() != (5+2) ) {
+                    statusMessage = String::formatted(T("in line %u: for an INHX32 record (0x02) expecting 2 address bytes!"), lineNumber);
+                    deleteAndZero(inFileStream);
+                    return false;
+                }
+
+                addressExtension = ((record[4] << 8) | (record[5])) << 4;
             } else if( recordType == 0x04 ) {
                 if( record.size() != (5+2) ) {
                     statusMessage = String::formatted(T("in line %u: for an INHX32 record (0x04) expecting 2 address bytes!"), lineNumber);
