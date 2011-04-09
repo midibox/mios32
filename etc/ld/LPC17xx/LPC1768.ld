@@ -163,32 +163,6 @@ SECTIONS
                 _sidata = _etext;
         } >FLASH
 
-        /* This is the initialized data section
-        The program executes knowing that the data is in the RAM
-        but the loader puts the initial values in the FLASH (inidata).
-        It is one task of the startup to copy the initial values from FLASH to RAM. */
-        .data : ALIGN (8)
-        {
-                /* This is used by the startup in order to initialize the .data section */
-                _sdata = . ;
-                
-                . = ALIGN(0x80);
-                _isr_vectorsram_offs = . - 0x10000000;
-                KEEP(*(.isr_vectorsram))
-                
-                . = ALIGN(4);
-                KEEP(*(.jcr))
-                *(.got.plt) *(.got)
-                *(.shdata)
-                *(.data .data.* .gnu.linkonce.d.*)
-                . = ALIGN (8);
-                *(.ram)
-                *(.ramfunc*)
-                 . = ALIGN(4);
-                /* This is used by the startup in order to initialize the .data section */
-                _edata = .;
-        } >RAM AT>FLASH
-
         /* This is the uninitialized data section */
         .bss (NOLOAD):
         {
@@ -226,6 +200,54 @@ SECTIONS
         _eusrstack = . ;
     } >RAM
     
+
+        /* This is the initialized data section
+        The program executes knowing that the data is in the RAM
+        but the loader puts the initial values in the FLASH (inidata).
+        It is one task of the startup to copy the initial values from FLASH to RAM. */
+        .data : ALIGN (8)
+        {
+                /* This is used by the startup in order to initialize the .data section */
+                _sdata = . ;
+                
+                . = ALIGN(0x80);
+                _isr_vectorsram_offs = . - 0x2007c000;
+                KEEP(*(.isr_vectorsram))
+                
+                . = ALIGN(4);
+                KEEP(*(.jcr))
+                *(.got.plt) *(.got)
+                *(.shdata)
+                *(.data .data.* .gnu.linkonce.d.*)
+                . = ALIGN (8);
+                *(.ram)
+                *(.ramfunc*)
+                 . = ALIGN(4);
+                /* This is used by the startup in order to initialize the .data section */
+                _edata = .;
+        } >RAMAHB AT>FLASH
+
+        /* This is the uninitialized data section of AHBRAM */
+        .bss_ahb (NOLOAD):
+        {
+                . = ALIGN(4);
+                /* This is used by the startup in order to initialize the .bss section */
+                _sbss_ahb = .;
+                *(.shbss_ahb)
+                *(.bss_ahb .bss_ahb.* .gnu.linkonce.b.*)
+                . = ALIGN (8);
+                *(.ram_ahb.b)
+                . = ALIGN(4);
+                 /* This is used by the startup in order to initialize the .bss section */
+                 _ebss_ahb = . ;
+                _end_ahb = .;
+                __end_ahb = .;
+        } >RAMAHB AT>FLASH
+
+    PROVIDE ( end_ahb = _ebss_ahb );
+    PROVIDE ( _end_ahb = _ebss_ahb );
+    PROVIDE ( __bss_ahb_start__ = _sbss_ahb );
+    PROVIDE ( __bss_ahb_end__ = _ebss_ahb );
 
    
     /* after that it's only debugging information. */
