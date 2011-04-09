@@ -96,6 +96,9 @@ int main(void)
   MIOS32_I2S_Init(0);
 #endif
 
+  // call C++ constructors
+  __libc_init_array();
+
   // initialize application
   APP_Init();
 
@@ -341,3 +344,6 @@ void exit(int par)
   while( 1 )
     _abort();
 }
+
+// see http://www.linuxquestions.org/questions/programming-9/fyi-shared-libs-and-iostream-c-331113/
+void *__dso_handle = NULL;
