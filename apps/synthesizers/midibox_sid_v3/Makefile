@@ -104,7 +104,7 @@ include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
 include $(MIOS32_PATH)/modules/random/random.mk
 
 # USB Mass Storage Device Driver
-include $(MIOS32_PATH)/modules/msd/msd.mk
+#include $(MIOS32_PATH)/modules/msd/msd.mk
 
 # For performance measurings
 include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk

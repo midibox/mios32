@@ -18,10 +18,13 @@
 
 #include <mios32.h>
 
-#include <msd.h>
-
 #include "app.h"
 #include "tasks.h"
+
+#if USE_MSD
+#include <msd.h>
+#endif
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,12 +49,14 @@ xSemaphoreHandle xLCDSemaphore;
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
+#if USE_MSD
 typedef enum {
   MSD_DISABLED,
   MSD_INIT,
   MSD_READY,
   MSD_SHUTDOWN
 } msd_state_t;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,7 +66,10 @@ typedef enum {
 #define PRIORITY_TASK_PERIOD1MS		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1S		 ( tskIDLE_PRIORITY + 2 )
+
+#if USE_MSD
 #define PRIORITY_TASK_MSD		 ( tskIDLE_PRIORITY + 3 )
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,15 +78,20 @@ typedef enum {
 static void TASK_Period1mS(void *pvParameters);
 static void TASK_Period1mS_LowPrio(void *pvParameters);
 static void TASK_Period1S(void *pvParameters);
+
+#if USE_MSD
 static void TASK_MSD(void *pvParameters);
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+#if USE_MSD
 static msd_state_t msd_state;
 static xTaskHandle xMSDHandle;
+#endif
 
  
 /////////////////////////////////////////////////////////////////////////////
@@ -86,14 +99,18 @@ static xTaskHandle xMSDHandle;
 /////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode)
 {
+#if USE_MSD
   // disable MSD by default (has to be enabled in SID_UI_FILE menu)
   msd_state = MSD_DISABLED;
+#endif
 
   // start tasks
   xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
   xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
   xTaskCreate(TASK_Period1S,          (signed portCHAR *)"Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
+#if USE_MSD
   xTaskCreate(TASK_MSD,               (signed portCHAR *)"MSD",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
+#endif
 
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -165,6 +182,7 @@ static void TASK_Period1S(void *pvParameters)
 }
 
 
+#if USE_MSD
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS when USB MSD access is enabled
 /////////////////////////////////////////////////////////////////////////////
@@ -251,3 +269,4 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 
   return 0; // no error
 }
+#endif
