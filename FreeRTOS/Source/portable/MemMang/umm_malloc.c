@@ -574,8 +574,13 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
   #define umm_malloc  pvPortMalloc
   #define umm_realloc realloc
 
-  umm_block umm_heap[configTOTAL_HEAP_SIZE/sizeof(umm_block)];
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define UMM_HEAP_SECTION __attribute__ ((section (".bss_ahb")))
+#else
+# define UMM_HEAP_SECTION
+#endif
 
+  umm_block umm_heap[configTOTAL_HEAP_SIZE/sizeof(umm_block)] UMM_HEAP_SECTION;
   const unsigned short int umm_numblocks = sizeof(umm_heap)/sizeof(umm_block);
 
   //extern umm_block umm_heap[];
