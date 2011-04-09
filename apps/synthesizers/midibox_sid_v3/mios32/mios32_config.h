@@ -86,4 +86,7 @@
 
 #endif
 
+// MSD not enabled yet...
+#undef USE_MSD
+
 #endif /* _MIOS32_CONFIG_H */
