@@ -92,9 +92,9 @@ s32 MIOS32_SYS_Init(u32 mode)
 
   // peripheral clock selection:
   // all are clocked with CCLK/4 (25 MHz)
-  // except for SPIs which are clocked at full speed (100 MHz)
+  // except for SPIs and I2S which are clocked at full speed (100 MHz)
   LPC_SC->PCLKSEL0  = (1 << 16) | (1 << 20);
-  LPC_SC->PCLKSEL1  = (1 << 10);
+  LPC_SC->PCLKSEL1  = (1 << 10) | (1 << 22);
 
   LPC_SC->CLKSRCSEL = 1;                 // select PLL0 as clock source
 

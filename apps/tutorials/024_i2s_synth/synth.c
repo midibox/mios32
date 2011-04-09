@@ -266,6 +266,6 @@ void SYNTH_ReloadSampleBuffer(u32 state)
     u32 chn1_value = (wavetable_buffer[0][(u32)wavetable_pos[0] >> FP_PRECISSION] * chn1_velocity) / 128;
     u32 chn2_value = (wavetable_buffer[1][(u32)wavetable_pos[1] >> FP_PRECISSION] * chn2_velocity) / 128;
 
-    *buffer++ = (chn2_value << 16) | chn1_value;
+    *buffer++ = ((u32)chn2_value << 16) | (chn1_value & 0xffff);
   }
 }
