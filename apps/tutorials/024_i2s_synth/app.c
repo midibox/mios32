@@ -79,7 +79,7 @@ void APP_Background(void)
   // endless loop: print status information on LCD
   while( 1 ) {
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)
-    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+    //MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
     // new message requested?
     // TODO: add FreeRTOS specific queue handling!
