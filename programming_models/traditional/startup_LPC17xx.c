@@ -25,9 +25,11 @@ extern unsigned long _edata;
     
 /* start address for the .bss section. defined in linker script */
 extern unsigned long _sbss;
+extern unsigned long _sbss_ahb;
 
 /* end address for the .bss section. defined in linker script */      
 extern unsigned long _ebss;  
+extern unsigned long _ebss_ahb;  
     
 /* init value for the stack pointer. defined in linker script */
 extern void _estack;  
@@ -202,14 +204,18 @@ void Reset_Handler(void)
   {
     *(pulDest++) = *(pulSrc++);
   }
+
   /* Zero fill the bss segment. */
   for(pulDest = &_sbss; pulDest < &_ebss; )
   {
     *(pulDest++) = 0;
   }
 
-  /* Call CTORS of static objects */
-  __libc_init_array();
+  /* Zero fill the bss_ahb segment. */
+  for(pulDest = &_sbss_ahb; pulDest < &_ebss_ahb; )
+  {
+    *(pulDest++) = 0;
+  }
 
   /* Call the application's entry point.*/
   main();
