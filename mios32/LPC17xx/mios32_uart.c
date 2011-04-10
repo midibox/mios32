@@ -35,13 +35,29 @@
 // Pin definitions and UART mappings
 /////////////////////////////////////////////////////////////////////////////
 
-// all peripherals are clocked at CCLK/4
-#define UART_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4000000)
+// UART peripherals are clocked at CCLK/4
+#define UART_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
 
-// TX: P0.2, RX: P0.3
-#define MIOS32_UART0_TX_INIT     { LPC_PINCON->PINSEL0 &= ~(3 << (2*2)); LPC_PINCON->PINSEL0 |= (1 << (2*2)); }
-#define MIOS32_UART0_RX_INIT     { LPC_PINCON->PINSEL0 &= ~(3 << (2*3)); LPC_PINCON->PINSEL0 |= (1 << (2*3)); }
-#define MIOS32_UART0             LPC_UART0
+// TX MIDI1: P2.0 w/ high-z and open-drain enabled
+#define MIOS32_UART0_TX_INIT     { MIOS32_SYS_LPC_PINSEL(2, 0, 2); MIOS32_SYS_LPC_PINMODE(2, 0, 2); MIOS32_SYS_LPC_PINMODE_OD(2, 0, 1); }
+// RX MIDI1: P2.1 w/ pull-up enabled
+#define MIOS32_UART0_RX_INIT     { MIOS32_SYS_LPC_PINSEL(2, 1, 2); MIOS32_SYS_LPC_PINMODE(2, 1, 0); }
+#define MIOS32_UART0             LPC_UART1
+
+
+// TX MIDI2: P0.0 w/ high-z and open-drain enabled
+#define MIOS32_UART1_TX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 0, 2); MIOS32_SYS_LPC_PINMODE(0, 0, 2); MIOS32_SYS_LPC_PINMODE_OD(0, 0, 1); }
+// RX MIDI2: P0.1 w/ pull-up enabled
+#define MIOS32_UART1_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 1, 2); MIOS32_SYS_LPC_PINMODE(0, 1, 0); }
+#define MIOS32_UART1             LPC_UART3
+
+
+// TX MIDI3 (optional): P0.2 w/ high-z and open-drain enabled
+#define MIOS32_UART2_TX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 2, 1); MIOS32_SYS_LPC_PINMODE(0, 2, 2); MIOS32_SYS_LPC_PINMODE_OD(0, 2, 1); }
+// RX MIDI3 (optional): P0.3 w/ pull-up enabled
+#define MIOS32_UART2_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 3, 1); MIOS32_SYS_LPC_PINMODE(0, 3, 0); }
+#define MIOS32_UART2             LPC_UART0
+
 
 
 // help masks
@@ -59,7 +75,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if MIOS32_UART_NUM >= 1
-static const LPC_UART_TypeDef *uart_base[MIOS32_UART_NUM] = { (LPC_UART_TypeDef*)MIOS32_UART0 };
+static const LPC_UART_TypeDef *uart_base[MIOS32_UART_NUM] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2 };
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
 
@@ -133,13 +149,65 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 
   LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
 
-  // USART configuration
+  // Inspired from lpc17xx_uart.c of the IEC60335 Class B library v1.0
+  u32 uClk = UART_PERIPHERAL_FRQ;
+  u32 calcBaudrate = 0;
+  u32 temp = 0;
+
+  u32 mulFracDiv, dividerAddFracDiv;
+  u32 diviser = 0 ;
+  u32 mulFracDivOptimal = 1;
+  u32 dividerAddOptimal = 0;
+  u32 diviserOptimal = 0;
+
+  u32 relativeError = 0;
+  u32 relativeOptimalError = 100000;
+
+  uClk = uClk >> 4; /* div by 16 */
+  /* In the Uart IP block, baud rate is calculated using FDR and DLL-DLM registers
+   * The formula is :
+   * BaudRate= uClk * (mulFracDiv/(mulFracDiv+dividerAddFracDiv) / (16 * (DLL)
+   * It involves floating point calculations. That's the reason the formulae are adjusted with
+   * Multiply and divide method.*/
+  /* The value of mulFracDiv and dividerAddFracDiv should comply to the following expressions:
+   * 0 < mulFracDiv <= 15, 0 <= dividerAddFracDiv <= 15 */
+  for(mulFracDiv = 1 ; mulFracDiv <= 15 ;mulFracDiv++) {
+    for(dividerAddFracDiv = 0 ; dividerAddFracDiv <= 15 ;dividerAddFracDiv++) {
+      temp = (mulFracDiv * uClk) / ((mulFracDiv + dividerAddFracDiv));
+
+      diviser = temp / baudrate;
+      if ((temp % baudrate) > (baudrate / 2))
+	diviser++;
+
+      if (diviser > 2 && diviser < 65536) {
+	calcBaudrate = temp / diviser;
+
+	if (calcBaudrate <= baudrate)
+	  relativeError = baudrate - calcBaudrate;
+	else
+	  relativeError = calcBaudrate - baudrate;
+
+	if( (relativeError < relativeOptimalError) ) {
+	  mulFracDivOptimal = mulFracDiv ;
+	  dividerAddOptimal = dividerAddFracDiv;
+	  diviserOptimal = diviser;
+	  relativeOptimalError = relativeError;
+	  if (relativeError == 0)
+	    break;
+	}
+      } /* End of if */
+    } /* end of inner for loop */
+
+    if( relativeError == 0 )
+      break;
+  } /* end of outer for loop  */
+
   u->LCR = 0x83; // 8 bits, no Parity, 1 Stop bit, DLAB=1
-  u32 Fdiv = ( UART_PERIPHERAL_FRQ / 16 ) / baudrate ;   // Set baud rate
-  u->DLM = Fdiv / 256;                                                        
-  u->DLL = Fdiv % 256;
-  u->LCR = 0x03;              // 8 bits, no Parity, 1 Stop bit DLAB = 0
-  u->FCR = 0x07;              // Enable and reset TX and RX FIFO
+  u->DLM = (diviserOptimal >> 8) & 0xff;
+  u->DLL = diviserOptimal & 0xff;
+  u->LCR = 0x03; // disable access to divisor latches
+  u->FDR = ((mulFracDivOptimal&0xf) << 4) | (dividerAddOptimal&0xf);
+  u->FCR = 0x07; // Enable and reset TX and RX FIFO
 
   // store baudrate in array
   uart_baudrate[uart] = baudrate;
