@@ -59,27 +59,30 @@
 #define MIOS32_SPI0_PTR        LPC_SSP0
 
 // RCLK1: P1.22 (used as GPIO)
-#define MIOS32_SPI0_RCLK1_INIT { LPC_PINCON->PINSEL3 &= ~(3 << ((22-16)*2)); LPC_GPIO1->FIODIR |= (1 << 22); }
-#define MIOS32_SPI0_RCLK1_SET(v) { if( v ) LPC_GPIO1->FIOSET = (1 << 22); else LPC_GPIO1->FIOCLR = (1 << 22); }
+#define MIOS32_SPI0_RCLK1_INIT   { MIOS32_SYS_LPC_PINSEL(1, 22, 0); MIOS32_SYS_LPC_FIODIR(1, 22, 1); }
+#define MIOS32_SPI0_RCLK1_SET(v) { MIOS32_SYS_LPC_FIOSET(1, 22, v); }
 
 // RCLK2: P1.21 (used as GPIO)
-#define MIOS32_SPI0_RCLK2_INIT { LPC_PINCON->PINSEL3 &= ~(3 << ((21-16)*2)); LPC_GPIO1->FIODIR |= (1 << 21); }
-#define MIOS32_SPI0_RCLK2_SET(v) { if( v ) LPC_GPIO1->FIOSET = (1 << 21); else LPC_GPIO1->FIOCLR = (1 << 21); }
+#define MIOS32_SPI0_RCLK2_INIT   { MIOS32_SYS_LPC_PINSEL(1, 21, 0); MIOS32_SYS_LPC_FIODIR(1, 21, 1); }
+#define MIOS32_SPI0_RCLK2_SET(v) { MIOS32_SYS_LPC_FIOSET(1, 21, v); }
 
 // SCLK: P1.20 (assigned to SSP0)
-#define MIOS32_SPI0_SCLK_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((20-16)*2)); }
+#define MIOS32_SPI0_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(1, 20, 3); }
 // MISO: P1.23 (assigned to SSP0)
-#define MIOS32_SPI0_MISO_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((23-16)*2)); }
+#define MIOS32_SPI0_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(1, 23, 3); }
 // MISO: P1.24 (assigned to SSP0)
-#define MIOS32_SPI0_MOSI_INIT  { LPC_PINCON->PINSEL3 |= (3 << ((24-16)*2)); }
+#define MIOS32_SPI0_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(1, 24, 3); }
 
 // Push-Pull Config
 #define MIOS32_SPI0_PP_INIT    { LPC_PINCON->PINMODE_OD1 &= ~((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
 // Open-Drain Config -- NOTE: unfortunately it has no effect on SCLK and MOSI pin! This isn't documented in the LPC17xx user manual
 #define MIOS32_SPI0_OD_INIT    { LPC_PINCON->PINMODE_OD1 |=  ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (1 << 20)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
-#define MIOS32_SPI0_IN_INIT    { LPC_PINCON->PINMODE3 &= ~((3<<((24-16)*2))|(3<<((23-16)*2))|(3<<((22-16)*2))|(3<<((21-16)*2))|(3<<((20-16)*2))); \
-                                 LPC_PINCON->PINMODE3 |=  ((2<<((24-16)*2))|(0<<((23-16)*2))|(2<<((22-16)*2))|(2<<((21-16)*2))|(2<<((20-16)*2))); }
+#define MIOS32_SPI0_IN_INIT    { MIOS32_SYS_LPC_PINMODE(1, 24, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(1, 23, 0); \
+                                 MIOS32_SYS_LPC_PINMODE(1, 22, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(1, 21, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(1, 20, 2); }
 
 // DMA Request Inputs (DMACSREQ)
 #define MIOS32_SPI0_DMA_TX_REQ  0
@@ -98,27 +101,30 @@
 #define MIOS32_SPI1_PTR        LPC_SSP1
 
 // RCLK1: P0.6 (used as GPIO)
-#define MIOS32_SPI1_RCLK1_INIT { LPC_PINCON->PINSEL0 &= ~(3 << (6*2)); LPC_GPIO0->FIODIR |= (1 << 6); }
-#define MIOS32_SPI1_RCLK1_SET(v) { if( v ) LPC_GPIO0->FIOSET = (1 << 6); else LPC_GPIO0->FIOCLR = (1 << 6); }
+#define MIOS32_SPI1_RCLK1_INIT   { MIOS32_SYS_LPC_PINSEL(0, 6, 0); MIOS32_SYS_LPC_FIODIR(0, 6, 1); }
+#define MIOS32_SPI1_RCLK1_SET(v) { MIOS32_SYS_LPC_FIOSET(0, 6, v); }
 
 // RCLK2: P0.5 (used as GPIO)
-#define MIOS32_SPI1_RCLK2_INIT { LPC_PINCON->PINSEL0 &= ~(3 << (5*2)); LPC_GPIO0->FIODIR |= (1 << 5); }
-#define MIOS32_SPI1_RCLK2_SET(v) { if( v ) LPC_GPIO0->FIOSET = (1 << 5); else LPC_GPIO0->FIOCLR = (1 << 5); }
+#define MIOS32_SPI1_RCLK2_INIT   { MIOS32_SYS_LPC_PINSEL(0, 5, 0); MIOS32_SYS_LPC_FIODIR(0, 5, 1); }
+#define MIOS32_SPI1_RCLK2_SET(v) { MIOS32_SYS_LPC_FIOSET(0, 5, v); }
 
 // SCLK: P0.7 (assigned to SSP1)
-#define MIOS32_SPI1_SCLK_INIT  { LPC_PINCON->PINSEL0 &= ~(3 << (7*2)); LPC_PINCON->PINSEL0 |= (2 << (7*2)); }
+#define MIOS32_SPI1_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 7, 2); }
 // MISO: P0.8 (assigned to SSP1)
-#define MIOS32_SPI1_MISO_INIT  { LPC_PINCON->PINSEL0 &= ~(3 << (8*2)); LPC_PINCON->PINSEL0 |= (2 << (8*2)); }
+#define MIOS32_SPI1_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(0, 8, 2); }
 // MISO: P0.9 (assigned to SSP1)
-#define MIOS32_SPI1_MOSI_INIT  { LPC_PINCON->PINSEL0 &= ~(3 << (9*2)); LPC_PINCON->PINSEL0 |= (2 << (9*2)); }
+#define MIOS32_SPI1_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 9, 2); }
 
 // Push-Pull Config
 #define MIOS32_SPI1_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
 // Open-Drain Config -- NOTE: unfortunately it has no effect on SCLK and MOSI pin! This isn't documented in the LPC17xx user manual
 #define MIOS32_SPI1_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6) | (1 << 5)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
-#define MIOS32_SPI1_IN_INIT    { LPC_PINCON->PINMODE0 &= ~((3<<(9*2))|(3<<(8*2))|(3<<(7*2))|(3<<(6*2))|(3<<(5*2))); \
-                                 LPC_PINCON->PINMODE0 |=  ((2<<(9*2))|(0<<(8*2))|(2<<(7*2))|(2<<(6*2))|(2<<(5*2))); }
+#define MIOS32_SPI1_IN_INIT    { MIOS32_SYS_LPC_PINMODE(0, 9, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 8, 0); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 7, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 6, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 5, 2); }
 
 // DMA Request Inputs (DMACSREQ)
 #define MIOS32_SPI1_DMA_TX_REQ  2
@@ -139,19 +145,19 @@
 #define MIOS32_SPI2_PTR        LPC_SPI
 
 // RCLK1: P0.16 (used as GPIO)
-#define MIOS32_SPI2_RCLK1_INIT { LPC_PINCON->PINSEL1 &= ~(3 << ((16-16)*2)); LPC_GPIO0->FIODIR |= (1 << 16); }
-#define MIOS32_SPI2_RCLK1_SET(v) { if( v ) LPC_GPIO0->FIOSET = (1 << 16); else LPC_GPIO0->FIOCLR = (1 << 16); }
+#define MIOS32_SPI2_RCLK1_INIT   { MIOS32_SYS_LPC_PINSEL(0, 16, 0); MIOS32_SYS_LPC_FIODIR(0, 16, 1); }
+#define MIOS32_SPI2_RCLK1_SET(v) { MIOS32_SYS_LPC_FIOSET(0, 16, v); }
 
 // RCLK2: P0.21 (used as GPIO)
-#define MIOS32_SPI2_RCLK2_INIT { LPC_PINCON->PINSEL1 &= ~(3 << ((21-16)*2)); LPC_GPIO0->FIODIR |= (1 << 21); }
-#define MIOS32_SPI2_RCLK2_SET(v) { if( v ) LPC_GPIO0->FIOSET = (1 << 21); else LPC_GPIO0->FIOCLR = (1 << 21); }
+#define MIOS32_SPI2_RCLK2_INIT   { MIOS32_SYS_LPC_PINSEL(0, 21, 0); MIOS32_SYS_LPC_FIODIR(0, 21, 1); }
+#define MIOS32_SPI2_RCLK2_SET(v) { MIOS32_SYS_LPC_FIOSET(0, 21, v); }
 
 // SCLK: P0.15 (assigned to SPI)
-#define MIOS32_SPI2_SCLK_INIT  { LPC_PINCON->PINSEL0 |= (3 << (15*2)); }
+#define MIOS32_SPI2_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 15, 3); }
 // MISO: P0.17 (assigned to SPI)
-#define MIOS32_SPI2_MISO_INIT  { LPC_PINCON->PINSEL1 |= (3 << ((17-16)*2)); }
+#define MIOS32_SPI2_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(0, 17, 3); }
 // MISO: P0.18 (assigned to SPI)
-#define MIOS32_SPI2_MOSI_INIT  { LPC_PINCON->PINSEL1 |= (3 << ((18-16)*2)); }
+#define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 3); }
 
 // Push-Pull Config
 #define MIOS32_SPI2_PP_INIT    { LPC_PINCON->PINMODE_OD0 &= ~((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
@@ -159,10 +165,11 @@
 // "The I/Os for this implementation of SPI are standard CMOS I/Os. The open drain SPI option is not implemented in this design."
 #define MIOS32_SPI2_OD_INIT    { LPC_PINCON->PINMODE_OD0 |=  ((1 << 21) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15)); }
 // Input Mode/Pulldevice Config (all outputs are high-impedance which is especially important in open drain mode, the input has pull-up enabled)
-#define MIOS32_SPI2_IN_INIT    { LPC_PINCON->PINMODE1 &= ~((3<<((21-16)*2))|(3<<((18-16)*2))|(3<<((17-16)*2))|(3<<((16-16)*2))); \
-                                 LPC_PINCON->PINMODE1 |=  ((2<<((21-16)*2))|(3<<((18-16)*2))|(0<<((17-16)*2))|(3<<((16-16)*2))); \
-				 LPC_PINCON->PINMODE0 &= ~((3<<(15*2))); \
-                                 LPC_PINCON->PINMODE0 |=  ((2<<(15*2))); }
+#define MIOS32_SPI2_IN_INIT    { MIOS32_SYS_LPC_PINMODE(0, 21, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 18, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 17, 0); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 16, 2); \
+                                 MIOS32_SYS_LPC_PINMODE(0, 15, 2); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes

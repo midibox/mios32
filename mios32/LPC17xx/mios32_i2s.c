@@ -3,8 +3,6 @@
 //!
 //! I2S Functions
 //!
-//! Not adapted to LPC17xx yet
-//!
 //! \{
 /* ==========================================================================
  *
@@ -34,13 +32,13 @@
 #define MIOS32_I2S_DIV2           1
 
 // TX CLK: P2.11
-#define MIOS32_I2S_CLK_INIT  { LPC_PINCON->PINSEL4 |= (3 << (11*2)); }
+#define MIOS32_I2S_CLK_INIT  { MIOS32_SYS_LPC_PINSEL(2, 11, 3); }
 // TX WS: P2.12
-#define MIOS32_I2S_WS_INIT   { LPC_PINCON->PINSEL4 |= (3 << (12*2)); }
+#define MIOS32_I2S_WS_INIT   { MIOS32_SYS_LPC_PINSEL(2, 12, 3); }
 // TX SDA: P2.13
-#define MIOS32_I2S_SDA_INIT  { LPC_PINCON->PINSEL4 |= (3 << (13*2)); }
+#define MIOS32_I2S_SDA_INIT  { MIOS32_SYS_LPC_PINSEL(2, 13, 3); }
 // TX MCLK: P4.29
-#define MIOS32_I2S_MCLK_INIT { LPC_PINCON->PINSEL9 &= ~(3 << ((29-16)*2)); LPC_PINCON->PINSEL9 |= (1 << ((29-16)*2)); }
+#define MIOS32_I2S_MCLK_INIT { MIOS32_SYS_LPC_PINSEL(4, 29, 1); }
 
 // DMA Request
 #define MIOS32_I2S_DMA_REQ 5

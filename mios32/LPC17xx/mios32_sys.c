@@ -222,6 +222,29 @@ s32 MIOS32_SYS_Reset(void)
   // send all-0 to MF control chain (if enabled) (TODO)
 
 
+  // reset some peripherals (unfortunately there is no system reset available)
+  LPC_GPDMA->DMACConfig = 0; // disable DMA
+
+  LPC_ADC->ADCR = 0; // ADC: clear the PDN flag #21 (Power Down)
+
+  LPC_CAN1->MOD = (1 << 0); // enter reset mode
+  LPC_CAN2->MOD = (1 << 0); // enter reset mode
+
+  // DAC: no SW reset
+
+  LPC_EMAC->MAC1 = 0xff00; // set all reset flags
+
+  // I2C: no reset
+
+  // MCPWM/PWM: no reset
+
+  // SPI: no reset
+  // UART: no reset
+
+  LPC_I2S->I2SDAO = (1 << 4); // set asynchronous reset
+
+  // reset GPIOs?
+
   // reset LPC17
   SCB->AIRCR = (0x5fa << SCB_AIRCR_VECTKEY_Pos) | (1 << SCB_AIRCR_VECTRESET_Pos);
 
