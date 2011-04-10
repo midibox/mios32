@@ -25,6 +25,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// External Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+extern void __libc_init_array(void);  /* calls CTORS of static objects */
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Task Priorities
 /////////////////////////////////////////////////////////////////////////////
 
@@ -259,9 +266,9 @@ void _abort(void)
   // keep MIDI alive, so that program code can be updated
   u32 delay_ctr = 0;
   while( 1 ) {
-    if( ++delay_ctr >= 100 ) {
-      delay_ctr = 0; // not really mS accurate, but better than nothing
+    ++delay_ctr;
 
+    if( (delay_ctr % 100) == 0 ) {
       // handle timeout/expire counters and USB packages
       MIOS32_MIDI_Periodic_mS();
     }
@@ -269,16 +276,17 @@ void _abort(void)
     // check for incoming MIDI packages and call hook
     MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
 
-    // toggle board LED
-    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+    if( (delay_ctr % 10000) == 0 ) {
+      // toggle board LED
+      MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+    }
   }
 #else
   u32 delay_ctr = 0;
   while( 1 ) {
-    // error indication via LED
-    if( ++delay_ctr >= 1000 ) {
-      delay_ctr = 0;
+    ++delay_ctr;
 
+    if( (delay_ctr % 1000000) == 0 ) {
       // toggle board LED
       MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
     }
@@ -347,3 +355,72 @@ void exit(int par)
 
 // see http://www.linuxquestions.org/questions/programming-9/fyi-shared-libs-and-iostream-c-331113/
 void *__dso_handle = NULL;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Customized HardFault Handler which prints out debugging informations
+/////////////////////////////////////////////////////////////////////////////
+void HardFault_Handler_c(unsigned int * hardfault_args)
+{
+  // from the book: "The definiteve guide to the ARM Cortex-M3"
+  volatile unsigned int stacked_r0;
+  volatile unsigned int stacked_r1;
+  volatile unsigned int stacked_r2;
+  volatile unsigned int stacked_r3;
+  volatile unsigned int stacked_r12;
+  volatile unsigned int stacked_lr;
+  volatile unsigned int stacked_pc;
+  volatile unsigned int stacked_psr;
+
+  stacked_r0 = ((unsigned long) hardfault_args[0]);
+  stacked_r1 = ((unsigned long) hardfault_args[1]);
+  stacked_r2 = ((unsigned long) hardfault_args[2]);
+  stacked_r3 = ((unsigned long) hardfault_args[3]);
+
+  stacked_r12 = ((unsigned long) hardfault_args[4]);
+  stacked_lr = ((unsigned long) hardfault_args[5]);
+  stacked_pc = ((unsigned long) hardfault_args[6]);
+  stacked_psr = ((unsigned long) hardfault_args[7]);
+  
+  MIOS32_MIDI_SendDebugMessage("==================\n");
+  MIOS32_MIDI_SendDebugMessage("!!! HARD FAULT !!!\n");
+  MIOS32_MIDI_SendDebugMessage("==================\n");
+  MIOS32_MIDI_SendDebugMessage("R0 = %08x\n", stacked_r0);
+  MIOS32_MIDI_SendDebugMessage("R1 = %08x\n", stacked_r1);
+  MIOS32_MIDI_SendDebugMessage("R2 = %08x\n", stacked_r2);
+  MIOS32_MIDI_SendDebugMessage("R3 = %08x\n", stacked_r3);
+  MIOS32_MIDI_SendDebugMessage("R12 = %08x\n", stacked_r12);
+  MIOS32_MIDI_SendDebugMessage("LR = %08x\n", stacked_lr);
+  MIOS32_MIDI_SendDebugMessage("PC = %08x\n", stacked_pc);
+  MIOS32_MIDI_SendDebugMessage("PSR = %08x\n", stacked_psr);
+  MIOS32_MIDI_SendDebugMessage("BFAR = %08x\n", (*((volatile unsigned long *)(0xE000ED38))));
+  MIOS32_MIDI_SendDebugMessage("CFSR = %08x\n", (*((volatile unsigned long *)(0xE000ED28))));
+  MIOS32_MIDI_SendDebugMessage("HFSR = %08x\n", (*((volatile unsigned long *)(0xE000ED2C))));
+  MIOS32_MIDI_SendDebugMessage("DFSR = %08x\n", (*((volatile unsigned long *)(0xE000ED30))));
+  MIOS32_MIDI_SendDebugMessage("AFSR = %08x\n", (*((volatile unsigned long *)(0xE000ED3C))));
+
+#ifndef MIOS32_DONT_USE_LCD
+  // TODO: here we should select the normal font - but only if available!
+  // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  MIOS32_LCD_BColourSet(0xffffff);
+  MIOS32_LCD_FColourSet(0x000000);
+
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_Clear();
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("!! HARD FAULT !!");
+#endif
+
+  _abort();
+}
+
+
+void HardFault_Handler(void)
+{
+  __asm("TST LR, #4");
+  __asm("ITE EQ");
+  __asm("MRSEQ R0, MSP");
+  __asm("MRSNE R0, PSP");
+  __asm("B HardFault_Handler_c");
+}
+

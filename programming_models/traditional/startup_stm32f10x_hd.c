@@ -59,7 +59,6 @@ extern void _estack;
 /* Private function prototypes -----------------------------------------------*/
 void Reset_Handler(void) __attribute__((__interrupt__));
 extern int main(void);
-extern void __libc_init_array(void);  /* calls CTORS of static objects */
 void __Init_Data(void);
 
 // for FreeRTOS
