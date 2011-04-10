@@ -14,8 +14,10 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "Tutorial #024"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 T.Klose"
 
+#if defined(MIOS32_FAMILY_STM32F10x)
 // I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
-#define MIOS32_SRIO_SPI 0
+# define MIOS32_SRIO_SPI 0
+#endif
 
 // I2S support has to be enabled explicitely
 #define MIOS32_USE_I2S
