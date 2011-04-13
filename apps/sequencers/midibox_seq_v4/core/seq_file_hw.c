@@ -431,7 +431,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	      continue;
 	    }
-	    seq_hwcfg_button.direct_track[track] = din_value;
+	    seq_hwcfg_button.direct_track[track-1] = din_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown button function 'BUTTON_%s'!", parameter);

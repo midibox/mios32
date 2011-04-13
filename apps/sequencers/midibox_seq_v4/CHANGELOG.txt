@@ -5,6 +5,12 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.0beta39
+~~~~~~~~~~~~~~~~~~~~~
+
+   o BUTTON_PAR_LAYER_A working again (was overwritten by BUTTON_DIRECT_TRACK16)
+
+
 MIDIboxSEQ V4.0beta38
 ~~~~~~~~~~~~~~~~~~~~~
 
