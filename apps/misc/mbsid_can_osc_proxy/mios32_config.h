@@ -17,10 +17,6 @@
 // function used to output debug messages (must be printf compatible!)
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
-// forward debugging messages to UART based MIDI output (since USB is disabled)
-#define MIOS32_MIDI_DEBUG_PORT UART0
-
-
 // ENC28J60 settings
 #define MIOS32_ENC28J60_FULL_DUPLEX 1
 #define MIOS32_ENC28J60_MAX_FRAME_SIZE 420
@@ -37,25 +33,29 @@
 
 
 // Ethernet configuration:
-//                      10        .    0        .    0       .    3
-#define MY_IP_ADDRESS ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  3 << 0)
+//                     192        .  168        .    1       .    3
+#define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  1 << 8) | (  3 << 0)
 
 //                     255        .  255        .  255       .    0
 #define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
 
-//                      10        .    0        .    0       .    1
-#define MY_GATEWAY    (  0 << 24) | (  0 << 16) | (  0 << 8) | (  1 << 0)
+//                     192        .  168        .    1       .    1
+#define MY_GATEWAY    (192 << 24) | (168 << 16) | (  1 << 8) | (  1 << 0)
 
-//                      10        .    0        .    0       .    2
-#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+//                     192        .  168        .    1       .  104
+#define OSC_REMOTE_IP (192 << 24) | (168 << 16) | (  1 << 8) | (104 << 0)
 
 #define OSC_SERVER_PORT 10000
 
 
 
-// disable USB, enable CAN (it isn't possible to use both peripherals at the same time)
-#define MIOS32_DONT_USE_USB
-#define MIOS32_USE_CAN
+#if defined(MIOS32_FAMILY_STM32F10x)
+// only for STM32: disable USB, enable CAN (it isn't possible to use both peripherals at the same time)
+# define MIOS32_DONT_USE_USB
+# define MIOS32_USE_CAN
+// forward debugging messages to UART based MIDI output (since USB is disabled)
+#define MIOS32_MIDI_DEBUG_PORT UART0
+#endif
 
 // relevant if configured as master: how many nodes should be scanned maximum
 #define MBNET_SLAVE_NODES_MAX 8

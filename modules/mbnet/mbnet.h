@@ -57,10 +57,10 @@ typedef union {
   u32 ALL;
   struct {
     u16 control;
-    u8 tos:2;
-    u8 ms:3;
-    u8 node:7;
-    u8 ack:1;
+    u32 tos:2;
+    u32 ms:3;
+    u32 node:7;
+    u32 ack:1;
   };
 } mbnet_id_t;
 
@@ -103,6 +103,8 @@ extern s32 MBNET_NodeIDSet(u8 node_id);
 extern s32 MBNET_NodeIDGet(void);
 
 extern s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info);
+
+extern s32 MBNET_Reconnect(void);
 
 extern s32 MBNET_ErrorStateGet(void);
 
