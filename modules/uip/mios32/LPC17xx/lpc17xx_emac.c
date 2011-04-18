@@ -41,7 +41,8 @@ static UNS_16 read_PHY (UNS_8 PhyReg) ;
 BOOL_32 EMAC_Init(uint8_t* mac_addr)
 {
    /* Initialize the EMAC ethernet controller. */
-  UNS_32 regv, id1,id2;
+  UNS_32 regv = 0;
+  UNS_32 id1,id2;
   volatile unsigned int tout;
   unsigned phy_id;
   unsigned phy_linkstatus_reg;

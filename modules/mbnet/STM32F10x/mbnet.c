@@ -9,6 +9,7 @@
  *
  * TODO: try recovery on CAN Bus errors
  * TODO: remove slaves from info list which timed out during transaction!
+ * TODO: try to share more code between LPC17 and STM32 driver in higher application layer
  *
  * ==========================================================================
  *
@@ -98,7 +99,6 @@ static s32 MBNET_BusErrorCheck(void);
 s32 MBNET_Init(u32 mode)
 {
   u32 poll_ctr;
-  int i;
 
   // currently only mode 0 supported
   if( mode != 0 )
@@ -111,18 +111,8 @@ s32 MBNET_Init(u32 mode)
   // The application has to use MBNET_NodeIDSet() to initialise it, and to configure the CAN filters
   my_node_id = 0xff;
 
-  // invalidate slave id to be searched
-  search_slave_id = 0xff;
-
-  // clear slave node index
-  for(i=0; i<=MBNET_SLAVE_NODES_END-MBNET_SLAVE_NODES_BEGIN; ++i)
-    slave_nodes_ix[i] = 0xff-32; // invalid slave entry, retry 32 times
-
-  // clear slave info
-  for(i=0; i<MBNET_SLAVE_NODES_MAX; ++i) {
-    slave_nodes_info[i].data_l = 0;
-    slave_nodes_info[i].data_h = 0;
-  }
+  // invalidate slave informations
+  MBNET_Reconnect();
 
   // remap CAN pins
   GPIO_PinRemapConfig(GPIO_Remap1_CAN1, ENABLE);
@@ -283,6 +273,29 @@ s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info)
   info = &slave_nodes_info[ix];
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// invalidates all slave informations and scans the MBNET (again)
+// OUT: < 0 on errora
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_Reconnect(void)
+{
+  int i;
+
+  // invalidate slave id to be searched
+  search_slave_id = 0xff;
+
+  // clear slave node index
+  for(i=0; i<=MBNET_SLAVE_NODES_END-MBNET_SLAVE_NODES_BEGIN; ++i)
+    slave_nodes_ix[i] = 0xff-32; // invalid slave entry, retry 32 times
+
+  // clear slave info
+  for(i=0; i<MBNET_SLAVE_NODES_MAX; ++i) {
+    slave_nodes_info[i].data_l = 0;
+    slave_nodes_info[i].data_h = 0;
+  }
 }
 
 
@@ -469,6 +482,10 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 
   if( my_node_id & 0x0f )
     return -2; // this node isn's configured as master
+
+  // exit immediately if CAN bus errors (CAN doesn't send messages anymore)
+  if( MBNET_BusErrorCheck() < 0 )
+    return -3; // transmission error
 
   // check for incoming FIFO1 messages (MBNet acknowledges)
   u8 again;   // allows to poll the FIFO again
