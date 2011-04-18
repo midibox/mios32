@@ -899,7 +899,8 @@ s32 MIOS32_USB_Init(u32 mode)
   // register endpoint handlers
   //USBHwRegisterEPIntHandler(0x81, NULL);
 #ifndef MIOS32_DONT_USE_USB_MIDI
-  USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback);
+  USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback); // (dummy callback)
+  // note: shared callback, IN and OUT irq will trigger MIOS32_USB_MIDI_EP1_OUT_Callback
   USBHwRegisterEPIntHandler(0x01, MIOS32_USB_MIDI_EP1_OUT_Callback);
 #endif
         

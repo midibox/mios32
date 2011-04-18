@@ -52,6 +52,8 @@ static volatile u16 tx_buffer_size;
 // transfer possible?
 static u8 transfer_possible = 0;
 
+static volatile u8 tx_buffer_busy;
+
 /** convert from endpoint address to endpoint index */
 #define EP2IDX(bEP)     ((((bEP)&0xF)<<1)|(((bEP)&0x80)>>7))
 /** convert from endpoint index to endpoint address */
@@ -105,9 +107,11 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 
   if( connected ) {
     transfer_possible = 1;
+    tx_buffer_busy = 0; // buffer not busy anymore
   } else {
     // cable disconnected: disable transfers
     transfer_possible = 0;
+    tx_buffer_busy = 1; // buffer busy
   }
 
   return 0; // no error
@@ -263,7 +267,7 @@ static void MIOS32_USB_MIDI_TxBufferHandler(u8 bEP)
 
   // atomic operation to avoid conflict with other interrupts
   MIOS32_IRQ_Disable();
-  if( tx_buffer_size && transfer_possible ) {
+  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
     s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
 
     // from USBHwEPWrite
@@ -282,6 +286,9 @@ static void MIOS32_USB_MIDI_TxBufferHandler(u8 bEP)
       if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
 	tx_buffer_tail = 0;
     }
+
+    // notify that new package is sent
+    tx_buffer_busy = 1;
 
     // send to IN pipe
     tx_buffer_size -= real_count;
@@ -359,6 +366,9 @@ static void MIOS32_USB_MIDI_RxBufferHandler(u8 bEP)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 {
+  // package has been sent
+  tx_buffer_busy = 0;
+
   // check for next package
   MIOS32_USB_MIDI_TxBufferHandler(bEP);
 }
@@ -369,8 +379,14 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 /////////////////////////////////////////////////////////////////////////////
 void MIOS32_USB_MIDI_EP1_OUT_Callback(u8 bEP, u8 bEPStatus)
 {
-  // put package into buffer
-  MIOS32_USB_MIDI_RxBufferHandler(bEP);
+  // package has been sent
+  if( bEP & 0x80 ) {
+    // note: shared callback, IN and OUT irq can trigger it
+    MIOS32_USB_MIDI_EP1_IN_Callback(bEP, bEPStatus);
+  } else {
+    // put package into buffer
+    MIOS32_USB_MIDI_RxBufferHandler(bEP);
+  }
 }
 
 //! \}
