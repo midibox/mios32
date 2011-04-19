@@ -921,14 +921,7 @@ s32 MIOS32_USB_Init(u32 mode)
 #endif
 
   // enable_USB_interrupt
-  // TODO: use NVIC_SetPriority; will require some encoding...
-  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
-  u32 tmppre = (4 - tmppriority);
-  tmppriority = MIOS32_IRQ_USB_PRIORITY << tmppre;
-  tmppriority = tmppriority << 4;
-  NVIC->IP[USB_IRQn] = tmppriority;
-
-  NVIC_EnableIRQ(USB_IRQn);
+  MIOS32_IRQ_Install(USB_IRQn, MIOS32_IRQ_USB_PRIORITY);
 
   // connect to USB bus
   USBHwConnect(TRUE);

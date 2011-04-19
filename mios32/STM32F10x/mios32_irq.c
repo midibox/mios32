@@ -83,6 +83,45 @@ s32 MIOS32_IRQ_Enable(void)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function installs an interrupt service.
+//! \param[in] IRQn the interrupt number as defined in the CMSIS (e.g. CAN_IRQn)
+//! \param[in] priority the priority from 0..15 - than lower the value, than higher the priority.\n
+//! Please prefer the usage of MIOS32_IRQ_PRIO_LOW .. MID .. HIGH .. HIGHEST
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IRQ_Install(u8 IRQn, u8 priority)
+{
+  // no check for IRQn as it's device dependent
+
+  if( priority >= 16 )
+    return -1; // invalid priority
+
+  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
+  u32 tmppre = (4 - tmppriority);
+  tmppriority = priority << tmppre;
+  tmppriority = tmppriority << 4;
+  NVIC->IP[IRQn] = tmppriority;
+
+  NVIC_EnableIRQ(IRQn);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function deinstalls an interrupt service.
+//! \param[in] IRQn the interrupt number as defined in the CMSIS (e.g. CAN_IRQn)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_IRQ_DeInstall(u8 IRQn)
+{
+  NVIC_DisableIRQ(IRQn);
+
+  return 0; // no error
+}
+
 //! \}
 
 #endif /* MIOS32_DONT_USE_IRQ */

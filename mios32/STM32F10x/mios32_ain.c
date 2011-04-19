@@ -321,13 +321,8 @@ s32 MIOS32_AIN_Init(u32 mode)
   // trigger interrupt when all conversion values have been fetched
   DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
 
-  // Configure and enable DMA interrupt  
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_AIN_DMA_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  // Configure and enable DMA interrupt
+  MIOS32_IRQ_Install(DMA1_Channel1_IRQn, MIOS32_IRQ_AIN_DMA_PRIORITY);
 
   // finally start initial conversion
   ADC_SoftwareStartConvCmd(ADC1, ENABLE);

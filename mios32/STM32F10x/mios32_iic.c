@@ -175,25 +175,14 @@ s32 MIOS32_IIC_Init(u32 mode)
   }
 
   // configure and enable I2C2 interrupts
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = I2C2_EV_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_IIC_EV_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
-  
+  MIOS32_IRQ_Install(I2C2_EV_IRQn, MIOS32_IRQ_IIC_EV_PRIORITY);  
 #if MIOS32_IIC_NUM >= 2
-  NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(I2C1_EV_IRQn, MIOS32_IRQ_IIC_EV_PRIORITY);
 #endif
 
-  NVIC_InitStructure.NVIC_IRQChannel = I2C2_ER_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_IIC_ER_PRIORITY;
-  NVIC_Init(&NVIC_InitStructure);
-
+  MIOS32_IRQ_Install(I2C2_ER_IRQn, MIOS32_IRQ_IIC_ER_PRIORITY);
 #if MIOS32_IIC_NUM >= 2
-  NVIC_InitStructure.NVIC_IRQChannel = I2C1_ER_IRQn;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(I2C1_ER_IRQn, MIOS32_IRQ_IIC_ER_PRIORITY);
 #endif
 
   return 0; // no error

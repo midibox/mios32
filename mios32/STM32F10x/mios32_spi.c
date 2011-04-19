@@ -145,7 +145,6 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   DMA_InitTypeDef DMA_InitStructure;
   DMA_StructInit(&DMA_InitStructure);
-  NVIC_InitTypeDef NVIC_InitStructure;
 
   ///////////////////////////////////////////////////////////////////////////
   // SPI0
@@ -202,11 +201,7 @@ s32 MIOS32_SPI_Init(u32 mode)
   SPI_I2S_DMACmd(MIOS32_SPI0_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
 
   // Configure DMA interrupt
-  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SPI0_DMA_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SPI_DMA_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(MIOS32_SPI0_DMA_IRQ_CHANNEL, MIOS32_IRQ_SPI_DMA_PRIORITY);
 
 #endif /* MIOS32_DONT_USE_SPI0 */
 
@@ -266,11 +261,7 @@ s32 MIOS32_SPI_Init(u32 mode)
   SPI_I2S_DMACmd(MIOS32_SPI1_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
 
   // Configure DMA interrupt
-  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_SPI1_DMA_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_SPI_DMA_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(MIOS32_SPI1_DMA_IRQ_CHANNEL, MIOS32_IRQ_SPI_DMA_PRIORITY);
 
 #endif /* MIOS32_DONT_USE_SPI1 */
 

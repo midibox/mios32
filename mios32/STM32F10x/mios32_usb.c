@@ -978,20 +978,10 @@ s32 MIOS32_USB_Init(u32 mode)
 
 #ifdef STM32F10X_CL
   // Enable the USB interrupts
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = OTG_FS_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);   
+  MIOS32_IRQ_Install(OTG_FS_IRQn, MIOS32_IRQ_USB_PRIORITY);
 #else
   // enable USB interrupts (unfortunately shared with CAN Rx0, as either CAN or USB can be used, but not at the same time)
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_USB_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(USB_LP_CAN1_RX0_IRQn, MIOS32_IRQ_USB_PRIORITY);
 #endif
 
   return 0; // no error
