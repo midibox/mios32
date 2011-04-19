@@ -2,18 +2,12 @@
 /*
  * MBNet Functions
  *
- * STM32: Note that CAN and USB cannot be used at the same time!
- * Add following defines to your local mios32_config.h file to disable USB:
- * #define MIOS32_DONT_USE_USB
- *
- *
  * TODO: try recovery on CAN Bus errors
  * TODO: remove slaves from info list which timed out during transaction!
- * TODO: try to share more code between LPC17 and STM32 driver in higher application layer
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -29,27 +23,24 @@
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
+#include <app.h>
+
 #include "mbnet.h"
+#include "mbnet_hal.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 1
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Pin definitions
+// Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-// note: remapped CAN IO - for different pins, 
-// the MBNET_Init() function has to be enhanced
-#define MBNET_RX_PORT     GPIOB
-#define MBNET_RX_PIN      GPIO_Pin_8
-#define MBNET_TX_PORT     GPIOB
-#define MBNET_TX_PIN      GPIO_Pin_9
-
+#define MBNET_TIMEOUT_CTR_MAX 5000
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -79,7 +70,7 @@ static mbnet_msg_t last_req_msg;
 static u8          last_req_dlc;
 
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
 // only for debugging: skip messages after more than 8 TOS=1/2
 static u32 tos12_ctr = 0;
 #endif
@@ -98,8 +89,6 @@ static s32 MBNET_BusErrorCheck(void);
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNET_Init(u32 mode)
 {
-  u32 poll_ctr;
-
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -114,63 +103,15 @@ s32 MBNET_Init(u32 mode)
   // invalidate slave informations
   MBNET_Reconnect();
 
-  // remap CAN pins
-  GPIO_PinRemapConfig(GPIO_Remap1_CAN1, ENABLE);
-
-  // configure CAN pins
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
-
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-  GPIO_InitStructure.GPIO_Pin = MBNET_RX_PIN;
-  GPIO_Init(MBNET_RX_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-  GPIO_InitStructure.GPIO_Pin = MBNET_TX_PIN;
-  GPIO_Init(MBNET_TX_PORT, &GPIO_InitStructure);
-
-  // enable CAN clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
-
-#if 0
-  // reset CAN
-  RCC_APB1PeriphResetCmd(RCC_APB1Periph_CAN, ENABLE);
-  RCC_APB1PeriphResetCmd(RCC_APB1Periph_CAN, DISABLE);
+  // init hardware
+  if( MBNET_HAL_Init(mode) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNET] ----- initialisation FAILED! ------------------------------------------\n");
 #endif
-
-  // CAN initialisation
-
-  // Request initialisation and wait until acknowledged
-  CAN1->MCR = (1 << 0); // CAN_MCR_INRQ
-  poll_ctr = 1000; // poll up to 1000 times
-  // according to datasheet, CAN waits until all ongoing transfers are finished
-  while( !(CAN1->MSR & (1 << 0)) ) { // CAN_MSR_INAK
-    if( --poll_ctr == 0 )
-      return -1; // initialisation failed
+    return -1;
   }
 
-  // enable receive FIFO locked mode (if FIFO is full, next incoming message will be discarded)
-  CAN1->MCR |= (1 << 3); // CAN_MCR_RFLM
-
-  // bit timings for 2 MBaud:
-  // -> 72 Mhz / 2 / 3 -> 12 MHz --> 6 quanta for 2 MBaud
-  //          normal mode               Resynch. Jump Width   Time Segment 1         Time Segment 2       Prescaler
-  CAN1->BTR = (CAN_Mode_Normal << 30) | (CAN_SJW_1tq << 24) | (CAN_BS1_3tq << 16) | (CAN_BS2_2tq << 20) | (3 - 1);
-
-  // leave initialisation mode and wait for acknowledge
-  // Datasheet: we expect that the bus is unbusy after CAN has monitored a sequence of 11 consecutive recessive bits
-  CAN1->MCR &= ~(1 << 0); // CAN_MCR_INRQ
-  poll_ctr = 1000; // poll up to 1000 times
-  while( !(CAN1->MSR & (1 << 0)) ) { // CAN_MSR_INAK
-    if( --poll_ctr == 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNET] ----- initialisation FAILED! ------------------------------------------\n");
-#endif
-      return -1; // initialisation failed
-    }
-  }
-
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNET] ----- initialized -----------------------------------------------------\n");
 #endif
 
@@ -187,9 +128,6 @@ s32 MBNET_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNET_NodeIDSet(u8 node_id)
 {
-  u32 filter_mask;
-  CAN_FilterInitTypeDef CAN_FilterInitStructure;
-
   // my node_id must be 0..127
   if( node_id >= 128 )
     return -1;
@@ -197,31 +135,8 @@ s32 MBNET_NodeIDSet(u8 node_id)
   // take over node ID
   my_node_id = node_id;
 
-  // CAN filter initialisation
-
-  // filter/FIFO 0 checks for incoming request messages directed to this node
-  CAN_FilterInitStructure.CAN_FilterNumber=0;
-  CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask;
-  CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;
-  CAN_FilterInitStructure.CAN_FilterIdHigh=(my_node_id << 8); // ACK=0
-  CAN_FilterInitStructure.CAN_FilterIdLow=0x0004; // only accept EID=1, RTR=0
-  CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0xff00;
-  CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0006; // check for EID and RTR
-  CAN_FilterInitStructure.CAN_FilterFIFOAssignment=0;
-  CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;
-  CAN_FilterInit(&CAN_FilterInitStructure);
-
-  // filter/FIFO 1 matches on incoming acknowledge messages directed to this node
-  CAN_FilterInitStructure.CAN_FilterNumber=1;
-  CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask;
-  CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;
-  CAN_FilterInitStructure.CAN_FilterIdHigh=(1 << 15) | (my_node_id << 8); // ACK=1
-  CAN_FilterInitStructure.CAN_FilterIdLow=0x0004; // only accept EID=1, RTR=0
-  CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0xff00;
-  CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0006; // check for EID and RTR
-  CAN_FilterInitStructure.CAN_FilterFIFOAssignment=1;
-  CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;
-  CAN_FilterInit(&CAN_FilterInitStructure);
+  // CAN acceptance filter initialisation
+  MBNET_HAL_FilterInit(node_id);
 
   return 0; // no error
 }
@@ -251,7 +166,6 @@ s32 MBNET_NodeIDGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info)
 {
-  int i;
   u8 ix;
   
   if( my_node_id >= 128 )
@@ -296,7 +210,10 @@ s32 MBNET_Reconnect(void)
     slave_nodes_info[i].data_l = 0;
     slave_nodes_info[i].data_h = 0;
   }
+
+  return 0; // no error
 }
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -319,37 +236,20 @@ s32 MBNET_ErrorStateGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // internal function to send a MBNet message
 // Used by MBNET_SendReq and MBNET_SendAck
-// returns 0 if message sent successfully
+// returns 1 if message sent successfully
 // returns -3 on transmission error
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
 {
-  // select an empty transmit mailbox
-  s8 mailbox = -1;
-  do {
-    // exit immediately if CAN bus errors (CAN doesn't send messages anymore)
-    if( MBNET_BusErrorCheck() < 0 )
-      return -3; // transmission error
+  s32 status;
 
-    // TODO: timeout required?
-    if     ( CAN1->TSR & (1 << 26) ) // TME0
-      mailbox = 0;
-    else if( CAN1->TSR & (1 << 27) ) // TME1
-      mailbox = 1;
-    else if( CAN1->TSR & (1 << 28) ) // TME2
-      mailbox = 2;
-  } while( mailbox == -1 ); // TODO: provide timeout mechanism
+  if( (status=MBNET_HAL_Send(mbnet_id, msg, dlc)) < 0 )
+    return status;
 
-  CAN1->sTxMailBox[mailbox].TDTR = (dlc << 0); // set dlc, disable timestamp
-  CAN1->sTxMailBox[mailbox].TDLR = msg.data_l;
-  CAN1->sTxMailBox[mailbox].TDHR = msg.data_h;
-  CAN1->sTxMailBox[mailbox].TIR = (mbnet_id.ALL << 3) | (1 << 2) | (1 << 0); // id field, EID flag, TX Req flag
-
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 3
   if( tos12_ctr <= 8 ) {
-    DEBUG_MSG("[MBNET] sent %s via mailbox %d: ID:%02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
+    DEBUG_MSG("[MBNET] sent %s: ID:%02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 	      mbnet_id.ack ? "ACK" : "REQ",
-	      mailbox,
 	      mbnet_id.node,
 	      mbnet_id.tos,
 	      dlc,
@@ -358,7 +258,7 @@ static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
   }
 #endif
 
-  return 0; // no error
+  return status;
 }
 
 
@@ -369,15 +269,13 @@ static s32 MBNET_SendMsg(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
 //     <control>: 16bit control field of ID
 //     <msg>: MBNet message (see mbnet_msg_t structure)
 //     <dlc>: data field length (0..8)
-// OUT: returns 0 if message sent successfully
+// OUT: returns 1 if message sent successfully
 //      returns -1 if this node hasn't been configured yet
 //      returns -2 if this node isn't configured as master
 //      returns -3 on transmission error
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNET_SendReq(u8 slave_id, mbnet_tos_req_t tos_req, u16 control, mbnet_msg_t msg, u8 dlc)
 {
-  s32 error;
-
   if( my_node_id >= 128 )
     return -1; // node not configured
 
@@ -404,10 +302,10 @@ s32 MBNET_SendReq(u8 slave_id, mbnet_tos_req_t tos_req, u16 control, mbnet_msg_t
 /////////////////////////////////////////////////////////////////////////////
 // If a slave acknowledged with retry, the last message has to be sent again
 // It can be initiated with this function
-// Only required if MBNET_WaitAck_NonBlocked() is used!
+// Only required if MBNET_WaitAck_NonBlocking() is used!
 // Automatically handled by MBNET_WaitAck()
 // IN: <slave_id>: slave node ID (0x00..0x7f)
-// OUT: returns 0 if message sent successfully
+// OUT: returns 1 if message sent successfully
 //      returns -1 if this node hasn't been configured yet
 //      returns -2 if this node isn't configured as master
 //      returns -3 on transmission error
@@ -415,8 +313,6 @@ s32 MBNET_SendReq(u8 slave_id, mbnet_tos_req_t tos_req, u16 control, mbnet_msg_t
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNET_SendReqAgain(u8 slave_id)
 {
-  s32 error;
-
   if( my_node_id >= 128 )
     return -1; // node not configured
 
@@ -473,10 +369,8 @@ s32 MBNET_SendAck(u8 master_id, mbnet_tos_ack_t tos_ack, mbnet_msg_t msg, u8 dlc
 //      returns -4 if slave acknowledged with retry (send message again)
 //      returns -5 if no response from slave yet (check again or timeout!)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
+s32 MBNET_WaitAck_NonBlocking(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 {
-  s32 error;
-
   if( my_node_id >= 128 )
     return -1; // node not configured
 
@@ -487,36 +381,31 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
   if( MBNET_BusErrorCheck() < 0 )
     return -3; // transmission error
 
-  // check for incoming FIFO1 messages (MBNet acknowledges)
-  u8 again;   // allows to poll the FIFO again
+  // check for incoming acknowledge messages
+  mbnet_packet_t p;
+  s32 got_msg;
   do {
-    again = 0;
-    if( CAN1->RF1R & 0x3 ) { // FMP1 contains number of messages
-      // get EID, MSG and DLC
-      mbnet_id_t mbnet_id;
-      mbnet_id.ALL = CAN1->sFIFOMailBox[1].RIR >> 3;
-      *dlc = CAN1->sFIFOMailBox[1].RDTR & 0xf;
-      ack_msg->data_l = CAN1->sFIFOMailBox[1].RDLR;
-      ack_msg->data_h = CAN1->sFIFOMailBox[1].RDHR;
+    got_msg = MBNET_HAL_ReceiveAck(&p);
 
-      // release FIFO, and check again next loop
-      CAN1->RF1R = (1 << 5); // set RFOM1 flag
-      again = 1;
+    if( got_msg > 0 ) {
+      // get EID, MSG and DLC
+      *dlc = p.dlc;
+      *ack_msg = p.msg;
 
       // response from expected slave? if not - ignore it!
-      if( (mbnet_id.control & 0xff) == slave_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
+      if( (p.id.control & 0xff) == slave_id ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
 	DEBUG_MSG("[MBNET] got ACK from slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		  mbnet_id.control & 0xff,
-		  mbnet_id.tos,
+		  p.id.control & 0xff,
+		  p.id.tos,
 		  *dlc,
 		  ack_msg->bytes[0], ack_msg->bytes[1], ack_msg->bytes[2], ack_msg->bytes[3],
 		  ack_msg->bytes[4], ack_msg->bytes[5], ack_msg->bytes[6], ack_msg->bytes[7]);
 #endif
 
 	// retry requested?
-	if( mbnet_id.tos == MBNET_ACK_RETRY ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
+	if( p.id.tos == MBNET_ACK_RETRY ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
 	  DEBUG_MSG("[MBNET] Slave ID %02x requested to retry the transfer!\n", slave_id);
 #endif
 	  return -4; // slave requested to retry
@@ -525,17 +414,15 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 	return 0; // wait ack successful!
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNET] ERROR: ACK from unexpected slave ID %02x TOS=%d DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		  mbnet_id.control & 0xff,
-		  mbnet_id.tos,
+	DEBUG_MSG("[MBNET] ERROR: ACK from unexpected slave ID %02x (TOS=%d DLC=%d MSG=%02x %02x %02x...)\n",
+		  p.id.control & 0xff,
+		  p.id.tos,
 		  *dlc,
-		  ack_msg->bytes[0], ack_msg->bytes[1], ack_msg->bytes[2], ack_msg->bytes[3],
-		  ack_msg->bytes[4], ack_msg->bytes[5], ack_msg->bytes[6], ack_msg->bytes[7]);
+		  ack_msg->bytes[0], ack_msg->bytes[1], ack_msg->bytes[2]);
 #endif
-	again = 1;
       }
     }
-  } while( again );
+  } while( got_msg );
 
   return -5; // no response from slave yet (check again or timeout!)
 }
@@ -543,7 +430,7 @@ s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 
 /////////////////////////////////////////////////////////////////////////////
 // Checks for acknowledge from a specific slave
-// (blocked function)
+// (blocking function)
 // IN: <slave_id>: slave node ID (0x00..0x7f)
 //     <*msg>: received MBNet message (see mbnet_msg_t structure)
 //     <*dlc>: received data field length (0..8)
@@ -560,15 +447,15 @@ s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
   s32 error;
 
   do {
-    error = MBNET_WaitAck_NonBlocked(slave_id, ack_msg, dlc);
+    error = MBNET_WaitAck_NonBlocking(slave_id, ack_msg, dlc);
     if( error == -4 ) {
       MBNET_SendReqAgain(slave_id);
       timeout_ctr = 0;
     }
-  } while( (error == -4 || error == -5) && ++timeout_ctr < 5000 );
+  } while( (error == -4 || error == -5) && ++timeout_ctr < MBNET_TIMEOUT_CTR_MAX );
 
-  if( timeout_ctr == 5000 ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
+  if( timeout_ctr == MBNET_TIMEOUT_CTR_MAX ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
     DEBUG_MSG("[MBNET] ACK polling for slave ID %02x timed out!\n", slave_id);
 #endif
     return -6; // timeout
@@ -628,9 +515,10 @@ s32 MBNET_Handler(void *_callback)
       mbnet_msg_t req_msg;
       req_msg.data_l = 0;
       req_msg.data_h = 0;
-      if( MBNET_SendReq(search_slave_id, MBNET_REQ_PING, 0x0000, req_msg, 0) == 0 ) {
+      if( MBNET_SendReq(search_slave_id, MBNET_REQ_PING, 0x0000, req_msg, 0) == 1 ) {
 	mbnet_msg_t ack_msg;
 	u8 dlc;
+
 	if( MBNET_WaitAck(search_slave_id, &ack_msg, &dlc) == 0 ) {
 
 	  // got it! :-)
@@ -668,31 +556,21 @@ s32 MBNET_Handler(void *_callback)
     }
   }
 
-  u8 again = 0;   // allows to poll the FIFO again
+  u8 got_msg;
+  mbnet_packet_t p;
   s8 locked = -1; // contains MS node ID if slave has been locked, otherwise -1 if not locked
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   tos12_ctr = 0; // only for debugging
 #endif
   do {
-    // check for incoming FIFO0 messages (MBNet requests)
-    if( CAN1->RF0R & 0x3 ) { // FMP0 contains number of messages
-      // get EID, MSG and DLC
-      mbnet_id_t mbnet_id;
-      mbnet_id.ALL = CAN1->sFIFOMailBox[0].RIR >> 3;
-      u8 dlc = CAN1->sFIFOMailBox[0].RDTR & 0xf;
-      mbnet_msg_t req_msg;
-      req_msg.data_l = CAN1->sFIFOMailBox[0].RDLR;
-      req_msg.data_h = CAN1->sFIFOMailBox[0].RDHR;
+    got_msg = MBNET_HAL_ReceiveReq(&p);
 
-      // release FIFO, and check again next loop
-      CAN1->RF0R = (1 << 5); // set RFOM0 flag
-      again = 1;
-
+    if( got_msg > 0 ) {
       // master node ID
-      u8 master_id = mbnet_id.ms << 4;
+      u8 master_id = p.id.ms << 4;
 
-#if DEBUG_VERBOSE_LEVEL >= 1
-      if( mbnet_id.tos == 1 || mbnet_id.tos == 2 ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      if( p.id.tos == 1 || p.id.tos == 2 ) {
 	++tos12_ctr;
 	if( tos12_ctr > 8 ) {
 	  DEBUG_MSG("[MBNET] ... skip display of remaining read/write operations\n");
@@ -701,15 +579,15 @@ s32 MBNET_Handler(void *_callback)
 	tos12_ctr = 0;
       }
 #endif
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 3
       if( tos12_ctr <= 8 ) {
 	DEBUG_MSG("[MBNET] request ID=%02x TOS=%d CTRL=%04x DLC=%d MSG=%02x %02x %02x %02x %02x %02x %02x %02x\n",
 		  master_id,
-		  mbnet_id.tos,
-		  mbnet_id.control,
-		  dlc,
-		  req_msg.bytes[0], req_msg.bytes[1], req_msg.bytes[2], req_msg.bytes[3],
-		  req_msg.bytes[4], req_msg.bytes[5], req_msg.bytes[6], req_msg.bytes[7]);
+		  p.id.tos,
+		  p.id.control,
+		  p.dlc,
+		  p.msg.bytes[0], p.msg.bytes[1], p.msg.bytes[2], p.msg.bytes[3],
+		  p.msg.bytes[4], p.msg.bytes[5], p.msg.bytes[6], p.msg.bytes[7]);
       }
 #endif
       // default acknowledge message is empty
@@ -717,19 +595,19 @@ s32 MBNET_Handler(void *_callback)
       ack_msg.data_l = ack_msg.data_h = 0;
 
       // if slave has been locked by another master: send retry acknowledge
-      if( locked != -1 && mbnet_id.ms != locked ) {
+      if( locked != -1 && p.id.ms != locked ) {
 	MBNET_SendAck(master_id, MBNET_ACK_RETRY, ack_msg, 0); // master_id, tos, msg, dlc
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 3
 	DEBUG_MSG("[MBNET] ignore - node is locked by MS=%d\n", locked);
 #endif
       } else {
 	// branch depending on TOS
-	switch( mbnet_id.tos ) {
+	switch( p.id.tos ) {
           case MBNET_REQ_SPECIAL:
 	    // branch depending on ETOS (extended TOS)
-	    switch( mbnet_id.control & 0xff ) {
+	    switch( p.id.control & 0xff ) {
 	      case 0x00: // lock receiver
-		locked = mbnet_id.ms;
+		locked = p.id.ms;
 		MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
 		break;
       	      case 0x01: // unlock receiver
@@ -750,7 +628,7 @@ s32 MBNET_Handler(void *_callback)
 		MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		break;
       	      case 0x06: // call APP_MIDI_NotifyPackage
-		if( dlc != 3 ) {
+		if( p.dlc != 3 ) {
 		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		} else {
 		  mios32_midi_package_t package;
@@ -763,26 +641,26 @@ s32 MBNET_Handler(void *_callback)
 		MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		break;
       	      case 0x08: // call APP_DIN_NotifyToggle
-		if( dlc != 2 ) {
+		if( p.dlc != 2 ) {
 		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		} else {
-		  APP_DIN_NotifyToggle(req_msg.bytes[0], req_msg.bytes[1]);
+		  APP_DIN_NotifyToggle(p.msg.bytes[0], p.msg.bytes[1]);
 		  MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
 		}
 		break;
       	      case 0x09: // call APP_ENC_NotifyChange
-		if( dlc != 2 ) {
+		if( p.dlc != 2 ) {
 		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		} else {
-		  APP_ENC_NotifyChange(req_msg.bytes[0], req_msg.bytes[1]);
+		  APP_ENC_NotifyChange(p.msg.bytes[0], p.msg.bytes[1]);
 		  MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
 		}
 		break;
       	      case 0x0a: // call APP_AIN_NotifyChange
-		if( dlc != 3 ) {
+		if( p.dlc != 3 ) {
 		  MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 		} else {
-		  APP_ENC_NotifyChange(req_msg.bytes[0], req_msg.bytes[1] | (req_msg.bytes[2] << 8));
+		  APP_ENC_NotifyChange(p.msg.bytes[0], p.msg.bytes[1] | (p.msg.bytes[2] << 8));
 		  MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
 		}
 		break;
@@ -803,7 +681,7 @@ s32 MBNET_Handler(void *_callback)
 		break;
     	      default:
 		// send ETOS to application via callback hook
-		callback(mbnet_id.ms << 4, mbnet_id.tos, mbnet_id.control, req_msg, dlc);
+		callback(p.id.ms << 4, p.id.tos, p.id.control, p.msg, p.dlc);
 		break;
 	    }
 	    break;
@@ -812,16 +690,16 @@ s32 MBNET_Handler(void *_callback)
           case MBNET_REQ_RAM_WRITE:
           case MBNET_REQ_PING:
 	    // handled by application
-	    callback(mbnet_id.ms << 4, mbnet_id.tos, mbnet_id.control, req_msg, dlc);
+	    callback(p.id.ms << 4, p.id.tos, p.id.control, p.msg, p.dlc);
 	    break;
 
-	  default: // mbnet_id.tos>=4 will never be received, just for the case...
+	  default: // p.id.tos>=4 will never be received, just for the case...
 	    MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
 	    break;
         }  
       }
     }
-  } while( again || locked != -1);
+  } while( got_msg || locked != -1);
 
   return 0; // no error
 }
@@ -844,12 +722,9 @@ static s32 MBNET_BusErrorCheck(void)
   if( mbnet_state.PERMANENT_OFF )
     return -1; // requires re-initialisation
 
-  // exit if CAN not in error warning state
-  if( !(CAN1->ESR & (1 << 0)) ) // EWGF
+  s32 status = MBNET_HAL_BusErrorCheck();
+  if( status >= 0 )
     return 0; // no error
-
-  // abort all pending transmissions
-  CAN1->TSR |= (1 << 23) | (1 << 15) | (1 << 7); // set ABRQ[210]
 
   // notify that an abort has happened
   mbnet_state.PANIC = 1;
@@ -857,7 +732,7 @@ static s32 MBNET_BusErrorCheck(void)
   // TODO: try to recover
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[MBNET] ERRORs detected (CAN_ESR=0x%08x) - permanent off state reached!\n", CAN1->ESR);
+  DEBUG_MSG("[MBNET] ERRORs detected - permanent off state reached!\n");
 #endif
 
   // recovery not possible: prevent MBNet accesses
