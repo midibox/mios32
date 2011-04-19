@@ -112,7 +112,7 @@ extern s32 MBNET_SendReq(u8 slave_id, mbnet_tos_req_t tos_req, u16 control, mbne
 extern s32 MBNET_SendReqAgain(u8 slave_id);
 extern s32 MBNET_SendAck(u8 master_id, mbnet_tos_ack_t tos_ack, mbnet_msg_t msg, u8 dlc);
 
-extern s32 MBNET_WaitAck_NonBlocked(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc);
+extern s32 MBNET_WaitAck_NonBlocking(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc);
 extern s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc);
 
 extern s32 MBNET_Handler(void *_callback);
