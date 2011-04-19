@@ -164,30 +164,16 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 
   // configure and enable UART interrupts
-  NVIC_InitTypeDef NVIC_InitStructure;
-
-  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART0_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(MIOS32_UART0_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
   USART_ITConfig(MIOS32_UART0, USART_IT_RXNE, ENABLE);
 
 #if MIOS32_UART_NUM >= 2
-  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART1_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(MIOS32_UART1_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
   USART_ITConfig(MIOS32_UART1, USART_IT_RXNE, ENABLE);
 #endif
 
 #if MIOS32_UART_NUM >= 3
-  NVIC_InitStructure.NVIC_IRQChannel = MIOS32_UART2_IRQ_CHANNEL;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_UART_PRIORITY; // defined in mios32_irq.h
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(MIOS32_UART2_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
   USART_ITConfig(MIOS32_UART2, USART_IT_RXNE, ENABLE);
 #endif
 

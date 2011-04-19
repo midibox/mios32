@@ -302,7 +302,7 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
     return -2; // nothing new in buffer
 
   // read byte from FIFO
-  u8 b = LPC_UART0->RBR;
+  u8 b = u->RBR;
 
   return b; // return received byte
 #endif

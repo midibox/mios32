@@ -124,14 +124,7 @@ s32 MBNET_HAL_Init(u32 mode)
   MBNET_CAN->MOD = 0;
 
   // enable CAN interrupt
-  // TODO: use NVIC_SetPriority; will require some encoding...
-  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
-  u32 tmppre = (4 - tmppriority);
-  tmppriority = MIOS32_IRQ_PRIO_HIGH << tmppre;
-  tmppriority = tmppriority << 4;
-  NVIC->IP[CAN_IRQn] = tmppriority;
-
-  NVIC_EnableIRQ(CAN_IRQn);
+  MIOS32_IRQ_Install(CAN_IRQn, MIOS32_IRQ_PRIO_HIGH);
 
   return 0; // no error
 }

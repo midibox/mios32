@@ -126,12 +126,7 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
   TIM_Cmd(timer_base[timer], ENABLE);
 
   // enable global interrupt
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = timer_irq_chn[timer];
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = irq_priority;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(timer_irq_chn[timer], irq_priority);
 
   return 0; // no error
 }

@@ -207,13 +207,7 @@ s32 MIOS32_AIN_Init(u32 mode)
   LPC_ADC->ADINTEN = (1 << last_channel);
 
   // TODO: use NVIC_SetPriority; will require some encoding...
-  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
-  u32 tmppre = (4 - tmppriority);
-  tmppriority = MIOS32_IRQ_AIN_DMA_PRIORITY << tmppre;
-  tmppriority = tmppriority << 4;
-  NVIC->IP[ADC_IRQn] = tmppriority;
-
-  NVIC_EnableIRQ(ADC_IRQn);
+  MIOS32_IRQ_Install(ADC_IRQn, MIOS32_IRQ_AIN_DMA_PRIORITY);
 
   return 0; // no error
 #endif

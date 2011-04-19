@@ -97,5 +97,7 @@
 extern s32 MIOS32_IRQ_Disable(void);
 extern s32 MIOS32_IRQ_Enable(void);
 
+extern s32 MIOS32_IRQ_Install(u8 IRQn, u8 priority);
+extern s32 MIOS32_IRQ_DeInstall(u8 IRQn);
 
 #endif /* _MIOS32_IRQ_H */

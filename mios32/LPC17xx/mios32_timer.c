@@ -116,14 +116,7 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
   tim->TCR = 1;
 
   // enable global interrupt
-  // TODO: use NVIC_SetPriority; will require some encoding...
-  u32 tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700)) >> 8;
-  u32 tmppre = (4 - tmppriority);
-  tmppriority = irq_priority << tmppre;
-  tmppriority = tmppriority << 4;
-  NVIC->IP[timer_irq_chn[timer]] = tmppriority;
-
-  NVIC_EnableIRQ(timer_irq_chn[timer]);
+  MIOS32_IRQ_Install(timer_irq_chn[timer], irq_priority);
 
   return 0; // no error
 }

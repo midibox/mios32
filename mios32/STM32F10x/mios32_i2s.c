@@ -151,12 +151,7 @@ s32 MIOS32_I2S_Init(u32 mode)
   SPI_I2S_DMACmd(SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
 
   // Configure and enable DMA interrupt
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_I2S_DMA_PRIORITY;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(DMA1_Channel5_IRQn, MIOS32_IRQ_I2S_DMA_PRIORITY);
 
   return 0; // no error
 }
