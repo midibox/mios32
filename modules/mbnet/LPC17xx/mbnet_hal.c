@@ -60,6 +60,9 @@ static volatile u8 mbnet_fifo_ack_tail;
 static volatile u8 mbnet_fifo_ack_head;
 static volatile u8 mbnet_fifo_ack_size;
 
+// optional TX handler callback
+s32 (*tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes CAN interface
@@ -75,6 +78,9 @@ s32 MBNET_HAL_Init(u32 mode)
   // clear FIFOs
   mbnet_fifo_req_tail = mbnet_fifo_req_head = mbnet_fifo_req_size = 0;
   mbnet_fifo_ack_tail = mbnet_fifo_ack_head = mbnet_fifo_ack_size = 0;
+
+  // disable TX handler callback
+  tx_handler_callback = NULL;
 
   // init CAN pins
   MBNET_RXD_INIT;
@@ -186,8 +192,11 @@ s32 MBNET_HAL_Send(mbnet_id_t mbnet_id, mbnet_msg_t msg, u8 dlc)
       mailbox = 0;
     else if( sr & (1 << 10) ) // TBS2
       mailbox = 1;
+#if 0
+    // assigned for interrupt driven transfers
     else if( sr & (1 << 18) ) // TBS3
       mailbox = 2;
+#endif
 
     // no free buffer: exit if CAN bus errors (CAN doesn't send messages anymore)
     if( mailbox < 0 && MBNET_HAL_BusErrorCheck() < 0 )
@@ -328,4 +337,65 @@ void CAN_IRQHandler(void)
     // release buffer
     MBNET_CAN->CMR = (1 << 2);
   }
+
+  if( icr & (1 << 10) ) { // TIE3
+    // trigger a new packet
+    MBNET_HAL_TriggerTxHandler();
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installs an optional Tx Handler which is called via interrupt whenever
+// a new message can be sent
+// Currently only supported by LPC17xx HAL!
+// tx_handler_callback == NULL will disable the handler
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_HAL_InstallTxHandler(s32 (*_tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc))
+{
+  tx_handler_callback = _tx_handler_callback;
+
+  if( tx_handler_callback == NULL ) {
+    // disable transmit interrupt for buffer 3
+    MBNET_CAN->IER &= ~(1 << 10); // TIE3
+  } else {
+    // enable transmit interrupt for buffer 3
+    MBNET_CAN->IER |= (1 << 10); // TIE3
+    // request to send first frame
+    MBNET_HAL_TriggerTxHandler();
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Manual request of transmit handler
+// Has to be called whenever the transmission has been stopped to restart
+// interrupt driven transfers
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_HAL_TriggerTxHandler(void)
+{
+  if( tx_handler_callback == NULL )
+    return -1; // no callback installed
+
+  s32 status;
+  mbnet_id_t mbnet_id;
+  mbnet_msg_t msg;
+  u8 dlc;
+
+  if( (status=tx_handler_callback(&mbnet_id, &msg, &dlc)) > 0 ) {
+    //              FF (extended frame)  DLC (length)   
+    MBNET_CAN->TFI3 = (1 << 31)         | (dlc << 16);
+    // the extended ID
+    MBNET_CAN->TID3 = mbnet_id.ALL;
+    // the playload
+    MBNET_CAN->TDA3 = msg.data_l;
+    MBNET_CAN->TDB3 = msg.data_h;
+    
+    // transmission request
+    MBNET_CAN->CMR = (1 << (5+2)) | (1 << 0);
+  }
+
+  return status;
 }

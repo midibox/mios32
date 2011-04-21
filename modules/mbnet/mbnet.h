@@ -14,6 +14,10 @@
 #ifndef _MBNET_H
 #define _MBNET_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -33,7 +37,10 @@
 #define MBNET_SLAVE_NODES_END   0x1f
 #endif
 
-
+// how many retries while scanning a node?
+#ifndef MBNET_NODE_SCAN_RETRY
+#define MBNET_NODE_SCAN_RETRY 32
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -102,7 +109,8 @@ extern s32 MBNET_Init(u32 mode);
 extern s32 MBNET_NodeIDSet(u8 node_id);
 extern s32 MBNET_NodeIDGet(void);
 
-extern s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info);
+extern s32 MBNET_ScanFinished(void);
+extern s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t **info);
 
 extern s32 MBNET_Reconnect(void);
 
@@ -115,12 +123,19 @@ extern s32 MBNET_SendAck(u8 master_id, mbnet_tos_ack_t tos_ack, mbnet_msg_t msg,
 extern s32 MBNET_WaitAck_NonBlocking(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc);
 extern s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc);
 
-extern s32 MBNET_Handler(void *_callback);
+extern s32 MBNET_Handler(void (*callback)(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc));
+
+extern s32 MBNET_InstallTxHandler(s32 (*tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc));
+extern s32 MBNET_TriggerTxHandler(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _MBNET_H */

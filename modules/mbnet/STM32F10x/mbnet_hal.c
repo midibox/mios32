@@ -255,3 +255,26 @@ s32 MBNET_HAL_BusErrorCheck(void)
 
   return -2; // PANIC state reached
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installs an optional Tx Handler which is called via interrupt whenever
+// a new message can be sent
+// Currently only supported by LPC17xx HAL!
+// tx_handler_callback == NULL will disable the handler
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_HAL_InstallTxHandler(s32 (*_tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc))
+{
+  return -1; // not supported by this HAL
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Manual request of transmit handler
+// Has to be called whenever the transmission has been stopped to restart
+// interrupt driven transfers
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_HAL_TriggerTxHandler(void)
+{
+  return -1; // not supported by this HAL
+}
+
