@@ -106,6 +106,9 @@ include $(MIOS32_PATH)/modules/random/random.mk
 # USB Mass Storage Device Driver
 #include $(MIOS32_PATH)/modules/msd/msd.mk
 
+# MBNet module
+include $(MIOS32_PATH)/modules/mbnet/mbnet.mk
+
 # For performance measurings
 include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
 

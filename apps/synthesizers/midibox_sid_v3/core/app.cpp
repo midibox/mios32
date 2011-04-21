@@ -21,6 +21,7 @@
 
 #include <aout.h>
 #include <sid.h>
+#include <mbnet.h>
 
 #include "app.h"
 #include "MbSidEnvironment.h"
@@ -44,6 +45,7 @@ extern "C" s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t pac
 extern "C" s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in);
 extern "C" s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
+extern "C" void MBNET_TASK_Service(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc);
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -90,6 +92,10 @@ extern "C" void APP_Init(void)
 
   // init Stopwatch
   APP_StopwatchInit();
+
+  // init MBNet
+  MBNET_Init(0);
+  MBNET_NodeIDSet(0x10);
 
   // initialize MbSidEnvironment
   sid_se_speed_factor = 2;
@@ -202,6 +208,55 @@ extern "C" void SID_TIMER_SE_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void SID_TASK_Period1mS(void)
 {
+  MUTEX_MIDIOUT_TAKE;
+
+  if( !MBNET_ScanFinished() ) {
+    MBNET_Handler(MBNET_TASK_Service);
+
+    if( MBNET_ScanFinished() ) {
+      int i;
+      u8 sid_available = 0x00;
+      for(i=MBNET_SLAVE_NODES_BEGIN; i<=MBNET_SLAVE_NODES_END; ++i) {
+	mbnet_msg_t *info;
+	if( MBNET_SlaveNodeInfoGet(i, &info) >= 0 ) {
+	  DEBUG_MSG("Slave ID %02x P:%d T:%c%c%c%c V:%d.%d\n", 
+		    i,
+		    info->protocol_version,
+		    info->node_type[0], info->node_type[1], info->node_type[2], info->node_type[3],
+		    info->node_version, info->node_subversion);
+
+	  if( info->node_type[0] == 'S' &&
+	      info->node_type[1] == 'I' &&
+	      info->node_type[2] == 'D' &&
+	      info->node_version >= 2 ) {
+
+	    // disable local engine of SID
+	    u8 sid = i;
+	    mbnet_msg_t dummy_msg;
+	    dummy_msg.data_l = dummy_msg.data_h = 0;
+	    u8 dlc = 0;
+	    s32 status;
+	    if( (status=MBNET_SendReq(sid, MBNET_REQ_SPECIAL, 22, dummy_msg, dlc)) < 0 ) {
+	      DEBUG_MSG("[MBNET] can't access SID ID %02x, status %d\n", sid, status);
+	    } else {
+	      if( (status=MBNET_WaitAck(sid, &dummy_msg, &dlc)) < 0 ) {
+		DEBUG_MSG("[MBNET] can't access SID ID %02x, status %d (no ACK)\n", sid, status);
+	      } else {
+		sid_available |= (3 << (2*i));
+	      }
+	    }
+	    
+	  } else {
+	    DEBUG_MSG("No MIDIbox SID V2 or greater - skipped!\n");
+	  }
+	}
+      }
+
+      SID_AvailableSet(sid_available);
+      DEBUG_MSG("MBNet Scan has been finished - available SIDs: 0x%02x\n", sid_available);
+    }
+  }
+  MUTEX_MIDIOUT_GIVE;
 }
 
 
@@ -234,8 +289,13 @@ extern "C" void SID_TASK_Period1S(void)
   u32 acc_value = stopwatch_value_accumulated;
   stopwatch_value_accumulated = 0;
   MIOS32_IRQ_Enable();
+#if 0
   if( acc_value || max_value )
     DEBUG_MSG("%d uS (max: %d uS)\n", acc_value / (1000000 / (2000/sid_se_speed_factor)), max_value);
+#endif
+#if 1
+  SID_PrintStatistics();
+#endif
   MUTEX_MIDIOUT_GIVE;
 
   static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
@@ -335,4 +395,49 @@ s32 APP_StopwatchCapture(void)
   MIOS32_IRQ_Enable();
 
   return 0; // no error
+}
+
+
+// Application specific ETOS, READ, WRITE and PING requests are forwarded to
+// this callback function
+// In any case, the function has to send an acknowledge message back
+// to the master node!
+extern "C" void MBNET_TASK_Service(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc)
+{
+  mbnet_msg_t ack_msg;
+  ack_msg.data_l = 0;
+  ack_msg.data_h = 0;
+
+  // branch depending on TOS
+  switch( tos ) {
+    case MBNET_REQ_SPECIAL:
+      // no support for MBSID specific ETOS yet - just accept them all
+      MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 0); // master_id, tos, msg, dlc
+      break;
+
+    case MBNET_REQ_RAM_READ:
+      // dummy
+      MBNET_SendAck(master_id, MBNET_ACK_READ, ack_msg, 8); // master_id, tos, msg, dlc
+      break;
+
+    case MBNET_REQ_RAM_WRITE:
+      // dummy
+      MBNET_SendAck(master_id, MBNET_ACK_READ, ack_msg, 0); // master_id, tos, msg, dlc
+      break;
+
+    case MBNET_REQ_PING:
+      ack_msg.protocol_version = 1;   // should be 1
+      ack_msg.node_type[0]    = 'S'; // 4 characters which identify the node type
+      ack_msg.node_type[1]    = 'I';
+      ack_msg.node_type[2]    = 'D';
+      ack_msg.node_type[3]    = ' ';
+      ack_msg.node_version    = 3;   // version number (0..255)
+      ack_msg.node_subversion = 0;   // subversion number (0..65535)
+      MBNET_SendAck(master_id, MBNET_ACK_OK, ack_msg, 8); // master_id, tos, msg, dlc
+      break;
+
+    default:
+      // unexpected TOS
+      MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
+  }
 }
