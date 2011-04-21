@@ -89,4 +89,14 @@
 // MSD not enabled yet...
 #undef USE_MSD
 
+
+// MBNet Config:
+// relevant if configured as master: how many nodes should be scanned maximum
+#define SID_USE_MBNET           1
+#define MBNET_SLAVE_NODES_MAX   4
+#define MBNET_SLAVE_NODES_BEGIN 0x00
+#define MBNET_SLAVE_NODES_END   0x03
+#define MBNET_NODE_SCAN_RETRY   32
+
+
 #endif /* _MIOS32_CONFIG_H */
