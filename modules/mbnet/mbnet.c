@@ -69,6 +69,8 @@ static mbnet_id_t  last_req_mbnet_id;
 static mbnet_msg_t last_req_msg;
 static u8          last_req_dlc;
 
+// turns to 1 if scan for MBNet nodes is finished
+static u8 scan_finished;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
 // only for debugging: skip messages after more than 8 TOS=1/2
@@ -155,6 +157,15 @@ s32 MBNET_NodeIDGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns 1 if scan for MBNet nodes has been finished
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_ScanFinished(void)
+{
+  return scan_finished;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns informations about a found node
 // IN: slave node ID (MBNET_SLAVE_NODES_BEGIN..MBNET_SLAVE_NODES_END)
 // OUT: "pong" reply in *info
@@ -164,7 +175,7 @@ s32 MBNET_NodeIDGet(void)
 //      returns -3 if slave index outside allowed range
 //      returns -4 if slave info not available (no slave found at this index)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info)
+s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t **info)
 {
   u8 ix;
   
@@ -184,7 +195,7 @@ s32 MBNET_SlaveNodeInfoGet(u8 slave_id, mbnet_msg_t *info)
   if( (ix=slave_nodes_ix[slave_id-MBNET_SLAVE_NODES_BEGIN]) >= 128 )
     return -4; // slave info not available
 
-  info = &slave_nodes_info[ix];
+  *info = (mbnet_msg_t *)&slave_nodes_info[ix];
 
   return 0;
 }
@@ -198,12 +209,14 @@ s32 MBNET_Reconnect(void)
 {
   int i;
 
+  scan_finished = 0;
+
   // invalidate slave id to be searched
   search_slave_id = 0xff;
 
   // clear slave node index
   for(i=0; i<=MBNET_SLAVE_NODES_END-MBNET_SLAVE_NODES_BEGIN; ++i)
-    slave_nodes_ix[i] = 0xff-32; // invalid slave entry, retry 32 times
+    slave_nodes_ix[i] = 0xff-MBNET_NODE_SCAN_RETRY; // invalid slave entry, set retry counter
 
   // clear slave info
   for(i=0; i<MBNET_SLAVE_NODES_MAX; ++i) {
@@ -478,15 +491,13 @@ s32 MBNET_WaitAck(u8 slave_id, mbnet_msg_t *ack_msg, u8 *dlc)
 // IN: pointer to callback function
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNET_Handler(void *_callback)
+s32 MBNET_Handler(void (*callback)(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc))
 {
   if( my_node_id >= 128 )
     return -1; // node not configured
 
-  s32 (*callback)(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc) = _callback;
-
   // scan for slave nodes if this node is a master
-  if( (my_node_id & 0x0f) == 0 ) {
+  if( !scan_finished && (my_node_id & 0x0f) == 0 ) {
     
     // determine next slave node
     u8 again = 0;
@@ -501,8 +512,7 @@ s32 MBNET_Handler(void *_callback)
       // next slave
       ++search_slave_id;
 
-      if( search_slave_id == my_node_id )
-	again = 1; // skip my own ID
+      again = (search_slave_id == my_node_id) ? 1 : 0; // skip my own ID
     } while( again );
 
     // search slave if not found yet, and retry counter hasn't reached end yet
@@ -540,7 +550,7 @@ s32 MBNET_Handler(void *_callback)
 	    slave_nodes_ix[ix_ix] = 0xff; // disable retry counter
 	  }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
 	  DEBUG_MSG("[MBNET] new slave found: ID %02x (Ix=%d) P:%d T:%c%c%c%c V:%d.%d\n", 
 		    search_slave_id,
 		    slave_nodes_ix[ix_ix],
@@ -552,6 +562,22 @@ s32 MBNET_Handler(void *_callback)
 	    DEBUG_MSG("[MBNET] unfortunately no free info slot anymore!\n");
 #endif
 	}
+      }
+    }
+
+    // check if scan is finished
+    {
+      int i;
+      u8 finished = 1; // taking temp. local variable, since scan_finished could be read by another thread
+      for(i=0; i<=MBNET_SLAVE_NODES_END-MBNET_SLAVE_NODES_BEGIN; ++i)
+	if( slave_nodes_ix[i] >= 128 && slave_nodes_ix[i] != 0xff && (i+MBNET_SLAVE_NODES_BEGIN) != my_node_id )
+	  finished = 0;
+
+      if( finished && !scan_finished ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+	DEBUG_MSG("[MBNET] Scan finished.\n");
+#endif
+	scan_finished = 1;
       }
     }
   }
@@ -739,4 +765,26 @@ static s32 MBNET_BusErrorCheck(void)
   mbnet_state.PERMANENT_OFF = 1;
 
   return -1; // bus permanent off
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Installs an optional Tx Handler which is called via interrupt whenever
+// a new message can be sent
+// Currently only supported by LPC17xx HAL!
+// tx_handler_callback == NULL will disable the handler
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_InstallTxHandler(s32 (*tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc))
+{
+  return MBNET_HAL_InstallTxHandler(tx_handler_callback);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Manual request of transmit handler
+// Has to be called whenever the transmission has been stopped to restart
+// interrupt driven transfers
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNET_TriggerTxHandler(void)
+{
+  return MBNET_HAL_TriggerTxHandler();
 }
