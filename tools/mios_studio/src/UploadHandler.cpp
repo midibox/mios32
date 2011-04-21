@@ -284,6 +284,7 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
             //printf("Mios8 Feedback\n");
         } else if( uploadHandlerThread->mios8QueryRequest && SysexHelper::isValidMios8Acknowledge(data, size, currentDeviceId) ) {
             uploadHandlerThread->mios8QueryRequest = 0;
+            hexFileLoader.checkMios8Ranges = true;
         } else if( SysexHelper::isValidMios32Query(data, size, currentDeviceId) ) {
             uploadHandlerThread->detectedMios32FeedbackLoop = 1;
             //printf("Mios32 Feedback\n");
