@@ -68,5 +68,8 @@ Updates for LPC1768 @ 100 MHz
 4: FreeRTOS based pvPortMalloc                                356,5 mS
 5: malloc provided by library                                 setup not done for Newlib
 
+Updates for LPC1769 @ 120 MHz
+3: internal static allocation with 32bit flags                303.5 mS
+
 
 ===============================================================================
