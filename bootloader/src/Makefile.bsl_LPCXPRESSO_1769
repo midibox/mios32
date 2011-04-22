@@ -1,0 +1,55 @@
+# $Id$
+
+################################################################################
+# following setup is static for STM32 and MBHP_CORE_STM32 module
+################################################################################
+
+PROCESSOR =	LPC1769
+FAMILY    = 	LPC17xx
+BOARD	  = 	LPCXPRESSO
+LCD       =     dummy
+
+
+################################################################################
+# Source Files, include paths and libraries
+################################################################################
+
+THUMB_SOURCE    = startup_LPC17xx.c \
+		  main.c \
+		  bsl_sysex.c
+
+# (following source stubs not relevant for Cortex M3 derivatives)
+THUMB_AS_SOURCE =
+ARM_SOURCE      =
+ARM_AS_SOURCE   =
+
+C_INCLUDE = 	-I .
+A_INCLUDE = 	-I .
+
+LIBS = 		
+
+
+################################################################################
+# Remaining variables
+################################################################################
+
+#LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
+# specified when this makefile is executed from Makefile
+LD_FILE   = 	LPC17xx_bsl.ld
+PROJECT   = 	project
+
+DEBUG     =	-g
+OPTIMIZE  =	-Os
+
+CFLAGS =	$(DEBUG) $(OPTIMIZE)
+
+
+################################################################################
+# Include source modules via additional makefiles
+################################################################################
+
+# add MIOS32 sources
+include $(MIOS32_PATH)/mios32/mios32.mk
+
+# common make rules
+include $(MIOS32_PATH)/include/makefile/common.mk

@@ -29,7 +29,7 @@ The notes can be recorded with a sequencer for visualisation, see also this
 forum posting: http://www.midibox.org/forum/index.php/topic,13542.0.html
 
 
-Results STM32:
+Results STM32F103RE @ 72 MHz:
 - USB0 with RS disabled:                   1.6 mS
 - USB0 with RS enabled:                    1.6 mS
 - UART0 with RS disabled:                245.2 mS
@@ -38,12 +38,20 @@ Results STM32:
 - OSC with 8 events bundled in datagram:  11.4 mS
 
 
-Results LPC17:
-- USB0 with RS disabled:                   1.1 mS
-- USB0 with RS enabled:                    1.1 mS
+Results LPC1768 @ 100 MHz:
+- USB0 with RS disabled:                   1.5 mS
+- USB0 with RS enabled:                    1.5 mS
 - UART0 with RS disabled:                245.1 mS
 - UART0 with RS enabled:                 163.9 mS
 - OSC with one datagram per event:        10.4 mS
 - OSC with 8 events bundled in datagram:   3.6 mS
+
+Results LPC1769 @ 120 MHz:
+- USB0 with RS disabled:                   1.4 mS
+- USB0 with RS enabled:                    1.4 mS
+- UART0 with RS disabled:                245.1 mS
+- UART0 with RS enabled:                 163.9 mS
+- OSC with one datagram per event:         8.8 mS
+- OSC with 8 events bundled in datagram:   2.5 mS
 
 ===============================================================================

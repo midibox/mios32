@@ -25,11 +25,17 @@ STM32_PRIMER:
 	mv project_build/project.bin project_STM32_PRIMER.bin
 	perl gen_inc_file.pl project_STM32_PRIMER.bin ../../mios32/STM32F10x/mios32_bsl_STM32_PRIMER.inc mios32_bsl_image mios32_bsl
 
-LPCXPRESSO:
-	make -f Makefile.bsl_LPCXPRESSO cleanall
-	make -f Makefile.bsl_LPCXPRESSO
-	mv project_build/project.bin project_LPCXPRESSO.bin
-	perl gen_inc_file.pl project_LPCXPRESSO.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO.inc mios32_bsl_image mios32_bsl
+LPCXPRESSO_1768:
+	make -f Makefile.bsl_LPCXPRESSO_1768 cleanall
+	make -f Makefile.bsl_LPCXPRESSO_1768
+	mv project_build/project.bin project_LPCXPRESSO_1768.bin
+	perl gen_inc_file.pl project_LPCXPRESSO_1768.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1768.inc mios32_bsl_image mios32_bsl
+
+LPCXPRESSO_1769:
+	make -f Makefile.bsl_LPCXPRESSO_1769 cleanall
+	make -f Makefile.bsl_LPCXPRESSO_1769
+	mv project_build/project.bin project_LPCXPRESSO_1769.bin
+	perl gen_inc_file.pl project_LPCXPRESSO_1769.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1769.inc mios32_bsl_image mios32_bsl
 
 dummy:
 	make -f Makefile.bsl_dummy cleanall

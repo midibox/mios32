@@ -122,6 +122,11 @@ s32 MBNET_HAL_Init(u32 mode)
   //                 TESG2         TESG1         SJW         Prescaler
   //                 -> 3          -> 6         -> 1        1:5
   MBNET_CAN->BTR  = (0x2 << 20) | (0x5 << 16) | (0 << 14) | (4 << 0);
+#elif CAN_PERIPHERAL_FRQ == 120000000
+  // -> 100 Mhz / 6 -> 20 MHz --> 10 quanta for 2 MBaud
+  //                 TESG2         TESG1         SJW         Prescaler
+  //                 -> 3          -> 6         -> 1        1:6
+  MBNET_CAN->BTR  = (0x2 << 20) | (0x5 << 16) | (0 << 14) | (5 << 0);
 #else
 # error "BTR baudrate not prepared for this peripheral frequency"
 #endif

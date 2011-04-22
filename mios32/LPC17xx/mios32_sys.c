@@ -99,13 +99,17 @@ s32 MIOS32_SYS_Init(u32 mode)
   LPC_SC->CLKSRCSEL = 1;                 // select PLL0 as clock source
 
 
-// check consistency with mios32_sys.h
-#if MIOS32_SYS_CPU_FREQUENCY != 100000000ULL
+
+  // PLL0
+  // check also consistency with mios32_sys.h
+#if MIOS32_SYS_CPU_FREQUENCY == 100000000
+  LPC_SC->PLL0CFG   = ((6-1)<<16) | (((100-1)<<0)); // PLL config: N=6, M=100 -> 12 MHz * 2 * 100 / 6 -> 400 MHz
+#elif MIOS32_SYS_CPU_FREQUENCY == 120000000
+  LPC_SC->PLL0CFG   = ((6-1)<<16) | (((120-1)<<0)); // PLL config: N=6, M=120 -> 12 MHz * 2 * 120 / 6 -> 480 MHz
+#else
 # error "Please adapt MIOS32_SYS_Init() for the selected MIOS32_SYS_CPU_FREQUENCY!"
 #endif
 
-  // PLL0
-  LPC_SC->PLL0CFG   = ((6-1)<<16) | (((100-1)<<0)); // PLL config: N=6, M=100 -> 12 MHz * 2 * 100 / 6 -> 400 MHz
   LPC_SC->PLL0FEED  = 0xaa;
   LPC_SC->PLL0FEED  = 0x55;
 
@@ -142,8 +146,12 @@ s32 MIOS32_SYS_Init(u32 mode)
   // clock output configuration
   LPC_SC->CLKOUTCFG = 0x00000000;
 
-  // Flash: set access time to 5 CPU clocks (suitable for 100 MHz)
+#if MIOS32_SYS_CPU_FREQUENCY <= 100000000 || (defined(MIOS32_PROCESSOR_LPC1769) && MIOS32_SYS_CPU_FREQUENCY <= 120000000)
+  // Flash: set access time to 5 CPU clocks (suitable for 100 MHz, resp. 120 MHz LPC1769 is used)
   LPC_SC->FLASHCFG  = (LPC_SC->FLASHCFG & ~0x0000F000) | ((5-1) << 12);
+#else
+# error "Please adapt MIOS32_SYS_Init() for the selected MIOS32_SYS_CPU_FREQUENCY!"
+#endif
 
   // Set the Vector Table base address as specified in .ld file (-> mios32_sys_isr_vector)
   SCB->VTOR = (u32)&mios32_sys_isr_vector;
