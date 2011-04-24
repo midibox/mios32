@@ -65,7 +65,6 @@ MidiKeyboard::MidiKeyboard(MiosStudio *_miosStudio)
 
 MidiKeyboard::~MidiKeyboard()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

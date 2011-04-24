@@ -119,7 +119,6 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
 
 MbhpMfToolConfigGlobals::~MbhpMfToolConfigGlobals()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -284,7 +283,6 @@ MbhpMfToolCalibrationTable::MbhpMfToolCalibrationTable(MbhpMfTool* _mbhpMfTool)
 
 MbhpMfToolCalibrationTable::~MbhpMfToolCalibrationTable()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -613,7 +611,6 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
 
 MbhpMfToolCalibration::~MbhpMfToolCalibration()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -995,7 +992,6 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
 
 MbhpMfToolControl::~MbhpMfToolControl()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -1402,7 +1398,6 @@ MbhpMfTool::MbhpMfTool(MiosStudio *_miosStudio)
 
 MbhpMfTool::~MbhpMfTool()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

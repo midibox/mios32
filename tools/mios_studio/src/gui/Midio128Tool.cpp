@@ -94,7 +94,6 @@ Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
 
 Midio128ToolConfigGlobals::~Midio128ToolConfigGlobals()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -748,7 +747,6 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
 
 Midio128ToolControl::~Midio128ToolControl()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -1082,7 +1080,6 @@ Midio128Tool::Midio128Tool(MiosStudio *_miosStudio)
 
 Midio128Tool::~Midio128Tool()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

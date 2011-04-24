@@ -89,7 +89,6 @@ MiosStudio::~MiosStudio()
         deleteAndZero(mbCvToolWindow);
     if( mbhpMfToolWindow )
         deleteAndZero(mbhpMfToolWindow);
-    deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
     closeMidiPorts();

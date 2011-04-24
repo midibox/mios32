@@ -42,7 +42,6 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
 
 MidiMonitor::~MidiMonitor()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

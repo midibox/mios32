@@ -84,7 +84,6 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
 OscToolConnect::~OscToolConnect()
 {
     deleteAndZero(udpSocket);
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -200,7 +199,6 @@ OscToolSend::OscToolSend(MiosStudio *_miosStudio, OscToolConnect *_oscToolConnec
 
 OscToolSend::~OscToolSend()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -273,7 +271,6 @@ OscTool::OscTool(MiosStudio *_miosStudio)
 
 OscTool::~OscTool()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
