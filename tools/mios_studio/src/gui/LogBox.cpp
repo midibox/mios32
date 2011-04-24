@@ -46,7 +46,7 @@ LogBox::LogBox(const String &componentName)
 
 LogBox::~LogBox()
 {
-    deleteAllChildren();
+    //deleteAllChildren();
 }
 
 //==============================================================================

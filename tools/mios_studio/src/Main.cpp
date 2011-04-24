@@ -118,7 +118,7 @@ public:
 
         // clear up..
         if( miosStudioWindow != 0 )
-            delete miosStudioWindow;
+            deleteAndZero(miosStudioWindow);
     }
 
 
