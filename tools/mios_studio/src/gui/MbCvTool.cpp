@@ -142,21 +142,20 @@ MbCvToolConfigChannels::MbCvToolConfigChannels()
     table->setColour(ListBox::outlineColourId, Colours::grey);
     table->setOutlineThickness(1);
 
-    TableHeaderComponent *tableHeader = table->getHeader();
-    tableHeader->addColumn(T("CV"), 1, 25);
-    tableHeader->addColumn(T("Channel"), 2, 70);
-    tableHeader->addColumn(T("Event"), 3, 100);
-    tableHeader->addColumn(T("Legato"), 4, 40);
-    tableHeader->addColumn(T("Poly"), 5, 30);
-    tableHeader->addColumn(T("Inv.Gate"), 6, 50);
-    tableHeader->addColumn(T("Pitchrange"), 7, 65);
-    tableHeader->addColumn(T("Lower"), 8, 50);
-    tableHeader->addColumn(T("Upper"), 9, 50);
-    tableHeader->addColumn(T("Tr.Octave"), 10, 70);
-    tableHeader->addColumn(T("Tr.Semitones"), 11, 70);
-    tableHeader->addColumn(T("CC Number"), 12, 70);
-    tableHeader->addColumn(T("Curve"), 13, 80);
-    tableHeader->addColumn(T("Slew Rate"), 14, 70);
+    table->getHeader().addColumn(T("CV"), 1, 25);
+    table->getHeader().addColumn(T("Channel"), 2, 70);
+    table->getHeader().addColumn(T("Event"), 3, 100);
+    table->getHeader().addColumn(T("Legato"), 4, 40);
+    table->getHeader().addColumn(T("Poly"), 5, 30);
+    table->getHeader().addColumn(T("Inv.Gate"), 6, 50);
+    table->getHeader().addColumn(T("Pitchrange"), 7, 65);
+    table->getHeader().addColumn(T("Lower"), 8, 50);
+    table->getHeader().addColumn(T("Upper"), 9, 50);
+    table->getHeader().addColumn(T("Tr.Octave"), 10, 70);
+    table->getHeader().addColumn(T("Tr.Semitones"), 11, 70);
+    table->getHeader().addColumn(T("CC Number"), 12, 70);
+    table->getHeader().addColumn(T("Curve"), 13, 80);
+    table->getHeader().addColumn(T("Slew Rate"), 14, 70);
 
     setSize(800, 200);
 }

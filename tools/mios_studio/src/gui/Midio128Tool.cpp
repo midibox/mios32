@@ -208,12 +208,11 @@ Midio128ToolConfigDout::Midio128ToolConfigDout()
     table->setColour(ListBox::outlineColourId, Colours::grey);
     table->setOutlineThickness(1);
 
-    TableHeaderComponent *tableHeader = table->getHeader();
-    tableHeader->addColumn(T("DOUT"), 1, 50);
-    tableHeader->addColumn(T("SR/Pin"), 2, 50);
-    tableHeader->addColumn(T("Channel"), 3, 75);
-    tableHeader->addColumn(T("Event"), 4, 125);
-    tableHeader->addColumn(T("Parameter"), 5, 75);
+    table->getHeader().addColumn(T("DOUT"), 1, 50);
+    table->getHeader().addColumn(T("SR/Pin"), 2, 50);
+    table->getHeader().addColumn(T("Channel"), 3, 75);
+    table->getHeader().addColumn(T("Event"), 4, 125);
+    table->getHeader().addColumn(T("Parameter"), 5, 75);
 
     setSize(800, 200);
 }
@@ -409,17 +408,16 @@ Midio128ToolConfigDin::Midio128ToolConfigDin()
     table->setColour(ListBox::outlineColourId, Colours::grey);
     table->setOutlineThickness(1);
 
-    TableHeaderComponent *tableHeader = table->getHeader();
-    tableHeader->addColumn(T("DIN"), 1, 50);
-    tableHeader->addColumn(T("SR/Pin"), 2, 50);
-    tableHeader->addColumn(T("Channel"), 3, 75);
-    tableHeader->addColumn(T("On Event"), 4, 125);
-    tableHeader->addColumn(T("On Par.1"), 5, 75);
-    tableHeader->addColumn(T("On Par.2"), 6, 75);
-    tableHeader->addColumn(T("Off Event"), 7, 125);
-    tableHeader->addColumn(T("Off Par.1"), 8, 75);
-    tableHeader->addColumn(T("Off Par.2"), 9, 75);
-    tableHeader->addColumn(T("Mode"), 10, 75);
+    table->getHeader().addColumn(T("DIN"), 1, 50);
+    table->getHeader().addColumn(T("SR/Pin"), 2, 50);
+    table->getHeader().addColumn(T("Channel"), 3, 75);
+    table->getHeader().addColumn(T("On Event"), 4, 125);
+    table->getHeader().addColumn(T("On Par.1"), 5, 75);
+    table->getHeader().addColumn(T("On Par.2"), 6, 75);
+    table->getHeader().addColumn(T("Off Event"), 7, 125);
+    table->getHeader().addColumn(T("Off Par.1"), 8, 75);
+    table->getHeader().addColumn(T("Off Par.2"), 9, 75);
+    table->getHeader().addColumn(T("Mode"), 10, 75);
 
     setSize(800, 200);
 }

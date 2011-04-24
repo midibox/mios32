@@ -269,16 +269,15 @@ MbhpMfToolCalibrationTable::MbhpMfToolCalibrationTable(MbhpMfTool* _mbhpMfTool)
     table->setColour(ListBox::outlineColourId, Colours::grey);
     table->setOutlineThickness(1);
 
-    TableHeaderComponent *tableHeader = table->getHeader();
-    tableHeader->addColumn(T("MF"), 1, 25);
-    tableHeader->addColumn(T("Use"), 2, 40);
-    tableHeader->addColumn(T("InvM"), 3, 40);
-    tableHeader->addColumn(T("MinValue"), 4, 80);
-    tableHeader->addColumn(T("MaxValue"), 5, 80);
-    tableHeader->addColumn(T("MinDutyUp"), 6, 80);
-    tableHeader->addColumn(T("MaxDutyUp"), 7, 80);
-    tableHeader->addColumn(T("MinDutyDn"), 8, 80);
-    tableHeader->addColumn(T("MaxDutyDn"), 9, 80);
+    table->getHeader().addColumn(T("MF"), 1, 25);
+    table->getHeader().addColumn(T("Use"), 2, 40);
+    table->getHeader().addColumn(T("InvM"), 3, 40);
+    table->getHeader().addColumn(T("MinValue"), 4, 80);
+    table->getHeader().addColumn(T("MaxValue"), 5, 80);
+    table->getHeader().addColumn(T("MinDutyUp"), 6, 80);
+    table->getHeader().addColumn(T("MaxDutyUp"), 7, 80);
+    table->getHeader().addColumn(T("MinDutyDn"), 8, 80);
+    table->getHeader().addColumn(T("MaxDutyDn"), 9, 80);
 
     setSize(400, 200);
 }
