@@ -96,7 +96,6 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
 UploadWindow::~UploadWindow()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

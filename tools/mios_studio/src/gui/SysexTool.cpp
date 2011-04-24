@@ -88,7 +88,6 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
 
 SysexToolSend::~SysexToolSend()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -293,7 +292,6 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
 
 SysexToolReceive::~SysexToolReceive()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -414,7 +412,6 @@ SysexTool::SysexTool(MiosStudio *_miosStudio)
 
 SysexTool::~SysexTool()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

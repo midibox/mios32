@@ -40,7 +40,6 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
 
 MiosTerminal::~MiosTerminal()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

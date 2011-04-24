@@ -50,7 +50,6 @@ MbCvToolConfigGlobals::MbCvToolConfigGlobals()
 
 MbCvToolConfigGlobals::~MbCvToolConfigGlobals()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -516,7 +515,6 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
 
 MbCvToolControl::~MbCvToolControl()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
@@ -841,7 +839,6 @@ MbCvTool::MbCvTool(MiosStudio *_miosStudio)
 
 MbCvTool::~MbCvTool()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================

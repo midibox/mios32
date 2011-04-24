@@ -43,7 +43,6 @@ OscMonitor::OscMonitor(MiosStudio *_miosStudio)
 
 OscMonitor::~OscMonitor()
 {
-    deleteAllChildren();
 }
 
 //==============================================================================
