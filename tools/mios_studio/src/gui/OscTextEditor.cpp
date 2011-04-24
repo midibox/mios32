@@ -29,13 +29,13 @@ OscTextEditor::OscTextEditor(Label *_statusLabel)
     setPopupMenuEnabled(true);
     //setInputRestrictions(1000000, T("0123456789ABCDEFabcdef \n"));
 #if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
-#if defined(JUCE_WIN32) || defined(JUCE_LINUX)
+#if defined(JUCE_WIN32)
     setFont(Font(Typeface::defaultTypefaceNameMono, 10.0, 0));
 #else
     setFont(Font(Typeface::defaultTypefaceNameMono, 13.0, 0));
 #endif
 #else
-#if defined(JUCE_WIN32) || defined(JUCE_LINUX)
+#if defined(JUCE_WIN32)
     setFont(Font(Font::getDefaultMonospacedFontName(), 10.0, 0));
 #else
     setFont(Font(Font::getDefaultMonospacedFontName(), 13.0, 0));

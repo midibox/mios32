@@ -31,12 +31,12 @@ MiosStudio::MiosStudio()
     addAndMakeVisible(miosTerminal = new MiosTerminal(this));
     addAndMakeVisible(midiKeyboard = new MidiKeyboard(this));
 
-    // tools are made visible via tools button in Upload Window
-    sysexToolWindow = new SysexToolWindow(this);
-    oscToolWindow = new OscToolWindow(this);
-    midio128ToolWindow = new Midio128ToolWindow(this);
-    mbCvToolWindow = new MbCvToolWindow(this);
-    mbhpMfToolWindow = new MbhpMfToolWindow(this);
+    // tools are created and made visible via tools button in Upload Window
+    sysexToolWindow = 0;
+    oscToolWindow = 0;
+    midio128ToolWindow = 0;
+    mbCvToolWindow = 0;
+    mbhpMfToolWindow = 0;
 
     commandManager = new ApplicationCommandManager();
     commandManager->registerAllCommandsForTarget(this);
@@ -79,11 +79,16 @@ MiosStudio::MiosStudio()
 MiosStudio::~MiosStudio()
 {
 	deleteAndZero(uploadHandler);
-	deleteAndZero(sysexToolWindow);
-	deleteAndZero(oscToolWindow);
-	deleteAndZero(midio128ToolWindow);
-	deleteAndZero(mbCvToolWindow);
-	deleteAndZero(mbhpMfToolWindow);
+    if( sysexToolWindow )
+        deleteAndZero(sysexToolWindow);
+    if( oscToolWindow )
+        deleteAndZero(oscToolWindow);
+    if( midio128ToolWindow )
+        deleteAndZero(midio128ToolWindow);
+    if( mbCvToolWindow )
+        deleteAndZero(mbCvToolWindow);
+    if( mbhpMfToolWindow )
+        deleteAndZero(mbhpMfToolWindow);
     deleteAllChildren();
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
@@ -250,10 +255,14 @@ void MiosStudio::timerCallback()
 
                 // filter runtime events for following components to improve performance
                 if( data[0] < 0xf8 ) {
-                    sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                    midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                    mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
-                    mbhpMfToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    if( sysexToolWindow )
+                        sysexToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    if( midio128ToolWindow )
+                        midio128ToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    if( mbCvToolWindow )
+                        mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    if( mbhpMfToolWindow )
+                        mbhpMfToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                     midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
                 }
@@ -407,31 +416,31 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
 
     case showSysexTool:
         result.setInfo(T("SysEx Tool"), T("Allows to send and receive SysEx dumps"), toolsCategory, 0);
-        result.setTicked(sysexToolWindow->isVisible());
+        result.setTicked(sysexToolWindow && sysexToolWindow->isVisible());
         result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showOscTool:
         result.setInfo(T("OSC Tool"), T("Allows to send and receive OSC messages"), toolsCategory, 0);
-        result.setTicked(oscToolWindow->isVisible());
+        result.setTicked(oscToolWindow && oscToolWindow->isVisible());
         result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMidio128Tool:
         result.setInfo(T("MIDIO128 Tool"), T("Allows to configure a MIDIO128"), toolsCategory, 0);
-        result.setTicked(midio128ToolWindow->isVisible());
+        result.setTicked(midio128ToolWindow && midio128ToolWindow->isVisible());
         result.addDefaultKeypress(T('2'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbCvTool:
         result.setInfo(T("MIDIbox CV Tool"), T("Allows to configure a MIDIbox CV"), toolsCategory, 0);
-        result.setTicked(mbCvToolWindow->isVisible());
+        result.setTicked(mbCvToolWindow && mbCvToolWindow->isVisible());
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbhpMfTool:
         result.setInfo(T("MBHP_MF V3 Tool"), T("Allows to configure the MBHP_MF firmware"), toolsCategory, 0);
-        result.setTicked(mbhpMfToolWindow->isVisible());
+        result.setTicked(mbhpMfToolWindow && mbhpMfToolWindow->isVisible());
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
@@ -457,26 +466,36 @@ bool MiosStudio::perform(const InvocationInfo& info)
         break;
 
     case showSysexTool:
+        if( !sysexToolWindow )
+            sysexToolWindow = new SysexToolWindow(this);
         sysexToolWindow->setVisible(true);
         sysexToolWindow->toFront(true);
         break;
 
     case showOscTool:
+        if( !oscToolWindow )
+            oscToolWindow = new OscToolWindow(this);
         oscToolWindow->setVisible(true);
         oscToolWindow->toFront(true);
         break;
 
     case showMidio128Tool:
+        if( !midio128ToolWindow )
+            midio128ToolWindow = new Midio128ToolWindow(this);
         midio128ToolWindow->setVisible(true);
         midio128ToolWindow->toFront(true);
         break;
 
     case showMbCvTool:
+        if( !mbCvToolWindow )
+            mbCvToolWindow = new MbCvToolWindow(this);
         mbCvToolWindow->setVisible(true);
         mbCvToolWindow->toFront(true);
         break;
 
     case showMbhpMfTool:
+        if( !mbhpMfToolWindow )
+            mbhpMfToolWindow = new MbhpMfToolWindow(this);
         mbhpMfToolWindow->setVisible(true);
         mbhpMfToolWindow->toFront(true);
         break;

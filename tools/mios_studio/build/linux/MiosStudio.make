@@ -16,7 +16,7 @@ ifeq ($(CONFIG),Debug)
   CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -I "/usr/include" -I "/usr/include/freetype2"
   CFLAGS += $(CPPFLAGS) $(TARGET_ARCH) -g -D_DEBUG -ggdb
   CXXFLAGS += $(CFLAGS)
-  LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -mwindows -L"/usr/X11R6/lib/" -L"../../../../bin" -lfreetype -lpthread -lrt -lX11 -lGL -lGLU -lXinerama -lasound
+  LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -mwindows -L"/usr/X11R6/lib/" -L"../../../../bin" -lfreetype -lpthread -lrt -lX11 -lGL -lasound
   LDDEPS :=
   RESFLAGS := -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -I "/usr/include" -I "/usr/include/freetype2"
   TARGET := MiosStudio
@@ -31,7 +31,7 @@ ifeq ($(CONFIG),Release)
   CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "NDEBUG=1" -I "/usr/include" -I "/usr/include/freetype2"
   CFLAGS += $(CPPFLAGS) $(TARGET_ARCH) -O2
   CXXFLAGS += $(CFLAGS)
-  LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -mwindows -s -L"/usr/X11R6/lib/" -L"../../../../bin" -lfreetype -lpthread -lrt -lX11 -lGL -lGLU -lXinerama -lasound
+  LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -mwindows -s -L"/usr/X11R6/lib/" -L"../../../../bin" -lfreetype -lpthread -lrt -lX11 -lGL -lasound
   LDDEPS :=
   RESFLAGS := -D "LINUX=1" -D "NDEBUG=1" -I "/usr/include" -I "/usr/include/freetype2"
   TARGET := MiosStudio
@@ -39,17 +39,28 @@ ifeq ($(CONFIG),Release)
 endif
 
 OBJECTS := \
+	$(OBJDIR)/OscHelper.o \
+	$(OBJDIR)/HexFileLoader.o \
+	$(OBJDIR)/UdpSocket.o \
 	$(OBJDIR)/juce_LibrarySource.o \
 	$(OBJDIR)/SysexHelper.o \
-	$(OBJDIR)/UploadHandler.o \
-	$(OBJDIR)/HexFileLoader.o \
 	$(OBJDIR)/Main.o \
-	$(OBJDIR)/MiosStudio.o \
-	$(OBJDIR)/LogBox.o \
-	$(OBJDIR)/MidiKeyboard.o \
-	$(OBJDIR)/UploadWindow.o \
+	$(OBJDIR)/UploadHandler.o \
 	$(OBJDIR)/MidiSlider.o \
+	$(OBJDIR)/UploadWindow.o \
+	$(OBJDIR)/OscMonitor.o \
+	$(OBJDIR)/LogBox.o \
+	$(OBJDIR)/MbhpMfTool.o \
+	$(OBJDIR)/ConfigTableComponents.o \
 	$(OBJDIR)/MidiMonitor.o \
+	$(OBJDIR)/OscTool.o \
+	$(OBJDIR)/MbCvTool.o \
+	$(OBJDIR)/MidiKeyboard.o \
+	$(OBJDIR)/SysexTool.o \
+	$(OBJDIR)/MiosStudio.o \
+	$(OBJDIR)/HexTextEditor.o \
+	$(OBJDIR)/Midio128Tool.o \
+	$(OBJDIR)/OscTextEditor.o \
 	$(OBJDIR)/MiosTerminal.o \
 
 MKDIR_TYPE := msdos
@@ -92,6 +103,21 @@ else
 	-@if exist $(subst /,\,$(OBJDIR)) rmdir /s /q $(subst /,\,$(OBJDIR))
 endif
 
+$(OBJDIR)/OscHelper.o: ../../src/OscHelper.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/HexFileLoader.o: ../../src/HexFileLoader.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/UdpSocket.o: ../../src/UdpSocket.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
 $(OBJDIR)/juce_LibrarySource.o: ../../src/juce_LibrarySource.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
@@ -102,37 +128,12 @@ $(OBJDIR)/SysexHelper.o: ../../src/SysexHelper.cpp
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
-$(OBJDIR)/UploadHandler.o: ../../src/UploadHandler.cpp
-	-@$(CMD_MKOBJDIR)
-	@echo $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
-$(OBJDIR)/HexFileLoader.o: ../../src/HexFileLoader.cpp
-	-@$(CMD_MKOBJDIR)
-	@echo $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
 $(OBJDIR)/Main.o: ../../src/Main.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
-$(OBJDIR)/MiosStudio.o: ../../src/gui/MiosStudio.cpp
-	-@$(CMD_MKOBJDIR)
-	@echo $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
-$(OBJDIR)/LogBox.o: ../../src/gui/LogBox.cpp
-	-@$(CMD_MKOBJDIR)
-	@echo $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
-$(OBJDIR)/MidiKeyboard.o: ../../src/gui/MidiKeyboard.cpp
-	-@$(CMD_MKOBJDIR)
-	@echo $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
-$(OBJDIR)/UploadWindow.o: ../../src/gui/UploadWindow.cpp
+$(OBJDIR)/UploadHandler.o: ../../src/UploadHandler.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
@@ -142,7 +143,72 @@ $(OBJDIR)/MidiSlider.o: ../../src/gui/MidiSlider.cpp
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
+$(OBJDIR)/UploadWindow.o: ../../src/gui/UploadWindow.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/OscMonitor.o: ../../src/gui/OscMonitor.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/LogBox.o: ../../src/gui/LogBox.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/MbhpMfTool.o: ../../src/gui/MbhpMfTool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/ConfigTableComponents.o: ../../src/gui/ConfigTableComponents.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
 $(OBJDIR)/MidiMonitor.o: ../../src/gui/MidiMonitor.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/OscTool.o: ../../src/gui/OscTool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/MbCvTool.o: ../../src/gui/MbCvTool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/MidiKeyboard.o: ../../src/gui/MidiKeyboard.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/SysexTool.o: ../../src/gui/SysexTool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/MiosStudio.o: ../../src/gui/MiosStudio.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/HexTextEditor.o: ../../src/gui/HexTextEditor.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/Midio128Tool.o: ../../src/gui/Midio128Tool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/OscTextEditor.o: ../../src/gui/OscTextEditor.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"

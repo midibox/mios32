@@ -9,9 +9,6 @@ endif
 
 export CONFIG
 
-TARGET_ARCH=-march=i686
-export TARGET_ARCH
-
 .PHONY: all clean MiosStudio
 
 all: MiosStudio
