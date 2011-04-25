@@ -214,8 +214,6 @@ s32 UpdateBSL(void)
   u32 ram_buffer[256/4];
 
   for(i=0; i<len; addr+=256, i+=256) {
-    MIOS32_MIDI_SendDebugMessage("i %d len %d\n", i, len);
-
     // toggle LED (sign of life)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
