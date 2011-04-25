@@ -1,6 +1,6 @@
 $Id$
 
-Bootloader Update V1.1
+Bootloader Update V1.2
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -13,21 +13,21 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or STM32 Primer
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
 
 ===============================================================================
 
 
 This application has different purposes:
 
-1) you would like to program the bootloader on a virgin STM32 device via JTAG
-or COM interface as described under file:///Users/TK/Sites/ucapps/mios32_bootstrap_experts.html
+1) you would like to program the bootloader on a virgin STM32 or LPC17 device via JTAG
+or COM interface as described under http://www.ucapps.de/mios32_bootstrap_experts.html
 
 In this case, just use the <board>/project.bin or <board>/project.hex file.
 Once uploaded, you are able to update applications via MIOS Studio
 
 
-2) you got a STM32 with preprogrammed bootloader, but you are not sure if it
+2) you got a STM32 or LPC17 with preprogrammed bootloader, but you are not sure if it
 is up-to-date. Just upload the <board>/project.hex file via MIOS Studio to
 check this, and to update the bootloader if it is not up-to-date
 
@@ -99,9 +99,9 @@ IMPORTANT: DON'T POWER-OFF THE CORE DURING THE BOOTLOADER IS PROGRAMMED!
 THIS CAN LEAD TO DATA CORRUPTION, SO THAT THE A JTAG OR COM INTERFACE IS
 REQUIRED TO INSTALL THE BOOTLOADER AGAIN!
 
-The green LED mounted on the MBHP_CORE_STM32 board will flicker if a check,
-the countdown or the flash erase/programming procedure is in progress.
-So long this happens, the core shouldn't be powered off or rebooted!
+The status LED mounted on the MBHP_CORE_STM32/LPC17 board will flicker 
+if a check, the countdown or the flash erase/programming procedure is in progress.
+As long as this happens, the core shouldn't be powered off or rebooted!
 
 Once the LED is permanently on, another application can be uploaded.
 

@@ -6,7 +6,7 @@
 
 PROCESSOR =	LPC1769
 FAMILY    = 	LPC17xx
-BOARD	  = 	LPCXPRESSO
+BOARD	  = 	MBHP_CORE_LPC17
 LCD       =     dummy
 
 

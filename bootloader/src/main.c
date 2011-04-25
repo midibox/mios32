@@ -40,7 +40,8 @@
 #define BSL_HOLD_PIN         GPIO_Pin_2
 #define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
 #else
-#define BSL_HOLD_STATE       0
+#define BSL_HOLD_INIT        { MIOS32_SYS_LPC_PINSEL(1, 27, 0); MIOS32_SYS_LPC_FIODIR(1, 27, 0); MIOS32_SYS_LPC_PINMODE(1, 27, 0); }
+#define BSL_HOLD_STATE       ((LPC_GPIO1->FIOPIN & (1 << 27)) ? 0 : 1)
 #endif
 
 
@@ -104,6 +105,9 @@ int main(void)
   MIOS32_DELAY_Init(0);
 
   MIOS32_BOARD_LED_Init(BSL_LED_MASK);
+#if !defined(MIOS32_FAMILY_STM32F10x)
+  BSL_HOLD_INIT; // e.g. for LPC17xx
+#endif
 
   ResetSRIOChains();
 
@@ -121,7 +125,8 @@ int main(void)
   ///////////////////////////////////////////////////////////////////////////
   // initialize USB only if already done (-> not after Power On) or Hold mode enabled
   ///////////////////////////////////////////////////////////////////////////
-  if( MIOS32_USB_IsInitialized() || BSL_HOLD_STATE ) {
+  u8 usb_was_initialized = MIOS32_USB_IsInitialized();
+  if( usb_was_initialized || BSL_HOLD_STATE ) {
     // if initialized, this function will only set some variables - it won't re-init the peripheral.
     // if hold mode activated via external pin, force re-initialisation by resetting USB
     if( hold_mode_active_after_reset ) {
@@ -138,7 +143,6 @@ int main(void)
     MIOS32_USB_Init(0);
 #endif
   }
-
 
   ///////////////////////////////////////////////////////////////////////////
   // initialize remaining peripherals
@@ -158,7 +162,16 @@ int main(void)
 #if !defined(MIOS32_DONT_USE_UART_MIDI)
   BSL_SYSEX_SendUploadReq(UART0);    
 #endif
-  BSL_SYSEX_SendUploadReq(USB0);
+
+  u8 send_usb_request = 1;
+#if defined(MIOS32_FAMILY_LPC17xx)
+  // Workaround: LPC17xx requires incoming USB message before something can be sent
+  // sending a request here will hang-up the transfer handling for unknown reasons
+  if( !usb_was_initialized )
+    send_usb_request = 0;
+#endif
+  if( send_usb_request )
+    BSL_SYSEX_SendUploadReq(USB0);
 
 
   ///////////////////////////////////////////////////////////////////////////

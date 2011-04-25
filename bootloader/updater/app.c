@@ -26,6 +26,12 @@
 #else
 # include "bsl_image_MBHP_CORE_STM32.inc"
 #endif
+#elif defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
+#if defined(MIOS32_PROCESSOR_LPC1769)
+# include "bsl_image_LPCXPRESSO_1769.inc"
+#else
+# include "bsl_image_LPCXPRESSO_1768.inc"
+#endif
 #else
 # error "BSL update not supported for the selected MIOS32_BOARD"
 #endif
@@ -35,13 +41,62 @@
 // Local Macros
 /////////////////////////////////////////////////////////////////////////////
 
-// STM32: determine page size (mid density devices: 1k, high density devices: 2k)
-// TODO: find a proper way, as there could be high density devices with less than 256k?)
-#define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
+#if defined(MIOS32_FAMILY_STM32F10x)
+  // STM32: determine page size (mid density devices: 1k, high density devices: 2k)
+  // TODO: find a proper way, as there could be high density devices with less than 256k?)
+# define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
 
-// STM32: flash memory range (16k BSL range excluded)
-#define BSL_START_ADDR  0x08000000
-#define BSL_END_ADDR    0x08003fff
+  // STM32: flash memory range of BSL
+# define BSL_START_ADDR  0x08000000
+# define BSL_END_ADDR    0x08003fff
+#elif defined(MIOS32_FAMILY_LPC17xx)
+
+#include <sbl_iap.h>
+#include <sbl_config.h>
+
+# undef  FLASH_BUF_SIZE
+# define FLASH_BUF_SIZE    BSL_SYSEX_BUFFER_SIZE
+# undef  USER_START_SECTOR
+# define USER_START_SECTOR  0
+# define MAX_USER_SECTOR   29
+# define USER_FLASH_START (sector_start_map[USER_START_SECTOR])
+# define USER_FLASH_END   (sector_end_map[MAX_USER_SECTOR])
+# define USER_FLASH_SIZE  ((USER_FLASH_END - USER_FLASH_START) + 1)
+
+  // LPC17xx: sectors have different sizes
+const unsigned sector_start_map[MAX_FLASH_SECTOR] = {SECTOR_0_START,             \
+SECTOR_1_START,SECTOR_2_START,SECTOR_3_START,SECTOR_4_START,SECTOR_5_START,      \
+SECTOR_6_START,SECTOR_7_START,SECTOR_8_START,SECTOR_9_START,SECTOR_10_START,     \
+SECTOR_11_START,SECTOR_12_START,SECTOR_13_START,SECTOR_14_START,SECTOR_15_START, \
+SECTOR_16_START,SECTOR_17_START,SECTOR_18_START,SECTOR_19_START,SECTOR_20_START, \
+SECTOR_21_START,SECTOR_22_START,SECTOR_23_START,SECTOR_24_START,SECTOR_25_START, \
+SECTOR_26_START,SECTOR_27_START,SECTOR_28_START,SECTOR_29_START                  };
+
+const unsigned sector_end_map[MAX_FLASH_SECTOR] = {SECTOR_0_END,SECTOR_1_END,    \
+SECTOR_2_END,SECTOR_3_END,SECTOR_4_END,SECTOR_5_END,SECTOR_6_END,SECTOR_7_END,   \
+SECTOR_8_END,SECTOR_9_END,SECTOR_10_END,SECTOR_11_END,SECTOR_12_END,             \
+SECTOR_13_END,SECTOR_14_END,SECTOR_15_END,SECTOR_16_END,SECTOR_17_END,           \
+SECTOR_18_END,SECTOR_19_END,SECTOR_20_END,SECTOR_21_END,SECTOR_22_END,           \
+SECTOR_23_END,SECTOR_24_END,SECTOR_25_END,SECTOR_26_END,                         \
+SECTOR_27_END,SECTOR_28_END,SECTOR_29_END                                        };
+
+
+  // expected by flash programming routine: system core clock (100/120 MHz) in kHz
+# define SYSTEM_CORE_CLOCK_KHZ (MIOS32_SYS_CPU_FREQUENCY/1000)
+
+  // LPC17xx: flash memory range of BSL
+# define BSL_START_ADDR  (0x00000000)
+# define BSL_END_ADDR    (0x00003fff)
+
+static void iap_entry(unsigned param_tab[], unsigned result_tab[]);
+static s32 write_data(unsigned cclk,unsigned flash_address, unsigned *flash_data_buf, unsigned count);
+static s32 find_erase_prepare_sector(unsigned cclk, unsigned flash_address);
+static s32 erase_sector(unsigned start_sector, unsigned end_sector, unsigned cclk);
+static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk);
+
+#else
+# error "Updater not prepared for this family"
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -120,6 +175,7 @@ s32 UpdateBSL(void)
   // can only be programmed once after flash has been erased!
   MIOS32_MIDI_DeviceIDSet(0x00);
 
+#if defined(MIOS32_FAMILY_STM32F10x)
   // FLASH_* routines are part of the STM32 code library
   FLASH_Unlock();
 
@@ -149,6 +205,47 @@ s32 UpdateBSL(void)
 
   // ensure that flash write access is locked
   FLASH_Lock();
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+
+  int i;
+  u32 addr = BSL_START_ADDR;
+  u32 len = BSL_END_ADDR - BSL_START_ADDR + 1;
+  u32 ram_buffer[256/4];
+
+  for(i=0; i<len; addr+=256, i+=256) {
+    MIOS32_MIDI_SendDebugMessage("i %d len %d\n", i, len);
+
+    // toggle LED (sign of life)
+    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+
+    // copy into RAM buffer
+    int j;
+    u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
+    for(j=0; j<256; ++j)
+      *ram_buffer_byte_ptr++ = bsl_image[i+j];
+    
+    s32 status;
+    if( (status=find_erase_prepare_sector(SYSTEM_CORE_CLOCK_KHZ, addr)) < 0 ) {
+      MIOS32_IRQ_Enable();
+      MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
+      return -1; // erase failed
+    } else if( (status=write_data(SYSTEM_CORE_CLOCK_KHZ, addr, (unsigned *)ram_buffer, 256)) < 0 ) {
+      MIOS32_IRQ_Enable();
+      MIOS32_MIDI_SendDebugMessage("write_data failed for 0x%08x: code %d\n", addr, status);
+      return -2; // programming failed
+    } else {
+      MIOS32_MIDI_SendDebugMessage("programmed 0x%08x..0x%08x\n", addr, addr+255);
+    }
+
+    MIOS32_IRQ_Enable();
+    MIOS32_IRQ_Disable();
+
+  }
+
+#else
+# error "BSL not prepared for this family"
+#endif
 
   MIOS32_IRQ_Enable();
 
@@ -321,3 +418,82 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
 }
+
+
+#if defined(MIOS32_FAMILY_LPC17xx)
+
+// to enter IAP routines
+static void iap_entry(unsigned param_tab[], unsigned result_tab[])
+{
+  void (*iap)(unsigned [],unsigned []);
+
+  iap = (void (*)(unsigned [],unsigned []))IAP_ADDRESS;
+  iap(param_tab,result_tab);
+}
+
+s32 find_erase_prepare_sector(unsigned cclk, unsigned flash_address)
+{
+  unsigned i;
+  s32 result = 0;
+
+  for(i=USER_START_SECTOR; i<=MAX_USER_SECTOR; i++) {
+    if(flash_address < sector_end_map[i]) {
+      if( flash_address == sector_start_map[i]) {
+	if( prepare_sector(i, i, cclk) < 0 )
+	  result = -1;
+	if( erase_sector(i, i ,cclk) < 0 )
+	  result = -2;
+      }
+      if( prepare_sector(i, i, cclk) < 0 )
+	result = -3;
+      break;
+    }
+  }
+
+  return result;
+}
+
+s32 write_data(unsigned cclk, unsigned flash_address, unsigned *flash_data_buf, unsigned count)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = COPY_RAM_TO_FLASH;
+  param_table[1] = flash_address;
+  param_table[2] = (unsigned)flash_data_buf;
+  param_table[3] = count;
+  param_table[4] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+s32 erase_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = ERASE_SECTOR;
+  param_table[1] = start_sector;
+  param_table[2] = end_sector;
+  param_table[3] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
+{
+  unsigned param_table[5];
+  unsigned result_table[5];
+
+  param_table[0] = PREPARE_SECTOR_FOR_WRITE;
+  param_table[1] = start_sector;
+  param_table[2] = end_sector;
+  param_table[3] = cclk;
+  iap_entry(param_table, result_table);
+
+  return -(s32)result_table[0];
+}
+
+#endif

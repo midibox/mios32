@@ -80,15 +80,15 @@ SECTOR_23_END,SECTOR_24_END,SECTOR_25_END,SECTOR_26_END,                        
 SECTOR_27_END,SECTOR_28_END,SECTOR_29_END                                        };
 
 
-  // expected by flash programming routine: system core clock (100 MHz) in kHz
-# define SYSTEM_CORE_CLOCK_KHZ 100000
+  // expected by flash programming routine: system core clock (100/120 MHz) in kHz
+# define SYSTEM_CORE_CLOCK_KHZ (MIOS32_SYS_CPU_FREQUENCY/1000)
 
   // LPC17xx: flash memory range (16k BSL range excluded)
 # define FLASH_START_ADDR  (0x00000000 + 0x4000)
 # define FLASH_END_ADDR    (0x00000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
 
 
-  // STM32: base address of SRAM
+  // LPC17xx: base address of SRAM
 # define SRAM_START_ADDR   (0x10000000)
 # define SRAM_END_ADDR     (0x10000000 + MIOS32_SYS_RAMSizeGet() - 1)
 

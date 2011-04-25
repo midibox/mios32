@@ -171,7 +171,7 @@ s32 MIOS32_BOARD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
-#if defined(MIOS32_BOARD_LPCXPRESSO)
+#if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   if( leds & 1 ) {
     // select GPIO for P0.22
     LPC_PINCON->PINSEL1 &= ~(3 << 12);
@@ -184,7 +184,8 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 
   return 0; // no error
 #else
-  return -1; // no LED specified for board
+#warning "no LED specified for this MIOS32_BOARD!"
+  return -1;
 #endif
 }
 
@@ -199,7 +200,7 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 {
-#if defined(MIOS32_BOARD_LPCXPRESSO)
+#if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   // only one LED, connected to P0.22
   if( leds & 1 ) {
     if( value & 1 )
@@ -213,7 +214,8 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 
   return 0; // no error
 #else
-  return -1; // no LED specified for board
+#warning "no LED specified for this MIOS32_BOARD!"
+  return -1;
 #endif
 }
 
@@ -226,12 +228,13 @@ u32 MIOS32_BOARD_LED_Get(void)
 {
   u32 values = 0;
 
-#if defined(MIOS32_BOARD_LPCXPRESSO)
+#if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   // only one LED, connected to P0.22
   if( LPC_GPIO0->FIOPIN & (1 << 22) )
     values |= (1 << 0);
 #else
-  return -1; // no LED specified for board
+#warning "no LED specified for this MIOS32_BOARD!"
+  return -1;
 #endif
 
   return values;
