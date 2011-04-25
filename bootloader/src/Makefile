@@ -29,13 +29,15 @@ LPCXPRESSO_1768:
 	make -f Makefile.bsl_LPCXPRESSO_1768 cleanall
 	make -f Makefile.bsl_LPCXPRESSO_1768
 	mv project_build/project.bin project_LPCXPRESSO_1768.bin
-	perl gen_inc_file.pl project_LPCXPRESSO_1768.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1768.inc mios32_bsl_image mios32_bsl
+	perl gen_inc_file.pl project_LPCXPRESSO_1768.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1768.inc mios32_bsl_image mios32_bsl -calc_lpc17_checksum
+	perl gen_inc_file.pl project_LPCXPRESSO_1768.bin ../updater/bsl_image_LPCXPRESSO_1768.inc bsl_image 0 -calc_lpc17_checksum
 
 LPCXPRESSO_1769:
 	make -f Makefile.bsl_LPCXPRESSO_1769 cleanall
 	make -f Makefile.bsl_LPCXPRESSO_1769
 	mv project_build/project.bin project_LPCXPRESSO_1769.bin
-	perl gen_inc_file.pl project_LPCXPRESSO_1769.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1769.inc mios32_bsl_image mios32_bsl
+	perl gen_inc_file.pl project_LPCXPRESSO_1769.bin ../../mios32/LPC17xx/mios32_bsl_LPCXPRESSO_1769.inc mios32_bsl_image mios32_bsl -calc_lpc17_checksum
+	perl gen_inc_file.pl project_LPCXPRESSO_1769.bin ../updater/bsl_image_LPCXPRESSO_1769.inc bsl_image 0 -calc_lpc17_checksum
 
 dummy:
 	make -f Makefile.bsl_dummy cleanall

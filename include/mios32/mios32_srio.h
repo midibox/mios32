@@ -45,7 +45,11 @@
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #ifndef MIOS32_SRIO_OUTPUTS_OD
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
 #define MIOS32_SRIO_OUTPUTS_OD 1
+#else
+#define MIOS32_SRIO_OUTPUTS_OD 0
+#endif
 #endif
 
 

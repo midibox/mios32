@@ -27,6 +27,7 @@
 // Peripheral/Pin definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#if 0
 // pointer to CAN peripheral
 #define MBNET_CAN      LPC_CAN2
 // index of CAN counted from 0 (0..1)
@@ -35,10 +36,26 @@
 // CAN clocked at CCLK (typically 100 MHz)
 #define CAN_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY)
 
-// RxD: P2.7 (RD2)
-#define MBNET_RXD_INIT    { MIOS32_SYS_LPC_PINSEL(2, 7, 1); }
-// TxD: P2.8 (TD2)
-#define MBNET_TXD_INIT    { MIOS32_SYS_LPC_PINSEL(2, 8, 1); }
+// RxD: P0.4 (RD2)
+#define MBNET_RXD_INIT    { MIOS32_SYS_LPC_PINSEL(0, 4, 2); }
+// TxD: P0.5 (TD2)
+#define MBNET_TXD_INIT    { MIOS32_SYS_LPC_PINSEL(0, 5, 2); }
+
+#else
+// pointer to CAN peripheral
+#define MBNET_CAN      LPC_CAN1
+// index of CAN counted from 0 (0..1)
+#define MBNET_CAN_IX   0
+
+// CAN clocked at CCLK (typically 100 MHz)
+#define CAN_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY)
+
+// RxD: P0.0 (RD1)
+#define MBNET_RXD_INIT    { MIOS32_SYS_LPC_PINSEL(0, 0, 1); }
+// TxD: P0.1 (TD1)
+#define MBNET_TXD_INIT    { MIOS32_SYS_LPC_PINSEL(0, 1, 1); }
+
+#endif
 
 
 // size of the two request/acknowledge receive FIFOs

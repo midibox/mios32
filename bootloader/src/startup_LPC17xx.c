@@ -236,6 +236,7 @@ void _init()
 #pragma weak NMI_Handler = Default_Handler
 #pragma weak MemManage_Handler = Default_Handler
 #pragma weak BusFault_Handler = Default_Handler
+#pragma weak HardFault_Handler = Default_Handler
 #pragma weak UsageFault_Handler = Default_Handler
 #pragma weak SVC_Handler = Default_Handler
 #pragma weak DebugMon_Handler = Default_Handler

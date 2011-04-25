@@ -948,18 +948,8 @@ void USB_IRQHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_IsInitialized(void)
 {
-  return 0;
-
-#if 0
-#ifdef STM32F10X_CL
-  // we assume that initialisation has been done when B-Session valid flag is set
-  __IO USB_OTG_GREGS *GREGS = (USB_OTG_GREGS *)(USB_OTG_FS_BASE_ADDR + USB_OTG_CORE_GLOBAL_REGS_OFFSET);
-  return (GREGS->GOTGCTL & (1 << 19));
-#else
-  // we assume that initialisation has been done when endpoint 0 contains a value
-  return GetEPType(ENDP0) ? 1 : 0;
-#endif
-#endif
+  // USB taken as initialized if clock enabled (reset value is 0)
+  return (LPC_USB->USBClkCtrl & (1 << 1)) ? 1 : 0;
 }
 
 
