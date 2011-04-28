@@ -291,7 +291,13 @@ void MidiSlider::sliderValueChanged(Slider* sliderThatWasMoved)
         MidiMessage message = MidiMessage::controllerEvent(midiChannel, functionArg, (uint8)slider->getValue());
         miosStudio->sendMidiMessage(message);
     } else if( functionName.containsWholeWord(T("PB")) ) {
-        MidiMessage message = MidiMessage::pitchWheel(midiChannel, (uint8)slider->getValue());
+        unsigned pitchValue = (int)slider->getValue() * 128;
+
+        // I've seen this handling to fake an increased resolution on Korg and Yamaha Keyboards
+        if( pitchValue != 0x2000 )
+            pitchValue += (int)slider->getValue();
+
+        MidiMessage message = MidiMessage::pitchWheel(midiChannel, pitchValue);
         miosStudio->sendMidiMessage(message);
     }
 }
