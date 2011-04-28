@@ -25,6 +25,7 @@ ConfigTableComboBox::ConfigTableComboBox(ConfigTableController& _owner)
 
 ConfigTableComboBox::~ConfigTableComboBox()
 {
+    deleteAllChildren();
 }
 
 void ConfigTableComboBox::resized()
@@ -66,6 +67,7 @@ ConfigTableSlider::ConfigTableSlider(ConfigTableController& _owner)
 
 ConfigTableSlider::~ConfigTableSlider()
 {
+    deleteAllChildren();
 }
 
 void ConfigTableSlider::resized()
@@ -103,6 +105,7 @@ ConfigTableToggleButton::ConfigTableToggleButton(ConfigTableController& _owner)
 
 ConfigTableToggleButton::~ConfigTableToggleButton()
 {
+    deleteAllChildren();
 }
 
 void ConfigTableToggleButton::resized()
