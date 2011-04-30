@@ -18,9 +18,18 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// number of IIC devices (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
+// number of IIC devices
+// STM32: (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
+// LPC17: (1: I2C0(iic_port 0) available ; 2: I2C1 (EEPROM) in addition, 3: I2C2 assigned to iic_port 1 available)
 #ifndef MIOS32_IIC_NUM
+#if defined(MIOS32_FAMILY_STM32F10x)
 #define MIOS32_IIC_NUM 1
+#elif defined(MIOS32_FAMILY_LPC17xx)
+#define MIOS32_IIC_NUM 3
+#else
+#define MIOS32_IIC_NUM 1
+# warning "mios32_iic.h not prepared for this derivative"
+#endif
 #endif
 
 // sets the IIC bus frequency in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
@@ -31,6 +40,11 @@
 // bus frequency for I2C1 device in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
 #ifndef MIOS32_IIC1_BUS_FREQUENCY
 #define MIOS32_IIC1_BUS_FREQUENCY 400000
+#endif
+
+// bus frequency for I2C2 device in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
+#ifndef MIOS32_IIC2_BUS_FREQUENCY
+#define MIOS32_IIC2_BUS_FREQUENCY 400000
 #endif
 
 // sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)

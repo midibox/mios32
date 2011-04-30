@@ -275,7 +275,7 @@ BOOL_32 EMAC_SendPacket(void *pPacket, UNS_32 size, void *pPacket2, UNS_32 size2
 #define OLD_EMAC_MODULE_ID  0x39022000  /* Rev. ID for first rev '-'         */
 
 
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
 /* DP83848C PHY Registers */
 #define PHY_REG_BMCR        0x00        /* Basic Mode Control Register       */
 #define PHY_REG_BMSR        0x01        /* Basic Mode Status Register        */

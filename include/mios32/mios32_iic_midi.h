@@ -41,6 +41,7 @@
 //             3 = interface enabled, check RI_N pin instead of polling receive status
 // _RI_N_PORT: Port to which RI_N is connected
 // _RI_N_PIN:  pin to which RI_N is connected
+#if defined(MIOS32_FAMILY_STM32F10x)
 #ifndef MIOS32_IIC_MIDI0_ENABLED
 #define MIOS32_IIC_MIDI0_ENABLED    2
 #endif
@@ -119,6 +120,92 @@
 #endif
 #ifndef MIOS32_IIC_MIDI7_RI_N_PIN
 #define MIOS32_IIC_MIDI7_RI_N_PIN   GPIO_Pin_3
+#endif
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+
+#ifndef MIOS32_IIC_MIDI0_ENABLED
+#define MIOS32_IIC_MIDI0_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI0_RI_N_PORT
+#define MIOS32_IIC_MIDI0_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI0_RI_N_PIN
+#define MIOS32_IIC_MIDI0_RI_N_PIN   2
+#endif
+
+#ifndef MIOS32_IIC_MIDI1_ENABLED
+#define MIOS32_IIC_MIDI1_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI1_RI_N_PORT
+#define MIOS32_IIC_MIDI1_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI1_RI_N_PIN
+#define MIOS32_IIC_MIDI1_RI_N_PIN   3
+#endif
+
+#ifndef MIOS32_IIC_MIDI2_ENABLED
+#define MIOS32_IIC_MIDI2_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI2_RI_N_PORT
+#define MIOS32_IIC_MIDI2_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI2_RI_N_PIN
+#define MIOS32_IIC_MIDI2_RI_N_PIN   4
+#endif
+
+#ifndef MIOS32_IIC_MIDI3_ENABLED
+#define MIOS32_IIC_MIDI3_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI3_RI_N_PORT
+#define MIOS32_IIC_MIDI3_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI3_RI_N_PIN
+#define MIOS32_IIC_MIDI3_RI_N_PIN   5
+#endif
+
+#ifndef MIOS32_IIC_MIDI4_ENABLED
+#define MIOS32_IIC_MIDI4_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI4_RI_N_PORT
+#define MIOS32_IIC_MIDI4_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI4_RI_N_PIN
+#define MIOS32_IIC_MIDI4_RI_N_PIN   6
+#endif
+
+#ifndef MIOS32_IIC_MIDI5_ENABLED
+#define MIOS32_IIC_MIDI5_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI5_RI_N_PORT
+#define MIOS32_IIC_MIDI5_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI5_RI_N_PIN
+#define MIOS32_IIC_MIDI5_RI_N_PIN   7
+#endif
+
+#ifndef MIOS32_IIC_MIDI6_ENABLED
+#define MIOS32_IIC_MIDI6_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI6_RI_N_PORT
+#define MIOS32_IIC_MIDI6_RI_N_PORT  2
+#endif
+#ifndef MIOS32_IIC_MIDI6_RI_N_PIN
+#define MIOS32_IIC_MIDI6_RI_N_PIN   8
+#endif
+
+#ifndef MIOS32_IIC_MIDI7_ENABLED
+#define MIOS32_IIC_MIDI7_ENABLED    2
+#endif
+#ifndef MIOS32_IIC_MIDI7_RI_N_PORT
+#define MIOS32_IIC_MIDI7_RI_N_PORT  1
+#endif
+#ifndef MIOS32_IIC_MIDI7_RI_N_PIN
+#define MIOS32_IIC_MIDI7_RI_N_PIN   18
+#endif
+
+#else
+# warning "mios32_iic_midi.h not prepared for this MIOS32_FAMILY!"
 #endif
 
 
