@@ -1,7 +1,7 @@
 /*
  *  CodeRed - minor modifications for port to RDB1768 development board
  *  TK: added code for MIOS32 specific handling:
- *      - MIOS32_BOARD_LPCXPRESSO
+ *      - MIOS32_BOARD_LPCXPRESSO and MIOS32_BOARD_MBHP_CORE_LPC17
  *      - helpful debug messages on receive errors
  *      - EMAC_Init() allows to pass "soft-MAC"
  */
@@ -91,7 +91,7 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
   /* Wait for hardware reset to end. */
   for (tout = 0; tout < 0x100000; tout++) {
   	regv = read_PHY (PHY_REG_BMCR);
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
     if (!(regv & 0x8000)) 
 #else
 	#error "No board!"
@@ -109,7 +109,7 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
   id2 = read_PHY (PHY_REG_IDR2);
   phy_id = ((id1 << 16) | (id2 & 0xFFF0));
   
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
 	  if ((phy_id != DP83848C_ID) && (phy_id != LAN8720_ID))
 #else
 	#error "No board"
@@ -151,7 +151,7 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
 
   /* Check the link status. */
   for (tout = 0; tout < 0x100000; tout++) {
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
     regv = read_PHY (phy_linkstatus_reg);
     if (regv & phy_linkstatus_mask)
 #else
@@ -168,7 +168,7 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
 
 
   /* Configure Full/Half Duplex mode. */
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
   if (regv & 0x0004) 
 #else
 	#error "No board"
@@ -185,7 +185,7 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
   }
 
   /* Configure 100MBit/10MBit mode. */
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO)
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
   if (regv & 0x0002) {
 #else
 	#error "No baord"

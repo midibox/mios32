@@ -25,7 +25,7 @@
 #define KEIL_BOARD_MCB17XX
 #elif defined ( _RDB1768_ )
 #define CODERED_BOARD_RDB1768
-#elif defined (MIOS32_BOARD_LPCXPRESSO)
+#elif defined (MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
      // great!
 #else
 #error "No board is selected!!!"

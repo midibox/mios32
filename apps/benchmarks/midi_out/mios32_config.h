@@ -56,4 +56,11 @@
 #define OSC_SERVER_PORT 8888
 
 
+// max number of IIC MIDI interfaces (0..8)
+// has to be set to >0 in mios32_config.h to enable IIC MIDI!
+#define MIOS32_IIC_MIDI_NUM 1
+// don't poll receive status (OUT only)
+#define MIOS32_IIC_MIDI0_ENABLED    1
+
+
 #endif /* _MIOS32_CONFIG_H */
