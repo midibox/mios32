@@ -61,7 +61,7 @@ s32 MIOS32_COM_Init(u32 mode)
 #endif
 
   // if any COM assignment:
-#if MIOS32_UART0_ASSIGNMENT == 2 || MIOS32_UART1_ASSIGNMENT == 2
+#if MIOS32_UART0_ASSIGNMENT == 2 || MIOS32_UART1_ASSIGNMENT == 2 || MIOS32_UART2_ASSIGNMENT == 2 || MIOS32_UART3_ASSIGNMENT == 2
   if( MIOS32_UART_Init(0) < 0 )
     ret |= (1 << 1);
 #endif
@@ -100,6 +100,12 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 #endif
 #if MIOS32_UART_NUM >= 2
         case 1: return MIOS32_UART1_ASSIGNMENT == 2 ? 1 : 0; // UART1 assigned to COM?
+#endif
+#if MIOS32_UART_NUM >= 3
+        case 2: return MIOS32_UART2_ASSIGNMENT == 2 ? 1 : 0; // UART2 assigned to COM?
+#endif
+#if MIOS32_UART_NUM >= 4
+        case 3: return MIOS32_UART3_ASSIGNMENT == 2 ? 1 : 0; // UART3 assigned to COM?
 #endif
       }
 #endif
@@ -349,6 +355,16 @@ s32 MIOS32_COM_Receive_Handler(void)
       case 2: status = MIOS32_UART_RxBufferGet(1); port = UART1; break;
 #else
       case 2: status = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART2_ASSIGNMENT == 2
+      case 3: status = MIOS32_UART_RxBufferGet(2); port = UART2; break;
+#else
+      case 3: status = -1; break;
+#endif
+#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART3_ASSIGNMENT == 2
+      case 4: status = MIOS32_UART_RxBufferGet(3); port = UART3; break;
+#else
+      case 4: status = -1; break;
 #endif
       default:
 	// allow 64 forwards maximum to yield some CPU time for other tasks
