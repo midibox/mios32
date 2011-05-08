@@ -27,37 +27,63 @@
 // J5 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
 // note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
 // since these functions access the ports directly
 typedef struct {
-  GPIO_TypeDef *port;
-  u16 pin_mask;
+  u8 port;
+  u8 pin;
 } j5_pin_t;
 
-#define J5_NUM_PINS 12
+#define J5_NUM_PINS 8
 static const j5_pin_t j5_pin[J5_NUM_PINS] = {
   // J5A
-  { GPIOC, 1 << 0 },
-  { GPIOC, 1 << 1 },
-  { GPIOC, 1 << 2 },
-  { GPIOC, 1 << 3 },
+  { 0, 23 },
+  { 0, 24 },
+  { 0, 25 },
+  { 0, 26 },
 
-  // J5B
-  { GPIOA, 1 << 0 },
-  { GPIOA, 1 << 1 },
-  { GPIOA, 1 << 2 },
-  { GPIOA, 1 << 3 },
-
-  // J5C
-  { GPIOC, 1 << 4 },
-  { GPIOC, 1 << 5 },
-  { GPIOB, 1 << 0 },
-  { GPIOB, 1 << 1 },
+  // J5BB
+  { 1, 30 },
+  { 1, 31 },
+  { 0,  3 },
+  { 0,  2 },
 };
 
 #else
 #define J5_NUM_PINS 0
+#warning "No J5 pins defined for this MIOS32_BOARD"
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// J10 pin mapping
+/////////////////////////////////////////////////////////////////////////////
+
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+// note: adaptions also have to be done in MIOS32_BOARD_J10_(Set/Get),
+// since these functions access the ports directly
+typedef struct {
+  u8 port;
+  u8 pin;
+} j10_pin_t;
+
+#define J10_NUM_PINS 8
+static const j10_pin_t j10_pin[J10_NUM_PINS] = {
+  // J10
+  { 2, 2 },
+  { 2, 3 },
+  { 2, 4 },
+  { 2, 5 },
+  { 2, 6 },
+  { 2, 7 },
+  { 2, 8 },
+  { 1, 18 },
+};
+
+#else
+#define J10_NUM_PINS 0
+#warning "No J10 pins defined for this MIOS32_BOARD"
 #endif
 
 
@@ -65,71 +91,52 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // J15 (LCD) pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
 
 #define J15_AVAILABLE 1
 
-#define J15_SCLK_PORT      GPIOA
-#define J15_SCLK_PIN       GPIO_Pin_8
+#define J15_SCLK_PORT      1
+#define J15_SCLK_PIN       25
 
-#define J15_RCLK_PORT      GPIOC
-#define J15_RCLK_PIN       GPIO_Pin_9
+#define J15_RCLK_PORT      1
+#define J15_RCLK_PIN       26
 
-#define J15_SER_PORT       GPIOC
-#define J15_SER_PIN        GPIO_Pin_8
+#define J15_SER_PORT       1        // also used as DC (data/command select) for serial interfaces
+#define J15_SER_PIN        28
 
-#define J15_E1_PORT        GPIOC        // also used to control SCLK of serial interfaces
-#define J15_E1_PIN         GPIO_Pin_7
+#define J15_E1_PORT        1        // also used to control SCLK of serial interfaces
+#define J15_E1_PIN         29
 
-#define J15_E2_PORT        GPIOC
-#define J15_E2_PIN         GPIO_Pin_6
+#define J15_E2_PORT        3
+#define J15_E2_PIN         25
 
-#ifdef MIOS32_BOARD_LCD_E3_PORT
-#define LCD_E3_PORT        MIOS32_BOARD_LCD_E3_PORT
-#define LCD_E3_PIN         MIOS32_BOARD_LCD_E3_PIN
-#endif
+#define J15_RW_PORT        1        // also used to control data output of serial interfaces
+#define J15_RW_PIN         27
 
-#ifdef MIOS32_BOARD_LCD_E4_PORT
-#define LCD_E4_PORT        MIOS32_BOARD_LCD_E4_PORT
-#define LCD_E4_PIN         MIOS32_BOARD_LCD_E4_PIN
-#endif
-
-#define J15_RW_PORT        GPIOB        // also used to control data output of serial interfaces
-#define J15_RW_PIN         GPIO_Pin_2
-
-#define J15_D7_PORT        GPIOC
-#define J15_D7_PIN         GPIO_Pin_12
-
-// 0: RS connected to SER input of 74HC595 shift register
-// 1: RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
-#define J15_RS_AT_D7APOSTROPHE 0
+#define J15_D7_PORT        1
+#define J15_D7_PIN         19
 
 // following macros simplify the access to J15 pins
-#define J15_PIN_SER(b)  { J15_SER_PORT->BSRR = (b) ? J15_SER_PIN : (J15_SER_PIN << 16); }
-#define J15_PIN_E1(b)   { J15_E1_PORT->BSRR  = (b) ? J15_E1_PIN  : (J15_E1_PIN << 16); }
-#define J15_PIN_E2(b)   { J15_E2_PORT->BSRR  = (b) ? J15_E2_PIN  : (J15_E2_PIN << 16); }
-#ifdef MIOS32_BOARD_LCD_E3_PORT
-#define LCD_PIN_E3(b)   { LCD_E3_PORT->BSRR  = (b) ? LCD_E3_PIN  : (LCD_E3_PIN << 16); }
-#endif
-#ifdef MIOS32_BOARD_LCD_E4_PORT
-#define LCD_PIN_E4(b)   { LCD_E4_PORT->BSRR  = (b) ? LCD_E4_PIN  : (LCD_E4_PIN << 16); }
-#endif
-#define J15_PIN_RW(b)   { J15_RW_PORT->BSRR  = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
+#define J15_PIN_SER(b)  MIOS32_SYS_LPC_PINSET(J15_SER_PORT, J15_SER_PIN, b)
+#define J15_PIN_E1(b)   MIOS32_SYS_LPC_PINSET(J15_E1_PORT, J15_E1_PIN, b)
+#define J15_PIN_E2(b)   MIOS32_SYS_LPC_PINSET(J15_E2_PORT, J15_E2_PIN, b)
+#define J15_PIN_RW(b)   MIOS32_SYS_LPC_PINSET(J15_RW_PORT, J15_RW_PIN, b)
 
-#define J15_PIN_SERLCD_DATAOUT(b) { J15_RW_PORT->BSRR = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
-#define J15_PIN_SERLCD_SCLK_0     { J15_E1_PORT->BRR  = J15_E1_PIN; }
-#define J15_PIN_SERLCD_SCLK_1     { J15_E1_PORT->BSRR = J15_E1_PIN; }
+#define J15_PIN_SERLCD_DATAOUT(b) MIOS32_SYS_LPC_PINSET(J15_RW_PORT, J15_RW_PIN, b)
+#define J15_PIN_SERLCD_SCLK_0     MIOS32_SYS_LPC_PINSET_0(J15_E1_PORT, J15_E1_PIN)
+#define J15_PIN_SERLCD_SCLK_1     MIOS32_SYS_LPC_PINSET_1(J15_E1_PORT, J15_E1_PIN)
 
-#define J15_PIN_RCLK_0  { J15_RCLK_PORT->BRR  = J15_RCLK_PIN; }
-#define J15_PIN_RCLK_1  { J15_RCLK_PORT->BSRR = J15_RCLK_PIN; }
+#define J15_PIN_RCLK_0  MIOS32_SYS_LPC_PINSET_0(J15_RCLK_PORT, J15_RCLK_PIN)
+#define J15_PIN_RCLK_1  MIOS32_SYS_LPC_PINSET_1(J15_RCLK_PORT, J15_RCLK_PIN)
 
-#define J15_PIN_SCLK_0  { J15_SCLK_PORT->BRR  = J15_SCLK_PIN; }
-#define J15_PIN_SCLK_1  { J15_SCLK_PORT->BSRR = J15_SCLK_PIN; }
+#define J15_PIN_SCLK_0  MIOS32_SYS_LPC_PINSET_0(J15_SCLK_PORT, J15_SCLK_PIN)
+#define J15_PIN_SCLK_1  MIOS32_SYS_LPC_PINSET_1(J15_SCLK_PORT, J15_SCLK_PIN)
 
-#define J15_PIN_D7_IN   (J15_D7_PORT->IDR & J15_D7_PIN)
+#define J15_PIN_D7_IN   MIOS32_SYS_LPC_PINGET(J15_D7_PORT, J15_D7_PIN)
 
 #else
 #define J15_AVAILABLE 0
+#warning "No J15 (LCD) port defined for this MIOS32_BOARD"
 #endif
 
 
@@ -138,6 +145,7 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 j5_enable_mask;
+static u8  j10_enable_mask;
 
 
 
@@ -153,6 +161,7 @@ s32 MIOS32_BOARD_Init(u32 mode)
     return -1; // unsupported mode
 
   j5_enable_mask = 0;
+  j10_enable_mask = 0;
 
   return 0; // no error
 }
@@ -174,9 +183,11 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 #if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   if( leds & 1 ) {
     // select GPIO for P0.22
-    LPC_PINCON->PINSEL1 &= ~(3 << 12);
+    MIOS32_SYS_LPC_PINSEL(0, 22, 0);
     // enable output driver of P0.22
-    LPC_GPIO0->FIODIR |= (1 << 22);
+    MIOS32_SYS_LPC_PINDIR(0, 22, 1);
+    // disable open drain
+    MIOS32_SYS_LPC_PINMODE_OD(0, 22, 0);
   }
 
   if( leds & 0xfffffffe)
@@ -203,10 +214,7 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 #if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   // only one LED, connected to P0.22
   if( leds & 1 ) {
-    if( value & 1 )
-      LPC_GPIO0->FIOSET = (1 << 22);
-    else
-      LPC_GPIO0->FIOCLR = (1 << 22);
+    MIOS32_SYS_LPC_PINSET(0, 22, value & 1);
   }
 
   if( leds & 0xfffffffe)
@@ -230,7 +238,7 @@ u32 MIOS32_BOARD_LED_Get(void)
 
 #if defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   // only one LED, connected to P0.22
-  if( LPC_GPIO0->FIOPIN & (1 << 22) )
+  if( MIOS32_SYS_LPC_PINGET(0, 22) )
     values |= (1 << 0);
 #else
 #warning "no LED specified for this MIOS32_BOARD!"
@@ -243,7 +251,7 @@ u32 MIOS32_BOARD_LED_Get(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes a J5 pin
-//! \param[in] pin the pin number (0..11)
+//! \param[in] pin the pin number (0..7)
 //! \param[in] mode the pin mode
 //!   <UL>
 //!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched
@@ -271,29 +279,38 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
     // enable pin
     j5_enable_mask |= (1 << pin);
 
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_Pin = j5_pin[pin].pin_mask;
+    j5_pin_t *p = (j5_pin_t *)&j5_pin[pin];
 
     switch( mode ) {
       case MIOS32_BOARD_PIN_MODE_ANALOG:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 1); // select ADC
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 2); // set to floating... doesn't matter, but also doesn't hurt
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
 	break;
       case MIOS32_BOARD_PIN_MODE_INPUT:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 2); // set to floating
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
 	break;
       case MIOS32_BOARD_PIN_MODE_INPUT_PD:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 3); // enable pull-down
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
 	break;
       case MIOS32_BOARD_PIN_MODE_INPUT_PU:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 0); // enable pull-up
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
 	break;
       case MIOS32_BOARD_PIN_MODE_OUTPUT_PP:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 1); // output mode
+	MIOS32_SYS_LPC_PINMODE_OD(p->port, p->pin, 0); // disable open-drain
 	break;
       case MIOS32_BOARD_PIN_MODE_OUTPUT_OD:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 1); // output mode
+	MIOS32_SYS_LPC_PINMODE_OD(p->port, p->pin, 1); // enable open-drain
 	break;
       default:
 	return -2; // invalid pin mode
@@ -304,13 +321,10 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
     // This should be done before IO mode configuration, because
     // in input mode, this bit will control Pull Up/Down (configured
     // by GPIO_Init)
-    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
+    MIOS32_SYS_LPC_PINSET(p->port, p->pin, 0);
     // TK: disabled since there are application which have to switch between Input/Output
     // without destroying the current pin value
 #endif
-
-    // init IO mode
-    GPIO_Init(j5_pin[pin].port, &GPIO_InitStructure);
   }
 
   return 0; // no error
@@ -320,7 +334,7 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sets all pins of J5 at once
-//! \param[in] value 12 bits which are forwarded to J5A/B/C
+//! \param[in] value 8 bits which are forwarded to J5A/B
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J5_Set(u16 value)
@@ -328,30 +342,31 @@ s32 MIOS32_BOARD_J5_Set(u16 value)
 #if J5_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J5 not supported
 #else
-# if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-  // J5A[3:0] -> GPIOC[3:0]
-  // J5B[3:0] -> GPIOA[3:0]
-  // J5C[1:0] -> GPIOC[5:4]
-  // J5C[3:2] -> GPIOB[1:0]
+# if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+  // J5A[3:0] -> P0[26:23]
+  // J5B[1:0] -> P1[31:30]
+  // J5B[2] -> P0[3]
+  // J5B[3] -> P0[2]
 
-  // BSRR[15:0] sets output register to 1, BSRR[31:16] to 0
+  LPC_GPIO0->FIOSET = 
+    (( value & j5_enable_mask & 0x000f) << 23) |  // set flags
+    (( value & j5_enable_mask & 0x0040) >>  3) |  // set flags
+    (( value & j5_enable_mask & 0x0080) >>  5);
 
-  GPIOC->BSRR =
-    (( value & j5_enable_mask & 0x000f) <<  0) |  // set flags
-    ((~value & j5_enable_mask & 0x000f) << 16) |  // clear flags
-    (( value & j5_enable_mask & 0x0300) >>  4) |  // set flags
-    ((~value & j5_enable_mask & 0x0300) << 12);   // clear flags
+  LPC_GPIO1->FIOSET = 
+    (( value & j5_enable_mask & 0x0030) << (30-4)); // set flags
 
-  GPIOA->BSRR =
-    (( value & j5_enable_mask & 0x00f0) >>  4) |  // set flags
-    ((~value & j5_enable_mask & 0x00f0) << 12);   // clear flags
+  LPC_GPIO0->FIOCLR = 
+    ((~value & j5_enable_mask & 0x000f) << 23) |  // clear flags
+    ((~value & j5_enable_mask & 0x0040) >>  3) |  // clear flags
+    ((~value & j5_enable_mask & 0x0080) >>  5);
 
-  GPIOB->BSRR =
-    (( value & j5_enable_mask & 0x0c00) >> 10) |  // set flags
-    ((~value & j5_enable_mask & 0x0c00) <<  6);   // clear flags
+  LPC_GPIO1->FIOCLR = 
+    ((~value & j5_enable_mask & 0x0030) << (30-4)); // clear flags
 
   return 0; // no error
 # else
+# warning "Not prepared for this MIOS32_BOARD"
   return -2; // board not supported
 # endif
 #endif
@@ -360,7 +375,7 @@ s32 MIOS32_BOARD_J5_Set(u16 value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sets a single pin of J5
-//! \param[in] pin the pin number (0..11)
+//! \param[in] pin the pin number (0..7)
 //! \param[in] value the pin value (0 or 1)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -375,10 +390,8 @@ s32 MIOS32_BOARD_J5_PinSet(u8 pin, u8 value)
   if( !(j5_enable_mask & (1 << pin)) )
     return -2; // pin disabled
 
-  if( value )
-    j5_pin[pin].port->BSRR = j5_pin[pin].pin_mask;
-  else
-    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
+  j5_pin_t *p = (j5_pin_t *)&j5_pin[pin];
+  MIOS32_SYS_LPC_PINSET(p->port, p->pin, value);
 
   return 0; // no error
 #endif
@@ -387,25 +400,28 @@ s32 MIOS32_BOARD_J5_PinSet(u8 pin, u8 value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the state of all pins of J5
-//! \return 12 bits which are forwarded from J5A/B/C
+//! \return 8 bits which are forwarded from J5A/B
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J5_Get(void)
 {
 #if J5_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J5 not supported
 #else
-# if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-  // J5A[3:0] -> GPIOC[3:0]
-  // J5B[3:0] -> GPIOA[3:0]
-  // J5C[1:0] -> GPIOC[5:4]
-  // J5C[3:2] -> GPIOB[1:0]
+# if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+  // J5A[3:0] -> P0[26:23]
+  // J5B[1:0] -> P1[31:30]
+  // J5B[2] -> P0[3]
+  // J5B[3] -> P0[2]
 
+  u32 p0 = LPC_GPIO0->FIOPIN;
+  u32 p1 = LPC_GPIO1->FIOPIN;
   return
-    (((GPIOC->IDR & 0x000f) <<  0) |
-     ((GPIOA->IDR & 0x000f) <<  4) |
-     ((GPIOC->IDR & 0x0030) <<  4) |
-     ((GPIOB->IDR & 0x0003) << 10)) & j5_enable_mask;
+    (((p0 >> (23-0)) & 0x000f) |
+     ((p0 >> (30-4)) & 0x0030) |
+     ((p1 << (6-3))  & 0x0040) |
+     ((p1 << (7-2))  & 0x0080));
 # else
+# warning "Not prepared for this MIOS32_BOARD"
   return -2; // board not supported
 # endif
 #endif
@@ -414,7 +430,7 @@ s32 MIOS32_BOARD_J5_Get(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the state of a single pin of J5
-//! \param[in] pin the pin number (0..11)
+//! \param[in] pin the pin number (0..7)
 //! \return < 0 if pin not available
 //! \return >= 0: input state of pin
 /////////////////////////////////////////////////////////////////////////////
@@ -429,7 +445,202 @@ s32 MIOS32_BOARD_J5_PinGet(u8 pin)
   if( !(j5_enable_mask & (1 << pin)) )
     return -2; // pin disabled
 
-  return (j5_pin[pin].port->IDR & j5_pin[pin].pin_mask) ? 1 : 0;
+  j5_pin_t *p = (j5_pin_t *)&j5_pin[pin];
+  return MIOS32_SYS_LPC_PINGET(p->port, p->pin) ? 1 : 0;
+#endif
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes a J10 pin
+//! \param[in] pin the pin number (0..7)
+//! \param[in] mode the pin mode
+//!   <UL>
+//!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched
+//!     <LI>MIOS32_BOARD_PIN_MODE_ANALOG: select analog input mode (default)
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT: pin is used as input w/o pull device (floating)
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PD: pin is used as input, internal pull down enabled
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PU: pin is used as input, internal pull up enabled
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_PP: pin is used as output in push-pull mode
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_OD: pin is used as output in open drain mode
+//!   </UL>
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10_PinInit(u8 pin, mios32_board_pin_mode_t mode)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( mode == MIOS32_BOARD_PIN_MODE_IGNORE ) {
+    // don't touch
+    j10_enable_mask &= ~(1 << pin);
+  } else {
+    // enable pin
+    j10_enable_mask |= (1 << pin);
+
+    j10_pin_t *p = (j10_pin_t *)&j10_pin[pin];
+
+    switch( mode ) {
+      case MIOS32_BOARD_PIN_MODE_ANALOG:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 1); // select ADC
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 2); // set to floating... doesn't matter, but also doesn't hurt
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
+	break;
+      case MIOS32_BOARD_PIN_MODE_INPUT:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 2); // set to floating
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
+	break;
+      case MIOS32_BOARD_PIN_MODE_INPUT_PD:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 3); // enable pull-down
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
+	break;
+      case MIOS32_BOARD_PIN_MODE_INPUT_PU:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINMODE(p->port, p->pin, 0); // enable pull-up
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 0); // input mode
+	break;
+      case MIOS32_BOARD_PIN_MODE_OUTPUT_PP:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 1); // output mode
+	MIOS32_SYS_LPC_PINMODE_OD(p->port, p->pin, 0); // disable open-drain
+	break;
+      case MIOS32_BOARD_PIN_MODE_OUTPUT_OD:
+	MIOS32_SYS_LPC_PINSEL(p->port, p->pin, 0);  // select GPIO
+	MIOS32_SYS_LPC_PINDIR(p->port, p->pin, 1); // output mode
+	MIOS32_SYS_LPC_PINMODE_OD(p->port, p->pin, 1); // enable open-drain
+	break;
+      default:
+	return -2; // invalid pin mode
+    }
+
+#if 0
+    // set pin value to 0
+    // This should be done before IO mode configuration, because
+    // in input mode, this bit will control Pull Up/Down (configured
+    // by GPIO_Init)
+    MIOS32_SYS_LPC_PINSET(p->port, p->pin, 0);
+    // TK: disabled since there are application which have to switch between Input/Output
+    // without destroying the current pin value
+#endif
+  }
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J10 at once
+//! \param[in] value 8 bits which are forwarded to J10
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10_Set(u16 value)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+  // J10[6:0] -> P2[8:2]
+  // J10[7] -> P1[18]
+
+  LPC_GPIO2->FIOSET = 
+    (( value & j10_enable_mask & 0x007f) << 2); // set flags
+
+  LPC_GPIO1->FIOSET = 
+    (( value & j10_enable_mask & 0x0080) << (18-7)); // set flags
+
+  LPC_GPIO2->FIOCLR = 
+    ((~value & j10_enable_mask & 0x007f) << 2); // clear flags
+
+  LPC_GPIO1->FIOCLR = 
+    ((~value & j10_enable_mask & 0x0080) << (18-7)); // clear flags
+
+  return 0; // no error
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets a single pin of J10
+//! \param[in] pin the pin number (0..7)
+//! \param[in] value the pin value (0 or 1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( !(j10_enable_mask & (1 << pin)) )
+    return -2; // pin disabled
+
+  j10_pin_t *p = (j10_pin_t *)&j10_pin[pin];
+  MIOS32_SYS_LPC_PINSET(p->port, p->pin, value);
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J10
+//! \return 8 bits which are forwarded from J10
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10_Get(void)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+  // J10[6:0] -> P2[8:2]
+  // J10[7] -> P1[18]
+
+  u32 p2 = LPC_GPIO2->FIOPIN;
+  u32 p1 = LPC_GPIO1->FIOPIN;
+  return
+    (((p2 >> (2)) & 0x007f) |
+     ((p1 >> (18-7)) & 0x0080));
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of a single pin of J10
+//! \param[in] pin the pin number (0..7)
+//! \return < 0 if pin not available
+//! \return >= 0: input state of pin
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10_PinGet(u8 pin)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( !(j10_enable_mask & (1 << pin)) )
+    return -2; // pin disabled
+
+  j10_pin_t *p = (j10_pin_t *)&j10_pin[pin];
+  return MIOS32_SYS_LPC_PINGET(p->port, p->pin) ? 1 : 0;
 #endif
 }
 
@@ -454,61 +665,41 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
   if( mode != 0 && mode != 1 )
     return -1; // unsupported mode
 
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-
   J15_PIN_SCLK_0;
   J15_PIN_RCLK_0;
   J15_PIN_RW(0);
   J15_PIN_E1(0);
   J15_PIN_E2(0);
-#ifdef MIOS32_BOARD_LCD_E3_PORT
-  LCD_PIN_E3(0);
-#endif
-#ifdef MIOS32_BOARD_LCD_E4_PORT
-  LCD_PIN_E4(0);
-#endif
 
   // configure push-pull pins
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // weak driver to reduce transients
+  MIOS32_SYS_LPC_PINSEL(J15_SCLK_PORT, J15_SCLK_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_SCLK_PORT, J15_SCLK_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_SCLK_PORT, J15_SCLK_PIN, 0); // no open drain
 
-  GPIO_InitStructure.GPIO_Pin = J15_SCLK_PIN;
-  GPIO_Init(J15_SCLK_PORT, &GPIO_InitStructure);
+  MIOS32_SYS_LPC_PINSEL(J15_RCLK_PORT, J15_RCLK_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_RCLK_PORT, J15_RCLK_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_RCLK_PORT, J15_RCLK_PIN, 0); // no open drain
 
-  GPIO_InitStructure.GPIO_Pin = J15_RCLK_PIN;
-  GPIO_Init(J15_RCLK_PORT, &GPIO_InitStructure);
+  MIOS32_SYS_LPC_PINSEL(J15_SER_PORT, J15_SER_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_SER_PORT, J15_SER_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_SER_PORT, J15_SER_PIN, mode ? 1 : 0); // open drain?
 
-  // configure open-drain pins (if OD option enabled)
-  if( mode )
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+  MIOS32_SYS_LPC_PINSEL(J15_E1_PORT, J15_E1_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_E1_PORT, J15_E1_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_E1_PORT, J15_E1_PIN, mode ? 1 : 0); // open drain?
 
-  GPIO_InitStructure.GPIO_Pin = J15_SER_PIN;
-  GPIO_Init(J15_SER_PORT, &GPIO_InitStructure);
+  MIOS32_SYS_LPC_PINSEL(J15_E2_PORT, J15_E2_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_E2_PORT, J15_E2_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_E2_PORT, J15_E2_PIN, mode ? 1 : 0); // open drain?
 
-  GPIO_InitStructure.GPIO_Pin = J15_E1_PIN;
-  GPIO_Init(J15_E1_PORT, &GPIO_InitStructure);
-
-  GPIO_InitStructure.GPIO_Pin = J15_E2_PIN;
-  GPIO_Init(J15_E2_PORT, &GPIO_InitStructure);
-
-#ifdef MIOS32_BOARD_LCD_E3_PORT
-  GPIO_InitStructure.GPIO_Pin = LCD_E3_PIN;
-  GPIO_Init(LCD_E3_PORT, &GPIO_InitStructure);
-#endif
-
-#ifdef MIOS32_BOARD_LCD_E4_PORT
-  GPIO_InitStructure.GPIO_Pin = LCD_E4_PIN;
-  GPIO_Init(LCD_E4_PORT, &GPIO_InitStructure);
-#endif
-
-  GPIO_InitStructure.GPIO_Pin = J15_RW_PIN;
-  GPIO_Init(J15_RW_PORT, &GPIO_InitStructure);
+  MIOS32_SYS_LPC_PINSEL(J15_RW_PORT, J15_RW_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINDIR(J15_RW_PORT, J15_RW_PIN, 1); // output
+  MIOS32_SYS_LPC_PINMODE_OD(J15_RW_PORT, J15_RW_PIN, mode ? 1 : 0); // open drain?
 
   // configure "busy" input with pull-up
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-  GPIO_InitStructure.GPIO_Pin = J15_D7_PIN;
-  GPIO_Init(J15_D7_PORT, &GPIO_InitStructure);
+  MIOS32_SYS_LPC_PINSEL(J15_D7_PORT, J15_D7_PIN, 0); // GPIO
+  MIOS32_SYS_LPC_PINMODE(J15_D7_PORT, J15_D7_PIN, 0); // pull-up enabled
+  MIOS32_SYS_LPC_PINDIR(J15_D7_PORT, J15_D7_PIN, 0); // input
 
   return 0; // no error
 #endif
@@ -580,27 +771,58 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
 #else
   J15_PIN_SERLCD_DATAOUT(data & 0x80); // D7
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x40); // D6
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x20); // D5
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x10); // D4
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x08); // D3
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x04); // D2
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x02); // D1
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x01); // D0
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
   J15_PIN_SERLCD_SCLK_1;
 
   return 0; // no error
@@ -620,29 +842,6 @@ s32 MIOS32_BOARD_J15_RS_Set(u8 rs)
   return -1; // LCD port not available
 #else
   J15_PIN_SER(rs);
-
-#if J15_RS_AT_D7APOSTROPHE
-  // RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
-  // shift RS to D7' 
-  // These 8 shifts take ca. 500 nS @ 72MHz, they don't really hurt
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-#endif
 
   return 0; // no error
 #endif
@@ -685,19 +884,6 @@ s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e)
     case 1: 
       J15_PIN_E2(e);
       return 0; // no error
-
-#ifdef MIOS32_BOARD_LCD_E3_PORT
-    case 2: 
-      LCD_PIN_E3(e);
-      return 0; // no error
-#endif
-
-#ifdef MIOS32_BOARD_LCD_E4_PORT
-    case 3: 
-      LCD_PIN_E4(e);
-      return 0; // no error
-#endif
-
   }
 
   return -1; // pin not available
