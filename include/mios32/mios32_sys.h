@@ -43,10 +43,12 @@
 # define MIOS32_SYS_LPC_PINSEL(port, pin, sel) { LPC_PINCON_TypeDef *LPC_PINSELx = (LPC_PINCON_TypeDef*)(LPC_PINCON_BASE+8*port+4*(pin/16)); LPC_PINSELx->PINSEL0 &= ~(3 << (2*(pin%16))); LPC_PINSELx->PINSEL0 |= (sel << (2*(pin%16))); }
 # define MIOS32_SYS_LPC_PINMODE(port, pin, mode) { LPC_PINCON_TypeDef *LPC_PINMODEx = (LPC_PINCON_TypeDef*)(LPC_PINCON_BASE+8*port+4*(pin/16)); LPC_PINMODEx->PINMODE0 &= ~(3 << (2*(pin%16))); LPC_PINMODEx->PINMODE0 |= (mode << (2*(pin%16))); }
 # define MIOS32_SYS_LPC_PINMODE_OD(port, pin, od) { LPC_PINCON_TypeDef *LPC_PINMODEx = (LPC_PINCON_TypeDef*)(LPC_PINCON_BASE+4*port); if( od ) LPC_PINMODEx->PINMODE_OD0 |= (1 << pin); else LPC_PINMODEx->PINMODE_OD0 &= ~(1 << pin); }
-# define MIOS32_SYS_LPC_FIODIR(port, pin, dir) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); if( dir ) LPC_GPIOx->FIODIR |= (1 << pin); else LPC_GPIOx->FIODIR &= ~(1 << pin); }
-# define MIOS32_SYS_LPC_FIOSET(port, pin, v) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); if( v ) LPC_GPIOx->FIOSET = (1 << pin); else LPC_GPIOx->FIOCLR = (1 << pin); }
+# define MIOS32_SYS_LPC_PINDIR(port, pin, dir) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); if( dir ) LPC_GPIOx->FIODIR |= (1 << pin); else LPC_GPIOx->FIODIR &= ~(1 << pin); }
+# define MIOS32_SYS_LPC_PINSET(port, pin, v) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); if( v ) LPC_GPIOx->FIOSET = (1 << pin); else LPC_GPIOx->FIOCLR = (1 << pin); }
+# define MIOS32_SYS_LPC_PINSET_1(port, pin) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); LPC_GPIOx->FIOSET = (1 << pin); }
+# define MIOS32_SYS_LPC_PINSET_0(port, pin) { LPC_GPIO_TypeDef *LPC_GPIOx = (LPC_GPIO_TypeDef*)(LPC_GPIO0_BASE+port*0x20); LPC_GPIOx->FIOCLR = (1 << pin); }
 // this macro reads FIOPIN of the given port, and masks the value with the given pin
-# define MIOS32_SYS_LPC_FIOGET(port, pin) (*((volatile u32 *)(LPC_GPIO0_BASE+port*0x20+0x14)) & (1 << pin))
+# define MIOS32_SYS_LPC_PINGET(port, pin) (*((volatile u32 *)(LPC_GPIO0_BASE+port*0x20+0x14)) & (1 << pin))
 #endif
 
 // STM32 only:
