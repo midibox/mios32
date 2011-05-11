@@ -295,7 +295,7 @@ s32 SEQ_FILE_BM_Read(void)
 	    bm->step = value - 1;
 	    bm->enable.STEP = parameter_enabled;
 	  } else if( strcmp(parameter, "EditView") == 0 ) {
-	    bm->edit_view = value - 1;
+	    bm->edit_view = value;
 	    bm->enable.EDIT_VIEW = parameter_enabled;
 	  } else if( strcmp(parameter, "Solo") == 0 ) {
 	    bm->flags.SOLO = value ? 1 : 0;
@@ -398,7 +398,7 @@ static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
     sprintf(line_buffer, "%cStep %d\n", bm->enable.STEP ? '+' : '-', (int)bm->step+1);
     FLUSH_BUFFER;
-    sprintf(line_buffer, "%cEditView %d\n", bm->enable.EDIT_VIEW ? '+' : '-', (int)bm->edit_view);
+    sprintf(line_buffer, "%cEditView %d\n", bm->enable.EDIT_VIEW ? '+' : '-', bm->edit_view);
     FLUSH_BUFFER;
     sprintf(line_buffer, "%cSolo %d\n", bm->enable.SOLO ? '+' : '-', bm->flags.SOLO);
     FLUSH_BUFFER;
