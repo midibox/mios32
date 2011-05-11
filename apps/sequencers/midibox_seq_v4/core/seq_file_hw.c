@@ -269,6 +269,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button_beh.follow = flag;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button_beh.menu = flag;
+	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	    seq_hwcfg_button_beh.bookmark = flag;
 	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_button_beh.step_view = flag;
 	  } else if( strcmp(parameter, "TRG_LAYER") == 0 ) {
@@ -348,6 +350,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.fwd = din_value;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button.menu = din_value;
+	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	    seq_hwcfg_button.bookmark = din_value;
 	  } else if( strcmp(parameter, "SELECT") == 0 ) {
 	    seq_hwcfg_button.select = din_value;
 	  } else if( strcmp(parameter, "EXIT") == 0 ) {
@@ -513,6 +517,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.select = dout_value;
 	  } else if( strcmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_led.menu = dout_value;
+	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	    seq_hwcfg_led.bookmark = dout_value;
 	  } else if( strcmp(parameter, "SCRUB") == 0 ) {
 	    seq_hwcfg_led.scrub = dout_value;
 	  } else if( strcmp(parameter, "LOOP") == 0 ) {

@@ -31,8 +31,10 @@
 #define SEQ_UI_CURSOR_FLASH_CTR_MAX     500  // mS
 #define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF 400  // mS
 
+#define SEQ_UI_BOOKMARKS_NUM 16
 
 #define UI_QUICKSEL_NUM_PRESETS 8
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -43,39 +45,40 @@ typedef union {
     u32 ALL;
   };
   struct {
-    u8 PAGE_CHANGE_BUTTON_FLAGS:6;
+    u8 PAGE_CHANGE_BUTTON_FLAGS:7;
   };
   struct {
     // these button functions will change a page (special "radio button" handling required)
-    u8 MENU_PRESSED:1;
-    u8 STEP_VIEW:1;
-    u8 PAR_LAYER_SEL:1;
-    u8 TRG_LAYER_SEL:1;
-    u8 TRACK_SEL:1;
-    u8 TEMPO_PRESET:1;
+    u32 MENU_PRESSED:1;
+    u32 STEP_VIEW:1;
+    u32 PAR_LAYER_SEL:1;
+    u32 TRG_LAYER_SEL:1;
+    u32 TRACK_SEL:1;
+    u32 TEMPO_PRESET:1;
+    u32 BOOKMARK:1;
 
     // remaining functions
-    u8 MENU_FIRST_PAGE_SELECTED:1;
-    u8 CHANGE_ALL_STEPS:1;
-    u8 CHANGE_ALL_STEPS_SAME_VALUE:1;
-    u8 SELECT_PRESSED:1;
-    u8 EDIT_PRESSED:1;
-    u8 MUTE_PRESSED:1;
-    u8 PATTERN_PRESSED:1;
-    u8 SONG_PRESSED:1;
-    u8 FAST_ENCODERS:1;
-    u8 FAST2_ENCODERS:1;
-    u8 SOLO:1;
-    u8 SCRUB:1;
-    u8 REW:1;
-    u8 FWD:1;
-    u8 COPY:1;
-    u8 PASTE:1;
-    u8 CLEAR:1;
-    u8 UNDO:1;
-    u8 TAP_TEMPO:1;
-    u8 UP:1;
-    u8 DOWN:1;
+    u32 MENU_FIRST_PAGE_SELECTED:1;
+    u32 CHANGE_ALL_STEPS:1;
+    u32 CHANGE_ALL_STEPS_SAME_VALUE:1;
+    u32 SELECT_PRESSED:1;
+    u32 EDIT_PRESSED:1;
+    u32 MUTE_PRESSED:1;
+    u32 PATTERN_PRESSED:1;
+    u32 SONG_PRESSED:1;
+    u32 FAST_ENCODERS:1;
+    u32 FAST2_ENCODERS:1;
+    u32 SOLO:1;
+    u32 SCRUB:1;
+    u32 REW:1;
+    u32 FWD:1;
+    u32 COPY:1;
+    u32 PASTE:1;
+    u32 CLEAR:1;
+    u32 UNDO:1;
+    u32 TAP_TEMPO:1;
+    u32 UP:1;
+    u32 DOWN:1;
   };
 } seq_ui_button_state_t;
 
@@ -154,6 +157,73 @@ typedef enum {
   SEQ_UI_REMOTE_MODE_SERVER,
   SEQ_UI_REMOTE_MODE_CLIENT
 } seq_ui_remote_mode_t;
+
+// numbers should not be changed, as it's also used by the bookmark function
+typedef enum {
+  SEQ_UI_EDIT_VIEW_STEPS = 0,
+  SEQ_UI_EDIT_VIEW_TRG = 1,
+  SEQ_UI_EDIT_VIEW_LAYERS = 2,
+  SEQ_UI_EDIT_VIEW_303 = 3,
+  SEQ_UI_EDIT_VIEW_STEPSEL = 8,
+} seq_ui_edit_view_t;
+
+typedef union {
+  u8 ALL;
+
+  struct {
+    u8 LOCKED:1;
+    u8 SOLO:1;
+    u8 CHANGE_ALL_STEPS:1;
+    u8 FAST:1;
+    u8 METRONOME:1;
+    u8 LOOP:1;
+    u8 FOLLOW:1;
+  };
+} seq_ui_bookmark_flags_t;
+
+typedef union {
+  u32 ALL;
+
+  struct {
+    u32 SOLO:1;
+    u32 CHANGE_ALL_STEPS:1;
+    u32 FAST:1;
+    u32 METRONOME:1;
+    u32 LOOP:1;
+    u32 FOLLOW:1;
+
+    u32 PAGE:1;
+    u32 GROUP:1;
+    u32 PAR_LAYER:1;
+    u32 TRG_LAYER:1;
+    u32 INSTRUMENT:1;
+    u32 STEP_VIEW:1;
+    u32 STEP:1;
+    u32 EDIT_VIEW:1;
+    u32 MUTES:1;
+    u32 TRACKS:1;
+  };
+} seq_ui_bookmark_enable_t;
+
+typedef struct seq_ui_bookmark_t {
+  seq_ui_bookmark_enable_t enable;
+  seq_ui_bookmark_flags_t flags;
+  char name[6]; // 5 chars used
+  u8  page;
+  u8  group;
+  u8  par_layer;
+  u8  trg_layer;
+  u8  instrument;
+  u8  step_view;
+  u8  step;
+  u8  edit_view;
+  u16 tracks;
+  u16 mutes;
+
+  // note: pattern and song number shouldn't be stored via bookmark
+  // since the "song phrases" feature is intended for such a purpose.
+  // storing mutes is already an exception, because they can be controlled via phrases as well.
+} seq_ui_bookmark_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -250,6 +320,9 @@ extern s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *
 extern s32 SEQ_UI_MsgStop(void);
 extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
 
+extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
+extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
@@ -306,5 +379,9 @@ extern u8 seq_ui_format_req;
 extern u8 seq_ui_saveall_req;
 
 extern char ui_global_dir_list[80];
+
+extern seq_ui_edit_view_t seq_ui_edit_view;
+
+extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
 #endif /* _SEQ_UI_H */

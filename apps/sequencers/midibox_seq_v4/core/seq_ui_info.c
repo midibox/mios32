@@ -59,7 +59,7 @@
 
 
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         10
+#define NUM_LIST_ITEMS         11
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_CONFIG       2
@@ -68,8 +68,9 @@
 #define LIST_ITEM_MIXER_MAP    5
 #define LIST_ITEM_SONG         6
 #define LIST_ITEM_GROOVES      7
-#define LIST_ITEM_SD_CARD      8
-#define LIST_ITEM_NETWORK      9
+#define LIST_ITEM_BOOKMARKS    8
+#define LIST_ITEM_SD_CARD      9
+#define LIST_ITEM_NETWORK      10
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -87,6 +88,7 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
   "Mixer Map"
   "Song     "
   "Grooves  "
+  "Bookmarks"
   "SD Card  "
   "Network  ";
 
@@ -197,6 +199,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_GROOVES:
 	SEQ_TERMINAL_PrintGrooveTemplates(DEBUG_MSG);
+	break;
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      case LIST_ITEM_BOOKMARKS:
+	SEQ_TERMINAL_PrintBookmarks(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////

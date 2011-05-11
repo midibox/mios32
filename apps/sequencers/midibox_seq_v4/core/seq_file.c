@@ -52,6 +52,7 @@
 #include "seq_file_c.h"
 #include "seq_file_gc.h"
 #include "seq_file_t.h"
+#include "seq_file_bm.h"
 #include "seq_file_hw.h"
 
 #include "seq_mixer.h"
@@ -163,6 +164,7 @@ s32 SEQ_FILE_Init(u32 mode)
   SEQ_FILE_M_Init(0); // mixer file access
   SEQ_FILE_S_Init(0); // song file access
   SEQ_FILE_T_Init(0); // track preset file access
+  SEQ_FILE_BM_Init(0); // bookmarks file access
 
 
   return error;
@@ -361,6 +363,9 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   // ignore status if global setup file doesn't exist
   SEQ_FILE_GC_Load();
 
+  // ignore status if bookmark file doesn't exist
+  SEQ_FILE_BM_Load();
+
   if( SEQ_FILE_C_Load(seq_file_session_name) >= 0 ) {
     // change mixer map to the one stored in MBSEQ_C.V4
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
@@ -390,6 +395,7 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   status |= SEQ_FILE_G_Unload();
   status |= SEQ_FILE_C_Unload();
   status |= SEQ_FILE_GC_Unload();
+  status |= SEQ_FILE_BM_Unload();
   status |= SEQ_FILE_HW_Unload();
   return status;
 }
