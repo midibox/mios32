@@ -50,9 +50,10 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .fwd   = ((( 2   -1)<<3)+    0),
 
   //           SR   ignore    Pin
-  .menu   = ((( 2   -1)<<3)+    5),
-  .select = ((( 2   -1)<<3)+    6),
-  .exit   = ((( 2   -1)<<3)+    7),
+  .menu     = ((( 2   -1)<<3)+    5),
+  .bookmark = ((( 0   -1)<<3)+    0),
+  .select   = ((( 2   -1)<<3)+    6),
+  .exit     = ((( 2   -1)<<3)+    7),
 
   //             SR   ignore    Pin
   .track[0] = ((( 3   -1)<<3)+    0),
@@ -190,6 +191,7 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .metronome = 1,
   .loop = 1,
   .follow = 1,
+  .bookmark = 1,
 #if defined(MIOS32_FAMILY_EMULATION) && !defined(MIOS32_BOARD_IPAD)
   .scrub = 1,
   .menu = 1,
@@ -279,6 +281,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .exit      = ((( 0   -1)<<3)+    0),
   .select    = ((( 0   -1)<<3)+    0),
   .menu      = (((13   -1)<<3)+    0),
+  .bookmark  = ((( 0   -1)<<3)+    0),
   .scrub     = (((13   -1)<<3)+    1),
   .metronome = (((13   -1)<<3)+    2),
   .utility   = (((13   -1)<<3)+    3),
@@ -325,6 +328,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
 
   //              SR    ignore    Pin
   .menu      = ((( 0   -1)<<3)+    0),
+  .bookmark  = ((( 0   -1)<<3)+    0),
   .scrub     = ((( 0   -1)<<3)+    0),
   .metronome = ((( 0   -1)<<3)+    0),
   .utility   = ((( 0   -1)<<3)+    0),

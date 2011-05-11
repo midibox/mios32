@@ -60,6 +60,7 @@ typedef struct {
   u8 menu;
   u8 select;
   u8 exit;
+  u8 bookmark;
 
   u8 track[SEQ_HWCFG_NUM_TRACK];
 
@@ -110,21 +111,22 @@ typedef struct {
 
 
 typedef struct {
-  u8 fast:1;
-  u8 fast2:1;
-  u8 all:1;
-  u8 all_with_triggers:1;
-  u8 solo:1;
-  u8 metronome:1;
-  u8 loop:1;
-  u8 follow:1;
-  u8 scrub:1;
-  u8 menu:1;
-  u8 step_view:1;
-  u8 trg_layer:1;
-  u8 par_layer:1;
-  u8 track_sel:1;
-  u8 tempo_preset:1;
+  u32 fast:1;
+  u32 fast2:1;
+  u32 all:1;
+  u32 all_with_triggers:1;
+  u32 solo:1;
+  u32 metronome:1;
+  u32 loop:1;
+  u32 follow:1;
+  u32 scrub:1;
+  u32 menu:1;
+  u32 bookmark:1;
+  u32 step_view:1;
+  u32 trg_layer:1;
+  u32 par_layer:1;
+  u32 track_sel:1;
+  u32 tempo_preset:1;
 } seq_hwcfg_button_beh_t;
 
 
@@ -167,6 +169,7 @@ typedef struct {
   u8 exit;
   u8 select;
   u8 menu;
+  u8 bookmark;
   u8 scrub;
   u8 metronome;
 

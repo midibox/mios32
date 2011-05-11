@@ -23,6 +23,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui.c  \
 		core/seq_ui_todo.c \
 		core/seq_ui_menu.c \
+		core/seq_ui_bookmarks.c \
 		core/seq_ui_edit.c \
 		core/seq_ui_mute.c \
 		core/seq_ui_pmute.c \
@@ -93,6 +94,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_file_c.c \
 		core/seq_file_gc.c \
 		core/seq_file_t.c \
+		core/seq_file_bm.c \
 		core/seq_file_hw.c \
 		core/seq_layer.c \
 		core/seq_random.c \

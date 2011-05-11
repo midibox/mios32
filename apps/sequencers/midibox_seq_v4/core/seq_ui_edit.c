@@ -30,22 +30,16 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Definitions
+// Global Variables
 /////////////////////////////////////////////////////////////////////////////
-typedef enum {
-  SEQ_UI_EDIT_VIEW_STEPS,
-  SEQ_UI_EDIT_VIEW_TRG,
-  SEQ_UI_EDIT_VIEW_LAYERS,
-  SEQ_UI_EDIT_VIEW_303,
-  SEQ_UI_EDIT_VIEW_STEPSEL,
-} seq_ui_edit_view_t;
+seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 show_edit_config_page;
-static seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 
 static u16 selected_steps = 0xffff; // will only be initialized once after startup
 

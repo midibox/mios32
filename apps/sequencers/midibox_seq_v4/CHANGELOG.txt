@@ -5,6 +5,38 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.0beta40
+~~~~~~~~~~~~~~~~~~~~~
+
+   o added bookmark function:
+     - Press MENU+SELECT to enter the bookmark page
+     - Alternatively this function can be assigned to a dedicated button/LED
+     - inside this menu, press a GP button (shortly) to recall a bookmark
+     - press&hold a GP button for 3 seconds to store a bookmark
+
+   o the bookmark function stores following UI settings:
+     - Bookmark name
+     - Current page
+     - Group
+     - Tracks
+     - Mutes
+     - Parameter Layer
+     - Trigger Layer
+     - Instrument
+     - Step View
+     - Step
+     - Edit View
+     - Solo/All/Fast/Metronome/Loop/Follow button mode
+
+   o Bookmarks are stored into the MBSEQ_BM.V4 file, which can be edited with
+     a common text editor.
+     This is the only way to change a bookmark name (5 characters)
+
+   o it's possible to prevent, that a certain UI parameter will be overwritten by a
+     bookmark. This can (only) be done by editing the MBSEQ_BM.V4 file:
+     Just replace the '+' sign at the beginning of the parameter name by a '-' sign.
+
+
 MIDIboxSEQ V4.0beta39
 ~~~~~~~~~~~~~~~~~~~~~
 

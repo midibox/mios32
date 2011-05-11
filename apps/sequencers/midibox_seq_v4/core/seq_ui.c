@@ -99,6 +99,7 @@ u8 seq_ui_saveall_req;
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
+seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -121,6 +122,7 @@ static seq_ui_msg_type_t ui_msg_type;
 
 static u16 ui_delayed_action_ctr;
 
+static seq_ui_page_t ui_page_before_bookmark;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -176,6 +178,18 @@ s32 SEQ_UI_Init(u32 mode)
   ui_page = SEQ_UI_PAGE_NONE;
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
+  // finally init bookmarks
+  ui_page_before_bookmark = SEQ_UI_PAGE_EDIT;
+  for(i=0; i<SEQ_UI_BOOKMARKS_NUM; ++i) {
+    char buffer[10];
+    seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[i];
+
+    sprintf(buffer, "BM%2d ", i+1);
+    memcpy((char *)bm->name, buffer, 6);
+    bm->enable.ALL = ~0;
+    bm->flags.LOCKED = 0;
+    SEQ_UI_Bookmark_Store(i);
+  }
 
   return 0; // no error
 }
@@ -835,8 +849,42 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
   return 0; // no error
 }
 
+
+static s32 SEQ_UI_Button_Bookmark(s32 depressed)
+{
+  if( seq_hwcfg_button_beh.bookmark ) {
+    if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.BOOKMARK ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
+#if 0
+    seq_ui_button_state.BOOKMARK ^= 1; // toggle BOOKMARK pressed (will also be released once GP button has been pressed)
+#else
+    seq_ui_button_state.BOOKMARK = 1; // seems that it's better *not* to toggle!
+#endif
+  } else {
+    // set mode
+    seq_ui_button_state.BOOKMARK = depressed ? 0 : 1;
+  }
+
+  if( seq_ui_button_state.BOOKMARK ) {
+    if( ui_page != SEQ_UI_PAGE_BOOKMARKS )
+      ui_page_before_bookmark = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_BOOKMARKS);
+  } else {
+    if( ui_page == SEQ_UI_PAGE_BOOKMARKS )
+      SEQ_UI_PageSet(ui_page_before_bookmark);
+  }
+
+  return 0; // no error
+}
+
+
 static s32 SEQ_UI_Button_Select(s32 depressed)
 {
+  // double function: -> Bookmark if menu button pressed
+  if( seq_ui_button_state.MENU_PRESSED )
+    return SEQ_UI_Button_Bookmark(depressed);
+
   // forward to menu page
   if( !seq_ui_button_state.MENU_PRESSED ) {
     seq_ui_button_state.SELECT_PRESSED = depressed ? 0 : 1;
@@ -1499,6 +1547,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 
   if( pin == seq_hwcfg_button.menu )
     return SEQ_UI_Button_Menu(pin_value);
+  if( pin == seq_hwcfg_button.bookmark )
+    return SEQ_UI_Button_Bookmark(pin_value);
   if( pin == seq_hwcfg_button.select )
     return SEQ_UI_Button_Select(pin_value);
   if( pin == seq_hwcfg_button.exit )
@@ -2196,6 +2246,7 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
+  SEQ_LED_PinSet(seq_hwcfg_led.bookmark, ui_page == SEQ_UI_PAGE_BOOKMARKS);
 
   // handle double functions
   if( seq_ui_button_state.MENU_PRESSED ) {
@@ -3062,3 +3113,72 @@ s32 SEQ_UI_KeyPad_LCD_Msg(void)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// stores a bookmark
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Bookmark_Store(u8 bookmark)
+{
+  if( bookmark >= SEQ_UI_BOOKMARKS_NUM )
+    return -1;
+
+  seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[bookmark];
+
+  // note: name, enable flags and flags.LOCKED not overwritten!
+
+  bm->flags.SOLO = seq_ui_button_state.SOLO;
+  bm->flags.CHANGE_ALL_STEPS = seq_ui_button_state.CHANGE_ALL_STEPS;
+  bm->flags.FAST = seq_ui_button_state.FAST_ENCODERS;
+  bm->flags.METRONOME = seq_core_state.METRONOME;
+  bm->flags.LOOP = seq_core_state.LOOP;
+  bm->flags.FOLLOW = seq_core_state.FOLLOW;
+  bm->page = (u8)ui_page_before_bookmark;
+  bm->group = ui_selected_group;
+  bm->par_layer = ui_selected_par_layer;
+  bm->trg_layer = ui_selected_trg_layer;
+  bm->instrument = ui_selected_instrument;
+  bm->step_view = ui_selected_step_view;
+  bm->step = ui_selected_step;
+  bm->edit_view = seq_ui_edit_view;
+  bm->tracks = ui_selected_tracks;
+  bm->mutes = seq_core_trk_muted;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// restores a bookmark
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Bookmark_Restore(u8 bookmark)
+{
+  if( bookmark >= SEQ_UI_BOOKMARKS_NUM )
+    return -1;
+
+  seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[bookmark];
+
+  // should be atomic
+  portENTER_CRITICAL();
+  if( bm->enable.SOLO )              seq_ui_button_state.SOLO = bm->flags.SOLO;
+  if( bm->enable.CHANGE_ALL_STEPS )  seq_ui_button_state.CHANGE_ALL_STEPS = bm->flags.CHANGE_ALL_STEPS;
+  if( bm->enable.FAST )              seq_ui_button_state.FAST_ENCODERS = bm->flags.FAST;
+  if( bm->enable.METRONOME )         seq_core_state.METRONOME = bm->flags.METRONOME;
+  if( bm->enable.LOOP )              seq_core_state.LOOP = bm->flags.LOOP;
+  if( bm->enable.FOLLOW )            seq_core_state.FOLLOW = bm->flags.FOLLOW;
+  if( bm->enable.GROUP )             ui_selected_group = bm->group;
+  if( bm->enable.PAR_LAYER )         ui_selected_par_layer = bm->par_layer;
+  if( bm->enable.TRG_LAYER )         ui_selected_trg_layer = bm->trg_layer;
+  if( bm->enable.INSTRUMENT )        ui_selected_instrument = bm->instrument;
+  if( bm->enable.STEP_VIEW )         ui_selected_step_view = bm->step_view;
+  if( bm->enable.STEP )              ui_selected_step = bm->step;
+  if( bm->enable.EDIT_VIEW )         seq_ui_edit_view = bm->edit_view;
+  if( bm->enable.TRACKS )            ui_selected_tracks = bm->tracks;
+  if( bm->enable.MUTES )             seq_core_trk_muted = bm->mutes;
+  portEXIT_CRITICAL();
+
+  // enter new page if enabled
+  if( bm->enable.PAGE )
+    SEQ_UI_PageSet((seq_ui_page_t)bm->page);
+
+  return 0; // no error
+}

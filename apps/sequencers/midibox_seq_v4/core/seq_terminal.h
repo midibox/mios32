@@ -35,6 +35,7 @@ extern s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte);
 extern s32 SEQ_TERMINAL_PrintHelp(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintSystem(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintGlobalConfig(void *_output_function);
+extern s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintSessionConfig(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintTracks(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintTrack(void *_output_function, u8 track);

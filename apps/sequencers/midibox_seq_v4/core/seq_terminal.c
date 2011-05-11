@@ -46,6 +46,7 @@
 #include "seq_file_c.h"
 #include "seq_file_t.h"
 #include "seq_file_gc.h"
+#include "seq_file_bm.h"
 #include "seq_file_hw.h"
 
 #include "seq_ui.h"
@@ -157,6 +158,8 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 	SEQ_TERMINAL_PrintSystem(DEBUG_MSG);
       } else if( strcmp(parameter, "global") == 0 ) {
 	SEQ_TERMINAL_PrintGlobalConfig(DEBUG_MSG);
+      } else if( strcmp(parameter, "bookmarks") == 0 ) {
+	SEQ_TERMINAL_PrintBookmarks(DEBUG_MSG);
       } else if( strcmp(parameter, "config") == 0 ) {
 	SEQ_TERMINAL_PrintSessionConfig(DEBUG_MSG);
       } else if( strcmp(parameter, "tracks") == 0 ) {
@@ -318,6 +321,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  mixer:          print current mixer map\n");
   out("  song:           print current song info\n");
   out("  grooves:        print groove templates\n");
+  out("  bookmarks:      print bookmarks\n");
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -397,6 +401,21 @@ s32 SEQ_TERMINAL_PrintGlobalConfig(void *_output_function)
   out("Global Configuration:\n");
   out("=====================\n");
   SEQ_FILE_GC_Debug();
+
+  out("done.\n");
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  MUTEX_MIDIOUT_TAKE;
+  out("Bookmarks:\n");
+  out("=========\n");
+  SEQ_FILE_BM_Debug();
 
   out("done.\n");
   MUTEX_MIDIOUT_GIVE;
