@@ -30,14 +30,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_FILE_BM_Init(u32 mode);
-extern s32 SEQ_FILE_BM_Load(void);
-extern s32 SEQ_FILE_BM_Unload(void);
+extern s32 SEQ_FILE_BM_Load(char *session, u8 global);
+extern s32 SEQ_FILE_BM_Unload(u8 global);
 
-extern s32 SEQ_FILE_BM_Valid(void);
+extern s32 SEQ_FILE_BM_Valid(u8 global);
 
-extern s32 SEQ_FILE_BM_Read(void);
-extern s32 SEQ_FILE_BM_Write(void);
-extern s32 SEQ_FILE_BM_Debug(void);
+extern s32 SEQ_FILE_BM_Read(char *session, u8 global);
+extern s32 SEQ_FILE_BM_Write(char *session, u8 global);
+extern s32 SEQ_FILE_BM_Debug(u8 global);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -425,11 +425,22 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.track_morph = din_value;
 	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_button.track_transpose = din_value;
+	  } else if( strncmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
+	    parameter += 15;
+
+	    s32 bookmark = get_dec(parameter);
+	    if( bookmark < 1 || bookmark > SEQ_HWCFG_NUM_DIRECT_BOOKMARK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_DIRECT_BOOKMARK%s definition: invalid track number '%s'!", parameter, parameter);
+#endif
+	      continue;
+	    }
+	    seq_hwcfg_button.direct_bookmark[bookmark-1] = din_value;
 	  } else if( strncmp(parameter, "DIRECT_TRACK", 12) == 0 ) {
 	    parameter += 12;
 
 	    s32 track = get_dec(parameter);
-	    if( track < 1 || track > 16 ) {
+	    if( track < 1 || track > SEQ_HWCFG_NUM_DIRECT_TRACK ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_DIRECT_TRACK%s definition: invalid track number '%s'!", parameter, parameter);
 #endif

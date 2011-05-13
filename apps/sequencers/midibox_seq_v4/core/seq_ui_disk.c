@@ -29,6 +29,7 @@
 #include "seq_file_m.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_bm.h"
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
@@ -83,12 +84,13 @@
 #define LIST_ENTRY_WIDTH 9
 
 
-#define SESSION_COPY_TYPE_NUM       5
+#define SESSION_COPY_TYPE_NUM       6
 #define SESSION_COPY_TYPE_PATTERNS  0
 #define SESSION_COPY_TYPE_SONGS     1
 #define SESSION_COPY_TYPE_MIXER     2
 #define SESSION_COPY_TYPE_GROOVES   3
 #define SESSION_COPY_TYPE_CONFIG    4
+#define SESSION_COPY_TYPE_BOOKMARKS 5
 
 static const char session_copy_names[SESSION_COPY_TYPE_NUM][9] = {
   "Patterns",
@@ -96,6 +98,7 @@ static const char session_copy_names[SESSION_COPY_TYPE_NUM][9] = {
   "MixerMap",
   " Grooves",
   " Config ",
+  "Bookmark",
 };
 
 static const int session_copy_max_items[SESSION_COPY_TYPE_NUM] = {
@@ -121,6 +124,7 @@ static s32 DoSessionCopySongs(char *from_session, u16 from_pattern, char *to_ses
 static s32 DoSessionCopyMixerMaps(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
 static s32 DoSessionCopyGrooves(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
 static s32 DoSessionCopyConfig(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
+static s32 DoSessionCopyBookmarks(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -328,6 +332,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		  DoSessionCopyConfig(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
 		else 
 		  DoSessionCopyConfig(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
+		break;
+
+	      case SESSION_COPY_TYPE_BOOKMARKS:
+		if( menu_dialog == DIALOG_S_IMPORT )
+		  DoSessionCopyBookmarks(session_dir, source_pattern_begin, seq_file_session_name, destination_pattern, num_patterns);
+		else 
+		  DoSessionCopyBookmarks(seq_file_session_name, source_pattern_begin, session_dir, destination_pattern, num_patterns);
 		break;
 	      }
 
@@ -2244,6 +2255,13 @@ static s32 DoSessionCopyConfig(char *from_session, u16 from_pattern, char *to_se
     status = SEQ_FILE_C_Write(to_session);
   }
 
+  // load from source session
+  status = SEQ_FILE_BM_Load(from_session, 0);
+  if( status >= 0 ) {
+    // store into destination session
+    status = SEQ_FILE_BM_Write(to_session, 0);
+  }
+
   if( status >= 0 )
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operation", "finished!");
   else {
@@ -2257,6 +2275,51 @@ static s32 DoSessionCopyConfig(char *from_session, u16 from_pattern, char *to_se
 
   // re-open previous config
   status = SEQ_FILE_C_Load(seq_file_session_name);
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return status;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function to copy bookmarks file of a session
+// from_pattern, to_pattern and num_patterns are ignored (only complete copy possible)
+// IMPORTANT: wrap this function with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE!
+// returns 0 on success
+// returns != 0 on errors (dialog page will be changed accordingly)
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionCopyBookmarks(char *from_session, u16 from_pattern, char *to_session, u16 to_pattern, u16 num_patterns)
+{
+  s32 status = 0;
+
+  char msg_l[20];
+  sprintf(msg_l, "%s -> %s", from_session, to_session);
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 65535, "Copy Local Bookmarks", msg_l);
+
+  // load from source session
+  status = SEQ_FILE_BM_Load(from_session, 0);
+  if( status >= 0 ) {
+    // store into destination session
+    status = SEQ_FILE_BM_Write(to_session, 0);
+  }
+
+  if( status >= 0 )
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Copy operation", "finished!");
+  else {
+    SEQ_UI_SDCardErrMsg(2000, status);
+
+    // wait a second...
+    int d;
+    for(d=0; d<1000; ++d)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  // re-open previous bookmarks
+  status = SEQ_FILE_BM_Load(seq_file_session_name, 0);
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
     return status;

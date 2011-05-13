@@ -323,6 +323,8 @@ extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
 
+extern s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

@@ -56,6 +56,7 @@
 #include "seq_file_s.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
+#include "seq_file_bm.h"
 #include "seq_file_gc.h"
 #include "seq_file_hw.h"
 

@@ -79,6 +79,24 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .direct_track[14] = ((( 0   -1)<<3)+    0),
   .direct_track[15] = ((( 0   -1)<<3)+    0),
 
+  //                        SR   ignore    Pin
+  .direct_bookmark[0]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[1]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[2]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[3]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[4]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[5]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[6]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[7]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[8]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[9]  = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[10] = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[11] = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[12] = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[13] = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[14] = ((( 0   -1)<<3)+    0),
+  .direct_bookmark[15] = ((( 0   -1)<<3)+    0),
+
   //                 SR   ignore    Pin
   .par_layer[0] = ((( 3   -1)<<3)+    4),
   .par_layer[1] = ((( 3   -1)<<3)+    5),

@@ -5,6 +5,24 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.0beta41
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Global/Session bookmarks: the first 8 bookmarks are now stored in the root
+     directory, the remaining 8 bookmarks in the session directory
+
+   o hwcfg/wilba/MBSEQ_HW.V4: F1 button now assigned to bookmark page
+
+   o added 16 dedicated bookmark buttons which can be assigned in MBSEQ_HW.V4
+
+   o Manual Trigger Request: now synchronized to next step
+
+   o edit page in drum mode: parameter layer is displayed when parameter
+     select button is pressed
+
+   o added "RATOPC" (restart all tracks on pattern change) option to UTIL->Opt menu
+
+
 MIDIboxSEQ V4.0beta40
 ~~~~~~~~~~~~~~~~~~~~~
 

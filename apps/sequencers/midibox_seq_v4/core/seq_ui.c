@@ -879,6 +879,15 @@ static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 }
 
 
+static s32 SEQ_UI_Button_DirectBookmark(s32 depressed, u32 bookmark_button)
+{
+  if( !depressed )
+    ui_page_before_bookmark = ui_page;
+
+  return SEQ_UI_BOOKMARKS_Button_Handler(bookmark_button, depressed);
+}
+
+
 static s32 SEQ_UI_Button_Select(s32 depressed)
 {
   // double function: -> Bookmark if menu button pressed
@@ -1208,14 +1217,22 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 
   if( par_layer >= 3 ) return -2; // max. 3 parlayer buttons
 
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+
   // in song page: parameter layer buttons are used to select the cursor position
   if( ui_page == SEQ_UI_PAGE_SONG ) {
     ui_selected_item = par_layer;
     return 0;
   }
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+  // drum mode in edit page: print parameter layer as long as button is pressed
+  if( ui_page == SEQ_UI_PAGE_EDIT ) {
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      ui_hold_msg_ctr = depressed ? 0 : ~0; // show value for at least 65 seconds... enough?
+    }
+  }
 
   // holding Layer C button allows to increment/decrement layer with A/B button
   if( par_layer == 2 )
@@ -1305,6 +1322,15 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+
+  // drum mode in edit page: ensure that trigger layer is print again
+  if( ui_page == SEQ_UI_PAGE_EDIT ) {
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      if( !depressed )
+	ui_hold_msg_ctr = 0;
+    }
+  }
 
   // holding Layer C button allows to increment/decrement layer with A/B button
   if( trg_layer == 2 )
@@ -1482,6 +1508,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   for(i=0; i<SEQ_HWCFG_NUM_DIRECT_TRACK; ++i)
     if( pin == seq_hwcfg_button.direct_track[i] )
       return SEQ_UI_Button_DirectTrack(pin_value, i);
+
+  for(i=0; i<SEQ_HWCFG_NUM_DIRECT_BOOKMARK; ++i)
+    if( pin == seq_hwcfg_button.direct_bookmark[i] )
+      return SEQ_UI_Button_DirectBookmark(pin_value, i);
 
   if( pin == seq_hwcfg_button.track_sel )
     return SEQ_UI_Button_TrackSel(pin_value);

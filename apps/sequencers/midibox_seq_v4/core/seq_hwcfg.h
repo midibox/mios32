@@ -28,6 +28,7 @@
 #define SEQ_HWCFG_NUM_DIRECT_TRACK 16
 #define SEQ_HWCFG_NUM_PAR_LAYER     3
 #define SEQ_HWCFG_NUM_TRG_LAYER     3
+#define SEQ_HWCFG_NUM_DIRECT_BOOKMARK 16
 
 // following constants can be safely changed (therefore documented)
 
@@ -67,6 +68,8 @@ typedef struct {
   u8 direct_track[SEQ_HWCFG_NUM_DIRECT_TRACK];
 
   u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
+
+  u8 direct_bookmark[SEQ_HWCFG_NUM_DIRECT_BOOKMARK];
 
   u8 edit;
   u8 mute;
