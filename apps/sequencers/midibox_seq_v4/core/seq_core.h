@@ -34,6 +34,7 @@ typedef union {
   struct {
     u8 SYNCHED_PATTERN_CHANGE:1;
     u8 PASTE_CLR_ALL:1;
+    u8 RATOPC:1;
   };
 } seq_core_options_t;
 
@@ -45,6 +46,7 @@ typedef union {
     u8  FIRST_CLK:1;
     u8  METRONOME:1;
     u8  MANUAL_TRIGGER_STOP_REQ:1;
+    u8  MANUAL_TRIGGER_STEP_REQ:1;
     u8  EXT_RESTART_REQ:1;
     u8  LOOP:1;
     u8  FOLLOW:1;
@@ -53,16 +55,17 @@ typedef union {
 
 
 typedef union {
-  u32 ALL;
+  u16 ALL;
   struct {
-    u8 DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
-    u8 POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
-    u8 BACKWARD:1;    // if set, the track will be played in backward direction
-    u8 FIRST_CLK:1;   // don't increment on the first clock event
-    u8 REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
-    u8 SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
-    u8 SUSTAINED:1;    // sustained note
-    u8 STRETCHED_GL:1; // stretched gatelength
+    u16 DISABLED:1;    // set if no pattern is selected to avoid editing of trigger/layer values
+    u16 POS_RESET:1;   // set by MIDI handler if position of ARP/Transpose track should be reset
+    u16 BACKWARD:1;    // if set, the track will be played in backward direction
+    u16 FIRST_CLK:1;   // don't increment on the first clock event
+    u16 REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
+    u16 SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
+    u16 SUSTAINED:1;    // sustained note
+    u16 STRETCHED_GL:1; // stretched gatelength
+    u16 MANUAL_STEP_REQ:1; // manual_step should be copied to step
   };
 } seq_core_trk_state_t;
 
@@ -78,6 +81,7 @@ typedef struct seq_core_trk_t {
   u16                  bpm_tick_delay;   // delay of current step
   u8                   step_replay_ctr;  // step replay counter
   u8                   step_saved;       // for replay mechanism
+  u8                   manual_step;      // requested step in manual trigger mode
   u8                   step_fwd_ctr;     // step forward counter
   u8                   step_interval_ctr; // step interval counter
   u8                   step_repeat_ctr;  // step repeat counter
@@ -191,6 +195,8 @@ extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
 extern u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value);
 extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
+
+extern s32 SEQ_CORE_ResetTrkPosAll(void);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(void);

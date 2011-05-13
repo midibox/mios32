@@ -352,19 +352,22 @@ char *SEQ_FILE_VolumeLabel(void)
 s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
 {
   s32 status = 0;
+
+  if( including_hw ) {
+    status |= SEQ_FILE_HW_Load();
+
+    // ignore status if global setup file doesn't exist
+    SEQ_FILE_GC_Load();
+  }
+
   status |= SEQ_FILE_B_LoadAllBanks(seq_file_session_name);
   status |= SEQ_FILE_M_LoadAllBanks(seq_file_session_name);
   status |= SEQ_FILE_S_LoadAllBanks(seq_file_session_name);
   status |= SEQ_FILE_G_Load(seq_file_session_name);
-  if( including_hw ) {
-    status |= SEQ_FILE_HW_Load();
-  }
-
-  // ignore status if global setup file doesn't exist
-  SEQ_FILE_GC_Load();
 
   // ignore status if bookmark file doesn't exist
-  SEQ_FILE_BM_Load();
+  SEQ_FILE_BM_Load(seq_file_session_name, 1); // global
+  SEQ_FILE_BM_Load(seq_file_session_name, 0); // session
 
   if( SEQ_FILE_C_Load(seq_file_session_name) >= 0 ) {
     // change mixer map to the one stored in MBSEQ_C.V4
@@ -395,7 +398,8 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   status |= SEQ_FILE_G_Unload();
   status |= SEQ_FILE_C_Unload();
   status |= SEQ_FILE_GC_Unload();
-  status |= SEQ_FILE_BM_Unload();
+  status |= SEQ_FILE_BM_Unload(0);
+  status |= SEQ_FILE_BM_Unload(1);
   status |= SEQ_FILE_HW_Unload();
   return status;
 }
@@ -1077,6 +1081,12 @@ s32 SEQ_FILE_Format(void)
     goto SEQ_FILE_Format_failed;
 
 
+  // create bookmarks
+  seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
+  sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
+  if( (status=SEQ_FILE_BM_Write(seq_file_session_name, 0)) < 0 )
+    goto SEQ_FILE_Format_failed;
+
 SEQ_FILE_Format_failed:
   if( status >= 0 ) {
     // we were successfull
@@ -1227,7 +1237,7 @@ s32 SEQ_FILE_CreateBackup(void)
   // this approach saves some stack - we don't want to allocate more memory by using
   // temporary variables to create src_file and dst_file from an array...
   seq_file_backup_percentage = 0;
-  u8 seq_file_backup_files = SEQ_FILE_B_NUM_BANKS+4; // for percentage display
+  u8 seq_file_backup_files = SEQ_FILE_B_NUM_BANKS+5; // for percentage display
   u8 seq_file_backup_file = 0;
   COPY_FILE_MACRO("MBSEQ_B1.V4");
   COPY_FILE_MACRO("MBSEQ_B2.V4");
@@ -1236,6 +1246,7 @@ s32 SEQ_FILE_CreateBackup(void)
   COPY_FILE_MACRO("MBSEQ_G.V4");
   COPY_FILE_MACRO("MBSEQ_M.V4");
   COPY_FILE_MACRO("MBSEQ_C.V4");
+  COPY_FILE_MACRO("MBSEQ_BM.V4");
   COPY_FILE_MACRO("MBSEQ_S.V4"); // important: should be the last file to notify that backup is complete!
 
   // stop printing the special message

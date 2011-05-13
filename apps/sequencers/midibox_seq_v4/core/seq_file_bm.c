@@ -70,7 +70,9 @@ typedef struct {
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static seq_file_bm_info_t seq_file_bm_info;
+// 0: session
+// 1: global
+static seq_file_bm_info_t seq_file_bm_info[2];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -79,7 +81,8 @@ static seq_file_bm_info_t seq_file_bm_info;
 s32 SEQ_FILE_BM_Init(u32 mode)
 {
   // invalidate file info
-  SEQ_FILE_BM_Unload();
+  SEQ_FILE_BM_Unload(0);
+  SEQ_FILE_BM_Unload(1);
 
   return 0; // no error
 }
@@ -90,10 +93,10 @@ s32 SEQ_FILE_BM_Init(u32 mode)
 // Called from SEQ_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Load(void)
+s32 SEQ_FILE_BM_Load(char *session, u8 global)
 {
   s32 error;
-  error = SEQ_FILE_BM_Read();
+  error = SEQ_FILE_BM_Read(session, global);
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_BM] Tried to open config file, status: %d\n", error);
 #endif
@@ -107,9 +110,9 @@ s32 SEQ_FILE_BM_Load(void)
 // Called from SEQ_FILE_CheckSDCard() when the SD card has been disconnected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Unload(void)
+s32 SEQ_FILE_BM_Unload(u8 global)
 {
-  seq_file_bm_info.valid = 0;
+  seq_file_bm_info[global].valid = 0;
 
   return 0; // no error
 }
@@ -120,9 +123,9 @@ s32 SEQ_FILE_BM_Unload(void)
 // Returns 1 if config file valid
 // Returns 0 if config file not valid
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Valid(void)
+s32 SEQ_FILE_BM_Valid(u8 global)
 {
-  return seq_file_bm_info.valid;
+  return seq_file_bm_info[global].valid;
 }
 
 
@@ -150,16 +153,19 @@ static s32 get_dec(char *word)
 // reads the config file content (again)
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Read(void)
+s32 SEQ_FILE_BM_Read(char *session, u8 global)
 {
   s32 status = 0;
-  seq_file_bm_info_t *info = &seq_file_bm_info;
+  seq_file_bm_info_t *info = &seq_file_bm_info[global];
   seq_file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_BM.V4", SEQ_FILES_PATH);
+  if( global )
+    sprintf(filepath, "%sMBSEQ_BM.V4", SEQ_FILES_PATH);
+  else
+    sprintf(filepath, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_BM] Open config file '%s'\n", filepath);
@@ -351,17 +357,20 @@ s32 SEQ_FILE_BM_Read(void)
 // help function to write data into file or send to debug terminal
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file)
+static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file, u8 global)
 {
   s32 status = 0;
   char line_buffer[200];
 
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
+  u8 from_bookmark = global ? 0 : 8;
+  u8 to_bookmark = global ? 7 : (SEQ_UI_BOOKMARKS_NUM-1);
+
   // write bookmarks
   u8 bookmark;
-  seq_ui_bookmark_t *bm = &seq_ui_bookmarks[0];
-  for(bookmark=0; bookmark<SEQ_UI_BOOKMARKS_NUM; ++bookmark, ++bm) {
+  seq_ui_bookmark_t *bm = &seq_ui_bookmarks[from_bookmark];
+  for(bookmark=from_bookmark; bookmark<=to_bookmark; ++bookmark, ++bm) {
     int i;
 
     sprintf(line_buffer, "####################\n");
@@ -425,12 +434,15 @@ static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file)
 // writes the groove file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Write(void)
+s32 SEQ_FILE_BM_Write(char* session, u8 global)
 {
-  seq_file_bm_info_t *info = &seq_file_bm_info;
+  seq_file_bm_info_t *info = &seq_file_bm_info[global];
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMBSEQ_BM.V4", SEQ_FILES_PATH);
+  if( global )
+    sprintf(filepath, "%sMBSEQ_BM.V4", SEQ_FILES_PATH);
+  else
+    sprintf(filepath, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, session);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_BM] Open config file '%s' for writing\n", filepath);
@@ -447,7 +459,7 @@ s32 SEQ_FILE_BM_Write(void)
   }
 
   // write file
-  status |= SEQ_FILE_BM_Write_Hlp(1);
+  status |= SEQ_FILE_BM_Write_Hlp(1, global);
 
   // close file
   status |= SEQ_FILE_WriteClose();
@@ -467,7 +479,7 @@ s32 SEQ_FILE_BM_Write(void)
 // sends groove data to debug terminal
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_BM_Debug(void)
+s32 SEQ_FILE_BM_Debug(u8 global)
 {
-  return SEQ_FILE_BM_Write_Hlp(0); // send to debug terminal
+  return SEQ_FILE_BM_Write_Hlp(0, global); // send to debug terminal
 }

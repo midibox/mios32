@@ -23,6 +23,7 @@
 
 #include "seq_lcd.h"
 #include "seq_ui.h"
+#include "seq_file.h"
 #include "seq_file_bm.h"
 
 
@@ -79,13 +80,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local button callback function
+// button callback function
+// Also used by SEQ_UI_Button_DirectBookmark
 // Should return:
 //   1 if value has been changed
 //   0 if value hasn't been changed
 //  -1 if invalid or unsupported button
 /////////////////////////////////////////////////////////////////////////////
-static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
+s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed)
 {
 #if 0
   // leads to: comparison is always true due to limited range of data type
@@ -94,10 +96,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
     if( depressed ) {
+      SEQ_UI_UnInstallDelayedActionCallback(Button_StoreRequest);
       if( store_state == 1 ) { // depressed within 1 second: select bookmark
 	SEQ_UI_Bookmark_Restore(last_bookmark);
-      } else {
-	SEQ_UI_UnInstallDelayedActionCallback(Button_StoreRequest);
       }
       return 0;
     }
@@ -136,11 +137,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //    Press GP Button to recall Bookmark orhold GP Button to store new Bookmark    
+  //             Global Bookmarks                        Session Bookmarks           
   // BM 1 BM 2 BM 3 BM 4 BM 5 BM 6 BM 7 BM 8 BM 9 BM10 BM11 BM12 BM13 BM14 BM15 BM16 
 
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("   Press GP Button to recall Bookmark orhold GP Button to store new Bookmark    ");
+  SEQ_LCD_PrintString("            Global Bookmarks                        Session Bookmarks           ");
 
   SEQ_LCD_CursorSet(0, 1);
   int i, j;
@@ -173,7 +174,7 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_BOOKMARKS_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallButtonCallback(SEQ_UI_BOOKMARKS_Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
@@ -207,7 +208,7 @@ static void Button_StoreRequest(u32 state)
 #endif
     // and store file
     MUTEX_SDCARD_TAKE;
-    s32 error = SEQ_FILE_BM_Write();
+    s32 error = SEQ_FILE_BM_Write(seq_file_session_name, (last_bookmark < 8) ? 1 : 0);
     MUTEX_SDCARD_GIVE;
     if( error < 0 )
       SEQ_UI_SDCardErrMsg(2000, error);

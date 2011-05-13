@@ -413,9 +413,15 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Bookmarks:\n");
-  out("=========\n");
-  SEQ_FILE_BM_Debug();
+  out("Global Bookmarks:\n");
+  out("=================\n");
+  SEQ_FILE_BM_Debug(1);
+
+  out("\n");
+
+  out("Session Bookmarks:\n");
+  out("==================\n");
+  SEQ_FILE_BM_Debug(0);
 
   out("done.\n");
   MUTEX_MIDIOUT_GIVE;

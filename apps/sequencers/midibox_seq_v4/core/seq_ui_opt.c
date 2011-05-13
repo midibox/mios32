@@ -35,15 +35,16 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       10
+#define NUM_OF_ITEMS       9
 #define ITEM_STEPS_MEASURE 0
 #define ITEM_STEPS_PATTERN 1
 #define ITEM_SYNC_CHANGE   2
-#define ITEM_PASTE_CLR_ALL 3
+#define ITEM_RATOPC        3
 #define ITEM_REMOTE_MODE   4
 #define ITEM_REMOTE_ID     5
 #define ITEM_REMOTE_PORT   6
 #define ITEM_REMOTE_REQUEST 7
+#define ITEM_PASTE_CLR_ALL 8
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -64,11 +65,12 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_STEPS_MEASURE:  *gp_leds = 0x0003; break;
     case ITEM_STEPS_PATTERN:  *gp_leds = 0x000c; break;
     case ITEM_SYNC_CHANGE:    *gp_leds = 0x0030; break;
-    case ITEM_PASTE_CLR_ALL:  *gp_leds = 0x00c0; break;
+    case ITEM_RATOPC:         *gp_leds = 0x00c0; break;
     case ITEM_REMOTE_MODE:    *gp_leds = 0x0100; break;
     case ITEM_REMOTE_ID:      *gp_leds = 0x0200; break;
     case ITEM_REMOTE_PORT:    *gp_leds = 0x0400; break;
     case ITEM_REMOTE_REQUEST: *gp_leds = 0x1800; break;
+    case ITEM_PASTE_CLR_ALL:  *gp_leds = 0xc000; break;
   }
 
   return 0; // no error
@@ -103,7 +105,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_PASTE_CLR_ALL;
+      ui_selected_item = ITEM_RATOPC;
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -124,9 +126,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
       
     case SEQ_UI_ENCODER_GP14:
+      return -1; // not mapped
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      return -1; // not mapped
+      ui_selected_item = ITEM_PASTE_CLR_ALL;
+      break;
   }
 
   // for GP encoders and Datawheel
@@ -178,6 +183,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.PASTE_CLR_ALL ^= 1;
+      store_file_required = 1;
+      return 1;
+
+    case ITEM_RATOPC:
+      if( incrementer )
+	seq_core_options.RATOPC = incrementer > 0 ? 1 : 0;
+      else
+	seq_core_options.RATOPC ^= 1;
       store_file_required = 1;
       return 1;
 
@@ -304,13 +317,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  SyncChange Paste/ClrRemote ID Port Request                  
-  //  16 Steps  16 Steps     off      Steps   Auto  00 Def. Connect:yes              
-
+  //  Measure   Pattern  SyncChange   RATOPC Remote ID Port Request         Paste/Clr
+  //  16 Steps  16 Steps     off       off    Auto  00 Def. Connect:yes       Steps  
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange Paste/ClrRemote ID Port Request                  ");
+  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange   RATOPC Remote ID Port Request         Paste/Clr");
   SEQ_LCD_PrintSpaces(18);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -337,13 +349,13 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintSpaces(7);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+  if( ui_selected_item == ITEM_RATOPC && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Track" : "Steps");
+    SEQ_LCD_PrintString(seq_core_options.RATOPC ? " on" : "off");
   }
   SEQ_LCD_PrintSpaces(2);
 
@@ -381,7 +393,16 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString(" Connect:%s", (seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_AUTO) ? "yes" : "no ");
   }
-  SEQ_LCD_PrintSpaces(20);
+  SEQ_LCD_PrintSpaces(8);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Track" : "Steps");
+  }
+  SEQ_LCD_PrintSpaces(2);
+
 
   return 0; // no error
 }

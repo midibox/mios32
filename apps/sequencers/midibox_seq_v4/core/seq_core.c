@@ -431,7 +431,7 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
   bpm_tick_prefetch_req = 0;
   bpm_tick_prefetched_ctr = 0;
 
-  // cancel stop request
+  // cancel stop and set step request
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
 
   // reset reference step
@@ -581,9 +581,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	  u8 skip_ctr = 0;
 	  do {
-	    // determine next step depending on direction mode
-	    if( !t->state.FIRST_CLK )
-	      SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
+	    if( t->state.MANUAL_STEP_REQ ) {
+	      // manual step requested
+	      t->state.MANUAL_STEP_REQ = 0;
+	      t->step = t->manual_step;
+	      t->step_saved = t->manual_step;
+	    } else {
+	      // determine next step depending on direction mode
+	      if( !t->state.FIRST_CLK )
+		SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
+	    }
 	    
 	    // clear "first clock" flag (on following clock ticks we can continue as usual)
 	    t->state.FIRST_CLK = 0;
@@ -1077,6 +1084,20 @@ static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Resets the step position variables of all tracks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_ResetTrkPosAll(void)
+{
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc)
+    SEQ_CORE_ResetTrkPos(track, t, tcc);
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Determine next step depending on direction mode
@@ -1573,17 +1594,23 @@ s32 SEQ_CORE_ManualTrigger(u8 step)
   seq_cc_trk_t *tcc = &seq_cc_trk[0];
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
     if( SEQ_UI_IsSelectedTrack(track) ) {
-      // reset track position
-      SEQ_CORE_ResetTrkPos(track, t, tcc);
+      if( !SEQ_BPM_IsRunning() ) {
+	// reset track position
+	SEQ_CORE_ResetTrkPos(track, t, tcc);
 
-      // change step
-      t->step = step;
-      t->step_saved = t->step;
+	// change step
+	t->step = step;
+	t->step_saved = t->step;
+      } else {
+	// request next step
+	t->manual_step = step;
+	t->state.MANUAL_STEP_REQ = 1;
+      }
     }
   }
 
-  // start sequencer if not running, but only for one step
   if( !SEQ_BPM_IsRunning() ) {
+    // start sequencer if not running, but only for one step
     SEQ_BPM_Cont();
     seq_core_state.MANUAL_TRIGGER_STOP_REQ = 1;
   }
