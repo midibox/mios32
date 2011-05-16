@@ -484,6 +484,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
     // release pause mode
     ui_seq_pause = 0;
+    // TK: this makes sense! Request synch-to-measure for all tracks so that they restart properly
+    SEQ_CORE_ManualSynchToMeasure();
   }
 
   // if no export and no mute:
