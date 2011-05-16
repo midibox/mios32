@@ -5,6 +5,26 @@ Wishlist for future features
 
 -> see bottom of this document
 
+
+MIDIboxSEQ V4.0beta42
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Handling of Start/Stop/Pause button changed for Slave and Auto Mode to allow 
+     proper synchronisation to the measure when multiple sequencers are playing
+     together.
+
+     Whenever a MIDI clock is received:
+     - the STOP button won't stop the sequencer, but just disables the output of
+       all tracks (like a Mute). The step progression continues to run.
+     - the START button won't start the sequencer immediately.
+       Instead MBSEQ will wait for the next measure and then enable track output again.
+     - the PAUSE button will enable/disable track output, but the track progression
+       continues to run.
+
+     In order to notify that track outputs are disabled, the START/STOP/PAUSE
+     LED flashes to the beat.
+
+
 MIDIboxSEQ V4.0beta41
 ~~~~~~~~~~~~~~~~~~~~~
 

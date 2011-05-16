@@ -81,6 +81,7 @@ u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
 
 u16 seq_core_trk_muted;
+seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
 
 u8 seq_core_step_update_req;
 
@@ -128,6 +129,7 @@ s32 SEQ_CORE_Init(u32 mode)
   int i;
 
   seq_core_trk_muted = 0;
+  seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
   seq_core_options.ALL = 0;
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
@@ -257,12 +259,19 @@ s32 SEQ_CORE_Handler(void)
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
+      // release slave mute
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
+
       // release pause mode
       ui_seq_pause = 0;
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
+      // release slave mute
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_SONG_Reset(0);
       SEQ_CORE_Reset(0);
@@ -271,6 +280,9 @@ s32 SEQ_CORE_Handler(void)
 
     u16 new_song_pos;
     if( SEQ_BPM_ChkReqSongPos(&new_song_pos) ) {
+      // release slave mute
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+
       u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
       SEQ_CORE_Reset(new_tick);
       SEQ_SONG_Reset(new_tick);
@@ -464,6 +476,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     synch_to_measure_req = 1;
   }
 
+  // disable slave clock mute if not in slave mode anymore
+  // or start of if measure is reached and OffOnNextMeasure has been requested
+  if( SEQ_BPM_IsMaster() ||
+      (synch_to_measure_req && (seq_core_slaveclk_mute == SEQ_CORE_SLAVECLK_MUTE_OffOnNextMeasure)) ) {
+    // enable ports
+    seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+    // release pause mode
+    ui_seq_pause = 0;
+  }
+
   // if no export and no mute:
   if( export_track == -1 && !mute_nonloopback_tracks ) {
     // send FA if external restart has been requested
@@ -533,7 +555,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       SEQ_LFO_HandleTrk(track, bpm_tick);
 
       // send LFO CC (if enabled)
-      if( !(seq_core_trk_muted & (1 << track)) ) {
+      if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute ) {
 	mios32_midi_package_t p;
 	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
 	  if( loopback_port )
@@ -690,6 +712,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	// Record Mode, new step and FWD_MIDI off
         if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
 	    (seq_core_trk_muted & (1 << track)) || // Track Mute function
+	    seq_core_slaveclk_mute || // Slave Clock Mute Function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
 	    (round && mute_nonloopback_tracks) || // all non-loopback tracks should be muted

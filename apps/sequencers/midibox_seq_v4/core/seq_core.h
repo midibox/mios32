@@ -119,6 +119,11 @@ typedef enum {
   SEQ_CORE_TRKDIR_Random_D_S
 } seq_core_trk_dir_t;
 
+typedef enum {
+  SEQ_CORE_SLAVECLK_MUTE_Off,
+  SEQ_CORE_SLAVECLK_MUTE_Enabled,
+  SEQ_CORE_SLAVECLK_MUTE_OffOnNextMeasure,
+} seq_core_slaveclk_mute_t;
 
 // shared mode parameters (each track holds another value)
 typedef union {
@@ -220,6 +225,7 @@ extern u8 seq_core_steps_per_measure;
 extern u8 seq_core_steps_per_pattern;
 
 extern u16 seq_core_trk_muted;
+extern seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
 
 extern u8 seq_core_step_update_req;
 
