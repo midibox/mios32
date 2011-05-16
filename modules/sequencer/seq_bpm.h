@@ -34,6 +34,12 @@ typedef enum {
   SEQ_BPM_MODE_Slave
 } seq_bpm_mode_t;
 
+typedef enum {
+  SEQ_BPM_RUN_MODE_Off,
+  SEQ_BPM_RUN_MODE_Armed,
+  SEQ_BPM_RUN_MODE_Clocked
+} seq_bpm_run_mode_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -54,6 +60,7 @@ extern u32 SEQ_BPM_TickGet(void);
 extern s32 SEQ_BPM_TickSet(u32 tick);
 
 extern s32 SEQ_BPM_IsRunning(void);
+extern seq_bpm_run_mode_t SEQ_BPM_RunModeGet(void);
 extern s32 SEQ_BPM_IsMaster(void);
 extern s32 SEQ_BPM_CheckAutoMaster(void);
 

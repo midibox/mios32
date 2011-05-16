@@ -68,6 +68,16 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Definitions
+/////////////////////////////////////////////////////////////////////////////
+
+// at which incoming_clk_ctr value do we assume that no incoming slave clock is available?
+// (for auto-master detection)
+// at 1 BPM the measure delay is typically 10000, so add some more ticks for "no clock" detection
+#define SLAVE_CLK_TIMEOUT_DELAY 11000
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -95,7 +105,7 @@ static u8 bpm_req_song_pos;
 static u8 slave_clk;
 
 static u32 bpm_tick;
-static u8  running; // 0: not running, 1: received start event, 2: received first clock after start
+static seq_bpm_run_mode_t run_mode;
 
 static float bpm;
 static u16 ppqn;
@@ -123,7 +133,7 @@ s32 SEQ_BPM_Init(u32 mode)
   bpm_req_song_pos = 0;
 
   bpm_tick = 0;
-  running = 0;
+  run_mode = SEQ_BPM_RUN_MODE_Off;
   new_song_pos = 0;
 
   receive_song_pos_state = 0;
@@ -258,12 +268,23 @@ s32 SEQ_BPM_TickSet(u32 tick)
 /////////////////////////////////////////////////////////////////////////////
 //! BPM generator running?
 //! \return 0 if generator not running
-//! \return 1 if start event has been received
-//! \return 2 if first clock after start has been received and bpm_tick will be incremented
+//! \return 1 if start event or clock has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_IsRunning(void)
 {
-  return running;
+  return run_mode != SEQ_BPM_RUN_MODE_Off;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! BPM generator running?
+//! \return SEQ_BPM_RUN_MODE_Off if generator not running
+//! \return SEQ_BPM_RUN_MODE_Armed if start event has been received
+//! \return SEQ_BPM_RUN_MODE_Clocked if first clock after start has been received and bpm_tick will be incremented
+/////////////////////////////////////////////////////////////////////////////
+seq_bpm_run_mode_t SEQ_BPM_RunModeGet(void)
+{
+  return run_mode;
 }
 
 
@@ -284,8 +305,10 @@ s32 SEQ_BPM_IsMaster(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BPM_CheckAutoMaster(void)
 {
-  // in Auto Slave Mode: check if we are already in master mode - if not, change to it now!
-  if( slave_clk && bpm_mode == SEQ_BPM_MODE_Auto ) {
+  // in Auto Slave Mode: check if we are already in master mode - if not, change it if we haven't received MIDI clocks in the last second!
+  if( slave_clk &&
+      bpm_mode == SEQ_BPM_MODE_Auto &&
+      incoming_clk_ctr >= SLAVE_CLK_TIMEOUT_DELAY ) {
     MIOS32_IRQ_Disable();
     slave_clk = 0;
     SEQ_BPM_TimerInit();
@@ -322,7 +345,7 @@ static s32 SEQ_BPM_TimerInit(void)
 
 static void SEQ_BPM_Timer_Master(void)
 {
-  if( running >= 2 ) {
+  if( run_mode == SEQ_BPM_RUN_MODE_Clocked ) {
     ++bpm_tick;
     ++bpm_req_clk_ctr;
   }
@@ -344,7 +367,7 @@ static void SEQ_BPM_Timer_Slave(void)
       sent_clk_delay = incoming_clk_delay/(ppqn/24);
       ++sent_clk_ctr;
 
-      if( running >= 2 ) {
+      if( run_mode == SEQ_BPM_RUN_MODE_Clocked ) {
 	++bpm_tick;
 	++bpm_req_clk_ctr;
       }
@@ -403,7 +426,7 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       sent_clk_delay = incoming_clk_delay / (ppqn/24);
 
       // how many clocks (still) need to be triggered?
-      if( running >= 2 ) {
+      if( run_mode == SEQ_BPM_RUN_MODE_Clocked ) {
 	int open_requests = (ppqn/24) - sent_clk_ctr;
 	if( open_requests > 0 ) {
 	  bpm_req_clk_ctr += open_requests;
@@ -411,7 +434,7 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 	}
       }
 
-      if( running ) {
+      if( run_mode != SEQ_BPM_RUN_MODE_Off ) {
 	// send clock immediately if sequencer running
 	sent_clk_ctr = 1;
 	++bpm_tick;
@@ -423,8 +446,8 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
       // if first clock after start or continue event: set run state to 2
       // (now we start to send BPM ticks)
-      if( running == 1 )
-	running = 2;
+      if( run_mode == SEQ_BPM_RUN_MODE_Armed )
+	run_mode = SEQ_BPM_RUN_MODE_Clocked;
 
     } else if( midi_byte == 0xfa ) { // MIDI Start event
       // request sequencer start, disable stop request
@@ -439,19 +462,19 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       bpm_tick = 0;
 
       // enter run state 1 (bpm_tick will be incremented once the first F8 event has been received)
-      running = 1;
+      run_mode = SEQ_BPM_RUN_MODE_Armed;
     } else if( midi_byte == 0xfb ) { // MIDI Continue event
       // request continue, disable stop request
       bpm_req_cont = 1;
       bpm_req_stop = 0;
 
       // enter run state 1 (bpm_tick will be incremented once the first F8 event has been received)
-      running = 1;
+      run_mode = SEQ_BPM_RUN_MODE_Armed;
     } else { // MIDI Stop event
       bpm_req_stop = 1;
 
       // enter stop state (bpm_tick won't be incremented)
-      running = 0;
+      run_mode = SEQ_BPM_RUN_MODE_Off;
     }
 
     // enable interrupts again
@@ -512,9 +535,15 @@ s32 SEQ_BPM_Start(void)
 {
   MIOS32_IRQ_Disable();
   bpm_req_start = 1;
-  if( !slave_clk || running == 1 ) { // master mode: start to send events, slave mode: change from 1->2 state
-    running = 2;
+
+#if 0
+  if( !slave_clk || run_mode == SEQ_BPM_RUN_MODE_Armed ) { // master mode: start to send events, slave mode: change to clocked state
+    run_mode = SEQ_BPM_RUN_MODE_Clocked;
   }
+#else
+  run_mode = SEQ_BPM_RUN_MODE_Clocked;
+#endif
+
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -530,9 +559,15 @@ s32 SEQ_BPM_Cont(void)
 {
   MIOS32_IRQ_Disable();
   bpm_req_cont = 1;
-  if( !slave_clk || running == 1 ) { // master mode: start to send events, slave mode: change from 1->2 state
-    running = 2;
+
+#if 0
+  if( !slave_clk || run_mode == SEQ_BPM_RUN_MODE_Armed ) { // master mode: start to send events, slave mode: change to clocked state
+    run_mode = SEQ_BPM_RUN_MODE_Clocked;
   }
+#else
+  run_mode = SEQ_BPM_RUN_MODE_Clocked;
+#endif
+
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -548,7 +583,7 @@ s32 SEQ_BPM_Stop(void)
 {
   MIOS32_IRQ_Disable();
   bpm_req_stop = 1;
-  running = 0;
+  run_mode = SEQ_BPM_RUN_MODE_Off;
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -599,8 +634,8 @@ s32 SEQ_BPM_ChkReqCont(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns the bpm_tick which is related to the clock request
-//! \attention ChkReqClk will return 0 so long Stop/Cont/Start/SongPos haven't been
-//! checked to ensure that clocks won't be propagated so long a position or
+//! \attention ChkReqClk will return 0 as long as Stop/Cont/Start/SongPos haven't been
+//! checked to ensure that clocks won't be propagated as long as a position or
 //! run state change hasn't been flagged to the sequencer. Accordingly, the
 //! sequencer application has to poll all requests as shown in the examples,
 //! otherwise it will never receive a clock
@@ -626,6 +661,7 @@ s32 SEQ_BPM_ChkReqClk(u32 *bpm_tick_ptr)
       *bpm_tick_ptr = bpm_tick - bpm_req_clk_ctr;
       --bpm_req_clk_ctr;
     }
+
     MIOS32_IRQ_Enable();
   }
   return req;
