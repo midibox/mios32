@@ -424,9 +424,22 @@ s32 SEQ_UI_Button_Stop(s32 depressed)
 
   // if sequencer running: stop it
   // if sequencer already stopped: reset song position
-  if( SEQ_BPM_IsRunning() )
-    SEQ_BPM_Stop();
-  else {
+  if( SEQ_BPM_IsRunning() ) {
+#if 0
+    // TK: maybe to complicated to understand: STOP sequencer in slave mode if stop button pressed twice
+    u8 enable_slaveclk_mute = !SEQ_BPM_IsMaster() && seq_core_slaveclk_mute != SEQ_CORE_SLAVECLK_MUTE_Enabled;
+#else
+    // always mute tracks, never stop sequencer (can only be done from external)
+    u8 enable_slaveclk_mute = !SEQ_BPM_IsMaster();
+#endif
+    if( enable_slaveclk_mute ) {
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Enabled;
+    } else {
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+      SEQ_BPM_Stop();
+    }
+  } else {
+    seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
     SEQ_SONG_Reset(0);
     SEQ_CORE_Reset(0);
     SEQ_MIDPLY_Reset();
@@ -439,18 +452,30 @@ static s32 SEQ_UI_Button_Pause(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  // if in auto mode and BPM generator is clocked in slave mode:
+  // if in auto mode and BPM generator is not clocked in slave mode:
   // change to master mode
   SEQ_BPM_CheckAutoMaster();
 
-  // toggle pause mode
+  // toggle pause
   ui_seq_pause ^= 1;
 
   // execute stop/continue depending on new mode
-  if( ui_seq_pause )
-    SEQ_BPM_Stop();
-  else
-    SEQ_BPM_Cont();
+  MIOS32_IRQ_Disable();
+  if( ui_seq_pause ) {
+    if( !SEQ_BPM_IsMaster() ) {
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Enabled;
+    } else {
+      SEQ_BPM_Stop();
+    }
+  } else {
+    if( !SEQ_BPM_IsMaster() ) {
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+    }
+
+    if( !SEQ_BPM_IsRunning() )
+      SEQ_BPM_Cont();
+  }
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
@@ -463,21 +488,29 @@ s32 SEQ_UI_Button_Play(s32 depressed)
   if( seq_ui_button_state.MENU_PRESSED )
     return SEQ_UI_BPM_TapTempo();
 
-  // if in auto mode and BPM generator is clocked in slave mode:
+  // if in auto mode and BPM generator is not clocked in slave mode:
   // change to master mode
   SEQ_BPM_CheckAutoMaster();
 
+  // slave mode and tracks muted: enable on next measure
+  if( !SEQ_BPM_IsMaster() && SEQ_BPM_IsRunning() ) {
+    if( seq_core_slaveclk_mute != SEQ_CORE_SLAVECLK_MUTE_Off )
+      seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_OffOnNextMeasure;
+    // TK: note - in difference to master mode pressing PLAY twice won't reset the sequencer!
+  } else {
 #if 0
-  // if sequencer running: restart it
-  // if sequencer stopped: continue at last song position
-  if( SEQ_BPM_IsRunning() )
-    SEQ_BPM_Start();
-  else
-    SEQ_BPM_Cont();
+    // if sequencer running: restart it
+    // if sequencer stopped: continue at last song position
+    if( SEQ_BPM_IsRunning() )
+      SEQ_BPM_Start();
+    else
+      SEQ_BPM_Cont();
 #else
-  // always restart sequencer
-  SEQ_BPM_Start();
+    // always restart sequencer
+    seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+    SEQ_BPM_Start();
 #endif
+  }
 
   return 0; // no error
 }
@@ -2262,9 +2295,11 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.fast2, seq_ui_button_state.FAST2_ENCODERS);
   SEQ_LED_PinSet(seq_hwcfg_led.all, seq_ui_button_state.CHANGE_ALL_STEPS);
   
-  SEQ_LED_PinSet(seq_hwcfg_led.play, SEQ_BPM_IsRunning());
-  SEQ_LED_PinSet(seq_hwcfg_led.stop, !SEQ_BPM_IsRunning() && !ui_seq_pause);
-  SEQ_LED_PinSet(seq_hwcfg_led.pause, ui_seq_pause);
+  u8 seq_running = SEQ_BPM_IsRunning() && (!seq_core_slaveclk_mute || ((seq_core_state.ref_step & 3) == 0));
+  // note: no bug: we added check for ref_step&3 for flashing the LEDs to give a sign of activity in slave mode with slaveclk_muted
+  SEQ_LED_PinSet(seq_hwcfg_led.play, seq_running);
+  SEQ_LED_PinSet(seq_hwcfg_led.stop, !seq_running && !ui_seq_pause);
+  SEQ_LED_PinSet(seq_hwcfg_led.pause, ui_seq_pause && (!seq_core_slaveclk_mute || ui_cursor_flash));
 
   SEQ_LED_PinSet(seq_hwcfg_led.rew, seq_ui_button_state.REW);
   SEQ_LED_PinSet(seq_hwcfg_led.fwd, seq_ui_button_state.FWD);
@@ -2403,13 +2438,15 @@ s32 SEQ_UI_LED_Handler_Periodic()
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 played_step = seq_core_trk[visible_track].step;
 
-  if( seq_ui_button_state.STEP_VIEW ) {
-    // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
-    if( sequencer_running )
-      pos_marker_mask = 1 << (played_step / (SEQ_TRG_NumStepsGet(visible_track)/16));
-  } else {
-    if( sequencer_running && (played_step >> 4) == ui_selected_step_view )
-      pos_marker_mask = 1 << (played_step & 0xf);
+  if( seq_core_slaveclk_mute != SEQ_CORE_SLAVECLK_MUTE_Enabled ) { // Off and OffOnNextMeasure
+    if( seq_ui_button_state.STEP_VIEW ) {
+      // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
+      if( sequencer_running )
+	pos_marker_mask = 1 << (played_step / (SEQ_TRG_NumStepsGet(visible_track)/16));
+    } else {
+      if( sequencer_running && (played_step >> 4) == ui_selected_step_view )
+	pos_marker_mask = 1 << (played_step & 0xf);
+    }
   }
 
 
