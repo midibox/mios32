@@ -478,14 +478,17 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
   // disable slave clock mute if not in slave mode anymore
   // or start of if measure is reached and OffOnNextMeasure has been requested
-  if( SEQ_BPM_IsMaster() ||
+  u8 is_master = SEQ_BPM_IsMaster();
+  if( is_master ||
       (synch_to_measure_req && (seq_core_slaveclk_mute == SEQ_CORE_SLAVECLK_MUTE_OffOnNextMeasure)) ) {
     // enable ports
     seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
-    // release pause mode
-    ui_seq_pause = 0;
-    // TK: this makes sense! Request synch-to-measure for all tracks so that they restart properly
-    SEQ_CORE_ManualSynchToMeasure();
+    if( !is_master ) {
+      // release pause mode
+      ui_seq_pause = 0;
+      // TK: this makes sense! Request synch-to-measure for all tracks so that they restart properly
+      SEQ_CORE_ManualSynchToMeasure();
+    }
   }
 
   // if no export and no mute:
