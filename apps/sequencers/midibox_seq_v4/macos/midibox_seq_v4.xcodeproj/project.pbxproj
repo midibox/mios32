@@ -170,6 +170,8 @@
 		52EEE7DB0FB227B300524AC0 /* seq_file_hw.c in Sources */ = {isa = PBXBuildFile; fileRef = 52EEE7D90FB227B300524AC0 /* seq_file_hw.c */; };
 		52F3E3D70F0F87A600355951 /* seq_ui_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F3E3D60F0F87A600355951 /* seq_ui_util.c */; };
 		52F714280F1ABB590043546F /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F714270F1ABB590043546F /* printf-stdarg.c */; };
+		52F7756813845D70009B9A20 /* seq_ui_bookmarks.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */; };
+		52F7757313845E39009B9A20 /* seq_file_bm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F7757113845E39009B9A20 /* seq_file_bm.c */; };
 		52F8CD860F197F3A00539304 /* seq_file_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F8CD820F197F3A00539304 /* seq_file_m.c */; };
 		52F8CD870F197F3A00539304 /* seq_mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F8CD830F197F3A00539304 /* seq_mixer.c */; };
 		52F8CD880F197F3A00539304 /* seq_ui_mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F8CD840F197F3A00539304 /* seq_ui_mixer.c */; };
@@ -447,6 +449,9 @@
 		52EEE7DA0FB227B300524AC0 /* seq_file_hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_hw.h; path = ../core/seq_file_hw.h; sourceTree = SOURCE_ROOT; };
 		52F3E3D60F0F87A600355951 /* seq_ui_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_util.c; path = ../core/seq_ui_util.c; sourceTree = SOURCE_ROOT; };
 		52F714270F1ABB590043546F /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "printf-stdarg.c"; path = "../../../../mios32/common/printf-stdarg.c"; sourceTree = SOURCE_ROOT; };
+		52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bookmarks.c; path = ../core/seq_ui_bookmarks.c; sourceTree = SOURCE_ROOT; };
+		52F7757113845E39009B9A20 /* seq_file_bm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_bm.c; path = ../core/seq_file_bm.c; sourceTree = SOURCE_ROOT; };
+		52F7757213845E39009B9A20 /* seq_file_bm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_bm.h; path = ../core/seq_file_bm.h; sourceTree = SOURCE_ROOT; };
 		52F8CD820F197F3A00539304 /* seq_file_m.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_m.c; path = ../core/seq_file_m.c; sourceTree = SOURCE_ROOT; };
 		52F8CD830F197F3A00539304 /* seq_mixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_mixer.c; path = ../core/seq_mixer.c; sourceTree = SOURCE_ROOT; };
 		52F8CD840F197F3A00539304 /* seq_ui_mixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_mixer.c; path = ../core/seq_ui_mixer.c; sourceTree = SOURCE_ROOT; };
@@ -571,6 +576,9 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52F7757113845E39009B9A20 /* seq_file_bm.c */,
+				52F7757213845E39009B9A20 /* seq_file_bm.h */,
+				52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */,
 				527CE3721256B9990097C2BB /* seq_cv.c */,
 				527CE3731256B9990097C2BB /* seq_cv.h */,
 				527CE3741256B9990097C2BB /* seq_lcd_logo.inc */,
@@ -1069,6 +1077,8 @@
 				527CE3761256B9990097C2BB /* seq_cv.c in Sources */,
 				527CE3771256B9990097C2BB /* seq_lcd_logo.inc in Sources */,
 				527CE3781256B9990097C2BB /* seq_ui_cv.c in Sources */,
+				52F7756813845D70009B9A20 /* seq_ui_bookmarks.c in Sources */,
+				52F7757313845E39009B9A20 /* seq_file_bm.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
