@@ -20,8 +20,9 @@
 #include "tasks.h"
 
 #include "seq_midi_osc.h"
+#if !defined(MIOS32_FAMILY_EMULATION)
 #include "osc_server.h"
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
