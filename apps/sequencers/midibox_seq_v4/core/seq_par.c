@@ -31,6 +31,9 @@
 // use SEQ_PAR_Get/Set
 u8 seq_par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_MAX_BYTES];
 
+// could be changed later during runtime for special configurations (e.g. combining four tracks to a single HQ track)
+u16 seq_par_max_hq_bytes;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -74,6 +77,9 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PAR_Init(u32 mode)
 {
+  // could be changed later during runtime for special configurations (e.g. combining four tracks to a single HQ track)
+  seq_par_max_hq_bytes = SEQ_PAR_MAX_BYTES;
+
   // init parameter layer values
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)

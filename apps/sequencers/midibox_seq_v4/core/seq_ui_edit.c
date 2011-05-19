@@ -43,11 +43,18 @@ static u8 show_edit_config_page;
 
 static u16 selected_steps = 0xffff; // will only be initialized once after startup
 
+static u16 hq_ix;
+static u16 hq_pos;
+static u16 hq_timestamp_step;
+static u16 hq_timestamp_tick;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate);
+static s32 HQ_StepUpdate(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -161,6 +168,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     u8 visible_track = SEQ_UI_VisibleTrackGet();
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+    // special handling in HQ mode
+    if( event_mode == SEQ_EVENT_MODE_HQ ) {
+      if( encoder == SEQ_UI_ENCODER_GP9 || encoder == SEQ_UI_ENCODER_Datawheel ) {
+	if( SEQ_UI_Var16_Inc(&hq_pos, 0, seq_par_max_hq_bytes-1, incrementer) >= 1 ) {
+	  HQ_StepUpdate();
+	  return 1;
+	} else
+	  return 0;
+      }
+
+      // TODO
+      return 0;
+    }
 
     if( event_mode != SEQ_EVENT_MODE_Drum &&
 	(seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
@@ -341,6 +362,47 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
+    // special handling in HQ mode
+    if( event_mode == SEQ_EVENT_MODE_HQ ) {
+      switch( button ) {
+      case SEQ_UI_BUTTON_Select:
+	show_edit_config_page = depressed ? 0 : 1;
+	return 1; // value always changed
+
+      case SEQ_UI_BUTTON_Right: {
+	if( depressed ) return 0; // ignore when button depressed
+
+	int next_pos = hq_pos + 1;
+	if( next_pos >= seq_par_max_hq_bytes )
+	  next_pos = 0;
+	hq_pos = next_pos;
+	HQ_StepUpdate();
+	return 1; // value always changed
+      } break;
+
+      case SEQ_UI_BUTTON_Left:
+	if( depressed ) return 0; // ignore when button depressed
+
+	if( hq_pos == 0 )
+	  hq_pos = seq_par_max_hq_bytes-1;
+	else
+	  --hq_pos;
+	HQ_StepUpdate();
+	return 1; // value always changed
+
+      case SEQ_UI_BUTTON_Up:
+	if( depressed ) return 0; // ignore when button depressed
+	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, 1);
+
+      case SEQ_UI_BUTTON_Down:
+	if( depressed ) return 0; // ignore when button depressed
+	return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
+      }
+
+      // TODO
+      return 0;
+    }
+
     if( event_mode != SEQ_EVENT_MODE_Drum &&
 	(seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
 
@@ -498,6 +560,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // G1T1 xxxxxxxxxxxxxxx  PA:Vel.   TA:Gate Step  1   G#1_ Vel:127_Len: 75%    xxxxx
   // ....
 
+  // layout HQ track:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // G1T1 xxxxxxxxxxxxxxx  PA:HQ     TA:Gate Pos. Timestamp  Event              xxxxx
+  //                                           1    001.00   G#1_  Vel:127  Len:  96 
+
   // layout edit config
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // Step Trg  Layer 303                     Step                                    
@@ -547,7 +615,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
 
-  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
+  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum && event_mode != SEQ_EVENT_MODE_HQ &&
       (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
     // we want to show vertical bars
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
@@ -594,7 +662,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     return 0;
   }
 
-  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
+  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum && event_mode != SEQ_EVENT_MODE_HQ &&
       (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
 
     // we want to show vertical bars
@@ -743,7 +811,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
   SEQ_LCD_PrintChar(':');
 
-  if( layer_type == SEQ_PAR_Type_CC ) {
+  if( event_mode == SEQ_EVENT_MODE_HQ ) {
+    SEQ_LCD_PrintString("HQ     ");
+  } else if( layer_type == SEQ_PAR_Type_CC ) {
     SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
   } else {
     SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
@@ -756,43 +826,48 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(40, 0);
 
-  SEQ_LCD_PrintFormattedString("Step%3d ", ui_selected_step+1);
-
-  if( layer_event.midi_package.event == CC ) {
-    mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-    u8 loopback = port == 0xf0;
-
-    if( loopback )
-      SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
-    else
-      SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
-    SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
-    SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
+  if( event_mode == SEQ_EVENT_MODE_HQ ) {
+    SEQ_LCD_PrintString("Pos.  Timestamp Event          ");
   } else {
-    SEQ_LCD_PrintSpaces(2);
+    SEQ_LCD_PrintFormattedString("Step%3d ", ui_selected_step+1);
 
-    if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
-      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
-	SEQ_LCD_PrintArp(layer_event.midi_package.note);
-      } else if( layer_type == SEQ_PAR_Type_Chord ) {
-	u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
-	u8 chord_ix = par_value & 0x1f;
-	u8 chord_oct = par_value >> 5;
-	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
-	SEQ_LCD_PrintFormattedString("/%d", chord_oct);
-      } else {
-	SEQ_LCD_PrintNote(layer_event.midi_package.note);
+    if( layer_event.midi_package.event == CC ) {
+      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+      u8 loopback = port == 0xf0;
+
+      if( loopback )
+	SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
+      else
+	SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+      SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
+      SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
+    } else {
+      SEQ_LCD_PrintSpaces(2);
+
+      if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
+	if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
+	  SEQ_LCD_PrintArp(layer_event.midi_package.note);
+	} else if( layer_type == SEQ_PAR_Type_Chord ) {
+	  u8 par_value = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+	  u8 chord_ix = par_value & 0x1f;
+	  u8 chord_oct = par_value >> 5;
+	  SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
+	  SEQ_LCD_PrintFormattedString("/%d", chord_oct);
+	} else {
+	  SEQ_LCD_PrintNote(layer_event.midi_package.note);
+	}
+	SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
       }
-      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+      else {
+	SEQ_LCD_PrintString("....");
+      }
+      SEQ_LCD_PrintFormattedString(" Vel:%3d", layer_event.midi_package.velocity);
     }
-    else {
-      SEQ_LCD_PrintString("....");
-    }
-    SEQ_LCD_PrintFormattedString(" Vel:%3d", layer_event.midi_package.velocity);
+
+    SEQ_LCD_PrintString(" Len:");
+    SEQ_LCD_PrintGatelength(layer_event.len);
   }
 
-  SEQ_LCD_PrintString(" Len:");
-  SEQ_LCD_PrintGatelength(layer_event.len);
 
   // print flashing *LOOPED* at right corner if loop mode activated to remind that steps will be played differntly
   if( (ui_cursor_flash_overrun_ctr & 1) && seq_core_state.LOOP ) {
@@ -807,6 +882,125 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       SEQ_LCD_PrintTrackCategory(visible_track, (char *)seq_core_trk[visible_track].name);
     }
   }
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Second Line
+  ///////////////////////////////////////////////////////////////////////////
+
+  if( event_mode == SEQ_EVENT_MODE_HQ ) {
+    // we want to show vertical bars
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+
+    // initial cursor position
+    SEQ_LCD_CursorSet(0, 1);
+
+    SEQ_LCD_PrintSpaces(40); // currently empty
+
+    SEQ_LCD_PrintFormattedString("%3d    %03d.%02d   ",
+				 hq_pos+1,
+				 hq_timestamp_step+1,
+				 hq_timestamp_tick+1);
+
+    if( hq_ix == 0xffff ) {
+      SEQ_LCD_PrintString("----  -------   ------- ");
+    } else {
+      u8 *layer_ptr = (u8 *)&seq_par_layer_value[visible_track][hq_ix];
+      u8 b0 = *layer_ptr++;
+      u8 b1 = *layer_ptr++;
+      mios32_midi_event_t event_type = b0 >> 4;
+
+      switch( event_type ) {
+      case NoteOff:
+      case NoteOn: {
+	u8 note = b1;
+	u8 velocity = *layer_ptr++;
+	u8 l0 = *layer_ptr++;
+	u8 l1 = *layer_ptr++;
+	u16 length = l0 | ((u16)l1 << 8);
+
+	if( note && velocity && length > 0 ) {
+	  if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
+	    SEQ_LCD_PrintArp(note);
+	  } else {
+	    SEQ_LCD_PrintNote(note);
+	  }
+	  SEQ_LCD_PrintVBar(velocity >> 4);
+	}
+	else {
+	  SEQ_LCD_PrintString("....");
+	}
+	SEQ_LCD_PrintFormattedString("  Vel:%3d", velocity);
+	
+	SEQ_LCD_PrintFormattedString("  Len:%4d ", length);
+      } break;
+	
+      case PolyPressure: {
+	u8 note = b1;
+	u8 value = *layer_ptr++;
+
+	SEQ_LCD_PrintFormattedString("A.Touch: ");
+	SEQ_LCD_PrintNote(note);
+
+	SEQ_LCD_PrintFormattedString("    Val:%3d", value);
+	SEQ_LCD_PrintVBar(value >> 4);
+      } break;
+
+      case CC: {
+	u8 cc_number = b1;
+	u8 value = *layer_ptr++;
+	mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+	u8 loopback = port == 0xf0;
+
+	if( loopback )
+	  SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, cc_number));
+	else
+	  SEQ_LCD_PrintFormattedString("CC#%3d", cc_number);
+	SEQ_LCD_PrintFormattedString("  %3d ", value);
+	SEQ_LCD_PrintVBar(value >> 4);
+	
+	SEQ_LCD_PrintSpaces(11);
+      } break;
+	
+      case PitchBend: {
+	u8 lsb = b1;
+	u8 msb = *layer_ptr++;
+	u16 pitch = (msb << 7) | lsb;
+
+	SEQ_LCD_PrintFormattedString("Pitch: %5d", pitch);
+	SEQ_LCD_PrintVBar(msb >> 4);
+	
+	SEQ_LCD_PrintSpaces(11);
+	SEQ_LCD_PrintChar('x');
+      } break;
+	
+      case ProgramChange: {
+	u8 pc = b1;
+
+	SEQ_LCD_PrintFormattedString("P.Chng: %3d", pc);
+	SEQ_LCD_PrintVBar(pc >> 4);
+
+	SEQ_LCD_PrintSpaces(12);
+      } break;
+
+      case Aftertouch: {
+	u8 value = b1;
+
+	SEQ_LCD_PrintFormattedString("A.Touch: %3d", value);
+	SEQ_LCD_PrintVBar(value >> 4);
+
+	SEQ_LCD_PrintSpaces(11);
+      } break;
+
+      default: { // 2 bytes, e.g. MIDI clock? ;)
+	SEQ_LCD_PrintFormattedString("0x%02x 0x%02x", b0, b1);
+	SEQ_LCD_PrintSpaces(15);
+      }
+      }
+    }
+
+    return 0; // no error
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -946,6 +1140,8 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL )
     seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 
+  HQ_StepUpdate();
+
   return 0; // no error
 }
 
@@ -1031,4 +1227,69 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   }
 
   return new_value;
+}
+
+
+static s32 HQ_StepUpdate(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  hq_ix = 0;
+
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  if( event_mode != SEQ_EVENT_MODE_HQ )
+    return -1;
+
+  u8 *layer_ptr = (u8 *)&seq_par_layer_value[visible_track];
+  int pos = 0;
+  u16 tick = 0;
+  while( hq_pos > pos || (layer_ptr[1] & 0x80) ) {
+    // get first bytes
+    u8 b0 = *layer_ptr++;
+    u8 b1 = *layer_ptr++;
+    hq_ix += 2;
+
+    // check for end marker
+    if( hq_ix >= seq_par_max_hq_bytes || (b0 == 0xff && b1 == 0xff) ) {
+      hq_ix = 0xffff;
+      return 0;
+    } else if( b1 & 0x80 ) { // delay marker?
+      tick += b0 | ((b1 & 0x7f) << 8);
+    } else {
+      // we got a MIDI event
+      mios32_midi_event_t event_type = b0 >> 4;
+      switch( event_type ) {
+      case NoteOff:
+      case NoteOn: {
+	layer_ptr += 3;
+	hq_ix += 3;
+	++pos;
+      } break;
+
+      case PolyPressure:
+      case CC:
+      case PitchBend: {
+	layer_ptr += 1;
+	hq_ix += 1;
+	++pos;
+      } break;
+
+      case ProgramChange:
+      case Aftertouch: {
+	++pos;
+      } break;
+      default: { // 2 byte in b0/b1, e.g. for MIDI clock? ;)
+	++pos;
+      }
+      }
+    }
+  }
+
+  seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+  u16 step_length = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+
+  hq_timestamp_step = tick / step_length;
+  hq_timestamp_tick = tick % step_length;
+
+  return 0;
 }
