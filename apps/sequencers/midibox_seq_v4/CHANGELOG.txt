@@ -9,6 +9,20 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta42
 ~~~~~~~~~~~~~~~~~~~~~
 
+   o Started HQ Track Mode
+     It's intended for high-resolution MIDI Event recording of any kind w/o step
+     quantisation.
+     It's especially useful for CC/Pitchbender sweeps and multiple notes played 
+     at any length and velocity per "step".
+
+     Disadvantage: the editing capabilities are very limited! This mode is mainly
+     intended for live recordings or MIDI file imports.
+
+     But all track processing features are working, such as Step Progression,
+     Randomization, Humanizer, Transpose, Force-to-Scale, MIDI Echo, etc etc!
+
+     to be continued...
+
    o Handling of Start/Stop/Pause button changed for Slave and Auto Mode to allow 
      proper synchronisation to the measure when multiple sequencers are playing
      together.

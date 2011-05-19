@@ -586,74 +586,78 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       // MEMO: we could also provide the option to synch to another track
       if( synch_to_measure_req && (tcc->clkdiv.SYNCH_TO_MEASURE || t->state.SYNC_MEASURE) )
         SEQ_CORE_ResetTrkPos(track, t, tcc);
-  
+
       u8 skip_this_step = 0;
-      if( t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step ) {
-	// calculate step length
-	u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
-        t->step_length = step_length_pre;
+      u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
+      u8 hq_event = tcc->event_mode == SEQ_EVENT_MODE_HQ && bpm_tick >= t->hq_next_timestamp;
+      if( next_step_event || hq_event ) {
 
-	// set timestamp of next step w/o groove delay (reference timestamp)
-	if( t->state.FIRST_CLK )
-	  t->timestamp_next_step_ref = bpm_tick + t->step_length;
-	else
-	  t->timestamp_next_step_ref += t->step_length;
+	if( next_step_event ) {
+	  // calculate step length
+	  u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+	  t->step_length = step_length_pre;
 
-        // increment step if not in arpeggiator mode or arp position == 0
-        if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
-	  // wrap step position around length - especially required for "section selection" later,
-	  // which can set t->step beyond tcc->length+1
-	  u8 prev_step = (u8)((int)t->step % ((int)tcc->length + 1));
-	  t->step = prev_step; // store back wrapped step position
+	  // set timestamp of next step w/o groove delay (reference timestamp)
+	  if( t->state.FIRST_CLK )
+	    t->timestamp_next_step_ref = bpm_tick + t->step_length;
+	  else
+	    t->timestamp_next_step_ref += t->step_length;
 
-	  u8 skip_ctr = 0;
-	  do {
-	    if( t->state.MANUAL_STEP_REQ ) {
-	      // manual step requested
-	      t->state.MANUAL_STEP_REQ = 0;
-	      t->step = t->manual_step;
-	      t->step_saved = t->manual_step;
-	    } else {
-	      // determine next step depending on direction mode
-	      if( !t->state.FIRST_CLK )
-		SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
-	    }
+	  // increment step if not in arpeggiator mode or arp position == 0
+	  if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
+	    // wrap step position around length - especially required for "section selection" later,
+	    // which can set t->step beyond tcc->length+1
+	    u8 prev_step = (u8)((int)t->step % ((int)tcc->length + 1));
+	    t->step = prev_step; // store back wrapped step position
+
+	    u8 skip_ctr = 0;
+	    do {
+	      if( t->state.MANUAL_STEP_REQ ) {
+		// manual step requested
+		t->state.MANUAL_STEP_REQ = 0;
+		t->step = t->manual_step;
+		t->step_saved = t->manual_step;
+	      } else {
+		// determine next step depending on direction mode
+		if( !t->state.FIRST_CLK )
+		  SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
+	      }
 	    
-	    // clear "first clock" flag (on following clock ticks we can continue as usual)
-	    t->state.FIRST_CLK = 0;
+	      // clear "first clock" flag (on following clock ticks we can continue as usual)
+	      t->state.FIRST_CLK = 0;
   
-	    // if skip flag set for this flag: try again
-	    if( SEQ_TRG_SkipGet(track, t->step, 0) )
-	      ++skip_ctr;
-	    else
-	      break;
-	    
-	  } while( skip_ctr < 32 ); // try 32 times maximum
+	      // if skip flag set for this flag: try again
+	      if( SEQ_TRG_SkipGet(track, t->step, 0) )
+		++skip_ctr;
+	      else
+		break;
 
-	  // Section selection
-	  // Approach:
-	  // o enabled with t->play_section > 0
-	  // o section width matches with the Track length, which means that the sequencer will
-	  //   play steps beyond the "last step" with t->play_section > 0
-	  // o section controlled via UI, MIDI Keyboard or BLM
-	  // o lower priority than global loop mode
-	  if( t->play_section > 0 ) {
-	    // note: SEQ_TRG_Get() will return 0 if t->step beyond total track size - no need to consider this here
-	    int step_offset = t->play_section * ((int)tcc->length+1);
-	    t->step += step_offset;
-	  }
+	    } while( skip_ctr < 32 ); // try 32 times maximum
 
-	  // global loop mode handling
-	  // requirements:
-	  // o loop all or only select tracks
-	  // o allow to loop the step view (16 step window) or a definable number of steps
-	  // o wrap step position properly when loop mode is activated so that this
-	  //   doesn't "dirsturb" the sequence output (ensure that the track doesn't get out of sync)
-	  if( seq_core_state.LOOP ) {
-	    u8 loop_active = 0;
-	    int step_offset = 0;
+	    // Section selection
+	    // Approach:
+	    // o enabled with t->play_section > 0
+	    // o section width matches with the Track length, which means that the sequencer will
+	    //   play steps beyond the "last step" with t->play_section > 0
+	    // o section controlled via UI, MIDI Keyboard or BLM
+	    // o lower priority than global loop mode
+	    if( t->play_section > 0 ) {
+	      // note: SEQ_TRG_Get() will return 0 if t->step beyond total track size - no need to consider this here
+	      int step_offset = t->play_section * ((int)tcc->length+1);
+	      t->step += step_offset;
+	    }
 
-	    switch( seq_core_glb_loop_mode ) {
+	    // global loop mode handling
+	    // requirements:
+	    // o loop all or only select tracks
+	    // o allow to loop the step view (16 step window) or a definable number of steps
+	    // o wrap step position properly when loop mode is activated so that this
+	    //   doesn't "dirsturb" the sequence output (ensure that the track doesn't get out of sync)
+	    if( seq_core_state.LOOP ) {
+	      u8 loop_active = 0;
+	      int step_offset = 0;
+
+	      switch( seq_core_glb_loop_mode ) {
 	      case SEQ_CORE_LOOP_MODE_ALL_TRACKS_STATIC:
 		loop_active = 1;
 		break;
@@ -673,41 +677,42 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		step_offset = 16 * ui_selected_step_view;
 		break;
+	      }
+
+	      if( loop_active ) {
+		// wrap step position within given boundaries if required
+		step_offset += seq_core_glb_loop_offset;
+		step_offset %= ((int)tcc->length+1);
+
+		int loop_steps = seq_core_glb_loop_steps + 1;
+		int max_steps = (int)tcc->length + 1;
+		if( loop_steps > max_steps )
+		  loop_steps = max_steps;
+
+		int new_step = (int)t->step;
+		new_step = step_offset + ((new_step-step_offset) % loop_steps);
+
+		if( new_step > tcc->length )
+		  new_step = step_offset;
+		t->step = new_step;
+	      }
 	    }
 
-	    if( loop_active ) {
-	      // wrap step position within given boundaries if required
-	      step_offset += seq_core_glb_loop_offset;
-	      step_offset %= ((int)tcc->length+1);
-
-	      int loop_steps = seq_core_glb_loop_steps + 1;
-	      int max_steps = (int)tcc->length + 1;
-	      if( loop_steps > max_steps )
-		loop_steps = max_steps;
-
-	      int new_step = (int)t->step;
-	      new_step = step_offset + ((new_step-step_offset) % loop_steps);
-
-	      if( new_step > tcc->length )
-		new_step = step_offset;
-	      t->step = new_step;
-	    }
-	  }
-
-	  // calculate number of cycles to next step
+	    // calculate number of cycles to next step
 #if 0
-	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
+	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
 #else
-	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
+	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	  skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
-	  // forward new step to recording function (only used in live recording mode)
-	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
+	    skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	    // forward new step to recording function (only used in live recording mode)
+	    SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 
-	  // inform UI about a new step (UI will clear this variable)
-	  seq_core_step_update_req = 1;
-        }
+	    // inform UI about a new step (UI will clear this variable)
+	    seq_core_step_update_req = 1;
+	  }
+	}
 
         // solo function: don't play MIDI event if track not selected
         // mute function
@@ -741,7 +746,12 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	  continue;
 	}
-  
+
+	// HQ: reset pointer if first step reached (again)
+	if( next_step_event && t->step == 0 ) {
+	  t->hq_ix = 0;
+	  t->hq_next_timestamp = 0; // now
+	}
   
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
@@ -762,8 +772,22 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	memcpy(last_glide_notes, t->glide_notes, 4*4);
 
         seq_layer_evnt_t layer_events[16];
-        s32 number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
-        if( number_of_events > 0 ) {
+        s32 number_of_events = 0;
+
+	if( tcc->event_mode == SEQ_EVENT_MODE_HQ ) {
+	  if( t->hq_next_timestamp <= bpm_tick ) {
+	    u16 next_delay;
+	    number_of_events = SEQ_LAYER_GetEventsHQ(track, &t->hq_ix, layer_events, &next_delay);
+	    if( next_delay < 0xffff )
+	      t->hq_next_timestamp = bpm_tick + next_delay;
+	    else
+	      t->hq_next_timestamp = 0xffffffff; // end of list reached
+	  }
+	} else {
+	  number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
+	}
+
+	if( number_of_events > 0 ) {
 	  int i;
 
 	  //////////////////////////////////////////////////////////////////////////////////////////
@@ -1089,6 +1113,10 @@ static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
   t->step_interval_ctr = 0;
   t->step_repeat_ctr = 0;
   t->step_skip_ctr = 0;
+
+  // reset HQ mode settings
+  t->hq_ix = 0;
+  t->hq_next_timestamp = 0;
 
   // next part depends on forward/backward direction
   if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
