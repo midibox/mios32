@@ -68,7 +68,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       ui_selected_tracks = (1 << (u8)encoder);
       multi_sel = 1; // start multi-selection
     }
+
     ui_selected_group = (u8)encoder / 4;
+
+    // if no track selected in current group anymore, search another (valid) group
+    if( (ui_selected_tracks >> (4*ui_selected_group)) == 0 ) {
+      u8 group;
+      for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+	if( ((ui_selected_tracks >> (4*group) & 0xf)) != 0 ) {
+	  ui_selected_group = group;
+	  break;
+	}
+      }
+    }
 
     return 1; // value changed
   }
