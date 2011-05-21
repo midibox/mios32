@@ -2659,7 +2659,7 @@ s32 SEQ_UI_MENU_Handler_Periodic()
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_CheckSelections(void)
 {
-  if( (ui_selected_tracks >> (4*ui_selected_group)) == 0 )
+  if( ((ui_selected_tracks >> (4*ui_selected_group)) & 0xf) == 0 )
     ui_selected_tracks = 1 << (4*ui_selected_group);
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
