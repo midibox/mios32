@@ -116,6 +116,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Defines
+/////////////////////////////////////////////////////////////////////////////
+#define CCR_ENABLE              ((uint32_t)0x00000001)
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -995,44 +1002,58 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   spi_callback[spi] = callback;
 
   // configure Rx channel
-  DMA_Cmd(dma_rx_ptr, DISABLE);
+  // TK: optimization method: read rx_CCR once, write back only when required
+  // the channel must be disabled to configure new values
+  u32 rx_CCR = dma_rx_ptr->CCR & ~CCR_ENABLE;
+  dma_rx_ptr->CCR = rx_CCR;
   if( receive_buffer != NULL ) {
     // enable memory addr. increment - bytes written into receive buffer
     dma_rx_ptr->CMAR = (u32)receive_buffer;
-    dma_rx_ptr->CCR |= DMA_MemoryInc_Enable;
+    rx_CCR |= DMA_MemoryInc_Enable;
   } else {
     // disable memory addr. increment - bytes written into dummy buffer
     rx_dummy_byte = 0xff;
     dma_rx_ptr->CMAR = (u32)&rx_dummy_byte;
-    dma_rx_ptr->CCR &= ~DMA_MemoryInc_Enable;
+    rx_CCR &= ~DMA_MemoryInc_Enable;
   }
   dma_rx_ptr->CNDTR = len;
-  DMA_Cmd(dma_rx_ptr, ENABLE);
+  rx_CCR |= CCR_ENABLE;
 
 
   // configure Tx channel
-  DMA_Cmd(dma_tx_ptr, DISABLE);
+  // TK: optimization method: read tx_CCR once, write back only when required
+  // the channel must be disabled to configure new values
+  u32 tx_CCR = dma_tx_ptr->CCR & ~CCR_ENABLE;
+  dma_tx_ptr->CCR = tx_CCR;
   if( send_buffer != NULL ) {
     // enable memory addr. increment - bytes read from send buffer
     dma_tx_ptr->CMAR = (u32)send_buffer;
-    dma_tx_ptr->CCR |= DMA_MemoryInc_Enable;
+    tx_CCR |= DMA_MemoryInc_Enable;
   } else {
     // disable memory addr. increment - bytes read from dummy buffer
     tx_dummy_byte = 0xff;
     dma_tx_ptr->CMAR = (u32)&tx_dummy_byte;
-    dma_tx_ptr->CCR &= ~DMA_MemoryInc_Enable;
+    tx_CCR &= ~DMA_MemoryInc_Enable;
   }
   dma_tx_ptr->CNDTR = len;
 
   // enable DMA interrupt if callback function active
-  DMA_ITConfig(dma_rx_ptr, DMA_IT_TC, (callback != NULL) ? ENABLE : DISABLE);
+  if( callback != NULL ) {
+    rx_CCR |= DMA_IT_TC;
+    dma_rx_ptr->CCR = rx_CCR;
 
-  // start DMA transfer
-  DMA_Cmd(dma_tx_ptr, ENABLE);
+    // start DMA transfer
+    dma_tx_ptr->CCR = tx_CCR | CCR_ENABLE;
+  } else {
+    rx_CCR &= ~DMA_IT_TC;
+    dma_rx_ptr->CCR = rx_CCR;
 
-  // if no callback: wait until all bytes have been transmitted/received
-  if( callback == NULL )
+    // start DMA transfer
+    dma_tx_ptr->CCR = tx_CCR | CCR_ENABLE;
+
+    // if no callback: wait until all bytes have been transmitted/received
     while( dma_rx_ptr->CNDTR );
+  }
 
   return 0; // no error;
 }
