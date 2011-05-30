@@ -1,11 +1,10 @@
 // $Id$
 /*
- * MIOS32 Tutorial #001: Forwarding MIDI
  * see README.txt for details
  *
  * ==========================================================================
  *
- *  Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
