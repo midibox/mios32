@@ -246,32 +246,29 @@ void APP_SRIO_ServiceFinish(void)
   // check DINs
   int mod;
   for(mod=0; mod<NUM_MATRICES; ++mod) {
-    u8 sr_ix;
-    for(sr_ix=0; sr_ix<2; ++sr_ix) {
-      int sr0 = din_map[mod+2*sr_ix + 0];
-      int sr1 = din_map[mod+2*sr_ix + 1];
+    int sr0 = din_map[2*mod+0];
+    int sr1 = din_map[2*mod+1];
 
-      u16 sr_value = 0;
-      if( sr0 ) {
-	MIOS32_DIN_SRChangedGetAndClear(sr0-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-	sr_value |= (MIOS32_DIN_SRGet(sr0-1) << 0);
-      }
+    u16 sr_value = 0;
+    if( sr0 ) {
+      MIOS32_DIN_SRChangedGetAndClear(sr0-1, 0xff); // ensure that change won't be propagated to normal DIN handler
+      sr_value |= (MIOS32_DIN_SRGet(sr0-1) << 0);
+    }
 
-      if( sr1 ) {
-	MIOS32_DIN_SRChangedGetAndClear(sr1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-	sr_value |= (MIOS32_DIN_SRGet(sr1-1) << 8);
-      }
+    if( sr1 ) {
+      MIOS32_DIN_SRChangedGetAndClear(sr1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
+      sr_value |= (MIOS32_DIN_SRGet(sr1-1) << 8);
+    }
 
-      // determine pin changes
-      u16 changed = sr_value ^ matrix16x16_button_row_values[mod][selected_row];
-
-      if( changed ) {
-	// add them to existing notifications
-	matrix16x16_button_row_changed[mod][selected_row] |= changed;
-
-	// store new value
-	matrix16x16_button_row_values[mod][selected_row] = sr_value;
-      }
+    // determine pin changes
+    u16 changed = sr_value ^ matrix16x16_button_row_values[mod][selected_row];
+    
+    if( changed ) {
+      // add them to existing notifications
+      matrix16x16_button_row_changed[mod][selected_row] |= changed;
+      
+      // store new value
+      matrix16x16_button_row_values[mod][selected_row] = sr_value;
     }
   }
 }
