@@ -183,7 +183,7 @@ void APP_SRIO_ServicePrepare(void)
   if( ++matrix16x16_ctr >= 16 )
     matrix16x16_ctr = 0;
 
-  u16 matrix_select = (1 << matrix16x16_ctr);
+  u16 matrix_select = ~(1 << matrix16x16_ctr); // if cathodes are connected to DOUTs
 
 #if DOUT_16x16_L
   MIOS32_DOUT_SRSet(DOUT_16x16_L-1, (matrix_select >> 0) & 0xff);
