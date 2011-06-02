@@ -31,6 +31,8 @@
 		523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */; };
 		5240A23E0FD0857E00681363 /* seq_ui_disk.c in Sources */ = {isa = PBXBuildFile; fileRef = 5240A23D0FD0857E00681363 /* seq_ui_disk.c */; };
 		52417A630FB6DECF00D84E75 /* seq_ui_bpm_presets.c in Sources */ = {isa = PBXBuildFile; fileRef = 52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */; };
+		5245AE8913983A1A00C99E6D /* seq_live.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245AE8713983A1A00C99E6D /* seq_live.c */; };
+		5245AE8B13983A2B00C99E6D /* seq_ui_trklive.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */; };
 		524A6FF90FB63949006134D1 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 524A6FF70FB63949006134D1 /* aout.c */; };
 		524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */ = {isa = PBXBuildFile; fileRef = 524AE14C0F8696BF008C64B8 /* seq_record.c */; };
 		5251924F0F13DDBD007A6BFF /* seq_scale.c in Sources */ = {isa = PBXBuildFile; fileRef = 5251924D0F13DDBD007A6BFF /* seq_scale.c */; };
@@ -228,6 +230,9 @@
 		523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_stepsel.c; path = ../core/seq_ui_stepsel.c; sourceTree = SOURCE_ROOT; };
 		5240A23D0FD0857E00681363 /* seq_ui_disk.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_disk.c; path = ../core/seq_ui_disk.c; sourceTree = SOURCE_ROOT; };
 		52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bpm_presets.c; path = ../core/seq_ui_bpm_presets.c; sourceTree = SOURCE_ROOT; };
+		5245AE8713983A1A00C99E6D /* seq_live.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_live.c; path = ../core/seq_live.c; sourceTree = SOURCE_ROOT; };
+		5245AE8813983A1A00C99E6D /* seq_live.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_live.h; path = ../core/seq_live.h; sourceTree = SOURCE_ROOT; };
+		5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trklive.c; path = ../core/seq_ui_trklive.c; sourceTree = SOURCE_ROOT; };
 		524A6FF70FB63949006134D1 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
 		524A6FF80FB63949006134D1 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
 		524AE14C0F8696BF008C64B8 /* seq_record.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_record.c; path = ../core/seq_record.c; sourceTree = SOURCE_ROOT; };
@@ -576,6 +581,9 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */,
+				5245AE8713983A1A00C99E6D /* seq_live.c */,
+				5245AE8813983A1A00C99E6D /* seq_live.h */,
 				52F7757113845E39009B9A20 /* seq_file_bm.c */,
 				52F7757213845E39009B9A20 /* seq_file_bm.h */,
 				52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */,
@@ -1079,6 +1087,8 @@
 				527CE3781256B9990097C2BB /* seq_ui_cv.c in Sources */,
 				52F7756813845D70009B9A20 /* seq_ui_bookmarks.c in Sources */,
 				52F7757313845E39009B9A20 /* seq_file_bm.c in Sources */,
+				5245AE8913983A1A00C99E6D /* seq_live.c in Sources */,
+				5245AE8B13983A2B00C99E6D /* seq_ui_trklive.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
