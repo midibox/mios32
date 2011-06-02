@@ -22,6 +22,8 @@
 		522E380711B478C70078410E /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83211790B6700293622 /* seq_file_g.c */; };
 		524324701229B27E003B950B /* seq_file_gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5243246E1229B27E003B950B /* seq_file_gc.c */; };
 		524324721229B29B003B950B /* seq_ui_eth.c in Sources */ = {isa = PBXBuildFile; fileRef = 524324711229B29B003B950B /* seq_ui_eth.c */; };
+		525C5D6213983A6D004DE8E4 /* seq_ui_trklive.c in Sources */ = {isa = PBXBuildFile; fileRef = 525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */; };
+		525C5D6B13983AB4004DE8E4 /* seq_live.c in Sources */ = {isa = PBXBuildFile; fileRef = 525C5D6913983AB4004DE8E4 /* seq_live.c */; };
 		5268E79C13845ED800520B92 /* seq_file_bm.c in Sources */ = {isa = PBXBuildFile; fileRef = 5268E79A13845ED800520B92 /* seq_file_bm.c */; };
 		5268E79E13845EF000520B92 /* seq_ui_bookmarks.c in Sources */ = {isa = PBXBuildFile; fileRef = 5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */; };
 		527779BC11B72BF6009D9083 /* OscPort.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779B911B72BF6009D9083 /* OscPort.m */; };
@@ -170,6 +172,9 @@
 		5243246E1229B27E003B950B /* seq_file_gc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_gc.c; path = ../core/seq_file_gc.c; sourceTree = SOURCE_ROOT; };
 		5243246F1229B27E003B950B /* seq_file_gc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_gc.h; path = ../core/seq_file_gc.h; sourceTree = SOURCE_ROOT; };
 		524324711229B29B003B950B /* seq_ui_eth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_eth.c; path = ../core/seq_ui_eth.c; sourceTree = SOURCE_ROOT; };
+		525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trklive.c; path = ../core/seq_ui_trklive.c; sourceTree = SOURCE_ROOT; };
+		525C5D6913983AB4004DE8E4 /* seq_live.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_live.c; path = ../core/seq_live.c; sourceTree = SOURCE_ROOT; };
+		525C5D6A13983AB4004DE8E4 /* seq_live.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_live.h; path = ../core/seq_live.h; sourceTree = SOURCE_ROOT; };
 		5268E79A13845ED800520B92 /* seq_file_bm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_bm.c; path = ../core/seq_file_bm.c; sourceTree = SOURCE_ROOT; };
 		5268E79B13845ED800520B92 /* seq_file_bm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_bm.h; path = ../core/seq_file_bm.h; sourceTree = SOURCE_ROOT; };
 		5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bookmarks.c; path = ../core/seq_ui_bookmarks.c; sourceTree = SOURCE_ROOT; };
@@ -498,6 +503,9 @@
 		529FA81C11790B5600293622 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				525C5D6913983AB4004DE8E4 /* seq_live.c */,
+				525C5D6A13983AB4004DE8E4 /* seq_live.h */,
+				525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */,
 				5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */,
 				5268E79A13845ED800520B92 /* seq_file_bm.c */,
 				5268E79B13845ED800520B92 /* seq_file_bm.h */,
@@ -871,6 +879,8 @@
 				52E114431256BD41001E6E43 /* seq_ui_cv.c in Sources */,
 				5268E79C13845ED800520B92 /* seq_file_bm.c in Sources */,
 				5268E79E13845EF000520B92 /* seq_ui_bookmarks.c in Sources */,
+				525C5D6213983A6D004DE8E4 /* seq_ui_trklive.c in Sources */,
+				525C5D6B13983AB4004DE8E4 /* seq_live.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
