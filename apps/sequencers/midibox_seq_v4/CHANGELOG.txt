@@ -9,20 +9,6 @@ Wishlist for future features
 MIDIboxSEQ V4.0beta42
 ~~~~~~~~~~~~~~~~~~~~~
 
-   o Started HQ Track Mode
-     It's intended for high-resolution MIDI Event recording of any kind w/o step
-     quantisation.
-     It's especially useful for CC/Pitchbender sweeps and multiple notes played 
-     at any length and velocity per "step".
-
-     Disadvantage: the editing capabilities are very limited! This mode is mainly
-     intended for live recordings or MIDI file imports.
-
-     But all track processing features are working, such as Step Progression,
-     Randomization, Humanizer, Transpose, Force-to-Scale, MIDI Echo, etc etc!
-
-     to be continued...
-
    o Handling of Start/Stop/Pause button changed for Slave and Auto Mode to allow 
      proper synchronisation to the measure when multiple sequencers are playing
      together.
@@ -37,6 +23,32 @@ MIDIboxSEQ V4.0beta42
 
      In order to notify that track outputs are disabled, the START/STOP/PAUSE
      LED flashes to the beat.
+
+   o Added Live page.
+     The page can be entered by pressing UTILITY -> Live (GP Button #11)
+
+     Inside this page notes (and drum instruments) can be played with the GP buttons.
+
+     In addition the 4 MIDI IN Busses for Transposer/Arpeggiator/Live Playing can be
+     configured like in the MIDI page.
+
+     Following Live Play parameters are available:
+     - track selection
+     - track mute/unmute
+     - Octavewise transpose
+     - Velocity (only used for GP button keyboard)
+     - FTS (Force-To-Scale)
+     - FX on (enables Humanizer, LFO, Limiter and Echo)
+       Note: the Echo effect will only work when the sequencer is running!
+
+
+   o parameter layer mutes are now also working for
+     velocity/length/probability/delay/roll/roll2
+
+   o Echo Fx now also works with "zero delay". In conjunction with the Note incrementer
+     and (optionally) force to scale this results into a "poor man's chord" mechanism. ;-)
+
+   o Move function works beyond step 16 as intended again
 
 
 MIDIboxSEQ V4.0beta41
@@ -1136,3 +1148,19 @@ the gatelength
 ----------------------------------------------------------
 
  would it be possible to get a "tempo" button just in the way of scrub? Just a shortcut to the bpm menu and selecting the current speed as long as it is pressed? This would be very cool for live tempo fades ;-) (i am aware of the very nice tempo preset button and page)
+
+----------------------------------------------------------
+   o HQ Track Mode
+     It's intended for high-resolution MIDI Event recording of any kind w/o step
+     quantisation.
+     It's especially useful for CC/Pitchbender sweeps and multiple notes played 
+     at any length and velocity per "step".
+
+     Disadvantage: the editing capabilities are very limited! This mode is mainly
+     intended for live recordings or MIDI file imports.
+
+     But all track processing features are working, such as Step Progression,
+     Randomization, Humanizer, Transpose, Force-to-Scale, MIDI Echo, etc etc!
+
+     to be continued...
+----------------------------------------------------------

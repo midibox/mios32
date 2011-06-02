@@ -66,15 +66,15 @@ extern seq_par_layer_type_t SEQ_PAR_AssignmentGet(u8 track, u8 par_layer);
 extern s32 SEQ_PAR_Set(u8 track, u16 step, u8 par_layer, u8 par_instrument, u8 value);
 extern s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer, u8 par_instrument);
 
-extern s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument);
-extern s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument);
+extern s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
 
 extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
 extern char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer);

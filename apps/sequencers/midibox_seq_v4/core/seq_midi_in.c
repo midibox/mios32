@@ -22,12 +22,14 @@
 
 #include "seq_ui.h"
 #include "seq_midi_in.h"
+#include "seq_core.h"
 #include "seq_cv.h"
 #include "seq_cc.h"
 #include "seq_pattern.h"
 #include "seq_morph.h"
 #include "seq_core.h"
 #include "seq_record.h"
+#include "seq_live.h"
 #include "seq_hwcfg.h"
 #include "seq_file_b.h"
 
@@ -303,9 +305,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	      midi_package.note >= seq_midi_in_lower[bus] &&
 	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
 	    if( seq_midi_in_options[bus].MODE_PLAY ) {
-	      MUTEX_MIDIOUT_TAKE;
-	      SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
-	      MUTEX_MIDIOUT_GIVE;
+	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	    } else {
 #if 0
 	      // octave normalisation - too complicated for normal users...
@@ -338,9 +338,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		midi_package.note >= seq_midi_in_lower[bus] &&
 		(!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
 	      if( seq_midi_in_options[bus].MODE_PLAY ) {
-		MUTEX_MIDIOUT_TAKE;
-		SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
-		MUTEX_MIDIOUT_GIVE;
+		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	      } else {
 #if 0
 		// octave normalisation - too complicated for normal users...
@@ -365,9 +363,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
       case CC:
 	if( !should_be_recorded ) {
 	  if( seq_midi_in_options[bus].MODE_PLAY ) {
-	    MUTEX_MIDIOUT_TAKE;
-	    SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
-	    MUTEX_MIDIOUT_GIVE;
+	    SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	  } else {
 	    SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
 	  }
@@ -377,9 +373,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
       default:
 	if( seq_midi_in_options[bus].MODE_PLAY ) {
-	  MUTEX_MIDIOUT_TAKE;
-	  SEQ_CORE_PlayLive(SEQ_UI_VisibleTrackGet(), midi_package);
-	  MUTEX_MIDIOUT_GIVE;
+	  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	}
       }
     }
@@ -531,13 +525,13 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
   if( velocity ) { // Note On
     // if no note in note stack anymore, reset position of all tracks with RESTART flag set
     if( !bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED].len ) {
+      portENTER_CRITICAL();
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
 	if( seq_cc_trk[track].mode.RESTART ) {
-	  portENTER_CRITICAL();
 	  seq_core_trk[track].state.POS_RESET = 1;
-	  portEXIT_CRITICAL();
 	}
+      portEXIT_CRITICAL();
 
       // and invalidate hold stacks
       int i;

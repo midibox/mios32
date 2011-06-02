@@ -29,6 +29,7 @@
 
 
 #include "seq_ui.h"
+#include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_trg.h"

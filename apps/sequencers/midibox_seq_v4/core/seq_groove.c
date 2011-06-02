@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "seq_groove.h"
+#include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
 

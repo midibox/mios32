@@ -700,7 +700,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     u8 par_value;
     // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
     if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
-      par_value = SEQ_PAR_ChordGet(track, step, instrument);
+      par_value = SEQ_PAR_ChordGet(track, step, instrument, 0x0000);
     else
       par_value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
@@ -731,19 +731,19 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   } break;
 
   case SEQ_PAR_Type_Probability:
-    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(track, step, instrument));
+    SEQ_LCD_PrintProbability(SEQ_PAR_ProbabilityGet(track, step, instrument, 0x0000));
     break;
 
   case SEQ_PAR_Type_Delay:
-    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(track, step, instrument));
+    SEQ_LCD_PrintStepDelay(SEQ_PAR_StepDelayGet(track, step, instrument, 0x0000));
     break;
 
   case SEQ_PAR_Type_Roll:
-    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(track, step, instrument));
+    SEQ_LCD_PrintRollMode(SEQ_PAR_RollModeGet(track, step, instrument, 0x0000));
     break;
 
   case SEQ_PAR_Type_Roll2:
-    SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(track, step, instrument));
+    SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(track, step, instrument, 0x0000));
     break;
 
   default:

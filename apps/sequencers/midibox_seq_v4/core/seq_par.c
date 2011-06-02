@@ -199,13 +199,15 @@ s32 SEQ_PAR_Get(u8 track, u16 step, u8 par_layer, u8 par_instrument)
 /////////////////////////////////////////////////////////////////////////////
 // returns the first layer which plays a note
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_note) >= 0 )
+  if( (par_layer=tcc->link_par_layer_note) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
 
   return 0;
 }
@@ -214,13 +216,15 @@ s32 SEQ_PAR_NoteGet(u8 track, u8 step, u8 par_instrument)
 /////////////////////////////////////////////////////////////////////////////
 // returns the first layer which plays a chord
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_chord) >= 0 )
+  if( (par_layer=tcc->link_par_layer_chord) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
 
   return 0;
 }
@@ -230,15 +234,17 @@ s32 SEQ_PAR_ChordGet(u8 track, u8 step, u8 par_instrument)
 // returns the first layer which controls velocity
 // if not assigned to a layer, returns 100 as default velocity
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
   // note: due to performance reasons, similar code exists in SEQ_LAYER_GetEvents()
 
-  if( (par_layer=tcc->link_par_layer_velocity) >= 0 )
+  if( (par_layer=tcc->link_par_layer_velocity) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
 
   return 100; // default velocity
 }
@@ -248,14 +254,15 @@ s32 SEQ_PAR_VelocityGet(u8 track, u8 step, u8 par_instrument)
 // returns the first layer which controls note length
 // returns 1..96 (96 for glide, 71 if no length assigned)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
   // note: due to performance reasons, similar code exists in SEQ_LAYER_GetEvents()
 
-  if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
+  if( (par_layer=tcc->link_par_layer_length) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     u8 value = SEQ_PAR_Get(track, step, par_layer, par_instrument);
     return ((value > 95) ? 95 : value) + 1;
   }
@@ -269,12 +276,13 @@ s32 SEQ_PAR_LengthGet(u8 track, u8 step, u8 par_instrument)
 // Probability ranges from 0 to 100 for 0%..100%
 // (the stored value is inverted, to that 0 results into 100%)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_probability) >= 0 ) {
+  if( (par_layer=tcc->link_par_layer_probability) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     u8 value = SEQ_PAR_Get(track, step, par_layer, par_instrument);
     return (value >= 100) ? 0 : 100-value;
   }
@@ -287,12 +295,13 @@ s32 SEQ_PAR_ProbabilityGet(u8 track, u8 step, u8 par_instrument)
 // returns the step delay if assigned to any parameter layer
 // Delay ranges from 0..95
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_delay) >= 0 ) {
+  if( (par_layer=tcc->link_par_layer_delay) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     s32 value = SEQ_PAR_Get(track, step, par_layer, par_instrument);
     return (value > 95) ? 95 : value;
   }
@@ -313,12 +322,13 @@ s32 SEQ_PAR_StepDelayGet(u8 track, u8 step, u8 par_instrument)
 //  96..111: 4U00..4U15
 // 112..127: 5U00..5U15
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_roll) >= 0 ) {
+  if( (par_layer=tcc->link_par_layer_roll) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     return SEQ_PAR_Get(track, step, par_layer, par_instrument);
   }
 
@@ -334,12 +344,13 @@ s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument)
 //  64.. 95: 4x..
 //  96..127: 5x..
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument)
+s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   s8 par_layer;
 
-  if( (par_layer=tcc->link_par_layer_roll2) >= 0 ) {
+  if( (par_layer=tcc->link_par_layer_roll2) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
     return SEQ_PAR_Get(track, step, par_layer, par_instrument);
   }
 

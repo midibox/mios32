@@ -184,10 +184,12 @@ typedef enum {
 } seq_core_loop_mode_t;
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
+
+#include "seq_cc.h"
+#include "seq_layer.h"
 
 extern s32 SEQ_CORE_Init(u32 mode);
 
@@ -203,6 +205,10 @@ extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
 extern u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value);
 extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
 
+extern s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
+extern s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
+extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
+
 extern s32 SEQ_CORE_ResetTrkPosAll(void);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
@@ -214,8 +220,6 @@ extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
 extern s32 SEQ_CORE_BPM_SweepHandler(void);
 
 extern s32 SEQ_CORE_Scrub(s32 incrementer);
-
-extern s32 SEQ_CORE_PlayLive(u8 track, mios32_midi_package_t midi_package);
 
 
 /////////////////////////////////////////////////////////////////////////////

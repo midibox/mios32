@@ -38,6 +38,7 @@
 #include "seq_song.h"
 #include "seq_random.h"
 #include "seq_record.h"
+#include "seq_live.h"
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
@@ -67,9 +68,6 @@
 
 static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc);
 static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progression, u8 reverse);
-static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
-static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
-static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -185,6 +183,9 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset song module
   SEQ_SONG_Init(0);
+
+  // reset live play module
+  SEQ_LIVE_Init(0);
 
   // reset record module
   SEQ_RECORD_Init(0);
@@ -621,6 +622,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		// determine next step depending on direction mode
 		if( !t->state.FIRST_CLK )
 		  SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
+		else {
+		  // ensure that position reset request is cleared
+		  t->state.POS_RESET = 0;
+		}
 	      }
 	    
 	      // clear "first clock" flag (on following clock ticks we can continue as usual)
@@ -757,12 +762,15 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
 
+	// parameter layer mute flags (only if not in drum mode)
+	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? t->layer_muted : 0;
+
 	// check probability if not in drum mode
 	// if probability < 100: play step with given probability
 	// in drum mode, the probability is checked for each individual instrument inside the layer event loop
 	if( tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	  u8 rnd_probability;
-	  if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, 0)) < 100 &&
+	  if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, 0, layer_muted)) < 100 &&
 	      SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
 	    continue;
 	}
@@ -809,7 +817,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    // if probability < 100: play step with given probability
 	    if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
 	      u8 rnd_probability;
-	      if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, instrument)) < 100 &&
+	      if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, t->step, instrument, layer_muted)) < 100 &&
 		  SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
 		continue;
 	    }
@@ -842,7 +850,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    // which would reduce the immediate response on value/trigger changes
 	    // therefore negative delays are only supported for groove patterns, and they are
 	    // applied over the whole track (e.g. drum mode: all instruments of the appr. track)
-	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument);
+	    t->bpm_tick_delay = SEQ_PAR_StepDelayGet(track, t->step, instrument, layer_muted);
 
 	    // scale delay (0..95) over next clock counter to consider the selected clock divider
 	    if( t->bpm_tick_delay )
@@ -958,9 +966,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		// apply Post-FX
 		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		  u8 local_gatelength = 95; // echo only with reduced gatelength
-		  if( tcc->echo_repeats )
-		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		  u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
+		  SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
 		}
 
 		// Note Off
@@ -989,7 +996,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // roll/flam?
 		  // get roll mode from parameter layer
-		  u8 roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument);
+		  u8 roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument, layer_muted);
 		  u8 roll2_mode = 0; // taken if roll1 not assigned
 		  // with less priority (parameter == 0): force roll mode if Roll trigger is set
 		  if( !roll_mode && SEQ_TRG_RollGet(track, t->step, instrument) )
@@ -998,7 +1005,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  if( roll_mode ) {
 		    triggers = ((roll_mode & 0x30)>>4) + 2;
 		  } else {
-		    roll2_mode = SEQ_PAR_Roll2ModeGet(track, t->step, instrument);
+		    roll2_mode = SEQ_PAR_Roll2ModeGet(track, t->step, instrument, layer_muted);
 		    if( roll2_mode )
 		      triggers = (roll2_mode >> 5) + 2;
 		  }
@@ -1071,12 +1078,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		    if( tcc->echo_repeats && gatelength )
 		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
-
 		}
 	      }
             }
           }
-
         }
       }
     }
@@ -1302,7 +1307,7 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 /////////////////////////////////////////////////////////////////////////////
 // Transposes if midi_package contains a Note Event
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
+s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
 {
   u8 is_cc = p->type != NoteOn && p->type != NoteOff; // CC or Pitchbender
 
@@ -1421,7 +1426,7 @@ s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 /////////////////////////////////////////////////////////////////////////////
 // Limit Fx
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
+s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
 {
   u8 lower = tcc->limit_lower;
   u8 upper = tcc->limit_upper;
@@ -1465,7 +1470,7 @@ static s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
 // Note: newer gcc versions don't allow to return a "const" parameter, therefore
 // this array is declared outside the SEQ_CORE_Echo_GetDelayModeName() function
 
-#define NUM_DELAY_VALUES 22
+#define NUM_DELAY_VALUES 23
 static const char delay_str[NUM_DELAY_VALUES+1][5] = {
     " 64T",
     " 64 ",
@@ -1489,6 +1494,7 @@ static const char delay_str[NUM_DELAY_VALUES+1][5] = {
     "  8d", // new with Beta30
     "  4d", // new with Beta30
     "  2d", // new with Beta30
+    "  0 ", // new with Beta42
     "????",
   };
 
@@ -1506,6 +1512,7 @@ const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode)
 // Used to keep pattern binaries compatible to enhanced delay entries
 /////////////////////////////////////////////////////////////////////////////
 static const u8 delay_value_map[NUM_DELAY_VALUES] = {
+  22, //"  0 ",
   0,  //" 64T",
   1,  //" 64 ",
   2,  //" 32T",
@@ -1552,14 +1559,16 @@ u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value)
 /////////////////////////////////////////////////////////////////////////////
 // Echo Fx
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength)
+s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength)
 {
   // thanks to MIDI queuing mechanism, this is a no-brainer :)
 
-  // 64T, 64, 32T, 32, 16T, 16, ... 1, Rnd1 and Rnd2, 64d..2d (new)
+  // 64T, 64, 32T, 32, 16T, 16, ... 1, Rnd1 and Rnd2, 64d..2d (new), 0 (supernew)
   s32 fb_ticks;
   s32 echo_delay = tcc->echo_delay;
-  if( echo_delay >= 16 ) // new dotted delays
+  if( echo_delay >= 22 ) // new zero delay
+    fb_ticks = 0;
+  else if ( echo_delay >= 16 ) // new dotted delays
     fb_ticks = 36 * (1 << (echo_delay-16));
   else {
     if( echo_delay >= 14 ) // Rnd1 and Rnd2
@@ -1798,15 +1807,3 @@ s32 SEQ_CORE_Scrub(s32 incrementer)
 
   return 0; // no error
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// Plays the packet "live" with port/channel parameters of the given track
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_PlayLive(u8 track, mios32_midi_package_t midi_package)
-{
-  midi_package.chn = seq_cc_trk[track].midi_chn;
-  s32 status = MIOS32_MIDI_SendPackage(seq_cc_trk[track].midi_port, midi_package);
-  return status;
-}
-
-
