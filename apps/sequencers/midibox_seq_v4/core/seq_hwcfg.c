@@ -41,6 +41,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .scrub     = ((( 1   -1)<<3)+    2),
   .metronome = ((( 1   -1)<<3)+    3),
   .record    = ((( 0   -1)<<3)+    0),
+  .live      = ((( 0   -1)<<3)+    0),
 
   //          SR   ignore    Pin
   .stop  = ((( 1   -1)<<3)+    4),
@@ -308,6 +309,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .clear     = (((13   -1)<<3)+    6),
   .undo      = ((( 0   -1)<<3)+    0),
   .record    = ((( 0   -1)<<3)+    0),
+  .live      = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
   .step_view     = (((14   -1)<<3)+    5),

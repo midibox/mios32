@@ -72,10 +72,11 @@ typedef enum {
   SEQ_UI_PAGE_ETH = 50,
   SEQ_UI_PAGE_BOOKMARKS = 51,
   SEQ_UI_PAGE_INFO = 52,
+  SEQ_UI_PAGE_TRKLIVE = 53,
 } seq_ui_page_t;
 
 	
-#define SEQ_UI_PAGES (SEQ_UI_PAGE_INFO + 1)
+#define SEQ_UI_PAGES (SEQ_UI_PAGE_TRKLIVE + 1)
 #define SEQ_UI_FIRST_MENU_SELECTION_PAGE SEQ_UI_PAGE_EDIT
 #define SEQ_UI_NUM_MENU_PAGES (SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE)
 
@@ -128,6 +129,7 @@ extern s32 SEQ_UI_DISK_Init(u32 mode);
 extern s32 SEQ_UI_ETH_Init(u32 mode);
 extern s32 SEQ_UI_BOOKMARKS_Init(u32 mode);
 extern s32 SEQ_UI_INFO_Init(u32 mode);
+extern s32 SEQ_UI_TRKLIVE_Init(u32 mode);
 
 
 typedef struct {
@@ -195,6 +197,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Ethernet (OSC)    ", (void *)&SEQ_UI_ETH_Init },
   { "Bookmarks         ", (void *)&SEQ_UI_BOOKMARKS_Init },
   { "About this MIDIbox", (void *)&SEQ_UI_INFO_Init },
+  { "Live Play         ", (void *)&SEQ_UI_TRKLIVE_Init },
 };
 
 // following pages are directly accessible with the GP buttons when MENU button is pressed

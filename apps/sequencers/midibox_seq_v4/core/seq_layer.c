@@ -225,7 +225,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
       else {
 	if( SEQ_TRG_Get(track, step, 0, drum) ) {
 	  if( tcc->link_par_layer_velocity >= 0 )
-	    velocity = SEQ_PAR_VelocityGet(track, step, drum);
+	    velocity = SEQ_PAR_VelocityGet(track, step, drum, 0x0000);
 	  else
 	    velocity = tcc->lay_const[1*16 + drum];
 	}
@@ -247,7 +247,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	p->chn      = tcc->midi_chn; // TODO: optionally different channel taken from const D
 	p->note     = note;
 	p->velocity = velocity;
-	e->len = SEQ_PAR_LengthGet(track, step, drum);
+	e->len = SEQ_PAR_LengthGet(track, step, drum, 0x0000);
 	e->layer_tag = drum;
 
 	++num_events;
@@ -264,9 +264,15 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     u8 gate = SEQ_TRG_GateGet(track, step, instrument);
     u8 velocity = 100; // default velocity
     if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
-      velocity = SEQ_PAR_Get(track, step, par_layer, instrument);
-      if( !insert_empty_notes && !gate )
-	velocity = 0;
+      if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	velocity = SEQ_PAR_Get(track, step, par_layer, instrument);
+	if( !insert_empty_notes && !gate )
+	  velocity = 0;
+      } else {
+	if( !gate )
+	  velocity = 0;
+      }
+
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = velocity | 0x80;
     } else {
@@ -276,10 +282,12 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
     u8 length = 71; // default length
     if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
-      length = SEQ_PAR_Get(track, step, par_layer, instrument);
-      if( length > 95 )
-	length = 95;
-      ++length;
+      if( (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	length = SEQ_PAR_Get(track, step, par_layer, instrument);
+	if( length > 95 )
+	  length = 95;
+	++length;
+      }
 
       if( handle_vu_meter )
 	seq_layer_vu_meter[par_layer] = length | 0x80;
@@ -287,18 +295,24 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
     if( handle_vu_meter ) { // only for VU meters
       if( (par_layer=tcc->link_par_layer_probability) ) { // Probability
-	u8 rnd_probability = SEQ_PAR_ProbabilityGet(track, step, instrument);
+	u8 rnd_probability = SEQ_PAR_ProbabilityGet(track, step, instrument, layer_muted);
 	seq_layer_vu_meter[par_layer] = rnd_probability | 0x80;
       }
 
       if( (par_layer=tcc->link_par_layer_delay) ) { // Delay
-	u8 delay = SEQ_PAR_StepDelayGet(track, step, instrument);
+	u8 delay = SEQ_PAR_StepDelayGet(track, step, instrument, layer_muted);
 	seq_layer_vu_meter[par_layer] = delay | 0x80;
       }
 
       if( (par_layer=tcc->link_par_layer_roll) ) { // Roll mode
-	u8 roll_mode = SEQ_PAR_RollModeGet(track, step, instrument);
+	u8 roll_mode = SEQ_PAR_RollModeGet(track, step, instrument, layer_muted);
 	if( roll_mode )
+	  seq_layer_vu_meter[par_layer] = 0x7f;
+      }
+
+      if( (par_layer=tcc->link_par_layer_roll2) ) { // Roll2 mode
+	u8 roll2_mode = SEQ_PAR_Roll2ModeGet(track, step, instrument, layer_muted);
+	if( roll2_mode )
 	  seq_layer_vu_meter[par_layer] = 0x7f;
       }
     }
@@ -776,7 +790,12 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	} break;
 
         case SEQ_EVENT_MODE_HQ: {
-	  // nothing to do
+	  // clear all assignments (they could be used for special purposes later)
+	  for(i=0; i<16; ++i) {
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, 0x00);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 0x00);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_C1+i, 0x00);
+	  }
 	} break;
       }
     }

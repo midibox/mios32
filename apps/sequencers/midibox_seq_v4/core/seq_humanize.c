@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_humanize.h"
+#include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_trg.h"

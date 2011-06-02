@@ -187,7 +187,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  MOVE_RestoreStep(visible_track, ui_selected_step, MOVE_BUFFER_NEW);
 	}
 	// select new encoder
-	move_enc = ui_selected_step;
+	move_enc = encoder;
 	// store current step value in buffer
 	MOVE_StoreStep(visible_track, ui_selected_step, MOVE_BUFFER_NEW, 0);
 	// store it also in "old" record and disable current value (clear all triggers)
@@ -390,11 +390,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	return 0; // ignore as long as message is displayed
       return SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
 
-    case SEQ_UI_BUTTON_GP11: // select Mixer Page
+    case SEQ_UI_BUTTON_GP11: // select Live Page
       if( depressed ) return -1;
       if( in_menu_msg & 0x80 )
 	return 0; // ignore as long as message is displayed
-      return SEQ_UI_PageSet(SEQ_UI_PAGE_MIXER);
+      return SEQ_UI_PageSet(SEQ_UI_PAGE_TRKLIVE);
 
     case SEQ_UI_BUTTON_GP12: // select Options Page
       if( depressed ) return -1;
@@ -474,7 +474,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk.        Utility Functions                       Quick Menu Change           
-  // G1T1 Copy Paste Clr Move Scrl Rand Undo Save Rec. Mix. Opt. PMte Disk Mute UnMte
+  // G1T1 Copy Paste Clr Move Scrl Rand Undo Save Rec. Live Opt. PMte Disk Mute UnMte
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -499,7 +499,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   SEQ_LCD_PrintString(" Copy Paste Clr Move Scrl Rand Undo ");
-  SEQ_LCD_PrintString("Save Rec. Mix. Opt. PMte Disk Mute UnMte");
+  SEQ_LCD_PrintString("Save Rec. Live Opt. PMte Disk Mute UnMte");
 
   return 0; // no error
 }

@@ -27,6 +27,7 @@
 #include "seq_file.h"
 #include "seq_file_b.h"
 
+#include "seq_core.h"
 #include "seq_cc.h"
 #include "seq_par.h"
 #include "seq_trg.h"

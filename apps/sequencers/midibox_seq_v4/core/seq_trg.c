@@ -18,8 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
-#include "seq_trg.h"
 #include "seq_core.h"
+#include "seq_trg.h"
 #include "seq_cc.h"
 
 
