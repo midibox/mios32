@@ -21,17 +21,17 @@
 // supported: 1..2 (see comments in app_lcd.c)
 // can be changed from mios32_config.h
 #ifndef APP_LCD_NUM_X
-#define APP_LCD_NUM_X 2
+#define APP_LCD_NUM_X 1
 #endif
 
 // supported: 1..4 (see comments in app_lcd.c)
 // can be changed from mios32_config.h
 #ifndef APP_LCD_NUM_Y
-#define APP_LCD_NUM_Y 4
+#define APP_LCD_NUM_Y 1
 #endif
 
 // don't change these values for this GLCD type
-#define APP_LCD_WIDTH 128
+#define APP_LCD_WIDTH 256
 #define APP_LCD_HEIGHT 64
 #define APP_LCD_COLOUR_DEPTH 1
 #define APP_LCD_BITMAP_SIZE ((APP_LCD_NUM_X*APP_LCD_WIDTH * APP_LCD_NUM_Y*APP_LCD_HEIGHT * APP_LCD_COLOUR_DEPTH) / 8)
