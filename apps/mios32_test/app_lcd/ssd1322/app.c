@@ -19,6 +19,7 @@
 #include "app.h"
 
 #include <glcd_font.h>
+#include <app_lcd.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -152,6 +153,35 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  // for testing
+  if( midi_package.type == CC ) {
+    switch( midi_package.cc_number ) {
+    case 0x10:
+      APP_LCD_Cmd(0xb3); // Set_Display_Clock(0x91);
+      APP_LCD_Data(midi_package.value);
+      break;
+    case 0x11:
+      APP_LCD_Cmd(0xca); // Set_Multiplex_Ratio(0x3F);
+      APP_LCD_Data(midi_package.value);
+      break;
+    case 0x12:
+      APP_LCD_Cmd(0xb1); // Set_Phase_Length(0xE2);
+      APP_LCD_Data(midi_package.value);
+      break;
+    case 0x13:
+      APP_LCD_Cmd(0xbb); // Set_Precharge_Voltage(0x1F);
+      APP_LCD_Data(midi_package.value);
+      break;
+    case 0x14:
+      APP_LCD_Cmd(0xb6); // Set_Precharge_Period(0x08);
+      APP_LCD_Data(midi_package.value);
+      break;
+    case 0x15:
+      APP_LCD_Cmd(0xbe); // Set_VCOMH(0x07);
+      APP_LCD_Data(midi_package.value);
+      break;
+    }
+  }
 }
 
 
