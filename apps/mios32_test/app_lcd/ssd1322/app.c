@@ -36,10 +36,10 @@ void APP_Init(void)
 // Voxelspace demo by Hawkeye
 
 u8 field[128][128];             // Heightfield
-u8 screen[64][64];              // Screen buffer [y][x]
+u8 screen[64][128];             // Screen buffer [y][x]
 
 
-// Limits a value to 0...255 
+// Limits a value to 0...255
 //
 int limit(int x)
 {
@@ -55,7 +55,7 @@ void calcField(void)
   int p, i, j, k, k2, p2;
 
   field[0][0]=128;
-  
+
   // "Cloud" landscape generator
   for (p = 256; p > 1; p = p2)
   {
@@ -87,17 +87,14 @@ void calcField(void)
            u16 four = field[i-1][j] + field[i+1][j] + field[i][j-1] + field[i][j+1];
            four = four >> 2;
            field[i][j] = (field[i][j] + four) >> 1;
-         }
+        }
 }
 // -------------------------------------------------------------------------------------------
 
 
 // Voxel space display demo
-// 
-// Note: this is not very optimized yet, especially some float multiplications/divisions
-// can be improved... When this is done, the x-resolution could also be increased,
-// by casting more rays... it is currently only using 64 pixels horizontal resolution.
-// but it works for now... greets, hawkeye.
+//
+// Now renders full 256x64 @ >30fps
 //
 void runVoxel(void)
 {
@@ -106,9 +103,15 @@ void runVoxel(void)
 
    calcField();
 
-   // initial clear screen   
+   // multiplication/division precalculated tables
+   u16 mult1dot5[64];
+   for (i = 0; i < 64; i++)
+      mult1dot5[i] = (u16)((float) i * 1.5);
+
+
+   // initial clear screen
    for (j = 0; j < 64; j++)
-      for (i = 0; i < 64; i++)
+      for (i = 0; i < 128; i++)
          screen[j][i] = j < 6 ? ((j << 4) + j) : 0;
 
    // endless animation, if it needs to be stopped, poll here
@@ -116,37 +119,49 @@ void runVoxel(void)
    {
       for (y = 30000; y >=1 ; y--)
       {
+         u16 yfield;
+
+         // Calculate screen buffer
          for (j=0; j<30; j++)  // Distance from screen plane
          {
-            u16 distscaler = 38 -j ;
+            u16 distscaler = 38 - j;
             u16 stdheight = 400 / distscaler;
-            u16 endy = (float) stdheight*1.5;
+            u16 endy = mult1dot5[stdheight];
             if (endy > 63) endy = 63;
 
-            u16 yfield = j + y;
+            yfield = j + y;
 
+            // "continuous scrolling" yfield accessor adjustment
             yfield = yfield % 255;
             if (yfield > 127)
                yfield = 255-yfield;
 
-            for (i = 0; i < 64; i++)
+            for (i = 0; i < 128; i++)
             {
-               u16 xfield = (64 + (int)((i-32) * (float)distscaler/10)) & 127;
+               // --- "Even" display pixel (0, 2, 4, 6, ...) ---
+               u16 xfield = (64 + (int)((((i<<1)-128)*distscaler)>>5)) & 127;
                u8 h = field[yfield][xfield];
+               u8 height = h / distscaler; // Scale height to distance
+               u8 starty = mult1dot5[stdheight - height];
 
-               u16 height_val= (float)h/distscaler; // Scale height to distance
-
-               u16 starty = stdheight - height_val;
-               
-               starty = (float)starty*1.5;
-               if (starty < 0) starty = 0;
-
-               u8 col = (h & 0xf0) + (h >> 4);
+               u8 col = h & 0xf0;
                for (k = starty; k < endy; k++)
-                  screen[k][i] = col;
+                  screen[k][i] = (screen[k][i] & 0x0f) + col;
+
+               // --- "Odd" display pixel (1, 3, 5, 7, ...) ---
+               xfield = (64 + (int)((((i<<1)-127)*distscaler)>>5)) & 127;
+               h = field[yfield][xfield];
+
+               height = h / distscaler; // Scale height to distance
+               starty = mult1dot5[stdheight - height];
+
+               col = h >> 4;
+               for (k = starty; k < endy; k++)
+                  screen[k][i] = (screen[k][i] & 0xf0) + col;
             }
          }
 
+         // Push screen buffer
          for (j = 0; j < 64; j++)
          {
             APP_LCD_Cmd(0x15);
@@ -157,11 +172,14 @@ void runVoxel(void)
 
             APP_LCD_Cmd(0x5c);
 
-            for (i = 0; i < 64; i++)
+            u8 bgcol = j < 6 ? ((j << 4) + j) : 0;
+            for (i = 0; i < 128; i++)
             {
                APP_LCD_Data(screen[j][i]);
+               screen[j][i] = bgcol;
+               i++;
                APP_LCD_Data(screen[j][i]);
-               screen[j][i] = j < 6 ? ((j << 4) + j) : 0;
+               screen[j][i] = bgcol;
             }
          }
       }
@@ -192,7 +210,7 @@ void testScreen()
      {
         if (x < 32)
         {  // half screen pattern
-        
+
            if (x || 4 == 0 || y || 4 == 0)
            {
               APP_LCD_Data(y & 0x0f);
@@ -211,7 +229,7 @@ void testScreen()
         }
      }
   }
-  
+
   while(1);
 }
 // -------------------------------------------------------------------------------------------
