@@ -19,6 +19,6 @@ Required hardware:
 
 This application demonstrates the GLCD driver for SSD1322 controller
 
-Messages and animated icons are printed on screen
+Small voxel space demo by Hawkeye.
 
 ===============================================================================
