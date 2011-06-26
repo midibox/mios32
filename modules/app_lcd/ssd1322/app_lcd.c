@@ -134,6 +134,7 @@ s32 APP_LCD_Init(u32 mode)
 
   APP_LCD_Cmd(0xa4 | 0x02); // Set_Display_Mode(0x02);
 
+  APP_LCD_Clear();
 
   APP_LCD_Cmd(0xae | 1); // Set_Display_On_Off(0x01);
 
