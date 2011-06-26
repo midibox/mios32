@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Application specific OLED driver for up to 8 * SSD1322 (every display 
+ * Application specific OLED driver for up to 8 * SSD1322 (every display
  * provides a resolution of 256x64)
  * Referenced from MIOS32_LCD routines
  *
@@ -9,7 +9,7 @@
  *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
- * 
+ *
  * ==========================================================================
  */
 
@@ -82,59 +82,61 @@ s32 APP_LCD_Init(u32 mode)
   // set LCD type
   mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
 
-  // initialize LCD (sequence from datasheet)
-  APP_LCD_Cmd(0xfd); // Set_Command_Lock(0x12);
+  u16 ctr;
+  for (ctr=0; ctr<300; ++ctr)
+    MIOS32_DELAY_Wait_uS(1000);
+
+  // Initialize LCD
+  APP_LCD_Cmd(0xfd); // Unlock 
   APP_LCD_Data(0x12);
-  APP_LCD_Cmd(0xae | 0); // Set_Display_On_Off(0x00);
-  APP_LCD_Cmd(0x15); // Set_Column_Address(0x1C,0x5B);
+
+  APP_LCD_Cmd(0xae | 0); // Set_Display_Off
+
+  APP_LCD_Cmd(0x15); // Set_Column_Address
   APP_LCD_Data(0x1c);
   APP_LCD_Data(0x5b);
-  APP_LCD_Cmd(0x75); // Set_Row_Address(0x00,0x3F);
+
+  APP_LCD_Cmd(0x75); // Set_Row_Address
   APP_LCD_Data(0x00);
   APP_LCD_Data(0x3f);
-  APP_LCD_Cmd(0xb3); // Set_Display_Clock(0x91);
-  APP_LCD_Data(0x91);
-  APP_LCD_Cmd(0xca); // Set_Multiplex_Ratio(0x3F);
+
+  APP_LCD_Cmd(0xca); // Set_Multiplex_Ratio
   APP_LCD_Data(0x3f);
-  APP_LCD_Cmd(0xa2); // Set_Display_Offset(0x00);
-  APP_LCD_Data(0x00);
-  APP_LCD_Cmd(0xa1); // Set_Start_Line(0x00);
-  APP_LCD_Data(0x00);
-  APP_LCD_Cmd(0xa0); // Set_Remap_Format(...);
-  APP_LCD_Data(0x14);
-  APP_LCD_Data(0x00); // was 0
-  APP_LCD_Cmd(0xb5); // Set_GPIO(0x00);
-  APP_LCD_Data(0x00);
-  APP_LCD_Cmd(0xab); // Set_Function_Selection(0x01);
-  APP_LCD_Data(0x01);
-  APP_LCD_Cmd(0xb4); // Set_Display_Enhancement_A(0xA0,0xFD);
-  APP_LCD_Data(0xa0);
-  APP_LCD_Data(0xfd);
-  APP_LCD_Cmd(0xc1); // Set_Contrast_Current(0x9F);
-  APP_LCD_Data(0xff);
-  APP_LCD_Cmd(0xc7); // Set_Master_Current(0x0F);
+
+  APP_LCD_Cmd(0xa0); // Set_Remap_Format
+  APP_LCD_Data(0x14); 
+  APP_LCD_Data(0x11); 
+
+
+  APP_LCD_Cmd(0xb3); // Set_Display_Clock
+  APP_LCD_Data(0x22); 
+
+  APP_LCD_Cmd(0xc1); // Set_Contrast_Current
+  APP_LCD_Data(0x78);
+
+  APP_LCD_Cmd(0xc7); // Set_Master_Current
   APP_LCD_Data(0x0f);
+
   APP_LCD_Cmd(0xb9); // Set_Linear_Gray_Scale_Table();
   APP_LCD_Cmd(0x00); // enable gray scale table
+
   APP_LCD_Cmd(0xb1); // Set_Phase_Length(0xE2);
-  APP_LCD_Data(0xe2);
-  APP_LCD_Cmd(0xd1); // Set_Display_Enhancement_B(0x20);
-  APP_LCD_Data(0x82);
-  APP_LCD_Data(0x20);
+  APP_LCD_Data(0x56);
+
   APP_LCD_Cmd(0xbb); // Set_Precharge_Voltage(0x1F);
-  APP_LCD_Data(0x1f);
+  APP_LCD_Data(0x0);
+
   APP_LCD_Cmd(0xb6); // Set_Precharge_Period(0x08);
   APP_LCD_Data(0x08);
+
   APP_LCD_Cmd(0xbe); // Set_VCOMH(0x07);
-  APP_LCD_Data(0x07);
-#if 1
+  APP_LCD_Data(0x00);
+
   APP_LCD_Cmd(0xa4 | 0x02); // Set_Display_Mode(0x02);
-#else
-  APP_LCD_Cmd(0xa4 | 0x01); // all pixels are enabled
-#endif
-  APP_LCD_Cmd(0xa9); // Set_Partial_Display(0x01,0x00,0x00);
+
 
   APP_LCD_Cmd(0xae | 1); // Set_Display_On_Off(0x01);
+
 
   return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
@@ -147,12 +149,16 @@ s32 APP_LCD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data)
 {
+#if 0  // TODO
   // select LCD depending on current cursor position
   // THIS PART COULD BE CHANGED TO ARRANGE THE 8 DISPLAYS ON ANOTHER WAY
   u8 cs = mios32_lcd_y / APP_LCD_HEIGHT;
 
   if( cs >= 8 )
     return -1; // invalid CS line
+#endif
+
+  u8 cs=0;
 
   // chip select and DC
 #if APP_LCD_USE_J10_FOR_CS
@@ -209,35 +215,26 @@ s32 APP_LCD_Cmd(u8 cmd)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Clear(void)
 {
-  s32 error = 0;
-  u32 x, y;
+  u8 i, j;
 
-  // use default font
-  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  for (j=0; j<64; j++)
+  {
+    APP_LCD_Cmd(0x15);
+    APP_LCD_Data(0+0x1c);
 
-  // send data
-  for(y=0; y<8; ++y) {
-    // select the view
-    error |= MIOS32_LCD_CursorSet(0, 8*y);
-    error |= APP_LCD_Cmd(0x5c); // Write RAM
+    APP_LCD_Cmd(0x75);
+    APP_LCD_Data(j);
 
-    // select all LCDs
-#if APP_LCD_USE_J10_FOR_CS
-    MIOS32_BOARD_J10_Set(0x00);
-#else
-    MIOS32_BOARD_J15_DataSet(0x00);
-#endif
-    MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
+    APP_LCD_Cmd(0x5c);
 
-    // for testing; different grayscales
-    for(x=0; x<8*128; ++x)
-      MIOS32_BOARD_J15_SerDataShift(x);
+    for (i=0; i<64; i++)
+    {
+       APP_LCD_Data(0);
+       APP_LCD_Data(0);
+    }
   }
 
-  // set X=0, Y=0
-  error |= MIOS32_LCD_CursorSet(0, 0);
-
-  return error;
+  return 0;
 }
 
 
@@ -248,25 +245,8 @@ s32 APP_LCD_Clear(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
-  s32 error = 0;
-
-#if 0
-  // exit with error if line is not in allowed range
-  if( line >= MIOS32_LCD_MAX_MAP_LINES )
-    return -1;
-
-  // exit if mapped line >= 8 (not supported by KS0108)
-  u8 mapped_line = mios32_lcd_cursor_map[line];
-  if( mapped_line >= 8 )
-    return -2;
-
-  // ...
-
-  return error;
-#else
   // mios32_lcd_x/y set by MIOS32_LCD_CursorSet() function
   return APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-#endif
 }
 
 
