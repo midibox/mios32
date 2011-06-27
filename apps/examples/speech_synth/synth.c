@@ -24,7 +24,6 @@
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
-
 /////////////////////////////////////////////////////////////////////////////
 // External prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -52,6 +51,13 @@ unsigned char* MCU_out_ptr;
 unsigned char* MCU_out_end;
 unsigned char MCU_outbuf[WAVETABLE_SIZE];
 
+
+// quick&dirty
+u8 synth_downsampling_factor = 6;
+u8 synth_resolution = 15;
+u16 synth_xor = 0x0000;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
@@ -67,7 +73,6 @@ unsigned char* pPlayWave_End;
 
 // sample buffer
 static u32 sample_buffer[SAMPLE_BUFFER_SIZE];
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -123,7 +128,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
   } else {
     int i;
     for(i=0; (i < (SAMPLE_BUFFER_SIZE/2)) && snd_ix < max_ix; ++i) {
-      if( ++downsampling_ctr >= 6 ) {
+      if( ++downsampling_ctr >= synth_downsampling_factor ) {
 	downsampling_ctr = 0;
 	last_sample = current_sample;
 #if 1
@@ -133,7 +138,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 	current_sample = MCU_outbuf[snd_ix++] << 8;
 #endif
 	snd_ix &= (WAVETABLE_SIZE-1);
-	sample_diff = (current_sample - last_sample) / 6;
+	sample_diff = (current_sample - last_sample) / synth_downsampling_factor;
       }
 #if 0
       u32 chn1_value = (u32)current_sample;
@@ -141,6 +146,11 @@ void SYNTH_ReloadSampleBuffer(u32 state)
       s32 interpolated = last_sample + sample_diff * (downsampling_ctr-1);
       u32 chn1_value = (u32)interpolated;
 #endif
+
+      if( synth_resolution && synth_resolution < 16 )
+	chn1_value &= ~((1 << (16-(u32)synth_resolution)) - 1);
+      if( synth_xor )
+	chn1_value ^= synth_xor;
 
       *buffer++ = ((u32)chn1_value << 16) | (chn1_value & 0xffff);
     }

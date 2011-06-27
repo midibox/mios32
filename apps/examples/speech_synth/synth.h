@@ -51,5 +51,8 @@ extern s32 SYNTH_Tick(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 synth_downsampling_factor;
+extern u8 synth_resolution;
+extern u16 synth_xor;
 
 #endif /* _SYNTH_H */
