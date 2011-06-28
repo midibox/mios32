@@ -14,6 +14,9 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "EmbSpeech Demo"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
+// name of USB device
+#define MIOS32_USB_PRODUCT_STR MIOS32_LCD_BOOT_MSG_LINE1
+
 #if defined(MIOS32_FAMILY_STM32F10x)
 // I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
 # define MIOS32_SRIO_SPI 0
