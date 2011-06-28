@@ -47,31 +47,6 @@
 
 #define LE_WORD(x)              ((x)&0xFF),((x)>>8)
 
-#if 0
-// ISTR events
-// mask defining which events has to be handled by the device application software
-//#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM)
-#define IMR_MSK (CNTR_CTRM | CNTR_RESETM)
-// TK: disabled SOF interrupt, since it isn't really used and disturbs debugging
-#endif
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local types
-/////////////////////////////////////////////////////////////////////////////
-
-#if 0
-typedef enum _DEVICE_STATE
-{
-  UNCONNECTED,
-  ATTACHED,
-  POWERED,
-  SUSPENDED,
-  ADDRESSED,
-  CONFIGURED
-} DEVICE_STATE;
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables used by STM32 USB Driver
 // (unfortunately no unique names are used...)
@@ -92,24 +67,6 @@ typedef struct {
 static TLineCoding LineCoding = {115200, 0, 0, 8};
 static U8 abClassReqData[8];
 
-#if 0
-/*  Points to the DEVICE_INFO/DEVICE_PROP_USER_STANDARD_REQUESTS structure of current device */
-/*  The purpose of this register is to speed up the execution */
-// TK: in addition, this allows to change USB driver during runtime
-DEVICE_INFO *pInformation;
-DEVICE Device_Table;
-DEVICE_PROP *pProperty;
-USER_STANDARD_REQUESTS *pUser_Standard_Requests;
-
-// stored in RAM, vectors can be changed on-the-fly
-void (*pEpInt_IN[7])(void) = {
-  NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process
-};
-
-void (*pEpInt_OUT[7])(void) = {
-  NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process, NOP_Process
-};
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -749,24 +706,6 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 
 #endif /* MIOS32_USE_USB_COM */
 
-  // string descriptors
-  0x04,
-  DESC_STRING,
-  LE_WORD(0x0409),
-
-  // TODO: allow to change strings as for STM32
-  14,
-  DESC_STRING,
-  'M', 0, 'I', 0, 'O', 0, 'S', 0, '3', 0, '2', 0,
-
-  22,
-  DESC_STRING,
-  'M', 0, 'I', 0, 'O', 0, 'S', 0, '3', 0, '2', 0, ' ', 0, 'A', 0, 'p', 0, 'p', 0,
-
-  18,
-  DESC_STRING,
-  '1', 0, '2', 0, '3', 0, '4', 0, '5', 0, '6', 0, '7', 0, '8', 0,
-
 // terminating zero
         0
 
@@ -778,71 +717,8 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 /////////////////////////////////////////////////////////////////////////////
 
 static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
+static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
 static void USBFrameHandler(U16 wFrame);
-
-#if 0
-static void MIOS32_USB_CB_Reset(void);
-static void MIOS32_USB_CB_SetConfiguration(void);
-static void MIOS32_USB_CB_SetDeviceAddress (void);
-static void MIOS32_USB_CB_Status_In(void);
-static void MIOS32_USB_CB_Status_Out(void);
-static RESULT MIOS32_USB_CB_Data_Setup(u8 RequestNo);
-static RESULT MIOS32_USB_CB_NoData_Setup(u8 RequestNo);
-static u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length);
-static u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length);
-static u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length);
-static RESULT MIOS32_USB_CB_Get_Interface_Setting(u8 Interface, u8 AlternateSetting);
-#endif
-
-/////////////////////////////////////////////////////////////////////////////
-// USB callback vectors
-/////////////////////////////////////////////////////////////////////////////
-
-#if 0
-static const DEVICE My_Device_Table = {
-  MIOS32_USB_EP_NUM,
-  1
-};
-
-static const DEVICE_PROP My_Device_Property = {
-  0, // MIOS32_USB_CB_Init,
-  MIOS32_USB_CB_Reset,
-  MIOS32_USB_CB_Status_In,
-  MIOS32_USB_CB_Status_Out,
-  MIOS32_USB_CB_Data_Setup,
-  MIOS32_USB_CB_NoData_Setup,
-  MIOS32_USB_CB_Get_Interface_Setting,
-  MIOS32_USB_CB_GetDeviceDescriptor,
-  MIOS32_USB_CB_GetConfigDescriptor,
-  MIOS32_USB_CB_GetStringDescriptor,
-  0,
-  0x40 /*MAX PACKET SIZE*/
-};
-
-static const USER_STANDARD_REQUESTS My_User_Standard_Requests = {
-  NOP_Process, // MIOS32_USB_CB_GetConfiguration,
-  MIOS32_USB_CB_SetConfiguration,
-  NOP_Process, // MIOS32_USB_CB_GetInterface,
-  NOP_Process, // MIOS32_USB_CB_SetInterface,
-  NOP_Process, // MIOS32_USB_CB_GetStatus,
-  NOP_Process, // MIOS32_USB_CB_ClearFeature,
-  NOP_Process, // MIOS32_USB_CB_SetEndPointFeature,
-  NOP_Process, // MIOS32_USB_CB_SetDeviceFeature,
-  MIOS32_USB_CB_SetDeviceAddress
-};
-#endif
-
-/////////////////////////////////////////////////////////////////////////////
-// Local Variables
-/////////////////////////////////////////////////////////////////////////////
-
-#if 0
-// USB Device informations
-static DEVICE_INFO My_Device_Info;
-
-// USB device status
-static vu32 bDeviceState = UNCONNECTED;
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -895,6 +771,9 @@ s32 MIOS32_USB_Init(u32 mode)
 
   // register class request handler
   USBRegisterRequestHandler(REQTYPE_TYPE_CLASS, HandleClassRequest, abClassReqData);
+
+  // register custom request handler
+  USBRegisterCustomReqHandler(HandleCustomRequest);
 
   // register endpoint handlers
   //USBHwRegisterEPIntHandler(0x81, NULL);
@@ -980,11 +859,78 @@ static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
   return TRUE;
 }
 
+// only used to return dynamically generated strings
+// TK: maybe it's possible to use a free buffer from somewhere else?
+#define BUFFER_SIZE 100
+u8 buffer[BUFFER_SIZE];
+static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
+{
+  const u8 vendor_str[] = MIOS32_USB_VENDOR_STR;
+  const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
+  static u8 buffer[200]; // TODO: maybe buffer provided by USB Driver?
+
+  if( pSetup->bRequest != REQ_GET_DESCRIPTOR )
+    return FALSE;
+
+  u8 bType = GET_DESC_TYPE(pSetup->wValue);
+  u8 bIndex = GET_DESC_INDEX(pSetup->wValue);
+
+  if( bType != DESC_STRING )
+    return FALSE;
+
+  u16 len;
+  int i;
+
+  switch( bIndex ) {
+    case 0: // Language
+      // buffer[0] and [1] initialized below
+      buffer[2] = 0x09;        // CharSet
+      buffer[3] = 0x04;        // U.S.
+      len = 4;
+      break;
+
+    case 1: // Vendor
+      // buffer[0] and [1] initialized below
+      for(i=0, len=2; vendor_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
+	buffer[len++] = vendor_str[i];
+	buffer[len++] = 0;
+      }
+      break;
+
+    case 2: // Product
+      // buffer[0] and [1] initialized below
+      for(i=0, len=2; product_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
+	buffer[len++] = product_str[i];
+	buffer[len++] = 0;
+      }
+      break;
+
+    case 3: { // Serial Number
+        u8 serial_number_str[40];
+	if( MIOS32_SYS_SerialNumberGet((char *)serial_number_str) >= 0 ) {
+	  for(i=0, len=2; serial_number_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
+	    buffer[len++] = serial_number_str[i];
+	    buffer[len++] = 0;
+	  }
+	} else
+	  return FALSE;
+      }
+      break;
+
+    default: // string ID not supported
+      return FALSE;
+  }
+
+  buffer[0] = len; // Descriptor Length
+  buffer[1] = DSCR_STRING; // Descriptor Type
+  *ppbData = buffer;
+  return TRUE;
+}
+
 static void USBFrameHandler(U16 wFrame)
 {
   // nothing to do...
 }
-
 
 //! \}
 
