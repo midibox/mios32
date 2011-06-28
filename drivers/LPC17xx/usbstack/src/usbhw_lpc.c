@@ -562,10 +562,16 @@ BOOL USBHwInit(void)
 	LPC_PINCON->PINSEL4 &= ~0x000C0000;
 	LPC_PINCON->PINSEL4 |= 0x00040000;
 
+#if 0
 	// P1.18 -> USB_UP_LED
 	// P1.30 -> VBUS
 	LPC_PINCON->PINSEL3 &= ~0x30000030;
 	LPC_PINCON->PINSEL3 |= 0x20000010;
+#else
+	// TK: don't configure P1.18 for UP_LED - we use this pin as analog input
+	LPC_PINCON->PINSEL3 &= ~0x30000000;
+	LPC_PINCON->PINSEL3 |= 0x20000000;
+#endif
 
 	// P0.29 -> USB_D+
 	// P0.30 -> USB_D-
