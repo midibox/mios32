@@ -709,6 +709,8 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   // disable callback
   MIOS32_SYS_DMA_CallbackSet(0, rx_chn, NULL);
 
+  //len = 2;
+
   // disable DMA channels
   rx_chn_ptr->DMACCConfig = 0;
   tx_chn_ptr->DMACCConfig = 0;
@@ -745,8 +747,13 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   LPC_GPDMA->DMACSoftSReq = (1 << tx_chn);
 
   // if no callback: wait until all bytes have been received
+#if 0
   if( callback == NULL )
     while( rx_chn_ptr->DMACCControl & 0xfff ); // wait until TransferSize field is 0
+#else
+  if( callback == NULL )
+    while( !(LPC_GPDMA->DMACRawIntTCStat & (1 << rx_chn)) ); // wait until terminal count interrupt is active
+#endif
 
   return 0; // no error
 }

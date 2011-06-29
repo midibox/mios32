@@ -93,6 +93,9 @@ s32 MIOS32_SRIO_Init(u32 mode)
 
   // initial state of RCLK
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+#ifdef MIOS32_SRIO_SPI_RC_PIN2
+  MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
+#endif
 
   // init GPIO structure
   // using 2 MHz instead of 50 MHz to avoid fast transients which can cause flickering!
@@ -210,8 +213,14 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   // latch DIN registers by pulsing RCLK: 1->0->1
   // TODO: maybe we should disable all IRQs here for higher accuracy
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+#ifdef MIOS32_SRIO_SPI_RC_PIN2
+  MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 0); // spi, rc_pin, pin_value
+#endif
   MIOS32_DELAY_Wait_uS(1); // TODO: variable delay for touch sensors
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+#ifdef MIOS32_SRIO_SPI_RC_PIN2
+  MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
+#endif
 
   // start DMA transfer
   MIOS32_SPI_TransferBlock(MIOS32_SRIO_SPI,
@@ -234,8 +243,14 @@ static void MIOS32_SRIO_DMA_Callback(void)
 
   // latch DOUT registers by pulsing RCLK: 1->0->1
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+#ifdef MIOS32_SRIO_SPI_RC_PIN2
+  MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 0); // spi, rc_pin, pin_value
+#endif
   MIOS32_DELAY_Wait_uS(1);
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+#ifdef MIOS32_SRIO_SPI_RC_PIN2
+  MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
+#endif
 
   // copy/or buffered DIN values/changed flags
   int i;

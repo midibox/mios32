@@ -43,6 +43,11 @@
 #define MIOS32_SRIO_SPI_RC_PIN 0
 #endif
 
+// optional second pin (currently only used on J8/9:RC2 of LPC17 module
+#if !defined(MIOS32_BOARD_MBHP_CORE_STM32)
+# define MIOS32_SRIO_SPI_RC_PIN2 1
+#endif
+
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #ifndef MIOS32_SRIO_OUTPUTS_OD
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)

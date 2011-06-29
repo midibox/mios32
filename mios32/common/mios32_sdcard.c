@@ -59,6 +59,18 @@
 #endif
 
 
+// SPI prescaler used for fast transfers
+#ifndef MIOS32_SDCARD_SPI_PRESCALER
+#if MIOS32_SYS_CPU_FREQUENCY < 80000000
+# define MIOS32_SDCARD_SPI_PRESCALER MIOS32_SPI_PRESCALER_4
+#else
+// for LPC17 module
+# define MIOS32_SDCARD_SPI_PRESCALER MIOS32_SPI_PRESCALER_8
+#endif
+#endif
+
+
+
 /* Definitions for MMC/SDC command */
 #define SDCMD_GO_IDLE_STATE		(0x40+0)	
 #define SDCMD_GO_IDLE_STATE_CRC	0x95
@@ -279,7 +291,7 @@ s32 MIOS32_SDCARD_CheckAvailable(u8 was_available)
   if( was_available ) {
     // init SPI port for fast frequency access (ca. 18 MBit/s)
     // this is required for the case that the SPI port is shared with other devices
-    MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+    MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
     // activate chip select
     MIOS32_SPI_RC_PinSet(MIOS32_SDCARD_SPI, MIOS32_SDCARD_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
@@ -435,7 +447,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_SINGLE_BLOCK, sector, SDCMD_READ_SINGLE_BLOCK_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
@@ -505,7 +517,7 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 	sector *= 512;
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_WRITE_SINGLE_BLOCK, sector, SDCMD_WRITE_SINGLE_BLOCK_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
@@ -572,7 +584,7 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
   // this is required for the case that the SPI port is shared with other devices
   MIOS32_SDCARD_MUTEX_TAKE;
 
-  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CID, 0, SDCMD_SEND_CID_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
@@ -660,7 +672,7 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
-  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_4);
+  MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CSD, 0, SDCMD_SEND_CSD_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
