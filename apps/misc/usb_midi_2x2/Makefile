@@ -51,8 +51,5 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
-# Mass Storage Device Driver
-include $(MIOS32_PATH)/modules/msd/msd.mk
-
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
