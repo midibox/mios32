@@ -548,6 +548,12 @@ void USBHwISR(void)
  */
 BOOL USBHwInit(void)
 {
+  // TK: always disable install EP int handlers, so that driver can be reconfigured during runtime
+  int i;
+  for(i=0; i<16; ++i)
+    _apfnEPIntHandlers[i] = NULL;
+
+
 /*	CodeRed - comment out original code
  * 
 	// configure P0.23 for Vbus sense
