@@ -147,7 +147,7 @@ s32 MIOS32_SDCARD_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_PowerOn(void)
 {
-  s32 status;
+  s32 status = 0;
   int i;
 
   MIOS32_SDCARD_MUTEX_TAKE;
@@ -169,7 +169,7 @@ s32 MIOS32_SDCARD_PowerOn(void)
 
   // send CMD0 to reset the media
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_GO_IDLE_STATE, 0, SDCMD_GO_IDLE_STATE_CRC)) < 0 ) 
-	goto error;
+    goto error;
   
   CardType=0;
 
@@ -438,7 +438,7 @@ s32 MIOS32_SDCARD_SendSDCCmd(u8 cmd, u32 addr, u8 crc)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 {
-  s32 status;
+  s32 status = 0;
   int i;
   if (!(CardType & CT_BLOCK)) 
 	sector *= 512;
@@ -451,7 +451,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_READ_SINGLE_BLOCK, sector, SDCMD_READ_SINGLE_BLOCK_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
-	goto error;
+    goto error;
   }
   
   // wait for start token of the data block
@@ -462,7 +462,7 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
   }
   if( i == 65536 ) {
     status= -257;
-	goto error;
+    goto error;
   }
 
   // read 512 bytes via DMA
@@ -508,21 +508,23 @@ error:
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
 {
-  s32 status;
+  s32 status = 0;
   int i;
 
   MIOS32_SDCARD_MUTEX_TAKE;
 
   if (!(CardType & CT_BLOCK))
 	sector *= 512;
+
   // init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
   MIOS32_SPI_TransferModeInit(MIOS32_SDCARD_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SDCARD_SPI_PRESCALER);
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_WRITE_SINGLE_BLOCK, sector, SDCMD_WRITE_SINGLE_BLOCK_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
-	goto error;
+    goto error;
   }  
+
   // send start token
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xfe);
 
@@ -537,8 +539,8 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   u8 response = MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
   if( (response & 0x0f) != 0x5 ) {
     status= -257;
-	goto error;
-   }
+    goto error;
+  }
 
   // wait for write completion
   for(i=0; i<32*65536; ++i) { // TODO: check if sufficient
@@ -549,7 +551,7 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   if( i == 32*65536 ) {
 
     status= -258;
-	goto error;
+    goto error;
   }
 
   // required for clocking (see spec)
@@ -577,7 +579,7 @@ error:
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
 {
-  s32 status;
+  s32 status = 0;
   int i;
 
   // init SPI port for fast frequency access (ca. 18 MBit/s)
@@ -588,7 +590,7 @@ s32 MIOS32_SDCARD_CIDRead(mios32_sdcard_cid_t *cid)
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CID, 0, SDCMD_SEND_CID_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
-	goto error;
+    goto error;
   }  
 	
   // wait for start token of the data block
@@ -665,7 +667,7 @@ error:
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
 {
-  s32 status;
+  s32 status = 0;
   int i;
   
   MIOS32_SDCARD_MUTEX_TAKE;
@@ -676,7 +678,7 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
 
   if( (status=MIOS32_SDCARD_SendSDCCmd(SDCMD_SEND_CSD, 0, SDCMD_SEND_CSD_CRC)) ) {
     status=(status < 0) ? -256 : status; // return timeout indicator or error flags
-	goto error;
+    goto error;
   }
   // wait for start token of the data block
   for(i=0; i<65536; ++i) { // TODO: check if sufficient
@@ -686,7 +688,7 @@ s32 MIOS32_SDCARD_CSDRead(mios32_sdcard_csd_t *csd)
   }
   if( i == 65536 ) {
     status= -257;
-	goto error;
+    goto error;
   }
 
   // read 16 bytes via DMA
