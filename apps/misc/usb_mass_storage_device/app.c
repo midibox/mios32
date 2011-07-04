@@ -70,6 +70,10 @@ void APP_Init(void)
   // start task
   xTaskCreate(TASK_SDCard, (signed portCHAR *)"SDCard", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SDCARD, NULL);
 
+  // optional:
+  // allows to send debug messages to UART0 since USB is allocated
+  //MIOS32_MIDI_DebugPortSet(UART0);
+
 #if DEBUG_VERBOSE_LEVEL >= 1
   // print welcome message on MIOS terminal
   DEBUG_MSG("\n");
@@ -105,8 +109,10 @@ static void TASK_SDCard(void *pvParameters)
     if( ++second_delay_ctr >= 1000 ) {
       second_delay_ctr = 0;
 
+      MIOS32_IRQ_Disable();
       u8 prev_sdcard_available = sdcard_available;
       sdcard_available = MIOS32_SDCARD_CheckAvailable(prev_sdcard_available);
+      MIOS32_IRQ_Enable();
 
       if( sdcard_available && !prev_sdcard_available ) {
 	MIOS32_BOARD_LED_Set(0x1, 0x1); // turn on LED
