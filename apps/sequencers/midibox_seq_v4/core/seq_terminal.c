@@ -64,6 +64,7 @@
 #if !defined(MIOS32_FAMILY_EMULATION)
 // for AOUT interface testmode
 // TODO: allow access to these pins via MIOS32_SPI driver
+#if defined(MIOS32_FAMILY_STM32F10x)
 #define MIOS32_SPI2_RCLK1_PORT GPIOC
 #define MIOS32_SPI2_RCLK1_PIN  GPIO_Pin_13
 #define MIOS32_SPI2_RCLK2_PORT GPIOC
@@ -79,6 +80,12 @@
 #define MIOS32_SPI2_GET_MISO    ( MIOS32_SPI2_MISO_PORT->IDR & MIOS32_SPI2_MISO_PIN )
 #define MIOS32_SPI2_SET_SCLK_0  { MIOS32_SPI2_SCLK_PORT->BRR  = MIOS32_SPI2_SCLK_PIN; }
 #define MIOS32_SPI2_SET_SCLK_1  { MIOS32_SPI2_SCLK_PORT->BSRR = MIOS32_SPI2_SCLK_PIN; }
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# warning "direct stimulation of AOUT pins not adapted yet"
+#else
+# error "Please adapt MIOS32_SPI settings!"
+#endif
 #endif
 
 
@@ -874,7 +881,13 @@ s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
     AOUT_SuspendSet(1);
     out("Setting AOUT:SI pin to ca. %dV - please measure now!\n", level ? 4 : 0);
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if defined(MIOS32_FAMILY_STM32F10x)
     MIOS32_SPI2_SET_MOSI(level ? 1 : 0);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# warning "direct stimulation of AOUT pins not adapted yet"
+#else
+# error "Please adapt MIOS32_SPI settings!"
+#endif
 #endif
     break;
 
@@ -882,11 +895,17 @@ s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
     AOUT_SuspendSet(1);
     out("Setting AOUT:SC pin to ca. %dV - please measure now!\n", level ? 4 : 0);
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if defined(MIOS32_FAMILY_STM32F10x)
     if( level ) {
       MIOS32_SPI2_SET_SCLK_1;
     } else {
       MIOS32_SPI2_SET_SCLK_0;
     }
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# warning "direct stimulation of AOUT pins not adapted yet"
+#else
+# error "Please adapt MIOS32_SPI settings!"
+#endif
 #endif
     break;
 

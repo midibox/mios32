@@ -40,7 +40,14 @@
 #define MIOS32_MINIMAL_STACK_SIZE 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 15*1024
+#define MIOS32_HEAP_SIZE 14*1024
+
+// for LPC17: simplify alloction of large arrays
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define AHB_SECTION __attribute__ ((section (".bss_ahb")))
+#else
+# define AHB_SECTION
+#endif
 
 
 // optional performance measuring
