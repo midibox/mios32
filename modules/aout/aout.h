@@ -43,7 +43,12 @@ extern "C" {
 
 // should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 #ifndef AOUT_SPI_OUTPUTS_OD
-#define AOUT_SPI_OUTPUTS_OD 1
+#if MIOS32_BOARD_MBHP_CORE_STM32
+# define AOUT_SPI_OUTPUTS_OD 1
+#else
+  // e.g. MBHP_CORE_LPC17 module
+# define AOUT_SPI_OUTPUTS_OD 0
+#endif
 #endif
 
 
