@@ -747,6 +747,13 @@ s32 MIOS32_USB_Init(u32 mode)
   MIOS32_IRQ_Enable();
 #endif
 
+  // force re-connection?
+  if( mode == 1 ) {
+    // disconnect from bus
+    USBHwConnect(FALSE);
+    MIOS32_DELAY_Wait_uS(10000);
+  }
+
 #if 0
   // if mode != 2: install MIOS32 hooks
   // a local driver can install it's own hooks and call MIOS32_USB_Init(2) to force re-enumeration
@@ -862,12 +869,11 @@ static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
 // only used to return dynamically generated strings
 // TK: maybe it's possible to use a free buffer from somewhere else?
 #define BUFFER_SIZE 100
-u8 buffer[BUFFER_SIZE];
 static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
 {
   const u8 vendor_str[] = MIOS32_USB_VENDOR_STR;
   const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
-  static u8 buffer[200]; // TODO: maybe buffer provided by USB Driver?
+  static u8 buffer[BUFFER_SIZE]; // TODO: maybe buffer provided by USB Driver?
 
   if( pSetup->bRequest != REQ_GET_DESCRIPTOR )
     return FALSE;
