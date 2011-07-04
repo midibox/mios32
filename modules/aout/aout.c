@@ -104,8 +104,8 @@
 //!     Only relevant for AOUT modules, not for AOUT_IF_INTDAC:<BR>
 //!     Specifies the RC pin of the SPI port which should be used.<BR>
 //!     Allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
-//!   <LI>AOUT_SPI_OUTPUTS_OD (default: 1)<BR>
-//!     Only relevant for AOUT modules, not for AOUT_IF_INTDAC:<BR>
+//!   <LI>AOUT_SPI_OUTPUTS_OD (default: 1 on STM32, 0 on LPC17 module)<BR>
+//!     Only relevant for AOUT modules connected to MBHP_CORE_STM32 module, not for AOUT_IF_INTDAC:<BR>
 //!     Specifies if output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
 //! </UL>
 //!
