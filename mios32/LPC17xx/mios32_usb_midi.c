@@ -244,11 +244,13 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
-  // check for received packages
-  MIOS32_USB_MIDI_RxBufferHandler(0x01);
+  if( transfer_possible ) {
+    // check for received packages
+    MIOS32_USB_MIDI_RxBufferHandler(0x01);
   
-  // check for packages which should be transmitted
-  MIOS32_USB_MIDI_TxBufferHandler(0x81);
+    // check for packages which should be transmitted
+    MIOS32_USB_MIDI_TxBufferHandler(0x81);
+  }
 
   return 0;
 }
