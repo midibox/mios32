@@ -718,7 +718,6 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 
 static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
 static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
-static void USBFrameHandler(U16 wFrame);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -740,35 +739,12 @@ s32 MIOS32_USB_Init(u32 mode)
   if( mode >= 3 )
     return -1; // unsupported mode
 
-  // clear all USB interrupt requests
-#if 0
-  MIOS32_IRQ_Disable();
-  //_SetCNTR(0); // Interrupt Mask
-  MIOS32_IRQ_Enable();
-#endif
-
   // force re-connection?
   if( mode == 1 ) {
     // disconnect from bus
     USBHwConnect(FALSE);
     MIOS32_DELAY_Wait_uS(10000);
   }
-
-#if 0
-  // if mode != 2: install MIOS32 hooks
-  // a local driver can install it's own hooks and call MIOS32_USB_Init(2) to force re-enumeration
-  if( mode != 2 ) {
-#ifndef MIOS32_DONT_USE_USB_MIDI
-    pEpInt_IN[0]  = MIOS32_USB_MIDI_EP1_IN_Callback;  // IN  EP1
-    pEpInt_OUT[0] = MIOS32_USB_MIDI_EP1_OUT_Callback; // OUT EP1
-#endif
-
-#ifdef MIOS32_USE_USB_COM
-    pEpInt_IN[3]  = MIOS32_USB_COM_EP4_IN_Callback;  // IN  EP4
-    pEpInt_OUT[2] = MIOS32_USB_COM_EP3_OUT_Callback; // OUT EP3
-#endif
-  }
-#endif
 
   // initialise stack
   USBInit();
@@ -783,28 +759,28 @@ s32 MIOS32_USB_Init(u32 mode)
   USBRegisterCustomReqHandler(HandleCustomRequest);
 
   // register endpoint handlers
-  //USBHwRegisterEPIntHandler(0x81, NULL);
 #ifndef MIOS32_DONT_USE_USB_MIDI
   USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback); // (dummy callback)
   // note: shared callback, IN and OUT irq will trigger MIOS32_USB_MIDI_EP1_OUT_Callback
   USBHwRegisterEPIntHandler(0x01, MIOS32_USB_MIDI_EP1_OUT_Callback);
 #endif
         
-  // register frame handler
-  USBHwRegisterFrameHandler(USBFrameHandler);
-
   // enable bulk-in interrupts on NAKs
   USBHwNakIntEnable(INACK_BI);
 
   // change connection state to disconnected
 #ifndef MIOS32_DONT_USE_USB_MIDI
   MIOS32_USB_MIDI_ChangeConnectionState(0);
-  // TODO!
-  MIOS32_USB_MIDI_ChangeConnectionState(1);
 #endif
 #ifdef MIOS32_USE_USB_COM
   MIOS32_USB_COM_ChangeConnectionState(0);
 #endif
+
+  // TODO: Find a better location to enable protocols
+#ifndef MIOS32_DONT_USE_USB_MIDI
+  MIOS32_USB_MIDI_ChangeConnectionState(1);
+#endif
+
 
   // enable_USB_interrupt
   MIOS32_IRQ_Install(USB_IRQn, MIOS32_IRQ_USB_PRIORITY);
@@ -931,11 +907,6 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
   buffer[1] = DSCR_STRING; // Descriptor Type
   *ppbData = buffer;
   return TRUE;
-}
-
-static void USBFrameHandler(U16 wFrame)
-{
-  // nothing to do...
 }
 
 //! \}

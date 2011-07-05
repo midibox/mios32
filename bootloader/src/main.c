@@ -137,11 +137,6 @@ int main(void)
     }
 
     MIOS32_USB_Init(0);
-  } else {
-#if defined(MIOS32_FAMILY_LPC17xx)
-    // currently somehow works ok for LPC17xx, but probably only for MacOS!
-    MIOS32_USB_Init(0);
-#endif
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -162,15 +157,7 @@ int main(void)
 #if !defined(MIOS32_DONT_USE_UART_MIDI)
   BSL_SYSEX_SendUploadReq(UART0);    
 #endif
-
-  u8 send_usb_request = 1;
-#if defined(MIOS32_FAMILY_LPC17xx)
-  // Workaround: LPC17xx requires incoming USB message before something can be sent
-  // sending a request here will hang-up the transfer handling for unknown reasons
-  if( !usb_was_initialized )
-    send_usb_request = 0;
-#endif
-  if( send_usb_request )
+  if( usb_was_initialized )
     BSL_SYSEX_SendUploadReq(USB0);
 
 
@@ -249,6 +236,7 @@ int main(void)
   u32 *reset_vector = (u32 *)0x00004004;
   if( (*reset_vector >> 24) == 0x00 ) {
     // reset all peripherals
+    // TODO?
 
     // change stack pointer
     u32 *stack_pointer = (u32 *)0x00004000;
