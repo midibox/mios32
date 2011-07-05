@@ -174,9 +174,11 @@ static void UIP_TASK_Handler(void *pvParameters)
 
     if( !(clock_time_tick() % 100) ) {
       // each 100 mS: check availablility of network device
-      //network_device_check();
-      // TK: no auto-detection for MBSEQ for best performance if no MBHP_ETH module connected
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17)
+      network_device_check();
+      // TK: on STM32 no auto-detection for MBSEQ for best performance if no MBHP_ETH module connected
       // the user has to reboot MBSEQ to restart module detection
+#endif
     }
 
     if( network_device_available() ) {

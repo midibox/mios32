@@ -19,9 +19,19 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local defines
+/////////////////////////////////////////////////////////////////////////////
+
+#define CONNECT_STATE_FAILED    0
+#define CONNECT_STATE_BASIC     1
+#define CONNECT_STATE_SPEED     2
+#define CONNECT_STATE_WAIT_LINK 3
+#define CONNECT_STATE_LINKED    4
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-static u8 netdev_available;
+static u8 netdev_state;
 
 static u8 mac_addr[6] = {
   MIOS32_ENC28J60_MY_MAC_ADDR1, MIOS32_ENC28J60_MY_MAC_ADDR2, MIOS32_ENC28J60_MY_MAC_ADDR3,
@@ -35,8 +45,6 @@ static u8 mac_addr[6] = {
 
 void network_device_init(void)
 {
-  s32 status = 0;
-
   // MAC Address: check for all-zero, derive MAC from serial number in this case
   int i;
   int ored = 0;
@@ -74,23 +82,62 @@ void network_device_init(void)
     }
   }
 
-  if( !EMAC_Init((uint8_t *)mac_addr) != SUCCESS )
-    status = -1;
-
-  netdev_available = (status >= 0);
-#if DEBUG_VERBOSE_LEVEL >= 1
-  MIOS32_MIDI_SendDebugMessage("[network_device_init] status %d, available: %d\n", status, netdev_available);
-#endif
+  netdev_state = CONNECT_STATE_BASIC;
 }
 
 void network_device_check(void)
 {
-  // hold initial netdev_available status
+  switch( netdev_state ) {
+  case CONNECT_STATE_FAILED:
+    // nothing to do anymore...
+    break;
+
+  case 1:
+    if( EMAC_Init((uint8_t *)mac_addr) == TRUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[network_device_init] PHY initialized\n");
+#endif
+      netdev_state = CONNECT_STATE_SPEED;
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[network_device_init] PHY init failed!\n");
+#endif
+      netdev_state = CONNECT_STATE_SPEED;
+    }
+    break;
+
+  case CONNECT_STATE_SPEED:
+    if( EMAC_Init2((uint8_t *)mac_addr) == TRUE ) {
+      netdev_state = CONNECT_STATE_WAIT_LINK;
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[network_device_init] link speed determined\n");
+#endif
+    }
+    break;
+
+  case CONNECT_STATE_WAIT_LINK:
+    if( EMAC_Init3((uint8_t *)mac_addr) == TRUE ) {
+      netdev_state = CONNECT_STATE_LINKED;
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[network_device_init] link available\n");
+#endif
+    }
+    break;
+
+  case CONNECT_STATE_LINKED:
+    if( EMAC_CheckLink() != TRUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[network_device_init] lost link\n");
+#endif
+      netdev_state = CONNECT_STATE_SPEED;
+    }
+    break;
+  }
 }
 
 int network_device_available(void)
 {
-  return netdev_available;
+  return netdev_state == CONNECT_STATE_LINKED;
 }
 
 int network_device_read(void)
