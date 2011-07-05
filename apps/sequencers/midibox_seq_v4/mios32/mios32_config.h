@@ -137,6 +137,13 @@
 #define MIOS32_BOARD_LCD_E4_PIN  GPIO_Pin_1
 #endif
 
+// LPC17 Ethernet driver: locate buffers to lower (default) section
+// (no attribute passed to this variable)
+#define LPC17XX_EMAC_MEM_SECTION
+// reduce number of buffers to save memory
+#define LPC17XX_EMAC_NUM_RX_FRAG 2
+#define LPC17XX_EMAC_NUM_TX_FRAG 2
+#define LPC17XX_EMAC_FRAG_SIZE   1024
 
 // ENC28J60 settings
 #define MIOS32_ENC28J60_FULL_DUPLEX 1

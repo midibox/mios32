@@ -14,41 +14,6 @@ UNS_32 EMAC_ReadPacket(void * pPacket);
 BOOL_32 EMAC_SendPacket(void *pPacket, UNS_32 size, void *pPacket2, UNS_32 size2);
 
 
-#define MYMAC_1         0x1E            /* our ethernet (MAC) address        */
-#define MYMAC_2         0x30            /* (MUST be unique in LAN!)          */
-#define MYMAC_3         0x6c
-#define MYMAC_4         0xa2
-#define MYMAC_5         0x45
-#define MYMAC_6         0x5e
-
-/* EMAC Memory Buffer configuration for 16K Ethernet RAM. */
-#define NUM_RX_FRAG         4           /* Num.of RX Fragments 4*1536= 6.0kB */
-#define NUM_TX_FRAG         3           /* Num.of TX Fragments 3*1536= 4.6kB */
-#define ETH_FRAG_SIZE       1536        /* Packet Fragment size 1536 Bytes   */
-
-#define ETH_MAX_FLEN        1536        /* Max. Ethernet Frame Size          */
-
-/* EMAC variables located in 16K Ethernet SRAM */
-// !!! TK: TODO!!! don't use these defines, this could clash with variables assigned to AHB section!!!
-//#define RX_DESC_BASE        0x7FE00000
-#define RX_DESC_BASE		0x20080000
-#define RX_STAT_BASE        (RX_DESC_BASE + NUM_RX_FRAG*8)
-#define TX_DESC_BASE        (RX_STAT_BASE + NUM_RX_FRAG*8)
-#define TX_STAT_BASE        (TX_DESC_BASE + NUM_TX_FRAG*8)
-#define RX_BUF_BASE         (TX_STAT_BASE + NUM_TX_FRAG*4)
-#define TX_BUF_BASE         (RX_BUF_BASE  + NUM_RX_FRAG*ETH_FRAG_SIZE)
-
-/* RX and TX descriptor and status definitions. */
-#define RX_DESC_PACKET(i)   (*(unsigned int *)(RX_DESC_BASE   + 8*i))
-#define RX_DESC_CTRL(i)     (*(unsigned int *)(RX_DESC_BASE+4 + 8*i))
-#define RX_STAT_INFO(i)     (*(unsigned int *)(RX_STAT_BASE   + 8*i))
-#define RX_STAT_HASHCRC(i)  (*(unsigned int *)(RX_STAT_BASE+4 + 8*i))
-#define TX_DESC_PACKET(i)   (*(unsigned int *)(TX_DESC_BASE   + 8*i))
-#define TX_DESC_CTRL(i)     (*(unsigned int *)(TX_DESC_BASE+4 + 8*i))
-#define TX_STAT_INFO(i)     (*(unsigned int *)(TX_STAT_BASE   + 4*i))
-#define RX_BUF(i)           (RX_BUF_BASE + ETH_FRAG_SIZE*i)
-#define TX_BUF(i)           (TX_BUF_BASE + ETH_FRAG_SIZE*i)
-
 /* MAC Configuration Register 1 */
 #define MAC1_REC_EN         0x00000001  /* Receive Enable                    */
 #define MAC1_PASS_ALL       0x00000002  /* Pass All Receive Frames           */

@@ -170,7 +170,7 @@ void network_device_send(void)
     status = EMAC_SendPacket((u8 *)uip_buf, (uip_len >= header_len) ? header_len : uip_len,
 			     (u8 *)uip_appdata, (uip_len > header_len) ? (uip_len-header_len) : 0);
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
     if( status == 0 ) {
       MIOS32_MIDI_SendDebugMessage("[network_device_send] retry\n");
     }

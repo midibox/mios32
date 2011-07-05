@@ -29,13 +29,66 @@ static UNS_16 read_PHY (UNS_8 PhyReg) ;
 static unsigned phy_id;
 
 
-
 /*************************************************
  * CodeRed - PHY definitions for RDB1768 rev 2
  * which uses SMSC LAN8720 PHY instead of DP83848C
  *************************************************/
 #define LAN8720_ID          0x0007C0F0  /* PHY Identifier                    */
 
+
+// TK: changed the way how memory locations are assigned
+// using local variables to ensure that the linker reserves the memory locations
+
+// TK: allows to locate EMAC buffers to different section
+#ifndef LPC17XX_EMAC_MEM_SECTION
+#define LPC17XX_EMAC_MEM_SECTION __attribute__ ((section (".bss_ahb")))
+#endif
+
+/* EMAC Memory Buffer configuration */
+#ifndef LPC17XX_EMAC_NUM_RX_FRAG
+#define LPC17XX_EMAC_NUM_RX_FRAG 4
+#endif
+
+#ifndef LPC17XX_EMAC_NUM_TX_FRAG
+#define LPC17XX_EMAC_NUM_TX_FRAG 3
+#endif
+
+#ifndef LPC17XX_EMAC_FRAG_SIZE
+#define LPC17XX_EMAC_FRAG_SIZE 1538 // must be dividable by 4!
+#endif
+
+#define NUM_RX_FRAG         LPC17XX_EMAC_NUM_RX_FRAG
+#define NUM_TX_FRAG         LPC17XX_EMAC_NUM_TX_FRAG
+
+#define ETH_FRAG_SIZE       LPC17XX_EMAC_FRAG_SIZE  /* Packet Fragment size  */
+#define ETH_MAX_FLEN        LPC17XX_EMAC_FRAG_SIZE  /* Max. Ethernet Frame Size */
+
+#define NUM_RX_FRAG         LPC17XX_EMAC_NUM_RX_FRAG
+#define NUM_TX_FRAG         LPC17XX_EMAC_NUM_TX_FRAG
+
+static u32 LPC17XX_EMAC_MEM_SECTION rx_desc[NUM_RX_FRAG*2];
+static u32 LPC17XX_EMAC_MEM_SECTION rx_stat[NUM_RX_FRAG*2];
+static u32 LPC17XX_EMAC_MEM_SECTION tx_desc[NUM_TX_FRAG*2];
+static u32 LPC17XX_EMAC_MEM_SECTION tx_stat[NUM_TX_FRAG];
+static u32 LPC17XX_EMAC_MEM_SECTION rx_buf[(NUM_RX_FRAG*ETH_FRAG_SIZE) / 4];
+static u32 LPC17XX_EMAC_MEM_SECTION tx_buf[(NUM_TX_FRAG*ETH_FRAG_SIZE) / 4];
+
+/* EMAC variables located in 16K Ethernet SRAM */
+#define RX_DESC_BASE	    ((u32)&rx_desc)
+#define RX_STAT_BASE        ((u32)&rx_stat)
+#define TX_DESC_BASE        ((u32)&tx_desc)
+#define TX_STAT_BASE        ((u32)&tx_stat)
+
+/* RX and TX descriptor and status definitions. */
+#define RX_DESC_PACKET(i)   rx_desc[2*i+0]
+#define RX_DESC_CTRL(i)     rx_desc[2*i+1]
+#define RX_STAT_INFO(i)     rx_stat[2*i+0]
+#define RX_STAT_HASHCRC(i)  rx_stat[2*i+1]
+#define TX_DESC_PACKET(i)   tx_desc[2*i+0]
+#define TX_DESC_CTRL(i)     tx_desc[2*i+1]
+#define TX_STAT_INFO(i)     tx_stat[i]
+#define RX_BUF(i)           (&rx_buf[(i*ETH_FRAG_SIZE)/4])
+#define TX_BUF(i)           (&tx_buf[(i*ETH_FRAG_SIZE)/4])
 
 
 /*--------------------------- EMAC_Init ---------------------------------*/
@@ -400,7 +453,7 @@ static void rx_descr_init (void)
   UNS_32 i;
 
   for (i = 0; i < NUM_RX_FRAG; i++) {
-    RX_DESC_PACKET(i)  = RX_BUF(i);
+    RX_DESC_PACKET(i)  = (unsigned int)RX_BUF(i);
     RX_DESC_CTRL(i)    = RCTRL_INT | (ETH_FRAG_SIZE-1);
     RX_STAT_INFO(i)    = 0;
     RX_STAT_HASHCRC(i) = 0;
@@ -422,7 +475,7 @@ static void tx_descr_init (void) {
   UNS_32 i;
 
   for (i = 0; i < NUM_TX_FRAG; i++) {
-    TX_DESC_PACKET(i) = TX_BUF(i);
+    TX_DESC_PACKET(i) = (unsigned int)TX_BUF(i);
     TX_DESC_CTRL(i)   = (1<<31) | (1<<30) | (1<<29) | (1<<28) | (1<<26) | (ETH_FRAG_SIZE-1);
     TX_STAT_INFO(i)   = 0;
   }
