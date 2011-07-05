@@ -259,9 +259,6 @@ static void TASK_Hooks(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 void _abort(void)
 {
-  // stop other tasks from running
-  portENTER_CRITICAL();
-
 #ifndef MIOS32_DONT_USE_MIDI
   // keep MIDI alive, so that program code can be updated
   u32 delay_ctr = 0;
@@ -292,9 +289,6 @@ void _abort(void)
     }
   }
 #endif
-
-  // only pro-forma - will never be reached
-  portEXIT_CRITICAL();
 }
 
 
@@ -409,6 +403,8 @@ void HardFault_Handler_c(unsigned int * hardfault_args)
   MIOS32_LCD_Clear();
   MIOS32_LCD_CursorSet(0, 0);
   MIOS32_LCD_PrintString("!! HARD FAULT !!");
+  MIOS32_LCD_CursorSet(0, 1);
+  MIOS32_LCD_PrintFormattedString("at PC=0x%08x", stacked_pc);
 #endif
 
   _abort();

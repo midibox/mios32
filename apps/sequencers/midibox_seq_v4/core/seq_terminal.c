@@ -807,9 +807,12 @@ s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
   out("No network informations available in emulation!");
 #else
 
-  out("MBHP_ETH module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
+  out("Ethernet link available: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
   if( !UIP_TASK_NetworkDeviceAvailable() ) {
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+    // since MBHP_ETH module is used
     out("Please reboot your MIDIbox SEQ to restart module detection! (or just type \"reset\")");
+#endif
   } else {
     out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
     out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");

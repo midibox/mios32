@@ -26,6 +26,8 @@ static void   tx_descr_init(void);
 static void write_PHY (UNS_32 PhyReg, UNS_32 Value);
 static UNS_16 read_PHY (UNS_8 PhyReg) ;
 
+static unsigned phy_id;
+
 
 
 /*************************************************
@@ -44,9 +46,6 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
   UNS_32 regv = 0;
   UNS_32 id1,id2;
   volatile unsigned int tout;
-  unsigned phy_id;
-  unsigned phy_linkstatus_reg;
-  unsigned phy_linkstatus_mask;
 
    /* Power Up the EMAC controller. */
    LPC_SC->PCONP |= 0x40000000;
@@ -110,80 +109,85 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
   phy_id = ((id1 << 16) | (id2 & 0xFFF0));
   
 #if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
-	  if ((phy_id != DP83848C_ID) && (phy_id != LAN8720_ID))
+  if ((phy_id != DP83848C_ID) && (phy_id != LAN8720_ID))
 #else
-	#error "No board"
+# error "No board"
 #endif		  
-  	return FALSE;
+    return FALSE;
+
+  return TRUE;
+}
 
 
-	/* Configure the PHY device */
-      /* Configure the PHY device */
+// TK: init sequence has been splitted to avoid hang-ups
+// see also code in network_device.c
+BOOL_32 EMAC_Init2(uint8_t* mac_addr)
+{
+  UNS_32 regv = 0;
+
+  /* Configure the PHY device */
 #if defined (_10MBIT_)
-      /* Connect at 10MBit */
-      write_PHY (PHY_REG_BMCR, PHY_FULLD_10M);
+  /* Connect at 10MBit */
+  write_PHY (PHY_REG_BMCR, PHY_FULLD_10M);
 #elif defined (_100MBIT_)
-      /* Connect at 100MBit */
-      write_PHY (PHY_REG_BMCR, PHY_FULLD_100M);
+  /* Connect at 100MBit */
+  write_PHY (PHY_REG_BMCR, PHY_FULLD_100M);
 #else
-      /* Use autonegotiation about the link speed. */
-      write_PHY (PHY_REG_BMCR, PHY_AUTO_NEG);
-      /* Wait to complete Auto_Negotiation. */
-      for (tout = 0; tout < 0x100000; tout++) {
-         regv = read_PHY (PHY_REG_BMSR);
-         if (regv & 0x0020) {
-            /* Autonegotiation Complete. */
-            break;
-         }
-      }
+  /* Use autonegotiation about the link speed. */
+  write_PHY (PHY_REG_BMCR, PHY_AUTO_NEG);
+  regv = read_PHY (PHY_REG_BMSR);
+  if( !(regv & 0x0020) )
+    return FALSE;
 
-	if (tout >= 0x100000)
-		return FALSE; // auto_neg failed
+  /* Autonegotiation Complete. */
 #endif
 
-	  phy_linkstatus_reg = PHY_REG_STS;		// Default to DP83848C
-	  phy_linkstatus_mask = 0x0001;
+  return TRUE;
+}
 
-	  if (phy_id == LAN8720_ID) {
-		  phy_linkstatus_reg = PHY_REG_BMSR;
-		  phy_linkstatus_mask = 0x0004;
-	  }
+// TK: init sequence has been splitted to avoid hang-ups
+// see also code in network_device.c
+BOOL_32 EMAC_Init3(uint8_t* mac_addr)
+{
+  UNS_32 regv = 0;
+  unsigned phy_linkstatus_reg;
+  unsigned phy_linkstatus_mask;
 
-  /* Check the link status. */
-  for (tout = 0; tout < 0x100000; tout++) {
-#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
-    regv = read_PHY (phy_linkstatus_reg);
-    if (regv & phy_linkstatus_mask)
-#else
-	#error "No board"
-#endif 
-	{   	
-      /* Link is on. */
-      break;
-    }
+  phy_linkstatus_reg = PHY_REG_STS;		// Default to DP83848C
+  phy_linkstatus_mask = 0x0001;
+
+  if (phy_id == LAN8720_ID) {
+    phy_linkstatus_reg = PHY_REG_BMSR;
+    phy_linkstatus_mask = 0x0004;
   }
 
-  if (tout >= 0x100000)
-  	return FALSE;
-
+  /* Check the link status. */
+  // TK: reduced timeout value to avoid hang-up if no ethernet cable connected
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
+  regv = read_PHY (phy_linkstatus_reg);
+  if ( !(regv & phy_linkstatus_mask) )
+    return FALSE;
+#else
+# error "No board"
+#endif 
 
   /* Configure Full/Half Duplex mode. */
 #if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
   if (regv & 0x0004) 
 #else
-	#error "No board"
+#error "No board"
 #endif
-	{  	
-    /* Full duplex is enabled. */
-	  LPC_EMAC->MAC2    |= MAC2_FULL_DUP;
-	  LPC_EMAC->Command |= CR_FULL_DUP;
-	  LPC_EMAC->IPGT     = IPGT_FULL_DUP;
-  }
+    {  	
+      /* Full duplex is enabled. */
+      LPC_EMAC->MAC2    |= MAC2_FULL_DUP;
+      LPC_EMAC->Command |= CR_FULL_DUP;
+      LPC_EMAC->IPGT     = IPGT_FULL_DUP;
+    }
   else {
     /* Half duplex mode. */
-	  LPC_EMAC->IPGT = IPGT_HALF_DUP;
+    LPC_EMAC->IPGT = IPGT_HALF_DUP;
   }
-
+  
   /* Configure 100MBit/10MBit mode. */
 #if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
   if (regv & 0x0002) {
@@ -228,7 +232,37 @@ BOOL_32 EMAC_Init(uint8_t* mac_addr)
 
    /* Configure VIC for EMAC interrupt. */
    //VICVectAddrxx = (UNS_32)xx;
-   
+
+  return TRUE;
+}
+
+
+// TK: added to check link during runtime
+// see also code in network_device.c
+BOOL_32 EMAC_CheckLink(void)
+{
+  UNS_32 regv = 0;
+  unsigned phy_linkstatus_reg;
+  unsigned phy_linkstatus_mask;
+
+  phy_linkstatus_reg = PHY_REG_STS;		// Default to DP83848C
+  phy_linkstatus_mask = 0x0001;
+
+  if (phy_id == LAN8720_ID) {
+    phy_linkstatus_reg = PHY_REG_BMSR;
+    phy_linkstatus_mask = 0x0004;
+  }
+
+  /* Check the link status. */
+  // TK: reduced timeout value to avoid hang-up if no ethernet cable connected
+#if	defined (KEIL_BOARD_MCB17XX) || defined (CODERED_BOARD_RDB1768) || defined(MIOS32_BOARD_LPCXPRESSO) || defined (MIOS32_BOARD_MBHP_CORE_LPC17)
+  regv = read_PHY (phy_linkstatus_reg);
+  if ( !(regv & phy_linkstatus_mask) )
+    return FALSE;
+#else
+# error "No board"
+#endif 
+
   return TRUE;
 }
 

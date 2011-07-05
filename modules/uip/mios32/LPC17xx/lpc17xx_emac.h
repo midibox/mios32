@@ -7,6 +7,9 @@
 
 // prototypes
 BOOL_32 EMAC_Init(uint8_t* mac_addr);
+BOOL_32 EMAC_Init2(uint8_t* mac_addr);
+BOOL_32 EMAC_Init3(uint8_t* mac_addr);
+BOOL_32 EMAC_CheckLink(void);
 UNS_32 EMAC_ReadPacket(void * pPacket);
 BOOL_32 EMAC_SendPacket(void *pPacket, UNS_32 size, void *pPacket2, UNS_32 size2);
 
@@ -26,6 +29,7 @@ BOOL_32 EMAC_SendPacket(void *pPacket, UNS_32 size, void *pPacket2, UNS_32 size2
 #define ETH_MAX_FLEN        1536        /* Max. Ethernet Frame Size          */
 
 /* EMAC variables located in 16K Ethernet SRAM */
+// !!! TK: TODO!!! don't use these defines, this could clash with variables assigned to AHB section!!!
 //#define RX_DESC_BASE        0x7FE00000
 #define RX_DESC_BASE		0x20080000
 #define RX_STAT_BASE        (RX_DESC_BASE + NUM_RX_FRAG*8)
