@@ -393,8 +393,58 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 
   // timeout error - something is stalling...
 
+#if 0
   // send stop condition
   I2C_GenerateSTOP(iicx->base, ENABLE);
+#else
+  // added by wackazong
+  // see also http://midibox.org/forums/topic/15770-sda-stuck-low-on-i2c-transfer/
+  // try to deblock a SDA line that is stuck low by bit-banging out a clock signal
+  // and waiting until the send buffer of any slave is empty
+
+  // disable interrupts
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+
+  I2C_Cmd(I2C2, DISABLE);
+  GPIO_InitTypeDef GPIO_InitStructure;
+
+  // reconfigure IIC pins to push pull
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
+  GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
+  GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
+
+  u32 i;
+  for (i=0; i<16; i++) {
+    /*Reset the SDA Pin*/
+    GPIO_ResetBits(GPIOB, MIOS32_IIC0_SDA_PIN);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Reset the SCL Pin*/
+    GPIO_ResetBits(GPIOB, MIOS32_IIC0_SCL_PIN);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Set the SCL Pin*/
+    GPIO_SetBits(GPIOB, MIOS32_IIC0_SCL_PIN);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Set the SDA Pin*/
+    GPIO_SetBits(GPIOB, MIOS32_IIC0_SDA_PIN);
+    MIOS32_DELAY_Wait_uS(1000);
+  }
+
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
+  GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
+  GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
+
+  I2C_Cmd(I2C2, ENABLE); 
+#endif
 
   // re-initialize peripheral
   MIOS32_IIC_InitPeripheral(iic_port);
