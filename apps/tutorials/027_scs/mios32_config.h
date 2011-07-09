@@ -16,6 +16,6 @@
 
 
 // the used encoder type (see mios32_enc.h)
-#define SCS_ENC_TYPE DETENTED1
+#define SCS_ENC_TYPE DETENTED2
 
 #endif /* _MIOS32_CONFIG_H */
