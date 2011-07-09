@@ -29,7 +29,7 @@
 //! #define SCS_ENC_MENU_ID 0
 //!
 //! // the encoder type (see mios32_enc.h for available types)
-//! #define SCS_ENC_MENU_TYPE DETENTED1
+//! #define SCS_ENC_MENU_TYPE DETENTED2
 //!
 //! number of menu items which are displayed on screen
 //! each item allocates 4x2 characters
