@@ -16,6 +16,9 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = app.c \
 		  synth.c \
+		  synth_file.c \
+		  synth_file_b.c \
+		  scs_config.c \
 		  embspeech/src/mcu_synthdata.c \
 		  embspeech/src/mcu_traslator.c \
 		  embspeech/src/mcu_synthesize.c \
@@ -58,6 +61,12 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # Notestack functions
 include $(MIOS32_PATH)/modules/notestack/notestack.mk
+
+# FATFS Driver
+include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
+
+# Sources for Standard Control Surface
+include $(MIOS32_PATH)/modules/scs/scs.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

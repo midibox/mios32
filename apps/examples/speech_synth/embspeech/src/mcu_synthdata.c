@@ -392,7 +392,15 @@ MCU_frameref_t *MCU_LookupSpect(MCU_PHONEME_TAB *this_ph, MCU_PHONEME_TAB *prev_
 
 	if((ix = MCU_LookupSound(this_ph,other_ph,which,match_level,0)) == 0)
 		return(NULL);
+
+	// TK: added size check to avoid crash
+	if( ix >= PHONEME_DATA_SIZE ) {
+	  //MIOS32_MIDI_SendDebugMessage("bad ix: %d\n", ix);
+	  ix = 0;
+	}
+
 	seq = (MCU_SPECT_SEQ *)(&MCU_spects_data[ix]);
+
 	nf = seq->n_frames;
 
 	seq_break = 0;
