@@ -18,19 +18,16 @@
 #include <mios32.h>
 #include "app.h"
 #include "synth.h"
-
-#include <FreeRTOS.h>
-#include <portmacro.h>
-#include <task.h>
-#include <queue.h>
-#include <semphr.h>
+#include "tasks.h"
 
 #include <notestack.h>
 
-#include "mcu_otherdef.h"
-#include "mcu_phoneme.h"
-#include "mcu_synthesize.h"
+// include source of the SCS
+#include <scs.h>
+#include "scs_config.h"
 
+#include "synth_file.h"
+#include "synth_file_b.h"
 
 // define priority level for task:
 // use same priority as MIOS32 specific tasks (3)
@@ -39,91 +36,12 @@
 // local prototype of the task function
 static void TASK_Periodic_1mS(void *pvParameters);
 
+// define priority level for control surface handler
+// use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
+#define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
 
-
-const char HelloMsg[] = "Circuit Cellar and Luminary Micro are pleased to offer design engineers an incredible contest opportunity called Design Stellaris 2006 And with Circuit Cellar magazine they also have the 1 venue for peer recognition of their winning applications";
-
-volatile char* p_cgen = NULL;
-MCU_PHONEME_LIST* g_ph_list;
-int num_phoneme;
-int gen_resume;
-
-int MCUTranslate(char* src);
-int MCUPhoneticString(char* dest);
-void MCUCalcPitches(int clause_tone);
-void MCUCalcLengths(void);
-
-void MCU_Speak(char* src)
-{
-  if(NULL != p_cgen) return;
-  p_cgen = (char*) src;
-  MCUTranslate((char*) p_cgen);
-  MCUCalcPitches(1);
-  MCUCalcLengths();
-}
-
-int MCU_SpeakPhoneme(MCU_PHONEME_LIST* ph_list, int num)
-{
-  num_phoneme = num;
-  gen_resume = 0;
-  g_ph_list = ph_list;
-  return (1);
-}
-
-//play list phoneme
-const MCU_PHONEME_LIST phoneme_default[43]={
- { 10,   1,   0,   0,   0,  20,   0, 205,    25,   23,   29,    0},
- { 67,   0,   6,   6,  15,  20,   5,   0,   256,    0,    0,14337},
- { 94,   0,   6,   2,   0,  24,   0,   4,   168,   39,   47,    0},
- { 59,   0,   0,   4,  40,  20,   0,   0,     0,    0,    0,    0},
- { 88,   0,   0,   2,   0,  16,   0,   4,   133,   35,   39,    0},
- { 50,   0,   8,   4,  60,  20,   0,   0,     0,    0,    0,    0},
- { 67,   0,   8,   6,  15,  20,   1,   0,   256,    0,    0,12297},
- { 87,   4,   8,   2,   0,  22,   0,   4,   229,   11,   41,    0},
- { 33,   1,   0,   3,   0,  15,   0,   0,   235,   14,   17,    0},
- { 13,   1,   0,   2,   0,  15,   0,   4,   235,   17,   29,    0},
- {  9,   0,  12,   0,   0,   0,   2,   0,   200,    0,    0,    0},
- {  9,   0,  12,   0,   0,   0,   0,   0,     0,    0,    0,    0},
- { 10,   1,   0,   0,   0,  20,   0, 205,    25,   23,   29,    0},
- { 33,   1,   6,   3,   0,  23,   1,   0,   155,   37,   46,16385},
- { 99,   0,   6,   2,   0,  23,   0,   4,   155,   39,   47,    0},
- { 42,   0,   1,   8,   0,  15,   0,   0,    87,   39,   38,    0},
- { 88,   0,   1,   2,   0,  15,   0,   4,    87,   35,   39,    0},
- { 43,   1,   0,   8,   0,  15,   0,   0,   123,   35,   42,    0},
- { 13,   0,   0,   2,   0,  15,   0,   4,   123,   39,   43,    0},
- { 30,   1,   0,   3,   0,  15,   0,   0,   146,   39,   42,    0},
- { 81,   0,   0,   2,   0,  15,   0,   4,   146,   39,   43,    0},
- { 42,   0,   6,   8,  12,  18,   1,   0,   168,   39,   39,10250},
- {102,   0,   6,   2,   0,  23,   0,   4,   168,   32,   40,    0},
- { 59,   0,   0,   4,  40,  20,   0,   0,     0,    0,    0,    0},
- { 30,   1,   0,   3,   0,  15,   0,   0,   200,   22,   31,    0},
- {101,   0,   0,   2,   0,  15,   0,   4,   200,   28,   32,    0},
- {  9,   0,   1,   0,   0,  20,   1,   0,    75,    0,    0, 6160},
- {  9,   0,   1,   0,   0,  20,   0,   0,    75,    0,    0,    0},
- { 85,   0,   1,   2,   0,  16,   0,  20,   108,   32,   36,    0},
- { 43,   0,   6,   8,   0,  16,   0,  17,   172,   24,   32,    0},
- { 49,   0,   6,   5,   0,  20,   0,  16,   128,    0,    0,    0},
- { 59,   0,   6,   4,  60,  20,   1,   0,     0,    0,    0, 8212},
- {103,   0,   6,   2,   0,  24,   0,   4,   182,   25,   33,    0},
- { 35,   0,   8,   3,   0,  16,   0,   1,   121,    5,   25,    0},
- { 59,   0,   8,   4,  60,  20,   1,   0,     0,    0,    0,14361},
- { 90,   0,   8,   2,   0,  22,   0,   4,   182,    8,   34,    0},
- { 43,   0,   0,   8,   0,  16,   0,   1,   182,    0,    8,    0},
- { 50,   0,   0,   4,  40,  20,   0,   0,     0,    0,    0,    0},
- { 87,   0,   0,   2,   0,  16,   0,   4,   165,    9,   13,    0},
- { 67,   0,  12,   6,   0,  20,   0,   0,   200,    0,    0,    0},
- { 50,   0,  12,   4,  20,  20,   0,   0,     0,    0,    0,    0},
- {  9,   0,  12,   0,   0,   0,   2,   0,    10,    0,    0,    0},
- {  9,   0,  12,   0,   0,   0,   0,   0,     0,    0,    0,    0},
-};
-
-
-
-// modified via CC
-// NOTE: at least 3 entries have to be played, we reserve for up to 16 entries
-#define PHONEME_CC_MAX 16
-static MCU_PHONEME_LIST phoneme_cc[PHONEME_CC_MAX];
-static u8 phoneme_cc_num_played;
+// local prototype of the task function
+static void TASK_Period_1mS_LP(void *pvParameters);
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -131,6 +49,8 @@ static u8 phoneme_cc_num_played;
 
 #define NOTESTACK_SIZE 16
 
+// C-2
+#define PHONEME_NOTE_OFFSET 0x30
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -144,6 +64,12 @@ static notestack_item_t notestack_items[NOTESTACK_SIZE];
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
+// for mutual exclusive SD Card access between different tasks
+// The mutex is handled with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE
+// macros inside the application, which contain a different implementation 
+// for emulation
+xSemaphoreHandle xSDCardSemaphore;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -153,39 +79,32 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+  // create semaphores
+  xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
+
   // initialize the Notestack
   NOTESTACK_Init(&notestack, NOTESTACK_MODE_PUSH_TOP, &notestack_items[0], NOTESTACK_SIZE);
-
-
-  // init CC phonemes
-  int i;
-  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phoneme_cc[0];
-  for(i=0; i<PHONEME_CC_MAX; ++i, ++p) {
-    p->ph = 88;
-    p->env = 0;
-    p->tone = 0;
-    p->type = 2;
-    p->prepause = 0;
-    p->amp = 16;
-    p->newword = 0;
-    p->synthflags = 4;
-    p->length = 133;
-    p->pitch1 = 35;
-    p->pitch2 = 39;
-    p->sourceix = 0;
-  }
-  phoneme_cc_num_played = 3; // at least 3 entries have to be played
-
-  // init speak
-  MCU_WavegenInit();
-  MCU_SynthesizeInit();
-  // MCU_Speak((char*) HelloMsg);
 
   // init Synth
   SYNTH_Init(0);
 
+  // initialize all J10 pins as inputs with internal Pull-Up
+  int pin;
+  for(pin=0; pin<8; ++pin)
+    MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+
+  // initialize Standard Control Surface
+  SCS_Init(0);
+
+  // initialize local SCS configuration
+  SCS_CONFIG_Init(0);
+
+  // initialize file system
+  SYNTH_FILE_Init(0);
+
   // start task
   xTaskCreate(TASK_Periodic_1mS, (signed portCHAR *)"Periodic_1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIODIC_1MS, NULL);
+  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 }
 
 
@@ -232,10 +151,18 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
       }
 #endif
 
-      //MCU_Speak((char*) HelloMsg);
-      //MCU_SpeakPhoneme(phoneme_default, 42);
-      MCU_SynthesizeInit();
-      MCU_SpeakPhoneme(phoneme_cc, phoneme_cc_num_played);
+      // play note
+      int phoneme_num = note - PHONEME_NOTE_OFFSET;
+      while( phoneme_num < 0)
+	phoneme_num += SYNTH_NUM_PHONEMES;
+      while( phoneme_num > SYNTH_NUM_PHONEMES )
+	phoneme_num -= SYNTH_NUM_PHONEMES;
+
+      // legato...
+      if( notestack.len == 1 )
+	SYNTH_PhonemeStop(phoneme_num);
+
+      SYNTH_PhonemePlay(phoneme_num, velocity);
       
       // set board LED
       MIOS32_BOARD_LED_Set(1, 1);
@@ -256,29 +183,19 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     NOTESTACK_SendDebugMessage(&notestack);
 #endif
   } else if( midi_package.type == CC ) {
-    int phoneme_ix = midi_package.chn;
-    u8 value = midi_package.value;
-    if( phoneme_ix >= PHONEME_CC_MAX ) // just to ensure, is 16...
-      return;
-    MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phoneme_cc[phoneme_ix];
+    u8 phoneme_num = 0;
+    u8 phoneme_ix = midi_package.chn;
+    u32 value = midi_package.value;
 
-    switch( midi_package.cc_number ) {
-    case 16: p->ph = value; break;
-    case 17: p->env = value; break;
-    case 18: p->tone = value; break;
-    case 19: p->type = value; break;
-    case 20: p->prepause = value; break;
-    case 21: p->amp = value; break;
-    case 22: p->newword = value; break;
-    case 23: p->synthflags = value; break;
-    case 24: p->length = 64*value; break;
-    case 25: p->pitch1 = value; break;
-    case 26: p->pitch2 = value; break;
-
-    case 32: phoneme_cc_num_played = (value >= PHONEME_CC_MAX) ? (PHONEME_CC_MAX-1) : value; break;
-    case 33: synth_downsampling_factor = value; break;
-    case 34: synth_resolution = (value >= 16) ? 16 : value; break;
-    case 35: synth_xor = ((u16)value << 9); break;
+    if( midi_package.cc_number < 16 ) {
+    } else if( midi_package.cc_number < 32 ) {
+      u8 phoneme_par = midi_package.cc_number - 16;
+      SYNTH_PhonemeParSet(phoneme_num, phoneme_ix, phoneme_par, value);
+    } else if( midi_package.cc_number == 32 ) {
+      SYNTH_PhonemeLengthSet(phoneme_num, value);
+    } else if( midi_package.cc_number < 48 ) {
+      u8 global_par = midi_package.cc_number - 33;
+      SYNTH_GlobalParSet(global_par, value);
     }
   }
 
@@ -290,6 +207,14 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
+#ifdef MIOS32_FAMILY_LPC17xx
+  // pass current pin state of J10
+  // only available for LPC17xx, all others (like STM32) default to SRIO
+  SCS_AllPinsSet(MIOS32_BOARD_J10_Get());
+#endif
+
+  // update encoders/buttons of SCS
+  SCS_EncButtonUpdate_Tick();
 }
 
 
@@ -307,6 +232,10 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
+  // for STM32 (no J10 available, accordingly encoder/buttons connected to DIN):
+  // if DIN pin number between 0..7: pass to SCS
+  if( pin < 8 )
+    SCS_DIN_NotifyToggle(pin, pin_value);
 }
 
 
@@ -317,6 +246,9 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
+  // pass encoder event to SCS handler
+  if( encoder == SCS_ENC_MENU_ID )
+    SCS_ENC_MENU_NotifyChange(incrementer);
 }
 
 
@@ -342,28 +274,78 @@ static void TASK_Periodic_1mS(void *pvParameters)
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
     SYNTH_Tick();
+  }
+}
 
-    if( g_ph_list ) {
-      // Local phoneme List
-      gen_resume = MCU_Generate(g_ph_list, &num_phoneme, gen_resume);
-      if( !gen_resume )
-	g_ph_list = NULL;
-    } else {
-      // Translated phoneme list
-      int trans=0;
-      gen_resume = MCU_Generate(MCU_phoneme_list, &MCU_n_phoneme_list, gen_resume);
-      if( !gen_resume ) {
-	if( p_cgen != NULL ) {
-	  //p_cgen = MCUTranslate((char*) p_cgen);
-	  trans = MCUTranslate(NULL);
-	  MCUCalcPitches(1);
-	  MCUCalcLengths();
-	  //num_phoneme = MCU_n_phoneme_list;
-	  gen_resume = MCU_Generate(MCU_phoneme_list,&MCU_n_phoneme_list,0);
-	  if( (trans ==0) && (0 == gen_resume) /*&& (get_sound_state() )*/ )
-	    p_cgen = NULL;
+/////////////////////////////////////////////////////////////////////////////
+// This task handles the control surface
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period_1mS_LP(void *pvParameters)
+{
+  MIOS32_LCD_Clear();
+
+  while( 1 ) {
+    vTaskDelay(1 / portTICK_RATE_MS);
+
+    // call SCS handler
+    SCS_Tick();
+
+    // SD Card handler
+    MUTEX_SDCARD_TAKE;
+    s32 status = SYNTH_FILE_CheckSDCard();
+
+    if( status == 1 ) {
+      DEBUG_MSG("SD Card connected: %s\n", SYNTH_FILE_VolumeLabel());
+    } else if( status == 2 ) {
+      DEBUG_MSG("SD Card disconnected\n");
+    } else if( status == 3 ) {
+      if( !SYNTH_FILE_SDCardAvailable() ) {
+	DEBUG_MSG("SD Card not found\n");
+      } else if( !SYNTH_FILE_VolumeAvailable() ) {
+	DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+      } else {
+	int bank;
+	for(bank=0; bank<SYNTH_FILE_B_NUM_BANKS; ++bank) {
+	  u8 numPatches = SYNTH_FILE_B_NumPatches(bank);
+
+	  if( numPatches ) {
+	    DEBUG_MSG("Bank #%d contains %d patches\n", bank+1, numPatches);
+	  } else {
+	    DEBUG_MSG("Bank #%d not found - creating new one\n", bank+1);
+	    if( (status=SYNTH_FILE_B_Create(synth_file_session_name, bank)) < 0 ) {
+	      DEBUG_MSG("Failed to create Bank #%d (status: %d)\n", bank+1, status);
+	    } else {
+	      DEBUG_MSG("Bank #%d successfully created!\n", bank+1);
+
+	      int numPatches = SYNTH_FILE_B_NumPatches(bank);
+	      int patch;
+	      for(patch=0; patch<numPatches; ++patch) {
+		DEBUG_MSG("Writing Bank %d Patch #%d\n", bank+1, patch+1);
+		MIOS32_LCD_CursorSet(0, 0); // TMP - use message system later
+		MIOS32_LCD_PrintFormattedString("Write Patch %d.%03d  ", bank+1, patch+1);
+		MIOS32_LCD_CursorSet(0, 1); // TMP - use message system later
+		MIOS32_LCD_PrintFormattedString("Please wait...      ");
+		u8 sourceGroup = 0;
+		u8 rename_if_empty_name = 0;
+		MUTEX_SDCARD_TAKE;
+		if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, bank, patch, sourceGroup, rename_if_empty_name)) < 0 ) {
+		  DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", patch+1, bank+1, status);
+		}
+	      }
+	      SCS_DisplayUpdateRequest();
+	    }
+	  }
+	}
+	status = SYNTH_FILE_UnloadAllFiles();
+	status = SYNTH_FILE_LoadAllFiles(1);
+	if( status < 0 ) {
+	  DEBUG_MSG("Failed to load the newly created files!\n");
 	}
       }
     }
+
+    MUTEX_SDCARD_GIVE;
   }
+
 }
+

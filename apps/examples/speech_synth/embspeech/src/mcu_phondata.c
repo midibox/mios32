@@ -50,7 +50,9 @@ const unsigned long phoneme_index[372]={
 };
 
 /*Phoneme data*/
-const unsigned long phoneme_data[6751]={
+// TK: added for array index check
+#define PHONEME_DATA_SIZE (4*6751)
+const unsigned long phoneme_data[PHONEME_DATA_SIZE/4]={
 0x00000000, 0x0003008B, 0x36320000, 0x020D0070, 0x092405A1, 0x0E740CBC, 0x2D504222, 0x96A7242F,
 0x78787887, 0x4F5A0002, 0x020D0074, 0x092405A1, 0x0E740CBC, 0x36604F29, 0x96A72B38, 0x78787887,
 0x2A000000, 0x020D0074, 0x092405A1, 0x0E740CBC, 0x27463A1E, 0x96A72029, 0x78787887, 0x0003008C,

@@ -19,22 +19,31 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// number of provided waveforms
-#define SYNTH_NUM_WAVEFORMS  4
+#define SYNTH_NUM_GROUPS         1 // tmp, could be more groups (synths running in parallel) later
+#define SYNTH_NUM_PHONEMES       64
+#define SYNTH_PHONEME_MAX_LENGTH 16
+
+#define SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR 0
+#define SYNTH_GLOBAL_PAR_RESOLUTION          1
+#define SYNTH_GLOBAL_PAR_XOR                 2
+
+#define SYNTH_PHONEME_PAR_PH         0
+#define SYNTH_PHONEME_PAR_ENV        1
+#define SYNTH_PHONEME_PAR_TONE       2
+#define SYNTH_PHONEME_PAR_TYPE       3
+#define SYNTH_PHONEME_PAR_PREPAUSE   4
+#define SYNTH_PHONEME_PAR_AMP        5
+#define SYNTH_PHONEME_PAR_NEWWORD    6
+#define SYNTH_PHONEME_PAR_FLAGS      7
+#define SYNTH_PHONEME_PAR_LENGTH     8
+#define SYNTH_PHONEME_PAR_PITCH1     9
+#define SYNTH_PHONEME_PAR_PITCH2    10
+#define SYNTH_PHONEME_PAR_SOURCE_IX 11
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
-
-
-// available waveforms
-typedef enum {
-  WAVEFORM_TRIANGLE,
-  WAVEFORM_SAW,
-  WAVEFORM_PULSE,
-  WAVEFORM_SINE
-} synth_waveform_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,13 +55,24 @@ extern s32 SYNTH_Init(u32 mode);
 extern s32 SYNTH_SamplePlayed(void);
 extern s32 SYNTH_Tick(void);
 
+extern s32 SYNTH_GlobalParGet(u8 par);
+extern s32 SYNTH_GlobalParSet(u8 par, u8 value);
+
+extern s32 SYNTH_PhonemeParGet(u8 num, u8 ix, u8 par);
+extern s32 SYNTH_PhonemeParSet(u8 num, u8 ix, u8 par, u8 value);
+
+extern s32 SYNTH_PhonemeLengthGet(u8 num);
+extern s32 SYNTH_PhonemeLengthSet(u8 num, u8 length);
+
+extern s32 SYNTH_PhonemePlay(u8 num, u8 velocity);
+extern s32 SYNTH_PhonemeStop(u8 num);
+extern s32 SYNTH_PhonemeIsPlayed(u8 num);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 synth_downsampling_factor;
-extern u8 synth_resolution;
-extern u16 synth_xor;
+// tmp.
+extern char synth_patch_name[SYNTH_NUM_GROUPS][21];
 
 #endif /* _SYNTH_H */

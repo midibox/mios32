@@ -18,17 +18,25 @@
 #include <mios32.h>
 
 #include <math.h>
+#include <string.h>
 
 #include "synth.h"
 
 #include <FreeRTOS.h>
 #include <portmacro.h>
 
+#include "mcu_otherdef.h"
+#include "mcu_phoneme.h"
+#include "mcu_synthesize.h"
+
+
 /////////////////////////////////////////////////////////////////////////////
 // External prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 extern int MCU_WavegenFill(int fill_zeros);
+extern void MCU_WcmdqStop();
+extern int MCU_WcmdqUsed();
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -45,18 +53,16 @@ extern int MCU_WavegenFill(int fill_zeros);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
+// Global variables and prototypes from embspeech driver
 /////////////////////////////////////////////////////////////////////////////
 unsigned char* MCU_out_ptr;
 unsigned char* MCU_out_end;
 unsigned char MCU_outbuf[WAVETABLE_SIZE];
 
+int MCUTranslate(char* src);
 
-// quick&dirty
-u8 synth_downsampling_factor = 6;
-u8 synth_resolution = 15;
-u16 synth_xor = 0x0000;
-
+// tmp.
+char synth_patch_name[SYNTH_NUM_GROUPS][21];
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -73,6 +79,21 @@ unsigned char* pPlayWave_End;
 
 // sample buffer
 static u32 sample_buffer[SAMPLE_BUFFER_SIZE];
+
+// modified via CC
+// NOTE: at least 3 entries have to be played, we reserve for up to 16 entries
+static MCU_PHONEME_LIST phonemes[SYNTH_NUM_PHONEMES][SYNTH_PHONEME_MAX_LENGTH];
+static u8 phoneme_length[SYNTH_NUM_PHONEMES];
+
+static MCU_PHONEME_LIST* current_phoneme;
+static int current_phoneme_length;
+static int current_phoneme_resume;
+
+// quick&dirty
+static u8 synth_downsampling_factor = 6;
+static u8 synth_resolution = 16;
+static u16 synth_xor = 0x0000;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -91,6 +112,34 @@ s32 SYNTH_Init(u32 mode)
   prev_ix = 0;
   sound_stopped = 0;
 
+  // init speak
+  MCU_WavegenInit();
+  MCU_SynthesizeInit();
+
+  // init CC phonemes
+  int i;
+  for(i=0; i<SYNTH_NUM_PHONEMES; ++i) {
+    int j;
+    MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[i][0];
+    for(j=0; j<SYNTH_PHONEME_MAX_LENGTH; ++j, ++p) {
+      p->ph = 88;
+      p->env = 0;
+      p->tone = 0;
+      p->type = 2;
+      p->prepause = 0;
+      p->amp = 16;
+      p->newword = 0;
+      p->synthflags = 4;
+      p->length = 133;
+      p->pitch1 = 35;
+      p->pitch2 = 39;
+      p->sourceix = 0;
+    }
+    phoneme_length[i] = 3; // at least 3 entries have to be played
+  }
+
+  strcpy(synth_patch_name[1], "Default Patch       ");
+
   // start I2S DMA transfers
   return MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &SYNTH_ReloadSampleBuffer);
 }
@@ -101,8 +150,8 @@ s32 SYNTH_Init(u32 mode)
 // interface function for playing wave files from user task's
 //=============================================================================
 void SYNTH_PlayWave(unsigned char* wavedata, unsigned long sample_no){
-	pPlayWave = wavedata;
-	pPlayWave_End = pPlayWave + sample_no - 1;
+  pPlayWave = wavedata;
+  pPlayWave_End = pPlayWave + sample_no - 1;
 }
 
 
@@ -148,7 +197,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 #endif
 
       if( synth_resolution && synth_resolution < 16 )
-	chn1_value &= ~((1 << (16-(u32)synth_resolution)) - 1);
+	chn1_value &= ~((1 << (15-(u32)synth_resolution)) - 1);
       if( synth_xor )
 	chn1_value ^= synth_xor;
 
@@ -185,16 +234,16 @@ s32 SYNTH_Tick(void)
     MCU_out_ptr = MCU_outbuf;				//fill the buffer from start
     MCU_out_end = MCU_out_ptr + (WAVETABLE_SIZE-1);	//to the end
     filled = MCU_WavegenFill(1);
-    if(1 == filled) return 0;				//if nothing to be played return
-
-    //set max_ix:
-    // - at the end of the buffer if nothing else to be played
-    // - past the buffer if there are more samples waiting
-    max_ix = (filled == 1)? (WAVETABLE_SIZE-1):(0xFFFF);
-    curr_ix = snd_ix = 0;
-    //validate generation
-    //sound_start();
-    sound_stopped = 0;
+    if( filled != 1 ) {
+      //set max_ix:
+      // - at the end of the buffer if nothing else to be played
+      // - past the buffer if there are more samples waiting
+      max_ix = (filled == 1)? (WAVETABLE_SIZE-1):(0xFFFF);
+      curr_ix = snd_ix = 0;
+      //validate generation
+      //sound_start();
+      sound_stopped = 0;
+    }
   } else if( (curr_ix != prev_ix) ) {
     // driver is playing
     // fill next half buffer only
@@ -204,14 +253,163 @@ s32 SYNTH_Tick(void)
     if(1 == filled){
       //nothing to play, stop at the end of current buffer
       max_ix = prev_ix;
-      return 0; // no error
+    } else {
+      max_ix = (filled == 1)? (MCU_out_end-MCU_outbuf):(0xFFFF);
     }
-    max_ix = (filled == 1)? (MCU_out_end-MCU_outbuf):(0xFFFF);
-  }else{
+  } else {
     //nothing to do
     filled = 0;
   }
   prev_ix = curr_ix;
 
+
+  if( current_phoneme ) {
+    current_phoneme_resume = MCU_Generate(current_phoneme, &current_phoneme_length, current_phoneme_resume);
+    if( !current_phoneme_resume )
+      current_phoneme = NULL;
+  }
+
   return 0; // no error
 }
+
+
+s32 SYNTH_PhonemePlay(u8 num, u8 velocity)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  // should be atomic
+  MIOS32_IRQ_Disable();
+  current_phoneme = (MCU_PHONEME_LIST*)&phonemes[num];
+  current_phoneme_length = phoneme_length[num];
+  current_phoneme_resume = 0;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+s32 SYNTH_PhonemeStop(u8 num)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  // should be atomic
+  MIOS32_IRQ_Disable();
+  MCU_WcmdqStop();
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+s32 SYNTH_PhonemeIsPlayed(u8 num)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return 0; // not played...
+
+  return sound_stopped ? 0 : 1;
+}
+
+s32 SYNTH_GlobalParGet(u8 par)
+{
+  switch( par ) {
+  case SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR: return synth_downsampling_factor;
+  case SYNTH_GLOBAL_PAR_RESOLUTION:          return synth_resolution;
+  case SYNTH_GLOBAL_PAR_XOR:                 return synth_xor >> 9;
+  default: return -1;
+  }
+
+  return 0; // no error
+}
+
+s32 SYNTH_GlobalParSet(u8 par, u8 value)
+{
+  switch( par ) {
+  case SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR: synth_downsampling_factor = value; break;
+  case SYNTH_GLOBAL_PAR_RESOLUTION:          synth_resolution = value; break;
+  case SYNTH_GLOBAL_PAR_XOR:                 synth_xor = (u16)value << 9; break;
+  default: return -1;
+  }
+
+  return 0; // no error
+}
+
+
+s32 SYNTH_PhonemeParGet(u8 num, u8 ix, u8 par)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  if( ix >= SYNTH_PHONEME_MAX_LENGTH )
+    return -2;
+
+  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[num][ix];
+
+  switch( par ) {
+  case SYNTH_PHONEME_PAR_PH:        return p->ph;
+  case SYNTH_PHONEME_PAR_ENV:       return p->env;
+  case SYNTH_PHONEME_PAR_TONE:      return p->tone;
+  case SYNTH_PHONEME_PAR_TYPE:      return p->type;
+  case SYNTH_PHONEME_PAR_PREPAUSE:  return p->prepause;
+  case SYNTH_PHONEME_PAR_AMP:       return p->amp;
+  case SYNTH_PHONEME_PAR_NEWWORD:   return p->newword;
+  case SYNTH_PHONEME_PAR_FLAGS:     return p->synthflags;
+  case SYNTH_PHONEME_PAR_LENGTH:    return p->length / 64;
+  case SYNTH_PHONEME_PAR_PITCH1:    return p->pitch1;
+  case SYNTH_PHONEME_PAR_PITCH2:    return p->pitch2;
+  case SYNTH_PHONEME_PAR_SOURCE_IX: return p->sourceix;
+  default: return -3;
+  }
+
+  return 0; // no error
+}
+
+s32 SYNTH_PhonemeParSet(u8 num, u8 ix, u8 par, u8 value)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  if( ix >= SYNTH_PHONEME_MAX_LENGTH )
+    return -2;
+
+  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[num][ix];
+
+  switch( par ) {
+  case SYNTH_PHONEME_PAR_PH:        p->ph = value; break;
+  case SYNTH_PHONEME_PAR_ENV:       p->env = value; break;
+  case SYNTH_PHONEME_PAR_TONE:      p->tone = value; break;
+  case SYNTH_PHONEME_PAR_TYPE:      p->type = value; break;
+  case SYNTH_PHONEME_PAR_PREPAUSE:  p->prepause = value; break;
+  case SYNTH_PHONEME_PAR_AMP:       p->amp = value; break;
+  case SYNTH_PHONEME_PAR_NEWWORD:   p->newword = value; break;
+  case SYNTH_PHONEME_PAR_FLAGS:     p->synthflags = value; break;
+  case SYNTH_PHONEME_PAR_LENGTH:    p->length = (u32)value * 64; break;
+  case SYNTH_PHONEME_PAR_PITCH1:    p->pitch1 = value; break;
+  case SYNTH_PHONEME_PAR_PITCH2:    p->pitch2 = value; break;
+  case SYNTH_PHONEME_PAR_SOURCE_IX: p->sourceix = value; break;
+  default: return -3;
+  }
+
+  return 0; // no error
+}
+
+s32 SYNTH_PhonemeLengthGet(u8 num)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  return phoneme_length[num];
+}
+
+s32 SYNTH_PhonemeLengthSet(u8 num, u8 length)
+{
+  if( num >= SYNTH_NUM_PHONEMES )
+    return -1;
+
+  if( length >= SYNTH_PHONEME_MAX_LENGTH )
+    return -2;
+
+  phoneme_length[num] = length;
+
+  return 0; // no error
+}
+
