@@ -449,19 +449,25 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 
       int itemPos = displayPageOffset + softButton;
       if( itemPos < numItems ) {
-	displayCursorPos = softButton;
-	rootTableSelectedItem = itemPos;
+	scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[itemPos];
 
-	scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
+	// edit item if maxValue >= 2
+	// if maxValue == 1, we will toggle the value
+	if( pageItem->maxValue != 1 ) {
+	  displayCursorPos = softButton;
+	  rootTableSelectedItem = itemPos;
 
-	if( scsMenuState == MENU_STATE_INSIDE_PAGE ) {
-	  scsMenuState = MENU_STATE_EDIT_ITEM;
-	  SCS_ENC_MENU_AutoSpeedSet(pageItem->maxValue);
+	  if( scsMenuState == MENU_STATE_INSIDE_PAGE ) {
+	    scsMenuState = MENU_STATE_EDIT_ITEM;
+	    SCS_ENC_MENU_AutoSpeedSet(pageItem->maxValue);
+	  }
 	}
 
-	u16 value = pageItem->getFunct(pageItem->ix);
-	value = pageItem->selectFunct(pageItem->ix, value);
-	pageItem->setFunct(pageItem->ix, value);
+	u16 oldValue = pageItem->getFunct(pageItem->ix);
+	u16 newValue = pageItem->selectFunct(pageItem->ix, oldValue);
+	if( newValue == oldValue && pageItem->maxValue == 1 )
+	  newValue ^= 1; // auto-toggle
+	pageItem->setFunct(pageItem->ix, newValue);
       }
 
       // flicker menu item for 200 mS
