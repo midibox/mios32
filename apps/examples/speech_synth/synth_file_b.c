@@ -211,7 +211,7 @@ s32 SYNTH_FILE_B_Create(char *session, u8 bank)
   info->header.num_patches = 64;
   status |= SYNTH_FILE_WriteHWord(info->header.num_patches);
 
-  info->header.patch_size = SYNTH_NUM_PHONEMES * (16*16 + 16); // currently hardcoded
+  info->header.patch_size = SYNTH_NUM_PHRASES * (16*16 + 16); // currently hardcoded
   status |= SYNTH_FILE_WriteWord(info->header.patch_size);
 
   // close file
@@ -362,28 +362,23 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
   DEBUG_MSG("[SYNTH_FILE_B] read patch B%d:P%d '%s'\n", bank+1, patch, synth_patch_name[target_group]);
 #endif
 
-  int phoneme;
-  for(phoneme=0; phoneme<SYNTH_NUM_PHONEMES; ++phoneme) {
+  int phrase;
+  for(phrase=0; phrase<SYNTH_NUM_PHRASES; ++phrase) {
     int ix;
-    for(ix=0; ix<SYNTH_PHONEME_MAX_LENGTH; ++ix) {
+    for(ix=0; ix<SYNTH_PHRASE_MAX_LENGTH; ++ix) {
       int par;
       for(par=0; par<16; ++par) {
 	u8 value;
 	status |= SYNTH_FILE_ReadByte(&value);
-	SYNTH_PhonemeParSet(phoneme, ix, par, value);
+	SYNTH_PhonemeParSet(phrase, ix, par, value);
       }
     }
 
-    {
+    int par;
+    for(par=0; par<16; ++par) {
       u8 value;
       status |= SYNTH_FILE_ReadByte(&value);
-      SYNTH_PhonemeLengthSet(phoneme, value);
-    }
-
-    int i; // 15 dummy reads
-    for(i=0; i<15; ++i) {
-      u8 value;
-      status |= SYNTH_FILE_ReadByte(&value);
+      SYNTH_PhraseParSet(phrase, par, value);
     }
   }
 
@@ -480,22 +475,21 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
   status |= SYNTH_FILE_WriteByte(0x00);
   status |= SYNTH_FILE_WriteByte(0x00);
 
-  // writing phonemes
-  int phoneme;
-  for(phoneme=0; phoneme<SYNTH_NUM_PHONEMES; ++phoneme) {
+  // writing phrases
+  int phrase;
+  for(phrase=0; phrase<SYNTH_NUM_PHRASES; ++phrase) {
     int ix;
-    for(ix=0; ix<SYNTH_PHONEME_MAX_LENGTH; ++ix) {
+    for(ix=0; ix<SYNTH_PHRASE_MAX_LENGTH; ++ix) {
       int par;
       for(par=0; par<16; ++par) {
-	status |= SYNTH_FILE_WriteByte(SYNTH_PhonemeParGet(phoneme, ix, par));
+	status |= SYNTH_FILE_WriteByte(SYNTH_PhonemeParGet(phrase, ix, par));
       }
     }
 
-    status |= SYNTH_FILE_WriteByte(SYNTH_PhonemeLengthGet(phoneme));
-
-    int i; // 15 dummy writes
-    for(i=0; i<15; ++i)
-      status |= SYNTH_FILE_WriteByte(0x00);
+    int par;
+    for(par=0; par<16; ++par) {
+      status |= SYNTH_FILE_WriteByte(SYNTH_PhraseParGet(phrase, par));
+    }
   }
 
   // close file

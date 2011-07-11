@@ -20,8 +20,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define SYNTH_NUM_GROUPS         1 // tmp, could be more groups (synths running in parallel) later
-#define SYNTH_NUM_PHONEMES       64
-#define SYNTH_PHONEME_MAX_LENGTH 16
+#define SYNTH_NUM_PHRASES       64
+#define SYNTH_PHRASE_MAX_LENGTH 16
 
 #define SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR 0
 #define SYNTH_GLOBAL_PAR_RESOLUTION          1
@@ -39,6 +39,9 @@
 #define SYNTH_PHONEME_PAR_PITCH1     9
 #define SYNTH_PHONEME_PAR_PITCH2    10
 #define SYNTH_PHONEME_PAR_SOURCE_IX 11
+
+#define SYNTH_PHRASE_PAR_LENGTH       0
+#define SYNTH_PHRASE_PAR_TUNE         1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,12 +64,12 @@ extern s32 SYNTH_GlobalParSet(u8 par, u8 value);
 extern s32 SYNTH_PhonemeParGet(u8 num, u8 ix, u8 par);
 extern s32 SYNTH_PhonemeParSet(u8 num, u8 ix, u8 par, u8 value);
 
-extern s32 SYNTH_PhonemeLengthGet(u8 num);
-extern s32 SYNTH_PhonemeLengthSet(u8 num, u8 length);
+extern s32 SYNTH_PhraseParGet(u8 num, u8 par);
+extern s32 SYNTH_PhraseParSet(u8 num, u8 par, u8 value);
 
-extern s32 SYNTH_PhonemePlay(u8 num, u8 velocity);
-extern s32 SYNTH_PhonemeStop(u8 num);
-extern s32 SYNTH_PhonemeIsPlayed(u8 num);
+extern s32 SYNTH_PhrasePlay(u8 num, u8 velocity);
+extern s32 SYNTH_PhraseStop(u8 num);
+extern s32 SYNTH_PhraseIsPlayed(u8 num);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
