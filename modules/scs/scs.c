@@ -433,6 +433,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       if( newPage < rootTableNumItems ) {
 	displayCursorPos = softButton;
 	rootTableSelectedPage = newPage;
+	displayPageOffset = 0; // optionally we got store the last offset somewhere?
 	scsMenuState = MENU_STATE_INSIDE_PAGE;
 	displayInitReq = 1;
       }

@@ -59,10 +59,21 @@ unsigned char* MCU_out_ptr;
 unsigned char* MCU_out_end;
 unsigned char MCU_outbuf[WAVETABLE_SIZE];
 
+int MCU_pitch_offset;
+
 int MCUTranslate(char* src);
 
 // tmp.
 char synth_patch_name[SYNTH_NUM_GROUPS][21];
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Types
+/////////////////////////////////////////////////////////////////////////////
+typedef struct phrase_par_t {
+  u8 length;
+  u8 tune;
+} phrase_par_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -82,11 +93,11 @@ static u32 sample_buffer[SAMPLE_BUFFER_SIZE];
 
 // modified via CC
 // NOTE: at least 3 entries have to be played, we reserve for up to 16 entries
-static MCU_PHONEME_LIST phonemes[SYNTH_NUM_PHONEMES][SYNTH_PHONEME_MAX_LENGTH];
-static u8 phoneme_length[SYNTH_NUM_PHONEMES];
+static MCU_PHONEME_LIST phrases[SYNTH_NUM_PHRASES][SYNTH_PHRASE_MAX_LENGTH];
+static phrase_par_t phrase_par[SYNTH_NUM_PHRASES];
 
 static MCU_PHONEME_LIST* current_phoneme;
-static int current_phoneme_length;
+static phrase_par_t current_phrase;
 static int current_phoneme_resume;
 
 // quick&dirty
@@ -116,12 +127,12 @@ s32 SYNTH_Init(u32 mode)
   MCU_WavegenInit();
   MCU_SynthesizeInit();
 
-  // init CC phonemes
+  // init phrases
   int i;
-  for(i=0; i<SYNTH_NUM_PHONEMES; ++i) {
+  for(i=0; i<SYNTH_NUM_PHRASES; ++i) {
     int j;
-    MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[i][0];
-    for(j=0; j<SYNTH_PHONEME_MAX_LENGTH; ++j, ++p) {
+    MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phrases[i][0];
+    for(j=0; j<SYNTH_PHRASE_MAX_LENGTH; ++j, ++p) {
       p->ph = 88;
       p->env = 0;
       p->tone = 0;
@@ -135,7 +146,10 @@ s32 SYNTH_Init(u32 mode)
       p->pitch2 = 39;
       p->sourceix = 0;
     }
-    phoneme_length[i] = 3; // at least 3 entries have to be played
+
+    phrase_par_t *phrase = (phrase_par_t *)&phrase_par[i];
+    phrase->length = 3; // at least 3 entries have to be played
+    phrase->tune = 64; // mid value
   }
 
   strcpy(synth_patch_name[1], "Default Patch       ");
@@ -264,7 +278,9 @@ s32 SYNTH_Tick(void)
 
 
   if( current_phoneme ) {
-    current_phoneme_resume = MCU_Generate(current_phoneme, &current_phoneme_length, current_phoneme_resume);
+    int length = current_phrase.length;
+    MCU_pitch_offset = 15000 * ((int)current_phrase.tune - 64);
+    current_phoneme_resume = MCU_Generate(current_phoneme, &length, current_phoneme_resume);
     if( !current_phoneme_resume )
       current_phoneme = NULL;
   }
@@ -273,24 +289,24 @@ s32 SYNTH_Tick(void)
 }
 
 
-s32 SYNTH_PhonemePlay(u8 num, u8 velocity)
+s32 SYNTH_PhrasePlay(u8 num, u8 velocity)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
   // should be atomic
   MIOS32_IRQ_Disable();
-  current_phoneme = (MCU_PHONEME_LIST*)&phonemes[num];
-  current_phoneme_length = phoneme_length[num];
+  current_phoneme = (MCU_PHONEME_LIST*)&phrases[num];
+  current_phrase = phrase_par[num];
   current_phoneme_resume = 0;
   MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
 
-s32 SYNTH_PhonemeStop(u8 num)
+s32 SYNTH_PhraseStop(u8 num)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
   // should be atomic
@@ -301,9 +317,9 @@ s32 SYNTH_PhonemeStop(u8 num)
   return 0; // no error
 }
 
-s32 SYNTH_PhonemeIsPlayed(u8 num)
+s32 SYNTH_PhraseIsPlayed(u8 num)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return 0; // not played...
 
   return sound_stopped ? 0 : 1;
@@ -336,13 +352,13 @@ s32 SYNTH_GlobalParSet(u8 par, u8 value)
 
 s32 SYNTH_PhonemeParGet(u8 num, u8 ix, u8 par)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
-  if( ix >= SYNTH_PHONEME_MAX_LENGTH )
+  if( ix >= SYNTH_PHRASE_MAX_LENGTH )
     return -2;
 
-  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[num][ix];
+  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phrases[num][ix];
 
   switch( par ) {
   case SYNTH_PHONEME_PAR_PH:        return p->ph;
@@ -357,21 +373,20 @@ s32 SYNTH_PhonemeParGet(u8 num, u8 ix, u8 par)
   case SYNTH_PHONEME_PAR_PITCH1:    return p->pitch1;
   case SYNTH_PHONEME_PAR_PITCH2:    return p->pitch2;
   case SYNTH_PHONEME_PAR_SOURCE_IX: return p->sourceix;
-  default: return -3;
   }
 
-  return 0; // no error
+  return -2; // invalid parameter
 }
 
 s32 SYNTH_PhonemeParSet(u8 num, u8 ix, u8 par, u8 value)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
-  if( ix >= SYNTH_PHONEME_MAX_LENGTH )
+  if( ix >= SYNTH_PHRASE_MAX_LENGTH )
     return -2;
 
-  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phonemes[num][ix];
+  MCU_PHONEME_LIST *p = (MCU_PHONEME_LIST *)&phrases[num][ix];
 
   switch( par ) {
   case SYNTH_PHONEME_PAR_PH:        p->ph = value; break;
@@ -386,29 +401,39 @@ s32 SYNTH_PhonemeParSet(u8 num, u8 ix, u8 par, u8 value)
   case SYNTH_PHONEME_PAR_PITCH1:    p->pitch1 = value; break;
   case SYNTH_PHONEME_PAR_PITCH2:    p->pitch2 = value; break;
   case SYNTH_PHONEME_PAR_SOURCE_IX: p->sourceix = value; break;
-  default: return -3;
+  default: return 0; // init value for future extensions
   }
 
   return 0; // no error
 }
 
-s32 SYNTH_PhonemeLengthGet(u8 num)
+s32 SYNTH_PhraseParGet(u8 num, u8 par)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
-  return phoneme_length[num];
+  phrase_par_t *phrase = (phrase_par_t *)&phrase_par[num];
+
+  switch( par ) {
+  case SYNTH_PHRASE_PAR_LENGTH: return phrase->length;
+  case SYNTH_PHRASE_PAR_TUNE:   return phrase->tune;
+  }
+
+  return -2; // invalid parameter
 }
 
-s32 SYNTH_PhonemeLengthSet(u8 num, u8 length)
+s32 SYNTH_PhraseParSet(u8 num, u8 par, u8 value)
 {
-  if( num >= SYNTH_NUM_PHONEMES )
+  if( num >= SYNTH_NUM_PHRASES )
     return -1;
 
-  if( length >= SYNTH_PHONEME_MAX_LENGTH )
-    return -2;
+  phrase_par_t *phrase = (phrase_par_t *)&phrase_par[num];
 
-  phoneme_length[num] = length;
+  switch( par ) {
+  case SYNTH_PHRASE_PAR_LENGTH:       phrase->length = (value < SYNTH_PHRASE_MAX_LENGTH) ? value : (SYNTH_PHRASE_MAX_LENGTH-1); break;
+  case SYNTH_PHRASE_PAR_TUNE:         phrase->tune = value;
+  default: return -2;
+  }
 
   return 0; // no error
 }

@@ -163,6 +163,13 @@ extern unsigned char MCU_outbuf[1024];  // used when writing to file
 long MCU_wcmdq[MCU_N_WCMDQ][4];
 int MCU_wcmdq_head=0;
 int MCU_wcmdq_tail=0;
+
+// TK: additional mods
+#define TK_USE_PITCH_OFFSET 1
+#if TK_USE_PITCH_OFFSET
+int MCU_pitch_offset = 0;
+#endif
+
 /*
 // pitch,speed,
 int embedded_default[N_EMBEDDED_VALUES]        = {0,50,165,100,50, 0,50, 0,165,0,0,0,0,0};
@@ -489,6 +496,10 @@ void MCU_WavegenInit() /*int rate, int wavemult_fact)*/
 #ifdef MCU_USE_FLUTTER
 	Flutter_inc = 64;//(64 * samplerate)/rate;
 #endif // MCU_USE_FLUTTER
+
+#if TK_USE_PITCH_OFFSET
+	MCU_pitch_offset = 0;
+#endif
 	samplecount = 0;
 	nsamples = 0;
 	wavephase = 0x7fffffff;
@@ -721,6 +732,13 @@ static void MCU_AdvanceParameters()
 	Flutter_ix += Flutter_inc;
 	pitch += x;
 #endif // MCU_USE_FLUTTER
+
+#if TK_USE_PITCH_OFFSET
+	pitch += MCU_pitch_offset;
+	//MIOS32_MIDI_SendDebugMessage("%d\n", pitch);
+	if( pitch < 210000 )
+	  pitch = 210000;
+#endif
 
 	if(samplecount == samplecount_start)
 		return;

@@ -50,7 +50,7 @@ static void TASK_Period_1mS_LP(void *pvParameters);
 #define NOTESTACK_SIZE 16
 
 // C-2
-#define PHONEME_NOTE_OFFSET 0x30
+#define PHRASE_NOTE_OFFSET 0x30
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -152,17 +152,17 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 #endif
 
       // play note
-      int phoneme_num = note - PHONEME_NOTE_OFFSET;
-      while( phoneme_num < 0)
-	phoneme_num += SYNTH_NUM_PHONEMES;
-      while( phoneme_num > SYNTH_NUM_PHONEMES )
-	phoneme_num -= SYNTH_NUM_PHONEMES;
+      int phrase_num = note - PHRASE_NOTE_OFFSET;
+      while( phrase_num < 0)
+	phrase_num += SYNTH_NUM_PHRASES;
+      while( phrase_num > SYNTH_NUM_PHRASES )
+	phrase_num -= SYNTH_NUM_PHRASES;
 
       // legato...
       if( notestack.len == 1 )
-	SYNTH_PhonemeStop(phoneme_num);
+	SYNTH_PhraseStop(phrase_num);
 
-      SYNTH_PhonemePlay(phoneme_num, velocity);
+      SYNTH_PhrasePlay(phrase_num, velocity);
       
       // set board LED
       MIOS32_BOARD_LED_Set(1, 1);
@@ -183,18 +183,19 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     NOTESTACK_SendDebugMessage(&notestack);
 #endif
   } else if( midi_package.type == CC ) {
-    u8 phoneme_num = 0;
+    u8 phrase_num = 0;
     u8 phoneme_ix = midi_package.chn;
     u32 value = midi_package.value;
 
     if( midi_package.cc_number < 16 ) {
     } else if( midi_package.cc_number < 32 ) {
       u8 phoneme_par = midi_package.cc_number - 16;
-      SYNTH_PhonemeParSet(phoneme_num, phoneme_ix, phoneme_par, value);
-    } else if( midi_package.cc_number == 32 ) {
-      SYNTH_PhonemeLengthSet(phoneme_num, value);
+      SYNTH_PhonemeParSet(phrase_num, phoneme_ix, phoneme_par, value);
     } else if( midi_package.cc_number < 48 ) {
-      u8 global_par = midi_package.cc_number - 33;
+      u8 phrase_par = midi_package.cc_number - 32;
+      SYNTH_PhraseParSet(phrase_num, phrase_par, value);
+    } else if( midi_package.cc_number < 64 ) {
+      u8 global_par = midi_package.cc_number - 48;
       SYNTH_GlobalParSet(global_par, value);
     }
   }
