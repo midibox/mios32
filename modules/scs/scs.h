@@ -84,10 +84,26 @@
 #endif
 
 // number of menu items which are displayed on screen
-// each item allocates 4x2 characters
 #ifndef SCS_NUM_MENU_ITEMS
 #define SCS_NUM_MENU_ITEMS 5
 #endif
+
+// width of an item (4 by default, so that 5 items can be output on a 2x20 LCD)
+#ifndef SCS_MENU_ITEM_WIDTH
+#define SCS_MENU_ITEM_WIDTH 4
+#endif
+
+// maximum width of a temporary message
+#ifndef SCS_MSG_MAX_CHAR
+#define SCS_MSG_MAX_CHAR 14
+#endif
+
+// Debounce counter reload value (in mS)
+// Allowed values 0..255 - 0 turns off debouncing
+#ifndef SCS_BUTTON_DEBOUNCE_RELOAD
+#define SCS_BUTTON_DEBOUNCE_RELOAD 20
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Help Macros
@@ -118,10 +134,20 @@ typedef struct scs_menu_item_t {
 } scs_menu_item_t;
 
 typedef struct scs_menu_page_t {
-  char             name[5];
+  char             name[SCS_MENU_ITEM_WIDTH+1];
   scs_menu_item_t  *page;
   u8               numItems;
 } scs_menu_page_t;
+
+
+typedef enum {
+  SCS_MSG_L,
+  SCS_MSG_R,
+  SCS_MSG_ERROR_L,
+  SCS_MSG_ERROR_R,
+  SCS_MSG_DELAYED_ACTION_L,
+  SCS_MSG_DELAYED_ACTION_R
+} scs_msg_type_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -150,6 +176,12 @@ extern s32 SCS_InstallEncMainPageHook(s32 (*encFunct)(s32 incrementer));
 extern s32 SCS_InstallButtonMainPageHook(s32 (*buttonFunct)(u8 softButton));
 
 extern s32 SCS_DisplayUpdateRequest(void);
+
+extern s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2);
+extern s32 SCS_MsgStop(void);
+
+extern s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
+extern s32 SCS_UnInstallDelayedActionCallback(void *callback);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
