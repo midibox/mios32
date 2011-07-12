@@ -211,7 +211,7 @@ void APP_SRIO_ServicePrepare(void)
 #ifdef MIOS32_FAMILY_LPC17xx
   // pass current pin state of J10
   // only available for LPC17xx, all others (like STM32) default to SRIO
-  SCS_AllPinsSet(MIOS32_BOARD_J10_Get());
+  SCS_AllPinsSet(0xff00 | MIOS32_BOARD_J10_Get());
 #endif
 
   // update encoders/buttons of SCS

@@ -31,9 +31,19 @@
 //! // the encoder type (see mios32_enc.h for available types)
 //! #define SCS_ENC_MENU_TYPE DETENTED2
 //!
-//! number of menu items which are displayed on screen
-//! each item allocates 4x2 characters
+//! // number of menu items which are displayed on screen
+//! // each item allocates 4x2 characters
 //! #define SCS_NUM_MENU_ITEMS 5
+//!
+//! // width of an item (4 by default, so that 5 items can be output on a 2x20 LCD)
+//! #define SCS_MENU_ITEM_WIDTH 4
+//!
+//! // maximum width of a temporary message
+//! #define SCS_MSG_MAX_CHAR 16
+//!
+//! // Debounce counter reload value (in mS)
+//! // Allowed values 0..255 - 0 turns off debouncing
+//! #define SCS_BUTTON_DEBOUNCE_RELOAD 20
 //! \endcode
 //! 
 //! \{
@@ -54,11 +64,15 @@
 #include <string.h>
 
 #include "scs.h"
+#include "scs_lcd.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Definitions
 /////////////////////////////////////////////////////////////////////////////
+
+// add some headroom to prevent buffer overwrites
+#define SCS_MAX_STR (SCS_LCD_MAX_COLUMNS+50)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,18 +108,50 @@ static u8 displayCursorPos;    // cursor position
 static u8 displayRootOffset;   // offset in root menu
 static u8 displayPageOffset;   // offset in page
 
+static s32 (*scsDelayedActionCallback)(u32 parameter);
+static u32 scsDelayedActionParameter;
+static u16 scsDelayedActionCtr;
+
+static char scsMsg[2][SCS_MSG_MAX_CHAR+10+1]; // + some "margin" + zero terminator
+static u16 scsMsgCtr;
+static scs_msg_type_t scsMsgType;
+
+
 static u16 scsPinState;
-static u16 scsPinStateChanged;
+static u16 scsPinStatePrev;
+#if SCS_BUTTON_DEBOUNCE_RELOAD
+static u8 scsButtonDebounceCtr;
+#endif
+
 
 static scs_menu_page_t *rootTable;
 static u8 rootTableNumItems;
 static u8 rootTableSelectedPage;
 static u8 rootTableSelectedItem;
 
+//                                             00112233
+static const char animation_l_arrows[2*4+1] = "   >>>> ";
+//                                             00112233
+static const char animation_r_arrows[2*4+1] = "  < << <";
+//                                               00112233
+static const char animation_l_brackets[2*4+1] = "   )))) ";
+//                                               00112233
+static const char animation_r_brackets[2*4+1] = "  ( (( (";
+//                                            00112233
+static const char animation_l_stars[2*4+1] = "   **** ";
+//                                            00112233
+static const char animation_r_stars[2*4+1] = "  * ** *";
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
 static s32 (*scsMainPageStringFunct)(char *line1, char *line2);
 static s32 (*scsPageSelectStringFunct)(char *line1);
 static s32 (*scsEncMainPageFunct)(s32 incrementer);
 static s32 (*scsButtonMainPageFunct)(u8 button);
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -115,6 +161,9 @@ static s32 (*scsButtonMainPageFunct)(u8 button);
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_Init(u32 mode)
 {
+  SCS_LCD_Init(mode);
+  SCS_LCD_InitSpecialChars(SCS_LCD_CHARSET_Menu);
+
   scsMenuState = MENU_STATE_MAINPAGE;
 
   displayUpdateReq = 1;
@@ -127,8 +176,18 @@ s32 SCS_Init(u32 mode)
   displayRootOffset = 0;
   displayPageOffset = 0;
 
-  scsPinState = 0xff;
-  scsPinStateChanged = 0x00;
+  scsDelayedActionCallback = NULL;
+  scsDelayedActionParameter = 0;
+  scsDelayedActionCtr = 0;
+
+  scsMsgCtr = 0;
+  scsDelayedActionCtr = 0;
+
+  scsPinState = 0xffff;
+  scsPinStatePrev = 0xffff;
+#if SCS_BUTTON_DEBOUNCE_RELOAD
+  scsButtonDebounceCtr = 0;
+#endif
 
   rootTable = NULL;
   rootTableNumItems = 0;
@@ -165,9 +224,7 @@ s32 SCS_PinSet(u8 pin, u8 depressed)
 
   u16 mask = 1 << pin;
   MIOS32_IRQ_Disable(); // should be atomic
-  u16 newState = depressed ? (scsPinState | mask) : (scsPinState & ~mask);
-  scsPinStateChanged |= newState ^ scsPinState;
-  scsPinState = newState;
+  scsPinState = depressed ? (scsPinState | mask) : (scsPinState & ~mask);
   MIOS32_IRQ_Enable();
 
   return 0; // no error
@@ -195,10 +252,7 @@ s32 SCS_PinGet(u8 pin)
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_AllPinsSet(u16 newState)
 {
-  MIOS32_IRQ_Disable(); // should be atomic
-  scsPinStateChanged |= scsPinState ^ newState;
   scsPinState = newState;
-  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }
@@ -221,13 +275,26 @@ s32 SCS_EncButtonUpdate_Tick(void)
 {
   // pass state of encoder to MIOS32_ENC
   u8 encoderState = 0;
-  if( scsPinState & (1 << SCS_PIN_ENC_MENU_A) )
+  u16 maskEncA = (1 << SCS_PIN_ENC_MENU_A);
+  u16 maskEncB = (1 << SCS_PIN_ENC_MENU_B);
+
+  if( scsPinState & maskEncA )
     encoderState |= 1;
-  if( scsPinState & (1 << SCS_PIN_ENC_MENU_B) )
+  if( scsPinState & maskEncB )
     encoderState |= 2;
   MIOS32_ENC_StateSet(SCS_ENC_MENU_ID, scsPinState);
 
+  // ensure that change won't be propagated to DIN handler
+  scsPinState &= ~(maskEncA | maskEncB);
+
   // no state update required for buttons (done from external)
+
+#if SCS_BUTTON_DEBOUNCE_RELOAD
+  // for button debouncing
+  if( scsButtonDebounceCtr )
+    --scsButtonDebounceCtr;
+#endif
+
 
   // cursor timer handling is done here
   // it's only used if an item is edited
@@ -281,6 +348,9 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 {
   if( incrementer == 0 ) // nothing to do...
     return 0;
+
+  // deinstall callback if it was active
+  scsDelayedActionCallback = 0;
 
   switch( scsMenuState ) {
   case MENU_STATE_SELECT_PAGE: {
@@ -385,25 +455,31 @@ s32 SCS_ENC_MENU_AutoSpeedSet(u16 maxValue)
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 {
-  // ignore if button depressed
-  if( depressed )
-    return 0; // no error
-
   int softButton = -1;
 
   switch( pin ) {
   case SCS_PIN_MENU: {
+
+    if( depressed ) {
+      // deinstall callback if it was active
+      scsDelayedActionCallback = 0;
+      return 0; // no error
+    }
+
     switch( scsMenuState ) {
     case MENU_STATE_SELECT_PAGE: {
       scsMenuState = MENU_STATE_MAINPAGE;
       displayInitReq = 1;
+      scsMsgCtr = 0; // disable message
     } break;
     case MENU_STATE_INSIDE_PAGE: {
       scsMenuState = MENU_STATE_SELECT_PAGE;
       displayInitReq = 1;
+      scsMsgCtr = 0; // disable message
     } break;
     case MENU_STATE_EDIT_ITEM: {
       scsMenuState = MENU_STATE_INSIDE_PAGE;
+      scsMsgCtr = 0; // disable message
     } break;
       //default: // MENU_STATE_MAINPAGE
       //scsMenuState = MENU_STATE_SELECT_PAGE;
@@ -427,6 +503,13 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
   }
 
   if( softButton >= 0 ) {
+
+    if( depressed ) {
+      // deinstall callback if it was active
+      scsDelayedActionCallback = 0;
+      return 0; // no error
+    }
+
     switch( scsMenuState ) {
     case MENU_STATE_SELECT_PAGE: {
       int newPage = displayRootOffset + softButton;
@@ -507,58 +590,98 @@ s32 SCS_Tick(void)
   // STM32 will call SCS_DIN_NotifyToggle from APP_DIN_NotifyToggle (buttons connected to DINX1)
   ///////////////////////////////////////////////////////////////////////////
 
-  // should be atomic
-  MIOS32_IRQ_Disable();
-  u16 pinState = scsPinState;
-  u16 changedState = scsPinStateChanged;
-  scsPinStateChanged = 0;
-  MIOS32_IRQ_Enable();
+  u8 checkButtons = 1;
+#if SCS_BUTTON_DEBOUNCE_RELOAD
+  if( scsButtonDebounceCtr )
+    checkButtons = 0;
+#endif
 
-  // check each button
-  int pin;
-  u16 mask = (1 << 0);
-  for(pin=0; pin<8; ++pin, mask <<= 1) {
-    if( pin == SCS_PIN_ENC_MENU_A ||
-	pin == SCS_PIN_ENC_MENU_B )
-      continue;
+  if( checkButtons ) {
+    // should be atomic
+    MIOS32_IRQ_Disable();
+    u16 changedState = scsPinStatePrev ^ scsPinState;
+    scsPinStatePrev = scsPinState;
+    u16 pinState = scsPinState;
+    MIOS32_IRQ_Enable();
 
-    if( changedState & mask )
-      SCS_DIN_NotifyToggle(pin, (pinState & mask) ? 1 : 0);
+    // check each button
+    int pin;
+    u16 mask = (1 << 0);
+    for(pin=0; pin<16; ++pin, mask <<= 1) {
+      if( changedState & mask ) {
+	SCS_DIN_NotifyToggle(pin, (pinState & mask) ? 1 : 0);
+#if SCS_BUTTON_DEBOUNCE_RELOAD
+	scsButtonDebounceCtr = SCS_BUTTON_DEBOUNCE_RELOAD;
+#endif
+      }
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  // delayed action will be triggered once counter reached 0
+  ///////////////////////////////////////////////////////////////////////////
+
+  if( !scsDelayedActionCallback )
+    scsDelayedActionCtr = 0;
+  else if( scsDelayedActionCtr ) {
+    if( --scsDelayedActionCtr == 0 ) {
+      // must be atomic
+      MIOS32_IRQ_Disable();
+      s32 (*_scsDelayedActionCallback)(u32 parameter);
+      _scsDelayedActionCallback = scsDelayedActionCallback;
+      u32 parameter = scsDelayedActionParameter;
+      scsDelayedActionCallback = NULL;
+      MIOS32_IRQ_Enable();
+      _scsDelayedActionCallback(parameter); // note: it's allowed that the delayed action generates a new delayed action
+    }
   }
 
 
   ///////////////////////////////////////////////////////////////////////////
   // handle LCD
   ///////////////////////////////////////////////////////////////////////////
+
   if( displayInitReq ) {
     displayInitReq = 0;
-    MIOS32_LCD_Clear();
+    displayUpdateReq = 1;
+    SCS_LCD_Clear();
   }
 
   if( displayUpdateReq ) {
     displayUpdateReq = 0;
 
     switch( scsMenuState ) {
-    /////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////
     case MENU_STATE_SELECT_PAGE: {
       int i;
 
-      char line1[100]; // 21 should be enough, but just to prevent buffer overruns a bit...
+      char line1[SCS_MAX_STR];
       strcpy(line1, "Select Page:");
       if( scsPageSelectStringFunct )
 	scsPageSelectStringFunct(line1);
 
-      MIOS32_LCD_CursorSet(0, 0);
-      MIOS32_LCD_PrintString(line1);
+      SCS_LCD_CursorSet(0, 0);
+      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
 
-      MIOS32_LCD_CursorSet(0, 1);
+      SCS_LCD_CursorSet(0, 1);
       for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	u8 page = displayRootOffset + i;
 	if( page >= rootTableNumItems )
-	  MIOS32_LCD_PrintString("    ");
+	  SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	else {
-	  MIOS32_LCD_PrintString(rootTable[page].name);
+	  SCS_LCD_PrintStringPadded(rootTable[page].name, SCS_MENU_ITEM_WIDTH);
 	}
+      }
+
+      // print arrow at upper right corner
+      if( rootTableNumItems > SCS_NUM_MENU_ITEMS ) {
+	SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	if( displayRootOffset == 0 )
+	  SCS_LCD_PrintChar(1); // right arrow
+	else if( displayRootOffset >= (rootTableNumItems-SCS_NUM_MENU_ITEMS) )
+	  SCS_LCD_PrintChar(0); // left arrow
+	else
+	  SCS_LCD_PrintChar(2); // left/right arrow
       }
     } break;
 
@@ -583,67 +706,188 @@ s32 SCS_Tick(void)
 	if( pageItem && pageItem->stringFullFunct ) {
 	  printCommonPage = 0;
 
-	  char line1[100]; // 21 should be enough, but just to prevent buffer overruns a bit...
+	  char line1[SCS_MAX_STR];
 	  strcpy(line1, "???");
-	  char line2[100];
+	  char line2[SCS_MAX_STR];
 	  strcpy(line2, "???");
 	  u16 value = pageItem->getFunct(pageItem->ix);
 	  pageItem->stringFullFunct(pageItem->ix, value, line1, line2);
 
-	  MIOS32_LCD_CursorSet(0, 0);
-	  MIOS32_LCD_PrintString(line1);
-	  MIOS32_LCD_CursorSet(0, 1);
-	  MIOS32_LCD_PrintString(line2);
+	  SCS_LCD_CursorSet(0, 0);
+	  SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+	  SCS_LCD_CursorSet(0, 1);
+	  SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
 	}
       }
 
       if( printCommonPage ) {
-	MIOS32_LCD_CursorSet(0, 0);
+	SCS_LCD_CursorSet(0, 0);
 	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	  u8 item = displayPageOffset + i;
 	  if( item >= numItems ||
 	      (scsMenuState == MENU_STATE_EDIT_ITEM && item == rootTableSelectedItem && !displayLabelOn ) )
-	    MIOS32_LCD_PrintString("    ");
+	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	  else {
-	    MIOS32_LCD_PrintString(pageItems[item].name);
+	    SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
 	  }
 	}
 
-	MIOS32_LCD_CursorSet(0, 1);
+	SCS_LCD_CursorSet(0, 1);
 	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	  u8 item = displayPageOffset + i;
 	  if( item >= numItems ||
 	      (scsMenuState == MENU_STATE_EDIT_ITEM && item == rootTableSelectedItem && !displayCursorOn ) )
-	    MIOS32_LCD_PrintString("    ");
+	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	  else {
 	    scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
-	    char label[100]; // 5 should be enough, but just to prevent buffer overruns a bit...
+	    char label[SCS_MAX_STR];
 	    strcpy(label, "??? "); // default
 	    u16 value = pageItem->getFunct(pageItem->ix);
 	    pageItem->stringFunct(pageItem->ix, value, label);
-	    MIOS32_LCD_PrintString(label);
+	    SCS_LCD_PrintStringPadded(label, SCS_MENU_ITEM_WIDTH);
 	  }
+	}
+
+	// print arrow at upper right corner
+	if( numItems > SCS_NUM_MENU_ITEMS ) {
+	  SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	  if( displayPageOffset == 0 )
+	    SCS_LCD_PrintChar(1); // right arrow
+	  else if( displayPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
+	    SCS_LCD_PrintChar(0); // left arrow
+	  else
+	    SCS_LCD_PrintChar(2); // left/right arrow
 	}
       }
     } break;
 
     /////////////////////////////////////////////////////////////////////////
     default: { // MENU_STATE_MAINPAGE
-      char line1[100]; // 21 should be enough, but just to prevent buffer overruns a bit...
-      strncpy(line1, MIOS32_LCD_BOOT_MSG_LINE1, 20);
-      char line2[100];
+      char line1[SCS_MAX_STR];
+      strncpy(line1, MIOS32_LCD_BOOT_MSG_LINE1, SCS_LCD_MAX_COLUMNS);
+      char line2[SCS_MAX_STR];
       strcpy(line2, "Press soft button");
 
       if( scsMainPageStringFunct )
 	scsMainPageStringFunct(line1, line2);
 
-      MIOS32_LCD_CursorSet(0, 0);
-      MIOS32_LCD_PrintString(line1);
-      MIOS32_LCD_CursorSet(0, 1);
-      MIOS32_LCD_PrintString(line2);
+      SCS_LCD_CursorSet(0, 0);
+      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+      SCS_LCD_CursorSet(0, 1);
+      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
     }
     }
   }
+
+  // if message active: overrule the common text
+  if( scsMsgCtr ) {
+    --scsMsgCtr;
+
+    char *animation_l_ptr;
+    char *animation_r_ptr;
+    u8 msg_x = 0;
+    u8 right_aligned = 0;
+    u8 disable_message = 0;
+
+    switch( scsMsgType ) {
+      case SCS_MSG_ERROR_L:
+      case SCS_MSG_ERROR_R: {
+	animation_l_ptr = (char *)animation_l_arrows;
+	animation_r_ptr = (char *)animation_r_arrows;
+	if( scsMsgType == SCS_MSG_ERROR_R ) {
+	  msg_x = SCS_LCD_MAX_COLUMNS-1;
+	  right_aligned = 1;
+	} else {
+	  msg_x = 0;
+	  right_aligned = 0;
+	}
+      } break;
+
+      case SCS_MSG_DELAYED_ACTION_L:
+      case SCS_MSG_DELAYED_ACTION_R: {
+	animation_l_ptr = (char *)animation_l_brackets;
+	animation_r_ptr = (char *)animation_r_brackets;
+	if( scsMsgType == SCS_MSG_DELAYED_ACTION_R ) {
+	  msg_x = SCS_LCD_MAX_COLUMNS-1;
+	  right_aligned = 1;
+	} else {
+	  msg_x = 0;
+	  right_aligned = 0;
+	}
+
+	if( scsDelayedActionCallback == NULL ) {
+	  disable_message = 1; // button has been depressed before delay
+	} else {
+	  int seconds = (scsDelayedActionCtr / 1000) + 1;
+	  if( seconds == 1 )
+	    sprintf(scsMsg[0], "Hold 1 second ");
+	  else
+	    sprintf(scsMsg[0], "Hold %d seconds", seconds);
+	}
+      } break;
+
+      case SCS_MSG_R: {
+	animation_l_ptr = (char *)animation_l_stars;
+	animation_r_ptr = (char *)animation_r_stars;
+	msg_x = SCS_LCD_MAX_COLUMNS-1;
+	right_aligned = 1;
+      } break;
+
+      default: { // SCS_MSG_L
+	animation_l_ptr = (char *)animation_l_stars;
+	animation_r_ptr = (char *)animation_r_stars;
+	msg_x = 0;
+	right_aligned = 0;
+	//MIOS32_MIDI_SendDebugMessage("1");
+      } break;
+
+    }
+
+    if( !disable_message ) {
+      int anum = (scsMsgCtr % 1000) / 250;
+
+      int len[2];
+      len[0] = strlen((char *)scsMsg[0]);
+      len[1] = strlen((char *)scsMsg[1]);
+      int len_max = len[0];
+      if( len[1] > len_max )
+	len_max = len[1];
+
+      if( right_aligned )
+	msg_x -= (9 + len_max);
+
+      int line;
+      for(line=0; line<2; ++line) {
+	SCS_LCD_CursorSet(msg_x, line);
+
+	// ensure that both lines are padded with same number of spaces
+	int end_pos = len[line];
+	while( end_pos < len_max )
+	  scsMsg[line][end_pos++] = ' ';
+	scsMsg[line][end_pos] = 0;
+
+#if 0
+	SCS_LCD_PrintFormattedString(" %c%c| %s |%c%c ",
+				     *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				     (char *)scsMsg[line], 
+				     *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+#else
+	SCS_LCD_PrintFormattedString("%c%c %s %c%c ",
+				     *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				     (char *)scsMsg[line], 
+				     *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+#endif
+      }
+    }
+
+    if( disable_message || scsMsgCtr == 0 ) {
+      // re-init and update display with next tick
+      displayInitReq = 1;
+    }
+  }
+
+  // transfer display changes to LCD if necessary (no force)
+  SCS_LCD_Update(0);
 
   return 0; // no error
 }
@@ -715,7 +959,6 @@ s32 SCS_InstallButtonMainPageHook(s32 (*buttonFunct)(u8 softButton))
 }
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 //! Can be called from external to force a display update
 //! \return < 0 on errors
@@ -723,6 +966,71 @@ s32 SCS_InstallButtonMainPageHook(s32 (*buttonFunct)(u8 softButton))
 s32 SCS_DisplayUpdateRequest(void)
 {
   displayUpdateReq = 1;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Print temporary user messages (e.g. warnings, errors)
+//! expects mS delay and two lines, each up to 18 characters
+//!
+//! Examples:
+//! \code
+//!     // try *one* of these lines (only last message will be displayed for given delay)
+//!     SCS_Msg(SCS_MSG_L, 1000, "Left", "Side");
+//! // or:
+//!     SCS_Msg(SCS_MSG_R, 1000, "Right", "Side");
+//! // or:
+//!     SCS_InstallDelayedActionCallback(clearPatch, 2000, selectedPatch);
+//!     SCS_Msg(SEQ_UI_MSG_DELAYED_ACTION_L, 2001, "", "to clear patch");
+//! \endcode
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2)
+{
+  scsMsgType = msgType;
+  scsMsgCtr = delay;
+  strncpy((char *)scsMsg[0], line1, SCS_MSG_MAX_CHAR);
+  strncpy((char *)scsMsg[1], line2, SCS_MSG_MAX_CHAR);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Stops temporary message if no SD card warning
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_MsgStop(void)
+{
+  scsMsgCtr = 0;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Function will be called after given delay with given parameter\n
+//! see tutorial/027_scs for usage example
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter)
+{
+  // must be atomic
+  MIOS32_IRQ_Disable();
+  scsDelayedActionParameter = parameter;
+  scsDelayedActionCallback = callback;
+  scsDelayedActionCtr = delay_mS;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Function will be called after given delay with given parameter
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_UnInstallDelayedActionCallback(void *callback)
+{
+  // must be atomic
+  MIOS32_IRQ_Disable();
+  if( scsDelayedActionCallback == callback )
+    scsDelayedActionCallback = 0;
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 }

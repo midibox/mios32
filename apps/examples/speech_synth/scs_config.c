@@ -40,7 +40,7 @@ static u8 selectedPhonemeIx;
 /////////////////////////////////////////////////////////////////////////////
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
-static void stringEmpty(u32 ix, u16 value, char *label)  { sprintf(label, "    "); }
+static void stringEmpty(u32 ix, u16 value, char *label)  { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d ", value); }
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", value+1); }
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", (int)value - 64); }
@@ -59,13 +59,19 @@ static u16  selectSAVE(u32 ix, u16 value)
   s32 status;
   u8 sourceGroup = 0;
   u8 rename_if_empty_name = 1;
+
   MUTEX_SDCARD_TAKE;
   if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, selectedBank, selectedPatch, sourceGroup, rename_if_empty_name)) < 0 ) {
-    DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", selectedPatch+1, selectedBank+1, status);
+    char buffer[100];
+    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
   } else {
-    DEBUG_MSG("Patch #%d written into bank #%d\n", selectedPatch+1, selectedBank+1);
+    char buffer[100];
+    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
   }
   MUTEX_SDCARD_GIVE;
+
   return 0;
 }
 
@@ -75,9 +81,13 @@ static u16  selectLOAD(u32 ix, u16 value)
   u8 targetGroup = 0;
   MUTEX_SDCARD_TAKE;
   if( (status=SYNTH_FILE_B_PatchRead(selectedBank, selectedPatch, targetGroup)) < 0 ) {
-    DEBUG_MSG("Failed to read patch #%d from bank #%d (status: %d)\n", selectedPatch+1, selectedBank+1, status);
+    char buffer[100];
+    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
   } else {
-    DEBUG_MSG("Patch #%d read from bank #%d\n", selectedPatch+1, selectedBank+1);
+    char buffer[100];
+    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
   }
   MUTEX_SDCARD_GIVE;
   return 0;

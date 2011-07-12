@@ -41,6 +41,7 @@ static u8 knobValue[NUM_KNOBS];
 /////////////////////////////////////////////////////////////////////////////
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
+static void stringEmpty(u32 ix, u16 value, char *label)  { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d ", value); }
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", value+1); }
 static void stringDec000(u32 ix, u16 value, char *label) { sprintf(label, "%03d ", value); }
@@ -58,10 +59,62 @@ static void stringCCFull(u32 ix, u16 value, char *line1, char *line2)
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
+// message demos
+static u16 selectMsg1(u32 ix, u16 value)
+{
+  SCS_Msg(SCS_MSG_L, 1000, "Short", "Message");
+  return value; // no change on value
+}
+
+static u16 selectMsg2(u32 ix, u16 value)
+{
+  SCS_Msg(SCS_MSG_L, 3000, "Long", "Message");
+  return value; // no change on value
+}
+
+static u16 selectMsg3(u32 ix, u16 value)
+{
+  char buffer[100];
+  sprintf(buffer, "Knob #%d", selectedKnob+1);
+  SCS_Msg(SCS_MSG_L, 1000, "Parameters:", buffer);
+  return value; // no change on value
+}
+
+static u16 selectMsg4(u32 ix, u16 value)
+{
+  SCS_Msg(SCS_MSG_R, 1000, "Right", "Aligned");
+  return value; // no change on value
+}
+
+static u16 selectMsg5(u32 ix, u16 value)
+{
+  SCS_Msg(SCS_MSG_ERROR_L, 1000, "ERROR", "42");
+  return value; // no change on value
+}
+
+
+static void demoCallback(u32 parameter)
+{
+  char buffer[100];
+  sprintf(buffer, "0x%08x", parameter);
+  SCS_Msg(SCS_MSG_L, 2000, "Got parameter:", buffer);
+}
+static u16 selectMsg6(u32 ix, u16 value)
+{
+  // if upper line empty: it will show the seconds how long a button has to be pressed
+  SCS_Msg(SCS_MSG_DELAYED_ACTION_L, 3001, "", "for demo");
+  u32 parameter = 0x1234567; // to pass an optional parameter
+  SCS_InstallDelayedActionCallback(demoCallback, 3000, parameter);
+  return value; // no change on value
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Access Functions
 /////////////////////////////////////////////////////////////////////////////
+static u16  dummyGet(u32 ix)              { return 0; }
+static void dummySet(u32 ix, u16 value)   { }
+
 static u16  knobGet(u32 ix)              { return selectedKnob; }
 static void knobSet(u32 ix, u16 value)   { selectedKnob = value; }
 
@@ -109,9 +162,19 @@ const scs_menu_item_t pageKnb[] = {
   SCS_ITEM("K10 ",  9, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
 };
 
+const scs_menu_item_t pageMsg[] = {
+  SCS_ITEM(" M1 ", 0, 1, dummyGet, dummySet, selectMsg1, stringEmpty,  NULL),
+  SCS_ITEM(" M2 ", 0, 1, dummyGet, dummySet, selectMsg2, stringEmpty,  NULL),
+  SCS_ITEM(" M3 ", 0, 1, dummyGet, dummySet, selectMsg3, stringEmpty,  NULL),
+  SCS_ITEM(" M4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
+  SCS_ITEM(" M5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
+  SCS_ITEM(" M6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
+};
+
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Knb ", pageKnb),
   SCS_PAGE("Cfg ", pageCfg),
+  SCS_PAGE("Msg ", pageMsg),
 };
 
 

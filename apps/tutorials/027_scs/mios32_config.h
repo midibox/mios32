@@ -18,4 +18,9 @@
 // the used encoder type (see mios32_enc.h)
 #define SCS_ENC_TYPE DETENTED2
 
+// define this to display 4 items with a with of 2x5 chars on a 2x20 LCD
+//#define SCS_MENU_ITEM_WIDTH 5
+//#define SCS_NUM_MENU_ITEMS 4
+
+
 #endif /* _MIOS32_CONFIG_H */
