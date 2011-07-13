@@ -63,8 +63,9 @@ extern s32 SCS_LCD_Update(u8 force);
 extern s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset);
 extern s32 SCS_LCD_PrintString(char *str);
 extern s32 SCS_LCD_PrintFormattedString(char *format, ...);
-extern s32 SCS_LCD_PrintSpaces(u8 num);
+extern s32 SCS_LCD_PrintSpaces(int num);
 extern s32 SCS_LCD_PrintStringPadded(char *str, u32 width);
+extern s32 SCS_LCD_PrintStringCentered(char *str, u32 width);
 
 
 /////////////////////////////////////////////////////////////////////////////

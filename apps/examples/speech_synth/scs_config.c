@@ -37,6 +37,24 @@ static u8 selectedBank;
 static u8 selectedPhrase;
 static u8 selectedPhonemeIx;
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Generates patch string
+/////////////////////////////////////////////////////////////////////////////
+static void getPatchString(char *str)
+{
+  char *patchName = SYNTH_PatchNameGet(0);
+  int i;
+  u8 stringIsEmpty = 1;
+  for(i=0; i<SYNTH_PATCH_NAME_LEN; ++i)
+    if( patchName[i] != ' ' ) {
+      stringIsEmpty = 0;
+      break;
+    }
+
+  sprintf(str, "%c%03d %s", 'A' + selectedBank, selectedPatch+1, stringIsEmpty ? "<Unnamed Patch>" : patchName);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
@@ -47,50 +65,36 @@ static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d "
 static void stringDec000(u32 ix, u16 value, char *label) { sprintf(label, "%03d ", value); }
 static void stringPlay(u32 ix, u16 value, char *label)   { sprintf(label, " %c  ", SYNTH_PhraseIsPlayed(selectedPhrase) ? '*' : 'o'); }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Selection Functions
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP (u32 ix, u16 value)    { return value; }
 static u16  selectPLAY(u32 ix, u16 value)    { return value ? 0 : 1; } // toggle
 
-static u16  selectSAVE(u32 ix, u16 value)
+static void selectSAVE_Callback(char *newString)
 {
   s32 status;
   u8 sourceGroup = 0;
   u8 rename_if_empty_name = 1;
 
+  SYNTH_PatchNameSet(sourceGroup, newString);
+
   MUTEX_SDCARD_TAKE;
   if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, selectedBank, selectedPatch, sourceGroup, rename_if_empty_name)) < 0 ) {
     char buffer[100];
-    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
   } else {
     char buffer[100];
-    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
+    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
     SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
   }
   MUTEX_SDCARD_GIVE;
-
-  return 0;
 }
 
-static u16  selectLOAD(u32 ix, u16 value)
+static u16  selectSAVE(u32 ix, u16 value)
 {
-  s32 status;
-  u8 targetGroup = 0;
-  MUTEX_SDCARD_TAKE;
-  if( (status=SYNTH_FILE_B_PatchRead(selectedBank, selectedPatch, targetGroup)) < 0 ) {
-    char buffer[100];
-    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
-    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
-  } else {
-    char buffer[100];
-    sprintf(buffer, "Patch %d.%d", selectedPatch+1, selectedBank+1);
-    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
-  }
-  MUTEX_SDCARD_GIVE;
-  return 0;
+  return SCS_InstallEditStringCallback(selectSAVE_Callback, "SAVE", SYNTH_PatchNameGet(0), SYNTH_PATCH_NAME_LEN);
 }
 
 
@@ -165,7 +169,6 @@ const scs_menu_item_t pageDsk[] = {
   SCS_ITEM("Bnk ", 0, 3,  selBankGet,  selBankSet,  selectNOP, stringDecP1, NULL),
   SCS_ITEM("Pat ", 0, 63, selPatchGet, selPatchSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Save", 0, 0, dummyGet, dummySet, selectSAVE, stringEmpty, NULL),
-  SCS_ITEM("Load", 0, 0, dummyGet, dummySet, selectLOAD, stringEmpty, NULL),
 };
 
 const scs_menu_page_t rootMode0[] = {
@@ -180,7 +183,7 @@ const scs_menu_page_t rootMode0[] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringMainPage(char *line1, char *line2)
 {
-  strcpy(line1, "Main Page");
+  getPatchString(line1);
   strcpy(line2, "Press soft button");
 
   return 0; // no error
@@ -192,7 +195,27 @@ static s32 getStringMainPage(char *line1, char *line2)
 /////////////////////////////////////////////////////////////////////////////
 static s32 encMovedInMainPage(s32 incrementer)
 {
-  MIOS32_MIDI_SendDebugMessage("Encoder moved in main page: %d\n", incrementer);
+  int newPatch = selectedPatch + incrementer;
+  if( newPatch < 0 )
+    newPatch = 0;
+  else if( newPatch > 63 )
+    newPatch = 63;
+
+  selectedPatch = newPatch;
+
+  s32 status;
+  u8 targetGroup = 0;
+  MUTEX_SDCARD_TAKE;
+  if( (status=SYNTH_FILE_B_PatchRead(selectedBank, selectedPatch, targetGroup)) < 0 ) {
+    char buffer[100];
+    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
+  } else {
+//    char buffer[100];
+//    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
+//    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
+  }
+  MUTEX_SDCARD_GIVE;
 
   return 0; // no error
 }
@@ -215,7 +238,7 @@ static s32 buttonPressedInMainPage(u8 softButton)
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringPageSelection(char *line1)
 {
-  strcpy(line1, "Select Page:");
+  getPatchString(line1);
 
   return 0; // no error
 }

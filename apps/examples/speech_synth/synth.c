@@ -63,8 +63,8 @@ int MCU_pitch_offset;
 
 int MCUTranslate(char* src);
 
-// tmp.
-char synth_patch_name[SYNTH_NUM_GROUPS][21];
+char patchName[SYNTH_NUM_GROUPS][SYNTH_PATCH_NAME_LEN+1];
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -152,7 +152,9 @@ s32 SYNTH_Init(u32 mode)
     phrase->tune = 64; // mid value
   }
 
-  strcpy(synth_patch_name[1], "Default Patch       ");
+  char *tmp = (char *)patchName;
+  for(i=0; i<SYNTH_NUM_GROUPS * SYNTH_PATCH_NAME_LEN; ++i, ++tmp)
+      *tmp = ' ';
 
   // start I2S DMA transfers
   return MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &SYNTH_ReloadSampleBuffer);
@@ -438,3 +440,13 @@ s32 SYNTH_PhraseParSet(u8 num, u8 par, u8 value)
   return 0; // no error
 }
 
+char *SYNTH_PatchNameGet(u8 group)
+{
+  return patchName[group];
+}
+
+s32 SYNTH_PatchNameSet(u8 group, char *newName)
+{
+  memcpy(patchName[group], newName, SYNTH_PATCH_NAME_LEN);
+  return 0; // no error
+}

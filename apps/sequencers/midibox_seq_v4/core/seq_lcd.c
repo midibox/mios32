@@ -376,11 +376,12 @@ s32 SEQ_LCD_PrintFormattedString(char *format, ...)
 /////////////////////////////////////////////////////////////////////////////
 // prints <num> spaces
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintSpaces(u8 num)
+s32 SEQ_LCD_PrintSpaces(int num)
 {
-  do {
+  while( num > 0 ) {
     SEQ_LCD_PrintChar(' ');
-  } while( --num );
+    --num;
+  }
 
   return 0; // no error
 }

@@ -327,11 +327,12 @@ s32 SCS_LCD_PrintFormattedString(char *format, ...)
 /////////////////////////////////////////////////////////////////////////////
 // prints <num> spaces
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_LCD_PrintSpaces(u8 num)
+s32 SCS_LCD_PrintSpaces(int num)
 {
-  do {
+  while( num > 0 ) {
     SCS_LCD_PrintChar(' ');
-  } while( --num );
+    --num;
+  }
 
   return 0; // no error
 }
@@ -352,6 +353,25 @@ s32 SCS_LCD_PrintStringPadded(char *str, u32 width)
       fill = 1;
     SCS_LCD_PrintChar(fill ? ' ' : c);
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints centered string
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_PrintStringCentered(char *str, u32 width)
+{
+  u32 strLen = strlen(str);
+  if( strLen > width )
+    return SCS_LCD_PrintStringPadded(str, width);
+
+  u32 leftSpaces = (width - strLen) / 2;
+  if( leftSpaces )
+    SCS_LCD_PrintSpaces(++leftSpaces);
+  SCS_LCD_PrintString(str);
+  SCS_LCD_PrintSpaces(width-leftSpaces-strLen); // PrintSpaces checks by itself if values is <= 0
 
   return 0; // no error
 }

@@ -84,6 +84,7 @@ typedef enum {
   MENU_STATE_SELECT_PAGE, // we select a page
   MENU_STATE_INSIDE_PAGE, // we are in a page
   MENU_STATE_EDIT_ITEM,   // we edit an item in the page
+  MENU_STATE_EDIT_STRING, // we edit a string in the page
 } scs_menu_state_t;
 
 
@@ -116,6 +117,11 @@ static char scsMsg[2][SCS_MSG_MAX_CHAR+10+1]; // + some "margin" + zero terminat
 static u16 scsMsgCtr;
 static scs_msg_type_t scsMsgType;
 
+static char scsActionString[SCS_MENU_ITEM_WIDTH+1];
+static char scsEditString[SCS_LCD_COLUMNS_PER_DEVICE+1];
+static u8 scsEditStringMaxChars;
+static u8 scsEditPos;
+static void (*scsEditStringCallback)(char *newString);
 
 static u16 scsPinState;
 static u16 scsPinStatePrev;
@@ -179,6 +185,12 @@ s32 SCS_Init(u32 mode)
   scsDelayedActionCallback = NULL;
   scsDelayedActionParameter = 0;
   scsDelayedActionCtr = 0;
+
+  scsEditStringCallback = NULL;
+  scsActionString[0] = 0;
+  scsEditString[0] = 0;
+  scsEditStringMaxChars = 0;
+  scsEditPos = 0;
 
   scsMsgCtr = 0;
   scsDelayedActionCtr = 0;
@@ -298,7 +310,7 @@ s32 SCS_EncButtonUpdate_Tick(void)
 
   // cursor timer handling is done here
   // it's only used if an item is edited
-  if( scsMenuState == MENU_STATE_EDIT_ITEM ) {
+  if( scsMenuState == MENU_STATE_EDIT_ITEM || MENU_STATE_EDIT_STRING ) {
     if( displayFlickerSelectionCtr ) { // new selected parameter flickers
       --displayFlickerSelectionCtr;
 
@@ -405,6 +417,33 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
   } break;
 
+  case MENU_STATE_EDIT_STRING: {
+    char c = scsEditString[scsEditPos];
+
+    if( incrementer > 0 ) {
+      if( c < 32 )
+	c = 32;
+      else {
+	c += incrementer;
+	if( c >= 128 )
+	  c = 127;
+      }
+    } else {
+      if( c >= 128 )
+	c = 127;
+      else {
+	c += incrementer;
+	if( c < 32 )
+	  c = 32;
+      }
+    }
+
+    scsEditString[scsEditPos] = (char)c;
+
+    // reset cursor counter, so that parameter is visible
+    displayCursorCtr = 0;
+  } break;
+
   default: // MENU_STATE_MAINPAGE
     if( scsEncMainPageFunct )
       scsEncMainPageFunct(incrementer);
@@ -481,6 +520,11 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       scsMenuState = MENU_STATE_INSIDE_PAGE;
       scsMsgCtr = 0; // disable message
     } break;
+    case MENU_STATE_EDIT_STRING: {
+      scsMenuState = MENU_STATE_INSIDE_PAGE;
+      scsMsgCtr = 0; // disable message
+      scsEditStringCallback = NULL; // disable edit string callback
+    }
       //default: // MENU_STATE_MAINPAGE
       //scsMenuState = MENU_STATE_SELECT_PAGE;
       // enter page only via soft buttons
@@ -556,6 +600,51 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 
       // flicker menu item for 200 mS
       displayFlickerSelectionCtr = 200;
+    } break;
+
+    case MENU_STATE_EDIT_STRING: {
+      switch( softButton ) {
+      case 0: {
+	if( scsEditStringCallback )
+	  scsEditStringCallback(scsEditString);
+	scsMenuState = MENU_STATE_INSIDE_PAGE;
+      } break;
+
+      case 1: { // <
+	if( scsEditPos > 0 )
+	  --scsEditPos;
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
+
+      case 2: { // >
+	if( scsEditPos < scsEditStringMaxChars )
+	  ++scsEditPos;
+
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
+
+      case 3: { // Del
+	int i;
+	for(i=scsEditPos; i<scsEditStringMaxChars; ++i)
+	  scsEditString[i] = scsEditString[i+1];
+	scsEditString[scsEditStringMaxChars] = ' ';
+
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
+
+      case 4: { // Clr
+	int i;
+	for(i=0; i<=scsEditStringMaxChars; ++i)
+	  scsEditString[i] = ' ';
+
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
+
+      }
     } break;
 
     default: { // MENU_STATE_MAINPAGE
@@ -759,6 +848,40 @@ s32 SCS_Tick(void)
 	    SCS_LCD_PrintChar(2); // left/right arrow
 	}
       }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case MENU_STATE_EDIT_STRING: {
+      // check if empty string
+      int i;
+      u8 stringIsEmpty = 1;
+      for(i=0; i<scsEditStringMaxChars; ++i)
+	if( scsEditString[i] != ' ' ) {
+	  stringIsEmpty = 0;
+	  break;
+	}
+
+      // edited string
+      SCS_LCD_CursorSet(0, 0);      
+      SCS_LCD_PrintStringPadded(stringIsEmpty ? "<empty>" : scsEditString, SCS_LCD_COLUMNS_PER_DEVICE);
+
+      // set cursor
+      if( !displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn) ) {
+	SCS_LCD_CursorSet(scsEditPos, 0);
+	SCS_LCD_PrintChar((scsEditString[scsEditPos] == '*') ? ' ' : '*');
+      }
+
+      // edit functions
+      SCS_LCD_CursorSet(0, 1);
+      SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
+      if( SCS_NUM_MENU_ITEMS >= 2 )
+	SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
+      if( SCS_NUM_MENU_ITEMS >= 3 )
+	SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
+      if( SCS_NUM_MENU_ITEMS >= 4 )
+	SCS_LCD_PrintStringCentered("Del", SCS_MENU_ITEM_WIDTH);
+      if( SCS_NUM_MENU_ITEMS >= 5 )
+	SCS_LCD_PrintStringCentered("Clr", SCS_MENU_ITEM_WIDTH);
     } break;
 
     /////////////////////////////////////////////////////////////////////////
@@ -1007,7 +1130,9 @@ s32 SCS_MsgStop(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Function will be called after given delay with given parameter\n
-//! see tutorial/027_scs for usage example
+//! See tutorial/027_scs for usage example\n
+//! Note that only a single callback function can be handled, if another
+//! one was active before, it will be dropped.
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter)
 {
@@ -1022,7 +1147,10 @@ s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Function will be called after given delay with given parameter
+//! Disables delayed action of the given callback function\n
+//! Only relevant if the callback should be disabled before the delay given
+//! via SCS_InstallDelayedActionCallback passed.\n
+//! After this delay has passed, the callback will be dropped automatically.
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_UnInstallDelayedActionCallback(void *callback)
 {
@@ -1034,5 +1162,36 @@ s32 SCS_UnInstallDelayedActionCallback(void *callback)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Can be called from an item select function to enter string editing mode
+//! (e.g. to enter a filename).\n
+//! See tutorial/027_scs for usage example
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *initialString, u8 maxChars)
+{
+  if( maxChars >= SCS_LCD_COLUMNS_PER_DEVICE )
+    maxChars = SCS_LCD_COLUMNS_PER_DEVICE;
+  memcpy(scsEditString, initialString, maxChars);
+  scsEditString[maxChars] = 0; // makes sense to set terminator for the case that it isn't available in initialString
+  memcpy(scsActionString, actionString, SCS_MENU_ITEM_WIDTH);
+  scsActionString[SCS_MENU_ITEM_WIDTH] = 0; // ditto.
+  scsEditStringMaxChars = maxChars;
+
+  // set edit pos after last char in string
+  for(scsEditPos=maxChars-1; scsEditPos>0; --scsEditPos)
+    if( scsEditString[scsEditPos] != ' ' ) {
+      if( scsEditPos < maxChars )
+	++scsEditPos;
+      break;
+    }
+
+  scsEditStringCallback = callback;
+  scsMenuState = MENU_STATE_EDIT_STRING;
+
+  return 0;
+}
+
 
 //! \}
