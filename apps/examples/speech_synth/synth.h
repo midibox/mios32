@@ -23,6 +23,8 @@
 #define SYNTH_NUM_PHRASES       64
 #define SYNTH_PHRASE_MAX_LENGTH 16
 
+#define SYNTH_PATCH_NAME_LEN    16
+
 #define SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR 0
 #define SYNTH_GLOBAL_PAR_RESOLUTION          1
 #define SYNTH_GLOBAL_PAR_XOR                 2
@@ -71,11 +73,11 @@ extern s32 SYNTH_PhrasePlay(u8 num, u8 velocity);
 extern s32 SYNTH_PhraseStop(u8 num);
 extern s32 SYNTH_PhraseIsPlayed(u8 num);
 
+extern char *SYNTH_PatchNameGet(u8 group);
+extern s32 SYNTH_PatchNameSet(u8 group, char *newName);
+
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
-
-// tmp.
-extern char synth_patch_name[SYNTH_NUM_GROUPS][21];
 
 #endif /* _SYNTH_H */

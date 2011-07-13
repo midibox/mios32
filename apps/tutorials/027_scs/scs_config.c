@@ -26,16 +26,20 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
-#define NUM_KNOBS 10
+#define NUM_KNOBS        10
+#define DEMO_STRING_LEN  16
 
 /////////////////////////////////////////////////////////////////////////////
 // Local parameter variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 selectedKnob;
+
 static u8 knobCC[NUM_KNOBS];
 static u8 knobChn[NUM_KNOBS];
 static u8 knobValue[NUM_KNOBS];
+
+static char demoString[DEMO_STRING_LEN+1]; // +1 char for 0 terminator
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -108,6 +112,19 @@ static u16 selectMsg6(u32 ix, u16 value)
   return value; // no change on value
 }
 
+static void selectString_Callback(char *newString)
+{
+  // could be the name of a patch which should be stored
+  memcpy(demoString, newString, DEMO_STRING_LEN);
+  SCS_Msg(SCS_MSG_L, 2000, "You entered:", demoString);
+  // call SD Card store function here
+}
+
+static u16  selectString(u32 ix, u16 value)
+{
+  return SCS_InstallEditStringCallback(selectString_Callback, "SAVE", demoString, DEMO_STRING_LEN);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Access Functions
@@ -169,6 +186,7 @@ const scs_menu_item_t pageMsg[] = {
   SCS_ITEM(" M4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
   SCS_ITEM(" M5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
   SCS_ITEM(" M6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
+  SCS_ITEM("Str ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
 };
 
 const scs_menu_page_t rootMode0[] = {
@@ -240,6 +258,11 @@ s32 SCS_CONFIG_Init(u32 mode)
     int i;
     for(i=0; i<NUM_KNOBS; ++i)
       knobCC[i] = 16 + i;
+
+    // default demo string content
+    for(i=0; i<DEMO_STRING_LEN; ++i)
+      demoString[i] = ' ';
+    demoString[DEMO_STRING_LEN] = 0; // 0 terminator
 
     // install table
     SCS_INSTALL_ROOT(rootMode0);

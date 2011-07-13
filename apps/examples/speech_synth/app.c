@@ -333,6 +333,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 		  DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", patch+1, bank+1, status);
 		}
 	      }
+
 	      SCS_DisplayUpdateRequest();
 	    }
 	  }
@@ -341,6 +342,19 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	status = SYNTH_FILE_LoadAllFiles(1);
 	if( status < 0 ) {
 	  DEBUG_MSG("Failed to load the newly created files!\n");
+	} else {
+	  u8 initialBank = 0;
+	  u8 initialPatch = 0;
+	  u8 targetGroup = 0;
+	  if( (status=SYNTH_FILE_B_PatchRead(initialBank, initialPatch, targetGroup)) < 0 ) {
+	    char buffer[100];
+	    sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
+	    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
+	  } else {
+	    //    char buffer[100];
+	    //    sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
+	    //    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
+	  }
 	}
       }
     }

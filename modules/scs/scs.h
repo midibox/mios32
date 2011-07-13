@@ -183,6 +183,8 @@ extern s32 SCS_MsgStop(void);
 extern s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
 extern s32 SCS_UnInstallDelayedActionCallback(void *callback);
 
+extern s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *initialString, u8 maxChars);
+
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////

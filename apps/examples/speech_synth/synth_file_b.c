@@ -346,8 +346,12 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
     return SYNTH_FILE_B_ERR_READ;
   }
 
-  status |= SYNTH_FILE_ReadBuffer((u8 *)synth_patch_name[target_group], 20);
-  synth_patch_name[target_group][20] = 0;
+  u8 patchNameLen = 16; // failsave to avoid unwanted overwrite
+  if( patchNameLen > SYNTH_PATCH_NAME_LEN )
+    patchNameLen = SYNTH_PATCH_NAME_LEN;
+  status |= SYNTH_FILE_ReadBuffer((u8 *)SYNTH_PatchNameGet(target_group), patchNameLen);
+  u32 reservedName; // reserve 4 chars for longer name
+  status |= SYNTH_FILE_ReadWord(&reservedName);
 
   u8 reserved1;
   status |= SYNTH_FILE_ReadByte(&reserved1);
@@ -359,7 +363,7 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
   status |= SYNTH_FILE_ReadByte(&reserved4);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[SYNTH_FILE_B] read patch B%d:P%d '%s'\n", bank+1, patch, synth_patch_name[target_group]);
+  DEBUG_MSG("[SYNTH_FILE_B] read patch B%d:P%d '%s'\n", bank+1, patch, SYNTH_PatchNameGet(target_group));
 #endif
 
   int phrase;
@@ -451,8 +455,8 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
   if( rename_if_empty_name ) {
     int i;
     u8 found_char = 0;
-    u8 *label = (u8 *)&synth_patch_name[source_group][5];
-    for(i=0; i<15; ++i)
+    u8 *label = (u8 *)SYNTH_PatchNameGet(source_group);
+    for(i=0; i<SYNTH_PATCH_NAME_LEN; ++i)
       if( label[i] != ' ' ) {
 	found_char = 1;
 	break;
@@ -463,10 +467,12 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
   }
 
   // write patch name w/o zero terminator
-  status |= SYNTH_FILE_WriteBuffer((u8 *)synth_patch_name[source_group], 20);
+  status |= SYNTH_FILE_WriteBuffer((u8 *)SYNTH_PatchNameGet(source_group), 16);
+  u32 reservedName; // reserve 4 chars for longer name
+  status |= SYNTH_FILE_ReadWord(&reservedName);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SYNTH_FILE_B] writing patch '%s'...\n", synth_patch_name[source_group]);
+  DEBUG_MSG("[SYNTH_FILE_B] writing patch '%s'...\n", SYNTH_PatchNameGet(source_group));
 #endif
 
   // reserved
