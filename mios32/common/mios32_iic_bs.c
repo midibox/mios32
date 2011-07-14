@@ -102,7 +102,7 @@ s32 MIOS32_IIC_BS_ScanBankSticks(void)
       s32 error = -1;
 
       while( error < 0 && retries-- ) {
-	s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
+	error = MIOS32_IIC_Transfer(MIOS32_IIC_BS_PORT, IIC_Write, MIOS32_IIC_BS_ADDR_BASE + 2*bs, NULL, 0);
 	if( !error )
 	  error = MIOS32_IIC_TransferWait(MIOS32_IIC_BS_PORT);
 	if( !error )

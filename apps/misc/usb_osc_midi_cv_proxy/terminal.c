@@ -441,7 +441,7 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
 
   out("Application: " MIOS32_LCD_BOOT_MSG_LINE1);
 
-  out("MBHP_ETH module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
+  out("Ethernet module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
   out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
   out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
 

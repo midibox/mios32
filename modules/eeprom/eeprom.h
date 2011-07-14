@@ -20,20 +20,35 @@
 
 /* Define the STM32F10Xxx Flash page size depending on the used STM32 device */
 // TODO: find a better way how to define this in MIOS32
-#if defined(MIOS32_PROCESSOR_STM32F103RB)
-# define PAGE_SIZE ((uint16_t)0x400)  /* Page size = 1KByte */
-# ifndef EEPROM_START_ADDRESS
-#  define EEPROM_START_ADDRESS   ((uint32_t)0x0801F800)  // 2*1k at top of flash memory
+#if defined(MIOS32_FAMILY_STM32F10x)
+# if defined(MIOS32_PROCESSOR_STM32F103RB)
+#  define PAGE_SIZE ((uint16_t)0x400)  /* Page size = 1KByte */
+#  ifndef EEPROM_START_ADDRESS
+#   define EEPROM_START_ADDRESS   ((uint32_t)0x0801F800)  // 2*1k at top of flash memory
+#  endif
+# elif defined(MIOS32_PROCESSOR_STM32F103RE)
+#  define PAGE_SIZE ((uint16_t)0x800)  /* Page size = 1KByte */
+#  ifndef EEPROM_START_ADDRESS
+#   define EEPROM_START_ADDRESS    ((uint32_t)0x0807F000)  // 2*2k at top of flash memory
+#  endif
+# else
+#  error "Processor not prepared for STM32 EEPROM emulation"
 # endif
-#elif defined(MIOS32_PROCESSOR_STM32F103RE)
-# define PAGE_SIZE ((uint16_t)0x800)  /* Page size = 1KByte */
-# ifndef EEPROM_START_ADDRESS
-#  define EEPROM_START_ADDRESS    ((uint32_t)0x0807F000)  // 2*2k at top of flash memory
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+// using on-board EEPROM of LPCXPRESSO module which is connected to P0.19 and P0.20
+  // set this either to 0 (for first IIC port) or 2 (for second IIC port)
+  // IIC1 selects the on-board EEPROM
+# ifndef EEPROM_IIC_DEVICE
+#  define EEPROM_IIC_DEVICE 1
+# endif
+  // Set a device number if the 3 address pins are not tied to ground
+# ifndef EEPROM_IIC_CS
+#  define EEPROM_IIC_CS     0
 # endif
 #else
-# error "Processor not prepared for EEPROM emulation"
+# error "This MIOS32_FAMILY not prepared for EEPROM (emulation)"
 #endif
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
