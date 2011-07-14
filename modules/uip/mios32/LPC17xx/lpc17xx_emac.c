@@ -69,7 +69,7 @@ static unsigned phy_id;
 static unsigned long long LPC17XX_EMAC_MEM_SECTION rx_desc_ll[NUM_RX_FRAG]; // must be 64bit aligned!
 static unsigned long long LPC17XX_EMAC_MEM_SECTION rx_stat_ll[NUM_RX_FRAG]; // must be 64bit aligned!
 static unsigned long long LPC17XX_EMAC_MEM_SECTION tx_desc_ll[NUM_TX_FRAG]; // must be 64bit aligned!
-static u32 LPC17XX_EMAC_MEM_SECTION tx_stat[NUM_TX_FRAG/2];
+static u32 LPC17XX_EMAC_MEM_SECTION tx_stat[NUM_TX_FRAG];
 static u32 LPC17XX_EMAC_MEM_SECTION rx_buf[(NUM_RX_FRAG*ETH_FRAG_SIZE) / 4];
 static u32 LPC17XX_EMAC_MEM_SECTION tx_buf[(NUM_TX_FRAG*ETH_FRAG_SIZE) / 4];
 
