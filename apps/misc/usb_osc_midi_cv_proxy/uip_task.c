@@ -178,16 +178,18 @@ static void UIP_TASK_Handler(void *pvParameters)
 
     if( !(clock_time_tick() % 100) ) {
       // each 100 mS: check availablility of network device
-      //network_device_check();
-      // TK: no auto-detection for MBSEQ for best performance if no MBHP_ETH module connected
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17) || defined(MIOS32_BOARD_LPCXPRESSO)
+      network_device_check();
+      // TK: on STM32 no auto-detection for MBSEQ for best performance if no MBHP_ETH module connected
       // the user has to reboot MBSEQ to restart module detection
+#endif
     }
 
     if( network_device_available() ) {
       uip_len = network_device_read();
 
       if( uip_len > 0 ) {
-	if(BUF->type == htons(UIP_ETHTYPE_IP) ) {
+	if(BUF->type == HTONS(UIP_ETHTYPE_IP) ) {
 	  uip_arp_ipin();
 	  uip_input();
 	
@@ -198,7 +200,7 @@ static void UIP_TASK_Handler(void *pvParameters)
 	    uip_arp_out();
 	    network_device_send();
 	  }
-	} else if(BUF->type == htons(UIP_ETHTYPE_ARP)) {
+	} else if(BUF->type == HTONS(UIP_ETHTYPE_ARP)) {
 	  uip_arp_arpin();
 	  /* If the above function invocation resulted in data that
 	     should be sent out on the network, the global variable
