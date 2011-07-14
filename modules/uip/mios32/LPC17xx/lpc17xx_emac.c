@@ -66,26 +66,28 @@ static unsigned phy_id;
 #define NUM_RX_FRAG         LPC17XX_EMAC_NUM_RX_FRAG
 #define NUM_TX_FRAG         LPC17XX_EMAC_NUM_TX_FRAG
 
-static u32 LPC17XX_EMAC_MEM_SECTION rx_desc[NUM_RX_FRAG*2];
-static u32 LPC17XX_EMAC_MEM_SECTION rx_stat[NUM_RX_FRAG*2];
-static u32 LPC17XX_EMAC_MEM_SECTION tx_desc[NUM_TX_FRAG*2];
-static u32 LPC17XX_EMAC_MEM_SECTION tx_stat[NUM_TX_FRAG];
+static unsigned long long LPC17XX_EMAC_MEM_SECTION rx_desc_ll[NUM_RX_FRAG]; // must be 64bit aligned!
+static unsigned long long LPC17XX_EMAC_MEM_SECTION rx_stat_ll[NUM_RX_FRAG]; // must be 64bit aligned!
+static unsigned long long LPC17XX_EMAC_MEM_SECTION tx_desc_ll[NUM_TX_FRAG]; // must be 64bit aligned!
+static u32 LPC17XX_EMAC_MEM_SECTION tx_stat[NUM_TX_FRAG/2];
 static u32 LPC17XX_EMAC_MEM_SECTION rx_buf[(NUM_RX_FRAG*ETH_FRAG_SIZE) / 4];
 static u32 LPC17XX_EMAC_MEM_SECTION tx_buf[(NUM_TX_FRAG*ETH_FRAG_SIZE) / 4];
 
 /* EMAC variables located in 16K Ethernet SRAM */
-#define RX_DESC_BASE	    ((u32)&rx_desc)
-#define RX_STAT_BASE        ((u32)&rx_stat)
-#define TX_DESC_BASE        ((u32)&tx_desc)
+#define RX_DESC_BASE	    ((u32)&rx_desc_ll)
+#define RX_STAT_BASE        ((u32)&rx_stat_ll)
+#define TX_DESC_BASE        ((u32)&tx_desc_ll)
 #define TX_STAT_BASE        ((u32)&tx_stat)
 
 /* RX and TX descriptor and status definitions. */
-#define RX_DESC_PACKET(i)   rx_desc[2*i+0]
-#define RX_DESC_CTRL(i)     rx_desc[2*i+1]
-#define RX_STAT_INFO(i)     rx_stat[2*i+0]
-#define RX_STAT_HASHCRC(i)  rx_stat[2*i+1]
-#define TX_DESC_PACKET(i)   tx_desc[2*i+0]
-#define TX_DESC_CTRL(i)     tx_desc[2*i+1]
+#define MEM32(addr) (*((volatile u32 *)(addr))) // helpful macro...
+
+#define RX_DESC_PACKET(i)   MEM32(RX_DESC_BASE + 8*i + 0)
+#define RX_DESC_CTRL(i)     MEM32(RX_DESC_BASE + 8*i + 4)
+#define RX_STAT_INFO(i)     MEM32(RX_STAT_BASE + 8*i + 0)
+#define RX_STAT_HASHCRC(i)  MEM32(RX_STAT_BASE + 8*i + 4)
+#define TX_DESC_PACKET(i)   MEM32(TX_DESC_BASE + 8*i + 0)
+#define TX_DESC_CTRL(i)     MEM32(TX_DESC_BASE + 8*i + 4)
 #define TX_STAT_INFO(i)     tx_stat[i]
 #define RX_BUF(i)           (&rx_buf[(i*ETH_FRAG_SIZE)/4])
 #define TX_BUF(i)           (&tx_buf[(i*ETH_FRAG_SIZE)/4])
