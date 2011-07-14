@@ -716,6 +716,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static void HandleUsbReset(U8 bDevStatus);
 static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
 static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData);
 
@@ -768,19 +769,19 @@ s32 MIOS32_USB_Init(u32 mode)
   // enable bulk-in interrupts on NAKs
   USBHwNakIntEnable(INACK_BI);
 
-  // change connection state to disconnected
-#ifndef MIOS32_DONT_USE_USB_MIDI
-  MIOS32_USB_MIDI_ChangeConnectionState(0);
-#endif
-#ifdef MIOS32_USE_USB_COM
-  MIOS32_USB_COM_ChangeConnectionState(0);
-#endif
+  // register bus reset handler
+  USBHwRegisterDevIntHandler(HandleUsbReset);
 
-  // TODO: Find a better location to enable protocols
+  // change connection state to connected
+  // (in different to STM32 variant)
+  // will be changed to disconnected if no package can be sent
+  // or if the cable is reconnected
 #ifndef MIOS32_DONT_USE_USB_MIDI
   MIOS32_USB_MIDI_ChangeConnectionState(1);
 #endif
-
+#ifdef MIOS32_USE_USB_COM
+  MIOS32_USB_COM_ChangeConnectionState(1);
+#endif
 
   // enable_USB_interrupt
   MIOS32_IRQ_Install(USB_IRQn, MIOS32_IRQ_USB_PRIORITY);
@@ -814,6 +815,19 @@ s32 MIOS32_USB_IsInitialized(void)
   return (LPC_USB->USBClkCtrl & (1 << 1)) ? 1 : 0;
 }
 
+
+static void HandleUsbReset(U8 bDevStatus)
+{
+  if (bDevStatus & DEV_STATUS_RESET) {
+    // No USB connection anymore
+#ifndef MIOS32_DONT_USE_USB_MIDI
+    MIOS32_USB_MIDI_ChangeConnectionState(0); // disconnected
+#endif
+#ifdef MIOS32_USE_USB_COM
+    MIOS32_USB_COM_ChangeConnectionState(0); // disconnected
+#endif
+  }
+}
 
 static BOOL HandleClassRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
 {
@@ -851,19 +865,29 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
   const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
   static u8 buffer[BUFFER_SIZE]; // TODO: maybe buffer provided by USB Driver?
 
-  if( pSetup->bRequest != REQ_GET_DESCRIPTOR )
+  if( pSetup->bRequest == REQ_SET_CONFIGURATION ) {
+#ifndef MIOS32_DONT_USE_USB_MIDI
+    // propagate connection state to USB MIDI driver
+    MIOS32_USB_MIDI_ChangeConnectionState(1); // connected
+#endif
+#ifdef MIOS32_USE_USB_COM
+    // propagate connection state to USB COM driver
+    MIOS32_USB_COM_ChangeConnectionState(1); // connected
+#endif
     return FALSE;
+  }
+  
+  if( pSetup->bRequest == REQ_GET_DESCRIPTOR ) {
+    u8 bType = GET_DESC_TYPE(pSetup->wValue);
+    u8 bIndex = GET_DESC_INDEX(pSetup->wValue);
 
-  u8 bType = GET_DESC_TYPE(pSetup->wValue);
-  u8 bIndex = GET_DESC_INDEX(pSetup->wValue);
+    if( bType != DESC_STRING )
+      return FALSE;
 
-  if( bType != DESC_STRING )
-    return FALSE;
+    u16 len;
+    int i;
 
-  u16 len;
-  int i;
-
-  switch( bIndex ) {
+    switch( bIndex ) {
     case 0: // Language
       // buffer[0] and [1] initialized below
       buffer[2] = 0x09;        // CharSet
@@ -888,25 +912,27 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
       break;
 
     case 3: { // Serial Number
-        u8 serial_number_str[40];
-	if( MIOS32_SYS_SerialNumberGet((char *)serial_number_str) >= 0 ) {
-	  for(i=0, len=2; serial_number_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
-	    buffer[len++] = serial_number_str[i];
-	    buffer[len++] = 0;
-	  }
-	} else
-	  return FALSE;
-      }
-      break;
+      u8 serial_number_str[40];
+      if( MIOS32_SYS_SerialNumberGet((char *)serial_number_str) >= 0 ) {
+	for(i=0, len=2; serial_number_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
+	  buffer[len++] = serial_number_str[i];
+	  buffer[len++] = 0;
+	}
+      } else
+	return FALSE;
+    } break;
 
     default: // string ID not supported
       return FALSE;
+    }
+
+    buffer[0] = len; // Descriptor Length
+    buffer[1] = DSCR_STRING; // Descriptor Type
+    *ppbData = buffer;
+    return TRUE;
   }
 
-  buffer[0] = len; // Descriptor Length
-  buffer[1] = DSCR_STRING; // Descriptor Type
-  *ppbData = buffer;
-  return TRUE;
+  return FALSE;
 }
 
 //! \}
