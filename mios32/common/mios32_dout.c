@@ -94,7 +94,7 @@ s32 MIOS32_DOUT_Init(u32 mode)
 s32 MIOS32_DOUT_PinGet(u32 pin)
 {
   // check if pin available
-  if( pin/8 >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
     return -1;
 
   // NOTE: DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
@@ -110,7 +110,7 @@ s32 MIOS32_DOUT_PinGet(u32 pin)
 s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 {
   // check if pin available
-  if( pin/8 >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
     return -1;
 
   MIOS32_IRQ_Disable(); // this should be atomic

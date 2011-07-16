@@ -104,12 +104,16 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the connection status of the USB MIDI interface
+//! \param[in] cable number
 //! \return 1: interface available
 //! \return 0: interface not available
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_USB_MIDI_CheckAvailable(void)
+s32 MIOS32_USB_MIDI_CheckAvailable(u8 cable)
 {
+  if( cable >= MIOS32_USB_MIDI_NUM_PORTS )
+    return 0;
+
   return transfer_possible ? 1 : 0;
 }
 

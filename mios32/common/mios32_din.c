@@ -56,7 +56,7 @@ s32 MIOS32_DIN_Init(u32 mode)
 s32 MIOS32_DIN_PinGet(u32 pin)
 {
   // check if pin available
-  if( pin/8 >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
     return -1;
 
   return (mios32_srio_din[pin >> 3] & (1 << (pin&7))) ? 1 : 0;
