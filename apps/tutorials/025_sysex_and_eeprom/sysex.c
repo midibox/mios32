@@ -24,6 +24,77 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+
+// help constant - don't change!
+#if SYSEX_FORMAT == 0
+# if SYSEX_CHECKSUM_PROTECTION
+#  define SYSEX_PATCH_DUMP_SIZE  ((PATCH_SIZE) + 1)
+# else
+#  define SYSEX_PATCH_DUMP_SIZE  ((PATCH_SIZE) + 0)
+# endif
+#elif SYSEX_FORMAT == 1
+# if SYSEX_CHECKSUM_PROTECTION
+#  define SYSEX_PATCH_DUMP_SIZE  (2*(PATCH_SIZE) + 1)
+# else
+#  define SYSEX_PATCH_DUMP_SIZE  (2*(PATCH_SIZE) + 0)
+# endif
+#else
+# error "unsupported SYSEX_FORMAT"
+#endif
+
+
+// command states
+#define SYSEX_CMD_STATE_BEGIN 0
+#define SYSEX_CMD_STATE_CONT  1
+#define SYSEX_CMD_STATE_END   2
+
+// ack/disack code
+#define SYSEX_DISACK   0x0e
+#define SYSEX_ACK      0x0f
+
+// disacknowledge arguments
+#define SYSEX_DISACK_LESS_BYTES_THAN_EXP  0x01
+#define SYSEX_DISACK_MORE_BYTES_THAN_EXP  0x02
+#define SYSEX_DISACK_WRONG_CHECKSUM       0x03
+#define SYSEX_DISACK_BS_NOT_AVAILABLE     0x0a
+#define SYSEX_DISACK_INVALID_COMMAND      0x0c
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Type definitions
+/////////////////////////////////////////////////////////////////////////////
+
+typedef union {
+  struct {
+    unsigned ALL:8;
+  };
+
+  struct {
+    unsigned CTR:3;
+    unsigned :1;
+    unsigned :1;
+    unsigned :1;
+    unsigned CMD:1;
+    unsigned MY_SYSEX:1;
+  };
+
+  struct {
+    unsigned :1;
+    unsigned :1;
+    unsigned :1;
+    unsigned :1;
+    unsigned PATCH_RECEIVED:1;
+    unsigned BANK_RECEIVED:1;
+    unsigned :1;
+    unsigned :1;
+  };
+} sysex_state_t;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +122,7 @@ static u8 sysex_received_checksum;
 static u16 sysex_receive_ctr;
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 // constant definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -61,7 +133,7 @@ static u16 sysex_receive_ctr;
 // if you decide to use "F0 00 00 7E" prefix, please ensure that your
 // own ID (here: 0x7f) will be entered into this document.
 // Otherwise please use a different header
-const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x7f };
+static const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x7f };
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,7 +141,7 @@ const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x7f };
 /////////////////////////////////////////////////////////////////////////////
 
 // TODO: use malloc function instead of a global array to save RAM
-u8 sysex_buffer[1024];
+static u8 sysex_buffer[1024];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -112,8 +184,8 @@ s32 SYSEX_Send(mios32_midi_port_t port, u8 bank, u8 patch)
   sysex_buffer[sysex_buffer_ix++] = bank;
 
   // send patch content
-  for(checksum=0, i=0; i<SYSEX_PATCH_SIZE; ++i) {
-    c = PATCH_ReadByte((u8)i);
+  for(checksum=0, i=0; i<PATCH_SIZE; ++i) {
+    c = PATCH_ReadByte(i);
 
 #if   SYSEX_FORMAT == 0    // 7bit format - 8th bit discarded
     sysex_buffer[sysex_buffer_ix++] = c & 0x7f;
@@ -345,15 +417,15 @@ s32 SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 	  // new byte has been received - put it into patch structure
 
 #if   SYSEX_FORMAT == 0    // 7bit format - 8th bit discarded
-	  PATCH_WriteByte((u8)sysex_receive_ctr, midi_in);
+	  PATCH_WriteByte(sysex_receive_ctr, midi_in);
 #elif SYSEX_FORMAT == 1    // two nibble format - low-nibble first
 	  if( (sysex_receive_ctr&1) == 0 ) {
 	    // low-nibble has been received
-	    PATCH_WriteByte((u8)(sysex_receive_ctr>>1), midi_in & 0x0f);
+	    PATCH_WriteByte((sysex_receive_ctr>>1), midi_in & 0x0f);
 	  } else {
 	    // high-nibble has been received, merge it with previously received low-nibble
-	    PATCH_WriteByte((u8)(sysex_receive_ctr>>1), 
-			    PATCH_ReadByte((u8)(sysex_receive_ctr>>1)) & 0x0f | ((midi_in&0x0f) << 4));
+	    PATCH_WriteByte((sysex_receive_ctr>>1), 
+			    PATCH_ReadByte((sysex_receive_ctr>>1)) & 0x0f | ((midi_in&0x0f) << 4));
 	  }
 #else
 # error "unsupported SYSEX_FORMAT"
