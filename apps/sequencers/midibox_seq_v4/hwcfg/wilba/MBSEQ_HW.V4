@@ -41,8 +41,8 @@ RS_OPTIMISATION 0x21 1
 ##################################################
 
 # number of first and second DOUT shift register used for GP LEDs
-GP_DOUT_L_SR    3
-GP_DOUT_R_SR    4
+GP_DOUT_L_SR    0
+GP_DOUT_R_SR    0
 
 # DOUTs for Dual Color option:
 GP_DOUT_L2_SR  0
