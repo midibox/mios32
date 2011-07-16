@@ -29,7 +29,7 @@
 
 // the patch structure (could also be located somewhere else, depending on
 // where and how you are storing values in RAM)
-u8 patch_structure[256];
+static u8 patch_structure[PATCH_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,11 @@ s32 PATCH_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // This function returns a byte from patch structure in RAM
 /////////////////////////////////////////////////////////////////////////////
-u8 PATCH_ReadByte(u8 addr)
+u8 PATCH_ReadByte(u16 addr)
 {
+  if( addr >= PATCH_SIZE )
+    return 0x00;
+
   return patch_structure[addr];
 }
 
@@ -62,8 +65,11 @@ u8 PATCH_ReadByte(u8 addr)
 /////////////////////////////////////////////////////////////////////////////
 // This function writes a byte into patch structure in RAM
 /////////////////////////////////////////////////////////////////////////////
-s32 PATCH_WriteByte(u8 addr, u8 byte)
+s32 PATCH_WriteByte(u16 addr, u8 byte)
 {
+  if( addr >= PATCH_SIZE )
+    return -1; // invalid address
+
   patch_structure[addr] = byte;
 
   return 0; // no error
@@ -85,7 +91,7 @@ s32 PATCH_Load(u8 bank, u8 patch)
 
   // use 64byte page load functions for faster access
   // TODO: proper error and retry handling
-  for(i=0; i<4; ++i)
+  for(i=0; i<(PATCH_SIZE/64); ++i)
     if( status = MIOS32_IIC_BS_Read(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
       return status;
     }
@@ -98,7 +104,7 @@ s32 PATCH_Load(u8 bank, u8 patch)
     return -1; // only a single patch is supported
 
   status = 0;
-  for(i=0; i<128; i+=2) {
+  for(i=0; i<PATCH_SIZE; i+=2) {
     s32 value = EEPROM_Read(i/2);
 
     if( value < 0 )
@@ -128,7 +134,7 @@ s32 PATCH_Store(u8 bank, u8 patch)
 
   // use 64byte page write functions for faster access
   // TODO: proper error and retry handling
-  for(i=0; i<4; ++i) {
+  for(i=0; i<(PATCH_SIZE/64); ++i) {
     if( status = MIOS32_IIC_BS_Write(bank, offset + i*0x40, (u8 *)(patch_structure + i*0x40), 0x40) ) {
       return status;
     }
@@ -147,7 +153,7 @@ s32 PATCH_Store(u8 bank, u8 patch)
   if( patch > 0 )
     return -1; // only a single patch is supported
 
-  for(i=0; i<128; i+=2) {
+  for(i=0; i<PATCH_SIZE; i+=2) {
     u16 hword = patch_structure[i+0] | (patch_structure[i+1] << 8);
 
     if( (status=EEPROM_Write(i/2, hword)) < 0 )
