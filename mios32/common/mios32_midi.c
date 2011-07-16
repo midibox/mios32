@@ -250,7 +250,7 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
   switch( port & 0xf0 ) {
     case USB0://..15
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      return MIOS32_USB_MIDI_CheckAvailable();
+      return MIOS32_USB_MIDI_CheckAvailable(port & 0xf);
 #else
       return 0; // USB has been disabled
 #endif
