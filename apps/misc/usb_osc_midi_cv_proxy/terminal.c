@@ -188,6 +188,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
       out("  store:                            stores current config as preset");
       out("  restore:                          restores config from preset");
+      out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
       out("  exit:                             (telnet only) exits the terminal");
     } else if( strcmp(parameter, "system") == 0 ) {
@@ -206,6 +207,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       } else {
 	out("ERROR: failed to restore presets from internal EEPROM (status %d)!", status);
       }
+    } else if( strcmp(parameter, "reset") == 0 ) {
+      MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "dhcp") == 0 ) {
