@@ -328,7 +328,6 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 		MIOS32_LCD_PrintFormattedString("Please wait...      ");
 		u8 sourceGroup = 0;
 		u8 rename_if_empty_name = 0;
-		MUTEX_SDCARD_TAKE;
 		if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, bank, patch, sourceGroup, rename_if_empty_name)) < 0 ) {
 		  DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", patch+1, bank+1, status);
 		}
