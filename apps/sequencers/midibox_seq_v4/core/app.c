@@ -50,6 +50,7 @@
 #include "seq_terminal.h"
 #include "seq_statistics.h"
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_m.h"
@@ -380,19 +381,21 @@ void SEQ_TASK_Period1S(void)
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
 
-  s32 status = SEQ_FILE_CheckSDCard();
+  s32 status = FILE_CheckSDCard();
 
   if( status == 1 ) {
     char str[21];
-    sprintf(str, "Label: %s", SEQ_FILE_VolumeLabel());
+    sprintf(str, "Label: %s", FILE_VolumeLabel());
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, " SD Card connected", "        :-D");
+    SEQ_FILE_LoadAllFiles(1);
   } else if( status == 2 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "SD Card disconnected", "        :-/");
+    SEQ_FILE_UnloadAllFiles();
   } else if( status == 3 ) {
-    if( !SEQ_FILE_SDCardAvailable() ) {
+    if( !FILE_SDCardAvailable() ) {
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "  No SD Card found  ", "        :-(");
       SEQ_FILE_HW_LockConfig(); // lock configuration
-    } else if( !SEQ_FILE_VolumeAvailable() ) {
+    } else if( !FILE_VolumeAvailable() ) {
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
       SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
@@ -446,7 +449,7 @@ void SEQ_TASK_Period1S(void)
     status = SEQ_FILE_CreateBackup();
       
     if( status < 0 ) {
-      if( status == SEQ_FILE_ERR_COPY )
+      if( status == FILE_ERR_COPY )
 	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "COPY FAILED!", "ERROR :-(");
       else
 	SEQ_UI_SDCardErrMsg(2000, status);

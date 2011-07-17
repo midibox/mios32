@@ -50,6 +50,7 @@
 		526B84F00EF6C1CE0092E5B3 /* seq_ui_pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 526B84ED0EF6C1CE0092E5B3 /* seq_ui_pattern.c */; };
 		526DA2D20F12C93A00ED244D /* seq_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 526DA2D00F12C93A00ED244D /* seq_file.c */; };
 		526DA2D30F12C93A00ED244D /* seq_file_b.c in Sources */ = {isa = PBXBuildFile; fileRef = 526DA2D10F12C93A00ED244D /* seq_file_b.c */; };
+		526F61EC13D2FBC900F1BB30 /* file.c in Sources */ = {isa = PBXBuildFile; fileRef = 526F61EA13D2FBC900F1BB30 /* file.c */; };
 		526F87CF0EEA126A00441997 /* Bugs.html in Resources */ = {isa = PBXBuildFile; fileRef = 526F879C0EEA126A00441997 /* Bugs.html */; };
 		526F87D00EEA126A00441997 /* archiving.html in Resources */ = {isa = PBXBuildFile; fileRef = 526F879E0EEA126A00441997 /* archiving.html */; };
 		526F87D10EEA126A00441997 /* PYMIDIEndpoint.html in Resources */ = {isa = PBXBuildFile; fileRef = 526F87A00EEA126A00441997 /* PYMIDIEndpoint.html */; };
@@ -260,6 +261,8 @@
 		526DA2D00F12C93A00ED244D /* seq_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file.c; path = ../core/seq_file.c; sourceTree = SOURCE_ROOT; };
 		526DA2D10F12C93A00ED244D /* seq_file_b.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_b.c; path = ../core/seq_file_b.c; sourceTree = SOURCE_ROOT; };
 		526DA2E10F12C9D300ED244D /* dosfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dosfs.h; path = ../../../../modules/dosfs/dosfs.h; sourceTree = SOURCE_ROOT; };
+		526F61EA13D2FBC900F1BB30 /* file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = file.c; path = ../../../../modules/file/file.c; sourceTree = SOURCE_ROOT; };
+		526F61EB13D2FBC900F1BB30 /* file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = file.h; path = ../../../../modules/file/file.h; sourceTree = SOURCE_ROOT; };
 		526F879C0EEA126A00441997 /* Bugs.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = Bugs.html; sourceTree = "<group>"; };
 		526F879E0EEA126A00441997 /* archiving.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = archiving.html; sourceTree = "<group>"; };
 		526F87A00EEA126A00441997 /* PYMIDIEndpoint.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIEndpoint.html; sourceTree = "<group>"; };
@@ -581,6 +584,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				526F61EA13D2FBC900F1BB30 /* file.c */,
+				526F61EB13D2FBC900F1BB30 /* file.h */,
 				5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */,
 				5245AE8713983A1A00C99E6D /* seq_live.c */,
 				5245AE8813983A1A00C99E6D /* seq_live.h */,
@@ -1089,6 +1094,7 @@
 				52F7757313845E39009B9A20 /* seq_file_bm.c in Sources */,
 				5245AE8913983A1A00C99E6D /* seq_live.c in Sources */,
 				5245AE8B13983A2B00C99E6D /* seq_ui_trklive.c in Sources */,
+				526F61EC13D2FBC900F1BB30 /* file.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

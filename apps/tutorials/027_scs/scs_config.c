@@ -201,8 +201,8 @@ const scs_menu_page_t rootMode0[] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringMainPage(char *line1, char *line2)
 {
-  strcpy(line1, "Main Page");
-  strcpy(line2, "Press soft button");
+  sprintf(line1, "Main Page");
+  sprintf(line2, "Press soft button");
 
   return 0; // no error
 }
@@ -236,7 +236,7 @@ static s32 buttonPressedInMainPage(u8 softButton)
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringPageSelection(char *line1)
 {
-  strcpy(line1, "Select Page:");
+  sprintf(line1, "Select Page:");
 
   return 0; // no error
 }

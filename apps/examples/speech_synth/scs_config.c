@@ -80,7 +80,7 @@ static void selectSAVE_Callback(char *newString)
   SYNTH_PatchNameSet(sourceGroup, newString);
 
   MUTEX_SDCARD_TAKE;
-  if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, selectedBank, selectedPatch, sourceGroup, rename_if_empty_name)) < 0 ) {
+  if( (status=SYNTH_FILE_B_PatchWrite(selectedBank, selectedPatch, sourceGroup, rename_if_empty_name)) < 0 ) {
     char buffer[100];
     sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);

@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_s.h"
 
@@ -74,7 +75,7 @@ typedef struct {
 
   seq_file_s_header_t header;
 
-  seq_file_t file;      // file informations
+  file_t file;      // file informations
 } seq_file_s_info_t;
 
 
@@ -167,7 +168,7 @@ s32 SEQ_FILE_S_Create(char *session)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] Failed to create file, status: %d\n", status);
 #endif
@@ -176,24 +177,24 @@ s32 SEQ_FILE_S_Create(char *session)
 
   // write seq_file_s_header
   const char file_type[10] = "MBSEQV4_S";
-  status |= SEQ_FILE_WriteBuffer((u8 *)file_type, 10);
+  status |= FILE_WriteBuffer((u8 *)file_type, 10);
 
   // write bank name w/o zero terminator
   char bank_name[21];
   sprintf(bank_name, "Default Bank        ");
   memcpy(info->header.name, bank_name, 20);
-  status |= SEQ_FILE_WriteBuffer((u8 *)info->header.name, 20);
+  status |= FILE_WriteBuffer((u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_S] writing '%s'...\n", bank_name);
 #endif
 
   // number of songs
   info->header.num_songs = SEQ_SONG_NUM;
-  status |= SEQ_FILE_WriteHWord(info->header.num_songs);
+  status |= FILE_WriteHWord(info->header.num_songs);
 
   // write predefined song size
   info->header.song_size = sizeof(seq_file_s_song_header_t) + sizeof(seq_song_step_t) * SEQ_SONG_NUM_STEPS;
-  status |= SEQ_FILE_WriteHWord(info->header.song_size);
+  status |= FILE_WriteHWord(info->header.song_size);
 
   // not required anymore with FatFs (was required with DOSFS)
 #if 0
@@ -202,12 +203,12 @@ s32 SEQ_FILE_S_Create(char *session)
   for(song=0; song<info->header.num_songs; ++song) {
     u32 pos;
     for(pos=0; pos<info->header.song_size; ++pos)
-      status |= SEQ_FILE_WriteByte(0x00);
+      status |= FILE_WriteByte(0x00);
   }
 #endif
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   if( status >= 0 )
     // bank valid - caller should fill the song slots with useful data now
@@ -240,7 +241,7 @@ s32 SEQ_FILE_S_Open(char *session)
 #endif
 
   s32 status;
-  if( (status=SEQ_FILE_ReadOpen((seq_file_t*)&info->file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen((file_t*)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] failed to open file, status: %d\n", status);
 #endif
@@ -250,13 +251,13 @@ s32 SEQ_FILE_S_Open(char *session)
   // read and check header
   // in order to avoid endianess issues, we have to read the sector bytewise!
   char file_type[10];
-  if( (status=SEQ_FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
+  if( (status=FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] failed to read header, status: %d\n", status);
 #endif
 
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
 
     return status;
   }
@@ -268,17 +269,17 @@ s32 SEQ_FILE_S_Open(char *session)
 #endif
 
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
 
     return SEQ_FILE_S_ERR_FORMAT;
   }
 
-  status |= SEQ_FILE_ReadBuffer((u8 *)info->header.name, 20);
-  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.num_songs);
-  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.song_size);
+  status |= FILE_ReadBuffer((u8 *)info->header.name, 20);
+  status |= FILE_ReadHWord((u16 *)&info->header.num_songs);
+  status |= FILE_ReadHWord((u16 *)&info->header.song_size);
 
   // close file (so that it can be re-opened)
-  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -313,22 +314,22 @@ s32 SEQ_FILE_S_SongRead(u8 song)
     return SEQ_FILE_S_ERR_INVALID_SONG;
 
   // re-open file
-  if( SEQ_FILE_ReadReOpen((seq_file_t*)&info->file) < 0 )
+  if( FILE_ReadReOpen((file_t*)&info->file) < 0 )
     return -1; // file cannot be re-opened
 
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(seq_file_s_header_t) + song * info->header.song_size;
-  if( (status=SEQ_FILE_ReadSeek(offset)) < 0 ) {
+  if( (status=FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] failed to change song offset in file, status: %d\n", status);
 #endif
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return SEQ_FILE_S_ERR_READ;
   }
 
-  status |= SEQ_FILE_ReadBuffer((u8 *)seq_song_name, 20);
+  status |= FILE_ReadBuffer((u8 *)seq_song_name, 20);
   seq_song_name[20] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -346,12 +347,12 @@ s32 SEQ_FILE_S_SongRead(u8 song)
   seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[0];
   u32 num_entries = (song_size - sizeof(seq_file_s_song_header_t)) / sizeof(seq_song_step_t);
   for(entry=0; entry<num_entries; ++entry, ++s) {
-    status |= SEQ_FILE_ReadWord((u32 *)&s->ALL_L); // ensure proper endianess - therefore two word reads
-    status |= SEQ_FILE_ReadWord((u32 *)&s->ALL_H); // via functions which are aligning the bytes correctly
+    status |= FILE_ReadWord((u32 *)&s->ALL_L); // ensure proper endianess - therefore two word reads
+    status |= FILE_ReadWord((u32 *)&s->ALL_H); // via functions which are aligning the bytes correctly
   }
 
   // close file (so that it can be re-opened)
-  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -400,21 +401,21 @@ s32 SEQ_FILE_S_SongWrite(char *session, u8 song, u8 rename_if_empty_name)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 0)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] Failed to open file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // change to file position
   u32 offset = 10 + sizeof(seq_file_s_header_t) + song * info->header.song_size;
-  if( (status=SEQ_FILE_WriteSeek(offset)) < 0 ) {
+  if( (status=FILE_WriteSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_S] failed to change song offset in file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
@@ -433,7 +434,7 @@ s32 SEQ_FILE_S_SongWrite(char *session, u8 song, u8 rename_if_empty_name)
   }
 
   // write song name w/o zero terminator
-  status |= SEQ_FILE_WriteBuffer((u8 *)seq_song_name, 20);
+  status |= FILE_WriteBuffer((u8 *)seq_song_name, 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_S] writing song #%d '%s'...\n", song+1, seq_song_name);
@@ -444,19 +445,19 @@ s32 SEQ_FILE_S_SongWrite(char *session, u8 song, u8 rename_if_empty_name)
   seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[0];
   u32 num_entries = (song_size - sizeof(seq_file_s_song_header_t)) / sizeof(seq_song_step_t);
   for(entry=0; entry<num_entries; ++entry, ++s) {
-    status |= SEQ_FILE_WriteWord(s->ALL_L); // ensure proper endianess - therefore two word writes
-    status |= SEQ_FILE_WriteWord(s->ALL_H); // via functions which are aligning the bytes correctly
+    status |= FILE_WriteWord(s->ALL_L); // ensure proper endianess - therefore two word writes
+    status |= FILE_WriteWord(s->ALL_H); // via functions which are aligning the bytes correctly
   }
 
   // fill remaining bytes with zero if required
   if( song_size < info->header.song_size ) {
     int i;
     for(i=song_size; i<info->header.song_size; ++i)
-      status |= SEQ_FILE_WriteByte(0x00);
+      status |= FILE_WriteByte(0x00);
   }
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_S] Song written with status %d\n", status);

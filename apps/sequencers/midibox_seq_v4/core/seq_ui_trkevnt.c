@@ -29,6 +29,8 @@
 #include "seq_midi_port.h"
 #include "seq_label.h"
 #include "seq_cc_labels.h"
+
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_t.h"
 
@@ -143,7 +145,7 @@ static const layer_config_t layer_config[] = {
 
 static u8 pr_dialog;
 
-static s32 dir_num_items; // contains SEQ_FILE error status if < 0
+static s32 dir_num_items; // contains FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
 
@@ -1078,7 +1080,7 @@ static s32 LCD_Handler(u8 high_prio)
 
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
-	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	if( dir_num_items == FILE_ERR_NO_DIR )
 	  SEQ_LCD_PrintString("/PRESETS directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -1522,7 +1524,7 @@ static s32 SEQ_UI_TRKEVNT_UpdateDirList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetFiles("/PRESETS", "V4T", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = FILE_GetFiles("/PRESETS", "V4T", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -1573,8 +1575,8 @@ static s32 DoExport(u8 force_overwrite)
 
   strcpy(path, "/PRESETS");
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_MakeDir(path); // create directory if it doesn't exist
-  status = SEQ_FILE_DirExists(path);
+  status = FILE_MakeDir(path); // create directory if it doesn't exist
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
@@ -1599,7 +1601,7 @@ static s32 DoExport(u8 force_overwrite)
   sprintf(path, "/PRESETS/%s.v4t", v4t_file);
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_FileExists(path);
+  status = FILE_FileExists(path);
   MUTEX_SDCARD_GIVE;
 	    
   if( status < 0 ) {

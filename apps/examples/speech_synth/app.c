@@ -26,6 +26,7 @@
 #include <scs.h>
 #include "scs_config.h"
 
+#include "file.h"
 #include "synth_file.h"
 #include "synth_file_b.h"
 
@@ -283,6 +284,8 @@ static void TASK_Periodic_1mS(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
+  u16 sdcard_check_ctr = 0;
+
   MIOS32_LCD_Clear();
 
   while( 1 ) {
@@ -291,74 +294,82 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     // call SCS handler
     SCS_Tick();
 
-    // SD Card handler
-    MUTEX_SDCARD_TAKE;
-    s32 status = SYNTH_FILE_CheckSDCard();
+    // each second: check if SD Card (still) available
+    if( ++sdcard_check_ctr >= 1000 ) {
+      sdcard_check_ctr = 0;
 
-    if( status == 1 ) {
-      DEBUG_MSG("SD Card connected: %s\n", SYNTH_FILE_VolumeLabel());
-    } else if( status == 2 ) {
-      DEBUG_MSG("SD Card disconnected\n");
-    } else if( status == 3 ) {
-      if( !SYNTH_FILE_SDCardAvailable() ) {
-	DEBUG_MSG("SD Card not found\n");
-      } else if( !SYNTH_FILE_VolumeAvailable() ) {
-	DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-      } else {
-	int bank;
-	for(bank=0; bank<SYNTH_FILE_B_NUM_BANKS; ++bank) {
-	  u8 numPatches = SYNTH_FILE_B_NumPatches(bank);
+      MUTEX_SDCARD_TAKE;
+      s32 status = FILE_CheckSDCard();
 
-	  if( numPatches ) {
-	    DEBUG_MSG("Bank #%d contains %d patches\n", bank+1, numPatches);
-	  } else {
-	    DEBUG_MSG("Bank #%d not found - creating new one\n", bank+1);
-	    if( (status=SYNTH_FILE_B_Create(synth_file_session_name, bank)) < 0 ) {
-	      DEBUG_MSG("Failed to create Bank #%d (status: %d)\n", bank+1, status);
+      if( status == 1 ) {
+	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+	// load all file infos
+	SYNTH_FILE_LoadAllFiles(1); // including HW info
+      } else if( status == 2 ) {
+	DEBUG_MSG("SD Card disconnected\n");
+	// invalidate all file infos
+	SYNTH_FILE_UnloadAllFiles();
+      } else if( status == 3 ) {
+	if( !FILE_SDCardAvailable() ) {
+	  DEBUG_MSG("SD Card not found\n");
+	} else if( !FILE_VolumeAvailable() ) {
+	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	} else {
+	  int bank;
+	  for(bank=0; bank<SYNTH_FILE_B_NUM_BANKS; ++bank) {
+	    u8 numPatches = SYNTH_FILE_B_NumPatches(bank);
+
+	    if( numPatches ) {
+	      DEBUG_MSG("Bank #%d contains %d patches\n", bank+1, numPatches);
 	    } else {
-	      DEBUG_MSG("Bank #%d successfully created!\n", bank+1);
+	      DEBUG_MSG("Bank #%d not found - creating new one\n", bank+1);
+	      if( (status=SYNTH_FILE_B_Create(bank)) < 0 ) {
+		DEBUG_MSG("Failed to create Bank #%d (status: %d)\n", bank+1, status);
+	      } else {
+		DEBUG_MSG("Bank #%d successfully created!\n", bank+1);
 
-	      int numPatches = SYNTH_FILE_B_NumPatches(bank);
-	      int patch;
-	      for(patch=0; patch<numPatches; ++patch) {
-		DEBUG_MSG("Writing Bank %d Patch #%d\n", bank+1, patch+1);
-		MIOS32_LCD_CursorSet(0, 0); // TMP - use message system later
-		MIOS32_LCD_PrintFormattedString("Write Patch %d.%03d  ", bank+1, patch+1);
-		MIOS32_LCD_CursorSet(0, 1); // TMP - use message system later
-		MIOS32_LCD_PrintFormattedString("Please wait...      ");
-		u8 sourceGroup = 0;
-		u8 rename_if_empty_name = 0;
-		if( (status=SYNTH_FILE_B_PatchWrite(synth_file_session_name, bank, patch, sourceGroup, rename_if_empty_name)) < 0 ) {
-		  DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", patch+1, bank+1, status);
+		int numPatches = SYNTH_FILE_B_NumPatches(bank);
+		int patch;
+		for(patch=0; patch<numPatches; ++patch) {
+		  DEBUG_MSG("Writing Bank %d Patch #%d\n", bank+1, patch+1);
+		  MIOS32_LCD_CursorSet(0, 0); // TMP - use message system later
+		  MIOS32_LCD_PrintFormattedString("Write Patch %d.%03d  ", bank+1, patch+1);
+		  MIOS32_LCD_CursorSet(0, 1); // TMP - use message system later
+		  MIOS32_LCD_PrintFormattedString("Please wait...      ");
+		  u8 sourceGroup = 0;
+		  u8 rename_if_empty_name = 0;
+		  if( (status=SYNTH_FILE_B_PatchWrite(bank, patch, sourceGroup, rename_if_empty_name)) < 0 ) {
+		    DEBUG_MSG("Failed to write patch #%d into bank #%d (status: %d)\n", patch+1, bank+1, status);
+		  }
 		}
-	      }
 
-	      SCS_DisplayUpdateRequest();
+		SCS_DisplayUpdateRequest();
+	      }
+	    }
+	  }
+	  status = SYNTH_FILE_UnloadAllFiles();
+	  status = SYNTH_FILE_LoadAllFiles(1);
+	  if( status < 0 ) {
+	    DEBUG_MSG("Failed to load the newly created files!\n");
+	  } else {
+	    u8 initialBank = 0;
+	    u8 initialPatch = 0;
+	    u8 targetGroup = 0;
+	    if( (status=SYNTH_FILE_B_PatchRead(initialBank, initialPatch, targetGroup)) < 0 ) {
+	      char buffer[100];
+	      sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
+	      SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
+	    } else {
+	      //    char buffer[100];
+	      //    sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
+	      //    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
 	    }
 	  }
 	}
-	status = SYNTH_FILE_UnloadAllFiles();
-	status = SYNTH_FILE_LoadAllFiles(1);
-	if( status < 0 ) {
-	  DEBUG_MSG("Failed to load the newly created files!\n");
-	} else {
-	  u8 initialBank = 0;
-	  u8 initialPatch = 0;
-	  u8 targetGroup = 0;
-	  if( (status=SYNTH_FILE_B_PatchRead(initialBank, initialPatch, targetGroup)) < 0 ) {
-	    char buffer[100];
-	    sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
-	    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
-	  } else {
-	    //    char buffer[100];
-	    //    sprintf(buffer, "Patch %c%03d", 'A'+initialBank, initialPatch+1);
-	    //    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
-	  }
-	}
       }
-    }
 
-    MUTEX_SDCARD_GIVE;
+      MUTEX_SDCARD_GIVE;
+    }
   }
 
 }

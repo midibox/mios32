@@ -152,9 +152,11 @@ s32 MIOS32_TIMER_ReInit(u8 timer, u32 period)
   LPC_TIM_TypeDef *tim = (LPC_TIM_TypeDef *)timer_base[timer];
 
   // time base configuration
+  tim->MCR = 0;                   // disable timer
   tim->CTCR = 0x00;               // timer mode
   tim->PR = ((TIM_PERIPHERAL_FRQ/1000000) * 1)-1; // <resolution> uS accuracy @ CCLK/4 Peripheral Clock
   tim->MR0 = period;              // interrupt event on overrun
+  tim->TC = 0;                    // reset counter
   tim->MCR = (1 << 1) | (1 << 0); // generate event on match, reset counter on match
 
   return 0; // no error

@@ -35,6 +35,8 @@ typedef union {
     u8 SYNCHED_PATTERN_CHANGE:1;
     u8 PASTE_CLR_ALL:1;
     u8 RATOPC:1;
+    u8 SYNCHED_MUTE:1;
+    u8 SYNCHED_UNMUTE:1;
   };
 } seq_core_options_t;
 
@@ -231,6 +233,8 @@ extern u8 seq_core_steps_per_measure;
 extern u8 seq_core_steps_per_pattern;
 
 extern u16 seq_core_trk_muted;
+extern u16 seq_core_trk_synched_mute;
+extern u16 seq_core_trk_synched_unmute;
 extern seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
 
 extern u8 seq_core_step_update_req;

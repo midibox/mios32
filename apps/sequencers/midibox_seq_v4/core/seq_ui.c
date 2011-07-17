@@ -40,6 +40,8 @@
 #include "seq_cc.h"
 #include "seq_midi_sysex.h"
 #include "seq_blm.h"
+
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_hw.h"
 
@@ -2046,8 +2048,8 @@ s32 SEQ_UI_LCD_Handler(void)
       SEQ_LCD_CursorSet(40+3, 1);
       SEQ_LCD_PrintString("File:  [");
       for(i=0; i<20; ++i)
-	SEQ_LCD_PrintChar((i>(seq_file_copy_percentage/5)) ? ' ' : '#');
-      SEQ_LCD_PrintFormattedString("] %3d%%", seq_file_copy_percentage);
+	SEQ_LCD_PrintChar((i>(file_copy_percentage/5)) ? ' ' : '#');
+      SEQ_LCD_PrintFormattedString("] %3d%%", file_copy_percentage);
     }
 
   } else if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
@@ -2935,12 +2937,12 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
 {
   // send error message to MIOS terminal
   MUTEX_MIDIOUT_TAKE;
-  SEQ_FILE_SendErrorMessage(status);
+  FILE_SendErrorMessage(status);
   MUTEX_MIDIOUT_GIVE;
 
   // print on LCD
   char str[21];
-  sprintf(str, "E%3d (FatFs: D%3d)", -status, seq_file_dfs_errno < 1000 ? seq_file_dfs_errno : 999);
+  sprintf(str, "E%3d (FatFs: D%3d)", -status, file_dfs_errno < 1000 ? file_dfs_errno : 999);
   return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
 }
 

@@ -30,7 +30,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIDI
 /////////////////////////////////////////////////////////////////////////////
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -105,6 +105,30 @@ s32 MID_FILE_FindNext(char *filename, char *next_file)
     strcpy(ui_midifile_name, "SDCard Err!");
   } else if( status == 0 ) {
     strcpy(ui_midifile_name, "No .mid File");
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the .mid file previous to the given filename
+// returns < 0 on errors
+// returns 1 if a new file has been found, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_FindPrev(char *filename, char *prev_file)
+{
+  s32 status;
+
+  MUTEX_SDCARD_TAKE;
+  status = FILE_FindPreviousFile(MID_FILES_PATH,
+				 filename,
+				 "MID",
+				 prev_file);
+  MUTEX_SDCARD_GIVE;
+
+  if( status < 0 ) {
+    strcpy(ui_midifile_name, "SDCard Err!");
   }
 
   return status;

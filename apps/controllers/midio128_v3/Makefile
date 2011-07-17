@@ -21,6 +21,8 @@ THUMB_SOURCE    = src/app.c \
 		  src/midio_dout.c \
 		  src/midio_file.c \
 		  src/midio_file_p.c \
+		  src/mid_file.c \
+		  src/seq.c \
                   src/midimon.c \
                   src/terminal.c \
                   src/uip_task.c \
@@ -71,6 +73,15 @@ include $(MIOS32_PATH)/modules/uip/uip.mk
 
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
+
+# FILE Access Layer
+include $(MIOS32_PATH)/modules/file/file.mk
+
+# generic sequencer modules
+include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
+
+# MIDI file Player
+include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
 # Sources for Standard Control Surface
 include $(MIOS32_PATH)/modules/scs/scs.mk

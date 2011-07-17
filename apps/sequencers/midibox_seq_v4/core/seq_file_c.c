@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_c.h"
 #include "seq_file_b.h"
@@ -152,7 +153,7 @@ s32 SEQ_FILE_C_Read(char *session)
 {
   s32 status = 0;
   seq_file_c_info_t *info = &seq_file_c_info;
-  seq_file_t file;
+  file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -163,7 +164,7 @@ s32 SEQ_FILE_C_Read(char *session)
   DEBUG_MSG("[SEQ_FILE_C] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_C] failed to open file, status: %d\n", status);
 #endif
@@ -173,7 +174,7 @@ s32 SEQ_FILE_C_Read(char *session)
   // read config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -285,6 +286,10 @@ s32 SEQ_FILE_C_Read(char *session)
 	    }
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
 	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
+	  } else if( strcmp(parameter, "SynchedMute") == 0 ) {
+	    seq_core_options.SYNCHED_MUTE = value;
+	  } else if( strcmp(parameter, "SynchedUnmute") == 0 ) {
+	    seq_core_options.SYNCHED_UNMUTE = value;
 	  } else if( strcmp(parameter, "RATOPC") == 0 ) {
 	    seq_core_options.RATOPC = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
@@ -460,7 +465,7 @@ s32 SEQ_FILE_C_Read(char *session)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -488,7 +493,7 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   s32 status = 0;
   char line_buffer[128];
 
-#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write config values
   u8 bpm_preset;
@@ -553,6 +558,12 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   sprintf(line_buffer, "SynchedPatternChange %d\n", seq_core_options.SYNCHED_PATTERN_CHANGE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "SynchedMute %d\n", seq_core_options.SYNCHED_MUTE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "SynchedUnmute %d\n", seq_core_options.SYNCHED_UNMUTE);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RATOPC %d\n", seq_core_options.RATOPC);
@@ -654,11 +665,11 @@ s32 SEQ_FILE_C_Write(char *session)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_C] Failed to open/create config file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
     return status;
   }
@@ -667,7 +678,7 @@ s32 SEQ_FILE_C_Write(char *session)
   status |= SEQ_FILE_C_Write_Hlp(1);
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 
   // check if file is valid

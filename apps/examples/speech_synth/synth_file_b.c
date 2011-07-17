@@ -9,7 +9,7 @@
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "synth_file.h"
 #include "synth_file_b.h"
 
@@ -70,7 +71,7 @@ typedef struct {
 
   synth_file_b_header_t header;
 
-  synth_file_t file;      // file informations
+  file_t file;      // file informations
 } synth_file_b_info_t;
 
 
@@ -107,20 +108,20 @@ s32 SYNTH_FILE_B_Init(u32 mode)
 // Called from SYNTH_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_B_LoadAllBanks(char *session)
+s32 SYNTH_FILE_B_LoadAllBanks(void)
 {
   s32 status = 0;
 
   // load all banks
   u8 bank;
   for(bank=0; bank<SYNTH_FILE_B_NUM_BANKS; ++bank) {
-    s32 error = SYNTH_FILE_B_Open(session, bank);
+    s32 error = SYNTH_FILE_B_Open(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] Tried to open bank #%d file, status: %d\n", bank+1, error);
 #endif
 #if 0
     if( error == -2 ) {
-      error = SYNTH_FILE_B_Create(session, bank);
+      error = SYNTH_FILE_B_Create(bank);
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SYNTH_FILE_B] Tried to create bank #%d file, status: %d\n", bank+1, error);
 #endif
@@ -166,7 +167,7 @@ s32 SYNTH_FILE_B_NumPatches(u8 bank)
 // create a complete bank file
 // returns < 0 on errors (error codes are documented in synth_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_B_Create(char *session, u8 bank)
+s32 SYNTH_FILE_B_Create(u8 bank)
 {
   if( bank >= SYNTH_FILE_B_NUM_BANKS )
     return SYNTH_FILE_B_ERR_INVALID_BANK;
@@ -175,19 +176,14 @@ s32 SYNTH_FILE_B_Create(char *session, u8 bank)
   info->valid = 0; // set to invalid as long as we are not sure if file can be accessed
 
   char filepath[MAX_PATH];
-#if 0
-  sprintf(filepath, "%s/%s/SYNTH_B%d.V1", SYNTH_FILE_SESSION_PATH, session, bank+1);
-#else
-  // currently no sessions used
   sprintf(filepath, "/SYNTH_B%d.V1", bank+1);
-#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] Creating new bank file '%s'\n", filepath);
 #endif
 
   s32 status = 0;
-  if( (status=SYNTH_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] Failed to create file, status: %d\n", status);
 #endif
@@ -196,26 +192,26 @@ s32 SYNTH_FILE_B_Create(char *session, u8 bank)
 
   // write synth_file_b_header
   const char file_type[10] = "SYNTHZZ_B";
-  status |= SYNTH_FILE_WriteBuffer((u8 *)file_type, 10);
+  status |= FILE_WriteBuffer((u8 *)file_type, 10);
 
   // write bank name w/o zero terminator
   char bank_name[21];
   sprintf(bank_name, "Default Bank        ");
   memcpy(info->header.name, bank_name, 20);
-  status |= SYNTH_FILE_WriteBuffer((u8 *)info->header.name, 20);
+  status |= FILE_WriteBuffer((u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] writing '%s'...\n", bank_name);
 #endif
 
   // number of patches
   info->header.num_patches = 64;
-  status |= SYNTH_FILE_WriteHWord(info->header.num_patches);
+  status |= FILE_WriteHWord(info->header.num_patches);
 
   info->header.patch_size = SYNTH_NUM_PHRASES * (16*16 + 16); // currently hardcoded
-  status |= SYNTH_FILE_WriteWord(info->header.patch_size);
+  status |= FILE_WriteWord(info->header.patch_size);
 
   // close file
-  status |= SYNTH_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   if( status >= 0 )
     // bank valid - caller should fill the patch slots with useful data now
@@ -234,7 +230,7 @@ s32 SYNTH_FILE_B_Create(char *session, u8 bank)
 // open a bank file
 // returns < 0 on errors (error codes are documented in synth_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_B_Open(char *session, u8 bank)
+s32 SYNTH_FILE_B_Open(u8 bank)
 {
   if( bank >= SYNTH_FILE_B_NUM_BANKS )
     return SYNTH_FILE_B_ERR_INVALID_BANK;
@@ -244,19 +240,14 @@ s32 SYNTH_FILE_B_Open(char *session, u8 bank)
   info->valid = 0; // will be set to valid if bank header has been read successfully
 
   char filepath[MAX_PATH];
-#if 0
-  sprintf(filepath, "%s/%s/SYNTH_B%d.V1", SYNTH_FILE_SESSION_PATH, session, bank+1);
-#else
-  // currently no sessions used
   sprintf(filepath, "/SYNTH_B%d.V1", bank+1);
-#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] Open bank file '%s'\n", filepath);
 #endif
 
   s32 status;
-  if( (status=SYNTH_FILE_ReadOpen((synth_file_t*)&info->file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen((file_t*)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] failed to open file, status: %d\n", status);
 #endif
@@ -266,7 +257,7 @@ s32 SYNTH_FILE_B_Open(char *session, u8 bank)
   // read and check header
   // in order to avoid endianess issues, we have to read the sector bytewise!
   char file_type[10];
-  if( (status=SYNTH_FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
+  if( (status=FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] failed to read header, status: %d\n", status);
 #endif
@@ -281,9 +272,9 @@ s32 SYNTH_FILE_B_Open(char *session, u8 bank)
     return SYNTH_FILE_B_ERR_FORMAT;
   }
 
-  status |= SYNTH_FILE_ReadBuffer((u8 *)info->header.name, 20);
-  status |= SYNTH_FILE_ReadHWord((u16 *)&info->header.num_patches);
-  status |= SYNTH_FILE_ReadWord((u32 *)&info->header.patch_size);
+  status |= FILE_ReadBuffer((u8 *)info->header.name, 20);
+  status |= FILE_ReadHWord((u16 *)&info->header.num_patches);
+  status |= FILE_ReadWord((u32 *)&info->header.patch_size);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -293,7 +284,7 @@ s32 SYNTH_FILE_B_Open(char *session, u8 bank)
   }
 
   // close file (so that it can be re-opened)
-  SYNTH_FILE_ReadClose((synth_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   // bank is valid! :)
   info->valid = 1;
@@ -331,36 +322,36 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
     return SYNTH_FILE_B_ERR_INVALID_PATCH;
 
   // re-open file
-  if( SYNTH_FILE_ReadReOpen((synth_file_t*)&info->file) < 0 )
+  if( FILE_ReadReOpen((file_t*)&info->file) < 0 )
     return -1; // file cannot be re-opened
 
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(synth_file_b_header_t) + patch * info->header.patch_size;
-  if( (status=SYNTH_FILE_ReadSeek(offset)) < 0 ) {
+  if( (status=FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] failed to change patch offset in file, status: %d\n", status);
 #endif
     // close file (so that it can be re-opened)
-    SYNTH_FILE_ReadClose((synth_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return SYNTH_FILE_B_ERR_READ;
   }
 
   u8 patchNameLen = 16; // failsave to avoid unwanted overwrite
   if( patchNameLen > SYNTH_PATCH_NAME_LEN )
     patchNameLen = SYNTH_PATCH_NAME_LEN;
-  status |= SYNTH_FILE_ReadBuffer((u8 *)SYNTH_PatchNameGet(target_group), patchNameLen);
+  status |= FILE_ReadBuffer((u8 *)SYNTH_PatchNameGet(target_group), patchNameLen);
   u32 reservedName; // reserve 4 chars for longer name
-  status |= SYNTH_FILE_ReadWord(&reservedName);
+  status |= FILE_ReadWord(&reservedName);
 
   u8 reserved1;
-  status |= SYNTH_FILE_ReadByte(&reserved1);
+  status |= FILE_ReadByte(&reserved1);
   u8 reserved2;
-  status |= SYNTH_FILE_ReadByte(&reserved2);
+  status |= FILE_ReadByte(&reserved2);
   u8 reserved3;
-  status |= SYNTH_FILE_ReadByte(&reserved3);
+  status |= FILE_ReadByte(&reserved3);
   u8 reserved4;
-  status |= SYNTH_FILE_ReadByte(&reserved4);
+  status |= FILE_ReadByte(&reserved4);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] read patch B%d:P%d '%s'\n", bank+1, patch, SYNTH_PatchNameGet(target_group));
@@ -373,7 +364,7 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
       int par;
       for(par=0; par<16; ++par) {
 	u8 value;
-	status |= SYNTH_FILE_ReadByte(&value);
+	status |= FILE_ReadByte(&value);
 	SYNTH_PhonemeParSet(phrase, ix, par, value);
       }
     }
@@ -381,13 +372,13 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
     int par;
     for(par=0; par<16; ++par) {
       u8 value;
-      status |= SYNTH_FILE_ReadByte(&value);
+      status |= FILE_ReadByte(&value);
       SYNTH_PhraseParSet(phrase, par, value);
     }
   }
 
   // close file (so that it can be re-opened)
-  SYNTH_FILE_ReadClose((synth_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -404,7 +395,7 @@ s32 SYNTH_FILE_B_PatchRead(u8 bank, u8 patch, u8 target_group)
 // writes a patch of a given group into bank
 // returns < 0 on errors (error codes are documented in synth_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u8 rename_if_empty_name)
+s32 SYNTH_FILE_B_PatchWrite(u8 bank, u8 patch, u8 source_group, u8 rename_if_empty_name)
 {
   if( bank >= SYNTH_FILE_B_NUM_BANKS )
     return SYNTH_FILE_B_ERR_INVALID_BANK;
@@ -421,33 +412,28 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
     return SYNTH_FILE_B_ERR_INVALID_PATCH;
 
   char filepath[MAX_PATH];
-#if 0
-  sprintf(filepath, "%s/%s/SYNTH_B%d.V1", SYNTH_FILE_SESSION_PATH, session, bank+1);
-#else
-  // currently no sessions used
   sprintf(filepath, "/SYNTH_B%d.V1", bank+1);
-#endif
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] Open bank file '%s' for writing\n", filepath);
 #endif
 
   s32 status = 0;
-  if( (status=SYNTH_FILE_WriteOpen(filepath, 0)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] Failed to open file, status: %d\n", status);
 #endif
-    SYNTH_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // change to file position
   u32 offset = 10 + sizeof(synth_file_b_header_t) + patch * info->header.patch_size;
-  if( (status=SYNTH_FILE_WriteSeek(offset)) < 0 ) {
+  if( (status=FILE_WriteSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] failed to change patch offset in file, status: %d\n", status);
 #endif
-    SYNTH_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
@@ -467,19 +453,19 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
   }
 
   // write patch name w/o zero terminator
-  status |= SYNTH_FILE_WriteBuffer((u8 *)SYNTH_PatchNameGet(source_group), 16);
+  status |= FILE_WriteBuffer((u8 *)SYNTH_PatchNameGet(source_group), 16);
   u32 reservedName; // reserve 4 chars for longer name
-  status |= SYNTH_FILE_ReadWord(&reservedName);
+  status |= FILE_ReadWord(&reservedName);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SYNTH_FILE_B] writing patch '%s'...\n", SYNTH_PatchNameGet(source_group));
 #endif
 
   // reserved
-  status |= SYNTH_FILE_WriteByte(0x00);
-  status |= SYNTH_FILE_WriteByte(0x00);
-  status |= SYNTH_FILE_WriteByte(0x00);
-  status |= SYNTH_FILE_WriteByte(0x00);
+  status |= FILE_WriteByte(0x00);
+  status |= FILE_WriteByte(0x00);
+  status |= FILE_WriteByte(0x00);
+  status |= FILE_WriteByte(0x00);
 
   // writing phrases
   int phrase;
@@ -488,18 +474,18 @@ s32 SYNTH_FILE_B_PatchWrite(char *session, u8 bank, u8 patch, u8 source_group, u
     for(ix=0; ix<SYNTH_PHRASE_MAX_LENGTH; ++ix) {
       int par;
       for(par=0; par<16; ++par) {
-	status |= SYNTH_FILE_WriteByte(SYNTH_PhonemeParGet(phrase, ix, par));
+	status |= FILE_WriteByte(SYNTH_PhonemeParGet(phrase, ix, par));
       }
     }
 
     int par;
     for(par=0; par<16; ++par) {
-      status |= SYNTH_FILE_WriteByte(SYNTH_PhraseParGet(phrase, par));
+      status |= FILE_WriteByte(SYNTH_PhraseParGet(phrase, par));
     }
   }
 
   // close file
-  status |= SYNTH_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SYNTH_FILE_B] Patch written with status %d\n", status);
@@ -552,27 +538,27 @@ s32 SYNTH_FILE_B_PatchPeekName(u8 bank, u8 patch, u8 non_cached, char *patch_nam
     return SYNTH_FILE_B_ERR_INVALID_PATCH;
 
   // re-open file
-  if( SYNTH_FILE_ReadReOpen((synth_file_t*)&info->file) < 0 )
+  if( FILE_ReadReOpen((file_t*)&info->file) < 0 )
     return -1; // file cannot be re-opened
 
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(synth_file_b_header_t) + patch * info->header.patch_size;
-  if( (status=SYNTH_FILE_ReadSeek(offset)) < 0 ) {
+  if( (status=FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SYNTH_FILE_B] failed to change patch offset in file, status: %d\n", status);
 #endif
     // close file (so that it can be re-opened)
-    SYNTH_FILE_ReadClose((synth_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return SYNTH_FILE_B_ERR_READ;
   }
 
   // read name
-  status |= SYNTH_FILE_ReadBuffer((u8 *)cached_patch_name, 20);
+  status |= FILE_ReadBuffer((u8 *)cached_patch_name, 20);
   cached_patch_name[20] = 0;
 
   // close file (so that it can be re-opened)
-  SYNTH_FILE_ReadClose((synth_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   // fill category with "-----" if it is empty
   int i;

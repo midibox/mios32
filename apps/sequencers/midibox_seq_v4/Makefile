@@ -169,6 +169,9 @@ include $(MIOS32_PATH)/modules/midifile/midifile.mk
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
+# FILE Access Layer
+include $(MIOS32_PATH)/modules/file/file.mk
+
 # Portable randomize module
 include $(MIOS32_PATH)/modules/random/random.mk
 
