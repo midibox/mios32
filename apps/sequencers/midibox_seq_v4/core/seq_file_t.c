@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_t.h"
 
@@ -87,7 +88,7 @@ static s32 get_dec(char *word)
 s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 {
   s32 status = 0;
-  seq_file_t file;
+  file_t file;
 
   if( track > SEQ_CORE_NUM_TRACKS )
     return SEQ_FILE_T_ERR_TRACK;
@@ -98,7 +99,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   DEBUG_MSG("[SEQ_FILE_T] Open track preset file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_T] failed to open file, status: %d\n", status);
 #endif
@@ -116,7 +117,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   // read track definitions
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -399,7 +400,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&file);
 
   // update CC links (again)
   SEQ_CC_LinkUpdate(track);
@@ -434,7 +435,7 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write comments if target is a file
   if( write_to_file ) {
@@ -781,11 +782,11 @@ s32 SEQ_FILE_T_Write(char *filepath, u8 track)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_T] Failed to open/create track preset file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
@@ -793,7 +794,7 @@ s32 SEQ_FILE_T_Write(char *filepath, u8 track)
   status |= SEQ_FILE_T_Write_Hlp(1, track);
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 
 #if DEBUG_VERBOSE_LEVEL >= 2

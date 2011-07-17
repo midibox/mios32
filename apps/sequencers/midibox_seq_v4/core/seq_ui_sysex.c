@@ -22,6 +22,7 @@
 #include "seq_ui.h"
 #include "tasks.h"
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_midi_port.h"
 
@@ -52,7 +53,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 dir_num_items; // contains SEQ_FILE error status if < 0
+static s32 dir_num_items; // contains FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
 static mios32_midi_port_t sysex_port = DEFAULT; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
@@ -190,7 +191,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, "Sending:", syx_file);
 	    MUTEX_SDCARD_TAKE;
 	    MUTEX_MIDIOUT_TAKE;
-	    s32 status = SEQ_FILE_SendSyxDump(path, sysex_port);
+	    s32 status = FILE_SendSyxDump(path, sysex_port);
 	    MUTEX_MIDIOUT_GIVE;
 	    MUTEX_SDCARD_GIVE;
 	    if( status < 0 )
@@ -250,9 +251,9 @@ static s32 LCD_Handler(u8 high_prio)
 
   SEQ_LCD_CursorSet(0, 0);
   if( dir_num_items < 0 ) {
-    if( dir_name[0] != 0 && dir_num_items == SEQ_FILE_ERR_NO_DIR )
+    if( dir_name[0] != 0 && dir_num_items == FILE_ERR_NO_DIR )
       SEQ_LCD_PrintFormattedString("/SYSEX/%s directory not found on SD Card!", dir_name);
-    else if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+    else if( dir_num_items == FILE_ERR_NO_DIR )
       SEQ_LCD_PrintString("/SYSEX directory not found on SD Card!");
     else
       SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -328,11 +329,11 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
 #else
   MUTEX_SDCARD_TAKE;
   if( !dir_name[0] ) {
-    dir_num_items = SEQ_FILE_GetDirs("/SYSEX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+    dir_num_items = FILE_GetDirs("/SYSEX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   } else {
     char path[25];
     sprintf(path, "/SYSEX/%s", dir_name);
-    dir_num_items = SEQ_FILE_GetFiles(path, "SYX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
+    dir_num_items = FILE_GetFiles(path, "SYX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
   }
   MUTEX_SDCARD_GIVE;
 

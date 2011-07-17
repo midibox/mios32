@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta43
+~~~~~~~~~~~~~~~~~~~~~
+
+   o delayed mute/unmute which is synched to the measure.
+     It can be enabled individually in the global options menu (UTILITY->OPT)
+
+
 MIDIboxSEQ V4.0beta42
 ~~~~~~~~~~~~~~~~~~~~~
 

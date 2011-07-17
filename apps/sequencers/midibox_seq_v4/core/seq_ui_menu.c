@@ -21,11 +21,13 @@
 #include <seq_bpm.h>
 #include "tasks.h"
 
+#include "file.h"
+#include "seq_file.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cv.h"
 #include "seq_midi_in.h"
-#include "seq_file.h"
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_midply.h"
@@ -72,7 +74,7 @@ static u8 menu_selected_item = 0; // dito
 
 static u8 menu_dialog;
 
-static s32 dir_num_items; // contains SEQ_FILE error status if < 0
+static s32 dir_num_items; // contains FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
 
@@ -547,7 +549,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(40);
     SEQ_LCD_CursorSet(0, 0);
     if( dir_num_items < 0 ) {
-      if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+      if( dir_num_items == FILE_ERR_NO_DIR )
 	SEQ_LCD_PrintFormattedString("%s directory not found on SD Card!", SEQ_FILE_SESSION_PATH);
       else
 	SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -717,7 +719,7 @@ static s32 SEQ_UI_MENU_UpdateSessionList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], SESSION_NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], SESSION_NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -794,8 +796,8 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
 
   strcpy(path, SEQ_FILE_SESSION_PATH);
   MUTEX_SDCARD_TAKE;
-  SEQ_FILE_MakeDir(path); // create directory if it doesn't exist
-  status = SEQ_FILE_DirExists(path);
+  FILE_MakeDir(path); // create directory if it doesn't exist
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
@@ -820,7 +822,7 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_DirExists(path);
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
@@ -834,10 +836,9 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     return 1;
   }
 
-  SEQ_FILE_MakeDir(path); // create directory
-
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_DirExists(path);
+  FILE_MakeDir(path); // create directory
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 	    
   if( status < 0 ) {
@@ -848,7 +849,7 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   // take over session name
   strcpy(seq_file_new_session_name, session_dir);
   seq_file_backup_percentage = 0;
-  seq_file_copy_percentage = 0; // for percentage display
+  file_copy_percentage = 0; // for percentage display
 
   if( new_session ) {
     // stop sequencer if it is still running
@@ -918,7 +919,7 @@ static s32 OpenSession(void)
   sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_DirExists(path);
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {

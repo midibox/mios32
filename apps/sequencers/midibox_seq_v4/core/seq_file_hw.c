@@ -29,6 +29,7 @@
 #include <blm.h>
 #include <blm_x.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_hw.h"
 
@@ -194,7 +195,7 @@ s32 SEQ_FILE_HW_Read(void)
 {
   s32 status = 0;
   seq_file_hw_info_t *info = &seq_file_hw_info;
-  seq_file_t file;
+  file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -205,7 +206,7 @@ s32 SEQ_FILE_HW_Read(void)
   DEBUG_MSG("[SEQ_FILE_HW] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_HW] failed to open file, status: %d\n", status);
 #endif
@@ -215,7 +216,7 @@ s32 SEQ_FILE_HW_Read(void)
   // read config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 80);
+    status=FILE_ReadLine((u8 *)line_buffer, 80);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -1024,7 +1025,7 @@ s32 SEQ_FILE_HW_Read(void)
 
   } while( status >= 1 );
 
-  SEQ_FILE_ReadClose(&file);
+  FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

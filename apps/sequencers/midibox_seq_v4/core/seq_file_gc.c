@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_gc.h"
 #include "seq_file_b.h"
@@ -200,7 +201,7 @@ s32 SEQ_FILE_GC_Read(void)
 {
   s32 status = 0;
   seq_file_gc_info_t *info = &seq_file_gc_info;
-  seq_file_t file;
+  file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -211,7 +212,7 @@ s32 SEQ_FILE_GC_Read(void)
   DEBUG_MSG("[SEQ_FILE_GC] Open global config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_GC] failed to open file, status: %d\n", status);
 #endif
@@ -221,7 +222,7 @@ s32 SEQ_FILE_GC_Read(void)
   // read global config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -403,7 +404,7 @@ s32 SEQ_FILE_GC_Read(void)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&file);
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   // OSC_SERVER_Init(0) has to be called after all settings have been done!
@@ -436,7 +437,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   s32 status = 0;
   char line_buffer[128];
 
-#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write global config values
   sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
@@ -561,11 +562,11 @@ s32 SEQ_FILE_GC_Write(void)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_GC] Failed to open/create global config file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
     return status;
   }
@@ -574,7 +575,7 @@ s32 SEQ_FILE_GC_Write(void)
   status |= SEQ_FILE_GC_Write_Hlp(1);
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 
   // check if file is valid

@@ -28,8 +28,14 @@
 #include <scs.h>
 #include "scs_config.h"
 
+#include "file.h"
 #include "midio_file.h"
 #include "midio_file_p.h"
+
+#include <seq_bpm.h>
+#include <seq_midi_out.h>
+#include "seq.h"
+#include "mid_file.h"
 
 #include "terminal.h"
 #include "midimon.h"
@@ -37,6 +43,13 @@
 #include "uip_task.h"
 #include "osc_client.h"
 
+
+// define priority level for sequencer
+// use same priority as MIOS32 specific tasks
+#define PRIORITY_TASK_PERIOD_1mS ( tskIDLE_PRIORITY + 3 )
+
+// local prototype of the task function
+static void TASK_Period_1mS(void *pvParameters);
 
 // define priority level for control surface handler
 // use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
@@ -82,6 +95,7 @@ static u32 sysex_buffer_len[NUM_SYSEX_BUFFERS];
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void APP_Periodic_100uS(void);
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 
 
 
@@ -116,6 +130,9 @@ void APP_Init(void)
   // install SysEx callback
   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
 
+  // install MIDI Rx callback function
+  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
+
   // initialize code modules
   MIDIO_SYSEX_Init(0);
   MIDIO_PATCH_Init(0);
@@ -127,11 +144,14 @@ void APP_Init(void)
   TERMINAL_Init(0);
   MIDIMON_Init(0);
   MIDIO_FILE_Init(0);
+  SEQ_MIDI_OUT_Init(0);
+  SEQ_Init(0);
 
   // install timer function which is called each 100 uS
-  MIOS32_TIMER_Init(0, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
+  MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
 
-  // start task
+  // start tasks
+  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 
 }
@@ -331,11 +351,15 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 }
 
 
+
+
 /////////////////////////////////////////////////////////////////////////////
 // This task handles the control surface
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
+  u16 sdcard_check_ctr = 0;
+
   MIOS32_LCD_Clear();
 
   while( 1 ) {
@@ -344,37 +368,87 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     // call SCS handler
     SCS_Tick();
 
-    // SD Card handler
-    MUTEX_SDCARD_TAKE;
-    s32 status = MIDIO_FILE_CheckSDCard();
+    // each second: check if SD Card (still) available
+    if( ++sdcard_check_ctr >= 1000 ) {
+      sdcard_check_ctr = 0;
 
-    din_enabled = 1; // enable the DINs after first read...
+      MUTEX_SDCARD_TAKE;
+      s32 status = FILE_CheckSDCard();
 
-    if( status == 1 ) {
-      DEBUG_MSG("SD Card connected: %s\n", MIDIO_FILE_VolumeLabel());
-    } else if( status == 2 ) {
-      DEBUG_MSG("SD Card disconnected\n");
-    } else if( status == 3 ) {
-      if( !MIDIO_FILE_SDCardAvailable() ) {
-	DEBUG_MSG("SD Card not found\n");
-      } else if( !MIDIO_FILE_VolumeAvailable() ) {
-	DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-      } else {
-	// check if patch file exists
-	if( !MIDIO_FILE_P_Valid() ) {
-	  // create new one
-	  DEBUG_MSG("Creating initial MIDIO_P.V3 file\n");
+      din_enabled = 1; // enable the DINs after first read...
 
-	  if( (status=MIDIO_FILE_P_Write()) < 0 ) {
-	    DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+      if( status == 1 ) {
+	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+	// load all file infos
+	MIDIO_FILE_LoadAllFiles(1); // including HW info
+      } else if( status == 2 ) {
+	DEBUG_MSG("SD Card disconnected\n");
+	// invalidate all file infos
+	MIDIO_FILE_UnloadAllFiles();
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+
+	// change filename
+	sprintf(MID_FILE_UI_NameGet(), "No SD Card");
+      } else if( status == 3 ) {
+	if( !FILE_SDCardAvailable() ) {
+	  DEBUG_MSG("SD Card not found\n");
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "No SD Card");
+	} else if( !FILE_VolumeAvailable() ) {
+	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "No FAT");
+	} else {
+	  // check if patch file exists
+	  if( !MIDIO_FILE_P_Valid() ) {
+	    // create new one
+	    DEBUG_MSG("Creating initial MIDIO_P.V3 file\n");
+
+	    if( (status=MIDIO_FILE_P_Write()) < 0 ) {
+	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+	    }
 	  }
-	}
-      }
-    }
 
-    MUTEX_SDCARD_GIVE;
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "SDCard found");
+	}
+
+	// reset sequencer
+	SEQ_Reset(0);
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
   }
 
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS to handle sequencer requests
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period_1mS(void *pvParameters)
+{
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // execute sequencer handler
+    MUTEX_SDCARD_TAKE;
+    SEQ_Handler();
+    MUTEX_SDCARD_GIVE;
+
+    // send timestamped MIDI events
+    MUTEX_MIDIOUT_TAKE;
+    SEQ_MIDI_OUT_Handler();
+    MUTEX_MIDIOUT_GIVE;
+  }
 }
 
 
@@ -393,4 +467,17 @@ static void APP_Periodic_100uS(void)
 
   // here we could do some additional high-prio jobs
   // (e.g. PWM LEDs)
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectRxCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+{
+  // here we could filter a certain port
+  // The BPM generator will deliver inaccurate results if MIDI clock 
+  // is received from multiple ports
+  SEQ_BPM_NotifyMIDIRx(midi_byte);
+
+  return 0; // no error, no filtering
 }

@@ -65,7 +65,7 @@ s32 MIDIO_DOUT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
   int pin;
   for(pin=0; pin<MIDIO_PATCH_NUM_DOUT; ++pin, ++dout_cfg) {
     // check if port is enabled
-    if( dout_cfg->enabled_ports & port_mask ) {
+    if( port == DEFAULT || (dout_cfg->enabled_ports & port_mask) ) {
       // check for matching MIDI event
       if( ((midi_package.evnt0 ^ dout_cfg->evnt0) & 0x7f) == 0 &&
 	  midi_package.evnt1 == dout_cfg->evnt1 ) {

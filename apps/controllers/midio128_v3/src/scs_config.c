@@ -16,10 +16,15 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
 #include <string.h>
 
 #include <scs.h>
 #include "scs_config.h"
+
+#include <seq_bpm.h>
+#include "seq.h"
+#include "mid_file.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -192,8 +197,17 @@ const scs_menu_page_t rootMode0[] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringMainPage(char *line1, char *line2)
 {
-  strcpy(line1, "Main Page");
-  strcpy(line2, "Press soft button");
+  u32 tick = SEQ_BPM_TickGet();
+  u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+  u32 ticks_per_measure = ticks_per_step * 16;
+  u32 measure = (tick / ticks_per_measure) + 1;
+  u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
+
+  sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
+  sprintf(line2, "%s  <   >      MENU", SEQ_BPM_IsRunning() ? "STP" : "PLY");
+
+  // request LCD update - this will lead to fast refresh rate in main screen
+  SCS_DisplayUpdateRequest();
 
   return 0; // no error
 }
@@ -216,7 +230,50 @@ static s32 encMovedInMainPage(s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 buttonPressedInMainPage(u8 softButton)
 {
-  // here the root table could be changed depending on soft button
+  switch( softButton ) {
+  case 0: // Play/Stop
+    if( SEQ_BPM_IsRunning() ) {
+      SEQ_BPM_Stop();          // stop sequencer
+      seq_pause = 1;
+    } else {
+      if( seq_pause ) {
+	// continue sequencer
+	seq_pause = 0;
+	SEQ_BPM_Cont();
+      } else {
+	MUTEX_SDCARD_TAKE;
+	// if in auto mode and BPM generator is clocked in slave mode:
+	// change to master mode
+	SEQ_BPM_CheckAutoMaster();
+	// first song
+	SEQ_PlayFileReq(0);
+	// reset sequencer
+	SEQ_Reset(1);
+	// start sequencer
+	SEQ_BPM_Start();
+	MUTEX_SDCARD_GIVE;
+      }
+    }
+    return -1; // don't enter menu
+
+  case 1: { // previous song
+    MUTEX_SDCARD_TAKE;
+    SEQ_PlayFileReq(-1);
+    MUTEX_SDCARD_GIVE;
+    return -1; // don't enter menu
+  }
+
+  case 2: { // next song
+    MUTEX_SDCARD_TAKE;
+    SEQ_PlayFileReq(1);
+    MUTEX_SDCARD_GIVE;
+    return -1; // don't enter menu
+  }
+
+  case 3:
+    // not assigned yet
+    return -1; // don't enter menu
+  }
 
   return 0; // no error
 }
@@ -227,7 +284,7 @@ static s32 buttonPressedInMainPage(u8 softButton)
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringPageSelection(char *line1)
 {
-  strcpy(line1, "Select Page:");
+  sprintf(line1, "Select Page:");
 
   return 0; // no error
 }

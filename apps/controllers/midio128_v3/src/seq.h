@@ -33,7 +33,7 @@ extern s32 SEQ_Init(u32 mode);
 extern s32 SEQ_Reset(u8 play_off_events);
 extern s32 SEQ_Handler(void);
 
-extern s32 SEQ_PlayFileReq(u32 next);
+extern s32 SEQ_PlayFileReq(s8 next);
 
 
 /////////////////////////////////////////////////////////////////////////////

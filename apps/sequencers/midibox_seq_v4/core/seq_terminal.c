@@ -38,6 +38,7 @@
 #include "seq_mixer.h"
 #include "seq_midi_port.h"
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_s.h"
@@ -678,7 +679,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   taskYIELD();
 
   MUTEX_SDCARD_TAKE;
-  SEQ_FILE_PrintSDCardInfos();
+  FILE_PrintSDCardInfos();
   MUTEX_SDCARD_GIVE;
 #endif
 
@@ -688,22 +689,22 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 
   taskYIELD();
 
-  if( !SEQ_FILE_SDCardAvailable() ) {
+  if( !FILE_SDCardAvailable() ) {
     sprintf(str_buffer, "not connected");
-  } else if( !SEQ_FILE_VolumeAvailable() ) {
+  } else if( !FILE_VolumeAvailable() ) {
     sprintf(str_buffer, "Invalid FAT");
   } else {
     out("Retrieving SD Card informations - please wait!\n");
     MUTEX_MIDIOUT_GIVE;
     MUTEX_SDCARD_TAKE;
-    SEQ_FILE_UpdateFreeBytes();
+    FILE_UpdateFreeBytes();
     MUTEX_SDCARD_GIVE;
     MUTEX_MIDIOUT_TAKE;
 
     sprintf(str_buffer, "'%s': %u of %u MB free", 
-	    SEQ_FILE_VolumeLabel(),
-	    (unsigned int)(SEQ_FILE_VolumeBytesFree()/1000000),
-	    (unsigned int)(SEQ_FILE_VolumeBytesTotal()/1000000));
+	    FILE_VolumeLabel(),
+	    (unsigned int)(FILE_VolumeBytesFree()/1000000),
+	    (unsigned int)(FILE_VolumeBytesTotal()/1000000));
   }
   out("SD Card: %s\n", str_buffer);
 

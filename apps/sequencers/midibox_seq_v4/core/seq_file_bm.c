@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_bm.h"
 
@@ -157,7 +158,7 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 {
   s32 status = 0;
   seq_file_bm_info_t *info = &seq_file_bm_info[global];
-  seq_file_t file;
+  file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -171,7 +172,7 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
   DEBUG_MSG("[SEQ_FILE_BM] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_BM] failed to open file, status: %d\n", status);
 #endif
@@ -182,7 +183,7 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
   u8 current_bookmark = 0;
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -337,7 +338,7 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -362,7 +363,7 @@ static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file, u8 global)
   s32 status = 0;
   char line_buffer[200];
 
-#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   u8 from_bookmark = global ? 0 : 8;
   u8 to_bookmark = global ? 7 : (SEQ_UI_BOOKMARKS_NUM-1);
@@ -449,11 +450,11 @@ s32 SEQ_FILE_BM_Write(char* session, u8 global)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_BM] Failed to open/create config file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
     return status;
   }
@@ -462,7 +463,7 @@ s32 SEQ_FILE_BM_Write(char* session, u8 global)
   status |= SEQ_FILE_BM_Write_Hlp(1, global);
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   // check if file is valid
   if( status >= 0 )

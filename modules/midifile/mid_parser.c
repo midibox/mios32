@@ -57,6 +57,8 @@ static u32 MID_PARSER_ReadVarLen(u32 *pos);
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 file_valid;
+
 static u16 midifile_format;
 static u16 midifile_ppqn;
 
@@ -79,6 +81,8 @@ static s32 (*mid_parser_playmeta_callback)(u8 track, u8 meta, u32 len, u8 *buffe
 s32 MID_PARSER_Init(u32 mode)
 {
   // initial values
+  file_valid = 0;
+
   midi_tracks_num = 0;
 
   mid_parser_read_callback = NULL;
@@ -117,6 +121,9 @@ s32 MID_PARSER_Read(void)
 {
   u8 chunk_type[4];
   u32 chunk_len;
+
+  // invalidate current file
+  file_valid = 0;
 
   if( mid_parser_read_callback == NULL ||
       mid_parser_eof_callback == NULL ||
@@ -199,14 +206,16 @@ s32 MID_PARSER_Read(void)
       DEBUG_MSG("[MID_PARSER] Found unknown chunk '%c%c%c%c' of size %u\n\r", 
 	     chunk_type[0], chunk_type[1], chunk_type[2], chunk_type[3],
 	     chunk_len);
-      return -1;
 #endif
+      return -1;
     }
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[MID_PARSER] Number of Tracks: %u (expected: %u)\n\r", midi_tracks_num, num_tracks);
 #endif    
+
+  file_valid = 1;
 
   return 0; // no error
 }
@@ -250,6 +259,9 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
       mid_parser_eof_callback == NULL ||
       mid_parser_seek_callback == NULL )
     return -1; // missing callback functions
+
+  if( file_valid == 0 )
+    return 1; // fake for compatibility reasons
 
   u8 num_tracks_running = 0;
   u8 track = 0;

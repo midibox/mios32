@@ -85,7 +85,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       u8 visible_track = SEQ_UI_VisibleTrackGet();
       u16 mask = 1 << encoder;
-      u16 *muted = seq_ui_button_state.MUTE_PRESSED ? (u16 *)&seq_core_trk[visible_track].layer_muted : (u16 *)&seq_core_trk_muted;
+      u16 *muted = (u16 *)&seq_core_trk_muted;
+
+      if( seq_ui_button_state.MUTE_PRESSED )
+	muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
+      else {
+	if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE ) {
+	  muted = (u16 *)&seq_core_trk_synched_mute;
+	} else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE ) {
+	  muted = (u16 *)&seq_core_trk_synched_unmute;
+	}
+      }
 
       if( incrementer < 0 )
 	*muted |= mask;
@@ -134,7 +144,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  u8 visible_track = SEQ_UI_VisibleTrackGet();
 	  seq_core_trk[visible_track].layer_muted = latched_mute;
 	} else {
-	  seq_core_trk_muted = latched_mute;
+	  u16 new_mutes = latched_mute & ~seq_core_trk_muted;
+	  if( seq_core_options.SYNCHED_MUTE )
+	    seq_core_trk_synched_mute |= new_mutes;
+	  else
+	    seq_core_trk_muted |= new_mutes;
+
+	  u16 new_unmutes = ~latched_mute & seq_core_trk_muted;
+	  if( seq_core_options.SYNCHED_UNMUTE )
+	    seq_core_trk_synched_unmute |= new_unmutes;
+	  else
+	    seq_core_trk_muted &= ~new_unmutes;
 	}
       } else {
 	// select pressed: init latched mutes which will be taken over once SELECT button released
@@ -188,18 +208,30 @@ static s32 LCD_Handler(u8 high_prio)
 
     if( seq_ui_button_state.MUTE_PRESSED ) {
       u8 layer;
-      for(layer=0; layer<16; ++layer)
-	if( mute_flags & (1 << layer) )
+      u16 mask = (1 << 0);
+      for(layer=0; layer<16; ++layer, mask <<= 1)
+	if( mute_flags & mask )
 	  SEQ_LCD_PrintString("Mute ");
 	else
 	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
     } else {
+      int remaining_steps = (seq_core_steps_per_measure - seq_core_state.ref_step) + 1;
       seq_core_trk_t *t = &seq_core_trk[0];
-      for(track=0; track<16; ++t, ++track)
-	if( mute_flags & (1 << track) )
-	  SEQ_LCD_PrintString("Mute ");
-	else
-	  SEQ_LCD_PrintHBar(t->vu_meter >> 3);
+      u16 mask = (1 << 0);
+      for(track=0; track<16; ++t, ++track, mask <<= 1)
+	if( mute_flags & mask ) {
+	  if( !seq_ui_button_state.SELECT_PRESSED && (seq_core_trk_synched_unmute & mask) ) {
+	    SEQ_LCD_PrintFormattedString("U%3d ", remaining_steps);
+	  } else {
+	    SEQ_LCD_PrintString("Mute ");
+	  }
+	} else {
+	  if( !seq_ui_button_state.SELECT_PRESSED && (seq_core_trk_synched_mute & mask) ) {
+	    SEQ_LCD_PrintFormattedString("M%3d ", remaining_steps);
+	  } else {
+	    SEQ_LCD_PrintHBar(t->vu_meter >> 3);
+	  }
+	}
     }
   } else {
     ///////////////////////////////////////////////////////////////////////////

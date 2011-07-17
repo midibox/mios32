@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_g.h"
 
@@ -141,7 +142,7 @@ s32 SEQ_FILE_G_Read(char *session)
 {
   s32 status = 0;
   seq_file_g_info_t *info = &seq_file_g_info;
-  seq_file_t file;
+  file_t file;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -152,7 +153,7 @@ s32 SEQ_FILE_G_Read(char *session)
   DEBUG_MSG("[SEQ_FILE_G] Open config file '%s'\n", filepath);
 #endif
 
-  if( (status=SEQ_FILE_ReadOpen(&file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ_FILE_G] failed to open file, status: %d\n", status);
 #endif
@@ -162,7 +163,7 @@ s32 SEQ_FILE_G_Read(char *session)
   // read config values
   char line_buffer[128];
   do {
-    status=SEQ_FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 128);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -237,7 +238,7 @@ s32 SEQ_FILE_G_Read(char *session)
   } while( status >= 1 );
 
   // close file
-  status |= SEQ_FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -262,7 +263,7 @@ static s32 SEQ_FILE_G_Write_Hlp(u8 write_to_file)
   s32 status = 0;
   char line_buffer[200];
 
-#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= SEQ_FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+#define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write groove templates
   u8 groove;
@@ -314,11 +315,11 @@ s32 SEQ_FILE_G_Write(char *session)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_G] Failed to open/create config file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
     return status;
   }
@@ -327,7 +328,7 @@ s32 SEQ_FILE_G_Write(char *session)
   status |= SEQ_FILE_G_Write_Hlp(1);
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   // check if file is valid
   if( status >= 0 )

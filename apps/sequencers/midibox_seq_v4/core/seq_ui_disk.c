@@ -23,6 +23,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_b.h"
 #include "seq_file_s.h"
@@ -133,7 +134,7 @@ static s32 DoSessionCopyBookmarks(char *from_session, u16 from_pattern, char *to
 
 static u8 menu_dialog;
 
-static s32 dir_num_items; // contains SEQ_FILE error status if < 0
+static s32 dir_num_items; // contains FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
 static u8 dir_selected_item = 0; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
@@ -1272,7 +1273,7 @@ static s32 LCD_Handler(u8 high_prio)
 
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
-	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	if( dir_num_items == FILE_ERR_NO_DIR )
 	  SEQ_LCD_PrintString("/SESSIONS directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -1395,7 +1396,7 @@ static s32 LCD_Handler(u8 high_prio)
 
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
-	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	if( dir_num_items == FILE_ERR_NO_DIR )
 	  SEQ_LCD_PrintString("/MIDI directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -1456,7 +1457,7 @@ static s32 LCD_Handler(u8 high_prio)
 
       SEQ_LCD_CursorSet(0, 0);
       if( dir_num_items < 0 ) {
-	if( dir_num_items == SEQ_FILE_ERR_NO_DIR )
+	if( dir_num_items == FILE_ERR_NO_DIR )
 	  SEQ_LCD_PrintString("/MIDI directory not found on SD Card!");
 	else
 	  SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
@@ -1763,7 +1764,7 @@ static s32 SEQ_UI_DISK_UpdateSessionDirList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = FILE_GetDirs(SEQ_FILE_SESSION_PATH, (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -1790,7 +1791,7 @@ static s32 SEQ_UI_DISK_UpdateMfDirList(void)
   int item;
 
   MUTEX_SDCARD_TAKE;
-  dir_num_items = SEQ_FILE_GetFiles("/MIDI", "MID", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
+  dir_num_items = FILE_GetFiles("/MIDI", "MID", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS, dir_view_offset);
   MUTEX_SDCARD_GIVE;
 
   if( dir_num_items < 0 )
@@ -1841,7 +1842,7 @@ static s32 DoMfExport(u8 force_overwrite)
 
   strcpy(path, "/MIDI");
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_DirExists(path);
+  status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
@@ -1866,7 +1867,7 @@ static s32 DoMfExport(u8 force_overwrite)
   sprintf(path, "/MIDI/%s.MID", mid_file);
 
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_FileExists(path);
+  status = FILE_FileExists(path);
   MUTEX_SDCARD_GIVE;
 	    
   if( status < 0 ) {

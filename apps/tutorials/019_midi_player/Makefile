@@ -59,8 +59,11 @@ include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
-# DOSFS Driver
-include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
+# FATFS Driver
+include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
+
+# FILE Access Layer
+include $(MIOS32_PATH)/modules/file/file.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

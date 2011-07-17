@@ -4,7 +4,7 @@
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 

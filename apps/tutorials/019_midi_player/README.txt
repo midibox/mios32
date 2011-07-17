@@ -48,11 +48,13 @@ Some additional modules are used here:
   o $MIOS32_PATH/modules/midifile: provides a generic MIDI file parser
     which uses callback functions to access the file system
 
-  o $MIOS32_PATH/modules/dosfs: driver to access FAT12/FAT16/FAT32
-    file system, provided as Open Source by Lewin Edwards.
+  o $MIOS32_PATH/modules/fatfs: driver to access FAT12/FAT16/FAT32
+    file system, provided as Open Source by ChaN
     This driver has been enhanced for MIOS32, so that MIOS32_SDCARD
     functions are used to read/write sectors
 
+  o $MIOS32_PATH/modules/file: access layer to FatFS which simplifies
+    the file handling
 
 Source files:
 
@@ -66,7 +68,7 @@ Source files:
     DEBUG_VERBOSE_LEVEL is set to 1, so that Lyrics are sent to MIOS Terminal
 
   o mid_file.c: contains the callbacks to access the filesystem.
-    This is the link between the MIDI File parser and DOSFS driver
+    This is the link between the MIDI File parser and FILE_* access functions.
     DEBUG_VERBOSE_LEVEL is set to 2 to monitor the file access activity
 
 

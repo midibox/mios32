@@ -79,6 +79,8 @@ u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
 
 u16 seq_core_trk_muted;
+u16 seq_core_trk_synched_mute;
+u16 seq_core_trk_synched_unmute;
 seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
 
 u8 seq_core_step_update_req;
@@ -536,6 +538,18 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       if( p.note )
 	SEQ_MIDI_OUT_Send(seq_core_metronome_port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
     }
+  }
+
+  // delayed mute
+  if( synch_to_measure_req ) {
+    // the priority handling for each individual track ensures
+    // that mute/unmute will be done depending on the current mute state
+    // unmute has higher priority than mute
+    seq_core_trk_muted |= (seq_core_trk_synched_mute & ~seq_core_trk_muted);
+    seq_core_trk_synched_mute = 0;
+
+    seq_core_trk_muted &= ~(seq_core_trk_synched_unmute & seq_core_trk_muted);
+    seq_core_trk_synched_unmute = 0;
   }
 
 

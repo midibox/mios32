@@ -24,6 +24,8 @@
 #include "seq.h"
 #include "mid_file.h"
 
+#include "midio_dout.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIDI
@@ -48,7 +50,7 @@ static s32 SEQ_PlayOffEvents(void);
 static s32 SEQ_SongPos(u16 new_song_pos);
 static s32 SEQ_Tick(u32 bpm_tick);
 
-static s32 SEQ_PlayFile(u32 next);
+static s32 SEQ_PlayFile(s8 next);
 
 static s32 SEQ_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick);
 static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
@@ -79,14 +81,21 @@ static u32 next_prefetch;
 static u32 prefetch_offset;
 
 // request to play the next file
-static u8 next_file_req;
+static s8 next_file_req;
 
+// output port flags
+static u16 enabled_ports;
+
+static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_Init(u32 mode)
 {
+  // play over USB0 and UART0/1
+  enabled_ports = 0x01 | (0x03 << 4);
+  
   // init MIDI file handler
   MID_FILE_Init(0);
 
@@ -103,6 +112,9 @@ s32 SEQ_Init(u32 mode)
   // init BPM generator
   SEQ_BPM_Init(0);
 
+  // scheduler should send packages to private hook
+  SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(Hook_MIDI_SendPackage);
+
   return 0; // no error
 }
 
@@ -114,8 +126,8 @@ s32 SEQ_Init(u32 mode)
 s32 SEQ_Handler(void)
 {
   // a lower priority task requested to play the next file
-  if( next_file_req ) {
-    SEQ_PlayFile(next_file_req-1);
+  if( next_file_req != 0 ) {
+    SEQ_PlayFile(next_file_req & (s8)~0x40);
     next_file_req = 0;
   };
 
@@ -179,9 +191,9 @@ static s32 SEQ_PlayOffEvents(void)
   for(chn=0; chn<16; ++chn) {
     midi_package.chn = chn;
     midi_package.evnt1 = 123; // All Notes Off
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    Hook_MIDI_SendPackage(DEFAULT, midi_package);
     midi_package.evnt1 = 121; // Controller Reset
-    MIOS32_MIDI_SendPackage(DEFAULT, midi_package);
+    Hook_MIDI_SendPackage(DEFAULT, midi_package);
   }
 
   return 0; // no error
@@ -258,19 +270,43 @@ static s32 SEQ_SongPos(u16 new_song_pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Plays the first .mid file if next == 0, the next file if next != 0
+// Plays the first .mid file if next == 0, the next file if next > 0, the
+// 0: plays the first .mid file
+// 1: plays the next .mid file
+// -1: plays the previous .mid file
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_PlayFile(u32 next)
+static s32 SEQ_PlayFile(s8 next)
 {
   // play off events before loading new file
   SEQ_PlayOffEvents();
 
   char next_file[13];
-  if( MID_FILE_FindNext(next ? MID_FILE_UI_NameGet() : NULL, next_file) == 1 ||
+  next_file[0] = 0;
+
+  if( next < 0 &&
+      (MID_FILE_FindPrev(MID_FILE_UI_NameGet(), next_file) == 1 ||
+       MID_FILE_FindNext(NULL, next_file) == 1) ) { // if previous file not found, try first file
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ] previous file found '%s'\n", next_file);
+#endif
+  } else if( MID_FILE_FindNext(next ? MID_FILE_UI_NameGet() : NULL, next_file) == 1 ||
       MID_FILE_FindNext(NULL, next_file) == 1 ) { // if next file not found, try first file
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[SEQ] next file found '%s'\n", next_file);
 #endif
+  }
+
+  if( next_file[0] == 0 ) {
+    if( next < 0 )
+      return 0; // ignore silently
+
+    SEQ_BPM_Stop();           // stop BPM generator
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ] no file found\n");
+#endif
+    return -1; // file not found
+  } else {
     SEQ_BPM_Stop();                  // stop BPM generator
     if( MID_FILE_open(next_file) ) { // try to open next file
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -285,13 +321,6 @@ static s32 SEQ_PlayFile(u32 next)
       return -2; // file is invalid
     } 
     SEQ_BPM_Start();          // start BPM generator
-  } else {
-    SEQ_BPM_Stop();           // stop BPM generator
-
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ] no file found\n");
-#endif
-    return -1; // file not found
   }
 
   return 0; // no error
@@ -300,14 +329,17 @@ static s32 SEQ_PlayFile(u32 next)
 
 /////////////////////////////////////////////////////////////////////////////
 // Allows to request to play the next file from a lower priority task
+// 0: request first
+// 1: request next
+// -1: request previous
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PlayFileReq(u32 next)
+s32 SEQ_PlayFileReq(s8 next)
 {
   // stop generator
   SEQ_BPM_Stop();
 
   // request next file
-  next_file_req = next ? 2 : 1;
+  next_file_req = next | 0x40; // ensure that next_file is always != 0
 
   return 0; // no error
 }
@@ -498,4 +530,27 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
   }
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// this hook is called when the MIDI scheduler sends a package
+/////////////////////////////////////////////////////////////////////////////
+static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // forward to MIDIO
+  MIDIO_DOUT_MIDI_NotifyPackage(port, package);
+
+  // forward to enabled MIDI ports
+  int i;
+  int mask = 1;
+  for(i=0; i<8; ++i, mask <<= 1) {
+    if( enabled_ports & mask ) {
+      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+      mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
+      MIOS32_MIDI_SendPackage(port, package);
+    }
+  }
+
+  return 0; // no error
 }

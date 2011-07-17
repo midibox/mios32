@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "file.h"
 #include "seq_file.h"
 #include "seq_file_m.h"
 
@@ -76,7 +77,7 @@ typedef struct {
 
   seq_file_m_header_t header;
 
-  seq_file_t file;      // file informations
+  file_t file;      // file informations
 } seq_file_m_info_t;
 
 
@@ -169,7 +170,7 @@ s32 SEQ_FILE_M_Create(char *session)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] Failed to create file, status: %d\n", status);
 #endif
@@ -178,27 +179,27 @@ s32 SEQ_FILE_M_Create(char *session)
 
   // write seq_file_m_header
   const char file_type[10] = "MBSEQV4_M";
-  status |= SEQ_FILE_WriteBuffer((u8 *)file_type, 10);
+  status |= FILE_WriteBuffer((u8 *)file_type, 10);
 
   // write bank name w/o zero terminator
   char bank_name[21];
   sprintf(bank_name, "Default Bank        ");
   memcpy(info->header.name, bank_name, 20);
-  status |= SEQ_FILE_WriteBuffer((u8 *)info->header.name, 20);
+  status |= FILE_WriteBuffer((u8 *)info->header.name, 20);
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] writing '%s'...\n", bank_name);
 #endif
 
   // number of maps
   info->header.num_maps = SEQ_MIXER_NUM;
-  status |= SEQ_FILE_WriteHWord(info->header.num_maps);
+  status |= FILE_WriteHWord(info->header.num_maps);
 
   // write predefined map size
   u8 num_chn = 16;
   u8 num_par = 16;
 
   info->header.map_size = sizeof(seq_file_m_map_header_t) + num_chn * num_par;
-  status |= SEQ_FILE_WriteHWord(info->header.map_size);
+  status |= FILE_WriteHWord(info->header.map_size);
 
 
   // not required anymore with FatFs (was required with DOSFS)
@@ -208,12 +209,12 @@ s32 SEQ_FILE_M_Create(char *session)
   for(map=0; map<info->header.num_maps; ++map) {
     u32 pos;
     for(pos=0; pos<info->header.map_size; ++pos)
-      status |= SEQ_FILE_WriteByte(0x00);
+      status |= FILE_WriteByte(0x00);
   }
 #endif
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   if( status >= 0 )
     // bank valid - caller should fill the map slots with useful data now
@@ -246,7 +247,7 @@ s32 SEQ_FILE_M_Open(char *session)
 #endif
 
   s32 status;
-  if( (status=SEQ_FILE_ReadOpen((seq_file_t*)&info->file, filepath)) < 0 ) {
+  if( (status=FILE_ReadOpen((file_t*)&info->file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] failed to open file, status: %d\n", status);
 #endif
@@ -256,12 +257,12 @@ s32 SEQ_FILE_M_Open(char *session)
   // read and check header
   // in order to avoid endianess issues, we have to read the sector bytewise!
   char file_type[10];
-  if( (status=SEQ_FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
+  if( (status=FILE_ReadBuffer((u8 *)file_type, 10)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] failed to read header, status: %d\n", status);
 #endif
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return status;
   }
 
@@ -271,16 +272,16 @@ s32 SEQ_FILE_M_Open(char *session)
     DEBUG_MSG("[SEQ_FILE_M] wrong header type: %s\n", file_type);
 #endif
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return SEQ_FILE_M_ERR_FORMAT;
   }
 
-  status |= SEQ_FILE_ReadBuffer((u8 *)info->header.name, 20);
-  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.num_maps);
-  status |= SEQ_FILE_ReadHWord((u16 *)&info->header.map_size);
+  status |= FILE_ReadBuffer((u8 *)info->header.name, 20);
+  status |= FILE_ReadHWord((u16 *)&info->header.num_maps);
+  status |= FILE_ReadHWord((u16 *)&info->header.map_size);
 
   // close file (so that it can be re-opened)
-  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -315,28 +316,28 @@ s32 SEQ_FILE_M_MapRead(u8 map)
     return SEQ_FILE_M_ERR_INVALID_MAP;
 
   // re-open file
-  if( SEQ_FILE_ReadReOpen((seq_file_t*)&info->file) < 0 )
+  if( FILE_ReadReOpen((file_t*)&info->file) < 0 )
     return -1; // file cannot be re-opened
 
   // change to file position
   s32 status;
   u32 offset = 10 + sizeof(seq_file_m_header_t) + map * info->header.map_size;
-  if( (status=SEQ_FILE_ReadSeek(offset)) < 0 ) {
+  if( (status=FILE_ReadSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] failed to change map offset in file, status: %d\n", status);
 #endif
     // close file (so that it can be re-opened)
-    SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+    FILE_ReadClose((file_t*)&info->file);
     return SEQ_FILE_M_ERR_READ;
   }
 
-  status |= SEQ_FILE_ReadBuffer((u8 *)seq_mixer_map_name, 20);
+  status |= FILE_ReadBuffer((u8 *)seq_mixer_map_name, 20);
   seq_mixer_map_name[20] = 0;
 
   u8 num_chn;
-  status |= SEQ_FILE_ReadByte(&num_chn);
+  status |= FILE_ReadByte(&num_chn);
   u8 num_par;
-  status |= SEQ_FILE_ReadByte(&num_par);
+  status |= FILE_ReadByte(&num_par);
 
 
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -356,13 +357,13 @@ s32 SEQ_FILE_M_MapRead(u8 map)
     u8 par;
     for(par=0; par<num_par; ++par) {
       u8 value;
-      status |= SEQ_FILE_ReadByte(&value);
+      status |= FILE_ReadByte(&value);
       SEQ_MIXER_Set(chn, par, value);
     }
   }
 
   // close file (so that it can be re-opened)
-  SEQ_FILE_ReadClose((seq_file_t*)&info->file);
+  FILE_ReadClose((file_t*)&info->file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -413,21 +414,21 @@ s32 SEQ_FILE_M_MapWrite(char *session, u8 map, u8 rename_if_empty_name)
 #endif
 
   s32 status = 0;
-  if( (status=SEQ_FILE_WriteOpen(filepath, 0)) < 0 ) {
+  if( (status=FILE_WriteOpen(filepath, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] Failed to open file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
   // change to file position
   u32 offset = 10 + sizeof(seq_file_m_header_t) + map * info->header.map_size;
-  if( (status=SEQ_FILE_WriteSeek(offset)) < 0 ) {
+  if( (status=FILE_WriteSeek(offset)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_M] failed to change map offset in file, status: %d\n", status);
 #endif
-    SEQ_FILE_WriteClose(); // important to free memory given by malloc
+    FILE_WriteClose(); // important to free memory given by malloc
     return status;
   }
 
@@ -446,35 +447,35 @@ s32 SEQ_FILE_M_MapWrite(char *session, u8 map, u8 rename_if_empty_name)
   }
 
   // write map name w/o zero terminator
-  status |= SEQ_FILE_WriteBuffer((u8 *)seq_mixer_map_name, 20);
+  status |= FILE_WriteBuffer((u8 *)seq_mixer_map_name, 20);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_M] writing map #%d '%s'...\n", map, seq_mixer_map_name);
 #endif
 
   // write number of channels
-  status |= SEQ_FILE_WriteByte(num_chn);
+  status |= FILE_WriteByte(num_chn);
 
   // write number of parameters
-  status |= SEQ_FILE_WriteByte(num_par);
+  status |= FILE_WriteByte(num_par);
 
   // writing parameters
   u8 chn;
   for(chn=0; chn<num_chn; ++chn) {
     u8 par;
     for(par=0; par<num_par; ++par)
-      status |= SEQ_FILE_WriteByte(SEQ_MIXER_Get(chn, par));
+      status |= FILE_WriteByte(SEQ_MIXER_Get(chn, par));
   }
 
   // fill remaining bytes with zero if required
   if( expected_map_size < info->header.map_size ) {
     int i;
     for(i=expected_map_size; i<info->header.map_size; ++i)
-      status |= SEQ_FILE_WriteByte(0x00);
+      status |= FILE_WriteByte(0x00);
   }
 
   // close file
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_FILE_M] Map written with status %d\n", status);

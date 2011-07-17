@@ -32,8 +32,10 @@
 #include "seq_song.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
-#include "seq_file.h"
 #include "seq_ui.h"
+
+#include "file.h"
+#include "seq_file.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -119,7 +121,7 @@ static s32 SEQ_MIDEXP_WriteWord(u32 word, u8 len)
 
   // ensure big endian coding, therefore byte writes
   for(i=0; i<len; ++i)
-    status |= SEQ_FILE_WriteByte((u8)(word >> (8*(len-1-i))));
+    status |= FILE_WriteByte((u8)(word >> (8*(len-1-i))));
 
   return (status < 0) ? status : len;
 }
@@ -140,7 +142,7 @@ static s32 SEQ_MIDEXP_WriteVarLen(u32 value)
   int num_bytes = 0;
   while( 1 ) {
     ++num_bytes;
-    status |= SEQ_FILE_WriteByte((u8)(buffer & 0xff));
+    status |= FILE_WriteByte((u8)(buffer & 0xff));
     if( buffer & 0x80 )
       buffer >>= 8;
     else
@@ -271,7 +273,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
   DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Export to '%s' started\n", path);
 #endif
 
-  if( (status=SEQ_FILE_WriteOpen(path, 1)) < 0 ) {
+  if( (status=FILE_WriteOpen(path, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open/create %s, status: %d\n", path, status);
 #endif
@@ -281,12 +283,12 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
 
   // write file header
   u32 header_size = 6;
-  status |= SEQ_FILE_WriteBuffer((u8*)"MThd", 4);
+  status |= FILE_WriteBuffer((u8*)"MThd", 4);
   status |= SEQ_MIDEXP_WriteWord(header_size, 4);
   status |= SEQ_MIDEXP_WriteWord(1, 2); // MIDI File Format
   status |= SEQ_MIDEXP_WriteWord(last_track-first_track+1, 2); // Number of Tracks
   status |= SEQ_MIDEXP_WriteWord(ppqn, 2); // PPQN
-  status |= SEQ_FILE_WriteClose();
+  status |= FILE_WriteClose();
 
   // check file status
   if( status < 0 ) {
@@ -335,7 +337,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     SEQ_CORE_Reset(0);
 
     // open file again
-    if( (status=SEQ_FILE_WriteOpen(path, 0)) < 0 ) {
+    if( (status=FILE_WriteOpen(path, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open %s again, status: %d\n", path, status);
 #endif
@@ -344,11 +346,11 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     }
 
     // write Track header
-    u32 track_header_filepos = SEQ_FILE_WriteGetCurrentSize();
-    status |= SEQ_FILE_WriteSeek(track_header_filepos);
+    u32 track_header_filepos = FILE_WriteGetCurrentSize();
+    status |= FILE_WriteSeek(track_header_filepos);
     export_trk_size = 0;
     export_trk_tick = 0;
-    status |= SEQ_FILE_WriteBuffer((u8*)"MTrk", 4);
+    status |= FILE_WriteBuffer((u8*)"MTrk", 4);
     status |= SEQ_MIDEXP_WriteWord(export_trk_size, 4); // Placeholder
 
     // add track name as meta event
@@ -364,7 +366,7 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
       sprintf(buffer, "G%dT%d",
 	      (export_track / SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1,
 	      (export_track % SEQ_CORE_NUM_TRACKS_PER_GROUP) + 1);
-      status |= SEQ_FILE_WriteBuffer((u8*)buffer, 4);
+      status |= FILE_WriteBuffer((u8*)buffer, 4);
       export_trk_size += 4;
     }
 
@@ -395,20 +397,20 @@ s32 SEQ_MIDEXP_GenerateFile(char *path)
     }
 
     // close file
-    status |= SEQ_FILE_WriteClose();
+    status |= FILE_WriteClose();
 
     if( export_trk_size ) {
       // switch back to first byte of track and write final track size
-      if( (status=SEQ_FILE_WriteOpen(path, 0)) < 0 ) {
+      if( (status=FILE_WriteOpen(path, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[SEQ_MIDEXP_WriteFile] Failed to open %s again, status: %d\n", path, status);
 #endif
 	status = -3; // file re-open error
 	goto error;
       }
-      status |= SEQ_FILE_WriteSeek(track_header_filepos + 4);
+      status |= FILE_WriteSeek(track_header_filepos + 4);
       status |= SEQ_MIDEXP_WriteWord(export_trk_size, 4);
-      status |= SEQ_FILE_WriteClose();
+      status |= FILE_WriteClose();
     }
   }
 

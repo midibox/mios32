@@ -44,7 +44,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u8 enabled_ports;
+  u16 enabled_ports;
   u8 mode;
   u8 evnt0_on;
   u8 evnt1_on;
@@ -55,7 +55,7 @@ typedef struct {
 } midio_patch_din_entry_t;
 
 typedef struct {
-  u8 enabled_ports;
+  u16 enabled_ports;
   u8 evnt0;
   u8 evnt1;
 } midio_patch_dout_entry_t;

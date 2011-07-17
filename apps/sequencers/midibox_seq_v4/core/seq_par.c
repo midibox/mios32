@@ -29,6 +29,9 @@
 
 // should only be directly accessed by SEQ_FILE_B, remaining functions should
 // use SEQ_PAR_Get/Set
+#ifndef AHB_SECTION
+#define AHB_SECTION
+#endif
 u8 AHB_SECTION seq_par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_MAX_BYTES];
 
 // could be changed later during runtime for special configurations (e.g. combining four tracks to a single HQ track)

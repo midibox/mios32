@@ -65,6 +65,9 @@ include $(MIOS32_PATH)/modules/notestack/notestack.mk
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
+# FILE Access Layer
+include $(MIOS32_PATH)/modules/file/file.mk
+
 # Sources for Standard Control Surface
 include $(MIOS32_PATH)/modules/scs/scs.mk
 

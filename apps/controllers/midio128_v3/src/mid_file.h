@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Header file for sequencer routines
+ * Header for MIDI file access routines
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_H
-#define _SEQ_H
+#ifndef _MID_FILE_H
+#define _MID_FILE_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,19 +28,20 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_Init(u32 mode);
+extern s32 MID_FILE_Init(u32 mode);
 
-extern s32 SEQ_Reset(u8 play_off_events);
-extern s32 SEQ_Handler(void);
+extern char *MID_FILE_UI_NameGet(void);
+extern s32 MID_FILE_FindNext(char *filename, char *next_file);
+extern s32 MID_FILE_FindPrev(char *filename, char *prev_file);
 
-extern s32 SEQ_PlayFileReq(u32 next);
+extern s32 MID_FILE_open(char *filename);
+extern u32 MID_FILE_read(void *buffer, u32 len);
+extern s32 MID_FILE_eof(void);
+extern s32 MID_FILE_seek(u32 pos);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 seq_pause;
-
-
-#endif /* _SEQ_H */
+#endif /* _MID_FILE_H */
