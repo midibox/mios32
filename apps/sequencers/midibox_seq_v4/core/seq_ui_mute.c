@@ -23,6 +23,7 @@
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_par.h"
+#include "seq_bpm.h"
 
 #include "seq_core.h"
 
@@ -89,12 +90,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       if( seq_ui_button_state.MUTE_PRESSED )
 	muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
-      else {
+      else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
 	if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE ) {
 	  muted = (u16 *)&seq_core_trk_synched_mute;
 	} else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE ) {
 	  muted = (u16 *)&seq_core_trk_synched_unmute;
 	}
+      } else {
+	// clear synched mutes/unmutes if sequencer not running
+	seq_core_trk_synched_mute = 0;
+	seq_core_trk_synched_unmute = 0;
       }
 
       if( incrementer < 0 )
@@ -145,13 +150,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  seq_core_trk[visible_track].layer_muted = latched_mute;
 	} else {
 	  u16 new_mutes = latched_mute & ~seq_core_trk_muted;
-	  if( seq_core_options.SYNCHED_MUTE )
+	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_MUTE )
 	    seq_core_trk_synched_mute |= new_mutes;
 	  else
 	    seq_core_trk_muted |= new_mutes;
 
 	  u16 new_unmutes = ~latched_mute & seq_core_trk_muted;
-	  if( seq_core_options.SYNCHED_UNMUTE )
+	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_UNMUTE )
 	    seq_core_trk_synched_unmute |= new_unmutes;
 	  else
 	    seq_core_trk_muted &= ~new_unmutes;

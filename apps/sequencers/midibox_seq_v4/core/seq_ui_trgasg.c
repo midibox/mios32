@@ -79,7 +79,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_GATE;
+      ui_selected_item = ITEM_GATE;      
       break;
 
     case SEQ_UI_ENCODER_GP3:
@@ -122,17 +122,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
 
   // for GP encoders and Datawheel
+  u8 cc_asg = 0;
+
   switch( ui_selected_item ) {
-    case ITEM_GXTY:         return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_GATE:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_GATE, 0, num_t_layers, incrementer);
-    case ITEM_ACCENT:       return SEQ_UI_CC_Inc(SEQ_CC_ASG_ACCENT, 0, num_t_layers, incrementer);
-    case ITEM_ROLL:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_ROLL, 0, num_t_layers, incrementer);
-    case ITEM_GLIDE:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_GLIDE, 0, num_t_layers, incrementer);
-    case ITEM_SKIP:         return SEQ_UI_CC_Inc(SEQ_CC_ASG_SKIP, 0, num_t_layers, incrementer);
-    case ITEM_RANDOM_GATE:  return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_GATE, 0, num_t_layers, incrementer);
-    case ITEM_RANDOM_VALUE: return SEQ_UI_CC_Inc(SEQ_CC_ASG_RANDOM_VALUE, 0, num_t_layers, incrementer);
-    case ITEM_NO_FX:        return SEQ_UI_CC_Inc(SEQ_CC_ASG_NO_FX, 0, num_t_layers, incrementer);
+  case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
+  case ITEM_GATE:          cc_asg = SEQ_CC_ASG_GATE; break;
+  case ITEM_ACCENT:        cc_asg = SEQ_CC_ASG_ACCENT; break;
+  case ITEM_ROLL:          cc_asg = SEQ_CC_ASG_ROLL; break;
+  case ITEM_GLIDE:         cc_asg = SEQ_CC_ASG_GLIDE; break;
+  case ITEM_SKIP:          cc_asg = SEQ_CC_ASG_SKIP; break;
+  case ITEM_RANDOM_GATE:   cc_asg = SEQ_CC_ASG_RANDOM_GATE; break;
+  case ITEM_RANDOM_VALUE:  cc_asg = SEQ_CC_ASG_RANDOM_VALUE; break;
+  case ITEM_NO_FX:         cc_asg = SEQ_CC_ASG_NO_FX; break;
   }
+
+  if( cc_asg ) {
+    s32 status = SEQ_UI_CC_Inc(cc_asg, 0, num_t_layers, incrementer);
+    u8 value = SEQ_CC_Get(visible_track, cc_asg);
+    if( value && value <= num_t_layers )
+      ui_selected_trg_layer = value-1;
+    return status;
+ }
 
   return -1; // invalid or unsupported encoder
 }

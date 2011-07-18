@@ -12,6 +12,21 @@ MIDIboxSEQ V4.0beta43
    o delayed mute/unmute which is synched to the measure.
      It can be enabled individually in the global options menu (UTILITY->OPT)
 
+   o trigger assignment page: trigger layer of the current assignment automatically
+     selected (alternative way to select a trigger layer)
+
+   o random page: random values can now be generated for all parameter and trigger
+     layers (resp. drums: parameter and drum instruments).
+     The selection is scrollable with a GP encoder.
+
+   o random page: special behaviour for drum tracks: parameter layers and each
+     individual drum instrument can be randomized (no triggers in this mode
+     to keep the code simple)
+
+   o random page: new values will only be generated when "Generate" button is
+     pressed, or for a single layer if the GP button under the appr. layer is
+     pressed.
+
 
 MIDIboxSEQ V4.0beta42
 ~~~~~~~~~~~~~~~~~~~~~

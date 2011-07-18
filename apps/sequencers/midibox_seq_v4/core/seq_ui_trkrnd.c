@@ -35,12 +35,14 @@
 
 #define NUM_OF_ITEMS       7
 #define ITEM_GXTY          0
-#define ITEM_PAR_A         1
-#define ITEM_PAR_B         2
-#define ITEM_PAR_C         3
-#define ITEM_TRG_A         4
-#define ITEM_TRG_B         5
-#define ITEM_TRG_C         6
+#define ITEM_SCROLL        1
+#define ITEM_PAR1          2
+#define ITEM_PAR2          3
+#define ITEM_PAR3          4
+#define ITEM_PAR4          5
+#define ITEM_PAR5          6
+#define ITEM_PAR6          7
+#define ITEM_PAR7          8
 
 
 // used "In-Menu" messages
@@ -68,15 +70,15 @@ static u8 par_layer_range[16] = { 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 // 0..14, 15=ALL
 static u8 trg_layer_range[16] = { 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static u8 random_gen_req;
+u8 scroll_offset = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 RandomGenerator(u8 req);
-
+static s32 RandomGenerator(u32 req);
+static int getRandomIx(int rnd_item);
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -87,13 +89,15 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_PAR_A: *gp_leds = 0x0100; break;
-    case ITEM_PAR_B: *gp_leds = 0x0200; break;
-    case ITEM_PAR_C: *gp_leds = 0x0400; break;
-    case ITEM_TRG_A: *gp_leds = 0x0800; break;
-    case ITEM_TRG_B: *gp_leds = 0x1000; break;
-    case ITEM_TRG_C: *gp_leds = 0x2000; break;
+    case ITEM_GXTY:   *gp_leds = 0x0001; break;
+    case ITEM_SCROLL: *gp_leds = 0x0100; break;
+    case ITEM_PAR1:   *gp_leds = 0x0200; break;
+    case ITEM_PAR2:   *gp_leds = 0x0400; break;
+    case ITEM_PAR3:   *gp_leds = 0x0800; break;
+    case ITEM_PAR4:   *gp_leds = 0x1000; break;
+    case ITEM_PAR5:   *gp_leds = 0x2000; break;
+    case ITEM_PAR6:   *gp_leds = 0x4000; break;
+    case ITEM_PAR7:   *gp_leds = 0x8000; break;
   }
 
   return 0; // no error
@@ -125,38 +129,68 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // no encoder function
 
     case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_PAR_A;
+      ui_selected_item = ITEM_SCROLL;
       break;
     case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_PAR_B;
+      ui_selected_item = ITEM_PAR1;
       break;
     case SEQ_UI_ENCODER_GP11:
-      ui_selected_item = ITEM_PAR_C;
+      ui_selected_item = ITEM_PAR2;
       break;
     case SEQ_UI_ENCODER_GP12:
-      ui_selected_item = ITEM_TRG_A;
+      ui_selected_item = ITEM_PAR3;
       break;
     case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_TRG_B;
+      ui_selected_item = ITEM_PAR4;
       break;
     case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_TRG_C;
+      ui_selected_item = ITEM_PAR5;
       break;
-      
     case SEQ_UI_ENCODER_GP15:
+      ui_selected_item = ITEM_PAR6;
+      break;
     case SEQ_UI_ENCODER_GP16:
-      return 0; // no encoder function
+      ui_selected_item = ITEM_PAR7;
+      break;
   }
 
   // for GP encoders and Datawheel
+  int rnd_item = -1;
   switch( ui_selected_item ) {
-    case ITEM_GXTY:   return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_PAR_A:  random_gen_req |= 0x01; return SEQ_UI_Var8_Inc(&par_layer_range[0], 0, 63, incrementer);
-    case ITEM_PAR_B:  random_gen_req |= 0x02; return SEQ_UI_Var8_Inc(&par_layer_range[1], 0, 63, incrementer);
-    case ITEM_PAR_C:  random_gen_req |= 0x04; return SEQ_UI_Var8_Inc(&par_layer_range[2], 0, 63, incrementer);
-    case ITEM_TRG_A:  random_gen_req |= 0x08; return SEQ_UI_Var8_Inc(&trg_layer_range[0], 0, 15, incrementer);
-    case ITEM_TRG_B:  random_gen_req |= 0x10; return SEQ_UI_Var8_Inc(&trg_layer_range[1], 0, 15, incrementer);
-    case ITEM_TRG_C:  random_gen_req |= 0x20; return SEQ_UI_Var8_Inc(&trg_layer_range[2], 0, 15, incrementer);
+  case ITEM_GXTY:   return SEQ_UI_GxTyInc(incrementer);
+  case ITEM_SCROLL: {
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+    int num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+    int num_t_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? SEQ_TRG_NumInstrumentsGet(visible_track) : SEQ_TRG_NumLayersGet(visible_track);
+    int max_offset = num_p_layers + num_t_layers - 7;
+    if( max_offset < 1 ) {
+      scroll_offset = 0;
+      return -1;
+    }
+    return SEQ_UI_Var8_Inc(&scroll_offset, 0, max_offset, incrementer);
+  }
+  case ITEM_PAR1:   rnd_item = 0; break;
+  case ITEM_PAR2:   rnd_item = 1; break;
+  case ITEM_PAR3:   rnd_item = 2; break;
+  case ITEM_PAR4:   rnd_item = 3; break;
+  case ITEM_PAR5:   rnd_item = 4; break;
+  case ITEM_PAR6:   rnd_item = 5; break;
+  case ITEM_PAR7:   rnd_item = 6; break;
+  }
+
+  if( rnd_item >= 0 ) {
+    int rnd_ix = getRandomIx(rnd_item);
+    if( rnd_ix < 0 )
+      return -1;
+
+    s32 status = -1;
+    if( rnd_ix < 16 )
+      status = SEQ_UI_Var8_Inc(&par_layer_range[rnd_ix], 0, 63, incrementer);
+    else if( rnd_item < 32 )
+      status = SEQ_UI_Var8_Inc(&trg_layer_range[rnd_ix-16], 0, 15, incrementer);
+
+    return status;
   }
 
   return -1; // invalid or unsupported encoder
@@ -186,7 +220,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	ui_hold_msg_ctr = 1000;
       } else {
 	// request new values for all layers
-	random_gen_req |= 0x3f;
+	RandomGenerator(0xffffffff);
+
 	// print message
 	in_menu_msg = MSG_RANDOM;
       }
@@ -225,19 +260,36 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       }
       return 1;
 
-    case SEQ_UI_BUTTON_GP9: // request random generation of certain layer
-    case SEQ_UI_BUTTON_GP10:
+    case SEQ_UI_BUTTON_GP9:
+      if( depressed ) return -1;
+      ui_selected_item = ITEM_SCROLL;
+      return 1;
+
+    case SEQ_UI_BUTTON_GP10: // request random generation of certain layer
     case SEQ_UI_BUTTON_GP11:
     case SEQ_UI_BUTTON_GP12:
     case SEQ_UI_BUTTON_GP13:
     case SEQ_UI_BUTTON_GP14:
-      ui_selected_item = ITEM_PAR_A + (button-8);
-      random_gen_req |= (1 << (button-8));
-      return 1;
-
-    case SEQ_UI_BUTTON_GP15: // not used
+    case SEQ_UI_BUTTON_GP15:
     case SEQ_UI_BUTTON_GP16:
-      return 0;
+      if( depressed ) {
+	// turn message inactive and hold it for 1 second
+	in_menu_msg &= 0x7f;
+	ui_hold_msg_ctr = 1000;
+      } else {
+	ui_selected_item = ITEM_PAR1 + (button-9);
+
+	int rnd_ix = getRandomIx(button - 9);
+	if( rnd_ix < 0 )
+	  return -1;
+
+	// request new values for selected layer
+	RandomGenerator(1 << rnd_ix);
+
+	// print message
+	in_menu_msg = MSG_RANDOM;
+      }
+      return 1;
 
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -273,17 +325,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
-  // new requests?
-  if( random_gen_req ) {
-    portENTER_CRITICAL();
-    u8 req = random_gen_req;
-    random_gen_req = 0;
-    portEXIT_CRITICAL();
-
-    if( req )
-      RandomGenerator(req);
-  }
-
   // branch to edit page if random values have been generated
   if( in_menu_msg == MSG_RANDOM )
     return SEQ_UI_EDIT_LCD_Handler(high_prio, SEQ_UI_EDIT_MODE_RANDOM);
@@ -295,8 +336,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.          Random Generator          LayA LayB LayC TrgA TrgB TrgC           
-  // G1T1  Generate           Clr. Util Undo  64   --   --   All  --   --            
+  // Trk.          Random Generator          Scrl LayA LayB LayC LayD LayE LayF LayG 
+  // G1T1  Generate           Clr. Util Undo  <>   64   --   --   All  --   --   --
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -308,7 +349,60 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(8);
   }
 
-  SEQ_LCD_PrintString("LayA LayB LayC TrgA TrgB TrgC           ");
+  SEQ_LCD_PrintString("Scrl ");
+
+  {
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+    int i;
+    for(i=0; i<7; ++i) {
+      int rnd_ix = getRandomIx(i);
+      if( rnd_ix < 0 ) {
+	// dummy...
+	SEQ_LCD_CursorSet(45 + i*5, 0);
+	SEQ_LCD_PrintString("???? ");
+	SEQ_LCD_CursorSet(45 + i*5, 1);
+	SEQ_LCD_PrintString("???? ");
+      } else {
+	if( rnd_ix < 16 ) {
+	  SEQ_LCD_CursorSet(45 + i*5, 0);
+	  SEQ_LCD_PrintFormattedString("Lay%c ", 'A' + rnd_ix);
+
+	  SEQ_LCD_CursorSet(45 + i*5, 1);
+	  if( ui_selected_item == (ITEM_PAR1+i) && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(5);
+	  } else {
+	    if( par_layer_range[rnd_ix] )
+	      SEQ_LCD_PrintFormattedString(" %2d  ", par_layer_range[rnd_ix]);
+	    else
+	      SEQ_LCD_PrintString(" --  ");
+	  }
+	} else if( rnd_ix < 32 ) {
+	  int trg_ix = rnd_ix-16;
+
+	  SEQ_LCD_CursorSet(45 + i*5, 0);
+	  if( event_mode == SEQ_EVENT_MODE_Drum )
+	    SEQ_LCD_PrintTrackDrum(visible_track, trg_ix, (char *)seq_core_trk[visible_track].name);
+	  else
+	    SEQ_LCD_PrintFormattedString("Trg%c ", 'A' + trg_ix);
+
+	  SEQ_LCD_CursorSet(45 + i*5, 1);
+	  if( ui_selected_item == (ITEM_PAR1+i) && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(5);
+	  } else {
+	    if( trg_layer_range[trg_ix] == 15 )
+	      SEQ_LCD_PrintString(" All ");
+	    else if( trg_layer_range[trg_ix] )
+	      SEQ_LCD_PrintFormattedString(" %2d  ", trg_layer_range[trg_ix]);
+	    else
+	      SEQ_LCD_PrintString(" --  ");
+	  }
+	}
+      }
+    }
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -322,32 +416,11 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintString("  Generate           Clr. Util Undo ");
 
   ///////////////////////////////////////////////////////////////////////////
-  int i;
-  for(i=0; i<3; ++i) {
-    if( ui_selected_item == (ITEM_PAR_A+i) && ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(5);
-    } else {
-      if( par_layer_range[i] )
-	SEQ_LCD_PrintFormattedString(" %2d  ", par_layer_range[i]);
-      else
-	SEQ_LCD_PrintString(" --  ");
-    }
+  if( ui_selected_item == ITEM_SCROLL && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString(" <>  ");
   }
-
-  for(i=0; i<3; ++i) {
-    if( ui_selected_item == (ITEM_TRG_A+i) && ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(5);
-    } else {
-      if( trg_layer_range[i] == 15 )
-	SEQ_LCD_PrintString(" All ");
-      else if( trg_layer_range[i] )
-	SEQ_LCD_PrintFormattedString(" %2d  ", trg_layer_range[i]);
-      else
-	SEQ_LCD_PrintString(" --  ");
-    }
-  }
-
-  SEQ_LCD_PrintSpaces(10);
 
   return 0; // no error
 }
@@ -364,34 +437,58 @@ s32 SEQ_UI_TRKRND_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
-  random_gen_req = 0;
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns random request flag (rnd_ix) depending on scroll offset
+// 0..15: parameter layers
+// 16..31: trigger/instrument layers
+/////////////////////////////////////////////////////////////////////////////
+static int getRandomIx(int rnd_item)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  int num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+  int num_t_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? SEQ_TRG_NumInstrumentsGet(visible_track) : SEQ_TRG_NumLayersGet(visible_track);
+
+  rnd_item += scroll_offset;
+  if( rnd_item >= (num_p_layers+num_t_layers) ) {
+    scroll_offset = 0;
+    // try again...
+    return -1;
+  }
+
+  if( rnd_item < num_p_layers )
+    return rnd_item;
+
+  return 16 + (rnd_item-num_p_layers);
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // The Random Generator
 /////////////////////////////////////////////////////////////////////////////
-static s32 RandomGenerator(u8 req)
+static s32 RandomGenerator(u32 req)
 {
   // check for requests
   int i;
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-
-  // TODO: proper parametrisation depending on number of par/trg layers
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
   // update UNDO buffer
   SEQ_UI_UTIL_UndoUpdate(visible_track);
 
-  for(i=0; i<6; ++i) {
+  for(i=0; i<32; ++i) {
     if( req & (1 << i) ) {
 
       ///////////////////////////////////////////////////////////////////////
       // Parameter Layers
       ///////////////////////////////////////////////////////////////////////
-      if( i < 3 ) {
+      if( i < 16 ) {
 	u8 layer = i;
 
 	// don't touch if intensity is 0
@@ -422,7 +519,13 @@ static s32 RandomGenerator(u8 req)
       // Trigger Layers
       ///////////////////////////////////////////////////////////////////////
       } else {
-	u8 layer = i-3;
+	u8 layer = i-16;
+	u8 instrument = ui_selected_instrument;
+
+	if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	  layer = 0;
+	  instrument = i - 16;
+	}
 
 	// don't touch if probability is 0
 	u8 probability = trg_layer_range[layer];
@@ -433,10 +536,10 @@ static s32 RandomGenerator(u8 req)
 	u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 	for(step=0; step<num_steps; ++step) {
 	  if( probability == 15 ) // set all steps
-	    SEQ_TRG_Set(visible_track, step, layer, ui_selected_instrument, 1);
+	    SEQ_TRG_Set(visible_track, step, layer, instrument, 1);
 	  else {
 	    u8 rnd = SEQ_RANDOM_Gen_Range(1, 14);
-	    SEQ_TRG_Set(visible_track, step, layer, ui_selected_instrument, (probability >= rnd) ? 1 : 0);
+	    SEQ_TRG_Set(visible_track, step, layer, instrument, (probability >= rnd) ? 1 : 0);
 	  }
 	}
 
@@ -446,4 +549,3 @@ static s32 RandomGenerator(u8 req)
 
   return 0; // no error
 }
-

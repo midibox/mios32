@@ -148,7 +148,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( in_menu_msg ) {
     case MSG_COPY: {
       // change copy offset and copy marker to begin/end range depending on encoder which has been moved
-      if( encoder_step <= copypaste_begin ) {
+      if( encoder == SEQ_UI_ENCODER_GP1 || encoder_step <= copypaste_begin ) {
 	if( SEQ_UI_Var8_Inc(&copypaste_begin, 0, copypaste_end, incrementer) ) {
 	  SEQ_UI_SelectedStepSet(copypaste_begin); // set new visible step/view
 	  return 1; // value changed
