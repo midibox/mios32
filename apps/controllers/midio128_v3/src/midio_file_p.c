@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Global Config File access functions
+ * Patch File access functions
  *
  * NOTE: before accessing the SD Card, the upper level function should
  * synchronize with the SD Card semaphore!
@@ -81,6 +81,12 @@ static midio_file_p_info_t midio_file_p_info;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+char midio_file_p_patch_name[MIDIO_FILE_P_FILENAME_LEN+1];
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_FILE_P_Init(u32 mode)
@@ -93,16 +99,16 @@ s32 MIDIO_FILE_P_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Loads global config file
-// Called from MIDIO_FILE_PheckSDCard() when the SD card has been connected
+// Loads patch file
+// Called from MIDIO_FILE_CheckSDCard() when the SD card has been connected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_FILE_P_Load(void)
+s32 MIDIO_FILE_P_Load(char *filename)
 {
   s32 error;
-  error = MIDIO_FILE_P_Read();
+  error = MIDIO_FILE_P_Read(filename);
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MIDIO_FILE_P] Tried to open global config file, status: %d\n", error);
+  DEBUG_MSG("[MIDIO_FILE_P] Tried to open patch %s, status: %d\n", filename, error);
 #endif
 
   return error;
@@ -110,8 +116,8 @@ s32 MIDIO_FILE_P_Load(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Unloads global config file
-// Called from MIDIO_FILE_PheckSDCard() when the SD card has been disconnected
+// Unloads patch file
+// Called from MIDIO_FILE_CheckSDCard() when the SD card has been disconnected
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_FILE_P_Unload(void)
@@ -124,8 +130,8 @@ s32 MIDIO_FILE_P_Unload(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns 1 if global config file valid
-// Returns 0 if global config file not valid
+// Returns 1 if current patch file valid
+// Returns 0 if current patch file not valid
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_FILE_P_Valid(void)
 {
@@ -181,10 +187,10 @@ static u32 get_ip(char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// reads the global config file content (again)
+// reads the patch file content (again)
 // returns < 0 on errors (error codes are documented in midio_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_FILE_P_Read(void)
+s32 MIDIO_FILE_P_Read(char *filename)
 {
   s32 status = 0;
   midio_file_p_info_t *info = &midio_file_p_info;
@@ -192,11 +198,14 @@ s32 MIDIO_FILE_P_Read(void)
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
+  // store current file name in global variable for UI
+  memcpy(midio_file_p_patch_name, filename, MIDIO_FILE_P_FILENAME_LEN+1);
+
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMIDIO_P.V3", MIDIO_FILES_PATH);
+  sprintf(filepath, "%s%s.MIO", MIDIO_FILES_PATH, midio_file_p_patch_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MIDIO_FILE_P] Open global config file '%s'\n", filepath);
+  DEBUG_MSG("[MIDIO_FILE_P] Open patch '%s'\n", filepath);
 #endif
 
   if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
@@ -206,7 +215,7 @@ s32 MIDIO_FILE_P_Read(void)
     return status;
   }
 
-  // read global config values
+  // read patch values
   char line_buffer[128];
   do {
     status=FILE_ReadLine((u8 *)line_buffer, 128);
@@ -429,24 +438,27 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// writes data into global config file
+// writes data into patch file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_FILE_P_Write(void)
+s32 MIDIO_FILE_P_Write(char *filename)
 {
   midio_file_p_info_t *info = &midio_file_p_info;
 
+  // store current file name in global variable for UI
+  memcpy(midio_file_p_patch_name, filename, MIDIO_FILE_P_FILENAME_LEN+1);
+
   char filepath[MAX_PATH];
-  sprintf(filepath, "%sMIDIO_P.V3", MIDIO_FILES_PATH);
+  sprintf(filepath, "%s%s.MIO", MIDIO_FILES_PATH, midio_file_p_patch_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MIDIO_FILE_P] Open global config file '%s' for writing\n", filepath);
+  DEBUG_MSG("[MIDIO_FILE_P] Open patch '%s' for writing\n", filepath);
 #endif
 
   s32 status = 0;
   if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MIDIO_FILE_P] Failed to open/create global config file, status: %d\n", status);
+    DEBUG_MSG("[MIDIO_FILE_P] Failed to open/create patch file, status: %d\n", status);
 #endif
     FILE_WriteClose(); // important to free memory given by malloc
     info->valid = 0;
@@ -465,7 +477,7 @@ s32 MIDIO_FILE_P_Write(void)
     info->valid = 1;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MIDIO_FILE_P] global config file written with status %d\n", status);
+  DEBUG_MSG("[MIDIO_FILE_P] patch file written with status %d\n", status);
 #endif
 
   return (status < 0) ? MIDIO_FILE_P_ERR_WRITE : 0;
@@ -473,7 +485,7 @@ s32 MIDIO_FILE_P_Write(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// sends global config data to debug terminal
+// sends patch data to debug terminal
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_FILE_P_Debug(void)

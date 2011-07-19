@@ -21,6 +21,8 @@
 #include "midio_patch.h"
 #include "midio_sysex.h"
 
+#include "midio_file.h"
+#include "midio_file_p.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // local definitions
@@ -379,9 +381,7 @@ s32 MIDIO_SYSEX_Cmd_ReadPatch(u8 cmd_state, u8 midi_in)
 
 #if 0
       // load patch
-      u8 sysex_bank = 0; // not used due to compatibility reasons
-      u8 sysex_patch = 0; // not used due to compatibility reasons
-      if( MIDIO_PATCH_Load(sysex_bank, sysex_patch) ) {
+      if( MIDIO_PATCH_Load(midio_file_p_patch_name) ) {
 	// read failed (bankstick not available)
 	MIDIO_SYSEX_SendAck(sysex_port, MIDIO_SYSEX_DISACK, MIDIO_SYSEX_DISACK_BS_NOT_AVAILABLE);
       } else {
@@ -449,9 +449,7 @@ s32 MIDIO_SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
       } else {
 	// write patch
 	s32 error;
-	u8 sysex_bank = 0; // not used due to compatibility reasons
-	u8 sysex_patch = 0; // not used due to compatibility reasons
-	if( (error = MIDIO_PATCH_Store(sysex_bank, sysex_patch)) ) {
+	if( (error = MIDIO_PATCH_Store(midio_file_p_patch_name)) ) {
 	  // write failed (bankstick not available)
 	  MIDIO_SYSEX_SendAck(sysex_port, MIDIO_SYSEX_DISACK, MIDIO_SYSEX_DISACK_BS_NOT_AVAILABLE);
 	} else {
@@ -563,9 +561,7 @@ s32 MIDIO_SYSEX_Cmd_WritePatchBlock(u8 cmd_state, u8 midi_in)
 	// write patch when last block has been written
 	if( sysex_block == 5 ) {
 	  s32 error;
-	  u8 sysex_bank = 0; // not used due to compatibility reasons
-	  u8 sysex_patch = 0; // not used due to compatibility reasons
-	  if( (error = MIDIO_PATCH_Store(sysex_bank, sysex_patch)) ) {
+	  if( (error = MIDIO_PATCH_Store(midio_file_p_patch_name)) ) {
 	    // write failed (bankstick not available)
 	    MIDIO_SYSEX_SendAck(sysex_port, MIDIO_SYSEX_DISACK, MIDIO_SYSEX_DISACK_BS_NOT_AVAILABLE);
 	  } else {

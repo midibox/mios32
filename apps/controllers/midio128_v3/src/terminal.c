@@ -189,27 +189,43 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
       out("  set dout <pin> <0|1>:             directly sets the DOUT pin (all or 0..%d) to the given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
-      out("  store:                            stores current config on SD Card");
-      out("  restore:                          restores config from SD Card");
+      out("  save <name>:                      stores current config on SD Card");
+      out("  load <name>:                      restores config from SD Card");
       out("  show:                             shows the current configuration file");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
       out("  exit:                             (telnet only) exits the terminal");
     } else if( strcmp(parameter, "system") == 0 ) {
       TERMINAL_PrintSystem(_output_function);
-    } else if( strcmp(parameter, "store") == 0 ) {
-      s32 status = MIDIO_PATCH_Store(0, 0);
-      if( status >= 0 ) {
-	out("Presets stored on SD Card!");
+    } else if( strcmp(parameter, "save") == 0 ) {
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("ERROR: please specify filename for patch (up to 8 characters)!");
       } else {
-	out("ERROR: failed to store presets on SD Card (status %d)!", status);
+	if( strlen(parameter) > 8 ) {
+	  out("ERROR: 8 characters maximum!");
+	} else {
+	  s32 status = MIDIO_PATCH_Store(parameter);
+	  if( status >= 0 ) {
+	    out("Patch '%s' stored on SD Card!", parameter);
+	  } else {
+	    out("ERROR: failed to store patch '%s' on SD Card (status %d)!", parameter, status);
+	  }
+	}
       }
-    } else if( strcmp(parameter, "restore") == 0 ) {
-      s32 status = MIDIO_PATCH_Load(0, 0);
-      if( status >= 0 ) {
-	out("Presets restored from SD Card!");
+    } else if( strcmp(parameter, "load") == 0 ) {
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("ERROR: please specify filename for patch (up to 8 characters)!");
       } else {
-	out("ERROR: failed to restore presets from SD Card (status %d)!", status);
+	if( strlen(parameter) > 8 ) {
+	  out("ERROR: 8 characters maximum!");
+	} else {
+	  s32 status = MIDIO_PATCH_Load(parameter);
+	  if( status >= 0 ) {
+	    out("Patch '%s' loaded from SD Card!", parameter);
+	  } else {
+	    out("ERROR: failed to load patch '%s' on SD Card (status %d)!", parameter, status);
+	  }
+	}
       }
     } else if( strcmp(parameter, "show") == 0 ) {
       MIDIO_FILE_P_Debug();

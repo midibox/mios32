@@ -777,7 +777,6 @@ s32 SCS_Tick(void)
     /////////////////////////////////////////////////////////////////////////
     case MENU_STATE_INSIDE_PAGE:
     case MENU_STATE_EDIT_ITEM: {
-      int i;
       scs_menu_item_t *pageItems = NULL;
       u8 numItems = 0;
       if( rootTableSelectedPage < rootTableNumItems ) {
@@ -785,67 +784,79 @@ s32 SCS_Tick(void)
 	numItems = rootTable[rootTableSelectedPage].numItems;
       }
 
-      // check for full screen message
-      u8 printCommonPage = 1;
-      if( scsMenuState == MENU_STATE_EDIT_ITEM ) {
-	scs_menu_item_t *pageItem = NULL;
-	if( rootTableSelectedItem < numItems )
-	  pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
-
-	if( pageItem && pageItem->stringFullFunct ) {
-	  printCommonPage = 0;
-
-	  char line1[SCS_MAX_STR];
-	  strcpy(line1, "???");
-	  char line2[SCS_MAX_STR];
-	  strcpy(line2, "???");
-	  u16 value = pageItem->getFunct(pageItem->ix);
-	  pageItem->stringFullFunct(pageItem->ix, value, line1, line2);
-
-	  SCS_LCD_CursorSet(0, 0);
-	  SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
-	  SCS_LCD_CursorSet(0, 1);
-	  SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
-	}
-      }
-
-      if( printCommonPage ) {
+      if( !pageItems ) {
 	SCS_LCD_CursorSet(0, 0);
-	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
-	  u8 item = displayPageOffset + i;
-	  if( item >= numItems ||
-	      (scsMenuState == MENU_STATE_EDIT_ITEM && item == rootTableSelectedItem && !displayLabelOn ) )
-	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
-	  else {
-	    SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
-	  }
-	}
-
+	SCS_LCD_PrintStringPadded("!! ERROR !!", SCS_LCD_MAX_COLUMNS);
 	SCS_LCD_CursorSet(0, 1);
-	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
-	  u8 item = displayPageOffset + i;
-	  if( item >= numItems ||
-	      (scsMenuState == MENU_STATE_EDIT_ITEM && item == rootTableSelectedItem && !displayCursorOn ) )
-	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
-	  else {
-	    scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
-	    char label[SCS_MAX_STR];
-	    strcpy(label, "??? "); // default
+	SCS_LCD_PrintStringPadded("!! INVALID PAGE ITEMS !!", SCS_LCD_MAX_COLUMNS);
+      } else {
+	// check for full screen message
+	u8 printCommonPage = 1;
+	if( scsMenuState == MENU_STATE_EDIT_ITEM ) {
+	  scs_menu_item_t *pageItem = NULL;
+	  if( rootTableSelectedItem < numItems )
+	    pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
+
+	  if( pageItem && pageItem->stringFullFunct ) {
+	    printCommonPage = 0;
+
+	    char line1[SCS_MAX_STR];
+	    strcpy(line1, "???");
+	    char line2[SCS_MAX_STR];
+	    strcpy(line2, "???");
 	    u16 value = pageItem->getFunct(pageItem->ix);
-	    pageItem->stringFunct(pageItem->ix, value, label);
-	    SCS_LCD_PrintStringPadded(label, SCS_MENU_ITEM_WIDTH);
+	    pageItem->stringFullFunct(pageItem->ix, value, line1, line2);
+
+	    SCS_LCD_CursorSet(0, 0);
+	    SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+	    SCS_LCD_CursorSet(0, 1);
+	    SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
 	  }
 	}
 
-	// print arrow at upper right corner
-	if( numItems > SCS_NUM_MENU_ITEMS ) {
-	  SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
-	  if( displayPageOffset == 0 )
-	    SCS_LCD_PrintChar(1); // right arrow
-	  else if( displayPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
-	    SCS_LCD_PrintChar(0); // left arrow
-	  else
-	    SCS_LCD_PrintChar(2); // left/right arrow
+	if( printCommonPage ) {
+	  void (*itemsLineFunct)(u8 editMode, char *line) = NULL;
+	  void (*valuesLineFunct)(u8 editMode, char *line) = NULL;
+      
+	  if( rootTableSelectedPage < rootTableNumItems ) {
+	    itemsLineFunct = rootTable[rootTableSelectedPage].itemsLineFunct;
+	    valuesLineFunct = rootTable[rootTableSelectedPage].valuesLineFunct;
+	  }
+
+	  u8 editMode = scsMenuState == MENU_STATE_EDIT_ITEM;
+
+	  // first line
+	  {
+	    SCS_LCD_CursorSet(0, 0);
+	    char line1[SCS_MAX_STR];
+	    strcpy(line1, "???");
+	    if( itemsLineFunct )
+	      itemsLineFunct(editMode, line1);
+	    if( line1[0] != 0 )
+	      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+	  }
+
+	  // second line
+	  {
+	    SCS_LCD_CursorSet(0, 1);
+	    char line2[SCS_MAX_STR];
+	    strcpy(line2, "???");
+	    if( valuesLineFunct )
+	      valuesLineFunct(editMode, line2);
+	    if( line2[0] != 0 )
+	      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+	  }
+
+	  // print arrow at upper right corner
+	  if( numItems > SCS_NUM_MENU_ITEMS ) {
+	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	    if( displayPageOffset == 0 )
+	      SCS_LCD_PrintChar(1); // right arrow
+	    else if( displayPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
+	      SCS_LCD_PrintChar(0); // left arrow
+	    else
+	      SCS_LCD_PrintChar(2); // left/right arrow
+	  }
 	}
       }
     } break;
@@ -1017,6 +1028,66 @@ s32 SCS_Tick(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Standard function to print the items of a page
+//! \param[in] editMode 0 if page is in scroll mode, 1 if value is edited
+//! \param[out] line copy the line into this string
+/////////////////////////////////////////////////////////////////////////////
+void SCS_StringStandardItems(u8 editMode, char *line)
+{
+  scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
+  u8 numItems = rootTable[rootTableSelectedPage].numItems;
+
+  // TK: the user would put the string into *line
+  // but internally we can also use SCS_LCD_* to simplify the output if line[0] set to 0
+  line[0] = 0;
+
+  // (shouldn't be used externally to allow a proper implementation later)
+  int i;
+  for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+    u8 item = displayPageOffset + i;
+    if( item >= numItems ||
+	(editMode && item == rootTableSelectedItem && !displayLabelOn ) )
+      SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
+    else {
+      SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Standard function to print the values of a page
+//! \param[in] editMode 0 if page is in scroll mode, 1 if value is edited
+//! \param[out] line copy the line into this string
+/////////////////////////////////////////////////////////////////////////////
+void SCS_StringStandardValues(u8 editMode, char *line)
+{
+  scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
+  u8 numItems = rootTable[rootTableSelectedPage].numItems;
+
+  // TK: the user would put the string into *line
+  // but internally we can also use SCS_LCD_* to simplify the output if line[0] set to 0
+  line[0] = 0;
+
+  // (shouldn't be used externally to allow a proper implementation later)
+  int i;
+  for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+    u8 item = displayPageOffset + i;
+    if( item >= numItems ||
+	(editMode && item == rootTableSelectedItem && !displayCursorOn ) )
+      SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
+    else {
+      scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
+      char label[SCS_MAX_STR];
+      strcpy(label, "??? "); // default
+      u16 value = pageItem->getFunct(pageItem->ix);
+      pageItem->stringFunct(pageItem->ix, value, label);
+      SCS_LCD_PrintStringPadded(label, SCS_MENU_ITEM_WIDTH);
+    }
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Installs a root table
 //! \param[in] rootTable pointer to table of pages
 //! \param[in] numItems number of items in table
@@ -1180,12 +1251,19 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
   scsEditStringMaxChars = maxChars;
 
   // set edit pos after last char in string
-  for(scsEditPos=maxChars-1; scsEditPos>0; --scsEditPos)
-    if( scsEditString[scsEditPos] != ' ' ) {
-      if( scsEditPos < maxChars )
-	++scsEditPos;
+  // search forward for null terminator
+  for(scsEditPos=0; scsEditPos<(maxChars-1); ++scsEditPos)
+    if( scsEditString[scsEditPos] == 0 )
       break;
-    }
+  if( scsEditPos ) {
+    // search backward for last character
+    for(--scsEditPos; scsEditPos>0; --scsEditPos)
+      if( scsEditString[scsEditPos] != ' ' ) {
+	if( scsEditPos < maxChars )
+	  ++scsEditPos;
+	break;
+      }
+  }
 
   scsEditStringCallback = callback;
   scsMenuState = MENU_STATE_EDIT_STRING;

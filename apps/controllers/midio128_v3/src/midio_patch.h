@@ -90,8 +90,8 @@ extern s32 MIDIO_PATCH_Init(u32 mode);
 extern u8  MIDIO_PATCH_ReadByte(u16 addr);
 extern s32 MIDIO_PATCH_WriteByte(u16 addr, u8 byte);
 
-extern s32 MIDIO_PATCH_Load(u8 bank, u8 patch);
-extern s32 MIDIO_PATCH_Store(u8 bank, u8 patch);
+extern s32 MIDIO_PATCH_Load(char *filename);
+extern s32 MIDIO_PATCH_Store(char *filename);
 
 
 /////////////////////////////////////////////////////////////////////////////
