@@ -406,7 +406,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	    // create new one
 	    DEBUG_MSG("Creating initial MIDIO_P.V3 file\n");
 
-	    if( (status=MIDIO_FILE_P_Write()) < 0 ) {
+	    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }

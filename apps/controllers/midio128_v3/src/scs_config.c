@@ -26,24 +26,20 @@
 #include "seq.h"
 #include "mid_file.h"
 
+#include "midio_file.h"
+#include "midio_file_p.h"
+#include "midio_patch.h"
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
-#define NUM_KNOBS        10
-#define DEMO_STRING_LEN  16
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local parameter variables
 /////////////////////////////////////////////////////////////////////////////
-
-static u8 selectedKnob;
-
-static u8 knobCC[NUM_KNOBS];
-static u8 knobChn[NUM_KNOBS];
-static u8 knobValue[NUM_KNOBS];
-
-static char demoString[DEMO_STRING_LEN+1]; // +1 char for 0 terminator
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,66 +56,42 @@ static void stringDec000(u32 ix, u16 value, char *label) { sprintf(label, "%03d 
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
-// message demos
-static u16 selectMsg1(u32 ix, u16 value)
+static void selectSAVE_Callback(char *newString)
 {
-  SCS_Msg(SCS_MSG_L, 1000, "Short", "Message");
-  return value; // no change on value
+  s32 status;
+
+  if( (status=MIDIO_PATCH_Store(newString)) < 0 ) {
+    char buffer[100];
+    sprintf(buffer, "Patch '%s'", newString);
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
+  } else {
+    char buffer[100];
+    sprintf(buffer, "Patch %s", newString);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
+  }
+}
+static u16  selectSAVE(u32 ix, u16 value)
+{
+  return SCS_InstallEditStringCallback(selectSAVE_Callback, "SAVE", midio_file_p_patch_name, MIDIO_FILE_P_FILENAME_LEN);
 }
 
-static u16 selectMsg2(u32 ix, u16 value)
+static void selectLOAD_Callback(char *newString)
 {
-  SCS_Msg(SCS_MSG_L, 3000, "Long", "Message");
-  return value; // no change on value
-}
+  s32 status;
 
-static u16 selectMsg3(u32 ix, u16 value)
-{
-  char buffer[100];
-  sprintf(buffer, "Knob #%d", selectedKnob+1);
-  SCS_Msg(SCS_MSG_L, 1000, "Parameters:", buffer);
-  return value; // no change on value
+  if( (status=MIDIO_PATCH_Load(newString)) < 0 ) {
+    char buffer[100];
+    sprintf(buffer, "Patch %s", newString);
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
+  } else {
+    char buffer[100];
+    sprintf(buffer, "Patch '%s'", newString);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
+  }
 }
-
-static u16 selectMsg4(u32 ix, u16 value)
+static u16  selectLOAD(u32 ix, u16 value)
 {
-  SCS_Msg(SCS_MSG_R, 1000, "Right", "Aligned");
-  return value; // no change on value
-}
-
-static u16 selectMsg5(u32 ix, u16 value)
-{
-  SCS_Msg(SCS_MSG_ERROR_L, 1000, "ERROR", "42");
-  return value; // no change on value
-}
-
-
-static void demoCallback(u32 parameter)
-{
-  char buffer[100];
-  sprintf(buffer, "0x%08x", parameter);
-  SCS_Msg(SCS_MSG_L, 2000, "Got parameter:", buffer);
-}
-static u16 selectMsg6(u32 ix, u16 value)
-{
-  // if upper line empty: it will show the seconds how long a button has to be pressed
-  SCS_Msg(SCS_MSG_DELAYED_ACTION_L, 3001, "", "for demo");
-  u32 parameter = 0x1234567; // to pass an optional parameter
-  SCS_InstallDelayedActionCallback(demoCallback, 3000, parameter);
-  return value; // no change on value
-}
-
-static void selectString_Callback(char *newString)
-{
-  // could be the name of a patch which should be stored
-  memcpy(demoString, newString, DEMO_STRING_LEN);
-  SCS_Msg(SCS_MSG_L, 2000, "You entered:", demoString);
-  // call SD Card store function here
-}
-
-static u16  selectString(u32 ix, u16 value)
-{
-  return SCS_InstallEditStringCallback(selectString_Callback, "SAVE", demoString, DEMO_STRING_LEN);
+  return SCS_InstallEditStringCallback(selectLOAD_Callback, "LOAD", midio_file_p_patch_name, MIDIO_FILE_P_FILENAME_LEN);
 }
 
 
@@ -129,66 +101,32 @@ static u16  selectString(u32 ix, u16 value)
 static u16  dummyGet(u32 ix)              { return 0; }
 static void dummySet(u32 ix, u16 value)   { }
 
-static u16  knobGet(u32 ix)              { return selectedKnob; }
-static void knobSet(u32 ix, u16 value)   { selectedKnob = value; }
 
-static u16  knobValueGet(u32 ix)               { return knobValue[ix]; }
-static void knobValueSet(u32 ix, u16 value)
+
+/////////////////////////////////////////////////////////////////////////////
+// Special output functions for Disk page
+/////////////////////////////////////////////////////////////////////////////
+void pageDskStringLine1(u8 editMode, char *line)
 {
-  if( knobValue[ix] != value ) {
-    knobValue[ix] = value;
-    MIOS32_MIDI_SendCC(USB0,  knobChn[ix], knobCC[ix], knobValue[ix]);
-    MIOS32_MIDI_SendCC(UART0, knobChn[ix], knobCC[ix], knobValue[ix]);
-  }
+  sprintf(line, "Patch: %s", midio_file_p_patch_name);
 }
 
-static u16  selKnobCCGet(u32 ix)               { return knobCC[selectedKnob]; }
-static void selKnobCCSet(u32 ix, u16 value)    { knobCC[selectedKnob] = value; }
-
-static u16  selKnobChnGet(u32 ix)              { return knobChn[selectedKnob]; }
-static void selKnobChnSet(u32 ix, u16 value)   { knobChn[selectedKnob] = value; }
-
-static u16  selKnobValueGet(u32 ix)            { return knobValue[selectedKnob]; }
-static void selKnobValueSet(u32 ix, u16 value) { knobValueSet(selectedKnob, value); } // re-use, will send CC
-
+void pageDskStringLine2(u8 editMode, char *line)
+{
+  sprintf(line, "Load Save");
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
-const scs_menu_item_t pageCfg[] = {
-  SCS_ITEM("Knb ", 0, NUM_KNOBS-1, knobGet,         knobSet,         selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Chn ", 0, 0x0f,        selKnobChnGet,   selKnobChnSet,   selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Val ", 0, 0x7f,        selKnobValueGet, selKnobValueSet, selectNOP, stringDec,    NULL),
-};
-
-const scs_menu_item_t pageKnb[] = {
-  SCS_ITEM("K 1 ",  0, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 2 ",  1, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 3 ",  2, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 4 ",  3, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 5 ",  4, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 6 ",  5, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 7 ",  6, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 8 ",  7, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 9 ",  8, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K10 ",  9, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-};
-
-const scs_menu_item_t pageMsg[] = {
-  SCS_ITEM(" M1 ", 0, 1, dummyGet, dummySet, selectMsg1, stringEmpty,  NULL),
-  SCS_ITEM(" M2 ", 0, 1, dummyGet, dummySet, selectMsg2, stringEmpty,  NULL),
-  SCS_ITEM(" M3 ", 0, 1, dummyGet, dummySet, selectMsg3, stringEmpty,  NULL),
-  SCS_ITEM(" M4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
-  SCS_ITEM(" M5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
-  SCS_ITEM(" M6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
-  SCS_ITEM("Str ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
+const scs_menu_item_t pageDsk[] = {
+  SCS_ITEM("Load", 0, 0,           dummyGet,        dummySet,        selectLOAD, stringEmpty, NULL),
+  SCS_ITEM("Save", 0, 0,           dummyGet,        dummySet,        selectSAVE, stringEmpty, NULL),
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Knb ", pageKnb),
-  SCS_PAGE("Cfg ", pageCfg),
-  SCS_PAGE("Msg ", pageMsg),
+  SCS_PAGE("Dsk ", pageDsk, pageDskStringLine1, pageDskStringLine2),
 };
 
 
@@ -284,7 +222,7 @@ static s32 buttonPressedInMainPage(u8 softButton)
 /////////////////////////////////////////////////////////////////////////////
 static s32 getStringPageSelection(char *line1)
 {
-  sprintf(line1, "Select Page:");
+  sprintf(line1, "Patch: %s", midio_file_p_patch_name);
 
   return 0; // no error
 }
@@ -302,16 +240,6 @@ s32 SCS_CONFIG_Init(u32 mode)
 
   switch( mode ) {
   case 0: {
-    // default knob assignments
-    int i;
-    for(i=0; i<NUM_KNOBS; ++i)
-      knobCC[i] = 16 + i;
-
-    // default demo string content
-    for(i=0; i<DEMO_STRING_LEN; ++i)
-      demoString[i] = ' ';
-    demoString[DEMO_STRING_LEN] = 0; // 0 terminator
-
     // install table
     SCS_INSTALL_ROOT(rootMode0);
     SCS_InstallMainPageStringHook(getStringMainPage);

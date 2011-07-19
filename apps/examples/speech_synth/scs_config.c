@@ -172,9 +172,9 @@ const scs_menu_item_t pageDsk[] = {
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Dsk ", pageDsk),
-  SCS_PAGE("Glb ", pageGlb),
-  SCS_PAGE("Phr ", pagePhr),
+  SCS_PAGE("Dsk ", pageDsk, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Glb ", pageGlb, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Phr ", pagePhr, SCS_StringStandardItems, SCS_StringStandardValues),
 };
 
 

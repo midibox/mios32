@@ -110,7 +110,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define SCS_INSTALL_ROOT(rootTable) SCS_InstallRoot((scs_menu_page_t *)rootTable, sizeof(rootTable)/sizeof(scs_menu_page_t))
-#define SCS_PAGE(name, items) { name, (scs_menu_item_t *)items, sizeof(items)/sizeof(scs_menu_item_t) }
+#define SCS_PAGE(name, items, itemLineFunct, valueLineFunct) { name, (scs_menu_item_t *)items, sizeof(items)/sizeof(scs_menu_item_t), itemLineFunct, valueLineFunct }
 #define SCS_ITEM(name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct) { name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -137,6 +137,8 @@ typedef struct scs_menu_page_t {
   char             name[SCS_MENU_ITEM_WIDTH+1];
   scs_menu_item_t  *page;
   u8               numItems;
+  void             (*itemsLineFunct)(u8 editMode, char *line);
+  void             (*valuesLineFunct)(u8 editMode, char *line);
 } scs_menu_page_t;
 
 
@@ -168,6 +170,9 @@ extern s32 SCS_ENC_MENU_NotifyChange(s32 incrementer);
 extern s32 SCS_ENC_MENU_AutoSpeedSet(u16 maxValue);
 
 extern s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed);
+
+extern void SCS_StringStandardItems(u8 editMode, char *line);
+extern void SCS_StringStandardValues(u8 editMode, char *line);
 
 extern s32 SCS_InstallRoot(scs_menu_page_t *rootTable, u8 numItems);
 extern s32 SCS_InstallMainPageStringHook(s32 (*stringFunct)(char *line1, char *line2));

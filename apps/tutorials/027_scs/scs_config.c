@@ -190,9 +190,9 @@ const scs_menu_item_t pageMsg[] = {
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Knb ", pageKnb),
-  SCS_PAGE("Cfg ", pageCfg),
-  SCS_PAGE("Msg ", pageMsg),
+  SCS_PAGE("Knb ", pageKnb, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Cfg ", pageCfg, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Msg ", pageMsg, SCS_StringStandardItems, SCS_StringStandardValues),
 };
 
 

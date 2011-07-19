@@ -383,7 +383,7 @@ s32 MIDIO_PATCH_Init(u32 mode)
   midio_patch_cfg.flags.INVERSE_DIN = 1;
 
   // load first patch
-  MIDIO_PATCH_Load(0, 0); // bank, patch
+  MIDIO_PATCH_Load("DEFAULT");
 
   return 0; // no error
 }
@@ -506,13 +506,13 @@ s32 MIDIO_PATCH_WriteByte(u16 addr, u8 byte)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function loads the patch structure from EEPROM/BankStick
-// Returns != 0 if Load failed (e.g. BankStick not connected)
+// This function loads the patch from SD Card
+// Returns != 0 if Load failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_PATCH_Load(u8 bank, u8 patch)
+s32 MIDIO_PATCH_Load(char *filename)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = MIDIO_FILE_P_Read();
+  s32 status = MIDIO_FILE_P_Read(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;
@@ -520,13 +520,13 @@ s32 MIDIO_PATCH_Load(u8 bank, u8 patch)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function stores the patch structure into EEPROM/BankStick
-// Returns != 0 if Store failed (e.g. BankStick not connected)
+// This function stores the patch on SD Card
+// Returns != 0 if Store failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_PATCH_Store(u8 bank, u8 patch)
+s32 MIDIO_PATCH_Store(char *filename)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = MIDIO_FILE_P_Write();
+  s32 status = MIDIO_FILE_P_Write(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;

@@ -71,7 +71,7 @@ s32 MIDIO_FILE_LoadAllFiles(u8 including_hw)
     //status |= MIDIO_FILE_HW_Load();
   }
 
-  status |= MIDIO_FILE_P_Load();
+  status |= MIDIO_FILE_P_Load("DEFAULT");
 
   return status;
 }
