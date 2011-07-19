@@ -60,6 +60,8 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
   if( encoder == SEQ_UI_ENCODER_GP1 )
     ui_selected_item = ITEM_GXTY;
   else if( encoder >= SEQ_UI_ENCODER_GP2 && encoder <= SEQ_UI_ENCODER_GP16 ) {
@@ -72,11 +74,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
   }
 
-  // for GP encoders and Datawheel
+  // for GXTY via GP encoder + Datawheel
+  u8 change_cc = 0;
   switch( ui_selected_item ) {
-    case ITEM_GXTY:     return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_OCTAVE:   return SEQ_UI_CC_Inc(SEQ_CC_TRANSPOSE_OCT, 0, 14, incrementer);
-    case ITEM_SEMITONE: return SEQ_UI_CC_Inc(SEQ_CC_TRANSPOSE_SEMI, 0, 14, incrementer);
+  case ITEM_GXTY:     return SEQ_UI_GxTyInc(incrementer);
+  case ITEM_OCTAVE:   change_cc = SEQ_CC_TRANSPOSE_OCT; break;
+  case ITEM_SEMITONE: change_cc = SEQ_CC_TRANSPOSE_SEMI; break;
+  }
+
+  if( change_cc ) {
+    u8 value = (SEQ_CC_Get(visible_track, change_cc) + 7) & 0xf;
+    if( SEQ_UI_Var8_Inc(&value, 0, 14, incrementer) ) {
+      SEQ_CC_Set(visible_track, change_cc, (value - 7) & 0xf);
+      return 1;
+    }
   }
 
   return -1; // invalid or unsupported encoder
