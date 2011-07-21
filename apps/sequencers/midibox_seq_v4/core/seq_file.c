@@ -120,9 +120,6 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
 {
   s32 status = 0;
 
-  // load last selected session name
-  SEQ_FILE_LoadSessionName();
-
   if( including_hw ) {
     status |= SEQ_FILE_HW_Load();
 

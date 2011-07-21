@@ -387,6 +387,7 @@ void SEQ_TASK_Period1S(void)
     char str[21];
     sprintf(str, "Label: %s", FILE_VolumeLabel());
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, " SD Card connected", "        :-D");
+    SEQ_FILE_LoadSessionName();
     SEQ_FILE_LoadAllFiles(1);
   } else if( status == 2 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "SD Card disconnected", "        :-/");

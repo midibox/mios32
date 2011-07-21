@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta44
+~~~~~~~~~~~~~~~~~~~~~
+
+   o session can be selected again
+
+
 MIDIboxSEQ V4.0beta43
 ~~~~~~~~~~~~~~~~~~~~~
 
