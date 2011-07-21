@@ -913,7 +913,6 @@ static s32 OpenSession(void)
   }
   *p++ = 0;
 
-
   // check if directory still exists
   char path[30];
   sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
