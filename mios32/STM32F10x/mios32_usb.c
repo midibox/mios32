@@ -841,13 +841,13 @@ s32 MIOS32_USB_Init(u32 mode)
     pUser_Standard_Requests = (USER_STANDARD_REQUESTS *)&My_User_Standard_Requests;
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
-    pEpInt_IN[0]  = MIOS32_USB_MIDI_EP1_IN_Callback;  // IN  EP1
-    pEpInt_OUT[0] = MIOS32_USB_MIDI_EP1_OUT_Callback; // OUT EP1
+    pEpInt_IN[0]  = (void*)MIOS32_USB_MIDI_EP1_IN_Callback;  // IN  EP1
+    pEpInt_OUT[0] = (void*)MIOS32_USB_MIDI_EP1_OUT_Callback; // OUT EP1
 #endif
 
 #ifdef MIOS32_USE_USB_COM
-    pEpInt_IN[3]  = MIOS32_USB_COM_EP4_IN_Callback;  // IN  EP4
-    pEpInt_OUT[2] = MIOS32_USB_COM_EP3_OUT_Callback; // OUT EP3
+    pEpInt_IN[3]  = (void*)MIOS32_USB_COM_EP4_IN_Callback;  // IN  EP4
+    pEpInt_OUT[2] = (void*)MIOS32_USB_COM_EP3_OUT_Callback; // OUT EP3
 #endif
   }
 
