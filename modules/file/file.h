@@ -48,16 +48,6 @@
 #define FILE_ERR_INVALID_SESSION_NAME -24 // FILE_LoadSessionName()
 #define FILE_ERR_UPDATE_FREE      -25 // FILE_UpdateFreeBytes()
 
-// used by file_p.c
-#define FILE_P_ERR_INVALID_BANK    -128 // invalid bank number
-#define FILE_P_ERR_INVALID_GROUP   -129 // invalid group number
-#define FILE_P_ERR_INVALID_PATCH   -130 // invalid patch number
-#define FILE_P_ERR_FORMAT          -131 // invalid bank file format
-#define FILE_P_ERR_READ            -132 // error while reading file (exact error status cannot be determined anymore)
-#define FILE_P_ERR_WRITE           -133 // error while writing file (exact error status cannot be determined anymore)
-#define FILE_P_ERR_NO_FILE         -134 // no or invalid bank file
-#define FILE_P_ERR_P_TOO_LARGE     -135 // during patch write: patch too large for slot in bank
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
