@@ -59,11 +59,12 @@ static void getPatchString(char *str)
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
 static void stringEmpty(u32 ix, u16 value, char *label)  { label[0] = 0; }
-static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d ", value); }
-static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", value+1); }
-static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", (int)value - 64); }
-static void stringDec000(u32 ix, u16 value, char *label) { sprintf(label, "%03d ", value); }
-static void stringPlay(u32 ix, u16 value, char *label)   { sprintf(label, " %c  ", SYNTH_PhraseIsPlayed(selectedPhrase) ? '*' : 'o'); }
+static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%4d ", value); }
+static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", value+1); }
+static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", (int)value - 64); }
+static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, " %03d ", value); }
+static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
+static void stringPlay(u32 ix, u16 value, char *label)   { sprintf(label, " [%c] ", SYNTH_PhraseIsPlayed(selectedPhrase) ? '*' : 'o'); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Selection Functions
@@ -140,41 +141,41 @@ static void selPatchSet(u32 ix, u16 value) { selectedPatch = value; }
 /////////////////////////////////////////////////////////////////////////////
 
 const scs_menu_item_t pageGlb[] = {
-  SCS_ITEM("DwS ", SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR,   63, globalGet, globalSet, selectNOP, stringDec, NULL),
-  SCS_ITEM("Res ", SYNTH_GLOBAL_PAR_RESOLUTION,            16, globalGet, globalSet, selectNOP, stringDec, NULL),
-  SCS_ITEM("XOR ", SYNTH_GLOBAL_PAR_XOR,                 0x7f, globalGet, globalSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("DwnS ", SYNTH_GLOBAL_PAR_DOWNSAMPLING_FACTOR,   63, globalGet, globalSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Res. ", SYNTH_GLOBAL_PAR_RESOLUTION,            16, globalGet, globalSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("XOR  ", SYNTH_GLOBAL_PAR_XOR,                 0x7f, globalGet, globalSet, selectNOP, stringDec, NULL),
 };
 
 const scs_menu_item_t pagePhr[] = {
-  SCS_ITEM("PLY ", 0, 1,                          playGet,          playSet,          selectPLAY,stringPlay,  NULL),
-  SCS_ITEM("Phr ", 0, SYNTH_NUM_PHRASES-1,       phraseGet,       phraseSet,       selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Len ", SYNTH_PHRASE_PAR_LENGTH, SYNTH_PHRASE_MAX_LENGTH-1, phraseParGet, phraseParSet, selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Tun ", SYNTH_PHRASE_PAR_TUNE,     0x7f,  phraseParGet,     phraseParSet,     selectNOP, stringDecPM,  NULL),
-  SCS_ITEM("Ix  ", 0, SYNTH_PHRASE_MAX_LENGTH-1,     phonemeIxGet,     phonemeIxSet,     selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Ph  ", SYNTH_PHONEME_PAR_PH,      0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Env ", SYNTH_PHONEME_PAR_ENV,     0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Ton ", SYNTH_PHONEME_PAR_TONE,    0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Typ ", SYNTH_PHONEME_PAR_TYPE,    0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("PrP ", SYNTH_PHONEME_PAR_PREPAUSE, 0x7f, phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Amp ", SYNTH_PHONEME_PAR_AMP,     0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("New ", SYNTH_PHONEME_PAR_NEWWORD, 0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Flg ", SYNTH_PHONEME_PAR_FLAGS,   0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Len ", SYNTH_PHONEME_PAR_LENGTH,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Pt1 ", SYNTH_PHONEME_PAR_PITCH1,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("Pt2 ", SYNTH_PHONEME_PAR_PITCH2,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
-  SCS_ITEM("SIx ", SYNTH_PHONEME_PAR_SOURCE_IX, SYNTH_PHRASE_MAX_LENGTH-1, phonemeParGet, phonemeParSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("PLAY ", 0, 1,                          playGet,          playSet,          selectPLAY,stringPlay,  NULL),
+  SCS_ITEM("Phrs ", 0, SYNTH_NUM_PHRASES-1,       phraseGet,       phraseSet,       selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Len. ", SYNTH_PHRASE_PAR_LENGTH, SYNTH_PHRASE_MAX_LENGTH-1, phraseParGet, phraseParSet, selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Tune ", SYNTH_PHRASE_PAR_TUNE,     0x7f,  phraseParGet,     phraseParSet,     selectNOP, stringDecPM,  NULL),
+  SCS_ITEM("Ix   ", 0, SYNTH_PHRASE_MAX_LENGTH-1,     phonemeIxGet,     phonemeIxSet,     selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Phr  ", SYNTH_PHONEME_PAR_PH,      0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Env  ", SYNTH_PHONEME_PAR_ENV,     0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Tone ", SYNTH_PHONEME_PAR_TONE,    0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Type ", SYNTH_PHONEME_PAR_TYPE,    0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("PrP  ", SYNTH_PHONEME_PAR_PREPAUSE, 0x7f, phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Amp. ", SYNTH_PHONEME_PAR_AMP,     0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("New  ", SYNTH_PHONEME_PAR_NEWWORD, 0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Flag ", SYNTH_PHONEME_PAR_FLAGS,   0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Len. ", SYNTH_PHONEME_PAR_LENGTH,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Pt1  ", SYNTH_PHONEME_PAR_PITCH1,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("Pt2  ", SYNTH_PHONEME_PAR_PITCH2,  0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
+  SCS_ITEM("SIx  ", SYNTH_PHONEME_PAR_SOURCE_IX, SYNTH_PHRASE_MAX_LENGTH-1, phonemeParGet, phonemeParSet, selectNOP, stringDec, NULL),
 };
 
 const scs_menu_item_t pageDsk[] = {
-  SCS_ITEM("Bnk ", 0, 3,  selBankGet,  selBankSet,  selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Pat ", 0, 63, selPatchGet, selPatchSet, selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Save", 0, 0, dummyGet, dummySet, selectSAVE, stringEmpty, NULL),
+  SCS_ITEM("Bank ", 0, 3,  selBankGet,  selBankSet,  selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Pat. ", 0, 63, selPatchGet, selPatchSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Save ", 0, 0, dummyGet, dummySet, selectSAVE, stringEmpty, NULL),
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Dsk ", pageDsk, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Glb ", pageGlb, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Phr ", pagePhr, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Disk ", pageDsk, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Glb. ", pageGlb, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Phr. ", pagePhr, SCS_StringStandardItems, SCS_StringStandardValues),
 };
 
 
