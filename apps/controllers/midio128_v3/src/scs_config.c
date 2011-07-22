@@ -267,7 +267,7 @@ static s32 getStringMainPage(char *line1, char *line2)
   u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
   sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
-  sprintf(line2, "%s  <   >      MENU", SEQ_BPM_IsRunning() ? "STP" : "PLY");
+  sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
 
   // request LCD update - this will lead to fast refresh rate in main screen
   SCS_DisplayUpdateRequest();
@@ -332,10 +332,6 @@ static s32 buttonPressedInMainPage(u8 softButton)
     MUTEX_SDCARD_GIVE;
     return -1; // don't enter menu
   }
-
-  case 3:
-    // not assigned yet
-    return -1; // don't enter menu
   }
 
   return 0; // no error

@@ -49,7 +49,7 @@
 #endif
 
 #ifndef SCS_PIN_SOFT5
-#define SCS_PIN_SOFT5      7
+#define SCS_PIN_SOFT5      7 // optional if SCS_NUM_MENU_ITEMS >= 5
 #endif
 
 #ifndef SCS_PIN_SOFT6
