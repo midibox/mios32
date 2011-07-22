@@ -46,9 +46,11 @@ static char demoString[DEMO_STRING_LEN+1]; // +1 char for 0 terminator
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
 static void stringEmpty(u32 ix, u16 value, char *label)  { label[0] = 0; }
-static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d ", value); }
-static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d ", value+1); }
-static void stringDec000(u32 ix, u16 value, char *label) { sprintf(label, "%03d ", value); }
+static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%4d ", value); }
+static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", value+1); }
+static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", (int)value - 64); }
+static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, " %03d ", value); }
+static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
 
 static void stringCCFull(u32 ix, u16 value, char *line1, char *line2)
 {
@@ -160,39 +162,39 @@ static void selKnobValueSet(u32 ix, u16 value) { knobValueSet(selectedKnob, valu
 /////////////////////////////////////////////////////////////////////////////
 
 const scs_menu_item_t pageCfg[] = {
-  SCS_ITEM("Knb ", 0, NUM_KNOBS-1, knobGet,         knobSet,         selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("Chn ", 0, 0x0f,        selKnobChnGet,   selKnobChnSet,   selectNOP, stringDecP1,  NULL),
-  SCS_ITEM("CC# ", 0, 0x7f,        selKnobCCGet,    selKnobCCSet,    selectNOP, stringDec000, stringCCFull),
-  SCS_ITEM("Val ", 0, 0x7f,        selKnobValueGet, selKnobValueSet, selectNOP, stringDec,    NULL),
+  SCS_ITEM("Knob ", 0, NUM_KNOBS-1, knobGet,         knobSet,         selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Chn. ", 0, 0x0f,        selKnobChnGet,   selKnobChnSet,   selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("CC # ", 0, 0x7f,        selKnobCCGet,    selKnobCCSet,    selectNOP, stringDec03, stringCCFull),
+  SCS_ITEM("Val. ", 0, 0x7f,        selKnobValueGet, selKnobValueSet, selectNOP, stringDec,    NULL),
 };
 
 const scs_menu_item_t pageKnb[] = {
-  SCS_ITEM("K 1 ",  0, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 2 ",  1, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 3 ",  2, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 4 ",  3, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 5 ",  4, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 6 ",  5, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 7 ",  6, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 8 ",  7, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K 9 ",  8, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
-  SCS_ITEM("K10 ",  9, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec000, NULL),
+  SCS_ITEM(" K 1 ",  0, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 2 ",  1, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 3 ",  2, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 4 ",  3, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 5 ",  4, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 6 ",  5, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 7 ",  6, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 8 ",  7, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K 9 ",  8, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
+  SCS_ITEM(" K10 ",  9, 0x7f,      knobValueGet,    knobValueSet,    selectNOP, stringDec03, NULL),
 };
 
 const scs_menu_item_t pageMsg[] = {
-  SCS_ITEM(" M1 ", 0, 1, dummyGet, dummySet, selectMsg1, stringEmpty,  NULL),
-  SCS_ITEM(" M2 ", 0, 1, dummyGet, dummySet, selectMsg2, stringEmpty,  NULL),
-  SCS_ITEM(" M3 ", 0, 1, dummyGet, dummySet, selectMsg3, stringEmpty,  NULL),
-  SCS_ITEM(" M4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
-  SCS_ITEM(" M5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
-  SCS_ITEM(" M6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
-  SCS_ITEM("Str ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
+  SCS_ITEM("Msg1 ", 0, 1, dummyGet, dummySet, selectMsg1, stringEmpty,  NULL),
+  SCS_ITEM("Msg2 ", 0, 1, dummyGet, dummySet, selectMsg2, stringEmpty,  NULL),
+  SCS_ITEM("Msg3 ", 0, 1, dummyGet, dummySet, selectMsg3, stringEmpty,  NULL),
+  SCS_ITEM("Msg4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
+  SCS_ITEM("Msg5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
+  SCS_ITEM("Msg6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
+  SCS_ITEM("Str. ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Knb ", pageKnb, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Cfg ", pageCfg, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Msg ", pageMsg, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Knob ", pageKnb, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Cfg. ", pageCfg, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Msg. ", pageMsg, SCS_StringStandardItems, SCS_StringStandardValues),
 };
 
 

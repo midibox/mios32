@@ -84,13 +84,14 @@
 #endif
 
 // number of menu items which are displayed on screen
+// each item allocates 5x2 characters
 #ifndef SCS_NUM_MENU_ITEMS
-#define SCS_NUM_MENU_ITEMS 5
+#define SCS_NUM_MENU_ITEMS 4
 #endif
 
-// width of an item (4 by default, so that 5 items can be output on a 2x20 LCD)
+// width of an item (5 by default, so that 4 items can be output on a 2x20 LCD)
 #ifndef SCS_MENU_ITEM_WIDTH
-#define SCS_MENU_ITEM_WIDTH 4
+#define SCS_MENU_ITEM_WIDTH 5
 #endif
 
 // maximum width of a temporary message

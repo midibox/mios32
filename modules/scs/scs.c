@@ -18,7 +18,7 @@
 //! #define SCS_PIN_SOFT2      4
 //! #define SCS_PIN_SOFT3      5
 //! #define SCS_PIN_SOFT4      6
-//! #define SCS_PIN_SOFT5      7
+//! #define SCS_PIN_SOFT5      7 // optional if SCS_NUM_MENU_ITEMS >= 5
 //! #define SCS_PIN_SOFT6      8 // optional if SCS_NUM_MENU_ITEMS >= 6
 //! #define SCS_PIN_SOFT7      9 // optional if SCS_NUM_MENU_ITEMS >= 7
 //! #define SCS_PIN_SOFT8      10 // optional if SCS_NUM_MENU_ITEMS >= 8
@@ -32,11 +32,11 @@
 //! #define SCS_ENC_MENU_TYPE DETENTED2
 //!
 //! // number of menu items which are displayed on screen
-//! // each item allocates 4x2 characters
-//! #define SCS_NUM_MENU_ITEMS 5
+//! // each item allocates 5x2 characters
+//! #define SCS_NUM_MENU_ITEMS 4
 //!
-//! // width of an item (4 by default, so that 5 items can be output on a 2x20 LCD)
-//! #define SCS_MENU_ITEM_WIDTH 4
+//! // width of an item (5 by default, so that 4 items can be output on a 2x20 LCD)
+//! #define SCS_MENU_ITEM_WIDTH 5
 //!
 //! // maximum width of a temporary message
 //! #define SCS_MSG_MAX_CHAR 16
