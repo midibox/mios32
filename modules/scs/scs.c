@@ -13,7 +13,7 @@
 //! // note that you could also assign them to global variables for soft-configuration!
 //! #define SCS_PIN_ENC_MENU_A 0
 //! #define SCS_PIN_ENC_MENU_B 1
-//! #define SCS_PIN_MENU       2
+//! #define SCS_PIN_EXIT       2
 //! #define SCS_PIN_SOFT1      3
 //! #define SCS_PIN_SOFT2      4
 //! #define SCS_PIN_SOFT3      5
@@ -79,15 +79,6 @@
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-  MENU_STATE_MAINPAGE,    // we are in the main page
-  MENU_STATE_SELECT_PAGE, // we select a page
-  MENU_STATE_INSIDE_PAGE, // we are in a page
-  MENU_STATE_EDIT_ITEM,   // we edit an item in the page
-  MENU_STATE_EDIT_STRING, // we edit a string in the page
-} scs_menu_state_t;
-
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -152,10 +143,9 @@ static const char animation_r_stars[2*4+1] = "  * ** *";
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static s32 (*scsMainPageStringFunct)(char *line1, char *line2);
-static s32 (*scsPageSelectStringFunct)(char *line1);
-static s32 (*scsEncMainPageFunct)(s32 incrementer);
-static s32 (*scsButtonMainPageFunct)(u8 button);
+static s32 (*scsDisplayHook)(char *line1, char *line2);
+static s32 (*scsEncHook)(s32 incrementer);
+static s32 (*scsButtonHook)(u8 button, u8 depressed);
 
 
 
@@ -170,7 +160,7 @@ s32 SCS_Init(u32 mode)
   SCS_LCD_Init(mode);
   SCS_LCD_InitSpecialChars(SCS_LCD_CHARSET_Menu);
 
-  scsMenuState = MENU_STATE_MAINPAGE;
+  scsMenuState = SCS_MENU_STATE_MAINPAGE;
 
   displayUpdateReq = 1;
   displayInitReq = 1;
@@ -205,10 +195,9 @@ s32 SCS_Init(u32 mode)
   rootTableNumItems = 0;
   rootTableSelectedPage = 0;
 
-  scsMainPageStringFunct = NULL;
-  scsPageSelectStringFunct = NULL;
-  scsEncMainPageFunct = NULL;
-  scsButtonMainPageFunct = NULL;
+  scsDisplayHook = NULL;
+  scsEncHook = NULL;
+  scsButtonHook = NULL;
 
   // configure encoder
   mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(SCS_ENC_MENU_ID);
@@ -310,7 +299,7 @@ s32 SCS_EncButtonUpdate_Tick(void)
 
   // cursor timer handling is done here
   // it's only used if an item is edited
-  if( scsMenuState == MENU_STATE_EDIT_ITEM || MENU_STATE_EDIT_STRING ) {
+  if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM || SCS_MENU_STATE_EDIT_STRING ) {
     if( displayFlickerSelectionCtr ) { // new selected parameter flickers
       --displayFlickerSelectionCtr;
 
@@ -364,8 +353,14 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
   // deinstall callback if it was active
   scsDelayedActionCallback = 0;
 
+  // check for overruling
+  if( scsEncHook && scsEncHook(incrementer) > 0 ) {
+    displayUpdateReq = 1;
+    return 1;
+  }
+
   switch( scsMenuState ) {
-  case MENU_STATE_SELECT_PAGE: {
+  case SCS_MENU_STATE_SELECT_PAGE: {
     int newOffset = displayRootOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
@@ -377,7 +372,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     displayRootOffset = newOffset;
   } break;
 
-  case MENU_STATE_INSIDE_PAGE: {
+  case SCS_MENU_STATE_INSIDE_PAGE: {
     if( rootTableSelectedPage >= rootTableNumItems )
       return -1; // fail safe
     scs_menu_page_t *selectedPage = (scs_menu_page_t *)&rootTable[rootTableSelectedPage];
@@ -393,7 +388,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     displayPageOffset = newOffset;
   } break;
 
-  case MENU_STATE_EDIT_ITEM: {
+  case SCS_MENU_STATE_EDIT_ITEM: {
     scs_menu_item_t *pageItem = NULL;
     if( rootTableSelectedPage < rootTableNumItems ) {
       scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
@@ -417,7 +412,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
   } break;
 
-  case MENU_STATE_EDIT_STRING: {
+  case SCS_MENU_STATE_EDIT_STRING: {
     char c = scsEditString[scsEditPos];
 
     if( incrementer > 0 ) {
@@ -444,9 +439,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     displayCursorCtr = 0;
   } break;
 
-  default: // MENU_STATE_MAINPAGE
-    if( scsEncMainPageFunct )
-      scsEncMainPageFunct(incrementer);
+    //default: // SCS_MENU_STATE_MAINPAGE
   }
 
   displayUpdateReq = 1;
@@ -496,8 +489,14 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 {
   int softButton = -1;
 
+  // check for overruling
+  if( scsButtonHook && scsButtonHook(pin, depressed) > 0 ) {
+    displayUpdateReq = 1;
+    return 1;
+  }
+
   switch( pin ) {
-  case SCS_PIN_MENU: {
+  case SCS_PIN_EXIT: {
 
     if( depressed ) {
       // deinstall callback if it was active
@@ -506,27 +505,27 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     }
 
     switch( scsMenuState ) {
-    case MENU_STATE_SELECT_PAGE: {
-      scsMenuState = MENU_STATE_MAINPAGE;
+    case SCS_MENU_STATE_SELECT_PAGE: {
+      scsMenuState = SCS_MENU_STATE_MAINPAGE;
       displayInitReq = 1;
       scsMsgCtr = 0; // disable message
     } break;
-    case MENU_STATE_INSIDE_PAGE: {
-      scsMenuState = MENU_STATE_SELECT_PAGE;
+    case SCS_MENU_STATE_INSIDE_PAGE: {
+      scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
       displayInitReq = 1;
       scsMsgCtr = 0; // disable message
     } break;
-    case MENU_STATE_EDIT_ITEM: {
-      scsMenuState = MENU_STATE_INSIDE_PAGE;
+    case SCS_MENU_STATE_EDIT_ITEM: {
+      scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
       scsMsgCtr = 0; // disable message
     } break;
-    case MENU_STATE_EDIT_STRING: {
-      scsMenuState = MENU_STATE_INSIDE_PAGE;
+    case SCS_MENU_STATE_EDIT_STRING: {
+      scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
       scsMsgCtr = 0; // disable message
       scsEditStringCallback = NULL; // disable edit string callback
     }
-      //default: // MENU_STATE_MAINPAGE
-      //scsMenuState = MENU_STATE_SELECT_PAGE;
+      //default: // SCS_MENU_STATE_MAINPAGE
+      //scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
       // enter page only via soft buttons
     }
     SCS_ENC_MENU_AutoSpeedSet(1); // slow speed..
@@ -555,19 +554,19 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     }
 
     switch( scsMenuState ) {
-    case MENU_STATE_SELECT_PAGE: {
+    case SCS_MENU_STATE_SELECT_PAGE: {
       int newPage = displayRootOffset + softButton;
       if( newPage < rootTableNumItems ) {
 	displayCursorPos = softButton;
 	rootTableSelectedPage = newPage;
 	displayPageOffset = 0; // optionally we got store the last offset somewhere?
-	scsMenuState = MENU_STATE_INSIDE_PAGE;
+	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
 	displayInitReq = 1;
       }
     } break;
 
-    case MENU_STATE_INSIDE_PAGE:
-    case MENU_STATE_EDIT_ITEM: {
+    case SCS_MENU_STATE_INSIDE_PAGE:
+    case SCS_MENU_STATE_EDIT_ITEM: {
       scs_menu_item_t *pageItems = NULL;
       u8 numItems = 0;
       if( rootTableSelectedPage < rootTableNumItems ) {
@@ -585,8 +584,8 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 	  displayCursorPos = softButton;
 	  rootTableSelectedItem = itemPos;
 
-	  if( scsMenuState == MENU_STATE_INSIDE_PAGE ) {
-	    scsMenuState = MENU_STATE_EDIT_ITEM;
+	  if( scsMenuState == SCS_MENU_STATE_INSIDE_PAGE ) {
+	    scsMenuState = SCS_MENU_STATE_EDIT_ITEM;
 	    SCS_ENC_MENU_AutoSpeedSet(pageItem->maxValue);
 	  }
 	}
@@ -602,12 +601,12 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       displayFlickerSelectionCtr = 200;
     } break;
 
-    case MENU_STATE_EDIT_STRING: {
+    case SCS_MENU_STATE_EDIT_STRING: {
       switch( softButton ) {
       case 0: {
 	if( scsEditStringCallback )
 	  scsEditStringCallback(scsEditString);
-	scsMenuState = MENU_STATE_INSIDE_PAGE;
+	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
       } break;
 
       case 1: { // <
@@ -647,18 +646,9 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       }
     } break;
 
-    default: { // MENU_STATE_MAINPAGE
-      u8 enterMenu = 1;
-
-      // this hook can be used to change the root menu depending on the pressed soft button
-      // if it returns < 0, the menu won't be entered!
-      if( scsButtonMainPageFunct && scsButtonMainPageFunct(softButton) < 0 )
-	enterMenu = 0;
-
-      if( enterMenu ) {
-	displayInitReq = 1;
-	scsMenuState = MENU_STATE_SELECT_PAGE;
-      }
+    default: { // SCS_MENU_STATE_MAINPAGE
+      displayInitReq = 1;
+      scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
     }
     }
     displayUpdateReq = 1;
@@ -739,44 +729,68 @@ s32 SCS_Tick(void)
   if( displayUpdateReq ) {
     displayUpdateReq = 0;
 
-    switch( scsMenuState ) {
-      /////////////////////////////////////////////////////////////////////////
-    case MENU_STATE_SELECT_PAGE: {
-      int i;
+    // call optional display hook for overruling
+    char line1[SCS_MAX_STR];
+    line1[0] = 0;
+    char line2[SCS_MAX_STR];
+    line2[0] = 0;
+    if( scsDisplayHook && scsDisplayHook(line1, line2) < 1 ) {
+      line1[0] = 0; // disable again: no overruling
+      line2[0] = 0;
+    }
 
-      char line1[SCS_MAX_STR];
-      strcpy(line1, "Select Page:");
-      if( scsPageSelectStringFunct )
-	scsPageSelectStringFunct(line1);
-
+    // notifies if any page has been overruled
+    u8 line1AlreadyPrint = 0;
+    if( line1[0] ) {
       SCS_LCD_CursorSet(0, 0);
       SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+      line1AlreadyPrint = 1;
+    }
 
+    u8 line2AlreadyPrint = 0;
+    if( line2[0] ) {
       SCS_LCD_CursorSet(0, 1);
-      for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
-	u8 page = displayRootOffset + i;
-	if( page >= rootTableNumItems )
-	  SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
-	else {
-	  SCS_LCD_PrintStringPadded(rootTable[page].name, SCS_MENU_ITEM_WIDTH);
-	}
+      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+      line2AlreadyPrint = 1;
+    }
+
+    switch( scsMenuState ) {
+      /////////////////////////////////////////////////////////////////////////
+    case SCS_MENU_STATE_SELECT_PAGE: {
+      if( !line1AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 0);
+	SCS_LCD_PrintStringPadded("Select Page:", SCS_LCD_MAX_COLUMNS);
       }
 
-      // print arrow at upper right corner
-      if( rootTableNumItems > SCS_NUM_MENU_ITEMS ) {
-	SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
-	if( displayRootOffset == 0 )
-	  SCS_LCD_PrintChar(1); // right arrow
-	else if( displayRootOffset >= (rootTableNumItems-SCS_NUM_MENU_ITEMS) )
-	  SCS_LCD_PrintChar(0); // left arrow
-	else
-	  SCS_LCD_PrintChar(2); // left/right arrow
+      if( !line2AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 1);
+
+	int i;
+	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	  u8 page = displayRootOffset + i;
+	  if( page >= rootTableNumItems )
+	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
+	  else {
+	    SCS_LCD_PrintStringPadded(rootTable[page].name, SCS_MENU_ITEM_WIDTH);
+	  }
+	}
+
+	// print arrow at upper right corner
+	if( rootTableNumItems > SCS_NUM_MENU_ITEMS ) {
+	  SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	  if( displayRootOffset == 0 )
+	    SCS_LCD_PrintChar(1); // right arrow
+	  else if( displayRootOffset >= (rootTableNumItems-SCS_NUM_MENU_ITEMS) )
+	    SCS_LCD_PrintChar(0); // left arrow
+	  else
+	    SCS_LCD_PrintChar(2); // left/right arrow
+	}
       }
     } break;
 
     /////////////////////////////////////////////////////////////////////////
-    case MENU_STATE_INSIDE_PAGE:
-    case MENU_STATE_EDIT_ITEM: {
+    case SCS_MENU_STATE_INSIDE_PAGE:
+    case SCS_MENU_STATE_EDIT_ITEM: {
       scs_menu_item_t *pageItems = NULL;
       u8 numItems = 0;
       if( rootTableSelectedPage < rootTableNumItems ) {
@@ -785,14 +799,18 @@ s32 SCS_Tick(void)
       }
 
       if( !pageItems ) {
-	SCS_LCD_CursorSet(0, 0);
-	SCS_LCD_PrintStringPadded("!! ERROR !!", SCS_LCD_MAX_COLUMNS);
-	SCS_LCD_CursorSet(0, 1);
-	SCS_LCD_PrintStringPadded("!! INVALID PAGE ITEMS !!", SCS_LCD_MAX_COLUMNS);
+	if( !line1AlreadyPrint ) {
+	  SCS_LCD_CursorSet(0, 0);
+	  SCS_LCD_PrintStringPadded("!! ERROR !!", SCS_LCD_MAX_COLUMNS);
+	}
+	if( !line2AlreadyPrint ) {
+	  SCS_LCD_CursorSet(0, 1);
+	  SCS_LCD_PrintStringPadded("!! INVALID PAGE ITEMS !!", SCS_LCD_MAX_COLUMNS);
+	}
       } else {
 	// check for full screen message
 	u8 printCommonPage = 1;
-	if( scsMenuState == MENU_STATE_EDIT_ITEM ) {
+	if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM ) {
 	  scs_menu_item_t *pageItem = NULL;
 	  if( rootTableSelectedItem < numItems )
 	    pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
@@ -800,55 +818,64 @@ s32 SCS_Tick(void)
 	  if( pageItem && pageItem->stringFullFunct ) {
 	    printCommonPage = 0;
 
-	    char line1[SCS_MAX_STR];
 	    strcpy(line1, "???");
-	    char line2[SCS_MAX_STR];
 	    strcpy(line2, "???");
 	    u16 value = pageItem->getFunct(pageItem->ix);
 	    pageItem->stringFullFunct(pageItem->ix, value, line1, line2);
 
-	    SCS_LCD_CursorSet(0, 0);
-	    SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
-	    SCS_LCD_CursorSet(0, 1);
-	    SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+	    if( !line1AlreadyPrint ) {
+	      SCS_LCD_CursorSet(0, 0);
+	      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+	    }
+	    if( !line2AlreadyPrint ) {
+	      SCS_LCD_CursorSet(0, 1);
+	      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+	    }
 	  }
 	}
 
 	if( printCommonPage ) {
-	  void (*itemsLineFunct)(u8 editMode, char *line) = NULL;
-	  void (*valuesLineFunct)(u8 editMode, char *line) = NULL;
-      
-	  if( rootTableSelectedPage < rootTableNumItems ) {
-	    itemsLineFunct = rootTable[rootTableSelectedPage].itemsLineFunct;
-	    valuesLineFunct = rootTable[rootTableSelectedPage].valuesLineFunct;
-	  }
-
-	  u8 editMode = scsMenuState == MENU_STATE_EDIT_ITEM;
+	  u8 editMode = scsMenuState == SCS_MENU_STATE_EDIT_ITEM;
 
 	  // first line
-	  {
+	  if( !line1AlreadyPrint ) {
 	    SCS_LCD_CursorSet(0, 0);
-	    char line1[SCS_MAX_STR];
-	    strcpy(line1, "???");
-	    if( itemsLineFunct )
-	      itemsLineFunct(editMode, line1);
-	    if( line1[0] != 0 )
-	      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+
+	    int i;
+	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	      u8 item = displayPageOffset + i;
+	      if( item >= numItems ||
+		  (editMode && item == rootTableSelectedItem && !displayLabelOn ) )
+		SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
+	      else {
+		SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
+	      }
+	    }
 	  }
 
 	  // second line
-	  {
+	  if( !line2AlreadyPrint ) {
 	    SCS_LCD_CursorSet(0, 1);
-	    char line2[SCS_MAX_STR];
-	    strcpy(line2, "???");
-	    if( valuesLineFunct )
-	      valuesLineFunct(editMode, line2);
-	    if( line2[0] != 0 )
-	      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+
+	    int i;
+	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	      u8 item = displayPageOffset + i;
+	      if( item >= numItems ||
+		  (editMode && item == rootTableSelectedItem && !displayCursorOn ) )
+		SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
+	      else {
+		scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
+		char label[SCS_MAX_STR];
+		strcpy(label, "??? "); // default
+		u16 value = pageItem->getFunct(pageItem->ix);
+		pageItem->stringFunct(pageItem->ix, value, label);
+		SCS_LCD_PrintStringPadded(label, SCS_MENU_ITEM_WIDTH);
+	      }
+	    }
 	  }
 
 	  // print arrow at upper right corner
-	  if( numItems > SCS_NUM_MENU_ITEMS ) {
+	  if( !line1AlreadyPrint && numItems > SCS_NUM_MENU_ITEMS ) {
 	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
 	    if( displayPageOffset == 0 )
 	      SCS_LCD_PrintChar(1); // right arrow
@@ -862,7 +889,7 @@ s32 SCS_Tick(void)
     } break;
 
     /////////////////////////////////////////////////////////////////////////
-    case MENU_STATE_EDIT_STRING: {
+    case SCS_MENU_STATE_EDIT_STRING: {
       // check if empty string
       int i;
       u8 stringIsEmpty = 1;
@@ -873,42 +900,44 @@ s32 SCS_Tick(void)
 	}
 
       // edited string
-      SCS_LCD_CursorSet(0, 0);      
-      SCS_LCD_PrintStringPadded(stringIsEmpty ? "<empty>" : scsEditString, SCS_LCD_COLUMNS_PER_DEVICE);
+      if( !line1AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 0);      
+	SCS_LCD_PrintStringPadded(stringIsEmpty ? "<empty>" : scsEditString, SCS_LCD_COLUMNS_PER_DEVICE);
+      }
 
       // set cursor
-      if( !displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn) ) {
+      if( !line1AlreadyPrint && (!displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn)) ) {
 	SCS_LCD_CursorSet(scsEditPos, 0);
 	SCS_LCD_PrintChar((scsEditString[scsEditPos] == '*') ? ' ' : '*');
       }
 
       // edit functions
-      SCS_LCD_CursorSet(0, 1);
-      SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
-      if( SCS_NUM_MENU_ITEMS >= 2 )
-	SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
-      if( SCS_NUM_MENU_ITEMS >= 3 )
-	SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
-      if( SCS_NUM_MENU_ITEMS >= 4 )
-	SCS_LCD_PrintStringCentered("Del", SCS_MENU_ITEM_WIDTH);
-      if( SCS_NUM_MENU_ITEMS >= 5 )
-	SCS_LCD_PrintStringCentered("Clr", SCS_MENU_ITEM_WIDTH);
+      if( !line2AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 1);
+	SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 2 )
+	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 3 )
+	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 4 )
+	  SCS_LCD_PrintStringCentered("Del", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 5 )
+	  SCS_LCD_PrintStringCentered("Clr", SCS_MENU_ITEM_WIDTH);
+      }
     } break;
 
     /////////////////////////////////////////////////////////////////////////
-    default: { // MENU_STATE_MAINPAGE
-      char line1[SCS_MAX_STR];
-      strncpy(line1, MIOS32_LCD_BOOT_MSG_LINE1, SCS_LCD_MAX_COLUMNS);
-      char line2[SCS_MAX_STR];
-      strcpy(line2, "Press soft button");
-
-      if( scsMainPageStringFunct )
-	scsMainPageStringFunct(line1, line2);
-
-      SCS_LCD_CursorSet(0, 0);
-      SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
-      SCS_LCD_CursorSet(0, 1);
-      SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+    default: { // SCS_MENU_STATE_MAINPAGE
+      if( !line1AlreadyPrint ) {
+	strncpy(line1, MIOS32_LCD_BOOT_MSG_LINE1, SCS_LCD_MAX_COLUMNS);
+	SCS_LCD_CursorSet(0, 0);
+	SCS_LCD_PrintStringPadded(line1, SCS_LCD_MAX_COLUMNS);
+      }
+      if( !line2AlreadyPrint ) {
+	strcpy(line2, "Press soft button");
+	SCS_LCD_CursorSet(0, 1);
+	SCS_LCD_PrintStringPadded(line2, SCS_LCD_MAX_COLUMNS);
+      }
     }
     }
   }
@@ -1028,66 +1057,6 @@ s32 SCS_Tick(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Standard function to print the items of a page
-//! \param[in] editMode 0 if page is in scroll mode, 1 if value is edited
-//! \param[out] line copy the line into this string
-/////////////////////////////////////////////////////////////////////////////
-void SCS_StringStandardItems(u8 editMode, char *line)
-{
-  scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
-  u8 numItems = rootTable[rootTableSelectedPage].numItems;
-
-  // TK: the user would put the string into *line
-  // but internally we can also use SCS_LCD_* to simplify the output if line[0] set to 0
-  line[0] = 0;
-
-  // (shouldn't be used externally to allow a proper implementation later)
-  int i;
-  for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
-    u8 item = displayPageOffset + i;
-    if( item >= numItems ||
-	(editMode && item == rootTableSelectedItem && !displayLabelOn ) )
-      SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
-    else {
-      SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
-    }
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//! Standard function to print the values of a page
-//! \param[in] editMode 0 if page is in scroll mode, 1 if value is edited
-//! \param[out] line copy the line into this string
-/////////////////////////////////////////////////////////////////////////////
-void SCS_StringStandardValues(u8 editMode, char *line)
-{
-  scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
-  u8 numItems = rootTable[rootTableSelectedPage].numItems;
-
-  // TK: the user would put the string into *line
-  // but internally we can also use SCS_LCD_* to simplify the output if line[0] set to 0
-  line[0] = 0;
-
-  // (shouldn't be used externally to allow a proper implementation later)
-  int i;
-  for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
-    u8 item = displayPageOffset + i;
-    if( item >= numItems ||
-	(editMode && item == rootTableSelectedItem && !displayCursorOn ) )
-      SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
-    else {
-      scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
-      char label[SCS_MAX_STR];
-      strcpy(label, "??? "); // default
-      u16 value = pageItem->getFunct(pageItem->ix);
-      pageItem->stringFunct(pageItem->ix, value, label);
-      SCS_LCD_PrintStringPadded(label, SCS_MENU_ITEM_WIDTH);
-    }
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 //! Installs a root table
 //! \param[in] rootTable pointer to table of pages
 //! \param[in] numItems number of items in table
@@ -1102,52 +1071,47 @@ s32 SCS_InstallRoot(scs_menu_page_t *_rootTable, u8 numItems)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Installs string function for main page (2x20 chars in both lines)
-//! \param[in] printFunct pointer to print function
+//! Installs string function which can overrule the display output
+//! If it returns 0, the original SCS output will be print
+//! If it returns 1, the output copied into line1 and/or line2 will be print
+//! If a line is not changed (line[0] = 0 or line[1] = 0), the original output
+//! will be displayed - this allows to overrule only a single line
+//! \param[in] stringFunct pointer to print function
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallMainPageStringHook(s32 (*stringFunct)(char *line1, char *line2))
+s32 SCS_InstallDisplayHook(s32 (*stringFunct)(char *line1, char *line2))
 {
-  scsMainPageStringFunct = stringFunct;
+  scsDisplayHook = stringFunct;
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Installs string function for selection page (20 chars in upper line)
-//! \param[in] printFunct pointer to print function
-//! \return < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallPageSelectStringHook(s32 (*stringFunct)(char *line1))
-{
-  scsPageSelectStringFunct = stringFunct;
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! Installs encoder handler for main page
+//! Installs encoder handler for overruling
+//! If it returns 0, the encoder increment will be handled by the SCS
+//! If it returns 1, the SCS will ignore the encoder
 //! \param[in] encFunct the encoder function
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEncMainPageHook(s32 (*encFunct)(s32 incrementer))
+s32 SCS_InstallEncHook(s32 (*encFunct)(s32 incrementer))
 {
-  scsEncMainPageFunct = encFunct;
+  scsEncHook = encFunct;
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Installs button handler for main page
+//! Installs button handler for overruling
+//! If it returns 0, the button movement will be handled by the SCS
+//! If it returns 1, the SCS will ignore the button event
 //! \param[in] buttonFunct the button function
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallButtonMainPageHook(s32 (*buttonFunct)(u8 softButton))
+s32 SCS_InstallButtonHook(s32 (*buttonFunct)(u8 scsButton, u8 depressed))
 {
-  scsButtonMainPageFunct = buttonFunct;
+  scsButtonHook = buttonFunct;
 
   return 0; // no error
 }
@@ -1162,6 +1126,35 @@ s32 SCS_DisplayUpdateRequest(void)
   displayUpdateReq = 1;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the current display state
+/////////////////////////////////////////////////////////////////////////////
+scs_menu_state_t SCS_MenuStateGet(void)
+{
+  return scsMenuState;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the current page pointer (not menu item as the scs_menu_item_t type
+//! could imply) if menu state is SCS_MENU_STATE_INSIDE_PAGE or
+//! SCS_MENU_STATE_EDIT_ITEM, otherwise returns NULL\n
+//! Can be used in display/button/encoder hook to overrule something if
+//! a certain page is displayed\n
+//! See apps/controllers/midio128_v3/src/scs_config.c for usage example
+/////////////////////////////////////////////////////////////////////////////
+scs_menu_item_t *SCS_MenuPageGet(void)
+{
+  if( scsMenuState != SCS_MENU_STATE_INSIDE_PAGE &&
+      scsMenuState != SCS_MENU_STATE_EDIT_ITEM )
+    return NULL;
+
+  if( !rootTable || !rootTableNumItems || rootTableSelectedPage >= rootTableNumItems )
+    return NULL;
+
+  return rootTable[rootTableSelectedPage].page;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1266,7 +1259,7 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
   }
 
   scsEditStringCallback = callback;
-  scsMenuState = MENU_STATE_EDIT_STRING;
+  scsMenuState = SCS_MENU_STATE_EDIT_STRING;
 
   return 0;
 }

@@ -36,6 +36,8 @@
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 extraPage;
+
 static u8 selectedDin;
 static u8 selectedDout;
 
@@ -48,10 +50,10 @@ static u8 selectedDout;
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
 static void stringEmpty(u32 ix, u16 value, char *label)   { label[0] = 0; }
-static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%4d ", value); }
-static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", value+1); }
-static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", (int)value - 64); }
-static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, " %03d ", value); }
+static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
+static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
+static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
+static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02x  ", value | 0x80); }
 static void stringBin4(u32 ix, u16 value, char *label)    { sprintf(label, "%c%c%c%c ", 
@@ -83,7 +85,7 @@ static void selectSAVE_Callback(char *newString)
 
   if( (status=MIDIO_PATCH_Store(newString)) < 0 ) {
     char buffer[100];
-    sprintf(buffer, "Patch '%s'", newString);
+    sprintf(buffer, "Patch %s", newString);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
   } else {
     char buffer[100];
@@ -106,7 +108,7 @@ static void selectLOAD_Callback(char *newString)
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
   } else {
     char buffer[100];
-    sprintf(buffer, "Patch '%s'", newString);
+    sprintf(buffer, "Patch %s", newString);
     SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
   }
 }
@@ -200,20 +202,6 @@ static void doutPortSet(u32 ix, u16 value)
 }
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Special output functions for Disk page
-/////////////////////////////////////////////////////////////////////////////
-void pageDskStringLine1(u8 editMode, char *line)
-{
-  sprintf(line, "Patch: %s", midio_file_p_patch_name);
-}
-
-void pageDskStringLine2(u8 editMode, char *line)
-{
-  sprintf(line, "Load Save");
-}
-
 /////////////////////////////////////////////////////////////////////////////
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
@@ -249,104 +237,119 @@ const scs_menu_item_t pageDsk[] = {
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("DIN  ", pageDIN,  SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("DOUT ", pageDOUT, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Disk ", pageDsk,  pageDskStringLine1, pageDskStringLine2),
+  SCS_PAGE("DIN  ", pageDIN),
+  SCS_PAGE("DOUT ", pageDOUT),
+  SCS_PAGE("Disk ", pageDsk),
 };
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the two lines of the main page (2x20 chars)
+// This function can overrule the display output
+// If it returns 0, the original SCS output will be print
+// If it returns 1, the output copied into line1 and/or line2 will be print
+// If a line is not changed (line[0] = 0 or line[1] = 0), the original output
+// will be displayed - this allows to overrule only a single line
 /////////////////////////////////////////////////////////////////////////////
-static s32 getStringMainPage(char *line1, char *line2)
+static s32 displayHook(char *line1, char *line2)
 {
-  u32 tick = SEQ_BPM_TickGet();
-  u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-  u32 ticks_per_measure = ticks_per_step * 16;
-  u32 measure = (tick / ticks_per_measure) + 1;
-  u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
+  if( extraPage ) {
+    sprintf(line1, "MIDI DOUT");
+    sprintf(line2, "%s Off", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    return 1;
+  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    u32 tick = SEQ_BPM_TickGet();
+    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+    u32 ticks_per_measure = ticks_per_step * 16;
+    u32 measure = (tick / ticks_per_measure) + 1;
+    u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
-  sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
-  sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
+    sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
 
-  // request LCD update - this will lead to fast refresh rate in main screen
-  SCS_DisplayUpdateRequest();
+    // request LCD update - this will lead to fast refresh rate in main screen
+    SCS_DisplayUpdateRequest();
+    return 1;
+  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_SELECT_PAGE ) {
+    sprintf(line1, "Patch: %s", midio_file_p_patch_name);
+    return 1;
+  } else if( SCS_MenuPageGet() == pageDsk ) {
+    // Disk page: we want to show the patch at upper line, and menu items at lower line
+    sprintf(line1, "Patch: %s", midio_file_p_patch_name);
+    sprintf(line2, "Load Save");
+    return 1;
+  }
 
-  return 0; // no error
+  return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when the rotary encoder is moved in the main page
+// This function is called when the rotary encoder is moved
+// If it returns 0, the encoder increment will be handled by the SCS
+// If it returns 1, the SCS will ignore the encoder
 /////////////////////////////////////////////////////////////////////////////
-static s32 encMovedInMainPage(s32 incrementer)
+static s32 encHook(s32 incrementer)
 {
-  MIOS32_MIDI_SendDebugMessage("Encoder moved in main page: %d\n", incrementer);
+  if( extraPage )
+    return 1; // ignore encoder movements in extra page
 
-  return 0; // no error
+  return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when a soft button is pressed in the main page
-// if a value < 0 is returned, the menu won't be entered
+// This function is called when a button has been pressed or depressed
+// If it returns 0, the button movement will be handled by the SCS
+// If it returns 1, the SCS will ignore the button event
 /////////////////////////////////////////////////////////////////////////////
-static s32 buttonPressedInMainPage(u8 softButton)
+static s32 buttonHook(u8 scsButton, u8 depressed)
 {
-  switch( softButton ) {
-  case 0: // Play/Stop
-    if( SEQ_BPM_IsRunning() ) {
-      SEQ_BPM_Stop();          // stop sequencer
-      seq_pause = 1;
-    } else {
-      if( seq_pause ) {
-	// continue sequencer
-	seq_pause = 0;
-	SEQ_BPM_Cont();
-      } else {
+  if( extraPage ) {
+    if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
+      extraPage = 0;
+    else {
+      if( !depressed )
+	switch( scsButton ) {
+	case SCS_PIN_SOFT1: SEQ_PlayStopButton(); break;
+	case SCS_PIN_SOFT2: MIDIO_DOUT_Init(0); SCS_Msg(SCS_MSG_L, 1000, "All DOUT pins", "deactivated"); break;
+	}
+    }
+    return 1;
+  } else {
+    if( scsButton == SCS_PIN_SOFT5 && !depressed ) { // selects/deselects extra page
+      extraPage = 1;
+      return 1;
+    }
+
+    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+      if( depressed )
+	return 0;
+
+      switch( scsButton ) {
+      case SCS_PIN_SOFT1: // Play/Stop
+	SEQ_PlayStopButton();
+	return 1;
+
+      case SCS_PIN_SOFT2: { // previous song
 	MUTEX_SDCARD_TAKE;
-	// if in auto mode and BPM generator is clocked in slave mode:
-	// change to master mode
-	SEQ_BPM_CheckAutoMaster();
-	// first song
-	SEQ_PlayFileReq(0);
-	// reset sequencer
-	SEQ_Reset(1);
-	// start sequencer
-	SEQ_BPM_Start();
+	SEQ_PlayFileReq(-1);
 	MUTEX_SDCARD_GIVE;
+	return 1;
+      }
+
+      case SCS_PIN_SOFT3: { // next song
+	MUTEX_SDCARD_TAKE;
+	SEQ_PlayFileReq(1);
+	MUTEX_SDCARD_GIVE;
+	return 1;
+      }
       }
     }
-    return -1; // don't enter menu
-
-  case 1: { // previous song
-    MUTEX_SDCARD_TAKE;
-    SEQ_PlayFileReq(-1);
-    MUTEX_SDCARD_GIVE;
-    return -1; // don't enter menu
-  }
-
-  case 2: { // next song
-    MUTEX_SDCARD_TAKE;
-    SEQ_PlayFileReq(1);
-    MUTEX_SDCARD_GIVE;
-    return -1; // don't enter menu
-  }
   }
 
   return 0; // no error
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the upper line on the page selection (20 chars)
-/////////////////////////////////////////////////////////////////////////////
-static s32 getStringPageSelection(char *line1)
-{
-  sprintf(line1, "Patch: %s", midio_file_p_patch_name);
-
-  return 0; // no error
-}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -363,10 +366,9 @@ s32 SCS_CONFIG_Init(u32 mode)
   case 0: {
     // install table
     SCS_INSTALL_ROOT(rootMode0);
-    SCS_InstallMainPageStringHook(getStringMainPage);
-    SCS_InstallPageSelectStringHook(getStringPageSelection);
-    SCS_InstallEncMainPageHook(encMovedInMainPage);
-    SCS_InstallButtonMainPageHook(buttonPressedInMainPage);
+    SCS_InstallDisplayHook(displayHook);
+    SCS_InstallEncHook(encHook);
+    SCS_InstallButtonHook(buttonHook);
     break;
   }
   default: return -1; // mode not supported

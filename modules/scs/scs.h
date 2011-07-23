@@ -28,8 +28,8 @@
 #define SCS_PIN_ENC_MENU_B 1
 #endif
 
-#ifndef SCS_PIN_MENU
-#define SCS_PIN_MENU       2
+#ifndef SCS_PIN_EXIT
+#define SCS_PIN_EXIT       2
 #endif
 
 #ifndef SCS_PIN_SOFT1
@@ -111,7 +111,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define SCS_INSTALL_ROOT(rootTable) SCS_InstallRoot((scs_menu_page_t *)rootTable, sizeof(rootTable)/sizeof(scs_menu_page_t))
-#define SCS_PAGE(name, items, itemLineFunct, valueLineFunct) { name, (scs_menu_item_t *)items, sizeof(items)/sizeof(scs_menu_item_t), itemLineFunct, valueLineFunct }
+#define SCS_PAGE(name, items) { name, (scs_menu_item_t *)items, sizeof(items)/sizeof(scs_menu_item_t) }
 #define SCS_ITEM(name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct) { name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -138,9 +138,16 @@ typedef struct scs_menu_page_t {
   char             name[SCS_MENU_ITEM_WIDTH+1];
   scs_menu_item_t  *page;
   u8               numItems;
-  void             (*itemsLineFunct)(u8 editMode, char *line);
-  void             (*valuesLineFunct)(u8 editMode, char *line);
 } scs_menu_page_t;
+
+
+typedef enum {
+  SCS_MENU_STATE_MAINPAGE,    // we are in the main page
+  SCS_MENU_STATE_SELECT_PAGE, // we select a page
+  SCS_MENU_STATE_INSIDE_PAGE, // we are in a page
+  SCS_MENU_STATE_EDIT_ITEM,   // we edit an item in the page
+  SCS_MENU_STATE_EDIT_STRING, // we edit a string in the page
+} scs_menu_state_t;
 
 
 typedef enum {
@@ -172,16 +179,15 @@ extern s32 SCS_ENC_MENU_AutoSpeedSet(u16 maxValue);
 
 extern s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed);
 
-extern void SCS_StringStandardItems(u8 editMode, char *line);
-extern void SCS_StringStandardValues(u8 editMode, char *line);
-
 extern s32 SCS_InstallRoot(scs_menu_page_t *rootTable, u8 numItems);
-extern s32 SCS_InstallMainPageStringHook(s32 (*stringFunct)(char *line1, char *line2));
-extern s32 SCS_InstallPageSelectStringHook(s32 (*stringFunct)(char *line1));
-extern s32 SCS_InstallEncMainPageHook(s32 (*encFunct)(s32 incrementer));
-extern s32 SCS_InstallButtonMainPageHook(s32 (*buttonFunct)(u8 softButton));
+extern s32 SCS_InstallDisplayHook(s32 (*stringFunct)(char *line1, char *line2));
+extern s32 SCS_InstallEncHook(s32 (*encFunct)(s32 incrementer));
+extern s32 SCS_InstallButtonHook(s32 (*buttonFunct)(u8 scsButton, u8 depressed));
 
 extern s32 SCS_DisplayUpdateRequest(void);
+
+extern scs_menu_state_t SCS_MenuStateGet(void);
+extern scs_menu_item_t *SCS_MenuPageGet(void);
 
 extern s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2);
 extern s32 SCS_MsgStop(void);

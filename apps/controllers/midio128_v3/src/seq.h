@@ -35,6 +35,8 @@ extern s32 SEQ_Handler(void);
 
 extern s32 SEQ_PlayFileReq(s8 next);
 
+extern s32 SEQ_PlayStopButton(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
