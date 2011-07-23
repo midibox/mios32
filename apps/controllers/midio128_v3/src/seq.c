@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 
@@ -549,6 +550,38 @@ static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t 
       // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
       mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
       MIOS32_MIDI_SendPackage(port, package);
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// To control the play/stop button function
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PlayStopButton(void)
+{
+  if( SEQ_BPM_IsRunning() ) {
+    SEQ_BPM_Stop();          // stop sequencer
+    seq_pause = 1;
+  } else {
+    if( seq_pause ) {
+      // continue sequencer
+      seq_pause = 0;
+      SEQ_BPM_Cont();
+    } else {
+      MUTEX_SDCARD_TAKE;
+      // if in auto mode and BPM generator is clocked in slave mode:
+      // change to master mode
+      SEQ_BPM_CheckAutoMaster();
+      // first song
+      SEQ_PlayFileReq(0);
+      // reset sequencer
+      SEQ_Reset(1);
+      // start sequencer
+      SEQ_BPM_Start();
+      MUTEX_SDCARD_GIVE;
     }
   }
 

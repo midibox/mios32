@@ -32,6 +32,8 @@
 // Local parameter variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 extraPage;
+
 static u8 selectedPatch;
 static u8 selectedBank;
 static u8 selectedPhrase;
@@ -59,10 +61,10 @@ static void getPatchString(char *str)
 // String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
 static void stringEmpty(u32 ix, u16 value, char *label)  { label[0] = 0; }
-static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%4d ", value); }
-static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", value+1); }
-static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%4d ", (int)value - 64); }
-static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, " %03d ", value); }
+static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
+static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
+static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
+static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
 static void stringPlay(u32 ix, u16 value, char *label)   { sprintf(label, " [%c] ", SYNTH_PhraseIsPlayed(selectedPhrase) ? '*' : 'o'); }
 
@@ -151,7 +153,7 @@ const scs_menu_item_t pagePhr[] = {
   SCS_ITEM("Phrs ", 0, SYNTH_NUM_PHRASES-1,       phraseGet,       phraseSet,       selectNOP, stringDecP1,  NULL),
   SCS_ITEM("Len. ", SYNTH_PHRASE_PAR_LENGTH, SYNTH_PHRASE_MAX_LENGTH-1, phraseParGet, phraseParSet, selectNOP, stringDecP1,  NULL),
   SCS_ITEM("Tune ", SYNTH_PHRASE_PAR_TUNE,     0x7f,  phraseParGet,     phraseParSet,     selectNOP, stringDecPM,  NULL),
-  SCS_ITEM("Ix   ", 0, SYNTH_PHRASE_MAX_LENGTH-1,     phonemeIxGet,     phonemeIxSet,     selectNOP, stringDecP1,  NULL),
+  SCS_ITEM(" Ix  ", 0, SYNTH_PHRASE_MAX_LENGTH-1,     phonemeIxGet,     phonemeIxSet,     selectNOP, stringDecP1,  NULL),
   SCS_ITEM("Phr  ", SYNTH_PHONEME_PAR_PH,      0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
   SCS_ITEM("Env  ", SYNTH_PHONEME_PAR_ENV,     0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
   SCS_ITEM("Tone ", SYNTH_PHONEME_PAR_TONE,    0x7f,  phonemeParGet,    phonemeParSet,    selectNOP, stringDec,    NULL),
@@ -173,75 +175,105 @@ const scs_menu_item_t pageDsk[] = {
 };
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("Disk ", pageDsk, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Glb. ", pageGlb, SCS_StringStandardItems, SCS_StringStandardValues),
-  SCS_PAGE("Phr. ", pagePhr, SCS_StringStandardItems, SCS_StringStandardValues),
+  SCS_PAGE("Disk ", pageDsk),
+  SCS_PAGE("Glb. ", pageGlb),
+  SCS_PAGE("Phr. ", pagePhr),
 };
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the two lines of the main page (2x20 chars)
+// This function can overrule the display output
+// If it returns 0, the original SCS output will be print
+// If it returns 1, the output copied into line1 and/or line2 will be print
+// If a line is not changed (line[0] = 0 or line[1] = 0), the original output
+// will be displayed - this allows to overrule only a single line
 /////////////////////////////////////////////////////////////////////////////
-static s32 getStringMainPage(char *line1, char *line2)
+static s32 displayHook(char *line1, char *line2)
 {
-  getPatchString(line1);
-  strcpy(line2, "Press soft button");
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function is called when the rotary encoder is moved in the main page
-/////////////////////////////////////////////////////////////////////////////
-static s32 encMovedInMainPage(s32 incrementer)
-{
-  int newPatch = selectedPatch + incrementer;
-  if( newPatch < 0 )
-    newPatch = 0;
-  else if( newPatch > 63 )
-    newPatch = 63;
-
-  selectedPatch = newPatch;
-
-  s32 status;
-  u8 targetGroup = 0;
-  MUTEX_SDCARD_TAKE;
-  if( (status=SYNTH_FILE_B_PatchRead(selectedBank, selectedPatch, targetGroup)) < 0 ) {
-    char buffer[100];
-    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
-    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
-  } else {
-//    char buffer[100];
-//    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
-//    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
+  if( extraPage ) {
+    sprintf(line1, "Extra Page");
+    sprintf(line2, "Msg1 Msg2 Msg3 Msg4 ");
+    return 1;
+  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    getPatchString(line1);
+    sprintf(line2, "Press soft button");
+    return 1;
+  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_SELECT_PAGE ) {
+    getPatchString(line1);
+    return 1;
   }
-  MUTEX_SDCARD_GIVE;
 
-  return 0; // no error
+  return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when a soft button is pressed in the main page
-// if a value < 0 is returned, the menu won't be entered
+// This function is called when the rotary encoder is moved
+// If it returns 0, the encoder increment will be handled by the SCS
+// If it returns 1, the SCS will ignore the encoder
 /////////////////////////////////////////////////////////////////////////////
-static s32 buttonPressedInMainPage(u8 softButton)
+static s32 encHook(s32 incrementer)
 {
-  // here the root table could be changed depending on soft button
+  if( extraPage ) {
+    MIOS32_MIDI_SendDebugMessage("Encoder moved in extra page: %d\n", incrementer);
+    return 1;
+  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    int newPatch = selectedPatch + incrementer;
+    if( newPatch < 0 )
+      newPatch = 0;
+    else if( newPatch > 63 )
+      newPatch = 63;
 
-  return 0; // no error
+    selectedPatch = newPatch;
+
+    s32 status;
+    u8 targetGroup = 0;
+    MUTEX_SDCARD_TAKE;
+    if( (status=SYNTH_FILE_B_PatchRead(selectedBank, selectedPatch, targetGroup)) < 0 ) {
+      char buffer[100];
+      sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
+      SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to read", buffer);
+    } else {
+      //    char buffer[100];
+      //    sprintf(buffer, "Patch %c%03d", 'A'+selectedBank, selectedPatch+1);
+      //    SCS_Msg(SCS_MSG_L, 1000, buffer, "read!");
+    }
+    MUTEX_SDCARD_GIVE;
+    return 1;
+  }
+
+  return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the upper line on the page selection (20 chars)
+// This function is called when a button has been pressed or depressed
+// If it returns 0, the button movement will be handled by the SCS
+// If it returns 1, the SCS will ignore the button event
 /////////////////////////////////////////////////////////////////////////////
-static s32 getStringPageSelection(char *line1)
+static s32 buttonHook(u8 scsButton, u8 depressed)
 {
-  getPatchString(line1);
+  if( extraPage ) {
+    if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
+      extraPage = 0;
+    else {
+      if( !depressed )
+	switch( scsButton ) {
+	case SCS_PIN_SOFT1: SCS_Msg(SCS_MSG_L, 1000, "Soft Button", "#1 pressed"); break;
+	case SCS_PIN_SOFT2: SCS_Msg(SCS_MSG_L, 1000, "Soft Button", "#2 pressed"); break;
+	case SCS_PIN_SOFT3: SCS_Msg(SCS_MSG_L, 1000, "Soft Button", "#3 pressed"); break;
+	case SCS_PIN_SOFT4: SCS_Msg(SCS_MSG_L, 1000, "Soft Button", "#4 pressed"); break;
+	}
+    }
+    return 1;
+  } else {
+    if( scsButton == SCS_PIN_SOFT5 && !depressed ) { // selects/deselects extra page
+      extraPage = 1;
+      return 1;
+    }
+  }
 
-  return 0; // no error
+  return 0;
 }
 
 
@@ -257,12 +289,13 @@ s32 SCS_CONFIG_Init(u32 mode)
 
   switch( mode ) {
   case 0: {
+    extraPage = 0;
+
     // install table
     SCS_INSTALL_ROOT(rootMode0);
-    SCS_InstallMainPageStringHook(getStringMainPage);
-    SCS_InstallPageSelectStringHook(getStringPageSelection);
-    SCS_InstallEncMainPageHook(encMovedInMainPage);
-    SCS_InstallButtonMainPageHook(buttonPressedInMainPage);
+    SCS_InstallDisplayHook(displayHook);
+    SCS_InstallEncHook(encHook);
+    SCS_InstallButtonHook(buttonHook);
     break;
   }
   default: return -1; // mode not supported
