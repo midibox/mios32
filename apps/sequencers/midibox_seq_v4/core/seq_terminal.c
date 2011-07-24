@@ -88,7 +88,10 @@
 #else
 # error "Please adapt MIOS32_SPI settings!"
 #endif
+#else
+# define MIOS32_SPI2_HIGH_VOLTAGE 5
 #endif
+
 
 
 /////////////////////////////////////////////////////////////////////////////
