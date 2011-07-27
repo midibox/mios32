@@ -38,6 +38,12 @@
 //! // width of an item (5 by default, so that 4 items can be output on a 2x20 LCD)
 //! #define SCS_MENU_ITEM_WIDTH 5
 //!
+//! // threshold for automatic toggle mode
+//! // if the maximum value of an item is >0, and <=SCS_MENU_ITEM_TOGGLE_THRESHOLD is
+//! // selected with a soft button, the item value will be immediately incremented
+//! // and not selected
+//! #define SCS_MENU_ITEM_TOGGLE_THRESHOLD 4
+//!
 //! // maximum width of a temporary message
 //! #define SCS_MSG_MAX_CHAR 16
 //!
@@ -111,8 +117,10 @@ static scs_msg_type_t scsMsgType;
 static char scsActionString[SCS_MENU_ITEM_WIDTH+1];
 static char scsEditString[SCS_LCD_COLUMNS_PER_DEVICE+1];
 static u8 scsEditStringMaxChars;
+static u32 scsEditIp;
 static u8 scsEditPos;
 static void (*scsEditStringCallback)(char *newString);
+static void (*scsEditIpCallback)(u32 newIp);
 
 static u16 scsPinState;
 static u16 scsPinStatePrev;
@@ -299,7 +307,9 @@ s32 SCS_EncButtonUpdate_Tick(void)
 
   // cursor timer handling is done here
   // it's only used if an item is edited
-  if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM || SCS_MENU_STATE_EDIT_STRING ) {
+  if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM ||
+      scsMenuState == SCS_MENU_STATE_EDIT_STRING ||
+      scsMenuState == SCS_MENU_STATE_EDIT_IP ) {
     if( displayFlickerSelectionCtr ) { // new selected parameter flickers
       --displayFlickerSelectionCtr;
 
@@ -331,8 +341,13 @@ s32 SCS_EncButtonUpdate_Tick(void)
       }
     }
   } else {
-    displayCursorCtr = 0;
     displayFlickerSelectionCtr = 0;
+    displayCursorOn = 1;
+    // update screen each second (configuration option required?)
+    if( ++displayCursorCtr >= 1000 ) {
+      displayCursorCtr = 0;
+      displayUpdateReq = 1;
+    }
   }
 
   return 0; // no error
@@ -439,6 +454,20 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     displayCursorCtr = 0;
   } break;
 
+  case SCS_MENU_STATE_EDIT_IP: {
+    int value = (scsEditIp >> (8*(3-scsEditPos))) & 0xff;
+    value += incrementer;
+    if( value < 0 )
+      value = 0;
+    else if( value >= 255 )
+      value = 255;
+    scsEditIp &= ~(0xff << (8*(3-scsEditPos)));
+    scsEditIp |= (value << (8*(3-scsEditPos)));
+
+    // reset cursor counter, so that parameter is visible
+    displayCursorCtr = 0;
+  } break;
+
     //default: // SCS_MENU_STATE_MAINPAGE
   }
 
@@ -524,6 +553,11 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       scsMsgCtr = 0; // disable message
       scsEditStringCallback = NULL; // disable edit string callback
     }
+    case SCS_MENU_STATE_EDIT_IP: {
+      scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+      scsMsgCtr = 0; // disable message
+      scsEditIpCallback = NULL; // disable edit IP callback
+    }
       //default: // SCS_MENU_STATE_MAINPAGE
       //scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
       // enter page only via soft buttons
@@ -578,9 +612,8 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       if( itemPos < numItems ) {
 	scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[itemPos];
 
-	// edit item if maxValue >= 2
-	// if maxValue == 1, we will toggle the value
-	if( pageItem->maxValue != 1 ) {
+	// edit item if maxValue > SCS_MENU_ITEM_TOGGLE_THRESHOLD
+	if( !pageItem->maxValue || pageItem->maxValue > SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
 	  displayCursorPos = softButton;
 	  rootTableSelectedItem = itemPos;
 
@@ -590,10 +623,15 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 	  }
 	}
 
-	u16 oldValue = pageItem->getFunct(pageItem->ix);
-	u16 newValue = pageItem->selectFunct(pageItem->ix, oldValue);
-	if( newValue == oldValue && pageItem->maxValue == 1 )
-	  newValue ^= 1; // auto-toggle
+	int oldValue = pageItem->getFunct(pageItem->ix);
+	int newValue = pageItem->selectFunct(pageItem->ix, oldValue);
+	if( oldValue == newValue &&
+	    pageItem->maxValue &&
+	    pageItem->maxValue <= SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
+	  ++newValue;
+	  if( newValue > pageItem->maxValue )
+	    newValue = 0;
+	}
 	pageItem->setFunct(pageItem->ix, newValue);
       }
 
@@ -643,6 +681,31 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 	displayFlickerSelectionCtr = 200;
       } break;
 
+      }
+    } break;
+
+    case SCS_MENU_STATE_EDIT_IP: {
+      switch( softButton ) {
+      case 0: {
+	if( scsEditIpCallback )
+	  scsEditIpCallback(scsEditIp);
+	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+      } break;
+
+      case 1: { // <
+	if( scsEditPos > 0 )
+	  --scsEditPos;
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
+
+      case 2: { // >
+	if( scsEditPos < 3 )
+	  ++scsEditPos;
+
+	// flicker menu item for 200 mS
+	displayFlickerSelectionCtr = 200;
+      } break;
       }
     } break;
 
@@ -923,6 +986,36 @@ s32 SCS_Tick(void)
 	  SCS_LCD_PrintStringCentered("Del", SCS_MENU_ITEM_WIDTH);
 	if( SCS_NUM_MENU_ITEMS >= 5 )
 	  SCS_LCD_PrintStringCentered("Clr", SCS_MENU_ITEM_WIDTH);
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case SCS_MENU_STATE_EDIT_IP: {
+      if( !line1AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 0);
+
+	SCS_LCD_PrintStringPadded(scsEditString, SCS_LCD_COLUMNS_PER_DEVICE-15);
+
+	int i;
+	for(i=0; i<4; ++i) {
+	  if( i == scsEditPos && (!displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn)) )
+	    SCS_LCD_PrintSpaces(4);
+	  else
+	    SCS_LCD_PrintFormattedString("%3d%c",
+					 (scsEditIp >> (8*(3-i))) & 0xff,
+					 (i < 3) ? '.' : ' ');
+	}
+      }
+
+      // edit functions
+      if( !line2AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 1);
+	SCS_LCD_PrintStringCentered("Ok", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 2 )
+	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 3 )
+	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
+	SCS_LCD_PrintSpaces(SCS_LCD_COLUMNS_PER_DEVICE-3*SCS_MENU_ITEM_WIDTH);
       }
     } break;
 
@@ -1260,6 +1353,20 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
 
   scsEditStringCallback = callback;
   scsMenuState = SCS_MENU_STATE_EDIT_STRING;
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Can be called from an item select function to enter IP editing mode
+//! See tutorial/027_scs for usage example
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_InstallEditIpCallback(void *callback, char *headerString, u32 initialIp)
+{
+  scsEditIpCallback = callback;
+  memcpy(scsEditString, headerString, SCS_LCD_COLUMNS_PER_DEVICE+1);
+  scsEditIp = initialIp;
+  scsMenuState = SCS_MENU_STATE_EDIT_IP;
 
   return 0;
 }
