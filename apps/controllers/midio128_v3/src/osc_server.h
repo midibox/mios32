@@ -30,11 +30,11 @@
 
 // can be overruled in mios32_config.h
 #ifndef OSC_LOCAL_PORT
-#define OSC_LOCAL_PORT 10000
+#define OSC_LOCAL_PORT 8000
 #endif
 
 #ifndef OSC_REMOTE_PORT
-#define OSC_REMOTE_PORT 10001
+#define OSC_REMOTE_PORT 8001
 #endif
 
 

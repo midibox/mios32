@@ -94,6 +94,14 @@
 #define SCS_MENU_ITEM_WIDTH 5
 #endif
 
+// threshold for automatic toggle mode
+// if the maximum value of an item is >0, and <=SCS_MENU_ITEM_TOGGLE_THRESHOLD is
+// selected with a soft button, the item value will be immediately incremented
+// and not selected
+#ifndef SCS_MENU_ITEM_TOGGLE_THRESHOLD
+#define SCS_MENU_ITEM_TOGGLE_THRESHOLD 4
+#endif
+
 // maximum width of a temporary message
 #ifndef SCS_MSG_MAX_CHAR
 #define SCS_MSG_MAX_CHAR 14
@@ -147,6 +155,7 @@ typedef enum {
   SCS_MENU_STATE_INSIDE_PAGE, // we are in a page
   SCS_MENU_STATE_EDIT_ITEM,   // we edit an item in the page
   SCS_MENU_STATE_EDIT_STRING, // we edit a string in the page
+  SCS_MENU_STATE_EDIT_IP,     // we edit an IP in the page
 } scs_menu_state_t;
 
 
@@ -196,6 +205,7 @@ extern s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 pa
 extern s32 SCS_UnInstallDelayedActionCallback(void *callback);
 
 extern s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *initialString, u8 maxChars);
+extern s32 SCS_InstallEditIpCallback(void *callback, char *headerString, u32 initialIp);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

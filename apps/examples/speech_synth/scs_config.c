@@ -65,8 +65,8 @@ static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
-static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
-static void stringPlay(u32 ix, u16 value, char *label)   { sprintf(label, " [%c] ", SYNTH_PhraseIsPlayed(selectedPhrase) ? '*' : 'o'); }
+static void stringHex2(u32 ix, u16 value, char *label)   { sprintf(label, " %02x  ", value); }
+static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Selection Functions
@@ -149,7 +149,7 @@ const scs_menu_item_t pageGlb[] = {
 };
 
 const scs_menu_item_t pagePhr[] = {
-  SCS_ITEM("PLAY ", 0, 1,                          playGet,          playSet,          selectPLAY,stringPlay,  NULL),
+  SCS_ITEM("PLAY ", 0, 1,                          playGet,          playSet,          selectPLAY,stringOnOff,  NULL),
   SCS_ITEM("Phrs ", 0, SYNTH_NUM_PHRASES-1,       phraseGet,       phraseSet,       selectNOP, stringDecP1,  NULL),
   SCS_ITEM("Len. ", SYNTH_PHRASE_PAR_LENGTH, SYNTH_PHRASE_MAX_LENGTH-1, phraseParGet, phraseParSet, selectNOP, stringDecP1,  NULL),
   SCS_ITEM("Tune ", SYNTH_PHRASE_PAR_TUNE,     0x7f,  phraseParGet,     phraseParSet,     selectNOP, stringDecPM,  NULL),
