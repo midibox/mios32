@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o STM32 or MBHP_CORE_STM32
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o a SD Card connected to J16 of the core module
 
 Optional hardware:
