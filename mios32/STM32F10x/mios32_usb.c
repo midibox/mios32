@@ -140,8 +140,9 @@ static const u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_DESC] = {
   DSCR_DEVICE,			// Decriptor type
   (u8)(0x0200 & 0xff),		// Specification Version (BCD, LSB)
   (u8)(0x0200 >> 8),		// Specification Version (BCD, MSB)
-#if 1
+#ifdef MIOS32_USE_USB_COM
   0x02,				// Device class "Communication"   -- required for MacOS to find the COM device. Audio Device works fine in parallel to this
+  // Update: by default disabled, since USB MIDI fails on MacOS Lion!!!
 #else
   0x00,				// Device class "Composite"
 #endif
@@ -867,7 +868,6 @@ s32 MIOS32_USB_Init(u32 mode)
 
   // if mode == 0: don't initialize USB if not required (important for BSL)
   if( mode == 0 && MIOS32_USB_IsInitialized() ) {
-
 #ifdef STM32F10X_CL
     // Perform OTG Device initialization procedure (including EP0 init) again
     // this is unfortunately required since the OTG driver has to initialize internal variables after reset

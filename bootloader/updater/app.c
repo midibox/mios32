@@ -41,6 +41,12 @@
 // Local Macros
 /////////////////////////////////////////////////////////////////////////////
 
+// send debug messages to USB0 and UART0
+#define DEBUG_MSG(msg) { MIOS32_MIDI_DebugPortSet(UART0); MIOS32_MIDI_SendDebugMessage(msg); MIOS32_MIDI_DebugPortSet(USB0); MIOS32_MIDI_SendDebugMessage(msg); }
+#define DEBUG_MSG1(msg, p1) { MIOS32_MIDI_DebugPortSet(UART0); MIOS32_MIDI_SendDebugMessage(msg, p1); MIOS32_MIDI_DebugPortSet(USB0); MIOS32_MIDI_SendDebugMessage(msg, p1); }
+#define DEBUG_MSG2(msg, p1, p2) { MIOS32_MIDI_DebugPortSet(UART0); MIOS32_MIDI_SendDebugMessage(msg, p1, p2); MIOS32_MIDI_DebugPortSet(USB0); MIOS32_MIDI_SendDebugMessage(msg, p1, p2); }
+
+
 #if defined(MIOS32_FAMILY_STM32F10x)
   // STM32: determine page size (mid density devices: 1k, high density devices: 2k)
   // TODO: find a proper way, as there could be high density devices with less than 256k?)
@@ -142,7 +148,7 @@ s32 CompareBSL(void)
   MIOS32_LCD_CursorSet(0, 1);
   MIOS32_LCD_PrintString("Checking        ");
 
-  MIOS32_MIDI_SendDebugMessage("Checking Bootloader...\n");
+  DEBUG_MSG("Checking Bootloader...\n");
 
   for(addr=0; addr<sizeof(bsl_image); ++addr) {
     // toggle LED (sign of life)
@@ -156,9 +162,9 @@ s32 CompareBSL(void)
     if( bsl_addr_ptr[addr] != bsl_image[addr] ) {
       ++mismatches;
       if( mismatches < 10 ) {
-	MIOS32_MIDI_SendDebugMessage("Mismatch at address 0x%04x\n", addr);
+	DEBUG_MSG1("Mismatch at address 0x%04x\n", addr);
       } else if( mismatches == 10 ) {
-	MIOS32_MIDI_SendDebugMessage("Too many mismatches, no additional messages will be print...\n");
+	DEBUG_MSG("Too many mismatches, no additional messages will be print...\n");
       }
     }
   }
@@ -226,14 +232,14 @@ s32 UpdateBSL(void)
     s32 status;
     if( (status=find_erase_prepare_sector(SYSTEM_CORE_CLOCK_KHZ, addr)) < 0 ) {
       MIOS32_IRQ_Enable();
-      MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
+      DEBUG_MSG2("erase failed for 0x%08x: code %d\n", addr, status);
       return -1; // erase failed
     } else if( (status=write_data(SYSTEM_CORE_CLOCK_KHZ, addr, (unsigned *)ram_buffer, 256)) < 0 ) {
       MIOS32_IRQ_Enable();
-      MIOS32_MIDI_SendDebugMessage("write_data failed for 0x%08x: code %d\n", addr, status);
+      DEBUG_MSG2("write_data failed for 0x%08x: code %d\n", addr, status);
       return -2; // programming failed
     } else {
-      MIOS32_MIDI_SendDebugMessage("programmed 0x%08x..0x%08x\n", addr, addr+255);
+      DEBUG_MSG2("programmed 0x%08x..0x%08x\n", addr, addr+255);
     }
 
     MIOS32_IRQ_Enable();
@@ -259,11 +265,11 @@ void APP_Background(void)
   MIOS32_LCD_Clear();
 
   // print welcome message on MIOS terminal
-  MIOS32_MIDI_SendDebugMessage("\n");
-  MIOS32_MIDI_SendDebugMessage("====================\n");
-  MIOS32_MIDI_SendDebugMessage("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
-  MIOS32_MIDI_SendDebugMessage("====================\n");
-  MIOS32_MIDI_SendDebugMessage("\n");
+  DEBUG_MSG("\n");
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG1("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
+  DEBUG_MSG("====================\n");
+  DEBUG_MSG("\n");
 
   // no mismatches? Fine! Wait for a new application upload (endless)
   if( CompareBSL() == 0 ) {
@@ -276,9 +282,9 @@ void APP_Background(void)
     MIOS32_BOARD_LED_Set(0xffffffff, 1);
 
     while( 1 ) {
-      MIOS32_MIDI_SendDebugMessage("No mismatches found.\n");
-      MIOS32_MIDI_SendDebugMessage("The bootloader is up-to-date!\n");
-      MIOS32_MIDI_SendDebugMessage("You can upload another application now!\n");
+      DEBUG_MSG("No mismatches found.\n");
+      DEBUG_MSG("The bootloader is up-to-date!\n");
+      DEBUG_MSG("You can upload another application now!\n");
 
       // wait for 1 second before printing the message again
       Wait1Second(1); // don't toggle LED!
@@ -288,13 +294,13 @@ void APP_Background(void)
   MIOS32_LCD_CursorSet(0, 0);
   MIOS32_LCD_PrintString("Bootloader Update"); // 16 chars
 
-  MIOS32_MIDI_SendDebugMessage("Bootloader requires an update...\n");
+  DEBUG_MSG("Bootloader requires an update...\n");
 
   int i;
   for(i=10; i>=0; --i) {
     MIOS32_LCD_CursorSet(0, 1);
     MIOS32_LCD_PrintFormattedString("in %2d seconds! ", i);
-    MIOS32_MIDI_SendDebugMessage("Bootloader update in %d seconds!\n", i);
+    DEBUG_MSG1("Bootloader update in %d seconds!\n", i);
     Wait1Second(0);
   }
 
@@ -303,7 +309,7 @@ void APP_Background(void)
   MIOS32_LCD_CursorSet(0, 1);
   MIOS32_LCD_PrintString("Don't power off!!");
 
-  MIOS32_MIDI_SendDebugMessage("Starting Update - don't power off!!!\n");
+  DEBUG_MSG("Starting Update - don't power off!!!\n");
 
   int num_retries = 5;
   int retry = num_retries;
@@ -313,9 +319,9 @@ void APP_Background(void)
     s32 status;
     if( (status=UpdateBSL()) < 0 ) {
       if( status == -1 ) {
-	MIOS32_MIDI_SendDebugMessage("Oh-oh! Erase failed!\n");
+	DEBUG_MSG("Oh-oh! Erase failed!\n");
       } else {
-	MIOS32_MIDI_SendDebugMessage("Oh-oh! Programming failed!\n");
+	DEBUG_MSG("Oh-oh! Programming failed!\n");
       }
     }
 
@@ -327,7 +333,7 @@ void APP_Background(void)
     else {
       --retry;
       if( retry )
-	MIOS32_MIDI_SendDebugMessage("Update failed - retry #%d\n", num_retries-retry);
+	DEBUG_MSG1("Update failed - retry #%d\n", num_retries-retry);
     }
   } while( mismatches != 0 && retry );
 
@@ -343,8 +349,8 @@ void APP_Background(void)
     MIOS32_LCD_PrintString("Have fun!        ");
 
     while( 1 ) {
-      MIOS32_MIDI_SendDebugMessage("The bootloader has been successfully updated!\n");
-      MIOS32_MIDI_SendDebugMessage("You can upload another application now!\n");
+      DEBUG_MSG("The bootloader has been successfully updated!\n");
+      DEBUG_MSG("You can upload another application now!\n");
 
       // wait for 1 second before printing the message again
       Wait1Second(1);
@@ -356,9 +362,9 @@ void APP_Background(void)
     MIOS32_LCD_PrintString("Contact support!  ");
 
     while( 1 ) {
-      MIOS32_MIDI_SendDebugMessage("Bootloader Update failed!\n");
-      MIOS32_MIDI_SendDebugMessage("Thats really unexpected - probably it has to be uploaded via JTAG or UART BSL!\n");
-      MIOS32_MIDI_SendDebugMessage("Please contact support if required!\n");
+      DEBUG_MSG("Bootloader Update failed!\n");
+      DEBUG_MSG("Thats really unexpected - probably it has to be uploaded via JTAG or UART BSL!\n");
+      DEBUG_MSG("Please contact support if required!\n");
 
       // wait for 1 second before printing the message again
       Wait1Second(1);

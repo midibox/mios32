@@ -31,6 +31,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
+typedef void( *const intfunc )( void );
+
 /* Private define ------------------------------------------------------------*/
 #define WEAK __attribute__ ((weak))
 
@@ -53,7 +55,7 @@ extern unsigned long _sbss;
 extern unsigned long _ebss;  
     
 /* init value for the stack pointer. defined in linker script */
-extern void _estack;  
+extern unsigned long _estack;
 
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -172,7 +174,7 @@ void WEAK OTG_FS_IRQHandler(void); // for STM32F105x
 __attribute__ ((section(".isr_vector")))
 void (* const g_pfnVectors[])(void) =
 {       
-    &_estack,                   /* The initial stack pointer */
+    (intfunc)((unsigned long)&_estack), /* The initial stack pointer */
     Reset_Handler,              /* Reset Handler */
     NMI_Handler,                /* NMI Handler */
     HardFault_Handler,          /* Hard Fault Handler */
@@ -327,6 +329,10 @@ void Reset_Handler(void)
   while( 1 );
 }
 
+// dummy for newer gcc versions
+void _init()
+{
+}
 
 /*******************************************************************************
 *
@@ -409,7 +415,8 @@ void Reset_Handler(void)
 #pragma weak DMA2_Channel1_IRQHandler = Default_Handler
 #pragma weak DMA2_Channel2_IRQHandler = Default_Handler
 #pragma weak DMA2_Channel3_IRQHandler = Default_Handler
-#pragma weak DMA2_Channel4_5_IRQHandler = Default_Handler
+#pragma weak DMA2_Channel4_IRQHandler = Default_Handler
+#pragma weak DMA2_Channel5_IRQHandler = Default_Handler
 
 #ifdef STM32F10X_CL
 #pragma weak ETH_IRQHandler = Default_Handler

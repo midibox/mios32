@@ -3,7 +3,7 @@
 ################################################################################
 # The make rule compiles the code and generates the mios32_bsl_*.inc file
 ################################################################################
-all: MBHP_CORE_STM32 MBHP_CORE_STM32_CL STM32_PRIMER LPCXPRESSO dummy cleanall
+all: MBHP_CORE_STM32 MBHP_CORE_STM32_CL STM32_PRIMER LPCXPRESSO_1768 LPCXPRESSO_1769 dummy cleanall
 
 MBHP_CORE_STM32:
 	make -f Makefile.bsl_MBHP_CORE_STM32 cleanall

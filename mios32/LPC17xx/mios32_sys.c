@@ -157,9 +157,11 @@ s32 MIOS32_SYS_Init(u32 mode)
   SCB->VTOR = (u32)&mios32_sys_isr_vector;
   SCB->AIRCR = 0x05fa0000 | MIOS32_IRQ_PRIGROUP;
 
+#ifndef MIOS32_SYS_DONT_INIT_RTC
   // initialize system clock
   mios32_sys_time_t t = { .seconds=0, .fraction_ms=0 };
   MIOS32_SYS_TimeSet(t);
+#endif
 
   // disable DMA callbacks
   int i;
