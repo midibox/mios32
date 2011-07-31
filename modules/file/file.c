@@ -843,7 +843,7 @@ s32 FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset)
       DEBUG_MSG("--> %s\n", de.fname);
 #endif
 
-      if( num_dirs >= dir_offset && num_dirs <= (dir_offset+num_of_items) ) {
+      if( num_dirs > dir_offset && num_dirs <= (dir_offset+num_of_items) ) {
 	int item_pos = 9 * (num_dirs-1-dir_offset);
 	char *p = (char *)&dir_list[item_pos];
 	int i;
@@ -868,7 +868,7 @@ s32 FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset)
 // into a list (e.g. used by seq_ui_sysex.c)
 // !!TEMPORARY VERSION!! will be combined with FILE_GetDirs later
 /////////////////////////////////////////////////////////////////////////////
-s32 FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items, u8 dir_offset)
+s32 FILE_GetFiles(char *path, char *ext_filter, char *file_list, u8 num_of_items, u8 file_offset)
 {
   s32 status = 0;
   DIR di;
@@ -911,16 +911,17 @@ s32 FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items,
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("--> %s\n", de.fname);
 #endif
+      if( num_files > file_offset && num_files <= (file_offset+num_of_items) ) {
+	int item_pos = 9 * (num_files-1-file_offset);
+	char *p = (char *)&file_list[item_pos];
 
-      if( num_files >= dir_offset && num_files <= (dir_offset+num_of_items) ) {
-	int item_pos = 9 * (num_files-1-dir_offset);
-	p = (char *)&dir_list[item_pos];
 	for(i=0; i<8; ++i) {
 	  char c = de.fname[i];
 	  if( !c || c == '.' )
 	    break;
 	  *p++ = c;
 	}
+
 	for(;i<9; ++i)
 	  *p++ = ' ';
       }

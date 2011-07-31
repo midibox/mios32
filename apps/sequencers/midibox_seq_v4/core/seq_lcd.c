@@ -659,6 +659,10 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   seq_layer_evnt_t layer_event;
   SEQ_LAYER_GetEvntOfLayer(track, step, par_layer, instrument, &layer_event);
 
+  // TODO: tmp. solution to print chord velocity correctly
+  if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
+    layer_type = SEQ_PAR_Type_Chord;
+
   switch( layer_type ) {
   case SEQ_PAR_Type_None:
     SEQ_LCD_PrintString("None");

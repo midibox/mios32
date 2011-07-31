@@ -31,6 +31,7 @@
 
 #include "midio_dout.h"
 
+#include <file.h>
 #include "midio_file.h"
 #include "midio_file_p.h"
 #include "midio_patch.h"
@@ -156,19 +157,32 @@ static void selectLOAD_Callback(char *newString)
 {
   s32 status;
 
-  if( (status=MIDIO_PATCH_Load(newString)) < 0 ) {
-    char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
-    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
-  } else {
-    char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
-    SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
+  if( newString[0] != 0 ) {
+    if( (status=MIDIO_PATCH_Load(newString)) < 0 ) {
+      char buffer[100];
+      sprintf(buffer, "Patch %s", newString);
+      SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
+    } else {
+      char buffer[100];
+      sprintf(buffer, "Patch %s", newString);
+      SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
+    }
   }
+}
+static u8 getListLOAD_Callback(u8 offset, char *line)
+{
+  MUTEX_SDCARD_TAKE;
+  s32 status = FILE_GetFiles("/", "MIO", line, 2, offset);
+  MUTEX_SDCARD_GIVE;
+  if( status < 1 ) {
+    sprintf(line, "<no .MIO files>");
+    status = 0;
+  }
+  return status;
 }
 static u16  selectLOAD(u32 ix, u16 value)
 {
-  return SCS_InstallEditStringCallback(selectLOAD_Callback, "LOAD", midio_file_p_patch_name, MIDIO_FILE_P_FILENAME_LEN);
+  return SCS_InstallEditBrowserCallback(selectLOAD_Callback, getListLOAD_Callback, "LOAD", 9, 2);
 }
 
 static void selectRemoteIp_Callback(u32 newIp)
