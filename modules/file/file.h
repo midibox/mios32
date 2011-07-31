@@ -109,7 +109,7 @@ extern s32 FILE_FileExists(char *filepath);
 extern s32 FILE_DirExists(char *path);
 
 extern s32 FILE_GetDirs(char *path, char *dir_list, u8 num_of_items, u8 dir_offset);
-extern s32 FILE_GetFiles(char *path, char *ext_filter, char *dir_list, u8 num_of_items, u8 dir_offset);
+extern s32 FILE_GetFiles(char *path, char *ext_filter, char *file_list, u8 num_of_items, u8 file_offset);
 
 extern s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_filename);
 extern s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, char *prev_filename);

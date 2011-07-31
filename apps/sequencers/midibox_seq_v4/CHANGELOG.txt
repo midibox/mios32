@@ -6,6 +6,14 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta45
+~~~~~~~~~~~~~~~~~~~~~
+
+   o USB update for MacOS 10.7 Lion
+
+   o Chords displayed correctly when a velocity layer is edited
+
+
 MIDIboxSEQ V4.0beta44
 ~~~~~~~~~~~~~~~~~~~~~
 

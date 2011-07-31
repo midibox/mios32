@@ -117,10 +117,15 @@ static scs_msg_type_t scsMsgType;
 static char scsActionString[SCS_MENU_ITEM_WIDTH+1];
 static char scsEditString[SCS_LCD_COLUMNS_PER_DEVICE+1];
 static u8 scsEditStringMaxChars;
+static u8 scsEditItemsPerPage;
+static u8 scsEditNumItems;
 static u32 scsEditIp;
 static u8 scsEditPos;
+static u8 scsEditOffset;
+static u8 scsEditPageUpdateReq;
 static void (*scsEditStringCallback)(char *newString);
 static void (*scsEditIpCallback)(u32 newIp);
+static u8 (*scsEditGetListCallback)(u8 offset, char *line);
 
 static u16 scsPinState;
 static u16 scsPinStatePrev;
@@ -185,10 +190,15 @@ s32 SCS_Init(u32 mode)
   scsDelayedActionCtr = 0;
 
   scsEditStringCallback = NULL;
+  scsEditGetListCallback = NULL;
   scsActionString[0] = 0;
   scsEditString[0] = 0;
   scsEditStringMaxChars = 0;
+  scsEditItemsPerPage = 0;
+  scsEditNumItems = 0;
   scsEditPos = 0;
+  scsEditOffset = 0;
+  scsEditPageUpdateReq = 0;
 
   scsMsgCtr = 0;
   scsDelayedActionCtr = 0;
@@ -309,7 +319,8 @@ s32 SCS_EncButtonUpdate_Tick(void)
   // it's only used if an item is edited
   if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM ||
       scsMenuState == SCS_MENU_STATE_EDIT_STRING ||
-      scsMenuState == SCS_MENU_STATE_EDIT_IP ) {
+      scsMenuState == SCS_MENU_STATE_EDIT_IP ||
+      scsMenuState == SCS_MENU_STATE_EDIT_BROWSER ) {
     if( displayFlickerSelectionCtr ) { // new selected parameter flickers
       --displayFlickerSelectionCtr;
 
@@ -468,6 +479,31 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     displayCursorCtr = 0;
   } break;
 
+  case SCS_MENU_STATE_EDIT_BROWSER: {
+    if( incrementer > 0 && scsEditPos < (scsEditItemsPerPage-1) )
+      ++scsEditPos;
+    else if( incrementer < 0 && scsEditPos > 0 )
+      --scsEditPos;
+    else {
+      int newOffset = scsEditOffset + incrementer;
+      if( newOffset < 0 )
+	newOffset = 0;
+      else if( (newOffset+scsEditItemsPerPage) >= scsEditNumItems ) {
+	newOffset = scsEditNumItems - scsEditItemsPerPage;
+	if( newOffset < 0 )
+	  newOffset = 0;
+      }
+      scsEditOffset = newOffset;
+
+      // request list update
+      scsEditPageUpdateReq = 1;
+    }
+
+    // flicker menu item for 200 mS
+    displayFlickerSelectionCtr = 200;
+  } break;
+
+
     //default: // SCS_MENU_STATE_MAINPAGE
   }
 
@@ -557,6 +593,12 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
       scsMsgCtr = 0; // disable message
       scsEditIpCallback = NULL; // disable edit IP callback
+    }
+    case SCS_MENU_STATE_EDIT_BROWSER: {
+      scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+      scsMsgCtr = 0; // disable message
+      scsEditStringCallback = NULL; // disable edit string callback
+      scsEditGetListCallback = NULL; // disable edit string callback
     }
       //default: // SCS_MENU_STATE_MAINPAGE
       //scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
@@ -705,6 +747,43 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 
 	// flicker menu item for 200 mS
 	displayFlickerSelectionCtr = 200;
+      } break;
+      }
+    } break;
+
+    case SCS_MENU_STATE_EDIT_BROWSER: {
+      switch( softButton ) {
+      case 0: {
+	if( scsEditStringCallback ) {
+	  if( !scsEditNumItems ) {
+	    scsEditString[0] = 0;
+	  } else {
+	    // copy selected item in scsEditString to beginning of scsEditString
+	    if( scsEditPos > 0 ) {
+	      memcpy(scsEditString, scsEditString+scsEditPos*scsEditStringMaxChars, scsEditStringMaxChars);
+	    }
+	    scsEditString[scsEditStringMaxChars] = 0;
+
+	    // remove spaces at the end of string
+	    int i;
+	    for(i=scsEditStringMaxChars-1; i>=0; --i)
+	      if( scsEditString[i] == ' ' )
+		scsEditString[i] = 0;
+	      else if( scsEditString[i] != 0 )
+		break;
+	  }
+
+	  scsEditStringCallback(scsEditString);
+	}
+	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+      } break;
+
+      case 1: { // <
+	SCS_ENC_MENU_NotifyChange(-1);
+      } break;
+
+      case 2: { // >
+	SCS_ENC_MENU_NotifyChange(1);
       } break;
       }
     } break;
@@ -966,12 +1045,12 @@ s32 SCS_Tick(void)
       if( !line1AlreadyPrint ) {
 	SCS_LCD_CursorSet(0, 0);      
 	SCS_LCD_PrintStringPadded(stringIsEmpty ? "<empty>" : scsEditString, SCS_LCD_COLUMNS_PER_DEVICE);
-      }
 
-      // set cursor
-      if( !line1AlreadyPrint && (!displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn)) ) {
-	SCS_LCD_CursorSet(scsEditPos, 0);
-	SCS_LCD_PrintChar((scsEditString[scsEditPos] == '*') ? ' ' : '*');
+	// set cursor
+	if( !displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn) ) {
+	  SCS_LCD_CursorSet(scsEditPos, 0);
+	  SCS_LCD_PrintChar((scsEditString[scsEditPos] == '*') ? ' ' : '*');
+	}
       }
 
       // edit functions
@@ -1016,6 +1095,50 @@ s32 SCS_Tick(void)
 	if( SCS_NUM_MENU_ITEMS >= 3 )
 	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
 	SCS_LCD_PrintSpaces(SCS_LCD_COLUMNS_PER_DEVICE-3*SCS_MENU_ITEM_WIDTH);
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case SCS_MENU_STATE_EDIT_BROWSER: {
+      // browser line
+      if( !line1AlreadyPrint ) {
+	if( scsEditPageUpdateReq ) {
+	  // get new line based on offset
+	  scsEditPageUpdateReq = 0;
+	  scsEditNumItems = scsEditGetListCallback ? scsEditGetListCallback(scsEditOffset, scsEditString) : 0;
+	}
+
+	SCS_LCD_CursorSet(0, 0);
+	SCS_LCD_PrintStringPadded(scsEditString, SCS_LCD_COLUMNS_PER_DEVICE);
+
+	if( scsEditNumItems ) {
+	  // set cursor
+	  if( !displayCursorOn || (displayFlickerSelectionCtr && displayLabelOn) ) {
+	    SCS_LCD_CursorSet(scsEditPos*scsEditStringMaxChars, 0);
+	    SCS_LCD_PrintSpaces(scsEditStringMaxChars);
+	  }
+
+	  // print arrow at upper right corner
+	  if( scsEditNumItems > scsEditItemsPerPage ) {
+	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	    if( scsEditOffset == 0 )
+	      SCS_LCD_PrintChar(1); // right arrow
+	    else if( scsEditOffset >= (scsEditNumItems-scsEditItemsPerPage) )
+	      SCS_LCD_PrintChar(0); // left arrow
+	    else
+	      SCS_LCD_PrintChar(2); // left/right arrow
+	  }
+	}
+      }
+
+      // edit functions
+      if( !line2AlreadyPrint ) {
+	SCS_LCD_CursorSet(0, 1);
+	SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 2 )
+	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
+	if( SCS_NUM_MENU_ITEMS >= 3 )
+	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
       }
     } break;
 
@@ -1326,7 +1449,7 @@ s32 SCS_UnInstallDelayedActionCallback(void *callback)
 //! (e.g. to enter a filename).\n
 //! See tutorial/027_scs for usage example
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *initialString, u8 maxChars)
+s32 SCS_InstallEditStringCallback(void *selectCallback, char *actionString, char *initialString, u8 maxChars)
 {
   if( maxChars >= SCS_LCD_COLUMNS_PER_DEVICE )
     maxChars = SCS_LCD_COLUMNS_PER_DEVICE;
@@ -1335,6 +1458,9 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
   memcpy(scsActionString, actionString, SCS_MENU_ITEM_WIDTH);
   scsActionString[SCS_MENU_ITEM_WIDTH] = 0; // ditto.
   scsEditStringMaxChars = maxChars;
+  scsEditItemsPerPage = 1; // not relevant for this function, just a MEMO for future extensions
+  scsEditNumItems = 1; // not relevant for this function, just a MEMO for future extensions
+  scsEditOffset = 0; // not relevant for this function, just a MEMO for future extensions
 
   // set edit pos after last char in string
   // search forward for null terminator
@@ -1351,7 +1477,7 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
       }
   }
 
-  scsEditStringCallback = callback;
+  scsEditStringCallback = selectCallback;
   scsMenuState = SCS_MENU_STATE_EDIT_STRING;
 
   return 0;
@@ -1361,12 +1487,35 @@ s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *init
 //! Can be called from an item select function to enter IP editing mode
 //! See tutorial/027_scs for usage example
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEditIpCallback(void *callback, char *headerString, u32 initialIp)
+s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 initialIp)
 {
-  scsEditIpCallback = callback;
+  scsEditIpCallback = selectCallback;
   memcpy(scsEditString, headerString, SCS_LCD_COLUMNS_PER_DEVICE+1);
   scsEditIp = initialIp;
+  scsEditItemsPerPage = 1; // not relevant for this function, just a MEMO for future extensions
+  scsEditNumItems = 1; // not relevant for this function, just a MEMO for future extensions
+  scsEditOffset = 0; // not relevant for this function, just a MEMO for future extensions
   scsMenuState = SCS_MENU_STATE_EDIT_IP;
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Can be called from an item select function to enter IP editing mode
+//! See tutorial/027_scs for usage example
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_InstallEditBrowserCallback(void *selectCallback, void *getListCallback, char *actionString, u8 itemWidth, u8 itemsPerPage)
+{
+  scsEditStringCallback = selectCallback;
+  scsEditGetListCallback = getListCallback;
+  memcpy(scsActionString, actionString, SCS_MENU_ITEM_WIDTH);
+  scsActionString[SCS_MENU_ITEM_WIDTH] = 0; // ditto.
+  scsEditItemsPerPage = itemsPerPage;
+  scsEditStringMaxChars = itemWidth;
+  scsEditPos = 0;
+  scsEditOffset = 0;
+  scsEditNumItems = scsEditGetListCallback ? scsEditGetListCallback(scsEditOffset, scsEditString) : 0;
+  scsMenuState = SCS_MENU_STATE_EDIT_BROWSER;
 
   return 0;
 }

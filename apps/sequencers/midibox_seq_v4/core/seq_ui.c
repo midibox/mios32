@@ -1769,6 +1769,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     if( !SEQ_BPM_IsRunning() )
       SEQ_BPM_Cont();
     ui_seq_pause = 0; // clear pause mode
+
     // Scrub sequence back or forth
     portENTER_CRITICAL(); // should be atomic
     SEQ_CORE_Scrub(incrementer);

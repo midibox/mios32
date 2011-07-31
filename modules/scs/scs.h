@@ -150,12 +150,13 @@ typedef struct scs_menu_page_t {
 
 
 typedef enum {
-  SCS_MENU_STATE_MAINPAGE,    // we are in the main page
-  SCS_MENU_STATE_SELECT_PAGE, // we select a page
-  SCS_MENU_STATE_INSIDE_PAGE, // we are in a page
-  SCS_MENU_STATE_EDIT_ITEM,   // we edit an item in the page
-  SCS_MENU_STATE_EDIT_STRING, // we edit a string in the page
-  SCS_MENU_STATE_EDIT_IP,     // we edit an IP in the page
+  SCS_MENU_STATE_MAINPAGE,     // we are in the main page
+  SCS_MENU_STATE_SELECT_PAGE,  // we select a page
+  SCS_MENU_STATE_INSIDE_PAGE,  // we are in a page
+  SCS_MENU_STATE_EDIT_ITEM,    // we edit an item in the page
+  SCS_MENU_STATE_EDIT_STRING,  // we edit a string in the page
+  SCS_MENU_STATE_EDIT_IP,      // we edit an IP in the page
+  SCS_MENU_STATE_EDIT_BROWSER, // dynamic browser callbacks (e.g. to scroll through a directory or file list)
 } scs_menu_state_t;
 
 
@@ -204,8 +205,9 @@ extern s32 SCS_MsgStop(void);
 extern s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
 extern s32 SCS_UnInstallDelayedActionCallback(void *callback);
 
-extern s32 SCS_InstallEditStringCallback(void *callback, char *actionString, char *initialString, u8 maxChars);
-extern s32 SCS_InstallEditIpCallback(void *callback, char *headerString, u32 initialIp);
+extern s32 SCS_InstallEditStringCallback(void *selectCallback, char *actionString, char *initialString, u8 maxChars);
+extern s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 initialIp);
+extern s32 SCS_InstallEditBrowserCallback(void *selectCallback, void *getListCallback, char *actionString, u8 itemWidth, u8 itemsPerPage);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
