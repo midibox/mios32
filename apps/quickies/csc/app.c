@@ -378,7 +378,7 @@ static void TASK_MATRIX_Scan(void *pvParameters)
 	    u8 chn = pin / 16;
 
 	    // each channel has 16 buttons
-	    u8 note = mod*16 + 0x3c; // 0x3c is C-3
+	    u8 note = mod*16 + 0x3c + sr_pin; // 0x3c is C-3
 
 	    // velocity: 0x7f if button pressed, 0x00 if button depressed
 	    u8 velocity = value ? 0x00 : 0x7f;
