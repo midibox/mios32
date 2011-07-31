@@ -311,7 +311,7 @@ s32 AOUT_IF_Init(u32 mode)
 	++aout_num_devices;
 
       // ensure that CS is deactivated
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     } break;
 
     case AOUT_IF_74HC595: {
@@ -321,7 +321,7 @@ s32 AOUT_IF_Init(u32 mode)
 	++aout_num_devices;
 
       // set RCLK=0
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
     } break;
 
     case AOUT_IF_TLV5630: {
@@ -333,17 +333,17 @@ s32 AOUT_IF_Init(u32 mode)
       // initialize CTRL0
       // DO=1 (DOUT Enable), R=3 (internal reference, 2V)
       u8 ctrl0 = (1 << 3) | (3 << 1);
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      status |= MIOS32_SPI_TransferByte(AOUT_SPI, 0x8 << 4);
-      status |= MIOS32_SPI_TransferByte(AOUT_SPI, ctrl0);
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      MIOS32_SPI_TransferByte(AOUT_SPI, 0x8 << 4);
+      MIOS32_SPI_TransferByte(AOUT_SPI, ctrl0);
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
       // initialize CTRL1
       u8 ctrl1 = 0;
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      status |= MIOS32_SPI_TransferByte(AOUT_SPI, 0x9 << 4);
-      status |= MIOS32_SPI_TransferByte(AOUT_SPI, ctrl1);
-      status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      MIOS32_SPI_TransferByte(AOUT_SPI, 0x9 << 4);
+      MIOS32_SPI_TransferByte(AOUT_SPI, ctrl1);
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     } break;
 
     case AOUT_IF_INTDAC: {
@@ -925,7 +925,7 @@ s32 AOUT_Update(void)
 	  // check if channel has to be updated for any device
 	  if( req & (0x11111111 << chn) ) {
 	    // activate chip select
-	    status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
 	    // loop through devices (value of last device has to be shifted first)
 	    int dev;
@@ -939,12 +939,12 @@ s32 AOUT_Update(void)
 	      u16 hword = (chn << 14) | (1 << 13) | (1 << 12) | dac_value;
 
 	      // transfer word
-	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
-	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
 	    }
 
 	    // deactivate chip select
-	    status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 	  }
 	}
       } break;
@@ -973,13 +973,13 @@ s32 AOUT_Update(void)
 	  }
 
 	  // transfer word
-	  status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
-	  status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	  MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
+	  MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
 	}
 
 	// toggle RCLK pin
-	status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-	status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
       } break;
 
       case AOUT_IF_TLV5630: {
@@ -990,7 +990,7 @@ s32 AOUT_Update(void)
 	  // check if channel has to be updated for any device
 	  if( req & (0x01010101 << chn) ) {
 	    // activate chip select
-	    status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
 	    // loop through devices (value of last device has to be shifted first)
 	    int dev;
@@ -1005,13 +1005,13 @@ s32 AOUT_Update(void)
 
 	      // transfer word
 	      MIOS32_IRQ_Disable();
-	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
-	      status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
 	      MIOS32_IRQ_Enable();
 	    }
 
 	    // deactivate chip select
-	    status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 	  }
 	}
       } break;
@@ -1049,7 +1049,7 @@ s32 AOUT_Update(void)
 
       case AOUT_IF_MAX525: {
 	// activate chip select
-	status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
 	// loop through devices (value of last device has to be shifted first)
 	int dev;
@@ -1062,12 +1062,12 @@ s32 AOUT_Update(void)
 	  u16 hword = (0 << 15) | (a0 << 14) | (1 << 13) | (0 << 12);
 
 	  // transfer word
-	  status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
-	  status |= MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	  MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
+	  MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
 	}
 
 	// deactivate chip select
-	status |= MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
       } break;
 
       case AOUT_IF_74HC595:
