@@ -176,9 +176,11 @@ s32 MIOS32_SYS_Init(u32 mode)
   // flags can be overruled in mios32_config.h
   MEM32(0xe0042004) = MIOS32_SYS_STM32_DBGMCU_CR;
 
+#ifndef MIOS32_SYS_DONT_INIT_RTC
   // initialize system clock
   mios32_sys_time_t t = { .seconds=0, .fraction_ms=0 };
   MIOS32_SYS_TimeSet(t);
+#endif
 
   // error during clock configuration?
   return HSEStartUpStatus == SUCCESS ? 0 : -1;

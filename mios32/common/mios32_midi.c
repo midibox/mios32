@@ -725,6 +725,10 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
 {
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
   u8 buffer[128+5+3+1]; // 128 chars allowed + 5 for header + 3 for command + F7
   va_list args;
   int i;
@@ -767,6 +771,7 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   ++len;
 
   return MIOS32_MIDI_SendSysEx(debug_port, buffer, len);
+#endif
 }
 
 
@@ -1310,7 +1315,7 @@ s32 MIOS32_MIDI_DebugPortSet(mios32_midi_port_t port)
     return -1;
 
   debug_port = port;
-
+ 
   return 0; // no error
 }
 

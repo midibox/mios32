@@ -70,7 +70,7 @@
 #define MIOS32_SPI0_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(1, 20, 3); }
 // MISO: P1.23 (assigned to SSP0)
 #define MIOS32_SPI0_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(1, 23, 3); }
-// MISO: P1.24 (assigned to SSP0)
+// MOSI: P1.24 (assigned to SSP0)
 #define MIOS32_SPI0_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(1, 24, 3); }
 
 // Push-Pull Config
@@ -112,7 +112,7 @@
 #define MIOS32_SPI1_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 7, 2); }
 // MISO: P0.8 (assigned to SSP1)
 #define MIOS32_SPI1_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(0, 8, 2); }
-// MISO: P0.9 (assigned to SSP1)
+// MOSI: P0.9 (assigned to SSP1)
 #define MIOS32_SPI1_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 9, 2); }
 
 // Push-Pull Config
@@ -156,7 +156,7 @@
 #define MIOS32_SPI2_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 15, 3); }
 // MISO: P0.17 (assigned to SPI)
 #define MIOS32_SPI2_MISO_INIT    { MIOS32_SYS_LPC_PINSEL(0, 17, 3); }
-// MISO: P0.18 (assigned to SPI)
+// MOSI: P0.18 (assigned to SPI)
 #define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 3); }
 
 // Push-Pull Config

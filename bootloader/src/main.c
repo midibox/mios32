@@ -56,6 +56,11 @@ typedef struct {
   GPIO_TypeDef *port;
   u16 pin_mask;
 } srio_pin_t;
+#elif defined(MIOS32_FAMILY_LPC17xx)
+typedef struct {
+  u8 port;
+  u8 pin;
+} srio_pin_t;
 #endif
 
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
@@ -83,6 +88,34 @@ static const srio_pin_t srio_mosi_pin[SRIO_NUM_MOSI_PINS] = {
   { GPIOB, GPIO_Pin_15 }, // SPI1
   { GPIOB, GPIO_Pin_5  }, // SPI2
 };
+
+
+#elif defined(MIOS32_BOARD_MBHP_CORE_LPC17)
+#define SRIO_NUM_SCLK_PINS 3
+static const srio_pin_t srio_sclk_pin[SRIO_NUM_SCLK_PINS] = {
+  { 1, 20 }, // SPI0
+  { 0,  7 }, // SPI1
+  { 0, 15 }, // SPI2
+};
+
+#define SRIO_NUM_RCLK_PINS 6
+static const srio_pin_t srio_rclk_pin[SRIO_NUM_RCLK_PINS] = {
+  { 1, 22 }, // SPI0, RCLK1
+  { 1, 21 }, // SPI0, RCLK2
+  { 0,  6 }, // SPI1, RCLK1
+  { 0,  5 }, // SPI1, RCLK2
+  { 0, 16 }, // SPI2, RCLK1
+  { 0, 21 }, // SPI2, RCLK2
+};
+
+#define SRIO_NUM_MOSI_PINS 3
+static const srio_pin_t srio_mosi_pin[SRIO_NUM_MOSI_PINS] = {
+  { 1, 24 }, // SPI0
+  { 0,  9 }, // SPI1
+  { 0, 18 }, // SPI2
+};
+
+#define SRIO_RESET_SUPPORTED 1
 #else
 #define SRIO_RESET_SUPPORTED 0
 #endif
@@ -139,6 +172,7 @@ int main(void)
     MIOS32_USB_Init(0);
   }
 
+
   ///////////////////////////////////////////////////////////////////////////
   // initialize remaining peripherals
   ///////////////////////////////////////////////////////////////////////////
@@ -177,6 +211,7 @@ int main(void)
       pwm_duty = pwm_period-pwm_duty; // negative direction each 50*100 ticks
     u32 led_on = ((cnt % pwm_period) > pwm_duty) ? 1 : 0;
     MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
+
 
     // call periodic hook each mS (!!! important - not shorter due to timeout counters which are handled here)
     if( (cnt % 10) == 0 ) {
@@ -290,6 +325,8 @@ static s32 ResetSRIOChains(void)
 #if SRIO_RESET_SUPPORTED == 0
   return -1; // not supported
 #else
+
+#if defined(MIOS32_FAMILY_STM32F10x)
   int i;
 
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -361,5 +398,67 @@ static s32 ResetSRIOChains(void)
   }
 
   return 0; // no error
+#else
+  int i;
+
+  // init GPIO driver modes
+  for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+    MIOS32_SYS_LPC_PINSET(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 1); // SCLK=1 by default
+    MIOS32_SYS_LPC_PINSEL(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 0); // select GPIO
+    MIOS32_SYS_LPC_PINDIR(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 1); // enable output driver
+  }
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+    MIOS32_SYS_LPC_PINSET(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 1); // RCLK=1 by default
+    MIOS32_SYS_LPC_PINSEL(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 0); // select GPIO
+    MIOS32_SYS_LPC_PINDIR(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 1); // enable output driver
+  }
+
+  for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
+    MIOS32_SYS_LPC_PINSET(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 1); // MOSI=0 by default
+    MIOS32_SYS_LPC_PINSEL(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 0); // select GPIO
+    MIOS32_SYS_LPC_PINDIR(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 1); // enable output driver
+  }
+
+  // send 128 clocks to all SPI ports
+  int cycle;
+  for(cycle=0; cycle<128; ++cycle) {
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+      MIOS32_SYS_LPC_PINSET(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 0); // SCLK=0
+
+    MIOS32_DELAY_Wait_uS(1);
+
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+      MIOS32_SYS_LPC_PINSET(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 1); // SCLK=1
+
+    MIOS32_DELAY_Wait_uS(1);
+  }
+
+  // latch values
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+    MIOS32_SYS_LPC_PINSET(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 0); // RCLK=0
+
+  MIOS32_DELAY_Wait_uS(1);
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+    MIOS32_SYS_LPC_PINSET(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 1); // RCLK=1
+
+  MIOS32_DELAY_Wait_uS(1);
+
+  // switch back driver modes to input with pull-up enabled
+
+  // init GPIO driver modes
+  for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+    MIOS32_SYS_LPC_PINDIR(srio_sclk_pin[i].port, srio_sclk_pin[i].pin, 0); // disable output driver
+
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+    MIOS32_SYS_LPC_PINDIR(srio_rclk_pin[i].port, srio_rclk_pin[i].pin, 0); // disable output driver
+
+  for(i=0; i<SRIO_NUM_MOSI_PINS; ++i)
+    MIOS32_SYS_LPC_PINDIR(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 0); // disable output driver
+
+  return 0; // no error
+#endif
+
 #endif
 }

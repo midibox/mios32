@@ -72,6 +72,8 @@ s32 MIOS32_USB_MIDI_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+  MIOS32_USB_MIDI_ChangeConnectionState(0);
+
   return 0; // no error
 }
 
