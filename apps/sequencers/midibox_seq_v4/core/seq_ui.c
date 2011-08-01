@@ -43,6 +43,7 @@
 
 #include "file.h"
 #include "seq_file.h"
+#include "seq_file_t.h"
 #include "seq_file_hw.h"
 
 
@@ -720,11 +721,68 @@ static s32 SEQ_UI_Button_Utility(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_MultiCopy(s32 depressed)
+{
+  if( depressed ) return 1;
+
+  s32 status = 0;
+  char path[30];
+
+  // create directory if it doesn't exist
+  strcpy(path, "/PRESETS");
+  MUTEX_SDCARD_TAKE;
+  status = FILE_MakeDir(path);
+  status = FILE_DirExists(path);
+  MUTEX_SDCARD_GIVE;
+
+  if( status < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+    return -3;
+  }
+
+  if( status == 0 ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "/PRESETS directory", "cannot be created!");
+    return -4;
+  }
+
+  // copy all selected patterns to preset directory
+  u8 track, track_id;
+  for(track=0, track_id=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( ui_selected_tracks & (1 << track) ) {
+      ++track_id;
+      sprintf(path, "/PRESETS/COPY%d.v4t", track_id);
+
+      char str[30];
+      sprintf(str, "Exporting G%dT%d to:", (track/4)+1, (track%4)+1);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
+
+      MUTEX_SDCARD_TAKE;
+      status=SEQ_FILE_T_Write(path, SEQ_UI_VisibleTrackGet());
+      MUTEX_SDCARD_GIVE;
+
+      if( status < 0 ) {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Error during Export!", "see MIOS Terminal!");
+	return -6;
+      }
+    }
+  }
+
+  if( !track_id ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "No Track selected", "for Multi-Copy!");
+  }
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_Copy(s32 depressed)
 {
   static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
   seq_ui_button_state.COPY = depressed ? 0 : 1;
+
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    return SEQ_UI_Button_MultiCopy(depressed);
+  }
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
@@ -755,11 +813,74 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
   }
 }
 
+static s32 SEQ_UI_Button_MultiPaste(s32 depressed)
+{
+  if( depressed ) return 1;
+
+  s32 status = 0;
+  char path[30];
+
+  // paste multi copy presets into selected tracks
+  u8 track, track_id;
+  for(track=0, track_id=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( ui_selected_tracks & (1 << track) ) {
+      ++track_id;
+      sprintf(path, "/PRESETS/COPY%d.v4t", track_id);
+
+      char str[30];
+      sprintf(str, "Importing to G%dT%d:", (track/4)+1, (track%4)+1);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
+
+      // mute track to avoid random effects while loading the file
+      MIOS32_IRQ_Disable(); // this operation should be atomic!
+      u8 muted = seq_core_trk_muted & (1 << track);
+      if( !muted )
+	seq_core_trk_muted |= (1 << track);
+      MIOS32_IRQ_Enable();
+
+      static seq_file_t_import_flags_t import_flags;
+      import_flags.ALL = 0xff;
+
+      // read file
+      MUTEX_SDCARD_TAKE;
+      status = SEQ_FILE_T_Read(path, track, import_flags);
+      MUTEX_SDCARD_GIVE;
+
+      // unmute track if it wasn't muted before
+      MIOS32_IRQ_Disable(); // this operation should be atomic!
+      if( !muted )
+	seq_core_trk_muted &= ~(1 << track);
+      MIOS32_IRQ_Enable();
+
+      if( status == FILE_ERR_OPEN_READ ) {
+	char str[30];
+	sprintf(str, "File for G%dT%d missing:", (track/4)+1, (track%4)+1);
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
+      } else if( status < 0 ) {
+	SEQ_UI_SDCardErrMsg(2000, status);
+      } else {
+	sprintf(str, "Imported to G%dT%d:", (track/4)+1, (track%4)+1);
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
+      }
+    }
+  }
+
+  if( !track_id ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "No Track selected", "for Multi-Paste!");
+  }
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_Paste(s32 depressed)
 {
   static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
 
   seq_ui_button_state.PASTE = depressed ? 0 : 1;
+
+  if( seq_ui_button_state.MENU_PRESSED ) {
+    return SEQ_UI_Button_MultiPaste(depressed);
+  }
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;

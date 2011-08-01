@@ -155,7 +155,7 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    int addr_offset = value;
 
 	    if( (par_layer && addr_offset >= SEQ_PAR_MAX_BYTES) ||
-		!(par_layer && addr_offset >= SEQ_TRG_MAX_BYTES) ) {
+		(!par_layer && addr_offset >= SEQ_TRG_MAX_BYTES) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_T] ERROR %s: invalid address offset %03x!\n", parameter, addr_offset);
 #endif

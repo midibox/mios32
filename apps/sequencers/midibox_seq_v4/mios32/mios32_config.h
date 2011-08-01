@@ -14,7 +14,7 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Beta45"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.0Beta46"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T. Klose"
 
 // USB settings
@@ -122,7 +122,7 @@
 #define BLM_X_LED_FIRST_DOUT_SR   255 // dummy, will be changed in seq_file_hw.c
 #define BLM_X_BTN_FIRST_DIN_SR    255 // dummy, will be changed in seq_file_hw.c
 #define BLM_X_ROWSEL_INV_MASK     0   // dummy, will be changed in seq_file_hw.c
-#define BLM_X_DEBOUNCE_MODE       0
+#define BLM_X_DEBOUNCE_MODE       1
 
 
 // optional for Francois' 4 * 20x2 LCD configuration
