@@ -157,7 +157,7 @@ s32 BLM_X_GetRow(void){
       // changed flags), the change flag will be unset (two changes -> original value)
       if( btn_rows_changed[scanned_row][sr] ^= (sr_value ^ btn_rows[scanned_row][sr]) ){
 #if (BLM_X_DEBOUNCE_MODE == 1)
-        debounce_ctr = blm_x_config.debounce_delay * BLM_X_NUM_ROWS;//restart debounce delay
+        debounce_ctr = blm_x_config.debounce_delay;//restart debounce delay
 #endif
         }
       //copy new values to btn_rows
