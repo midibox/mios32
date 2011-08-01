@@ -757,7 +757,7 @@ static s32 SEQ_UI_Button_MultiCopy(s32 depressed)
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
 
       MUTEX_SDCARD_TAKE;
-      status=SEQ_FILE_T_Write(path, SEQ_UI_VisibleTrackGet());
+      status=SEQ_FILE_T_Write(path, track);
       MUTEX_SDCARD_GIVE;
 
       if( status < 0 ) {
