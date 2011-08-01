@@ -20,6 +20,7 @@
 
 #include <mios32.h>
 
+#include "blm_x.h"
 #include "seq_hwcfg.h"
 
 
@@ -456,6 +457,11 @@ s32 SEQ_HWCFG_Init(u32 mode)
   // disable gate SRs
   for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i)
     seq_hwcfg_dout_gate_sr[i] = 0;
+
+  // initial debounce delay for BLM_X
+  blm_x_config_t config = BLM_X_ConfigGet();
+  config.debounce_delay = 20; // mS
+  BLM_X_ConfigSet(config);
 
   return 0; // no error
 }

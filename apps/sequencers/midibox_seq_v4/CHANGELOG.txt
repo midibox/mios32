@@ -6,6 +6,27 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.0beta46
+~~~~~~~~~~~~~~~~~~~~~
+
+   o added multi copy function: press MENU+COPY to export all selected tracks
+     into the /PRESETS folder on SD Card. The resulting files are named
+     COPY[track].V4T (the [track] numbers are independent from the actual track
+     position)
+
+   o added multi paste function: press MENU+PASTE to import "COPY[track].V4T"
+     files from the /PRESETS folder into all selected tracks, starting from
+     COPY1.V4T to (up to) COPY16.V4T
+
+   o use these new functions to quickly copy&paste tracks between patterns
+     and sessions, to create temporary backups, to duplicate tracks, or whatever.
+
+     Note that you can also import these COPY[track].V4T files from the
+     MENU->Event->PRESETS menu, e.g. to exclude certain parts of the preset
+
+   o buttons of Wilba's Frontpanel are now debounced
+
+
 MIDIboxSEQ V4.0beta45
 ~~~~~~~~~~~~~~~~~~~~~
 
