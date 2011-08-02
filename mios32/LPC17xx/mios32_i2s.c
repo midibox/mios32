@@ -116,9 +116,25 @@ s32 MIOS32_I2S_Init(u32 mode)
    * We use a loop function to chose the most suitable X,Y value
    */
 
+  // thanks to Roger for providing a corrected version to calculate the x_divide value
+  // (which has been taken from a NXP coding example).
+  // x_divide is now calculated within the iteration below
+
+  // He wrote:
+  // The loop uses the absolute value of the error to optimize the X and Y values.
+  // However, if the error is negative (>= 0x8000) then we are comparing against
+  // X + 1. So we should use that X + 1 for setting the register. The original 
+  // code doesn’t do that so that the clock rates will almost always be a few percent too low;
+  //  
+  // The code below is your code with arrows for new lines (->) and for lines to 
+  // take out (<-). It now uses the original ‘x’ to calculate x_divide and will 
+  // bump it up if the error is negative. When I run this the clock rates are accurate 
+  // within promilles for a number of clock combinations.
+
   u32 divider = (u32)(((unsigned long long)(mclk_frequency*MIOS32_I2S_DIV2)<<16) / MIOS32_I2S_PERIPHERAL_FRQ);
   u16 ErrorOptimal = 0xffff;
   u8 y_divide = 0;
+  u8 x_divide = 0;
   u32 error = 0;
   u32 y;
   for (y = 255; y > 0; y--) {
@@ -132,14 +148,20 @@ s32 MIOS32_I2S_Init(u32 mode)
     if (error == 0) {
       ErrorOptimal = error;
       y_divide = y;
+      x_divide = x >> 16;
       break;
     } else if (error < ErrorOptimal) {
       ErrorOptimal = error;
       y_divide = y;
+      x_divide = x >> 16;
+      if (dif >= 0x8000)
+	x_divide++; // Negative error, go one X higher
     }
   }
 
-  u8 x_divide = (y_divide * mclk_frequency*MIOS32_I2S_DIV2) / MIOS32_I2S_PERIPHERAL_FRQ;
+  // WRONG:
+  // u8 x_divide = (y_divide * mclk_frequency*MIOS32_I2S_DIV2) / MIOS32_I2S_PERIPHERAL_FRQ;
+
   LPC_I2S->I2STXRATE = y_divide | (x_divide << 8);
 
   // set transmit mode: select TX fractional rate divider clock output as the source, enable MCLK
