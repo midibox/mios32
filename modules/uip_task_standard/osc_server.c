@@ -24,15 +24,17 @@
 
 #include "osc_server.h"
 #include "osc_client.h"
-#include "app.h"
-
-#include "tasks.h"
+#include <app.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
 #define DEBUG_VERBOSE_LEVEL 1
+
+#ifndef DEBUG_MSG
+# define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,7 +88,7 @@ s32 OSC_SERVER_Init(u32 mode)
     if( (osc_conn[con]=uip_udp_new(&ripaddr, remote_port)) != NULL ) {
       uip_udp_bind(osc_conn[con], HTONS(osc_local_port[con]));
 #if DEBUG_VERBOSE_LEVEL >= 2
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[OSC_SERVER] #%d sends to %d.%d.%d.%d:%d\n", 
 		con,
 		(osc_conn[con]->ripaddr[0] >> 0) & 0xff,
@@ -94,13 +96,13 @@ s32 OSC_SERVER_Init(u32 mode)
 		(osc_conn[con]->ripaddr[1] >> 0) & 0xff,
 		(osc_conn[con]->ripaddr[1] >> 8) & 0xff,
 		HTONS(osc_conn[con]->lport));
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[OSC_SERVER] FAILED to create connection #%d (no free ports)\n", con);
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
       return -1;
     }
@@ -198,7 +200,7 @@ s32 OSC_SERVER_AppCall(void)
 
     if( osc_send_packet != NULL ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[OSC_SERVER] Sending Datagram to %d.%d.%d.%d:%d (%d bytes)\n", 
 		(uip_udp_conn->ripaddr[0] >> 0) & 0xff,
 		(uip_udp_conn->ripaddr[0] >> 8) & 0xff,
@@ -207,7 +209,7 @@ s32 OSC_SERVER_AppCall(void)
 		HTONS(uip_udp_conn->rport),
 		osc_send_len);
       MIOS32_MIDI_SendDebugHexDump((u8 *)osc_send_packet, osc_send_len);
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
       // send datagram
@@ -223,7 +225,7 @@ s32 OSC_SERVER_AppCall(void)
     // check for matching port
     int con;
     u16 search_port = HTONS(uip_udp_conn->lport); // (no error: use lport instead of rport, since UIP inserts it there)
-    DEBUG_MSG("%d", search_port);
+
     u8 port_ok = 0;
     for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
       if( osc_local_port[con] == search_port ) {
@@ -243,7 +245,7 @@ s32 OSC_SERVER_AppCall(void)
 
       // new UDP package has been received
 #if DEBUG_VERBOSE_LEVEL >= 3
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
 		(uip_udp_conn->ripaddr[0] >> 0) & 0xff,
 		(uip_udp_conn->ripaddr[0] >> 8) & 0xff,
@@ -252,14 +254,14 @@ s32 OSC_SERVER_AppCall(void)
 		search_port,
 		uip_len);
       MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
       s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
       if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	MUTEX_MIDIOUT_TAKE;
+	UIP_TASK_MUTEX_MIDIOUT_TAKE;
 	DEBUG_MSG("[OSC_SERVER] invalid OSC packet, status %d\n", status);
-	MUTEX_MIDIOUT_GIVE;
+	UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
       }
     }
@@ -282,9 +284,9 @@ s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
   // exit immediately if connection not ready
   if( osc_conn[con] == NULL ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    MUTEX_MIDIOUT_TAKE;
+    UIP_TASK_MUTEX_MIDIOUT_TAKE;
     DEBUG_MSG("[OSC_SERVER] dropped SendPacket due to invalid connection #%d\n", con);
-    MUTEX_MIDIOUT_GIVE;
+    UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
     return -1; // connection not established
   }
@@ -296,7 +298,7 @@ s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
   osc_conn[con]->rport = HTONS(osc_remote_port[con]);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   DEBUG_MSG("[OSC_SERVER] Send Datagram to %d.%d.%d.%d:%d (%d bytes) via #%d\n", 
 	    (osc_conn[con]->ripaddr[0] >> 0) & 0xff,
 	    (osc_conn[con]->ripaddr[0] >> 8) & 0xff,
@@ -306,7 +308,7 @@ s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
 	    len,
 	    con);
   MIOS32_MIDI_SendDebugHexDump(packet, len);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // store pointer and len in global variable, so that OSC_SERVER_AppCall() can take over
@@ -344,9 +346,9 @@ s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
 static s32 OSC_SERVER_Method_MIDI(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // check osc port
@@ -377,10 +379,10 @@ static s32 OSC_SERVER_Method_MIDI(mios32_osc_args_t *osc_args, u32 method_arg)
 
     // propagate to application
     // port is located in method argument
-    MUTEX_MIDIIN_TAKE;
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
     MIOS32_MIDI_SendPackageToRxCallback(method_arg, p);
     APP_MIDI_NotifyPackage(method_arg, p);
-    MUTEX_MIDIIN_GIVE;
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
 
   } else  if( osc_args->arg_type[0] == 'b' ) {
     // SysEx stream is embedded into blob
@@ -408,9 +410,9 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
   int i;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // we expect at least 1 argument
@@ -487,10 +489,10 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
   int osc_port;
   for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
     u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( transfer_mode == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
-      MUTEX_MIDIIN_TAKE;
-      MIOS32_MIDI_SendPackage(OSC0 + osc_port, p);
-      MUTEX_MIDIIN_GIVE;
+    if( OSC_IGNORE_TRANSFER_MODE || transfer_mode == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
+      UIP_TASK_MUTEX_MIDIIN_TAKE;
+      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
 
@@ -501,9 +503,9 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
 static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // we expect at least 1 argument
@@ -544,11 +546,12 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
   int osc_port;
   for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
     u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
+    if( OSC_IGNORE_TRANSFER_MODE ||
+	transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
-      MUTEX_MIDIIN_TAKE;
-      MIOS32_MIDI_SendPackage(OSC0 + osc_port, p);
-      MUTEX_MIDIIN_GIVE;
+      UIP_TASK_MUTEX_MIDIIN_TAKE;
+      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
 
@@ -558,9 +561,9 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // we expect at least 1 argument
@@ -592,11 +595,12 @@ static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg
   int osc_port;
   for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
     u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
+    if( OSC_IGNORE_TRANSFER_MODE ||
+	transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
-      MUTEX_MIDIIN_TAKE;
-      MIOS32_MIDI_SendPackage(OSC0 + osc_port, p);
-      MUTEX_MIDIIN_GIVE;
+      UIP_TASK_MUTEX_MIDIIN_TAKE;
+      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
 

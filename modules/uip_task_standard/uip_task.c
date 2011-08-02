@@ -22,9 +22,7 @@
 #include <task.h>
 #include <queue.h>
 
-#include "tasks.h"
-
-#include "app.h"
+//#include "app.h"
 
 #include "uip.h"
 #include "uip_arp.h"
@@ -32,7 +30,7 @@
 #include "timer.h"
 
 #include "uip_task.h"
-
+#include "telnetd.h"
 #include "osc_server.h"
 #include "dhcpc.h"
 
@@ -42,6 +40,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define DEBUG_VERBOSE_LEVEL 1
+
+#ifndef DEBUG_MSG
+# define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -256,9 +258,9 @@ static void UIP_TASK_Handler(void *pvParameters)
 void uip_log(char *msg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   DEBUG_MSG(msg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 }
 
@@ -281,7 +283,7 @@ static s32 UIP_TASK_SendDebugMessage_IP(void)
   uip_gethostaddr(&ipaddr);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   DEBUG_MSG("[UIP_TASK] IP address: %d.%d.%d.%d\n",
 	    uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
 	    uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
@@ -297,7 +299,7 @@ static s32 UIP_TASK_SendDebugMessage_IP(void)
   DEBUG_MSG("[UIP_TASK] Default Router (Gateway): %d.%d.%d.%d\n",
 	    uip_ipaddr1(draddr), uip_ipaddr2(draddr),
 	    uip_ipaddr3(draddr), uip_ipaddr4(draddr));
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   return 0; // no error
@@ -327,9 +329,9 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
     dhcpc_init(uip_ethaddr.addr, sizeof(uip_ethaddr.addr));
 #if DEBUG_VERBOSE_LEVEL >= 1
     if( network_device_available() ) { // don't print message if ethernet device is not available, the message could confuse "normal users"
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[UIP_TASK] DHCP Client requests the IP settings...\n");
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
     }
 #endif
   } else {
@@ -359,9 +361,9 @@ s32 UIP_TASK_DHCP_EnableSet(u8 _dhcp_enabled)
 
 #if DEBUG_VERBOSE_LEVEL >= 1
     if( network_device_available() ) { // don't print message if ethernet device is not available, the message could confuse "normal users"
-      MUTEX_MIDIOUT_TAKE;
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("[UIP_TASK] IP Address statically set:\n");
-      MUTEX_MIDIOUT_GIVE;
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
     }
 #endif
 
@@ -450,9 +452,12 @@ s32 UIP_TASK_GatewayGet(void)
 static s32 UIP_TASK_StartServices(void)
 {
   // print IP settings
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   UIP_TASK_SendDebugMessage_IP();
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
+
+  // start telnet daemon
+  telnetd_init();
 
   // start OSC daemon
   OSC_SERVER_Init(0);
@@ -526,7 +531,7 @@ extern u16_t uip_slen; // allows to access a variable which is part of uip.c
 #define UDPBUF ((struct uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
 s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix)
 {
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   int len;
   if( received ) {
     len = uip_len;
@@ -546,7 +551,7 @@ s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix)
 	      len);
   }
   MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, len);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -581,12 +586,12 @@ void dhcpc_configured(const struct dhcpc_state *s)
 
   // print unused settings
 #if DEBUG_VERBOSE_LEVEL >= 1
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   DEBUG_MSG("[UIP_TASK] Got DNS server %d.%d.%d.%d\n",
 	    uip_ipaddr1(s->dnsaddr), uip_ipaddr2(s->dnsaddr),
 	    uip_ipaddr3(s->dnsaddr), uip_ipaddr4(s->dnsaddr));
   DEBUG_MSG("[UIP_TASK] Lease expires in %d hours\n",
 	    (ntohs(s->lease_time[0])*65536ul + ntohs(s->lease_time[1]))/3600);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 }

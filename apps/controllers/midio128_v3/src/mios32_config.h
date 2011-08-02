@@ -25,40 +25,4 @@
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
-
-// ENC28J60 settings
-#define MIOS32_ENC28J60_FULL_DUPLEX 1
-#define MIOS32_ENC28J60_MAX_FRAME_SIZE 1504
-
-// a unique MAC address in your network (6 bytes are required)
-// If all bytes are 0, the serial number of STM32 will be taken instead,
-// which should be unique in your private network.
-#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
-
-// EEPROM emulation
-#define EEPROM_EMULATED_SIZE 128
-
-
-// Ethernet configuration:
-// (can be changed during runtime and stored in EEPROM)
-
-//                      192        .  168        .    2       .  100
-# define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
-//                      255        .  255        .  255       .    0
-# define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
-//                      192        .  168        .    2       .    1
-# define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
-
-
-//                     192        .  168        .    2       .    1
-#define OSC_REMOTE_IP (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
-
-#define OSC_REMOTE_PORT 10001
-#define OSC_LOCAL_PORT  10000
-
 #endif /* _MIOS32_CONFIG_H */

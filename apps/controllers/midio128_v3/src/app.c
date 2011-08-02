@@ -210,6 +210,22 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 //    led_trigger[0] = LED_PWM_PERIOD; // Board LED
 //    led_trigger[4] = LED_PWM_PERIOD; // J5A.3
     break;
+
+  case OSC0:
+    MIOS32_MIDI_SendPackage(USB0, midi_package);
+    break;
+
+  case OSC1:
+    MIOS32_MIDI_SendPackage(USB1, midi_package);
+    break;
+
+  case OSC2:
+    MIOS32_MIDI_SendPackage(UART0, midi_package);
+    break;
+
+  case OSC3:
+    MIOS32_MIDI_SendPackage(UART1, midi_package);
+    break;
   }
 
   // forward to MIDI Monitor

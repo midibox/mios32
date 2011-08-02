@@ -15,10 +15,9 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 THUMB_SOURCE    = app.c \
-		  presets.c \
 		  terminal.c \
-		  shell.c \
-		  midimon.c
+		  presets.c \
+		  shell.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

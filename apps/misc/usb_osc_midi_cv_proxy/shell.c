@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Telnet shell
+ * Telnet shell for standard UIP task
  *
  * ==========================================================================
  *
@@ -14,7 +14,10 @@
 #include <mios32.h>
 #include <string.h>
 #include <stdarg.h>
-#include "shell.h"
+
+// shell.h is located in uip_task_standard directory and has to be implemented locally in application
+#include <shell.h>
+
 #include "terminal.h"
 
 #define SHELL_PROMPT "> "

@@ -24,19 +24,23 @@
 
 // can be overruled in mios32_config.h
 #ifndef OSC_REMOTE_IP
-//                      10        .    0        .    0       .    2
+//                      192       .  168        .    2       .  101
 #define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
 #endif
 
 // can be overruled in mios32_config.h
 #ifndef OSC_LOCAL_PORT
-#define OSC_LOCAL_PORT 10000
+#define OSC_LOCAL_PORT 8000
 #endif
 
 #ifndef OSC_REMOTE_PORT
-#define OSC_REMOTE_PORT 10001
+#define OSC_REMOTE_PORT 8001
 #endif
 
+// should transfer mode be ignored on incoming OSC packets?
+#ifndef OSC_IGNORE_TRANSFER_MODE
+#define OSC_IGNORE_TRANSFER_MODE 1
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

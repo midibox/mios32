@@ -1,5 +1,5 @@
 # $Id$
-# defines additional rules for integrating DOSFS
+# defines additional rules
 
 # enhance include path
 C_INCLUDE += -I $(MIOS32_PATH)/modules/uip/uip \

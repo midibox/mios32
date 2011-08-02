@@ -23,12 +23,14 @@
 
 
 // transfer modes
-#define OSC_CLIENT_NUM_TRANSFER_MODES 4
+// keep OSC_CLIENT_TransferModeFullNameGet() and OSC_CLIENT_TransferModeShortNameGet() aligned with the assignments!
+#define OSC_CLIENT_NUM_TRANSFER_MODES 5
 
 #define OSC_CLIENT_TRANSFER_MODE_MIDI  0
 #define OSC_CLIENT_TRANSFER_MODE_INT   1
 #define OSC_CLIENT_TRANSFER_MODE_FLOAT 2
 #define OSC_CLIENT_TRANSFER_MODE_MCMPP 3
+#define OSC_CLIENT_TRANSFER_MODE_NEW   4
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -44,6 +46,9 @@ extern s32 OSC_CLIENT_Init(u32 mode);
 
 extern s32 OSC_CLIENT_TransferModeSet(u8 osc_port, u8 mode);
 extern u8 OSC_CLIENT_TransferModeGet(u8 osc_port);
+
+extern const char* OSC_CLIENT_TransferModeFullNameGet(u8 mode);
+extern const char* OSC_CLIENT_TransferModeShortNameGet(u8 mode);
 
 extern s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t p);
 extern s32 OSC_CLIENT_SendSysEx(u8 osc_port, u8 *stream, u32 count);
