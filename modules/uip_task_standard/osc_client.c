@@ -26,7 +26,34 @@
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
 /////////////////////////////////////////////////////////////////////////////
 
-#define DEBUG_VERBOSE_LEVEL 0
+#define DEBUG_VERBOSE_LEVEL 1
+
+#ifndef DEBUG_MSG
+# define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Transfer mode names
+// must be aligned with definitions in osc_client.h!!!
+/////////////////////////////////////////////////////////////////////////////
+static const char full_mode_names[OSC_CLIENT_NUM_TRANSFER_MODES+1][21] = {
+  "MIDI Messages       ",
+  "Text Msg (Integer)  ",
+  "Text Msg (Float)    ",
+  "Pianist Pro (iPad)  ",
+  "New                 ",
+  "** invalid mode **  ",
+};
+
+static const char short_mode_names[OSC_CLIENT_NUM_TRANSFER_MODES+1][5] = {
+  "MIDI",
+  "Int.",
+  "Flt.",
+  "MPP ",
+  "NEW ",
+  "??? ",
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,6 +99,23 @@ s32 OSC_CLIENT_TransferModeSet(u8 osc_port, u8 mode)
 u8 OSC_CLIENT_TransferModeGet(u8 osc_port)
 {
   return osc_transfer_mode[osc_port];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the full name of the transfer mode (up to 20 chars)
+/////////////////////////////////////////////////////////////////////////////
+const char* OSC_CLIENT_TransferModeFullNameGet(u8 mode)
+{
+  return (const char*)&full_mode_names[(mode >= OSC_CLIENT_NUM_TRANSFER_MODES) ? OSC_CLIENT_NUM_TRANSFER_MODES : mode];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the short name of the transfer mode (up to 4 chars)
+/////////////////////////////////////////////////////////////////////////////
+const char* OSC_CLIENT_TransferModeShortNameGet(u8 mode)
+{
+  return (const char*)&short_mode_names[(mode >= OSC_CLIENT_NUM_TRANSFER_MODES) ? OSC_CLIENT_NUM_TRANSFER_MODES : mode];
 }
 
 

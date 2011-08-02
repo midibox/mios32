@@ -15,6 +15,9 @@
 #define _UIP_TASK_H
 
 #include <mios32.h>
+#include <FreeRTOS.h>
+#include <semphr.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -26,22 +29,19 @@
 // By default the IP will be configured via DHCP
 // By defining DONT_USE_DHCP we can optionally use static addresses
 
-#ifdef DONT_USE_DHCP
-
-# ifndef MY_IP_ADDRESS
+#ifndef MY_IP_ADDRESS
 //                      192        .  168        .    2       .  100
-# definex MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
-# endif
+#define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
+#endif
 
-# ifndef MY_NETMASK
+#ifndef MY_NETMASK
 //                      255        .  255        .  255       .    0
-# define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
-# endif
+#define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
+#endif
 
-# ifndef MY_GATEWAY
+#ifndef MY_GATEWAY
 //                      192        .  168        .    2       .    1
-# define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
-# endif
+#define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
 #endif
 
 
@@ -58,12 +58,31 @@
 #define UDP_MONITOR_RECEIVED                 1
 
 
-#include <FreeRTOS.h>
-#include <semphr.h>
 
-extern xSemaphoreHandle xUIPSemaphore;
-# define MUTEX_UIP_TAKE { while( xSemaphoreTakeRecursive(xUIPSemaphore, (portTickType)1) != pdTRUE ); }
-# define MUTEX_UIP_GIVE { xSemaphoreGiveRecursive(xUIPSemaphore); }
+/////////////////////////////////////////////////////////////////////////////
+// Semaphores
+/////////////////////////////////////////////////////////////////////////////
+
+// optionally, can be assigned to a mutex used by application in mios32_config.h
+#ifndef UIP_TASK_MUTEX_MIDIOUT_TAKE
+#define UIP_TASK_MUTEX_MIDIOUT_TAKE { }
+#endif
+#ifndef UIP_TASK_MUTEX_MIDIOUT_GIVE
+#define UIP_TASK_MUTEX_MIDIOUT_GIVE { }
+#endif
+
+#ifndef UIP_TASK_MUTEX_MIDIIN_TAKE
+#define UIP_TASK_MUTEX_MIDIIN_TAKE { }
+#endif
+#ifndef UIP_TASK_MUTEX_MIDIIN_GIVE
+#define UIP_TASK_MUTEX_MIDIIN_GIVE { }
+#endif
+
+
+// this semaphore is defined by uip_task itself
+
+#define MUTEX_UIP_TAKE { while( xSemaphoreTakeRecursive(xUIPSemaphore, (portTickType)1) != pdTRUE ); }
+#define MUTEX_UIP_GIVE { xSemaphoreGiveRecursive(xUIPSemaphore); }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -102,6 +121,8 @@ extern s32 UIP_TASK_GatewayGet(void);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+extern xSemaphoreHandle xUIPSemaphore;
 
 
 #endif /* _UIP_TASK_H */

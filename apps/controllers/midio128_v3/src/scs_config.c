@@ -21,6 +21,8 @@
 
 #include <uip.h>
 #include "uip_task.h"
+#include "osc_client.h"
+#include "osc_server.h"
 
 #include <scs.h>
 #include "scs_config.h"
@@ -81,6 +83,18 @@ static void stringDIN_Mode(u32 ix, u16 value, char *label)
 static void stringOscPort(u32 ix, u16 value, char *label)
 {
   sprintf(label, "OSC%d", value+1);
+}
+
+static void stringOscMode(u32 ix, u16 value, char *label)
+{
+  sprintf(label, " %s", OSC_CLIENT_TransferModeShortNameGet(value));
+}
+
+static void stringOscModeFull(u32 ix, u16 value, char *line1, char *line2)
+{
+  // print CC parameter on full screen (2x20)
+  sprintf(line1, "OSC%d Transfer Mode:", selectedOscPort+1);
+  sprintf(line2, "%s", OSC_CLIENT_TransferModeFullNameGet(value));
 }
 
 static void stringIpPar(u32 ix, u16 value, char *label)
@@ -188,6 +202,7 @@ static u16  selectLOAD(u32 ix, u16 value)
 static void selectRemoteIp_Callback(u32 newIp)
 {
   OSC_SERVER_RemoteIP_Set(selectedOscPort, newIp);
+  OSC_SERVER_Init(0);
 }
 
 static u16 selectRemoteIp(u32 ix, u16 value)
@@ -310,9 +325,11 @@ static void doutPortSet(u32 ix, u16 value)
 static u16  oscPortGet(u32 ix)            { return selectedOscPort; }
 static void oscPortSet(u32 ix, u16 value) { selectedOscPort = value; }
 static u16  oscRemotePortGet(u32 ix)            { return OSC_SERVER_RemotePortGet(selectedOscPort); }
-static void oscRemotePortSet(u32 ix, u16 value) { OSC_SERVER_RemotePortSet(selectedOscPort, value); }
+static void oscRemotePortSet(u32 ix, u16 value) { OSC_SERVER_RemotePortSet(selectedOscPort, value); OSC_SERVER_Init(0); }
 static u16  oscLocalPortGet(u32 ix)             { return OSC_SERVER_LocalPortGet(selectedOscPort); }
-static void oscLocalPortSet(u32 ix, u16 value)  { OSC_SERVER_LocalPortSet(selectedOscPort, value); }
+static void oscLocalPortSet(u32 ix, u16 value)  { OSC_SERVER_LocalPortSet(selectedOscPort, value);  OSC_SERVER_Init(0); }
+static u16  oscModeGet(u32 ix)                  { return OSC_CLIENT_TransferModeGet(selectedOscPort); }
+static void oscModeSet(u32 ix, u16 value)       { OSC_CLIENT_TransferModeSet(selectedOscPort, value); }
 
 static u16  dhcpGet(u32 ix)                { return UIP_TASK_DHCP_EnableGet(); }
 static void dhcpSet(u32 ix, u16 value)     { UIP_TASK_DHCP_EnableSet(value); }
@@ -376,6 +393,7 @@ const scs_menu_item_t pageOSC[] = {
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectRemoteIp, stringRemoteIp, NULL),
   SCS_ITEM("RPort", 0, 65535,       oscRemotePortGet,oscRemotePortSet,selectNOP,      stringDec5,     NULL),
   SCS_ITEM("LPort", 0, 65535,       oscLocalPortGet, oscLocalPortSet, selectNOP,      stringDec5,     NULL),
+  SCS_ITEM(" Mode", 0, OSC_CLIENT_NUM_TRANSFER_MODES-1, oscModeGet, oscModeSet, selectNOP, stringOscMode, stringOscModeFull),
 };
 
 const scs_menu_item_t pageNetw[] = {

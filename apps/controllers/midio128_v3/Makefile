@@ -25,11 +25,6 @@ THUMB_SOURCE    = src/app.c \
 		  src/seq.c \
                   src/midimon.c \
                   src/terminal.c \
-                  src/uip_task.c \
-                  src/osc_server.c \
-                  src/osc_client.c \
-                  src/dhcpc.c \
-                  src/telnetd.c \
                   src/shell.c \
 		  src/scs_config.c
 
@@ -70,6 +65,9 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # UIP driver
 include $(MIOS32_PATH)/modules/uip/uip.mk
+
+# UIP Standard Task (with DHCPC + OSC server and client)
+include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk

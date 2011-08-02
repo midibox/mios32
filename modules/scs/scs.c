@@ -655,7 +655,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 	scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[itemPos];
 
 	// edit item if maxValue > SCS_MENU_ITEM_TOGGLE_THRESHOLD
-	if( !pageItem->maxValue || pageItem->maxValue > SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
+	if( !pageItem->maxValue || pageItem->maxValue >= SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
 	  displayCursorPos = softButton;
 	  rootTableSelectedItem = itemPos;
 
@@ -669,7 +669,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 	int newValue = pageItem->selectFunct(pageItem->ix, oldValue);
 	if( oldValue == newValue &&
 	    pageItem->maxValue &&
-	    pageItem->maxValue <= SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
+	    pageItem->maxValue < SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
 	  ++newValue;
 	  if( newValue > pageItem->maxValue )
 	    newValue = 0;
@@ -1492,6 +1492,7 @@ s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 init
   scsEditIpCallback = selectCallback;
   memcpy(scsEditString, headerString, SCS_LCD_COLUMNS_PER_DEVICE+1);
   scsEditIp = initialIp;
+  scsEditPos = 0;
   scsEditItemsPerPage = 1; // not relevant for this function, just a MEMO for future extensions
   scsEditNumItems = 1; // not relevant for this function, just a MEMO for future extensions
   scsEditOffset = 0; // not relevant for this function, just a MEMO for future extensions

@@ -184,7 +184,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set osc_remote <con> <address>:   changes OSC Remote Address");
       out("  set osc_remote_port <con> <port>: changes OSC Remote Port (1024..65535)");
       out("  set osc_local_port <con> <port>:  changes OSC Local Port (1024..65535)");
-      out("  set udpmon <0..4>:                enables UDP monitor to check OSC packets (current: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
+      out("  set udpmon <0..4>:                enables UDP monitor (verbose level: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
       out("  set midimon <on|off>:             enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
@@ -313,7 +313,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
 	    } else {
-	      con+=1; // the user counts from 1
+	      con-=1; // the user counts from 1
 
 	      u32 ip = 0;
 	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
@@ -321,11 +321,13 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      if( !ip ) {
 		out("Expecting OSC connection <1..%d> and remote address in format a.b.c.d!", OSC_SERVER_NUM_CONNECTIONS);
 	      } else {
-		if( OSC_SERVER_RemoteIP_Set(con, ip) >= 0 )
-		  out("Set OSC Remote address to %d.%d.%d.%d",
+		if( OSC_SERVER_RemoteIP_Set(con, ip) >= 0 ) {
+		  out("Set OSC%d Remote address to %d.%d.%d.%d",
+		      con+1,
 		      (ip>>24)&0xff, (ip>>16)&0xff, (ip>>8)&0xff, (ip>>0)&0xff);
-		else
-		  out("ERROR: failed to set OSC Remote address!");
+		  OSC_SERVER_Init(0);
+		} else
+		  out("ERROR: failed to set OSC%d Remote address!", con+1);
 	      }
 	    }
 	  }
@@ -339,7 +341,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
 	    } else {
-	      con+=1; // the user counts from 1
+	      con-=1; // the user counts from 1
 
 	      s32 value = -1;
 	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
@@ -347,10 +349,11 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      if( value < 1024 || value >= 65535) {
 		out("Expecting OSC connection (1..%d) and remote port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
 	      } else {
-		if( OSC_SERVER_RemotePortSet(con, value) >= 0 )
-		  out("Set OSC Remote port to %d", value);
-		else
-		  out("ERROR: failed to set OSC remote port!");
+		if( OSC_SERVER_RemotePortSet(con, value) >= 0 ) {
+		  out("Set OSC%d Remote port to %d", con+1, value);
+		  OSC_SERVER_Init(0);
+		} else
+		  out("ERROR: failed to set OSC%d remote port!", con+1);
 	      }
 	    }
 	  }
@@ -364,7 +367,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
 	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
 	    } else {
-	      con+=1; // the user counts from 1
+	      con-=1; // the user counts from 1
 
 	      s32 value = -1;
 	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
@@ -372,10 +375,11 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      if( value < 1024 || value >= 65535) {
 		out("Expecting OSC connection (1..%d) and local port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
 	      } else {
-		if( OSC_SERVER_LocalPortSet(con, value) >= 0 )
-		  out("Set OSC Local port to %d", value);
-		else
-		  out("ERROR: failed to set OSC local port!");
+		if( OSC_SERVER_LocalPortSet(con, value) >= 0 ) {
+		  out("Set OSC%d Local port to %d", con+1, value);
+		  OSC_SERVER_Init(0);
+		} else
+		  out("ERROR: failed to set OSC%d local port!", con+1);
 	      }
 	    }
 	  }

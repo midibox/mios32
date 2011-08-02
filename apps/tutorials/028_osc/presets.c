@@ -19,7 +19,6 @@
 
 #include <eeprom.h>
 #include "presets.h"
-#include "midimon.h"
 #include "uip_task.h"
 #include "osc_server.h"
 
@@ -75,9 +74,6 @@ s32 PRESETS_Init(u32 mode)
     DEBUG_MSG("[PRESETS] reading configuration data from EEPROM!\n");
 #endif
 
-    u8 midimon_setup = PRESETS_Read16(PRESETS_ADDR_MIDIMON);
-    status |= MIDIMON_InitFromPresets((midimon_setup>>0) & 1, (midimon_setup>>1) & 1, (midimon_setup>>2) & 1);
-
     status |= UIP_TASK_InitFromPresets(PRESETS_Read16(PRESETS_ADDR_UIP_USE_DHCP),
 				       PRESETS_Read32(PRESETS_ADDR_UIP_IP01),
 				       PRESETS_Read32(PRESETS_ADDR_UIP_NETMASK01),
@@ -132,12 +128,6 @@ s32 PRESETS_Write32(u8 addr, u32 value)
 s32 PRESETS_StoreAll(void)
 {
   s32 status = 0;
-
-  // write MIDImon data
-  status |= PRESETS_Write16(PRESETS_ADDR_MIDIMON,
-			    (MIDIMON_ActiveGet() ? 1 : 0) |
-			    (MIDIMON_FilterActiveGet() ? 2 : 0) |
-			    (MIDIMON_TempoActiveGet() ? 4 : 0));
 
   // write uIP data
   status |= PRESETS_Write16(PRESETS_ADDR_UIP_USE_DHCP, UIP_TASK_DHCP_EnableGet());
