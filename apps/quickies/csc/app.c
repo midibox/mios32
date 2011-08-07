@@ -359,7 +359,7 @@ static void TASK_MATRIX_Scan(void *pvParameters)
       for(row=0; row<16; ++row) {
 	// check if there are pin changes - must be atomic!
 	MIOS32_IRQ_Disable();
-	u8 changed = matrix16x16_button_row_changed[mod][row];
+	u16 changed = matrix16x16_button_row_changed[mod][row];
 	matrix16x16_button_row_changed[mod][row] = 0;
 	MIOS32_IRQ_Enable();
 
@@ -371,6 +371,7 @@ static void TASK_MATRIX_Scan(void *pvParameters)
 	int sr_pin;
 	for(sr_pin=0; sr_pin<16; ++sr_pin)
 	  if( changed & (1 << sr_pin) ) {
+
 	    u32 pin = 16*row + sr_pin;
 	    u8 value = (matrix16x16_button_row_values[mod][row] & (1 << sr_pin)) ? 1 : 0;
 
@@ -385,6 +386,13 @@ static void TASK_MATRIX_Scan(void *pvParameters)
 
 	    // send MIDI event
 	    MIOS32_MIDI_SendNoteOn(DEFAULT, chn, note, velocity);
+
+	    // a useful debug message to print out temporary variables
+	    // disable it by changing "#if 1" by "#if 0"
+#if 1
+	    MIOS32_MIDI_SendDebugMessage("Mod:%d  Row:%d  sr_pin: %d  value:%d\n",
+					 mod, row, sr_pin, value);
+#endif
 	  }
       }
     }
