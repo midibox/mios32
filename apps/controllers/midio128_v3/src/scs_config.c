@@ -143,6 +143,17 @@ static void stringIp(u32 ix, u16 value, char *label)
   label[SCS_MENU_ITEM_WIDTH] = 0;
 }
 
+static void stringMidiMode(u32 ix, u16 value, char *label)
+{
+  const char midiModeLabel[SEQ_MIDI_PLAY_MODE_NUM][6] = { "All ", "Sngl" };
+  strcpy(label, midiModeLabel[value < SEQ_MIDI_PLAY_MODE_NUM ? value : 0]);  
+}
+
+static void stringMidiFileName(u32 ix, u16 value, char *label)
+{
+  memcpy(label, (char *)(MID_FILE_UI_NameGet() + 5*ix), 5);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Selection Functions
 /////////////////////////////////////////////////////////////////////////////
@@ -236,6 +247,37 @@ static u16 selectIpEnter(u32 ix, u16 value)
     SCS_InstallEditIpCallback(selectIpEnter_Callback, (char *)headerString[selectedIpPar], initialIp);
   }
   return value;
+}
+
+static void selectMidiFile_Callback(char *newString)
+{
+  s32 status;
+
+  if( newString[0] != 0 ) {
+    char midifile[20];
+    sprintf(midifile, "%s.MID", newString);
+
+    if( (status=SEQ_PlayFile(midifile)) < 0 ) {
+      SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", midifile);
+    } else {
+      SCS_Msg(SCS_MSG_L, 1000, "Playing:", midifile);
+    }
+  }
+}
+static u8 getListMidiFile_Callback(u8 offset, char *line)
+{
+  MUTEX_SDCARD_TAKE;
+  s32 status = FILE_GetFiles("/", "MID", line, 2, offset);
+  MUTEX_SDCARD_GIVE;
+  if( status < 1 ) {
+    sprintf(line, "<no .MID files>");
+    status = 0;
+  }
+  return status;
+}
+static u16  selectMidiFile(u32 ix, u16 value)
+{
+  return SCS_InstallEditBrowserCallback(selectMidiFile_Callback, getListMidiFile_Callback, "LOAD", 9, 2);
 }
 
 
@@ -339,6 +381,8 @@ static void selIpParSet(u32 ix, u16 value)
   selectedIpPar = value;
 }
 
+static u16  midiPlayModeGet(u32 ix)            { return SEQ_MidiPlayModeGet(); }
+static void midiPlayModeSet(u32 ix, u16 value) { SEQ_MidiPlayModeSet(value); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Menu Structure
@@ -404,11 +448,19 @@ const scs_menu_item_t pageNetw[] = {
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectIpEnter,stringIp, NULL),
 };
 
+const scs_menu_item_t pageMIDI[] = {
+  SCS_ITEM("Mode ", 0, 1,           midiPlayModeGet, midiPlayModeSet, selectNOP,  stringMidiMode, NULL),
+  SCS_ITEM("Filen", 0, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+  SCS_ITEM("ame  ", 1, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+  SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+};
+
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DIN  ", pageDIN),
   SCS_PAGE("DOUT ", pageDOUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
+  SCS_PAGE("MIDI ", pageMIDI),
   SCS_PAGE("Disk ", pageDsk),
 };
 
@@ -502,14 +554,14 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 
       case SCS_PIN_SOFT2: { // previous song
 	MUTEX_SDCARD_TAKE;
-	SEQ_PlayFileReq(-1);
+	SEQ_PlayFileReq(-1, 1);
 	MUTEX_SDCARD_GIVE;
 	return 1;
       }
 
       case SCS_PIN_SOFT3: { // next song
 	MUTEX_SDCARD_TAKE;
-	SEQ_PlayFileReq(1);
+	SEQ_PlayFileReq(1, 1);
 	MUTEX_SDCARD_GIVE;
 	return 1;
       }
