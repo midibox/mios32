@@ -15,12 +15,10 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
 // define a unique VID/PID for this application
-#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
-#define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  MIOS32_LCD_BOOT_MSG_LINE1
-#define MIOS32_USB_PRODUCT_ID   1005          // 1000..1009 are free for lab use
 
-#define MIOS32_USB_MIDI_NUM_PORTS 2           // we provide 2 USB ports
+// only enable a single USB port by default to avoid USB issue under Win7 64bit
+//#define MIOS32_USB_MIDI_NUM_PORTS 2           // we provide 2 USB ports
 
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage

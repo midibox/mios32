@@ -51,7 +51,7 @@ static s32 SEQ_PlayOffEvents(void);
 static s32 SEQ_SongPos(u16 new_song_pos);
 static s32 SEQ_Tick(u32 bpm_tick);
 
-static s32 SEQ_PlayFile(s8 next);
+static s32 SEQ_PlayNextFile(s8 next);
 
 static s32 SEQ_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick);
 static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
@@ -87,6 +87,9 @@ static s8 next_file_req;
 // output port flags
 static u16 enabled_ports;
 
+// the MIDI play mode
+static u8 midi_play_mode;
+
 static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,6 +97,9 @@ static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t 
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_Init(u32 mode)
 {
+  // play mode
+  midi_play_mode = SEQ_MIDI_PLAY_MODE_ALL;
+
   // play over USB0 and UART0/1
   enabled_ports = 0x01 | (0x03 << 4);
   
@@ -121,6 +127,25 @@ s32 SEQ_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// set/get MIDI play mode
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MidiPlayModeGet(void)
+{
+  return midi_play_mode;
+}
+
+s32 SEQ_MidiPlayModeSet(u8 mode)
+{
+  if( mode >= SEQ_MIDI_PLAY_MODE_NUM )
+    return -1;
+
+  midi_play_mode = mode;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // this sequencer handler is called periodically to check for new requests
 // from BPM generator
 /////////////////////////////////////////////////////////////////////////////
@@ -128,7 +153,7 @@ s32 SEQ_Handler(void)
 {
   // a lower priority task requested to play the next file
   if( next_file_req != 0 ) {
-    SEQ_PlayFile(next_file_req & (s8)~0x40);
+    SEQ_PlayNextFile(next_file_req & (s8)~0x40);
     next_file_req = 0;
   };
 
@@ -271,16 +296,41 @@ static s32 SEQ_SongPos(u16 new_song_pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Plays the given .mid file
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PlayFile(char *midifile)
+{
+  SEQ_BPM_Stop();                  // stop BPM generator
+
+  // play off events before loading new file
+  SEQ_PlayOffEvents();
+
+  if( MID_FILE_open(midifile) ) { // try to open next file
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ] file %s cannot be opened (wrong directory?)\n", midifile);
+#endif
+    return -1; // file cannot be opened
+  }
+  if( MID_PARSER_Read() < 0 ) { // read file, stop on failure
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ] file %s is invalid!\n", midifile);
+#endif
+    return -2; // file is invalid
+  } 
+  SEQ_BPM_Start();          // start BPM generator
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Plays the first .mid file if next == 0, the next file if next > 0, the
 // 0: plays the first .mid file
 // 1: plays the next .mid file
 // -1: plays the previous .mid file
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_PlayFile(s8 next)
+static s32 SEQ_PlayNextFile(s8 next)
 {
-  // play off events before loading new file
-  SEQ_PlayOffEvents();
-
   char next_file[13];
   next_file[0] = 0;
 
@@ -308,20 +358,7 @@ static s32 SEQ_PlayFile(s8 next)
 #endif
     return -1; // file not found
   } else {
-    SEQ_BPM_Stop();                  // stop BPM generator
-    if( MID_FILE_open(next_file) ) { // try to open next file
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[SEQ] file %s cannot be opened (wrong directory?)\n", next_file);
-#endif
-      return -1; // file cannot be opened
-    }
-    if( MID_PARSER_Read() < 0 ) { // read file, stop on failure
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[SEQ] file %s is invalid!\n", next_file);
-#endif
-      return -2; // file is invalid
-    } 
-    SEQ_BPM_Start();          // start BPM generator
+    SEQ_PlayFile(next_file);
   }
 
   return 0; // no error
@@ -333,14 +370,24 @@ static s32 SEQ_PlayFile(s8 next)
 // 0: request first
 // 1: request next
 // -1: request previous
+//
+// if force is set, the next/previous song will be played regardless of current MIDI play mode
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PlayFileReq(s8 next)
+s32 SEQ_PlayFileReq(s8 next, u8 force)
 {
-  // stop generator
-  SEQ_BPM_Stop();
+  if( force || !next || midi_play_mode == SEQ_MIDI_PLAY_MODE_ALL ) {
+    // stop generator
+    SEQ_BPM_Stop();
 
-  // request next file
-  next_file_req = next | 0x40; // ensure that next_file is always != 0
+    // request next file
+    next_file_req = next | 0x40; // ensure that next_file is always != 0
+  } else {
+    // play current MIDI file again
+    SEQ_Reset(1);
+    SEQ_SongPos(0);
+  }
+
+
 
   return 0; // no error
 }
@@ -375,7 +422,8 @@ static s32 SEQ_Tick(u32 bpm_tick)
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
 #endif
-      SEQ_PlayFileReq(1);
+
+      SEQ_PlayFileReq(1, 0);
     } else {
       prefetch_offset += prefetch_ticks;
     }
@@ -576,7 +624,7 @@ s32 SEQ_PlayStopButton(void)
       // change to master mode
       SEQ_BPM_CheckAutoMaster();
       // first song
-      SEQ_PlayFileReq(0);
+      SEQ_PlayFileReq(0, 1);
       // reset sequencer
       SEQ_Reset(1);
       // start sequencer

@@ -140,6 +140,25 @@ s32 MIDIO_FILE_P_Valid(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which removes the quotes of an argument (e.g. .csv file format)
+// can be cascaded with strtok_r
+/////////////////////////////////////////////////////////////////////////////
+static char *remove_quotes(char *word)
+{
+  if( word == NULL )
+    return NULL;
+
+  if( *word == '"' )
+    ++word;
+
+  int len = strlen(word);
+  if( len && word[len-1] == '"' )
+    word[len-1] = 0;
+
+  return word;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses a decimal or hex value
 // returns >= 0 if value is valid
 // returns -1 if value is invalid
@@ -170,7 +189,7 @@ static u32 get_ip(char *brkt)
 
   int i;
   for(i=0; i<4; ++i) {
-    if( (word=strtok_r(NULL, ".", &brkt)) ) {
+    if( (word=remove_quotes(strtok_r(NULL, ".", &brkt))) ) {
       s32 value = get_dec(word);
       if( value >= 0 && value <= 255 )
 	ip[i] = value;
@@ -227,6 +246,8 @@ static s32 get_sr(char *word)
 // returns >= 0 if value is valid
 // returns -1 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
+// not required anymore
+#if 0
 static s32 get_bin(char *word, int numBits)
 {
   if( word == NULL )
@@ -249,7 +270,7 @@ static s32 get_bin(char *word, int numBits)
 
   return value;
 }
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // reads the patch file content (again)
@@ -291,31 +312,40 @@ s32 MIDIO_FILE_P_Read(char *filename)
 #endif
 
       // sscanf consumes too much memory, therefore we parse directly
-      char *separators = " \t";
+      char *separators = " \t;";
       char *brkt;
       char *parameter;
 
-      if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
+      if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
 
-	if( *parameter == '#' ) {
-	  // ignore comments
+	if( *parameter == 0 || *parameter == '#' ) {
+	  // ignore comments and empty lines
 	} else if( strcmp(parameter, "DIN") == 0 ) {
 	  s32 sr;
-	  char *word = strtok_r(NULL, separators, &brkt);
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  if( (sr=get_sr(word)) < 0 || sr >= MIDIO_PATCH_NUM_DIN  ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid SR.Pin format for parameter '%s'\n", parameter);
 #endif
 	  } else {
-	    s32 enabled_ports;
-	    char *word = strtok_r(NULL, separators, &brkt);
-	    if( (enabled_ports=get_bin(word, 16)) < 0 ) {
+	    s32 enabled_ports = 0;
+	    int bit;
+	    for(bit=0; bit<16; ++bit) {
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	      int enable = get_dec(word);
+	      if( enable < 0 )
+		break;
+	      if( enable >= 1 )
+		enabled_ports |= (1 << bit);
+	    }
+
+	    if( bit != 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
 #endif
 	    } else {
 	      s32 mode;
-	      char *word = strtok_r(NULL, separators, &brkt);
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (mode=get_dec(word)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid Mode format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
@@ -324,7 +354,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 		u8 events[6];
 		int i;
 		for(i=0; i<6; ++i) {
-		  char *word = strtok_r(NULL, separators, &brkt);
+		  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 		  if( (events[i]=get_dec(word)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid Event format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
@@ -353,15 +383,24 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  }	  
 	} else if( strcmp(parameter, "DOUT") == 0 ) {
 	  s32 sr;
-	  char *word = strtok_r(NULL, separators, &brkt);
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  if( (sr=get_sr(word)) < 0 || sr >= MIDIO_PATCH_NUM_DIN  ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid SR.Pin format for parameter '%s'\n", parameter);
 #endif
 	  } else {
-	    s32 enabled_ports;
-	    char *word = strtok_r(NULL, separators, &brkt);
-	    if( (enabled_ports=get_bin(word, 16)) < 0 ) {
+	    s32 enabled_ports = 0;
+	    int bit;
+	    for(bit=0; bit<16; ++bit) {
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	      int enable = get_dec(word);
+	      if( enable < 0 )
+		break;
+	      if( enable >= 1 )
+		enabled_ports |= (1 << bit);
+	    }
+
+	    if( bit != 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, 7-(sr%8));
 #endif
@@ -369,7 +408,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      u8 events[2];
 	      int i;
 	      for(i=0; i<2; ++i) {
-		char *word = strtok_r(NULL, separators, &brkt);
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 		if( (events[i]=get_dec(word)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		  DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid Event format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, (7-sr%8));
@@ -493,7 +532,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    UIP_TASK_GatewaySet(value);
 	  }
 	} else {
-	  char *word = strtok_r(NULL, separators, &brkt);
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  s32 value = get_dec(word);
 
 	  if( value < 0 ) {
@@ -521,7 +560,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
 	      u8 con = value;
-	      word = strtok_r(NULL, separators, &brkt);
+	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (value=get_dec(word)) < 0 ) {
 		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid port number for parameter '%s'\n", parameter);
 	      } else {
@@ -533,7 +572,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
 	      u8 con = value;
-	      word = strtok_r(NULL, separators, &brkt);
+	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (value=get_dec(word)) < 0 ) {
 		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid port number for parameter '%s'\n", parameter);
 	      } else {
@@ -546,7 +585,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
 	      u8 con = value;
-	      word = strtok_r(NULL, separators, &brkt);
+	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (value=get_dec(word)) < 0 ) {
 		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid transfer mode number for parameter '%s'\n", parameter);
 	      } else {
@@ -564,8 +603,9 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  }
 	}
       } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MIDIO_FILE_P] ERROR no space separator in following line: %s", line_buffer);
+#if DEBUG_VERBOSE_LEVEL >= 2
+	// no real error, can for example happen in .csv file
+	DEBUG_MSG("[MIDIO_FILE_P] ERROR no space or semicolon separator in following line: %s", line_buffer);
 #endif
       }
     }
@@ -606,21 +646,23 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    //    SR/Pin MIDI OUT ports   mode     ON Event        OFF event
-    // DIN  1.D0 1111111111111111   0   0x90 0x30 0x7F  0x90 0x30 0x00
-    sprintf(line_buffer, "\n\n#  SR/Pin MIDI OUT ports   mode     ON Event        OFF event\n");
+    sprintf(line_buffer, "\n\n#DIN;SR.Pin;USB1;USB2;USB3;USB4;OUT1;OUT2;OUT3;OUT4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;OnEv0;OnEv1;OnEv2;OffEv0;OffEv1;OffEv2\n");
     FLUSH_BUFFER;
 
     int din;
     midio_patch_din_entry_t *din_cfg = (midio_patch_din_entry_t *)&midio_patch_din[0];
     for(din=0; din<MIDIO_PATCH_NUM_DIN; ++din, ++din_cfg) {
-      char ports_bin[17];
+      char ports_bin[40];
       int bit;
-      for(bit=0; bit<16; ++bit)
-	ports_bin[bit] = (din_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-      ports_bin[16] = 0;
+      for(bit=0; bit<16; ++bit) {
+	ports_bin[2*bit+0] = (din_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
+	ports_bin[2*bit+1] = ';';
+      }
+      ports_bin[2*16-1] = 0; // removes also last semicolon
 
-      sprintf(line_buffer, "DIN %2d.D%d %s  %2d   0x%02X 0x%02X 0x%02X  0x%02x 0x%02x 0x%02x\n",
+      sprintf(line_buffer, "DIN;%d.D%d;%s;%d;0x%02X;0x%02X;0x%02X;0x%02x;0x%02x;0x%02x\n",
 	      (din / 8) + 1,
 	      din % 8,
 	      ports_bin,
@@ -632,21 +674,23 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    //     SR/Pin MIDI IN ports       Event
-    // DOUT  1.D7 1111111111111111  0x90 0x30
-    sprintf(line_buffer, "\n\n#   SR/Pin MIDI IN ports       Event\n");
+    sprintf(line_buffer, "\n\n#DOUT;SR.Pin;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Evnt0;Evnt1\n");
     FLUSH_BUFFER;
 
     int dout;
     midio_patch_dout_entry_t *dout_cfg = (midio_patch_dout_entry_t *)&midio_patch_dout[0];
     for(dout=0; dout<MIDIO_PATCH_NUM_DOUT; ++dout, ++dout_cfg) {
-      char ports_bin[17];
+      char ports_bin[40];
       int bit;
-      for(bit=0; bit<16; ++bit)
-	ports_bin[bit] = (dout_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-      ports_bin[16] = 0;
+      for(bit=0; bit<16; ++bit) {
+	ports_bin[2*bit+0] = (dout_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
+	ports_bin[2*bit+1] = ';';
+      }
+      ports_bin[2*16-1] = 0; // removes also last semicolon
 
-      sprintf(line_buffer, "DOUT %2d.D%d %s  0x%02X 0x%02X\n",
+      sprintf(line_buffer, "DOUT;%d.D%d;%s;0x%02X;0x%02X\n",
 	      (dout / 8) + 1,
 	      7 - (dout % 8),
 	      ports_bin,
@@ -660,7 +704,7 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   {
     u32 value = UIP_TASK_IP_AddressGet();
-    sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_LocalIp;%d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -670,7 +714,7 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_NetmaskGet();
-    sprintf(line_buffer, "ETH_Netmask %d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Netmask;%d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -680,7 +724,7 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_GatewayGet();
-    sprintf(line_buffer, "ETH_Gateway %d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Gateway;%d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -688,13 +732,13 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
   }
 
-  sprintf(line_buffer, "ETH_Dhcp %d\n", UIP_TASK_DHCP_EnableGet());
+  sprintf(line_buffer, "ETH_Dhcp;%d\n", UIP_TASK_DHCP_EnableGet());
   FLUSH_BUFFER;
 
   int con;
   for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
     u32 value = OSC_SERVER_RemoteIP_Get(con);
-    sprintf(line_buffer, "OSC_RemoteIp %d %d.%d.%d.%d\n",
+    sprintf(line_buffer, "OSC_RemoteIp;%d;%d.%d.%d.%d\n",
 	    con,
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
@@ -702,14 +746,14 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 	    (value >>  0) & 0xff);
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_RemotePort %d %d\n", con, OSC_SERVER_RemotePortGet(con));
+    sprintf(line_buffer, "OSC_RemotePort;%d;%d\n", con, OSC_SERVER_RemotePortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
+    sprintf(line_buffer, "OSC_LocalPort;%d;%d\n", con, OSC_SERVER_LocalPortGet(con));
     FLUSH_BUFFER;
 
 #if 0
-    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, MIDIO_MIDI_OSC_TransferModeGet(con));
+    sprintf(line_buffer, "OSC_TransferMode;%d;%d\n", con, MIDIO_MIDI_OSC_TransferModeGet(con));
     FLUSH_BUFFER;
 #endif
   }
@@ -718,21 +762,21 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MergerMode %d\n", midio_patch_cfg.flags.MERGER_MODE);
+  sprintf(line_buffer, "MergerMode;%d\n", midio_patch_cfg.flags.MERGER_MODE);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "ForwardIO %d\n", midio_patch_cfg.flags.FORWARD_IO);
+  sprintf(line_buffer, "ForwardIO;%d\n", midio_patch_cfg.flags.FORWARD_IO);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "InverseDIN %d\n", midio_patch_cfg.flags.INVERSE_DIN);
+  sprintf(line_buffer, "InverseDIN;%d\n", midio_patch_cfg.flags.INVERSE_DIN);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "InverseDOUT %d\n", midio_patch_cfg.flags.INVERSE_DOUT);
+  sprintf(line_buffer, "InverseDOUT;%d\n", midio_patch_cfg.flags.INVERSE_DOUT);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "AltProgramChange %d\n", midio_patch_cfg.flags.ALT_PROGCHNG);
+  sprintf(line_buffer, "AltProgramChange;%d\n", midio_patch_cfg.flags.ALT_PROGCHNG);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "DebounceCtr %d\n", midio_patch_cfg.debounce_ctr);
+  sprintf(line_buffer, "DebounceCtr;%d\n", midio_patch_cfg.debounce_ctr);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "GlobalChannel %d\n", midio_patch_cfg.global_chn);
+  sprintf(line_buffer, "GlobalChannel;%d\n", midio_patch_cfg.global_chn);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "AllNotesOffChannel %d\n", midio_patch_cfg.all_notes_off_chn);
+  sprintf(line_buffer, "AllNotesOffChannel;%d\n", midio_patch_cfg.all_notes_off_chn);
   FLUSH_BUFFER;
 
 
