@@ -23,6 +23,7 @@
 #include "midio_patch.h"
 #include "midio_din.h"
 #include "midio_dout.h"
+#include "midio_matrix.h"
 
 // include source of the SCS
 #include <scs.h>
@@ -138,6 +139,7 @@ void APP_Init(void)
   MIDIO_PATCH_Init(0);
   MIDIO_DIN_Init(0);
   MIDIO_DOUT_Init(0);
+  MIDIO_MATRIX_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
   SCS_CONFIG_Init(0);
@@ -323,6 +325,9 @@ void APP_SRIO_ServicePrepare(void)
 
   // update encoders/buttons of SCS
   SCS_EncButtonUpdate_Tick();
+
+  // Matrix handler
+  MIDIO_MATRIX_PrepareCol();
 }
 
 
@@ -331,6 +336,8 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
+  // Matrix handler
+  MIDIO_MATRIX_GetRow();
 }
 
 
@@ -420,7 +427,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	  // check if patch file exists
 	  if( !MIDIO_FILE_P_Valid() ) {
 	    // create new one
-	    DEBUG_MSG("Creating initial MIDIO_P.V3 file\n");
+	    DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
 
 	    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
@@ -464,6 +471,9 @@ static void TASK_Period_1mS(void *pvParameters)
     MUTEX_MIDIOUT_TAKE;
     SEQ_MIDI_OUT_Handler();
     MUTEX_MIDIOUT_GIVE;
+
+    // Scan Matrix button handler
+    MIDIO_MATRIX_ButtonHandler();
   }
 }
 

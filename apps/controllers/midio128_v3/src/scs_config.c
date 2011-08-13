@@ -48,6 +48,7 @@ static u8 extraPage;
 
 static u8 selectedDin;
 static u8 selectedDout;
+static u8 selectedMatrix;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
 
@@ -64,10 +65,29 @@ static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
+static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02x  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
+
+static void stringNote(u32 ix, u16 value, char *label)
+{
+  const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+
+  // print "---" if note number is 0
+  if( value == 0 )
+    sprintf(label, "---  ");
+  else {
+    u8 octave = value / 12;
+    u8 note = value % 12;
+
+    // print semitone and octave (-2): up to 4 chars
+    sprintf(label, "%s%d  ",
+	    noteTab[note],
+	    (int)octave-2);
+  }
+}
 
 static void stringDIN_SR(u32 ix, u16 value, char *label)  { sprintf(label, "%2d.%d", (value/8)+1, value%8); }
 static void stringDOUT_SR(u32 ix, u16 value, char *label) { sprintf(label, "%2d.%d", (value/8)+1, 7-(value%8)); }
@@ -364,6 +384,33 @@ static void doutPortSet(u32 ix, u16 value)
   dout_cfg->enabled_ports |= ((value&1) << ix);
 }
 
+static u16  matrixGet(u32 ix)                { return selectedMatrix; }
+static void matrixSet(u32 ix, u16 value)     { selectedMatrix = value; }
+
+static u16  matrixChnGet(u32 ix)             { return (midio_patch_matrix[selectedMatrix].chn-1) & 0xf; }
+static void matrixChnSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].chn = value+1; }
+
+static u16  matrixArgGet(u32 ix)             { return midio_patch_matrix[selectedMatrix].arg; }
+static void matrixArgSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].arg = value; }
+
+static u16  matrixDinGet(u32 ix)             { return midio_patch_matrix[selectedMatrix].sr_din; }
+static void matrixDinSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].sr_din = value; }
+
+static u16  matrixDoutGet(u32 ix)            { return midio_patch_matrix[selectedMatrix].sr_dout; }
+static void matrixDoutSet(u32 ix, u16 value) { midio_patch_matrix[selectedMatrix].sr_dout = value; }
+
+static u16  matrixPortGet(u32 ix)
+{
+  midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[selectedMatrix];
+  return (m->enabled_ports >> ix) & 0x1;
+}
+static void matrixPortSet(u32 ix, u16 value)
+{
+  midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[selectedMatrix];
+  m->enabled_ports &= ~(1 << ix);
+  m->enabled_ports |= ((value&1) << ix);
+}
+
 static u16  oscPortGet(u32 ix)            { return selectedOscPort; }
 static void oscPortSet(u32 ix, u16 value) { selectedOscPort = value; }
 static u16  oscRemotePortGet(u32 ix)            { return OSC_SERVER_RemotePortGet(selectedOscPort); }
@@ -399,7 +446,15 @@ const scs_menu_item_t pageDIN[] = {
   SCS_ITEM("E1Of ", 4, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
   SCS_ITEM("E2Of ", 5, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
   SCS_ITEM("USB1 ", 0, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#if MIOS32_USB_MIDI_NUM_PORTS >= 2
   SCS_ITEM("USB2 ", 1, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 3
+  SCS_ITEM("USB3 ", 2, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 4
+  SCS_ITEM("USB4 ", 3, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OUT1 ", 4, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT2 ", 5, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT3 ", 6, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
@@ -415,7 +470,15 @@ const scs_menu_item_t pageDOUT[] = {
   SCS_ITEM("Evn0 ", 0, 0x7f,        doutEvntGet,     doutEvntSet,     selectNOP, stringHex2O80, NULL),
   SCS_ITEM("Evn1 ", 1, 0x7f,        doutEvntGet,     doutEvntSet,     selectNOP, stringHex2, NULL),
   SCS_ITEM("USB1 ", 0, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#if MIOS32_USB_MIDI_NUM_PORTS >= 2
   SCS_ITEM("USB2 ", 1, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 3
+  SCS_ITEM("USB3 ", 2, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 4
+  SCS_ITEM("USB4 ", 3, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM(" IN1 ", 4, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM(" IN2 ", 5, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM(" IN3 ", 6, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
@@ -423,6 +486,31 @@ const scs_menu_item_t pageDOUT[] = {
   SCS_ITEM("OSC2 ",13, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC4 ",15, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+};
+
+const scs_menu_item_t pageM8x8[] = {
+  SCS_ITEM("Mat. ", 0, MIDIO_PATCH_NUM_MATRIX-1, matrixGet, matrixSet,selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Chn. ", 0, 15,          matrixChnGet,    matrixChnSet,    selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Base ", 0, 127,         matrixArgGet,    matrixArgSet,    selectNOP, stringNote,  NULL),
+  SCS_ITEM("DIN  ", 0, 16,          matrixDinGet,    matrixDinSet,    selectNOP, stringDec0Dis, NULL),
+  SCS_ITEM("DOUT ", 0, 16,          matrixDoutGet,   matrixDoutSet,   selectNOP, stringDec0Dis, NULL),
+  SCS_ITEM("USB1 ", 0, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#if MIOS32_USB_MIDI_NUM_PORTS >= 2
+  SCS_ITEM("USB2 ", 1, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 3
+  SCS_ITEM("USB3 ", 2, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 4
+  SCS_ITEM("USB4 ", 3, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#endif
+  SCS_ITEM("OUT1 ", 4, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT2 ", 5, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT3 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC1 ",12, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC2 ",13, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC3 ",14, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC4 ",15, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
 };
 
 const scs_menu_item_t pageDsk[] = {
@@ -458,6 +546,7 @@ const scs_menu_item_t pageMIDI[] = {
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DIN  ", pageDIN),
   SCS_PAGE("DOUT ", pageDOUT),
+  SCS_PAGE("M8x8 ", pageM8x8),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("MIDI ", pageMIDI),
