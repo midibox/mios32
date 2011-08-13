@@ -18,7 +18,7 @@
 #define MIOS32_USB_PRODUCT_STR  MIOS32_LCD_BOOT_MSG_LINE1
 
 // only enable a single USB port by default to avoid USB issue under Win7 64bit
-//#define MIOS32_USB_MIDI_NUM_PORTS 2           // we provide 2 USB ports
+#define MIOS32_USB_MIDI_NUM_PORTS 1
 
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage

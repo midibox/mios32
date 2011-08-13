@@ -485,13 +485,9 @@ s32 SEQ_LCD_PrintNote(u8 note)
   if( note == 0 )
     SEQ_LCD_PrintString("---");
   else {
-    u8 octave = 0;
-
     // determine octave, note contains semitone number thereafter
-    while( note >= 12 ) {
-      ++octave;
-      note -= 12;
-    }
+    u8 octave = note / 12;
+    note %= 12;
 
     // print semitone (capital letter if octave >= 2)
     SEQ_LCD_PrintChar(octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0]);

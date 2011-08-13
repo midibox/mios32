@@ -19,6 +19,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/midio_patch.c \
 		  src/midio_din.c \
 		  src/midio_dout.c \
+		  src/midio_matrix.c \
 		  src/midio_file.c \
 		  src/midio_file_p.c \
 		  src/mid_file.c \

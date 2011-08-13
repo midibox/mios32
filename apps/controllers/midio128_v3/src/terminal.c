@@ -188,7 +188,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set midimon <on|off>:             enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
-      out("  set dout <pin> <0|1>:             directly sets the DOUT pin (all or 0..%d) to the given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
+      out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
       out("  show:                             shows the current configuration file");

@@ -430,6 +430,59 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    }
 	    
 	  }	  
+	} else if( strcmp(parameter, "MATRIX") == 0 ) {
+	  s32 matrix;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (matrix=get_dec(word)) < 1 || matrix > MIDIO_PATCH_NUM_MATRIX  ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --matrix;
+
+	    s32 enabled_ports = 0;
+	    int bit;
+	    for(bit=0; bit<16; ++bit) {
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	      int enable = get_dec(word);
+	      if( enable < 0 )
+		break;
+	      if( enable >= 1 )
+		enabled_ports |= (1 << bit);
+	    }
+
+	    if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, matrix);
+#endif
+	    } else {
+	      // we have to read 5 additional values
+	      int values[5];
+	      const char value_name[5][10] = { "Mode", "Channel", "Arg", "SR_DIN", "SR_DOUT" };
+	      int i;
+	      for(i=0; i<5; ++i) {
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+		if( (values[i]=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, matrix);
+#endif
+		  break;
+		}
+	      }
+
+	      if( i == 5 ) {
+		// finally a valid line!
+		midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[matrix];
+		m->enabled_ports = enabled_ports;
+		m->mode = values[0];
+		m->chn = values[1];
+		m->arg = values[2];
+		m->sr_din = values[3];
+		m->sr_dout = values[4];
+	      }
+	    }
+	  }	  
 	} else if( strcmp(parameter, "MergerMode") == 0 ) {
 	  u32 value;
 	  if( (value=get_dec(brkt)) < 0 ) {
@@ -695,6 +748,35 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 	      7 - (dout % 8),
 	      ports_bin,
 	      dout_cfg->evnt0 | 0x80, dout_cfg->evnt1);
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#MATRIX;Number;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;Chn;Arg;DIN_SR;DOUT_SR\n");
+    FLUSH_BUFFER;
+
+    int matrix;
+    midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[0];
+    for(matrix=0; matrix<MIDIO_PATCH_NUM_MATRIX; ++matrix, ++m) {
+      char ports_bin[40];
+      int bit;
+      for(bit=0; bit<16; ++bit) {
+	ports_bin[2*bit+0] = (m->enabled_ports & (1 << bit)) ? '1' : '0';
+	ports_bin[2*bit+1] = ';';
+      }
+      ports_bin[2*16-1] = 0; // removes also last semicolon
+
+      sprintf(line_buffer, "MATRIX;%d;%s;%d;%d;0x%02X;%d;%d\n",
+	      matrix+1,
+	      ports_bin,
+	      m->mode,
+	      m->chn,
+	      m->arg,
+	      m->sr_din,
+	      m->sr_dout);
       FLUSH_BUFFER;
     }
   }

@@ -25,12 +25,15 @@
 #define MIDIO_PATCH_SIZE (MIDIO_PATCH_DOUT_SIZE + MIDIO_PATCH_DIN_SIZE + MIDIO_PATCH_CFG_SIZE)
 
 
-#define MIDIO_PATCH_NUM_DIN  128
-#define MIDIO_PATCH_NUM_DOUT 128
+#define MIDIO_PATCH_NUM_DIN    128
+#define MIDIO_PATCH_NUM_DOUT   128
+#define MIDIO_PATCH_NUM_MATRIX  16
 
 #define MIDIO_PATCH_DIN_MODE_ON_OFF        0
 #define MIDIO_PATCH_DIN_MODE_ON_ONLY       1
 #define MIDIO_PATCH_DIN_MODE_TOGGLE        2
+
+#define MIDIO_PATCH_MATRIX_MODE_COMMON     0
 
 #define MIDIO_PATCH_MERGER_MODE_DISABLED   0
 #define MIDIO_PATCH_MERGER_MODE_ENABLED    1
@@ -59,6 +62,15 @@ typedef struct {
   u8 evnt0;
   u8 evnt1;
 } midio_patch_dout_entry_t;
+
+typedef struct {
+  u16 enabled_ports;
+  u8 mode;
+  u8 chn;
+  u8 arg;
+  u8 sr_din;
+  u8 sr_dout;
+} midio_patch_matrix_entry_t;
 
 typedef union {
   struct {
@@ -100,6 +112,8 @@ extern s32 MIDIO_PATCH_Store(char *filename);
 
 extern midio_patch_din_entry_t  midio_patch_din[MIDIO_PATCH_NUM_DIN];
 extern midio_patch_dout_entry_t midio_patch_dout[MIDIO_PATCH_NUM_DOUT];
+extern midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX];
+
 extern midio_patch_cfg_t        midio_patch_cfg;
 
 #endif /* _MIDIO_PATCH_H */
