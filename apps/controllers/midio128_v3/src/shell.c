@@ -1,4 +1,4 @@
-// $Id: shell.c 1001 2010-04-18 21:01:15Z tk $
+// $Id$
 /*
  * Telnet shell for standard UIP task
  *

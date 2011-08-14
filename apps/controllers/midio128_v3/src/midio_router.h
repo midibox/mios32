@@ -1,6 +1,6 @@
 // $Id$
 /*
- * Scan Matrix access functions for MIDIO128 V3
+ * MIDI Router functions for MIDIO128 V3
  *
  * ==========================================================================
  *
@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _MIDIO_MATRIX_H
-#define _MIDIO_MATRIX_H
+#ifndef _MIDIO_ROUTER_H
+#define _MIDIO_ROUTER_H
 
 /////////////////////////////////////////////////////////////////////////////
 // global definitions
@@ -28,14 +28,14 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIDIO_MATRIX_Init(u32 mode);
-extern s32 MIDIO_MATRIX_PrepareCol(void);
-extern s32 MIDIO_MATRIX_GetRow(void);
-extern s32 MIDIO_MATRIX_ButtonHandler(void);
+extern s32 MIDIO_ROUTER_Init(u32 mode);
+
+extern s32 MIDIO_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 MIDIO_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _MIDIO_MATRIX_H */
+#endif /* _MIDIO_ROUTER_H */

@@ -31,6 +31,7 @@
 #include "seq.h"
 #include "mid_file.h"
 
+#include "midio_port.h"
 #include "midio_dout.h"
 
 #include <file.h>
@@ -49,6 +50,7 @@ static u8 extraPage;
 static u8 selectedDin;
 static u8 selectedDout;
 static u8 selectedMatrix;
+static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
 
@@ -100,6 +102,26 @@ static void stringDIN_Mode(u32 ix, u16 value, char *label)
     sprintf(label, "%3d ", value);
 }
 
+static void stringInPort(u32 ix, u16 value, char *label)
+{
+  sprintf(label, MIDIO_PORT_InNameGet(value));
+}
+
+static void stringOutPort(u32 ix, u16 value, char *label)
+{
+  sprintf(label, MIDIO_PORT_OutNameGet(value));
+}
+
+static void stringRouterChn(u32 ix, u16 value, char *label)
+{
+  if( value == 0 )
+    sprintf(label, "---  ");
+  else if( value == 17 )
+    sprintf(label, "All  ");
+  else
+    sprintf(label, "%3d  ", value);
+}
+
 static void stringOscPort(u32 ix, u16 value, char *label)
 {
   sprintf(label, "OSC%d", value+1);
@@ -148,9 +170,9 @@ static void stringIp(u32 ix, u16 value, char *label)
   } else {
     u32 ip = 0;
     switch( selectedIpPar ) {
-    case 0: ip = UIP_TASK_IP_AddressGet(); break;
-    case 1: ip = UIP_TASK_NetmaskGet(); break;
-    case 2: ip = UIP_TASK_GatewayGet(); break;
+    case 0: ip = UIP_TASK_IP_EffectiveAddressGet(); break;
+    case 1: ip = UIP_TASK_EffectiveNetmaskGet(); break;
+    case 2: ip = UIP_TASK_EffectiveGatewayGet(); break;
     }
 
     sprintf(buffer, "%3d.%3d.%3d.%3d",
@@ -411,6 +433,21 @@ static void matrixPortSet(u32 ix, u16 value)
   m->enabled_ports |= ((value&1) << ix);
 }
 
+static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
+static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
+
+static u16  routerSrcPortGet(u32 ix)             { return MIDIO_PORT_InIxGet(midio_patch_router[selectedRouterNode].src_port); }
+static void routerSrcPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].src_port = MIDIO_PORT_InPortGet(value); }
+
+static u16  routerSrcChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].src_chn; }
+static void routerSrcChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].src_chn = value; }
+
+static u16  routerDstPortGet(u32 ix)             { return MIDIO_PORT_OutIxGet(midio_patch_router[selectedRouterNode].dst_port); }
+static void routerDstPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].dst_port = MIDIO_PORT_OutPortGet(value); }
+
+static u16  routerDstChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].dst_chn; }
+static void routerDstChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].dst_chn = value; }
+
 static u16  oscPortGet(u32 ix)            { return selectedOscPort; }
 static void oscPortSet(u32 ix, u16 value) { selectedOscPort = value; }
 static u16  oscRemotePortGet(u32 ix)            { return OSC_SERVER_RemotePortGet(selectedOscPort); }
@@ -513,6 +550,14 @@ const scs_menu_item_t pageM8x8[] = {
   SCS_ITEM("OSC4 ",15, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
 };
 
+const scs_menu_item_t pageROUT[] = {
+  SCS_ITEM("Node", 0, MIDIO_PATCH_NUM_ROUTER-1, routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
+  SCS_ITEM("SrcP", 0, MIDIO_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
+  SCS_ITEM("Chn.", 0, 17,                       routerSrcChnGet, routerSrcChnSet,selectNOP, stringRouterChn, NULL),
+  SCS_ITEM("SrcD", 0, MIDIO_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),
+  SCS_ITEM("Chn.", 0, 17,                       routerDstChnGet, routerDstChnSet,selectNOP, stringRouterChn, NULL),
+};
+
 const scs_menu_item_t pageDsk[] = {
   SCS_ITEM("Load ", 0, 0,           dummyGet,        dummySet,        selectLOAD, stringEmpty, NULL),
   SCS_ITEM("Save ", 0, 0,           dummyGet,        dummySet,        selectSAVE, stringEmpty, NULL),
@@ -547,6 +592,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DIN  ", pageDIN),
   SCS_PAGE("DOUT ", pageDOUT),
   SCS_PAGE("M8x8 ", pageM8x8),
+  SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("MIDI ", pageMIDI),

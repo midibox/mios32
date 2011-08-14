@@ -372,6 +372,26 @@ midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX] = {
   { 0x1011, MIDIO_PATCH_MATRIX_MODE_COMMON,  1, 0x30,     0,     0 },
 };
 
+midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER] = {
+  // src chn   dst chn
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+  { 0x10,  0, 0x20, 17 },
+};
+
 midio_patch_cfg_t midio_patch_cfg = {
 #if 0
   // TK: doesn't work, these values are initialized in PATCH_Init()
