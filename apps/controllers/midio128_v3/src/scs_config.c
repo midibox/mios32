@@ -69,8 +69,8 @@ static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
-static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02x  ", value); }
-static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02x  ", value | 0x80); }
+static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
+static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 
 static void stringNote(u32 ix, u16 value, char *label)
@@ -494,7 +494,12 @@ const scs_menu_item_t pageDIN[] = {
 #endif
   SCS_ITEM("OUT1 ", 4, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT2 ", 5, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
   SCS_ITEM("OUT3 ", 6, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM("OUT4 ", 7, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OSC1 ",12, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
@@ -543,7 +548,12 @@ const scs_menu_item_t pageM8x8[] = {
 #endif
   SCS_ITEM("OUT1 ", 4, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT2 ", 5, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
   SCS_ITEM("OUT3 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM("OUT4 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OSC1 ",12, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),

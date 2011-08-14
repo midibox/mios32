@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <osc_client.h>
 
 #include "midio_din.h"
 #include "midio_dout.h"
