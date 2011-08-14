@@ -403,6 +403,16 @@ s32 UIP_TASK_IP_AddressGet(void)
   return my_ip_address;
 }
 
+s32 UIP_TASK_IP_EffectiveAddressGet(void)
+{
+  uip_ipaddr_t ipaddr;
+  uip_gethostaddr(&ipaddr);
+  return
+    (uip_ipaddr1(ipaddr) << 24) |
+    (uip_ipaddr2(ipaddr) << 16) |
+    (uip_ipaddr3(ipaddr) <<  8) |
+    (uip_ipaddr4(ipaddr) <<  0);
+}
 
 s32 UIP_TASK_NetmaskSet(u32 mask)
 {
@@ -424,6 +434,16 @@ s32 UIP_TASK_NetmaskGet(void)
   return my_netmask;
 }
 
+s32 UIP_TASK_EffectiveNetmaskGet(void)
+{
+  uip_ipaddr_t ipaddr;
+  uip_getnetmask(&ipaddr);
+  return
+    (uip_ipaddr1(ipaddr) << 24) |
+    (uip_ipaddr2(ipaddr) << 16) |
+    (uip_ipaddr3(ipaddr) <<  8) |
+    (uip_ipaddr4(ipaddr) <<  0);
+}
 
 s32 UIP_TASK_GatewaySet(u32 ip)
 {
@@ -445,6 +465,16 @@ s32 UIP_TASK_GatewayGet(void)
   return my_gateway;
 }
 
+s32 UIP_TASK_EffectiveGatewayGet(void)
+{
+  uip_ipaddr_t ipaddr;
+  uip_getdraddr(&ipaddr);
+  return
+    (uip_ipaddr1(ipaddr) << 24) |
+    (uip_ipaddr2(ipaddr) << 16) |
+    (uip_ipaddr3(ipaddr) <<  8) |
+    (uip_ipaddr4(ipaddr) <<  0);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // start services

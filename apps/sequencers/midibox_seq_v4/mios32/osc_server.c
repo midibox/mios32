@@ -427,8 +427,6 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
       return -2; // invalid format
   ++path_values;
 
-  printf(">>>%s\n", path_values);
-
   int note = 0;
   if( method_arg < 0xc0 ) {
       // (key) value not transmitted for 0xc0 (program change), 0xd0 (aftertouch), 0xe0 (pitch)
@@ -501,9 +499,9 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
 static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 {
 #if DEBUG_VERBOSE_LEVEL >= 2
-  MUTEX_MIDIOUT_TAKE;
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
   MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
-  MUTEX_MIDIOUT_GIVE;
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
   // we expect at least 1 argument
@@ -513,23 +511,54 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
   // get channel and status nibble
   int evnt0 = method_arg & 0xff;
 
-  // get note
-  int note = 60;
-  if( osc_args->arg_type[0] == 'i' )
-    note = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
-  else if( osc_args->arg_type[0] == 'f' )
-    note = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
-  if( note < 0 ) note = 0; else if( note > 127 ) note = 127;
-
-  // get velocity
-  int velocity = 127;
-  if( osc_args->num_args >= 2 ) {
-    if( osc_args->arg_type[1] == 'i' )
-      velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]);
-    else if( osc_args->arg_type[1] == 'f' )
-      velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) * 127.0);
-    if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
+  // check for TouchOSC format (note/CC number coded in path)
+  // extract value and channel from original path
+  // format: /<chn>/name/<value>
+  // /<chn> and /name have already been parsed, we only need the last value
+  char *path_values = (char *)osc_args->original_path;
+  int i;
+  for(i=0; i<2; ++i) {
+    if( (path_values = strchr(path_values+1, '/')) == NULL )
+      break;
+    ++path_values;
   }
+
+  int note = 60;
+  int velocity = 127;
+  if( i == 2 ) { // we expect touch osc format
+    if( method_arg < 0xc0 ) {
+      // (key) value not transmitted for 0xc0 (program change), 0xd0 (aftertouch), 0xe0 (pitch)
+
+      // get value
+      note = atoi(path_values);
+    }
+
+    // get velocity
+    if( osc_args->num_args >= 1 ) {
+      if( osc_args->arg_type[0] == 'i' )
+	velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+      else if( osc_args->arg_type[0] == 'f' )
+	velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
+    }
+  } else {
+    // get note
+    int note = 60;
+    if( osc_args->arg_type[0] == 'i' )
+      note = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+    else if( osc_args->arg_type[0] == 'f' )
+      note = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
+
+    // get velocity
+    if( osc_args->num_args >= 2 ) {
+      if( osc_args->arg_type[1] == 'i' )
+	velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]);
+      else if( osc_args->arg_type[1] == 'f' )
+	velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) * 127.0);
+    }
+  }
+
+  if( note < 0 ) note = 0; else if( note > 127 ) note = 127;
+  if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
 
   // build MIDI package
   mios32_midi_package_t p;
@@ -545,11 +574,10 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
   for(osc_port=0; osc_port<SEQ_MIDI_OSC_NUM_PORTS; ++osc_port) {
     u8 transfer_mode = SEQ_MIDI_OSC_TransferModeGet(osc_port);
     if( transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_INT ||
-	transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT ) {
-      MUTEX_MIDIIN_TAKE;
+	transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT ||
+	transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_TOSC ) {
       MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p);
       APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
-      MUTEX_MIDIIN_GIVE;
     }
   }
 

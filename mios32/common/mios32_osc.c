@@ -780,15 +780,19 @@ static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 me
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_OSC_SendDebugMessage(mios32_osc_args_t *osc_args, u32 method_arg)
 {
+  int i;
+#if 0
   // for debugging: merge path parts to complete path
   char path[128]; // should be enough?
-  int i;
   char *path_ptr = path;
 
   for(i=0; i<osc_args->num_path_parts; ++i) {
     path_ptr = stpcpy(path_ptr, "/");
     path_ptr = stpcpy(path_ptr, osc_args->path_part[i]);
   }
+#else
+  char *path = (char *)osc_args->original_path;
+#endif
 
   MIOS32_OSC_DEBUG_MSG("[%s] timetag %d.%d (%d args), Method Arg: 0x%08x\n", 
 		       path,
