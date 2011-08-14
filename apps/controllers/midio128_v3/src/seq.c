@@ -19,6 +19,7 @@
 #include "tasks.h"
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
+#include <osc_client.h>
 
 #include <mid_parser.h>
 

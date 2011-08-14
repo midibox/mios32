@@ -1,0 +1,6 @@
+$Id$
+
+MIDIO128 V3.0
+~~~~~~~~~~~~~
+
+   o initial version
