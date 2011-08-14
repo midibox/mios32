@@ -42,7 +42,7 @@ static const char full_mode_names[OSC_CLIENT_NUM_TRANSFER_MODES+1][21] = {
   "Text Msg (Integer)  ",
   "Text Msg (Float)    ",
   "Pianist Pro (iPad)  ",
-  "New                 ",
+  "TouchOSC            ",
   "** invalid mode **  ",
 };
 
@@ -51,7 +51,7 @@ static const char short_mode_names[OSC_CLIENT_NUM_TRANSFER_MODES+1][5] = {
   "Int.",
   "Flt.",
   "MPP ",
-  "NEW ",
+  "TOSC",
   "??? ",
 };
 
@@ -188,6 +188,61 @@ s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t package)
 
     default:
       sprintf(event_path, "/mcmpp/invalid/%d", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      break;
+    }
+  } else if( osc_transfer_mode[osc_port] == OSC_CLIENT_TRANSFER_MODE_TOSC &&
+      package.type >= NoteOff && package.type <= PitchBend ) {
+    char event_path[30];
+    switch( package.type ) {
+    case NoteOff:
+      package.velocity = 0;
+      // fall through
+    case NoteOn:
+      sprintf(event_path, "/%d/note/%d", package.chn+1, package.note);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case PolyPressure:
+      sprintf(event_path, "/%d/polypressure/%d", package.chn+1, package.note);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case CC:
+      sprintf(event_path, "/%d/cc/%d", package.chn+1, package.cc_number);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.value/127.0);
+      break;
+
+    case ProgramChange:
+      sprintf(event_path, "/%d/programchange/%d", package.chn+1, package.program_change);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      break;
+
+    case Aftertouch:
+      sprintf(event_path, "/%d/aftertouch", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
+      break;
+
+    case PitchBend: {
+      sprintf(event_path, "/%d/pitch/%d", package.chn+1);
+      end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+      int value = ((package.evnt1 & 0x7f) | (int)((package.evnt2 & 0x7f) << 7)) - 8192;
+      if( value >= 0 && value <= 127 )
+	value = 0;
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)value/8191.0);
+    } break;
+
+    default:
+      sprintf(event_path, "/%d/invalid", package.chn+1);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       break;
     }

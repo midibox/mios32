@@ -30,10 +30,10 @@ typedef union {
   u32 ALL;
   struct {
     u8 src_port; // don't use mios32_midi_port_t, since data width is important for save/restore function
-    u8 src_chn; // 0 == All, 1..16: specific source channel
+    u8 src_chn; // 0 == Off, 1..16: specific source channel, 17 == All
 
     u8 dst_port;
-    u8 dst_chn; // 0 == All, 1..16: specific destination channel
+    u8 dst_chn; // 0 == Off, 1..16: specific destination channel, 17 == All
   };
 } seq_midi_router_node_t;
 

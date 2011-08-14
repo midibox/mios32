@@ -30,7 +30,7 @@
 #define OSC_CLIENT_TRANSFER_MODE_INT   1
 #define OSC_CLIENT_TRANSFER_MODE_FLOAT 2
 #define OSC_CLIENT_TRANSFER_MODE_MCMPP 3
-#define OSC_CLIENT_TRANSFER_MODE_NEW   4
+#define OSC_CLIENT_TRANSFER_MODE_TOSC  4
 
 
 /////////////////////////////////////////////////////////////////////////////

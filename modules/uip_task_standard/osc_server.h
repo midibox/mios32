@@ -24,8 +24,8 @@
 
 // can be overruled in mios32_config.h
 #ifndef OSC_REMOTE_IP
-//                      192       .  168        .    2       .  101
-#define OSC_REMOTE_IP ( 10 << 24) | (  0 << 16) | (  0 << 8) | (  2 << 0)
+//                      192        .  168        .    1       .  101
+#define OSC_REMOTE_IP ( 192 << 24) | (168 << 16) | (  1 << 8) | (101 << 0)
 #endif
 
 // can be overruled in mios32_config.h

@@ -112,10 +112,13 @@ extern s32 UIP_TASK_DHCP_EnableGet(void);
 
 extern s32 UIP_TASK_IP_AddressSet(u32 ip);
 extern s32 UIP_TASK_IP_AddressGet(void);
+extern s32 UIP_TASK_IP_EffectiveAddressGet(void);
 extern s32 UIP_TASK_NetmaskSet(u32 mask);
 extern s32 UIP_TASK_NetmaskGet(void);
+extern s32 UIP_TASK_EffectiveNetmaskGet(void);
 extern s32 UIP_TASK_GatewaySet(u32 ip);
 extern s32 UIP_TASK_GatewayGet(void);
+extern s32 UIP_TASK_EffectiveGatewayGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
