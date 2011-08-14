@@ -34,6 +34,7 @@
 #include "uip.h"
 #include "uip_task.h"
 #include "osc_server.h"
+#include "osc_client.h"
 #endif
 
 
@@ -657,7 +658,6 @@ s32 MIDIO_FILE_P_Read(char *filename)
 		OSC_SERVER_LocalPortSet(con, value);
 	      }
 	    }
-#if 0
 	  } else if( strcmp(parameter, "OSC_TransferMode") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
 	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
@@ -667,10 +667,9 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      if( (value=get_dec(word)) < 0 ) {
 		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid transfer mode number for parameter '%s'\n", parameter);
 	      } else {
-		SEQ_MIDI_OSC_TransferModeSet(con, value);
+		OSC_CLIENT_TransferModeSet(con, value);
 	      }
 	    }
-#endif
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -876,10 +875,8 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "OSC_LocalPort;%d;%d\n", con, OSC_SERVER_LocalPortGet(con));
     FLUSH_BUFFER;
 
-#if 0
-    sprintf(line_buffer, "OSC_TransferMode;%d;%d\n", con, MIDIO_MIDI_OSC_TransferModeGet(con));
+    sprintf(line_buffer, "OSC_TransferMode;%d;%d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
-#endif
   }
 #endif
 

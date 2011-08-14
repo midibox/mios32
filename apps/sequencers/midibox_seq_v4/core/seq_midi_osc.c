@@ -158,28 +158,28 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
       package.velocity = 0;
       // fall through
     case NoteOn:
-      sprintf(event_path, "/%d/note/%d", package.chn+1, package.note);
+      sprintf(event_path, "/%d/note_%d", package.chn+1, package.note);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
       end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
       break;
 
     case PolyPressure:
-      sprintf(event_path, "/%d/polypressure/%d", package.chn+1, package.note);
+      sprintf(event_path, "/%d/polypressure_%d", package.chn+1, package.note);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
       end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.velocity/127.0);
       break;
 
     case CC:
-      sprintf(event_path, "/%d/cc/%d", package.chn+1, package.cc_number);
+      sprintf(event_path, "/%d/cc_%d", package.chn+1, package.cc_number);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
       end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)package.value/127.0);
       break;
 
     case ProgramChange:
-      sprintf(event_path, "/%d/programchange/%d", package.chn+1, package.program_change);
+      sprintf(event_path, "/%d/programchange_%d", package.chn+1, package.program_change);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       break;
 
@@ -191,7 +191,7 @@ s32 SEQ_MIDI_OSC_SendPackage(u8 osc_port, mios32_midi_package_t package)
       break;
 
     case PitchBend: {
-      sprintf(event_path, "/%d/pitch/%d", package.chn+1);
+      sprintf(event_path, "/%d/pitch", package.chn+1);
       end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
       int value = ((package.evnt1 & 0x7f) | (int)((package.evnt2 & 0x7f) << 7)) - 8192;
       if( value >= 0 && value <= 127 )
