@@ -28,6 +28,7 @@
 #define MIDIO_PATCH_NUM_DIN    128
 #define MIDIO_PATCH_NUM_DOUT   128
 #define MIDIO_PATCH_NUM_MATRIX  16
+#define MIDIO_PATCH_NUM_ROUTER  16
 
 #define MIDIO_PATCH_DIN_MODE_ON_OFF        0
 #define MIDIO_PATCH_DIN_MODE_ON_ONLY       1
@@ -72,6 +73,13 @@ typedef struct {
   u8 sr_dout;
 } midio_patch_matrix_entry_t;
 
+typedef struct {
+  u8 src_port; // don't use mios32_midi_port_t, since data width is important for save/restore function
+  u8 src_chn;  // 0 == Off, 1..16: specific source channel, 17 == All
+  u8 dst_port;
+  u8 dst_chn;  // 0 == Off, 1..16: specific source channel, 17 == All
+} midio_patch_router_entry_t;
+
 typedef union {
   struct {
     u8 ALL;
@@ -113,6 +121,7 @@ extern s32 MIDIO_PATCH_Store(char *filename);
 extern midio_patch_din_entry_t  midio_patch_din[MIDIO_PATCH_NUM_DIN];
 extern midio_patch_dout_entry_t midio_patch_dout[MIDIO_PATCH_NUM_DOUT];
 extern midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX];
+extern midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER];
 
 extern midio_patch_cfg_t        midio_patch_cfg;
 

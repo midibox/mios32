@@ -1,4 +1,4 @@
-// $Id: midio_din.c 1261 2011-07-17 18:21:45Z tk $
+// $Id$
 /*
  * Scan Matrix functions for MIDIO128 V3
  *
@@ -179,7 +179,7 @@ s32 MIDIO_MATRIX_ButtonHandler(void)
 // a button has been toggled
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
+static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 {
   //MIOS32_MIDI_SendDebugMessage("matrix=%d pin=%d pin_value=%d\n", matrix, pin, pin_value);
 

@@ -483,14 +483,39 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      }
 	    }
 	  }	  
-	} else if( strcmp(parameter, "MergerMode") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
+	} else if( strcmp(parameter, "ROUTER") == 0 ) {
+	  s32 node;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (node=get_dec(word)) < 1 || node > MIDIO_PATCH_NUM_ROUTER  ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid node number for parameter '%s'\n", parameter);
 #endif
 	  } else {
-	    midio_patch_cfg.flags.MERGER_MODE = value;
+	    // user counts from 1...
+	    --node;
+
+	    // we have to read 4 additional values
+	    int values[4];
+	    const char value_name[4][10] = { "SrcPort", "Channel", "DstPort", "Channel" };
+	    int i;
+	    for(i=0; i<4; ++i) {
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	      if( (values[i]=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node);
+#endif
+		break;
+	      }
+	    }
+	    
+	    if( i == 4 ) {
+	      // finally a valid line!
+	      midio_patch_router_entry_t *n = (midio_patch_router_entry_t *)&midio_patch_router[node];
+	      n->src_port = values[0];
+	      n->src_chn = values[1];
+	      n->dst_port = values[2];
+	      n->dst_chn = values[3];
+	    }
 	  }
 	} else if( strcmp(parameter, "ForwardIO") == 0 ) {
 	  u32 value;
@@ -781,6 +806,23 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
     }
   }
 
+  {
+    sprintf(line_buffer, "\n\n#ROUTER;Node;SrcPort;Chn.;DstPort;Chn.\n");
+    FLUSH_BUFFER;
+
+    int node;
+    midio_patch_router_entry_t *n = (midio_patch_router_entry_t *)&midio_patch_router[0];
+    for(node=0; node<MIDIO_PATCH_NUM_ROUTER; ++node, ++n) {
+      sprintf(line_buffer, "ROUTER;%d;0x%02X;%d;0x%02X;%d\n",
+	      node+1,
+	      n->src_port,
+	      n->src_chn,
+	      n->dst_port,
+	      n->dst_chn);
+      FLUSH_BUFFER;
+    }
+  }
+
 #if !defined(MIOS32_FAMILY_EMULATION)
   sprintf(line_buffer, "\n\n# Ethernet Setup\n");
   FLUSH_BUFFER;
@@ -844,8 +886,6 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MergerMode;%d\n", midio_patch_cfg.flags.MERGER_MODE);
-  FLUSH_BUFFER;
   sprintf(line_buffer, "ForwardIO;%d\n", midio_patch_cfg.flags.FORWARD_IO);
   FLUSH_BUFFER;
   sprintf(line_buffer, "InverseDIN;%d\n", midio_patch_cfg.flags.INVERSE_DIN);
