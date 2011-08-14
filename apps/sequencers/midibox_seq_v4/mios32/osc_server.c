@@ -511,54 +511,23 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
   // get channel and status nibble
   int evnt0 = method_arg & 0xff;
 
-  // check for TouchOSC format (note/CC number coded in path)
-  // extract value and channel from original path
-  // format: /<chn>/name/<value>
-  // /<chn> and /name have already been parsed, we only need the last value
-  char *path_values = (char *)osc_args->original_path;
-  int i;
-  for(i=0; i<2; ++i) {
-    if( (path_values = strchr(path_values+1, '/')) == NULL )
-      break;
-    ++path_values;
-  }
-
+  // get note
   int note = 60;
-  int velocity = 127;
-  if( i == 2 ) { // we expect touch osc format
-    if( method_arg < 0xc0 ) {
-      // (key) value not transmitted for 0xc0 (program change), 0xd0 (aftertouch), 0xe0 (pitch)
-
-      // get value
-      note = atoi(path_values);
-    }
-
-    // get velocity
-    if( osc_args->num_args >= 1 ) {
-      if( osc_args->arg_type[0] == 'i' )
-	velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
-      else if( osc_args->arg_type[0] == 'f' )
-	velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
-    }
-  } else {
-    // get note
-    int note = 60;
-    if( osc_args->arg_type[0] == 'i' )
-      note = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
-    else if( osc_args->arg_type[0] == 'f' )
-      note = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
-
-    // get velocity
-    if( osc_args->num_args >= 2 ) {
-      if( osc_args->arg_type[1] == 'i' )
-	velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]);
-      else if( osc_args->arg_type[1] == 'f' )
-	velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) * 127.0);
-    }
-  }
-
+  if( osc_args->arg_type[0] == 'i' )
+    note = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+  else if( osc_args->arg_type[0] == 'f' )
+    note = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
   if( note < 0 ) note = 0; else if( note > 127 ) note = 127;
-  if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
+
+  // get velocity
+  int velocity = 127;
+  if( osc_args->num_args >= 2 ) {
+    if( osc_args->arg_type[1] == 'i' )
+      velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]);
+    else if( osc_args->arg_type[1] == 'f' )
+      velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]) * 127.0);
+    if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
+  }
 
   // build MIDI package
   mios32_midi_package_t p;
@@ -633,6 +602,64 @@ static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg
   return 0; // no error
 }
 
+static s32 OSC_SERVER_Method_EventTOSC(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 2
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
+  MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
+#endif
+
+  // get channel and status nibble
+  int evnt0 = method_arg & 0xff;
+
+  // check for TouchOSC format (note/CC number coded in path)
+  // extract value and channel from original path
+  // format: /<chn>/name_<value>
+  // /<chn> and /name have already been parsed, we only need the last value
+  char *path_values = (char *)osc_args->original_path;
+  if( (path_values = strchr(path_values+1, '_')) == NULL )
+    return -1;
+
+  // get value
+  int note = 60;
+  note = atoi(path_values+1);
+  if( note < 0 ) note = 0; else if( note > 127 ) note = 127;
+
+  // get velocity
+  int velocity = 127;
+  if( osc_args->num_args >= 1 ) {
+    if( osc_args->arg_type[0] == 'i' )
+      velocity = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+    else if( osc_args->arg_type[0] == 'f' )
+      velocity = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]) * 127.0);
+  }
+  if( velocity < 0 ) velocity = 0; else if( velocity > 127 ) velocity = 127;
+
+  // build MIDI package
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.type = evnt0 >> 4;
+  p.evnt0 = evnt0;
+  p.evnt1 = note;
+  p.evnt2 = velocity;
+
+  // propagate to application
+  // search for ports which are assigned to the MIDI value protocol
+  int osc_port;
+  for(osc_port=0; osc_port<SEQ_MIDI_OSC_NUM_PORTS; ++osc_port) {
+    u8 transfer_mode = SEQ_MIDI_OSC_TransferModeGet(osc_port);
+    if( transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_INT ||
+	transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_FLOAT ||
+	transfer_mode == SEQ_MIDI_OSC_TRANSFER_MODE_TOSC ) {
+      MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p);
+      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+    }
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Search Tree for OSC Methods (used by MIOS32_OSC_ParsePacket())
@@ -658,6 +685,11 @@ static mios32_osc_search_tree_t parse_mcmpp[] = {
 
 
 static mios32_osc_search_tree_t parse_event[] = {
+  { "note_*",        NULL, &OSC_SERVER_Method_EventTOSC,0x00000090 }, // bit [7:4] contains status byte
+  { "polypressure_*",NULL, &OSC_SERVER_Method_EventTOSC,0x000000a0 }, // bit [7:4] contains status byte
+  { "cc_*",          NULL, &OSC_SERVER_Method_EventTOSC,0x000000b0 }, // bit [7:4] contains status byte
+  { "programchange_*", NULL, &OSC_SERVER_Method_EventTOSC,0x000000c0 }, // bit [7:4] contains status byte
+
   { "note",          NULL, &OSC_SERVER_Method_Event,   0x00000090 }, // bit [7:4] contains status byte
   { "polypressure",  NULL, &OSC_SERVER_Method_Event,   0x000000a0 }, // bit [7:4] contains status byte
   { "cc",            NULL, &OSC_SERVER_Method_Event,   0x000000b0 }, // bit [7:4] contains status byte
