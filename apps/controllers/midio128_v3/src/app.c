@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <msd.h>
 #include "app.h"
 #include "tasks.h"
 
@@ -58,8 +59,23 @@ static void TASK_Period_1mS(void *pvParameters);
 // use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
 #define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
 
+// SD Card with lower priority
+#define PRIORITY_TASK_PERIOD_1mS_SD ( tskIDLE_PRIORITY + 2 )
+
 // local prototype of the task function
 static void TASK_Period_1mS_LP(void *pvParameters);
+static void TASK_Period_1mS_SD(void *pvParameters);
+
+/////////////////////////////////////////////////////////////////////////////
+// Local types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+  MSD_DISABLED,
+  MSD_INIT,
+  MSD_READY,
+  MSD_SHUTDOWN
+} msd_state_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -80,6 +96,8 @@ xSemaphoreHandle xMIDIOUTSemaphore;
 
 static u32 ms_counter;
 
+static msd_state_t msd_state;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -96,6 +114,9 @@ void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // disable MSD by default (has to be enabled in SEQ_UI_FILE menu)
+  msd_state = MSD_DISABLED;
 
   // DINs will be enabled once configuration has been loaded from SD Card
   // (resp. no SD Card is available)
@@ -141,6 +162,7 @@ void APP_Init(void)
   // start tasks
   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+  xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
 
 }
 
@@ -326,6 +348,116 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This task handles the SD Card
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period_1mS_SD(void *pvParameters)
+{
+  u16 sdcard_check_ctr = 0;
+  u8 lun_available = 0;
+
+  MIOS32_LCD_Clear();
+
+  while( 1 ) {
+    vTaskDelay(1 / portTICK_RATE_MS);
+
+    // each second: check if SD Card (still) available
+    if( ++sdcard_check_ctr >= 1000 ) {
+      sdcard_check_ctr = 0;
+
+      MUTEX_SDCARD_TAKE;
+      s32 status = FILE_CheckSDCard();
+
+      din_enabled = 1; // enable the DINs after first read...
+
+      if( status == 1 ) {
+	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+	// load all file infos
+	MIDIO_FILE_LoadAllFiles(1); // including HW info
+      } else if( status == 2 ) {
+	DEBUG_MSG("SD Card disconnected\n");
+	// invalidate all file infos
+	MIDIO_FILE_UnloadAllFiles();
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+
+	// change filename
+	sprintf(MID_FILE_UI_NameGet(), "No SD Card");
+      } else if( status == 3 ) {
+	if( !FILE_SDCardAvailable() ) {
+	  DEBUG_MSG("SD Card not found\n");
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "No SD Card");
+	} else if( !FILE_VolumeAvailable() ) {
+	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "No FAT");
+	} else {
+	  // check if patch file exists
+	  if( !MIDIO_FILE_P_Valid() ) {
+	    // create new one
+	    DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
+
+	    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
+	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+	    }
+	  }
+
+	  // change filename
+	  sprintf(MID_FILE_UI_NameGet(), "SDCard found");
+	}
+
+	// reset sequencer
+	SEQ_Reset(0);
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
+
+    // MSD driver
+    if( msd_state != MSD_DISABLED ) {
+      MUTEX_SDCARD_TAKE;
+
+      switch( msd_state ) {
+      case MSD_SHUTDOWN:
+	// switch back to USB MIDI
+	MIOS32_USB_Init(1);
+	msd_state = MSD_DISABLED;
+	break;
+
+      case MSD_INIT:
+	// LUN not mounted yet
+	lun_available = 0;
+
+	// enable MSD USB driver
+	//MUTEX_J16_TAKE;
+	if( MSD_Init(0) >= 0 )
+	  msd_state = MSD_READY;
+	else
+	  msd_state = MSD_SHUTDOWN;
+	//MUTEX_J16_GIVE;
+	break;
+
+      case MSD_READY:
+	// service MSD USB driver
+	MSD_Periodic_mS();
+
+	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
+	if( lun_available && !MSD_LUN_AvailableGet(0) )
+	  msd_state = MSD_SHUTDOWN;
+	else if( !lun_available && MSD_LUN_AvailableGet(0) )
+	  lun_available = 1;
+	break;
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
+  }
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS to handle sequencer requests
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS(void *pvParameters)
@@ -337,6 +469,12 @@ static void TASK_Period_1mS(void *pvParameters)
 
   while( 1 ) {
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+
+    // skip delay gap if we had to wait for more than 5 ticks to avoid 
+    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+    portTickType xCurrentTickCount = xTaskGetTickCount();
+    if( xLastExecutionTime < (xCurrentTickCount-5) )
+      xLastExecutionTime = xCurrentTickCount;
 
     // execute sequencer handler
     MUTEX_SDCARD_TAKE;
@@ -382,4 +520,36 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
   SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// MSD access functions
+/////////////////////////////////////////////////////////////////////////////
+s32 TASK_MSD_EnableSet(u8 enable)
+{
+  MIOS32_IRQ_Disable();
+  if( msd_state == MSD_DISABLED && enable ) {
+    msd_state = MSD_INIT;
+  } else if( msd_state == MSD_READY && !enable )
+    msd_state = MSD_SHUTDOWN;
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+s32 TASK_MSD_EnableGet()
+{
+  return (msd_state == MSD_READY) ? 1 : 0;
+}
+
+s32 TASK_MSD_FlagStrGet(char str[5])
+{
+  str[0] = MSD_CheckAvailable() ? 'U' : '-';
+  str[1] = MSD_LUN_AvailableGet(0) ? 'M' : '-';
+  str[2] = MSD_RdLEDGet(250) ? 'R' : '-';
+  str[3] = MSD_WrLEDGet(250) ? 'W' : '-';
+  str[4] = 0;
+
+  return 0; // no error
 }

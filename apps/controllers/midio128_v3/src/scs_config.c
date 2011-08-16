@@ -468,6 +468,14 @@ static void selIpParSet(u32 ix, u16 value)
 static u16  midiPlayModeGet(u32 ix)            { return SEQ_MidiPlayModeGet(); }
 static void midiPlayModeSet(u32 ix, u16 value) { SEQ_MidiPlayModeSet(value); }
 
+
+
+static void MSD_EnableReq(u32 enable)
+{
+  TASK_MSD_EnableSet(enable);
+  SCS_Msg(SCS_MSG_L, 1000, "Mass Storage", enable ? "enabled!" : "disabled!");
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
@@ -620,33 +628,58 @@ const scs_menu_page_t rootMode0[] = {
 static s32 displayHook(char *line1, char *line2)
 {
   if( extraPage ) {
-    sprintf(line1, "MIDI DOUT");
-    sprintf(line2, "%s Off", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    char msdStr[5];
+    TASK_MSD_FlagStrGet(msdStr);
+
+    sprintf(line1, "MIDI DOUT MSD  ");
+    sprintf(line2, "%s Off  %s",
+	    SEQ_BPM_IsRunning() ? "STOP" : "PLAY",
+	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
-  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+  }
+
+  // overlay in MSD mode (user should disable soon since this sucks performance)
+  if( TASK_MSD_EnableGet() ) {
+    char msdStr[5];
+    TASK_MSD_FlagStrGet(msdStr);
+
+    sprintf(line1, "[ MSD ACTIVE: %s ]", msdStr);
+  }
+
+  if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    u8 fastRefresh = line1[0] != 0;
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
     u32 ticks_per_measure = ticks_per_step * 16;
     u32 measure = (tick / ticks_per_measure) + 1;
     u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
-    sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
+    if( line1[0] == 0 ) // no MSD overlay?
+      sprintf(line1, "%-12s %4u.%2d", MID_FILE_UI_NameGet(), measure, step);
     sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
 
     // request LCD update - this will lead to fast refresh rate in main screen
-    SCS_DisplayUpdateRequest();
+    if( fastRefresh )
+      SCS_DisplayUpdateRequest();
+
     return 1;
-  } else if( SCS_MenuStateGet() == SCS_MENU_STATE_SELECT_PAGE ) {
-    sprintf(line1, "Patch: %s", midio_file_p_patch_name);
+  }
+
+  if( SCS_MenuStateGet() == SCS_MENU_STATE_SELECT_PAGE ) {
+    if( line1[0] == 0 ) // no MSD overlay?
+      sprintf(line1, "Patch: %s", midio_file_p_patch_name);
     return 1;
-  } else if( SCS_MenuPageGet() == pageDsk ) {
+  }
+
+  if( SCS_MenuPageGet() == pageDsk ) {
     // Disk page: we want to show the patch at upper line, and menu items at lower line
-    sprintf(line1, "Patch: %s", midio_file_p_patch_name);
+    if( line1[0] == 0 ) // no MSD overlay?
+      sprintf(line1, "Patch: %s", midio_file_p_patch_name);
     sprintf(line2, "Load Save");
     return 1;
   }
 
-  return 0;
+  return (line1[0] != 0) ? 1 : 0; // return 1 if MSD overlay
 }
 
 
@@ -675,12 +708,38 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
     if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
       extraPage = 0;
     else {
-      if( !depressed )
-	switch( scsButton ) {
-	case SCS_PIN_SOFT1: SEQ_PlayStopButton(); break;
-	case SCS_PIN_SOFT2: MIDIO_DOUT_Init(0); SCS_Msg(SCS_MSG_L, 1000, "All DOUT pins", "deactivated"); break;
+      switch( scsButton ) {
+      case SCS_PIN_SOFT1:
+	if( depressed )
+	  return 1;
+	SEQ_PlayStopButton();
+	break;
+
+      case SCS_PIN_SOFT2:
+	if( depressed )
+	  return 1;
+	MIDIO_DOUT_Init(0);
+	SCS_Msg(SCS_MSG_L, 1000, "All DOUT pins", "deactivated");
+	break;
+
+      case SCS_PIN_SOFT3: {
+	u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
+	if( depressed )
+	  SCS_UnInstallDelayedActionCallback(MSD_EnableReq);
+	else {
+	  if( !do_enable ) {
+	    // wait a bit longer... normaly it would be better to print a warning that "unmounting via OS" is better
+	    SCS_InstallDelayedActionCallback(MSD_EnableReq, 5000, do_enable);
+	    SCS_Msg(SCS_MSG_DELAYED_ACTION_L, 5001, "", "to disable MSD USB!");
+	  } else {
+	    SCS_InstallDelayedActionCallback(MSD_EnableReq, 2000, do_enable);
+	    SCS_Msg(SCS_MSG_DELAYED_ACTION_L, 2001, "", "to enable MSD USB!");
+	  }
 	}
+      } break;
+      }
     }
+
     return 1;
   } else {
     if( scsButton == SCS_PIN_SOFT5 && !depressed ) { // selects/deselects extra page

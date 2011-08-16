@@ -84,6 +84,9 @@ include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
+# USB Mass Storage Device Driver
+include $(MIOS32_PATH)/modules/msd/msd.mk
+
 # Sources for Standard Control Surface
 include $(MIOS32_PATH)/modules/scs/scs.mk
 
