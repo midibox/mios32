@@ -102,9 +102,11 @@ s32 MID_FILE_FindNext(char *filename, char *next_file)
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
-    strcpy(ui_midifile_name, "SDCard Err!");
+    MIDIO_FILE_StatusMsgSet("SDCard Err!");
   } else if( status == 0 ) {
-    strcpy(ui_midifile_name, "No .mid File");
+    MIDIO_FILE_StatusMsgSet("No .MID File");
+  } else {
+    MIDIO_FILE_StatusMsgSet(NULL);
   }
 
   return status;
@@ -128,7 +130,11 @@ s32 MID_FILE_FindPrev(char *filename, char *prev_file)
   MUTEX_SDCARD_GIVE;
 
   if( status < 0 ) {
-    strcpy(ui_midifile_name, "SDCard Err!");
+    MIDIO_FILE_StatusMsgSet("SDCard Err!");
+  } else if( status == 0 ) {
+    MIDIO_FILE_StatusMsgSet("No .MID File");
+  } else {
+    MIDIO_FILE_StatusMsgSet(NULL);
   }
 
   return status;

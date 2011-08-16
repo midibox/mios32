@@ -1,6 +1,6 @@
 // $Id$
 /*
- * File access functions
+ * File access functions for MIDIbox CV
  *
  * NOTE: before accessing the SD Card, the upper level function should
  * synchronize with the SD Card semaphore!
@@ -24,8 +24,8 @@
 #include <string.h>
 
 #include "file.h"
-#include "synth_file.h"
-#include "synth_file_b.h"
+#include "mbcv_file.h"
+#include "mbcv_file_p.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,11 +43,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
@@ -57,14 +52,14 @@ static char sd_card_msg[13];
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_Init(u32 mode)
+s32 MBCV_FILE_Init(u32 mode)
 {
   s32 status = 0;
 
   strcpy(sd_card_msg, "SD Card?"); // 12 chars maximum
 
   status |= FILE_Init(0);
-  status |= SYNTH_FILE_B_Init(0);
+  status |= MBCV_FILE_P_Init(0);
 
   return status;
 }
@@ -73,15 +68,15 @@ s32 SYNTH_FILE_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Loads all files
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_LoadAllFiles(u8 including_hw)
+s32 MBCV_FILE_LoadAllFiles(u8 including_hw)
 {
   s32 status = 0;
 
   if( including_hw ) {
-    //status |= SYNTH_FILE_HW_Load();
+    //status |= MBCV_FILE_HW_Load();
   }
 
-  status |= SYNTH_FILE_B_LoadAllBanks();
+  status |= MBCV_FILE_P_Load("DEFAULT");
 
   return status;
 }
@@ -90,10 +85,10 @@ s32 SYNTH_FILE_LoadAllFiles(u8 including_hw)
 /////////////////////////////////////////////////////////////////////////////
 // invalidate all file infos
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_UnloadAllFiles(void)
+s32 MBCV_FILE_UnloadAllFiles(void)
 {
   s32 status = 0;
-  status |= SYNTH_FILE_B_UnloadAllBanks();
+  status |= MBCV_FILE_P_Unload();
   return status;
 }
 
@@ -103,7 +98,7 @@ s32 SYNTH_FILE_UnloadAllFiles(void)
 // 12 characters max.
 // if msg == NULL: ok, no special status, print filename
 /////////////////////////////////////////////////////////////////////////////
-s32 SYNTH_FILE_StatusMsgSet(char *msg)
+s32 MBCV_FILE_StatusMsgSet(char *msg)
 {
   if( msg == NULL ) {
     sd_card_msg[0] = 0;
@@ -119,7 +114,7 @@ s32 SYNTH_FILE_StatusMsgSet(char *msg)
 // returns the current SD Card status
 // if NULL: ok, no special status, print filename
 /////////////////////////////////////////////////////////////////////////////
-char *SYNTH_FILE_StatusMsgGet(void)
+char *MBCV_FILE_StatusMsgGet(void)
 {
   return sd_card_msg[0] ? sd_card_msg : NULL;
 }
