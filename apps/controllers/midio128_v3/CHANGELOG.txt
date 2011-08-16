@@ -1,6 +1,21 @@
 $Id$
 
-MIDIO128 V3.0
-~~~~~~~~~~~~~
+MIDIO128 V3.001
+~~~~~~~~~~~~~~~
+
+   o integrated MSD (Mass Storage Device) driver, so that SD Card can be accessed
+     from a computer via USB (like from a SD Card Reader).
+
+     Press SHIFT and hold MSD (3rd soft button) for two seconds to enable the driver.
+     Your computer should automatically mount the SD Card.
+     USB MIDI won't be available anymore.
+
+     After disk operations, don't forget to unmount the SD Card on your computer
+     first, thereafter disable MSD in the SHIFT menu.
+     Thereafter USB-MIDI will be available again.
+
+
+MIDIO128 V3.000
+~~~~~~~~~~~~~~~
 
    o initial version
