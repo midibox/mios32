@@ -309,11 +309,16 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	DEBUG_MSG("SD Card disconnected\n");
 	// invalidate all file infos
 	SYNTH_FILE_UnloadAllFiles();
+
+	// change status
+	SYNTH_FILE_StatusMsgSet("No SD Card");
       } else if( status == 3 ) {
 	if( !FILE_SDCardAvailable() ) {
 	  DEBUG_MSG("SD Card not found\n");
+	  SYNTH_FILE_StatusMsgSet("No SD Card");
 	} else if( !FILE_VolumeAvailable() ) {
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	  SYNTH_FILE_StatusMsgSet("No FAT");
 	} else {
 	  int bank;
 	  for(bank=0; bank<SYNTH_FILE_B_NUM_BANKS; ++bank) {
@@ -347,6 +352,10 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	      }
 	    }
 	  }
+
+	  // disable status message and print patch
+	  SYNTH_FILE_StatusMsgSet(NULL);
+
 	  status = SYNTH_FILE_UnloadAllFiles();
 	  status = SYNTH_FILE_LoadAllFiles(1);
 	  if( status < 0 ) {

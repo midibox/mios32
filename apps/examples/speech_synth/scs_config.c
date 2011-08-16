@@ -195,7 +195,11 @@ static s32 displayHook(char *line1, char *line2)
     sprintf(line2, "Msg1 Msg2 Msg3 Msg4 ");
     return 1;
   } else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-    getPatchString(line1);
+    // print SD Card status message or patch
+    if( SYNTH_FILE_StatusMsgGet() )
+      sprintf(line1, SYNTH_FILE_StatusMsgGet());
+    else
+      getPatchString(line1);
     sprintf(line2, "Press soft button");
     return 1;
   } else if( SCS_MenuStateGet() == SCS_MENU_STATE_SELECT_PAGE ) {

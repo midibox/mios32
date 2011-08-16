@@ -1,6 +1,6 @@
 // $Id$
 /*
- * MIDIO 128 V3
+ * MIDIbox CV V2
  *
  * ==========================================================================
  *
@@ -17,29 +17,25 @@
 
 #include <mios32.h>
 #include <msd.h>
+#include <aout.h>
 #include "app.h"
 #include "tasks.h"
 
-#include "midio_sysex.h"
-#include "midio_patch.h"
-#include "midio_din.h"
-#include "midio_dout.h"
-#include "midio_matrix.h"
-#include "midio_router.h"
-#include "midio_port.h"
+#include "mbcv_sysex.h"
+#include "mbcv_patch.h"
+#include "mbcv_router.h"
+#include "mbcv_port.h"
 
 // include source of the SCS
 #include <scs.h>
 #include "scs_config.h"
 
 #include "file.h"
-#include "midio_file.h"
-#include "midio_file_p.h"
+#include "mbcv_file.h"
+#include "mbcv_file_p.h"
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
-#include "seq.h"
-#include "mid_file.h"
 
 #include "terminal.h"
 #include "midimon.h"
@@ -140,21 +136,30 @@ void APP_Init(void)
   MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
 
   // initialize code modules
-  MIDIO_PORT_Init(0);
-  MIDIO_SYSEX_Init(0);
-  MIDIO_ROUTER_Init(0);
-  MIDIO_PATCH_Init(0);
-  MIDIO_DIN_Init(0);
-  MIDIO_DOUT_Init(0);
-  MIDIO_MATRIX_Init(0);
+  MBCV_PORT_Init(0);
+  MBCV_SYSEX_Init(0);
+  MBCV_ROUTER_Init(0);
+  MBCV_PATCH_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
   SCS_CONFIG_Init(0);
   TERMINAL_Init(0);
   MIDIMON_Init(0);
-  MIDIO_FILE_Init(0);
+  MBCV_FILE_Init(0);
   SEQ_MIDI_OUT_Init(0);
-  SEQ_Init(0);
+
+  // initialize AOUT module
+  AOUT_Init(0);
+
+  // configure interface (will be changed again once config file has been loaded from SD Card, or via SCS)
+  aout_config_t config;
+  config = AOUT_ConfigGet();
+  config.if_type = AOUT_IF_MAX525;
+  config.if_option = 0;
+  config.num_channels = 8;
+  config.chn_inverted = 0;
+  AOUT_ConfigSet(config);
+  AOUT_IF_Init(0);
 
   // install timer function which is called each 100 uS
   MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
@@ -185,11 +190,8 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // -> DOUT
-  MIDIO_DOUT_MIDI_NotifyPackage(port, midi_package);
-
   // -> MIDI Router
-  MIDIO_ROUTER_Receive(port, midi_package);
+  MBCV_ROUTER_Receive(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -203,11 +205,11 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
-  // -> MIDIO
-  MIDIO_SYSEX_Parser(port, midi_in);
+  // -> MBCV
+  MBCV_SYSEX_Parser(port, midi_in);
 
   // -> MIDI Router
-  MIDIO_ROUTER_ReceiveSysEx(port, midi_in);
+  MBCV_ROUTER_ReceiveSysEx(port, midi_in);
 
   return 0; // no error
 }
@@ -223,9 +225,6 @@ void APP_SRIO_ServicePrepare(void)
 
   // update encoders/buttons of SCS
   SCS_EncButtonUpdate_Tick();
-
-  // Matrix handler
-  MIDIO_MATRIX_PrepareCol();
 }
 
 
@@ -234,8 +233,6 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
-  // Matrix handler
-  MIDIO_MATRIX_GetRow();
 }
 
 
@@ -245,9 +242,6 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-  // -> MIDIO_DIN once enabled
-  if( hw_enabled )
-    MIDIO_DIN_NotifyToggle(pin, pin_value);
 }
 
 
@@ -286,6 +280,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
     // call SCS handler
     SCS_Tick();
+
   }
 
 }
@@ -314,43 +309,35 @@ static void TASK_Period_1mS_SD(void *pvParameters)
       if( status == 1 ) {
 	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
 	// load all file infos
-	MIDIO_FILE_LoadAllFiles(1); // including HW info
+	MBCV_FILE_LoadAllFiles(1); // including HW info
       } else if( status == 2 ) {
 	DEBUG_MSG("SD Card disconnected\n");
 	// invalidate all file infos
-	MIDIO_FILE_UnloadAllFiles();
-
-	// stop sequencer
-	SEQ_BPM_Stop();
+	MBCV_FILE_UnloadAllFiles();
 
 	// change status
-	MIDIO_FILE_StatusMsgSet("No SD Card");
+	MBCV_FILE_StatusMsgSet("No SD Card");
       } else if( status == 3 ) {
 	if( !FILE_SDCardAvailable() ) {
 	  DEBUG_MSG("SD Card not found\n");
-	  MIDIO_FILE_StatusMsgSet("No SD Card");
+	  MBCV_FILE_StatusMsgSet("No SD Card");
 	} else if( !FILE_VolumeAvailable() ) {
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-	  MIDIO_FILE_StatusMsgSet("No FAT");
+	  MBCV_FILE_StatusMsgSet("No FAT");
 	} else {
 	  // check if patch file exists
-	  if( !MIDIO_FILE_P_Valid() ) {
+	  if( !MBCV_FILE_P_Valid() ) {
 	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
+	    DEBUG_MSG("Creating initial DEFAULT.CV2 file\n");
 
-	    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
+	    if( (status=MBCV_FILE_P_Write("DEFAULT")) < 0 ) {
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }
 
 	  // disable status message and print patch
-	  //MIDIO_FILE_StatusMsgSet(NULL);
-	  // extra MIDIO: print SDCard found until MIDI file played
-	  MIDIO_FILE_StatusMsgSet("SDCard found");
+	  MBCV_FILE_StatusMsgSet(NULL);
 	}
-
-	// reset sequencer
-	SEQ_Reset(0);
       }
 
       MUTEX_SDCARD_GIVE;
@@ -400,7 +387,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS to handle sequencer requests
+// This task is called periodically each mS to handle AOUTs
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS(void *pvParameters)
 {
@@ -418,18 +405,10 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-    // execute sequencer handler
-    MUTEX_SDCARD_TAKE;
-    SEQ_Handler();
-    MUTEX_SDCARD_GIVE;
-
-    // send timestamped MIDI events
-    MUTEX_MIDIOUT_TAKE;
-    SEQ_MIDI_OUT_Handler();
-    MUTEX_MIDIOUT_GIVE;
-
-    // Scan Matrix button handler
-    MIDIO_MATRIX_ButtonHandler();
+    if( hw_enabled ) {
+      // update AOUT channels
+      AOUT_Update();
+    }
   }
 }
 

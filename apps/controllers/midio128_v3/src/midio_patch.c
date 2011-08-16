@@ -434,6 +434,8 @@ u8 MIDIO_PATCH_ReadByte(u16 addr)
   if( addr >= MIDIO_PATCH_SIZE )
     return 0;
 
+  // Note: this patch structure only exists for compatibility reasons with MIDIO128 V2
+  // Don't enhance it! Meanwhile the complete patch can only be edited via SD Card!
   if( addr < 0x100 ) {
     u8 dout = addr / 2;
     if( dout < MIDIO_PATCH_NUM_DOUT ) {
@@ -491,6 +493,8 @@ s32 MIDIO_PATCH_WriteByte(u16 addr, u8 byte)
   if( addr >= MIDIO_PATCH_SIZE )
     return 0;
 
+  // Note: this patch structure only exists for compatibility reasons with MIDIO128 V2
+  // Don't enhance it! Meanwhile the complete patch can only be edited via SD Card!
   if( addr < 0x100 ) {
     u8 dout = addr / 2;
     if( dout < MIDIO_PATCH_NUM_DOUT ) {
