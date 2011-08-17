@@ -249,6 +249,20 @@ s32 MIDIO_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function is called from NOTIFY_MIDI_TimeOut() in app.c if the 
+// MIDI parser runs into timeout
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_SYSEX_TimeOut(mios32_midi_port_t port)
+{
+  // if we receive a SysEx command (MY_SYSEX flag set), abort parser if port matches
+  if( sysex_state.MY_SYSEX && port == sysex_port )
+    MIDIO_SYSEX_CmdFinished();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for SysEx messages
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)

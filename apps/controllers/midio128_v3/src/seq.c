@@ -598,10 +598,7 @@ static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t 
     if( enabled_ports & mask ) {
       // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
       mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
-      if( (port & 0xf0) == OSC0 )
-	OSC_CLIENT_SendMIDIEvent(port & 0x0f, package);
-      else
-	MIOS32_MIDI_SendPackage(port, package);
+      MIOS32_MIDI_SendPackage(port, package);
     }
   }
 

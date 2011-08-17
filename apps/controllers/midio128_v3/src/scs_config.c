@@ -53,6 +53,8 @@ static u8 selectedMatrix;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
+static u8 monPageOffset;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local parameter variables
@@ -68,6 +70,7 @@ static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
+static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
@@ -195,6 +198,7 @@ static void stringMidiFileName(u32 ix, u16 value, char *label)
 {
   memcpy(label, (char *)(MID_FILE_UI_NameGet() + 5*ix), 5);
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Parameter Selection Functions
@@ -606,6 +610,11 @@ const scs_menu_item_t pageMIDI[] = {
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
 };
 
+const scs_menu_item_t pageMON[] = {
+  // dummy - will be overlayed in displayHook
+  SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
+};
+
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DIN  ", pageDIN),
   SCS_PAGE("DOUT ", pageDOUT),
@@ -614,6 +623,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("MIDI ", pageMIDI),
+  SCS_PAGE("Mon. ", pageMON),
   SCS_PAGE("Disk ", pageDsk),
 };
 
@@ -647,7 +657,7 @@ static s32 displayHook(char *line1, char *line2)
   }
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-    u8 fastRefresh = line1[0] != 0;
+    u8 fastRefresh = line1[0] == 0;
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
     u32 ticks_per_measure = ticks_per_step * 16;
@@ -688,6 +698,59 @@ static s32 displayHook(char *line1, char *line2)
     return 1;
   }
 
+  if( SCS_MenuPageGet() == pageMON ) {
+    u8 fastRefresh = line1[0] == 0;
+
+    int i;
+    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+      u8 portIx = 1 + i + monPageOffset;
+
+      if( fastRefresh ) { // no MSD overlay?
+	mios32_midi_port_t port = MIDIO_PORT_InPortGet(portIx);
+	mios32_midi_package_t package = MIDIO_PORT_InPackageGet(port);
+	if( port == 0xff ) {
+	  strcat(line1, "     ");
+	} else if( package.type ) {
+	  char buffer[6];
+	  MIDIO_PORT_EventNameGet(package, buffer, 5);
+	  strcat(line1, buffer);
+	} else {
+	  strcat(line1, MIDIO_PORT_InNameGet(portIx));
+	  strcat(line1, " ");
+	}
+
+	// insert arrow at upper right corner
+	int numItems = MIDIO_PORT_OutNumGet() - 1;
+	if( monPageOffset == 0 )
+	  line1[19] = 1; // right arrow
+	else if( monPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
+	  line1[19] = 0; // left arrow
+	else
+	  line1[19] = 2; // left/right arrow
+
+      }
+
+      mios32_midi_port_t port = MIDIO_PORT_OutPortGet(portIx);
+      mios32_midi_package_t package = MIDIO_PORT_OutPackageGet(port);
+      if( port == 0xff ) {
+	strcat(line2, "     ");
+      } else if( package.type ) {
+	char buffer[6];
+	MIDIO_PORT_EventNameGet(package, buffer, 5);
+	strcat(line2, buffer);
+      } else {
+	strcat(line2, MIDIO_PORT_OutNameGet(portIx));
+	strcat(line2, " ");
+      }
+    }
+
+    // request LCD update - this will lead to fast refresh rate in monitor screen
+    if( fastRefresh )
+      SCS_DisplayUpdateRequest();
+
+    return 1;
+  }
+
   return (line1[0] != 0) ? 1 : 0; // return 1 if MSD overlay
 }
 
@@ -701,6 +764,20 @@ static s32 encHook(s32 incrementer)
 {
   if( extraPage )
     return 1; // ignore encoder movements in extra page
+
+  // encoder overlayed in monitor page to scroll through port list
+  if( SCS_MenuPageGet() == pageMON ) {
+    int numItems = MIDIO_PORT_OutNumGet() - 1;
+    int newOffset = monPageOffset + incrementer;
+    if( newOffset < 0 )
+      newOffset = 0;
+    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= numItems ) {
+      newOffset = numItems - SCS_NUM_MENU_ITEMS;
+      if( newOffset < 0 )
+	newOffset = 0;
+    }
+    monPageOffset = newOffset;
+  }
 
   return 0;
 }
@@ -804,6 +881,7 @@ s32 SCS_CONFIG_Init(u32 mode)
     SCS_InstallDisplayHook(displayHook);
     SCS_InstallEncHook(encHook);
     SCS_InstallButtonHook(buttonHook);
+    monPageOffset = 0;
     break;
   }
   default: return -1; // mode not supported

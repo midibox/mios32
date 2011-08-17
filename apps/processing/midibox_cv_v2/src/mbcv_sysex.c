@@ -103,7 +103,6 @@ static u8 sysex_cmd;
 static mios32_midi_port_t sysex_port = DEFAULT;
 static u8 sysex_patch;
 static u8 sysex_checksum;
-static u8 sysex_block;
 static u8 sysex_received_checksum;
 static u16 sysex_receive_ctr;
 
@@ -211,6 +210,20 @@ s32 MBCV_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 
   // finally send SysEx stream and return error status
   return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, sysex_buffer_ix);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called from NOTIFY_MIDI_TimeOut() in app.c if the 
+// MIDI parser runs into timeout
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_SYSEX_TimeOut(mios32_midi_port_t port)
+{
+  // if we receive a SysEx command (MY_SYSEX flag set), abort parser if port matches
+  if( sysex_state.MY_SYSEX && port == sysex_port )
+    MBCV_SYSEX_CmdFinished();
+
+  return 0; // no error
 }
 
 

@@ -15,8 +15,10 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 THUMB_SOURCE    = src/app.c \
+		  src/mbcv_midi.c \
 		  src/mbcv_sysex.c \
 		  src/mbcv_patch.c \
+		  src/mbcv_map.c \
 		  src/mbcv_router.c \
 		  src/mbcv_port.c \
 		  src/mbcv_file.c \
@@ -79,8 +81,8 @@ include $(MIOS32_PATH)/modules/aout/aout.mk
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
-# MIDI file Player
-include $(MIOS32_PATH)/modules/midifile/midifile.mk
+# Notestack functions
+include $(MIOS32_PATH)/modules/notestack/notestack.mk
 
 # USB Mass Storage Device Driver
 include $(MIOS32_PATH)/modules/msd/msd.mk

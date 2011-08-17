@@ -392,6 +392,9 @@ midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER] = {
   { 0x10,  0, 0x20, 17 },
 };
 
+u32 midio_patch_router_mclk_in;
+u32 midio_patch_router_mclk_out;
+
 midio_patch_cfg_t midio_patch_cfg = {
 #if 0
   // TK: doesn't work, these values are initialized in PATCH_Init()
@@ -421,6 +424,11 @@ s32 MIDIO_PATCH_Init(u32 mode)
   midio_patch_cfg.flags.ALL = 0;
   midio_patch_cfg.flags.FORWARD_IO = 1;
   midio_patch_cfg.flags.INVERSE_DIN = 1;
+
+  //                            USB0 only     UART0..3       IIC0..3      OSC0..3
+  midio_patch_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
+ //                              all ports
+  midio_patch_router_mclk_out = 0xffffffff;
 
   return 0; // no error
 }

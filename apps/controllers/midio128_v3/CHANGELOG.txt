@@ -14,6 +14,8 @@ MIDIO128 V3.001
      first, thereafter disable MSD in the SHIFT menu.
      Thereafter USB-MIDI will be available again.
 
+   o added integrated MIDI monitor for USB/MIDI/OSC ports (-> "Mon." page)
+
 
 MIDIO128 V3.000
 ~~~~~~~~~~~~~~~

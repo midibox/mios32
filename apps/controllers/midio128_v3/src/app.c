@@ -96,7 +96,7 @@ xSemaphoreHandle xMIDIOUTSemaphore;
 
 static u32 ms_counter;
 
-static msd_state_t msd_state;
+static volatile msd_state_t msd_state;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -104,6 +104,8 @@ static msd_state_t msd_state;
 /////////////////////////////////////////////////////////////////////////////
 static void APP_Periodic_100uS(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
+static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 
@@ -115,7 +117,7 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
-  // disable MSD by default (has to be enabled in SEQ_UI_FILE menu)
+  // disable MSD by default (has to be enabled in SHIFT menu)
   msd_state = MSD_DISABLED;
 
   // hardware will be enabled once configuration has been loaded from SD Card
@@ -136,8 +138,12 @@ void APP_Init(void)
   // install SysEx callback
   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
 
-  // install MIDI Rx callback function
-  MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
+  // install MIDI Rx/Tx callback functions
+  MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
+  MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
+
+  // install timeout callback function
+  MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
   // initialize code modules
   MIDIO_PORT_Init(0);
@@ -190,6 +196,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 
   // -> MIDI Router
   MIDIO_ROUTER_Receive(port, midi_package);
+
+  // -> MIDI Port Handler (used for MIDI monitor function)
+  MIDIO_PORT_NotifyMIDIRx(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -286,6 +295,9 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
     // call SCS handler
     SCS_Tick();
+
+    // MIDI In/Out monitor
+    MIDIO_PORT_Period1mS();
   }
 
 }
@@ -456,12 +468,33 @@ static void APP_Periodic_100uS(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
-  // here we could filter a certain port
-  // The BPM generator will deliver inaccurate results if MIDI clock 
-  // is received from multiple ports
-  SEQ_BPM_NotifyMIDIRx(midi_byte);
+  // filter MIDI In port which controls the MIDI clock
+  if( MIDIO_ROUTER_MIDIClockInGet(port) == 1 )
+    SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_DirectTxCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  return MIDIO_PORT_NotifyMIDITx(port, package);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Installed via MIOS32_MIDI_TimeoutCallback_Init
+/////////////////////////////////////////////////////////////////////////////
+static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
+{  
+  // forward to SysEx parser
+  MIDIO_SYSEX_TimeOut(port);
+
+  // print message on screen
+  SCS_Msg(SCS_MSG_L, 2000, "MIDI Protocol", "TIMEOUT !!!");
+
+  return 0;
 }
 
 
