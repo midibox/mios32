@@ -32,6 +32,7 @@ extern s32 MIDIO_SYSEX_Init(u32 mode);
 extern s32 MIDIO_SYSEX_Send(mios32_midi_port_t port);
 extern s32 MIDIO_SYSEX_SendBlock(mios32_midi_port_t port, u8 block);
 extern s32 MIDIO_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 MIDIO_SYSEX_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////

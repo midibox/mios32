@@ -121,7 +121,10 @@ extern s32 MIDIO_PATCH_Store(char *filename);
 extern midio_patch_din_entry_t  midio_patch_din[MIDIO_PATCH_NUM_DIN];
 extern midio_patch_dout_entry_t midio_patch_dout[MIDIO_PATCH_NUM_DOUT];
 extern midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX];
+
 extern midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER];
+extern u32 midio_patch_router_mclk_in;
+extern u32 midio_patch_router_mclk_out;
 
 extern midio_patch_cfg_t        midio_patch_cfg;
 

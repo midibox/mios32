@@ -15,7 +15,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
 // define a unique VID/PID for this application
-#define MIOS32_USB_PRODUCT_STR  MIOS32_LCD_BOOT_MSG_LINE1
+#define MIOS32_USB_PRODUCT_STR  "MIDIO128"
 
 // only enable a single USB port by default to avoid USB issue under Win7 64bit
 #define MIOS32_USB_MIDI_NUM_PORTS 1

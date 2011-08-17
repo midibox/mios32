@@ -30,6 +30,7 @@
 #include <seq_bpm.h>
 
 #include "mbcv_port.h"
+#include "mbcv_map.h"
 
 #include <file.h>
 #include "mbcv_file.h"
@@ -44,9 +45,12 @@
 
 static u8 extraPage;
 
+static u8 selectedCv;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
+static u8 monPageOffset;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local parameter variables
@@ -62,6 +66,7 @@ static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
+static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
@@ -84,6 +89,21 @@ static void stringNote(u32 ix, u16 value, char *label)
 	    (int)octave-2);
   }
 }
+
+static void stringAoutIf(u32 ix, u16 value, char *label)
+{
+  char *name = MBCV_MAP_IfNameGet(); // 8 chars max
+  if( ix == 0 ) {
+    label[0] = ' ';
+    memcpy(label+1, (char *)(MBCV_MAP_IfNameGet()), 4);
+  } else {
+    memcpy(label, (char *)(MBCV_MAP_IfNameGet() + 4), 5);
+  }
+  label[5] = 0;
+}
+
+static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CurveNameGet(selectedCv), 5); label[5] = 0; }
+static void stringCvCaliMode(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CaliNameGet(), 5); label[5] = 0; }
 
 static void stringDIN_SR(u32 ix, u16 value, char *label)  { sprintf(label, "%2d.%d", (value/8)+1, value%8); }
 static void stringDOUT_SR(u32 ix, u16 value, char *label) { sprintf(label, "%2d.%d", (value/8)+1, 7-(value%8)); }
@@ -282,6 +302,25 @@ static u16 selectIpEnter(u32 ix, u16 value)
 static u16  dummyGet(u32 ix)              { return 0; }
 static void dummySet(u32 ix, u16 value)   { }
 
+static u16  cvGet(u32 ix)              { return selectedCv; }
+static void cvSet(u32 ix, u16 value)
+{
+  selectedCv = value;
+  MBCV_MAP_CaliModeSet(selectedCv, MBCV_MAP_CaliModeGet()); // change calibration mode to new pin
+}
+
+static u16  cvCurveGet(u32 ix)            { return MBCV_MAP_CurveGet(selectedCv); }
+static void cvCurveSet(u32 ix, u16 value) { MBCV_MAP_CurveSet(selectedCv, value); }
+
+static u16  cvSlewRateGet(u32 ix)            { return MBCV_MAP_SlewRateGet(selectedCv); }
+static void cvSlewRateSet(u32 ix, u16 value) { MBCV_MAP_SlewRateSet(selectedCv, value); }
+
+static u16  cvCaliModeGet(u32 ix)            { return MBCV_MAP_CaliModeGet(); }
+static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, value); }
+
+static u16  aoutIfGet(u32 ix)              { return MBCV_MAP_IfGet(); }
+static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet(value); }
+
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -326,6 +365,15 @@ static void MSD_EnableReq(u32 enable)
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
+const scs_menu_item_t pageAOUT[] = {
+  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Curve", 0, MBCV_MAP_NUM_CURVES-1, cvCurveGet, cvCurveSet, selectNOP, stringCvCurve, NULL),
+  SCS_ITEM(" Slew", 0, 255,   cvSlewRateGet, cvSlewRateSet, selectNOP, stringDec4, NULL),
+  SCS_ITEM(" Cali", 0, MBCV_MAP_NUM_CALI_MODES-1, cvCaliModeGet, cvCaliModeSet, selectNOP, stringCvCaliMode, NULL),
+  SCS_ITEM(" Modu", 0, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
+  SCS_ITEM("le   ", 1, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
+};
+
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MBCV_PATCH_NUM_ROUTER-1, routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MBCV_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -357,10 +405,17 @@ const scs_menu_item_t pageNetw[] = {
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectIpEnter,stringIp, NULL),
 };
 
+const scs_menu_item_t pageMON[] = {
+  // dummy - will be overlayed in displayHook
+  SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
+};
+
 const scs_menu_page_t rootMode0[] = {
+  SCS_PAGE("AOUT ", pageAOUT),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
+  SCS_PAGE("Mon. ", pageMON),
   SCS_PAGE("Disk ", pageDsk),
 };
 
@@ -394,7 +449,7 @@ static s32 displayHook(char *line1, char *line2)
   }
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-    u8 fastRefresh = line1[0] != 0;
+    u8 fastRefresh = line1[0] == 0;
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
     u32 ticks_per_measure = ticks_per_step * 16;
@@ -438,6 +493,59 @@ static s32 displayHook(char *line1, char *line2)
     return 1;
   }
 
+  if( SCS_MenuPageGet() == pageMON ) {
+    u8 fastRefresh = line1[0] == 0;
+
+    int i;
+    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+      u8 portIx = 1 + i + monPageOffset;
+
+      if( fastRefresh ) { // no MSD overlay?
+	mios32_midi_port_t port = MBCV_PORT_InPortGet(portIx);
+	mios32_midi_package_t package = MBCV_PORT_InPackageGet(port);
+	if( port == 0xff ) {
+	  strcat(line1, "     ");
+	} else if( package.type ) {
+	  char buffer[6];
+	  MBCV_PORT_EventNameGet(package, buffer, 5);
+	  strcat(line1, buffer);
+	} else {
+	  strcat(line1, MBCV_PORT_InNameGet(portIx));
+	  strcat(line1, " ");
+	}
+
+	// insert arrow at upper right corner
+	int numItems = MBCV_PORT_OutNumGet() - 1;
+	if( monPageOffset == 0 )
+	  line1[19] = 1; // right arrow
+	else if( monPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
+	  line1[19] = 0; // left arrow
+	else
+	  line1[19] = 2; // left/right arrow
+
+      }
+
+      mios32_midi_port_t port = MBCV_PORT_OutPortGet(portIx);
+      mios32_midi_package_t package = MBCV_PORT_OutPackageGet(port);
+      if( port == 0xff ) {
+	strcat(line2, "     ");
+      } else if( package.type ) {
+	char buffer[6];
+	MBCV_PORT_EventNameGet(package, buffer, 5);
+	strcat(line2, buffer);
+      } else {
+	strcat(line2, MBCV_PORT_OutNameGet(portIx));
+	strcat(line2, " ");
+      }
+    }
+
+    // request LCD update - this will lead to fast refresh rate in monitor screen
+    if( fastRefresh )
+      SCS_DisplayUpdateRequest();
+
+    return 1;
+  }
+
   return (line1[0] != 0) ? 1 : 0; // return 1 if MSD overlay
 }
 
@@ -451,6 +559,20 @@ static s32 encHook(s32 incrementer)
 {
   if( extraPage )
     return 1; // ignore encoder movements in extra page
+
+  // encoder overlayed in monitor page to scroll through port list
+  if( SCS_MenuPageGet() == pageMON ) {
+    int numItems = MBCV_PORT_OutNumGet() - 1;
+    int newOffset = monPageOffset + incrementer;
+    if( newOffset < 0 )
+      newOffset = 0;
+    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= numItems ) {
+      newOffset = numItems - SCS_NUM_MENU_ITEMS;
+      if( newOffset < 0 )
+	newOffset = 0;
+    }
+    monPageOffset = newOffset;
+  }
 
   return 0;
 }
@@ -554,6 +676,7 @@ s32 SCS_CONFIG_Init(u32 mode)
     SCS_InstallDisplayHook(displayHook);
     SCS_InstallEncHook(encHook);
     SCS_InstallButtonHook(buttonHook);
+    monPageOffset = 0;
     break;
   }
   default: return -1; // mode not supported

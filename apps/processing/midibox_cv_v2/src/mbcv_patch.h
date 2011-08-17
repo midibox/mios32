@@ -67,8 +67,6 @@ typedef struct {
   u8 transpose_oct;
   u8 transpose_semi;
   u8 cc_number;
-  u8 curve;
-  u8 slew_rate;
 } mbcv_patch_cv_entry_t;
 
 typedef struct {
@@ -90,6 +88,7 @@ typedef union {
 typedef struct {
   mbcv_patch_flags_t flags;
   u8 ext_clk_divider;
+  u8 ext_clk_pulsewidth;
 } mbcv_patch_cfg_t;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -111,7 +110,10 @@ extern s32 MBCV_PATCH_Store(char *filename);
 
 extern mbcv_patch_cv_entry_t mbcv_patch_cv[MBCV_PATCH_NUM_CV];
 extern u8 mbcv_patch_gate_inverted[MBCV_PATCH_NUM_CV/8];
+
 extern mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER];
+extern u32 mbcv_patch_router_mclk_in;
+extern u32 mbcv_patch_router_mclk_out;
 
 extern mbcv_patch_cfg_t        mbcv_patch_cfg;
 

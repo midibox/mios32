@@ -31,6 +31,7 @@
 extern s32 MBCV_SYSEX_Init(u32 mode);
 extern s32 MBCV_SYSEX_Send(mios32_midi_port_t port, u8 patch);
 extern s32 MBCV_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
+extern s32 MBCV_SYSEX_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////

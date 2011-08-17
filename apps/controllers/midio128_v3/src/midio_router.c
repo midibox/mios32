@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <seq_midi_out.h>
 #include <osc_client.h>
 #include "app.h"
 #include "tasks.h"
@@ -86,20 +87,14 @@ s32 MIDIO_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	    fwd_package.chn = (n->dst_chn-1);
 	  mios32_midi_port_t port = n->dst_port;
 	  MUTEX_MIDIOUT_TAKE;
-	  if( (port & 0xf0) == OSC0 )
-	    OSC_CLIENT_SendMIDIEvent(port & 0x0f, fwd_package);
-	  else
-	    MIOS32_MIDI_SendPackage(port, fwd_package);
+	  MIOS32_MIDI_SendPackage(port, fwd_package);
 	  MUTEX_MIDIOUT_GIVE;
 	}
       } else {
 	if( n->dst_chn >= 17 ) { // SysEx, MIDI Clock, etc... only forwarded if destination channel set to "All"
 	  mios32_midi_port_t port = n->dst_port;
 	  MUTEX_MIDIOUT_TAKE;
-	  if( (port & 0xf0) == OSC0 )
-	    OSC_CLIENT_SendMIDIEvent(port & 0x0f, midi_package);
-	  else
-	    MIOS32_MIDI_SendPackage(port, midi_package);
+	  MIOS32_MIDI_SendPackage(port, midi_package);
 	  MUTEX_MIDIOUT_GIVE;
 	}
       }
@@ -169,4 +164,119 @@ s32 MIDIO_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
   }
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if given port receives MIDI Clock
+// Returns 0 if MIDI Clock In disabled
+// Returns -1 if port not supported
+// Returns -2 if MIDI In function disabled
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_ROUTER_MIDIClockInGet(mios32_midi_port_t port)
+{
+  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
+  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
+    // extra: MIDI IN Clock function not supported for IIC0..7 (yet)
+    if( port >= IIC0 && port <= (IIC0+15) )
+      return -2; // MIDI In function disabled
+
+    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+    return (midio_patch_router_mclk_in & (1 << port_flag)) ? 1 : 0;
+  }
+
+  return -1; // port not supported
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Enables/Disables MIDI In Clock function for given port
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_ROUTER_MIDIClockInSet(mios32_midi_port_t port, u8 enable)
+{
+  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
+  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
+    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+    if( enable )
+      midio_patch_router_mclk_in |= (1 << port_flag);
+    else
+      midio_patch_router_mclk_in &= ~(1 << port_flag);
+
+    return 0; // no error
+  }
+
+  return -1; // port not supported
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if given port sends MIDI Clock
+// Returns 0 if MIDI Clock Out disabled
+// Returns -1 if port not supported
+// Returns -2 if MIDI In function disabled
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_ROUTER_MIDIClockOutGet(mios32_midi_port_t port)
+{
+  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
+  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
+    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+    return (midio_patch_router_mclk_out & (1 << port_flag)) ? 1 : 0;
+  }
+
+  return -1; // port not supported
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Enables/Disables MIDI Out Clock function for given port
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_ROUTER_MIDIClockOutSet(mios32_midi_port_t port, u8 enable)
+{
+  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
+  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
+    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+    if( enable )
+      midio_patch_router_mclk_out |= (1 << port_flag);
+    else
+      midio_patch_router_mclk_out &= ~(1 << port_flag);
+
+    return 0; // no error
+  }
+
+  return -1; // port not supported
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends a MIDI clock/Start/Stop/Continue event to all output
+// ports which have been enabled for this function.
+// if bpm_tick == 0, the event will be sent immediately, otherwise it will
+// be queued
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
+{
+  int i;
+
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.type = 0x5; // Single-byte system common message
+  p.evnt0 = evnt0;
+
+  u32 port_mask = 0x00000001;
+  for(i=0; i<32; ++i, port_mask<<=1) {
+    if( midio_patch_router_mclk_out & port_mask & 0xffffff0f ) { // filter USB5..USB8 to avoid unwanted clock events to non-existent ports
+      // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
+      mios32_midi_port_t port = (USB0 + ((i&0x18) << 1)) | (i&7);
+
+      // TODO: special check for OSC, since MIOS32_MIDI_CheckAvailable() won't work here
+      if( MIOS32_MIDI_CheckAvailable(port) ) {
+	if( bpm_tick )
+	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+	else {
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendPackage(port, p);
+	  MUTEX_MIDIOUT_GIVE;
+	}
+      }
+    }
+  }
+
+  return 0; // no error;
 }

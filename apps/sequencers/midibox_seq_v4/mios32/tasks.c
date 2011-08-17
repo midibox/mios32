@@ -84,7 +84,7 @@ static void TASK_Pattern(void *pvParameters);
 
 static xTaskHandle xPatternHandle;
 
-static msd_state_t msd_state;
+static volatile msd_state_t msd_state;
 
  
 /////////////////////////////////////////////////////////////////////////////
