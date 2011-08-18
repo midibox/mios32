@@ -1,6 +1,6 @@
 $Id$
 
-Bootloader Update V1.4
+Bootloader Update V1.5
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -36,6 +36,9 @@ check this, and to update the bootloader if it is not up-to-date
 Just proceed as described under 2)
 
 
+4) you want to change the Device ID or custize the USB Device Name
+
+
 
 Some messages are print on LCD, but some more verbose messages are send
 to the MIOS Terminal, which can be opened in MIOS Studio
@@ -44,65 +47,53 @@ to the MIOS Terminal, which can be opened in MIOS Studio
 If the bootloader is up-to-date, you will get following messages:
 
 | ====================
-| Bootloader V1.4
+| Bootloader V1.5
 | ====================
 | 
 | Checking Bootloader...
 | No mismatches found.
 | The bootloader is up-to-date!
-| ... (messages repeat until a new application is uploaded)
+| You can upload another application now!
+| Or type 'help' in MIOS Terminal for additional options!
 
 
 
 If the bootloader has to be updated, you will probably get following messages:
 
 | ====================
-| Bootloader V1.4
+| Bootloader V1.5 
 | ====================
 | 
 | Checking Bootloader...
-| Mismatch at address 0x0090
-| Mismatch at address 0x0091
-| Mismatch at address 0x00d4
-| Mismatch at address 0x00d5
-| Mismatch at address 0x00dc
-| Mismatch at address 0x00dd
-| Mismatch at address 0x02ac
-| Mismatch at address 0x02ad
-| Mismatch at address 0x02c0
+| Mismatch at address 0x00a0
+| Mismatch at address 0x00a8
+| Mismatch at address 0x00a9
+| Mismatch at address 0x00fc
+| Mismatch at address 0x0104
+| Mismatch at address 0x0105
+| Mismatch at address 0x0122
+| Mismatch at address 0x0128
+| Mismatch at address 0x012e
 | Too many mismatches, no additional messages will be print...
 | Bootloader requires an update...
-| Bootloader update in 10 seconds!
-| Bootloader update in 9 seconds!
-| Bootloader update in 8 seconds!
-| Bootloader update in 7 seconds!
-| Bootloader update in 6 seconds!
-| Bootloader update in 5 seconds!
-| Bootloader update in 4 seconds!
-| Bootloader update in 3 seconds!
-| Bootloader update in 2 seconds!
-| Bootloader update in 1 seconds!
-| Bootloader update in 0 seconds!
 | Starting Update - don't power off!!!
 | Checking Bootloader...
 | The bootloader has been successfully updated!
 | You can upload another application now!
-| The bootloader has been successfully updated!
-| You can upload another application now!
-| ... (messages repeat until a new application is uploaded)
-
-
-As you can see, the bootloader waits for 10 seconds before the flash section
-is reprogrammed.
+| Or type 'help' in MIOS Terminal for additional options!
 
 IMPORTANT: DON'T POWER-OFF THE CORE DURING THE BOOTLOADER IS PROGRAMMED!
 THIS CAN LEAD TO DATA CORRUPTION, SO THAT THE A JTAG OR COM INTERFACE IS
 REQUIRED TO INSTALL THE BOOTLOADER AGAIN!
 
-The status LED mounted on the MBHP_CORE_STM32/LPC17 board will flicker 
-if a check, the countdown or the flash erase/programming procedure is in progress.
-As long as this happens, the core shouldn't be powered off or rebooted!
+The status LED mounted on the MBHP_CORE_STM32/LPC17 board will flicker when
+the flash erase/programming procedure is in progress.
 
 Once the LED is permanently on, another application can be uploaded.
+
+===============================================================================
+
+For programming Device ID or USB Device Name:
+enter 'help' in MIOS Terminal (part of MIOS Studio) to get more informations
 
 ===============================================================================

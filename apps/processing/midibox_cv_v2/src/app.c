@@ -316,7 +316,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // each second: check if SD Card (still) available
-    if( ++sdcard_check_ctr >= 1000 ) {
+    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= 1000 ) {
       sdcard_check_ctr = 0;
 
       MUTEX_SDCARD_TAKE;

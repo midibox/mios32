@@ -44,10 +44,6 @@
 # define SRAM_START_ADDR   (0x20000000)
 # define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
-  // location of device ID (can be overprogrammed... but not erased!)
-  // must be 16bit aligned!
-# define BSL_DEVICE_ID_ADDR (0x08003ffe)
-
 #elif defined(MIOS32_FAMILY_LPC17xx)
 
 #include <sbl_iap.h>
@@ -92,10 +88,6 @@ SECTOR_27_END,SECTOR_28_END,SECTOR_29_END                                       
 # define SRAM_START_ADDR   (0x10000000)
 # define SRAM_END_ADDR     (0x10000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
-  // location of device ID (can be overprogrammed... but not erased!)
-  // must be 16bit aligned!
-# define BSL_DEVICE_ID_ADDR (0x00003ffe)
-
 static void iap_entry(unsigned param_tab[], unsigned result_tab[]);
 static s32 write_data(unsigned cclk,unsigned flash_address, unsigned *flash_data_buf, unsigned count);
 static s32 find_erase_prepare_sector(unsigned cclk, unsigned flash_address);
@@ -107,16 +99,12 @@ static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned c
 #endif
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 BSL_FetchDeviceIDFromFlash(void);
-
 static s32 BSL_SYSEX_Cmd_ReadMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 static s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
-static s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in);
 
 static s32 BSL_SYSEX_RecAddrAndLen(u8 midi_in);
 
@@ -159,8 +147,6 @@ s32 BSL_SYSEX_Init(u32 mode)
   // so long flash hasn't been programmed completely
   halt_state = 0;
 
-  BSL_FetchDeviceIDFromFlash();
-
   return 0; // no error
 }
 
@@ -191,20 +177,6 @@ s32 BSL_SYSEX_ReleaseHaltState(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Fetches device ID from flash location
-/////////////////////////////////////////////////////////////////////////////
-static s32 BSL_FetchDeviceIDFromFlash(void)
-{
-  // set device ID if < 0x80
-  u16 device_id = MEM16(BSL_DEVICE_ID_ADDR);
-  if( device_id < 0x80 )
-    MIOS32_MIDI_DeviceIDSet(device_id);
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // This function enhances MIOS32 SysEx commands
 // it's called from MIOS32_MIDI_SYSEX_Cmd if the "MIOS32_MIDI_BSL_ENHANCEMENTS"
 // switch is set (see code there for details)
@@ -224,9 +196,6 @@ s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_sta
       break;
     case 0x02:
       BSL_SYSEX_Cmd_WriteMem(port, cmd_state, midi_in);
-      break;
-    case 0x0c:
-      BSL_SYSEX_Cmd_ChangeDeviceID(port, cmd_state, midi_in);
       break;
 
     default:
@@ -364,81 +333,6 @@ s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_
 
   return 0; // no error
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Command 0C: change the Device ID
-/////////////////////////////////////////////////////////////////////////////
-s32 BSL_SYSEX_Cmd_ChangeDeviceID(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
-{
-  static u8 new_device_id = 0;
-
-  switch( cmd_state ) {
-
-    case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      new_device_id = 0;
-      sysex_rec_state = BSL_SYSEX_REC_ID;
-      break;
-
-    case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      if( sysex_rec_state == BSL_SYSEX_REC_ID ) {
-	  new_device_id = midi_in;
-	  sysex_rec_state = BSL_SYSEX_REC_ID_OK;
-      } else {
-	// too many bytes or wrong sequence... wait for F7
-	sysex_rec_state = BSL_SYSEX_REC_INVALID;
-      }
-      break;
-
-    default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
-      // TODO: send 0xf7 if merger enabled
-
-      if( sysex_rec_state != BSL_SYSEX_REC_ID_OK ) {
-	// too many bytes received
-	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_MORE_BYTES_THAN_EXP);
-      } else {
-	// program device ID if it has been changed
-	if( new_device_id != MIOS32_MIDI_DeviceIDGet() ) {
-	  // No EEPROM emulation used here (to save memory), accordingly the device ID can only be changed once!
-
-	  // if device ID has already been programmed, abort here to avoid invalid values!
-	  if( MIOS32_MIDI_DeviceIDGet() != 0x00 ) {
-	    BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_PROG_ID_NOT_ALLOWED);
-	    break;
-	  }
-
-	  MIOS32_IRQ_Disable();
-
-#if defined(MIOS32_FAMILY_STM32F10x)
-	  // FLASH_* routines are part of the STM32 code library
-	  FLASH_Unlock();
-
-	  FLASH_Status status;
-	  if( (status=FLASH_ProgramHalfWord(BSL_DEVICE_ID_ADDR, new_device_id)) != FLASH_COMPLETE ) {
-	    FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
-	  }
-
-	  FLASH_Lock();	  
-#elif defined(MIOS32_FAMILY_LPC17xx)
-#else
-# error "Flash Programming not prepared for this family"
-#endif
-
-	  MIOS32_IRQ_Enable();
-	}
-	// send acknowledge via old device ID
-	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
-	// change device ID
-	BSL_FetchDeviceIDFromFlash();
-	// send acknowledge via new device ID
-	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, new_device_id);
-      }
-      break;
-  }
-
-  return 0; // no error
-}
-
 
 
 /////////////////////////////////////////////////////////////////////////////

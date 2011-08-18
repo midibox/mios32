@@ -904,13 +904,27 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
       }
       break;
 
-    case 2: // Product
+    case 2: { // Product
       // buffer[0] and [1] initialized below
-      for(i=0, len=2; product_str[i] != '\0' && len<BUFFER_SIZE; ++i) {
-	buffer[len++] = product_str[i];
+      // check for user defined product string
+      char *product_str_ptr = (char *)product_str;
+#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
+      char *product_str_user = (u16 *)MIOS32_SYS_USB_DEV_NAME_ADDR;
+      int j;
+      u8 valid_str = 1;
+      for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN && valid_str; ++j) {
+	if( product_str_user[j] != 0x00 && (product_str_user[j] < 0x20 || product_str_user[j] >= 0x80) )
+	  valid_str = 0;
+      }
+      if( valid_str )
+	product_str_ptr = product_str_user;
+#endif
+
+      for(i=0, len=2; product_str_ptr[i] != '\0' && len<BUFFER_SIZE; ++i) {
+	buffer[len++] = product_str_ptr[i];
 	buffer[len++] = 0;
       }
-      break;
+    } break;
 
     case 3: { // Serial Number
       u8 serial_number_str[40];

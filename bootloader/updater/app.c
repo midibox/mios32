@@ -17,6 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "app.h"
 
 
@@ -106,15 +107,52 @@ static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned c
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 RetrieveBootInfos(void);
+
+static s32 TERMINAL_Parse(mios32_midi_port_t port, u8 byte);
+static s32 TERMINAL_ParseLine(char *input, void *_output_function);
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
+#define STRING_MAX 80
+static char line_buffer[STRING_MAX];
+static u16 line_ix;
+
+#ifdef MIOS32_SYS_DEVICE_ID_ADDR
+static u8 BSL_device_id;
+#endif
+#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
+static char BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN];
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
+  // retrieve informations from BSL range
+  RetrieveBootInfos();
+
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
   // turn off green LED as a clear indication that core shouldn't be powered-off/rebooted
   MIOS32_BOARD_LED_Set(0xffffffff, 0);
+
+  // install the callback function which is called on incoming characters
+  // from MIOS Terminal
+  MIOS32_MIDI_DebugCommandCallback_Init(TERMINAL_Parse);
+
+  // clear line buffer
+  line_buffer[0] = 0;
+  line_ix = 0;
 }
 
 
@@ -159,7 +197,16 @@ s32 CompareBSL(void)
       MIOS32_LCD_PrintFormattedString("0x%04x", addr);
     }
 
-    if( bsl_addr_ptr[addr] != bsl_image[addr] ) {
+    if( bsl_addr_ptr[addr] != bsl_image[addr]
+#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
+	&& !(addr >= (MIOS32_SYS_USB_DEV_NAME_ADDR & 0xffff) &&
+	     addr < ((MIOS32_SYS_USB_DEV_NAME_ADDR+MIOS32_SYS_USB_DEV_NAME_LEN) & 0xffff))
+#endif
+#ifdef MIOS32_SYS_DEVICE_ID_ADDR
+	&& !(addr >= (MIOS32_SYS_DEVICE_ID_ADDR & 0xffff) &&
+	     addr < ((MIOS32_SYS_DEVICE_ID_ADDR+2) & 0xffff))
+#endif
+	) {
       ++mismatches;
       if( mismatches < 10 ) {
 	DEBUG_MSG1("Mismatch at address 0x%04x\n", addr);
@@ -176,10 +223,6 @@ s32 UpdateBSL(void)
 {
   // disable interrupts - this is really a critical section!
   MIOS32_IRQ_Disable();
-
-  // Note: Device ID will be overwritten as well - this is intended, because it
-  // can only be programmed once after flash has been erased!
-  MIOS32_MIDI_DeviceIDSet(0x00);
 
 #if defined(MIOS32_FAMILY_STM32F10x)
   // FLASH_* routines are part of the STM32 code library
@@ -202,7 +245,18 @@ s32 UpdateBSL(void)
       }
     }
 
-    if( (status=FLASH_ProgramHalfWord(addr, bsl_image[i+0] | ((u16)bsl_image[i+1] << 8))) != FLASH_COMPLETE ) {
+    u16 data_value = bsl_image[i+0] | ((u16)bsl_image[i+1] << 8);
+
+    if( addr >= MIOS32_SYS_DEVICE_ID_ADDR && (addr < (MIOS32_SYS_DEVICE_ID_ADDR+2)) ) {
+      data_value = BSL_device_id;
+    }
+
+    if( addr >= MIOS32_SYS_USB_DEV_NAME_ADDR && (addr < MIOS32_SYS_USB_DEV_NAME_ADDR+MIOS32_SYS_USB_DEV_NAME_LEN) ) {
+      u8 offset = addr-MIOS32_SYS_USB_DEV_NAME_ADDR;
+      data_value = BSL_usb_dev_name[offset+0] | ((u16)BSL_usb_dev_name[offset+1] << 8);
+    }
+
+    if( (status=FLASH_ProgramHalfWord(addr, data_value)) != FLASH_COMPLETE ) {
       FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
       MIOS32_IRQ_Enable();
       return -2; // programming failed
@@ -228,6 +282,25 @@ s32 UpdateBSL(void)
     u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
     for(j=0; j<256; ++j)
       *ram_buffer_byte_ptr++ = bsl_image[i+j];
+
+    if( addr == (MIOS32_SYS_DEVICE_ID_ADDR & ~0xff) ) {
+      u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
+      u8 offset = MIOS32_SYS_DEVICE_ID_ADDR & 0xff;
+      DEBUG_MSG1("Inserting Device ID at 0x%08x!\n", addr+offset);
+      ram_buffer_byte_ptr += offset;
+      *ram_buffer_byte_ptr++ = (BSL_device_id >> 0) & 0xff;
+      *ram_buffer_byte_ptr++ = (BSL_device_id >> 8) & 0xff;
+    }
+
+    if( addr == (MIOS32_SYS_USB_DEV_NAME_ADDR  & ~0xff) ) {
+      u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
+      u8 offset = MIOS32_SYS_USB_DEV_NAME_ADDR & 0xff;
+      DEBUG_MSG1("Inserting USB Device Name at 0x%08x!\n", addr+offset);
+      ram_buffer_byte_ptr += offset;
+      int j;
+      for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN; ++j)
+	*ram_buffer_byte_ptr++ = BSL_usb_dev_name[j];
+    }
     
     s32 status;
     if( (status=find_erase_prepare_sector(SYSTEM_CORE_CLOCK_KHZ, addr)) < 0 ) {
@@ -252,6 +325,41 @@ s32 UpdateBSL(void)
 #endif
 
   MIOS32_IRQ_Enable();
+
+  RetrieveBootInfos();
+
+  return 0; // no error
+}
+
+
+static s32 RetrieveBootInfos(void)
+{
+#ifdef MIOS32_SYS_DEVICE_ID_ADDR
+  {
+    BSL_device_id = 0x00;
+    u16 *device_id = (u16 *)MIOS32_SYS_DEVICE_ID_ADDR;
+    if( *device_id < 0x80 )
+      BSL_device_id = *device_id;
+
+    if( BSL_device_id != MIOS32_MIDI_DeviceIDGet() ) {
+      DEBUG_MSG2("Device ID changed to %d (resp. 0x%02x)!\n", BSL_device_id, BSL_device_id);
+      DEBUG_MSG("Please change the Device ID in MIOS Studio accordingly - NOW!");
+    }
+    MIOS32_MIDI_DeviceIDSet(BSL_device_id);
+  }
+#endif
+#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
+  {
+    u16 *usb_dev_name = (u16 *)MIOS32_SYS_USB_DEV_NAME_ADDR;
+    memcpy(BSL_usb_dev_name, usb_dev_name, MIOS32_SYS_USB_DEV_NAME_LEN);
+
+    int i;
+    for(i=0; i<MIOS32_SYS_USB_DEV_NAME_LEN; ++i)
+      if( BSL_usb_dev_name[i] < 0x20 || BSL_usb_dev_name[i] >= 0x80 )
+	BSL_usb_dev_name[i] = 0x00;
+    BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN-1] = 0;
+  }
+#endif  
 
   return 0; // no error
 }
@@ -281,28 +389,19 @@ void APP_Background(void)
     // turn on green LED as a clear indication that core can be powered-off/rebooted
     MIOS32_BOARD_LED_Set(0xffffffff, 1);
 
-    while( 1 ) {
-      DEBUG_MSG("No mismatches found.\n");
-      DEBUG_MSG("The bootloader is up-to-date!\n");
-      DEBUG_MSG("You can upload another application now!\n");
+    DEBUG_MSG("No mismatches found.\n");
+    DEBUG_MSG("The bootloader is up-to-date!\n");
+    DEBUG_MSG("You can upload another application now!\n");
+    DEBUG_MSG("Or type 'help' in MIOS Terminal for additional options!\n");
 
-      // wait for 1 second before printing the message again
-      Wait1Second(1); // don't toggle LED!
-    }
+    // wait endless
+    while( 1 );
   }
 
   MIOS32_LCD_CursorSet(0, 0);
   MIOS32_LCD_PrintString("Bootloader Update"); // 16 chars
 
   DEBUG_MSG("Bootloader requires an update...\n");
-
-  int i;
-  for(i=10; i>=0; --i) {
-    MIOS32_LCD_CursorSet(0, 1);
-    MIOS32_LCD_PrintFormattedString("in %2d seconds! ", i);
-    DEBUG_MSG1("Bootloader update in %d seconds!\n", i);
-    Wait1Second(0);
-  }
 
   MIOS32_LCD_CursorSet(0, 0);
   MIOS32_LCD_PrintString("Starting Update  ");
@@ -348,18 +447,16 @@ void APP_Background(void)
     MIOS32_LCD_CursorSet(0, 1);
     MIOS32_LCD_PrintString("Have fun!        ");
 
-    while( 1 ) {
-      DEBUG_MSG("The bootloader has been successfully updated!\n");
-      DEBUG_MSG("You can upload another application now!\n");
+    DEBUG_MSG("The bootloader has been successfully updated!\n");
+    DEBUG_MSG("You can upload another application now!\n");
+    DEBUG_MSG("Or type 'help' in MIOS Terminal for additional options!\n");
 
-      // wait for 1 second before printing the message again
-      Wait1Second(1);
-    }
   } else {
     MIOS32_LCD_CursorSet(0, 0);
     MIOS32_LCD_PrintString("Update failed !!! ");
     MIOS32_LCD_CursorSet(0, 1);
     MIOS32_LCD_PrintString("Contact support!  ");
+
 
     while( 1 ) {
       DEBUG_MSG("Bootloader Update failed!\n");
@@ -370,6 +467,9 @@ void APP_Background(void)
       Wait1Second(1);
     }
   }
+
+  // wait endless
+  while( 1 );
 }
 
 
@@ -501,3 +601,131 @@ s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
 }
 
 #endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// Terminal
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a decimal or hex value
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  return l; // value is valid
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Parser
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
+{
+  // temporary change debug port (will be restored at the end of this function)
+  mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
+  MIOS32_MIDI_DebugPortSet(port);
+
+  if( byte == '\r' ) {
+    // ignore
+  } else if( byte == '\n' ) {
+    //MUTEX_MIDIOUT_TAKE;
+    TERMINAL_ParseLine(line_buffer, MIOS32_MIDI_SendDebugMessage);
+    //MUTEX_MIDIOUT_GIVE;
+    line_ix = 0;
+    line_buffer[line_ix] = 0;
+  } else if( line_ix < (STRING_MAX-1) ) {
+    line_buffer[line_ix++] = byte;
+    line_buffer[line_ix] = 0;
+  }
+
+  // restore debug port
+  MIOS32_MIDI_DebugPortSet(prev_debug_port);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Parser for a complete line - also used by shell.c for telnet
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_ParseLine(char *input, void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+  char *separators = " \t";
+  char *brkt;
+  char *parameter;
+
+  if( (parameter = strtok_r(input, separators, &brkt)) ) {
+    if( strcmp(parameter, "help") == 0 ) {
+      out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
+      out("Following commands are available:");
+      out("  set id <value>:    sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
+	  BSL_device_id, BSL_device_id);
+      out("  set name <name>:   sets USB device name (current: '%s')\n", BSL_usb_dev_name);
+      out("  store:             stores the changed settings in flash\n");
+      out("  restore:           restores previous settings from flash\n");
+      out("  reset:             resets the MIDIbox (!)\n");
+      out("  help:              this page");
+    } else if( strcmp(parameter, "reset") == 0 ) {
+      MIOS32_SYS_Reset();
+    } else if( strcmp(parameter, "store") == 0 ) {
+      if( UpdateBSL() >= 0 )
+	out("New settings stored.");
+      else
+	out("Failed to store new settings!");
+    } else if( strcmp(parameter, "restore") == 0 ) {
+      RetrieveBootInfos();
+      out("Previous settings restored.");
+    } else if( strcmp(parameter, "set") == 0 ) {
+      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(parameter, "id") == 0 ) {
+	  s32 device_id = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    device_id = get_dec(parameter);
+
+	  if( device_id < 0 || device_id > 127 ) {
+	    out("Expecting Device ID between 0..127 (resp. 0x00..0x7f)!");
+	  } else {
+	    BSL_device_id = device_id;
+	    out("Device ID will be changed to %d (0x%02x) after 'store'!",
+		BSL_device_id, BSL_device_id);
+	    out("Enter 'store' to permanently save this setting in flash!");
+	    out("Please change the Device ID in MIOS Studio accordingly after 'store'!");
+	  }
+	} else if( strcmp(parameter, "name") == 0 ) {
+	  if( strlen(brkt) > (MIOS32_SYS_USB_DEV_NAME_LEN-1) ) {
+	    out("This name is too long! %d characters maximum.", MIOS32_SYS_USB_DEV_NAME_LEN-1);
+	  } else {
+	    memcpy(BSL_usb_dev_name, brkt, MIOS32_SYS_USB_DEV_NAME_LEN);
+	    if( BSL_usb_dev_name[0] )
+	      out("Customized USB device name changed to '%s' after 'store'.\n", BSL_usb_dev_name);
+	    else
+	      out("Customized USB device name disabled after 'store'.");
+	    out("Enter 'store' to permanently save this setting in flash!");
+	  }
+	} else {
+	  out("Unknown set parameter: '%s'!", parameter);
+	}
+      } else {
+	out("Missing parameter after 'set'!");
+      }
+    } else {
+      out("Unknown command - type 'help' to list available commands!");
+    }
+  }
+
+  return 0; // no error
+}

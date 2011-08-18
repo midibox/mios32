@@ -62,6 +62,22 @@
 #endif
 
 
+// location of the Device ID and USB device name
+// The bootloader update tool allows to change these values from MIOS terminal
+#if defined(MIOS32_FAMILY_STM32F10x)
+# define MIOS32_SYS_DEVICE_ID_ADDR    (0x08003ffe)
+# define MIOS32_SYS_USB_DEV_NAME_ADDR (0x08003fe0)
+# define MIOS32_SYS_USB_DEV_NAME_LEN  0x1e
+#elif defined(MIOS32_FAMILY_LPC17xx)
+# define MIOS32_SYS_DEVICE_ID_ADDR    (0x00003ffe)
+# define MIOS32_SYS_USB_DEV_NAME_ADDR (0x00003fe0)
+# define MIOS32_SYS_USB_DEV_NAME_LEN  0x1e
+#else
+// no warning or error for other families... just don't support these features
+#endif
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
