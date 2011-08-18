@@ -361,7 +361,9 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int aout_type;
 	  if( (aout_type=get_dec(word)) < 0 || aout_type >= MBCV_MAP_NUM_IF ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid AOUT interface number parameter '%s'\n", parameter);
+#endif
 	  } else {
 	    MBCV_MAP_IfSet(aout_type);
 	  }
@@ -369,19 +371,25 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int cv;
 	  if( (cv=get_dec(word)) < 1 || cv > MBCV_PATCH_NUM_CV ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid CV channel number parameter '%s'\n", parameter);
+#endif
 	  } else {
 	    --cv; // user counts from 1
 
 	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	    int curve;
 	    if( (curve=get_dec(word)) < 0 || curve >= MBCV_MAP_NUM_CURVES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MBCV_FILE_P] ERROR wrong curve %d for parameter '%s', CV channel %d\n", curve, parameter, cv);
+#endif
 	    } else {
 	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      int slewrate;
 	      if( (slewrate=get_dec(word)) < 0 || slewrate >= MBCV_MAP_NUM_CURVES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[MBCV_FILE_P] ERROR wrong slewrate %d for parameter '%s', CV channel %d\n", curve, slewrate, cv);
+#endif
 	      } else {
 		MBCV_MAP_CurveSet(cv, curve);
 		MBCV_MAP_SlewRateSet(cv, slewrate);
@@ -392,7 +400,9 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int pulsewidth;
 	  if( (pulsewidth=get_dec(word)) < 0 || pulsewidth > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid pulsewidth %d for parameter '%s'\n", pulsewidth, parameter);
+#endif
 	  } else {
 	    mbcv_patch_cfg.ext_clk_pulsewidth = pulsewidth;
 	  }
@@ -400,7 +410,9 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int clkdiv;
 	  if( (clkdiv=get_dec(word)) < 0 || clkdiv > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid clockdivider %d for parameter '%s'\n", clkdiv, parameter);
+#endif
 	  } else {
 	    mbcv_patch_cfg.ext_clk_divider = clkdiv;
 	  }

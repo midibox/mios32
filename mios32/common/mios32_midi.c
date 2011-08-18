@@ -222,8 +222,13 @@ s32 MIOS32_MIDI_Init(u32 mode)
   last_sysex_port = DEFAULT;
   sysex_state.ALL = 0;
 
-  // TODO: allow to change device ID (read from flash, resp. BSL based EEPROM emulation)
   sysex_device_id = 0x00;
+#if MIOS32_SYS_DEVICE_ID_ADDR
+  // read from bootloader range
+  u16 *device_id = (u16 *)MIOS32_SYS_DEVICE_ID_ADDR;
+  if( *device_id < 0x80 )
+    sysex_device_id = *device_id;
+#endif
 
   // SysEx timeout mechanism
   sysex_timeout_ctr = 0;
@@ -1334,7 +1339,7 @@ mios32_midi_port_t MIOS32_MIDI_DebugPortGet(void)
 //! incoming SysEx Requests to MIOS32<BR>
 //! It can also be used by an application for additional parsing with the same ID.<BR>
 //! ID changes will get lost after reset. It can be changed permanently by the
-//! user via Bootloader Command 0x0c
+//! user via the bootloader update tool
 //! \param[in] device_id a new (temporary) device ID (0x00..0x7f)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1349,9 +1354,8 @@ s32 MIOS32_MIDI_DeviceIDSet(u8 device_id)
 //! incoming SysEx Requests to MIOS32<BR>
 //! It can also be used by an application for additional parsing with the same ID.<BR>
 //! The initial ID is stored inside the BSL range and will be recovered after
-//! reset. It can be changed by the user via Bootloader Command 0x0c
+//! reset. It can be changed by the user with the bootloader update tool
 //! \return SysEx device ID (0x00..0x7f)
-//! \todo store device ID via BSL based EEPROM emulation
 /////////////////////////////////////////////////////////////////////////////
 u8 MIOS32_MIDI_DeviceIDGet(void)
 {

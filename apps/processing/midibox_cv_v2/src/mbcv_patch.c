@@ -19,6 +19,7 @@
 #include "tasks.h"
 
 #include "mbcv_patch.h"
+#include "mbcv_map.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 

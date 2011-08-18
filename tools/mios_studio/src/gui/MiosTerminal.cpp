@@ -64,7 +64,7 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
     if( &editor == inputLine ) {
         String command = inputLine->getText();
 
-        Array<uint8> dataArray = SysexHelper::createMios32DebugMessage(0x00);
+        Array<uint8> dataArray = SysexHelper::createMios32DebugMessage(miosStudio->uploadHandler->getDeviceId());
         dataArray.add(0x00); // input string
         for(int i=0; i<command.length(); ++i)
             dataArray.add(command[i] & 0x7f);

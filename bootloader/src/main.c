@@ -415,7 +415,7 @@ static s32 ResetSRIOChains(void)
   }
 
   for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
-    MIOS32_SYS_LPC_PINSET(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 1); // MOSI=0 by default
+    MIOS32_SYS_LPC_PINSET(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 0); // MOSI=0 by default
     MIOS32_SYS_LPC_PINSEL(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 0); // select GPIO
     MIOS32_SYS_LPC_PINDIR(srio_mosi_pin[i].port, srio_mosi_pin[i].pin, 1); // enable output driver
   }
