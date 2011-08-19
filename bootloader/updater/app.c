@@ -286,7 +286,7 @@ s32 UpdateBSL(void)
     if( addr == (MIOS32_SYS_DEVICE_ID_ADDR & ~0xff) ) {
       u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
       u8 offset = MIOS32_SYS_DEVICE_ID_ADDR & 0xff;
-      DEBUG_MSG1("Inserting Device ID at 0x%08x!\n", addr+offset);
+      //DEBUG_MSG1("Inserting Device ID at 0x%08x!\n", addr+offset);
       ram_buffer_byte_ptr += offset;
       *ram_buffer_byte_ptr++ = (BSL_device_id >> 0) & 0xff;
       *ram_buffer_byte_ptr++ = (BSL_device_id >> 8) & 0xff;
@@ -295,7 +295,7 @@ s32 UpdateBSL(void)
     if( addr == (MIOS32_SYS_USB_DEV_NAME_ADDR  & ~0xff) ) {
       u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
       u8 offset = MIOS32_SYS_USB_DEV_NAME_ADDR & 0xff;
-      DEBUG_MSG1("Inserting USB Device Name at 0x%08x!\n", addr+offset);
+      //DEBUG_MSG1("Inserting USB Device Name at 0x%08x!\n", addr+offset);
       ram_buffer_byte_ptr += offset;
       int j;
       for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN; ++j)
@@ -312,7 +312,7 @@ s32 UpdateBSL(void)
       DEBUG_MSG2("write_data failed for 0x%08x: code %d\n", addr, status);
       return -2; // programming failed
     } else {
-      DEBUG_MSG2("programmed 0x%08x..0x%08x\n", addr, addr+255);
+      //DEBUG_MSG2("programmed 0x%08x..0x%08x\n", addr, addr+255);
     }
 
     MIOS32_IRQ_Enable();

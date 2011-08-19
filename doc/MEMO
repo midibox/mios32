@@ -327,17 +327,17 @@ Configuration steps:
 - Select GNU GCC Compiler (if not already selected)
 - press Copy button, new name: Cortex M3 GCC
 - press "Toolchain executables" tab
-- change compiler's directory, e.g. to /usr/local/stm32
+- change compiler's directory, e.g. to /usr/local/mios32
 - add "arm-none-eabi" prefix to all commands, e.g.
   arm-none-eabi-gcc
   arm-none-eabi-g++
   ..
   arm-none-eabi-gdb
-- Make program: write "make -s" for less verbose output
 
-- select "Debugger settings", and add following "Debugger initialisation commands":
+- select "Debugger settings" (in the -> icon <- list... strange GUI),
+and add following "Debugger initialisation commands":
 
----
+--- STM32 ---
 file project.elf
 target remote localhost:3333
 monitor reset halt
@@ -348,16 +348,33 @@ monitor flash write_image project.bin 0x08000000 bin
 monitor halt
 //thbreak main // can be commented in if app should stop at main() function
 continue
----
+--- STM32 ---
+
+
+--- LPC17 ---
+file project_built/project.elf
+target remote localhost:3333
+monitor halt
+monitor flash erase_address 0x00000000 0x00080000
+monitor flash write_image project_build/project.bin 0x00000000 bin
+monitor reset
+monitor halt
+monitor flash write_image project_build/project.bin 0x00000000 bin
+monitor reset
+monitor halt
+//thbreak main // can be commented in if app should stop at main() function
+continue
+--- LPC17 ---
+
 
 2) define MIOS32 specific environment variables
-- go to Settings->General Settings
+- go to Settings->Environment Settings
 - Select "Environment variables" tab, and add following variables:
 
 (have to be adapted based on your pathes and requirements!)
 (note that ~ doesn't work as shortcut for your home directory!)
 
----
+--- STM32 ---
 MIOS32_PATH=/Users/TK/svn/mios32/trunk
 MIOS32_BIN_PATH=$MIOS32_PATH/bin
 MIOS32_GCC_PREFIX=arm-none-eabi
@@ -365,11 +382,21 @@ MIOS32_FAMILY=STM32F10x
 MIOS32_PROCESSOR=STM32F103RE
 MIOS32_BOARD=MBHP_CORE_STM32
 MIOS32_LCD=clcd
----
+--- STM32 ---
+
+--- LPC17 ---
+MIOS32_PATH=/Users/TK/svn/mios32/trunk
+MIOS32_BIN_PATH=$MIOS_PATH/bin
+MIOS32_GCC_PREFIX=arm-none-eabi
+MIOS32_FAMILY=LPC17xx
+MIOS32_PROCESSOR=LPC1769
+MIOS32_BOARD=MBHP_CORE_LPC17
+MIOS32_LCD=clcd
+--- LPC17 ---
 
 MacOS users: add also
 ---
-DYLD_LIBRARY_PATH=/usr/local/stm32/lib
+DYLD_LIBRARY_PATH=/usr/local/mios32/lib
 ---
 
 
