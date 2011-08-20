@@ -27,6 +27,7 @@
 
 #define MIDIO_PATCH_NUM_DIN    128
 #define MIDIO_PATCH_NUM_DOUT   128
+#define MIDIO_PATCH_NUM_AIN      8
 #define MIDIO_PATCH_NUM_MATRIX  16
 #define MIDIO_PATCH_NUM_ROUTER  16
 
@@ -63,6 +64,12 @@ typedef struct {
   u8 evnt0;
   u8 evnt1;
 } midio_patch_dout_entry_t;
+
+typedef struct {
+  u16 enabled_ports;
+  u8 evnt0;
+  u8 evnt1;
+} midio_patch_ain_entry_t;
 
 typedef struct {
   u16 enabled_ports;
@@ -120,6 +127,7 @@ extern s32 MIDIO_PATCH_Store(char *filename);
 
 extern midio_patch_din_entry_t  midio_patch_din[MIDIO_PATCH_NUM_DIN];
 extern midio_patch_dout_entry_t midio_patch_dout[MIDIO_PATCH_NUM_DOUT];
+extern midio_patch_ain_entry_t  midio_patch_ain[MIDIO_PATCH_NUM_AIN];
 extern midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX];
 
 extern midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER];

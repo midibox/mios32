@@ -24,6 +24,7 @@
 #include "midio_patch.h"
 #include "midio_din.h"
 #include "midio_dout.h"
+#include "midio_ain.h"
 #include "midio_matrix.h"
 #include "midio_router.h"
 #include "midio_port.h"
@@ -152,6 +153,7 @@ void APP_Init(void)
   MIDIO_PATCH_Init(0);
   MIDIO_DIN_Init(0);
   MIDIO_DOUT_Init(0);
+  MIDIO_AIN_Init(0);
   MIDIO_MATRIX_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
@@ -278,6 +280,9 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+  // -> MIDIO_AIN once enabled
+  if( hw_enabled )
+    MIDIO_AIN_NotifyChange(pin, pin_value);
 }
 
 

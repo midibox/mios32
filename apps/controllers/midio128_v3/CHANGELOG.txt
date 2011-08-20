@@ -16,6 +16,13 @@ MIDIO128 V3.001
 
    o added integrated MIDI monitor for USB/MIDI/OSC ports (-> "Mon." page)
 
+   o support for up to 8 analog inputs which are available at J5A and J5B
+     of the MBHP_CORE_LPC17 module.
+
+     Pins are disabled by default - once a MIDI port (such as USB1, OUT1
+     or OSC1) has been assigned to the pin in the AIN page, or in an AIN entry
+     of the .MIO file, the pin will send MIDI events on pot position changes.
+
 
 MIDIO128 V3.000
 ~~~~~~~~~~~~~~~
