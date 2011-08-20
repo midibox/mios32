@@ -781,9 +781,9 @@ static s32 displayHook(char *line1, char *line2)
 	// insert arrow at upper right corner
 	int numItems = MIDIO_PORT_OutNumGet() - 1;
 	if( monPageOffset == 0 )
-	  line1[19] = 1; // right arrow
+	  line1[19] = 3; // right arrow
 	else if( monPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
-	  line1[19] = 0; // left arrow
+	  line1[19] = 1; // left arrow
 	else
 	  line1[19] = 2; // left/right arrow
 
