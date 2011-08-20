@@ -20,6 +20,8 @@ Required hardware:
 
 Optional hardware:
    o a 2x20 LCD for configuration + 6 buttons + 1 rotary encoder
+   o up to 8 pots/faders connected to J5A/J5B of the core module
+
 
 ===============================================================================
 
