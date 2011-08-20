@@ -31,7 +31,7 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 selected_column;
+static u8 selected_row;
 
 static u8 button_row[MIDIO_PATCH_NUM_MATRIX][NUM_ROWS];
 static u8 button_row_changed[MIDIO_PATCH_NUM_MATRIX][NUM_ROWS];
@@ -47,22 +47,23 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the DIN handler
+// This function initializes the matrix handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_MATRIX_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  selected_column = 0;
+  selected_row = 0;
 
   int matrix, row;
-  for(matrix=0; matrix<MIDIO_PATCH_NUM_MATRIX; ++matrix)
+  for(matrix=0; matrix<MIDIO_PATCH_NUM_MATRIX; ++matrix) {
     for(row=0; row<NUM_ROWS; ++row) {
       button_row[matrix][row] = 0xff;
       button_row_changed[matrix][row] = 0x00;
-      button_debounce_ctr[matrix] = 0;
     }
+    button_debounce_ctr[matrix] = 0;
+  }
 
   debounce_reload = 10; // mS
 
@@ -77,11 +78,11 @@ s32 MIDIO_MATRIX_Init(u32 mode)
 s32 MIDIO_MATRIX_PrepareCol(void)
 {
   // increment column, wrap at 8
-  if( ++selected_column >= 8 )
-    selected_column = 0;
+  if( ++selected_row >= 8 )
+    selected_row = 0;
 
   // select next DIN column (selected cathode line = 0, all others 1)
-  u8 dout_value = ~(1 << selected_column);
+  u8 dout_value = ~(1 << selected_row);
 
   // forward value to all shift registers which are assigned to the matrix function
   int matrix;
@@ -96,13 +97,13 @@ s32 MIDIO_MATRIX_PrepareCol(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function gets the DIN values of the selected column.
+// This function gets the DIN values of the selected row.
 // It should be called from the APP_SRIO_ServiceFinish() hook
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_MATRIX_GetRow(void)
 {
-  // determine the scanned row (selected_column driver has already been incremented, decrement it again)
-  u8 row = (selected_column-1) & 0x7;
+  // determine the scanned row (selected_row driver has already been incremented, decrement it again)
+  u8 row = (selected_row-1) & 0x7;
 
   int matrix;
   midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[0];

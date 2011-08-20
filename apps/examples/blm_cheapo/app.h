@@ -1,18 +1,19 @@
 // $Id$
 /*
- * Header file for DOUT Driver
+ * Header file of application
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) <year> <your name> (<your email address>)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _MIOS32_DOUT_H
-#define _MIOS32_DOUT_H
+#ifndef _APP_H
+#define _APP_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,19 +29,19 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIOS32_DOUT_Init(u32 mode);
-
-extern s32 MIOS32_DOUT_PinGet(u32 pin);
-extern s32 MIOS32_DOUT_PinSet(u32 pin, u32 value);
-
-extern s32 MIOS32_DOUT_SRGet(u32 sr);
-extern s32 MIOS32_DOUT_SRSet(u32 sr, u8 value);
+extern void APP_Init(void);
+extern void APP_Background(void);
+extern void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern void APP_SRIO_ServicePrepare(void);
+extern void APP_SRIO_ServiceFinish(void);
+extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
+extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
+extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-const u8 mios32_dout_reverse_tab[256];
 
-#endif /* _MIOS32_DOUT_H */
+#endif /* _APP_H */
