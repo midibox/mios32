@@ -621,9 +621,9 @@ const scs_menu_item_t pageAIN[] = {
 #if MIOS32_USB_MIDI_NUM_PORTS >= 4
   SCS_ITEM("USB4 ", 3, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
 #endif
-  SCS_ITEM(" IN1 ", 4, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM(" IN2 ", 5, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM(" IN3 ", 6, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT1 ", 4, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT2 ", 5, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT3 ", 6, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC1 ",12, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
