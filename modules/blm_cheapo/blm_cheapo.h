@@ -1,22 +1,29 @@
 // $Id$
 /*
- * Header file for DOUT Driver
+ * Header file for Cheapo BLM
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _MIOS32_DOUT_H
-#define _MIOS32_DOUT_H
+#ifndef _BLM_CHEAPO_H
+#define _BLM_CHEAPO_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
+
+// reverse pins for right half (layout measure)
+// can optionally be disabled in mios32_config.h by setting this define to 0
+#ifndef BLM_CHEAPO_RIGHT_HALF_REVERSED
+#define BLM_CHEAPO_RIGHT_HALF_REVERSED 1
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -28,19 +35,20 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIOS32_DOUT_Init(u32 mode);
+extern s32 BLM_CHEAPO_Init(u32 mode);
+extern s32 BLM_CHEAPO_PrepareCol(void);
+extern s32 BLM_CHEAPO_GetRow(void);
+extern s32 BLM_CHEAPO_ButtonHandler(void *_notify_hook);
 
-extern s32 MIOS32_DOUT_PinGet(u32 pin);
-extern s32 MIOS32_DOUT_PinSet(u32 pin, u32 value);
-
-extern s32 MIOS32_DOUT_SRGet(u32 sr);
-extern s32 MIOS32_DOUT_SRSet(u32 sr, u8 value);
+extern s32 BLM_CHEAPO_DOUT_PinSet(u32 pin, u32 value);
+extern s32 BLM_CHEAPO_DOUT_PinGet(u32 pin);
+extern s32 BLM_CHEAPO_DOUT_SRSet(u32 row, u8 value);
+extern u8 BLM_CHEAPO_DOUT_SRGet(u32 row);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-const u8 mios32_dout_reverse_tab[256];
 
-#endif /* _MIOS32_DOUT_H */
+#endif /* _BLM_CHEAPO_H */
