@@ -352,6 +352,18 @@ midio_patch_dout_entry_t midio_patch_dout[MIDIO_PATCH_NUM_DOUT] = {
   {  0x1011, 0xb0, 0x4f }, // 16.D0
 };
 
+midio_patch_ain_entry_t midio_patch_ain[MIDIO_PATCH_NUM_AIN] = {
+  // ports   event           AIN Pin
+  {  0x0000, 0xb0, 0x07 }, // 0
+  {  0x0000, 0xb1, 0x07 }, // 1
+  {  0x0000, 0xb2, 0x07 }, // 2
+  {  0x0000, 0xb3, 0x07 }, // 3
+  {  0x0000, 0xb4, 0x07 }, // 4
+  {  0x0000, 0xb5, 0x07 }, // 5
+  {  0x0000, 0xb6, 0x07 }, // 6
+  {  0x0000, 0xb7, 0x07 }, // 7
+};
+
 midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX] = {
   // ports  matrix mode                     chn arg    DINSR  DOUTSR
   { 0x1011, MIDIO_PATCH_MATRIX_MODE_COMMON,  1, 0x30,     0,     0 },
