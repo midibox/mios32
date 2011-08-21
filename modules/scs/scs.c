@@ -1020,9 +1020,9 @@ s32 SCS_Tick(void)
 	  if( !line1AlreadyPrint && numItems > SCS_NUM_MENU_ITEMS ) {
 	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
 	    if( displayPageOffset == 0 )
-	      SCS_LCD_PrintChar(1); // right arrow
+	      SCS_LCD_PrintChar(3); // right arrow
 	    else if( displayPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
-	      SCS_LCD_PrintChar(0); // left arrow
+	      SCS_LCD_PrintChar(1); // left arrow
 	    else
 	      SCS_LCD_PrintChar(2); // left/right arrow
 	  }
@@ -1122,9 +1122,9 @@ s32 SCS_Tick(void)
 	  if( scsEditNumItems > scsEditItemsPerPage ) {
 	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
 	    if( scsEditOffset == 0 )
-	      SCS_LCD_PrintChar(1); // right arrow
+	      SCS_LCD_PrintChar(3); // right arrow
 	    else if( scsEditOffset >= (scsEditNumItems-scsEditItemsPerPage) )
-	      SCS_LCD_PrintChar(0); // left arrow
+	      SCS_LCD_PrintChar(1); // left arrow
 	    else
 	      SCS_LCD_PrintChar(2); // left/right arrow
 	  }

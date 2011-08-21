@@ -99,8 +99,8 @@ s32 APP_LCD_Init(u32 mode)
   GPIO_InitTypeDef GPIO_InitStructure;
   s32 delay;
 
-  // notify that this is a GLCD type display
-  mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
+  // set LCD type
+  mios32_lcd_parameters.lcd_type = MIOS32_LCD_TYPE_GLCD_CUSTOM;
 
   // set initial font and colours
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);

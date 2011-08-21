@@ -52,9 +52,27 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-  MIOS32_LCD_TYPE_CLCD = 0,
-  MIOS32_LCD_TYPE_GLCD
+  // character LCDs
+  MIOS32_LCD_TYPE_CLCD     = 0x00,
+  MIOS32_LCD_TYPE_CLCD_DOG = 0x01,
+
+  // graphical LCDs (bit #7 set)
+  MIOS32_LCD_TYPE_GLCD_CUSTOM       = 0x80, // for app_lcd drivers so that MIOS32_LCD_TypeIsGLCD() returns 1
+  MIOS32_LCD_TYPE_GLCD_KS0108       = 0x81,
+  MIOS32_LCD_TYPE_GLCD_KS0108_INVCS = 0x82,
+  MIOS32_LCD_TYPE_GLCD_DOG          = 0x83,
+  MIOS32_LCD_TYPE_GLCD_SSD1306      = 0x84,
 } mios32_lcd_type_t;
+
+
+typedef struct {
+  mios32_lcd_type_t lcd_type; // also stored in bootloader info range, see mios32_sys.h for address
+  u8 num_x;                   // also stored in bootloader info range, see mios32_sys.h for address
+  u8 num_y;                   // also stored in bootloader info range, see mios32_sys.h for address
+  u16 width;                  // also stored in bootloader info range, see mios32_sys.h for address
+  u16 height;                 // also stored in bootloader info range, see mios32_sys.h for address
+  u8 colour_depth;            // NOT stored in bootloader info range (but set by LCD driver)
+} mios32_lcd_parameters_t;
 
 
 typedef struct {
@@ -71,6 +89,9 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MIOS32_LCD_Init(u32 mode);
+extern s32 MIOS32_LCD_ParametersSet(mios32_lcd_parameters_t parameters);
+extern mios32_lcd_parameters_t *MIOS32_LCD_ParametersGet(void);
+extern const char* MIOS32_LCD_LcdTypeName(mios32_lcd_type_t lcd_type);
 extern s32 MIOS32_LCD_DeviceSet(u8 device);
 extern u8  MIOS32_LCD_DeviceGet(void);
 extern s32 MIOS32_LCD_CursorSet(u16 column, u16 line);
@@ -104,7 +125,7 @@ extern s32 MIOS32_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 /////////////////////////////////////////////////////////////////////////////
 
 // should only be directly accessed by APP_LCD driver
-extern mios32_lcd_type_t mios32_lcd_type;
+extern mios32_lcd_parameters_t mios32_lcd_parameters;
 extern u8  mios32_lcd_device;
 extern u16 mios32_lcd_column;
 extern u16 mios32_lcd_line;

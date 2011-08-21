@@ -65,17 +65,41 @@
 // location of the Device ID and USB device name
 // The bootloader update tool allows to change these values from MIOS terminal
 #if defined(MIOS32_FAMILY_STM32F10x)
-# define MIOS32_SYS_DEVICE_ID_ADDR    (0x08003ffe)
-# define MIOS32_SYS_USB_DEV_NAME_ADDR (0x08003fe0)
-# define MIOS32_SYS_USB_DEV_NAME_LEN  0x1e
+# define MIOS32_SYS_ADDR_BSL_INFO_BEGIN    0x08003f00
 #elif defined(MIOS32_FAMILY_LPC17xx)
-# define MIOS32_SYS_DEVICE_ID_ADDR    (0x00003ffe)
-# define MIOS32_SYS_USB_DEV_NAME_ADDR (0x00003fe0)
-# define MIOS32_SYS_USB_DEV_NAME_LEN  0x1e
+# define MIOS32_SYS_ADDR_BSL_INFO_BEGIN    0x00003f00
 #else
 // no warning or error for other families... just don't support these features
 #endif
 
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+// NOTE: a change here will mean that:
+//   - the bootloader update application (which programs the parameters) has to be re-released
+//   - all applications have to be re-released
+//   -> better never change the addresses!!!
+// New parameters can be added by:
+//   - asking TK
+//   - searching for an unused offset
+//   - adding a confirmation code (parameters will only be taken if confirmation code is 0x42)
+//   - adding parameter addresses
+# define MIOS32_SYS_ADDR_LCD_PAR_CONFIRM   (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc0) // 0x42 to confirm value
+# define MIOS32_SYS_ADDR_LCD_PAR_TYPE      (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc1)
+# define MIOS32_SYS_ADDR_LCD_PAR_NUM_X     (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc2)
+# define MIOS32_SYS_ADDR_LCD_PAR_NUM_Y     (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc3)
+# define MIOS32_SYS_ADDR_LCD_PAR_WIDTH     (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc4)
+# define MIOS32_SYS_ADDR_LCD_PAR_HEIGHT    (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xc5)
+
+# define MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xd0) // 0x42 to confirm value
+# define MIOS32_SYS_ADDR_DEVICE_ID         (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xd1)
+# define MIOS32_SYS_ADDR_FASTBOOT_CONFIRM  (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xd2) // 0x42 to confirm value
+# define MIOS32_SYS_ADDR_FASTBOOT          (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xd3)
+
+
+# define MIOS32_SYS_ADDR_USB_DEV_NAME      (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xe0) // all chars != 0x00 and 0x20...0x7f to confirm string
+# define MIOS32_SYS_USB_DEV_NAME_LEN       0x20
+
+# define MIOS32_SYS_ADDR_BSL_INFO_END      (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xff)
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////

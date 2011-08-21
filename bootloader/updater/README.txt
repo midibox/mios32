@@ -36,7 +36,8 @@ check this, and to update the bootloader if it is not up-to-date
 Just proceed as described under 2)
 
 
-4) you want to change the Device ID or custize the USB Device Name
+4) you want to enable the "fastboot" option, change the LCD type, 
+Device ID, customize the USB Device Name, etc...
 
 
 
@@ -93,7 +94,94 @@ Once the LED is permanently on, another application can be uploaded.
 
 ===============================================================================
 
-For programming Device ID or USB Device Name:
-enter 'help' in MIOS Terminal (part of MIOS Studio) to get more informations
+Customizing the MIOS32 application:
+
+The bootloader provides a permanent storage for parameters which are referenced
+by (most) applications. These parameters can be customized from the MIOS Terminal
+(part of MIOS Studio) by uploading this application.
+
+Just type "help" in the MIOS Terminal to get a list of available commands.
+
+Explanation of the most important parameters:
+
+- fastboot: after power-on the bootloader waits for an upload request for 
+  ca. 3 seconds before the actual application will be started.
+  This is a fail-safe measure which is mainly relevant for developers who don't
+  want to open their MIDIbox and stuff the "BSL Hold" jumper (J27) if the
+  application crashed during the initialisation phase.
+
+  However, for common users this wait phase shouldn't be really necessary, especially
+  if they are using a stable application.
+
+  Therefore: enter
+     set fastboot 1
+  in the MIOS Terminal to skip this phase, and to start the application immediately!
+  You will like this option! :-)
+
+
+- Device ID: this ID is relevant once multiple cores are available on the same MIDI port,
+  or if you are using your MIOS32 based core as a USB<->MIDI / OSC<->MIDI gateway to a
+  PIC based MBHP_CORE.
+
+  MIOS Studio won't be able to differ between the cores if they have the same Device ID,
+  therefore it's recommended to change the Device ID of the MIOS32 core in this case
+  (e.g. to 127)
+
+  Enter:
+     set id 127
+  in this case
+
+  IMPORTANT NOTE: don't change the Device ID if you are using MIOS Studio 2.2.1 or lower!
+  Device IDs are properly supported with MIOS Studio 2.2.2 and higher!
+
+
+- LCD Type: applications which are compiled with the "universal" LCD driver can handle
+  various character/graphical LCD types and display dimensions.
+
+  It's recommended to store these parameters of your MIDIbox in the bootloader info range.
+
+  Following commands are available:
+    set lcd_type <value>       the LCD type number (enter "lcd_types" to get a list of available types)
+    set lcd_num_x <value>      number of LCDs in X direction
+    set lcd_num_y <value>      number of LCDs in Y direction
+    set lcd_width <value>      width of a single LCD (*)
+    set lcd_height <value>     height of a single LCD (*)
+
+  (*) CLCDs: number of characters, GLCD: number of pixels
+
+  Example: a single HD44780 based 2x20 character LCD is connected to your MIDIbox (default)
+  Enter:
+     lcd_type CLCD
+     lcd_num_x 1
+     lcd_num_y 1
+     lcd_width 20
+     lcd_height 2
+
+  Example2: two HD44780 based 2x40 character LCDs are connected to your MIDIbox
+  Enter:
+     lcd_type CLCD
+     lcd_num_x 2
+     lcd_num_y 1
+     lcd_width 40
+     lcd_height 2
+
+  Example3: five SSD1306 based 128x64 OLEDs are connected to your MIDIbox in vertical direction
+  Enter:
+     lcd_type GLCD_SSD1306
+     lcd_num_x 1
+     lcd_num_y 5
+     lcd_width 128
+     lcd_height 64
+
+
+  Please note: some applications (like MIDIbox SEQ V4) could overrule the predefined
+  parameters if they can't handle smaller (or larger) LCD sizes.
+
+  Please note also: some applications could have been released with a different
+  LCD driver (MIOS32_LCD != "universal") which don't consider these parameters.
+  It's up to the developer to document this limitation.
+
+
+In any case, please enter 'help' in MIOS Terminal to get more informations
 
 ===============================================================================

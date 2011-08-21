@@ -223,10 +223,11 @@ s32 MIOS32_MIDI_Init(u32 mode)
   sysex_state.ALL = 0;
 
   sysex_device_id = 0x00;
-#if MIOS32_SYS_DEVICE_ID_ADDR
-  // read from bootloader range
-  u16 *device_id = (u16 *)MIOS32_SYS_DEVICE_ID_ADDR;
-  if( *device_id < 0x80 )
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+  // read from bootloader info range
+  u8 *device_id_confirm = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM;
+  u8 *device_id = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID;
+  if( *device_id_confirm == 0x42 && *device_id < 0x80 )
     sysex_device_id = *device_id;
 #endif
 

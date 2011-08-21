@@ -124,11 +124,11 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function);
 static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
-#ifdef MIOS32_SYS_DEVICE_ID_ADDR
-static u8 BSL_device_id;
-#endif
-#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+static mios32_lcd_parameters_t BSL_lcd_parameters;
+static u8 BSL_fastboot;
 static char BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN];
+static u8 BSL_device_id;
 #endif
 
 
@@ -198,13 +198,9 @@ s32 CompareBSL(void)
     }
 
     if( bsl_addr_ptr[addr] != bsl_image[addr]
-#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
-	&& !(addr >= (MIOS32_SYS_USB_DEV_NAME_ADDR & 0xffff) &&
-	     addr < ((MIOS32_SYS_USB_DEV_NAME_ADDR+MIOS32_SYS_USB_DEV_NAME_LEN) & 0xffff))
-#endif
-#ifdef MIOS32_SYS_DEVICE_ID_ADDR
-	&& !(addr >= (MIOS32_SYS_DEVICE_ID_ADDR & 0xffff) &&
-	     addr < ((MIOS32_SYS_DEVICE_ID_ADDR+2) & 0xffff))
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+	&& !(addr >= (MIOS32_SYS_ADDR_BSL_INFO_BEGIN & 0xffff) &&
+	     addr <= (MIOS32_SYS_ADDR_BSL_INFO_END & 0xffff))
 #endif
 	) {
       ++mismatches;
@@ -247,13 +243,23 @@ s32 UpdateBSL(void)
 
     u16 data_value = bsl_image[i+0] | ((u16)bsl_image[i+1] << 8);
 
-    if( addr >= MIOS32_SYS_DEVICE_ID_ADDR && (addr < (MIOS32_SYS_DEVICE_ID_ADDR+2)) ) {
-      data_value = BSL_device_id;
-    }
+    if( addr >= MIOS32_SYS_ADDR_BSL_INFO_BEGIN &&
+	addr <= MIOS32_SYS_ADDR_BSL_INFO_END ) {
 
-    if( addr >= MIOS32_SYS_USB_DEV_NAME_ADDR && (addr < MIOS32_SYS_USB_DEV_NAME_ADDR+MIOS32_SYS_USB_DEV_NAME_LEN) ) {
-      u8 offset = addr-MIOS32_SYS_USB_DEV_NAME_ADDR;
-      data_value = BSL_usb_dev_name[offset+0] | ((u16)BSL_usb_dev_name[offset+1] << 8);
+      if       ( addr >= MIOS32_SYS_ADDR_LCD_PAR_CONFIRM && (addr < (MIOS32_SYS_ADDR_LCD_PAR_CONFIRM+2)) ) {
+	data_value = 0x42 | (BSL_lcd_parameters.lcd_type << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_LCD_PAR_NUM_X && (addr < (MIOS32_SYS_ADDR_LCD_PAR_NUM_X+2)) ) {
+	data_value = BSL_lcd_parameters.num_x | (BSL_lcd_parameters.num_y << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_LCD_PAR_WIDTH && (addr < (MIOS32_SYS_ADDR_LCD_PAR_WIDTH+2)) ) {
+	data_value = BSL_lcd_parameters.width | (BSL_lcd_parameters.height << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM && (addr < (MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM+2)) ) {
+	data_value = 0x42 | (BSL_device_id << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_FASTBOOT_CONFIRM && (addr < (MIOS32_SYS_ADDR_FASTBOOT_CONFIRM+2)) ) {
+	data_value = 0x42 | (BSL_fastboot << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_USB_DEV_NAME && (addr < MIOS32_SYS_ADDR_USB_DEV_NAME+MIOS32_SYS_USB_DEV_NAME_LEN) ) {
+	u8 offset = addr-MIOS32_SYS_ADDR_USB_DEV_NAME;
+	data_value = BSL_usb_dev_name[offset+0] | ((u16)BSL_usb_dev_name[offset+1] << 8);
+      }
     }
 
     if( (status=FLASH_ProgramHalfWord(addr, data_value)) != FLASH_COMPLETE ) {
@@ -283,23 +289,28 @@ s32 UpdateBSL(void)
     for(j=0; j<256; ++j)
       *ram_buffer_byte_ptr++ = bsl_image[i+j];
 
-    if( addr == (MIOS32_SYS_DEVICE_ID_ADDR & ~0xff) ) {
+    if( addr >= MIOS32_SYS_ADDR_BSL_INFO_BEGIN &&
+	addr <= MIOS32_SYS_ADDR_BSL_INFO_END ) {
+#if (MIOS32_SYS_ADDR_BSL_INFO_BEGIN+0xff) != MIOS32_SYS_ADDR_BSL_INFO_END
+# error "please update to new address range!"
+#endif
       u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
-      u8 offset = MIOS32_SYS_DEVICE_ID_ADDR & 0xff;
-      //DEBUG_MSG1("Inserting Device ID at 0x%08x!\n", addr+offset);
-      ram_buffer_byte_ptr += offset;
-      *ram_buffer_byte_ptr++ = (BSL_device_id >> 0) & 0xff;
-      *ram_buffer_byte_ptr++ = (BSL_device_id >> 8) & 0xff;
-    }
 
-    if( addr == (MIOS32_SYS_USB_DEV_NAME_ADDR  & ~0xff) ) {
-      u8 *ram_buffer_byte_ptr = (u8 *)ram_buffer;
-      u8 offset = MIOS32_SYS_USB_DEV_NAME_ADDR & 0xff;
-      //DEBUG_MSG1("Inserting USB Device Name at 0x%08x!\n", addr+offset);
-      ram_buffer_byte_ptr += offset;
-      int j;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_CONFIRM] = 0x42;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_TYPE] = BSL_lcd_parameters.lcd_type;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_NUM_X] = BSL_lcd_parameters.num_x;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_NUM_Y] = BSL_lcd_parameters.num_y;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_WIDTH] = BSL_lcd_parameters.width;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_LCD_PAR_HEIGHT] = BSL_lcd_parameters.height;
+
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM] = 0x42;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_DEVICE_ID] = BSL_device_id;
+
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_FASTBOOT_CONFIRM] = 0x42;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_FASTBOOT] = BSL_fastboot;
+
       for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN; ++j)
-	*ram_buffer_byte_ptr++ = BSL_usb_dev_name[j];
+	ram_buffer_byte_ptr[(0xff & MIOS32_SYS_ADDR_USB_DEV_NAME) + j] = BSL_usb_dev_name[j];
     }
     
     s32 status;
@@ -334,35 +345,59 @@ s32 UpdateBSL(void)
 
 static s32 RetrieveBootInfos(void)
 {
-#ifdef MIOS32_SYS_DEVICE_ID_ADDR
-  {
-    BSL_device_id = 0x00;
-    u16 *device_id = (u16 *)MIOS32_SYS_DEVICE_ID_ADDR;
-    if( *device_id < 0x80 )
-      BSL_device_id = *device_id;
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+  int i;
 
-    if( BSL_device_id != MIOS32_MIDI_DeviceIDGet() ) {
-      DEBUG_MSG2("Device ID changed to %d (resp. 0x%02x)!\n", BSL_device_id, BSL_device_id);
-      DEBUG_MSG("Please change the Device ID in MIOS Studio accordingly - NOW!");
-    }
-    MIOS32_MIDI_DeviceIDSet(BSL_device_id);
-  }
-#endif
-#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
-  {
-    u16 *usb_dev_name = (u16 *)MIOS32_SYS_USB_DEV_NAME_ADDR;
-    memcpy(BSL_usb_dev_name, usb_dev_name, MIOS32_SYS_USB_DEV_NAME_LEN);
+  BSL_lcd_parameters.lcd_type = MIOS32_LCD_TYPE_CLCD;
+  BSL_lcd_parameters.num_x = 2; // since MBHP_CORE_STM32 and MBHP_CORE_LPC17 has two J15 ports
+  BSL_lcd_parameters.num_y = 1;
+  BSL_lcd_parameters.width = 20; // since most people will (probably) build the SCS
+  BSL_lcd_parameters.height = 2;
 
-    int i;
-    for(i=0; i<MIOS32_SYS_USB_DEV_NAME_LEN; ++i)
-      if( BSL_usb_dev_name[i] < 0x20 || BSL_usb_dev_name[i] >= 0x80 )
-	BSL_usb_dev_name[i] = 0x00;
-    BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN-1] = 0;
+  u8 *lcd_par_confirm = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_CONFIRM;
+  if( *lcd_par_confirm == 0x42 ) {
+    u8 *lcd_par_type = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_TYPE;
+    BSL_lcd_parameters.lcd_type = *lcd_par_type;
+    u8 *lcd_par_num_x = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_NUM_X;
+    BSL_lcd_parameters.num_x = *lcd_par_num_x;
+    u8 *lcd_par_num_y = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_NUM_Y;
+    BSL_lcd_parameters.num_y = *lcd_par_num_y;
+    u8 *lcd_par_width = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_WIDTH;
+    BSL_lcd_parameters.width = *lcd_par_width;
+    u8 *lcd_par_height = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_HEIGHT;
+    BSL_lcd_parameters.height = *lcd_par_height;
   }
+
+  BSL_fastboot = 0x00;
+  u8 *fastboot_confirm = (u8 *)MIOS32_SYS_ADDR_FASTBOOT_CONFIRM;
+  u8 *fastboot = (u8 *)MIOS32_SYS_ADDR_FASTBOOT;
+  if( *fastboot_confirm == 0x42 && *fastboot < 0x80 )
+    BSL_fastboot = *fastboot;
+
+  BSL_device_id = 0x00;
+  u8 *device_id_confirm = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM;
+  u8 *device_id = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID;
+  if( *device_id_confirm == 0x42 && *device_id < 0x80 )
+    BSL_device_id = *device_id;
+  
+  if( BSL_device_id != MIOS32_MIDI_DeviceIDGet() ) {
+    DEBUG_MSG2("Device ID changed to %d (resp. 0x%02x)!\n", BSL_device_id, BSL_device_id);
+    DEBUG_MSG("Please change the Device ID in MIOS Studio accordingly - NOW!");
+  }
+  MIOS32_MIDI_DeviceIDSet(BSL_device_id);
+
+  u16 *usb_dev_name = (u16 *)MIOS32_SYS_ADDR_USB_DEV_NAME;
+  memcpy(BSL_usb_dev_name, usb_dev_name, MIOS32_SYS_USB_DEV_NAME_LEN);
+
+  for(i=0; i<MIOS32_SYS_USB_DEV_NAME_LEN; ++i)
+    if( BSL_usb_dev_name[i] < 0x20 || BSL_usb_dev_name[i] >= 0x80 )
+      BSL_usb_dev_name[i] = 0x00;
+  BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN-1] = 0;
 #endif  
 
   return 0; // no error
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
@@ -672,13 +707,34 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
       out("Following commands are available:");
-      out("  set id <value>:    sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
+      out("  set fastboot <1 or 0>:  if 1, the initial bootloader wait phase will be skipped (current: %d)\n", BSL_fastboot);
+      out("  set device_id <value>:  sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
 	  BSL_device_id, BSL_device_id);
-      out("  set name <name>:   sets USB device name (current: '%s')\n", BSL_usb_dev_name);
-      out("  store:             stores the changed settings in flash\n");
-      out("  restore:           restores previous settings from flash\n");
-      out("  reset:             resets the MIDIbox (!)\n");
-      out("  help:              this page");
+      out("  set usb_name <name>:    sets USB device name (current: '%s')\n", BSL_usb_dev_name);
+      out("  set lcd_type <value>:   sets LCD type ID (current: 0x%02x - %s)\n",
+	  BSL_lcd_parameters.lcd_type,
+	  MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
+	  ? MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
+	  : "unknown");
+      out("  set lcd_num_x <value>:  sets number of LCD devices (X direction, current: %d)\n", BSL_lcd_parameters.num_x);
+      out("  set lcd_num_y <value>:  sets number of LCD devices (Y direction, current: %d)\n", BSL_lcd_parameters.num_y);
+      out("  set lcd_width <value>:  sets width of a single LCD (current: %d)\n", BSL_lcd_parameters.width);
+      out("  set lcd_height <value>: sets height of a single LCD (current: %d)\n", BSL_lcd_parameters.height);
+      out("  lcd_types:              lists all known LCD types\n");
+      out("  store:                  stores the changed settings in flash\n");
+      out("  restore:                restores previous settings from flash\n");
+      out("  reset:                  resets the MIDIbox (!)\n");
+      out("  help:                   this page");
+    } else if( strcmp(parameter, "lcd_types") == 0 ) {
+      out("List of known LCD types:\n");
+      u8 lcd_type;
+      for(lcd_type=0; lcd_type<255; ++lcd_type) {
+	if( MIOS32_LCD_LcdTypeName(lcd_type) ) {
+	  out("0x%02x: %s\n", lcd_type, MIOS32_LCD_LcdTypeName(lcd_type));
+	}
+      }
+      out("You can change a LCD type with 'set lcd_type <value>'\n");
+      out("Please note that newer types could have been integrated after this application has been released!");
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "store") == 0 ) {
@@ -691,21 +747,106 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("Previous settings restored.");
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(parameter, "id") == 0 ) {
-	  s32 device_id = -1;
+	if( strcmp(parameter, "fastboot") == 0 ) {
+	  s32 value = -1;
 	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	    device_id = get_dec(parameter);
+	    value = get_dec(parameter);
 
-	  if( device_id < 0 || device_id > 127 ) {
+	  if( value < 0 || value > 1 ) {
+	    out("Expecting Fastboot 0 or 1!");
+	  } else {
+	    BSL_fastboot = value;
+	    if( BSL_fastboot )
+	      out("Fastboot enabled after 'store'!");
+	    else
+	      out("Fastboot disabled after 'store'!");
+	  }
+	} else if( strcmp(parameter, "id") == 0 || strcmp(parameter, "device_id") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 0 || value > 127 ) {
 	    out("Expecting Device ID between 0..127 (resp. 0x00..0x7f)!");
 	  } else {
-	    BSL_device_id = device_id;
+	    BSL_device_id = value;
 	    out("Device ID will be changed to %d (0x%02x) after 'store'!",
 		BSL_device_id, BSL_device_id);
 	    out("Enter 'store' to permanently save this setting in flash!");
 	    out("Please change the Device ID in MIOS Studio accordingly after 'store'!");
 	  }
-	} else if( strcmp(parameter, "name") == 0 ) {
+	} else if( strcmp(parameter, "lcd_type") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 0 ) { // try the name
+	    u8 lcd_type;
+	    for(lcd_type=0; lcd_type<255; ++lcd_type) {
+	      if( strcmp(parameter, MIOS32_LCD_LcdTypeName(lcd_type)) == 0 ) {
+		value = lcd_type;
+		break;
+	      }
+	    }
+	  }
+
+	  if( value < 0 || value > 255 ) {
+	    out("Expecting LCD type between 0x00 and 0xff!");
+	  } else {
+	    BSL_lcd_parameters.lcd_type = value;
+	    out("LCD type set to 0x%02x (%s) after 'store'!",
+		BSL_lcd_parameters.lcd_type,
+		MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
+		? MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
+		: "unknown");
+	  }
+	} else if( strcmp(parameter, "lcd_num_x") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 1 || value > 255 ) {
+	    out("Expecting num_x between 1 and 255!");
+	  } else {
+	    BSL_lcd_parameters.num_x = value;
+	    out("LCD num_x set to %d after 'store'!", BSL_lcd_parameters.num_x);
+	  }
+	} else if( strcmp(parameter, "lcd_num_y") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 1 || value > 255 ) {
+	    out("Expecting num_y between 1 and 255!");
+	  } else {
+	    BSL_lcd_parameters.num_y = value;
+	    out("LCD num_y set to %d after 'store'!", BSL_lcd_parameters.num_y);
+	  }
+	} else if( strcmp(parameter, "lcd_width") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 1 || value > 65535 ) {
+	    out("Expecting LCD width between 1 and 65535!");
+	  } else {
+	    BSL_lcd_parameters.width = value;
+	    out("LCD width set to %d after 'store'!", BSL_lcd_parameters.width);
+	  }
+	} else if( strcmp(parameter, "lcd_height") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 1 || value > 65535 ) {
+	    out("Expecting LCD height between 1 and 65535!");
+	  } else {
+	    BSL_lcd_parameters.height = value;
+	    out("LCD height set to %d after 'store'!", BSL_lcd_parameters.height);
+	  }
+	} else if( strcmp(parameter, "name") == 0 ||
+		   strcmp(parameter, "usb_name") == 0 ||
+		   strcmp(parameter, "usb_dev_name") == 0) {
 	  if( strlen(brkt) > (MIOS32_SYS_USB_DEV_NAME_LEN-1) ) {
 	    out("This name is too long! %d characters maximum.", MIOS32_SYS_USB_DEV_NAME_LEN-1);
 	  } else {
