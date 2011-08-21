@@ -70,7 +70,7 @@ export MIOS32_GCC_PREFIX=arm-none-eabi
 export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F103RE
 export MIOS32_BOARD=MBHP_CORE_STM32
-export MIOS32_LCD=clcd
+export MIOS32_LCD=universal
 
 
 MBHP_CORE_STM32 with STM32F105RC (communication line):
@@ -78,7 +78,7 @@ export MIOS32_GCC_PREFIX=arm-none-eabi
 export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F105RC
 export MIOS32_BOARD=MBHP_CORE_STM32
-export MIOS32_LCD=clcd
+export MIOS32_LCD=universal
 
 
 STM32 Primer:
@@ -249,7 +249,7 @@ a) set your environment variables to:
      set MIOS32_FAMILY=STM32F10x
      set MIOS32_PROCESSOR=STM32F103RE
      set MIOS32_BOARD=MBHP_CORE_STM32
-     set MIOS32_LCD=clcd
+     set MIOS32_LCD=universal
 
    (note you could write this into a batch file)
 
@@ -381,7 +381,7 @@ MIOS32_GCC_PREFIX=arm-none-eabi
 MIOS32_FAMILY=STM32F10x
 MIOS32_PROCESSOR=STM32F103RE
 MIOS32_BOARD=MBHP_CORE_STM32
-MIOS32_LCD=clcd
+MIOS32_LCD=universal
 --- STM32 ---
 
 --- LPC17 ---
@@ -391,7 +391,7 @@ MIOS32_GCC_PREFIX=arm-none-eabi
 MIOS32_FAMILY=LPC17xx
 MIOS32_PROCESSOR=LPC1769
 MIOS32_BOARD=MBHP_CORE_LPC17
-MIOS32_LCD=clcd
+MIOS32_LCD=universal
 --- LPC17 ---
 
 MacOS users: add also
