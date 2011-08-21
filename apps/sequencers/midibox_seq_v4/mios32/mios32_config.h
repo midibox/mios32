@@ -145,9 +145,17 @@
 #define LPC17XX_EMAC_NUM_TX_FRAG 2
 #define LPC17XX_EMAC_FRAG_SIZE   1024
 
-// ENC28J60 settings
-#define MIOS32_ENC28J60_FULL_DUPLEX 1
-#define MIOS32_ENC28J60_MAX_FRAME_SIZE 1504
+
+// map MIDI mutex to UIP task
+// located in tasks.c to access MIDI IN/OUT mutex from external
+extern void TASKS_MUTEX_MIDIOUT_Take(void);
+extern void TASKS_MUTEX_MIDIOUT_Give(void);
+extern void TASKS_MUTEX_MIDIIN_Take(void);
+extern void TASKS_MUTEX_MIDIIN_Give(void);
+#define UIP_TASK_MUTEX_MIDIOUT_TAKE { TASKS_MUTEX_MIDIOUT_Take(); }
+#define UIP_TASK_MUTEX_MIDIOUT_GIVE { TASKS_MUTEX_MIDIOUT_Give(); }
+#define UIP_TASK_MUTEX_MIDIIN_TAKE  { TASKS_MUTEX_MIDIIN_Take(); }
+#define UIP_TASK_MUTEX_MIDIIN_GIVE  { TASKS_MUTEX_MIDIIN_Give(); }
 
 // Mutex for J16 access
 extern void TASKS_J16SemaphoreTake(void);
@@ -156,32 +164,5 @@ extern void TASKS_J16SemaphoreGive(void);
 #define MIOS32_SDCARD_MUTEX_GIVE   { TASKS_J16SemaphoreGive(); }
 #define MIOS32_ENC28J60_MUTEX_TAKE { TASKS_J16SemaphoreTake(); }
 #define MIOS32_ENC28J60_MUTEX_GIVE { TASKS_J16SemaphoreGive(); }
-
-// a unique MAC address in your network (6 bytes are required)
-// If all bytes are 0, the serial number of STM32 will be taken instead,
-// which should be unique in your private network.
-#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
-#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
-
-// Ethernet configuration:
-// (can be changed during runtime and stored in EEPROM)
-
-//                      192        .  168        .    1       .  120
-# define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  1 << 8) | (120 << 0)
-//                      255        .  255        .  255       .    0
-# define MY_NETMASK    (255 << 24) | (255 << 16) | (255 << 8) | (  0 << 0)
-//                      192        .  168        .    1       .    1
-# define MY_GATEWAY    (192 << 24) | (168 << 16) | (  1 << 8) | (  1 << 0)
-
-
-//                     192        .  168        .    1       .  101
-#define OSC_REMOTE_IP (192 << 24) | (168 << 16) | (  1 << 8) | (101 << 0)
-
-#define OSC_REMOTE_PORT 10001
-#define OSC_LOCAL_PORT  10000
 
 #endif /* _MIOS32_CONFIG_H */

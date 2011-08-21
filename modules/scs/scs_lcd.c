@@ -98,6 +98,10 @@ static u16 lcd_cursor_y;
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_LCD_Init(u32 mode)
 {
+#if 0
+  // obsolete
+  // now done in main.c
+
   u8 dev;
 
   // first LCD already initialized
@@ -108,6 +112,7 @@ s32 SCS_LCD_Init(u32 mode)
 
   // switch back to first LCD
   MIOS32_LCD_DeviceSet(0);
+#endif
 
   return 0; // no error
 }

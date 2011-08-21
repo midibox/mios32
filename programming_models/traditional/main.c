@@ -98,6 +98,13 @@ int main(void)
 #endif
 #ifndef MIOS32_DONT_USE_LCD
   MIOS32_LCD_Init(0);
+
+# if defined(MIOS32_BOARD_MBHP_CORE_STM32) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
+  // init second LCD as well (if available)
+  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_Init(0);
+  MIOS32_LCD_DeviceSet(0);
+# endif
 #endif
 #ifdef MIOS32_USE_I2S
   MIOS32_I2S_Init(0);

@@ -29,7 +29,6 @@ THUMB_SOURCE    = src/app.c \
 		  src/seq.c \
                   src/midimon.c \
                   src/terminal.c \
-                  src/shell.c \
 		  src/scs_config.c
 
 

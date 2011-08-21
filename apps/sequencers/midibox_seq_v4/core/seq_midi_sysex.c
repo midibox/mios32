@@ -149,9 +149,6 @@ s32 SEQ_MIDI_SYSEX_Init(u32 mode)
   sysex_state.ALL = 0;
   sysex_device_id = MIOS32_MIDI_DeviceIDGet(); // taken from MIOS32
 
-  // install SysEx callback
-  MIOS32_MIDI_SysExCallback_Init(SEQ_MIDI_SYSEX_Parser);
-
   return 0; // no error
 }
 
@@ -162,12 +159,6 @@ s32 SEQ_MIDI_SYSEX_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
-  // forward event to MIDI router
-  SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
-
-  // forward event to BLM as well
-  SEQ_BLM_SYSEX_Parser(port, midi_in);
-
   // ignore realtime messages (see MIDI spec - realtime messages can
   // always be injected into events/streams, and don't change the running status)
   if( midi_in >= 0xf8 )

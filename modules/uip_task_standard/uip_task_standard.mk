@@ -9,8 +9,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/uip_task_standard/uip_task.c \
 	$(MIOS32_PATH)/modules/uip_task_standard/dhcpc.c \
 	$(MIOS32_PATH)/modules/uip_task_standard/osc_server.c \
-	$(MIOS32_PATH)/modules/uip_task_standard/osc_client.c \
-	$(MIOS32_PATH)/modules/uip_task_standard/telnetd.c
+	$(MIOS32_PATH)/modules/uip_task_standard/osc_client.c
 
 
 # directories and files that should be part of the distribution (release) package

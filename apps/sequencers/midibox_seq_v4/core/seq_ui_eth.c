@@ -26,8 +26,7 @@
 #include "seq_file.h"
 #include "seq_file_gc.h"
 
-#include "seq_midi_osc.h"
-
+#include <osc_client.h>
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -287,7 +286,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // value not changed
     } else if( ocfg_item == OCFG_TRANSFER_MODE ) {
       u8 value = ocfg_value;
-      if( SEQ_UI_Var8_Inc(&value, 0, SEQ_MIDI_OSC_NUM_TRANSFER_MODES-1, incrementer) ) {
+      if( SEQ_UI_Var8_Inc(&value, 0, OSC_CLIENT_NUM_TRANSFER_MODES-1, incrementer) ) {
 	ocfg_value = value;
 	ocfg_value_changed = 1;
 	return 1; // value changed
@@ -495,7 +494,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_selected_item >= ITEM_OSC_1 && ui_selected_item <= ITEM_OSC_4 && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(20);
     } else {
-      const char txmode_str[SEQ_MIDI_OSC_NUM_TRANSFER_MODES][21] = {
+      const char txmode_str[OSC_CLIENT_NUM_TRANSFER_MODES][21] = {
 	" MIDI Messages      ",
 	" Text Msg (Integer) ",
 	" Text Msg (Float)   ",
@@ -615,7 +614,7 @@ static s32 SEQ_UI_ETH_UpdateOCfg(void)
   case OCFG_REMOTE_IP:     ocfg_value = OSC_SERVER_RemoteIP_Get(selected_osc_con); break;
   case OCFG_REMOTE_PORT:   ocfg_value = OSC_SERVER_RemotePortGet(selected_osc_con); break;
   case OCFG_LOCAL_PORT:    ocfg_value = OSC_SERVER_LocalPortGet(selected_osc_con); break;
-  case OCFG_TRANSFER_MODE: ocfg_value = SEQ_MIDI_OSC_TransferModeGet(selected_osc_con); break;
+  case OCFG_TRANSFER_MODE: ocfg_value = OSC_CLIENT_TransferModeGet(selected_osc_con); break;
   }
 #endif
 
@@ -652,7 +651,7 @@ static s32 SEQ_UI_ETH_StoreOCfg(void)
   case OCFG_REMOTE_IP:     OSC_SERVER_RemoteIP_Set(selected_osc_con, ocfg_value); break;
   case OCFG_REMOTE_PORT:   OSC_SERVER_RemotePortSet(selected_osc_con, ocfg_value); break;
   case OCFG_LOCAL_PORT:    OSC_SERVER_LocalPortSet(selected_osc_con, ocfg_value); break;
-  case OCFG_TRANSFER_MODE: SEQ_MIDI_OSC_TransferModeSet(selected_osc_con, ocfg_value); break;
+  case OCFG_TRANSFER_MODE: OSC_CLIENT_TransferModeSet(selected_osc_con, ocfg_value); break;
   }
 
   // OSC_SERVER_Init(0) has to be called after any setting has been changed

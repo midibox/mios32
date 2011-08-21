@@ -301,3 +301,13 @@ void TASKS_J16SemaphoreGive(void)
   if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
     MUTEX_J16_GIVE;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// functions to access MIDI IN/Out Mutex
+// see also mios32_config.h
+/////////////////////////////////////////////////////////////////////////////
+void TASKS_MUTEX_MIDIOUT_Take(void) { MUTEX_MIDIOUT_TAKE; }
+void TASKS_MUTEX_MIDIOUT_Give(void) { MUTEX_MIDIOUT_GIVE; }
+void TASKS_MUTEX_MIDIIN_Take(void) { MUTEX_MIDIIN_TAKE; }
+void TASKS_MUTEX_MIDIIN_Give(void) { MUTEX_MIDIIN_GIVE; }

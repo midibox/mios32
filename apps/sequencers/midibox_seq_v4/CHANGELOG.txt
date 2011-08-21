@@ -6,6 +6,26 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.047
+~~~~~~~~~~~~~~~~~
+
+   o MIDIbox SEQ V4 is not beta anymore - but we continue to increment the
+     version number and just leave out "beta" :-)
+
+   o compiled for new MIOS32 Bootloader V1.005
+     You can safely enable the "fastboot" option of the bootloader, so that
+     the application starts immediately after power-on
+
+   o for MBHP_CORE_LPC17: since this board doesn't provide a J5C connector,
+     following signals are available at J28:
+     - Clock: J28.SDA
+     - Start/Stop: J28.SC
+     - Gate 7: J28.WS
+     - Gate 8: J28.MCLK
+
+   o OSC Client/Server: support for TouchOSC protocol
+
+
 MIDIboxSEQ V4.0beta46
 ~~~~~~~~~~~~~~~~~~~~~
 

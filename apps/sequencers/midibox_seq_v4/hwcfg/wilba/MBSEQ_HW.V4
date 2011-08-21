@@ -162,9 +162,10 @@ DOUT_GATE_SR8   0
 DOUT_1MS_TRIGGER 0
 
 # should J5A/B/C outputs be enabled (0: no, 1: yes, 2: yes, but in open drain mode)?
-#  - the 8 AOUT gates will be forwarded to J5A/B
-#  - DIN sync clock will be forwarded to J5C:A0
-#  - DIN sync start/stop will be forwarded to J5C:A1
+#  - the 6 first AOUT gates will be forwarded to J5A/B
+#  - the remaining last 2 AOUT gates are available at J5C.A10 and J5C.A11 (LPC17: J28.WS and J28.MCLK)
+#  - DIN sync clock will be forwarded to J5C:A0 (LPC17: J28.SDA)
+#  - DIN sync start/stop will be forwarded to J5C:A1 (LPC17: J28.SC)
 #  - if open drain mode enabled (option 2), external pull-ups have to be connected to J5 pins
 #    (advantage: pin levels can be pulled to 5V)
 #

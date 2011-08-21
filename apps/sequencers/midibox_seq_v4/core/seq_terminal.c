@@ -158,154 +158,11 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
-    // example for parsing the command:
-    char *separators = " \t";
-    char *brkt;
-    char *parameter;
-
-    if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
-      if( strcmp(parameter, "help") == 0 ) {
-	SEQ_TERMINAL_PrintHelp(DEBUG_MSG);
-      } else if( strcmp(parameter, "system") == 0 ) {
-	SEQ_TERMINAL_PrintSystem(DEBUG_MSG);
-      } else if( strcmp(parameter, "global") == 0 ) {
-	SEQ_TERMINAL_PrintGlobalConfig(DEBUG_MSG);
-      } else if( strcmp(parameter, "bookmarks") == 0 ) {
-	SEQ_TERMINAL_PrintBookmarks(DEBUG_MSG);
-      } else if( strcmp(parameter, "config") == 0 ) {
-	SEQ_TERMINAL_PrintSessionConfig(DEBUG_MSG);
-      } else if( strcmp(parameter, "tracks") == 0 ) {
-	SEQ_TERMINAL_PrintTracks(DEBUG_MSG);
-      } else if( strcmp(parameter, "track") == 0 ) {
-	  char *arg;
-	  if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	    int track = get_dec(arg);
-	    if( track < 1 || track > SEQ_CORE_NUM_TRACKS ) {
-	      MUTEX_MIDIOUT_TAKE;
-	      DEBUG_MSG("Wrong track number %d - expected track 1..%d\n", track, SEQ_CORE_NUM_TRACKS);
-	      MUTEX_MIDIOUT_GIVE;
-	    } else {
-	      SEQ_TERMINAL_PrintTrack(DEBUG_MSG, track-1);
-	    }
-	  } else {
-	    MUTEX_MIDIOUT_TAKE;
-	    DEBUG_MSG("Please specify track, e.g. \"track 1\"\n");
-	    MUTEX_MIDIOUT_GIVE;
-	  }
-      } else if( strcmp(parameter, "mixer") == 0 ) {
-	SEQ_TERMINAL_PrintCurrentMixerMap(DEBUG_MSG);
-      } else if( strcmp(parameter, "song") == 0 ) {
-	SEQ_TERMINAL_PrintCurrentSong(DEBUG_MSG);
-      } else if( strcmp(parameter, "grooves") == 0 ) {
-	SEQ_TERMINAL_PrintGrooveTemplates(DEBUG_MSG);
-      } else if( strcmp(parameter, "memory") == 0 ) {
-	SEQ_TERMINAL_PrintMemoryInfo(DEBUG_MSG);
-#if !defined(MIOS32_FAMILY_EMULATION)
-      } else if( strcmp(parameter, "network") == 0 ) {
-	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
-      } else if( strcmp(parameter, "udpmon") == 0 ) {
-	MUTEX_MIDIOUT_TAKE;
-	char *arg;
-	if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	  int level = get_dec(arg);
-	  switch( level ) {
-	  case UDP_MONITOR_LEVEL_0_OFF:
-	    DEBUG_MSG("Set UDP monitor level to %d (off)\n", level);
-	    break;
-	  case UDP_MONITOR_LEVEL_1_OSC_REC:
-	    DEBUG_MSG("Set UDP monitor level to %d (received packets assigned to a OSC1..4 port)\n", level);
-	    break;
-	  case UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND:
-	    DEBUG_MSG("Set UDP monitor level to %d (received and sent packets assigned to a OSC1..4 port)\n", level);
-	    break;
-	  case UDP_MONITOR_LEVEL_3_ALL_GEQ_1024:
-	    DEBUG_MSG("Set UDP monitor level to %d (all received and sent packets with port number >= 1024)\n", level);
-	    break;
-	  case UDP_MONITOR_LEVEL_4_ALL:
-	    DEBUG_MSG("Set UDP monitor level to %d (all received and sent packets)\n", level);
-	    break;
-	  default:
-	    DEBUG_MSG("Invalid level %d - please specify monitor level 0..4\n", level);
-	    level = -1; // invalidate level for next if() check
-	  }
-
-	  if( level >= 0 )
-	    UIP_TASK_UDP_MonitorLevelSet(level);
-	} else {
-	  DEBUG_MSG("Please specify monitor level (0..4)\n");
-	}
-	MUTEX_MIDIOUT_GIVE;
-#endif
-      } else if( strcmp(parameter, "sdcard") == 0 ) {
-	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
-      } else if( strcmp(parameter, "testaoutpin") == 0 ) {
-	char *arg;
-	int pin_number = -1;
-	int level = -1;
-
-	if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	  if( strcmp(arg, "cs") == 0 )
-	    pin_number = 1;
-	  else if( strcmp(arg, "si") == 0 )
-	    pin_number = 2;
-	  else if( strcmp(arg, "sc") == 0 )
-	    pin_number = 3;
-	  else if( strcmp(arg, "reset") == 0 ) {
-	    pin_number = 0;
-	    level = 0; // dummy
-	  }
-	}
-
-	if( pin_number < 0 ) {
-	  MUTEX_MIDIOUT_TAKE;
-	  DEBUG_MSG("Please specifiy valid AOUT pin name: cs, si or sc\n");
-	  MUTEX_MIDIOUT_GIVE;
-	} else {
-	  if( (arg = strtok_r(NULL, separators, &brkt)) )
-	    level = get_dec(arg);
-
-	  if( level != 0 && level != 1 ) {
-	    MUTEX_MIDIOUT_TAKE;
-	    DEBUG_MSG("Please specifiy valid logic level for AOUT pin: 0 or 1\n");
-	    MUTEX_MIDIOUT_GIVE;
-	  }
-	}
-
-	if( pin_number >= 0 && level >= 0 ) {
-	  SEQ_TERMINAL_TestAoutPin(DEBUG_MSG, pin_number, level);
-	} else {
-	  MUTEX_MIDIOUT_TAKE;
-	  DEBUG_MSG("Following commands are supported:\n");
-	  DEBUG_MSG("testaoutpin cs 0  -> sets AOUT:CS to 0.4V");
-	  DEBUG_MSG("testaoutpin cs 1  -> sets AOUT:CS to ca. 4V");
-	  DEBUG_MSG("testaoutpin si 0  -> sets AOUT:SI to ca. 0.4V");
-	  DEBUG_MSG("testaoutpin si 1  -> sets AOUT:SI to ca. 4V");
-	  DEBUG_MSG("testaoutpin sc 0  -> sets AOUT:SC to ca. 0.4V");
-	  DEBUG_MSG("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
-	  DEBUG_MSG("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
-	  MUTEX_MIDIOUT_GIVE;
-	}
-      } else if( strcmp(parameter, "play") == 0 ) {
-	SEQ_UI_Button_Play(0);
-	MUTEX_MIDIOUT_TAKE;
-	DEBUG_MSG("Sequencer started...\n");
-	MUTEX_MIDIOUT_GIVE;
-      } else if( strcmp(parameter, "stop") == 0 ) {
-	SEQ_UI_Button_Stop(0);
-	MUTEX_MIDIOUT_TAKE;
-	DEBUG_MSG("Sequencer stopped...\n");
-	MUTEX_MIDIOUT_GIVE;
-      } else if( strcmp(parameter, "reset") == 0 ) {
-	MIOS32_SYS_Reset();
-      } else {
-	MUTEX_MIDIOUT_TAKE;
-	DEBUG_MSG("Unknown command - type 'help' to list available commands!\n");
-	MUTEX_MIDIOUT_GIVE;
-      }
-    }
-
+    MUTEX_MIDIOUT_TAKE;
+    SEQ_TERMINAL_ParseLine(line_buffer, MIOS32_MIDI_SendDebugMessage);
+    MUTEX_MIDIOUT_GIVE;
     line_ix = 0;
-
+    line_buffer[line_ix] = 0;
   } else if( line_ix < (STRING_MAX-1) ) {
     line_buffer[line_ix++] = byte;
     line_buffer[line_ix] = 0;
@@ -313,6 +170,143 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
 
   // restore debug port
   MIOS32_MIDI_DebugPortSet(prev_debug_port);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Parser for a complete line - also used by shell.c for telnet
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+  char *separators = " \t";
+  char *brkt;
+  char *parameter;
+
+  if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
+    if( strcmp(parameter, "help") == 0 ) {
+      SEQ_TERMINAL_PrintHelp(out);
+    } else if( strcmp(parameter, "system") == 0 ) {
+      SEQ_TERMINAL_PrintSystem(out);
+    } else if( strcmp(parameter, "global") == 0 ) {
+      SEQ_TERMINAL_PrintGlobalConfig(out);
+    } else if( strcmp(parameter, "bookmarks") == 0 ) {
+      SEQ_TERMINAL_PrintBookmarks(out);
+    } else if( strcmp(parameter, "config") == 0 ) {
+      SEQ_TERMINAL_PrintSessionConfig(out);
+    } else if( strcmp(parameter, "tracks") == 0 ) {
+      SEQ_TERMINAL_PrintTracks(out);
+    } else if( strcmp(parameter, "track") == 0 ) {
+      char *arg;
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	int track = get_dec(arg);
+	if( track < 1 || track > SEQ_CORE_NUM_TRACKS ) {
+	  out("Wrong track number %d - expected track 1..%d\n", track, SEQ_CORE_NUM_TRACKS);
+	} else {
+	  SEQ_TERMINAL_PrintTrack(out, track-1);
+	}
+      } else {
+	out("Please specify track, e.g. \"track 1\"\n");
+      }
+    } else if( strcmp(parameter, "mixer") == 0 ) {
+      SEQ_TERMINAL_PrintCurrentMixerMap(out);
+    } else if( strcmp(parameter, "song") == 0 ) {
+      SEQ_TERMINAL_PrintCurrentSong(out);
+    } else if( strcmp(parameter, "grooves") == 0 ) {
+      SEQ_TERMINAL_PrintGrooveTemplates(out);
+    } else if( strcmp(parameter, "memory") == 0 ) {
+      SEQ_TERMINAL_PrintMemoryInfo(out);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    } else if( strcmp(parameter, "network") == 0 ) {
+      SEQ_TERMINAL_PrintNetworkInfo(out);
+    } else if( strcmp(parameter, "udpmon") == 0 ) {
+      char *arg;
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	int level = get_dec(arg);
+	switch( level ) {
+	case UDP_MONITOR_LEVEL_0_OFF:
+	  out("Set UDP monitor level to %d (off)\n", level);
+	  break;
+	case UDP_MONITOR_LEVEL_1_OSC_REC:
+	  out("Set UDP monitor level to %d (received packets assigned to a OSC1..4 port)\n", level);
+	  break;
+	case UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND:
+	  out("Set UDP monitor level to %d (received and sent packets assigned to a OSC1..4 port)\n", level);
+	  break;
+	case UDP_MONITOR_LEVEL_3_ALL_GEQ_1024:
+	  out("Set UDP monitor level to %d (all received and sent packets with port number >= 1024)\n", level);
+	  break;
+	case UDP_MONITOR_LEVEL_4_ALL:
+	  out("Set UDP monitor level to %d (all received and sent packets)\n", level);
+	  break;
+	default:
+	  out("Invalid level %d - please specify monitor level 0..4\n", level);
+	  level = -1; // invalidate level for next if() check
+	}
+	
+	if( level >= 0 )
+	  UIP_TASK_UDP_MonitorLevelSet(level);
+      } else {
+	out("Please specify monitor level (0..4)\n");
+      }
+#endif
+    } else if( strcmp(parameter, "sdcard") == 0 ) {
+      SEQ_TERMINAL_PrintSdCardInfo(out);
+    } else if( strcmp(parameter, "testaoutpin") == 0 ) {
+      char *arg;
+      int pin_number = -1;
+      int level = -1;
+      
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(arg, "cs") == 0 )
+	  pin_number = 1;
+	else if( strcmp(arg, "si") == 0 )
+	  pin_number = 2;
+	else if( strcmp(arg, "sc") == 0 )
+	  pin_number = 3;
+	else if( strcmp(arg, "reset") == 0 ) {
+	  pin_number = 0;
+	  level = 0; // dummy
+	}
+      }
+      
+      if( pin_number < 0 ) {
+	out("Please specifiy valid AOUT pin name: cs, si or sc\n");
+      } else {
+	if( (arg = strtok_r(NULL, separators, &brkt)) )
+	  level = get_dec(arg);
+	
+	if( level != 0 && level != 1 ) {
+	  out("Please specifiy valid logic level for AOUT pin: 0 or 1\n");
+	}
+      }
+
+      if( pin_number >= 0 && level >= 0 ) {
+	SEQ_TERMINAL_TestAoutPin(out, pin_number, level);
+      } else {
+	out("Following commands are supported:\n");
+	out("testaoutpin cs 0  -> sets AOUT:CS to 0.4V");
+	out("testaoutpin cs 1  -> sets AOUT:CS to ca. 4V");
+	out("testaoutpin si 0  -> sets AOUT:SI to ca. 0.4V");
+	out("testaoutpin si 1  -> sets AOUT:SI to ca. 4V");
+	out("testaoutpin sc 0  -> sets AOUT:SC to ca. 0.4V");
+	out("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
+	out("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
+      }
+    } else if( strcmp(parameter, "play") == 0 ) {
+      SEQ_UI_Button_Play(0);
+      out("Sequencer started...\n");
+    } else if( strcmp(parameter, "stop") == 0 ) {
+      SEQ_UI_Button_Stop(0);
+      out("Sequencer stopped...\n");
+    } else if( strcmp(parameter, "reset") == 0 ) {
+      MIOS32_SYS_Reset();
+    } else {
+      out("Unknown command - type 'help' to list available commands!\n");
+    }
+  }
 
   return 0; // no error
 }

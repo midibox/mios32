@@ -974,10 +974,19 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
 
+#if defined(MIOS32_FAMILY_STM32F10x)
 	  for(i=8; i<12; ++i) {
 	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
 	    MIOS32_BOARD_J5_PinSet(i, 0);
 	  }
+#elif defined(MIOS32_FAMILY_LPC17xx)
+	  for(i=0; i<4; ++i) {
+	    MIOS32_BOARD_J28_PinInit(i, pin_mode);
+	    MIOS32_BOARD_J28_PinSet(i, 0);
+	  }
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
 
 	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
