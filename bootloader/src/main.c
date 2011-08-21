@@ -186,54 +186,72 @@ int main(void)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  // check for optional fast boot
+  ///////////////////////////////////////////////////////////////////////////
+  u8 fastboot = 0;
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+  if( !usb_was_initialized && !BSL_HOLD_STATE ) {
+    // read from bootloader info range
+    u8 *bsl_info_fastboot_confirm = (u8 *)MIOS32_SYS_ADDR_FASTBOOT_CONFIRM;
+    u8 *bsl_info_fastboot = (u8 *)MIOS32_SYS_ADDR_FASTBOOT;
+    if( *bsl_info_fastboot_confirm == 0x42 )
+      fastboot = *bsl_info_fastboot;
+  }
+#endif
+
+
+  ///////////////////////////////////////////////////////////////////////////
   // send upload request to USB and UART MIDI
   ///////////////////////////////////////////////////////////////////////////
+  if( !fastboot ) {
 #if !defined(MIOS32_DONT_USE_UART_MIDI)
-  BSL_SYSEX_SendUploadReq(UART0);    
+    BSL_SYSEX_SendUploadReq(UART0);    
 #endif
-  if( usb_was_initialized )
-    BSL_SYSEX_SendUploadReq(USB0);
+    if( usb_was_initialized )
+      BSL_SYSEX_SendUploadReq(USB0);
+  }
 
 
   ///////////////////////////////////////////////////////////////////////////
   // reset stopwatch timer and start wait loop
-  MIOS32_STOPWATCH_Reset();
-  do {
-    // This is a simple way to pulsate a LED via PWM
-    // A timer in incrementer mode is used as reference, the counter value is incremented each 100 uS
-    // Within the given PWM period, we define a duty cycle based on the current counter value
-    // We periodically sweep the PWM duty cycle 100 steps up, and 100 steps down
-    u32 cnt = MIOS32_STOPWATCH_ValueGet();  // the reference counter (incremented each 100 uS)
-    const u32 pwm_period = 50;       // *100 uS -> 5 mS
-    const u32 pwm_sweep_steps = 100; // * 5 mS -> 500 mS
-    u32 pwm_duty = ((cnt / pwm_period) % pwm_sweep_steps) / (pwm_sweep_steps/pwm_period);
-    if( (cnt % (2*pwm_period*pwm_sweep_steps)) > pwm_period*pwm_sweep_steps )
-      pwm_duty = pwm_period-pwm_duty; // negative direction each 50*100 ticks
-    u32 led_on = ((cnt % pwm_period) > pwm_duty) ? 1 : 0;
-    MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
+  if( !fastboot ) {
+    MIOS32_STOPWATCH_Reset();
+    do {
+      // This is a simple way to pulsate a LED via PWM
+      // A timer in incrementer mode is used as reference, the counter value is incremented each 100 uS
+      // Within the given PWM period, we define a duty cycle based on the current counter value
+      // We periodically sweep the PWM duty cycle 100 steps up, and 100 steps down
+      u32 cnt = MIOS32_STOPWATCH_ValueGet();  // the reference counter (incremented each 100 uS)
+      const u32 pwm_period = 50;       // *100 uS -> 5 mS
+      const u32 pwm_sweep_steps = 100; // * 5 mS -> 500 mS
+      u32 pwm_duty = ((cnt / pwm_period) % pwm_sweep_steps) / (pwm_sweep_steps/pwm_period);
+      if( (cnt % (2*pwm_period*pwm_sweep_steps)) > pwm_period*pwm_sweep_steps )
+	pwm_duty = pwm_period-pwm_duty; // negative direction each 50*100 ticks
+      u32 led_on = ((cnt % pwm_period) > pwm_duty) ? 1 : 0;
+      MIOS32_BOARD_LED_Set(BSL_LED_MASK, led_on ? BSL_LED_MASK : 0);
 
 
-    // call periodic hook each mS (!!! important - not shorter due to timeout counters which are handled here)
-    if( (cnt % 10) == 0 ) {
-      MIOS32_MIDI_Periodic_mS();
-    }
+      // call periodic hook each mS (!!! important - not shorter due to timeout counters which are handled here)
+      if( (cnt % 10) == 0 ) {
+	MIOS32_MIDI_Periodic_mS();
+      }
 
-    // check for incoming MIDI messages - no hooks are used
-    // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
-    // directly by MIOS32 to enhance command set
-    MIOS32_MIDI_Receive_Handler(NULL);
+      // check for incoming MIDI messages - no hooks are used
+      // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
+      // directly by MIOS32 to enhance command set
+      MIOS32_MIDI_Receive_Handler(NULL);
 
-  } while( MIOS32_STOPWATCH_ValueGet() < 20000 ||             // wait for 2 seconds
-	   BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation
-	   (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
-
+    } while( MIOS32_STOPWATCH_ValueGet() < 20000 ||             // wait for 2 seconds
+	     BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation
+	     (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
+  }
 
 #if defined(MIOS32_FAMILY_STM32F10x)
   // ensure that flash write access is locked
   FLASH_Lock();
 #endif
 
-  // turn of LED
+  // turn off LED
   MIOS32_BOARD_LED_Set(BSL_LED_MASK, 0);
 
   // branch to application if reset vector is valid (should be inside flash range)

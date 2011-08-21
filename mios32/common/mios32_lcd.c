@@ -32,7 +32,7 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-mios32_lcd_type_t mios32_lcd_type;
+mios32_lcd_parameters_t mios32_lcd_parameters;
 u8  mios32_lcd_device = 0; // (not done in MIOS32_Init to allow the initialisation of multiple LCDs)
 u16 mios32_lcd_column;
 u16 mios32_lcd_line;
@@ -63,8 +63,34 @@ s32 MIOS32_LCD_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  // initial LCD type (can be set to a different type in APP_LCD_Init()
-  mios32_lcd_type = MIOS32_LCD_TYPE_CLCD;
+  // initial LCD parameters
+  // can be overruled in APP_LCD_Init()
+  static const mios32_lcd_parameters_t default_parameters = {
+    .lcd_type = MIOS32_LCD_TYPE_CLCD,
+    .num_x = 2, // since MBHP_CORE_STM32 and MBHP_CORE_LPC17 has two J15 ports
+    .num_y = 1,
+    .width = 20, // since most people will (probably) build the SCS
+    .height = 2,
+    .colour_depth = 1,
+  };
+  mios32_lcd_parameters = default_parameters;
+
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+  // read from bootloader info range
+  u8 *lcd_par_confirm = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_CONFIRM;
+  if( *lcd_par_confirm == 0x42 ) {
+    u8 *lcd_par_type = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_TYPE;
+    mios32_lcd_parameters.lcd_type = *lcd_par_type;
+    u8 *lcd_par_num_x = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_NUM_X;
+    mios32_lcd_parameters.num_x = *lcd_par_num_x;
+    u8 *lcd_par_num_y = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_NUM_Y;
+    mios32_lcd_parameters.num_y = *lcd_par_num_y;
+    u8 *lcd_par_width = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_WIDTH;
+    mios32_lcd_parameters.width = *lcd_par_width;
+    u8 *lcd_par_height = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_HEIGHT;
+    mios32_lcd_parameters.height = *lcd_par_height;
+  }
+#endif
 
   // disable font bitmap
   font_bitmap.width = 0;
@@ -88,6 +114,65 @@ s32 MIOS32_LCD_Init(u32 mode)
   MIOS32_LCD_GCursorSet(0, 0);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets LCD Parameters during runtime.
+//!
+//! Note that the default parameters are stored in Bootloader Info range, and
+//! fetched during startup. But it's possible to change them during runtime,
+//! and it's also possible that an alternative LCD driver (!= MIOS32_LCD=universal)
+//! overrides them!
+//! \param[in] the new lcd_parameters
+//! \return 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_ParametersSet(mios32_lcd_parameters_t lcd_parameters)
+{
+  mios32_lcd_parameters = lcd_parameters;
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the current LCD parameters
+/////////////////////////////////////////////////////////////////////////////
+mios32_lcd_parameters_t *MIOS32_LCD_ParametersGet(void)
+{
+  return &mios32_lcd_parameters;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns 1 if the currently selected LCD type is a GLCD, otherwise 0
+//! 
+//! Note: GLCDs are determined by checking the mios32_lcd_parameters.lcd_type
+//! setting - if bit #7 is set (>= 0x80), the LCD is a GLCD
+//! \return 1 or 0
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_LCD_TypeIsGLCD(void)
+{
+  return mios32_lcd_parameters.lcd_type >= 0x80;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns name of LCD type
+// returns NULL if type unknown
+/////////////////////////////////////////////////////////////////////////////
+const char* MIOS32_LCD_LcdTypeName(mios32_lcd_type_t lcd_type)
+{
+  switch( lcd_type ) {
+  case MIOS32_LCD_TYPE_CLCD: return "CLCD";
+  case MIOS32_LCD_TYPE_CLCD_DOG: return "CLCD_DOG";
+  
+  case MIOS32_LCD_TYPE_GLCD_CUSTOM: return "GLCD_CUSTOM";
+  case MIOS32_LCD_TYPE_GLCD_KS0108: return "GLCD_KS0108";
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: return "GLCD_KS0108_INVCS";
+  case MIOS32_LCD_TYPE_GLCD_DOG: return "GLCD_DOG";
+  case MIOS32_LCD_TYPE_GLCD_SSD1306: return "GLCD_SSD1306";
+  }
+
+  return NULL;
 }
 
 
@@ -326,7 +411,7 @@ s32 MIOS32_LCD_PrintChar(char c)
 {
   s32 status;
 
-  if( mios32_lcd_type == MIOS32_LCD_TYPE_GLCD ) {
+  if( MIOS32_LCD_TypeIsGLCD() ) { // GLCD
     if( !font_bitmap.width )
       return -1;    // font not initialized yet!
 

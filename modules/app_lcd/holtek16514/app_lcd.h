@@ -19,17 +19,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
-// only used by GLCDs
-// Use dummy values here - define a bitmap as it would be displayed with special chars
-// TODO: we could print a 8*5x8 bitmap like done in apps/sequencers/midibox_seq_v4/core/seq_lcd_logo.c
-#define APP_LCD_NUM_X 1
-#define APP_LCD_WIDTH (4*5)
-#define APP_LCD_NUM_Y 1
-#define APP_LCD_HEIGHT (2*8)
-#define APP_LCD_COLOUR_DEPTH 1
-#define APP_LCD_BITMAP_SIZE ((APP_LCD_NUM_X*APP_LCD_WIDTH * APP_LCD_NUM_Y*APP_LCD_HEIGHT * APP_LCD_COLOUR_DEPTH) / 8)
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////

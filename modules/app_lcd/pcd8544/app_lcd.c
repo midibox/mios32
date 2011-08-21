@@ -105,7 +105,7 @@ s32 APP_LCD_Init(u32 mode)
   display_available |= (1 << mios32_lcd_device);
 
   // set LCD type
-  mios32_lcd_type = MIOS32_LCD_TYPE_GLCD;
+  mios32_lcd_parameters.lcd_type = MIOS32_LCD_TYPE_GLCD_CUSTOM;
 
   // initialize LCD
 #ifdef MIOS32_DONT_USE_DELAY
