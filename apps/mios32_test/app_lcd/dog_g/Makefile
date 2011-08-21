@@ -8,9 +8,12 @@ PROCESSOR =	$(MIOS32_PROCESSOR)
 FAMILY    = 	$(MIOS32_FAMILY)
 BOARD	  = 	$(MIOS32_BOARD)
 
-#explicitely select PCD8544 display
 #LCD       =     $(MIOS32_LCD)
-LCD       =     dog_g
+# explicitely select the correct LCD driver
+# KS0108 is supported by the "universal" driver
+# please configure the bootloader info range accordingly
+# with the bootloader update application
+LCD = universal
 
 
 ################################################################################

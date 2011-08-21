@@ -77,6 +77,19 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
+// J28 pin mapping
+/////////////////////////////////////////////////////////////////////////////
+
+#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#define J28_NUM_PINS 0
+// not supported by this board
+#else
+#define J28_NUM_PINS 0
+#warning "No J28 pins defined for this MIOS32_BOARD"
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
 // J15 (LCD) pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
@@ -572,6 +585,98 @@ s32 MIOS32_BOARD_J10_PinGet(u8 pin)
 {
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes a J28 pin
+//! \param[in] pin the pin number (0..7)
+//! \param[in] mode the pin mode
+//!   <UL>
+//!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched
+//!     <LI>MIOS32_BOARD_PIN_MODE_ANALOG: select analog input mode (default)
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT: pin is used as input w/o pull device (floating)
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PD: pin is used as input, internal pull down enabled
+//!     <LI>MIOS32_BOARD_PIN_MODE_INPUT_PU: pin is used as input, internal pull up enabled
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_PP: pin is used as output in push-pull mode
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_OD: pin is used as output in open drain mode
+//!   </UL>
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_PinInit(u8 pin, mios32_board_pin_mode_t mode)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J28 at once
+//! \param[in] value 8 bits which are forwarded to J28
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_Set(u16 value)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets a single pin of J28
+//! \param[in] pin the pin number (0..7)
+//! \param[in] value the pin value (0 or 1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_PinSet(u8 pin, u8 value)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J28
+//! \return 8 bits which are forwarded from J28
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_Get(void)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of a single pin of J28
+//! \param[in] pin the pin number (0..7)
+//! \return < 0 if pin not available
+//! \return >= 0: input state of pin
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_PinGet(u8 pin)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
 #else
 # error "Not prepared for STM32"
   return -1;

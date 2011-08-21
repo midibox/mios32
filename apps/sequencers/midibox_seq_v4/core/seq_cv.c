@@ -58,8 +58,15 @@ s32 SEQ_CV_Init(u32 mode)
 
   // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
 
+#if defined(MIOS32_FAMILY_STM32F10x)
   for(i=8; i<12; ++i)
     MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  for(i=0; i<4; ++i)
+    MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
 
   // initialize AOUT driver
   AOUT_Init(0);
@@ -310,15 +317,34 @@ s32 SEQ_CV_Update(void)
   u8 start_stop = SEQ_BPM_IsRunning();
   if( start_stop != last_start_stop ) {
     last_start_stop = start_stop;
+#if defined(MIOS32_FAMILY_STM32F10x)
     MIOS32_BOARD_J5_PinSet(9, start_stop);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_BOARD_J28_PinSet(1, start_stop);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
   }
 
   // DIN Sync Pulse at J5C.A8
   if( seq_core_din_sync_pulse_ctr > 1 ) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     MIOS32_BOARD_J5_PinSet(8, 1);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_BOARD_J28_PinSet(0, 1);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
     --seq_core_din_sync_pulse_ctr;
   } else if( seq_core_din_sync_pulse_ctr == 1 ) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     MIOS32_BOARD_J5_PinSet(8, 0);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_BOARD_J28_PinSet(0, 0);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
+
     seq_core_din_sync_pulse_ctr = 0;
   }
 
@@ -336,11 +362,22 @@ s32 SEQ_CV_Update(void)
       MIOS32_BOARD_J5_PinSet(i, gates & 1);
       gates >>= 1;
     }
+
+#if defined(MIOS32_FAMILY_STM32F10x)
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
     MIOS32_BOARD_J5_PinSet(10, gates & 1);
     gates >>= 1;
     MIOS32_BOARD_J5_PinSet(11, gates & 1);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    // J5B.A6 and J5B.A7 allocated by MIDI OUT3
+    // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
+    MIOS32_BOARD_J28_PinSet(2, gates & 1);
+    gates >>= 1;
+    MIOS32_BOARD_J28_PinSet(3, gates & 1);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
   }
 
   return 0; // no error

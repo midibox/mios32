@@ -113,15 +113,22 @@ typedef u16 uip_stats_t;
    our project. */
 /*#include "smtp.h"*/
 /*#include "hello-world.h"*/
-#include "telnetd.h"
+//#include "telnetd.h"
 /*#include "webserver.h"*/
 #include "dhcpc.h"
 /*#include "resolv.h"*/
 /*#include "webclient.h"*/
 
+// dummy (since no TCP daemon is used)
+typedef struct uip_tcp_appstate_t {
+  u8_t state;
+} uip_tcp_appstate_t;
+
+
 #include "osc_server.h"
 
 #include "uip_task.h"
+#define UIP_APPCALL UIP_TASK_AppCall
 #define UIP_UDP_APPCALL UIP_TASK_UDP_AppCall
 
 // TK: special define for "modified uip lib"

@@ -35,6 +35,24 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
+  // print configured LCD parameters
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("KS0108 Demo started.");
+  MIOS32_MIDI_SendDebugMessage("Configured LCD Parameters in MIOS32 Bootloader Info Range:\n");
+  MIOS32_MIDI_SendDebugMessage("lcd_type: 0x%02x (%s)\n", mios32_lcd_parameters.lcd_type, MIOS32_LCD_LcdTypeName(mios32_lcd_parameters.lcd_type));
+  MIOS32_MIDI_SendDebugMessage("num_x:    %4d\n", mios32_lcd_parameters.num_x);
+  MIOS32_MIDI_SendDebugMessage("num_y:    %4d\n", mios32_lcd_parameters.num_y);
+  MIOS32_MIDI_SendDebugMessage("width:    %4d\n", mios32_lcd_parameters.width);
+  MIOS32_MIDI_SendDebugMessage("height:   %4d\n", mios32_lcd_parameters.height);
+
+  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_KS0108 &&
+      mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_KS0108_INVCS ) {
+    // print warning if correct LCD hasn't been selected
+    MIOS32_MIDI_SendDebugMessage("WARNING: your core module hasn't been configured for the KS0108 GLCD!\n");
+    MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
+  }
+
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 

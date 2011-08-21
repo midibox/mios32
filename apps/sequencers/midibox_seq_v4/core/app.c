@@ -18,7 +18,6 @@
 #include <mios32.h>
 
 #include <seq_midi_out.h>
-#include <seq_midi_osc.h>
 #include <seq_bpm.h>
 #include <blm.h>
 #include <blm_x.h>
@@ -104,7 +103,6 @@ void APP_Init(void)
   SEQ_BLM_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
-  SEQ_MIDI_OSC_Init(0);
   SEQ_TERMINAL_Init(0);
 
   // init mixer page
@@ -128,6 +126,9 @@ void APP_Init(void)
   // install MIDI Rx/Tx callback functions
   MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
   MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
+
+  // install SysEx callback
+  MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
 
   // install timeout callback function
   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
@@ -181,6 +182,25 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // forward to port handler (used for MIDI monitor function)
   SEQ_MIDI_PORT_NotifyMIDIRx(port, midi_package);
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function parses an incoming sysex stream for MIOS32 commands
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
+{
+  // forward event to MIDI router
+  SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
+
+  // forward event to BLM as well
+  SEQ_BLM_SYSEX_Parser(port, midi_in);
+
+  // forward to common SysEx handler
+  SEQ_MIDI_SYSEX_Parser(port, midi_in);
+
+  return 0; // no error
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////

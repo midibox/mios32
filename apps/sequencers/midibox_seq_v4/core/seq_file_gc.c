@@ -25,6 +25,8 @@
 
 #include <string.h>
 
+#include <osc_client.h>
+
 #include "file.h"
 #include "seq_file.h"
 #include "seq_file_gc.h"
@@ -37,7 +39,6 @@
 #include "seq_mixer.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
-#include "seq_midi_osc.h"
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
@@ -382,7 +383,7 @@ s32 SEQ_FILE_GC_Read(void)
 	      if( (value=get_dec(word)) < 0 ) {
 		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid transfer mode number for parameter '%s'\n", parameter);
 	      } else {
-		SEQ_MIDI_OSC_TransferModeSet(con, value);
+		OSC_CLIENT_TransferModeSet(con, value);
 	      }
 	    }
 #endif
@@ -536,7 +537,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, SEQ_MIDI_OSC_TransferModeGet(con));
+    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
 

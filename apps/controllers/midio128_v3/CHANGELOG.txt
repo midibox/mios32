@@ -1,5 +1,13 @@
 $Id$
 
+MIDIO128 V3.002
+~~~~~~~~~~~~~~~
+
+   o adaptions for new MIOS32 Bootloader V1.005
+     You can safely enable the "fastboot" option of the bootloader, so that
+     the application starts immediately after power-on
+
+
 MIDIO128 V3.001
 ~~~~~~~~~~~~~~~
 

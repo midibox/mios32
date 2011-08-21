@@ -17,10 +17,11 @@
 
 #include <mios32.h>
 
+#include <osc_client.h>
+
 #include "seq_hwcfg.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
-#include "seq_midi_osc.h"
 #include "seq_cv.h"
 #include "seq_core.h"
 
@@ -520,7 +521,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
 
   // TODO: Add also Bus handlers here
   if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
-    if( SEQ_MIDI_OSC_SendPackage(port & 0xf, package) >= 0 )
+    if( OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( port == 0x80 ) { // AOUT port
     if( SEQ_CV_SendPackage(port & 0xf, package) )

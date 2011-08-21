@@ -83,15 +83,21 @@
 #define SCS_ENC_MENU_TYPE DETENTED2
 #endif
 
-// number of menu items which are displayed on screen
-// each item allocates 5x2 characters
-#ifndef SCS_NUM_MENU_ITEMS
-#define SCS_NUM_MENU_ITEMS 4
-#endif
-
 // width of an item (5 by default, so that 4 items can be output on a 2x20 LCD)
 #ifndef SCS_MENU_ITEM_WIDTH
 #define SCS_MENU_ITEM_WIDTH 5
+#endif
+
+// number of menu items which are displayed on screen
+// each item allocates 5x2 characters
+// new: derived from mios32_lcd_parameters to give the user control over LCD width
+#ifndef SCS_NUM_MENU_ITEMS
+#if 0
+// TK: theoretically this is possible, but how to handle the additional soft buttons if J10 only provides 8 inputs?
+# define SCS_NUM_MENU_ITEMS ((MIOS32_LCD_TypeIsGLCD() ? ((mios32_lcd_parameters.width*mios32_lcd_parameters.num_x) / 5) : mios32_lcd_parameters.width) / SCS_MENU_ITEM_WIDTH)
+#else
+# define SCS_NUM_MENU_ITEMS 4
+#endif
 #endif
 
 // threshold for automatic toggle mode

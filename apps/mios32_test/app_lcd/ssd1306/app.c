@@ -51,6 +51,23 @@ void APP_Background(void)
   const u8 hmeter_icon_x[2] = {20, 80}; // memo: icon width 28
   const u8 hmeter_icon_y[2] = {60, 60}; // memo: icon height 8
 
+  // print configured LCD parameters
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("\n");
+  MIOS32_MIDI_SendDebugMessage("SSD1306 Demo started.");
+  MIOS32_MIDI_SendDebugMessage("Configured LCD Parameters in MIOS32 Bootloader Info Range:\n");
+  MIOS32_MIDI_SendDebugMessage("lcd_type: 0x%02x (%s)\n", mios32_lcd_parameters.lcd_type, MIOS32_LCD_LcdTypeName(mios32_lcd_parameters.lcd_type));
+  MIOS32_MIDI_SendDebugMessage("num_x:    %4d\n", mios32_lcd_parameters.num_x);
+  MIOS32_MIDI_SendDebugMessage("num_y:    %4d\n", mios32_lcd_parameters.num_y);
+  MIOS32_MIDI_SendDebugMessage("width:    %4d\n", mios32_lcd_parameters.width);
+  MIOS32_MIDI_SendDebugMessage("height:   %4d\n", mios32_lcd_parameters.height);
+
+  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
+    // print warning if correct LCD hasn't been selected
+    MIOS32_MIDI_SendDebugMessage("WARNING: your core module hasn't been configured for the SSD1306 GLCD!\n");
+    MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
+  }
+
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 
@@ -68,7 +85,7 @@ void APP_Background(void)
     u8 n;
     for(n=0; n<8; ++n) {
       int i;
-      // X/Y "position" of displays (see also comments in $MIOS32_PATH/modules/app_lcd/ssd1306/README.txt)
+      // X/Y "position" of displays
       u8 x_offset = 128*lcd_x[n];
       u8 y_offset = 64*lcd_y[n];
 

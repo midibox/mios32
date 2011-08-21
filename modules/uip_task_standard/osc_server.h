@@ -39,7 +39,7 @@
 
 // should transfer mode be ignored on incoming OSC packets?
 #ifndef OSC_IGNORE_TRANSFER_MODE
-#define OSC_IGNORE_TRANSFER_MODE 1
+#define OSC_IGNORE_TRANSFER_MODE 0
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

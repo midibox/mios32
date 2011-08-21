@@ -16,9 +16,6 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = core/app.c \
 		mios32/tasks.c \
-		mios32/uip_task.c \
-		mios32/dhcpc.c \
-		mios32/osc_server.c \
 		core/seq_hwcfg.c  \
 		core/seq_ui.c  \
 		core/seq_ui_todo.c \
@@ -69,7 +66,6 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_cv.c \
 		core/seq_midi_port.c \
 		core/seq_midi_in.c \
-		core/seq_midi_osc.c \
 		core/seq_midi_sysex.c \
 		core/seq_midi_router.c \
 		core/seq_midply.c \
@@ -183,6 +179,9 @@ include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
 
 # UIP driver
 include $(MIOS32_PATH)/modules/uip/uip.mk
+
+# UIP Standard Task (with OSC Client/Server)
+include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk

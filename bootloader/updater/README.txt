@@ -1,6 +1,6 @@
 $Id$
 
-Bootloader Update V1.5
+Bootloader Update V1.005
 ===============================================================================
 Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -48,7 +48,7 @@ to the MIOS Terminal, which can be opened in MIOS Studio
 If the bootloader is up-to-date, you will get following messages:
 
 | ====================
-| Bootloader V1.5
+| Bootloader V1.005
 | ====================
 | 
 | Checking Bootloader...
@@ -62,7 +62,7 @@ If the bootloader is up-to-date, you will get following messages:
 If the bootloader has to be updated, you will probably get following messages:
 
 | ====================
-| Bootloader V1.5 
+| Bootloader V1.005 
 | ====================
 | 
 | Checking Bootloader...
@@ -104,7 +104,7 @@ Just type "help" in the MIOS Terminal to get a list of available commands.
 
 Explanation of the most important parameters:
 
-- fastboot: after power-on the bootloader waits for an upload request for 
+- fastboot: normaly after power-on the bootloader waits for an upload request for 
   ca. 3 seconds before the actual application will be started.
   This is a fail-safe measure which is mainly relevant for developers who don't
   want to open their MIDIbox and stuff the "BSL Hold" jumper (J27) if the
@@ -118,18 +118,35 @@ Explanation of the most important parameters:
   in the MIOS Terminal to skip this phase, and to start the application immediately!
   You will like this option! :-)
 
+  Note that no MIDI upload request will be sent during power-on anymore!
+  Please consider this when reading documentation about MIDI troubleshooting.
+
+
+- USB device name: it's possible to assign a dedicated name for your MBHP_CORE_STM32
+  or MBHP_CORE_LPC17 module which is used for the USB connection.
+
+  This is especially useful if multiple MIDIboxes running with the same application
+  are connected to your computer, so that you are able to differ between them.
+
+  The USB name can be permanently changed with:
+    set name <name>
+  e.g.
+    set name MIDIbox SEQ V4 - 1
+  or
+    set name MIDIbox SEQ V4 - 2
+
 
 - Device ID: this ID is relevant once multiple cores are available on the same MIDI port,
   or if you are using your MIOS32 based core as a USB<->MIDI / OSC<->MIDI gateway to a
   PIC based MBHP_CORE.
 
-  MIOS Studio won't be able to differ between the cores if they have the same Device ID,
-  therefore it's recommended to change the Device ID of the MIOS32 core in this case
-  (e.g. to 127)
+  MIOS Studio won't be able to differ between the cores in this case if they have the
+  same Device ID, therefore it's recommended to change the Device ID of the MIOS32 core
 
   Enter:
-     set id 127
-  in this case
+     set device_id 127
+  to assign a new device id
+  Again: this is only relevant if multiple cores are connected to the same MIDI port
 
   IMPORTANT NOTE: don't change the Device ID if you are using MIOS Studio 2.2.1 or lower!
   Device IDs are properly supported with MIOS Studio 2.2.2 and higher!

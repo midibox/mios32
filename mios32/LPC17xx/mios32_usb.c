@@ -908,8 +908,8 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
       // buffer[0] and [1] initialized below
       // check for user defined product string
       char *product_str_ptr = (char *)product_str;
-#ifdef MIOS32_SYS_USB_DEV_NAME_ADDR
-      char *product_str_user = (u16 *)MIOS32_SYS_USB_DEV_NAME_ADDR;
+#ifdef MIOS32_SYS_ADDR_USB_DEV_NAME
+      char *product_str_user = (char *)MIOS32_SYS_ADDR_USB_DEV_NAME;
       int j;
       u8 valid_str = 1;
       for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN && valid_str; ++j) {

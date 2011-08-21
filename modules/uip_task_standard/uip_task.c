@@ -30,8 +30,9 @@
 #include "timer.h"
 
 #include "uip_task.h"
-#include "telnetd.h"
+//#include "telnetd.h"
 #include "osc_server.h"
+#include "osc_client.h"
 #include "dhcpc.h"
 
 
@@ -92,6 +93,9 @@ s32 UIP_TASK_Init(u32 mode)
 {
   if( mode > 0 )
     return -1; // only mode 0 supported yet
+
+  // initialize OSC client (in distance to OSC server: only once after startup...)
+  OSC_CLIENT_Init(0);
 
   xUIPSemaphore = xSemaphoreCreateRecursiveMutex();
 
@@ -487,7 +491,7 @@ static s32 UIP_TASK_StartServices(void)
   UIP_TASK_MUTEX_MIDIOUT_GIVE;
 
   // start telnet daemon
-  telnetd_init();
+  //telnetd_init();
 
   // start OSC daemon
   OSC_SERVER_Init(0);
