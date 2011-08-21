@@ -2,7 +2,7 @@
 /*
  * Hawkeye: application specific CLCD driver for holtek 16514 compatible displays
  * Support for dual display mode using special cabling with different
- * rw/rw/e lines, which were necessary due to interference (the displays could
+ * rs/rw/e lines, which were necessary due to interference (the displays could
  * not share these lines, at least in my meager tests).
  *
  * Cabling diagram
@@ -20,9 +20,9 @@
  * J15B    DISPLAY 2    WHAT
  * 1     -> 1           GND
  * 2     -> 2           VCC 5V
- * 8     -> 4           DB1 -> RS 
- * 9     -> 5           DB2 -> RW
- * 10    -> 6           DB3 -> E
+ * 8     -> 4           RS 
+ * 9     -> 5           RW
+ * 10    -> 6           E
  * 11    -> 11          DB4
  * 12    -> 12          DB5
  * 13    -> 13          DB6
