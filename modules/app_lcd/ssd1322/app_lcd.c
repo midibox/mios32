@@ -49,7 +49,7 @@
 // This option is nice if no J15 shiftregister is connected to a LPCXPRESSO.
 // This shiftregister is available on the MBHP_CORE_LPC17 module
 #ifndef APP_LCD_USE_J10_FOR_CS
-#define APP_LCD_USE_J10_FOR_CS 1
+#define APP_LCD_USE_J10_FOR_CS 0
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

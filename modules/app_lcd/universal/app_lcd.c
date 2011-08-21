@@ -37,19 +37,17 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// temporary - will be removed soon once TK updates his OLED board!
-/////////////////////////////////////////////////////////////////////////////
-
-#ifndef APP_LCD_USE_J10_FOR_CS
-#define APP_LCD_USE_J10_FOR_CS 1
-#endif
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 display_available = 0;
+static u8 display_available = 0;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static void APP_LCD_KS0108_SetCS(u8 all);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,7 +67,29 @@ s32 APP_LCD_Init(u32 mode)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+    // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
+    if( MIOS32_BOARD_J15_PortInit(1) < 0 )
+      return -2; // failed to initialize J15
 
+    // configure CS pins
+    // STM32: the 4 CS pins are available at J5C
+    // LPC17: the 4 CS pins are available at J28
+#if defined(MIOS32_FAMILY_STM32F10x)
+    int cs;
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J5_PinInit(cs + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    int cs;
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J28_PinInit(cs, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#else
+# warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"
+#endif
+
+    MIOS32_DELAY_Wait_uS(50000); // exact 50 mS delay
+
+    // "Display On" command
+    APP_LCD_Cmd(0x3e + 1);
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
@@ -77,7 +97,6 @@ s32 APP_LCD_Init(u32 mode)
     if( MIOS32_BOARD_J15_PortInit(0) < 0 )
       return -2; // failed to initialize J15
 
-    // initialize LCD
     MIOS32_DELAY_Wait_uS(50000); // exact 50 mS delay
 
     // initialisation sequence based on EA-DOGL/M datasheet
@@ -108,11 +127,8 @@ s32 APP_LCD_Init(u32 mode)
     if( MIOS32_BOARD_J15_PortInit(0) < 0 )
       return -2; // failed to initialize J15
 
-#if APP_LCD_USE_J10_FOR_CS
-    int pin;
-    for(pin=0; pin<8; ++pin)
-      MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-#endif
+    // select all LCDs
+    MIOS32_BOARD_J15_DataSet(0x00);
 
     // initialize LCD
     APP_LCD_Cmd(0xa8); // Set MUX Ratio
@@ -154,7 +170,6 @@ s32 APP_LCD_Init(u32 mode)
   default: {
     // 0: J15 pins are configured in Push Pull Mode (3.3V)
     // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
-
     if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
       // DOG CLCD works at 3.3V, level shifting (and open drain mode) not required
       if( MIOS32_BOARD_J15_PortInit(0) < 0 )
@@ -224,6 +239,28 @@ s32 APP_LCD_Data(u8 data)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+    // determine chip select line(s)
+    APP_LCD_KS0108_SetCS(0); // select display depending on current X position
+
+    // wait until LCD unbusy, exit on error (timeout)
+    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+      // disable display
+      display_available &= ~(1 << mios32_lcd_device);
+      return -2; // timeout
+    }
+
+    // write data
+    MIOS32_BOARD_J15_DataSet(data);
+    MIOS32_BOARD_J15_RS_Set(1);
+    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
+    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+
+    // increment graphical cursor
+    // if end of display segment reached: set X position of all segments to 0
+    if( (++mios32_lcd_x & 0x3f) == 0x00 )
+      return APP_LCD_Cmd(0x40);
+
+    return 0; // no error
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
@@ -275,11 +312,7 @@ s32 APP_LCD_Data(u8 data)
       return -1; // invalid CS line
 
     // chip select and DC
-#if APP_LCD_USE_J10_FOR_CS
-    MIOS32_BOARD_J10_Set(~(1 << cs));
-#else
     MIOS32_BOARD_J15_DataSet(~(1 << cs));
-#endif
     MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
     // send data
@@ -335,6 +368,26 @@ s32 APP_LCD_Cmd(u8 cmd)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+    // determine chip select line(s)
+    APP_LCD_KS0108_SetCS(0); // select display depending on current X position
+
+    // wait until LCD unbusy, exit on error (timeout)
+    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+      // disable display
+      display_available &= ~(1 << mios32_lcd_device);
+      return -2; // timeout
+    }
+
+    // select all displays
+    APP_LCD_KS0108_SetCS(1);
+
+    // write command
+    MIOS32_BOARD_J15_DataSet(cmd);
+    MIOS32_BOARD_J15_RS_Set(0);
+    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
+    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+
+    return 0; // no error
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
@@ -350,11 +403,7 @@ s32 APP_LCD_Cmd(u8 cmd)
 
   case MIOS32_LCD_TYPE_GLCD_SSD1306: {
     // select all LCDs
-#if APP_LCD_USE_J10_FOR_CS
-    MIOS32_BOARD_J10_Set(0x00);
-#else
     MIOS32_BOARD_J15_DataSet(0x00);
-#endif
     MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
 
     MIOS32_BOARD_J15_SerDataShift(cmd);
@@ -394,6 +443,25 @@ s32 APP_LCD_Clear(void)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+    s32 error = 0;
+    int x, y;
+
+    // use default font
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+
+    for(y=0; y<(mios32_lcd_parameters.height/8); ++y) {
+      error |= MIOS32_LCD_CursorSet(0, y);
+      for(x=0; x<mios32_lcd_parameters.width; ++x)
+	error |= APP_LCD_Data(0x00);
+    }
+
+    // set Y0=0
+    error |= APP_LCD_Cmd(0xc0 + 0);
+
+    // set X=0, Y=0
+    error |= MIOS32_LCD_CursorSet(0, 0);
+
+    return error;
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
@@ -433,11 +501,7 @@ s32 APP_LCD_Clear(void)
       error |= MIOS32_LCD_CursorSet(0, y);
 
       // select all LCDs
-#if APP_LCD_USE_J10_FOR_CS
-      MIOS32_BOARD_J10_Set(0x00);
-#else
       MIOS32_BOARD_J15_DataSet(0x00);
-#endif
       MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
       for(x=0; x<mios32_lcd_parameters.width; ++x)
@@ -470,18 +534,11 @@ s32 APP_LCD_CursorSet(u16 column, u16 line)
 {
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
+  case MIOS32_LCD_TYPE_GLCD_DOG:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
     // mios32_lcd_x/y set by MIOS32_LCD_CursorSet() function
     return APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-    // mios32_lcd_x/y set by MIOS32_LCD_CursorSet() function
-    return APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-  } break;
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
@@ -509,6 +566,15 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+    s32 error = 0;
+
+    // set X position
+    error |= APP_LCD_Cmd(0x40 | (x & 0x3f));
+
+    // set Y position
+    error |= APP_LCD_Cmd(0xb8 | ((y>>3) & 0x7));
+
+    return error;
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
@@ -551,14 +617,11 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 {
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-  } break;
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
+  case MIOS32_LCD_TYPE_GLCD_DOG:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+    // TODO
+    break;
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
@@ -590,18 +653,6 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_BColourSet(u32 rgb)
 {
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-  } break;
-  }
-
   return -3; // not supported
 }
 
@@ -614,18 +665,6 @@ s32 APP_LCD_BColourSet(u32 rgb)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_FColourSet(u32 rgb)
 {
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-  } break;
-  }
-
   return -3; // not supported
 }
 
@@ -638,39 +677,16 @@ s32 APP_LCD_FColourSet(u32 rgb)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 {
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
+  if( x >= bitmap.width || y >= bitmap.height )
+    return -1; // pixel is outside bitmap
 
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
-    if( x >= bitmap.width || y >= bitmap.height )
-      return -1; // pixel is outside bitmap
+  // all GLCDs support the same bitmap scrambling
+  u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
+  u8 mask = 1 << (y % 8);
 
-    u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
-    u8 mask = 1 << (y % 8);
-
-    *pixel &= ~mask;
-    if( colour )
-      *pixel |= mask;
-
-    return 0; // no error
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-    if( x >= bitmap.width || y >= bitmap.height )
-      return -1; // pixel is outside bitmap
-
-    u8 *pixel = (u8 *)&bitmap.memory[bitmap.line_offset*(y / 8) + x];
-    u8 mask = 1 << (y % 8);
-
-    *pixel &= ~mask;
-    if( colour )
-      *pixel |= mask;
-
-    return 0; // no error
-  } break;
-  }
+  *pixel &= ~mask;
+  if( colour )
+    *pixel |= mask;
 
   return -3; // not supported
 }
@@ -684,73 +700,84 @@ s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 {
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-  } break;
+  if( !MIOS32_LCD_TypeIsGLCD() )
+    return -1; // no GLCD
 
-  case MIOS32_LCD_TYPE_GLCD_DOG: {
-    int line;
-    int y_lines = (bitmap.height >> 3);
+  // all GLCDs support the same bitmap scrambling
+  int line;
+  int y_lines = (bitmap.height >> 3);
 
-    for(line=0; line<y_lines; ++line) {
+  for(line=0; line<y_lines; ++line) {
 
-      // calculate pointer to bitmap line
-      u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
+    // calculate pointer to bitmap line
+    u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
 
-      // set graphical cursor after second line has reached
-      if( line > 0 ) {
-	mios32_lcd_x -= bitmap.width;
-	mios32_lcd_y += 8;
-	APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-      }
-
-      // transfer character
-      int x;
-      for(x=0; x<bitmap.width; ++x)
-	APP_LCD_Data(*memory_ptr++);
-    }
-
-    // fix graphical cursor if more than one line has been print
-    if( y_lines >= 1 ) {
-      mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
+    // set graphical cursor after second line has reached
+    if( line > 0 ) {
+      mios32_lcd_x -= bitmap.width;
+      mios32_lcd_y += 8;
       APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
     }
 
-    return 0; // no error
-  } break;
-
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
-    int line;
-    int y_lines = (bitmap.height >> 3);
-
-    for(line=0; line<y_lines; ++line) {
-
-      // calculate pointer to bitmap line
-      u8 *memory_ptr = bitmap.memory + line * bitmap.line_offset;
-
-      // set graphical cursor after second line has reached
-      if( line > 0 ) {
-	mios32_lcd_x -= bitmap.width;
-	mios32_lcd_y += 8;
-	APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-      }
-
-      // transfer bitmap
-      int x;
-      for(x=0; x<bitmap.width; ++x)
-	APP_LCD_Data(*memory_ptr++);
-    }
-
-    // fix graphical cursor if more than one line has been print
-    if( y_lines >= 1 ) {
-      mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
-      APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-    }
-
-    return 0; // no error
-  } break;
+    // transfer character
+    int x;
+    for(x=0; x<bitmap.width; ++x)
+      APP_LCD_Data(*memory_ptr++);
   }
 
-  return -3; // not supported
+  // fix graphical cursor if more than one line has been print
+  if( y_lines >= 1 ) {
+    mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
+    APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// Help Functions
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+// for KS0108 based LCDs:
+// set CS line depending on X cursor position
+// if "all" flag is set, commands are sent to all segments
+static void APP_LCD_KS0108_SetCS(u8 all)
+{
+  // determine polarity of CS pins
+  u8 level_active = (mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_KS0108_INVCS) ? 0 : 1;
+  u8 level_nonactive = level_active ? 0 : 1;
+
+  int cs;
+  // STM32: the 4 CS pins are available at J5C
+  // LPC17: the 4 CS pins are available at J28
+#if defined(MIOS32_FAMILY_STM32F10x)
+  if( all ) {
+    // set all chip select lines
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J5_PinSet(cs+8, level_active);
+  } else {
+    // set only one chip select line depending on X pos   
+    u8 sel_cs = (mios32_lcd_x >> 6) & 0x3;
+
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J5_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
+  }
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  if( all ) {
+    // set all chip select lines
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J28_PinSet(cs+8, level_active);
+  } else {
+    // set only one chip select line depending on X pos   
+    u8 sel_cs = (mios32_lcd_x >> 6) & 0x3;
+
+    for(cs=0; cs<4; ++cs)
+      MIOS32_BOARD_J28_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
+  }
+#else
+# warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"
+#endif
 }
