@@ -338,17 +338,17 @@ s32 SCS_EncButtonUpdate_Tick(void)
       }
     } else {
       displayLabelOn = 1;
-      if( ++displayCursorCtr < 800 ) {
-	displayCursorOn = 1;
-      } else if( displayCursorCtr == 800 ) {
+      if( ++displayCursorCtr == 1 ) { // displayCursorCtr will be set to 0 on any selection - flicker it for ca. 20 mS to mark the selection
 	displayCursorOn = 0;
 	displayUpdateReq = 1;
-      } else if( displayCursorCtr < 1000 ) {
-	displayCursorOn = 0;
-      } else {
-	displayCursorCtr = 0;
+      } else if( displayCursorCtr == 20 ) { // set cursor after 20 ticks
 	displayCursorOn = 1;
 	displayUpdateReq = 1;
+      } else if( displayCursorCtr == 820 ) { // clear cursor after 820 ticks
+	displayCursorOn = 0;
+	displayUpdateReq = 1;
+      } else if( displayCursorCtr >= 1000 ) { // reset to 1 (not 0!!!) after 1000 ticks
+	displayCursorCtr = 1;
       }
     }
   } else {
@@ -435,6 +435,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
     // reset cursor counter, so that parameter is visible
     displayCursorCtr = 0;
+    displayUpdateReq = 1;
 
   } break;
 
@@ -463,6 +464,7 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
     // reset cursor counter, so that parameter is visible
     displayCursorCtr = 0;
+    displayUpdateReq = 1;
   } break;
 
   case SCS_MENU_STATE_EDIT_IP: {

@@ -109,9 +109,9 @@ aout_if_t SEQ_CV_IfGet(void)
 
 
 // will return 8 characters
-const char* SEQ_CV_IfNameGet(void)
+const char* SEQ_CV_IfNameGet(aout_if_t if_type)
 {
-  return AOUT_IfNameGet(SEQ_CV_IfGet());
+  return AOUT_IfNameGet(if_type);
 }
 
 
@@ -366,15 +366,13 @@ s32 SEQ_CV_Update(void)
 #if defined(MIOS32_FAMILY_STM32F10x)
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
-    MIOS32_BOARD_J5_PinSet(10, gates & 1);
-    gates >>= 1;
-    MIOS32_BOARD_J5_PinSet(11, gates & 1);
+    MIOS32_BOARD_J5_PinSet(10, (last_gates & 0x40) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(11, (last_gates & 0x80) ? 1 : 0);
 #elif defined(MIOS32_FAMILY_LPC17xx)
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
-    MIOS32_BOARD_J28_PinSet(2, gates & 1);
-    gates >>= 1;
-    MIOS32_BOARD_J28_PinSet(3, gates & 1);
+    MIOS32_BOARD_J28_PinSet(2, (last_gates & 0x40) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(3, (last_gates & 0x80) ? 1 : 0);
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif

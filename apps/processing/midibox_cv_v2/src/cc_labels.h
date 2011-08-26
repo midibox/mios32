@@ -1,6 +1,6 @@
-// $Id$
+// $Id: cc_labels.h 1244 2011-07-09 19:03:08Z tk $
 /*
- * Header file for MIDIbox CV MIDI functions
+ * Header file for CC label array
  *
  * ==========================================================================
  *
@@ -11,14 +11,17 @@
  * ==========================================================================
  */
 
-#ifndef _MBCV_MIDI_H
-#define _MBCV_MIDI_H
+#ifndef _CC_LABELS_H
+#define _CC_LABELS_H
 
-#include "mbcv_patch.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
+
+#define CC_LABELS_NUM   128 // for CC0..127
+#define CC_LABELS_WIDTH  17 // 8 characters + \0 terminator
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -29,25 +32,11 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MBCV_MIDI_Init(u32 mode);
-
-extern s32 MBCV_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t package);
-
+extern s32 CC_LABELS_Init(u32 mode);
+extern const char *CC_LABELS_Get(u8 cc);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 mbcv_midi_dout_gate_sr[MIOS32_SRIO_NUM_SR];
-
-extern u32 mbcv_midi_gates; // prepared for up to 32 channels
-extern u8  mbcv_midi_gateclr_ctr[MBCV_PATCH_NUM_CV];
-
-extern u8  mbcv_midi_note[MBCV_PATCH_NUM_CV];
-extern u8  mbcv_midi_velocity[MBCV_PATCH_NUM_CV];
-extern u8  mbcv_midi_cc[MBCV_PATCH_NUM_CV];
-extern u16 mbcv_midi_nrpn[MBCV_PATCH_NUM_CV];
-extern u8  mbcv_midi_aftertouch[MBCV_PATCH_NUM_CV];
-extern s16 mbcv_midi_pitch[MBCV_PATCH_NUM_CV];
-
-#endif /* _MBCV_MIDI_H */
+#endif /* _CC_LABELS_H */

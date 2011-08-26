@@ -372,11 +372,11 @@ s32 AOUT_IF_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
 static const char if_name[AOUT_NUM_IF][9] = {
-  "  none  ",
-  "  AOUT  ",
-  "AOUT_LC ",
-  "AOUT_NG ",
-  " INTDAC ",
+  "none", // note: don't add spaces! this string is used for parsing as well
+  "AOUT",
+  "AOUT_LC",
+  "AOUT_NG",
+  "INTDAC",
 };
 const char* AOUT_IfNameGet(aout_if_t if_type)
 {

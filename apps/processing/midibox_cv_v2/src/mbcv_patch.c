@@ -29,15 +29,15 @@
 /////////////////////////////////////////////////////////////////////////////
 
 mbcv_patch_cv_entry_t mbcv_patch_cv[MBCV_PATCH_NUM_CV] = {
-  // ports  chn mode prange split l/u   +oct +semi    CC
-  { 0x1011,  1, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  2, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  3, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  4, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  5, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  6, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  7, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  8, 0x10,   2,  0x00, 0x7f, 0x00, 0x00, 0x10 },
+  // ports  chn mode  split l/u   +oct +semi    CC
+  { 0x1011,  1, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  2, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  3, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  4, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  5, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  6, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  7, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
+  { 0x1011,  8, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
 };
 
 mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER] = {
@@ -74,6 +74,8 @@ mbcv_patch_cfg_t mbcv_patch_cfg = {
   .ext_clk_divider = 16, // 24 ppqn
   .ext_clk_pulsewidth = 1,
 };
+
+u8 mbcv_patch_gateclr_cycles = 3; // 3 mS
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,11 +123,11 @@ u8 MBCV_PATCH_ReadByte(u16 addr)
     switch( addr >> 3 ) {
     case 0x01: return mbcv_patch_cv[cv].chn ? (mbcv_patch_cv[cv].chn - 1) : 16; // normaly 0..16 (0 disables channel) - for patch compatibility we take 16 to disable channel
     case 0x02: return mbcv_patch_cv[cv].midi_mode.ALL;
-    case 0x03: return mbcv_patch_cv[cv].pitchrange;
+    case 0x03: return MBCV_MAP_PitchRangeGet(cv);
     case 0x04: return mbcv_patch_cv[cv].split_l;
     case 0x05: return mbcv_patch_cv[cv].split_u;
-    case 0x06: return mbcv_patch_cv[cv].transpose_oct;
-    case 0x07: return mbcv_patch_cv[cv].transpose_semi;
+    case 0x06: return (mbcv_patch_cv[cv].transpose_oct >= 0) ? mbcv_patch_cv[cv].transpose_oct : (16+mbcv_patch_cv[cv].transpose_oct);
+    case 0x07: return (mbcv_patch_cv[cv].transpose_semi >= 0) ? mbcv_patch_cv[cv].transpose_semi : (16+mbcv_patch_cv[cv].transpose_semi);
     case 0x08: return mbcv_patch_cv[cv].cc_number;
     case 0x09: return MBCV_MAP_CurveGet(cv);
     case 0x0a: return MBCV_MAP_SlewRateGet(cv); // TODO: conversion to old format
@@ -161,11 +163,11 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
     switch( addr >> 3 ) {
     case 0x01: mbcv_patch_cv[cv].chn = (byte < 16) ? (byte+1) : 0; return 0;
     case 0x02: mbcv_patch_cv[cv].midi_mode.ALL = byte; return 0;
-    case 0x03: mbcv_patch_cv[cv].pitchrange = byte; return 0;
+    case 0x03: MBCV_MAP_PitchRangeSet(cv, byte); return 0;
     case 0x04: mbcv_patch_cv[cv].split_l = byte; return 0;
     case 0x05: mbcv_patch_cv[cv].split_u = byte; return 0;
-    case 0x06: mbcv_patch_cv[cv].transpose_oct = byte; return 0;
-    case 0x07: mbcv_patch_cv[cv].transpose_semi = byte; return 0;
+    case 0x06: if( byte < 8 ) mbcv_patch_cv[cv].transpose_oct = byte; else mbcv_patch_cv[cv].transpose_oct = 7 - (int)byte; return 0;
+    case 0x07: if( byte < 8 ) mbcv_patch_cv[cv].transpose_semi = byte; else mbcv_patch_cv[cv].transpose_semi = 7 - (int)byte; return 0;
     case 0x08: mbcv_patch_cv[cv].cc_number = byte; return 0;
     case 0x09: MBCV_MAP_CurveSet(cv, byte); return 0;
     case 0x0a: MBCV_MAP_SlewRateSet(cv, byte); return 0; // TODO: conversion to old format

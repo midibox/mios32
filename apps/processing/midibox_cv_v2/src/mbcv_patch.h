@@ -23,12 +23,13 @@
 #define MBCV_PATCH_NUM_CV      8  // should be at least 8, and dividable by 8!
 #define MBCV_PATCH_NUM_ROUTER  16
 
-#define MBCV_PATCH_CV_MIDI_MODE_NOTE        0
-#define MBCV_PATCH_CV_MIDI_MODE_VELOCITY    1
-#define MBCV_PATCH_CV_MIDI_MODE_AFTERTOUCH  2
-#define MBCV_PATCH_CV_MIDI_MODE_CC          3
-#define MBCV_PATCH_CV_MIDI_MODE_NRPN        4
-#define MBCV_PATCH_CV_MIDI_MODE_PITCHBENDER 5
+#define MBCV_PATCH_CV_MIDI_EVENT_NUM         6
+#define MBCV_PATCH_CV_MIDI_EVENT_NOTE        0
+#define MBCV_PATCH_CV_MIDI_EVENT_VELOCITY    1
+#define MBCV_PATCH_CV_MIDI_EVENT_AFTERTOUCH  2
+#define MBCV_PATCH_CV_MIDI_EVENT_CC          3
+#define MBCV_PATCH_CV_MIDI_EVENT_NRPN        4
+#define MBCV_PATCH_CV_MIDI_EVENT_PITCHBENDER 5
 
 #define MBCV_PATCH_CV_CURVE_V_OCTAVE    0
 #define MBCV_PATCH_CV_CURVE_HZ_V        1
@@ -51,7 +52,7 @@ typedef union {
     u8 ALL;
   };
   struct {
-    u8 mode:4;
+    u8 event:4;
     u8 LEGATO:1;
     u8 POLY:1;
   };
@@ -61,11 +62,10 @@ typedef struct {
   u16 enabled_ports;
   u8 chn;
   mbcv_patch_midi_mode_t midi_mode;
-  u8 pitchrange;
   u8 split_l;
   u8 split_u;
-  u8 transpose_oct;
-  u8 transpose_semi;
+  s8 transpose_oct;
+  s8 transpose_semi;
   u8 cc_number;
 } mbcv_patch_cv_entry_t;
 
@@ -116,5 +116,7 @@ extern u32 mbcv_patch_router_mclk_in;
 extern u32 mbcv_patch_router_mclk_out;
 
 extern mbcv_patch_cfg_t        mbcv_patch_cfg;
+
+extern u8 mbcv_patch_gateclr_cycles;
 
 #endif /* _MBCV_PATCH_H */

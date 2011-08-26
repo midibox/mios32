@@ -37,6 +37,8 @@
 #include "mbcv_file_p.h"
 #include "mbcv_patch.h"
 
+#include "cc_labels.h"
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,6 +74,13 @@ static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 
+static void stringCCFull(u32 ix, u16 value, char *line1, char *line2)
+{
+  // print CC parameter on full screen (2x20)
+  sprintf(line1, "CC Assignment CV#%d  ", selectedCv+1);
+  sprintf(line2, "%s    (CC#%03d)", CC_LABELS_Get(value), value);
+}
+
 static void stringNote(u32 ix, u16 value, char *label)
 {
   const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
@@ -92,15 +101,45 @@ static void stringNote(u32 ix, u16 value, char *label)
 
 static void stringAoutIf(u32 ix, u16 value, char *label)
 {
-  char *name = MBCV_MAP_IfNameGet(); // 8 chars max
+  char *name = MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()); // 8 chars max
   if( ix == 0 ) {
     label[0] = ' ';
-    memcpy(label+1, (char *)(MBCV_MAP_IfNameGet()), 4);
+    memcpy(label+1, (char *)name, 4);
   } else {
-    memcpy(label, (char *)(MBCV_MAP_IfNameGet() + 4), 5);
+    memcpy(label, (char *)(name + 4), 5);
   }
   label[5] = 0;
 }
+
+static void stringCvMode(u32 ix, u16 value, char *label)
+{
+  static const char mode[8][6] = {
+    "Note ",
+    "Vel. ",
+    "Aft. ",
+    " CC  ",
+    "NRPN ",
+    "PBnd ",
+    "???? ",
+    "???? ",
+  };
+
+  sprintf(label, mode[value&7]);
+}
+
+static void stringCvPlayMode(u32 ix, u16 value, char *label)
+{
+  static const char playMode[4][6] = {
+    "Mono ",
+    "Leg. ",
+    "Poly ",
+    "???? ",
+  };
+
+  sprintf(label, playMode[value&3]);
+}
+
+static void stringCvTranspose(u32 ix, u16 value, char *label) { if( value >= 8 ) sprintf(label, " +%d  ", value-8); else sprintf(label, " -%d  ", 8-value); }
 
 static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CurveNameGet(selectedCv), 5); label[5] = 0; }
 static void stringCvCaliMode(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CaliNameGet(), 5); label[5] = 0; }
@@ -309,6 +348,63 @@ static void cvSet(u32 ix, u16 value)
   MBCV_MAP_CaliModeSet(selectedCv, MBCV_MAP_CaliModeGet()); // change calibration mode to new pin
 }
 
+static u16  cvChnGet(u32 ix)            { return mbcv_patch_cv[selectedCv].chn; }
+static void cvChnSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].chn = value; }
+
+static u16  cvEventGet(u32 ix)            { return mbcv_patch_cv[selectedCv].midi_mode.event; }
+static void cvEventSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].midi_mode.event = value; }
+
+static u16  cvPlayModeGet(u32 ix)
+{
+  return
+    (mbcv_patch_cv[selectedCv].midi_mode.LEGATO ? 1 : 0) |
+    (mbcv_patch_cv[selectedCv].midi_mode.POLY ? 2 : 0);
+}
+static void cvPlayModeSet(u32 ix, u16 value)
+{
+  mbcv_patch_cv[selectedCv].midi_mode.LEGATO = (value & 1) ? 1 : 0;
+  mbcv_patch_cv[selectedCv].midi_mode.POLY = (value & 2) ? 1 : 0;
+}
+
+static u16  cvInvGateGet(u32 ix)            { return (mbcv_patch_gate_inverted[selectedCv>>8] & (1 << (selectedCv&7))) ? 1 : 0; }
+static void cvInvGateSet(u32 ix, u16 value)
+{
+  if( value )
+    mbcv_patch_gate_inverted[selectedCv>>3] |= (1 << (selectedCv&7));
+  else
+    mbcv_patch_gate_inverted[selectedCv>>3] &= ~(1 << (selectedCv&7));
+}
+
+static u16  cvSplitLowerGet(u32 ix)            { return mbcv_patch_cv[selectedCv].split_l; }
+static void cvSplitLowerSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].split_l = value; }
+
+static u16  cvSplitUpperGet(u32 ix)            { return mbcv_patch_cv[selectedCv].split_u; }
+static void cvSplitUpperSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].split_u = value; }
+
+static u16  cvPitchRangeGet(u32 ix)            { return MBCV_MAP_PitchRangeGet(selectedCv); }
+static void cvPitchRangeSet(u32 ix, u16 value) { MBCV_MAP_PitchRangeSet(selectedCv, value); }
+
+static u16  cvTranspOctGet(u32 ix)            { return mbcv_patch_cv[selectedCv].transpose_oct + 8; }
+static void cvTranspOctSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].transpose_oct = (int)value - 8; }
+
+static u16  cvTranspSemiGet(u32 ix)            { return mbcv_patch_cv[selectedCv].transpose_semi + 8; }
+static void cvTranspSemiSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].transpose_semi = (int)value - 8; }
+
+static u16  cvCCGet(u32 ix)            { return mbcv_patch_cv[selectedCv].cc_number; }
+static void cvCCSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].cc_number = value; }
+
+static u16  cvPortGet(u32 ix)
+{
+  mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[selectedCv];
+  return (cv_cfg->enabled_ports >> ix) & 0x1;
+}
+static void cvPortSet(u32 ix, u16 value)
+{
+  mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[selectedCv];
+  cv_cfg->enabled_ports &= ~(1 << ix);
+  cv_cfg->enabled_ports |= ((value&1) << ix);
+}
+
 static u16  cvCurveGet(u32 ix)            { return MBCV_MAP_CurveGet(selectedCv); }
 static void cvCurveSet(u32 ix, u16 value) { MBCV_MAP_CurveSet(selectedCv, value); }
 
@@ -365,6 +461,42 @@ static void MSD_EnableReq(u32 enable)
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
+const scs_menu_item_t pageCV[] = {
+  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Chn  ", 0, 16,    cvChnGet,      cvChnSet,      selectNOP, stringDec0Dis, NULL),
+  SCS_ITEM("Mode ", 0, MBCV_PATCH_CV_MIDI_EVENT_NUM-1,    cvEventGet,     cvEventSet,     selectNOP, stringCvMode, NULL),
+  SCS_ITEM("Play ", 0, 2,     cvPlayModeGet, cvPlayModeSet, selectNOP, stringCvPlayMode, NULL),
+  SCS_ITEM("InvG ", 0, 1,     cvInvGateGet,  cvInvGateSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("SplL ", 0, 127,   cvSplitLowerGet,cvSplitLowerSet,selectNOP, stringNote, NULL),
+  SCS_ITEM("SplU ", 0, 127,   cvSplitUpperGet,cvSplitUpperSet,selectNOP, stringNote, NULL),
+  SCS_ITEM("PRng ", 0, 24,    cvPitchRangeGet,cvPitchRangeSet,selectNOP, stringDec, NULL),
+  SCS_ITEM("Oct. ", 0, 15,    cvTranspOctGet, cvTranspOctSet,selectNOP, stringCvTranspose, NULL),
+  SCS_ITEM("Semi ", 0, 15,    cvTranspSemiGet,cvTranspSemiSet,selectNOP,stringCvTranspose, NULL),
+  SCS_ITEM(" CC  ", 0, 127,   cvCCGet,        cvCCSet,       selectNOP,stringDec, stringCCFull),
+  SCS_ITEM("USB1 ", 0, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#if MIOS32_USB_MIDI_NUM_PORTS >= 2
+  SCS_ITEM("USB2 ", 1, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 3
+  SCS_ITEM("USB3 ", 2, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 4
+  SCS_ITEM("USB4 ", 3, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+  SCS_ITEM("IN1  ", 4, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+  SCS_ITEM("IN2  ", 5, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
+  SCS_ITEM("IN3  ", 6, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM("IN4  ", 7, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+#endif
+  SCS_ITEM("OSC1 ",12, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC2 ",13, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC3 ",14, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC4 ",15, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+};
+
 const scs_menu_item_t pageAOUT[] = {
   SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Curve", 0, MBCV_MAP_NUM_CURVES-1, cvCurveGet, cvCurveSet, selectNOP, stringCvCurve, NULL),
@@ -411,6 +543,7 @@ const scs_menu_item_t pageMON[] = {
 };
 
 const scs_menu_page_t rootMode0[] = {
+  SCS_PAGE(" CV  ", pageCV),
   SCS_PAGE("AOUT ", pageAOUT),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
@@ -599,7 +732,7 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       case SCS_PIN_SOFT2:
 	if( depressed )
 	  return 1;
-	// TODO
+	MBCV_MAP_ResetAllChannels();
 	SCS_Msg(SCS_MSG_L, 1000, "All Notes", "off!");
 	break;
 

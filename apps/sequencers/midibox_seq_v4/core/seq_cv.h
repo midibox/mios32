@@ -50,7 +50,7 @@ extern s32 SEQ_CV_Init(u32 mode);
 
 extern s32 SEQ_CV_IfSet(aout_if_t if_type);
 extern aout_if_t SEQ_CV_IfGet(void);
-extern const char* SEQ_CV_IfNameGet(void);
+extern const char* SEQ_CV_IfNameGet(aout_if_t if_type);
 
 extern s32 SEQ_CV_CurveSet(u8 cv, u8 curve);
 extern u8 SEQ_CV_CurveGet(u8 cv);
