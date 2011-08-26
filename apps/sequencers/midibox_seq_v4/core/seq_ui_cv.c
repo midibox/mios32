@@ -381,7 +381,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_MODULE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    SEQ_LCD_PrintString((char *)SEQ_CV_IfNameGet());
+    SEQ_LCD_PrintString((char *)SEQ_CV_IfNameGet(SEQ_CV_IfGet()));
   }
 
 
