@@ -49,6 +49,7 @@ s32 SEQ_CC_Init(u32 mode)
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;
     tcc->midi_port = DEFAULT;
+    tcc->event_mode = SEQ_EVENT_MODE_Note;
   }
 
   return 0; // no error

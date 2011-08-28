@@ -1,0 +1,184 @@
+##################################################
+# Setup File for Standard Frontpanel
+# $Id$
+##################################################
+
+
+##################################################
+# MIDI Remote Keyboard Function
+##################################################
+
+# The note number which activates the remote function
+# 96 = C-7 (by some MIDI monitors displayed as C-8)
+# 0 disables the remote keyboard function
+MIDI_REMOTE_KEY 96
+
+# The CC number which activates the remote function
+# (e.g. to control it with a footswitch)
+# Allowed numbers: 1-127 for CC#1..CC#127
+# 0 disables the function (default)
+MIDI_REMOTE_CC 0
+
+
+##################################################
+# Running status optimisation
+# Enabled by default, should be disabled if a MIDI
+# device connected to a MIDI port doesn't fully
+# comply to the MIDI specification.
+# Expects two parameters: port number and 0/1 to
+# disable/enable the optimisation.
+##################################################
+
+# OUT1 (MIDI1 port of MBHP_CORE_STM32 module)
+RS_OPTIMISATION 0x20 1
+
+# OUT2 (MIDI2 port of MBHP_CORE_STM32 module)
+RS_OPTIMISATION 0x21 1
+
+
+##################################################
+# Shift Register Setup
+##################################################
+
+# number of first and second DOUT row used for GP LEDs
+GP_DOUT_L_SR    3
+GP_DOUT_R_SR    7
+
+# DOUTs for first and second DOUT row used for position marker
+POS_DOUT_L_SR  2
+POS_DOUT_R_SR  6
+
+# DINs for first and second DIN row used for GP buttons
+GP_DIN_L_SR  3
+GP_DIN_R_SR  7
+
+# sets the debounce delay for low-quality buttons in mS
+# use low values for high quality buttons - this ensures best latency.
+# use higher values for lower quality buttons.
+# Recommended values:
+#   - 0   for high quality buttons (we used it many months w/o complaints)
+#   - 10 is the default
+#   - 20 for low-quality buttons
+DEBOUNCE_DELAY 10
+
+
+##################################################
+# CV and Gate/Trigger/Sync Setup
+##################################################
+
+# AOUT interface now selected in CV Configuration Menu and stored in MBSEQ_GC.V4T file
+# please scroll through the menu to find this page!
+
+# should J5A/B/C outputs be enabled (0: no, 1: yes, 2: yes, but in open drain mode)?
+#  - the 6 first AOUT gates will be forwarded to J5A/B
+#  - the remaining last 2 AOUT gates are available at J5C.A10 and J5C.A11 (LPC17: J28.WS and J28.MCLK)
+#  - DIN sync clock will be forwarded to J5C:A0 (LPC17: J28.SDA)
+#  - DIN sync start/stop will be forwarded to J5C:A1 (LPC17: J28.SC)
+#  - if open drain mode enabled (option 2), external pull-ups have to be connected to J5 pins
+#    (advantage: pin levels can be pulled to 5V)
+#
+# NEVER USE THIS TOGETHER WITH ANALOG POTS - IT WILL CAUSE A SHORT CIRCUIT!
+J5_ENABLED 1
+
+
+##################################################
+# LED assignments to DOUT pins
+# SR = 0: LED disabled
+# SR = 1..8:  directly forwarded to DOUT pin
+##################################################
+
+#               SR  Pin
+LED_BAR1         1   0
+LED_BAR2         1   1
+LED_BAR3         1   2
+LED_BAR4         1   3
+
+LED_SEQ1         1   4
+LED_SEQ2         1   5
+
+LED_LOAD         1   6
+LED_SAVE         1   7
+
+LED_COPY         5   0
+LED_PASTE        5   1
+LED_CLEAR        5   2
+LED_UNDO         5   3
+
+LED_MASTER       5   4
+LED_TAP_TEMPO    5   5
+LED_STOP         5   6
+LED_PLAY         5   7
+
+LED_PAUSE        0   0
+LED_METRONOME    0   0
+LED_EXT_RESTART  0   0
+
+LED_TRIGGER      4   0
+LED_LENGTH       4   1
+LED_PROGRESSION  4   2
+LED_GROOVE       4   3
+LED_ECHO         4   4
+LED_HUMANIZER    4   5
+LED_LFO          4   6
+LED_SCALE        4   7
+
+LED_MUTE         8   0
+LED_MIDICHN      8   1
+LED_REC_ARM      8   2
+LED_REC_STEP     8   3
+LED_REC_LIVE     8   4
+LED_REC_POLY     8   5
+LED_INOUT_FWD    8   6
+LED_TRANSPOSE    8   7
+
+
+
+##################################################
+# Button assignments to DIN pins
+# SR = 0: Button disabled
+# SR = 1..8:  directly triggered from DIN pin
+##################################################
+
+#                  SR  Pin
+BUTTON_BAR1         1   0
+BUTTON_BAR2         1   1
+BUTTON_BAR3         1   2
+BUTTON_BAR4         1   3
+
+BUTTON_SEQ1         1   4
+BUTTON_SEQ2         1   5
+
+BUTTON_LOAD         1   6
+BUTTON_SAVE         1   7
+
+BUTTON_COPY         5   0
+BUTTON_PASTE        5   1
+BUTTON_CLEAR        5   2
+BUTTON_UNDO         5   3
+
+BUTTON_MASTER       5   4
+BUTTON_TAP_TEMPO    5   5
+BUTTON_STOP         5   6
+BUTTON_PLAY         5   7
+
+BUTTON_PAUSE        0   0
+BUTTON_METRONOME    0   0
+BUTTON_EXT_RESTART  0   0
+
+BUTTON_TRIGGER      4   0
+BUTTON_LENGTH       4   1
+BUTTON_PROGRESSION  4   2
+BUTTON_GROOVE       4   3
+BUTTON_ECHO         4   4
+BUTTON_HUMANIZER    4   5
+BUTTON_LFO          4   6
+BUTTON_SCALE        4   7
+
+BUTTON_MUTE         8   0
+BUTTON_MIDICHN      8   1
+BUTTON_REC_ARM      8   2
+BUTTON_REC_STEP     8   3
+BUTTON_REC_LIVE     8   4
+BUTTON_REC_POLY     8   5
+BUTTON_INOUT_FWD    8   6
+BUTTON_TRANSPOSE    8   7

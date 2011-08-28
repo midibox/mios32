@@ -1,0 +1,3 @@
+arm-none-eabi-size project_build/project.elf
+   text	   data	    bss	    dec	    hex	filename
+ 270356	   1488	  63792	 335636	  51f14	project_build/project.elf

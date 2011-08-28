@@ -38,6 +38,7 @@
 #include "seq_par.h"
 #include "seq_layer.h"
 #include "seq_cc.h"
+#include "seq_record.h"
 #include "seq_midi_sysex.h"
 #include "seq_blm.h"
 
@@ -2460,7 +2461,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
   }
 
-  SEQ_LED_PinSet(seq_hwcfg_led.record, ui_page == SEQ_UI_PAGE_TRKREC);
+  SEQ_LED_PinSet(seq_hwcfg_led.record, seq_record_state.ENABLED);
   SEQ_LED_PinSet(seq_hwcfg_led.live, ui_page == SEQ_UI_PAGE_TRKLIVE);
 
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);

@@ -340,7 +340,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 {
-  if( ui_page != SEQ_UI_PAGE_TRKREC )
+  if( !seq_record_state.ENABLED )
     return -1; // not in recording page
 
   if( seq_record_options.STEP_RECORD )

@@ -40,6 +40,9 @@ extern s32 BLM_CHEAPO_PrepareCol(void);
 extern s32 BLM_CHEAPO_GetRow(void);
 extern s32 BLM_CHEAPO_ButtonHandler(void *_notify_hook);
 
+extern s32 BLM_CHEAPO_DebounceSet(u8 delay);
+extern s32 BLM_CHEAPO_DebounceGet(void);
+
 extern s32 BLM_CHEAPO_DOUT_PinSet(u32 pin, u32 value);
 extern s32 BLM_CHEAPO_DOUT_PinGet(u32 pin);
 extern s32 BLM_CHEAPO_DOUT_SRSet(u32 row, u8 value);
