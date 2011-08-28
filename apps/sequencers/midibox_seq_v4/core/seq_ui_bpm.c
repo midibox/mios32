@@ -77,8 +77,13 @@ static s32 resetTapTempo(void)
 // returns current timestamp
 static u32 tapTempoTimestamp(void)
 {
+#if 0
+  // Problem: LPC17 doesn't deliver a timestamp which is accurate enough... (only second resolution)
   mios32_sys_time_t t = MIOS32_SYS_TimeGet();
   return 1000*t.seconds + t.fraction_ms;
+#else
+  return seq_core_timestamp_ms;
+#endif
 }
 
 

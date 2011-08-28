@@ -38,7 +38,7 @@ typedef union {
 typedef union {
   u8 ALL;
   struct {
-    u8 spare:1;
+    u8 ENABLED:1;
   };
 } seq_record_state_t;
 

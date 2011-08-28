@@ -53,6 +53,9 @@ s32 BLM_CHEAPO_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+  // initialize J15 pins for open drain mode
+  MIOS32_BOARD_J15_PortInit(1);
+
   // initialize all J10 pins as inputs with internal Pull-Up
   int pin;
   for(pin=0; pin<8; ++pin)
@@ -190,6 +193,27 @@ s32 BLM_CHEAPO_ButtonHandler(void *_notify_hook)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the debounce delay
+//! \param[in] delay between 0..255 update cycles (usually mS)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 BLM_CHEAPO_DebounceSet(u8 delay)
+{
+  button_debounce_reload = delay;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the debounce delay
+//! \return delay between 0..255 update cycles (usually mS)
+/////////////////////////////////////////////////////////////////////////////
+s32 BLM_CHEAPO_DebounceGet(void)
+{
+  return button_debounce_reload;
 }
 
 

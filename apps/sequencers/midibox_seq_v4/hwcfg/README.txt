@@ -8,7 +8,7 @@ Copy one of these files into the root directory of the SD Card.
   - enable the Button/LED Matrix
   - etc.
 
-So long no SD Card is connected, or the file cannot be found, the
+As long as no SD Card is connected, or the file cannot be found, the
 standard V4 definitions will be used as documented in hwcfg/standard_v4/MBSEQ_HW.V4
 
 

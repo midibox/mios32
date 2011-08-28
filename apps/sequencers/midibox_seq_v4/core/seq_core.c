@@ -74,6 +74,8 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+u32 seq_core_timestamp_ms;
+
 seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
@@ -128,9 +130,11 @@ s32 SEQ_CORE_Init(u32 mode)
 {
   int i;
 
+  seq_core_timestamp_ms = 0;
   seq_core_trk_muted = 0;
   seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
   seq_core_options.ALL = 0;
+  seq_core_options.PASTE_CLR_ALL = 1;
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
   seq_core_global_scale = 0;
@@ -247,6 +251,8 @@ s32 SEQ_CORE_Init(u32 mode)
 s32 SEQ_CORE_Handler(void)
 {
   // handle requests
+
+  ++seq_core_timestamp_ms; // mS accurate timestamp
 
   u8 num_loops = 0;
   u8 again = 0;
@@ -406,6 +412,9 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 {
   ui_seq_pause = 0;
   seq_core_state.FIRST_CLK = 1;
+
+  // reset latched PB/CC values
+  SEQ_LAYER_ResetLatchedValues();
 
   int track;
   seq_core_trk_t *t = &seq_core_trk[0];

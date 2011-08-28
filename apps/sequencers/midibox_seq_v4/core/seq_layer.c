@@ -113,6 +113,13 @@ static const u8 seq_layer_preset_table_drum_notes[16] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
+// local variables
+/////////////////////////////////////////////////////////////////////////////
+static u8 pb_last_value[SEQ_CORE_NUM_TRACKS];
+static u8 cc_last_value[SEQ_CORE_NUM_TRACKS][16];
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LAYER_Init(u32 mode)
@@ -121,6 +128,8 @@ s32 SEQ_LAYER_Init(u32 mode)
   SEQ_PAR_Init(0);
   SEQ_TRG_Init(0);
   SEQ_CC_Init(0);
+
+  SEQ_LAYER_ResetLatchedValues();
 
   // copy preset into all tracks
   u8 track;
@@ -139,15 +148,33 @@ s32 SEQ_LAYER_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function clears the latched pitchbender and CC values
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_ResetLatchedValues(void)
+{
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    pb_last_value[track] = 0xff; // invalid value - PB value will be send in any case
+
+    int i;
+    for(i=0; i<16; ++i)
+      cc_last_value[track][i] = 0xff; // invalid value - CC value will be send in any case
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This function returns a string to the event mode name (5 chars)
 /////////////////////////////////////////////////////////////////////////////
 // Note: newer gcc versions don't allow to return a "const" parameter, therefore
 // this array is declared outside the SEQ_LAYER_GetEvntModeName() function
-static const char event_mode_str[5+1][6] = { "Note ", "Chord", " CC  ", "Drum ", " HQ  ", "?????" };
+static const char event_mode_str[6+1][7] = { "Note ", "Chord", " CC  ", "Drum ", " HQ  ", "Comb ", "?????" };
 
 const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode)
 {
-  if( event_mode < 5 )
+  if( event_mode < 6 )
     return event_mode_str[event_mode];
   else
     return event_mode_str[5];
@@ -263,34 +290,38 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     
     u8 gate = SEQ_TRG_GateGet(track, step, instrument);
     u8 velocity = 100; // default velocity
-    if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
-      if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
-	velocity = SEQ_PAR_Get(track, step, par_layer, instrument);
+    if( tcc->event_mode != SEQ_EVENT_MODE_Combined__Disabled ) {
+      if( (par_layer=tcc->link_par_layer_velocity) >= 0 ) {
+	if( insert_empty_notes || !(layer_muted & (1 << par_layer)) ) {
+	  velocity = SEQ_PAR_Get(track, step, par_layer, instrument);
+	  if( !insert_empty_notes && !gate )
+	    velocity = 0;
+	} else {
+	  if( !gate )
+	    velocity = 0;
+	}
+
+	if( handle_vu_meter )
+	  seq_layer_vu_meter[par_layer] = velocity | 0x80;
+      } else {
 	if( !insert_empty_notes && !gate )
 	  velocity = 0;
-      } else {
-	if( !gate )
-	  velocity = 0;
       }
-
-      if( handle_vu_meter )
-	seq_layer_vu_meter[par_layer] = velocity | 0x80;
-    } else {
-      if( !insert_empty_notes && !gate )
-	velocity = 0;
     }
 
     u8 length = 71; // default length
-    if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
-      if( (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
-	length = SEQ_PAR_Get(track, step, par_layer, instrument);
-	if( length > 95 )
-	  length = 95;
-	++length;
-      }
+    if( tcc->event_mode != SEQ_EVENT_MODE_Combined__Disabled ) {
+      if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
+	if( (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	  length = SEQ_PAR_Get(track, step, par_layer, instrument);
+	  if( length > 95 )
+	    length = 95;
+	  ++length;
+	}
 
-      if( handle_vu_meter )
-	seq_layer_vu_meter[par_layer] = length | 0x80;
+	if( handle_vu_meter )
+	  seq_layer_vu_meter[par_layer] = length | 0x80;
+      }
     }
 
     if( handle_vu_meter ) { // only for VU meters
@@ -334,6 +365,21 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  mios32_midi_package_t *p = &e->midi_package;
 	  u8 note = SEQ_PAR_Get(track, step, par_layer, instrument);
 
+	  if( tcc->event_mode == SEQ_EVENT_MODE_Combined__Disabled ) {
+	    if( (track&7) == 1 || (track&7) == 2)
+	      return 0; // assigned to velocity and length
+	  
+	    if( !insert_empty_notes && !gate )
+	      velocity = 0;
+	    else
+	      velocity = SEQ_PAR_Get(track+1, step, par_layer, instrument);
+
+	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument);
+	    if( length > 95 )
+	      length = 95;
+	    ++length;
+	  }
+
 	  if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
 	    note = 0;
 
@@ -360,6 +406,21 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
         case SEQ_PAR_Type_Chord: {
 	  u8 chord_value = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  int i;
+
+	  if( tcc->event_mode == SEQ_EVENT_MODE_Combined__Disabled ) {
+	    if( (track&7) == 1 || (track&7) == 2)
+	      return 0; // assigned to velocity and length
+	  
+	    if( !insert_empty_notes && !gate )
+	      velocity = 0;
+	    else
+	      velocity = SEQ_PAR_Get(track+1, step, par_layer, instrument);
+
+	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument);
+	    if( length > 95 )
+	      length = 95;
+	    ++length;
+	  }
 
 	  if( chord_value || insert_empty_notes ) {
 	    seq_layer_evnt_t e_proto;
@@ -406,6 +467,12 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
         case SEQ_PAR_Type_CC: {
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+	  // don't send CC if value hasn't changed
+	  if( value >= 0x80 || value == cc_last_value[track][par_layer] )
+	    break;
+	  cc_last_value[track][par_layer] = value;
 
 	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
 	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
@@ -414,7 +481,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    p->event    = CC;
 	    p->chn      = tcc->midi_chn;
 	    p->note     = tcc->lay_const[1*16 + par_layer];
-	    p->value    = SEQ_PAR_Get(track, step, par_layer, instrument);
+	    p->value    = value;
 	    e->len      = -1;
 	    e->layer_tag = par_layer;
 	    ++num_events;
@@ -434,13 +501,18 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  mios32_midi_package_t *p = &e->midi_package;
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
+	  // don't send pitchbender if value hasn't changed
+	  if( value >= 0x80 || value == pb_last_value[track] )
+	    break;
+	  pb_last_value[track] = value;
+
 	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
 	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
 	    p->type     = PitchBend;
 	    p->cable    = track;
 	    p->event    = PitchBend;
 	    p->chn      = tcc->midi_chn;
-	    p->evnt1    = value; // LSB (TODO: check if re-using the MSB is useful)
+	    p->evnt1    = (value == 0x40) ? 0x00 : value; // LSB
 	    p->evnt2    = value; // MSB
 	    e->len      = -1;
 	    e->layer_tag = par_layer;
@@ -624,6 +696,10 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
       }
     }
 
+    // if gate isn't set or MONO mode: start poly counter at 0 (remaining notes will be cleared)
+    if( !seq_record_options.POLY_RECORD || !SEQ_TRG_GateGet(track, step, instrument) )
+      t->rec_poly_ctr = 0;
+
     // go through all layers to search for matching event
     u8 note_ctr = 0;
     for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
@@ -649,7 +725,6 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 		  SEQ_PAR_Set(track, step, remaining_par_layer, instrument, 0x00);
 	      }
 	    }
-
 	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.note);
 
 	    // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
@@ -690,7 +765,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 
         case SEQ_PAR_Type_PitchBend: {
 	  if( layer_event.midi_package.event == PitchBend ) {
-	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt1); // MSB
+	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
 	    return par_layer;
 	  }
 	} break;
@@ -731,18 +806,33 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
     if( init_assignments ) {
       switch( event_mode ) {
         case SEQ_EVENT_MODE_Note:
-        case SEQ_EVENT_MODE_Chord: {
+        case SEQ_EVENT_MODE_Chord:
+        case SEQ_EVENT_MODE_Combined__Disabled: {
 	  // Trigger Layer Assignments
 	  for(i=0; i<8; ++i)
 	    SEQ_CC_Set(track, SEQ_CC_ASG_GATE+i, i+1);
 
 	  // Parameter Layer Assignments
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, (event_mode == SEQ_EVENT_MODE_Chord) ? SEQ_PAR_Type_Chord : SEQ_PAR_Type_Note);
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
-	  for(i=4; i<16; ++i)
-	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Note);
+	  if( event_mode == SEQ_EVENT_MODE_Combined__Disabled ) {
+	    if( (track&7) == 0 ) {
+	      for(i=0; i<16; ++i)
+		SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Note);
+	    } else if( (track&7) == 1 ) {
+	      for(i=0; i<16; ++i)
+		SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Velocity);
+	    } else if( (track&7) == 2 ) {
+	      for(i=0; i<16; ++i)
+		SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Length);
+	    }
+	  } else {
+	    // Parameter Layer Assignments
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1, (event_mode == SEQ_EVENT_MODE_Chord) ? SEQ_PAR_Type_Chord : SEQ_PAR_Type_Note);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A2, SEQ_PAR_Type_Velocity);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A3, SEQ_PAR_Type_Length);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A4, SEQ_PAR_Type_Roll);
+	    for(i=4; i<16; ++i)
+	      SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Note);
+	  }
 
 	  for(i=0; i<16; ++i)
 	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
@@ -804,7 +894,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
     switch( event_mode ) {
       case SEQ_EVENT_MODE_Note:
       case SEQ_EVENT_MODE_Chord:
-      case SEQ_EVENT_MODE_CC: {
+      case SEQ_EVENT_MODE_CC:
+      case SEQ_EVENT_MODE_Combined__Disabled: {
 	for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
         } break;
@@ -840,6 +931,10 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	SEQ_TRG_Set8(track, step8, layer, instrument, 0xff);
     } else if( event_mode == SEQ_EVENT_MODE_HQ ) {
       // HQ: no trigger set
+      for(step8=0; step8<(num_t_steps/8); ++step8)
+	SEQ_TRG_Set8(track, step8, layer, instrument, 0x00);
+    } else if( event_mode == SEQ_EVENT_MODE_Combined__Disabled ) {
+      // Combined: clear all gates
       for(step8=0; step8<(num_t_steps/8); ++step8)
 	SEQ_TRG_Set8(track, step8, layer, instrument, 0x00);
     } else {

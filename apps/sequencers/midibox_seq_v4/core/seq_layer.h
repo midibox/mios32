@@ -35,7 +35,8 @@ typedef enum {
   SEQ_EVENT_MODE_Chord,
   SEQ_EVENT_MODE_CC,
   SEQ_EVENT_MODE_Drum,
-  SEQ_EVENT_MODE_HQ
+  SEQ_EVENT_MODE_HQ,
+  SEQ_EVENT_MODE_Combined__Disabled, // MBSEQV4L only
 } seq_event_mode_t;
 
 
@@ -44,6 +45,8 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_LAYER_Init(u32 mode);
+
+extern s32 SEQ_LAYER_ResetLatchedValues(void);
 
 extern const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode);
 

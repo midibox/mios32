@@ -448,6 +448,9 @@ static s32 EXIT_Handler(void)
     MUTEX_SDCARD_GIVE;
   }
 
+  // disable recording
+  seq_record_state.ENABLED = 0;
+
   return status;
 }
 
@@ -465,6 +468,9 @@ s32 SEQ_UI_TRKREC_Init(u32 mode)
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   store_file_required = 0;
+
+  // enable recording
+  seq_record_state.ENABLED = 1;
 
   return 0; // no error
 }
