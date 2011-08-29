@@ -100,7 +100,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   switch( button ) {
     case SEQ_UI_BUTTON_Select: {
       // Request synch to measure for all selected tracks
-      SEQ_CORE_ManualSynchToMeasure();
+      SEQ_CORE_ManualSynchToMeasure(ui_selected_tracks);
       return 1;
     } break;
 

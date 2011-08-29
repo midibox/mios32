@@ -43,6 +43,17 @@ typedef enum {
 
 
 typedef struct {
+  u8 including_cc;
+  u8 steps_forward;
+  u8 steps_jump_back;
+  u8 steps_replay;
+  u8 steps_repeat;
+  u8 steps_skip;
+  u8 steps_rs_interval;
+} seq_ui_pages_progression_presets_t;
+
+
+typedef struct {
   u8 repeats;
   u8 delay;
   u8 velocity;
@@ -69,6 +80,7 @@ extern s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed);
 
 extern seq_ui_page_t ui_page;
 
+extern seq_ui_pages_progression_presets_t seq_ui_pages_progression_presets[16];
 extern seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16];
 
 #endif /* _SEQ_PAGES_H */

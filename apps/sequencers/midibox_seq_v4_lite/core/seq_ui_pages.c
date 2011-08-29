@@ -37,6 +37,26 @@ seq_ui_page_t ui_page;
 // presets (stored on SD Card)
 /////////////////////////////////////////////////////////////////////////////
 
+seq_ui_pages_progression_presets_t seq_ui_pages_progression_presets[16] = {
+  // +CC  forward  jmpbck  replay  repeat  skip  rs_interval
+  {    0,    1,      0,       0,     0,      0,       4     }, // GP#1 (off) -- also syncs to measure
+  {    0,    4,      2,       0,     0,      0,       4     }, // GP#2
+  {    0,    8,      4,       0,     0,      0,       4     }, // GP#3
+  {    0,    8,      2,       1,     0,      0,       4     }, // GP#4
+  {    0,    5,      2,       0,     0,      0,       4     }, // GP#5
+  {    0,    5,      3,       0,     0,      0,       4     }, // GP#6
+  {    0,    2,      3,       0,     0,      0,       4     }, // GP#7
+  {    0,    2,      5,       0,     0,      0,       4     }, // GP#8
+  {    0,    1,      0,       0,     1,      0,       4     }, // GP#9
+  {    0,    1,      0,       0,     2,      0,       4     }, // GP#10
+  {    0,    1,      0,       0,     1,      0,       8     }, // GP#11
+  {    0,    1,      0,       0,     2,      0,       8     }, // GP#12
+  {    0,    1,      0,       0,     0,      1,       4     }, // GP#13
+  {    0,    1,      0,       0,     0,      2,       4     }, // GP#14
+  {    0,    1,      0,       0,     0,      1,       8     }, // GP#15
+  {    0,    1,      0,       0,     0,      2,       8     }, // GP#16
+};
+
 seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
   // repeats  delay  velocity  fb_velocity  fb_note  fb_gatelength  fb_ticks
   {     0,      7,      15,        15,        24,          20,        20     }, // GP#1 (off)
@@ -62,6 +82,7 @@ seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 ui_selected_progression_preset;
 static u8 ui_selected_echo_preset;
 
 
@@ -153,10 +174,34 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_PROGRESSION: {
+    // check if selection still valid
+    if( check_100mS_ctr == 0 ) {
+      seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+      seq_ui_pages_progression_presets_t *preset = (seq_ui_pages_progression_presets_t *)&seq_ui_pages_progression_presets[0];
+      int i;
+      for(i=0; i<16; ++i, ++preset) {
+	if( ((u8)tcc->steps_forward+1) == preset->steps_forward &&
+	    tcc->steps_jump_back == preset->steps_jump_back &&
+	    tcc->steps_replay == preset->steps_replay &&
+	    tcc->steps_repeat == preset->steps_repeat &&
+	    tcc->steps_skip == preset->steps_skip &&
+	    tcc->steps_rs_interval == preset->steps_rs_interval ) {
+	  ui_selected_echo_preset = i;
+	  break;
+	}
+      }
+    }
+
+    return (1 << ui_selected_progression_preset);
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_GROOVE: {
+    u8 groove_style = SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_STYLE);
+    if( groove_style < 8 || groove_style > 22 )
+      return 0x0001; // off resp. non-selectable value
+    else // note: starting at second custom groove, the first groove is always "off"
+      return (1 << (groove_style-8+1));
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -289,6 +334,20 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
+    ui_selected_progression_preset = button;
+    seq_ui_pages_progression_presets_t *preset = (seq_ui_pages_progression_presets_t *)&seq_ui_pages_progression_presets[ui_selected_progression_preset];
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_FORWARD, (preset->steps_forward > 0) ? (preset->steps_forward-1) : 0);
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_JMPBCK, preset->steps_jump_back);
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_REPLAY, preset->steps_replay);
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_REPEAT, preset->steps_repeat);
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_SKIP, preset->steps_skip);
+    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_RS_INTERVAL, preset->steps_rs_interval);
+
+    // GP1 also requests synch to measure
+    // it's a good idea to do this for all tracks so that both sequences are in synch again
+    if( button == 0 )
+      SEQ_CORE_ManualSynchToMeasure(0xffff);
+
     portEXIT_CRITICAL();
     return 0;
   } break;
@@ -298,6 +357,12 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
+    // first button turns off groove function
+    // remaining buttons select custom groove #1..15
+    u8 groove_style = 0;
+    if( button > 0 ) // note: starting at second custom groove, the first groove is always "off"
+      groove_style = button+8-1;
+    SEQ_UI_CC_Set(SEQ_CC_GROOVE_STYLE, groove_style);
     portEXIT_CRITICAL();
     return 0;
   } break;

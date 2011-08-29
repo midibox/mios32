@@ -499,7 +499,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       // release pause mode
       ui_seq_pause = 0;
       // TK: this makes sense! Request synch-to-measure for all tracks so that they restart properly
-      SEQ_CORE_ManualSynchToMeasure();
+      SEQ_CORE_ManualSynchToMeasure(0xffff);
     }
   }
 
@@ -1710,16 +1710,16 @@ s32 SEQ_CORE_ManualTrigger(u8 step)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Manually requests synch to measure for all selected tracks
+// Manually requests synch to measure for given tracks
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_ManualSynchToMeasure(void)
+s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks)
 {
   MIOS32_IRQ_Disable();
 
   u8 track;
   seq_core_trk_t *t = &seq_core_trk[0];
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t)
-    if( SEQ_UI_IsSelectedTrack(track) )
+    if( tracks & (1 << track) )
       t->state.SYNC_MEASURE = 1;
 
   MIOS32_IRQ_Enable();

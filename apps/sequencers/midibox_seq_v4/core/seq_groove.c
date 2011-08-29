@@ -95,18 +95,131 @@ const seq_groove_entry_t seq_groove_presets[SEQ_GROOVE_NUM_PRESETS] = {
 // custom groove templates are read from MBSEQ_G.V4 file which is located on SD Card
 seq_groove_entry_t seq_groove_templates[SEQ_GROOVE_NUM_TEMPLATES];
 
+// here some useful presets
+const seq_groove_entry_t seq_groove_templates_presets[SEQ_GROOVE_NUM_TEMPLATES] = {
+  { "Custom #1   ", // first one should be "empty" (no groove)
+    4, // Number of Steps
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #2   ",
+    4, // Number of Steps
+    {    0,    6,    0,    6,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #3   ",
+    4, // Number of Steps
+    {    0,   12,    0,   12,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #4   ",
+    4, // Number of Steps
+    {    0,   24,    0,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #5   ",
+    4, // Number of Steps
+    {    0,    0,    6,    6,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #6   ",
+    4, // Number of Steps
+    {    0,    0,   12,   12,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #7   ",
+    4, // Number of Steps
+    {    0,    0,   24,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #8   ",
+    4, // Number of Steps
+    {    0,   24,   24,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,  -12,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #9   ",
+    4, // Number of Steps
+    {    0,    6,    0,    6,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,  -16,    0,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #10  ",
+    4, // Number of Steps
+    {    0,   12,    0,   12,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,  -16,    0,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #11  ",
+    4, // Number of Steps
+    {    0,   24,    0,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,  -16,    0,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #12  ",
+    4, // Number of Steps
+    {    0,    0,    6,    6,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,  -16,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #13  ",
+    4, // Number of Steps
+    {    0,    0,   12,   12,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,  -16,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #14  ",
+    4, // Number of Steps
+    {    0,    0,   24,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,    0,  -16,   -8,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #15  ",
+    4, // Number of Steps
+    {    0,   24,   24,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,  -16,   -8,  -16,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+  { "Custom #16  ",
+    4, // Number of Steps
+    {    0,   24,    6,   24,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Delay
+    {    0,  -48,  -30,  -16,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Gatelength
+    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 }, // Velocity
+  },
+
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_GROOVE_Init(u32 mode)
 {
-  u8 groove;
-
-  // initialise custom templates with dummy template
+  // initialise custom templates with presets
   // will be loaded from SD Card in SEQ_FILE_G
-  for(groove=0; groove<SEQ_GROOVE_NUM_TEMPLATES; ++groove)
-    SEQ_GROOVE_Clear(SEQ_GROOVE_NUM_PRESETS + groove);
+  memcpy(seq_groove_templates, seq_groove_templates_presets, sizeof(seq_groove_templates));
 
   return 0; // no error
 }
