@@ -11,6 +11,7 @@
 //! \code
 //! // optionally these 8 pins can be re-assigned
 //! // note that you could also assign them to global variables for soft-configuration!
+//! // Encoder pins can be disabled by setting value 255 (use SCS_PIN_DEC/INC in this case)
 //! #define SCS_PIN_ENC_MENU_A 0
 //! #define SCS_PIN_ENC_MENU_B 1
 //! #define SCS_PIN_EXIT       2
@@ -25,6 +26,22 @@
 //! #define SCS_PIN_SOFT9      11 // optional if SCS_NUM_MENU_ITEMS >= 9
 //! #define SCS_PIN_SOFT10     12 // optional if SCS_NUM_MENU_ITEMS >= 10
 //! 
+//! // if set to 1, the menu handler doesn't require a soft button
+//! // instead, items are selected with the rotary encoder, and the selection is
+//! // confirmed with a "SELECT" button (button connected to SCS_PIN_SOFT1)
+//! // The remaining SOFT buttons have no function!
+//! #define SCS_MENU_NO_SOFT_BUTTON_MODE 0
+//!
+//! // Optional Inc/Dec button (e.g. as encoder replacement)
+//! // it's save to assign them to the same pins like the encoder (SCS_PIN_ENC_MENU_A and SCS_PIN_ENC_MENU_B)
+//! // in order to use the DEC/INC pins, either disable the encoder by assigning SCS_PIN_ENC to invalid values
+//! // (e.g. 255), or set SCS_PIN_* to free pins
+//! //
+//! // the optional DEC button
+//! #define SCS_PIN_DEC 0
+//! // the optional INC button
+//! #define SCS_PIN_INC 1
+//!
 //! // encoder id which is used for MIOS32_ENC
 //! #define SCS_ENC_MENU_ID 0
 //!
@@ -292,6 +309,7 @@ s32 SCS_AllPinsGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_EncButtonUpdate_Tick(void)
 {
+#if SCS_PIN_ENC_MENU_A < 255 && SCS_PIN_ENC_MENU_B < 255
   // pass state of encoder to MIOS32_ENC
   u8 encoderState = 0;
   u16 maskEncA = (1 << SCS_PIN_ENC_MENU_A);
@@ -305,6 +323,7 @@ s32 SCS_EncButtonUpdate_Tick(void)
 
   // ensure that change won't be propagated to DIN handler
   scsPinState &= ~(maskEncA | maskEncB);
+#endif
 
   // no state update required for buttons (done from external)
 
@@ -318,6 +337,10 @@ s32 SCS_EncButtonUpdate_Tick(void)
   // cursor timer handling is done here
   // it's only used if an item is edited
   if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM ||
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      scsMenuState == SCS_MENU_STATE_SELECT_PAGE ||
+      scsMenuState == SCS_MENU_STATE_INSIDE_PAGE ||
+#endif
       scsMenuState == SCS_MENU_STATE_EDIT_STRING ||
       scsMenuState == SCS_MENU_STATE_EDIT_IP ||
       scsMenuState == SCS_MENU_STATE_EDIT_BROWSER ) {
@@ -387,6 +410,30 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
   switch( scsMenuState ) {
   case SCS_MENU_STATE_SELECT_PAGE: {
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+    // move cursor with encoder
+    // if border is reached, move offset as usual
+    int newCursorPos = displayCursorPos + incrementer;
+    int pageOffsetIncrementer = 0;
+    if( newCursorPos < 0 ) {
+      newCursorPos = 0;
+      pageOffsetIncrementer = -1;
+    } else if( newCursorPos >= SCS_NUM_MENU_ITEMS ) {
+      newCursorPos = SCS_NUM_MENU_ITEMS-1;
+      pageOffsetIncrementer = 1;
+    } else if( newCursorPos >= rootTableNumItems ) {
+      newCursorPos = rootTableNumItems-1;
+      pageOffsetIncrementer = 0; // NOP
+    }
+
+    if( displayCursorPos != newCursorPos ) {
+      // flicker menu item for 200 mS
+      displayFlickerSelectionCtr = 200;
+    }
+      
+    displayCursorPos = newCursorPos;
+    incrementer = pageOffsetIncrementer;
+#endif
     int newOffset = displayRootOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
@@ -402,6 +449,31 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     if( rootTableSelectedPage >= rootTableNumItems )
       return -1; // fail safe
     scs_menu_page_t *selectedPage = (scs_menu_page_t *)&rootTable[rootTableSelectedPage];
+
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+    // move cursor with encoder
+    // if border is reached, move offset as usual
+    int newCursorPos = displayCursorPos + incrementer;
+    int pageOffsetIncrementer = 0;
+    if( newCursorPos < 0 ) {
+      newCursorPos = 0;
+      pageOffsetIncrementer = -1;
+    } else if( newCursorPos >= SCS_NUM_MENU_ITEMS ) {
+      newCursorPos = SCS_NUM_MENU_ITEMS-1;
+      pageOffsetIncrementer = 1;
+    } else if( newCursorPos >= selectedPage->numItems ) {
+      newCursorPos = selectedPage->numItems - 1;
+      pageOffsetIncrementer = 0; // NOP
+    }
+
+    if( displayCursorPos != newCursorPos ) {
+      // flicker menu item for 200 mS
+      displayFlickerSelectionCtr = 200;
+    }
+      
+    displayCursorPos = newCursorPos;
+    incrementer = pageOffsetIncrementer;
+#endif
 
     int newOffset = displayPageOffset + incrementer;
     if( newOffset < 0 )
@@ -562,9 +634,19 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     return 1;
   }
 
-  switch( pin ) {
-  case SCS_PIN_EXIT: {
+  // note: don't usw switch() here to allow soft-assignments (SCS_PIN_xxx can optionally reference global variables)
 
+  if( pin == SCS_PIN_DEC ) {
+    if( !depressed )
+      return 0;
+    return SCS_ENC_MENU_NotifyChange(-1);
+
+  } else if( pin == SCS_PIN_INC ) {
+    if( !depressed )
+      return 0;
+    return SCS_ENC_MENU_NotifyChange(1);
+
+  } else if( pin == SCS_PIN_EXIT ) {
     if( depressed ) {
       // deinstall callback if it was active
       scsDelayedActionCallback = 0;
@@ -575,12 +657,18 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     case SCS_MENU_STATE_SELECT_PAGE: {
       scsMenuState = SCS_MENU_STATE_MAINPAGE;
       displayInitReq = 1;
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      displayCursorPos = 0;
+#endif
       scsMsgCtr = 0; // disable message
     } break;
     case SCS_MENU_STATE_INSIDE_PAGE: {
       scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
       displayInitReq = 1;
       scsMsgCtr = 0; // disable message
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      displayCursorPos = 0;
+#endif
     } break;
     case SCS_MENU_STATE_EDIT_ITEM: {
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
@@ -608,18 +696,33 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     }
     SCS_ENC_MENU_AutoSpeedSet(1); // slow speed..
     displayUpdateReq = 1;
-  } break;
-  case SCS_PIN_SOFT1:  softButton = 0; break; // (allows pin mapping)
-  case SCS_PIN_SOFT2:  softButton = 1; break;
-  case SCS_PIN_SOFT3:  softButton = 2; break;
-  case SCS_PIN_SOFT4:  softButton = 3; break;
-  case SCS_PIN_SOFT5:  softButton = 4; break;
-  case SCS_PIN_SOFT6:  softButton = 5; break;
-  case SCS_PIN_SOFT7:  softButton = 6; break;
-  case SCS_PIN_SOFT8:  softButton = 7; break;
-  case SCS_PIN_SOFT9:  softButton = 8; break;
-  case SCS_PIN_SOFT10: softButton = 9; break;
-  default:
+
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+  } else if( pin == SCS_PIN_SOFT1 ) {
+    softButton = 0; // SELECT button
+#else
+  } else if( pin == SCS_PIN_SOFT1 ) {
+    softButton = 0;
+  } else if( pin == SCS_PIN_SOFT2 ) {
+    softButton = 1;
+  } else if( pin == SCS_PIN_SOFT3 ) {
+    softButton = 2;
+  } else if( pin == SCS_PIN_SOFT4 ) {
+    softButton = 3;
+  } else if( pin == SCS_PIN_SOFT5 ) {
+    softButton = 4;
+  } else if( pin == SCS_PIN_SOFT6 ) {
+    softButton = 5;
+  } else if( pin == SCS_PIN_SOFT7 ) {
+    softButton = 6;
+  } else if( pin == SCS_PIN_SOFT8 ) {
+    softButton = 7;
+  } else if( pin == SCS_PIN_SOFT9 ) {
+    softButton = 8;
+  } else if( pin == SCS_PIN_SOFT10 ) {
+    softButton = 9;
+#endif
+  } else {
     return -1; // unsupported pin
   }
 
@@ -634,11 +737,19 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     switch( scsMenuState ) {
     case SCS_MENU_STATE_SELECT_PAGE: {
       int newPage = displayRootOffset + softButton;
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      newPage += displayCursorPos;
+#endif
       if( newPage < rootTableNumItems ) {
+#if !SCS_MENU_NO_SOFT_BUTTON_MODE
 	displayCursorPos = softButton;
+#endif
 	rootTableSelectedPage = newPage;
 	displayPageOffset = 0; // optionally we got store the last offset somewhere?
 	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+	displayCursorPos = 0;
+#endif
 	displayInitReq = 1;
       }
     } break;
@@ -653,12 +764,18 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       }
 
       int itemPos = displayPageOffset + softButton;
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      itemPos += displayCursorPos;
+#endif
+
       if( itemPos < numItems ) {
 	scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[itemPos];
 
 	// edit item if maxValue > SCS_MENU_ITEM_TOGGLE_THRESHOLD
 	if( !pageItem->maxValue || pageItem->maxValue >= SCS_MENU_ITEM_TOGGLE_THRESHOLD ) {
+#if !SCS_MENU_NO_SOFT_BUTTON_MODE
 	  displayCursorPos = softButton;
+#endif
 	  rootTableSelectedItem = itemPos;
 
 	  if( scsMenuState == SCS_MENU_STATE_INSIDE_PAGE ) {
@@ -912,7 +1029,11 @@ s32 SCS_Tick(void)
 	int i;
 	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	  u8 page = displayRootOffset + i;
-	  if( page >= rootTableNumItems )
+	  if( page >= rootTableNumItems
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+	      || (page == (displayRootOffset+displayCursorPos) && (!displayCursorOn || !displayLabelOn))
+#endif
+	      )
 	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	  else {
 	    SCS_LCD_PrintStringPadded(rootTable[page].name, SCS_MENU_ITEM_WIDTH);
@@ -989,6 +1110,9 @@ s32 SCS_Tick(void)
 	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	      u8 item = displayPageOffset + i;
 	      if( item >= numItems ||
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+		  (!editMode && (item == displayPageOffset+displayCursorPos) && (!displayCursorOn || !displayLabelOn)) ||
+#endif
 		  (editMode && item == rootTableSelectedItem && !displayLabelOn ) )
 		SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	      else {
