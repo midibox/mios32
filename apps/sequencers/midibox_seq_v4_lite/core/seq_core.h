@@ -212,7 +212,7 @@ extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_packa
 extern s32 SEQ_CORE_ResetTrkPosAll(void);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
-extern s32 SEQ_CORE_ManualSynchToMeasure(void);
+extern s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks);
 
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 

@@ -169,12 +169,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  if( !*layer_cc_ptr ) {
 	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
 
-	    // initialize whole layer with invalud value 0xff (indicates: not recorded)
+	    // initialize whole layer with invalud value 0xc0 (indicates: not recorded)
 	    int num_p_steps = SEQ_PAR_NumStepsGet(track);
 	    int instrument = 0;
 	    int step;
 	    for(step=0; step<num_p_steps; ++step)
-	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xff);
+	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
 #endif
