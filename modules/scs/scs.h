@@ -20,6 +20,7 @@
 
 // optionally these 8 pins can be re-assigned
 // note that you could also assign them to global variables for soft-configuration!
+// Encoder pins can be disabled by setting value 255 (use SCS_PIN_DEC/INC in this case)
 #ifndef SCS_PIN_ENC_MENU_A
 #define SCS_PIN_ENC_MENU_A 0
 #endif
@@ -70,6 +71,29 @@
 
 #ifndef SCS_PIN_SOFT10
 #define SCS_PIN_SOFT10     12 // optional if SCS_NUM_MENU_ITEMS >= 10
+#endif
+
+// if set to 1, the menu handler doesn't require a soft button
+// instead, items are selected with the rotary encoder, and the selection is
+// confirmed with a "SELECT" button (button connected to SCS_PIN_SOFT1)
+// The remaining SOFT buttons have no function!
+#ifndef SCS_MENU_NO_SOFT_BUTTON_MODE
+#define SCS_MENU_NO_SOFT_BUTTON_MODE 0
+#endif
+
+
+// Optional Inc/Dec button (e.g. as encoder replacement)
+// it's save to assign them to the same pins like the encoder (SCS_PIN_ENC_MENU_A and SCS_PIN_ENC_MENU_B)
+// in order to use the DEC/INC pins, either disable the encoder by assigning SCS_PIN_ENC to invalid values
+// (e.g. 255), or set SCS_PIN_* to free pins
+//
+// the optional DEC button
+#ifndef SCS_PIN_DEC
+#define SCS_PIN_DEC 0
+#endif
+// the optional INC button
+#ifndef SCS_PIN_INC
+#define SCS_PIN_INC 1
 #endif
 
 
