@@ -30,13 +30,16 @@
 
 
 #include "seq_core.h"
-#include "seq_song.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
-#include "seq_mixer.h"
 #include "seq_midi_port.h"
+
+#ifndef MBSEQV4
+#include "seq_song.h"
+#include "seq_mixer.h"
+#endif
 
 #include "file.h"
 #include "seq_file.h"
@@ -419,6 +422,9 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
+#ifdef MBSEQV4L
+  out("Bookmarks are not supported by MBSEQV4L\n");
+#else
   out("Global Bookmarks:\n");
   out("=================\n");
   SEQ_FILE_BM_Debug(1);
@@ -430,6 +436,7 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
   SEQ_FILE_BM_Debug(0);
 
   out("done.\n");
+#endif
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -524,9 +531,12 @@ s32 SEQ_TERMINAL_PrintTrack(void *_output_function, u8 track)
 s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
-  char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
+#ifdef MBSEQV4L
+  out("Mixer Maps are not supported by MBSEQV4L\n");
+#else
+  char str_buffer[128];
   u8 map = SEQ_MIXER_NumGet();
   int i;
 
@@ -560,6 +570,7 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 
   out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
   out("done.\n");
+#endif
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -569,9 +580,12 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
-  u8 song = SEQ_SONG_NumGet();
 
   MUTEX_MIDIOUT_TAKE;
+#ifdef MBSEQV4L
+  out("Songs are not supported by MBSEQV4L\n");
+#else
+  u8 song = SEQ_SONG_NumGet();
 
   out("Song #%2d\n", song+1);
   out("========\n");
@@ -580,6 +594,7 @@ s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
   MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_song_steps[0], SEQ_SONG_NUM_STEPS*sizeof(seq_song_step_t));
 
   out("done.\n");
+#endif
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -761,17 +776,21 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 	out("File /SESSIONS/%s/MBSEQ_B%d.V4: doesn't exist\n", seq_file_session_name, bank+1, num_patterns);
     }
 
+#ifndef MBSEQV4L
     int num_maps = SEQ_FILE_M_NumMaps();
     if( num_maps )
       out("File /SESSIONS/%sMBSEQ_M.V4: valid (%d mixer maps)\n", seq_file_session_name, num_maps);
     else
       out("File /SESSIONS/%s/MBSEQ_M.V4: doesn't exist\n", seq_file_session_name);
+#endif
     
+#ifndef MBSEQV4L
     int num_songs = SEQ_FILE_S_NumSongs();
     if( num_songs )
       out("File /SESSIONS/%s/MBSEQ_S.V4: valid (%d songs)\n", seq_file_session_name, num_songs);
     else
       out("File /SESSIONS/%s/MBSEQ_S.V4: doesn't exist\n", seq_file_session_name);
+#endif
 
     if( SEQ_FILE_G_Valid() )
       out("File /SESSIONS/%s/MBSEQ_G.V4: valid\n", seq_file_session_name);

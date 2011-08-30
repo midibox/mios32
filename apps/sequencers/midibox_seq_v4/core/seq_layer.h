@@ -35,8 +35,7 @@ typedef enum {
   SEQ_EVENT_MODE_Chord,
   SEQ_EVENT_MODE_CC,
   SEQ_EVENT_MODE_Drum,
-  SEQ_EVENT_MODE_HQ,
-  SEQ_EVENT_MODE_Combined__Disabled, // MBSEQV4L only
+  SEQ_EVENT_MODE_Combined,
 } seq_event_mode_t;
 
 
@@ -53,7 +52,6 @@ extern const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode);
 extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event);
 
 extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes);
-extern s32 SEQ_LAYER_GetEventsHQ(u8 track, u16 *layer_ix, seq_layer_evnt_t layer_events[16], u16 *next_delay);
 
 extern s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event);
 

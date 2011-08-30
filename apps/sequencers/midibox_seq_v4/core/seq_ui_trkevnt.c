@@ -138,8 +138,7 @@ static const layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_Drum,     2,          64,        1,         256,      8 },
   { SEQ_EVENT_MODE_Drum,     1,          64,        1,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        1,         128,      8 },
-  { SEQ_EVENT_MODE_Drum,     1,         256,        1,         256,      4 },
-  { SEQ_EVENT_MODE_HQ,       1,         256,        1,         256,      1 }
+  { SEQ_EVENT_MODE_Drum,     1,         256,        1,         256,      4 }
 };
 
 
@@ -562,29 +561,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    case SEQ_UI_ENCODER_GP16:
 	      return -1; // EXIT not mapped to encoder
 	  }
-	} else if( event_mode == SEQ_EVENT_MODE_HQ ) {
-	  switch( encoder ) {
-	    case SEQ_UI_ENCODER_GP9:
-	    case SEQ_UI_ENCODER_GP10:
-	    case SEQ_UI_ENCODER_GP11:
-	    case SEQ_UI_ENCODER_GP12:
-	    case SEQ_UI_ENCODER_GP13:
-	      return -1; // not mapped in HQ mode
-
-	    case SEQ_UI_ENCODER_GP14:
-	    case SEQ_UI_ENCODER_GP15:
-	      // change to preset page (only via button)
-	      if( incrementer == 0 ) {
-		ui_selected_item = 0;
-		pr_dialog = PR_DIALOG_PRESETS;
-		SEQ_UI_TRKEVNT_UpdateDirList();
-	      }
-	      return 1;
-
-	    case SEQ_UI_ENCODER_GP16:
-	      return -1; // not mapped to encoder
-	  }
-
 	} else {
 	  switch( encoder ) {
 	    case SEQ_UI_ENCODER_GP9:
@@ -1222,8 +1198,6 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintString("LayA ");
 	SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
 	SEQ_LCD_PrintString(" Drum Note VelN VelA PRE-    ");
-      } else if( event_mode == SEQ_EVENT_MODE_HQ ) {
-	SEQ_LCD_PrintSpaces(40);
       } else {
 	SEQ_LCD_PrintString("Layer  controls                         ");
       }
@@ -1261,8 +1235,6 @@ static s32 LCD_Handler(u8 high_prio)
 	  
 	  SEQ_LCD_PrintFormattedString(") %d", lc->instruments);
 	  SEQ_LCD_CursorSet(26, 1);
-	} else if( event_mode == SEQ_EVENT_MODE_HQ ) {
-	  SEQ_LCD_PrintSpaces(16);
 	} else {
 	  SEQ_LCD_PrintFormattedString("  %3d %3d  %3d  ", lc->par_steps, lc->par_layers, lc->trg_layers);
 	}
@@ -1355,9 +1327,6 @@ static s32 LCD_Handler(u8 high_prio)
 	}
 
 	SEQ_LCD_PrintString("SETS INIT");
-      } else if( event_mode == SEQ_EVENT_MODE_HQ ) {
-	SEQ_LCD_PrintSpaces(27);
-	SEQ_LCD_PrintString("PRESETS  INIT");
       } else {
 	/////////////////////////////////////////////////////////////////////////
 	SEQ_LCD_PrintSpaces(2);

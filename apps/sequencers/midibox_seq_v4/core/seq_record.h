@@ -24,7 +24,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u16 ALL;
+  u8 ALL;
   struct {
     u8 STEPS_PER_KEY;
     u8 STEP_RECORD:1;
@@ -36,9 +36,10 @@ typedef union {
 
 
 typedef union {
-  u8 ALL;
+  u32 ALL;
   struct {
-    u8 ENABLED:1;
+    u16 ARMED_TRACKS;
+    u32 ENABLED:1;
   };
 } seq_record_state_t;
 

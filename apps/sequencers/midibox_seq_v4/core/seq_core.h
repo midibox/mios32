@@ -94,8 +94,6 @@ typedef struct seq_core_trk_t {
   u32                  rec_timestamp;    // for recording function
   u8                   rec_poly_ctr;     // for recording function
   u8                   play_section;     // selects the section which should be played. If -1, no section selection
-  u16                  hq_ix;            // HQ mode: current index in parameter layer memory
-  u32                  hq_next_timestamp; // HQ mode: next timestamp at which a MIDI event should be played
 } seq_core_trk_t;
 
 

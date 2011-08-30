@@ -90,6 +90,4 @@ extern u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer);
 // use SEQ_PAR_Get/Set
 extern u8 seq_par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_MAX_BYTES];
 
-extern u16 seq_par_max_hq_bytes;
-
 #endif /* _SEQ_PAR_H */

@@ -53,8 +53,11 @@ s32 SEQ_CV_Init(u32 mode)
   // initialize J5 pins
   // they will be enabled after MBSEQ_HW.V4 has been read
   // as long as this hasn't been done, activate pull-downs
+#ifndef MBSEQV4L
+  // MBSEQV4L: allocated by BLM_CHEAPO driver
   for(i=0; i<6; ++i)
     MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+#endif
 
   // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
 
@@ -355,24 +358,39 @@ s32 SEQ_CV_Update(void)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
   u8 gates = AOUT_DigitalPinsGet() ^ gate_inversion_mask;
   if( gates != last_gates ) {
-    int i;
-
     last_gates = gates;
+
+#ifndef MBSEQV4L
+    // MBSEQV4L: allocated by BLM_CHEAPO driver
+    int i;
     for(i=0; i<6; ++i) {
       MIOS32_BOARD_J5_PinSet(i, gates & 1);
       gates >>= 1;
     }
+#endif
 
 #if defined(MIOS32_FAMILY_STM32F10x)
+#ifndef MBSEQV4L
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
     MIOS32_BOARD_J5_PinSet(10, (last_gates & 0x40) ? 1 : 0);
     MIOS32_BOARD_J5_PinSet(11, (last_gates & 0x80) ? 1 : 0);
+#else
+    // MBSEQV4L: Gate 1 and 2 are routed to J5C.A10 and J5C.A11
+    MIOS32_BOARD_J5_PinSet(10, (last_gates & 0x01) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(11, (last_gates & 0x02) ? 1 : 0);
+#endif
 #elif defined(MIOS32_FAMILY_LPC17xx)
+#ifndef MBSEQV4L
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
     MIOS32_BOARD_J28_PinSet(2, (last_gates & 0x40) ? 1 : 0);
     MIOS32_BOARD_J28_PinSet(3, (last_gates & 0x80) ? 1 : 0);
+#else
+    // MBSEQV4L: Gate 1 and 2 are routed to J28.WS and J28.MCLK
+    MIOS32_BOARD_J28_PinSet(2, (last_gates & 0x01) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(3, (last_gates & 0x02) ? 1 : 0);
+#endif
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
@@ -408,11 +426,13 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
     if( package.chn == Chn16 ) {
       int gate_pin = package.note - 0x24; // C-1 is the base note
       if( gate_pin >= 0 ) {
+#ifndef MBSEQV4L
 	u8 dout_sr = gate_pin / 8;
 	u8 dout_pin = gate_pin % 8;
 
 	if( dout_sr < SEQ_HWCFG_NUM_SR_DOUT_GATES && seq_hwcfg_dout_gate_sr[dout_sr] )
 	  MIOS32_DOUT_PinSet((seq_hwcfg_dout_gate_sr[dout_sr]-1)*8 + dout_pin, package.velocity ? 1 : 0);
+#endif
       }
     } else {
       int aout_chn_note, aout_chn_vel, gate_pin;
@@ -527,9 +547,11 @@ s32 SEQ_CV_ResetAllChannels(void)
 
   AOUT_DigitalPinsSet(0x00);
 
+#ifndef MBSEQV4L
   int sr;
   for(sr=0; sr<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++sr)
     MIOS32_DOUT_SRSet(sr, seq_hwcfg_dout_gate_sr[sr]);
+#endif
 
   return 0; // no error
 }

@@ -14,40 +14,46 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
+# path to complete MBSEQ V4 application
+MIDIBOX_SEQ_V4_PATH = ../midibox_seq_v4
+# midibox_seq_v4_lite only contains different files where a selection
+# via "#ifdef MBSEQV4L" doesn't make sense
+
 THUMB_SOURCE    = core/app.c \
-		mios32/tasks.c \
+		$(MIDIBOX_SEQ_V4_PATH)/mios32/tasks.c \
 		core/seq_hwcfg.c  \
 		core/seq_ui.c  \
 		core/seq_ui_pages.c \
 		core/seq_ui_util.c \
-		core/seq_cv.c \
-		core/seq_midi_port.c \
-		core/seq_midi_in.c \
-		core/seq_midi_sysex.c \
-		core/seq_midi_router.c \
-		core/seq_cc.c  \
-		core/seq_core.c \
-		core/seq_scale.c \
-		core/seq_groove.c \
-		core/seq_morph.c \
-		core/seq_humanize.c \
-		core/seq_lfo.c \
-		core/seq_chord.c \
-		core/seq_pattern.c \
-		core/seq_record.c \
-		core/seq_live.c \
-		core/seq_file.c \
-		core/seq_file_b.c \
-		core/seq_file_t.c \
-		core/seq_file_g.c \
-		core/seq_file_gc.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_cv.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_port.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_in.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_sysex.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_router.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_cc.c  \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_core.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_scale.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_groove.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_morph.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_humanize.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_lfo.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_chord.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_pattern.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_record.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_live.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_b.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_t.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_g.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_c.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_gc.c \
 		core/seq_file_hw.c \
-		core/seq_layer.c \
-		core/seq_random.c \
-		core/seq_trg.c \
-		core/seq_par.c \
-		core/seq_terminal.c \
-		core/seq_statistics.c
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_layer.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_random.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_trg.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_par.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_terminal.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_statistics.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -55,7 +61,8 @@ ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
 C_INCLUDE = 	-I mios32 \
-		-I core
+		-I core \
+		-I $(MIDIBOX_SEQ_V4_PATH)/core
 
 A_INCLUDE = 	-I .
 
@@ -72,7 +79,10 @@ PROJECT   = 	project
 DEBUG     =	-g
 OPTIMIZE  =	-Os
 
-CFLAGS =	$(DEBUG) $(OPTIMIZE)
+###
+# --> HERE WE SELECT THE MBSEQV4L VARIANT
+###
+CFLAGS =	$(DEBUG) $(OPTIMIZE) -DMBSEQV4L
 
 
 ################################################################################

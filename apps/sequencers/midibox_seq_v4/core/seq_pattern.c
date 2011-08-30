@@ -139,7 +139,11 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
     seq_pattern_req[group] = pattern;
     portEXIT_CRITICAL();
 
-    if( seq_core_options.SYNCHED_PATTERN_CHANGE && !SEQ_SONG_ActiveGet() ) {
+    if( seq_core_options.SYNCHED_PATTERN_CHANGE
+#ifndef MBSEQV4L
+	&& !SEQ_SONG_ActiveGet()
+#endif
+	) {
       // done in SEQ_CORE_Tick() when last step reached
     } else {
       // pregenerate bpm ticks

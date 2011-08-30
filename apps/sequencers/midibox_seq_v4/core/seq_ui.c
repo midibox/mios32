@@ -87,15 +87,6 @@ u8 ui_edit_preset_num_drum;
 
 u8 ui_seq_pause;
 
-seq_ui_remote_mode_t seq_ui_remote_mode;
-seq_ui_remote_mode_t seq_ui_remote_active_mode;
-mios32_midi_port_t seq_ui_remote_port;
-mios32_midi_port_t seq_ui_remote_active_port;
-u8 seq_ui_remote_id;
-u16 seq_ui_remote_client_timeout_ctr;
-u8 seq_ui_remote_force_lcd_update;
-u8 seq_ui_remote_force_led_update;
-
 u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 u8 seq_ui_saveall_req;
@@ -162,16 +153,6 @@ s32 SEQ_UI_Init(u32 mode)
 
   // visible GP pattern
   ui_gp_leds = 0x0000;
-
-  // default remote mode
-  seq_ui_remote_mode = SEQ_UI_REMOTE_MODE_AUTO;
-  seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
-  seq_ui_remote_port = DEFAULT;
-  seq_ui_remote_active_port = DEFAULT;
-  seq_ui_remote_id = 0x00;
-  seq_ui_remote_client_timeout_ctr = 0;
-  seq_ui_remote_force_lcd_update = 0;
-  seq_ui_remote_force_led_update = 0;
 
   // misc
   seq_ui_backup_req = 0;
@@ -1638,7 +1619,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   int i;
 
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendButton(pin, pin_value);
 
   // ignore as long as hardware config hasn't been read
@@ -1817,7 +1798,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 {
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_Send_BLM_Button(row, pin, pin_value);
 
   // ignore as long as hardware config hasn't been read
@@ -1860,7 +1841,7 @@ s32 SEQ_UI_BLM_Button_Handler(u32 row, u32 pin, u32 pin_value)
 s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
 {
   // send MIDI event in remote mode and exit
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return SEQ_MIDI_SYSEX_REMOTE_Client_SendEncoder(encoder, incrementer);
 
   // ignore as long as hardware config hasn't been read
@@ -1916,12 +1897,12 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 {
 #if 1
   // check for active remote mode
-  if( seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_SERVER )
+  if( seq_midi_sysex_remote_active_mode != SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER )
     return 0; // no error
 #endif
 
-  if( (seq_ui_remote_port == DEFAULT && seq_ui_remote_active_port != port) ||
-      (seq_ui_remote_port != DEFAULT && port != seq_ui_remote_port) )
+  if( (seq_midi_sysex_remote_port == DEFAULT && seq_midi_sysex_remote_active_port != port) ||
+      (seq_midi_sysex_remote_port != DEFAULT && port != seq_midi_sysex_remote_port) )
     return 0; // wrong port
 
   // for easier parsing: convert Note Off -> Note On with velocity 0
@@ -1961,7 +1942,7 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
 {
 #if 0
-  MIOS32_MIDI_SendDebugMessage("SEQ_UI_REMOTE_MIDI_Keyboard(%d, %d)\n", key, depressed);
+  MIOS32_MIDI_SendDebugMessage("SEQ_MIDI_SYSEX_REMOTE_MIDI_Keyboard(%d, %d)\n", key, depressed);
 #endif
 
   switch( key ) {
@@ -2105,7 +2086,7 @@ s32 SEQ_UI_LCD_Handler(void)
   static u8 boot_animation_lcd_pos = 0;
 
   // special handling in remote client mode
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return SEQ_UI_LCD_Update();
 
   if( seq_ui_display_init_req ) {
@@ -2227,10 +2208,10 @@ static const char animation_r_stars[2*4+1] = "  * ** *";
 s32 SEQ_UI_LCD_Update(void)
 {
   // special handling in remote client mode
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT ) {
     MIOS32_IRQ_Disable();
-    u8 force = seq_ui_remote_force_lcd_update;
-    seq_ui_remote_force_lcd_update = 0;
+    u8 force = seq_midi_sysex_remote_force_lcd_update;
+    seq_midi_sysex_remote_force_lcd_update = 0;
     MIOS32_IRQ_Enable();
     return SEQ_LCD_Update(force);
   }
@@ -2347,7 +2328,7 @@ s32 SEQ_UI_LED_Handler(void)
   static u8 remote_led_sr[SEQ_LED_NUM_SR];
 
   // ignore in remote client mode
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   // ignore as long as hardware config hasn't been read
@@ -2508,7 +2489,7 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_BLM_LED_Update();
 
   // send LED changes in remote server mode
-  if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER ) {
+  if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER || seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER ) {
     int first_sr = -1;
     int last_sr = -1;
     int sr;
@@ -2523,11 +2504,11 @@ s32 SEQ_UI_LED_Handler(void)
     }
 
     MIOS32_IRQ_Disable();
-    if( seq_ui_remote_force_led_update ) {
+    if( seq_midi_sysex_remote_force_led_update ) {
       first_sr = 0;
       last_sr = SEQ_LED_NUM_SR-1;
     }
-    seq_ui_remote_force_led_update = 0;
+    seq_midi_sysex_remote_force_led_update = 0;
     MIOS32_IRQ_Enable();
 
     if( first_sr >= 0 )
@@ -2546,7 +2527,7 @@ s32 SEQ_UI_LED_Handler(void)
 s32 SEQ_UI_LED_Handler_Periodic()
 {
   // ignore in remote client mode
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   // ignore as long as hardware config hasn't been read
@@ -2717,7 +2698,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 s32 SEQ_UI_MENU_Handler_Periodic()
 {
   // ignore in remote client mode
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
     return 0; // no error
 
   if( ++ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_MAX ) {

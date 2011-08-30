@@ -25,6 +25,7 @@
 #include <ff.h>
 #include <string.h>
 #include <aout.h>
+#include <blm_cheapo.h>
 #include <seq_cv.h>
 
 #include "file.h"

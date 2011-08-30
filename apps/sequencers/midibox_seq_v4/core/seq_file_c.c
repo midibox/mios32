@@ -239,11 +239,15 @@ s32 SEQ_FILE_C_Read(char *session)
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	    SEQ_BPM_ModeSet(value);
 	  } else if( strcmp(parameter, "LastSong") == 0 ) {
+#ifndef MBSEQV4L
 	    if( value )
 	      SEQ_SONG_NumSet(value-1);
+#endif
 	  } else if( strcmp(parameter, "LastMixerMap") == 0 ) {
+#ifndef MBSEQV4L
 	    if( value )
 	      SEQ_MIXER_NumSet(value-1);
+#endif
 	  } else if( strcmp(parameter, "LastPattern") == 0 ) {
 	    int group = value;
 
@@ -309,6 +313,7 @@ s32 SEQ_FILE_C_Read(char *session)
 	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
 	    seq_core_glb_loop_steps = value-1;
 	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
+#ifndef MBSEQV4L
 	    int i;
 	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
 	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
@@ -325,7 +330,9 @@ s32 SEQ_FILE_C_Read(char *session)
 		ui_quicksel_length[i] = v;
 	      }
 	    }
+#endif
 	  } else if( strcmp(parameter, "QuickSelLoopLength") == 0 ) {
+#ifndef MBSEQV4L
 	    int i;
 	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
 	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
@@ -342,7 +349,9 @@ s32 SEQ_FILE_C_Read(char *session)
 		ui_quicksel_loop_length[i] = v;
 	      }
 	    }
+#endif
 	  } else if( strcmp(parameter, "QuickSelLoopLoop") == 0 ) {
+#ifndef MBSEQV4L
 	    int i;
 	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
 	      if( i >= 1 ) word = strtok_r(NULL, separators, &brkt);
@@ -359,6 +368,7 @@ s32 SEQ_FILE_C_Read(char *session)
 		ui_quicksel_loop_loop[i] = v;
 	      }
 	    }
+#endif
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
 	    MIOS32_MIDI_DefaultPortSet(value);
 	  } else if( strncmp(parameter, "MIDI_BUS_", 9) == 0 ) {
@@ -511,6 +521,7 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
   FLUSH_BUFFER;
 
+#ifndef MBSEQV4L
   // quick&dirty...
   sprintf(line_buffer, "QuickSelLength %d %d %d %d %d %d %d %d\n",
 	  (int)ui_quicksel_length[0] + 1,
@@ -544,12 +555,17 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 	  (int)ui_quicksel_loop_loop[6] + 1,
 	  (int)ui_quicksel_loop_loop[7] + 1);
   FLUSH_BUFFER;
+#endif
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "LastSong %d\n", SEQ_SONG_NumGet()+1);
   FLUSH_BUFFER;
+#endif
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "LastMixerMap %d\n", SEQ_MIXER_NumGet()+1);
   FLUSH_BUFFER;
+#endif
 
   int group;
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {

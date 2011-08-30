@@ -61,11 +61,19 @@ static u32 played_notes[4];
 s32 SEQ_RECORD_Init(u32 mode)
 {
   seq_record_options.ALL = 0;
-  seq_record_options.AUTO_START = 1;
+  seq_record_options.AUTO_START = 0;
   seq_record_options.FWD_MIDI = 1;
   seq_record_quantize = 20;
 
   seq_record_state.ALL = 0;
+
+#ifndef MBSEQV4L
+  // default for MBSEQ V4
+  seq_record_state.ARMED_TRACKS = 0x0001; // first track -- currently not relevant, could be provided for MBSEQV4 later
+#else
+  // default for MBSEQ V4L
+  seq_record_state.ARMED_TRACKS = 0x00ff; // first sequence
+#endif
 
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
@@ -110,15 +118,19 @@ s32 SEQ_RECORD_Reset(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_RECORD_PrintEditScreen(void)
 {
+#ifndef MBSEQV4L
   // for 2 seconds
   ui_hold_msg_ctr = 2000;
+#endif
 
   // select visible steps depending on record step
   ui_selected_step = seq_record_step;
   ui_selected_step_view = ui_selected_step/16;
 
+#ifndef MBSEQV4L
   // update immediately
   seq_ui_display_update_req = 1;
+#endif
 
   return 0; // no error
 }
@@ -130,6 +142,80 @@ s32 SEQ_RECORD_PrintEditScreen(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 {
+#if MBSEQV4L
+  // extra for MBSEQ V4L: seq_record_state.ARMED_TRACKS and auto-assignment
+  if( !seq_record_state.ARMED_TRACKS )
+    return 0; // no track armed
+
+  track = 0;
+  if( seq_record_state.ARMED_TRACKS & 0xff00)
+    track = 8;
+
+  // search for free track/layer
+  if( (midi_package.event == NoteOn) || (midi_package.event == NoteOff) ) {
+    // fine, we will record Note in selected track
+  } else if( midi_package.event == PitchBend ) {
+    track += 3; // G1T4 resp. G3T4
+  } else if( midi_package.event == CC ) {
+    if( midi_package.cc_number == 0 )
+      return 0; // not recordable
+
+    track += 3; // starting at G1T4 resp. G3T4
+    // search for same (or free) CC entry
+    seq_cc_trk_t *tcc = &seq_cc_trk[track];
+    u8 free_layer_found = 0;
+    for(;(track&7) != 0 && !free_layer_found; ++track, ++tcc) {
+
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+      u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+      u8 *layer_cc_ptr = (u8 *)&tcc->lay_const[1*16];
+      int par_layer;
+      for(par_layer=0; par_layer<num_p_layers && !free_layer_found; ++par_layer, ++layer_type_ptr, ++layer_cc_ptr) {
+	if( *layer_type_ptr == SEQ_PAR_Type_CC &&
+	    (*layer_cc_ptr == 0 || *layer_cc_ptr == midi_package.cc_number) ) {
+
+	  // exit if track not armed
+	  // Note: the current handling doesn't allow to select the track in which a CC will be recorded via ARM flag
+	  if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
+	    return 0;
+
+	  if( !*layer_cc_ptr ) {
+	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
+
+	    // initialize whole layer with invalud value 0xc0 (indicates: not recorded)
+	    int num_p_steps = SEQ_PAR_NumStepsGet(track);
+	    int instrument = 0;
+	    int step;
+	    for(step=0; step<num_p_steps; ++step)
+	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
+#endif
+	  }
+
+	  free_layer_found = 1;
+	  break;
+	}
+      }
+      if( free_layer_found )
+	break;
+    }
+
+    if( !free_layer_found ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ_RECORD_Receive] no free CC layer found for CC#%d\n", midi_package.cc_number);
+#endif
+      return 0; // no free layer
+    }
+  } else {
+    return 0; // event not relevant
+  }
+
+  // exit if track not armed
+  if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
+    return 0;
+#endif
+
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[SEQ_RECORD_Receive] %02x %02x %02x -> track #%d\n", 
 	    midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, 
@@ -161,13 +247,27 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
 	  // insert length into current step
 	  u8 instrument = 0;
-	  if( tcc->link_par_layer_length >= 0 ) {
-	    int len = SEQ_BPM_TickGet() - t->rec_timestamp;
-	    if( len < 1 )
-	      len = 1;
-	    else if( len > 95 )
-	      len = 95;
-	    SEQ_PAR_Set(track, t->step, tcc->link_par_layer_length, instrument, len);
+
+	  int len = SEQ_BPM_TickGet() - t->rec_timestamp;
+	  if( len < 1 )
+	    len = 1;
+	  else if( len > 95 )
+	    len = 95;
+
+	  if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
+	    // extra for MBSEQ V4L:
+	    // search for note in track 1/8, insert length into track 3/10
+	    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+	    int par_layer;
+	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+	      if( SEQ_PAR_Get(track, t->step, par_layer, instrument) == midi_package.note ) {
+		SEQ_PAR_Set(track, t->step, par_layer, instrument, len);
+		break;
+	      }
+	    }
+	  } else {
+	    if( tcc->link_par_layer_length >= 0 )
+	      SEQ_PAR_Set(track, t->step, tcc->link_par_layer_length, instrument, len);
 	  }
 	  MIOS32_IRQ_Enable();
 	}
@@ -268,6 +368,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     if( (insert_layer=SEQ_LAYER_RecEvent(track, seq_record_step, layer_event)) < 0 )
       rec_event = 0;
     else {
+#ifndef MBSEQV4L
       // change layer on UI
       if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
 	ui_selected_instrument = insert_layer;
@@ -278,6 +379,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	ui_selected_par_layer = insert_layer;
 	ui_selected_trg_layer = 0;
       }
+#endif
 
       // start sequencer if not running and auto start enabled
       if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START ) {
@@ -290,7 +392,16 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
       if( seq_record_options.FWD_MIDI && !dont_play_step_now ) {
         seq_layer_evnt_t layer_events[16];
-        s32 number_of_events = SEQ_LAYER_GetEvents(track, seq_record_step, layer_events, 0);
+
+	u8 record_step = seq_record_step;
+#ifdef MBSEQV4L
+	// extra MBSEQ V4L if CC track: read 16th step in step record mode
+	// could also be provided for normal MBSEQ V4 later (has to be made more flexible!)
+	if( seq_record_options.STEP_RECORD && tcc->clkdiv.value == 0x03 )
+	  record_step *= 4;
+#endif
+
+        s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
         if( number_of_events > 0 ) {
 	  int i;
           seq_layer_evnt_t *e = &layer_events[0];
@@ -346,8 +457,13 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
   if( seq_record_options.STEP_RECORD )
     return -2; // only in live record mode
 
+#ifndef MBSEQV4L
   if( track != SEQ_UI_VisibleTrackGet() )
     return -3; // only for visible track
+#else
+  if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
+    return -3; // MBSEQV4L: only for armed track
+#endif
 
   if( track >= SEQ_CORE_NUM_TRACKS )
     return -4; // unsupported track
@@ -377,9 +493,28 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       }
     } else {
       // set length of previous step to maximum, and of the new step to minimum
-      if( tcc->link_par_layer_length >= 0 ) {
-	SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, 95);
-	SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, 1);
+      if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
+	// extra for MBSEQ V4L:
+	// search for note in track 1/8, insert length into track 3/10
+	u8 note;
+	for(note=0; note<128; ++note) {
+	  if( played_notes[note>>5] & (1 << note & 0x1f) ) {
+	    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+	    int par_layer;
+	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+	      if( SEQ_PAR_Get(track, t->step, par_layer, instrument) == note ) {
+		SEQ_PAR_Set(track, prev_step, par_layer, instrument, 95);
+		SEQ_PAR_Set(track, new_step, par_layer, instrument, 1);
+		break;
+	      }
+	    }
+	  }
+	}
+      } else {
+	if( tcc->link_par_layer_length >= 0 ) {
+	  SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, 95);
+	  SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, 1);
+	}
       }
 
       // disable gate of new step

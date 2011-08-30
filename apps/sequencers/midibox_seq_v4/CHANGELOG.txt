@@ -11,7 +11,7 @@ MIDIboxSEQ V4.048
 
    o CC and PitchBender values only send on value changes anymore to save
      MIDI bandwith on high-speed tracks
-     
+
 
 MIDIboxSEQ V4.047
 ~~~~~~~~~~~~~~~~~
