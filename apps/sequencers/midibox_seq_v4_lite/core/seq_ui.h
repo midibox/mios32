@@ -80,6 +80,8 @@ extern s32 SEQ_UI_SelectedStepSet(u8 step);
 extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);
 
+extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes for functions implemented in seq_ui_*.c

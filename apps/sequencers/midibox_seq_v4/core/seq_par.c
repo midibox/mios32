@@ -34,9 +34,6 @@
 #endif
 u8 AHB_SECTION seq_par_layer_value[SEQ_CORE_NUM_TRACKS][SEQ_PAR_MAX_BYTES];
 
-// could be changed later during runtime for special configurations (e.g. combining four tracks to a single HQ track)
-u16 seq_par_max_hq_bytes;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -80,13 +77,23 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PAR_Init(u32 mode)
 {
-  // could be changed later during runtime for special configurations (e.g. combining four tracks to a single HQ track)
-  seq_par_max_hq_bytes = SEQ_PAR_MAX_BYTES;
-
+#ifndef MBSEQV4L
   // init parameter layer values
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
     SEQ_PAR_TrackInit(track, 256, 4, 1); // track, steps, parameter layers, instruments
+#else
+  // extra for MBSEQ V4L:
+  // G1T1/2/3 and G3T1/2/3 use 64 steps and 16 layers (for Notes)
+  // remaining tracks use 256 steps and 4 layers (Pitchbender/CC) with 4 times speed
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) )
+      SEQ_PAR_TrackInit(track, 64, 16, 1); // track, steps, parameter layers, instruments
+    else
+      SEQ_PAR_TrackInit(track, 256, 4, 1); // track, steps, parameter layers, instruments
+  }
+#endif
 
   return 0; // no error
 }

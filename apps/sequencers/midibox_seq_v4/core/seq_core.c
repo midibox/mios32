@@ -21,6 +21,9 @@
 #include <seq_midi_out.h>
 
 #include "seq_core.h"
+#ifndef MBSEQV4L
+#include "seq_song.h"
+#endif
 #include "seq_random.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
@@ -35,16 +38,18 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_pattern.h"
-#include "seq_song.h"
 #include "seq_random.h"
 #include "seq_record.h"
 #include "seq_live.h"
+#ifndef MBSEQV4L
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
+#endif
 #include "seq_cv.h"
 #include "seq_statistics.h"
 #include "seq_ui.h"
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -187,8 +192,10 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset LFO module
   SEQ_LFO_Init(0);
 
+#ifndef MBSEQV4L
   // reset song module
   SEQ_SONG_Init(0);
+#endif
 
   // reset live play module
   SEQ_LIVE_Init(0);
@@ -196,10 +203,12 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset record module
   SEQ_RECORD_Init(0);
 
+#ifndef MBSEQV4L
   // init MIDI file player/exporter/importer
   SEQ_MIDPLY_Init(0);
   SEQ_MIDEXP_Init(0);
   SEQ_MIDIMP_Init(0);
+#endif
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -227,8 +236,10 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset sequencer
   SEQ_CORE_Reset(0);
 
+#ifndef MBSEQV4L
   // reset MIDI player
   SEQ_MIDPLY_Reset();
+#endif
 
   // init BPM generator
   SEQ_BPM_Init(0);
@@ -264,7 +275,9 @@ s32 SEQ_CORE_Handler(void)
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
+#ifndef MBSEQV4L
       SEQ_MIDPLY_PlayOffEvents();
+#endif
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -282,9 +295,13 @@ s32 SEQ_CORE_Handler(void)
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
 
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
+#ifndef MBSEQV4L
       SEQ_SONG_Reset(0);
+#endif
       SEQ_CORE_Reset(0);
+#ifndef MBSEQV4L
       SEQ_MIDPLY_Reset();
+#endif
     }
 
     u16 new_song_pos;
@@ -294,7 +311,9 @@ s32 SEQ_CORE_Handler(void)
 
       u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
       SEQ_CORE_Reset(new_tick);
+#ifndef MBSEQV4L
       SEQ_SONG_Reset(new_tick);
+#endif
 
 #if 0
       // fast forward to new song position
@@ -307,7 +326,9 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_BPM_TickSet(new_tick);
       }
 #endif
+#ifndef MBSEQV4L
       SEQ_MIDPLY_SongPos(new_song_pos, 1);
+#endif
     }
 
     u32 bpm_tick;
@@ -348,7 +369,9 @@ s32 SEQ_CORE_Handler(void)
 
 	  // generate MIDI events
 	  SEQ_CORE_Tick(bpm_tick, -1, 0);
+#ifndef MBSEQV4L
 	  SEQ_MIDPLY_Tick(bpm_tick);
+#endif
 
 #if LED_PERFORMANCE_MEASURING == 1
 	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
@@ -360,11 +383,19 @@ s32 SEQ_CORE_Handler(void)
 	  // load new pattern/song step if reference step reached measure
 	  // (this code is outside SEQ_CORE_Tick() to save stack space!)
 	  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
+#ifndef MBSEQV4L
 	    if( SEQ_SONG_ActiveGet() ) {
 	      SEQ_SONG_NextPos();
-	    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+	    }
+#else
+	    if( 0 ) {
+	      // no song mode
+	    }
+#endif
+	    else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
 	      SEQ_PATTERN_Handler();
 	    }
+
 	  }
 	}
 
@@ -475,8 +506,12 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 {
+#ifndef MBSEQV4L
   // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
-  seq_midply_mode_t midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
+  u8 midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
+#else
+  u8 midply_solo = 0;
+#endif
 
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
@@ -613,8 +648,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       u8 skip_this_step = 0;
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
-      u8 hq_event = tcc->event_mode == SEQ_EVENT_MODE_HQ && bpm_tick >= t->hq_next_timestamp;
-      if( next_step_event || hq_event ) {
+      if( next_step_event ) {
 
 	if( next_step_event ) {
 	  // calculate step length
@@ -775,12 +809,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  continue;
 	}
 
-	// HQ: reset pointer if first step reached (again)
-	if( next_step_event && t->step == 0 ) {
-	  t->hq_ix = 0;
-	  t->hq_next_timestamp = 0; // now
-	}
-  
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
@@ -805,19 +833,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = 0;
 
-	if( tcc->event_mode == SEQ_EVENT_MODE_HQ ) {
-	  if( t->hq_next_timestamp <= bpm_tick ) {
-	    u16 next_delay;
-	    number_of_events = SEQ_LAYER_GetEventsHQ(track, &t->hq_ix, layer_events, &next_delay);
-	    if( next_delay < 0xffff )
-	      t->hq_next_timestamp = bpm_tick + next_delay;
-	    else
-	      t->hq_next_timestamp = 0xffffffff; // end of list reached
-	  }
-	} else {
-	  number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
-	}
-
+	number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
 	if( number_of_events > 0 ) {
 	  int i;
 
@@ -1141,10 +1157,6 @@ static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
   t->step_interval_ctr = 0;
   t->step_repeat_ctr = 0;
   t->step_skip_ctr = 0;
-
-  // reset HQ mode settings
-  t->hq_ix = 0;
-  t->hq_next_timestamp = 0;
 
   // next part depends on forward/backward direction
   if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {

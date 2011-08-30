@@ -351,15 +351,15 @@ void SEQ_TASK_Period1mS_LowPrio(void)
   SEQ_MIDI_PORT_Period1mS();
 
   // if remote client active: timeout handling
-  if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT ) {
-    ++seq_ui_remote_client_timeout_ctr;
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT ) {
+    ++seq_midi_sysex_remote_client_timeout_ctr;
 
     // request refresh from server each second
-    if( (seq_ui_remote_client_timeout_ctr % 1000) == 999 ) {
+    if( (seq_midi_sysex_remote_client_timeout_ctr % 1000) == 999 ) {
       SEQ_MIDI_SYSEX_REMOTE_SendRefresh();
-    } else if( seq_ui_remote_client_timeout_ctr >= 5000 ) {
+    } else if( seq_midi_sysex_remote_client_timeout_ctr >= 5000 ) {
       // no reply from server after 5 seconds: leave client mode
-      seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
+      seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO;
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "No response from", "Remote Server!");
     }
   }

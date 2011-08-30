@@ -78,12 +78,34 @@ seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
 };
 
 
+u8 seq_ui_pages_scale_presets[16] = {
+   0, // reserved, first position not used as it disabled force-to-scale
+   0, // Major
+   1, // Harmonic Minor
+   2, // Melodic Minor
+   3, // Natural Minor
+   4, // Chromatic
+   5, // Whole Tone
+   6, // Pentatonic Major
+   7, // Pentatonic Minor
+   8, // Pentatonic Blues
+   9, // Pentatonic Neutral
+  10, // Octatonic (H-W)
+  11, // Octatonic (W-H)
+  12, // Ionian
+  13, // Dorian
+  14, // Phrygian
+};
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 ui_selected_progression_preset;
 static u8 ui_selected_echo_preset;
+static u8 ui_selected_scale;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -238,6 +260,26 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_SCALE: {
+    // check if selection still valid
+    if( check_100mS_ctr == 0 ) {
+      u8 note_track = 8;
+      if( ui_selected_tracks & (1 << 0) )
+	note_track = 0;
+
+      if( !seq_cc_trk[note_track].mode.FORCE_SCALE )
+	ui_selected_scale = 0;
+      else {
+	u8 *preset = (u8 *)&seq_ui_pages_scale_presets[1];
+	int i;
+	for(i=1; i<16; ++i, ++preset)
+	  if( seq_core_global_scale == *preset )
+	    break;
+
+	ui_selected_scale = (i > 15) ? 15 : i; // if no preset scale, show last LED
+      }
+    }
+
+    return (1 << ui_selected_scale);
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -252,7 +294,7 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_REC_ARM: {
-    return seq_record_armed_tracks;
+    return seq_record_state.ARMED_TRACKS;
   } break;
 
   }
@@ -403,6 +445,23 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
+    ui_selected_scale = button;
+
+    if( ui_selected_scale == 0 ) {
+      // disable force-to-scale for both note tracks (makes sense, since the scale itself is global as well)
+      u8 track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8)
+	seq_cc_trk[track].mode.FORCE_SCALE = 0;
+    } else {
+      // select scale
+      seq_core_global_scale = seq_ui_pages_scale_presets[ui_selected_scale];
+
+      // enable force-to-scale for both note tracks (makes sense, since the scale itself is global as well)
+      u8 track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8)
+	seq_cc_trk[track].mode.FORCE_SCALE = 1;
+    }
+
     portEXIT_CRITICAL();
     return 0;
   } break;
@@ -435,12 +494,12 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     portENTER_CRITICAL();
 
     // allow to select an unplayed track
-    if( button >= 8 && (seq_record_armed_tracks & 0x00ff) )
-      seq_record_armed_tracks = 0xff00;
-    else if( button < 8 && (seq_record_armed_tracks & 0xff00) )
-      seq_record_armed_tracks = 0x00ff;
+    if( button >= 8 && (seq_record_state.ARMED_TRACKS & 0x00ff) )
+      seq_record_state.ARMED_TRACKS = 0xff00;
+    else if( button < 8 && (seq_record_state.ARMED_TRACKS & 0xff00) )
+      seq_record_state.ARMED_TRACKS = 0x00ff;
     else {
-      seq_record_armed_tracks ^= (1 << button);
+      seq_record_state.ARMED_TRACKS ^= (1 << button);
     }
 
     portEXIT_CRITICAL();

@@ -285,7 +285,7 @@ s32 SEQ_LCD_Update(u8 force)
   MUTEX_LCD_GIVE;
 
   // forward display changes to remote client
-  if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_SERVER ) {
+  if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER || seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER ) {
     for(y=0; y<LCD_MAX_LINES; ++y)
       if( remote_first_x[y] >= 0 )
 	SEQ_MIDI_SYSEX_REMOTE_Server_SendLCD(remote_first_x[y],
@@ -340,7 +340,7 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
     MUTEX_LCD_GIVE;
 
     // forward charset change to remote client
-    if( seq_ui_remote_mode == SEQ_UI_REMOTE_MODE_SERVER )
+    if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER )
       SEQ_MIDI_SYSEX_REMOTE_Server_SendCharset(charset);
   }
 

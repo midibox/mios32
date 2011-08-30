@@ -46,10 +46,24 @@ s32 SEQ_CC_Init(u32 mode)
     // clear all CCs
     memset((u8 *)tcc, 0, sizeof(seq_cc_trk_t));
 
+#ifndef MBSEQV4L
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;
     tcc->midi_port = DEFAULT;
     tcc->event_mode = SEQ_EVENT_MODE_Note;
+#else
+    // extra for MBSEQ V4L: use same channel by default
+    tcc->midi_chn = 0;
+    tcc->midi_port = DEFAULT;
+
+    // set combined mode for first 3 tracks of a sequence
+    // set all other tracks to CC
+    if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) ) {
+      tcc->event_mode = SEQ_EVENT_MODE_Combined;
+    } else {
+      tcc->event_mode = SEQ_EVENT_MODE_CC;
+    }
+#endif
   }
 
   return 0; // no error
@@ -178,9 +192,11 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value)
 {
   if( cc == 0x01 ) { // ModWheel -> Morph Value
+#ifndef MBSEQV4L
     // update screen immediately if in morph page
     if( ui_page == SEQ_UI_PAGE_TRKMORPH )
       seq_ui_display_update_req = 1;
+#endif
     // forward morph value
     return SEQ_MORPH_ValueSet(value);
   } else if( cc == 0x03 ) {

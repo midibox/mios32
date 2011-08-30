@@ -158,11 +158,11 @@ static s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
   // armed tracks handling: alternate and select all tracks depending on seq selection
   // can be changed in RecArm page
   if( seq ) {
-    if( (seq_record_armed_tracks & 0x00ff) )
-      seq_record_armed_tracks = 0xff00;
+    if( (seq_record_state.ARMED_TRACKS & 0x00ff) )
+      seq_record_state.ARMED_TRACKS = 0xff00;
   } else {
-    if( (seq_record_armed_tracks & 0xff00) )
-      seq_record_armed_tracks = 0x00ff;
+    if( (seq_record_state.ARMED_TRACKS & 0xff00) )
+      seq_record_state.ARMED_TRACKS = 0x00ff;
   }
 
   return 0; // no error
@@ -1128,4 +1128,26 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
     }
 
   return 1; // value changed
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints a temporary error messages after file operation
+// Expects error status number (as defined in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
+{
+  // send error message to MIOS terminal
+  MUTEX_MIDIOUT_TAKE;
+  FILE_SendErrorMessage(status);
+  MUTEX_MIDIOUT_GIVE;
+
+#if 0
+  // print on LCD
+  char str[21];
+  sprintf(str, "E%3d (FatFs: D%3d)", -status, file_dfs_errno < 1000 ? file_dfs_errno : 999);
+  return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
+#else
+  return 0;
+#endif
 }

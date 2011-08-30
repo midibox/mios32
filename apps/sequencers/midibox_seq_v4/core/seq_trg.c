@@ -57,6 +57,7 @@ static const char seq_trg_names[8][6] = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TRG_Init(u32 mode)
 {
+#ifndef MBSEQV4L
   // init trigger layer values
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
@@ -67,6 +68,24 @@ s32 SEQ_TRG_Init(u32 mode)
     if( track == 0 )
       memset((u8 *)&seq_trg_layer_value[track], 0x11, trg_layer_num_steps8[track]);
   }
+#else
+  // extra for MBSEQ V4L:
+  // G1T1/2/3 and G3T1/2/3 use 64 steps and 16 layers (for Notes)
+  // remaining tracks use 256 steps and 4 layers (Pitchbender/CC) with 4 times speed
+  // init trigger layer values
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) )
+      SEQ_TRG_TrackInit(track, 64, 8, 1); // track, steps, trigger layers, instruments
+    else {
+      SEQ_TRG_TrackInit(track, 256, 8, 1); // track, steps, trigger layers, instruments
+
+      // all gates enabled
+      if( track == 0 )
+	memset((u8 *)&seq_trg_layer_value[track], 0xff, trg_layer_num_steps8[track]);
+    }
+  }
+#endif
 
   return 0; // no error
 }
