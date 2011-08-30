@@ -637,12 +637,12 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
   // note: don't usw switch() here to allow soft-assignments (SCS_PIN_xxx can optionally reference global variables)
 
   if( pin == SCS_PIN_DEC ) {
-    if( !depressed )
+    if( depressed )
       return 0;
     return SCS_ENC_MENU_NotifyChange(-1);
 
   } else if( pin == SCS_PIN_INC ) {
-    if( !depressed )
+    if( depressed )
       return 0;
     return SCS_ENC_MENU_NotifyChange(1);
 
