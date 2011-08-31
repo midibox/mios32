@@ -19,7 +19,12 @@
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
+
+#ifndef MBSEQV4L
 #include <blm.h>
+#else
+#include <blm_cheapo.h>
+#endif
 #include <blm_x.h>
 
 #include "tasks.h"
@@ -33,12 +38,15 @@
 #include "seq_led.h"
 #include "seq_ui.h"
 #include "seq_pattern.h"
+
+#ifndef MBSEQV4L
 #include "seq_mixer.h"
 #include "seq_song.h"
 #include "seq_label.h"
 #include "seq_cc_labels.h"
-
 #include "seq_midply.h"
+#endif
+
 
 #include "seq_cv.h"
 #include "seq_midi_port.h"
@@ -52,13 +60,16 @@
 #include "file.h"
 #include "seq_file.h"
 #include "seq_file_b.h"
-#include "seq_file_m.h"
-#include "seq_file_s.h"
 #include "seq_file_g.h"
 #include "seq_file_c.h"
-#include "seq_file_bm.h"
 #include "seq_file_gc.h"
 #include "seq_file_hw.h"
+
+#ifndef MBSEQV4L
+#include "seq_file_m.h"
+#include "seq_file_s.h"
+#include "seq_file_bm.h"
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,11 +97,17 @@ void APP_Init(void)
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
 
+#ifndef MBSEQV4L
   // initialize CLCDs
   SEQ_LCD_Init(0);
+#endif
 
   // init BLMs
+#ifndef MBSEQV4L
   BLM_Init(0);
+#else
+  BLM_CHEAPO_Init(0);
+#endif
   BLM_X_Init();
 
   // initialize CV
@@ -100,21 +117,27 @@ void APP_Init(void)
   SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_SYSEX_Init(0);
+#ifndef MBSEQV4L
   SEQ_BLM_Init(0);
+#endif
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
   SEQ_TERMINAL_Init(0);
 
+#ifndef MBSEQV4L
   // init mixer page
   SEQ_MIXER_Init(0);
+#endif
 
   // init sequencer core
   SEQ_CORE_Init(0);
 
   // init user interface
+#ifndef MBSEQV4L
   SEQ_LABEL_Init(0);
   SEQ_CC_LABELS_Init(0);
   SEQ_LED_Init(0);
+#endif
   SEQ_UI_Init(0);
 
   // initial load of filesystem
@@ -166,9 +189,13 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
+#ifndef MBSEQV4L
     if( port == seq_blm_port ) {
       SEQ_BLM_MIDI_Receive(port, midi_package);
-    } else {
+    }
+    else
+#endif
+    {
       // returns > 0 if byte has been used for remote function
       if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
 	// forward to router
@@ -192,8 +219,10 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   // forward event to MIDI router
   SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
+#ifndef MBSEQV4L
   // forward event to BLM as well
   SEQ_BLM_SYSEX_Parser(port, midi_in);
+#endif
 
   // forward to common SysEx handler
   SEQ_MIDI_SYSEX_Parser(port, midi_in);
@@ -208,10 +237,14 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
+#ifndef MBSEQV4L
   if( seq_hwcfg_blm.enabled ) {
     // prepare DOUT registers of BLM to drive the column
     BLM_PrepareCol();
   }
+#else
+  BLM_CHEAPO_PrepareCol();
+#endif
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // prepare DOUT registers of 8x8 BLM to drive the row
@@ -225,10 +258,14 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
+#ifndef MBSEQV4L
   if( seq_hwcfg_blm.enabled ) {
     // call the BL_GetRow function after scan is finished to capture the read DIN values
     BLM_GetRow();
   }
+#else
+  BLM_CHEAPO_GetRow();
+#endif
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // call the BL_X_GetRow function after scan is finished to capture the read DIN values
@@ -259,6 +296,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 {
+#ifndef MBSEQV4L
   u8 row = pin / 16;
   u8 pin_of_row = pin % 16;
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -267,6 +305,14 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 
   // forward to UI BLM button handler
   SEQ_UI_BLM_Button_Handler(row, pin_of_row, pin_value);
+#else
+#if 0
+  MIOS32_MIDI_SendDebugMessage("SR: %d  Pin:%d  Value:%d\n", (pin>>3)+1, pin & 7, pin_value);
+#endif
+
+  // forward to UI button handler
+  SEQ_UI_Button_Handler(pin, pin_value);
+#endif
 }
 
 
@@ -297,8 +343,10 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
   DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
 #endif
 
+#ifndef MBSEQV4L
   // forward to UI encoder handler
   SEQ_UI_Encoder_Handler(encoder, incrementer);
+#endif
 }
 
 
@@ -323,11 +371,16 @@ void SEQ_TASK_Period1mS(void)
   // update BPM
   SEQ_CORE_BPM_SweepHandler();
 
+#ifndef MBSEQV4L
   // Button handlers
   if( seq_hwcfg_blm.enabled ) {
     // check for BLM pin changes, call button handler of sequencer on each toggled pin
     BLM_ButtonHandler(APP_BLM_NotifyToggle);
   }
+#else
+  // -> BLM_CHEAPO driver
+  BLM_CHEAPO_ButtonHandler(APP_BLM_NotifyToggle);
+#endif
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
@@ -341,8 +394,10 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1mS_LowPrio(void)
 {
+#ifndef MBSEQV4L
   // call LCD Handler
   SEQ_UI_LCD_Handler();
+#endif
 
   // update LEDs
   SEQ_UI_LED_Handler();
@@ -360,7 +415,9 @@ void SEQ_TASK_Period1mS_LowPrio(void)
     } else if( seq_midi_sysex_remote_client_timeout_ctr >= 5000 ) {
       // no reply from server after 5 seconds: leave client mode
       seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO;
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "No response from", "Remote Server!");
+#endif
     }
   }
 
@@ -371,6 +428,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
+#ifndef MBSEQV4L
   static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
@@ -525,6 +583,50 @@ void SEQ_TASK_Period1S(void)
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
     SEQ_SONG_Load(SEQ_SONG_NumGet());
   }
+#else
+  // MBSEQV4L handling (could be combined with code above later)
+
+  // don't check for SD Card if MSD enabled
+  if( TASK_MSD_EnableGet() > 0 )
+    return;
+
+  MUTEX_SDCARD_TAKE;
+  s32 status = FILE_CheckSDCard();
+
+  if( status == 1 ) {
+    DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+    // load all file infos
+    SEQ_FILE_LoadAllFiles(1); // including HW info
+  } else if( status == 2 ) {
+    DEBUG_MSG("SD Card disconnected\n");
+    // invalidate all file infos
+    SEQ_FILE_UnloadAllFiles();
+  } else if( status == 3 ) {
+    if( !FILE_SDCardAvailable() ) {
+      DEBUG_MSG("SD Card not found\n");
+      SEQ_FILE_HW_LockConfig(); // lock configuration
+    } else if( !FILE_VolumeAvailable() ) {
+      DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+      SEQ_FILE_HW_LockConfig(); // lock configuration
+    } else {
+#if 0
+      // check if patch file exists
+      if( !MIDIO_FILE_P_Valid() ) {
+	// create new one
+	DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
+	    
+	if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
+	  DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+	}
+      }
+#endif
+
+      DEBUG_MSG("SD Card found\n");
+    }
+  }
+
+  MUTEX_SDCARD_GIVE;
+#endif
 }
 
 
@@ -588,8 +690,10 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
   // forward to SysEx parser
   SEQ_MIDI_SYSEX_TimeOut(port);
 
+#ifndef MBSEQV4L
   // print message on screen
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI Protocol", "TIMEOUT !!!");
+#endif
 
   return 0;
 }

@@ -58,6 +58,9 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRSet(u32 sr, u8 value)
 {
+  if( !sr )
+    return -1; // SR not available
+
   if( sr < 16 )
     return MIOS32_DOUT_SRSet(sr, value);
 
@@ -73,6 +76,9 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRGet(u32 sr)
 {
+  if( !sr )
+    return 0; // SR not available... return 0
+
   if( sr < 16 )
     return MIOS32_DOUT_SRGet(sr);
 

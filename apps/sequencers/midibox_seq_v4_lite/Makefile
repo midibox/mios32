@@ -19,7 +19,7 @@ MIDIBOX_SEQ_V4_PATH = ../midibox_seq_v4
 # midibox_seq_v4_lite only contains different files where a selection
 # via "#ifdef MBSEQV4L" doesn't make sense
 
-THUMB_SOURCE    = core/app.c \
+THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		$(MIDIBOX_SEQ_V4_PATH)/mios32/tasks.c \
 		core/seq_hwcfg.c  \
 		core/seq_ui.c  \
@@ -106,6 +106,9 @@ include $(MIOS32_PATH)/modules/notestack/notestack.mk
 
 # BLM_CHEAPO driver
 include $(MIOS32_PATH)/modules/blm_cheapo/blm_cheapo.mk
+
+# BLM_X
+include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk

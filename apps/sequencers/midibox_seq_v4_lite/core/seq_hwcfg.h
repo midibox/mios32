@@ -127,6 +127,11 @@ typedef struct {
 
 
 typedef struct {
+  u8 enabled;
+  u8 dout_gp_mapping;
+} seq_hwcfg_blm8x8_t;
+
+typedef struct {
   u8 key;
   u8 cc;
 } seq_hwcfg_midi_remote_t;
@@ -144,6 +149,7 @@ extern s32 SEQ_HWCFG_Init(u32 mode);
 
 extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_led_t seq_hwcfg_led;
+extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 
 #endif /* _SEQ_HWCFG_H */

@@ -63,6 +63,33 @@ DEBOUNCE_DELAY 10
 
 
 ##################################################
+# Optional 8x8 BLM as used for Wilba's Frontpannel
+##################################################
+
+# set to 1 to enable 8x8 BLM driver
+BLM8X8_ENABLED  0
+
+# to which shift register are the select lines connected?
+# Allowed values: 0 to disable, 1..16 to assign shift register
+BLM8X8_DOUT_CATHODES_SR  1
+
+# set an inversion mask for the DOUT shift registers if sink drivers (transistors)
+# have been added to the cathode lines
+BLM8X8_DOUT_CATHODES_INV_MASK 0x00
+
+# to which shift register are the LED anode lines connected?
+# Allowed values: 0 to disable, 1..16 to assign shift register
+BLM8X8_DOUT_LED_SR	2
+
+# 0: no mapping of 8x8 LEDs
+# 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
+BLM8X8_DOUT_GP_MAPPING  1
+
+# 8x8 matrix for misc. button functions
+BLM8X8_DIN_SR  2
+
+
+##################################################
 # CV and Gate/Trigger/Sync Setup
 ##################################################
 
@@ -85,6 +112,7 @@ J5_ENABLED 1
 # LED assignments to DOUT pins
 # SR = 0: LED disabled
 # SR = 1..8:  directly forwarded to DOUT pin
+# SR = 17..24: forwarded to shift register based 8x8 LED matrix
 ##################################################
 
 #               SR  Pin
@@ -137,6 +165,7 @@ LED_TRANSPOSE    8   7
 # Button assignments to DIN pins
 # SR = 0: Button disabled
 # SR = 1..8:  directly triggered from DIN pin
+# SR = 17..24: triggered from shift register based 8x8 button matrix
 ##################################################
 
 #                  SR  Pin

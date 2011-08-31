@@ -248,7 +248,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  // insert length into current step
 	  u8 instrument = 0;
 
-	  int len = SEQ_BPM_TickGet() - t->rec_timestamp;
+	  int len;
+	  if( seq_record_options.STEP_RECORD ) {
+	    len = 71; // TODO: determine based timestamp
+	  } else {
+	    len = SEQ_BPM_TickGet() - t->rec_timestamp;
+	  }
 	  if( len < 1 )
 	    len = 1;
 	  else if( len > 95 )
@@ -261,7 +266,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    int par_layer;
 	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
 	      if( SEQ_PAR_Get(track, t->step, par_layer, instrument) == midi_package.note ) {
-		SEQ_PAR_Set(track, t->step, par_layer, instrument, len);
+		SEQ_PAR_Set(track+2, t->step, par_layer, instrument, len);
 		break;
 	      }
 	    }
@@ -272,10 +277,31 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  MIOS32_IRQ_Enable();
 	}
 
-	// send Note Off events of current track
-	send_note_off = 1;
+	if( seq_record_options.STEP_RECORD ) {
+	  // send Note Off events of current track
+	  send_note_off = 1;     
+	}
       } else {
 	MIOS32_IRQ_Disable();
+
+	if( seq_record_options.STEP_RECORD && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
+	  // check if another note is already played
+	  u8 any_note_played = played_notes[0] || played_notes[1] || played_notes[2] || played_notes[3];
+	  // if not: clear poly counter and all notes (so that new chord can be entered if all keys were released)
+	  if( !any_note_played ) {
+	    t->rec_poly_ctr = 0;
+
+	    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+	    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+	    int par_layer;
+	    u8 instrument = 0;
+	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
+	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord )
+		SEQ_PAR_Set(track, seq_record_step, par_layer, instrument, 0x00);
+	    }
+	  }
+	}
+
 	// note is active
 	played_notes[midi_package.note>>5] |= note_mask;
 	// start measuring length
@@ -283,7 +309,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	MIOS32_IRQ_Enable();
 
 	// send Note Off events of current track
-	send_note_off = 1;
+	if( seq_record_options.STEP_RECORD )
+	  send_note_off = 1;
 
 	// record event
 	rec_event = 1;
@@ -392,7 +419,6 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
       if( seq_record_options.FWD_MIDI && !dont_play_step_now ) {
         seq_layer_evnt_t layer_events[16];
-
 	u8 record_step = seq_record_step;
 #ifdef MBSEQV4L
 	// extra MBSEQ V4L if CC track: read 16th step in step record mode
@@ -492,22 +518,26 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	}
       }
     } else {
+      // copy notes of previous step to new step
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+      u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+      int par_layer;
+      for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
+	if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+	  u8 note = SEQ_PAR_Get(track, prev_step, par_layer, instrument);
+	  SEQ_PAR_Set(track, new_step, par_layer, instrument, note);
+	}
+      }
+
       // set length of previous step to maximum, and of the new step to minimum
       if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
 	// extra for MBSEQ V4L:
 	// search for note in track 1/8, insert length into track 3/10
-	u8 note;
-	for(note=0; note<128; ++note) {
-	  if( played_notes[note>>5] & (1 << note & 0x1f) ) {
-	    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
-	    int par_layer;
-	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-	      if( SEQ_PAR_Get(track, t->step, par_layer, instrument) == note ) {
-		SEQ_PAR_Set(track, prev_step, par_layer, instrument, 95);
-		SEQ_PAR_Set(track, new_step, par_layer, instrument, 1);
-		break;
-	      }
-	    }
+	for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+	  u8 note = SEQ_PAR_Get(track, prev_step, par_layer, instrument);
+	  if( played_notes[note>>5] & (1 << (note&0x1f)) ) {
+	    SEQ_PAR_Set(track+2, prev_step, par_layer, instrument, 95);
+	    SEQ_PAR_Set(track+2, new_step, par_layer, instrument, 1);
 	  }
 	}
       } else {

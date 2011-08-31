@@ -20,7 +20,7 @@
 
 #include <mios32.h>
 
-#include "blm_x.h"
+#include <blm_x.h>
 #include "seq_hwcfg.h"
 
 
