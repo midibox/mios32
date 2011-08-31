@@ -23,6 +23,7 @@
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include <blm_cheapo.h>
+#include <blm_x.h>
 
 #include "tasks.h"
 #include "seq_ui.h"
@@ -794,6 +795,14 @@ s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+  return 0; // not relevant
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Sets a LED
 // Could be enhanced for different BLMs (or common DOUTs) in future
 /////////////////////////////////////////////////////////////////////////////
@@ -801,6 +810,10 @@ static s32 SEQ_UI_LED_PinSet(u32 pin, u32 value)
 {
   if( pin < 64 )
     return BLM_CHEAPO_DOUT_PinSet(pin, value);
+
+  if( pin >= 128 && pin < 196 )
+    return BLM_X_LEDSet(pin-128, 0, value);
+
   return -1; // not assigned
 }
 
@@ -810,8 +823,15 @@ static s32 SEQ_UI_LED_PinSet(u32 pin, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_LED_SRSet(u8 sr, u8 value)
 {
-  if( sr && sr <= 8 )
+  if( !sr )
+    return -1; // not assigned
+
+  if( sr <= 8 )
     return BLM_CHEAPO_DOUT_SRSet(sr-1, value);
+
+  if( sr >= 16 && sr < 24 )
+    return BLM_X_LEDSRSet(sr-16, 0, value);
+
   return -1; // not assigned
 }
 

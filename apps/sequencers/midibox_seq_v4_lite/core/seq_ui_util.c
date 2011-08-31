@@ -35,7 +35,7 @@
 
 // Note: verbose level 1 is default - it prints error messages
 // and useful info messages during backups
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
 
 #ifndef DEBUG_MSG
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage

@@ -26,6 +26,7 @@
 #include <string.h>
 #include <aout.h>
 #include <blm_cheapo.h>
+#include <blm_x.h>
 #include <seq_cv.h>
 
 #include "file.h"
@@ -499,6 +500,51 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.pos_dout_l_sr = sr;
 	  } else {
 	    seq_hwcfg_led.pos_dout_r_sr = sr;
+	  }
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// BLM8X8_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "BLM8X8_", 7) == 0 ) {
+	  parameter += 7;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BLM8X8_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] BLM8X8_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_blm8x8.enabled = value;
+	  } else if( strcmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.rowsel_dout_sr = value;
+	    BLM_X_ConfigSet(config);
+	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.rowsel_inv_mask = value;
+	    BLM_X_ConfigSet(config);
+	  } else if( strcmp(parameter, "DOUT_LED_SR") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.led_first_dout_sr = value;
+	    BLM_X_ConfigSet(config);
+	  } else if( strcmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
+	    seq_hwcfg_blm8x8.dout_gp_mapping = value;
+	  } else if( strcmp(parameter, "DIN_SR") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.btn_first_din_sr = value;
+	    BLM_X_ConfigSet(config);
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM8X8_* name '%s'!", parameter);
+#endif
 	  }
 
 	////////////////////////////////////////////////////////////////////////////////////////////

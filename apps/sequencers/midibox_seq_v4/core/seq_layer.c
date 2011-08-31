@@ -315,10 +315,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     if( tcc->event_mode != SEQ_EVENT_MODE_Combined ) {
       if( (par_layer=tcc->link_par_layer_length) >= 0 ) {
 	if( (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
-	  length = SEQ_PAR_Get(track, step, par_layer, instrument);
-	  if( length > 95 )
-	    length = 95;
-	  ++length;
+	  length = SEQ_PAR_Get(track, step, par_layer, instrument) + 1;
+	  if( length > 96 )
+	    length = 96;
 	}
 
 	if( handle_vu_meter )
@@ -376,10 +375,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    else
 	      velocity = SEQ_PAR_Get(track+1, step, par_layer, instrument);
 
-	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument);
-	    if( length > 95 )
-	      length = 95;
-	    ++length;
+	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument) + 1;
+	    if( length > 96 )
+	      length = 96;
 	  }
 
 	  if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
@@ -418,10 +416,9 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    else
 	      velocity = SEQ_PAR_Get(track+1, step, par_layer, instrument);
 
-	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument);
-	    if( length > 95 )
-	      length = 95;
-	    ++length;
+	    length = SEQ_PAR_Get(track+2, step, par_layer, instrument) + 1;
+	    if( length > 96 )
+	      length = 96;
 	  }
 
 	  if( chord_value || insert_empty_notes ) {

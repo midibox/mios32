@@ -20,6 +20,7 @@
 
 #include <mios32.h>
 
+#include <blm_x.h>
 #include "seq_hwcfg.h"
 
 
@@ -132,6 +133,13 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .transpose   = ((( 8   -1)<<3)+    7),
 };
 
+
+seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
+  .enabled = 0,
+  .dout_gp_mapping = 1,
+};
+
+
 seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .key = 96, // C-7, on some MIDI monitors displayed as C-6
   .cc = 0, // disabled
@@ -144,5 +152,10 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_HWCFG_Init(u32 mode)
 {
+  // initial debounce delay for BLM_X
+  blm_x_config_t config = BLM_X_ConfigGet();
+  config.debounce_delay = 20; // mS
+  BLM_X_ConfigSet(config);
+
   return 0; // no error
 }

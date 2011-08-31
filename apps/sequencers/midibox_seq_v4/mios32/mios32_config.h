@@ -42,7 +42,7 @@
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 14*1024
 
-// for LPC17: simplify alloction of large arrays
+// for LPC17: simplify allocation of large arrays
 #if defined(MIOS32_FAMILY_LPC17xx)
 # define AHB_SECTION __attribute__ ((section (".bss_ahb")))
 #else

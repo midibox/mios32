@@ -59,6 +59,7 @@ extern s32 SEQ_UI_InitEncSpeed(u32 auto_config);
 
 extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
 extern s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed);
+extern s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
 extern s32 SEQ_UI_Button_Play(s32 depressed);
 extern s32 SEQ_UI_Button_Stop(s32 depressed);
