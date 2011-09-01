@@ -412,10 +412,13 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 //! \param[in] tag (0..15) the mios32_midi_package.t.cable number of events which should be re-scheduled
 //! \param[in] event_type the event type which should be rescheduled
 //! \param[in] timestamp the bpm_tick value at which the event should be sent
+//! \param[in] reschedule_filter if != NULL, we expect a 4*32 bit word which contains flags for all
+//!            Note and CC values which shouldn't be rescheduled (e.g. don't send note off for notes
+//!            which are played on a keyboard)
 //! 
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 timestamp)
+s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 timestamp, u32 *reschedule_filter)
 {
   // search in queue for items with the given tag
 
@@ -425,8 +428,10 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
     // filter event_type and tag
     // and ignore events, which will be played with next invocation of the Out Handler to avoid,
     // that a re-scheduled event will be checked again
-    if( (item->event_type == event_type) && (item->package.cable == tag) && (item->timestamp > timestamp) ) {
-
+    u8 evnt1 = item->package.evnt1;
+    if( (item->event_type == event_type) && (item->package.cable == tag) && (item->timestamp > timestamp) &&
+	(reschedule_filter == NULL ||
+	 !(reschedule_filter[evnt1>>5] & (1 << (evnt1 & 0x1f)))) ) {
       // ensure that we get a free memory slot by releasing the current item before queuing the off item
 #if 0
       seq_midi_out_queue_item_t copy = *item;

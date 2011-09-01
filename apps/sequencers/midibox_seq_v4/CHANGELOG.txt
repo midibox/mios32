@@ -14,7 +14,11 @@ MIDIboxSEQ V4.048
 
    o Step record: simplified usage of poly mode. Now the step is automatically
      cleared when all keys were released and new notes are entered.
-   
+
+   o Step record: duration (note length) will now be recorded as well!
+
+   o Live record: some improvements for the "forward MIDI" option
+
 
 MIDIboxSEQ V4.047
 ~~~~~~~~~~~~~~~~~

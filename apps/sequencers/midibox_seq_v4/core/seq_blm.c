@@ -1556,8 +1556,10 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	    ui_selected_group = (midi_package.chn / 4);
 	    blm_force_update = 1;	
 
+#ifndef MBSEQV4L
 	    // set/clear encoder fast function if required
 	    SEQ_UI_InitEncSpeed(1); // auto config
+#endif
 	  }
 	}
 	return 1; // MIDI event has been taken

@@ -30,6 +30,10 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_in.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_sysex.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_router.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midply.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midexp.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midimp.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_blm.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_cc.c  \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_core.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_scale.c \
@@ -43,15 +47,20 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_live.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_b.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_m.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_s.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_t.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_g.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_c.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_gc.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_bm.c \
 		core/seq_file_hw.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_layer.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_random.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_trg.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_par.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_mixer.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_song.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_terminal.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_statistics.c
 
@@ -109,6 +118,9 @@ include $(MIOS32_PATH)/modules/blm_cheapo/blm_cheapo.mk
 
 # BLM_X
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
+
+# MIDI file Player
+include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk

@@ -43,10 +43,7 @@
 #include "seq_pattern.h"
 #include "seq_core.h"
 #include "seq_cv.h"
-
-#ifndef MBSEQV4L
 #include "seq_blm.h"
-#endif
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -330,14 +327,12 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
 	    SEQ_CV_ClkDividerSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
-#ifndef MBSEQV4L
 	    seq_blm_port = value;
 
 	    MUTEX_MIDIOUT_TAKE;
 	    SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	    MUTEX_MIDIOUT_GIVE;
 	    blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
-#endif
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
@@ -489,10 +484,8 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "CV_ClkDivider %d\n", SEQ_CV_ClkDividerGet());
   FLUSH_BUFFER;
 
-#ifndef MBSEQV4L
   sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);
   FLUSH_BUFFER;
-#endif
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   {

@@ -239,6 +239,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_rec_port = SEQ_MIDI_PORT_InPortGet(port_ix);
 	store_file_required = 1;
+	SEQ_RECORD_AllNotesOff(); // reset note markers
 	return 1; // value changed
       }
       return 0; // no change
@@ -247,6 +248,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_REC_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_rec_channel, 0, 16, incrementer) >= 0 ) {
 	store_file_required = 1;
+	SEQ_RECORD_AllNotesOff(); // reset note markers
 	return 1; // value changed
       }
       return 0; // no change

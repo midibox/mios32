@@ -60,21 +60,21 @@ seq_ui_pages_progression_presets_t seq_ui_pages_progression_presets[16] = {
 seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
   // repeats  delay  velocity  fb_velocity  fb_note  fb_gatelength  fb_ticks
   {     0,      7,      15,        15,        24,          20,        20     }, // GP#1 (off)
-  {     3,      7,      15,        15,        24,          20,        20     }, // GP#2
-  {     3,      7,      15,        15,        27,          20,        20     }, // GP#3
-  {     3,      7,      15,        15,        36,          20,        20     }, // GP#4
-  {     3,      5,      15,        15,        24,          20,        20     }, // GP#5
-  {     3,      5,      15,        15,        27,          20,        20     }, // GP#6
-  {     3,      5,      15,        15,        29,          20,        20     }, // GP#7
-  {     3,      3,      15,        15,        36,          20,        20     }, // GP#8
-  {     3,     19,      15,        15,        24,          20,        20     }, // GP#9
-  {     3,     19,      15,        15,        27,          20,        20     }, // GP#10
-  {     3,     19,      15,        15,        29,          20,        20     }, // GP#11
-  {     3,     19,      15,        15,        36,          20,        10     }, // GP#12
-  {     3,     19,      15,        15,        36,          20,        30     }, // GP#13
-  {     3,     19,      15,        15,        27,          20,        10     }, // GP#14
-  {     5,     19,      15,        15,        28,          20,        10     }, // GP#15
-  {     5,     19,      15,        15,        29,          20,        10     }, // GP#16
+  {     3,      5,      15,        15,        24,          20,        20     }, // GP#2
+  {     3,      7,      15,        15,        24,          20,        20     }, // GP#3
+  {     3,     19,      15,        15,        24,          20,        20     }, // GP#4
+  {     3,      5,       5,        35,        24,          20,        20     }, // GP#5
+  {     3,      7,       5,        35,        24,          20,        20     }, // GP#6
+  {     3,     19,       5,        35,        24,          20,        20     }, // GP#7
+  {     3,     19,      20,        15,        24,          20,        20     }, // GP#8
+  {     3,      7,      15,        15,        27,          20,        20     }, // GP#9
+  {     3,      7,      15,        15,        29,          20,        20     }, // GP#10
+  {     3,     19,      15,        15,        27,          20,        20     }, // GP#11
+  {     3,     19,      15,        15,        29,          20,        20     }, // GP#12
+  {     3,      7,       5,        35,        27,          20,        20     }, // GP#13
+  {     3,      7,       5,        35,        29,          20,        20     }, // GP#14
+  {     3,     19,       5,        35,        27,          20,        20     }, // GP#15
+  {     3,     19,       5,        35,        29,          20,        20     }, // GP#16
 };
 
 
@@ -165,20 +165,36 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  case SEQ_UI_PAGE_TRIGGER:
-  case SEQ_UI_PAGE_REC_STEP:
-  case SEQ_UI_PAGE_REC_LIVE: {
+  case SEQ_UI_PAGE_TRIGGER: {
     u8 *trg_ptr = (u8 *)&seq_trg_layer_value[visible_track][2*ui_selected_step_view];
     u16 leds = *trg_ptr;
     ++trg_ptr;
     leds |= (*trg_ptr << 8);
 
-    // recording page: flash record position
-    if( !ui_cursor_flash &&
-	(ui_page == SEQ_UI_PAGE_REC_STEP || ui_page == SEQ_UI_PAGE_REC_LIVE) &&
+    return leds;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case SEQ_UI_PAGE_REC_STEP:
+  case SEQ_UI_PAGE_REC_LIVE: {
+    u8 record_track = 8;
+    if( seq_record_state.ARMED_TRACKS & (1 << 0) )
+      record_track = 0;
+
+    u8 *trg_ptr = (u8 *)&seq_trg_layer_value[record_track][2*ui_selected_step_view];
+    u16 leds = *trg_ptr;
+    ++trg_ptr;
+    leds |= (*trg_ptr << 8);
+
+    u16 record_step_mask = (1 << (seq_record_step % 16));
+    if( ui_cursor_flash &&
 	((seq_record_step >> 4) == ui_selected_step_view) ) {
-      leds ^= (1 << (seq_record_step % 16));
+      leds ^= record_step_mask;
     }
+
+    // button of selected step always active as long as GP button is pressed
+    if( ui_selected_gp_buttons & record_step_mask )
+      leds |= record_step_mask;
 
     return leds;
   } break;
@@ -284,6 +300,12 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_MUTE: {
+    u16 muted = seq_core_trk_muted;
+    if( ui_cursor_flash && seq_ui_button_state.SOLO ) {
+      //muted |= !ui_selected_tracks; // doesn't work with gcc version 4.2.1 ?!?
+      muted |= ui_selected_tracks ^ 0xffff;
+    }
+    return muted;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -471,6 +493,8 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
+    seq_core_trk_muted ^= (1 << button);
+
     portEXIT_CRITICAL();
     return 0;
   } break;
@@ -508,19 +532,20 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_REC_STEP: {
+  case SEQ_UI_PAGE_REC_LIVE:
     // should be atomic
     portENTER_CRITICAL();
 
     seq_record_step = 16*ui_selected_step_view + button;
 
-    portEXIT_CRITICAL();
-    return 0;
-  } break;
-
-  ///////////////////////////////////////////////////////////////////////////
-  case SEQ_UI_PAGE_REC_LIVE: {
-    // should be atomic
-    portENTER_CRITICAL();
+    // we will always clear the current step for more comfortable handling
+    // (no need to select the Trigger page for doing this)
+    u8 track; // only change triggers if track 0 and 8
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8)
+      if( seq_record_state.ARMED_TRACKS & (1 << track) ) {
+	u8 *trg_ptr = (u8 *)&seq_trg_layer_value[track][2*ui_selected_step_view + (button>>3)];
+	*trg_ptr &= ~(1 << (button&7));
+      }
 
     portEXIT_CRITICAL();
     return 0;

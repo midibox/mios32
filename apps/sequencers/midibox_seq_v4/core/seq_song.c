@@ -370,9 +370,11 @@ s32 SEQ_SONG_NextPos(void)
 
     SEQ_SONG_FetchPos(0);
 
+#ifndef MBSEQV4L
     // correct the song position if follow mode is active
     if( seq_core_state.FOLLOW && SEQ_SONG_ActiveGet() )
       SEQ_UI_SONG_EditPosSet(song_pos);
+#endif
 
     // update display immediately
     seq_ui_display_update_req = 1;

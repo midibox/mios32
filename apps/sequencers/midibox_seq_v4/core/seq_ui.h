@@ -26,10 +26,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // cursor flash with following waveform:
-// 0..399 mS: cursor on
-// 400..499 mS: cursor off
+// 0..449 mS: cursor on
+// 450..499 mS: cursor off
 #define SEQ_UI_CURSOR_FLASH_CTR_MAX     500  // mS
-#define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF 400  // mS
+#define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF 450  // mS
 
 #define SEQ_UI_BOOKMARKS_NUM 16
 
@@ -343,6 +343,7 @@ extern u8 ui_selected_instrument;
 extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;
+extern u16 ui_selected_gp_buttons;
 
 extern u16 ui_hold_msg_ctr;
 
