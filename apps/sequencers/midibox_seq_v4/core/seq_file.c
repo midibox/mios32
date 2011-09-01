@@ -40,12 +40,9 @@
 #include "seq_file_gc.h"
 #include "seq_file_t.h"
 #include "seq_file_hw.h"
-
-#ifndef MBSEQV4L
 #include "seq_file_s.h"
 #include "seq_file_m.h"
 #include "seq_file_bm.h"
-#endif
 
 #include "seq_mixer.h"
 #include "seq_pattern.h"
@@ -108,11 +105,9 @@ s32 SEQ_FILE_Init(u32 mode)
   status |= SEQ_FILE_G_Init(0); // groove file access
   status |= SEQ_FILE_B_Init(0); // pattern file access
   status |= SEQ_FILE_T_Init(0); // track preset file access
-#ifndef MBSEQV4L
   status |= SEQ_FILE_M_Init(0); // mixer file access
   status |= SEQ_FILE_S_Init(0); // song file access
   status |= SEQ_FILE_BM_Init(0); // bookmarks file access
-#endif
 
   return status;
 }
@@ -133,33 +128,25 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
   }
 
   status |= SEQ_FILE_B_LoadAllBanks(seq_file_session_name);
-#ifndef MBSEQV4L
   status |= SEQ_FILE_M_LoadAllBanks(seq_file_session_name);
   status |= SEQ_FILE_S_LoadAllBanks(seq_file_session_name);
-#endif
   status |= SEQ_FILE_G_Load(seq_file_session_name);
 
-#ifndef MBSEQV4L
   // ignore status if bookmark file doesn't exist
   SEQ_FILE_BM_Load(seq_file_session_name, 1); // global
   SEQ_FILE_BM_Load(seq_file_session_name, 0); // session
-#endif
 
   if( SEQ_FILE_C_Load(seq_file_session_name) >= 0 ) {
-#ifndef MBSEQV4L
     // change mixer map to the one stored in MBSEQ_C.V4
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
-#endif
 
     // change patterns to the ones stored in MBSEQ_C.V4
     int group;
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
       SEQ_PATTERN_Change(group, seq_pattern[group], 0);
 
-#ifndef MBSEQV4L
     // change song to the one stored in MBSEQ_C.V4
     SEQ_SONG_Load(SEQ_SONG_NumGet());
-#endif
   }
 
   return status;
@@ -173,17 +160,13 @@ s32 SEQ_FILE_UnloadAllFiles(void)
 {
   s32 status = 0;
   status |= SEQ_FILE_B_UnloadAllBanks();
-#ifndef MBSEQV4L
   status |= SEQ_FILE_M_UnloadAllBanks();
   status |= SEQ_FILE_S_UnloadAllBanks();
-#endif
   status |= SEQ_FILE_G_Unload();
   status |= SEQ_FILE_C_Unload();
   status |= SEQ_FILE_GC_Unload();
-#ifndef MBSEQV4L
   status |= SEQ_FILE_BM_Unload(0);
   status |= SEQ_FILE_BM_Unload(1);
-#endif
   status |= SEQ_FILE_HW_Unload();
 
   // invalidate session
@@ -261,13 +244,11 @@ s32 SEQ_FILE_FormattingRequired(void)
     if( !SEQ_FILE_B_NumPatterns(bank) )
       return 1;
 
-#ifndef MBSEQV4L
   if( !SEQ_FILE_M_NumMaps() )
     return 1;
 
   if( !SEQ_FILE_S_NumSongs() )
     return 1;
-#endif
 
   return 0;
 }
@@ -341,7 +322,6 @@ s32 SEQ_FILE_Format(void)
   }
 
 
-#ifndef MBSEQV4L
   // create mixer maps
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+0)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
@@ -375,7 +355,6 @@ s32 SEQ_FILE_Format(void)
     if( (status=SEQ_FILE_S_Open(seq_file_session_name)) < 0 )
       goto SEQ_FILE_Format_failed;
   }
-#endif
 
 
   // create grooves
@@ -394,14 +373,12 @@ s32 SEQ_FILE_Format(void)
     goto SEQ_FILE_Format_failed;
 
 
-#ifndef MBSEQV4L
   // create bookmarks
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
   SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
   if( (status=SEQ_FILE_BM_Write(seq_file_session_name, 0)) < 0 )
     goto SEQ_FILE_Format_failed;
-#endif
 
 SEQ_FILE_Format_failed:
   if( status >= 0 ) {
@@ -483,14 +460,10 @@ s32 SEQ_FILE_CreateBackup(void)
   COPY_FILE_MACRO("MBSEQ_B3.V4");
   COPY_FILE_MACRO("MBSEQ_B4.V4");
   COPY_FILE_MACRO("MBSEQ_G.V4");
-#ifndef MBSEQV4L
   COPY_FILE_MACRO("MBSEQ_M.V4");
-#endif
   COPY_FILE_MACRO("MBSEQ_C.V4");
-#ifndef MBSEQV4L
   COPY_FILE_MACRO("MBSEQ_BM.V4");
   COPY_FILE_MACRO("MBSEQ_S.V4"); // important: should be the last file to notify that backup is complete!
-#endif
 
   // stop printing the special message
   seq_file_backup_notification = NULL;

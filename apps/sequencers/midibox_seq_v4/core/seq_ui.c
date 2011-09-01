@@ -65,6 +65,7 @@ u8 ui_selected_instrument;
 u8 ui_selected_step_view;
 u8 ui_selected_step;
 u8 ui_selected_item;
+u16 ui_selected_gp_buttons;
 
 u8 ui_selected_item;
 
@@ -139,6 +140,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step_view = 0;
   ui_selected_step = 0;
   ui_selected_item = 0;
+  ui_selected_gp_buttons = 0;
 
   ui_hold_msg_ctr = 0;
   ui_msg_ctr = 0;
@@ -345,6 +347,11 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
     if( depressed ) return -1;
     SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
   } else {
+    if( depressed )
+      ui_selected_gp_buttons &= ~(1 << gp);
+    else
+      ui_selected_gp_buttons |= (1 << gp);
+
     // forward to menu page
     if( ui_button_callback != NULL ) {
       ui_button_callback(gp, depressed);

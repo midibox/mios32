@@ -47,9 +47,14 @@
 
 seq_ui_button_state_t seq_ui_button_state;
 
+u8 ui_selected_group;
 u16 ui_selected_tracks;
+u8 ui_selected_par_layer;
+u8 ui_selected_trg_layer;
+u8 ui_selected_instrument;
 u8 ui_selected_step;
 u8 ui_selected_step_view;
+u16 ui_selected_gp_buttons;
 
 volatile u8 ui_cursor_flash;
 volatile u8 ui_cursor_flash_overrun_ctr;
@@ -59,6 +64,11 @@ u8 seq_ui_display_update_req;
 
 u8 ui_seq_pause;
 
+u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
+u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
+u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
+
+seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -85,10 +95,15 @@ s32 SEQ_UI_Init(u32 mode)
   seq_ui_button_state.ALL = 0;
   seq_ui_button_state.SOLO = 1; // MBSEQV4Lite is always in solo mode!
 
+  ui_selected_group = 0;
   ui_selected_tracks = 0x00ff;
+  ui_selected_par_layer = 0;
+  ui_selected_trg_layer = 0;
+  ui_selected_instrument = 0;
   ui_selected_step = 0;
   ui_selected_step_view = 0;
   ui_seq_pause = 0;
+  ui_selected_gp_buttons = 0;
 
   ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
   ui_cursor_flash = 0;
@@ -99,6 +114,20 @@ s32 SEQ_UI_Init(u32 mode)
 
   // set initial page
   SEQ_UI_PAGES_Set(SEQ_UI_PAGE_TRIGGER);
+
+  // finally init bookmarks
+  //ui_page_before_bookmark = SEQ_UI_PAGE_EDIT;
+  int i;
+  for(i=0; i<SEQ_UI_BOOKMARKS_NUM; ++i) {
+    char buffer[10];
+    seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[i];
+
+    sprintf(buffer, "BM%2d ", i+1);
+    memcpy((char *)bm->name, buffer, 6);
+    bm->enable.ALL = ~0;
+    bm->flags.LOCKED = 0;
+    SEQ_UI_Bookmark_Store(i);
+  }
 
   return 0; // no error
 }
@@ -127,6 +156,11 @@ static s32 resetTapTempo(void)
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
   s32 status;
+
+  if( depressed )
+    ui_selected_gp_buttons &= ~(1 << gp);
+  else
+    ui_selected_gp_buttons |= (1 << gp);
 
   if( (status=SEQ_UI_PAGES_GP_Button_Handler(gp, depressed)) >= 0 ) {
     ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
@@ -339,8 +373,6 @@ static s32 SEQ_UI_Button_Master(s32 depressed)
 
 static s32 SEQ_UI_Button_ExtRestart(s32 depressed)
 {
-  seq_ui_button_state.EXT_RESTART = depressed ? 0 : 1;
-
   if( depressed ) return -1; // ignore when button depressed
 
   // should be atomic
@@ -802,6 +834,21 @@ s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
   return 0; // not relevant
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Called by BLM
+// Replacement for MBSEQV4L
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_EDIT_Button_Handler(u8 button, u8 depressed)
+{
+  u8 prev_page = ui_page;
+  ui_page = SEQ_UI_PAGE_TRIGGER;
+  SEQ_UI_PAGES_GP_Button_Handler(button, depressed);
+  ui_page = prev_page;
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Sets a LED
 // Could be enhanced for different BLMs (or common DOUTs) in future
@@ -1170,4 +1217,31 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
 #else
   return 0;
 #endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// stores a bookmark
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Bookmark_Store(u8 bookmark)
+{
+  if( bookmark >= SEQ_UI_BOOKMARKS_NUM )
+    return -1;
+
+  //seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[bookmark];
+
+  return -1; // not supported by MBSEQV4L
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// restores a bookmark
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Bookmark_Restore(u8 bookmark)
+{
+  if( bookmark >= SEQ_UI_BOOKMARKS_NUM )
+    return -1;
+
+  //seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[bookmark];
+
+  return -1; // not supported by MBSEQV4L
 }

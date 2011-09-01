@@ -38,14 +38,11 @@
 #include "seq_led.h"
 #include "seq_ui.h"
 #include "seq_pattern.h"
-
-#ifndef MBSEQV4L
 #include "seq_mixer.h"
 #include "seq_song.h"
 #include "seq_label.h"
 #include "seq_cc_labels.h"
 #include "seq_midply.h"
-#endif
 
 
 #include "seq_cv.h"
@@ -64,12 +61,9 @@
 #include "seq_file_c.h"
 #include "seq_file_gc.h"
 #include "seq_file_hw.h"
-
-#ifndef MBSEQV4L
 #include "seq_file_m.h"
 #include "seq_file_s.h"
 #include "seq_file_bm.h"
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -117,17 +111,13 @@ void APP_Init(void)
   SEQ_MIDI_PORT_Init(0);
   SEQ_MIDI_IN_Init(0);
   SEQ_MIDI_SYSEX_Init(0);
-#ifndef MBSEQV4L
   SEQ_BLM_Init(0);
-#endif
   SEQ_MIDI_OUT_Init(0);
   SEQ_MIDI_ROUTER_Init(0);
   SEQ_TERMINAL_Init(0);
 
-#ifndef MBSEQV4L
   // init mixer page
   SEQ_MIXER_Init(0);
-#endif
 
   // init sequencer core
   SEQ_CORE_Init(0);
@@ -189,13 +179,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
-#ifndef MBSEQV4L
     if( port == seq_blm_port ) {
       SEQ_BLM_MIDI_Receive(port, midi_package);
-    }
-    else
-#endif
-    {
+    } else {
       // returns > 0 if byte has been used for remote function
       if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
 	// forward to router
@@ -219,10 +205,8 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   // forward event to MIDI router
   SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
-#ifndef MBSEQV4L
   // forward event to BLM as well
   SEQ_BLM_SYSEX_Parser(port, midi_in);
-#endif
 
   // forward to common SysEx handler
   SEQ_MIDI_SYSEX_Parser(port, midi_in);

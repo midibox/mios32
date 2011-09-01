@@ -34,7 +34,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
-#define DEBUG_VERBOSE_LEVEL 0
+// select 1 by default to allow error messages (recommended)
+#define DEBUG_VERBOSE_LEVEL 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,12 +48,18 @@ seq_record_state_t seq_record_state;
 u8 seq_record_step;
 u8 seq_record_quantize;
 
+// one bit for each note, 32*4 = 128 notes supported (covers all notes of one MIDI channel)
+// also used by seq_core for SEQ_MIDI_OUT_ReSchedule in record mode, therefore global
+u32 seq_record_played_notes[4];
+
+
 /////////////////////////////////////////////////////////////////////////////
-// Local Variables
+// Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-// one bit for each note, 32*4 = 128 notes supported (covers all notes of one MIDI channel)
-static u32 played_notes[4];
+// for step recording mode: timestamp to measure the length of the played
+// notes (deluxe version: separate timestamp for each note!)
+u16 seq_record_note_timestamp_ms[128];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +70,7 @@ s32 SEQ_RECORD_Init(u32 mode)
   seq_record_options.ALL = 0;
   seq_record_options.AUTO_START = 0;
   seq_record_options.FWD_MIDI = 1;
+  seq_record_options.POLY_RECORD = 1;
   seq_record_quantize = 20;
 
   seq_record_state.ALL = 0;
@@ -78,6 +86,11 @@ s32 SEQ_RECORD_Init(u32 mode)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
     SEQ_RECORD_Reset(track);
+
+  SEQ_RECORD_AllNotesOff();
+
+  // used for all tracks
+  seq_record_step = 0;
 
   return 0; // no error
 }
@@ -101,14 +114,23 @@ s32 SEQ_RECORD_Reset(u8 track)
   t->rec_poly_ctr = 0;
   MIOS32_IRQ_Enable();
 
-  // used for all tracks
-  seq_record_step = 0;
-
-  int i;
-  for(i=0; i<4; ++i)
-    played_notes[i] = 0;
-
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// should be called whenever the MIDI channel or port is changed
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RECORD_AllNotesOff(void)
+{
+  int i;
+  for(i=0; i<128; ++i)
+    seq_record_note_timestamp_ms[i] = 0;
+
+  for(i=0; i<4; ++i)
+    seq_record_played_notes[i] = 0;
+
+  return 0;
 }
 
 
@@ -188,7 +210,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    int step;
 	    for(step=0; step<num_p_steps; ++step)
 	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
 	    DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
 #endif
 	  }
@@ -202,7 +224,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     }
 
     if( !free_layer_found ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ_RECORD_Receive] no free CC layer found for CC#%d\n", midi_package.cc_number);
 #endif
       return 0; // no free layer
@@ -216,7 +238,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     return 0;
 #endif
 
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_RECORD_Receive] %02x %02x %02x -> track #%d\n", 
 	    midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, 
 	    track+1);
@@ -240,53 +262,98 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
       // if Note Off and new note number matches with recorded note number
       if( midi_package.event == NoteOff || midi_package.velocity == 0 ) {
-	if( played_notes[midi_package.note>>5] & note_mask ) {
+	if( seq_record_played_notes[midi_package.note>>5] & note_mask ) {
 	  MIOS32_IRQ_Disable();
 	  // note not active anymore
-	  played_notes[midi_package.note>>5] &= ~note_mask;
+	  seq_record_played_notes[midi_package.note>>5] &= ~note_mask;
+
+	  // determine duration in mS (for step recording function)
+	  u16 duration_ms = seq_core_timestamp_ms - seq_record_note_timestamp_ms[midi_package.note];
+	  // map to BPM
+	  int duration = (int)((float)duration_ms / ((1000.0*60.0) / SEQ_BPM_Get() / (float)SEQ_BPM_PPQN_Get()));
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_RECORD_Receive] duration of note 0x%02x was %d mS (%d ticks)\n",
+		    midi_package.note, duration_ms, duration);
+#endif	  
 
 	  // insert length into current step
 	  u8 instrument = 0;
-
 	  int len;
 	  if( seq_record_options.STEP_RECORD ) {
-	    len = 71; // TODO: determine based timestamp
+	    len = 71; // 75%
+	    if( tcc->event_mode != SEQ_EVENT_MODE_Drum )
+	      len = (duration <= 96) ? duration : 96; // for duration >= 96 the length will be stretched after record
 	  } else {
 	    len = SEQ_BPM_TickGet() - t->rec_timestamp;
-	  }
-	  if( len < 1 )
-	    len = 1;
-	  else if( len > 95 )
-	    len = 95;
 
-	  if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
-	    // extra for MBSEQ V4L:
-	    // search for note in track 1/8, insert length into track 3/10
-	    u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+	    if( len < 1 )
+	      len = 1;
+	    else if( len > 95 )
+	      len = 95;
+	  }
+
+	  int len_step = seq_record_options.STEP_RECORD ? seq_record_step : t->step;
+	  u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+
+	  while( 1 ) {
+	    if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
+	      // extra for MBSEQ V4L:
+	      // search for note in track 1/8, insert length into track 3/10
+	      int par_layer;
+	      for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
+		if( SEQ_PAR_Get(track, len_step, par_layer, instrument) == midi_package.note ) {
+		  SEQ_PAR_Set(track+2, len_step, par_layer, instrument, len);
+		  break;
+		}
+	      }
+	    } else {
+	      if( tcc->link_par_layer_length >= 0 )
+		SEQ_PAR_Set(track, len_step, tcc->link_par_layer_length, instrument, len);
+	    }
+
+	    if( !seq_record_options.STEP_RECORD )
+	      break;
+	    if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
+	      break;
+	    if( duration <= 0 )
+	      break;
+	    duration -= 96;
+
+	    // insert length into all following steps until a gate is set
+	    if( ++len_step > tcc->length ) // TODO: handle this correctly if track is played backwards
+	      len_step = tcc->loop;
+
+	    if( SEQ_TRG_GateGet(track, len_step, instrument) )
+	      break;
+
+	    len = (duration > 0) ? 96 : -duration;
+
+	    // copy notes
+	    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
 	    int par_layer;
-	    for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
-	      if( SEQ_PAR_Get(track, t->step, par_layer, instrument) == midi_package.note ) {
-		SEQ_PAR_Set(track+2, t->step, par_layer, instrument, len);
-		break;
+	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
+	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+		u8 note = SEQ_PAR_Get(track, seq_record_step, par_layer, instrument);
+		SEQ_PAR_Set(track, len_step, par_layer, instrument, note);
 	      }
 	    }
-	  } else {
-	    if( tcc->link_par_layer_length >= 0 )
-	      SEQ_PAR_Set(track, t->step, tcc->link_par_layer_length, instrument, len);
 	  }
+
 	  MIOS32_IRQ_Enable();
 	}
 
-	if( seq_record_options.STEP_RECORD ) {
-	  // send Note Off events of current track
-	  send_note_off = 1;     
+	if( seq_record_options.STEP_RECORD && seq_record_options.FWD_MIDI ) {
+	  // send Note Off events of current track if no key is played anymore
+	  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
+	  if( !any_note_played )
+	    send_note_off = 1;     
 	}
       } else {
 	MIOS32_IRQ_Disable();
 
 	if( seq_record_options.STEP_RECORD && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	  // check if another note is already played
-	  u8 any_note_played = played_notes[0] || played_notes[1] || played_notes[2] || played_notes[3];
+	  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
 	  // if not: clear poly counter and all notes (so that new chord can be entered if all keys were released)
 	  if( !any_note_played ) {
 	    t->rec_poly_ctr = 0;
@@ -303,14 +370,13 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	}
 
 	// note is active
-	played_notes[midi_package.note>>5] |= note_mask;
+	seq_record_played_notes[midi_package.note>>5] |= note_mask;
 	// start measuring length
 	t->rec_timestamp = SEQ_BPM_TickGet();
-	MIOS32_IRQ_Enable();
+	// for step record function: independent from BPM
+	seq_record_note_timestamp_ms[midi_package.note & 0x7f] = seq_core_timestamp_ms; // note: 16bit only
 
-	// send Note Off events of current track
-	if( seq_record_options.STEP_RECORD )
-	  send_note_off = 1;
+	MIOS32_IRQ_Enable();
 
 	// record event
 	rec_event = 1;
@@ -323,7 +389,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     } break;
 
     default: {
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ_RECORD_Receive] event %x not supported.\n", midi_package.event);
 #endif
       return -2; // unsupported event
@@ -343,13 +409,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
   if( send_note_off ) {
     if( SEQ_BPM_IsRunning() )
-      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, 0);
+      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, 0, seq_record_played_notes);
     else
       SEQ_MIDI_OUT_FlushQueue();
   }
 
   if( rec_event ) {
-    u8 dont_play_step_now = 0;
     if( !seq_record_options.STEP_RECORD ) {
       u8 prev_step = seq_record_step;
       u8 new_step = t->step;
@@ -375,12 +440,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
 	  if( next_step > tcc->length ) // TODO: handle this correctly if track is played backwards
 	    next_step = tcc->loop;
-#if DEBUG_VERBOSE_LEVEL >= 1
+#if DEBUG_VERBOSE_LEVEL >= 2
 	  MIOS32_MIDI_SendDebugMessage("Shifted step %d -> %d\n", seq_record_step, next_step);
 #endif
 	  seq_record_step = next_step;
 	  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 1; // next step won't be overwritten
-	  dont_play_step_now = 1; // next step will be played by sequencer, and not immediately
 	}
       }
 
@@ -417,8 +481,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	SEQ_BPM_Start();
       }
 
-      if( seq_record_options.FWD_MIDI && !dont_play_step_now ) {
-        seq_layer_evnt_t layer_events[16];
+      if( seq_record_options.STEP_RECORD && seq_record_options.FWD_MIDI ) {
+	seq_layer_evnt_t layer_events[16];
 	u8 record_step = seq_record_step;
 #ifdef MBSEQV4L
 	// extra MBSEQ V4L if CC track: read 16th step in step record mode
@@ -427,11 +491,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  record_step *= 4;
 #endif
 
-        s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
-        if( number_of_events > 0 ) {
+	s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
+	if( number_of_events > 0 ) {
 	  int i;
-          seq_layer_evnt_t *e = &layer_events[0];
-          for(i=0; i<number_of_events; ++e, ++i) {
+	  seq_layer_evnt_t *e = &layer_events[0];
+	  for(i=0; i<number_of_events; ++e, ++i) {
 	    // send event immediately
 	    MIOS32_MIDI_SendPackage(rec_port, e->midi_package);
 
@@ -454,11 +518,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	seq_record_step = next_step;
       }
     }
+  }
 
-  } else { // !rec_event
-    // forward event directly if it hasn't been recorded
-    if( seq_record_options.FWD_MIDI )
-      MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
+  if( seq_record_options.FWD_MIDI && (!rec_event || !seq_record_options.STEP_RECORD) ) {
+    // forward event directly in live mode or if it hasn't been recorded
+    MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
   }
 
   // give MIDI Out/Sequencer semaphore
@@ -502,7 +566,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
   // branch depending on drum/normal mode
   u8 instrument = 0;
-  u8 any_note_played = played_notes[0] || played_notes[1] || played_notes[2] || played_notes[3];
+  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
 
   // if at least one note is played and step can be overwritten
   if( any_note_played && !t->state.REC_DONT_OVERWRITE_NEXT_STEP ) {
@@ -512,7 +576,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track);
       for(instrument=0; instrument<num_instruments; ++instrument) {
 	u8 note = tcc->lay_const[0*16 + instrument];
-	if( played_notes[note>>5] & (1 << (note & 0x1f)) ) {
+	if( seq_record_played_notes[note>>5] & (1 << (note & 0x1f)) ) {
 	  // disable gate of new step
 	  SEQ_TRG_GateSet(track, new_step, instrument, 0);
 	}
@@ -535,7 +599,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	// search for note in track 1/8, insert length into track 3/10
 	for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
 	  u8 note = SEQ_PAR_Get(track, prev_step, par_layer, instrument);
-	  if( played_notes[note>>5] & (1 << (note&0x1f)) ) {
+	  if( seq_record_played_notes[note>>5] & (1 << (note&0x1f)) ) {
 	    SEQ_PAR_Set(track+2, prev_step, par_layer, instrument, 95);
 	    SEQ_PAR_Set(track+2, new_step, par_layer, instrument, 1);
 	  }

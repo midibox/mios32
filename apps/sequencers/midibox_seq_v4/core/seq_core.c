@@ -21,9 +21,7 @@
 #include <seq_midi_out.h>
 
 #include "seq_core.h"
-#ifndef MBSEQV4L
 #include "seq_song.h"
-#endif
 #include "seq_random.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
@@ -41,11 +39,9 @@
 #include "seq_random.h"
 #include "seq_record.h"
 #include "seq_live.h"
-#ifndef MBSEQV4L
 #include "seq_midply.h"
 #include "seq_midexp.h"
 #include "seq_midimp.h"
-#endif
 #include "seq_cv.h"
 #include "seq_statistics.h"
 #include "seq_ui.h"
@@ -192,10 +188,8 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset LFO module
   SEQ_LFO_Init(0);
 
-#ifndef MBSEQV4L
   // reset song module
   SEQ_SONG_Init(0);
-#endif
 
   // reset live play module
   SEQ_LIVE_Init(0);
@@ -203,12 +197,10 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset record module
   SEQ_RECORD_Init(0);
 
-#ifndef MBSEQV4L
   // init MIDI file player/exporter/importer
   SEQ_MIDPLY_Init(0);
   SEQ_MIDEXP_Init(0);
   SEQ_MIDIMP_Init(0);
-#endif
 
   // clear registers which are not reset by SEQ_CORE_Reset()
   u8 track;
@@ -236,10 +228,8 @@ s32 SEQ_CORE_Init(u32 mode)
   // reset sequencer
   SEQ_CORE_Reset(0);
 
-#ifndef MBSEQV4L
   // reset MIDI player
   SEQ_MIDPLY_Reset();
-#endif
 
   // init BPM generator
   SEQ_BPM_Init(0);
@@ -275,9 +265,7 @@ s32 SEQ_CORE_Handler(void)
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
-#ifndef MBSEQV4L
       SEQ_MIDPLY_PlayOffEvents();
-#endif
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -295,13 +283,9 @@ s32 SEQ_CORE_Handler(void)
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
 
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
-#ifndef MBSEQV4L
       SEQ_SONG_Reset(0);
-#endif
       SEQ_CORE_Reset(0);
-#ifndef MBSEQV4L
       SEQ_MIDPLY_Reset();
-#endif
     }
 
     u16 new_song_pos;
@@ -311,9 +295,7 @@ s32 SEQ_CORE_Handler(void)
 
       u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
       SEQ_CORE_Reset(new_tick);
-#ifndef MBSEQV4L
       SEQ_SONG_Reset(new_tick);
-#endif
 
 #if 0
       // fast forward to new song position
@@ -326,9 +308,7 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_BPM_TickSet(new_tick);
       }
 #endif
-#ifndef MBSEQV4L
       SEQ_MIDPLY_SongPos(new_song_pos, 1);
-#endif
     }
 
     u32 bpm_tick;
@@ -369,9 +349,7 @@ s32 SEQ_CORE_Handler(void)
 
 	  // generate MIDI events
 	  SEQ_CORE_Tick(bpm_tick, -1, 0);
-#ifndef MBSEQV4L
 	  SEQ_MIDPLY_Tick(bpm_tick);
-#endif
 
 #if LED_PERFORMANCE_MEASURING == 1
 	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
@@ -383,16 +361,9 @@ s32 SEQ_CORE_Handler(void)
 	  // load new pattern/song step if reference step reached measure
 	  // (this code is outside SEQ_CORE_Tick() to save stack space!)
 	  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
-#ifndef MBSEQV4L
 	    if( SEQ_SONG_ActiveGet() ) {
 	      SEQ_SONG_NextPos();
-	    }
-#else
-	    if( 0 ) {
-	      // no song mode
-	    }
-#endif
-	    else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+	    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
 	      SEQ_PATTERN_Handler();
 	    }
 
@@ -506,12 +477,8 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 {
-#ifndef MBSEQV4L
   // get MIDI File play mode (if set to SEQ_MIDPLY_MODE_Exclusive, all tracks will be muted)
   u8 midply_solo = SEQ_MIDPLY_RunModeGet() != 0 && SEQ_MIDPLY_ModeGet() == SEQ_MIDPLY_MODE_Exclusive; 
-#else
-  u8 midply_solo = 0;
-#endif
 
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
@@ -634,7 +601,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
-	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0);
+	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0,
+				seq_record_state.ENABLED ? seq_record_played_notes : NULL);
 	// clear state flag and note storage
 	t->state.SUSTAINED = 0;
 	for(i=0; i<4; ++i)
@@ -795,9 +763,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    int i;
 
 	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
-	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0);
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0,
+				      seq_record_state.ENABLED ? seq_record_played_notes : NULL);
 	    else // Glide
-	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick);
+	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick,
+				      seq_record_state.ENABLED ? seq_record_played_notes : NULL);
 
 	    // clear state flags and note storage
 	    t->state.STRETCHED_GL = 0;
@@ -961,7 +931,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    u32 rescheduled_tick = bpm_tick + prev_bpm_tick_delay + gen_off_events;
 	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
 	      rescheduled_tick -= 1;
-	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, rescheduled_tick);
+	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, rescheduled_tick,
+				    seq_record_state.ENABLED ? seq_record_played_notes : NULL);
 
 	    // clear state flag and note storage
 	    t->state.SUSTAINED = 0;
@@ -989,6 +960,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
+	      // skip in record mode if the same note is already played
+	      if( seq_record_state.ENABLED &&
+		  (seq_record_played_notes[p->note>>5] & (1 << (p->note&0x1f))) )
+		continue;
+
 	      // sustained/glided note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
 	      if( gen_sustained_events ) {
 		u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
