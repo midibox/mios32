@@ -192,11 +192,40 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
       out("  show:                             shows the current configuration file");
+      out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
       out("  exit:                             (telnet only) exits the terminal");
     } else if( strcmp(parameter, "system") == 0 ) {
       TERMINAL_PrintSystem(_output_function);
+    } else if( strcmp(parameter, "msd") == 0 ) {
+      char *arg = NULL;
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(arg, "on") == 0 ) {
+	  if( TASK_MSD_EnableGet() ) {
+	    out("Mass Storage Device Mode already activated!\n");
+	  } else {
+	    out("Mass Storage Device Mode activated - USB MIDI will be disabled!!!\n");
+	    // wait a second to ensure that this message is print in MIOS Terminal
+	    int d;
+	    for(d=0; d<1000; ++d)
+	      MIOS32_DELAY_Wait_uS(1000);
+	    // activate MSD mode
+	    TASK_MSD_EnableSet(1);
+	  }
+	} else if( strcmp(arg, "off") == 0 ) {
+	  if( !TASK_MSD_EnableGet() ) {
+	    out("Mass Storage Device Mode already deactivated!\n");
+	  } else {
+	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again.n");
+	    TASK_MSD_EnableSet(0);
+	  }
+	} else
+	  arg = NULL;
+      }
+      if( arg == NULL ) {
+	out("Please enter 'msd on' or 'msd off'\n");
+      }      
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("ERROR: please specify filename for patch (up to 8 characters)!");

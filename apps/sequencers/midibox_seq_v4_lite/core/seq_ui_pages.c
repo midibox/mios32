@@ -25,6 +25,8 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_record.h"
+#include "seq_file.h"
+#include "seq_pattern.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -77,6 +79,48 @@ seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
   {     3,     19,       5,        35,        29,          20,        20     }, // GP#16
 };
 
+seq_ui_pages_lfo_presets_t seq_ui_pages_lfo_presets[16] = {
+  // waveform amplitude phase steps steps_rst enable_flags cc cc_offset cc_ppqn
+  {     0,      128+64,   0,   15,    15,        0x00,     0,    64,       6    }, // GP#1 (off)
+  {     1,      128+12,   0,   15,    15,        0x0e,     0,    64,       6    }, // GP#2
+  {     3,      128+24,   0,   15,    15,        0x0e,     0,    64,       6    }, // GP#3
+  {     3,      128-12,   0,   15,    15,        0x06,     0,    64,       6    }, // GP#4
+  {     3,      128+24,   0,   15,     3,        0x06,     0,    64,       6    }, // GP#5
+  {     3,      128-12,   0,   31,    15,        0x06,     0,    64,       6    }, // GP#6
+  {     3,      128+12,   0,   31,    15,        0x06,     0,    64,       6    }, // GP#7
+  {     3,      128+12,   0,   63,    31,        0x06,     0,    64,       6    }, // GP#8
+
+  {     1,      128+32,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#9
+  {     3,      128+64,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#10
+  {     3,      128+48,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#11
+  {     3,      128+48,   0,   15,     3,        0x08,     1,    64,       6    }, // GP#12
+  {     3,      128+48,   0,   31,     3,        0x08,     1,    64,       6    }, // GP#13
+  {     3,      128+48,   0,   31,    15,        0x08,     1,    64,       6    }, // GP#14
+  {     3,      128+48,   0,   63,    31,        0x08,     1,    64,       6    }, // GP#15
+  {     1,      128+48,   0,   63,    31,        0x08,     1,    64,       6    }, // GP#16
+};
+
+
+seq_ui_pages_humanizer_presets_t seq_ui_pages_humanizer_presets[16] = {
+  // mode  value
+  {  0x00,    0   }, // GP#1 (off)
+  {  0x06,    8   }, // GP#2
+  {  0x06,   16   }, // GP#3
+  {  0x06,   24   }, // GP#4
+  {  0x06,   32   }, // GP#5
+  {  0x06,   40   }, // GP#6
+  {  0x06,   48   }, // GP#7
+  {  0x06,   64   }, // GP#8
+  {  0x01,   12   }, // GP#9
+  {  0x01,   16   }, // GP#10
+  {  0x01,   24   }, // GP#11
+  {  0x01,   36   }, // GP#12
+  {  0x07,   12   }, // GP#13
+  {  0x07,   16   }, // GP#14
+  {  0x07,   24   }, // GP#15
+  {  0x07,   36   }, // GP#16
+};
+
 
 u8 seq_ui_pages_scale_presets[16] = {
    0, // reserved, first position not used as it disabled force-to-scale
@@ -98,14 +142,18 @@ u8 seq_ui_pages_scale_presets[16] = {
 };
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 ui_selected_progression_preset;
 static u8 ui_selected_echo_preset;
+static u8 ui_selected_lfo_preset;
+static u8 ui_selected_humanizer_preset;
 static u8 ui_selected_scale;
+static seq_pattern_t ui_selected_pattern[SEQ_CORE_NUM_GROUPS];
+static u8 ui_selected_pattern_changing;
+static u16 load_save_notifier_ctr;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -148,6 +196,10 @@ s32 SEQ_UI_PAGES_Set(seq_ui_page_t page)
 u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 {
   static u16 check_100mS_ctr = 0;
+
+  if( load_save_notifier_ctr )
+    --load_save_notifier_ctr;
+
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // for periodic checks (e.g. of selections derived from patches)
@@ -157,11 +209,21 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
   switch( ui_page ) {
 
   ///////////////////////////////////////////////////////////////////////////
-  case SEQ_UI_PAGE_LOAD: {
-  } break;
-
-  ///////////////////////////////////////////////////////////////////////////
+  case SEQ_UI_PAGE_LOAD:
   case SEQ_UI_PAGE_SAVE: {
+    u8 group = 8;
+    if( ui_selected_tracks & (1 << 0) )
+      group = 0;
+
+    u16 leds = (1 << ui_selected_pattern[group].group) | (1 << (ui_selected_pattern[group].num+8));
+    if( ui_selected_pattern_changing && ui_cursor_flash )
+      leds &= 0x00ff;
+
+    // invert LEDs each 50 mS if load/save notifier active
+    if( load_save_notifier_ctr && (load_save_notifier_ctr % 100) >= 50 )
+      leds ^= 0xffff;
+
+    return leds;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -224,7 +286,7 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 	    tcc->steps_repeat == preset->steps_repeat &&
 	    tcc->steps_skip == preset->steps_skip &&
 	    tcc->steps_rs_interval == preset->steps_rs_interval ) {
-	  ui_selected_echo_preset = i;
+	  ui_selected_progression_preset = i;
 	  break;
 	}
       }
@@ -268,10 +330,47 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_HUMANIZER: {
+    // check if selection still valid
+    if( check_100mS_ctr == 0 ) {
+      seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+      seq_ui_pages_humanizer_presets_t *preset = (seq_ui_pages_humanizer_presets_t *)&seq_ui_pages_humanizer_presets[0];
+      int i;
+      for(i=0; i<16; ++i, ++preset) {
+	if( tcc->humanize_mode == preset->mode &&
+	    tcc->humanize_value == preset->value ) {
+	  ui_selected_humanizer_preset = i;
+	  break;
+	}
+      }
+    }
+
+    return (1 << ui_selected_humanizer_preset);
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_LFO: {
+    // check if selection still valid
+    if( check_100mS_ctr == 0 ) {
+      seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+      seq_ui_pages_lfo_presets_t *preset = (seq_ui_pages_lfo_presets_t *)&seq_ui_pages_lfo_presets[0];
+      int i;
+      for(i=0; i<16; ++i, ++preset) {
+	if( tcc->lfo_waveform == preset->waveform &&
+	    tcc->lfo_amplitude == preset->amplitude &&
+	    tcc->lfo_phase == preset->phase &&
+	    tcc->lfo_steps == preset->steps &&
+	    tcc->lfo_steps_rst == preset->steps_rst &&
+	    tcc->lfo_enable_flags.ALL == preset->enable_flags &&
+	    tcc->lfo_cc == preset->cc &&
+	    tcc->lfo_cc_offset == preset->cc_offset &&
+	    tcc->lfo_cc_ppqn == preset->cc_ppqn ) {
+	  ui_selected_lfo_preset = i;
+	  break;
+	}
+      }
+    }
+
+    return (1 << ui_selected_lfo_preset);
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -339,20 +438,41 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
   switch( ui_page ) {
 
   ///////////////////////////////////////////////////////////////////////////
-  case SEQ_UI_PAGE_LOAD: {
-    // should be atomic
-    portENTER_CRITICAL();
-
-    portEXIT_CRITICAL();
-    return 0;
-  } break;
-
-  ///////////////////////////////////////////////////////////////////////////
+  case SEQ_UI_PAGE_LOAD:
   case SEQ_UI_PAGE_SAVE: {
-    // should be atomic
-    portENTER_CRITICAL();
+    // not atomic so that files can be stored in background
+    //portENTER_CRITICAL();
 
-    portEXIT_CRITICAL();
+    u8 group;
+    for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+      seq_pattern_t *pattern = &ui_selected_pattern[group];
+
+      pattern->bank = group; // always same as group
+      if( button < 8 ) {
+	pattern->group = button;
+	ui_selected_pattern_changing = 1;
+      } else {
+	pattern->num = button-8;
+	ui_selected_pattern_changing = 0;
+
+	if( ui_page == SEQ_UI_PAGE_SAVE ) {
+	  //DEBUG_MSG("BEGIN Save %d:%c%d\n", pattern->bank+1, 'A'+pattern->group, pattern->num+1);
+	  s32 status = 0;
+	  if( (status=SEQ_PATTERN_Save(group, *pattern)) < 0 )
+	    SEQ_UI_SDCardErrMsg(2000, status);
+	  else
+	    load_save_notifier_ctr = 300; // notify about save operation for 300 mS
+	  //DEBUG_MSG("END   Save %d:%c%d\n", pattern->bank+1, 'A'+pattern->group, pattern->num+1);
+	} else {
+	  //DEBUG_MSG("BEGIN Load %d:%c%d\n", pattern->bank+1, 'A'+pattern->group, pattern->num+1);
+	  SEQ_PATTERN_Change(group, *pattern, 0);
+	  load_save_notifier_ctr = 300; // notify about load operation for 300 mS
+	  //DEBUG_MSG("END   Load %d:%c%d\n", pattern->bank+1, 'A'+pattern->group, pattern->num+1);
+	}
+      }
+    }
+
+    //portEXIT_CRITICAL();
     return 0;
   } break;
 
@@ -454,12 +574,34 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
+    ui_selected_humanizer_preset = button;
+    seq_ui_pages_humanizer_presets_t *preset = (seq_ui_pages_humanizer_presets_t *)&seq_ui_pages_humanizer_presets[ui_selected_humanizer_preset];
+    SEQ_CC_Set(visible_track, SEQ_CC_HUMANIZE_MODE, preset->mode);
+    SEQ_CC_Set(visible_track, SEQ_CC_HUMANIZE_VALUE, preset->value);
+
     portEXIT_CRITICAL();
     return 0;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_LFO: {
+    // should be atomic
+    portENTER_CRITICAL();
+
+    ui_selected_lfo_preset = button;
+    seq_ui_pages_lfo_presets_t *preset = (seq_ui_pages_lfo_presets_t *)&seq_ui_pages_lfo_presets[ui_selected_lfo_preset];
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_WAVEFORM, preset->waveform);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_AMPLITUDE, preset->amplitude);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_PHASE, preset->phase);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_STEPS, preset->steps);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_STEPS_RST, preset->steps_rst);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_ENABLE_FLAGS, preset->enable_flags);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC, preset->cc);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC_OFFSET, preset->cc_offset);
+    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC_PPQN, preset->cc_ppqn);
+
+    portEXIT_CRITICAL();
+    return 0;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -545,6 +687,8 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
       if( seq_record_state.ARMED_TRACKS & (1 << track) ) {
 	u8 *trg_ptr = (u8 *)&seq_trg_layer_value[track][2*ui_selected_step_view + (button>>3)];
 	*trg_ptr &= ~(1 << (button&7));
+
+	SEQ_RECORD_Reset(track);
       }
 
     portEXIT_CRITICAL();

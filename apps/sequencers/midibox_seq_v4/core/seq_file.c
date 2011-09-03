@@ -91,7 +91,7 @@ s32 SEQ_FILE_Init(u32 mode)
 {
   s32 status = 0;
 
-  strcpy(seq_file_session_name, "DEFAULT");
+  strcpy(seq_file_session_name, "DEF_V4L");
   seq_file_new_session_name[0] = 0; // invalidate
   
   seq_file_backup_notification = NULL;
@@ -244,11 +244,13 @@ s32 SEQ_FILE_FormattingRequired(void)
     if( !SEQ_FILE_B_NumPatterns(bank) )
       return 1;
 
+#ifndef MBSEQV4L
   if( !SEQ_FILE_M_NumMaps() )
     return 1;
 
   if( !SEQ_FILE_S_NumSongs() )
     return 1;
+#endif
 
   return 0;
 }
@@ -279,29 +281,44 @@ s32 SEQ_FILE_Format(void)
   strcpy(prev_session_name, seq_file_session_name);
   strcpy(seq_file_session_name, seq_file_new_session_name); 
 
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[SEQ_FILE_Format] Creating Session %s (previous was %s)\n", seq_file_session_name, prev_session_name);
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[SEQ_FILE_Format] Creating Session %s\n", seq_file_session_name);
 #endif
 
+  // create directories (ignore status)
+  {
+    FILE_MakeDir(SEQ_FILE_SESSION_PATH);
+    char path[MAX_PATH];
+    sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, seq_file_session_name);
+    FILE_MakeDir(path);
+  }
+
+  // create banks
   u8 num_operations = SEQ_FILE_B_NUM_BANKS + 1 + 1 + 1 + 1;
   char filename_buffer[30];
   seq_file_backup_notification = filename_buffer;
 
   file_copy_percentage = 0; // for percentage display
 
-  // create banks
   u8 bank;
   for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
     seq_file_backup_percentage = (u8)(((u32)100 * (u32)bank) / num_operations);
     sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name, bank+1);
 
+#ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
 
     if( (status=SEQ_FILE_B_Create(seq_file_session_name, bank)) < 0 )
       goto SEQ_FILE_Format_failed;
 
+#ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#endif
 
     // fill patterns with useful data
     int pattern;
@@ -310,7 +327,9 @@ s32 SEQ_FILE_Format(void)
       file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
       u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
 
+#ifndef MBSEQV4L
       SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#endif
 
       if( (status=SEQ_FILE_B_PatternWrite(seq_file_session_name, bank, pattern, group, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
@@ -325,7 +344,15 @@ s32 SEQ_FILE_Format(void)
   // create mixer maps
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+0)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
+#ifndef MBSEQV4L
+    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
+
   if( (status=SEQ_FILE_M_Create(seq_file_session_name)) >= 0 ) {
     int map;
     int num_maps = SEQ_FILE_M_NumMaps();
@@ -342,7 +369,15 @@ s32 SEQ_FILE_Format(void)
   // create song
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+1)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
+#ifndef MBSEQV4L
+    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
+
   if( (status=SEQ_FILE_S_Create(seq_file_session_name)) >= 0 ) {
     int song;
     int num_songs = SEQ_FILE_S_NumSongs();
@@ -360,7 +395,15 @@ s32 SEQ_FILE_Format(void)
   // create grooves
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+2)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
+#ifndef MBSEQV4L
+    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
+
   if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
     goto SEQ_FILE_Format_failed;
 
@@ -368,7 +411,15 @@ s32 SEQ_FILE_Format(void)
   // create config
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
+#ifndef MBSEQV4L
+    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
+
   if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
     goto SEQ_FILE_Format_failed;
 
@@ -376,14 +427,22 @@ s32 SEQ_FILE_Format(void)
   // create bookmarks
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
-  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
+#ifndef MBSEQV4L
+    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+#else
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+#endif
+#endif
+
   if( (status=SEQ_FILE_BM_Write(seq_file_session_name, 0)) < 0 )
     goto SEQ_FILE_Format_failed;
 
 SEQ_FILE_Format_failed:
   if( status >= 0 ) {
     // we were successfull
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Session %s created successfully!\n", seq_file_session_name);
 #endif
 
@@ -391,7 +450,7 @@ SEQ_FILE_Format_failed:
     SEQ_FILE_LoadAllFiles(0); // excluding HW info
   } else {
     // we were not successfull!
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Session %s failed with status %d!\n", seq_file_session_name, status);
 #endif
 

@@ -64,6 +64,25 @@ typedef struct {
 } seq_ui_pages_echo_presets_t;
 
 
+typedef struct {
+  u8 waveform;
+  u8 amplitude;
+  u8 phase;
+  u8 steps;
+  u8 steps_rst;
+  u8 enable_flags;
+  u8 cc;
+  u8 cc_offset;
+  u8 cc_ppqn;
+} seq_ui_pages_lfo_presets_t;
+
+
+typedef struct {
+  u8 mode;
+  u8 value;
+} seq_ui_pages_humanizer_presets_t;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -82,6 +101,9 @@ extern seq_ui_page_t ui_page;
 
 extern seq_ui_pages_progression_presets_t seq_ui_pages_progression_presets[16];
 extern seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16];
+extern seq_ui_pages_lfo_presets_t seq_ui_pages_lfo_presets[16];
+extern seq_ui_pages_humanizer_presets_t seq_ui_pages_humanizer_presets[16];
+u8 seq_ui_pages_scale_presets[16];
 
 #endif /* _SEQ_PAGES_H */
 

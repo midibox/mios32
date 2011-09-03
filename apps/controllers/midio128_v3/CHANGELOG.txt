@@ -1,5 +1,13 @@
 $Id$
 
+
+MIDIO128 V3.003
+~~~~~~~~~~~~~~~
+
+   o MSD mode (SD Card Reader) can now also be enabled with the "msd" command
+     in MIOS Terminal
+
+
 MIDIO128 V3.002
 ~~~~~~~~~~~~~~~
 

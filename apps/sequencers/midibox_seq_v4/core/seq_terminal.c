@@ -218,6 +218,35 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintGrooveTemplates(out);
     } else if( strcmp(parameter, "memory") == 0 ) {
       SEQ_TERMINAL_PrintMemoryInfo(out);
+    } else if( strcmp(parameter, "msd") == 0 ) {
+      char *arg = NULL;
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(arg, "on") == 0 ) {
+	  if( TASK_MSD_EnableGet() ) {
+	    out("Mass Storage Device Mode already activated!\n");
+	  } else {
+	    out("Mass Storage Device Mode activated - USB MIDI will be disabled!!!\n");
+	    // wait a second to ensure that this message is print in MIOS Terminal
+	    int d;
+	    for(d=0; d<1000; ++d)
+	      MIOS32_DELAY_Wait_uS(1000);
+	    // activate MSD mode
+	    TASK_MSD_EnableSet(1);
+	  }
+	} else if( strcmp(arg, "off") == 0 ) {
+	  if( !TASK_MSD_EnableGet() ) {
+	    out("Mass Storage Device Mode already deactivated!\n");
+	  } else {
+	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again.n");
+	    TASK_MSD_EnableSet(0);
+	  }
+	} else
+	  arg = NULL;
+      }
+      if( arg == NULL ) {
+	out("Please enter 'msd on' or 'msd off'\n");
+      }
+      
 #if !defined(MIOS32_FAMILY_EMULATION)
     } else if( strcmp(parameter, "network") == 0 ) {
       SEQ_TERMINAL_PrintNetworkInfo(out);
@@ -330,6 +359,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  bookmarks:      print bookmarks\n");
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
+  out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
   out("  network:        print ethernet network info\n");
   out("  udpmon <0..4>:  enables UDP monitor to check OSC packets (current: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
@@ -343,6 +373,26 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 
   return 0; // no error
 }
+
+// Help function
+static void stringNote(char *label, u8 note)
+{
+  const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+
+  // print "---" if note number is 0
+  if( note == 0 )
+    sprintf(label, "---  ");
+  else {
+    u8 octave = note / 12;
+    note %= 12;
+
+    // print semitone and octave (-2): up to 4 chars
+    sprintf(label, "%s%d  ",
+	    noteTab[note],
+	    (int)octave-2);
+  }
+}
+
 
 
 s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
@@ -385,6 +435,14 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   } else {
     out("Stopwatch: %d/%d uS\n", stopwatch_value, stopwatch_value_max);
   }
+
+  u8 scale, root_selection, root;
+  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+  char root_note_str[20];
+  stringNote(root_note_str, root + 0x3c);
+  out("Current Root Note (via %s): %s\n",
+      root_selection == 0 ? "Keyboard" : "Selection",
+      root_note_str);
 
 #if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
   // send Run Time Stats to MIOS terminal
