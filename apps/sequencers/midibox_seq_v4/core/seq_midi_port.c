@@ -429,7 +429,7 @@ mios32_midi_package_t SEQ_MIDI_PORT_InPackageGet(mios32_midi_port_t port)
   empty.ALL = 0;
 
   if( port != DEFAULT ) {
-    port_ix = SEQ_MIDI_PORT_OutIxGet(port);
+    port_ix = SEQ_MIDI_PORT_InIxGet(port);
 
     if( !port_ix )
       return empty; // port not supported...

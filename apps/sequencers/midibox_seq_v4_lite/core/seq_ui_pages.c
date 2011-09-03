@@ -648,7 +648,8 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
     u8 track;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-      SEQ_CC_Set(track, SEQ_CC_MIDI_CHANNEL, button);
+      if( ui_selected_tracks & (1 << track) )
+	SEQ_CC_Set(track, SEQ_CC_MIDI_CHANNEL, button);
 
     portEXIT_CRITICAL();
     return 0;

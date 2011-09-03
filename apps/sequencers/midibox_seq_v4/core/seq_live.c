@@ -120,12 +120,20 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       seq_core_trk_t *t = &seq_core_trk[track];
       seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
+      // transpose
+      //SEQ_CORE_Transpose(t, tcc, &e.midi_package);
+      // conflict if same keyboard is assigned to transposer
+
       // adding FX?
       if( seq_live_options.FX ) {
 	SEQ_HUMANIZE_Event(track, t->step, &e);
 	SEQ_LFO_Event(track, &e);
 
-	if( seq_live_options.FORCE_SCALE ) {
+	if( seq_live_options.FORCE_SCALE
+#ifdef MBSEQV4L
+	    || tcc->mode.FORCE_SCALE
+#endif
+	    ) {
 	  u8 scale, root_selection, root;
 	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
 	  SEQ_SCALE_Note(&e.midi_package, scale, root);
@@ -133,7 +141,11 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	SEQ_CORE_Limit(t, tcc, &e); // should be the last Fx in the chain!
 
       } else {
-	if( seq_live_options.FORCE_SCALE ) {
+	if( seq_live_options.FORCE_SCALE
+#ifdef MBSEQV4L
+	    || tcc->mode.FORCE_SCALE
+#endif
+	    ) {
 	  u8 scale, root_selection, root;
 	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
 	  SEQ_SCALE_Note(&e.midi_package, scale, root);
