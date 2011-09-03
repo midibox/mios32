@@ -380,8 +380,8 @@ static s32 OSC_SERVER_Method_MIDI(mios32_osc_args_t *osc_args, u32 method_arg)
     // propagate to application
     // port is located in method argument
     UIP_TASK_MUTEX_MIDIIN_TAKE;
-    MIOS32_MIDI_SendPackageToRxCallback(method_arg, p);
-    APP_MIDI_NotifyPackage(method_arg, p);
+    if( MIOS32_MIDI_SendPackageToRxCallback(method_arg, p) < 1 )
+      APP_MIDI_NotifyPackage(method_arg, p);
     UIP_TASK_MUTEX_MIDIIN_GIVE;
 
   } else  if( osc_args->arg_type[0] == 'b' ) {
@@ -489,7 +489,8 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
     u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
     if( OSC_IGNORE_TRANSFER_MODE || transfer_mode == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
       UIP_TASK_MUTEX_MIDIIN_TAKE;
-      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
+	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
       UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
@@ -549,7 +550,8 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ||
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
       UIP_TASK_MUTEX_MIDIIN_TAKE;
-      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
+	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
       UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
@@ -598,7 +600,8 @@ static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
       UIP_TASK_MUTEX_MIDIIN_TAKE;
-      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
+	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
       UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }
@@ -656,7 +659,8 @@ static s32 OSC_SERVER_Method_EventTOSC(mios32_osc_args_t *osc_args, u32 method_a
     if( OSC_IGNORE_TRANSFER_MODE ||
 	transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
       UIP_TASK_MUTEX_MIDIIN_TAKE;
-      APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
+      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
+	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
       UIP_TASK_MUTEX_MIDIIN_GIVE;
     }
   }

@@ -1348,7 +1348,7 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
       return -1; // note has been disabled
     }
 
-    inc_semi += tr_note - 0x48; // C-4 is the base note
+    inc_semi += tr_note - 0x3c; // C-3 is the base note
   }
   else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
     int key_num = (note >> 2) & 0x3;

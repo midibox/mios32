@@ -93,7 +93,6 @@ static s32 resetTapTempo(void);
 s32 SEQ_UI_Init(u32 mode)
 {
   seq_ui_button_state.ALL = 0;
-  seq_ui_button_state.SOLO = 1; // MBSEQV4Lite is always in solo mode!
 
   ui_selected_group = 0;
   ui_selected_tracks = 0x00ff;
@@ -543,13 +542,7 @@ static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  seq_core_trk_playmode_t new_playmode =
-    (SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Transpose)
-    ? SEQ_CORE_TRKMODE_Normal
-    : SEQ_CORE_TRKMODE_Transpose;
-  
-  SEQ_CC_Set(0, SEQ_CC_MODE, new_playmode);
-  SEQ_CC_Set(8, SEQ_CC_MODE, new_playmode);
+  seq_core_global_transpose_enabled ^= 1;
 
   return 0; // no error
 }
@@ -889,7 +882,7 @@ static s32 SEQ_UI_LED_SRSet(u8 sr, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  //u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // check if update requested
   if( !seq_ui_display_update_req )
@@ -940,7 +933,7 @@ s32 SEQ_UI_LED_Handler(void)
 
   SEQ_UI_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
   SEQ_UI_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.transpose, SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Transpose);
+  SEQ_UI_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
 
   return 0; // no error
 }

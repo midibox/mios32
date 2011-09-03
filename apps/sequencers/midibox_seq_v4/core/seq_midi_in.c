@@ -204,16 +204,16 @@ s32 SEQ_MIDI_IN_ResetTransArpStacks(void)
 		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
 		   SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-    transposer_hold_note[bus] = 0x48; // C-4
+    transposer_hold_note[bus] = 0x3c; // C-3
 
     int i;
     for(i=0; i<4; ++i)
       arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
 
-    arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x48; // C-4
-    arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x4c; // E-4
-    arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x4f; // G-4
-    arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x54; // C-4
+    arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
+    arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
+    arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
+    arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
   }
     
   return 0; // no error
@@ -305,14 +305,6 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	      midi_package.note >= seq_midi_in_lower[bus] &&
 	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
 
-	    if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
-		) {
-	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-	    }
-
 	    if( !seq_midi_in_options[bus].MODE_PLAY ) {
 #if 0
 	      // octave normalisation - too complicated for normal users...
@@ -328,6 +320,15 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	      SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
 #endif
 	    }
+
+	    if( seq_midi_in_options[bus].MODE_PLAY
+#ifdef MBSEQV4L
+		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+#endif
+		) {
+	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+	    }
+
 	    status |= 1;
 	  }
 	}
@@ -345,14 +346,6 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		midi_package.note >= seq_midi_in_lower[bus] &&
 		(!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
 
-	      if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
-		  ) {
-		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-	      }
-
 	      if( !seq_midi_in_options[bus].MODE_PLAY ) {
 #if 0
 		// octave normalisation - too complicated for normal users...
@@ -368,6 +361,15 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
 #endif
 	      }
+
+	      if( seq_midi_in_options[bus].MODE_PLAY
+#ifdef MBSEQV4L
+		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+#endif
+		  ) {
+		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+	      }
+
 	      status |= 1;
 	    }
 	  }
@@ -377,6 +379,10 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
       case CC:
 	if( !should_be_recorded ) {
 
+	  if( !seq_midi_in_options[bus].MODE_PLAY ) {
+	    SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+	  }
+
 	  if( seq_midi_in_options[bus].MODE_PLAY
 #ifdef MBSEQV4L
 	      || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
@@ -385,9 +391,6 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	    SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	  }
 
-	  if( !seq_midi_in_options[bus].MODE_PLAY ) {
-	    SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
-	  }
 	}
 	status |= 1;
 	break;
@@ -530,8 +533,13 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
     transposer_hold_note[bus] = n->note_items[0].note;
 
     // will only be used for Bus1 and if enabled in OPT menu
-    if( bus == 0 )
+    if( bus == 0
+#ifdef MBSEQV4L
+	&& seq_core_global_transpose_enabled
+#endif
+	) {
       seq_core_keyb_scale_root = note % 12;
+    }
   } else { // Note Off
     if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
       transposer_hold_note[bus] = n->note_items[0].note;
