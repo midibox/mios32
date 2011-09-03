@@ -313,7 +313,7 @@ s32 SEQ_UI_UTIL_Paste(void)
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("COPY Read End\n");
 #endif
-  
+
   return 0; // no error
 }
 
@@ -332,8 +332,10 @@ s32 SEQ_UI_UTIL_Clear(void)
 
   u8 track;
   for(track=0;track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( ui_selected_tracks & (1 << track) )
+    if( ui_selected_tracks & (1 << track) ) {
+      // copy preset
       SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
+    }
 
   return 0; // no error
 }

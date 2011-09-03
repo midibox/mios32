@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -580,6 +581,8 @@ void SEQ_TASK_Period1S(void)
   if( status == 1 ) {
     DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
     // load all file infos
+    SEQ_FILE_LoadSessionName();
+    DEBUG_MSG("Loading session %s\n", seq_file_session_name);
     SEQ_FILE_LoadAllFiles(1); // including HW info
   } else if( status == 2 ) {
     DEBUG_MSG("SD Card disconnected\n");
@@ -593,19 +596,18 @@ void SEQ_TASK_Period1S(void)
       DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
       SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
-#if 0
-      // check if patch file exists
-      if( !MIDIO_FILE_P_Valid() ) {
-	// create new one
-	DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
-	    
-	if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
-	  DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+      // check if formatting is required
+      if( SEQ_FILE_FormattingRequired() ) {
+	strcpy(seq_file_new_session_name, "DEF_V4L");
+	DEBUG_MSG("Creating initial session '%s'... this can take some seconds!\n", seq_file_new_session_name);
+
+	if( (status=SEQ_FILE_Format()) < 0 ) {
+	  DEBUG_MSG("Failed to create session! (status: %d)\n", status);
+	} else {
+	  SEQ_FILE_StoreSessionName();
+	  DEBUG_MSG("Done!\n");
 	}
       }
-#endif
-
-      DEBUG_MSG("SD Card found\n");
     }
   }
 

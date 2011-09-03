@@ -25,6 +25,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_cc.h"
+#include "seq_live.h"
 #include "seq_ui.h"
 #include "tasks.h"
 
@@ -402,7 +403,6 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   layer_event.midi_package.cable = track; // used as tag
   layer_event.len = 71; // 75%
   layer_event.midi_package.chn = tcc->midi_chn;
-  mios32_midi_port_t rec_port = tcc->midi_port;
 
   // take MIDI Out/Sequencer semaphore
   MUTEX_MIDIOUT_TAKE;
@@ -495,16 +495,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	if( number_of_events > 0 ) {
 	  int i;
 	  seq_layer_evnt_t *e = &layer_events[0];
-	  for(i=0; i<number_of_events; ++e, ++i) {
-	    // send event immediately
-	    MIOS32_MIDI_SendPackage(rec_port, e->midi_package);
-
-	    // if note: queue off event
-	    if( e->midi_package.event == NoteOn ) {
-	      e->midi_package.velocity = 0;
-	      SEQ_MIDI_OUT_Send(rec_port, e->midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
-	    }
-	  }
+	  for(i=0; i<number_of_events; ++e, ++i)
+	    SEQ_LIVE_PlayEvent(track, e->midi_package);
 	}
       }
 
@@ -522,7 +514,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
   if( seq_record_options.FWD_MIDI && (!rec_event || !seq_record_options.STEP_RECORD) ) {
     // forward event directly in live mode or if it hasn't been recorded
-    MIOS32_MIDI_SendPackage(rec_port, layer_event.midi_package);
+    SEQ_LIVE_PlayEvent(track, layer_event.midi_package);
   }
 
   // give MIDI Out/Sequencer semaphore

@@ -94,6 +94,8 @@ u8 seq_core_global_scale_root;
 u8 seq_core_global_scale_root_selection;
 u8 seq_core_keyb_scale_root;
 
+u8 seq_core_global_transpose_enabled;
+
 u8 seq_core_bpm_preset_num;
 float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
 float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
@@ -142,6 +144,7 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
+  seq_core_global_transpose_enabled = 0;
   seq_core_din_sync_pulse_ctr = 0; // used to generate a 1 mS pulse
 
   seq_core_metronome_port = DEFAULT;
@@ -1336,7 +1339,8 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
     inc_semi -= 16;
 
   // in transpose or arp playmode we allow to transpose notes and CCs
-  if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ) {
+  if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ||
+      (!is_cc && seq_core_global_transpose_enabled) ) {
     int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD);
 
     if( tr_note < 0 ) {
@@ -1344,7 +1348,7 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
       return -1; // note has been disabled
     }
 
-    inc_semi += tr_note - 0x3c; // C-3 is the base note
+    inc_semi += tr_note - 0x48; // C-4 is the base note
   }
   else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
     int key_num = (note >> 2) & 0x3;
@@ -1414,7 +1418,7 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
 // global/group specific settings
 // scale and root note are for interest while playing the sequence -> SEQ_CORE
 // scale and root selection are for interest when editing the settings -> SEQ_UI_OPT
-// Both functions are calling this function to ensure consistency
+// Both modules are calling this function to ensure consistency
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 {

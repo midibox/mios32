@@ -19,6 +19,9 @@ MIDIboxSEQ V4.048
 
    o Live record: some improvements for the "forward MIDI" option
 
+   o MSD mode (SD Card Reader) can now also be enabled with the "msd" command
+     in MIOS Terminal
+
 
 MIDIboxSEQ V4.047
 ~~~~~~~~~~~~~~~~~

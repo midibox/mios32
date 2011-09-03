@@ -244,6 +244,8 @@ extern u8 seq_core_global_scale_ctrl;
 extern u8 seq_core_global_scale_root_selection;
 extern u8 seq_core_keyb_scale_root;
 
+extern u8 seq_core_global_transpose_enabled;
+
 extern u8 seq_core_bpm_preset_num;
 extern float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
 extern float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
