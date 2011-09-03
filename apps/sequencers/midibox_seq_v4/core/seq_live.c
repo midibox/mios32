@@ -155,7 +155,8 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       }
 
     }
-  } else {
+  } else if( p.type >= 0x8 && p.type <= 0xe ) {
+
     // just forward event over right channel...
     p.chn = chn;
     MUTEX_MIDIOUT_TAKE;
