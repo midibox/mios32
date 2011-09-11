@@ -27,6 +27,15 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+// MIDI events are forwarded when sent to port 0xc0 to selectable ports
+// selects USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, AOUT
+u32 seq_midi_port_multi_enable_flags;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
@@ -132,6 +141,10 @@ static seq_midi_port_mon_filter_t seq_midi_port_mon_filter;
 s32 SEQ_MIDI_PORT_Init(u32 mode)
 {
   int i;
+
+  // multi port (0xc0): default enables:
+  //                                   USB1,      OUT1,       OSC1,      AOUT
+  seq_midi_port_multi_enable_flags = (1 << 0) | (1 << 4) | (1 << 12) | (1 << 16);
 
   // unmute all Out ports
   muted_out = 0;
@@ -519,13 +532,28 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     return 1; // filter package
   }
 
-  // TODO: Add also Bus handlers here
   if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
     if( OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( port == 0x80 ) { // AOUT port
     if( SEQ_CV_SendPackage(port & 0xf, package) )
       return 1; // filter package
+  } else if( port == 0xc0 ) { // Multi OUT port
+    int i;
+    u32 mask = 1;
+    for(i=0; i<16; ++i, mask <<= 1) {
+      if( seq_midi_port_multi_enable_flags & mask ) {
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
+	MIOS32_MIDI_SendPackage(port, package);
+      }
+    }
+
+    if( seq_midi_port_multi_enable_flags & (1 << 16) ) {
+      MIOS32_MIDI_SendPackage(0x80, package); // AOUT
+    }
+
+    return 1; // filter forwarding
   }
 
   return 0; // don't filter package

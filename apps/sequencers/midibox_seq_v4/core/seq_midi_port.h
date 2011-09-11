@@ -78,7 +78,7 @@ extern s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_packa
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 seq_midi_port_din_sync_pulse_ctr;
+extern u32 seq_midi_port_multi_enable_flags;
 
 
 #endif /* _SEQ_MIDI_PORT_H */

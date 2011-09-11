@@ -38,6 +38,7 @@
 #include "seq_song.h"
 #include "seq_mixer.h"
 #include "seq_midi_in.h"
+#include "seq_midi_port.h"
 #include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
 #include "seq_pattern.h"
@@ -287,6 +288,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_metronome_note_b = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
+	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
+	    seq_midi_port_multi_enable_flags = value;
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
 	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
@@ -455,6 +458,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MultiPortEnableFlags 0x%06x\n", seq_midi_port_multi_enable_flags);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_midi_sysex_remote_mode);
