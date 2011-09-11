@@ -89,6 +89,11 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+#ifdef MBSEQV4L
+  // MBSEQV4L: set default port to 0xc0: multiple outputs
+  MIOS32_MIDI_DefaultPortSet(0xc0);
+#endif
+
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
 
