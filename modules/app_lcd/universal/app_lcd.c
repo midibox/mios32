@@ -182,9 +182,9 @@ s32 APP_LCD_Init(u32 mode)
     // initialize LCD
     MIOS32_BOARD_J15_DataSet(0x38);
     MIOS32_BOARD_J15_RS_Set(0);
+    MIOS32_BOARD_J15_RW_Set(0);
     MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
     MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
-    MIOS32_BOARD_J15_RW_Set(0);
     MIOS32_DELAY_Wait_uS(50000);
 
     MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
