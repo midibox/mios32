@@ -72,7 +72,7 @@ s32 SEQ_RECORD_Init(u32 mode)
   seq_record_options.AUTO_START = 0;
   seq_record_options.FWD_MIDI = 1;
   seq_record_options.POLY_RECORD = 1;
-  seq_record_quantize = 20;
+  seq_record_quantize = 10;
 
   seq_record_state.ALL = 0;
 

@@ -306,6 +306,8 @@ s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_
       // TODO: send 0xf7 if merger enabled
 
       if( sysex_receive_ctr < sysex_len ) {
+	// for remote analysis...
+	MIOS32_MIDI_SendDebugMessage("[BSL_SYSEX] expected %d, got %d bytes (retry)\n", sysex_len, sysex_receive_ctr);
 	// not enough bytes received
 	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
       } else if( sysex_rec_state == BSL_SYSEX_REC_INVALID ) {

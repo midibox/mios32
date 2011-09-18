@@ -25,6 +25,11 @@
 #include <usbapi.h>
 #include <usbhw_lpc.h>
 
+
+// for debugging Rx buffer usage
+#define RX_BUFFER_MAX_ANALYSIS 0
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -217,9 +222,20 @@ s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 {
+#if RX_BUFFER_MAX_ANALYSIS
+  static u16 rx_buffer_max_size = 0;
+#endif
+
   // package received?
   if( !rx_buffer_size )
     return -1;
+
+#if RX_BUFFER_MAX_ANALYSIS
+  if( rx_buffer_size > rx_buffer_max_size ) {
+    rx_buffer_max_size = rx_buffer_size;
+    MIOS32_MIDI_SendDebugMessage("[MIOS32_USB_MIDI] Max Rx Buffer: %d\n", rx_buffer_max_size);
+  }
+#endif
 
   // get package - this operation should be atomic!
   MIOS32_IRQ_Disable();

@@ -59,7 +59,7 @@
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "MIOS32 Bootloader"  // you will see this in the MIDI device list
 #define MIOS32_USB_PRODUCT_ID   0x0400        // ==1024; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
-#define MIOS32_USB_VERSION_ID   0x1005        // v1.005
+#define MIOS32_USB_VERSION_ID   0x1006        // v1.006
 
 
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
@@ -69,8 +69,8 @@
 #define MIOS32_USB_MIDI_NUM_PORTS 1
 
 // buffer size (should be at least >= MIOS32_USB_MIDI_DATA_*_SIZE/4)
-#define MIOS32_USB_MIDI_RX_BUFFER_SIZE   64 // packages
-#define MIOS32_USB_MIDI_TX_BUFFER_SIZE   64 // packages
+#define MIOS32_USB_MIDI_RX_BUFFER_SIZE  512 // packages
+#define MIOS32_USB_MIDI_TX_BUFFER_SIZE  512 // packages
 
 // size of IN/OUT pipe
 #define MIOS32_USB_MIDI_DATA_IN_SIZE           64

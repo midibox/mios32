@@ -22,6 +22,9 @@ MIDIboxSEQ V4.048
    o MSD mode (SD Card Reader) can now also be enabled with the "msd" command
      in MIOS Terminal
 
+   o Move step: doesn't overwrite new selection anymore
+
+
 
 MIDIboxSEQ V4.047
 ~~~~~~~~~~~~~~~~~
