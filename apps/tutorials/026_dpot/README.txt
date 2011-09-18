@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
 
 Optional hardware:
    o 2x Microchip MCP42XXX digital potentiometers with SPI interface, for a

@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o at least one MBHP_DINX4 module
    o 1..6 rotary encoders
 
