@@ -20,4 +20,12 @@ Required hardware:
 
 Documentation: TODO
 
+
+I2S DAC Schematics: see http://www.ucapps.de/mbhp_i2s.html
+
+If a STM32 is used instead of LPC17, connect the I2S chip to J8 of the core module.
+The system clock is available at J15B:E
+
+If a LPC17 is used, connect the I2S DAC to J28 of the MBHP_CORE_LPC17 module
+
 ===============================================================================

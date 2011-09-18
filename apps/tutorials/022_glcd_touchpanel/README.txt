@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or STM32 Primer
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o a DOGM128 based graphical LCD
    o a resistive touchpanel "EA TOUCH128", which is available as accessory to DOGM128
 

@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o up to 4 DINX4 modules
    o up to 128 buttons
 

@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or STM32 Primer
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o a I2S compatible audio DAC (like TDA1543 or PCM1725U)
 
 Optional:
@@ -26,21 +26,12 @@ Optional:
 Tutorial text: TODO
 
 
-I2S chip is connected to J8 of the core module
-The system clock is available at J15B:E (not for STM32 Primer, as GLCD is 
-connected to this IO)
+I2S DAC Schematics: see http://www.ucapps.de/mbhp_i2s.html
 
-Accordingly, STM32 Primer requires an I2S DAC without "master clock", like TDA1543
-For MBHP_CORE_STM32, all "common" I2S DACs like PCM1725U can be used
+If a STM32 is used instead of LPC17, connect the I2S chip to J8 of the core module.
+The system clock is available at J15B:E
 
-
-Detailed pinning:
-   - VSS -> Vss (J8:Vs)
-   - VCC -> 5V (J8:Vd)
-   - LRCIN (WS)   -> PB12 (J8:RC)
-   - BCKIN (CK)   -> PB13 (J8:SC)
-   - DIN   (SD)   -> PB15 (J8:SO)
-   - SCKI  (MCLK) -> PC6 (J15B:E)
+If a LPC17 is used, connect the I2S DAC to J28 of the MBHP_CORE_LPC17 module
 
 
 The application starts with a 440 Hz triangle wave at L/R channel

@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o 12 LEDs
    o 12 220 Ohm resistors
    o 3 2x5 pin sockets

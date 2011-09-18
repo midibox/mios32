@@ -13,8 +13,8 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32
-     (DAC voltages are output at pin RA4 (J16:RC1) and RA5 (J16:SC)
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+     (STM32: DAC voltages are output at pin RA4 (J16:RC1) and RA5 (J16:SC)
 
 Optional hardware:
    o MBHP_AOUT, MBHP_AOUT_LC or MBHP_AOUT_NG module
