@@ -181,11 +181,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	// select step
 	SEQ_UI_SelectedStepSet(encoder_step); // this will change ui_selected_step
 
-	// not first selection -> new encoder
-	if( move_enc != -1 ) {
-	  // restore moved value
-	  MOVE_RestoreStep(visible_track, ui_selected_step, MOVE_BUFFER_NEW);
-	}
 	// select new encoder
 	move_enc = encoder;
 	// store current step value in buffer

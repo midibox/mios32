@@ -76,7 +76,7 @@ s32 MBCV_MIDI_Init(u32 mode)
     mbcv_midi_cc[cv] = 0x40; // mid value
     mbcv_midi_nrpn[cv] = 0x2000; // mid value
     mbcv_midi_aftertouch[cv] = 0x40; // mid value
-    mbcv_midi_pitch[cv] = 8192; // mid value
+    mbcv_midi_pitch[cv] = 0; // mid value
   }
 
   mbcv_midi_gates = 0;
