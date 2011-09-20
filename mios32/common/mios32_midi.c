@@ -1198,7 +1198,7 @@ s32 MIOS32_MIDI_Periodic_mS(void)
 //! is filtered which is also used for code upload, you won't be able to exchange
 //! the erroneous code w/o starting the bootloader in hold mode after power-on.
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx)
+s32 MIOS32_MIDI_DirectTxCallback_Init(s32 (*callback_tx)(mios32_midi_port_t port, mios32_midi_package_t package))
 {
   direct_tx_callback_func = callback_tx;
 
@@ -1230,7 +1230,7 @@ s32 MIOS32_MIDI_DirectTxCallback_Init(void *callback_tx)
 //! is filtered which is also used for code upload, you won't be able to exchange
 //! the erroneous code w/o starting the bootloader in hold mode after power-on.
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_DirectRxCallback_Init(void *callback_rx)
+s32 MIOS32_MIDI_DirectRxCallback_Init(s32 (*callback_rx)(mios32_midi_port_t port, u8 midi_byte))
 {
   direct_rx_callback_func = callback_rx;
 
@@ -1400,7 +1400,7 @@ u8 MIOS32_MIDI_DeviceIDGet(void)
 //! With return value != 0, APP_MIDI_NotifyPackage() won't get the already processed package.
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SysExCallback_Init(void *callback_sysex)
+s32 MIOS32_MIDI_SysExCallback_Init(s32 (*callback_sysex)(mios32_midi_port_t port, u8 midi_in))
 {
   sysex_callback_func = callback_sysex;
 
@@ -1749,7 +1749,7 @@ static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 //! \param[in] callback_debug_command the callback function (NULL disables the callback)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_DebugCommandCallback_Init(void *callback_debug_command)
+s32 MIOS32_MIDI_DebugCommandCallback_Init(s32 (*callback_debug_command)(mios32_midi_port_t port, char c))
 {
   debug_command_callback_func = callback_debug_command;
 
@@ -1787,7 +1787,7 @@ s32 MIOS32_MIDI_DebugCommandCallback_Init(void *callback_debug_command)
 //! \param[in] callback_timeout the callback function (NULL disables the callback)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_TimeOutCallback_Init(void *callback_timeout)
+s32 MIOS32_MIDI_TimeOutCallback_Init(s32 (*callback_timeout)(mios32_midi_port_t port))
 {
   timeout_callback_func = callback_timeout;
 

@@ -28,7 +28,7 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority);
+extern s32 MIOS32_TIMER_Init(u8 timer, u32 period, void (*_irq_handler)(void), u8 irq_priority);
 extern s32 MIOS32_TIMER_ReInit(u8 timer, u32 period);
 extern s32 MIOS32_TIMER_DeInit(u8 timer);
 

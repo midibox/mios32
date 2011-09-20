@@ -14,6 +14,10 @@
 #ifndef _SCS_H
 #define _SCS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -162,7 +166,7 @@ typedef enum {
 } scs_menu_type_t;
 
 typedef struct scs_menu_item_t {
-  char name[5];
+  char name[6];
   u32  ix;
   u16  maxValue;
   u16  (*getFunct)(u32 ix);
@@ -232,16 +236,19 @@ extern scs_menu_item_t *SCS_MenuPageGet(void);
 extern s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2);
 extern s32 SCS_MsgStop(void);
 
-extern s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
-extern s32 SCS_UnInstallDelayedActionCallback(void *callback);
+extern s32 SCS_InstallDelayedActionCallback(void (*callback)(u32 parameter), u16 delay_mS, u32 parameter);
+extern s32 SCS_UnInstallDelayedActionCallback(void (*callback)(u32 parameter));
 
-extern s32 SCS_InstallEditStringCallback(void *selectCallback, char *actionString, char *initialString, u8 maxChars);
-extern s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 initialIp);
-extern s32 SCS_InstallEditBrowserCallback(void *selectCallback, void *getListCallback, char *actionString, u8 itemWidth, u8 itemsPerPage);
+extern s32 SCS_InstallEditStringCallback(void (*selectCallback)(char *newString), char *actionString, char *initialString, u8 maxChars);
+extern s32 SCS_InstallEditIpCallback(void (*selectCallback)(u32 newIp), char *headerString, u32 initialIp);
+extern s32 SCS_InstallEditBrowserCallback(void (*selectCallback)(char *newString), u8 (*getListCallback)(u8 offset, char *line), char *actionString, u8 itemWidth, u8 itemsPerPage);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SCS_H */

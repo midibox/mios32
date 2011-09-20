@@ -41,6 +41,6 @@ extern s32 MIOS32_DOUT_SRSet(u32 sr, u8 value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-const u8 mios32_dout_reverse_tab[256];
+extern const u8 mios32_dout_reverse_tab[256];
 
 #endif /* _MIOS32_DOUT_H */
