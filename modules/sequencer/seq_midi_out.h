@@ -14,6 +14,10 @@
 #ifndef _SEQ_MIDI_OUT_H
 #define _SEQ_MIDI_OUT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -83,6 +87,10 @@ extern u32 seq_midi_out_allocated;
 #if SEQ_MIDI_OUT_MALLOC_ANALYSIS
 extern u32 seq_midi_out_max_allocated;
 extern u32 seq_midi_out_dropouts;
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _SEQ_MIDI_OUT_H */

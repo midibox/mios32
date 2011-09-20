@@ -123,7 +123,7 @@ static u8 displayCursorPos;    // cursor position
 static u8 displayRootOffset;   // offset in root menu
 static u8 displayPageOffset;   // offset in page
 
-static s32 (*scsDelayedActionCallback)(u32 parameter);
+static void (*scsDelayedActionCallback)(u32 parameter);
 static u32 scsDelayedActionParameter;
 static u16 scsDelayedActionCtr;
 
@@ -967,7 +967,7 @@ s32 SCS_Tick(void)
     if( --scsDelayedActionCtr == 0 ) {
       // must be atomic
       MIOS32_IRQ_Disable();
-      s32 (*_scsDelayedActionCallback)(u32 parameter);
+      void (*_scsDelayedActionCallback)(u32 parameter);
       _scsDelayedActionCallback = scsDelayedActionCallback;
       u32 parameter = scsDelayedActionParameter;
       scsDelayedActionCallback = NULL;
@@ -1540,7 +1540,7 @@ s32 SCS_MsgStop(void)
 //! Note that only a single callback function can be handled, if another
 //! one was active before, it will be dropped.
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter)
+s32 SCS_InstallDelayedActionCallback(void (*callback)(u32 parameter), u16 delay_mS, u32 parameter)
 {
   // must be atomic
   MIOS32_IRQ_Disable();
@@ -1558,7 +1558,7 @@ s32 SCS_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter
 //! via SCS_InstallDelayedActionCallback passed.\n
 //! After this delay has passed, the callback will be dropped automatically.
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_UnInstallDelayedActionCallback(void *callback)
+s32 SCS_UnInstallDelayedActionCallback(void (*callback)(u32 parameter))
 {
   // must be atomic
   MIOS32_IRQ_Disable();
@@ -1575,7 +1575,7 @@ s32 SCS_UnInstallDelayedActionCallback(void *callback)
 //! (e.g. to enter a filename).\n
 //! See tutorial/027_scs for usage example
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEditStringCallback(void *selectCallback, char *actionString, char *initialString, u8 maxChars)
+s32 SCS_InstallEditStringCallback(void (*selectCallback)(char *newString), char *actionString, char *initialString, u8 maxChars)
 {
   if( maxChars >= SCS_LCD_COLUMNS_PER_DEVICE )
     maxChars = SCS_LCD_COLUMNS_PER_DEVICE;
@@ -1613,7 +1613,7 @@ s32 SCS_InstallEditStringCallback(void *selectCallback, char *actionString, char
 //! Can be called from an item select function to enter IP editing mode
 //! See tutorial/027_scs for usage example
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 initialIp)
+s32 SCS_InstallEditIpCallback(void (*selectCallback)(u32 newIp), char *headerString, u32 initialIp)
 {
   scsEditIpCallback = selectCallback;
   memcpy(scsEditString, headerString, SCS_LCD_COLUMNS_PER_DEVICE+1);
@@ -1631,7 +1631,7 @@ s32 SCS_InstallEditIpCallback(void *selectCallback, char *headerString, u32 init
 //! Can be called from an item select function to enter IP editing mode
 //! See tutorial/027_scs for usage example
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_InstallEditBrowserCallback(void *selectCallback, void *getListCallback, char *actionString, u8 itemWidth, u8 itemsPerPage)
+s32 SCS_InstallEditBrowserCallback(void (*selectCallback)(char *newString), u8 (*getListCallback)(u8 offset, char *line), char *actionString, u8 itemWidth, u8 itemsPerPage)
 {
   scsEditStringCallback = selectCallback;
   scsEditGetListCallback = getListCallback;
