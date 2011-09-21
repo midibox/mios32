@@ -25,7 +25,8 @@
 #if defined(MIOS32_FAMILY_STM32F10x)
 #define MIOS32_IIC_NUM 1
 #elif defined(MIOS32_FAMILY_LPC17xx)
-#define MIOS32_IIC_NUM 3
+// The third IIC port at J4B is disabled by default so that the app can decide if it's used for UART or IIC
+#define MIOS32_IIC_NUM 2
 #else
 #define MIOS32_IIC_NUM 1
 # warning "mios32_iic.h not prepared for this derivative"

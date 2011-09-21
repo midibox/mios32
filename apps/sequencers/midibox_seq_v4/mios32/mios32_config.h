@@ -80,7 +80,7 @@
 
 
 // enable third UART
-#define MIOS32_UART_NUM 3
+#define MIOS32_UART_NUM 4
 
 
 // configure IIC_MIDI

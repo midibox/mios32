@@ -38,25 +38,32 @@
 // UART peripherals are clocked at CCLK/4
 #define UART_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
 
-// TX MIDI1: P2.0 w/ high-z and open-drain enabled
+// TX MIDI1: P2.0
 #define MIOS32_UART0_TX_INIT     { MIOS32_SYS_LPC_PINSEL(2, 0, 2); MIOS32_SYS_LPC_PINMODE(2, 0, 2); MIOS32_SYS_LPC_PINMODE_OD(2, 0, 1); }
 // RX MIDI1: P2.1 w/ pull-up enabled
 #define MIOS32_UART0_RX_INIT     { MIOS32_SYS_LPC_PINSEL(2, 1, 2); MIOS32_SYS_LPC_PINMODE(2, 1, 0); }
 #define MIOS32_UART0             LPC_UART1
 
 
-// TX MIDI2: P0.0 w/ high-z and open-drain enabled
+// TX MIDI2: P0.0
 #define MIOS32_UART1_TX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 0, 2); MIOS32_SYS_LPC_PINMODE(0, 0, 2); MIOS32_SYS_LPC_PINMODE_OD(0, 0, 1); }
 // RX MIDI2: P0.1 w/ pull-up enabled
 #define MIOS32_UART1_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 1, 2); MIOS32_SYS_LPC_PINMODE(0, 1, 0); }
 #define MIOS32_UART1             LPC_UART3
 
 
-// TX MIDI3 (optional): P0.2 w/ high-z and open-drain enabled
+// TX MIDI3 (optional at J5B.A7): P0.2
 #define MIOS32_UART2_TX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 2, 1); MIOS32_SYS_LPC_PINMODE(0, 2, 2); MIOS32_SYS_LPC_PINMODE_OD(0, 2, 1); }
-// RX MIDI3 (optional): P0.3 w/ pull-up enabled
+// RX MIDI3 (optional at J5B.A6): P0.3 w/ pull-up enabled
 #define MIOS32_UART2_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 3, 1); MIOS32_SYS_LPC_PINMODE(0, 3, 0); }
 #define MIOS32_UART2             LPC_UART0
+
+
+// TX MIDI4 (optional at J4B.SD): P0.10
+#define MIOS32_UART3_TX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 10, 1); MIOS32_SYS_LPC_PINMODE(0, 10, 2); MIOS32_SYS_LPC_PINMODE_OD(0, 10, 1); }
+// RX MIDI3 (optional at J4B.SC): P0.11 w/ pull-up enabled
+#define MIOS32_UART3_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 11, 1); MIOS32_SYS_LPC_PINMODE(0, 11, 0); }
+#define MIOS32_UART3             LPC_UART2
 
 
 
@@ -75,7 +82,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if MIOS32_UART_NUM >= 1
-static const LPC_UART_TypeDef *uart_base[MIOS32_UART_NUM] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2 };
+static const LPC_UART_TypeDef *uart_base[MIOS32_UART_NUM] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2, (LPC_UART_TypeDef*)MIOS32_UART3 };
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
 
@@ -110,6 +117,10 @@ s32 MIOS32_UART_Init(u32 mode)
   MIOS32_UART2_TX_INIT;
   MIOS32_UART2_RX_INIT;
 #endif
+#if MIOS32_UART_NUM >= 4
+  MIOS32_UART3_TX_INIT;
+  MIOS32_UART3_RX_INIT;
+#endif
 
   // clear size counters
   int i;
@@ -124,6 +135,9 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 #if MIOS32_UART_NUM >=3
   MIOS32_UART_BaudrateSet(2, MIOS32_UART2_BAUDRATE);
+#endif
+#if MIOS32_UART_NUM >=4
+  MIOS32_UART_BaudrateSet(3, MIOS32_UART3_BAUDRATE);
 #endif
 
   return 0; // no error

@@ -68,6 +68,16 @@
 #define MIOS32_UART2_TX_OD 1
 #endif
 
+// Baudrate of UART fourth interface
+#ifndef MIOS32_UART3_BAUDRATE
+#define MIOS32_UART3_BAUDRATE 31250
+#endif
+
+// should UART3 Tx pin configured for open drain (default) or push-pull mode?
+#ifndef MIOS32_UART3_TX_OD
+#define MIOS32_UART3_TX_OD 1
+#endif
+
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #ifndef MIOS32_UART0_ASSIGNMENT
 #define MIOS32_UART0_ASSIGNMENT 1
