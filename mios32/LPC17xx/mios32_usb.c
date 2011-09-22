@@ -885,7 +885,7 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
     if( bType != DESC_STRING )
       return FALSE;
 
-    u16 len;
+    u16 len = 0;
     int i;
 
     switch( bIndex ) {

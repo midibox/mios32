@@ -82,7 +82,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if MIOS32_UART_NUM >= 1
-static const LPC_UART_TypeDef *uart_base[MIOS32_UART_NUM] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2, (LPC_UART_TypeDef*)MIOS32_UART3 };
+static const LPC_UART_TypeDef *uart_base[4] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2, (LPC_UART_TypeDef*)MIOS32_UART3 };
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
 
