@@ -112,7 +112,7 @@ static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned c
 
 static s32 RetrieveBootInfos(void);
 
-static s32 TERMINAL_Parse(mios32_midi_port_t port, u8 byte);
+static s32 TERMINAL_Parse(mios32_midi_port_t port, char byte);
 static s32 TERMINAL_ParseLine(char *input, void *_output_function);
 
 
@@ -667,7 +667,7 @@ static s32 get_dec(char *word)
 /////////////////////////////////////////////////////////////////////////////
 // Parser
 /////////////////////////////////////////////////////////////////////////////
-static s32 TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
+static s32 TERMINAL_Parse(mios32_midi_port_t port, char byte)
 {
   // temporary change debug port (will be restored at the end of this function)
   mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();

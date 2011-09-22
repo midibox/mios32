@@ -1413,7 +1413,7 @@ static u8 *MIOS32_USB_CB_GetStringDescriptor(u16 Length)
   const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
 
   u8 buffer[200];
-  u16 len;
+  u16 len = 0;
   int i;
 
   switch( pInformation->USBwValue0 ) {
