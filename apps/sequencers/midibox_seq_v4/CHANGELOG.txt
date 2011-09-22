@@ -6,6 +6,18 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.049
+~~~~~~~~~~~~~~~~~
+
+   o support for MIDI OUT4 and MIDI IN4
+     Provided by MBHP_CORE_LPC17 module only.
+     MIDI OUT4 is available at J4B.SD
+     MIDI IN4 is available at J4B.SC
+
+   o fixed USB issue under Win7 if the interface name hasn't been
+     customized in bootloader
+
+
 MIDIboxSEQ V4.048
 ~~~~~~~~~~~~~~~~~
 
