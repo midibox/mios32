@@ -139,6 +139,7 @@ into your local mios32_config.h file
 // LPC17: (1: I2C0(iic_port 0) available ; 2: I2C1 (EEPROM) in addition, 3: I2C2 assigned to iic_port 1 available)
 #define MIOS32_IIC_NUM 1
 // for LPC17:
+// The third IIC port at J4B is disabled by default so that the app can decide if it's used for UART or IIC
 #define MIOS32_IIC_NUM 3
 
 // sets the IIC bus frequency in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
@@ -251,6 +252,12 @@ into your local mios32_config.h file
 
 // should UART2 Tx pin configured for open drain (default) or push-pull mode?
 #define MIOS32_UART2_TX_OD 1
+
+// Baudrate of UART fourth interface
+#define MIOS32_UART3_BAUDRATE 31250
+
+// should UART3 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART3_TX_OD 1
 
 // Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
 #define MIOS32_UART0_ASSIGNMENT 1
