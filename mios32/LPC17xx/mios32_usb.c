@@ -916,7 +916,7 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
 	if( product_str_user[j] != 0x00 && (product_str_user[j] < 0x20 || product_str_user[j] >= 0x80) )
 	  valid_str = 0;
       }
-      if( valid_str )
+      if( valid_str && len )
 	product_str_ptr = product_str_user;
 #endif
 

@@ -59,7 +59,7 @@
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "MIOS32 Bootloader"  // you will see this in the MIDI device list
 #define MIOS32_USB_PRODUCT_ID   0x0400        // ==1024; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
-#define MIOS32_USB_VERSION_ID   0x1006        // v1.006
+#define MIOS32_USB_VERSION_ID   0x1007        // v1.007
 
 
 // 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
