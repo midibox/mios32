@@ -14,19 +14,32 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = src/app.c \
-		  src/mbcv_midi.c \
+THUMB_SOURCE    = src/tasks.c \
 		  src/mbcv_sysex.c \
-		  src/mbcv_patch.c \
-		  src/mbcv_map.c \
 		  src/mbcv_router.c \
 		  src/mbcv_port.c \
 		  src/mbcv_file.c \
 		  src/mbcv_file_p.c \
 		  src/cc_labels.c \
                   src/midimon.c \
-                  src/terminal.c \
-		  src/scs_config.c
+                  src/terminal.c
+
+THUMB_CPP_SOURCE  = src/app.cpp \
+		    src/scs_config.cpp \
+		    src/mbcv_patch.cpp \
+		    src/mbcv_map.cpp \
+		    src/components/MbCvEnvironment.cpp \
+		    src/components/MbCv.cpp \
+		    src/components/MbCvPatch.cpp \
+		    src/components/MbCvRandomGen.cpp \
+		    src/components/MbCvClock.cpp \
+		    src/components/MbCvLfo.cpp \
+		    src/components/MbCvEnv.cpp \
+		    src/components/MbCvArp.cpp \
+		    src/components/MbCvVoice.cpp \
+		    src/components/MbCvVoiceQueue.cpp \
+		    src/components/MbCvMidiVoice.cpp \
+		    src/components/MbCvTables.cpp
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -34,7 +47,9 @@ THUMB_AS_SOURCE =
 ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
-C_INCLUDE = 	-I src
+C_INCLUDE = 	-I src \
+		-I src/components
+
 A_INCLUDE = 	-I src
 
 LIBS = 		
@@ -74,6 +89,9 @@ include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
 # FILE Access Layer
 include $(MIOS32_PATH)/modules/file/file.mk
+
+# Portable randomize module
+include $(MIOS32_PATH)/modules/random/random.mk
 
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk

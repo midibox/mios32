@@ -19,30 +19,36 @@
 #include <string.h>
 #include "tasks.h"
 
+#include <scs.h>
+#include "scs_config.h"
+
+#include <file.h>
+
+#include <seq_bpm.h>
+
+#include <app.h>
+#include <MbCvEnvironment.h>
+
+// quick&dirty to simplify re-use of C modules without changing header files
+extern "C" {
 #include <uip.h>
 #include "uip_task.h"
 #include "osc_client.h"
 #include "osc_server.h"
 
-#include <scs.h>
-#include "scs_config.h"
-
-#include <seq_bpm.h>
-
 #include "mbcv_port.h"
 #include "mbcv_map.h"
 
-#include <file.h>
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_patch.h"
 
 #include "cc_labels.h"
-
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local defines
+// Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 extraPage;
@@ -53,6 +59,8 @@ static u8 selectedIpPar;
 static u8 selectedOscPort;
 static u8 monPageOffset;
 
+// we need a reference to this environment very often
+static MbCvEnvironment* env;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local parameter variables
@@ -101,7 +109,7 @@ static void stringNote(u32 ix, u16 value, char *label)
 
 static void stringAoutIf(u32 ix, u16 value, char *label)
 {
-  char *name = MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()); // 8 chars max
+  char *name = (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()); // 8 chars max
   if( ix == 0 ) {
     label[0] = ' ';
     memcpy(label+1, (char *)name, 4);
@@ -348,22 +356,22 @@ static void cvSet(u32 ix, u16 value)
   MBCV_MAP_CaliModeSet(selectedCv, MBCV_MAP_CaliModeGet()); // change calibration mode to new pin
 }
 
-static u16  cvChnGet(u32 ix)            { return mbcv_patch_cv[selectedCv].chn; }
-static void cvChnSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].chn = value; }
+static u16  cvChnGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceChannel; }
+static void cvChnSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceChannel = value; }
 
-static u16  cvEventGet(u32 ix)            { return mbcv_patch_cv[selectedCv].midi_mode.event; }
-static void cvEventSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].midi_mode.event = value; }
+static u16  cvEventGet(u32 ix)            { return (u32)env->mbCv[selectedCv].mbCvVoice.voiceEventMode; }
+static void cvEventSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceEventMode = (mbcv_midi_event_mode_t)value; }
 
 static u16  cvPlayModeGet(u32 ix)
 {
   return
-    (mbcv_patch_cv[selectedCv].midi_mode.LEGATO ? 1 : 0) |
-    (mbcv_patch_cv[selectedCv].midi_mode.POLY ? 2 : 0);
+    (env->mbCv[selectedCv].mbCvVoice.voiceLegato ? 1 : 0) |
+    (env->mbCv[selectedCv].mbCvVoice.voicePoly ? 2 : 0);
 }
 static void cvPlayModeSet(u32 ix, u16 value)
 {
-  mbcv_patch_cv[selectedCv].midi_mode.LEGATO = (value & 1) ? 1 : 0;
-  mbcv_patch_cv[selectedCv].midi_mode.POLY = (value & 2) ? 1 : 0;
+  env->mbCv[selectedCv].mbCvVoice.voiceLegato = (value & 1) ? 1 : 0;
+  env->mbCv[selectedCv].mbCvVoice.voicePoly = (value & 2) ? 1 : 0;
 }
 
 static u16  cvInvGateGet(u32 ix)            { return (mbcv_patch_gate_inverted[selectedCv>>8] & (1 << (selectedCv&7))) ? 1 : 0; }
@@ -375,34 +383,32 @@ static void cvInvGateSet(u32 ix, u16 value)
     mbcv_patch_gate_inverted[selectedCv>>3] &= ~(1 << (selectedCv&7));
 }
 
-static u16  cvSplitLowerGet(u32 ix)            { return mbcv_patch_cv[selectedCv].split_l; }
-static void cvSplitLowerSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].split_l = value; }
+static u16  cvSplitLowerGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower; }
+static void cvSplitLowerSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower = value; }
 
-static u16  cvSplitUpperGet(u32 ix)            { return mbcv_patch_cv[selectedCv].split_u; }
-static void cvSplitUpperSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].split_u = value; }
+static u16  cvSplitUpperGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitUpper; }
+static void cvSplitUpperSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitUpper = value; }
 
-static u16  cvPitchRangeGet(u32 ix)            { return MBCV_MAP_PitchRangeGet(selectedCv); }
-static void cvPitchRangeSet(u32 ix, u16 value) { MBCV_MAP_PitchRangeSet(selectedCv, value); }
+static u16  cvPitchRangeGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voicePitchrange; }
+static void cvPitchRangeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voicePitchrange = value; }
 
-static u16  cvTranspOctGet(u32 ix)            { return mbcv_patch_cv[selectedCv].transpose_oct + 8; }
-static void cvTranspOctSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].transpose_oct = (int)value - 8; }
+static u16  cvTranspOctGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceTransposeOctave + 8; }
+static void cvTranspOctSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceTransposeOctave = (int)value - 8; }
 
-static u16  cvTranspSemiGet(u32 ix)            { return mbcv_patch_cv[selectedCv].transpose_semi + 8; }
-static void cvTranspSemiSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].transpose_semi = (int)value - 8; }
+static u16  cvTranspSemiGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceTransposeSemitone + 8; }
+static void cvTranspSemiSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceTransposeSemitone = (int)value - 8; }
 
-static u16  cvCCGet(u32 ix)            { return mbcv_patch_cv[selectedCv].cc_number; }
-static void cvCCSet(u32 ix, u16 value) { mbcv_patch_cv[selectedCv].cc_number = value; }
+static u16  cvCCGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber; }
+static void cvCCSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber = value; }
 
 static u16  cvPortGet(u32 ix)
 {
-  mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[selectedCv];
-  return (cv_cfg->enabled_ports >> ix) & 0x1;
+  return (env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts >> ix) & 0x1;
 }
 static void cvPortSet(u32 ix, u16 value)
 {
-  mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[selectedCv];
-  cv_cfg->enabled_ports &= ~(1 << ix);
-  cv_cfg->enabled_ports |= ((value&1) << ix);
+  env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts &= ~(1 << ix);
+  env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts |= ((value&1) << ix);
 }
 
 static u16  cvCurveGet(u32 ix)            { return MBCV_MAP_CurveGet(selectedCv); }
@@ -412,21 +418,21 @@ static u16  cvSlewRateGet(u32 ix)            { return MBCV_MAP_SlewRateGet(selec
 static void cvSlewRateSet(u32 ix, u16 value) { MBCV_MAP_SlewRateSet(selectedCv, value); }
 
 static u16  cvCaliModeGet(u32 ix)            { return MBCV_MAP_CaliModeGet(); }
-static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, value); }
+static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, (aout_cali_mode_t)value); }
 
 static u16  aoutIfGet(u32 ix)              { return MBCV_MAP_IfGet(); }
-static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet(value); }
+static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet((aout_if_t)value); }
 
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
-static u16  routerSrcPortGet(u32 ix)             { return MBCV_PORT_InIxGet(mbcv_patch_router[selectedRouterNode].src_port); }
+static u16  routerSrcPortGet(u32 ix)             { return MBCV_PORT_InIxGet((mios32_midi_port_t)mbcv_patch_router[selectedRouterNode].src_port); }
 static void routerSrcPortSet(u32 ix, u16 value)  { mbcv_patch_router[selectedRouterNode].src_port = MBCV_PORT_InPortGet(value); }
 
 static u16  routerSrcChnGet(u32 ix)              { return mbcv_patch_router[selectedRouterNode].src_chn; }
 static void routerSrcChnSet(u32 ix, u16 value)   { mbcv_patch_router[selectedRouterNode].src_chn = value; }
 
-static u16  routerDstPortGet(u32 ix)             { return MBCV_PORT_OutIxGet(mbcv_patch_router[selectedRouterNode].dst_port); }
+static u16  routerDstPortGet(u32 ix)             { return MBCV_PORT_OutIxGet((mios32_midi_port_t)mbcv_patch_router[selectedRouterNode].dst_port); }
 static void routerDstPortSet(u32 ix, u16 value)  { mbcv_patch_router[selectedRouterNode].dst_port = MBCV_PORT_OutPortGet(value); }
 
 static u16  routerDstChnGet(u32 ix)              { return mbcv_patch_router[selectedRouterNode].dst_chn; }
@@ -454,7 +460,7 @@ static void selIpParSet(u32 ix, u16 value)
 static void MSD_EnableReq(u32 enable)
 {
   TASK_MSD_EnableSet(enable);
-  SCS_Msg(SCS_MSG_L, 1000, "Mass Storage", enable ? "enabled!" : "disabled!");
+  SCS_Msg(SCS_MSG_L, 1000, "Mass Storage", (char *)(enable ? "enabled!" : "disabled!"));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -464,7 +470,7 @@ static void MSD_EnableReq(u32 enable)
 const scs_menu_item_t pageCV[] = {
   SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Chn  ", 0, 16,    cvChnGet,      cvChnSet,      selectNOP, stringDec0Dis, NULL),
-  SCS_ITEM("Mode ", 0, MBCV_PATCH_CV_MIDI_EVENT_NUM-1,    cvEventGet,     cvEventSet,     selectNOP, stringCvMode, NULL),
+  SCS_ITEM("Mode ", 0, MBCV_MIDI_EVENT_MODE_NUM-1,    cvEventGet,     cvEventSet,     selectNOP, stringCvMode, NULL),
   SCS_ITEM("Play ", 0, 2,     cvPlayModeGet, cvPlayModeSet, selectNOP, stringCvPlayMode, NULL),
   SCS_ITEM("InvG ", 0, 1,     cvInvGateGet,  cvInvGateSet,  selectNOP, stringOnOff, NULL),
   SCS_ITEM("SplL ", 0, 127,   cvSplitLowerGet,cvSplitLowerSet,selectNOP, stringNote, NULL),
@@ -797,8 +803,10 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 // mode selects the used SCS config (currently only one available selected with 0)
 // return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_CONFIG_Init(u32 mode)
+extern "C" s32 SCS_CONFIG_Init(u32 mode)
 {
+  env = APP_GetEnv();
+
   if( mode > 0 )
     return -1;
 

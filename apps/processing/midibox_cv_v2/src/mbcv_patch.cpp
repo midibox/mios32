@@ -18,27 +18,24 @@
 #include <mios32.h>
 #include "tasks.h"
 
-#include "mbcv_patch.h"
+#include <app.h>
+#include <MbCvEnvironment.h>
+
+
 #include "mbcv_map.h"
+#include "mbcv_patch.h"
+
+
+// quick&dirty to simplify re-use of C modules without changing header files
+extern "C" {
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Preset patch
 /////////////////////////////////////////////////////////////////////////////
-
-mbcv_patch_cv_entry_t mbcv_patch_cv[MBCV_PATCH_NUM_CV] = {
-  // ports  chn mode  split l/u   +oct +semi    CC
-  { 0x1011,  1, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  2, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  3, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  4, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  5, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  6, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  7, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-  { 0x1011,  8, 0x10, 0x00, 0x7f, 0x00, 0x00, 0x10 },
-};
 
 mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER] = {
   // src chn   dst chn
@@ -63,17 +60,9 @@ mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER] = {
 u32 mbcv_patch_router_mclk_in;
 u32 mbcv_patch_router_mclk_out;
 
-u8 mbcv_patch_gate_inverted[MBCV_PATCH_NUM_CV/8];
+mbcv_patch_cfg_t mbcv_patch_cfg;
 
-mbcv_patch_cfg_t mbcv_patch_cfg = {
-#if 0
-  // TK: doesn't work, these values are initialized in PATCH_Init()
-  .flags = { .MERGER_MODE = 0,
-  },
-#endif
-  .ext_clk_divider = 16, // 24 ppqn
-  .ext_clk_pulsewidth = 1,
-};
+u8 mbcv_patch_gate_inverted[MBCV_PATCH_NUM_CV/8];
 
 u8 mbcv_patch_gateclr_cycles = 3; // 3 mS
 
@@ -88,6 +77,8 @@ s32 MBCV_PATCH_Init(u32 mode)
 
   // init remaining config values
   mbcv_patch_cfg.flags.ALL = 0;
+  mbcv_patch_cfg.ext_clk_divider = 16; // 24 ppqn
+  mbcv_patch_cfg.ext_clk_pulsewidth = 1;
 
   //                           USB0 only     UART0..3       IIC0..3      OSC0..3
   mbcv_patch_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
@@ -120,15 +111,19 @@ u8 MBCV_PATCH_ReadByte(u16 addr)
     }
   } else {
     u8 cv = addr & 0x7;
+    MbCvEnvironment* env = APP_GetEnv();
+    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
+    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
+
     switch( addr >> 3 ) {
-    case 0x01: return mbcv_patch_cv[cv].chn ? (mbcv_patch_cv[cv].chn - 1) : 16; // normaly 0..16 (0 disables channel) - for patch compatibility we take 16 to disable channel
-    case 0x02: return mbcv_patch_cv[cv].midi_mode.ALL;
+    case 0x01: return mv->midivoiceChannel ? (mv->midivoiceChannel - 1) : 16; // normaly 0..16 (0 disables channel) - for patch compatibility we take 16 to disable channel
+    case 0x02: return (v->voiceEventMode & 0xf) | (v->voiceLegato << 4) | (v->voicePoly << 5);
     case 0x03: return MBCV_MAP_PitchRangeGet(cv);
-    case 0x04: return mbcv_patch_cv[cv].split_l;
-    case 0x05: return mbcv_patch_cv[cv].split_u;
-    case 0x06: return (mbcv_patch_cv[cv].transpose_oct >= 0) ? mbcv_patch_cv[cv].transpose_oct : (16+mbcv_patch_cv[cv].transpose_oct);
-    case 0x07: return (mbcv_patch_cv[cv].transpose_semi >= 0) ? mbcv_patch_cv[cv].transpose_semi : (16+mbcv_patch_cv[cv].transpose_semi);
-    case 0x08: return mbcv_patch_cv[cv].cc_number;
+    case 0x04: return mv->midivoiceSplitLower;
+    case 0x05: return mv->midivoiceSplitUpper;
+    case 0x06: return (v->voiceTransposeOctave >= 0) ? v->voiceTransposeOctave : (16+v->voiceTransposeOctave);
+    case 0x07: return (v->voiceTransposeSemitone >= 0) ? v->voiceTransposeSemitone : (16+v->voiceTransposeSemitone);
+    case 0x08: return mv->midivoiceCCNumber;
     case 0x09: return MBCV_MAP_CurveGet(cv);
     case 0x0a: return MBCV_MAP_SlewRateGet(cv); // TODO: conversion to old format
     }
@@ -160,15 +155,23 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
     return 0x00;
   } else if( addr < 0x100 ) {
     u8 cv = addr & 0x7;
+    MbCvEnvironment* env = APP_GetEnv();
+    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
+    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
+
     switch( addr >> 3 ) {
-    case 0x01: mbcv_patch_cv[cv].chn = (byte < 16) ? (byte+1) : 0; return 0;
-    case 0x02: mbcv_patch_cv[cv].midi_mode.ALL = byte; return 0;
+    case 0x01: mv->midivoiceChannel = (byte < 16) ? (byte+1) : 0; return 0;
+    case 0x02:
+      v->voiceEventMode = (mbcv_midi_event_mode_t)(byte & 0xf);
+      v->voiceLegato = (byte & 0x10) ? 1 : 0;
+      v->voicePoly = (byte & 0x20) ? 1 : 0;
+      return 0;
     case 0x03: MBCV_MAP_PitchRangeSet(cv, byte); return 0;
-    case 0x04: mbcv_patch_cv[cv].split_l = byte; return 0;
-    case 0x05: mbcv_patch_cv[cv].split_u = byte; return 0;
-    case 0x06: if( byte < 8 ) mbcv_patch_cv[cv].transpose_oct = byte; else mbcv_patch_cv[cv].transpose_oct = 7 - (int)byte; return 0;
-    case 0x07: if( byte < 8 ) mbcv_patch_cv[cv].transpose_semi = byte; else mbcv_patch_cv[cv].transpose_semi = 7 - (int)byte; return 0;
-    case 0x08: mbcv_patch_cv[cv].cc_number = byte; return 0;
+    case 0x04: mv->midivoiceSplitLower = byte; return 0;
+    case 0x05: mv->midivoiceSplitUpper = byte; return 0;
+    case 0x06: if( byte < 8 ) v->voiceTransposeOctave = byte; else v->voiceTransposeOctave = 7 - (int)byte; return 0;
+    case 0x07: if( byte < 8 ) v->voiceTransposeSemitone = byte; else v->voiceTransposeSemitone = 7 - (int)byte; return 0;
+    case 0x08: mv->midivoiceCCNumber = byte; return 0;
     case 0x09: MBCV_MAP_CurveSet(cv, byte); return 0;
     case 0x0a: MBCV_MAP_SlewRateSet(cv, byte); return 0; // TODO: conversion to old format
     }
