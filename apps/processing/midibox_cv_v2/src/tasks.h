@@ -71,6 +71,7 @@ extern "C" {
 #endif
 
 
+extern s32 TASKS_Init(u32 mode);
 
 extern s32 TASK_MSD_EnableSet(u8 enable);
 extern s32 TASK_MSD_EnableGet();

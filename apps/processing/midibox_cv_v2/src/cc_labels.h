@@ -1,4 +1,4 @@
-// $Id: cc_labels.h 1244 2011-07-09 19:03:08Z tk $
+// $Id$
 /*
  * Header file for CC label array
  *

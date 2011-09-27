@@ -16,64 +16,46 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include <msd.h>
 #include <aout.h>
-#include "app.h"
 #include "tasks.h"
+#include "app.h"
+#include "MbCvEnvironment.h"
 
-#include "mbcv_sysex.h"
-#include "mbcv_midi.h"
-#include "mbcv_patch.h"
-#include "mbcv_map.h"
-#include "mbcv_router.h"
-#include "mbcv_port.h"
+#include <file.h>
 
 // include source of the SCS
 #include <scs.h>
 #include "scs_config.h"
 
-#include "file.h"
-#include "mbcv_file.h"
-#include "mbcv_file_p.h"
-
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
+
+// quick&dirty to simplify re-use of C modules without changing header files
+extern "C" {
+#include "mbcv_sysex.h"
+#include "mbcv_patch.h"
+#include "mbcv_map.h"
+#include "mbcv_router.h"
+#include "mbcv_port.h"
+
+#include "mbcv_file.h"
+#include "mbcv_file_p.h"
 
 #include "terminal.h"
 #include "midimon.h"
 
 #include "uip_task.h"
 #include "osc_client.h"
-
-
-// define priority level for sequencer
-// use same priority as MIOS32 specific tasks
-#define PRIORITY_TASK_PERIOD_1mS ( tskIDLE_PRIORITY + 3 )
-
-// local prototype of the task function
-static void TASK_Period_1mS(void *pvParameters);
-
-// define priority level for control surface handler
-// use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
-#define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
-
-// SD Card with lower priority
-#define PRIORITY_TASK_PERIOD_1mS_SD ( tskIDLE_PRIORITY + 2 )
-
-// local prototype of the task function
-static void TASK_Period_1mS_LP(void *pvParameters);
-static void TASK_Period_1mS_SD(void *pvParameters);
+}
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
+// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+// should be at least 1 for sending error messages
 /////////////////////////////////////////////////////////////////////////////
+#define DEBUG_VERBOSE_LEVEL 2
 
-typedef enum {
-  MSD_DISABLED,
-  MSD_INIT,
-  MSD_READY,
-  MSD_SHUTDOWN
-} msd_state_t;
+// measure performance with the stopwatch
+#define STOPWATCH_PERFORMANCE_MEASURING 2
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,26 +63,25 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 static u8 hw_enabled;
 
-// for mutual exclusive SD Card access between different tasks
-// The mutex is handled with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE
-// macros inside the application, which contain a different implementation 
-// for emulation
-xSemaphoreHandle xSDCardSemaphore;
-
-// Mutex for MIDI IN/OUT handler
-xSemaphoreHandle xMIDIINSemaphore;
-xSemaphoreHandle xMIDIOUTSemaphore;
-
-
 static u32 ms_counter;
 
-static volatile msd_state_t msd_state;
+static u32 stopwatch_value;
+static u32 stopwatch_value_max;
+static u32 stopwatch_value_accumulated;
+
+static u32 cv_se_speed_factor;
+
+/////////////////////////////////////////////////////////////////////////////
+// C++ objects
+/////////////////////////////////////////////////////////////////////////////
+MbCvEnvironment mbCvEnvironment;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static void APP_Periodic_100uS(void);
+extern void CV_TIMER_SE_Update(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
@@ -108,30 +89,34 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////
+// returns pointer to MbCv objects
+/////////////////////////////////////////////////////////////////////////////
+MbCvEnvironment *APP_GetEnv()
+{
+  return &mbCvEnvironment;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
-void APP_Init(void)
+extern "C" void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
-  // disable MSD by default (has to be enabled in SHIFT menu)
-  msd_state = MSD_DISABLED;
-
   // hardware will be enabled once configuration has been loaded from SD Card
   // (resp. no SD Card is available)
   hw_enabled = 0;
+
+  // init Stopwatch
+  APP_StopwatchInit();
 
   // initialize all J10 pins as inputs with internal Pull-Up
   int pin;
   for(pin=0; pin<8; ++pin)
     MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
 
-
-  // create semaphores
-  xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
-  xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
-  xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
 
   // install SysEx callback
   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
@@ -158,7 +143,6 @@ void APP_Init(void)
 
   // initialize code modules
   MBCV_PORT_Init(0);
-  MBCV_MIDI_Init(0);
   MBCV_SYSEX_Init(0);
   MBCV_MAP_Init(0);
   MBCV_ROUTER_Init(0);
@@ -174,18 +158,23 @@ void APP_Init(void)
   // install timer function which is called each 100 uS
   MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
 
-  // start tasks
-  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
-  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-  xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+  // initialize MbCvEnvironment
+  cv_se_speed_factor = 2;
+  mbCvEnvironment.updateSpeedFactorSet(cv_se_speed_factor);
 
+  // initialize tasks
+  TASKS_Init(0);
+
+  // start timer
+  // TODO: increase  once performance has been evaluated
+  MIOS32_TIMER_Init(2, 2000 / cv_se_speed_factor, CV_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
-void APP_Background(void)
+extern "C" void APP_Background(void)
 {
   // endless loop
   while( 1 ) {
@@ -198,10 +187,10 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // -> CV MIDI handler
-  MBCV_MIDI_NotifyPackage(port, midi_package);
+  mbCvEnvironment.midiReceive(port, midi_package);
 
   // -> MIDI Router
   MBCV_ROUTER_Receive(port, midi_package);
@@ -219,7 +208,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 // This function parses an incoming sysex stream for MIOS32 commands
 /////////////////////////////////////////////////////////////////////////////
-s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
+extern "C" s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
   // -> MBCV
   MBCV_SYSEX_Parser(port, midi_in);
@@ -233,7 +222,7 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServicePrepare(void)
+extern "C" void APP_SRIO_ServicePrepare(void)
 {
   // pass current pin state of J10
   // only available for LPC17xx, all others (like STM32) default to SRIO
@@ -247,7 +236,7 @@ void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServiceFinish(void)
+extern "C" void APP_SRIO_ServiceFinish(void)
 {
 }
 
@@ -256,7 +245,7 @@ void APP_SRIO_ServiceFinish(void)
 // This hook is called when a button has been toggled
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
+extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
 }
 
@@ -266,7 +255,7 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 // incrementer is positive when encoder has been turned clockwise, else
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
-void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
+extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
   // pass encoder event to SCS handler
   if( encoder == SCS_ENC_MENU_ID )
@@ -277,8 +266,37 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a pot has been moved
 /////////////////////////////////////////////////////////////////////////////
-void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
+extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This timer interrupt periodically calls the sound engine update
+/////////////////////////////////////////////////////////////////////////////
+extern void CV_TIMER_SE_Update(void)
+{
+  if( !hw_enabled )
+    return;
+
+#if STOPWATCH_PERFORMANCE_MEASURING >= 1
+  APP_StopwatchReset();
+#endif
+
+  if( !mbCvEnvironment.tick() )
+    return; // no update required
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+  APP_StopwatchCapture();
+#endif
+
+  // update AOUTs
+  MBCV_MAP_Update();
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 2
+  APP_StopwatchCapture();
+#endif
 }
 
 
@@ -287,18 +305,32 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 // This task handles the control surface
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS_LP(void *pvParameters)
+void APP_TASK_Period_1mS_LP(void)
 {
-  MIOS32_LCD_Clear();
+  static u16 performance_print_ctr = 0;
 
-  while( 1 ) {
-    vTaskDelay(1 / portTICK_RATE_MS);
+  // call SCS handler
+  SCS_Tick();
 
-    // call SCS handler
-    SCS_Tick();
+  // MIDI In/Out monitor
+  MBCV_PORT_Period1mS();
 
-    // MIDI In/Out monitor
-    MBCV_PORT_Period1mS();
+  // output and reset current stopwatch max value each second
+  if( ++performance_print_ctr >= 1000 ) {
+    performance_print_ctr = 0;
+
+    MUTEX_MIDIOUT_TAKE;
+    MIOS32_IRQ_Disable();
+    u32 max_value = stopwatch_value_max;
+    stopwatch_value_max = 0;
+    u32 acc_value = stopwatch_value_accumulated;
+    stopwatch_value_accumulated = 0;
+    MIOS32_IRQ_Enable();
+#if DEBUG_VERBOSE_LEVEL >= 2
+    if( acc_value || max_value )
+      DEBUG_MSG("%d uS (max: %d uS)\n", acc_value / (1000000 / (2000/cv_se_speed_factor)), max_value);
+#endif
+    MUTEX_MIDIOUT_GIVE;
   }
 
 }
@@ -307,126 +339,65 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 // This task handles the SD Card
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS_SD(void *pvParameters)
+void APP_TASK_Period_1mS_SD(void)
 {
-  u16 sdcard_check_ctr = 0;
-  u8 lun_available = 0;
+  static u16 sdcard_check_ctr = 0;
 
-  while( 1 ) {
-    vTaskDelay(1 / portTICK_RATE_MS);
+  // each second: check if SD Card (still) available
+  if( ++sdcard_check_ctr >= 1000 ) {
+    sdcard_check_ctr = 0;
 
-    // each second: check if SD Card (still) available
-    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= 1000 ) {
-      sdcard_check_ctr = 0;
+    MUTEX_SDCARD_TAKE;
+    s32 status = FILE_CheckSDCard();
 
-      MUTEX_SDCARD_TAKE;
-      s32 status = FILE_CheckSDCard();
+    hw_enabled = 1; // enable hardware after first read...
 
-      hw_enabled = 1; // enable hardware after first read...
+    if( status == 1 ) {
+      DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+      // load all file infos
+      MBCV_FILE_LoadAllFiles(1); // including HW info
+    } else if( status == 2 ) {
+      DEBUG_MSG("SD Card disconnected\n");
+      // invalidate all file infos
+      MBCV_FILE_UnloadAllFiles();
 
-      if( status == 1 ) {
-	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
-	// load all file infos
-	MBCV_FILE_LoadAllFiles(1); // including HW info
-      } else if( status == 2 ) {
-	DEBUG_MSG("SD Card disconnected\n");
-	// invalidate all file infos
-	MBCV_FILE_UnloadAllFiles();
-
-	// change status
+      // change status
+      MBCV_FILE_StatusMsgSet("No SD Card");
+    } else if( status == 3 ) {
+      if( !FILE_SDCardAvailable() ) {
+	DEBUG_MSG("SD Card not found\n");
 	MBCV_FILE_StatusMsgSet("No SD Card");
-      } else if( status == 3 ) {
-	if( !FILE_SDCardAvailable() ) {
-	  DEBUG_MSG("SD Card not found\n");
-	  MBCV_FILE_StatusMsgSet("No SD Card");
-	} else if( !FILE_VolumeAvailable() ) {
-	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-	  MBCV_FILE_StatusMsgSet("No FAT");
-	} else {
-	  // check if patch file exists
-	  if( !MBCV_FILE_P_Valid() ) {
-	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.CV2 file\n");
-
-	    if( (status=MBCV_FILE_P_Write("DEFAULT")) < 0 ) {
-	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
-	    }
+      } else if( !FILE_VolumeAvailable() ) {
+	DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	MBCV_FILE_StatusMsgSet("No FAT");
+      } else {
+	// check if patch file exists
+	if( !MBCV_FILE_P_Valid() ) {
+	  // create new one
+	  DEBUG_MSG("Creating initial DEFAULT.CV2 file\n");
+	  
+	  if( (status=MBCV_FILE_P_Write("DEFAULT")) < 0 ) {
+	    DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	  }
-
-	  // disable status message and print patch
-	  MBCV_FILE_StatusMsgSet(NULL);
 	}
+
+	// disable status message and print patch
+	MBCV_FILE_StatusMsgSet(NULL);
       }
-
-      MUTEX_SDCARD_GIVE;
     }
-
-    // MSD driver
-    if( msd_state != MSD_DISABLED ) {
-      MUTEX_SDCARD_TAKE;
-
-      switch( msd_state ) {
-      case MSD_SHUTDOWN:
-	// switch back to USB MIDI
-	MIOS32_USB_Init(1);
-	msd_state = MSD_DISABLED;
-	break;
-
-      case MSD_INIT:
-	// LUN not mounted yet
-	lun_available = 0;
-
-	// enable MSD USB driver
-	//MUTEX_J16_TAKE;
-	if( MSD_Init(0) >= 0 )
-	  msd_state = MSD_READY;
-	else
-	  msd_state = MSD_SHUTDOWN;
-	//MUTEX_J16_GIVE;
-	break;
-
-      case MSD_READY:
-	// service MSD USB driver
-	MSD_Periodic_mS();
-
-	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
-	if( lun_available && !MSD_LUN_AvailableGet(0) )
-	  msd_state = MSD_SHUTDOWN;
-	else if( !lun_available && MSD_LUN_AvailableGet(0) )
-	  lun_available = 1;
-	break;
-      }
-
-      MUTEX_SDCARD_GIVE;
-    }
+    
+    MUTEX_SDCARD_GIVE;
   }
-
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is called periodically each mS to handle AOUTs
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS(void *pvParameters)
+void APP_TASK_Period_1mS(void)
 {
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
-    // skip delay gap if we had to wait for more than 5 ticks to avoid 
-    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
-    portTickType xCurrentTickCount = xTaskGetTickCount();
-    if( xLastExecutionTime < (xCurrentTickCount-5) )
-      xLastExecutionTime = xCurrentTickCount;
-
-    if( hw_enabled ) {
-      // update AOUT channels
-      MBCV_MAP_Update();
-    }
+  if( hw_enabled ) {
+    // nothing to do... yet
   }
 }
 
@@ -484,32 +455,30 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// MSD access functions
+// For performance Measurements
 /////////////////////////////////////////////////////////////////////////////
-s32 TASK_MSD_EnableSet(u8 enable)
+s32 APP_StopwatchInit(void)
 {
+  stopwatch_value = 0;
+  stopwatch_value_max = 0;
+  stopwatch_value_accumulated = 0;
+  return MIOS32_STOPWATCH_Init(1); // 1 uS resolution
+}
+
+s32 APP_StopwatchReset(void)
+{
+  return MIOS32_STOPWATCH_Reset();
+}
+
+s32 APP_StopwatchCapture(void)
+{
+  u32 value = MIOS32_STOPWATCH_ValueGet();
   MIOS32_IRQ_Disable();
-  if( msd_state == MSD_DISABLED && enable ) {
-    msd_state = MSD_INIT;
-  } else if( msd_state == MSD_READY && !enable )
-    msd_state = MSD_SHUTDOWN;
+  stopwatch_value = value;
+  if( value > stopwatch_value_max )
+    stopwatch_value_max = value;
+  stopwatch_value_accumulated += value;
   MIOS32_IRQ_Enable();
-
-  return 0; // no error
-}
-
-s32 TASK_MSD_EnableGet()
-{
-  return (msd_state == MSD_READY) ? 1 : 0;
-}
-
-s32 TASK_MSD_FlagStrGet(char str[5])
-{
-  str[0] = MSD_CheckAvailable() ? 'U' : '-';
-  str[1] = MSD_LUN_AvailableGet(0) ? 'M' : '-';
-  str[2] = MSD_RdLEDGet(250) ? 'R' : '-';
-  str[3] = MSD_WrLEDGet(250) ? 'W' : '-';
-  str[4] = 0;
 
   return 0; // no error
 }

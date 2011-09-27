@@ -18,10 +18,11 @@
 #include <mios32.h>
 #include <aout.h>
 #include <seq_bpm.h>
+#include <app.h>
+#include <MbCvEnvironment.h>
 
 
 #include "mbcv_map.h"
-#include "mbcv_midi.h"
 #include "mbcv_patch.h"
 
 
@@ -36,7 +37,7 @@ static u8 seq_core_din_sync_pulse_ctr;
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_Init(u32 mode)
+extern "C" s32 MBCV_MAP_Init(u32 mode)
 {
   int i;
 
@@ -65,7 +66,7 @@ s32 MBCV_MAP_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set/Name AOUT interface
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_IfSet(aout_if_t if_type)
+extern "C" s32 MBCV_MAP_IfSet(aout_if_t if_type)
 {
   if( if_type >= AOUT_NUM_IF )
     return -1; // invalid interface
@@ -80,7 +81,7 @@ s32 MBCV_MAP_IfSet(aout_if_t if_type)
   return AOUT_IF_Init(0);
 }
 
-aout_if_t MBCV_MAP_IfGet(void)
+extern "C" aout_if_t MBCV_MAP_IfGet(void)
 {
   aout_config_t config;
   config = AOUT_ConfigGet();
@@ -89,7 +90,7 @@ aout_if_t MBCV_MAP_IfGet(void)
 
 
 // will return 8 characters
-const char* MBCV_MAP_IfNameGet(aout_if_t if_type)
+extern "C" const char* MBCV_MAP_IfNameGet(aout_if_t if_type)
 {
   return AOUT_IfNameGet(if_type);
 }
@@ -98,7 +99,7 @@ const char* MBCV_MAP_IfNameGet(aout_if_t if_type)
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set/Name CV Curve
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_CurveSet(u8 cv, u8 curve)
+extern "C" s32 MBCV_MAP_CurveSet(u8 cv, u8 curve)
 {
   if( cv >= MBCV_PATCH_NUM_CV )
     return -1; // invalid cv channel selected
@@ -123,7 +124,7 @@ s32 MBCV_MAP_CurveSet(u8 cv, u8 curve)
   return AOUT_ConfigSet(config);
 }
 
-u8 MBCV_MAP_CurveGet(u8 cv)
+extern "C" u8 MBCV_MAP_CurveGet(u8 cv)
 {
   if( cv >= MBCV_PATCH_NUM_CV )
     return 0; // invalid cv channel selected, return default curve
@@ -148,7 +149,7 @@ static const char curve_desc[3][7] = {
   "Hz/V  ",
   "Inv.  ",
 };
-const char* MBCV_MAP_CurveNameGet(u8 cv)
+extern "C" const char* MBCV_MAP_CurveNameGet(u8 cv)
 {
 
   if( cv >= MBCV_PATCH_NUM_CV )
@@ -162,7 +163,7 @@ const char* MBCV_MAP_CurveNameGet(u8 cv)
 // Get/Set/Name Calibration Mode
 /////////////////////////////////////////////////////////////////////////////
 
-s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode)
+extern "C" s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode)
 {
   if( cv >= MBCV_PATCH_NUM_CV )
     return -1; // invalid cv channel selected
@@ -174,12 +175,12 @@ s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode)
 
 }
 
-aout_cali_mode_t MBCV_MAP_CaliModeGet(void)
+extern "C" aout_cali_mode_t MBCV_MAP_CaliModeGet(void)
 {
   return AOUT_CaliModeGet();
 }
 
-const char* MBCV_MAP_CaliNameGet(void)
+extern "C" const char* MBCV_MAP_CaliNameGet(void)
 {
   return AOUT_CaliNameGet(MBCV_MAP_CaliModeGet());
 }
@@ -188,12 +189,12 @@ const char* MBCV_MAP_CaliNameGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set Slewrate
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_SlewRateSet(u8 cv, u8 value)
+extern "C" s32 MBCV_MAP_SlewRateSet(u8 cv, u8 value)
 {
   return AOUT_PinSlewRateSet(cv, value);
 }
 
-s32 MBCV_MAP_SlewRateGet(u8 cv)
+extern "C" s32 MBCV_MAP_SlewRateGet(u8 cv)
 {
   return AOUT_PinSlewRateGet(cv);
 }
@@ -202,12 +203,12 @@ s32 MBCV_MAP_SlewRateGet(u8 cv)
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set Pitch Range
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_PitchRangeSet(u8 cv, u8 value)
+extern "C" s32 MBCV_MAP_PitchRangeSet(u8 cv, u8 value)
 {
   return AOUT_PinPitchRangeSet(cv, value);
 }
 
-s32 MBCV_MAP_PitchRangeGet(u8 cv)
+extern "C" s32 MBCV_MAP_PitchRangeGet(u8 cv)
 {
   return AOUT_PinPitchRangeGet(cv);
 }
@@ -218,56 +219,43 @@ s32 MBCV_MAP_PitchRangeGet(u8 cv)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBCV_MAP_UpdateChannels(void)
 {
-  // prepare gates
-  u32 gates = mbcv_midi_gates;
+  MbCvEnvironment* env = APP_GetEnv();
 
-  // set CV voltages depending on MIDI mode
-  // force gate to 0 as long as gateclr_ctr > 0
   int cv;
-  mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[0];
-  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv, ++cv_cfg) {
-    // for MONO and POLO mode: force gate to 0 for <mbcv_patch_gateclr_cycles> cycles
-    if( mbcv_midi_gateclr_ctr[cv] ) {
-      --mbcv_midi_gateclr_ctr[cv];
-      gates &= ~(1 << cv);
-    }
+  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv) {
+    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
+    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
 
-    // branch depending on value assignment
-    switch( cv_cfg->midi_mode.event ) {
-    case MBCV_PATCH_CV_MIDI_EVENT_NOTE: {
-      AOUT_PinPitchSet(cv, mbcv_midi_pitch[cv]);
-      int note = (int)mbcv_midi_note[cv];
-      note += cv_cfg->transpose_oct * 12;
-      note += cv_cfg->transpose_semi;
-      while( note < 0 ) note += 12; // octavewise saturation
-      while( note >= 127 ) note -= 12; // octavewise saturation
-      AOUT_PinSet(cv, (u16)note << 9);
+    // set gate in any mode
+    AOUT_DigitalPinSet(cv, v->voicePhysGateActive);
+
+    // set CV voltage depending on MIDI mode
+    switch( v->voiceEventMode ) {
+    case MBCV_MIDI_EVENT_MODE_NOTE: {
+      AOUT_PinSet(cv, v->voiceFrq);
     } break;
 
-    case MBCV_PATCH_CV_MIDI_EVENT_VELOCITY:
-      AOUT_PinSet(cv, mbcv_midi_velocity[cv] << 9);
+    case MBCV_MIDI_EVENT_MODE_VELOCITY:
+      AOUT_PinSet(cv, v->voiceVelocity << 9);
       break;
 
-    case MBCV_PATCH_CV_MIDI_EVENT_AFTERTOUCH:
-      AOUT_PinSet(cv, mbcv_midi_aftertouch[cv] << 9);
+    case MBCV_MIDI_EVENT_MODE_AFTERTOUCH:
+      AOUT_PinSet(cv, mv->midivoiceAftertouch << 9);
       break;
 
-    case MBCV_PATCH_CV_MIDI_EVENT_CC:
-      AOUT_PinSet(cv, mbcv_midi_cc[cv] << 9);
+    case MBCV_MIDI_EVENT_MODE_CC:
+      AOUT_PinSet(cv, mv->midivoiceCCValue << 9);
       break;
 
-    case MBCV_PATCH_CV_MIDI_EVENT_NRPN:
-      AOUT_PinSet(cv, mbcv_midi_nrpn[cv] << 2);
+    case MBCV_MIDI_EVENT_MODE_NRPN:
+      AOUT_PinSet(cv, mv->midivoiceNRPNValue << 2);
       break;
 
-    case MBCV_PATCH_CV_MIDI_EVENT_PITCHBENDER:
-      AOUT_PinSet(cv, (u16)(mbcv_midi_pitch[cv] + 8192) << 2);
+    case MBCV_MIDI_EVENT_MODE_PITCHBENDER:
+      AOUT_PinSet(cv, (mv->midivoicePitchbender + 8192) << 2);
       break;
     }
   }
-
-  // set gates
-  AOUT_DigitalPinsSet(gates);
 
   return 0; // no error
 }
@@ -276,7 +264,7 @@ static s32 MBCV_MAP_UpdateChannels(void)
 /////////////////////////////////////////////////////////////////////////////
 // Updates all CV channels and gates
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_Update(void)
+extern "C" s32 MBCV_MAP_Update(void)
 {
   static u8 last_gates = 0xff; // to force an update
   static u8 last_start_stop = 0xff; // to force an update
@@ -353,25 +341,19 @@ s32 MBCV_MAP_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 // Called to reset all channels/notes (e.g. after session change)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_MAP_ResetAllChannels(void)
+extern "C" s32 MBCV_MAP_ResetAllChannels(void)
 {
+  MbCvEnvironment* env = APP_GetEnv();
   int cv;
 
-  // reset all notestacks
-  MBCV_MIDI_Init(0);
+  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv)
+    env->mbCv[cv].noteAllOff(false);
 
   // reset AOUT voltages
   for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv) {
     AOUT_PinPitchSet(cv, 0x0000);
     AOUT_PinSet(cv, 0x0000);
   }
-
-  // clear pins 
-  AOUT_DigitalPinsSet(0x00);
-
-  int sr;
-  for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr)
-    MIOS32_DOUT_SRSet(sr, mbcv_midi_dout_gate_sr[sr]);
 
   return 0; // no error
 }

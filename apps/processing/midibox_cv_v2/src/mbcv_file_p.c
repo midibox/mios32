@@ -385,6 +385,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 	      }
 
 	      if( i == 11 ) {
+#if 0
 		// finally a valid line!
 		mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[cv];
 		cv_cfg->enabled_ports = enabled_ports;
@@ -402,6 +403,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 		cv_cfg->transpose_oct = values[8];
 		cv_cfg->transpose_semi = values[9];
 		cv_cfg->cc_number = values[10];
+#endif
 	      }
 	    }
 	  }
@@ -645,6 +647,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
+#if 0
   {
     sprintf(line_buffer, "#CV;Pin;USB1;USB2;USB3;USB4;OUT1;OUT2;OUT3;OUT4;");
     FLUSH_BUFFER;
@@ -681,6 +684,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
     }
   }
+#endif
 
   {
     sprintf(line_buffer, "\n\n#PinMode;Curve;SlewRate\n");
