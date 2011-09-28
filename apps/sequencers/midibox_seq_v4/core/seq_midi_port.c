@@ -34,6 +34,11 @@
 // selects USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, AOUT
 u32 seq_midi_port_multi_enable_flags;
 
+// MIDI OUT/IN activity
+u8 seq_midi_port_out_combined_ctr;
+u8 seq_midi_port_in_combined_ctr;
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -159,6 +164,9 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
     midi_in_ctr[i] = 0;
     midi_in_package[i].ALL = 0;
   }
+
+  seq_midi_port_out_combined_ctr = 0;
+  seq_midi_port_in_combined_ctr = 0;
 
   seq_midi_port_mon_filter.ALL = 0;
   seq_midi_port_mon_filter.MIDI_CLOCK = 1;
@@ -490,6 +498,12 @@ s32 SEQ_MIDI_PORT_Period1mS(void)
     for(i=0; i<NUM_IN_PORTS; ++i)
       if( midi_in_ctr[i] )
 	--midi_in_ctr[i];
+
+    if( seq_midi_port_out_combined_ctr )
+      --seq_midi_port_out_combined_ctr;
+
+    if( seq_midi_port_in_combined_ctr )
+      --seq_midi_port_in_combined_ctr;
   }
 
   return 0;
@@ -522,6 +536,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     if( port_ix >= 0 ) {
       midi_out_package[port_ix] = package;
       midi_out_ctr[port_ix] = 20; // 2 seconds lifetime
+      seq_midi_port_out_combined_ctr = 5; // 500 mS lifetime
     }
   }
 
@@ -584,6 +599,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_package_t pa
     if( port_ix >= 0 ) {
       midi_in_package[port_ix] = package;
       midi_in_ctr[port_ix] = 20; // 2 seconds lifetime
+      seq_midi_port_in_combined_ctr = 5; // 500 mS lifetime
     }
   }
 

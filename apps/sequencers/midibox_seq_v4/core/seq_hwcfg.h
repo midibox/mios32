@@ -148,6 +148,9 @@ typedef struct {
 
   u8 beat;
 
+  u8 midi_in_combined;
+  u8 midi_out_combined;
+
   u8 edit;
   u8 mute;
   u8 pattern;
@@ -230,6 +233,14 @@ typedef struct {
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {
+  u8 enabled;
+  u8 segments_sr;
+  u8 common1_pin;
+  u8 common2_pin;
+  u8 common3_pin;
+} seq_hwcfg_bpm_digits_t;
+
+typedef struct {
   u8 key;
   u8 cc;
 } seq_hwcfg_midi_remote_t;
@@ -251,6 +262,7 @@ extern seq_hwcfg_led_t seq_hwcfg_led;
 extern seq_hwcfg_blm_t seq_hwcfg_blm;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
+extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];

@@ -90,6 +90,27 @@ BLM8X8_DIN_SR  2
 
 
 ##################################################
+# Optional BPM digits
+##################################################
+
+# set to 1 or 2 to enable the 3 optional BPM digits
+# 0: BPM digits disabled
+# 1: BPM digits with common cathode
+# 2: BPM digits with common anode
+BPM_DIGITS_ENABLED 0
+
+# define the DOUT shift register to which the segments are connected (0=disabled)
+BPM_DIGITS_SEGMENTS_SR 0
+
+# define the DOUT SR and pin to which the common pins are connected
+# we are counting from right to left (1=right digit, 2=middle digit, 3=left digit)
+#                       SR  Pin
+BPM_DIGITS_COMMON1_PIN   0   0
+BPM_DIGITS_COMMON2_PIN   0   0
+BPM_DIGITS_COMMON3_PIN   0   0
+
+
+##################################################
 # CV and Gate/Trigger/Sync Setup
 ##################################################
 

@@ -14,7 +14,7 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.049"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.050"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T. Klose"
 
 // USB settings
@@ -79,8 +79,13 @@
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
 
+#if defined(MIOS32_FAMILY_STM32F10x)
 // enable third UART
-#define MIOS32_UART_NUM 4
+# define MIOS32_UART_NUM 3
+#else
+// enable third and fourth UART
+# define MIOS32_UART_NUM 4
+#endif
 
 
 // configure IIC_MIDI
