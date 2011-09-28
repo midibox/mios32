@@ -264,6 +264,10 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .beat = ((( 1   -1)<<3)+    7),
 
+  //                     SR    ignore    Pin
+  .midi_in_combined =  ((( 0   -1)<<3)+    0),
+  .midi_out_combined = ((( 0   -1)<<3)+    0),
+
   //            SR    ignore    Pin
   .edit    = ((( 2   -1)<<3)+    0),
   .mute    = ((( 2   -1)<<3)+    1),
@@ -404,6 +408,15 @@ seq_hwcfg_blm_t seq_hwcfg_blm = {
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
   .enabled = 0,
   .dout_gp_mapping = 1,
+};
+
+
+seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits = {
+  .enabled = 0,
+  .segments_sr = 0,
+  .common1_pin = ((( 0   -1)<<3)+    0),
+  .common2_pin = ((( 0   -1)<<3)+    0),
+  .common3_pin = ((( 0   -1)<<3)+    0),
 };
 
 

@@ -493,6 +493,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.par_layer[hlp] = dout_value;
 	  } else if( strcmp(parameter, "BEAT") == 0 ) {
 	    seq_hwcfg_led.beat = dout_value;
+	  } else if( strcmp(parameter, "MIDI_IN_COMBINED") == 0 ) {
+	    seq_hwcfg_led.midi_in_combined = dout_value;
+	  } else if( strcmp(parameter, "MIDI_OUT_COMBINED") == 0 ) {
+	    seq_hwcfg_led.midi_out_combined = dout_value;
 	  } else if( strcmp(parameter, "EDIT") == 0 ) {
 	    seq_hwcfg_led.edit = dout_value;
 	  } else if( strcmp(parameter, "MUTE") == 0 ) {
@@ -845,6 +849,56 @@ s32 SEQ_FILE_HW_Read(void)
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM8X8_* name '%s'!", parameter);
+#endif
+	  }
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// BPM_DIGITS_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "BPM_DIGITS_", 11) == 0 ) {
+	  parameter += 11;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BPM_DIGITS_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] BPM_DIGITS_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_bpm_digits.enabled = value;
+	  } else if( strcmp(parameter, "SEGMENTS_SR") == 0 ) {
+	    seq_hwcfg_bpm_digits.segments_sr = value;
+	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
+		     strcmp(parameter, "COMMON2_PIN") == 0 ||
+		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	    
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 pin = get_dec(word);
+	    if( pin < 0 || pin >= 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_DIGITS_%s definition: invalid pin value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+	    u8 dout_value = ((value-1)<<3) | pin;
+
+	    if( strcmp(parameter, "COMMON1_PIN") == 0 ) {
+	      seq_hwcfg_bpm_digits.common1_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON2_PIN") == 0 ) {
+	      seq_hwcfg_bpm_digits.common2_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	      seq_hwcfg_bpm_digits.common3_pin = dout_value;
+	    }
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED_DIGITS_* name '%s'!", parameter);
 #endif
 	  }
 

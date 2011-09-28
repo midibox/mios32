@@ -6,6 +6,14 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.050
+~~~~~~~~~~~~~~~~~
+
+   o added LED functions for received MIDI IN/OUT events to MBSEQ_HW.V4
+
+   o added BPM LED Digit function to MBSEQ_HW.V4
+
+
 MIDIboxSEQ V4.049
 ~~~~~~~~~~~~~~~~~
 

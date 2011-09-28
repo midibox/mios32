@@ -140,6 +140,15 @@ seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
 };
 
 
+seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits = {
+  .enabled = 0,
+  .segments_sr = 0,
+  .common1_pin = ((( 0   -1)<<3)+    0),
+  .common2_pin = ((( 0   -1)<<3)+    0),
+  .common3_pin = ((( 0   -1)<<3)+    0),
+};
+
+
 seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .key = 96, // C-7, on some MIDI monitors displayed as C-6
   .cc = 0, // disabled

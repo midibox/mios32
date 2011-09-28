@@ -110,7 +110,7 @@ BLM_DIN_R_SR  12
 
 
 ##################################################
-# Additional 8x8 BLM as used for Wilba's Frontpannel
+# Additional 8x8 BLM as used for Wilba's Frontpanel
 ##################################################
 
 # set to 1 to enable 8x8 BLM driver
@@ -134,6 +134,27 @@ BLM8X8_DOUT_GP_MAPPING  1
 
 # 8x8 matrix for misc. button functions
 BLM8X8_DIN_SR  2
+
+
+##################################################
+# Optional BPM digits
+##################################################
+
+# set to 1 or 2 to enable the 3 optional BPM digits
+# 0: BPM digits disabled
+# 1: BPM digits with common cathode
+# 2: BPM digits with common anode
+BPM_DIGITS_ENABLED 0
+
+# define the DOUT shift register to which the segments are connected (0=disabled)
+BPM_DIGITS_SEGMENTS_SR 0
+
+# define the DOUT SR and pin to which the common pins are connected
+# we are counting from right to left (1=right digit, 2=middle digit, 3=left digit)
+#                       SR  Pin
+BPM_DIGITS_COMMON1_PIN   0   0
+BPM_DIGITS_COMMON2_PIN   0   0
+BPM_DIGITS_COMMON3_PIN   0   0
 
 
 ##################################################
@@ -193,6 +214,10 @@ LED_PAR_LAYER_C   1   6
 
 #         SR  Pin
 LED_BEAT   1   7
+
+#                    SR  Pin
+LED_MIDI_IN_COMBINED  0   0
+LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
 LED_EDIT     2   0

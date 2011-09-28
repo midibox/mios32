@@ -37,6 +37,8 @@ extern s32 SEQ_LED_PinSet(u32 pin, u32 value);
 extern s32 SEQ_LED_SRSet(u32 sr, u8 value);
 extern s32 SEQ_LED_SRGet(u32 sr);
 
+extern s32 SEQ_LED_DigitPatternGet(u8 value);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

@@ -26,6 +26,7 @@
 #include <blm_x.h>
 
 #include "tasks.h"
+#include "seq_led.h"
 #include "seq_ui.h"
 #include "seq_ui_pages.h"
 #include "seq_hwcfg.h"
@@ -843,40 +844,6 @@ s32 SEQ_UI_EDIT_Button_Handler(u8 button, u8 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets a LED
-// Could be enhanced for different BLMs (or common DOUTs) in future
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_UI_LED_PinSet(u32 pin, u32 value)
-{
-  if( pin < 64 )
-    return BLM_CHEAPO_DOUT_PinSet(pin, value);
-
-  if( pin >= 128 && pin < 196 )
-    return BLM_X_LEDSet(pin-128, 0, value);
-
-  return -1; // not assigned
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Sets a LED SR
-// Could be enhanced for different BLMs (or common DOUTs) in future
-/////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_UI_LED_SRSet(u8 sr, u8 value)
-{
-  if( !sr )
-    return -1; // not assigned
-
-  if( sr <= 8 )
-    return BLM_CHEAPO_DOUT_SRSet(sr-1, value);
-
-  if( sr >= 16 && sr < 24 )
-    return BLM_X_LEDSRSet(sr-16, 0, value);
-
-  return -1; // not assigned
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Update all LEDs
 // Usually called from background task
 /////////////////////////////////////////////////////////////////////////////
@@ -893,47 +860,47 @@ s32 SEQ_UI_LED_Handler(void)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.seq1, ui_selected_tracks & (1 << 0));
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.seq2, ui_selected_tracks & (1 << 8));
+  SEQ_LED_PinSet(seq_hwcfg_led.seq1, ui_selected_tracks & (1 << 0));
+  SEQ_LED_PinSet(seq_hwcfg_led.seq2, ui_selected_tracks & (1 << 8));
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.load, ui_page == SEQ_UI_PAGE_LOAD);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.save, ui_page == SEQ_UI_PAGE_SAVE);
+  SEQ_LED_PinSet(seq_hwcfg_led.load, ui_page == SEQ_UI_PAGE_LOAD);
+  SEQ_LED_PinSet(seq_hwcfg_led.save, ui_page == SEQ_UI_PAGE_SAVE);
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
+  SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
+  SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
+  SEQ_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
 
   u8 seq_running = SEQ_BPM_IsRunning() && (!seq_core_slaveclk_mute || ((seq_core_state.ref_step & 3) == 0));
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.master, SEQ_BPM_IsMaster());
-  // SEQ_UI_LED_PinSet(seq_hwcfg_led.tap_tempo, 0); // handled in SEQ_UI_LED_Handler_Periodic()
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.stop, 0);
+  SEQ_LED_PinSet(seq_hwcfg_led.master, SEQ_BPM_IsMaster());
+  // SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, 0); // handled in SEQ_UI_LED_Handler_Periodic()
+  SEQ_LED_PinSet(seq_hwcfg_led.stop, 0);
   // note: no bug: we added check for ref_step&3 for flashing the LEDs to give a sign of activity in slave mode with slaveclk_muted
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.play, seq_running);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.stop, !seq_running && !ui_seq_pause);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.pause, ui_seq_pause && !seq_core_slaveclk_mute);
+  SEQ_LED_PinSet(seq_hwcfg_led.play, seq_running);
+  SEQ_LED_PinSet(seq_hwcfg_led.stop, !seq_running && !ui_seq_pause);
+  SEQ_LED_PinSet(seq_hwcfg_led.pause, ui_seq_pause && !seq_core_slaveclk_mute);
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.ext_restart, seq_core_state.EXT_RESTART_REQ);
+  SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
+  SEQ_LED_PinSet(seq_hwcfg_led.ext_restart, seq_core_state.EXT_RESTART_REQ);
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.trigger, ui_page == SEQ_UI_PAGE_TRIGGER);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.length, ui_page == SEQ_UI_PAGE_LENGTH);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.progression, ui_page == SEQ_UI_PAGE_PROGRESSION);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.groove, ui_page == SEQ_UI_PAGE_GROOVE);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.echo, ui_page == SEQ_UI_PAGE_ECHO);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.humanizer, ui_page == SEQ_UI_PAGE_HUMANIZER);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.lfo, ui_page == SEQ_UI_PAGE_LFO);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.scale, ui_page == SEQ_UI_PAGE_SCALE);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.midichn, ui_page == SEQ_UI_PAGE_MIDICHN);
+  SEQ_LED_PinSet(seq_hwcfg_led.trigger, ui_page == SEQ_UI_PAGE_TRIGGER);
+  SEQ_LED_PinSet(seq_hwcfg_led.length, ui_page == SEQ_UI_PAGE_LENGTH);
+  SEQ_LED_PinSet(seq_hwcfg_led.progression, ui_page == SEQ_UI_PAGE_PROGRESSION);
+  SEQ_LED_PinSet(seq_hwcfg_led.groove, ui_page == SEQ_UI_PAGE_GROOVE);
+  SEQ_LED_PinSet(seq_hwcfg_led.echo, ui_page == SEQ_UI_PAGE_ECHO);
+  SEQ_LED_PinSet(seq_hwcfg_led.humanizer, ui_page == SEQ_UI_PAGE_HUMANIZER);
+  SEQ_LED_PinSet(seq_hwcfg_led.lfo, ui_page == SEQ_UI_PAGE_LFO);
+  SEQ_LED_PinSet(seq_hwcfg_led.scale, ui_page == SEQ_UI_PAGE_SCALE);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.midichn, ui_page == SEQ_UI_PAGE_MIDICHN);
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.rec_arm, ui_page == SEQ_UI_PAGE_REC_ARM);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.rec_step, ui_page == SEQ_UI_PAGE_REC_STEP);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.rec_live, ui_page == SEQ_UI_PAGE_REC_LIVE);
+  SEQ_LED_PinSet(seq_hwcfg_led.rec_arm, ui_page == SEQ_UI_PAGE_REC_ARM);
+  SEQ_LED_PinSet(seq_hwcfg_led.rec_step, ui_page == SEQ_UI_PAGE_REC_STEP);
+  SEQ_LED_PinSet(seq_hwcfg_led.rec_live, ui_page == SEQ_UI_PAGE_REC_LIVE);
 
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
+  SEQ_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
+  SEQ_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
+  SEQ_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
 
   return 0; // no error
 }
@@ -956,7 +923,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // beat LED
   u8 sequencer_running = SEQ_BPM_IsRunning();
   u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step & 3) == 0);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.tap_tempo, beat_led_on);
+  SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, beat_led_on);
 
   // mirror to status LED (inverted, so that LED is normaly on)
   MIOS32_BOARD_LED_Set(0xffffffff, beat_led_on ? 0 : 1);
@@ -990,16 +957,16 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // transfer to GP LEDs
   if( seq_hwcfg_led.gp_dout_l_sr ) {
     if( seq_hwcfg_led.pos_dout_l_sr )
-      SEQ_UI_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, (ui_page_gp_leds >> 0) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, (ui_page_gp_leds >> 0) & 0xff);
     else
-      SEQ_UI_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
   }
 
   if( seq_hwcfg_led.gp_dout_r_sr ) {
     if( seq_hwcfg_led.pos_dout_r_sr )
-      SEQ_UI_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, (ui_page_gp_leds >> 8) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, (ui_page_gp_leds >> 8) & 0xff);
     else
-      SEQ_UI_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
   }
 
 
@@ -1017,8 +984,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
   // pos LEDs
-  SEQ_UI_LED_SRSet(seq_hwcfg_led.pos_dout_l_sr, ((pos_marker_mask ^ pos_overlay) >> 0) & 0xff);
-  SEQ_UI_LED_SRSet(seq_hwcfg_led.pos_dout_r_sr, ((pos_marker_mask ^ pos_overlay) >> 8) & 0xff);
+  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_l_sr, ((pos_marker_mask ^ pos_overlay) >> 0) & 0xff);
+  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_r_sr, ((pos_marker_mask ^ pos_overlay) >> 8) & 0xff);
 
   u8 bar1, bar2, bar3, bar4;
 
@@ -1056,10 +1023,10 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	bar4 ^= 1;
     }
   }
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.bar1, bar1);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.bar2, bar2);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.bar3, bar3);
-  SEQ_UI_LED_PinSet(seq_hwcfg_led.bar4, bar4);
+  SEQ_LED_PinSet(seq_hwcfg_led.bar1, bar1);
+  SEQ_LED_PinSet(seq_hwcfg_led.bar2, bar2);
+  SEQ_LED_PinSet(seq_hwcfg_led.bar3, bar3);
+  SEQ_LED_PinSet(seq_hwcfg_led.bar4, bar4);
 
   return 0; // no error
 }

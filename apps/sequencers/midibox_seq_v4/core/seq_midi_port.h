@@ -80,5 +80,7 @@ extern s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_packa
 
 extern u32 seq_midi_port_multi_enable_flags;
 
+extern u8 seq_midi_port_out_combined_ctr;
+extern u8 seq_midi_port_in_combined_ctr;
 
 #endif /* _SEQ_MIDI_PORT_H */
