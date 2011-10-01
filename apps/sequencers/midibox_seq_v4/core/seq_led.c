@@ -70,12 +70,12 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRSet(u32 sr, u8 value)
 {
-  if( !sr )
-    return -1; // SR not available
+  if( sr >= 128 )
+    return -1; // SR disabled
 
 #ifdef MBSEQV4L
   if( sr <= 8 )
-    return BLM_CHEAPO_DOUT_SRSet(sr-1, value);
+    return BLM_CHEAPO_DOUT_SRSet(sr, value);
 
   if( sr >= 16 && sr < 24 )
     return BLM_X_LEDSRSet(sr-16, 0, value);
@@ -96,12 +96,12 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRGet(u32 sr)
 {
-  if( !sr )
-    return 0; // SR not available... return 0
+  if( sr >= 128 )
+    return 0; // SR disabled
 
 #ifdef MBSEQV4L
   if( sr <= 8 )
-    return BLM_CHEAPO_DOUT_SRGet(sr-1);
+    return BLM_CHEAPO_DOUT_SRGet(sr);
 
   if( sr >= 16 && sr < 24 )
     return BLM_X_LEDSRGet(sr-16, 0);
